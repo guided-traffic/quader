@@ -6,7 +6,7 @@ import { stateView } from './backups-model';
  * `stateView`. `showHint` adds the sentence that says what an `interrupted` or stopped run means.
  */
 @Component({
-  selector: 'trove-backup-state',
+  selector: 'quader-backup-state',
   template: `
     <span class="badge" [class]="view().tone">
       <span class="material-icons" aria-hidden="true">{{ view().icon }}</span>
@@ -19,9 +19,9 @@ import { stateView } from './backups-model';
   styles: `
     .hint {
       display: block;
-      margin-block-start: var(--trove-space-1);
+      margin-block-start: var(--quader-space-1);
       font-size: 0.8125rem;
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
       white-space: normal;
     }
   `,

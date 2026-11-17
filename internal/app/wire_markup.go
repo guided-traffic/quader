@@ -3,8 +3,8 @@ package app
 import (
 	"fmt"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/packages/readme"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/packages/readme"
 )
 
 // readmeMarkup is the Host's Markup (ADR-196): the README renderer of the installation, with the operator's image origins, so a format's

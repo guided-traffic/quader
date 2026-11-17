@@ -3,8 +3,8 @@ package deb
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 // JournalStore is the part of the data port that writes the journaled events of files and applies their replay (R-DEB-032, Q-DEB-22,
@@ -22,7 +22,7 @@ type JournalStore interface {
 	// stays (already in effect), a file the repository does not hold with that digest is subject unknown.
 	Withhold(ctx context.Context, tx formats.Tx, in rows.Tombstone) (rows.ReplayResult, error)
 	// ReinstateFile removes the mark of a withheld file, only while the file is stored with that digest, and writes deb.reinstate; it
-	// reports whether a mark was there (`trove admin deb reinstate`).
+	// reports whether a mark was there (`quader admin deb reinstate`).
 	ReinstateFile(ctx context.Context, tx formats.Tx, repoID int64, path string, sha256 [32]byte) (bool, error)
 	// Tombstone reads the mark of a path; found is false when there is none. The serve check reads the same fact with the item
 	// (servefacts.DebLocal) and asks the port only when the lookup did not.

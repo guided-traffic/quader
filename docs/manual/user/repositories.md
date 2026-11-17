@@ -1,6 +1,6 @@
 # Repositories
 
-Everything trove stores lives in a repository, and every repository belongs to a project and has a key, a format and a class. This page explains the local, remote and virtual classes from a user's point of view, how projects and keys become addresses, which formats this version serves, what you see depending on your permissions, and how the content page of a repository and its setup help you connect a client.
+Everything Quader stores lives in a repository, and every repository belongs to a project and has a key, a format and a class. This page explains the local, remote and virtual classes from a user's point of view, how projects and keys become addresses, which formats this version serves, what you see depending on your permissions, and how the content page of a repository and its setup help you connect a client.
 
 ## Repository classes
 
@@ -9,7 +9,7 @@ A repository is local, remote or virtual. An administrator chooses the class whe
 | Class | What it holds | What you do with it |
 |---|---|---|
 | **Local** | The packages and files your teams publish or upload | Read, and publish or upload where you hold the permission |
-| **Remote** | A cache of an upstream registry, filled on demand | Read only; trove fetches from the upstream for you |
+| **Remote** | A cache of an upstream registry, filled on demand | Read only; Quader fetches from the upstream for you |
 | **Virtual** | Nothing of its own: it combines several repositories, its members, under one address | Read through one address; publishing goes to one local member |
 
 ### Local repositories
@@ -18,9 +18,9 @@ A local repository keeps what is published to it, and a publish is visible as so
 
 ### Remote repositories
 
-A remote repository is a pull-through cache of an upstream registry; for npm the default upstream is `https://registry.npmjs.org/`. The first request for a package fetches it from the upstream and stores it; later requests are answered from trove. While the upstream is down, trove serves what it has cached. A version that the upstream withdraws is no longer served, even from the cache, unless an administrator chose otherwise. You cannot publish to a remote repository.
+A remote repository is a pull-through cache of an upstream registry; for npm the default upstream is `https://registry.npmjs.org/`. The first request for a package fetches it from the upstream and stores it; later requests are answered from Quader. While the upstream is down, Quader serves what it has cached. A version that the upstream withdraws is no longer served, even from the cache, unless an administrator chose otherwise. You cannot publish to a remote repository.
 
-For NuGet the default upstream is `https://api.nuget.org/v3/index.json`: trove reads the service index of the feed and takes the package files and documents from the addresses it names. A NuGet remote checks every package it caches: the ID and version the package declares must be the ones the request named, and an archive whose ID and version cannot be read is refused the same way: the answer is `502` `upstream_package_mismatch` and nothing is stored. A version that disappears from the upstream's lists stays downloadable from the cache by its exact address; an ID the upstream no longer has is not served at all, though its cached packages stay stored and the cache view (`<key>~cache`) lists them.
+For NuGet the default upstream is `https://api.nuget.org/v3/index.json`: Quader reads the service index of the feed and takes the package files and documents from the addresses it names. A NuGet remote checks every package it caches: the ID and version the package declares must be the ones the request named, and an archive whose ID and version cannot be read is refused the same way: the answer is `502` `upstream_package_mismatch` and nothing is stored. A version that disappears from the upstream's lists stays downloadable from the cache by its exact address; an ID the upstream no longer has is not served at all, though its cached packages stay stored and the cache view (`<key>~cache`) lists them.
 
 For Debian (APT) the default upstream is `https://deb.debian.org/debian/`. A Debian remote passes the archive's signed release files through unchanged, so your APT client verifies the archive's own signature; [Debian packages with APT](apt-packages.md#through-a-remote-repository) says which key file to use.
 
@@ -46,12 +46,12 @@ Your client reaches a repository at an address built from the installation's add
 
 | Format | Address for your package manager | Address for raw files |
 |---|---|---|
-| npm | `https://trove.example.com/api/npm/<project>/<key>/` | `https://trove.example.com/files/<project>/<key>/` |
-| NuGet | `https://trove.example.com/api/nuget/<project>/<key>/v3/index.json` | `https://trove.example.com/files/<project>/<key>/` |
-| Generic | `https://trove.example.com/files/<project>/<key>/` | the same |
-| OCI (Docker) | `trove.example.com/<project>/<key>/<image>:<tag>`, an image reference without a scheme | `https://trove.example.com/files/<project>/<key>/` (download and delete; uploads go through the registry) |
-| Debian (APT) | `https://trove.example.com/api/deb/<project>/<key>/`, with a suite in the source line | `https://trove.example.com/files/<project>/<key>/` (download and delete; uploads go to `upload/<file>` of the APT address) |
-| Ansible Galaxy | `https://trove.example.com/api/ansible/<project>/<key>/`, the `url` of a server in `ansible.cfg` | none: collections are published with `ansible-galaxy collection publish` |
+| npm | `https://quader.example.com/api/npm/<project>/<key>/` | `https://quader.example.com/files/<project>/<key>/` |
+| NuGet | `https://quader.example.com/api/nuget/<project>/<key>/v3/index.json` | `https://quader.example.com/files/<project>/<key>/` |
+| Generic | `https://quader.example.com/files/<project>/<key>/` | the same |
+| OCI (Docker) | `quader.example.com/<project>/<key>/<image>:<tag>`, an image reference without a scheme | `https://quader.example.com/files/<project>/<key>/` (download and delete; uploads go through the registry) |
+| Debian (APT) | `https://quader.example.com/api/deb/<project>/<key>/`, with a suite in the source line | `https://quader.example.com/files/<project>/<key>/` (download and delete; uploads go to `upload/<file>` of the APT address) |
+| Ansible Galaxy | `https://quader.example.com/api/ansible/<project>/<key>/`, the `url` of a server in `ansible.cfg` | none: collections are published with `ansible-galaxy collection publish` |
 
 The page of a repository shows its address for your package manager under its title, with a copy button, and the others under **Details**; **Set up client** shows them in the configuration of your client, so you do not have to build them yourself. A repository that an administrator moves to another project changes its address: the old address answers `404`, and your client configuration needs the new one.
 
@@ -70,7 +70,7 @@ Generic repositories store files of any kind at paths you choose: installers, ar
 
 ## What you see depends on your permissions
 
-trove shows you only what you may read. A repository you may not read is not listed anywhere, and its addresses answer `404`, exactly as if it did not exist (or `403`, where an administrator chose not to hide repositories).
+Quader shows you only what you may read. A repository you may not read is not listed anywhere, and its addresses answer `404`, exactly as if it did not exist (or `403`, where an administrator chose not to hide repositories).
 
 | What you hold | What you see and can do |
 |---|---|
@@ -129,6 +129,6 @@ The settings page is one column: the key and the description at the top, then **
 3. Copy a snippet with **Copy snippet**. A snippet meant for a file names it, for example **File**: `.npmrc`.
 4. **Open the client setup** prepares the client setup page for the same repository and client, where you can create a token and copy ready-made configuration. **Open in the guides** opens the same guide in the **Guides** area.
 
-The sections cover what the repository is, pointing the client at it, signing the client in, installing, publishing and maintaining (where the class allows writes), and troubleshooting; the npm guide adds security audits and lockfiles. A guide never contains a token: snippets read it from an environment variable such as `TROVE_TOKEN`, and the guide for an anonymous reader uses no credential at all.
+The sections cover what the repository is, pointing the client at it, signing the client in, installing, publishing and maintaining (where the class allows writes), and troubleshooting; the npm guide adds security audits and lockfiles. A guide never contains a token: snippets read it from an environment variable such as `QUADER_TOKEN`, and the guide for an anonymous reader uses no credential at all.
 
 **Guides** in the start side bar and in the user menu holds the same guides without opening a repository first: choose a **Package type**, a **Client**, and either a **Repository** or **None in particular: the guide of a repository class** together with a **Repository class**. To configure a client step by step, see [Connecting a package client](client-setup.md).

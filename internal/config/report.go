@@ -11,19 +11,19 @@ type Command int
 
 // The commands that load a configuration.
 const (
-	// CommandServe is `trove serve`.
+	// CommandServe is `quader serve`.
 	CommandServe Command = iota
-	// CommandMigrate is `trove migrate`.
+	// CommandMigrate is `quader migrate`.
 	CommandMigrate
-	// CommandAdmin is `trove admin …`.
+	// CommandAdmin is `quader admin …`.
 	CommandAdmin
-	// CommandValidate is `trove admin config validate`: every check of
+	// CommandValidate is `quader admin config validate`: every check of
 	// CommandServe except that the role may be unset.
 	CommandValidate
-	// CommandBackup is `trove backup …`: the database, the blob store and the backup keys, no role and no Valkey
+	// CommandBackup is `quader backup …`: the database, the blob store and the backup keys, no role and no Valkey
 	// (R-BAK-009).
 	CommandBackup
-	// CommandImport is `trove admin import …`: a client of two registries that reads the outbound settings and opens no
+	// CommandImport is `quader admin import …`: a client of two registries that reads the outbound settings and opens no
 	// database, no Valkey and no object store (Q-IMP-1), so the keys of the database are not required.
 	CommandImport
 )

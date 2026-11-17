@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func TestR_ANS_019_TheExchangeIsTheRefreshTokenGrantAtAuthUrl(t *testing.T) {

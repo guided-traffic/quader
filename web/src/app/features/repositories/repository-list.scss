@@ -1,24 +1,24 @@
 .badge {
-  margin-inline-start: var(--trove-space-2);
+  margin-inline-start: var(--quader-space-2);
 }
 
 .deleting {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-2);
-  margin-block-start: var(--trove-space-1);
+  gap: var(--quader-space-2);
+  margin-block-start: var(--quader-space-1);
 }
 
 // The line that says the list is limited to a project (R-UI-041).
 .project-note {
-  margin-block: 0 var(--trove-space-3);
-  color: var(--trove-text-muted);
+  margin-block: 0 var(--quader-space-3);
+  color: var(--quader-text-muted);
 }
 
 // The admin area's row: the quiet copy button and the menu side by side (Q-UI-330).
 td.actions {
-  trove-copy-button {
-    margin-inline-end: var(--trove-space-1);
+  quader-copy-button {
+    margin-inline-end: var(--quader-space-1);
   }
 }

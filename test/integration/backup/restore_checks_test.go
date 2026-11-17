@@ -12,12 +12,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestR_BAK_020_Preconditions(t *testing.T) {
@@ -32,7 +32,7 @@ func TestR_BAK_020_Preconditions(t *testing.T) {
 		if n := dst.relations(); n != 0 {
 			t.Fatalf("--check created %d relations", n)
 		}
-		if c := dst.stack.Text("SELECT coalesce(obj_description('trove'::regnamespace, 'pg_namespace'), '')"); c != "" {
+		if c := dst.stack.Text("SELECT coalesce(obj_description('quader'::regnamespace, 'pg_namespace'), '')"); c != "" {
 			t.Fatalf("--check set the anchor %q", c)
 		}
 	})
@@ -43,7 +43,7 @@ func TestR_BAK_020_Preconditions(t *testing.T) {
 	})
 
 	t.Run("R-BAK-020 a key ring without the backup's key ID exits 6 and the database stays empty", func(t *testing.T) {
-		other := src.destination("TROVE_SECRETS_ENCRYPTION_KEY_FILES=[\""+src.stack.KeyFile("2026-09.key", bytes.Repeat([]byte{1}, 32))+"\"]", "TROVE_SECRETS_ACTIVE_KEY_ID=2026-09")
+		other := src.destination("QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\""+src.stack.KeyFile("2026-09.key", bytes.Repeat([]byte{1}, 32))+"\"]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-09")
 		_, err := other.restore(backup.RestoreOptions{SkipRevocationJournal: true})
 		wantExit(t, err, backup.ExitPrecondition, "check 3", "key ring does not match backup: missing key 2026-10")
 		if n := other.relations(); n != 0 {
@@ -68,14 +68,14 @@ func TestR_BAK_020_Preconditions(t *testing.T) {
 
 	t.Run("R-BAK-020 a database anchored by another backup exits 6 and names both IDs", func(t *testing.T) {
 		dst := src.destination()
-		dst.stack.Exec("COMMENT ON SCHEMA trove IS 'trove-restore 20250101T000000Z-aaaa'")
+		dst.stack.Exec("COMMENT ON SCHEMA quader IS 'quader-restore 20250101T000000Z-aaaa'")
 		_, err := dst.restore(backup.RestoreOptions{SkipRevocationJournal: true})
 		wantExit(t, err, backup.ExitPrecondition, "check 4", "20250101T000000Z-aaaa", string(src.id))
 	})
 
 	t.Run("R-BAK-020 a schema that does not exist exits 6 at check 4", func(t *testing.T) {
 		dst := src.destination()
-		dst.stack.Exec("DROP SCHEMA trove CASCADE")
+		dst.stack.Exec("DROP SCHEMA quader CASCADE")
 		_, err := dst.restore(backup.RestoreOptions{SkipRevocationJournal: true})
 		wantExit(t, err, backup.ExitPrecondition, "check 4", "does not exist")
 	})
@@ -161,7 +161,7 @@ func TestR_BAK_021_Resumption(t *testing.T) {
 	want := fingerprint(ref.stack, tablesOf)
 
 	// Each point stops the restore the way a SIGTERM does (exit 75, rolled back and resumable); the Job's next pod, a fresh
-	// process, finishes it. The kill -9 variants run the trove binary (restore_kill_test.go).
+	// process, finishes it. The kill -9 variants run the quader binary (restore_kill_test.go).
 	for _, point := range []string{"step2:anchored", "step2:migrated:20", "step3:copied:5", "load:items", "load:blobs", "step5", "step6", "step8", "step9"} {
 		t.Run("R-BAK-021 interrupted at "+point+" and resumed ends like an uninterrupted restore", func(t *testing.T) {
 			dst := src.destination()
@@ -180,7 +180,7 @@ func TestR_BAK_021_Resumption(t *testing.T) {
 				t.Fatalf("the restore never reached %s", point)
 			}
 			wantExit(t, err, backup.ExitTemporary)
-			if c := dst.stack.Text("SELECT coalesce(obj_description('trove'::regnamespace, 'pg_namespace'), '')"); c != "trove-restore "+string(src.id) {
+			if c := dst.stack.Text("SELECT coalesce(obj_description('quader'::regnamespace, 'pg_namespace'), '')"); c != "quader-restore "+string(src.id) {
 				t.Fatalf("anchor after the interruption = %q", c)
 			}
 			if _, err := dst.restore(backup.RestoreOptions{SkipRevocationJournal: true}); err != nil {

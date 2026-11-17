@@ -6,18 +6,18 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// ConfigurationActor is the caller of the writes `trove migrate` makes for the declared issuers: the
+// ConfigurationActor is the caller of the writes `quader migrate` makes for the declared issuers: the
 // audit events carry the actor system:configuration, as those of the declared role bindings do.
 func ConfigurationActor() Actor { return authz.ConfigurationSubject() }
 
 // ApplyDeclared makes the issuers with source configuration exactly the ones ci.issuers declares
-// (R-CI-001, Q-CI-16), in the caller's transaction, which is the one of `trove migrate`: no replica
+// (R-CI-001, Q-CI-16), in the caller's transaction, which is the one of `quader migrate`: no replica
 // calls it, so replicas of two releases during a rolling update never overwrite each other.
 //
 //   - A declared issuer is created, or replaced by name when the stored settings differ; one that the
@@ -108,11 +108,11 @@ func sameIdentity(before, next Issuer) error {
 	switch {
 	case before.Issuer != next.Issuer:
 		return fmt.Errorf("the issuer URL changes from %s to %s; the issuer URL and the kind of a CI issuer never change: "+
-			"declare %s under a new name and remove this entry, which trove migrate then disables (its tokens revoked, its mappings kept)",
+			"declare %s under a new name and remove this entry, which quader migrate then disables (its tokens revoked, its mappings kept)",
 			before.Issuer, next.Issuer, next.Issuer)
 	case before.Kind != next.Kind:
 		return fmt.Errorf("the kind changes from %s to %s; the issuer URL and the kind of a CI issuer never change: "+
-			"declare the issuer under a new name and remove this entry, which trove migrate then disables (its tokens revoked, its mappings kept)",
+			"declare the issuer under a new name and remove this entry, which quader migrate then disables (its tokens revoked, its mappings kept)",
 			before.Kind, next.Kind)
 	}
 	return nil

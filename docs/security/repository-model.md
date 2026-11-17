@@ -221,7 +221,7 @@ requesting through a replica that has not polled yet.
 Component: `CleanPath` and the items store. Subject: lookalike paths. Live with milestone M1. `Report.pdf`, `report.pdf`
 and two spellings of `é` (one precomposed code point, one letter plus a combining accent) are four different paths, and a
 generic repository stores all of them. A person reading a listing, or a pattern written for one spelling, can mistake one
-for another. The rule is deliberate: trove never rewrites what a client sent, and an include or exclude pattern
+for another. The rule is deliberate: Quader never rewrites what a client sent, and an include or exclude pattern
 therefore matches exactly the bytes it is written with. What makes it real: a repository whose uploaders are not
 trusted and whose consumers pick files by reading names; the remedy is to grant `deploy` only to accounts that
 publish.

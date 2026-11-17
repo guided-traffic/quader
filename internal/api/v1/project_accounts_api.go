@@ -4,13 +4,13 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The service accounts of a project (Q-AUTHZ-169, Q-AUTHZ-209): /projects/{projectKey}/service-accounts. The
@@ -202,7 +202,7 @@ func (s *Server) RevokeProjectServiceAccountTokens(w http.ResponseWriter, r *htt
 }
 
 // CreateProjectServiceAccountToken implements POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens
-// (R-AUTH-027, Q-AUTHZ-177): an administrator of trove, an Owner of the project, or a token of the same account
+// (R-AUTH-027, Q-AUTHZ-177): an administrator of quader, an Owner of the project, or a token of the same account
 // under the derivation rule. An Owner who is no administrator creates a delegated token: never non-expiring,
 // admin false, no system item. The operation decides in the handler; anyone else gets the same 403 whether the
 // account exists or not.

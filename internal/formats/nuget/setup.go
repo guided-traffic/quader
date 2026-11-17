@@ -1,6 +1,6 @@
 package nuget
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // clients are the native clients of the acceptance matrix (R-NUGET-026, R-NUGET-027): the
 // .NET SDK, nuget.exe and Visual Studio. Visual Studio reads the same nuget.config as the
@@ -34,8 +34,8 @@ const sourceURL = `(printf "%sv3/index.json" .RegistryURL)`
 // shows them and the token it mints are the API's (R-API-033); a template sees
 // [formats.SetupData] and never a token, so the credential is always a reference to the
 // environment variable that the client or the shell expands itself, in the spelling of the
-// syntax it is written in: %TROVE_TOKEN% in a nuget.config and in cmd, ${TROVE_TOKEN} in a
-// POSIX shell, $env:TROVE_TOKEN in PowerShell.
+// syntax it is written in: %QUADER_TOKEN% in a nuget.config and in cmd, ${QUADER_TOKEN} in a
+// POSIX shell, $env:QUADER_TOKEN in PowerShell.
 //
 // The credential of a configure snippet is written only for a repository that is not
 // anonymously readable (SetupData.RequiresAuth): a client with a credential for a source that
@@ -46,30 +46,30 @@ const sourceURL = `(printf "%sv3/index.json" .RegistryURL)`
 func (f *Format) SetupTemplates() []formats.SetupTemplate {
 	// The server never sees the user name (R-NUGET-012: any name is accepted); the instructions
 	// use a fixed one.
-	const user = "trove"
+	const user = "quader"
 	nugetConfig := `<?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
     <clear />
-    <add key="trove" value="{{xml ` + sourceURL + `}}" protocolVersion="3" />
+    <add key="quader" value="{{xml ` + sourceURL + `}}" protocolVersion="3" />
   </packageSources>
 {{if .RequiresAuth}}  <packageSourceCredentials>
-    <trove>
+    <quader>
       <add key="Username" value="` + user + `" />
       <add key="ClearTextPassword" value="` + formats.SetupTokenRefWin + `" />
-    </trove>
+    </quader>
   </packageSourceCredentials>
 {{end}}</configuration>
 `
-	dotnetShell := `dotnet nuget add source {{shell ` + sourceURL + `}} --name trove{{if .RequiresAuth}} \
+	dotnetShell := `dotnet nuget add source {{shell ` + sourceURL + `}} --name quader{{if .RequiresAuth}} \
   --username ` + user + ` --password "` + formats.SetupTokenRef + `" --store-password-in-clear-text{{end}}
 `
-	dotnetPS := "dotnet nuget add source {{powershell " + sourceURL + "}} --name trove{{if .RequiresAuth}} `\n" +
+	dotnetPS := "dotnet nuget add source {{powershell " + sourceURL + "}} --name quader{{if .RequiresAuth}} `\n" +
 		"  --username " + user + ` --password "` + formats.SetupTokenRefPS + `" --store-password-in-clear-text{{end}}` + "\n"
-	nugetCmd := `nuget sources add -Name trove -Source {{cmd ` + sourceURL + `}}{{if .RequiresAuth}} ^
+	nugetCmd := `nuget sources add -Name quader -Source {{cmd ` + sourceURL + `}}{{if .RequiresAuth}} ^
   -Username ` + user + ` -Password ` + formats.SetupTokenRefWin + `{{end}}
 `
-	nugetPS := "nuget sources add -Name trove -Source {{powershell " + sourceURL + "}}{{if .RequiresAuth}} `\n" +
+	nugetPS := "nuget sources add -Name quader -Source {{powershell " + sourceURL + "}}{{if .RequiresAuth}} `\n" +
 		"  -Username " + user + ` -Password "` + formats.SetupTokenRefPS + `"{{end}}` + "\n"
 	const dotnetPush = "dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source "
 	const nugetPush = "nuget push Acme.Widgets.1.2.3.nupkg -Source "
@@ -83,7 +83,7 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
 		{ID: "visual-studio.nugetconfig.configure", Client: ClientVisualStudio, Section: "configure", Lang: "xml", File: "nuget.config", Template: nugetConfig},
 
 		{ID: "dotnet.install", Client: ClientDotnet, Section: "install", Lang: "shell", Template: "dotnet add package <package>\n", VersionSpec: " --version " + formats.SetupVersionRef},
-		{ID: "nuget.install", Client: ClientNuGet, Section: "install", Lang: "cmd", Template: "nuget install <package> -Source trove -OutputDirectory packages\n", VersionSpec: " -Version " + formats.SetupVersionRef},
+		{ID: "nuget.install", Client: ClientNuGet, Section: "install", Lang: "cmd", Template: "nuget install <package> -Source quader -OutputDirectory packages\n", VersionSpec: " -Version " + formats.SetupVersionRef},
 		// The version attribute closes the Include attribute: the API replaces <package> by the
 		// quoted package followed by the spec, so the spec starts with the closing quote.
 		{ID: "visual-studio.packagereference.install", Client: ClientVisualStudio, Section: "install", Lang: "xml", Template: "<PackageReference Include=\"<package>\" />\n", VersionSpec: "\" Version=\"" + formats.SetupVersionRef},

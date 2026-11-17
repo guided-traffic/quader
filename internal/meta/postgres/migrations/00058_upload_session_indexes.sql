@@ -1,5 +1,5 @@
--- trove:phase contract
--- trove:requires-app >= 0.1.0
+-- quader:phase contract
+-- quader:requires-app >= 0.1.0
 --
 -- Indexes and one column for the statements that grow with the number of sessions (R-STOR-011, Q-STOR-176). The collection run lists the
 -- aborted and the finished sessions oldest first: it needs them ordered by last_activity_at inside a state, which the index on state alone

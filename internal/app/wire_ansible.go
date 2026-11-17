@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"io"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/blob"
-	ansibledata "github.com/guided-traffic/trove/internal/formatdata/ansible"
-	"github.com/guided-traffic/trove/internal/formats"
-	ansibleformat "github.com/guided-traffic/trove/internal/formats/ansible"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection"
-	"github.com/guided-traffic/trove/internal/formats/ansible/docgen"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/blob"
+	ansibledata "github.com/guided-traffic/quader/internal/formatdata/ansible"
+	"github.com/guided-traffic/quader/internal/formats"
+	ansibleformat "github.com/guided-traffic/quader/internal/formats/ansible"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/docgen"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // ansibleBlobs gives the data port of the Ansible Galaxy format whole reads of a stored archive: the README of a version is a file

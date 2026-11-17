@@ -43,7 +43,7 @@ What this does not do is bound what the analyser itself writes ([H-871](#h-871--
 
 ### H-810 · Java archives are not analysed
 
-Reading a JAR needs a second database, of Java artifacts, which trove does not mirror, and without it the analyser refuses to work offline on an image that contains one. The analysis skips `*.jar`, `*.war`, `*.ear` and `*.par`, so vulnerabilities in Java libraries inside an image are not reported. An image that holds only Java libraries shows `evaluated` with no findings. Mirroring the Java database as well would close this.
+Reading a JAR needs a second database, of Java artifacts, which Quader does not mirror, and without it the analyser refuses to work offline on an image that contains one. The analysis skips `*.jar`, `*.war`, `*.ear` and `*.par`, so vulnerabilities in Java libraries inside an image are not reported. An image that holds only Java libraries shows `evaluated` with no findings. Mirroring the Java database as well would close this.
 
 ### H-811 · The block of an image is the block of its manifest
 
@@ -83,7 +83,7 @@ The worker holds what it writes itself (the layout, from sizes it checked agains
 
 ### H-872 · The database allowance of the chart is a constant
 
-The chart checks the spool budget against 2 GiB for the unpacked database; the database was 1.6 GiB on 2026-11-10 and changes with every update. At run time the exact size is held, so a database that outgrows the budget is refused when it is unpacked, not when the chart is installed: `vuln-image-scan` then ends with a `skipped` result naming the reason, every image stays `pending_scan`, and the signals are that result, the log and the counter `trove_vuln_image_scans_total{result="spool_busy"}`, which `TroveVulnerabilityImageScansFailing` covers after an hour. What makes it real: an installation that sized `worker.spool.sizeLimit` exactly to the check and a database that grows past 2 GiB.
+The chart checks the spool budget against 2 GiB for the unpacked database; the database was 1.6 GiB on 2026-11-10 and changes with every update. At run time the exact size is held, so a database that outgrows the budget is refused when it is unpacked, not when the chart is installed: `vuln-image-scan` then ends with a `skipped` result naming the reason, every image stays `pending_scan`, and the signals are that result, the log and the counter `quader_vuln_image_scans_total{result="spool_busy"}`, which `QuaderVulnerabilityImageScansFailing` covers after an hour. What makes it real: an installation that sized `worker.spool.sizeLimit` exactly to the check and a database that grows past 2 GiB.
 
 ### H-873 · A refused scan waits an hour after the limit is raised
 

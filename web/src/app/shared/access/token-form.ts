@@ -46,11 +46,11 @@ export interface TokenDraft {
  * (`scope.endpoints`, R-EP-011, Q-UI-91) that accept its type; none chosen leaves the token unbound.
  */
 @Component({
-  selector: 'trove-token-form',
+  selector: 'quader-token-form',
   imports: [Checkbox, SelectField, TextField],
   template: `
     <form class="form" (submit)="submit($event)" novalidate>
-      <trove-text-field
+      <quader-text-field
         width="full"
         i18n-label="@@token-form.description"
         label="Description"
@@ -61,7 +61,7 @@ export interface TokenDraft {
         i18n-hint="@@token-form.description-hint"
         hint="What the token is for, for example the machine or the job."
       />
-      <trove-select-field
+      <quader-select-field
         i18n-label="@@token-form.lifetime"
         label="Lifetime"
         name="lifetime"
@@ -75,7 +75,7 @@ export interface TokenDraft {
         </p>
       }
       @if (lifetime() === 'custom') {
-        <trove-text-field
+        <quader-text-field
           width="bytes"
           i18n-label="@@token-form.expires"
           label="Expires on (UTC)"
@@ -104,7 +104,7 @@ export interface TokenDraft {
           <span i18n="@@token-form.scope-restricted">Only the repositories and actions below</span>
         </label>
         @if (restricted()) {
-          <trove-text-field
+          <quader-text-field
             width="full"
             i18n-label="@@token-form.repositories"
             label="Repositories"
@@ -116,7 +116,7 @@ export interface TokenDraft {
             i18n-hint="@@token-form.repositories-hint"
             hint="One project/key or pattern per line, for example web/npm-internal or web/npm-team-*; or a class such as @any-local."
           />
-          <trove-text-field
+          <quader-text-field
             width="full"
             i18n-label="@@token-form.packages"
             label="Package patterns (optional)"
@@ -129,7 +129,7 @@ export interface TokenDraft {
           <fieldset class="actions">
             <legend i18n="@@token-form.actions">Actions</legend>
             @for (a of actionList; track a) {
-              <trove-checkbox [checked]="actions().includes(a)" (checkedChange)="toggle(a, $event)">{{ a }}</trove-checkbox>
+              <quader-checkbox [checked]="actions().includes(a)" (checkedChange)="toggle(a, $event)">{{ a }}</quader-checkbox>
             }
             @if (fieldError('/scope/actions', 'actions'); as text) {
               <p class="field-error">{{ text }}</p>
@@ -146,7 +146,7 @@ export interface TokenDraft {
             accepted. A further endpoint accepts only service-account tokens bound to it.
           </p>
           @for (e of endpointNames(); track e) {
-            <trove-checkbox [checked]="endpoints().includes(e)" (checkedChange)="toggleEndpoint(e, $event)">{{ e }}</trove-checkbox>
+            <quader-checkbox [checked]="endpoints().includes(e)" (checkedChange)="toggleEndpoint(e, $event)">{{ e }}</quader-checkbox>
           }
         </fieldset>
       }
@@ -167,41 +167,41 @@ export interface TokenDraft {
       max-inline-size: 36rem;
     }
     fieldset {
-      margin: 0 0 var(--trove-space-3);
-      padding: var(--trove-space-2) var(--trove-space-3);
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-m);
+      margin: 0 0 var(--quader-space-3);
+      padding: var(--quader-space-2) var(--quader-space-3);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-m);
       inline-size: 100%;
       box-sizing: border-box;
     }
     .hint {
       flex-basis: 100%;
       margin: 0;
-      color: var(--trove-text-muted);
-      font: var(--trove-type-body-small);
+      color: var(--quader-text-muted);
+      font: var(--quader-type-body-small);
     }
     .actions,
     .endpoints {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-1) var(--trove-space-3);
+      gap: var(--quader-space-1) var(--quader-space-3);
     }
     .radio {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       min-block-size: 24px;
-      margin-block-end: var(--trove-space-1);
+      margin-block-end: var(--quader-space-1);
     }
     .row {
       display: flex;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
     }
     .field-error {
       flex-basis: 100%;
       margin: 0;
-      color: var(--trove-status-bad);
-      font: var(--trove-type-body-small);
+      color: var(--quader-status-bad);
+      font: var(--quader-type-body-small);
     }
   `,
 })

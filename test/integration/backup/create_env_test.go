@@ -21,19 +21,19 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/create"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/create"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -89,7 +89,7 @@ func newInstall(t *testing.T) *install {
 		return c
 	}
 	var err error
-	in.dbName = "trove_bak_" + runID()
+	in.dbName = "quader_bak_" + runID()
 	maint := connect("postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+in.dbName+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatalf("create database: %v", err)
@@ -107,9 +107,9 @@ func newInstall(t *testing.T) *install {
 		t.Fatalf("migrate: %v", err)
 	}
 	in.admin = connect(in.dbName)
-	in.exec("SET search_path TO trove")
-	in.exec(`INSERT INTO trove.secret_key_canary (key_id, ciphertext) VALUES ('2026-10', 'v1:2026-10:AAAA')`)
-	in.exec(`INSERT INTO trove.project (id, key, display_name) VALUES (gen_random_uuid(), 'it', 'it')`)
+	in.exec("SET search_path TO quader")
+	in.exec(`INSERT INTO quader.secret_key_canary (key_id, ciphertext) VALUES ('2026-10', 'v1:2026-10:AAAA')`)
+	in.exec(`INSERT INTO quader.project (id, key, display_name) VALUES (gen_random_uuid(), 'it', 'it')`)
 	in.repo = in.newRepo("generic-local", "local")
 	if in.web, err = postgres.Open(ctx, in.dbCfg, "it-bak-web", "web", quiet); err != nil {
 		t.Fatal(err)
@@ -144,16 +144,16 @@ func newInstall(t *testing.T) *install {
 
 func sourceConfig(t testing.TB, dir string) config.StorageS3 {
 	cfg := blobtest.Storage(t, dir).S3
-	cfg.Endpoint = testenv.Get(t, "TROVE_TEST_S3_ENDPOINT")
-	cfg.Region = testenv.Get(t, "TROVE_TEST_S3_REGION")
-	cfg.Bucket = testenv.Get(t, "TROVE_TEST_S3_BUCKET_BLOBS")
-	cfg.ForcePathStyle = testenv.Get(t, "TROVE_TEST_S3_FORCE_PATH_STYLE") == "true"
+	cfg.Endpoint = testenv.Get(t, "QUADER_TEST_S3_ENDPOINT")
+	cfg.Region = testenv.Get(t, "QUADER_TEST_S3_REGION")
+	cfg.Bucket = testenv.Get(t, "QUADER_TEST_S3_BUCKET_BLOBS")
+	cfg.ForcePathStyle = testenv.Get(t, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true"
 	cfg.CAFile = testenv.CAFile(t)
 	cfg.Prefix = "it-bak-src/" + runID()
 	cfg.Credentials = config.StorageS3Credentials{
 		Source:              "static",
-		AccessKeyIDFile:     secretFile(t, dir, "src-id", testenv.Get(t, "TROVE_TEST_S3_ACCESS_KEY")),
-		SecretAccessKeyFile: secretFile(t, dir, "src-secret", testenv.Get(t, "TROVE_TEST_S3_SECRET_KEY")),
+		AccessKeyIDFile:     secretFile(t, dir, "src-id", testenv.Get(t, "QUADER_TEST_S3_ACCESS_KEY")),
+		SecretAccessKeyFile: secretFile(t, dir, "src-secret", testenv.Get(t, "QUADER_TEST_S3_SECRET_KEY")),
 	}
 	return cfg
 }
@@ -176,7 +176,7 @@ func (in *install) number(sql string, args ...any) int64 {
 
 func (in *install) newRepo(key, class string) int64 {
 	in.t.Helper()
-	return in.number(`INSERT INTO trove.repositories (key, format, class, project_id) SELECT $1, 'generic', $2, id FROM trove.project WHERE key = 'it' RETURNING id`, key, class)
+	return in.number(`INSERT INTO quader.repositories (key, format, class, project_id) SELECT $1, 'generic', $2, id FROM quader.project WHERE key = 'it' RETURNING id`, key, class)
 }
 
 // upload ingests, commits and links a file item to the repository.
@@ -209,12 +209,12 @@ func (in *install) mustUpload(repo int64, path, content string) blob.Digest {
 // deleteItem removes the item; the release trigger queues the blob for the collector.
 func (in *install) deleteItem(path string) {
 	in.t.Helper()
-	in.exec(`DELETE FROM trove.items WHERE path = $1`, path)
+	in.exec(`DELETE FROM quader.items WHERE path = $1`, path)
 }
 
 func (in *install) blobState(d blob.Digest) (string, bool) {
 	var st string
-	err := in.admin.QueryRow(context.Background(), `SELECT state FROM trove.blobs WHERE sha256 = $1`, d.Bytes()).Scan(&st)
+	err := in.admin.QueryRow(context.Background(), `SELECT state FROM quader.blobs WHERE sha256 = $1`, d.Bytes()).Scan(&st)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", false
 	}
@@ -254,8 +254,8 @@ func (in *install) backupConfig(t testing.TB) config.Backup {
 	l, err := config.Load(config.Options{
 		ReadFile: func(string) ([]byte, error) { return nil, fs.ErrNotExist },
 		Environ: []string{
-			"TROVE_DATABASE_HOST=db.invalid", "TROVE_DATABASE_NAME=trove", "TROVE_STORAGE_S3_BUCKET=blobs",
-			"TROVE_BACKUP_TARGET_BUCKET=" + testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"),
+			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader", "QUADER_STORAGE_S3_BUCKET=blobs",
+			"QUADER_BACKUP_TARGET_BUCKET=" + testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"),
 		},
 		Command: config.CommandBackup,
 	})
@@ -263,7 +263,7 @@ func (in *install) backupConfig(t testing.TB) config.Backup {
 		t.Fatalf("backup defaults: %v", err)
 	}
 	cfg := l.Config.Backup
-	tc := targetConfig(t, testenv.Get(t, "TROVE_TEST_S3_BUCKET_BACKUPS"), workingSSE(t))
+	tc := targetConfig(t, testenv.Get(t, "QUADER_TEST_S3_BUCKET_BACKUPS"), workingSSE(t))
 	cfg.Target = tc.Target
 	cfg.Database.PartSize = tc.Database.PartSize
 	cfg.Copy.PartSize = tc.Copy.PartSize
@@ -357,13 +357,13 @@ func exit(err error) int { return backup.ExitCode(err) }
 // pgConfig is the database section for the stack's PostgreSQL and a database of the given name.
 func pgConfig(t testing.TB, dir, name string) config.Database {
 	t.Helper()
-	host, user, secret := testenv.Get(t, "TROVE_TEST_PG_HOST"), testenv.Get(t, "TROVE_TEST_PG_USER"), testenv.Get(t, "TROVE_TEST_PG_PASSWORD")
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	host, user, secret := testenv.Get(t, "QUADER_TEST_PG_HOST"), testenv.Get(t, "QUADER_TEST_PG_USER"), testenv.Get(t, "QUADER_TEST_PG_PASSWORD")
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	return config.Database{
-		Host: host, Port: port, Name: name, Schema: "trove",
+		Host: host, Port: port, Name: name, Schema: "quader",
 		UsernameFile: secretFile(t, dir, "username", user), PasswordFile: secretFile(t, dir, "password", secret),
 		SSLMode: "verify-full", SSLRootCertFile: testenv.CAFile(t),
 		ConnectTimeout: 5 * time.Second, TargetSessionAttrs: "read-write",

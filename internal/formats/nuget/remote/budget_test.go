@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // pagesIndex is a registration index that lists n pages by address.
@@ -19,11 +19,11 @@ func pagesIndex(n int) []byte {
 	return []byte(`{"count":` + fmt.Sprint(n) + `,"items":[` + strings.Join(pages, ",") + `]}`)
 }
 
-// TestR_NUGET_015_AnIndexOfMorePagesThanTroveReadsIsNoDocument (Q-NUGET-83): every page an index
+// TestR_NUGET_015_AnIndexOfMorePagesThanQuaderReadsIsNoDocument (Q-NUGET-83): every page an index
 // lists by address costs an upstream request, a stored document and a URL-map row. An index that
 // lists more than MaxPages is refused as the document its path does not promise, so a fill
 // stores nothing and fetches no page; before, any number of pages was read.
-func TestR_NUGET_015_AnIndexOfMorePagesThanTroveReadsIsNoDocument(t *testing.T) {
+func TestR_NUGET_015_AnIndexOfMorePagesThanQuaderReadsIsNoDocument(t *testing.T) {
 	if _, err := ParseIndex(pagesIndex(MaxPages), 64<<20); err != nil {
 		t.Fatalf("an index of %d pages: %v", MaxPages, err)
 	}

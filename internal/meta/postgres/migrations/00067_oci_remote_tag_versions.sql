@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The tags a remote OCI repository holds, as versions the package screens list (R-OCI-036, Q-OCI-215). A remote's tag is a metadata
 -- cache entry `<name>/_tags/<tag>` whose document is the manifest the tag points at (R-OCI-007), so it owns no package_versions row and

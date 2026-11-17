@@ -9,9 +9,9 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
 // maxPreamble bounds what is read of a multipart body before its first part starts: the

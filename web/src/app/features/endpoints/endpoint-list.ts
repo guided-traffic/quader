@@ -12,16 +12,16 @@ import { PageHeader } from '../../shared/ui/page-header';
  * sortable columns (name, rule count) sort in the browser, which is exact.
  */
 @Component({
-  selector: 'trove-endpoint-list',
+  selector: 'quader-endpoint-list',
   imports: [PageHeader, RouterLink, DataTable],
   template: `
-    <trove-page-header heading="Endpoints" i18n-heading="@@ep.list.heading" />
+    <quader-page-header heading="Endpoints" i18n-heading="@@ep.list.heading" />
     <p class="hint" i18n="@@ep.list.hint">
       Endpoints come from the configuration file. Exposure rules decide what an endpoint in mode
       "rules" makes retrievable.
     </p>
 
-    <trove-data-table
+    <quader-data-table
       [caption]="caption"
       [columns]="columns"
       [sort]="sort()"
@@ -67,11 +67,11 @@ import { PageHeader } from '../../shared/ui/page-header';
           }
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
   styles: `
     .badge {
-      margin-inline-start: var(--trove-space-2);
+      margin-inline-start: var(--quader-space-2);
     }
   `,
 })
@@ -94,7 +94,7 @@ export class EndpointList {
     {
       id: 'surface',
       label: $localize`:@@ep.col.surface:Surface`,
-      help: $localize`:@@ep.help.surface:Which parts of trove this endpoint serves: the web interface, the management API, the CI token exchange, package clients and file downloads.`,
+      help: $localize`:@@ep.help.surface:Which parts of Quader this endpoint serves: the web interface, the management API, the CI token exchange, package clients and file downloads.`,
     },
     {
       id: 'mode',

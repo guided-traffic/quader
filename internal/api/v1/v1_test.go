@@ -13,17 +13,17 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 type allowAll struct{}
 
 func (allowAll) Require(context.Context, string) error { return nil }
 
-// RequireAction lets the action form of x-trove-permission pass as well, so that an
+// RequireAction lets the action form of x-quader-permission pass as well, so that an
 // operation which declares a repository action reaches the checks behind the
 // shared step (R-API-012 answers 428 there).
 func (allowAll) RequireAction(context.Context, authz.Coordinate) error { return nil }
@@ -76,19 +76,19 @@ func newSetup(t *testing.T, opts func(*Options), authn func(*http.Request) (http
 	}
 	ready := true
 	o := Options{
-		Document: doc, Identity: Identity{Replica: "trove-web-1", Role: "web"}, Ready: func() bool { return ready },
-		Access: allowAll{}, Replicas: fakeReplicas{replica("trove-web-1", "web", "n1", gen.Ready, false)}, Facts: fakeFacts{},
+		Document: doc, Identity: Identity{Replica: "quader-web-1", Role: "web"}, Ready: func() bool { return ready },
+		Access: allowAll{}, Replicas: fakeReplicas{replica("quader-web-1", "web", "n1", gen.Ready, false)}, Facts: fakeFacts{},
 	}
 	if opts != nil {
 		opts(&o)
 	}
 	router := httpserver.NewClientRouter()
 	New(o).Register(router)
-	res, err := httpserver.NewResolver(nil, "https://trove.example.com", nil)
+	res, err := httpserver.NewResolver(nil, "https://quader.example.com", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	chain := httpserver.Chain{Router: router, Resolver: res, Authenticate: authn, Replica: "trove-web-1", ReplicaHeader: httpserver.ReplicaAuthenticated}
+	chain := httpserver.Chain{Router: router, Resolver: res, Authenticate: authn, Replica: "quader-web-1", ReplicaHeader: httpserver.ReplicaAuthenticated}
 	return setup{handler: chain.Handler(), router: router, doc: doc, ready: &ready}
 }
 
@@ -132,15 +132,15 @@ func TestVersion(t *testing.T) {
 	t.Run("R-OPS-002 an anonymous call to version gets 401", func(t *testing.T) {
 		s := newSetup(t, nil, nil)
 		w := s.get("/api/v1/system/version")
-		if w.Code != 401 || w.Header().Get("WWW-Authenticate") != "Bearer" || w.Header().Get("X-Trove-Replica") != "" {
-			t.Fatalf("%d challenge %q replica %q", w.Code, w.Header().Get("WWW-Authenticate"), w.Header().Get("X-Trove-Replica"))
+		if w.Code != 401 || w.Header().Get("WWW-Authenticate") != "Bearer" || w.Header().Get("X-Quader-Replica") != "" {
+			t.Fatalf("%d challenge %q replica %q", w.Code, w.Header().Get("WWW-Authenticate"), w.Header().Get("X-Quader-Replica"))
 		}
 	})
 	t.Run("R-OPS-002 an authenticated call gets the build facts and the replica header", func(t *testing.T) {
 		s := newSetup(t, nil, authed)
 		w := s.get("/api/v1/system/version")
-		if w.Code != 200 || w.Header().Get("X-Trove-Replica") != "trove-web-1" {
-			t.Fatalf("%d replica %q", w.Code, w.Header().Get("X-Trove-Replica"))
+		if w.Code != 200 || w.Header().Get("X-Quader-Replica") != "quader-web-1" {
+			t.Fatalf("%d replica %q", w.Code, w.Header().Get("X-Quader-Replica"))
 		}
 		var v map[string]any
 		if err := json.Unmarshal(w.Body.Bytes(), &v); err != nil {
@@ -166,15 +166,15 @@ func TestVersion(t *testing.T) {
 func TestSystemInfo(t *testing.T) {
 	facts := Facts{
 		InstallationID: ptr("0b7c3f5e"), Incarnation: ptr("5d10e2a4"),
-		Valkey:      gen.ValkeyFacts{Mode: gen.Sentinel, PrimaryName: "trove", Sentinels: 3, Tls: "verify-full", KeyPrefix: "trove:", Keyspace: ptr("5f2a9c0b13de")},
-		ObjectStore: gen.ObjectStoreFacts{Endpoint: "https://s3.example.com", Bucket: "trove", Prefix: "blobs", CredentialSource: "static"},
+		Valkey:      gen.ValkeyFacts{Mode: gen.Sentinel, PrimaryName: "quader", Sentinels: 3, Tls: "verify-full", KeyPrefix: "quader:", Keyspace: ptr("5f2a9c0b13de")},
+		ObjectStore: gen.ObjectStoreFacts{Endpoint: "https://s3.example.com", Bucket: "quader", Prefix: "blobs", CredentialSource: "static"},
 	}
 	reps := fakeReplicas{
-		replica("trove-web-1", "web", "n1", gen.Ready, false, "valkey"),
-		replica("trove-web-2", "web", "n1", gen.Ready, false),
-		replica("trove-web-3", "web", "n2", gen.Starting, false),
-		replica("trove-worker-1", "worker", "n3", gen.Ready, false),
-		replica("trove-worker-gone", "worker", "n4", gen.Ready, true),
+		replica("quader-web-1", "web", "n1", gen.Ready, false, "valkey"),
+		replica("quader-web-2", "web", "n1", gen.Ready, false),
+		replica("quader-web-3", "web", "n2", gen.Starting, false),
+		replica("quader-worker-1", "worker", "n3", gen.Ready, false),
+		replica("quader-worker-gone", "worker", "n4", gen.Ready, true),
 	}
 	reps[0].Valkey = &gen.ValkeyView{State: gen.ValkeyViewStateDegraded, Circuit: "open"}
 	s := newSetup(t, func(o *Options) { o.Facts = fakeFacts{facts}; o.Replicas = reps }, authed)
@@ -188,7 +188,7 @@ func TestSystemInfo(t *testing.T) {
 		if err := json.Unmarshal(w.Body.Bytes(), &info); err != nil {
 			t.Fatal(err)
 		}
-		if info.AnsweredBy.Replica != "trove-web-1" || info.AnsweredBy.Role != "web" {
+		if info.AnsweredBy.Replica != "quader-web-1" || info.AnsweredBy.Role != "web" {
 			t.Errorf("answeredBy = %+v", info.AnsweredBy)
 		}
 		if info.Replicas.Live != 4 || info.Replicas.Ready != 3 {
@@ -201,7 +201,7 @@ func TestSystemInfo(t *testing.T) {
 		if info.Replicas.Roles["worker"].Live != 1 {
 			t.Errorf("worker = %+v", info.Replicas.Roles["worker"])
 		}
-		if info.BaseUrl != "https://trove.example.com" || info.BaseUrlSource != gen.Config {
+		if info.BaseUrl != "https://quader.example.com" || info.BaseUrlSource != gen.Config {
 			t.Errorf("baseUrl %q %q", info.BaseUrl, info.BaseUrlSource)
 		}
 		if info.Valkey.DegradedReplicas == nil || *info.Valkey.DegradedReplicas != 1 {
@@ -230,7 +230,7 @@ func TestSystemInfo(t *testing.T) {
 
 	t.Run("R-OPS-004 info carries no secret and no Sentinel address", func(t *testing.T) {
 		body := strings.ToLower(s.get("/api/v1/system/info").Body.String())
-		for _, bad := range []string{"password", "secret", "trv_", "26379", "serverversion"} {
+		for _, bad := range []string{"password", "secret", "qdr_", "26379", "serverversion"} {
 			if strings.Contains(body, bad) {
 				t.Errorf("response contains %q", bad)
 			}
@@ -314,10 +314,10 @@ func TestDocument(t *testing.T) {
 		}
 		// servers[0].url is the one instance-specific value: the public base URL.
 		servers := served.(map[string]any)["servers"].([]any)[0].(map[string]any)
-		if servers["url"] != "https://trove.example.com" {
+		if servers["url"] != "https://quader.example.com" {
 			t.Fatalf("servers[0].url = %v", servers["url"])
 		}
-		embedded.(map[string]any)["servers"].([]any)[0].(map[string]any)["url"] = "https://trove.example.com"
+		embedded.(map[string]any)["servers"].([]any)[0].(map[string]any)["url"] = "https://quader.example.com"
 		if !reflect.DeepEqual(roundTrip(t, served), roundTrip(t, embedded)) {
 			t.Fatal("served document differs from the embedded one")
 		}
@@ -333,7 +333,7 @@ func TestDocument(t *testing.T) {
 
 	t.Run("R-API-002 openapi.yaml serves the embedded document with the base URL", func(t *testing.T) {
 		w := s.get("/api/v1/openapi.yaml")
-		if w.Code != 200 || !strings.Contains(w.Body.String(), "url: https://trove.example.com") {
+		if w.Code != 200 || !strings.Contains(w.Body.String(), "url: https://quader.example.com") {
 			t.Fatalf("%d %s", w.Code, w.Body.String()[:200])
 		}
 		if !strings.Contains(w.Body.String(), "operationId: getPing") {
@@ -364,8 +364,8 @@ func TestDocument(t *testing.T) {
 				if op["operationId"] == "" || op["operationId"] == nil {
 					t.Errorf("%s: no operationId", name)
 				}
-				if p, _ := op["x-trove-permission"].(map[string]any); len(p) == 0 {
-					t.Errorf("%s: no x-trove-permission", name)
+				if p, _ := op["x-quader-permission"].(map[string]any); len(p) == 0 {
+					t.Errorf("%s: no x-quader-permission", name)
 				}
 				raw, _ := json.Marshal(op["responses"])
 				if !strings.Contains(string(raw), "responses/Unauthenticated") && !strings.Contains(string(raw), "schemas/Problem") && !strings.Contains(string(raw), "responses/Internal") {
@@ -405,8 +405,8 @@ func TestDocument(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-002 an operation without x-trove-permission is refused at load", func(t *testing.T) {
-		raw := strings.Replace(string(EmbeddedYAML()), "      x-trove-permission:\n        permission: settings:read\n      responses:\n        \"200\":\n          description: The installation facts.", "      responses:\n        \"200\":\n          description: The installation facts.", 1)
+	t.Run("R-API-002 an operation without x-quader-permission is refused at load", func(t *testing.T) {
+		raw := strings.Replace(string(EmbeddedYAML()), "      x-quader-permission:\n        permission: settings:read\n      responses:\n        \"200\":\n          description: The installation facts.", "      responses:\n        \"200\":\n          description: The installation facts.", 1)
 		if raw == string(EmbeddedYAML()) {
 			t.Fatal("test setup: replacement did not apply")
 		}
@@ -574,7 +574,7 @@ func TestAuthorizationStep(t *testing.T) {
 		delete(d.ops, "GET /api/v1/system/ping")
 		router := httpserver.NewClientRouter()
 		New(Options{Document: d, Access: allowAll{}, Ready: func() bool { return true }}).Register(router)
-		res, _ := httpserver.NewResolver(nil, "https://trove.example.com", nil)
+		res, _ := httpserver.NewResolver(nil, "https://quader.example.com", nil)
 		h := httpserver.Chain{Router: router, Resolver: res, Authenticate: authed, Replica: "r"}.Handler()
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/system/ping", nil))
@@ -601,8 +601,8 @@ func TestAuthorizationStep(t *testing.T) {
 
 	t.Run("R-API-002 a declaration in a form the step does not enforce is refused at load", func(t *testing.T) {
 		for _, form := range []string{"role: root", "public: false", "permission: \"\"", "permission: system.read", "authenticated: true\n        publicSwitch: system.anything", "public: true\n        permission: settings:read"} {
-			raw := strings.Replace(string(EmbeddedYAML()), "      x-trove-permission:\n        permission: settings:read\n      responses:\n        \"200\":\n          description: The installation facts.",
-				"      x-trove-permission:\n        "+form+"\n      responses:\n        \"200\":\n          description: The installation facts.", 1)
+			raw := strings.Replace(string(EmbeddedYAML()), "      x-quader-permission:\n        permission: settings:read\n      responses:\n        \"200\":\n          description: The installation facts.",
+				"      x-quader-permission:\n        "+form+"\n      responses:\n        \"200\":\n          description: The installation facts.", 1)
 			if raw == string(EmbeddedYAML()) {
 				t.Fatal("test setup: replacement did not apply")
 			}

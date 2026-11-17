@@ -5,7 +5,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // OtherLabel is the value of every key beyond the cap (R-OPS-007).
@@ -68,7 +68,7 @@ func (c *CappedLabels) UpdateRepositories(repos []RepoLabel) { c.install(repos) 
 
 // OnForget registers fn to be called, once per name, with each repository name that was in the previous snapshot and is not
 // in the new one: a deleted repository, or a moved one under its old name. The owner of a family with a repo label deletes the
-// series of that name, so that a gauge such as trove_remote_upstream_up does not keep reporting a repository that no longer
+// series of that name, so that a gauge such as quader_remote_upstream_up does not keep reporting a repository that no longer
 // exists (R-OPS-007). The functions run in the caller of UpdateRepositories and must not block.
 func (c *CappedLabels) OnForget(fn func(name string)) {
 	c.mu.Lock()
@@ -150,7 +150,7 @@ func selects(sel qname.Selector, r RepoLabel) bool {
 
 // Value returns the label value for key in the family: the key itself when it
 // has a series, otherwise "_other" and one count on
-// trove_metrics_label_overflow_total{family,label}.
+// quader_metrics_label_overflow_total{family,label}.
 func (c *CappedLabels) Value(family, key string) string {
 	c.mu.RLock()
 	_, ok := c.set[key]

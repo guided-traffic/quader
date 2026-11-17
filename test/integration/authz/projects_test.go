@@ -14,19 +14,19 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/project"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/test/integration/stack"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/project"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/stack"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // Projects in the engine and over HTTP (R-AUTHZ-026, R-AUTHZ-028, Q-AUTHZ-207 to Q-AUTHZ-209, Q-AUTHZ-215 to
@@ -156,7 +156,7 @@ func TestR_AUTHZ_026_AnOwnerWritesThePoliciesOfItsProject(t *testing.T) {
 }
 
 // TestR_AUTHZ_022_AuthzMeListsTheMemberships: GET /api/v1/authz/me lists the caller's memberships with their roles,
-// a group's role through the group (R-AUTHZ-022, Q-AUTHZ-207); an administrator of trove is no member.
+// a group's role through the group (R-AUTHZ-022, Q-AUTHZ-207); an administrator of quader is no member.
 func TestR_AUTHZ_022_AuthzMeListsTheMemberships(t *testing.T) {
 	f := newProjectAPI(t)
 	for name, want := range map[string]string{

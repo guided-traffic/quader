@@ -21,12 +21,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // fakeS3 is a minimal path-style S3 endpoint: PUT, GET, HEAD and DELETE of
@@ -404,7 +404,7 @@ func TestOutboundClient(t *testing.T) {
 		}
 		var n float64
 		for _, f := range fams {
-			if f.GetName() != "trove_outbound_requests_total" {
+			if f.GetName() != "quader_outbound_requests_total" {
 				continue
 			}
 			for _, mm := range f.GetMetric() {
@@ -501,7 +501,7 @@ func TestConfiguration(t *testing.T) {
 	})
 	t.Run("R-STOR-033 a proxy credentials file is refused until the outbound layer can send it, not ignored", func(t *testing.T) {
 		cfg := base(t)
-		cfg.HTTP.ProxyCredentialsFile = "/etc/trove/proxy-credentials"
+		cfg.HTTP.ProxyCredentialsFile = "/etc/quader/proxy-credentials"
 		if _, err := s3.NewFromFactory(context.Background(), cfg, hc()); err == nil || !strings.Contains(err.Error(), "proxy_credentials_file") {
 			t.Fatalf("got %v", err)
 		}
@@ -510,11 +510,11 @@ func TestConfiguration(t *testing.T) {
 	// the requirement and does not count as its evidence.
 	t.Run("a presigned URL names the bucket, the key and the validity, and honours presign.endpoint", func(t *testing.T) {
 		e := newEnv(t, func(c *config.StorageS3) { c.Presign.Endpoint = "https://blobs.example.com" })
-		u, err := e.client.Presign(context.Background(), "trove/sha256/aa/bb/x", 60*time.Second)
+		u, err := e.client.Presign(context.Background(), "quader/sha256/aa/bb/x", 60*time.Second)
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, want := range []string{"https://blobs.example.com/b/trove/sha256/aa/bb/x", "X-Amz-Expires=60", "X-Amz-Signature="} {
+		for _, want := range []string{"https://blobs.example.com/b/quader/sha256/aa/bb/x", "X-Amz-Expires=60", "X-Amz-Signature="} {
 			if !strings.Contains(u, want) {
 				t.Errorf("missing %q in %s", want, u)
 			}
@@ -541,7 +541,7 @@ func TestWebIdentity(t *testing.T) {
 		}
 		e := newEnv(t, func(c *config.StorageS3) {
 			c.Credentials = config.StorageS3Credentials{
-				Source: "webIdentity", RoleARN: "arn:aws:iam::123456789012:role/trove",
+				Source: "webIdentity", RoleARN: "arn:aws:iam::123456789012:role/quader",
 				WebIdentityTokenFile: token, STSEndpoint: sts.URL,
 			}
 		})
@@ -553,7 +553,7 @@ func TestWebIdentity(t *testing.T) {
 		if e.fake.keys[0] != "AKIDSTS" {
 			t.Fatalf("signed with %v", e.fake.keys)
 		}
-		if gotToken.Load() != "projected-jwt" || gotRole.Load() != "arn:aws:iam::123456789012:role/trove" {
+		if gotToken.Load() != "projected-jwt" || gotRole.Load() != "arn:aws:iam::123456789012:role/quader" {
 			t.Fatalf("token %v role %v", gotToken.Load(), gotRole.Load())
 		}
 	})

@@ -8,9 +8,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	vsync "github.com/guided-traffic/trove/internal/vuln/sync"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/internal/jobs"
+	vsync "github.com/guided-traffic/quader/internal/vuln/sync"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 const kindChangedEvent = "vulnerability.advisory.kind_changed"
@@ -214,7 +214,7 @@ func TestR_VULN_007_ALaterAliasVectorChangeIsAdopted(t *testing.T) {
 	canonical := osvstub.Advisory{
 		ID: "GHSA-aaaa-zzzz-0001", Aliases: []string{"CVE-2026-7001", "CVE-2026-7002"},
 		DatabaseSpecific: map[string]any{"severity": "LOW"},
-		Affected:         []osvstub.Affected{{Package: osvstub.Package{Ecosystem: "npm", Name: "trove-test-rule3"}, Versions: []string{"1.0.0"}}},
+		Affected:         []osvstub.Affected{{Package: osvstub.Package{Ecosystem: "npm", Name: "quader-test-rule3"}, Versions: []string{"1.0.0"}}},
 	}
 	lowAlias := osvstub.Advisory{
 		ID: "CVE-2026-7001", Aliases: []string{"GHSA-aaaa-zzzz-0001"},

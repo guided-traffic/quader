@@ -115,7 +115,7 @@ is aborted or removed. Every request checks the age at its claim, and the renewa
 `session_max_age` is below `storage.orphans.multipart_max_age`, and startup refuses a configuration where it is not
 ([config/storage.go](../../internal/config/storage.go)); it refuses `writer_lease` at or above `session_ttl` as well, which would let the
 run abort a session whose claim is valid. Keeping the bucket's lifecycle rule for incomplete multipart uploads at one day or longer is the
-operator's part: the permissions of R-STOR-031 do not let trove read the rule.
+operator's part: the permissions of R-STOR-031 do not let Quader read the rule.
 
 ## What it costs a replica
 
@@ -130,7 +130,7 @@ continued costs a row and no object.
 
 ## What this does not cover
 
-- [H-11](../spec/storage.md#h-11--object-store-principals-bypass-troves-authorization-and-integrity-checks): principals of the object store bypass trove's checks; the staging area is part of what they can read and replace.
+- [H-11](../spec/storage.md#h-11--object-store-principals-bypass-quaders-authorization-and-integrity-checks): principals of the object store bypass Quader's checks; the staging area is part of what they can read and replace.
 - [H-13](../spec/storage.md#h-13--deduplication-reveals-the-existence-of-known-content-through-upload-timing): a finalize whose blob is stored already copies nothing and answers sooner.
 - [H-14](../spec/storage.md#h-14--no-per-principal-limit-on-concurrent-uploads-or-spool-use): no per-principal limit on bodies in flight or the spool they use; the requests of a session are bodies like any other, and a client that holds many slow bodies (a second byte trickled under the stall timeout) holds the spool of each; the bound of H-14 and not the session design is what limits that.
 - [H-552](../spec/storage.md#h-552--a-deduplication-hit-across-projects-can-be-told-apart-by-its-timing): the same timing across projects.
@@ -151,7 +151,7 @@ the size limits bound, since a repository has no quota
 removes expired sessions for a time budget of two minutes per step and run, 200 rows at a time; where the sessions that expire exceed what
 the runs remove between them, the table and the bucket grow until the rate falls. Dormant until a format's handlers call the port (the OCI
 handlers land with T-16 work package 5); live from then on for every installation with an OCI repository, and real where the holders of
-`deploy` are not all trusted. Mitigation outside trove: a bucket quota, a short `session_ttl`, and the rate limit of the endpoint.
+`deploy` are not all trusted. Mitigation outside Quader: a bucket quota, a short `session_ttl`, and the rate limit of the endpoint.
 
 ### H-591 · The staging object is copied without being read back
 
@@ -159,8 +159,8 @@ Component: the commit of a finalize ([staged.go](../../internal/blob/staged.go) 
 The digest under which the blob is stored is the one the session computed over the bytes that arrived, and the parts were verified by the
 store as they arrived; the copy to the content address moves the staging object, the multipart object `data` or, for a blob of less than one
 part, its single tail segment or the merge of its segments, by a request to the store and checks only its size. A principal that can write
-the bucket (the case of [H-11](../spec/storage.md#h-11--object-store-principals-bypass-troves-authorization-and-integrity-checks))
-and replaces that object between its completion and the copy makes trove store other bytes under the digest of the original; the scrub
+the bucket (the case of [H-11](../spec/storage.md#h-11--object-store-principals-bypass-quaders-authorization-and-integrity-checks))
+and replaces that object between its completion and the copy makes Quader store other bytes under the digest of the original; the scrub
 (R-STOR-027) finds the mismatch later, and a download verifies the digest before it releases the last bytes (R-STOR-013). The window is the
 time between the two steps, normally seconds and as long as a finalize that was cut waits for its retry. Live today for every session; it
 needs write access to the bucket, which already breaks every other integrity guarantee of the blob store.

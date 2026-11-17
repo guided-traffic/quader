@@ -76,7 +76,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
  * sees the reduced consumer view.
  */
 @Component({
-  selector: 'trove-repository-detail',
+  selector: 'quader-repository-detail',
   imports: [
     AddressField,
     AnsibleImportTasks,

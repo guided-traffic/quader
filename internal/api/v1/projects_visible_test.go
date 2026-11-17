@@ -3,8 +3,8 @@ package v1
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/project"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/project"
 )
 
 // TestR_AUTHZ_035_TheProjectsACallerSees: a holder of projects:read sees every project, a member its own, any caller the projects its

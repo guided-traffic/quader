@@ -1,4 +1,4 @@
-// Package ansiblestub is the counting test upstream for trove's Ansible Galaxy remote repositories, mirror and virtual repositories
+// Package ansiblestub is the counting test upstream for quader's Ansible Galaxy remote repositories, mirror and virtual repositories
 // and for the Galaxy import: a stub Galaxy that serves a deterministic, generated set of collections and roles, counts every
 // request and fails on command. Everything is generated in code (collection archives with their MANIFEST.json and FILES.json, role
 // archives, the documents), so nothing is recorded or downloaded. It answers over TLS only.
@@ -43,7 +43,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ansiblestub/ansiblegen"
+	"github.com/guided-traffic/quader/test/ansiblestub/ansiblegen"
 )
 
 // Config configures a Server. The zero value serves the default corpus and has no control API.

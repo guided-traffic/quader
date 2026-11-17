@@ -3,8 +3,8 @@ package principal
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The two guards that keep the identity operations from reaching the role

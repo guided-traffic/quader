@@ -5,15 +5,15 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // poolCollector exports the connection pools of this replica (R-OPS-007). It
 // reads the pools' counters at scrape time; a scrape opens no connection. The
 // wait for a connection as a histogram is the pool tracer's
-// (trove_db_pool_acquire_duration_seconds, postgres.NewMetrics).
+// (quader_db_pool_acquire_duration_seconds, postgres.NewMetrics).
 type poolCollector struct {
 	db       func() *postgres.DB
 	conns    *prometheus.Desc
@@ -27,11 +27,11 @@ func newPoolCollector(db func() *postgres.DB) *poolCollector {
 	l := []string{"db_pool"}
 	return &poolCollector{
 		db:       db,
-		conns:    prometheus.NewDesc("trove_db_pool_connections", "Connection state per pool of this replica.", []string{"db_pool", "state"}, nil),
-		maxes:    prometheus.NewDesc("trove_db_pool_max_connections", "Pool size.", l, nil),
-		empty:    prometheus.NewDesc("trove_db_pool_empty_acquires_total", "Acquisitions that had to wait for a connection.", l, nil),
-		canceled: prometheus.NewDesc("trove_db_pool_canceled_acquires_total", "Acquisitions given up because the caller's deadline ended.", l, nil),
-		opened:   prometheus.NewDesc("trove_db_pool_connections_opened_total", "Connections opened.", l, nil),
+		conns:    prometheus.NewDesc("quader_db_pool_connections", "Connection state per pool of this replica.", []string{"db_pool", "state"}, nil),
+		maxes:    prometheus.NewDesc("quader_db_pool_max_connections", "Pool size.", l, nil),
+		empty:    prometheus.NewDesc("quader_db_pool_empty_acquires_total", "Acquisitions that had to wait for a connection.", l, nil),
+		canceled: prometheus.NewDesc("quader_db_pool_canceled_acquires_total", "Acquisitions given up because the caller's deadline ended.", l, nil),
+		opened:   prometheus.NewDesc("quader_db_pool_connections_opened_total", "Connections opened.", l, nil),
 	}
 }
 
@@ -70,8 +70,8 @@ type jobDescs struct{ queued, oldest *prometheus.Desc }
 func newJobDescs() jobDescs {
 	l := []string{"kind"}
 	return jobDescs{
-		queued: prometheus.NewDesc("trove_jobs_queued", "Queued jobs by kind, from PostgreSQL (aggregate with max, not sum, across replicas).", l, nil),
-		oldest: prometheus.NewDesc("trove_jobs_oldest_queued_age_seconds", "Age in seconds of the oldest queued job that is due, by kind, from PostgreSQL (aggregate with max).", l, nil),
+		queued: prometheus.NewDesc("quader_jobs_queued", "Queued jobs by kind, from PostgreSQL (aggregate with max, not sum, across replicas).", l, nil),
+		oldest: prometheus.NewDesc("quader_jobs_oldest_queued_age_seconds", "Age in seconds of the oldest queued job that is due, by kind, from PostgreSQL (aggregate with max).", l, nil),
 	}
 }
 
@@ -87,8 +87,8 @@ func (d jobDescs) metrics(rows []q.JobQueueGaugesRow) []prometheus.Metric {
 }
 
 // registerGauges adds the pool collector and the gauges read from PostgreSQL in
-// the background (Q-OPS-18): trove_jobs_queued{kind}, trove_jobs_oldest_queued_age_seconds{kind}
-// and trove_valkey_primary_views.
+// the background (Q-OPS-18): quader_jobs_queued{kind}, quader_jobs_oldest_queued_age_seconds{kind}
+// and quader_valkey_primary_views.
 func (a *App) registerGauges() {
 	m := a.tele.metrics
 	if err := a.registerCIMetrics(); err != nil {
@@ -107,7 +107,7 @@ func (a *App) registerGauges() {
 			return jobs.metrics(rows), nil
 		},
 	})
-	views := prometheus.NewDesc("trove_valkey_primary_views",
+	views := prometheus.NewDesc("quader_valkey_primary_views",
 		"Distinct Valkey primaries named by the live replicas of the registry; above 1 means replicas write to different primaries.", nil, nil)
 	stale := a.cfg.System.HeartbeatStaleAfter.Seconds()
 	m.DBGauges().Add(observability.GaugeSource{

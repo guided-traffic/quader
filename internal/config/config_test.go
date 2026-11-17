@@ -17,18 +17,18 @@ import (
 
 // minimalEnv is what every command needs besides defaults.
 func minimalEnv(extra ...string) []string {
-	return append([]string{"TROVE_DATABASE_HOST=db.example", "TROVE_DATABASE_NAME=trove"}, extra...)
+	return append([]string{"QUADER_DATABASE_HOST=db.example", "QUADER_DATABASE_NAME=quader"}, extra...)
 }
 
-// servableEnv adds what `trove serve` additionally requires.
+// servableEnv adds what `quader serve` additionally requires.
 func servableEnv(extra ...string) []string {
 	return minimalEnv(append([]string{
-		"TROVE_PROCESS_ROLE=web",
-		"TROVE_VALKEY_SENTINEL_ADDRESSES=[\"s1:26379\"]",
-		"TROVE_VALKEY_SENTINEL_PRIMARY_NAME=trove",
-		"TROVE_STORAGE_S3_BUCKET=blobs",
-		"TROVE_SECRETS_ENCRYPTION_KEY_FILES=[\"/keys/2026-10.key\"]",
-		"TROVE_SECRETS_ACTIVE_KEY_ID=2026-10",
+		"QUADER_PROCESS_ROLE=web",
+		"QUADER_VALKEY_SENTINEL_ADDRESSES=[\"s1:26379\"]",
+		"QUADER_VALKEY_SENTINEL_PRIMARY_NAME=quader",
+		"QUADER_STORAGE_S3_BUCKET=blobs",
+		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\"/keys/2026-10.key\"]",
+		"QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
 	}, extra...)...)
 }
 
@@ -87,8 +87,8 @@ func TestSchemaOfTheTree(t *testing.T) {
 			AB inner `yaml:"a_b"`
 		}
 		_, errs := Describe(reflect.TypeOf(tree{}))
-		if len(errs) != 1 || !strings.Contains(errs[0].Error(), "TROVE_A_B_C") {
-			t.Fatalf("want one duplicate-env error naming TROVE_A_B_C, got %v", errs)
+		if len(errs) != 1 || !strings.Contains(errs[0].Error(), "QUADER_A_B_C") {
+			t.Fatalf("want one duplicate-env error naming QUADER_A_B_C, got %v", errs)
 		}
 	})
 	t.Run("R-ARCH-020 a field without a yaml tag fails", func(t *testing.T) {
@@ -116,16 +116,16 @@ func TestSchemaOfTheTree(t *testing.T) {
 			t.Fatalf("got %v", errs)
 		}
 	})
-	t.Run("R-OPS-028 environment names follow TROVE_ plus the upper-cased path", func(t *testing.T) {
+	t.Run("R-OPS-028 environment names follow QUADER_ plus the upper-cased path", func(t *testing.T) {
 		s := MustDescribe()
 		for path, env := range map[string]string{
-			"log.request.enabled":                         "TROVE_LOG_REQUEST_ENABLED",
-			"metrics.label_limits.repository":             "TROVE_METRICS_LABEL_LIMITS_REPOSITORY",
-			"runtime.memory_limit_bytes":                  "TROVE_RUNTIME_MEMORY_LIMIT_BYTES",
-			"runtime.termination_grace_period":            "TROVE_RUNTIME_TERMINATION_GRACE_PERIOD",
-			"storage.spool.max_bytes":                     "TROVE_STORAGE_SPOOL_MAX_BYTES",
-			"database.preflight.expected_web_replicas":    "TROVE_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS",
-			"database.preflight.expected_worker_replicas": "TROVE_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS",
+			"log.request.enabled":                         "QUADER_LOG_REQUEST_ENABLED",
+			"metrics.label_limits.repository":             "QUADER_METRICS_LABEL_LIMITS_REPOSITORY",
+			"runtime.memory_limit_bytes":                  "QUADER_RUNTIME_MEMORY_LIMIT_BYTES",
+			"runtime.termination_grace_period":            "QUADER_RUNTIME_TERMINATION_GRACE_PERIOD",
+			"storage.spool.max_bytes":                     "QUADER_STORAGE_SPOOL_MAX_BYTES",
+			"database.preflight.expected_web_replicas":    "QUADER_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS",
+			"database.preflight.expected_worker_replicas": "QUADER_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS",
 		} {
 			k, ok := s.ByPath(path)
 			if !ok || k.Env != env {
@@ -156,14 +156,14 @@ func TestProcessRole(t *testing.T) {
 		containsAll(t, msgs, "process.role must be api, packages, worker, web or all")
 	})
 	t.Run("R-ARCH-001 an invalid role is rejected", func(t *testing.T) {
-		_, err := Load(Options{Environ: servableEnv("TROVE_PROCESS_ROLE=backup"), Command: CommandServe, ReadFile: fakeFS(nil)})
+		_, err := Load(Options{Environ: servableEnv("QUADER_PROCESS_ROLE=backup"), Command: CommandServe, ReadFile: fakeFS(nil)})
 		containsAll(t, issuesOf(t, err), "process.role must be one of api, packages, worker, web, all")
 	})
 	t.Run("R-ARCH-001 the role flag overrides the file and the environment", func(t *testing.T) {
 		l := mustLoad(t, Options{
 			File:     "/c.yaml",
 			ReadFile: fakeFS(map[string]string{"/c.yaml": "process:\n  role: worker\n"}),
-			Environ:  servableEnv("TROVE_PROCESS_ROLE=all"),
+			Environ:  servableEnv("QUADER_PROCESS_ROLE=all"),
 			Flags:    map[string]string{"process.role": "web"}, FlagNames: map[string]string{"process.role": "--role"},
 			Command: CommandServe,
 		})
@@ -184,7 +184,7 @@ func TestPrecedence(t *testing.T) {
 		return Options{File: "/c.yaml", ReadFile: fakeFS(map[string]string{"/c.yaml": file}), Environ: minimalEnv(env...), Command: CommandAdmin}
 	}
 	t.Run("R-OPS-028 defaults, then file, then environment, then flags", func(t *testing.T) {
-		o := opts("TROVE_LOG_LEVEL=error")
+		o := opts("QUADER_LOG_LEVEL=error")
 		o.Flags = map[string]string{"log.level": "debug"}
 		o.FlagNames = map[string]string{"log.level": "--log-level"}
 		l := mustLoad(t, o)
@@ -204,13 +204,13 @@ func TestPrecedence(t *testing.T) {
 		}
 	})
 	t.Run("R-OPS-028 environment beats the file", func(t *testing.T) {
-		l := mustLoad(t, opts("TROVE_LOG_LEVEL=error"))
+		l := mustLoad(t, opts("QUADER_LOG_LEVEL=error"))
 		if l.Config.Log.Level != "error" || l.Sources["log.level"].String() != "env" {
 			t.Fatalf("level %q source %v", l.Config.Log.Level, l.Sources["log.level"])
 		}
 	})
 	t.Run("R-OPS-028 a variable inside a nested section is reported with source env", func(t *testing.T) {
-		l := mustLoad(t, opts("TROVE_METRICS_LABEL_LIMITS_REPOSITORY=50"))
+		l := mustLoad(t, opts("QUADER_METRICS_LABEL_LIMITS_REPOSITORY=50"))
 		if l.Config.Metrics.LabelLimits.Repository != 50 || l.Sources["metrics.label_limits.repository"].Kind != "env" {
 			t.Fatalf("got %d source %v", l.Config.Metrics.LabelLimits.Repository, l.Sources["metrics.label_limits.repository"])
 		}
@@ -223,20 +223,20 @@ func TestPrecedence(t *testing.T) {
 		}
 	})
 	t.Run("R-OPS-028 lists and maps in variables are JSON", func(t *testing.T) {
-		l := mustLoad(t, opts(`TROVE_LOG_LEVELS={"proxy":"debug"}`, `TROVE_SERVER_TRUSTED_PROXIES=["10.0.0.0/8"]`))
+		l := mustLoad(t, opts(`QUADER_LOG_LEVELS={"proxy":"debug"}`, `QUADER_SERVER_TRUSTED_PROXIES=["10.0.0.0/8"]`))
 		if l.Config.Log.Levels["proxy"] != "debug" || len(l.Config.Server.TrustedProxies) != 1 {
 			t.Fatalf("got %+v %+v", l.Config.Log.Levels, l.Config.Server.TrustedProxies)
 		}
 	})
 	t.Run("R-OPS-028 durations and sizes accept their text forms", func(t *testing.T) {
-		l := mustLoad(t, opts("TROVE_SERVER_SHUTDOWN_TIMEOUT=40s", "TROVE_STORAGE_SPOOL_MAX_BYTES=20GiB", "TROVE_STORAGE_UPLOAD_MAX_SIZE=1GiB"))
+		l := mustLoad(t, opts("QUADER_SERVER_SHUTDOWN_TIMEOUT=40s", "QUADER_STORAGE_SPOOL_MAX_BYTES=20GiB", "QUADER_STORAGE_UPLOAD_MAX_SIZE=1GiB"))
 		if l.Config.Server.ShutdownTimeout != 40*time.Second || l.Config.Storage.Spool.MaxBytes != 20*GiB {
 			t.Fatalf("got %v %v", l.Config.Server.ShutdownTimeout, l.Config.Storage.Spool.MaxBytes)
 		}
 	})
-	t.Run("R-OPS-028 the file path comes from --config, then TROVE_CONFIG_FILE, then the default", func(t *testing.T) {
+	t.Run("R-OPS-028 the file path comes from --config, then QUADER_CONFIG_FILE, then the default", func(t *testing.T) {
 		fsys := fakeFS(map[string]string{"/env.yaml": "log:\n  level: warn\n", DefaultFile: "log:\n  level: error\n"})
-		l := mustLoad(t, Options{ReadFile: fsys, Environ: minimalEnv("TROVE_CONFIG_FILE=/env.yaml"), Command: CommandAdmin})
+		l := mustLoad(t, Options{ReadFile: fsys, Environ: minimalEnv("QUADER_CONFIG_FILE=/env.yaml"), Command: CommandAdmin})
 		if l.Config.Log.Level != "warn" || l.File != "/env.yaml" {
 			t.Fatalf("env file: level %q file %q", l.Config.Log.Level, l.File)
 		}
@@ -257,8 +257,8 @@ func TestStrictValidation(t *testing.T) {
 		return Options{File: "/c.yaml", ReadFile: fakeFS(map[string]string{"/c.yaml": file}), Environ: minimalEnv(env...), Command: CommandAdmin}
 	}
 	t.Run("R-OPS-028 an unknown variable names it and suggests the closest", func(t *testing.T) {
-		_, err := Load(base("", "TROVE_LOG_LEVL=debug"))
-		containsAll(t, issuesOf(t, err), "TROVE_LOG_LEVL", "TROVE_LOG_LEVEL")
+		_, err := Load(base("", "QUADER_LOG_LEVL=debug"))
+		containsAll(t, issuesOf(t, err), "QUADER_LOG_LEVL", "QUADER_LOG_LEVEL")
 	})
 	t.Run("R-OPS-028 an unknown file key names it, its line and the closest key", func(t *testing.T) {
 		_, err := Load(base("log:\n  levl: debug\n"))
@@ -269,15 +269,15 @@ func TestStrictValidation(t *testing.T) {
 		containsAll(t, issuesOf(t, err), `unknown key "logg"`, `"log"`)
 	})
 	t.Run("R-OPS-028 reserved variables are exempt", func(t *testing.T) {
-		mustLoad(t, base("", "TROVE_POD_NAME=p", "TROVE_POD_NAMESPACE=n", "TROVE_NODE_NAME=x", "TROVE_POOL_NAME=y", "TROVE_CAC_ORG_TOKEN=z", "TROVE_TEST_PG_DSN=q"))
+		mustLoad(t, base("", "QUADER_POD_NAME=p", "QUADER_POD_NAMESPACE=n", "QUADER_NODE_NAME=x", "QUADER_POOL_NAME=y", "QUADER_CAC_ORG_TOKEN=z", "QUADER_TEST_PG_DSN=q"))
 	})
 	t.Run("R-OPS-028 every error is reported in one pass", func(t *testing.T) {
-		_, err := Load(base("log:\n  level: loud\n  levl: x\nserver:\n  max_in_flight: many\n", "TROVE_LOG_FORMA=json", "TROVE_JOBS_POLL_INTERVAL=soon"))
+		_, err := Load(base("log:\n  level: loud\n  levl: x\nserver:\n  max_in_flight: many\n", "QUADER_LOG_FORMA=json", "QUADER_JOBS_POLL_INTERVAL=soon"))
 		msgs := issuesOf(t, err)
 		if len(msgs) < 4 {
 			t.Fatalf("want at least 4 issues, got %d: %v", len(msgs), msgs)
 		}
-		containsAll(t, msgs, "log.levl", "max_in_flight", "TROVE_LOG_FORMA", "TROVE_JOBS_POLL_INTERVAL")
+		containsAll(t, msgs, "log.levl", "max_in_flight", "QUADER_LOG_FORMA", "QUADER_JOBS_POLL_INTERVAL")
 	})
 	t.Run("R-OPS-028 type errors name the key", func(t *testing.T) {
 		_, err := Load(base("server:\n  max_in_flight: many\n  idle_timeout: 120\n  trusted_proxies: 10.0.0.0/8\n"))
@@ -312,13 +312,13 @@ func TestSecrets(t *testing.T) {
 	t.Run("R-OPS-028 a secret written inline into the file fails naming the _file key and the variable", func(t *testing.T) {
 		_, err := load("mail:\n  password: hunter2\n", nil, nil)
 		msgs := issuesOf(t, err)
-		containsAll(t, msgs, "mail.password_file", "TROVE_MAIL_PASSWORD")
+		containsAll(t, msgs, "mail.password_file", "QUADER_MAIL_PASSWORD")
 		if strings.Contains(strings.Join(msgs, "\n"), "hunter2") {
 			t.Fatal("the secret value appears in the error")
 		}
 	})
 	t.Run("R-OPS-028 the secret may come from the environment", func(t *testing.T) {
-		l, err := load("", []string{"TROVE_MAIL_PASSWORD=s3cret"}, nil)
+		l, err := load("", []string{"QUADER_MAIL_PASSWORD=s3cret"}, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -339,13 +339,13 @@ func TestSecrets(t *testing.T) {
 		}
 	})
 	t.Run("R-OPS-028 the companion is settable through the environment", func(t *testing.T) {
-		_, err := load("", []string{"TROVE_MAIL_PASSWORD_FILE=/run/smtp"}, map[string]string{"/run/smtp": "x"})
+		_, err := load("", []string{"QUADER_MAIL_PASSWORD_FILE=/run/smtp"}, map[string]string{"/run/smtp": "x"})
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
 	t.Run("R-OPS-028 setting the value and the file is an error", func(t *testing.T) {
-		_, err := load("mail:\n  password_file: /run/smtp\n", []string{"TROVE_MAIL_PASSWORD=x"}, map[string]string{"/run/smtp": "y"})
+		_, err := load("mail:\n  password_file: /run/smtp\n", []string{"QUADER_MAIL_PASSWORD=x"}, map[string]string{"/run/smtp": "y"})
 		containsAll(t, issuesOf(t, err), "mail.password and mail.password_file are both set")
 	})
 	t.Run("R-OPS-028 an unreadable secret file is an error", func(t *testing.T) {
@@ -441,13 +441,13 @@ func TestSectionRules(t *testing.T) {
 		return err
 	}
 	t.Run("R-OPS-005 base_url must be an origin", func(t *testing.T) {
-		for _, bad := range []string{"https://shared.example.com/trove", "https://trove.example.com/?x=1", "https://user@trove.example.com", "ftp://x.example.com"} {
+		for _, bad := range []string{"https://shared.example.com/quader", "https://quader.example.com/?x=1", "https://user@quader.example.com", "ftp://x.example.com"} {
 			err := load("server:\n  base_url: \""+bad+"\"\n", CommandServe)
 			if err == nil || !strings.Contains(err.Error(), "server.base_url") {
 				t.Errorf("%s: want an error naming server.base_url, got %v", bad, err)
 			}
 		}
-		for _, good := range []string{"https://trove.example.com/", "https://trove.example.com:8443", "http://localhost:8080"} {
+		for _, good := range []string{"https://quader.example.com/", "https://quader.example.com:8443", "http://localhost:8080"} {
 			if err := load("server:\n  base_url: \""+good+"\"\n", CommandServe); err != nil {
 				t.Errorf("%s: %v", good, err)
 			}
@@ -475,7 +475,7 @@ func TestSectionRules(t *testing.T) {
 		}
 	})
 	t.Run("R-ARCH-021 a missing key ring stops serve but not migrate", func(t *testing.T) {
-		env := minimalEnv("TROVE_PROCESS_ROLE=web", "TROVE_VALKEY_SENTINEL_ADDRESSES=[\"s:1\"]", "TROVE_VALKEY_SENTINEL_PRIMARY_NAME=t", "TROVE_STORAGE_S3_BUCKET=b")
+		env := minimalEnv("QUADER_PROCESS_ROLE=web", "QUADER_VALKEY_SENTINEL_ADDRESSES=[\"s:1\"]", "QUADER_VALKEY_SENTINEL_PRIMARY_NAME=t", "QUADER_STORAGE_S3_BUCKET=b")
 		_, err := Load(Options{ReadFile: fakeFS(nil), Environ: env, Command: CommandServe})
 		containsAll(t, issuesOf(t, err), "secrets.encryption_key_files", "secrets.active_key_id")
 		if _, err := Load(Options{ReadFile: fakeFS(nil), Environ: env, Command: CommandMigrate}); err != nil {
@@ -483,11 +483,11 @@ func TestSectionRules(t *testing.T) {
 		}
 	})
 	t.Run("R-ARCH-021 the active key must be one of the listed files", func(t *testing.T) {
-		_, err := Load(Options{ReadFile: fakeFS(nil), Environ: servableEnv("TROVE_SECRETS_ACTIVE_KEY_ID=2027-01"), Command: CommandServe})
+		_, err := Load(Options{ReadFile: fakeFS(nil), Environ: servableEnv("QUADER_SECRETS_ACTIVE_KEY_ID=2027-01"), Command: CommandServe})
 		containsAll(t, issuesOf(t, err), "secrets.active_key_id", "2027-01")
 	})
 	t.Run("R-ARCH-031 sentinel mode needs addresses and a primary name", func(t *testing.T) {
-		env := minimalEnv("TROVE_PROCESS_ROLE=web", "TROVE_STORAGE_S3_BUCKET=b", "TROVE_SECRETS_ENCRYPTION_KEY_FILES=[\"/k/a.key\"]", "TROVE_SECRETS_ACTIVE_KEY_ID=a")
+		env := minimalEnv("QUADER_PROCESS_ROLE=web", "QUADER_STORAGE_S3_BUCKET=b", "QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\"/k/a.key\"]", "QUADER_SECRETS_ACTIVE_KEY_ID=a")
 		_, err := Load(Options{ReadFile: fakeFS(nil), Environ: env, Command: CommandServe})
 		containsAll(t, issuesOf(t, err), "valkey.sentinel.addresses", "valkey.sentinel.primary_name")
 	})

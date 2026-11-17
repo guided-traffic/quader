@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // Retry is the retry policy of a client (R-IMP-008): a transport failure, 429, 502, 503 and 504 are tried again with a
@@ -364,7 +364,7 @@ func (c *SourceClient) Download(ctx context.Context, raw, dir string, limit int6
 	if resp.ContentLength > limit {
 		return nil, ErrTooLarge
 	}
-	f, err := os.CreateTemp(dir, "trove-import-*")
+	f, err := os.CreateTemp(dir, "quader-import-*")
 	if err != nil {
 		return nil, err
 	}
@@ -389,7 +389,7 @@ func (c *SourceClient) Download(ctx context.Context, raw, dir string, limit int6
 	return out, nil
 }
 
-// TargetClient writes the trove repository that is copied into. Its credentials are decided by the hop policy of its HTTP
+// TargetClient writes the quader repository that is copied into. Its credentials are decided by the hop policy of its HTTP
 // client.
 type TargetClient struct {
 	HTTP  *http.Client

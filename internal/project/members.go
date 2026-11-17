@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The members of a project (R-AUTHZ-026, Q-AUTHZ-207, Q-AUTHZ-208, Q-AUTHZ-217). A member is a user or a
@@ -121,7 +121,7 @@ func checkLastOwner(ctx context.Context, qs *q.Queries, key, projectID string, b
 	}
 	if n <= 1 {
 		return errs.E(errs.Conflict, errs.CodeLastOwner,
-			fmt.Sprintf("This is the last Owner of the project %q; make another member an Owner first (an administrator of trove may remove it).", key))
+			fmt.Sprintf("This is the last Owner of the project %q; make another member an Owner first (an administrator of Quader may remove it).", key))
 	}
 	return nil
 }

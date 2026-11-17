@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/vuln/osv"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/vuln/osv"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 type testAdapter struct{}

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/formatdata/npm"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/formatdata/npm"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The npm purger (R-BAK-008, R-NPM-047): after a restore from a backup that left the remote caches out, it empties

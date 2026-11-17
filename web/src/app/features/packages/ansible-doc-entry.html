@@ -2,7 +2,7 @@
   <header class="doc-head">
     <h2 class="doc-title">
       <span translate="no">{{ entry().fullName }}</span>
-      <trove-copy-button [value]="entry().fullName" [label]="copyName" />
+      <quader-copy-button [value]="entry().fullName" [label]="copyName" />
     </h2>
     @if (entry().shortDescription) {
       <p class="doc-short" translate="no">{{ entry().shortDescription }}</p>
@@ -18,7 +18,7 @@
     @if (entry().deprecated; as dep) {
       <div class="doc-deprecation" role="note">
         @if (dep.why) {
-          <trove-doc-prose [html]="[dep.why]" />
+          <quader-doc-prose [html]="[dep.why]" />
         }
         @if (dep.removedIn) {
           <p>
@@ -34,14 +34,14 @@
           <p>
             <strong i18n="@@docs.alternative">Alternative</strong>
           </p>
-          <trove-doc-prose [html]="[dep.alternative]" />
+          <quader-doc-prose [html]="[dep.alternative]" />
         }
       </div>
     }
   </header>
 
   @if (readme(); as r) {
-    <trove-package-readme [readme]="r" />
+    <quader-package-readme [readme]="r" />
   } @else if (!entry().hasDocs) {
     <p class="doc-none" data-testid="doc-no-docs">
       @if (entry().source === 'upstream') {
@@ -54,7 +54,7 @@
     @if (entry().description?.length) {
       <section aria-labelledby="doc-synopsis">
         <h3 id="doc-synopsis" i18n="@@docs.synopsis">Synopsis</h3>
-        <trove-doc-prose [html]="entry().description ?? []" />
+        <quader-doc-prose [html]="entry().description ?? []" />
       </section>
     }
 
@@ -67,7 +67,7 @@
     @if (options().length > 0) {
       <section aria-labelledby="doc-parameters">
         <h3 id="doc-parameters" i18n="@@docs.parameters">Parameters</h3>
-        <trove-data-table [caption]="optionsCaption" [columns]="optionColumns" [empty]="false">
+        <quader-data-table [caption]="optionsCaption" [columns]="optionColumns" [empty]="false">
           @for (row of options(); track row.id) {
             <tr [attr.data-depth]="row.depth">
               <th scope="row" class="param-name" [style.padding-inline-start]="indent(row)">
@@ -119,7 +119,7 @@
                 }
               </td>
               <td class="param-description">
-                <trove-doc-prose [html]="row.description" />
+                <quader-doc-prose [html]="row.description" />
                 @if (row.versionAdded) {
                   <span class="doc-muted"
                     ><ng-container i18n="@@docs.added-in">added in</ng-container>{{ ' ' }}<span translate="no">{{ row.versionAdded }}</span></span
@@ -128,14 +128,14 @@
               </td>
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
       </section>
     }
 
     @if (entry().notes?.length) {
       <section aria-labelledby="doc-notes">
         <h3 id="doc-notes" i18n="@@docs.notes">Notes</h3>
-        <trove-doc-prose [html]="entry().notes ?? []" />
+        <quader-doc-prose [html]="entry().notes ?? []" />
       </section>
     }
 
@@ -144,7 +144,7 @@
         <h3 id="doc-requirements" i18n="@@docs.requirements">Requirements</h3>
         <ul class="doc-list">
           @for (r of entry().requirements ?? []; track $index) {
-            <li><trove-doc-prose [html]="[r]" /></li>
+            <li><quader-doc-prose [html]="[r]" /></li>
           }
         </ul>
       </section>
@@ -162,8 +162,8 @@
               }
             </dt>
             <dd>
-              <trove-doc-prose [html]="a.description ?? []" />
-              <trove-doc-prose [html]="a.details ?? []" />
+              <quader-doc-prose [html]="a.description ?? []" />
+              <quader-doc-prose [html]="a.details ?? []" />
             </dd>
           }
         </dl>
@@ -180,7 +180,7 @@
                 <code translate="no">{{ s.module }}</code>
               }
               @if (s.description) {
-                <trove-doc-prose [html]="[s.description]" />
+                <quader-doc-prose [html]="[s.description]" />
               }
               @if (s.link; as link) {
                 @if (safeHttpUrl(link); as href) {
@@ -200,7 +200,7 @@
         <h3 id="doc-examples" i18n="@@docs.examples">Examples</h3>
         <div class="code-wrap">
           <pre class="code-block" translate="no" tabindex="0">{{ entry().examples }}</pre>
-          <trove-copy-button [value]="entry().examples ?? ''" [label]="copyExamples" />
+          <quader-copy-button [value]="entry().examples ?? ''" [label]="copyExamples" />
         </div>
       </section>
     }
@@ -208,7 +208,7 @@
     @if (returns().length > 0) {
       <section aria-labelledby="doc-returns">
         <h3 id="doc-returns" i18n="@@docs.returns">Return values</h3>
-        <trove-data-table [caption]="returnsCaption" [columns]="returnColumns" [empty]="false">
+        <quader-data-table [caption]="returnsCaption" [columns]="returnColumns" [empty]="false">
           @for (row of returns(); track row.id) {
             <tr [attr.data-depth]="row.depth">
               <th scope="row" class="param-name" [style.padding-inline-start]="indent(row)">
@@ -243,17 +243,17 @@
                   } @else {
                     <div class="code-wrap">
                       <pre class="code-block" translate="no" tabindex="0">{{ row.sample }}</pre>
-                      <trove-copy-button [value]="row.sample" [label]="copyExamples" />
+                      <quader-copy-button [value]="row.sample" [label]="copyExamples" />
                     </div>
                   }
                 }
               </td>
               <td class="param-description">
-                <trove-doc-prose [html]="row.description" />
+                <quader-doc-prose [html]="row.description" />
               </td>
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
       </section>
     }
 

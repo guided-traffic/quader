@@ -1,21 +1,21 @@
 // The credential in one line, then More options with the other ways and the place to install from (Q-UI-316).
 .credential-line {
   max-inline-size: 48rem;
-  margin-block: 0 var(--trove-space-3);
+  margin-block: 0 var(--quader-space-3);
 }
 
 .more-options {
   max-inline-size: 48rem;
-  margin-block-end: var(--trove-space-5);
+  margin-block-end: var(--quader-space-5);
 
   fieldset {
-    margin: 0 0 var(--trove-space-4);
+    margin: 0 0 var(--quader-space-4);
     padding: 0;
     border: 0;
   }
 
   legend {
-    margin-block-end: var(--trove-space-2);
+    margin-block-end: var(--quader-space-2);
     padding: 0;
     font-weight: 600;
   }
@@ -23,24 +23,24 @@
 
 .steps {
   display: grid;
-  gap: var(--trove-space-4);
-  margin: 0 0 var(--trove-space-5);
+  gap: var(--quader-space-4);
+  margin: 0 0 var(--quader-space-5);
   padding: 0;
   list-style: none;
   max-inline-size: 48rem;
 
   fieldset {
     margin: 0;
-    padding: var(--trove-space-3) var(--trove-space-4);
-    border: 1px solid var(--trove-border);
-    border-radius: var(--trove-radius-m);
-    background: var(--trove-surface-raised);
+    padding: var(--quader-space-3) var(--quader-space-4);
+    border: 1px solid var(--quader-border);
+    border-radius: var(--quader-radius-m);
+    background: var(--quader-surface-raised);
   }
 
   legend,
   .step-title {
-    padding-inline: var(--trove-space-1);
-    font: var(--trove-type-title-medium);
+    padding-inline: var(--quader-space-1);
+    font: var(--quader-type-title-medium);
   }
 
   .step-title {
@@ -54,17 +54,17 @@
   justify-content: center;
   inline-size: 1.5rem;
   block-size: 1.5rem;
-  margin-inline-end: var(--trove-space-1);
-  border-radius: var(--trove-radius-full);
-  background: var(--trove-accent);
-  color: var(--trove-on-accent);
+  margin-inline-end: var(--quader-space-1);
+  border-radius: var(--quader-radius-full);
+  background: var(--quader-accent);
+  color: var(--quader-on-accent);
   font-size: 0.8125rem;
 }
 
 .choices {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2) var(--trove-space-4);
+  gap: var(--quader-space-2) var(--quader-space-4);
 
   &.vertical {
     flex-direction: column;
@@ -74,7 +74,7 @@
 .choice {
   display: flex;
   align-items: flex-start;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 }
 
 .choice-text {
@@ -83,15 +83,15 @@
 }
 
 .secondary {
-  color: var(--trove-text-muted);
-  font-size: var(--trove-text-muted-size);
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
 }
 
 
 .secret-row {
   display: flex;
   align-items: center;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 
   .text-input {
     flex: 1 1 auto;
@@ -101,10 +101,10 @@
 }
 
 .once {
-  margin-block: var(--trove-space-3);
-  padding: var(--trove-space-3);
-  border: 1px solid var(--trove-status-warn);
-  border-radius: var(--trove-radius-m);
+  margin-block: var(--quader-space-3);
+  padding: var(--quader-space-3);
+  border: 1px solid var(--quader-status-warn);
+  border-radius: var(--quader-radius-m);
 
   p {
     margin: 0;
@@ -114,8 +114,8 @@
 .token-line {
   display: flex;
   align-items: center;
-  gap: var(--trove-space-2);
-  margin-block-start: var(--trove-space-2);
+  gap: var(--quader-space-2);
+  margin-block-start: var(--quader-space-2);
 }
 
 .token-value {
@@ -127,22 +127,22 @@
 }
 
 .tab {
-  padding-block: var(--trove-space-4);
+  padding-block: var(--quader-space-4);
 }
 
 .snippet {
-  margin-block-end: var(--trove-space-4);
+  margin-block-end: var(--quader-space-4);
 
   .why,
   .target {
-    margin-block: 0 var(--trove-space-2);
+    margin-block: 0 var(--quader-space-2);
   }
 }
 
 .command {
   display: flex;
   align-items: flex-start;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 
   pre {
     flex: 1 1 auto;
@@ -161,5 +161,5 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 }

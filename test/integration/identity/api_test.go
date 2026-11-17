@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/auth/token"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/auth/token"
 )
 
 // identityOperations are the operations of the identity area that a test over
@@ -415,7 +415,7 @@ func TestAPIOperations(t *testing.T) {
 		}
 		child := rp.json(t)
 		childSecret := str(child, "token")
-		if !strings.HasPrefix(childSecret, "trv_pat_") || str(child, "type") != "pat" {
+		if !strings.HasPrefix(childSecret, "qdr_pat_") || str(child, "type") != "pat" {
 			t.Fatalf("%v", child)
 		}
 		t.Run("the value is shown once; a replay of the create is a 409 with the token ID", func(t *testing.T) {
@@ -572,7 +572,7 @@ func TestAPIOperations(t *testing.T) {
 			dSecret := str(derived.json(t), "token")
 			// By value, without credentials: 202, and the child is revoked with it.
 			want(t, next().call(post, "/api/v1/tokens/revoke", "", map[string]any{"token": p.Secret}), 202, "")
-			want(t, next().call(post, "/api/v1/tokens/revoke", "", map[string]any{"token": "trv_pat_not-a-token"}), 400, "")
+			want(t, next().call(post, "/api/v1/tokens/revoke", "", map[string]any{"token": "qdr_pat_not-a-token"}), 400, "")
 			want(t, next().call(post, "/api/v1/tokens/revoke", "", map[string]any{"token": unknownToken(t)}), 202, "") // well-formed but unknown: the same answer
 			for _, sec := range []string{p.Secret, dSecret} {
 				waitFor(t, "the revoked token", revocationBound, func() bool {
@@ -755,7 +755,7 @@ func TestAPIOperations(t *testing.T) {
 				t.Errorf("%s: %d events, want at least %d", a.action, n, a.min)
 			}
 		}
-		if n := e.scalar(`SELECT count(*) FROM audit_event WHERE details::text ~ 'trv_(pat|sat|cit)_[0-9A-Za-z]{20}'`); n != 0 {
+		if n := e.scalar(`SELECT count(*) FROM audit_event WHERE details::text ~ 'qdr_(pat|sat|cit)_[0-9A-Za-z]{20}'`); n != 0 {
 			t.Errorf("%d audit events carry a token value", n)
 		}
 		if n := e.scalar(`SELECT count(*) FROM audit_event WHERE action = 'token.revoked' AND reason = 'leaked'`); n < 2 {
@@ -772,7 +772,7 @@ func TestAPIOperations(t *testing.T) {
 	contractDo := func(req *http.Request) (*http.Response, error) {
 		node := next()
 		req.URL.Scheme, req.URL.Host = "http", node.srv.Listener.Addr().String()
-		req.Host = "trove.test"
+		req.Host = "quader.test"
 		req.Header.Set("Authorization", "Bearer "+admin)
 		return http.DefaultClient.Do(req)
 	}

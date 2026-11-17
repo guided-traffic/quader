@@ -16,30 +16,30 @@ import { PageHeader } from '../../shared/ui/page-header';
  * project, the dry run over the project's tier and the tokens issued through the project's mappings.
  */
 @Component({
-  selector: 'trove-project-ci',
+  selector: 'quader-project-ci',
   imports: [PageHeader, RouterLink, ErrorNotice, DataTable, IssuanceList, MappingList],
   template: `
-    <trove-page-header heading="CI identity" i18n-heading="@@ci.project.heading">
+    <quader-page-header heading="CI identity" i18n-heading="@@ci.project.heading">
       <a actions class="btn btn-default" [routerLink]="testLink()" i18n="@@ci.project.test">Test with claims</a>
-    </trove-page-header>
+    </quader-page-header>
     <p class="subject" translate="no">{{ project() }}</p>
     <p i18n="@@ci.project.hint">
       Jobs of your GitLab projects exchange their ID token for a short-lived token. The mappings below decide what such a job may do in the repositories of this project. They apply next to the administrators' mappings; yours can never take anything away from theirs.
     </p>
 
     @if (error(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     } @else {
       <section class="card" aria-labelledby="ci-p-issuers">
         <h2 id="ci-p-issuers" i18n="@@ci.project.issuers">Issuers you can use</h2>
-        <p class="muted" i18n="@@ci.project.issuers-hint">Issuers are managed by the administrators of trove. A mapping names one of them.</p>
-        <trove-data-table
+        <p class="muted" i18n="@@ci.project.issuers-hint">Issuers are managed by the administrators of Quader. A mapping names one of them.</p>
+        <quader-data-table
           [caption]="caption"
           [columns]="columns"
           [loaded]="loaded()"
           [empty]="issuers().length === 0"
           i18n-emptyText="@@ci.project.issuers-empty"
-          emptyText="No issuer is registered yet. Ask an administrator of trove."
+          emptyText="No issuer is registered yet. Ask an administrator of Quader."
         >
           @for (i of issuers(); track i.name) {
             <tr>
@@ -49,17 +49,17 @@ import { PageHeader } from '../../shared/ui/page-header';
               <td>{{ i.publicIssuer ? yes : no }}</td>
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
       </section>
 
       <section class="card" aria-labelledby="ci-p-mappings">
         <h2 id="ci-p-mappings" i18n="@@ci.project.mappings">Mappings of the project</h2>
-        <trove-ci-mapping-list [project]="project()" />
+        <quader-ci-mapping-list [project]="project()" />
       </section>
 
       <section class="card" aria-labelledby="ci-p-issuances">
         <h2 id="ci-p-issuances" i18n="@@ci.project.issuances">Issued tokens</h2>
-        <trove-ci-issuance-list [project]="project()" />
+        <quader-ci-issuance-list [project]="project()" />
       </section>
     }
   `,

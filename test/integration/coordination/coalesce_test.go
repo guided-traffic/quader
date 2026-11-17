@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/jobs"
+	"github.com/guided-traffic/quader/internal/jobs"
 )
 
 // TestR_ARCH_016_ACoalescedEnqueueAdjustsTheWaitingJob: the enqueue of a coalesce kind that finds a waiting job under its key moves it

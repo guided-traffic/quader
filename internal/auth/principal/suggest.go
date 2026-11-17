@@ -3,7 +3,7 @@ package principal
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The users and groups of the search field's suggestions (R-API-060 to R-API-062): one statement each, ranked in the statement

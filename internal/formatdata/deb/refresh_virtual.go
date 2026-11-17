@@ -3,8 +3,8 @@ package deb
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // EnqueueVirtualsDue is the virtual part of the periodic task deb-index-refresh (R-DEB-026, Q-DEB-21): it enqueues a deb-index job for

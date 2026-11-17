@@ -56,7 +56,7 @@ test('E2.13 R-UI-049 the guide of a virtual repository, and its configure snippe
     const snippet = page.locator('[data-section="npm.configure"] .snippet pre');
     await expect(snippet).toHaveCount(1);
     guideSnippet = (await snippet.textContent()) ?? '';
-    expect(guideSnippet).toContain(`/api/npm/${e2eProject}/${virtualKey}/:_authToken=\${TROVE_TOKEN}`);
+    expect(guideSnippet).toContain(`/api/npm/${e2eProject}/${virtualKey}/:_authToken=\${QUADER_TOKEN}`);
     await expectAccessible(page, 'repository detail, how to use');
   });
 
@@ -64,7 +64,7 @@ test('E2.13 R-UI-049 the guide of a virtual repository, and its configure snippe
     await page.getByRole('link', { name: 'Open the client setup' }).click();
     await expect(page.getByRole('heading', { name: 'Client setup', level: 1 })).toBeVisible();
     // The credential is one line, the environment variable by default (Q-UI-316).
-    await expect(page.locator('.credential-line')).toContainText('The snippets read your token from the variable TROVE_TOKEN.');
+    await expect(page.locator('.credential-line')).toContainText('The snippets read your token from the variable QUADER_TOKEN.');
     const setup = page.getByRole('tabpanel', { name: 'Configure' }).locator('.snippet pre');
     await expect.poll(() => setup.first().textContent()).toBe(guideSnippet);
   });

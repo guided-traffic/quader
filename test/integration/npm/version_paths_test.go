@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // A path pattern finer than a package's folder on npm (R-AUTHZ-005, Q-AUTHZ-255, Q-NPM-82): a version is decided on the
@@ -43,7 +43,7 @@ type versionEnv struct {
 
 func newVersionEnv(t *testing.T) *versionEnv {
 	t.Helper()
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "npmver", Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "npmver", Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
 	e := &versionEnv{env: &env{t: t, st: st}}
 	st.Repository("npm-ver", "local", "npm", `{"local":{"packageOwnership":"off"}}`)
 	repos := []string{"npm-ver"}

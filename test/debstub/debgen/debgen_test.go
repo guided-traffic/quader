@@ -64,7 +64,7 @@ func readTarGz(t *testing.T, b []byte) map[string]string {
 }
 
 func TestBuildMakesAnArArchiveDpkgReads(t *testing.T) {
-	d, err := Build(Spec{Package: "trove-hello", Version: "1.0-1", Architecture: "amd64", Depends: "libc6 (>= 2.34)", LongDescription: []string{"Prints a fixed line.", "", "Nothing else."}})
+	d, err := Build(Spec{Package: "quader-hello", Version: "1.0-1", Architecture: "amd64", Depends: "libc6 (>= 2.34)", LongDescription: []string{"Prints a fixed line.", "", "Nothing else."}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestBuildMakesAnArArchiveDpkgReads(t *testing.T) {
 	if ctrl["./control"] != d.Control {
 		t.Errorf("control = %q", ctrl["./control"])
 	}
-	for _, want := range []string{"Package: trove-hello\n", "Version: 1.0-1\n", "Architecture: amd64\n", "Depends: libc6 (>= 2.34)\n", "Description: trove test package trove-hello\n Prints a fixed line.\n .\n Nothing else.\n"} {
+	for _, want := range []string{"Package: quader-hello\n", "Version: 1.0-1\n", "Architecture: amd64\n", "Depends: libc6 (>= 2.34)\n", "Description: quader test package quader-hello\n Prints a fixed line.\n .\n Nothing else.\n"} {
 		if !strings.Contains(d.Control, want) {
 			t.Errorf("control lacks %q:\n%s", want, d.Control)
 		}
@@ -87,19 +87,19 @@ func TestBuildMakesAnArArchiveDpkgReads(t *testing.T) {
 	if !strings.HasSuffix(d.Control, "\n") || strings.Contains(d.Control, "\n\n") {
 		t.Errorf("control is not one paragraph: %q", d.Control)
 	}
-	if !strings.Contains(ctrl["./md5sums"], "usr/bin/trove-hello") {
+	if !strings.Contains(ctrl["./md5sums"], "usr/bin/quader-hello") {
 		t.Errorf("md5sums = %q", ctrl["./md5sums"])
 	}
 	data := readTarGz(t, members["data.tar.gz"])
-	if got := data["./usr/bin/trove-hello"]; got != "#!/bin/sh\necho 'hello from trove-hello 1.0-1 (amd64)'\n" {
+	if got := data["./usr/bin/quader-hello"]; got != "#!/bin/sh\necho 'hello from quader-hello 1.0-1 (amd64)'\n" {
 		t.Errorf("script = %q", got)
 	}
 }
 
 func TestBuildIsDeterministic(t *testing.T) {
-	a, _ := Build(Hello("trove-hello", "1.0-1", "all"))
-	b, _ := Build(Hello("trove-hello", "1.0-1", "all"))
-	c, _ := Build(Hello("trove-hello", "1.1-1", "all"))
+	a, _ := Build(Hello("quader-hello", "1.0-1", "all"))
+	b, _ := Build(Hello("quader-hello", "1.0-1", "all"))
+	c, _ := Build(Hello("quader-hello", "1.1-1", "all"))
 	if !bytes.Equal(a.Bytes, b.Bytes) || bytes.Equal(a.Bytes, c.Bytes) {
 		t.Fatal("equal specs must give equal bytes, different specs different bytes")
 	}
@@ -130,7 +130,7 @@ func TestWriteForDpkg(t *testing.T) {
 		t.Skip("DEBGEN_OUT is not set")
 	}
 	for _, arch := range []string{"all", "amd64"} {
-		d, err := Build(Spec{Package: "trove-hello", Version: "1.0-1", Architecture: arch, Depends: "libc6 (>= 2.34)"})
+		d, err := Build(Spec{Package: "quader-hello", Version: "1.0-1", Architecture: arch, Depends: "libc6 (>= 2.34)"})
 		if err != nil {
 			t.Fatal(err)
 		}

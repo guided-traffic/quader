@@ -29,7 +29,7 @@ func tarballFiles(name, version string, deps map[string]string, pad int) []tarFi
 	manifest := map[string]any{
 		"name":        name,
 		"version":     version,
-		"description": "Synthetic package " + name + " of the trove test corpus",
+		"description": "Synthetic package " + name + " of the quader test corpus",
 		"main":        "index.js",
 		"license":     "MIT",
 	}

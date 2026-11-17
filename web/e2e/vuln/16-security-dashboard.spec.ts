@@ -5,12 +5,12 @@ import { bobPassword, e2eProject, expect, expectAccessible, qualified, repositor
 // R-UI-047 journey "security dashboard" (Q-UI-130, R-VULN-020, R-VULN-021, R-VULN-022): the auditor's instance-wide view in
 // the admin area over two projects, against the test advisory source (deploy/dev/osvstub.yaml). It creates its own second
 // project and local npm repositories and publishes the fixture packages through the API (INV-17); the findings come from the
-// commit hook of the publish. Run with `npx playwright test -c playwright.vuln.config.ts` and TROVE_E2E_VULN=1 in the
+// commit hook of the publish. Run with `npx playwright test -c playwright.vuln.config.ts` and QUADER_E2E_VULN=1 in the
 // `scatter` profile (R-HA-011).
 
 test.beforeAll(() => {
-  if (!process.env['TROVE_E2E_VULN']) {
-    throw new Error('TROVE_E2E_VULN is not set: the journeys need the scanning against the test advisory source (deploy/dev/osvstub.yaml)');
+  if (!process.env['QUADER_E2E_VULN']) {
+    throw new Error('QUADER_E2E_VULN is not set: the journeys need the scanning against the test advisory source (deploy/dev/osvstub.yaml)');
   }
 });
 
@@ -61,22 +61,22 @@ test('Q-UI-130 the auditor searches every project by alias, package and project,
   const created = await admin.post('/api/v1/projects', { data: { key: shop, displayName: 'Security journey' } });
   expect(created.status(), await created.text()).toBe(201);
   try {
-    // trove-test-alias 2.0.0 carries GHSA-aaaa-bbbb-cccc with the alias CVE-2026-0001 (test/osvstub/fixture.go)
-    await localNpmRepository(admin, repoA, [['trove-test-alias', '2.0.0']]);
+    // quader-test-alias 2.0.0 carries GHSA-aaaa-bbbb-cccc with the alias CVE-2026-0001 (test/osvstub/fixture.go)
+    await localNpmRepository(admin, repoA, [['quader-test-alias', '2.0.0']]);
     await localNpmRepositoryIn(admin, shop, repoB, [
-      ['trove-test-alias', '2.0.0'],
-      ['trove-test-cvss', '1.0.0'],
+      ['quader-test-alias', '2.0.0'],
+      ['quader-test-cvss', '1.0.0'],
     ]);
     const mine = await findingsOfProject(admin, shop, 2);
-    const aliasFinding = mine.find((f) => f.package === 'trove-test-alias')!;
+    const aliasFinding = mine.find((f) => f.package === 'quader-test-alias')!;
     expect(aliasFinding.aliases, 'the aliases of the finding').toContain('CVE-2026-0001');
     await signInLocal(page);
 
     await test.step('the dashboard is the admin area\'s Security entry and shows the findings of both projects', async () => {
-      await page.goto('/ui/en/admin/security?package=trove-test-alias');
+      await page.goto('/ui/en/admin/security?package=quader-test-alias');
       await expect(page.getByRole('heading', { name: 'Security dashboard', level: 1 })).toBeVisible();
       await expect(page.getByRole('link', { name: 'Security', exact: true }).first()).toBeVisible();
-      const rows = page.locator('trove-data-table tbody tr').filter({ hasText: 'trove-test-alias' });
+      const rows = page.locator('quader-data-table tbody tr').filter({ hasText: 'quader-test-alias' });
       await expect(rows.filter({ hasText: shop })).toHaveCount(1);
       await expect(rows.filter({ hasText: e2eProject })).not.toHaveCount(0);
       // Q-UI-380: the project is the link of each qualified repository name, not a column of its own.
@@ -96,11 +96,11 @@ test('Q-UI-130 the auditor searches every project by alias, package and project,
       await search.getByRole('button', { name: 'Search' }).click();
       await expect(page).toHaveURL(/advisory=CVE-2026-0001/);
       await expect(page.getByRole('list', { name: 'Applied filters' })).toContainText('Advisory: CVE-2026-0001');
-      const rows = page.locator('trove-data-table tbody tr');
+      const rows = page.locator('quader-data-table tbody tr');
       await expect(rows.filter({ hasText: shop })).toHaveCount(1);
       await expect(rows.filter({ hasText: qualified(repoA) })).toHaveCount(1);
       await expect(rows.filter({ hasText: 'GHSA-aaaa-bbbb-cccc' })).not.toHaveCount(0);
-      await expect(rows.filter({ hasText: 'trove-test-cvss' })).toHaveCount(0);
+      await expect(rows.filter({ hasText: 'quader-test-cvss' })).toHaveCount(0);
     });
 
     await test.step('the project field narrows the list, the counts and the URL to one project', async () => {
@@ -108,7 +108,7 @@ test('Q-UI-130 the auditor searches every project by alias, package and project,
       await search.getByLabel('Project key').fill(shop);
       await search.getByRole('button', { name: 'Search' }).click();
       await expect(page).toHaveURL(new RegExp(`project=${shop}`));
-      const rows = page.locator('trove-data-table tbody tr');
+      const rows = page.locator('quader-data-table tbody tr');
       await expect(rows).toHaveCount(1);
       await expect(rows.first()).toContainText(qualified(repoB, shop));
       await expect(page.getByRole('list', { name: 'Applied filters' })).toContainText(`Project: ${shop}`);
@@ -116,14 +116,14 @@ test('Q-UI-130 the auditor searches every project by alias, package and project,
 
     await test.step('the package search with the project alone lists that project\'s findings, and the counts cover that project', async () => {
       await page.goto(`/ui/en/admin/security?project=${shop}`);
-      const rows = page.locator('trove-data-table tbody tr');
+      const rows = page.locator('quader-data-table tbody tr');
       await expect(rows).toHaveCount(2);
       for (const row of await rows.all()) await expect(row).toContainText(shop);
       const search = page.getByRole('search', { name: 'Search findings' });
-      await search.getByLabel('Package starts with').fill('trove-test-cvss');
+      await search.getByLabel('Package starts with').fill('quader-test-cvss');
       await search.getByRole('button', { name: 'Search' }).click();
       await expect(rows).toHaveCount(1);
-      await expect(rows.first()).toContainText('trove-test-cvss');
+      await expect(rows.first()).toContainText('quader-test-cvss');
       // the total of the counts is the number of open findings of the project
       await page.goto(`/ui/en/admin/security?project=${shop}`);
       const counts = page.getByRole('list', { name: 'Open findings' });
@@ -131,8 +131,8 @@ test('Q-UI-130 the auditor searches every project by alias, package and project,
     });
 
     await test.step('a project cell narrows the list to its project, and a finding opens inside the admin area', async () => {
-      await page.goto('/ui/en/admin/security?package=trove-test-alias');
-      await page.locator('trove-data-table tbody tr').filter({ hasText: shop }).getByRole('link', { name: shop, exact: true }).click();
+      await page.goto('/ui/en/admin/security?package=quader-test-alias');
+      await page.locator('quader-data-table tbody tr').filter({ hasText: shop }).getByRole('link', { name: shop, exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`project=${shop}`));
       await page.getByRole('link', { name: 'GHSA-aaaa-bbbb-cccc' }).first().click();
       await expect(page).toHaveURL(/\/admin\/security\/findings\//);
@@ -158,7 +158,7 @@ test('Q-UI-130 R-VULN-013 an auditor who is a member of no project reads the fin
   expect(created.status(), await created.text()).toBe(201);
   const bobContext = await browser.newContext({ ignoreHTTPSErrors: true, locale: 'en-US' });
   try {
-    await localNpmRepositoryIn(admin, shop, repoB, [['trove-test-cvss', '1.0.0']]);
+    await localNpmRepositoryIn(admin, shop, repoB, [['quader-test-cvss', '1.0.0']]);
     await findingsOfProject(admin, shop, 1);
     const bob = await bobContext.newPage();
     await signInWithKeycloak(bob, 'bob', bobPassword);
@@ -170,9 +170,9 @@ test('Q-UI-130 R-VULN-013 an auditor who is a member of no project reads the fin
       await bob.goto('/ui/en/admin');
       await expect(bob.getByRole('heading', { name: /Security dashboard|Dashboard/, level: 1 })).toBeVisible();
       await bob.goto(`/ui/en/admin/security?project=${shop}`);
-      const rows = bob.locator('trove-data-table tbody tr');
+      const rows = bob.locator('quader-data-table tbody tr');
       await expect(rows).toHaveCount(1);
-      await expect(rows.first()).toContainText('trove-test-cvss');
+      await expect(rows.first()).toContainText('quader-test-cvss');
       await expectAccessible(bob, 'the dashboard of an auditor');
     });
 
@@ -184,8 +184,8 @@ test('Q-UI-130 R-VULN-013 an auditor who is a member of no project reads the fin
       await expect(dialog).toContainText('1 changed, 0 failed, 0 unchanged');
       await dialog.getByRole('button', { name: 'Close' }).click();
       await bob.goto(`/ui/en/admin/security?project=${shop}&status=confirmed`);
-      await expect(bob.locator('trove-data-table tbody tr')).toHaveCount(1);
-      await expect(bob.locator('trove-data-table tbody tr').first()).toContainText('Confirmed');
+      await expect(bob.locator('quader-data-table tbody tr')).toHaveCount(1);
+      await expect(bob.locator('quader-data-table tbody tr').first()).toContainText('Confirmed');
     });
   } finally {
     await bobContext.close();

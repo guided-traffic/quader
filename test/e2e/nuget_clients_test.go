@@ -16,20 +16,20 @@ import (
 )
 
 // The clients pods of the NuGet acceptance tests (R-NUGET-027): test/e2e/nugetclients/Dockerfile holds the .NET SDK
-// (`dotnet`) and nuget.exe on Mono, and deploy/dev/e2e.sh (marker M3 nuget-clients) starts the pods trove-e2e-nuget-<i>,
+// (`dotnet`) and nuget.exe on Mono, and deploy/dev/e2e.sh (marker M3 nuget-clients) starts the pods quader-e2e-nuget-<i>,
 // each with a forwarder on 127.0.0.1:<base-URL port>, the dev CA mounted and the trust of both runtimes built at start.
 // The tests run the clients through `kubectl exec`; the scenarios of the NuGet suite build on nugetClientExec.
 
 // nugetClientPod returns the name of the i-th clients pod; a missing setting is a failure, never a skip.
 func nugetClientPod(t testing.TB, i int) string {
 	t.Helper()
-	prefix, count := os.Getenv("TROVE_E2E_NUGET_CLIENTS_POD_PREFIX"), os.Getenv("TROVE_E2E_NUGET_CLIENTS_PODS")
+	prefix, count := os.Getenv("QUADER_E2E_NUGET_CLIENTS_POD_PREFIX"), os.Getenv("QUADER_E2E_NUGET_CLIENTS_PODS")
 	if prefix == "" || count == "" {
-		t.Fatal("TROVE_E2E_NUGET_CLIENTS_POD_PREFIX and TROVE_E2E_NUGET_CLIENTS_PODS are not set; run `deploy/dev/e2e.sh nuget-clients`")
+		t.Fatal("QUADER_E2E_NUGET_CLIENTS_POD_PREFIX and QUADER_E2E_NUGET_CLIENTS_PODS are not set; run `deploy/dev/e2e.sh nuget-clients`")
 	}
 	n, err := strconv.Atoi(count)
 	if err != nil || i < 0 || i >= n {
-		t.Fatalf("clients pod %d is outside TROVE_E2E_NUGET_CLIENTS_PODS=%q", i, count)
+		t.Fatalf("clients pod %d is outside QUADER_E2E_NUGET_CLIENTS_PODS=%q", i, count)
 	}
 	return prefix + strconv.Itoa(i)
 }
@@ -91,13 +91,13 @@ func TestNuGetClients(t *testing.T) {
 
 	// The base URL of the setup snippets (R-NUGET-026) is https://localhost:<port>. The forwarder in the pod carries
 	// it to the cluster. Each runtime verifies the edge's certificate against `localhost` with the CA the entrypoint
-	// put into its trust (SSL_CERT_FILE for .NET, the Mono store for nuget.exe). A source that trove answers with an
+	// put into its trust (SSL_CERT_FILE for .NET, the Mono store for nuget.exe). A source that quader answers with an
 	// HTTP status (401 for the anonymous request, 404 for a repository that does not exist) proves the handshake
 	// passed; a failed verification ends in a certificate error instead and never reaches a status.
 	t.Run("R-NUGET-027 both clients verify the edge's certificate", func(t *testing.T) {
-		port := os.Getenv("TROVE_DEV_HTTP_PORT")
+		port := os.Getenv("QUADER_DEV_HTTP_PORT")
 		if port == "" {
-			t.Fatal("TROVE_DEV_HTTP_PORT is not set")
+			t.Fatal("QUADER_DEV_HTTP_PORT is not set")
 		}
 		source := fmt.Sprintf("https://localhost:%s%sno-such-repository/v3/index.json", port, nugetBase)
 		for name, argv := range map[string][]string{
@@ -114,7 +114,7 @@ func TestNuGetClients(t *testing.T) {
 					t.Fatalf("%v: the output names the certificate, the TLS verification failed:\n%s", argv, out)
 				}
 				if !regexp.MustCompile(`status code does not indicate success: (401|404)`).MatchString(out) {
-					t.Fatalf("%v: want an HTTP status of trove (401 or 404) in the output, got:\n%s", argv, out)
+					t.Fatalf("%v: want an HTTP status of quader (401 or 404) in the output, got:\n%s", argv, out)
 				}
 			})
 		}

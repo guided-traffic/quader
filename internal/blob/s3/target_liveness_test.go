@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob/s3"
 )
 
 func xml(w http.ResponseWriter, body string) {
@@ -170,9 +170,9 @@ func TestR_BAK_005_WriterRefusesAnObjectAboveTheLimitUpFront(t *testing.T) {
 func TestR_STOR_033_AReaderThatPausesIsNotAStalledStore(t *testing.T) {
 	data := bytes.Repeat([]byte("0123456789abcdef"), 1<<18) // 4 MiB
 	e := newTargetEnv(t, "none", s3.WithIdleTimeout(200*time.Millisecond))
-	e.fake.objects["trove/big"] = data
+	e.fake.objects["quader/big"] = data
 	e.fake.fail = nil
-	rc, o, err := e.t.Get(context.Background(), "trove/big")
+	rc, o, err := e.t.Get(context.Background(), "quader/big")
 	if err != nil {
 		t.Fatal(err)
 	}

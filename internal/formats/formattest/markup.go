@@ -3,7 +3,7 @@ package formattest
 import (
 	"html"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // StandInMarkup is the kit's deterministic stand-in for the Host's renderer (ADR-196): it escapes the text and wraps it, so a format's

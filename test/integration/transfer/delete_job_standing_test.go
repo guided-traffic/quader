@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/authz"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // The delete job of a large subtree continues the request that queued it, and decides every batch again on what the subject that
@@ -161,7 +161,7 @@ func TestR_STOR_018_TheDeleteJobDecidesEveryBatchOnTheStandingOfItsSubject(t *te
 	// in flight at that moment finishes (H-658), which with batches of one file is at most one file.
 	t.Run("R-STOR-018 a token revoked while a running worker is between two batches stops the job at the next one", func(t *testing.T) {
 		const many = 120
-		oneByOne := []string{"TROVE_STORAGE_DELETE_MAX_SYNC_ITEMS=5", "TROVE_STORAGE_DELETE_BATCH_SIZE=1"}
+		oneByOne := []string{"QUADER_STORAGE_DELETE_MAX_SYNC_ITEMS=5", "QUADER_STORAGE_DELETE_BATCH_SIZE=1"}
 		e := newWebEnv(t)
 		web := queueStandingDelete(t, e, many, oneByOne)
 		h := token.Hash(e.token("deleter"))

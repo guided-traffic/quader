@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_NPM_001_TheRegistryURL: the registry URL answers 200 {}, a repository that does
 // not exist or has another format answers 404 in the native error shape, an operation
-// npm defines and trove does not implement answers 404 (501 for a POST).
+// npm defines and quader does not implement answers 404 (501 for a POST).
 func TestR_NPM_001_TheRegistryURL(t *testing.T) {
 	e := newEnv(t)
 	e.st.Repository("gen-local", "local", "generic", "{}")
@@ -43,7 +43,7 @@ func TestR_NPM_001_TheRegistryURL(t *testing.T) {
 		}
 		code(t, ans)
 	})
-	t.Run("R-NPM-043 the endpoints npm defines and trove does not implement", func(t *testing.T) {
+	t.Run("R-NPM-043 the endpoints npm defines and quader does not implement", func(t *testing.T) {
 		for _, c := range []struct {
 			method, path string
 			status       int
@@ -144,14 +144,14 @@ func TestR_NPM_005_AccessLogAndMetrics(t *testing.T) {
 	}
 	m := a.Metrics(t)
 	for _, series := range []string{
-		`trove_npm_requests_total{class="local",operation="publish",status="201"}`,
-		`trove_npm_requests_total{class="local",operation="deferred.get",status="404"}`,
+		`quader_npm_requests_total{class="local",operation="publish",status="201"}`,
+		`quader_npm_requests_total{class="local",operation="deferred.get",status="404"}`,
 	} {
 		if v := testenv.MetricValue(m, series); v < 1 {
 			t.Errorf("%s = %v", series, v)
 		}
 	}
-	if !strings.Contains(m, `trove_npm_request_duration_seconds_count{class="local",operation="publish"}`) {
+	if !strings.Contains(m, `quader_npm_request_duration_seconds_count{class="local",operation="publish"}`) {
 		t.Error("no duration histogram for publish")
 	}
 }

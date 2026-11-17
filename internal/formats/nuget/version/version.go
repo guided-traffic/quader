@@ -24,7 +24,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // CodeInvalid is the error code of every version this package refuses.

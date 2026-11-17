@@ -3,10 +3,10 @@ package v1
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/authz"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // Beginner is the optional third method of an [Access]: the shared step of an
@@ -23,7 +23,7 @@ type Beginner interface {
 }
 
 // NewAccess adapts the decision point to [Access]: the permission of an
-// operation's x-trove-permission is checked for the caller of the request, on the
+// operation's x-quader-permission is checked for the caller of the request, on the
 // index the request holds.
 func NewAccess(d authz.Decider) Access { return authzAccess{d: d} }
 
@@ -60,7 +60,7 @@ func (x authzAccess) Holds(ctx context.Context, permission string) (bool, error)
 
 // RequireAction decides a repository action on the coordinate an operation's
 // declaration names, for the caller of the request (the action form of
-// x-trove-permission). The endpoint the request arrived on is part of the
+// x-quader-permission). The endpoint the request arrived on is part of the
 // subject, because the exposure of an endpoint is a ceiling (R-EP-013).
 func (x authzAccess) RequireAction(ctx context.Context, c authz.Coordinate) error {
 	a, err := x.holder(ctx, c.Repository)

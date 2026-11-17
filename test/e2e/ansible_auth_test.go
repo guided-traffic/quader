@@ -25,7 +25,7 @@ func TestAnsibleAuth(t *testing.T) {
 		t.Run("R-ANS-006 R-ANS-032 "+img.name+" publishes with the token on the command line", func(t *testing.T) {
 			c := fx.client(t, img)
 			// --token belongs to --server: ansible-core applies it to the server named on the command line, not to those of ansible.cfg
-			c.must(pub.buildScript() + "ansible-galaxy collection publish out/" + pub.archive() + " --server " + shellQuoteWord(url) + ` --token "$TROVE_TOKEN"`)
+			c.must(pub.buildScript() + "ansible-galaxy collection publish out/" + pub.archive() + " --server " + shellQuoteWord(url) + ` --token "$QUADER_TOKEN"`)
 		})
 
 		for name, tc := range map[string]struct {
@@ -35,7 +35,7 @@ func TestAnsibleAuth(t *testing.T) {
 			"token= in ansible.cfg":                         {cfg: ansibleCfg(url, "token="+fx.token)},
 			"the environment variable of the server":        {cfg: ansibleCfg(url), env: []string{tokenEnvVar + "=" + fx.token}},
 			"a username and the token as the password":      {cfg: ansibleCfg(url, "username=e2e", "password="+fx.token)},
-			"the environment variable beats a wrong token=": {cfg: ansibleCfg(url, "token=trv_pat_wrong"), env: []string{tokenEnvVar + "=" + fx.token}},
+			"the environment variable beats a wrong token=": {cfg: ansibleCfg(url, "token=qdr_pat_wrong"), env: []string{tokenEnvVar + "=" + fx.token}},
 		} {
 			t.Run("R-ANS-006 R-ANS-032 "+img.name+" installs with "+name, func(t *testing.T) {
 				c := fx.client(t, img)
@@ -45,7 +45,7 @@ func TestAnsibleAuth(t *testing.T) {
 
 		t.Run("R-ANS-006 R-ANS-032 "+img.name+" a wrong token is refused with the 401 of the server", func(t *testing.T) {
 			c := fx.client(t, img)
-			out, err := c.sh(withCfg(ansibleCfg(url, "token=trv_pat_00000000000000000000000000000000"), "ansible-galaxy collection install "+pub.full()+" -p coll"))
+			out, err := c.sh(withCfg(ansibleCfg(url, "token=qdr_pat_00000000000000000000000000000000"), "ansible-galaxy collection install "+pub.full()+" -p coll"))
 			if err == nil {
 				t.Fatalf("an install with a wrong token succeeded:\n%s", tailLines(out, 20))
 			}

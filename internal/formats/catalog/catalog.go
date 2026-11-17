@@ -19,7 +19,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // ID is the name of a format: "generic", "npm", "nuget". Its shape is qname.ValidFormat:
@@ -66,7 +66,7 @@ const (
 	KindSearch RequestKind = "search"
 	// KindWrite changes state: a deploy or a delete.
 	KindWrite RequestKind = "write"
-	// KindOther is everything else, such as a directory index that trove renders.
+	// KindOther is everything else, such as a directory index that quader renders.
 	KindOther RequestKind = "other"
 )
 
@@ -132,7 +132,7 @@ type Facts struct {
 	// and the writers of those refuse a path pattern with an upper-case letter that covers one, as feedback to
 	// whoever wrote it (Q-AUTHZ-253).
 	LowerCasePaths bool
-	// Wiki is true for a format with wiki content, the documentation of its packages that trove serves or shows apart from their
+	// Wiki is true for a format with wiki content, the documentation of its packages that quader serves or shows apart from their
 	// files (R-AUTHZ-034): npm and NuGet serve a README. A repository of such a format has a wiki level worth setting; the kit
 	// holds the format to the wiki rules with check 15 (R-ARCH-010), and a format without wiki content declares no Wiki route.
 	Wiki bool
@@ -157,7 +157,7 @@ type Facts struct {
 	// repository document, the member named after the format (R-ARCH-008, R-REPO-004).
 	// Nil for a format without settings. The root must be an object schema with
 	// additionalProperties false; a property may name the classes it applies to in
-	// x-trove-classes. [Entry.ValidateSettings] checks a document against it, and
+	// x-quader-classes. [Entry.ValidateSettings] checks a document against it, and
 	// GET /api/v1/formats serves it to the create form.
 	SettingsSchema []byte
 }

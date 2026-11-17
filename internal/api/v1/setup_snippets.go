@@ -12,7 +12,7 @@ import (
 	"text/template"
 	"text/template/parse"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The client setup snippets of R-API-030. A format contributes templates
@@ -359,7 +359,7 @@ func shellQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
-var tokenShape = regexp.MustCompile(`trv_(pat|sat|cit)_`)
+var tokenShape = regexp.MustCompile(`qdr_(pat|sat|cit)_`)
 
 // holdsTokenShape reports whether s looks like one of the tokens of R-AUTH-001. No
 // answer of the client setup may; the same check runs over the input, so that a

@@ -1,4 +1,4 @@
-// Package manual loads the trove manual (docs/manual) for the help area of the UI
+// Package manual loads the quader manual (docs/manual) for the help area of the UI
 // (R-API-054, R-UI-050): the pages of the user and the administrator guide, in the
 // order of the contents below, each rendered once at start-up by the README renderer
 // of R-UI-008, with the links between pages turned into links of the help area.
@@ -25,7 +25,7 @@ import (
 	xhtml "golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 
-	"github.com/guided-traffic/trove/internal/packages/readme"
+	"github.com/guided-traffic/quader/internal/packages/readme"
 )
 
 // LinkPrefix starts the target of a link to another page: the route of the help

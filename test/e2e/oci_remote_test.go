@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 // ociPlatformBlobs are the blobs a pull of the image on the clients' platform fetches: the configuration and the layers of its platform

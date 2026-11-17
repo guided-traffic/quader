@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // The hold check itself needs PostgreSQL and is tested in test/integration/backup/create_hold_test.go; this is its result shape.

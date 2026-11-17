@@ -15,9 +15,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // monitorTick is how often the monitor compares the primary the client is
@@ -128,8 +128,8 @@ type valkeyOptions struct {
 func WithKeyspaceID(id string) ValkeyOption { return func(o *valkeyOptions) { o.keyspace = id } }
 
 // WithoutKeyspace forms keys without a keyspace segment: <key_prefix><mechanism>:v<version>[:<part>...]. The
-// trove Bastion has no PostgreSQL and so no system_state.keyspace_id; its key_prefix
-// (trove-bastion:<valkey.key_prefix>:) is the whole separation between installations (R-BAS-034).
+// quader Bastion has no PostgreSQL and so no system_state.keyspace_id; its key_prefix
+// (quader-bastion:<valkey.key_prefix>:) is the whole separation between installations (R-BAS-034).
 func WithoutKeyspace() ValkeyOption { return func(o *valkeyOptions) { o.noKeyspace = true } }
 
 // NewValkey creates the client. It returns an error only for a configuration
@@ -318,7 +318,7 @@ func (v *Valkey) OnPrimaryChange(fn func(PrimaryChange)) {
 }
 
 // CountDegraded records that a mechanism ran its fallback because Valkey was
-// unavailable (trove_valkey_degraded_total). An unknown mechanism is ignored.
+// unavailable (quader_valkey_degraded_total). An unknown mechanism is ignored.
 func (v *Valkey) CountDegraded(mechanism string) {
 	if mechanisms[mechanism] {
 		v.m.degraded.WithLabelValues(mechanism).Inc()
@@ -326,7 +326,7 @@ func (v *Valkey) CountDegraded(mechanism string) {
 }
 
 // CountCacheLookup records a lookup in Valkey after an in-process miss
-// (trove_valkey_cache_lookups_total). cache is a registered cache name ("negative"),
+// (quader_valkey_cache_lookups_total). cache is a registered cache name ("negative"),
 // result is "hit", "miss", "rejected" (the entry was malformed or reader
 // validation refused it) or "unavailable".
 func (v *Valkey) CountCacheLookup(cache, result string) {
@@ -413,11 +413,11 @@ func (v *Valkey) clientOption() valkey.ClientOption {
 	lifetime := cfg.MaxConnLifetime + time.Duration(rand.Int64N(int64(cfg.MaxConnLifetime/10)+1)) //nolint:gosec // jitter, not a secret
 	opt := valkey.ClientOption{
 		InitAddress:       []string{cfg.Address},
-		ClientName:        "trove:" + v.instance + ":main",
+		ClientName:        "quader:" + v.instance + ":main",
 		TLSConfig:         v.dataTLS,
 		AuthCredentialsFn: v.creds.fn,
 		DialCtxFn:         dialFn(v.sentinelResolver, v.tls.prepare),
-		DisableCache:      true, // R-ARCH-031: trove's caches are its own
+		DisableCache:      true, // R-ARCH-031: quader's caches are its own
 		SelectDB:          cfg.Database,
 		Dialer:            outbound.NewDialer(cfg.ConnectTimeout, nil),
 		ConnWriteTimeout:  max(2*cfg.CommandTimeout, time.Second),
@@ -427,7 +427,7 @@ func (v *Valkey) clientOption() valkey.ClientOption {
 		opt.InitAddress = cfg.Sentinel.Addresses
 		opt.Sentinel = valkey.SentinelOption{
 			MasterSet:  cfg.Sentinel.PrimaryName,
-			ClientName: "trove:" + v.instance + ":sentinel",
+			ClientName: "quader:" + v.instance + ":sentinel",
 			TLSConfig:  v.sentinelTLS,
 			Dialer:     outbound.NewDialer(cfg.SentinelQueryTimeout, v.sentinelResolver),
 			// The poll that bounds failover when +switch-master is missed.

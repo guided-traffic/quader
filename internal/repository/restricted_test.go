@@ -3,7 +3,7 @@ package repository
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // restrictedFields validates two remote sections of the npmlike format, the stored one
@@ -46,7 +46,7 @@ func TestR_AUTHZ_026_RestrictedRemoteRules(t *testing.T) {
 		{"Q-REPO-127 a create names no reference", "", ref, map[string]string{"/remote/password/secretRef": "secret_value_required"}},
 		{"Q-REPO-127 the stored reference sent back is kept", ref, ref, nil},
 		{
-			"Q-REPO-127 another reference is refused", ref, `{"url":"https://partner.example.test/","authMode":"bearer","password":{"secretRef":{"env":"TROVE_CAC_OTHER"}}}`,
+			"Q-REPO-127 another reference is refused", ref, `{"url":"https://partner.example.test/","authMode":"bearer","password":{"secretRef":{"env":"QUADER_CAC_OTHER"}}}`,
 			map[string]string{"/remote/password/secretRef": "secret_value_required"},
 		},
 		{"Q-REPO-127 a kept value with another url", sealed, `{` + elsewhr + `,"authMode":"bearer","password":{"set":true}}`, map[string]string{"/remote/password": "secret_value_required"}},

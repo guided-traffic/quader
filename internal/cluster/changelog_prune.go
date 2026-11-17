@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // PruneChanges is the body of the cluster-change-prune task (R-ARCH-016,

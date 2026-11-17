@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/link"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/link"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
 )
 
 // handler serves the site over HTTP, for the real client and the in-process main installation: the site's
@@ -78,7 +78,7 @@ func TestR_BAS_025_EveryPathClosesTheResponseBodyAndSoReleasesItsSlot(t *testing
 		t.Fatal(err)
 	}
 	tc := newTestCache(t, cfg, nil, bm, clk.now)
-	holder := mainclient.NewHolder(mainclient.Token{Value: m.NewToken(), Hint: "trv_bst_test"})
+	holder := mainclient.NewHolder(mainclient.Token{Value: m.NewToken(), Hint: "qdr_bst_test"})
 	client, err := mainclient.New(mainclient.Options{
 		URL: m.URL(), BaseURL: "https://packages.example.com", Replica: "bastion-0", Release: "test", Tokens: holder,
 		Budget: mainclient.NewBudget(mainclient.BudgetOptions{

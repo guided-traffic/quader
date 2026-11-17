@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/report"
-	"github.com/guided-traffic/trove/internal/vuln/store"
-	"github.com/guided-traffic/trove/internal/vuln/triage"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/report"
+	"github.com/guided-traffic/quader/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln/triage"
 )
 
 // AreaVulnAPI is the services of the vulnerability scanning's operations of the management API (R-VULN-013, R-VULN-019 to

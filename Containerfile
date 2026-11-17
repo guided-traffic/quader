@@ -1,5 +1,5 @@
 # check=skip=InvalidDefaultArgInFrom
-# The release image of trove (R-ARCH-003, R-HA-033): the Angular bundle embedded into a static
+# The release image of quader (R-ARCH-003, R-HA-033): the Angular bundle embedded into a static
 # binary, on a distroless base that runs as UID 65532. Three stages:
 #
 #   web    the Angular build (build:embed) on the Node.js of web/.nvmrc, into internal/webui/dist
@@ -29,7 +29,7 @@ WORKDIR /src
 COPY internal/webui/dist/ internal/webui/dist/
 COPY web/ web/
 WORKDIR /src/web
-RUN npm ci && TROVE_UI_BUNDLE_MARK="$UI_BUNDLE_MARK" npm run build:embed
+RUN npm ci && QUADER_UI_BUNDLE_MARK="$UI_BUNDLE_MARK" npm run build:embed
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine AS build
 ARG TARGETOS
@@ -44,10 +44,10 @@ COPY . .
 COPY --from=web /src/internal/webui/dist/ internal/webui/dist/
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -buildvcs=false \
       -ldflags "-s -w \
-        -X github.com/guided-traffic/trove/internal/buildinfo.version=${VERSION} \
-        -X github.com/guided-traffic/trove/internal/buildinfo.commit=${COMMIT} \
-        -X github.com/guided-traffic/trove/internal/buildinfo.date=${DATE}" \
-      -o /out/trove ./cmd/trove
+        -X github.com/guided-traffic/quader/internal/buildinfo.version=${VERSION} \
+        -X github.com/guided-traffic/quader/internal/buildinfo.commit=${COMMIT} \
+        -X github.com/guided-traffic/quader/internal/buildinfo.date=${DATE}" \
+      -o /out/quader ./cmd/quader
 
 FROM --platform=$BUILDPLATFORM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS trivy
 ARG TARGETARCH
@@ -66,8 +66,8 @@ RUN set -eu; \
     mkdir -p /out; tar -xzf "/tmp/$name" -C /out trivy
 
 FROM ${RUNTIME_BASE_IMAGE}
-COPY --from=build /out/trove /usr/local/bin/trove
+COPY --from=build /out/quader /usr/local/bin/quader
 COPY --from=trivy /out/trivy /usr/local/bin/trivy
 USER 65532:65532
 EXPOSE 8080 8081
-ENTRYPOINT ["/usr/local/bin/trove"]
+ENTRYPOINT ["/usr/local/bin/quader"]

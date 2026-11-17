@@ -13,10 +13,10 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // fileReader streams one object of the backup through zstd. It counts and hashes the bytes of the object as stored, and its
@@ -83,9 +83,9 @@ func (f *fileReader) Close() error {
 		got := hex.EncodeToString(f.h.Sum(nil))
 		switch {
 		case f.n != f.wantSize:
-			verr = backup.Failf(backup.ExitFailed, backup.CodeInternal, "%s: %d bytes in the target, the manifest says %d; run trove backup verify", f.name, f.n, f.wantSize)
+			verr = backup.Failf(backup.ExitFailed, backup.CodeInternal, "%s: %d bytes in the target, the manifest says %d; run quader backup verify", f.name, f.n, f.wantSize)
 		case got != f.wantSum:
-			verr = backup.Failf(backup.ExitFailed, backup.CodeInternal, "%s: SHA-256 %s, the manifest says %s; run trove backup verify", f.name, got, f.wantSum)
+			verr = backup.Failf(backup.ExitFailed, backup.CodeInternal, "%s: SHA-256 %s, the manifest says %s; run quader backup verify", f.name, got, f.wantSum)
 		}
 	}
 	f.zr.Close()

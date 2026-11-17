@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/listing"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/listing"
 )
 
-// Runner runs `trove backup delete` and `trove backup prune` as target-writing runs of their own (R-BAK-010, R-BAK-016): it
+// Runner runs `quader backup delete` and `quader backup prune` as target-writing runs of their own (R-BAK-010, R-BAK-016): it
 // takes the slot, heartbeats, moves the run to state pruning, calls the stage code and writes the result. Both are
 // operation delete in backup_run; a delete of one backup records its ID in backup_id.
 type Runner struct {
@@ -22,8 +22,8 @@ type Runner struct {
 	Timing backup.Timing
 	// RunHistory is backup.run_history: rows older than this are deleted by the next run.
 	RunHistory time.Duration
-	// Target is the "s3://<bucket>/<prefix>" text of the run row; Pod and TroveVersion complete it.
-	Target, Pod, TroveVersion string
+	// Target is the "s3://<bucket>/<prefix>" text of the run row; Pod and QuaderVersion complete it.
+	Target, Pod, QuaderVersion string
 	// NewRunID returns a UUIDv7.
 	NewRunID func() string
 	// Sleep waits for a stale run's lease; nil is a real sleep.
@@ -104,7 +104,7 @@ func (r *Runner) execute(ctx context.Context, id format.ID, body func(context.Co
 	}
 	run, err := backup.AcquireSlot(ctx, r.Runs, backup.NewRun{
 		ID: r.NewRunID(), Operation: backup.OpDelete, BackupID: string(id), Trigger: backup.TriggerManual,
-		Target: r.Target, Pod: r.Pod, TroveVersion: r.TroveVersion, Lease: r.Timing.Lease,
+		Target: r.Target, Pod: r.Pod, QuaderVersion: r.QuaderVersion, Lease: r.Timing.Lease,
 	}, r.Timing, r.Sleep)
 	if err != nil {
 		return nil, backup.Classify(err)

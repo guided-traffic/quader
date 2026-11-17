@@ -11,14 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/gauges"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/gauges"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The read side of the backup job against real backup_run rows (R-API-050, R-BAK-014, R-OPS-004, R-OPS-007): the API of a
@@ -47,9 +47,9 @@ func (r runRow) insert(st *testenv.Stack) {
 	if r.Progress == "" {
 		r.Progress = "{}"
 	}
-	st.Exec(`INSERT INTO backup_run (id, operation, backup_id, state, hold, trigger, target, pod, trove_version, progress, result, error,
+	st.Exec(`INSERT INTO backup_run (id, operation, backup_id, state, hold, trigger, target, pod, quader_version, progress, result, error,
 	                                  started_at, heartbeat_at, lease_expires_at, finished_at)
-	         VALUES ($1::uuid, $2, NULLIF($3, ''), $4, $5, $6, 's3://trove-backups/trove', 'trove-backup-x7k2q', '0.4.0', $7::jsonb,
+	         VALUES ($1::uuid, $2, NULLIF($3, ''), $4, $5, $6, 's3://quader-backups/quader', 'quader-backup-x7k2q', '0.4.0', $7::jsonb,
 	                 NULLIF($8, '')::jsonb, NULLIF($9, '')::jsonb,
 	                 now() - make_interval(secs => $10::float8), now() - make_interval(secs => $10::float8),
 	                 now() + make_interval(secs => $11::float8),
@@ -68,7 +68,7 @@ const (
 	// listed is the result of a create that pruned: the retention it applied and the backups it left.
 	listed = `{"backupId":"20261107T020000Z-aaaa","outcome":"completed","databaseBytes":183500800,"blobCount":51234,"blobBytes":412316860416,
 	  "blobsCopied":12,"bytesCopied":9123456789,"damaged":1,"retention":{"keepLast":7,"keepWithinSeconds":0},
-	  "retained":[{"backupId":"20261107T020000Z-aaaa","snapshotAt":"2026-11-07T02:00:08.913Z","troveVersion":"0.4.0","schemaStep":46,
+	  "retained":[{"backupId":"20261107T020000Z-aaaa","snapshotAt":"2026-11-07T02:00:08.913Z","quaderVersion":"0.4.0","schemaStep":46,
 	               "databaseBytes":183500800,"blobCount":51234,"blobBytes":412316860416,"damaged":true}]}`
 )
 
@@ -260,8 +260,8 @@ func TestR_API_050_BackupAPIOverPostgres(t *testing.T) {
 	st.Exec(`INSERT INTO system_state (key, value) VALUES ('restored_from', '{"installationId":"i-1","incarnation":"c-1","backupId":"20261001T000000Z-bbbb","snapshotAt":"2026-10-01T00:00:00Z"}'::jsonb)`)
 
 	r := st.Start(t, testenv.ReplicaOptions{Name: "web1", Env: []string{
-		"TROVE_BACKUP_EXPECTED_INTERVAL=1h", "TROVE_BACKUP_MANUAL_RUN_NAMESPACE=trove", "TROVE_BACKUP_MANUAL_RUN_CRONJOB=trove-backup",
-		"TROVE_METRICS_DB_GAUGE_INTERVAL=1s",
+		"QUADER_BACKUP_EXPECTED_INTERVAL=1h", "QUADER_BACKUP_MANUAL_RUN_NAMESPACE=quader", "QUADER_BACKUP_MANUAL_RUN_CRONJOB=quader-backup",
+		"QUADER_METRICS_DB_GAUGE_INTERVAL=1s",
 	}})
 	get := func(path, tok string) testenv.Answer { t.Helper(); return st.Do(r, "GET", path, tok, nil) }
 
@@ -378,7 +378,7 @@ func TestR_API_050_BackupAPIOverPostgres(t *testing.T) {
 		if s["expectedIntervalSeconds"].(float64) != 3600 || s["overdue"] != true {
 			t.Errorf("interval/overdue = %v / %v", s["expectedIntervalSeconds"], s["overdue"])
 		}
-		if s["lastSuccessAt"] == nil || s["target"] != "s3://trove-backups/trove" {
+		if s["lastSuccessAt"] == nil || s["target"] != "s3://quader-backups/quader" {
 			t.Errorf("lastSuccessAt/target = %v / %v", s["lastSuccessAt"], s["target"])
 		}
 		f := s["lastFailure"].(map[string]any)
@@ -400,7 +400,7 @@ func TestR_API_050_BackupAPIOverPostgres(t *testing.T) {
 		if rf := s["restoredFrom"].(map[string]any); rf["backupId"] != "20261001T000000Z-bbbb" || rf["incarnation"] != "c-1" {
 			t.Errorf("restoredFrom = %v", rf)
 		}
-		if m := s["manualRun"].(map[string]any); m["namespace"] != "trove" || m["cronJob"] != "trove-backup" {
+		if m := s["manualRun"].(map[string]any); m["namespace"] != "quader" || m["cronJob"] != "quader-backup" {
 			t.Errorf("manualRun = %v", m)
 		}
 	})

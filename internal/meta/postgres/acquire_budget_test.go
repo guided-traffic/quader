@@ -10,8 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // blackHole accepts connections and never answers: a database whose host is up and whose PostgreSQL is stopped behind a
@@ -50,7 +50,7 @@ func blackHole(t *testing.T) string {
 // connection (the pool is one dial deep, the dial times out after connect_timeout) and used to wait for its own deadline,
 // 45 s at a client's timeout. It now fails with the 503 of R-ARCH-023 within retry.max_elapsed.
 func TestRetryBudgetBoundsTheWaitForAConnection(t *testing.T) {
-	pc, err := pgxpool.ParseConfig("postgres://trove@" + blackHole(t) + "/trove?sslmode=disable&connect_timeout=60")
+	pc, err := pgxpool.ParseConfig("postgres://quader@" + blackHole(t) + "/quader?sslmode=disable&connect_timeout=60")
 	if err != nil {
 		t.Fatal(err)
 	}

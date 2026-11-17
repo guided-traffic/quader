@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Revisions for the identity resources and the runtime authentication settings
 -- (R-API-012, Q-API-25). A user, a group and a service account are one row of

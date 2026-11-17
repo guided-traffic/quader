@@ -7,13 +7,13 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	debdata "github.com/guided-traffic/trove/internal/formatdata/deb"
-	debformat "github.com/guided-traffic/trove/internal/formats/deb"
-	"github.com/guided-traffic/trove/internal/formats/deb/index"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
+	debformat "github.com/guided-traffic/quader/internal/formats/deb"
+	"github.com/guided-traffic/quader/internal/formats/deb/index"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // debVirtualRepos reads a virtual Debian repository from the repository model for the build of its indexes (R-DEB-025). The members and

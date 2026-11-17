@@ -13,7 +13,7 @@
 //
 // A fill is spooled to temporary storage and committed under its content address only after its SHA-256 was
 // verified (R-BAS-021); a cache failure after the first readiness turns hits into misses that are passed
-// through, counted in trove_bastion_cache_errors_total, never into failed requests (R-BAS-030).
+// through, counted in quader_bastion_cache_errors_total, never into failed requests (R-BAS-030).
 package cache
 
 import (
@@ -64,9 +64,9 @@ type Entry struct {
 	SHA256 string `json:"sha256"`
 	Size   int64  `json:"size"`
 	// Header holds the response headers to replay: Content-Type, ETag, Cache-Control, Content-Disposition,
-	// Vary and the like, never a Trove-Bastion-* header, Set-Cookie or a hop-by-hop header.
+	// Vary and the like, never a Quader-Bastion-* header, Set-Cookie or a hop-by-hop header.
 	Header http.Header `json:"header"`
-	// Repository is the addressed repository's qualified name "<projectKey>/<repoKey>" (Trove-Bastion-Repository).
+	// Repository is the addressed repository's qualified name "<projectKey>/<repoKey>" (Quader-Bastion-Repository).
 	Repository string `json:"repository"`
 	// Status is the status the main installation answered (200).
 	Status int `json:"status"`
@@ -89,7 +89,7 @@ type SpoolFile struct {
 	Size    int64
 }
 
-// Usage is what the backend holds by area (trove_bastion_cache_bytes).
+// Usage is what the backend holds by area (quader_bastion_cache_bytes).
 type Usage struct {
 	Artifacts int64
 	Documents int64

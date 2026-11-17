@@ -10,16 +10,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // Flush reasons of R-ARCH-018 step 5, the values of the reason label of
-// trove_cache_flushes_total.
+// quader_cache_flushes_total.
 const (
 	FlushChangeLogGap    = "change_log_gap"
 	FlushUnknownPayload  = "unknown_payload"
@@ -135,11 +135,11 @@ func NewChanges(o ChangesOptions) (*Changes, error) {
 		log = slog.Default()
 	}
 	m := &changeMetrics{
-		applied:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "trove_cluster_changes_applied_total", Help: "Changes applied by area and source (poll, message, local)."}, []string{"area", "source"}),
-		lastOK:    prometheus.NewGauge(prometheus.GaugeOpts{Name: "trove_cluster_poll_last_success_timestamp_seconds", Help: "End of the last successful change-log poll."}),
-		pollErrs:  prometheus.NewCounter(prometheus.CounterOpts{Name: "trove_cluster_poll_errors_total", Help: "Change-log polls that failed."}),
-		published: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "trove_cluster_changes_published_total", Help: "Change messages published to Valkey by area."}, []string{"area"}),
-		dropped:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "trove_cluster_changes_dropped_total", Help: "Change messages not published because Valkey was unavailable, by area."}, []string{"area"}),
+		applied:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "quader_cluster_changes_applied_total", Help: "Changes applied by area and source (poll, message, local)."}, []string{"area", "source"}),
+		lastOK:    prometheus.NewGauge(prometheus.GaugeOpts{Name: "quader_cluster_poll_last_success_timestamp_seconds", Help: "End of the last successful change-log poll."}),
+		pollErrs:  prometheus.NewCounter(prometheus.CounterOpts{Name: "quader_cluster_poll_errors_total", Help: "Change-log polls that failed."}),
+		published: prometheus.NewCounterVec(prometheus.CounterOpts{Name: "quader_cluster_changes_published_total", Help: "Change messages published to Valkey by area."}, []string{"area"}),
+		dropped:   prometheus.NewCounterVec(prometheus.CounterOpts{Name: "quader_cluster_changes_dropped_total", Help: "Change messages not published because Valkey was unavailable, by area."}, []string{"area"}),
 	}
 	if err := register(o.Metrics, m.applied, m.lastOK, m.pollErrs, m.published, m.dropped); err != nil {
 		return nil, err

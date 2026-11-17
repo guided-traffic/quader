@@ -17,7 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
 // store is the keyed object storage a [Backend] is built on: the volume (a directory) and the bucket (S3 with
@@ -47,7 +47,7 @@ const (
 )
 
 // backend implements [Backend] over a [store]. It counts the errors of the store in
-// trove_bastion_cache_errors_total{op} (R-BAS-030); a cancelled context and a missing key are not errors.
+// quader_bastion_cache_errors_total{op} (R-BAS-030); a cancelled context and a missing key are not errors.
 type backend struct {
 	s         store
 	now       func() time.Time
@@ -74,7 +74,7 @@ func (b *backend) Check(ctx context.Context) error {
 		return err
 	}
 	key := dirProbe + "/" + hex.EncodeToString(id[:])
-	payload := []byte("trove-bastion-cache-probe " + hex.EncodeToString(id[:]))
+	payload := []byte("quader-bastion-cache-probe " + hex.EncodeToString(id[:]))
 	if err := b.s.putBytes(ctx, key, payload); err != nil {
 		return fmt.Errorf("cache check: write: %w", err)
 	}

@@ -2,7 +2,7 @@ A remote repository is a pull-through cache of an APT archive{{if .Repository}}:
 
 ### What is passed through
 
-The release documents (`InRelease`, `Release`, `Release.gpg`) are the upstream's, byte for byte. trove signs nothing of a remote, so the signatures your client checks are the archive's own. The index files are served only while they are the files the stored release lists: a client never reads an index that no release names. By-hash files are fetched once and kept as they are.
+The release documents (`InRelease`, `Release`, `Release.gpg`) are the upstream's, byte for byte. Quader signs nothing of a remote, so the signatures your client checks are the archive's own. The index files are served only while they are the files the stored release lists: a client never reads an index that no release names. By-hash files are fetched once and kept as they are.
 
 ### Package files
 

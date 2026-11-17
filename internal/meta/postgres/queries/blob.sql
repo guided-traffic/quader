@@ -124,7 +124,7 @@ SELECT n.nspname::text AS schema_name, cl.relname::text AS table_name, a.attname
  ORDER BY n.nspname, cl.relname, a.attname;
 
 -- name: VerifyBlobPage :many
--- One page of `trove admin storage verify` (R-HA-024, R-HA-025): the live blob rows after the last digest of the previous
+-- One page of `quader admin storage verify` (R-HA-024, R-HA-025): the live blob rows after the last digest of the previous
 -- page, in digest order, so that a table of any size is read in pages of a fixed size. since_unix is the --since cut-off
 -- in Unix seconds; 0 selects every row. A row is selected when it was created or changed state at or after the cut-off.
 SELECT sha256, size
@@ -137,7 +137,7 @@ SELECT sha256, size
 
 -- name: VerifyBlobItems :many
 -- The items that reference a blob whose object is missing or of another size, for the per-item report of
--- `trove admin storage verify`: project, repository and path, trashed ones included (a trashed item still holds its blob,
+-- `quader admin storage verify`: project, repository and path, trashed ones included (a trashed item still holds its blob,
 -- R-STOR-022).
 SELECT p.key AS project_key, r.key AS repo_key, i.path, (i.trashed_at IS NOT NULL)::boolean AS trashed
   FROM items i

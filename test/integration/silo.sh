@@ -4,8 +4,8 @@
 # and the same MINIO_* settings. The leg of .github/workflows/release.yml (job s3-conformance) runs these steps; `make silo-up`,
 # `make s3-conformance` and `make silo-down` run them locally.
 #
-#   up    starts the container trove-silo on https://127.0.0.1:9000 (console 9001), checks that a plaintext request is refused,
-#         seeds the buckets and writes the TROVE_TEST_S3_* variables to .dev/silo/env.
+#   up    starts the container quader-silo on https://127.0.0.1:9000 (console 9001), checks that a plaintext request is refused,
+#         seeds the buckets and writes the QUADER_TEST_S3_* variables to .dev/silo/env.
 #   down  writes the server's log to .out/silo.log and stops the container, which takes its data with it.
 #
 # The root credentials are random per start and live only in .dev/silo/env (owner-only).
@@ -18,7 +18,7 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$root"
 state=.dev/silo
 env_file="$state/env"
-name=trove-silo
+name=quader-silo
 
 down() {
   if docker inspect "$name" >/dev/null 2>&1; then
@@ -48,7 +48,7 @@ up() {
   chmod 644 "$state/certs/public.crt" "$state/certs/private.key"
   ca="$pki/ca.crt"
 
-  user="trove-silo"
+  user="quader-silo"
   pass="$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')"
   docker run -d --rm --name "$name" \
     -p 127.0.0.1:9000:9000 -p 127.0.0.1:9001:9001 \
@@ -71,14 +71,14 @@ up() {
   (
     umask 077
     {
-      echo "TROVE_TEST_S3_ENDPOINT=https://127.0.0.1:9000"
-      echo "TROVE_TEST_CA_FILE=$root/$ca"
-      echo "TROVE_TEST_S3_REGION=us-east-1"
-      echo "TROVE_TEST_S3_ACCESS_KEY=$user"
-      echo "TROVE_TEST_S3_SECRET_KEY=$pass"
-      echo "TROVE_TEST_S3_BUCKET_BLOBS=trove-blobs"
-      echo "TROVE_TEST_S3_BUCKET_BACKUPS=trove-backups"
-      echo "TROVE_TEST_S3_FORCE_PATH_STYLE=true"
+      echo "QUADER_TEST_S3_ENDPOINT=https://127.0.0.1:9000"
+      echo "QUADER_TEST_CA_FILE=$root/$ca"
+      echo "QUADER_TEST_S3_REGION=us-east-1"
+      echo "QUADER_TEST_S3_ACCESS_KEY=$user"
+      echo "QUADER_TEST_S3_SECRET_KEY=$pass"
+      echo "QUADER_TEST_S3_BUCKET_BLOBS=quader-blobs"
+      echo "QUADER_TEST_S3_BUCKET_BACKUPS=quader-backups"
+      echo "QUADER_TEST_S3_FORCE_PATH_STYLE=true"
     } > "$env_file"
   )
   set -a

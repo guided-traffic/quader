@@ -29,12 +29,12 @@ marker is written, which is not atomic; the one-run rule in PostgreSQL, not the 
 ## How the chart keeps the split
 
 The chart gives each Job its own pod template and the Secrets of its scope only ([helm-chart.md](../developer/helm-chart.md#the-backup-and-restore-jobs),
-[_secrets.tpl](../../deploy/helm/trove/templates/_secrets.tpl)):
+[_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl)):
 
 | Mechanism | Effect | Test |
 |---|---|---|
-| `secrets.backupTarget` and `secrets.backupTargetCA` mount in the scopes `backup` and `restore` | no `api`, `packages` or `worker` pod and not the migration Job has a file or a variable with the target's credentials; the shared `trove.yaml` names the paths and nothing exists under them there | `TestR_HA_030_BackupSecrets` (every value set) |
-| `secrets.backupSource` replaces `secrets.s3` in the backup scope; the config key `backup.source` makes `trove backup create` read the bucket with it | a compromised backup pod cannot write blobs or the journal (R-BAK-015); with a workload identity there is nothing to mount | `TestR_HA_030_BackupSecrets` |
+| `secrets.backupTarget` and `secrets.backupTargetCA` mount in the scopes `backup` and `restore` | no `api`, `packages` or `worker` pod and not the migration Job has a file or a variable with the target's credentials; the shared `quader.yaml` names the paths and nothing exists under them there | `TestR_HA_030_BackupSecrets` (every value set) |
+| `secrets.backupSource` replaces `secrets.s3` in the backup scope; the config key `backup.source` makes `quader backup create` read the bucket with it | a compromised backup pod cannot write blobs or the journal (R-BAK-015); with a workload identity there is nothing to mount | `TestR_HA_030_BackupSecrets` |
 | `restore.journalCredentials` and `postRestore.journalCredentials` render the credentials file that turns the listing of object versions on | a deletion or delete marker set with the runtime credential cannot hide a journal entry from a restore | `TestR_HA_060_RestoreJob`, `TestR_HA_025_PostRestoreJob` |
 | the replica rule of `restore.enabled` also holds for `postRestore.enabled` | no replica serves the restored database before the clean-up has replayed the journal | `TestR_HA_025_PostRestoreJob` |
 | Valkey Secrets mount in neither Job; the key ring only in the restore Job | a compromised backup pod holds no Valkey credential and no key ring (R-BAK-012) | `TestR_HA_030_BackupSecrets` |
@@ -72,7 +72,7 @@ The run reads the whole database in one `REPEATABLE READ READ ONLY` snapshot tha
 ([backup_snapshot.go](../../internal/meta/postgres/backup_snapshot.go)): the shared migration lock first, so no migration step runs while
 the database is exported; then `ACCESS SHARE` on every table of the catalog before the first `SELECT`, which keeps `TRUNCATE` and
 a rewriting `ALTER TABLE` from outside the runner away from the snapshot. The snapshot and the lock end with the last table, not
-with the blob copy. Every connection of the run is named `trove:<pod>:backup` and goes to the session host; a standby is refused.
+with the blob copy. Every connection of the run is named `quader:<pod>:backup` and goes to the session host; a standby is refused.
 The statements assemble identifiers from the catalog with `pgx.Identifier`, never a value. The role writes only `backup_run` and
 `backup_blob_pin`, and writes its audit events through `backup_record_event()`, which accepts the four events of the lane and
 no other ([Q-BAK-50](../spec/backup-and-restore.md#q-bak-50--the-backup-login-writes-its-audit-events-through-a-function-not-through-insert-on-the-audit-trail)); a role that is no
@@ -113,7 +113,7 @@ complete backup lists it, and it builds that set only from blob lists whose SHA-
 (`Sweeper.Sweep`, `TestR_BAK_017_CorruptBlobListSkipsTheSweepWithAWarning`); a pool key outside the layout or out of order ends the
 sweep without a further delete. The manifest's own SHA-256 entries are in the same trust domain as the lists (H-46).
 
-`trove backup create` warns when a retained backup lists a key ID the new backup no longer uses (`EscrowWarnings`): it compares
+`quader backup create` warns when a retained backup lists a key ID the new backup no longer uses (`EscrowWarnings`): it compares
 IDs only and says nothing about whether the key is in escrow. The listing prints `encryption` per backup, `none` included.
 
 ### What the format handlers of the journal do with an entry
@@ -124,7 +124,7 @@ a missing member, an oversized value or a digest that is not the expected shape 
 
 - **npm withholds, it does not delete** ([R-NPM-047](../spec/formats/npm.md#r-npm-047--npm-data-in-backups-and-restores)). A forged or mistaken
   `npm.unpublish` entry can only write a `journal` tombstone, and only for a version the repository stores with exactly the integrity the
-  entry names; the version row, its items and its bytes stay. The cost is availability until an administrator runs `trove admin npm
+  entry names; the version row, its items and its bytes stay. The cost is availability until an administrator runs `quader admin npm
   reinstate`, which removes only a `journal` tombstone and only while the version is still stored with the tombstone's integrity, so it
   brings back the same bytes and never admits new ones (Q-NPM-8). A tombstone of a client's unpublish is not reinstated. The version is
   refused on every road that serves it: the version and package documents, the tarball route, `/files`, and the virtual repositories
@@ -210,7 +210,7 @@ a missing member, an oversized value or a digest that is not the expected shape 
     `TestR_AUTH_016_ARemovedPendingLinkStaysRemovedAfterARestore`, `TestR_AUTH_018_AGroupRenamedAfterTheRestorePointIsDetached`,
     `TestR_AUTH_026_ALoweredMaximumStaysLoweredAfterARestore`, and the `TestR_REPO_061_…` tests of
     [journal_repository_narrowing_test.go](../../test/integration/backup/journal_repository_narrowing_test.go).
-- **Coverage.** `TestR_HA_054_EveryJournaledEventHasAReplayHandler` fails for a journaled event without a handler in the `trove` binary.
+- **Coverage.** `TestR_HA_054_EveryJournaledEventHasAReplayHandler` fails for a journaled event without a handler in the `quader` binary.
 - **Exposure rules** ([journal_replay_exposure.go](../../internal/authz/journal_replay_exposure.go), R-EP-020). A deletion deletes the rule;
   deleting a rule only removes exposure, because rules add up and exclude wins inside a rule only. An update is applied only when the
   comparator proves the after-state exposes nothing the restored rule does not: the same endpoint and repository, `enabled` and
@@ -227,7 +227,7 @@ a missing member, an oversized value or a digest that is not the expected shape 
   which decide a tier's first match, is never one. Tested in `TestR_CI_020_TheIssuerComparator`, `TestR_CI_020_TheMappingComparator` and
   `TestR_CI_020_IssuerAndMappingEntriesReplayIntoTheRestoredDatabase`, which also shows that a merge request pipeline gets
   `no_matching_mapping` after a replayed deletion of the shadowing mapping.
-- **Replicas during a platform restore.** `trove admin post-restore` commits `system_state.post_restore_in_progress` in its first
+- **Replicas during a platform restore.** `quader admin post-restore` commits `system_state.post_restore_in_progress` in its first
   transaction and deletes it in its last, after the replay and `system.restored`; the schema check of
   [gate.go](../../internal/meta/postgres/gate.go) fails with `ErrRestoreInProgress` while it exists, so no pod, running or
   started later, serves the restored database's access before the replay (`TestR_HA_025_ReplicasAreHeldUntilThePostRestoreHasReplayed`).
@@ -235,14 +235,14 @@ a missing member, an oversized value or a digest that is not the expected shape 
   point that completed changes nothing; a run after a failed one resumes at the replay. The chart renders the Job with the
   owner credential: it should be switched off after the restore, and it refuses replicas while it is on (the chart's part).
   A failed post-restore leaves the installation not ready until it is run again, on purpose.
-- **A row the shipper cannot encode** is set aside (`system_state.journal_quarantined`, `trove_revocation_journal_quarantined_total`)
+- **A row the shipper cannot encode** is set aside (`system_state.journal_quarantined`, `quader_revocation_journal_quarantined_total`)
   and the rows behind it ship; post-restore prints the count, because the change that row recorded is not in the journal.
-- **Declared bindings.** `trove migrate` applies two kinds of configuration-declared access: `authz.role_bindings` and `ci.issuers`
+- **Declared bindings.** `quader migrate` applies two kinds of configuration-declared access: `authz.role_bindings` and `ci.issuers`
   (policies, repository settings and the authz settings are not written by it). A replayed unbinding is recorded (also when the row was
   already gone, and for every role of a replayed group deletion) by role and name in `system_state.journal_suppressed_bindings`; `ApplyDeclared` ([declared.go](../../internal/authz/declared.go)) then does not
   re-create the binding from an older configuration, logs it, and lists it in the outcome, until an administrator binds the role
   again through the API (Q-AUTHZ-235; `TestR_AUTHZ_010_DeclaredBindingRemovedByReplayIsNotBroughtBack`). The CI issuers have no such
-  mark: [H-565](ci-federation.md#h-565--a-replayed-disable-of-a-configuration-declared-ci-issuer-is-undone-by-trove-migrate-when-the-restore-runs-with-an-older-configuration).
+  mark: [H-565](ci-federation.md#h-565--a-replayed-disable-of-a-configuration-declared-ci-issuer-is-undone-by-quader-migrate-when-the-restore-runs-with-an-older-configuration).
 - **Credential.** The shipper writes with the runtime credential and deletes nothing. The reader of a restore uses the credentials file
   of [open.go](../../internal/journal/replay/open.go) and lists object versions with it.
 
@@ -275,7 +275,7 @@ the event name and the subject quoted, because both come from the object. Every 
 | `settings.auth.changed` | Lowers each token lifetime maximum, to 60 seconds at the least: new tokens live that long | Raise the maxima in the settings |
 | `vulnerability.finding.*` with `block: set` | Blocks any version of a repository of the restored database, creating the finding when it is missing: the version is refused until the finding is triaged. An entry is found by its ID only when repository, package version and advisory match; a finding that a replay created takes the stronger kind and severity of every later copy (each raise has a history row), a finding restored from the backup is never raised | Triage the finding; the first complete import after a restore also reconciles it |
 | `package.published`, `package.deleted` of a local NuGet repository | Takes a version number that the restored database does not hold out of use: reserves it for the bytes the entry names, or refuses it for every package (a removal, or an addition that names other bytes than another entry of the version, Q-NUGET-112); the genuine package cannot come back under that number, not even byte-identically | None: no operation removes a tombstone, the package takes a new version number ([H-585](nuget-publish.md#h-585--a-forged-nuget-journal-entry-takes-a-version-number-out-of-use-for-good)) |
-| `token.*`, `user.*`, `serviceaccount.*`, `bastion.*`, `ci.*`, `authz.*`, `endpoint.exposure.*`, `repository.disabled`, `repository.deleted`, `npm.unpublish` | Revokes, disables, deletes or narrows the object the entry names, if the restored database holds it | Create the token again, enable the object, restore the grant; an unpublished version is reinstated with `trove admin npm reinstate` |
+| `token.*`, `user.*`, `serviceaccount.*`, `bastion.*`, `ci.*`, `authz.*`, `endpoint.exposure.*`, `repository.disabled`, `repository.deleted`, `npm.unpublish` | Revokes, disables, deletes or narrows the object the entry names, if the restored database holds it | Create the token again, enable the object, restore the grant; an unpublished version is reinstated with `quader admin npm reinstate` |
 
 ## What a restore trusts
 
@@ -288,7 +288,7 @@ installation cannot write into it (`Marker.Check`, exit 4).
 
 A restore runs as the schema owner (check 6 refuses any other credential) on one session connection that holds the migration lock
 exclusively until it ends ([migrate_restore.go](../../internal/meta/postgres/migrate_restore.go)). Its first write is the anchor, a
-schema comment `trove-restore <backup-id>`; from then on `trove migrate` refuses the database and a replica stays unready while
+schema comment `quader-restore <backup-id>`; from then on `quader migrate` refuses the database and a replica stays unready while
 `system_state` holds `restore_in_progress` ([gate.go](../../internal/meta/postgres/gate.go), `CheckSchema`: the marker is read after the
 schema state, because the restore commits it with the step that makes the schema servable). The load disables the user triggers and
 truncates every table in one transaction ([backup_load.go](../../internal/meta/postgres/backup_load.go)), which is the reason for three
@@ -308,7 +308,7 @@ installation are never read ([system_state.go](../../internal/backup/fixup/syste
 
 ## The version repair of a platform restore
 
-Step 5 of the platform restore (R-HA-025) is `trove admin storage restore-versions --before <t>`: after a point-in-time restore of
+Step 5 of the platform restore (R-HA-025) is `quader admin storage restore-versions --before <t>`: after a point-in-time restore of
 PostgreSQL, the objects the old installation's collector deleted after *t* sit under delete markers in the versioned blob bucket, and the
 command removes those markers so the restored rows find their objects again.
 
@@ -323,7 +323,7 @@ command removes those markers so the restored rows find their objects again.
   `TestR_HA_025_RestoreVersionsKeepsAMarkerWhenNoVersionIsBelow`). A wrong *t* removes markers of objects deleted legitimately between the
   wrong and the right time; the objects return and the orphan sweep collects them after the deletions resume. `--dry-run` shows the effect
   first.
-- **The pause is the other half.** `trove admin maintenance resume-deletions` clears the deletion pause that the post-restore set, with the
+- **The pause is the other half.** `quader admin maintenance resume-deletions` clears the deletion pause that the post-restore set, with the
   runtime database role; it is the step that lets the collector delete again, so it is run after the verification, and each change of the
   pause writes an audit event (`system.deletions_paused`, `system.deletions_resumed`), as does a repair that removed markers
   (`system.storage.versions_restored`) (`TestR_HA_025_ResumeDeletionsClearsThePauseOfAPostRestore`). Who may run the commands is whoever
@@ -347,7 +347,7 @@ The mechanisms of this page add:
 - [H-554](../spec/backup-and-restore.md#h-554--a-compromised-backup-pod-can-hold-garbage-collection): a compromised backup pod can hold garbage collection.
 - [H-557](../spec/backup-and-restore.md#h-557--a-replay-writes-no-audit-event-per-changed-object): a replay writes no audit event per changed object.
 - [H-564](../spec/ha-and-helm.md#h-564--the-platform-check-reads-settings-not-outcomes): the platform check reads settings, not outcomes.
-- [H-565](ci-federation.md#h-565--a-replayed-disable-of-a-configuration-declared-ci-issuer-is-undone-by-trove-migrate-when-the-restore-runs-with-an-older-configuration): a replayed disable of a configuration-declared CI issuer is undone by `trove migrate` when the restore runs with an older configuration.
+- [H-565](ci-federation.md#h-565--a-replayed-disable-of-a-configuration-declared-ci-issuer-is-undone-by-quader-migrate-when-the-restore-runs-with-an-older-configuration): a replayed disable of a configuration-declared CI issuer is undone by `quader migrate` when the restore runs with an older configuration.
 - [H-555](../spec/backup-and-restore.md#h-555--the-run-history-is-only-as-trustworthy-as-the-backup-role): the run history is only as trustworthy as the backup role.
 - [H-556](../spec/backup-and-restore.md#h-556--adopting-a-target-and-writing-its-marker-are-not-atomic-on-a-store-without-conditional-writes): adopting a target and writing its marker are not atomic on a store without conditional writes.
 - [H-558](../spec/backup-and-restore.md#h-558--a-server-side-copy-into-the-blob-store-is-checked-by-size-not-by-content): a server-side copy into the blob store is checked by size, not by content.
@@ -370,7 +370,7 @@ administrator reviews the printed entry.
 What a restore still reverts is the rest of the repository document, by
 [Q-REPO-246](../spec/repositories-and-proxy.md#q-repo-246--patterns-auto-claims-virtual-members-pin-rules-and-the-vulnerabilities-member-are-journaled-upstream-storage-and-format-settings-are-not):
 the rule is that a setting is journaled when its tightening decides which names a repository serves or which versions it withholds,
-and that the replay can re-apply it as a removal. Settings of how trove reaches an upstream and what it accepts from it or from
+and that the replay can re-apply it as a removal. Settings of how Quader reaches an upstream and what it accepts from it or from
 clients are not, and some of them are security relevant: tightened after the restore point, they are loose again after a restore,
 the audit events that recorded the tightening are gone with the restored database, and the operator finds them in the log stream of
 the audit events or in his own records. A setting that was loosened after the restore point comes back tight, which costs
@@ -396,4 +396,4 @@ availability only.
   a client searches for reach the upstream again, the service index lists the earlier vulnerability information, and a delete
   behaves as before.
 
-Sessions are not on the list: a backup restore loads no session (R-BAK-004) and `trove admin post-restore` ends every session.
+Sessions are not on the list: a backup restore loads no session (R-BAK-004) and `quader admin post-restore` ends every session.

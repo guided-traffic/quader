@@ -14,10 +14,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/manifest"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // The remote class (R-OCI-021 to R-OCI-025). The remote engine owns the request path, the freshness, the collapsing of concurrent
@@ -38,7 +38,7 @@ const MaxTaglistEntries = 100_000
 // truncatedMember is the member the format adds to a stored tags list document whose upstream answer was cut (it had a Link): the
 // stored document is the upstream's plus this fact, which a client's window beyond the stored tags needs (R-OCI-024). It cannot be
 // confused with an upstream member: the grammar of a tags list names only name and tags.
-const truncatedMember = "x-trove-truncated"
+const truncatedMember = "x-quader-truncated"
 
 // The manifest media types a fetch asks for (R-OCI-022): all four, so the upstream returns its index and not a platform manifest it
 // picked.
@@ -341,7 +341,7 @@ func (t *truncatedBody) Read(p []byte) (int, error) {
 
 func (t *truncatedBody) Close() error { return t.rc.Close() }
 
-// markTruncated adds `"x-trove-truncated":true` as the last member of a JSON object.
+// markTruncated adds `"x-quader-truncated":true` as the last member of a JSON object.
 func markTruncated(doc []byte) []byte {
 	end := bytes.LastIndexByte(doc, '}')
 	if end < 0 || len(bytes.TrimSpace(doc[end+1:])) != 0 {

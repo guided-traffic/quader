@@ -7,17 +7,17 @@ import { Checkbox } from './checkbox';
 @Component({
   imports: [Checkbox],
   template: `
-    <trove-checkbox [checked]="on()" (checkedChange)="on.set($event)" describedBy="note">Allow it</trove-checkbox>
+    <quader-checkbox [checked]="on()" (checkedChange)="on.set($event)" describedBy="note">Allow it</quader-checkbox>
     <p id="note">Only for admins.</p>
-    <trove-checkbox [checked]="false" [disabled]="true">Locked</trove-checkbox>
-    <trove-checkbox [checked]="false" ariaLabel="Select row 1" />
+    <quader-checkbox [checked]="false" [disabled]="true">Locked</quader-checkbox>
+    <quader-checkbox [checked]="false" ariaLabel="Select row 1" />
   `,
 })
 class Host {
   readonly on = signal(false);
 }
 
-describe('trove checkbox (Q-UI-126)', () => {
+describe('Quader checkbox (Q-UI-126)', () => {
   async function render() {
     await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
     const fixture = TestBed.createComponent(Host);

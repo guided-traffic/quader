@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // WriteJSON answers a JSON body with the headers of a management answer: no

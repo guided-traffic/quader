@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // buildRoutes is the whole endpoint map of R-NPM-001, written once with the name of
@@ -92,7 +92,7 @@ func (f *Format) buildRoutes() []formats.Route {
 		route("audit.legacy", http.MethodPost, "/-/npm/v1/security/audits[/quick]", formats.Volatile, read,
 			matchAuditLegacy, []string{"-/npm/v1/security/audits", "-/npm/v1/security/audits/quick"}, f.handleAuditLegacy),
 
-		// What npm defines and trove does not implement (R-NPM-043): 404 for a GET, PUT
+		// What npm defines and quader does not implement (R-NPM-043): 404 for a GET, PUT
 		// and DELETE, 501 for a POST, so that npm's fetch layer, which retries a GET
 		// and a PUT on a 5xx but never a POST, fails at once. The four routes share one
 		// matcher; their names carry the method.
@@ -171,7 +171,7 @@ func (f *Format) handleRoot(_ context.Context, _ *formats.Request, w http.Respon
 	return writeJSON(w, http.StatusOK, struct{}{})
 }
 
-// handleDeferred answers the endpoints npm defines and trove does not implement.
+// handleDeferred answers the endpoints npm defines and quader does not implement.
 func (f *Format) handleDeferred(_ context.Context, rq *formats.Request, _ http.ResponseWriter) error {
 	return notImplemented(rq.Method)
 }

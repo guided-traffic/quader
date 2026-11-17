@@ -9,7 +9,7 @@ package e2e
 //
 // The pipeline is not re-typed here: docs/spec/gitlab-ci-oidc.md is the source. specExamples reads the Examples (the
 // issuer and mapping bodies, the .gitlab-ci.yml and the nuget.config), swaps the example host for the edge, and a job
-// runs the steps of `.trove` (before_script) and of its own script exactly as the file writes them, in one shell with
+// runs the steps of `.quader` (before_script) and of its own script exactly as the file writes them, in one shell with
 // -e -o pipefail, as a GitLab runner does. What the harness adds is what the runner is: the job's variables, the ID token
 // (minted by the double with the claim set of a recorded fixture, test/oidcstub/testdata), a working directory with the
 // repository's files and, after the script, a copy of the CI token into a file of the pod so that a test can use the
@@ -44,7 +44,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 const (
@@ -59,10 +59,10 @@ const (
 	ciNugetAll   = ciProject + "/nuget-all"
 	ciPolicyName = "ci-read-internal"
 	ciSetupSA    = "e2e-ci-setup"
-	// The dev CA, which signs the double's certificate, as the pods of trove see it (deploy/dev/values-dev.yaml mounts it through
-	// trustedCA, R-HA-043, at /etc/trove/ca). The issuer names it as its ca_bundle_ref, the way an instance behind a private CA is
+	// The dev CA, which signs the double's certificate, as the pods of quader see it (deploy/dev/values-dev.yaml mounts it through
+	// trustedCA, R-HA-043, at /etc/quader/ca). The issuer names it as its ca_bundle_ref, the way an instance behind a private CA is
 	// registered (R-CI-001, Q-CI-31).
-	ciCABundleRef = "file:/etc/trove/ca/ca.crt"
+	ciCABundleRef = "file:/etc/quader/ca/ca.crt"
 
 	ciNpmVersionTag = "v1.4.0" // the protected tag of the reference pipeline
 )
@@ -115,7 +115,7 @@ func double(t testing.TB, stub, hostEnv string) *oidcDouble {
 		}
 	}
 	d := &oidcDouble{
-		stub: stub, host: host, tok: secretValue(t, "trove-"+stub, "control-token"),
+		stub: stub, host: host, tok: secretValue(t, "quader-"+stub, "control-token"),
 		c:    &http.Client{Timeout: 30 * time.Second, Transport: transport(false)},
 		pool: &http.Client{Timeout: 30 * time.Second, Transport: transport(true)},
 	}
@@ -186,7 +186,7 @@ func (d *oidcDouble) tryMintOn(c *http.Client, claims map[string]any) (string, e
 
 // mintAll mints n tokens (claims(i) for token i) before the measured window of a test starts: mintWorkers requests at a time over
 // kept-alive connections, so a test with many jobs does not open one TLS connection and one forwarded stream per job at the same
-// moment. A refused mint fails the test; nothing of trove is measured yet.
+// moment. A refused mint fails the test; nothing of quader is measured yet.
 func (d *oidcDouble) mintAll(t testing.TB, n int, claims func(i int) map[string]any) []string {
 	t.Helper()
 	toks := make([]string, n)
@@ -346,7 +346,7 @@ func parsePipeline(t testing.TB, src string) ciPipeline {
 	for k, v := range doc["variables"].(map[string]any) {
 		p.Variables[k] = v.(string)
 	}
-	hidden := doc[".trove"].(map[string]any)
+	hidden := doc[".quader"].(map[string]any)
 	for name, v := range hidden["id_tokens"].(map[string]any) {
 		p.TokenVar, p.Audience = name, v.(map[string]any)["aud"].(string)
 	}
@@ -356,8 +356,8 @@ func parsePipeline(t testing.TB, src string) ciPipeline {
 		if !ok || strings.HasPrefix(name, ".") || job["script"] == nil {
 			continue
 		}
-		if job["extends"] != ".trove" {
-			t.Fatalf("job %s of the Examples does not extend .trove", name)
+		if job["extends"] != ".quader" {
+			t.Fatalf("job %s of the Examples does not extend .quader", name)
 		}
 		j := ciPipelineJob{Script: strs(job["script"])}
 		for _, r := range job["rules"].([]any) {
@@ -393,7 +393,7 @@ func ruleHolds(t testing.TB, expr string, vars map[string]string) bool {
 type ciFixture struct {
 	adm      *api
 	run      string
-	base     string // TROVE_URL: https://localhost:<edge port>
+	base     string // QUADER_URL: https://localhost:<edge port>
 	host     string // localhost:<edge port>
 	dbl      *oidcDouble
 	spec     *ciSpec
@@ -436,7 +436,7 @@ func buildCIFixture(t testing.TB) (*ciFixture, error) {
 		n = n<<8 | int64(c)
 	}
 	fx.jobBase = 1_000_000 + n
-	fx.dbl = double(t, "oidcstub", "TROVE_E2E_OIDCSTUB_HOST")
+	fx.dbl = double(t, "oidcstub", "QUADER_E2E_OIDCSTUB_HOST")
 	fx.dbl.resetAll(t)
 	fx.spec = specExamples(t, fx.base)
 
@@ -623,7 +623,7 @@ func (fx *ciFixture) runJob(t testing.TB, j ciJob) ciJobResult {
 	root := "/work/" + tag
 	repo := root + "/repo"
 	vars := map[string]string{
-		"TROVE_URL": fx.spec.pipeline.Variables["TROVE_URL"], "CI_JOB_ID": jobID, "CI_PIPELINE_ID": pipelineID, "CI_PROJECT_DIR": repo,
+		"QUADER_URL": fx.spec.pipeline.Variables["QUADER_URL"], "CI_JOB_ID": jobID, "CI_PIPELINE_ID": pipelineID, "CI_PROJECT_DIR": repo,
 		"CI_COMMIT_SHA": str(payload["sha"]), "CI_COMMIT_REF_NAME": str(payload["ref"]), "CI_COMMIT_REF_PROTECTED": str(payload["ref_protected"]),
 		"CI_PROJECT_ID": str(payload["project_id"]), "CI_PROJECT_PATH": str(payload["project_path"]),
 	}
@@ -662,13 +662,13 @@ func (fx *ciFixture) runJob(t testing.TB, j ciJob) ciJobResult {
 cd "$CI_PROJECT_DIR_ROOT/repo"
 . "$CI_PROJECT_DIR_ROOT/job.env"
 rm -f "$CI_PROJECT_DIR_ROOT/job.env"
-trap 'printf %s "${TROVE_TOKEN:-}" > "$CI_PROJECT_DIR_ROOT/token.out"' EXIT
+trap 'printf %s "${QUADER_TOKEN:-}" > "$CI_PROJECT_DIR_ROOT/token.out"' EXIT
 . "$CI_PROJECT_DIR_ROOT/job.sh"
 `
-	argv := []string{"env", "CI_PROJECT_DIR_ROOT=" + root, "CURL_CA_BUNDLE=/etc/trove-ca/ca.crt"}
+	argv := []string{"env", "CI_PROJECT_DIR_ROOT=" + root, "CURL_CA_BUNDLE=/etc/quader-ca/ca.crt"}
 	switch j.kind {
 	case "npm":
-		argv = append(argv, "HOME="+root+"/home", "PATH="+root+"/bin:/usr/local/bin:/usr/bin:/bin", "NODE_EXTRA_CA_CERTS=/etc/trove-ca/ca.crt", "npm_config_update_notifier=false", "npm_config_fund=false",
+		argv = append(argv, "HOME="+root+"/home", "PATH="+root+"/bin:/usr/local/bin:/usr/bin:/bin", "NODE_EXTRA_CA_CERTS=/etc/quader-ca/ca.crt", "npm_config_update_notifier=false", "npm_config_fund=false",
 			"npm_config_audit=false", "npm_config_cache="+root+"/home/npm-cache")
 	case "nuget":
 		argv = append(argv, "NUGET_PACKAGES="+root+"/packages", "NUGET_HTTP_CACHE_PATH="+root+"/httpcache", "NUGET_PLUGINS_CACHE_PATH="+root+"/plugins")
@@ -771,7 +771,7 @@ func fixtureClaims(t testing.TB, name string) *ciClaims {
 					s = to
 				}
 			}
-			s = strings.ReplaceAll(s, "trove-oidc-validation/", "acme/")
+			s = strings.ReplaceAll(s, "quader-oidc-validation/", "acme/")
 			v = s
 		}
 		c.set[k] = v
@@ -841,7 +841,7 @@ func (fx *ciFixture) nugetRepoFiles() map[string]string {
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <PackageId>` + nugetPackageID + `</PackageId>
-    <Authors>trove end-to-end</Authors>
+    <Authors>quader end-to-end</Authors>
     <Description>end-to-end test package of the reference pipeline</Description>
     <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
@@ -861,7 +861,7 @@ func (fx *ciFixture) publishDependencies(t testing.TB) error {
 	root := "/work/ci-setup-" + fx.run
 	_, _ = podExec(t, pod, "", time.Minute, "rm", "-rf", root)
 	rc := func(ref string) string {
-		return fmt.Sprintf("registry=%s%s/\n//%s%s/:_authToken=${TROVE_TOKEN}\n", fx.base, npmAddr(ref), fx.host, npmAddr(ref))
+		return fmt.Sprintf("registry=%s%s/\n//%s%s/:_authToken=${QUADER_TOKEN}\n", fx.base, npmAddr(ref), fx.host, npmAddr(ref))
 	}
 	putTree(t, pod, root, map[string]string{
 		"lib/package.json": `{"name": "` + npmDependency + `", "version": "1.0.0", "main": "index.js"}` + "\n",
@@ -871,7 +871,7 @@ func (fx *ciFixture) publishDependencies(t testing.TB) error {
 	})
 	putTree(t, pod, root+"/proj", fx.npmRepoFiles())
 	env := []string{
-		"HOME=" + root + "/home", "NODE_EXTRA_CA_CERTS=/etc/trove-ca/ca.crt", "TROVE_TOKEN=" + fx.setupTok,
+		"HOME=" + root + "/home", "NODE_EXTRA_CA_CERTS=/etc/quader-ca/ca.crt", "QUADER_TOKEN=" + fx.setupTok,
 		"npm_config_update_notifier=false", "npm_config_fund=false", "npm_config_audit=false", "npm_config_cache=" + root + "/home/npm-cache",
 	}
 	if out, code := podExec(t, pod, "", 5*time.Minute, append(append([]string{"env", "-C", root + "/lib"}, env...), "npm11", "publish")...); code != 0 {
@@ -893,25 +893,25 @@ func (fx *ciFixture) publishDependencies(t testing.TB) error {
 	putTree(t, pod, root, map[string]string{
 		"lib.csproj": `<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>` + nugetDependency + `</PackageId><Version>1.0.0</Version>
-    <Authors>trove end-to-end</Authors><Description>end-to-end test package</Description><NuGetAudit>false</NuGetAudit></PropertyGroup>
+    <Authors>quader end-to-end</Authors><Description>end-to-end test package</Description><NuGetAudit>false</NuGetAudit></PropertyGroup>
 </Project>
 `,
 		"Shared.cs":    "namespace Acme.Billing { public static class Shared { public const string Id = \"shared\"; } }\n",
 		"nuget.config": `<?xml version="1.0" encoding="utf-8"?><configuration><packageSources><clear /></packageSources></configuration>` + "\n",
 		// the push source needs credentials of its own: the service index is fetched before the API key is sent
 		"push/nuget.config": `<?xml version="1.0" encoding="utf-8"?><configuration><packageSources><clear />
-<add key="trove-internal" value="` + fx.base + nugetAddr(ciNugetInt) + `/v3/index.json" /></packageSources>
-<packageSourceCredentials><trove-internal><add key="Username" value="ci" /><add key="ClearTextPassword" value="%TROVE_TOKEN%" /></trove-internal></packageSourceCredentials></configuration>` + "\n",
+<add key="quader-internal" value="` + fx.base + nugetAddr(ciNugetInt) + `/v3/index.json" /></packageSources>
+<packageSourceCredentials><quader-internal><add key="Username" value="ci" /><add key="ClearTextPassword" value="%QUADER_TOKEN%" /></quader-internal></packageSourceCredentials></configuration>` + "\n",
 	})
 	nenv := []string{
 		"env", "-C", root, "NUGET_PACKAGES=" + root + "/packages", "NUGET_HTTP_CACHE_PATH=" + root + "/httpcache",
-		"NUGET_PLUGINS_CACHE_PATH=" + root + "/plugins", "TROVE_TOKEN=" + fx.setupTok,
+		"NUGET_PLUGINS_CACHE_PATH=" + root + "/plugins", "QUADER_TOKEN=" + fx.setupTok,
 	}
 	if out, code := podExec(t, pod, "", 10*time.Minute, append(append([]string{}, nenv...), "dotnet", "pack", "lib.csproj", "-c", "Release", "-o", "out", "--nologo")...); code != 0 {
 		return fmt.Errorf("dotnet pack of %s: %d\n%s", nugetDependency, code, tailLines(out, 30))
 	}
 	source := fx.base + nugetAddr(ciNugetInt) + "/v3/index.json"
-	if out, code := podExec(t, pod, "", 5*time.Minute, append(append([]string{}, nenv...), "sh", "-c", `cd push && dotnet nuget push ../out/`+nugetDependency+`.1.0.0.nupkg --source "$1" --api-key "$TROVE_TOKEN"`, "sh", source)...); code != 0 || !pushedRE.MatchString(out) {
+	if out, code := podExec(t, pod, "", 5*time.Minute, append(append([]string{}, nenv...), "sh", "-c", `cd push && dotnet nuget push ../out/`+nugetDependency+`.1.0.0.nupkg --source "$1" --api-key "$QUADER_TOKEN"`, "sh", source)...); code != 0 || !pushedRE.MatchString(out) {
 		return fmt.Errorf("push %s 1.0.0: %d\n%s", nugetDependency, code, tailLines(out, 30))
 	}
 	return nil

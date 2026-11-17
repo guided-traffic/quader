@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // TestR_BAS_008_TheInterfaceOfABastionIsCountedAgainstItsTokenInTheReadClass: the check and the report of downloads

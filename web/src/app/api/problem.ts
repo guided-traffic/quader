@@ -22,7 +22,7 @@ export interface Problem {
   readonly [extension: string]: unknown;
 }
 
-/** True for an object that carries the mandatory `code` member of a trove problem. */
+/** True for an object that carries the mandatory `code` member of a Quader problem. */
 export function isProblem(value: unknown): value is Problem {
   return (
     typeof value === 'object' &&

@@ -18,10 +18,10 @@ OPNS=valkey-operator-system
 log "stopping the Valkey operator, then scaling the Sentinels to $n"
 kubectl --context "$CTX" -n "$OPNS" scale deployment/valkey-operator --replicas=0 >/dev/null
 kubectl --context "$CTX" -n "$OPNS" wait --for=delete pod -l app.kubernetes.io/component=operator --timeout=60s >/dev/null 2>&1 || true
-kn scale statefulset/trove-valkey-sentinel --replicas="$n" >/dev/null
+kn scale statefulset/quader-valkey-sentinel --replicas="$n" >/dev/null
 deadline=$(( $(date +%s) + 120 ))
 while :; do
-  left="$(kn get pods -o name 2>/dev/null | grep -c '^pod/trove-valkey-sentinel-[0-9]' || true)"
+  left="$(kn get pods -o name 2>/dev/null | grep -c '^pod/quader-valkey-sentinel-[0-9]' || true)"
   [ "$left" = "$n" ] && break
   [ "$(date +%s)" -lt "$deadline" ] || die "$left Sentinel pods are left 120 s after the scale to $n"
   sleep 1

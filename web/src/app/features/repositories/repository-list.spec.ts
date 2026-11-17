@@ -15,10 +15,10 @@ describe('Repository list', () => {
     expect(heads.slice(0, 4)).toEqual(['Repository', 'Project', 'Format', 'Class']);
     const row = [...root.querySelectorAll('tbody tr')].find((tr) => text(tr).includes('generic-local'))!;
     expect(row.querySelector('td.project-cell a')?.getAttribute('href')).toBe('/projects/web');
-    expect(row.querySelector('td.format-cell .format-name trove-format-icon')).toBeTruthy();
+    expect(row.querySelector('td.format-cell .format-name quader-format-icon')).toBeTruthy();
     expect(text(row.querySelector('td.format-cell span[translate="no"]')!)).toBe('Generic');
     expect(text(row.querySelector('td.class-cell')!)).toContain('Local');
-    expect(root.querySelector('trove-address-field')).toBeNull();
+    expect(root.querySelector('quader-address-field')).toBeNull();
     expect(addressValues(root)).toEqual([]);
     await expectAccessible(root);
   });
@@ -28,7 +28,7 @@ describe('Repository list', () => {
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     const { root, fixture } = await renderScreen(RepositoryList);
     const row = [...root.querySelectorAll('tbody tr')].find((tr) => text(tr).includes('generic-local'))!;
-    const copy = row.querySelector<HTMLButtonElement>('td.actions trove-copy-button button')!;
+    const copy = row.querySelector<HTMLButtonElement>('td.actions quader-copy-button button')!;
     const label = copy.getAttribute('aria-label')!;
     expect(label).toMatch(/^Copy client address https?:\/\/.*generic-local\/$/);
     expect(copy.getAttribute('title')).toBe(label);
@@ -60,7 +60,7 @@ describe('Repository list', () => {
     expect(first.querySelectorAll('.secondary')).toHaveLength(1);
     // No row has a last activity: the column is left out (a column of dashes says nothing).
     expect(heads).not.toContain('Last activity');
-    expect(root.querySelector('trove-data-table')?.classList.contains('stack')).toBe(true);
+    expect(root.querySelector('quader-data-table')?.classList.contains('stack')).toBe(true);
     // The copy button and the menu.
     expect(row.querySelectorAll('td.actions button')).toHaveLength(2);
     row.querySelector<HTMLButtonElement>('button[aria-label="Actions for generic-local"]')!.click();

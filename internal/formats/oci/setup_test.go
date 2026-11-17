@@ -6,7 +6,7 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func renderSetup(t *testing.T, tpl formats.SetupTemplate, d formats.SetupData) string {
@@ -27,7 +27,7 @@ func renderSetup(t *testing.T, tpl formats.SetupTemplate, d formats.SetupData) s
 
 func setupData(auth bool) formats.SetupData {
 	return formats.SetupData{
-		RegistryURL: "https://trove.example.com/v2/web/docker-local/", ImagePrefix: "trove.example.com/web/docker-local",
+		RegistryURL: "https://quader.example.com/v2/web/docker-local/", ImagePrefix: "quader.example.com/web/docker-local",
 		Repository: "docker-local", Endpoint: "default", RequiresAuth: auth,
 	}
 }
@@ -38,7 +38,7 @@ func setupData(auth bool) formats.SetupData {
 //
 // Mechanism of R-OCI-030, not a proof of its criteria: its criterion needs the e2e run of every rendered snippet.
 func TestTheSnippetsNameTheImagePrefixAndNoCredential(t *testing.T) {
-	const prefix = "trove.example.com/web/docker-local"
+	const prefix = "quader.example.com/web/docker-local"
 	tpls := New().SetupTemplates()
 	if len(tpls) == 0 {
 		t.Fatal("no templates")
@@ -83,8 +83,8 @@ func TestTheSnippetsNameTheImagePrefixAndNoCredential(t *testing.T) {
 // Mechanism of R-OCI-030, not a proof of its criteria: its criterion needs the e2e run of every rendered snippet.
 func TestTheLoginReadsTheTokenFromStandardInput(t *testing.T) {
 	want := map[string]string{
-		"docker.shell.configure": `printf '%s' "${TROVE_TOKEN}" | docker login trove.example.com/web/docker-local --username trove --password-stdin`,
-		"podman.shell.configure": `printf '%s' "${TROVE_TOKEN}" | podman login trove.example.com/web/docker-local --username trove --password-stdin`,
+		"docker.shell.configure": `printf '%s' "${QUADER_TOKEN}" | docker login quader.example.com/web/docker-local --username quader --password-stdin`,
+		"podman.shell.configure": `printf '%s' "${QUADER_TOKEN}" | podman login quader.example.com/web/docker-local --username quader --password-stdin`,
 	}
 	for _, tpl := range New().SetupTemplates() {
 		if w, ok := want[tpl.ID]; ok {
@@ -92,7 +92,7 @@ func TestTheLoginReadsTheTokenFromStandardInput(t *testing.T) {
 				t.Errorf("%s:\n got %s\nwant %s", tpl.ID, got, w)
 			}
 			// A reader without a credential gets the login that asks for it.
-			if got := strings.TrimSpace(renderSetup(t, tpl, setupData(false))); strings.Contains(got, "TROVE_TOKEN") || !strings.Contains(got, " login trove.example.com/web/docker-local --username trove") {
+			if got := strings.TrimSpace(renderSetup(t, tpl, setupData(false))); strings.Contains(got, "QUADER_TOKEN") || !strings.Contains(got, " login quader.example.com/web/docker-local --username quader") {
 				t.Errorf("%s without a credential: %s", tpl.ID, got)
 			}
 		}
@@ -107,8 +107,8 @@ func TestTheKubernetesSecretIsKeyedByTheImagePrefixAndKeepsTheTokenOffTheCommand
 		}
 		out := renderSetup(t, tpl, setupData(true))
 		for _, want := range []string{
-			`printf '{"auths":{"%s":{"username":"trove","password":"%s"}}}' trove.example.com/web/docker-local "${TROVE_TOKEN}" |`,
-			"kubectl create secret generic trove-registry --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin",
+			`printf '{"auths":{"%s":{"username":"quader","password":"%s"}}}' quader.example.com/web/docker-local "${QUADER_TOKEN}" |`,
+			"kubectl create secret generic quader-registry --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin",
 		} {
 			if !strings.Contains(out, want) {
 				t.Errorf("missing %q in\n%s", want, out)
@@ -116,11 +116,11 @@ func TestTheKubernetesSecretIsKeyedByTheImagePrefixAndKeepsTheTokenOffTheCommand
 		}
 		// The line that holds the token is a printf, a shell builtin: no kubectl argument carries it.
 		for _, line := range strings.Split(out, "\n") {
-			if strings.Contains(line, "kubectl") && strings.Contains(line, "TROVE_TOKEN") || strings.Contains(out, "--docker-password") {
+			if strings.Contains(line, "kubectl") && strings.Contains(line, "QUADER_TOKEN") || strings.Contains(out, "--docker-password") {
 				t.Errorf("the token reaches kubectl's arguments: %s", line)
 			}
 		}
-		if no := renderSetup(t, tpl, setupData(false)); strings.Contains(no, "kubectl") || strings.Contains(no, "TROVE_TOKEN") || !strings.HasPrefix(no, "#") {
+		if no := renderSetup(t, tpl, setupData(false)); strings.Contains(no, "kubectl") || strings.Contains(no, "QUADER_TOKEN") || !strings.HasPrefix(no, "#") {
 			t.Errorf("without a credential: %q", no)
 		}
 		return
@@ -138,7 +138,7 @@ func TestTheInstallSnippetPlacesTheImageAndItsTag(t *testing.T) {
 			t.Errorf("%s: version spec %q, template %q", tpl.ID, tpl.VersionSpec, tpl.Template)
 		}
 		out := renderSetup(t, tpl, setupData(true))
-		if !strings.HasSuffix(strings.TrimSpace(out), "trove.example.com/web/docker-local/"+formats.SetupPackageRef) {
+		if !strings.HasSuffix(strings.TrimSpace(out), "quader.example.com/web/docker-local/"+formats.SetupPackageRef) {
 			t.Errorf("%s: %s", tpl.ID, out)
 		}
 	}

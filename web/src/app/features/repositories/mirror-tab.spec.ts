@@ -73,9 +73,9 @@ describe('The section Mirror of the settings page: status, pause, resume, run (R
     const { r, fake } = await open();
     expect(fake.mirrorStatusCalls).toBe(1);
     expect(stateOf(r.root)).toBe('scheduled');
-    const tab = [...r.root.querySelectorAll('trove-disclosure')].find((d) => d.querySelector('trove-mirror-settings'))!;
-    const status = tab.querySelector('trove-mirror-status')!;
-    const settings = tab.querySelector('trove-mirror-settings')!;
+    const tab = [...r.root.querySelectorAll('quader-disclosure')].find((d) => d.querySelector('quader-mirror-settings'))!;
+    const status = tab.querySelector('quader-mirror-status')!;
+    const settings = tab.querySelector('quader-mirror-settings')!;
     expect(status.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(text(tab)).toContain('Mirror status');
     await expectAccessible(r.root);
@@ -84,7 +84,7 @@ describe('The section Mirror of the settings page: status, pause, resume, run (R
   it('R-UI-021 a remote stored in pull-through mode reads no status and shows only the settings; choosing mirror says the status comes after the save', async () => {
     const { r, fake } = await open(stored('pullThrough'));
     expect(fake.mirrorStatusCalls).toBe(0);
-    expect(r.root.querySelector('trove-mirror-status')).toBeNull();
+    expect(r.root.querySelector('quader-mirror-status')).toBeNull();
     const radio = r.root.querySelector<HTMLInputElement>('input[name="remote-mode"][value="mirror"]')!;
     radio.checked = true;
     radio.dispatchEvent(new Event('change', { bubbles: true }));
@@ -108,7 +108,7 @@ describe('The section Mirror of the settings page: status, pause, resume, run (R
     expect(fake.mirrorStatusCalls).toBe(1);
     button(r.root, /Mirror/).click();
     await settle(r.fixture);
-    expect(r.root.querySelector('trove-mirror-status')).toBeNull();
+    expect(r.root.querySelector('quader-mirror-status')).toBeNull();
   });
 
   describe('who sees the buttons (Q-UI-120)', () => {
@@ -244,7 +244,7 @@ describe('The section Mirror of the settings page: status, pause, resume, run (R
       button(r.root, 'Run a pass now').click();
       await settle(r.fixture);
       expect(fake.mirrorRuns).toMatchObject([{ key: 'web/npm-remote', full: false }]);
-      expect(text(r.root.querySelector('trove-mirror-status')!)).toContain('A pass is queued.');
+      expect(text(r.root.querySelector('quader-mirror-status')!)).toContain('A pass is queued.');
     });
   });
 });

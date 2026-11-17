@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 // TestOCILong_R_REPO_058_DrainOfTheNodeOfAMirrorPass: the mirror keeps 400 tags of bulk/tags, each held 300 ms by the test upstream, so that the pass
@@ -38,7 +38,7 @@ func TestOCILong_R_REPO_058_DrainOfTheNodeOfAMirrorPass(t *testing.T) {
 	st := e.awaitPassRunning(t, key)
 	jobID := st.Pass.Job.ID
 	podName, node := poolPodOfPass(t, jobID)
-	if !strings.HasPrefix(podName, "trove-worker-"+mirrorPoolName+"-") {
+	if !strings.HasPrefix(podName, "quader-worker-"+mirrorPoolName+"-") {
 		t.Fatalf("the pass runs in %q, want a process of the pool %s", podName, mirrorPoolName)
 	}
 	for _, p := range livePods(t, selMirrorPool) {
@@ -80,7 +80,7 @@ func TestOCILong_R_REPO_058_DrainOfTheNodeOfAMirrorPass(t *testing.T) {
 	if sum.Outcome != "complete" || sum.PackagesFailed != 0 {
 		t.Errorf("the pass ended %+v, want complete with no failed package", *sum)
 	}
-	if after := sql(t, `SELECT coalesce(r.name, '') FROM trove.job j LEFT JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE j.id = '`+jobID+`'`); after == podName {
+	if after := sql(t, `SELECT coalesce(r.name, '') FROM quader.job j LEFT JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE j.id = '`+jobID+`'`); after == podName {
 		t.Errorf("the job ended in %s, the process that was drained", after)
 	}
 	twice := 0

@@ -3,8 +3,8 @@ package ci
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/ci/subject"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The key source of the exchange (R-CI-003, Q-CI-12): the in-process copy of the key rows, the

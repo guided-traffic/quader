@@ -3,8 +3,8 @@
 package e2e
 
 // The harness of drain variants B to E of R-HA-059 (Q-HA-170 to Q-HA-174): it picks the node of a variant, drains it with
-// deploy/dev/drain.sh and judges the variant's own condition together with the conditions every variant shares (no SIGKILL of a trove
-// container, no trove pod Pending for more than 60 s, the drain within 10 minutes). It brings no load of its own: the caller starts
+// deploy/dev/drain.sh and judges the variant's own condition together with the conditions every variant shares (no SIGKILL of a quader
+// container, no quader pod Pending for more than 60 s, the drain within 10 minutes). It brings no load of its own: the caller starts
 // its probes or its load after prepareVariantDrain, runs Run as the fault and calls Verify and Settle after it. The blocks of the
 // vulnerability scanning use it under their probes (vuln_drain_variants_test.go, vuln_pooler_test.go), E5.9 under the full load.
 //
@@ -40,11 +40,11 @@ const (
 
 const (
 	// the dependencies drain.sh --also evicts, by the labels of the operators that own them
-	selValkeyDeps     = "app.kubernetes.io/instance=trove-valkey" // the Valkey data pods and the Sentinels
-	selPostgresDeps   = "cnpg.io/cluster=trove-db,cnpg.io/podRole=instance"
-	selValkeyDataPods = "app.kubernetes.io/instance=trove-valkey,app.kubernetes.io/component=valkey"
-	selPoolerDeps     = "cnpg.io/poolerName"                    // the pods of both poolers
-	selPoolerRW       = "cnpg.io/poolerName=trove-db-pooler-rw" // the request pooler
+	selValkeyDeps     = "app.kubernetes.io/instance=quader-valkey" // the Valkey data pods and the Sentinels
+	selPostgresDeps   = "cnpg.io/cluster=quader-db,cnpg.io/podRole=instance"
+	selValkeyDataPods = "app.kubernetes.io/instance=quader-valkey,app.kubernetes.io/component=valkey"
+	selPoolerDeps     = "cnpg.io/poolerName"                     // the pods of both poolers
+	selPoolerRW       = "cnpg.io/poolerName=quader-db-pooler-rw" // the request pooler
 )
 
 // variantDrain is one drain of a variant: prepared before the caller's load or probes start, run as their fault, judged after.
@@ -104,7 +104,7 @@ func startPrimaryPoll(old string) *primaryPoll {
 	go func() {
 		defer close(p.done)
 		for ctx.Err() == nil {
-			raw, err := kubectlCtx(ctx, "-n", cfg.namespace, "get", "cluster/trove-db", "pod/"+old, "--ignore-not-found", "-o", "json")
+			raw, err := kubectlCtx(ctx, "-n", cfg.namespace, "get", "cluster/quader-db", "pod/"+old, "--ignore-not-found", "-o", "json")
 			at := time.Now()
 			if err == nil {
 				var l struct {
@@ -174,8 +174,8 @@ func prepareVariantDrain(t *testing.T, v drainVariant, opts ...func(*variantDrai
 	for _, o := range opts {
 		o(d)
 	}
-	// kubectl drain --pod-selector matches pods of every namespace: an installation left in trove-restore (its PostgreSQL cluster is
-	// named trove-db too, and its PodDisruptionBudget would hold the drain) is removed first
+	// kubectl drain --pod-selector matches pods of every namespace: an installation left in quader-restore (its PostgreSQL cluster is
+	// named quader-db too, and its PodDisruptionBudget would hold the drain) is removed first
 	if out, err := kubectl("get", "namespace", restoreNS, "-o", "name"); err == nil && strings.TrimSpace(out) != "" {
 		t.Logf("removing the installation in %s before the drain", restoreNS)
 		restoreNSScript(t, "down")
@@ -195,11 +195,11 @@ func prepareVariantDrain(t *testing.T, v drainVariant, opts ...func(*variantDrai
 		t.Fatalf("unknown drain variant %q", v)
 	}
 	t.Cleanup(func() { _, _ = kubectl("uncordon", d.Node) })
-	for _, p := range livePods(t, selTrove) {
+	for _, p := range livePods(t, selQuader) {
 		switch {
-		case strings.HasPrefix(p.Name, "trove-api-"):
+		case strings.HasPrefix(p.Name, "quader-api-"):
 			d.counts[0]++
-		case strings.HasPrefix(p.Name, "trove-packages-"):
+		case strings.HasPrefix(p.Name, "quader-packages-"):
 			d.counts[1]++
 		default:
 			d.counts[2]++
@@ -238,7 +238,7 @@ func prepareVariantDrain(t *testing.T, v drainVariant, opts ...func(*variantDrai
 	case variantE:
 		d.prepareBackupJob(t)
 	}
-	d.watch = startPodWatch(t, selTrove)
+	d.watch = startPodWatch(t, selQuader)
 	return d
 }
 
@@ -398,7 +398,7 @@ func (d *variantDrain) prepareBackupJob(t *testing.T) {
 		bakCreateJob(t, bakJob{
 			name: d.job, backoff: &zero, preferNode: d.Node,
 			env: map[string]string{
-				"TROVE_BACKUP_TARGET_PREFIX": bakFreshPrefix(run, "var-e"), "TROVE_BACKUP_COPY_BYTES_PER_SECOND": "512KiB", "TROVE_BACKUP_COPY_CONCURRENCY": "1",
+				"QUADER_BACKUP_TARGET_PREFIX": bakFreshPrefix(run, "var-e"), "QUADER_BACKUP_COPY_BYTES_PER_SECOND": "512KiB", "QUADER_BACKUP_COPY_CONCURRENCY": "1",
 			},
 		})
 		bakWaitLog(t, cfg.namespace, d.job, "backup run started", 3*time.Minute)
@@ -449,7 +449,7 @@ func (d *variantDrain) Run(t *testing.T) {
 		// counters are those of the release as the caller left it settled
 		d.mon = startMonitor(t)
 		t.Cleanup(d.stopMonitor)
-		d.changes = replicaMetric(t, "trove_valkey_primary_changes_total")
+		d.changes = replicaMetric(t, "quader_valkey_primary_changes_total")
 		d.vkBefore, _ = sentinelPrimary()
 		// the primary stays down until the Sentinels have failed over (Q-HA-181): its replacement would otherwise be back within
 		// down-after-milliseconds and no failover would happen
@@ -493,9 +493,9 @@ func (d *variantDrain) Verify(t *testing.T) {
 		t.Errorf("variant %s: containers were killed: %v", d.V, d.watch.killed)
 	}
 	if name, p := d.watch.longestPending(); p > 60*time.Second {
-		t.Errorf("variant %s: trove pod %s was Pending for %s", d.V, name, p.Round(time.Second))
+		t.Errorf("variant %s: quader pod %s was Pending for %s", d.V, name, p.Round(time.Second))
 	} else {
-		t.Logf("variant %s: longest Pending of a trove pod: %s (%s)", d.V, p.Round(100*time.Millisecond), name)
+		t.Logf("variant %s: longest Pending of a quader pod: %s (%s)", d.V, p.Round(100*time.Millisecond), name)
 	}
 	if d.took > 10*time.Minute {
 		t.Errorf("R-HA-059: kubectl drain returned after %s, more than 10 minutes", d.took.Round(time.Second))
@@ -532,7 +532,7 @@ func (d *variantDrain) Verify(t *testing.T) {
 func (d *variantDrain) verifyB(t *testing.T) {
 	t.Helper()
 	d.stopMonitor()
-	after := replicaMetric(t, "trove_valkey_primary_changes_total")
+	after := replicaMetric(t, "quader_valkey_primary_changes_total")
 	vkAfter, _ := sentinelPrimary()
 	t.Logf("variant B: the Sentinels named %s as the Valkey primary before the drain and name %s after it", d.vkBefore, vkAfter)
 	holdReported := false
@@ -565,7 +565,7 @@ func (d *variantDrain) verifyB(t *testing.T) {
 		}
 		ranThrough++
 		if now-was < 1 {
-			t.Errorf("R-HA-057: trove_valkey_primary_changes_total on %s rose by %v, want at least 1 (before %v, after %v)", name, now-was, was, now)
+			t.Errorf("R-HA-057: quader_valkey_primary_changes_total on %s rose by %v, want at least 1 (before %v, after %v)", name, now-was, was, now)
 		}
 		if notReady[name] != 0 {
 			t.Errorf("R-HA-057: /readyz of %s answered non-200 %d times during the drain", name, notReady[name])
@@ -633,18 +633,18 @@ func (d *variantDrain) verifyE(t *testing.T) {
 // fault or the next variant may start.
 func (d *variantDrain) Settle(t *testing.T) {
 	t.Helper()
-	troveSettled(t, d.counts[0], d.counts[1], d.counts[2])
+	quaderSettled(t, d.counts[0], d.counts[1], d.counts[2])
 	switch d.V {
 	case variantB:
 		waitFor(t, "two Valkey data pods and three Sentinels to be ready", 5*time.Minute, 2*time.Second, func() bool {
-			return stsReady(t, "trove-valkey") == 2 && stsReady(t, "trove-valkey-sentinel") == 3
+			return stsReady(t, "quader-valkey") == 2 && stsReady(t, "quader-valkey-sentinel") == 3
 		})
 	case variantC:
 		waitFor(t, "two ready PostgreSQL instances", 10*time.Minute, 2*time.Second, func() bool {
-			return strings.TrimSpace(kn(t, "get", "cluster", "trove-db", "-o", "jsonpath={.status.readyInstances}")) == "2"
+			return strings.TrimSpace(kn(t, "get", "cluster", "quader-db", "-o", "jsonpath={.status.readyInstances}")) == "2"
 		})
 	case variantD:
-		for _, dep := range []string{"trove-db-pooler-rw", "trove-db-pooler-control"} {
+		for _, dep := range []string{"quader-db-pooler-rw", "quader-db-pooler-control"} {
 			kn(t, "rollout", "status", "deployment/"+dep, "--timeout=5m")
 		}
 	}

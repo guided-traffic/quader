@@ -1,6 +1,6 @@
-<trove-page-header heading="Packages" i18n-heading="@@pkg.list.heading">
+<quader-page-header heading="Packages" i18n-heading="@@pkg.list.heading">
   <a actions class="btn btn-default" routerLink="/setup" i18n="@@pkg.list.setup">Set up a client</a>
-</trove-page-header>
+</quader-page-header>
 
 @if (memory.available()) {
   <nav class="view-tabs tab-nav" aria-label="Package views" i18n-aria-label="@@pkg.views.label">
@@ -40,7 +40,7 @@
         @for (p of memory.recent(); track p.format + '/' + p.name) {
           <li>
             <span class="type-cell">
-              <trove-format-icon [format]="p.format" />
+              <quader-format-icon [format]="p.format" />
               <span translate="no">{{ formatLabel(p.format) }}</span>
             </span>
             <a [routerLink]="commands(p.format, p.name)" translate="no">{{ p.name }}</a>
@@ -130,9 +130,9 @@
     }
     <div class="list-layout" [class.panel-open]="panelOpen()">
       <div class="list-toolbar">
-        <trove-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
+        <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
       </div>
-      <trove-filter-panel
+      <quader-filter-panel
         #panel
         class="list-side"
         [(open)]="panelOpen"
@@ -141,7 +141,7 @@
         (apply)="submitFilters()"
         (clearAll)="clearFilters()"
       >
-        <trove-filter-category i18n-label="@@pkg.filter.type" label="Package type" [active]="formatNames().length > 0" [expanded]="formatNames().length > 0">
+        <quader-filter-category i18n-label="@@pkg.filter.type" label="Package type" [active]="formatNames().length > 0" [expanded]="formatNames().length > 0">
           @for (f of formatOptions(); track f.name) {
             <label class="check-row">
               <input
@@ -152,8 +152,8 @@
               <span translate="no">{{ f.displayName }}</span>
             </label>
           }
-        </trove-filter-category>
-        <trove-filter-category i18n-label="@@pkg.filter.repository" label="Repository" [active]="repositoryNames().length > 0" [expanded]="repositoryNames().length > 0">
+        </quader-filter-category>
+        <quader-filter-category i18n-label="@@pkg.filter.repository" label="Repository" [active]="repositoryNames().length > 0" [expanded]="repositoryNames().length > 0">
           <div class="check-list">
             @for (r of repositoryOptions(); track r) {
               <label class="check-row">
@@ -166,8 +166,8 @@
               </label>
             }
           </div>
-        </trove-filter-category>
-        <trove-filter-category i18n-label="@@pkg.filter.text" label="Name or description" [active]="!!q()" [expanded]="!!q()">
+        </quader-filter-category>
+        <quader-filter-category i18n-label="@@pkg.filter.text" label="Name or description" [active]="!!q()" [expanded]="!!q()">
           <input
             class="text-input"
             type="search"
@@ -177,8 +177,8 @@
             [value]="search()"
             (input)="search.set($any($event.target).value)"
           />
-        </trove-filter-category>
-        <trove-filter-category i18n-label="@@pkg.filter.keyword" label="Keyword" [active]="!!keyword()" [expanded]="!!keyword()">
+        </quader-filter-category>
+        <quader-filter-category i18n-label="@@pkg.filter.keyword" label="Keyword" [active]="!!keyword()" [expanded]="!!keyword()">
           <input
             class="text-input"
             type="search"
@@ -188,8 +188,8 @@
             [value]="stagedKeyword()"
             (input)="stagedKeyword.set($any($event.target).value)"
           />
-        </trove-filter-category>
-        <trove-filter-category i18n-label="@@pkg.filter.created" label="Created" [active]="!!period()" [expanded]="!!period()">
+        </quader-filter-category>
+        <quader-filter-category i18n-label="@@pkg.filter.created" label="Created" [active]="!!period()" [expanded]="!!period()">
           <select
             class="select-input"
             aria-label="Created"
@@ -221,11 +221,11 @@
               />
             </label>
           }
-        </trove-filter-category>
-      </trove-filter-panel>
+        </quader-filter-category>
+      </quader-filter-panel>
 
       <div class="list-main">
-        <trove-data-table
+        <quader-data-table
           [caption]="tableCaption"
           [columns]="columns"
           [sort]="tableSort()"
@@ -251,7 +251,7 @@
               </th>
               <td>
                 <span class="type-cell">
-                  <trove-format-icon [format]="row.format" />
+                  <quader-format-icon [format]="row.format" />
                   <span translate="no">{{ formatLabel(row.format) }}</span>
                 </span>
               </td>
@@ -263,7 +263,7 @@
               </td>
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
         @if (list.loaded() && list.items().length === 0) {
           @if (filtered()) {
             <p>

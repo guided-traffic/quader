@@ -2282,7 +2282,7 @@ metal, not for Kubernetes.
 
 **Interactions.** HA-067, HA-068, HA-076.
 
-For trove the same checks fit a `preflight` subcommand of the server binary and a Helm
+For Quader the same checks fit a `preflight` subcommand of the server binary and a Helm
 pre-install hook: PostgreSQL connection and version, S3 bucket write and read, reachability of
 the OIDC issuer.
 
@@ -2321,7 +2321,7 @@ supported.
 **Interactions.** HA-012, HA-019 (a TLS-intercepting proxy needs its CA in the trust store),
 RMT-048 and RMT-049.
 
-For trove, Go's standard environment-based proxy selection already understands these variables,
+For Quader, Go's standard environment-based proxy selection already understands these variables,
 including domain suffixes and CIDR ranges in `NO_PROXY`; the remaining work is to route every
 outbound client (upstreams, OIDC discovery, S3, webhooks) through one configured transport.
 
@@ -2362,7 +2362,7 @@ security data through offline synchronization (SEC-003), release sets through ar
 
 **Interactions.** HA-056, HA-074 (connectivity check), HA-075.
 
-For trove the list shrinks to destinations the operator configures: upstream registries of
+For Quader the list shrinks to destinations the operator configures: upstream registries of
 remote repositories, OIDC issuers and their key endpoints, the S3 endpoint, webhook targets and
 the mail server. A self-hosted product with no call-home needs no air-gap switch; it needs this
 list documented, and every one of these destinations must work through the proxy of HA-075.
@@ -2428,7 +2428,7 @@ limited cluster support.
 
 **Interactions.** HA-002, HA-004, HA-010, HA-016, HA-022, HA-033, HA-074.
 
-For trove a single static Go binary in a minimal image makes this path nearly free; a compose
+For Quader a single static Go binary in a minimal image makes this path nearly free; a compose
 file with PostgreSQL and an S3-compatible store is the natural evaluation and development setup
 next to the Helm chart.
 

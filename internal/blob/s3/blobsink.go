@@ -10,13 +10,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
-// BlobSink is the new installation's blob store as `trove backup restore` writes it (R-BAK-021 step 3, backup.BlobSink): an
+// BlobSink is the new installation's blob store as `quader backup restore` writes it (R-BAK-021 step 3, backup.BlobSink): an
 // object per digest at the key of R-STOR-001, written server-side from the backup target when the credentials of the blob
 // store may read the target, otherwise streamed through the pod and hashed. It also lists and probes the prefix for the checks
 // of R-BAK-020. It writes objects only; the blob rows come from the load.

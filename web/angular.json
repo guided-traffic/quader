@@ -28,7 +28,7 @@
       },
       "root": "",
       "sourceRoot": "src",
-      "prefix": "trove",
+      "prefix": "quader",
       "architect": {
         "build": {
           "builder": "@angular/build:application",

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"testing/iotest"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func TestR_BAS_032_AnEntryIsSignedAndAnEntryMovedOrRewrittenIsIgnoredAndDeleted(t *testing.T) {

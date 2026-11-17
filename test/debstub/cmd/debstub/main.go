@@ -19,7 +19,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/guided-traffic/trove/test/debstub"
+	"github.com/guided-traffic/quader/test/debstub"
 )
 
 func main() {

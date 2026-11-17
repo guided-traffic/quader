@@ -36,7 +36,7 @@ export const RUNS_PAGE_SIZE = 25;
  * reads: every request it sends is a GET. It refreshes with the status screen's interval and pause control (R-UI-038).
  */
 @Component({
-  selector: 'trove-backups-page',
+  selector: 'quader-backups-page',
   imports: [PageHeader, DatePipe, RouterLink, ErrorNotice, BackupState, ManualRunPanel],
   templateUrl: './backups-page.html',
   styleUrl: './backups-page.scss',

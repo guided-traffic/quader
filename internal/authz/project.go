@@ -4,8 +4,8 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Projects as the engine sees them (R-AUTHZ-026, Q-AUTHZ-207, Q-AUTHZ-208, Q-AUTHZ-215). The project

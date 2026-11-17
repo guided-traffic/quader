@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// MaxValueSize is the largest value or payload trove stores or publishes
+// MaxValueSize is the largest value or payload quader stores or publishes
 // (R-ARCH-030: small values).
 const MaxValueSize = 1024
 
@@ -289,8 +289,8 @@ var negFamily = registerKeyFamily("neg", 1, MaxNegativeTTL)
 
 // >>> M5b bastion
 
-// The state a trove Bastion shares through its Valkey (R-BAS-034, mechanism in valkey_bastion.go). Its client
-// has no keyspace (WithoutKeyspace); the key_prefix is trove-bastion:<valkey.key_prefix>:.
+// The state a quader Bastion shares through its Valkey (R-BAS-034, mechanism in valkey_bastion.go). Its client
+// has no keyspace (WithoutKeyspace); the key_prefix is quader-bastion:<valkey.key_prefix>:.
 var (
 	blockFamily      = registerKeyFamily("block", 1, MaxBlockTTL)
 	blockLevelFamily = registerKeyFamily("block:level", 1, MaxBlockLevelTTL)

@@ -7,7 +7,7 @@ import { ChangeDetectionStrategy, Component, computed, input, resource } from '@
  * host takes its size and shape from the place it is used in.
  */
 @Component({
-  selector: 'trove-avatar',
+  selector: 'quader-avatar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `@if (src(); as src) {
     <img [src]="src" alt="" width="64" height="64" draggable="false" />
@@ -26,7 +26,7 @@ import { ChangeDetectionStrategy, Component, computed, input, resource } from '@
     }
   `,
 })
-export class TroveAvatar {
+export class QuaderAvatar {
   /** The stable, non-secret identifier of the user (the ID, which a rename does not change). */
   readonly seed = input.required<string>();
   /** The uploaded avatar, when the user has one; it wins over the generated robot. */

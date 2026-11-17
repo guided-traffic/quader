@@ -10,7 +10,7 @@
 # second request without the token, so the token reaches github.com and no other host, whatever curl does with redirects. If
 # the second request fails, the first is repeated for a fresh redirect, up to three rounds.
 #
-# The whole download has a budget (900 s; TROVE_DOWNLOAD_BUDGET overrides it, for CI steps with less time and for the tests).
+# The whole download has a budget (900 s; QUADER_DOWNLOAD_BUDGET overrides it, for CI steps with less time and for the tests).
 # Before each curl call the time left is computed, and the call's limits come from it:
 #   - the first request (headers only) may take up to 120 s; its retries stop when the time left reserves the last attempt
 #     (the 20 s retry delay counts), and the retry window is at most 300 s;
@@ -37,7 +37,7 @@ esac
 token="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
-budget="${TROVE_DOWNLOAD_BUDGET:-900}"
+budget="${QUADER_DOWNLOAD_BUDGET:-900}"
 deadline=$(( SECONDS + budget ))
 common=(--globoff --proto '=https' --proto-redir '=https' --silent --show-error --connect-timeout 20 --speed-limit 51200 --speed-time 30)
 retry_delay=20

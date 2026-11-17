@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // projectCaller is an Access of a caller that holds the listed capabilities and is a member of the listed

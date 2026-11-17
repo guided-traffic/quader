@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formatdata/npm"
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formatdata/npm"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // tagsOf reads the stored dist-tags of a package.
@@ -275,7 +275,7 @@ func TestR_NPM_047_ReinstateRefusesWhatItMustNotBringBack(t *testing.T) {
 	})
 }
 
-// The command of R-NPM-047 runs as `trove admin npm reinstate`: built here and run against the installation's database.
+// The command of R-NPM-047 runs as `quader admin npm reinstate`: built here and run against the installation's database.
 func TestR_NPM_047_AdminNPMReinstateCommand(t *testing.T) {
 	e := newFormatsEnv(t)
 	r := e.replica("web-1")
@@ -288,14 +288,14 @@ func TestR_NPM_047_AdminNPMReinstateCommand(t *testing.T) {
 	}
 	_ = integrity
 
-	bin := filepath.Join(t.TempDir(), "trove")
-	build := exec.Command("go", "build", "-o", bin, "github.com/guided-traffic/trove/cmd/trove")
+	bin := filepath.Join(t.TempDir(), "quader")
+	build := exec.Command("go", "build", "-o", bin, "github.com/guided-traffic/quader/cmd/quader")
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build: %v\n%s", err, out)
 	}
 	run := func(args ...string) (string, error) {
 		cmd := exec.Command(bin, append([]string{"admin", "npm", "reinstate"}, args...)...)
-		cmd.Env = append(append(os.Environ(), e.st.Environ()...), "TROVE_POD_NAME=admin-cli-test")
+		cmd.Env = append(append(os.Environ(), e.st.Environ()...), "QUADER_POD_NAME=admin-cli-test")
 		out, err := cmd.CombinedOutput()
 		return string(out), err
 	}

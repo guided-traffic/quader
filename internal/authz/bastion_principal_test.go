@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_BAS_004_ABastionReferenceParsesSoThatEveryWriteRefusesIt: bastion:<name> is a reference of the kind

@@ -8,17 +8,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/packages"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/packages"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 type store interface{ Name() string }
@@ -296,15 +296,15 @@ func TestR_AUTHZ_018_CheckOwnershipFailsClosed(t *testing.T) {
 }
 
 func TestR_ARCH_007_LinksComeFromTheBaseURL(t *testing.T) {
-	l := linkBuilder{base: "https://trove.example.com", template: "/api/npm/{project}/{key}/", key: qr("npm-local")}
+	l := linkBuilder{base: "https://quader.example.com", template: "/api/npm/{project}/{key}/", key: qr("npm-local")}
 	for got, want := range map[string]string{
-		l.Base():                           "https://trove.example.com",
-		l.Registry(qr("npm-remote~cache")): "https://trove.example.com/api/npm/it/npm-remote~cache/",
-		l.Repository():                     "https://trove.example.com/api/npm/it/npm-local/",
-		l.Path("@acme/ui/-/ui-1.0.0.tgz"):  "https://trove.example.com/api/npm/it/npm-local/@acme/ui/-/ui-1.0.0.tgz",
-		l.Path("a b/c#d"):                  "https://trove.example.com/api/npm/it/npm-local/a%20b/c%23d",
-		l.Path(""):                         "https://trove.example.com/api/npm/it/npm-local/",
-		l.File(qr("npm-local"), "@acme/ui/ui-1.0.0.tgz"): "https://trove.example.com/files/it/npm-local/@acme/ui/ui-1.0.0.tgz",
+		l.Base():                           "https://quader.example.com",
+		l.Registry(qr("npm-remote~cache")): "https://quader.example.com/api/npm/it/npm-remote~cache/",
+		l.Repository():                     "https://quader.example.com/api/npm/it/npm-local/",
+		l.Path("@acme/ui/-/ui-1.0.0.tgz"):  "https://quader.example.com/api/npm/it/npm-local/@acme/ui/-/ui-1.0.0.tgz",
+		l.Path("a b/c#d"):                  "https://quader.example.com/api/npm/it/npm-local/a%20b/c%23d",
+		l.Path(""):                         "https://quader.example.com/api/npm/it/npm-local/",
+		l.File(qr("npm-local"), "@acme/ui/ui-1.0.0.tgz"): "https://quader.example.com/files/it/npm-local/@acme/ui/ui-1.0.0.tgz",
 	} {
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)

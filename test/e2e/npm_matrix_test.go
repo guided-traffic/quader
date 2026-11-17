@@ -25,17 +25,17 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // ── the snippets ─────────────────────────────────────────────────────────────
 
 // setupSnippet renders the configure template of the row's client with the data the setup API would give it for the
 // repository: the registry URL of the edge, the keyed credential form and the always-auth switches of a repository
-// that is not anonymously readable. The credential stays the placeholder ${TROVE_TOKEN}, which the client expands
+// that is not anonymously readable. The credential stays the placeholder ${QUADER_TOKEN}, which the client expands
 // from its environment.
 func setupSnippet(t testing.TB, row, host, repo string) (file, content string) {
 	t.Helper()
@@ -101,12 +101,12 @@ func (c *npmClient) publishDir(name, version, marker string) string {
 	c.t.Helper()
 	dir := c.dir("pkg-" + strings.NewReplacer("@", "", "/", "-").Replace(name) + "-" + version)
 	pkg, _ := json.MarshalIndent(map[string]any{
-		"name": name, "version": version, "description": "trove end-to-end test package", "main": "index.js", "license": "MIT",
+		"name": name, "version": version, "description": "quader end-to-end test package", "main": "index.js", "license": "MIT",
 	}, "", "  ")
 	c.sh("/work", `rm -rf "`+dir+`" && mkdir -p "`+dir+`"`)
 	c.write(dir+"/package.json", string(pkg)+"\n")
 	c.write(dir+"/index.js", fmt.Sprintf("module.exports = %q;\n", marker))
-	c.write(dir+"/README.md", fmt.Sprintf("# %s\n\nPublished by the trove end-to-end tests, row %s.\n", name, c.row))
+	c.write(dir+"/README.md", fmt.Sprintf("# %s\n\nPublished by the quader end-to-end tests, row %s.\n", name, c.row))
 	c.configure(dir)
 	if c.family() == "yarn4" {
 		// `yarn npm publish` wants the package in the lockfile of its own project; an install with no dependencies
@@ -250,7 +250,7 @@ var npmScenarios = []npmScenario{
 		case "yarn1":
 			return "yarn audit sends its request to registry.yarnpkg.com whatever the .npmrc says (verified with --verbose), so it never reaches the registry under test"
 		case "pnpm10":
-			return "pnpm 10 speaks only npm 6's audit endpoints (audits/quick, audits), which trove answers with 501 and does not translate (Q-NPM-65)"
+			return "pnpm 10 speaks only npm 6's audit endpoints (audits/quick, audits), which quader answers with 501 and does not translate (Q-NPM-65)"
 		}
 		return ""
 	}, run: scenarioAudit},
@@ -582,7 +582,7 @@ func scenarioAudit(t *testing.T, c *npmClient) {
 	if r.Code == 0 || !strings.Contains(r.Out, "1900001") || !strings.Contains(r.Out, "1900003") {
 		t.Fatalf("%s audit: exit %d, want the advisories 1900001 (left-pad) and 1900003 (@cobalt/dusky-gauge):\n%s", c.row, r.Code, tailLines(r.Out, 40))
 	}
-	if c.family() == "npm" && !strings.Contains(r.Out, "trove audited") {
+	if c.family() == "npm" && !strings.Contains(r.Out, "Quader audited") {
 		t.Errorf("%s printed no npm-notice of the withheld name %s:\n%s", c.row, plain, tailLines(r.Out, 20))
 	}
 	log := stub(t).audits(t)

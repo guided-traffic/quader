@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 func (e *jenv) tokenID(raw string) string {
@@ -129,7 +129,7 @@ func TestR_HA_054_ObjectAppearsAfterTheStoreReturns(t *testing.T) {
 	}
 	n, age, err := e.outbox.Pending(ctx)
 	if err != nil || n != 1 || age <= 0 {
-		t.Fatalf("Pending = %d, %v, %v; want one row with an age (trove_revocation_journal_pending)", n, age, err)
+		t.Fatalf("Pending = %d, %v, %v; want one row with an age (quader_revocation_journal_pending)", n, age, err)
 	}
 
 	e.store.down.Store(false)

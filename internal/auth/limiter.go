@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/auth/token"
 )
 
 // FailureLimiter is the count-only limiter of R-ARCH-034 that the failed-credential

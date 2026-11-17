@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The acceptance criteria of the requirements of api-and-ui.md that no area test of the management API states in one place,
@@ -57,13 +57,13 @@ func TestR_API_005_CallerAuthenticationOnTheManagementAPI(t *testing.T) {
 	check401 := func(t *testing.T, what string, a answer) {
 		t.Helper()
 		ch := strings.Join(a.Header.Values("WWW-Authenticate"), ",")
-		if a.Status != http.StatusUnauthorized || !strings.Contains(ch, `Bearer realm="trove"`) || strings.Contains(strings.ToLower(ch), "basic") {
+		if a.Status != http.StatusUnauthorized || !strings.Contains(ch, `Bearer realm="quader"`) || strings.Contains(strings.ToLower(ch), "basic") {
 			t.Errorf("%s: %d, WWW-Authenticate %q, want 401 with the Bearer challenge of RFC 6750 and no Basic challenge\n%s", what, a.Status, ch, a.Body)
 		}
 	}
 	t.Run("R-API-005 an invalid token is 401 with a Bearer challenge and no Basic challenge, on every replica", func(t *testing.T) {
 		for range 4 {
-			check401(t, "invalid bearer", send(t, c, "GET", whoami, nil, "Authorization", "Bearer trv_pat_invalid"))
+			check401(t, "invalid bearer", send(t, c, "GET", whoami, nil, "Authorization", "Bearer qdr_pat_invalid"))
 		}
 	})
 	t.Run("R-API-005 the same token as the password of Basic names its owner, whatever the user name", func(t *testing.T) {
@@ -79,11 +79,11 @@ func TestR_API_005_CallerAuthenticationOnTheManagementAPI(t *testing.T) {
 		if a := send(t, c, "GET", whoami, nil, browser...); a.Status != http.StatusOK {
 			t.Fatalf("the session alone: %d %s", a.Status, a.Body)
 		}
-		check401(t, "session cookie with an invalid bearer", send(t, c, "GET", whoami, nil, append(browser, "Authorization", "Bearer trv_pat_invalid")...))
+		check401(t, "session cookie with an invalid bearer", send(t, c, "GET", whoami, nil, append(browser, "Authorization", "Bearer qdr_pat_invalid")...))
 	})
 	t.Run("R-API-005 an invalid token is 401 although a request without credentials may be admitted as anonymous", func(t *testing.T) {
 		for range 4 {
-			check401(t, "invalid bearer", send(t, c, "GET", whoami, nil, "Authorization", "Bearer trv_pat_invalid"))
+			check401(t, "invalid bearer", send(t, c, "GET", whoami, nil, "Authorization", "Bearer qdr_pat_invalid"))
 		}
 	})
 }
@@ -207,7 +207,7 @@ func TestR_API_020_ResourceMapAndRouting(t *testing.T) {
 			// Two characters make a valid project, repository and package key; one would be answered at the syntax before the caller is
 			// asked, now that the default endpoint admits a request without a credential (R-EP-010).
 			concrete := pathParam.ReplaceAllString(p, "xx")
-			perm, _ := op["x-trove-permission"].(map[string]any)
+			perm, _ := op["x-quader-permission"].(map[string]any)
 			public := perm["public"] == true
 			// The UI's content routes serve a session only; any other request is the answer of a path the role does not have,
 			// 404 (Q-UI-106).
@@ -257,12 +257,12 @@ func TestR_API_032_AccessTokens(t *testing.T) {
 		m := a.JSON(t)
 		value, _ = m["token"].(string)
 		id, _ = m["id"].(string)
-		if a.Status != http.StatusCreated || !strings.HasPrefix(value, "trv_pat_") || id == "" {
+		if a.Status != http.StatusCreated || !strings.HasPrefix(value, "qdr_pat_") || id == "" {
 			t.Fatalf("create: %d %s", a.Status, a.Body)
 		}
 		return value, id
 	}
-	t.Run("R-API-032 a created token starts with trv_pat_ and no read of it ever shows the value again", func(t *testing.T) {
+	t.Run("R-API-032 a created token starts with qdr_pat_ and no read of it ever shows the value again", func(t *testing.T) {
 		value, id := create(t)
 		for _, p := range []string{"/api/v1/tokens/" + id, "/api/v1/tokens?limit=100", "/api/v1/tokens/current"} {
 			hdr := e.alice.header()

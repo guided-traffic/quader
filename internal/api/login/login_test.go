@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/oidc"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/oidc"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The HTTP level of the browser login without a database: what the edge parses,
@@ -21,7 +21,7 @@ import (
 func handler() *Handler {
 	return New(&oidc.Service{}, nil, Options{
 		ClientAddr: func(*http.Request) string { return "192.0.2.1" },
-		Origin:     func(*http.Request) string { return "https://trove.test" },
+		Origin:     func(*http.Request) string { return "https://quader.test" },
 	})
 }
 
@@ -87,7 +87,7 @@ func TestR_AUTH_014_LocalLoginEdge(t *testing.T) {
 	})
 
 	t.Run("R-AUTH-014 a disabled local login answers 403 local_login_disabled before the body is read", func(t *testing.T) {
-		rec := post(func(r *http.Request) { r.Header.Set("Origin", "https://trove.test") }, `not json`)
+		rec := post(func(r *http.Request) { r.Header.Set("Origin", "https://quader.test") }, `not json`)
 		if _, code := problemOf(t, rec); rec.Code != http.StatusForbidden || code != errs.CodeLocalLoginDisabled {
 			t.Fatalf("%d %q", rec.Code, code)
 		}
@@ -105,7 +105,7 @@ func TestR_AUTH_006_ErrorPage(t *testing.T) {
 	}{
 		{"a failure of the browser or the user is 400", oidc.LoginFailure{Reason: oidc.ReasonFlowExpired}, http.StatusBadRequest},
 		{"a failure of the provider is 502", oidc.LoginFailure{Reason: oidc.ReasonTokenExchange, Provider: true}, http.StatusBadGateway},
-		{"a dependency of trove that did not answer is 503", oidc.LoginFailure{Reason: oidc.ReasonUnavailable, Unavailable: true}, http.StatusServiceUnavailable},
+		{"a dependency of quader that did not answer is 503", oidc.LoginFailure{Reason: oidc.ReasonUnavailable, Unavailable: true}, http.StatusServiceUnavailable},
 		{"a failed provisioning is 500", oidc.LoginFailure{Reason: oidc.ReasonProvisioningFailed}, http.StatusInternalServerError},
 	}
 	for _, c := range cases {

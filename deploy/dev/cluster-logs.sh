@@ -4,7 +4,7 @@
 #
 #   cluster-logs.sh <dir>
 #
-# What it keeps, per pod of the namespaces trove (every trove pod, the Valkey, PostgreSQL and test pods included) and
+# What it keeps, per pod of the namespaces quader (every quader pod, the Valkey, PostgreSQL and test pods included) and
 # ingress-controller (the edge, HAProxy Ingress):
 #   log-<ns>-<pod>.txt.gz                      every container, from the start of the container's current log, no tail limit,
 #                                              every line timestamped by the kubelet (--timestamps), so a failure window in the
@@ -16,12 +16,12 @@
 # (deploy/dev/haproxy-values.yaml). Every log is compressed: the artifact is bounded by the size of the logs, which compress
 # about tenfold, and is kept 14 days like the rest of the cluster state.
 #
-# Environment: TROVE_DEV_CLUSTER (default trove), as in lib.sh; the script needs only kubectl and gzip.
+# Environment: QUADER_DEV_CLUSTER (default quader), as in lib.sh; the script needs only kubectl and gzip.
 set -u
 dir="${1:?usage: cluster-logs.sh <dir>}"
-ctx="kind-${TROVE_DEV_CLUSTER:-trove}"
+ctx="kind-${QUADER_DEV_CLUSTER:-quader}"
 mkdir -p "$dir"
-for ns in trove ingress-controller; do
+for ns in quader ingress-controller; do
   for p in $(kubectl --context "$ctx" -n "$ns" get pods -o name 2>/dev/null); do
     name="${p#pod/}"
     kubectl --context "$ctx" -n "$ns" logs "$p" --all-containers --timestamps 2>&1 | gzip -c > "$dir/log-$ns-$name.txt.gz" || true

@@ -29,11 +29,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/ci/subject"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 // gitlabKeys is the number of keys the issuer double publishes, as GitLab 19.0.1 did when it was recorded
@@ -71,9 +71,9 @@ func newEnv(t *testing.T, o options) *env {
 	}
 	s := testenv.NewStack(t, testenv.StackOptions{Valkey: o.valkey, Name: "ci", Env: append([]string{
 		// The issuer double listens on the loopback address, which the egress policy denies by default.
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.0/8","::1/128"]`,
-		"TROVE_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "TROVE_JOBS_POLL_INTERVAL=200ms",
-		"TROVE_CI_SIGNING_KEYS_UNKNOWN_KID_REFRESH_INTERVAL=" + o.kidInterval,
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.0/8","::1/128"]`,
+		"QUADER_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "QUADER_JOBS_POLL_INTERVAL=200ms",
+		"QUADER_CI_SIGNING_KEYS_UNKNOWN_KID_REFRESH_INTERVAL=" + o.kidInterval,
 	}, o.env...)})
 	e := &env{t: t, stack: s}
 	ops, alice, bob := s.User("ops"), s.User("alice"), s.User("bob")
@@ -137,7 +137,7 @@ func (e *env) conn(t *testing.T) *pgx.Conn {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Exec(t.Context(), "SET search_path TO trove"); err != nil {
+	if _, err := c.Exec(t.Context(), "SET search_path TO quader"); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = c.Close(context.Background()) })

@@ -493,7 +493,7 @@ ON CONFLICT (key) DO UPDATE SET value = system_state.value || EXCLUDED.value, up
 `
 
 // An outbox row that cannot be encoded as a journal object. It leaves the outbox so that it does not hold back the rows
-// behind it, and stays visible here (post-restore prints it) and in trove_revocation_journal_quarantined_total.
+// behind it, and stays visible here (post-restore prints it) and in quader_revocation_journal_quarantined_total.
 func (q *Queries) JournalQuarantine(ctx context.Context, entry string) error {
 	_, err := q.db.Exec(ctx, journalQuarantine, entry)
 	return err
@@ -691,7 +691,7 @@ ON CONFLICT (key) DO UPDATE
        updated_at = now()
 `
 
-// A role binding that a replay removed ("<role>|<principal id>"). trove migrate does not apply a declared binding that is
+// A role binding that a replay removed ("<role>|<principal id>"). quader migrate does not apply a declared binding that is
 // marked until an administrator binds it again (R-AUTHZ-010, Q-AUTHZ-235).
 func (q *Queries) JournalSuppressBinding(ctx context.Context, entry string) error {
 	_, err := q.db.Exec(ctx, journalSuppressBinding, entry)

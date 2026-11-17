@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/gauges"
-	"github.com/guided-traffic/trove/internal/backup/gauges/gaugestest"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/gauges"
+	"github.com/guided-traffic/quader/internal/backup/gauges/gaugestest"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 var t0 = time.Date(2026, 11, 7, 12, 0, 0, 0, time.UTC)

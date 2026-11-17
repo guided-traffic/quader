@@ -1,7 +1,7 @@
 package claims
 
 import (
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The repository selectors of R-AUTHZ-004 are one grammar (R-CI-007, Q-AUTHZ-216), parsed by

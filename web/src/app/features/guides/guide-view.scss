@@ -4,53 +4,53 @@
 }
 
 .toc {
-  margin-block: 0 var(--trove-space-4);
-  padding: var(--trove-space-3) var(--trove-space-4);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-m);
-  background: var(--trove-surface-raised);
+  margin-block: 0 var(--quader-space-4);
+  padding: var(--quader-space-3) var(--quader-space-4);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-m);
+  background: var(--quader-surface-raised);
 
   // A numbered list stays a list (UI-A-07): one item a line, in two columns where there is room; a flex row ran the numbers
   // into the titles before them.
   ol {
     columns: 2 18rem;
-    column-gap: var(--trove-space-6);
+    column-gap: var(--quader-space-6);
     margin: 0;
-    padding-inline-start: var(--trove-space-5);
+    padding-inline-start: var(--quader-space-5);
 
     li {
       break-inside: avoid;
-      margin-block-end: var(--trove-space-1);
+      margin-block-end: var(--quader-space-1);
     }
   }
 }
 
 .toc-title {
-  margin-block: 0 var(--trove-space-2);
-  font: var(--trove-type-title-small);
+  margin-block: 0 var(--quader-space-2);
+  font: var(--quader-type-title-small);
 }
 
 .guide-section {
-  margin-block-end: var(--trove-space-5);
+  margin-block-end: var(--quader-space-5);
 
   > h2 {
-    margin-block: 0 var(--trove-space-2);
-    font: var(--trove-type-title-large);
+    margin-block: 0 var(--quader-space-2);
+    font: var(--quader-type-title-large);
   }
 }
 
 .snippet {
-  margin-block: var(--trove-space-3);
+  margin-block: var(--quader-space-3);
 
   .target {
-    margin-block: 0 var(--trove-space-2);
+    margin-block: 0 var(--quader-space-2);
   }
 }
 
 .command {
   display: flex;
   align-items: flex-start;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 
   pre {
     flex: 1 1 auto;

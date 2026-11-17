@@ -17,7 +17,7 @@ const (
 	DocSourceUpstream  = "upstream"
 )
 
-// The formats of a [DocFile] (the column ansible_doc_files.format): Markdown that trove generated from an archive, or the HTML an
+// The formats of a [DocFile] (the column ansible_doc_files.format): Markdown that quader generated from an archive, or the HTML an
 // upstream sent, which is untrusted and sanitized on every serving (R-ANS-039).
 const (
 	DocFormatMarkdown = "markdown"

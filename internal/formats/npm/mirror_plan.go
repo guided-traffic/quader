@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/remote"
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/remote"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // MirrorPlan fills the full package document of the package through the engine's upstream (variant full, R-NPM-024) and

@@ -2,7 +2,7 @@
 
 This page is the entry point for package formats. It states which formats a full-featured
 repository manager supports, which repository classes (local, remote, virtual, federated) each
-format offers, which native clients speak it and from which client version, what priority trove
+format offers, which native clients speak it and from which client version, what priority Quader
 gives it, and which page in this directory describes it in depth. It then catalogs the behavior
 that all formats share, or that differs between formats only in its parameters: client families,
 client version floors, client setup instructions, the package view versus the file view,
@@ -22,7 +22,7 @@ exactly one format, chosen at creation and immutable afterwards (REPO-002 in
 [../repositories.md](../repositories.md)). Each format has a stable lowercase identifier used in
 repository documents; the UI shows a display name. Not every format exists in every repository
 class. The matrix below gives, per format, the classes it supports, its native clients, the
-trove priority and the format page. This entry is MVP for npm and NuGet; every other row carries
+Quader priority and the format page. This entry is MVP for npm and NuGet; every other row carries
 its own priority.
 
 How the priorities were set:
@@ -323,7 +323,7 @@ the container-only profile has no federation (FMT-005); client setup for federat
 Priority: **Out of scope**
 
 A self-hosted deployment profile limited to container and chart workflows. The profile is
-packaging, not a capability, so trove does not need it. Its observable behavior is recorded so
+packaging, not a capability, so Quader does not need it. Its observable behavior is recorded so
 the inventory stays complete:
 
 - Formats: Docker, OCI, Helm (index-based), Helm on OCI and generic only. The setup wizard and the

@@ -18,12 +18,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // overviewDB answers the five statements of queries/overview.sql by their name
@@ -255,16 +255,16 @@ func TestR_OPS_004_SystemOverview(t *testing.T) {
 // and a replica of a release before them, are valid members of GET /api/v1/system/replicas.
 func TestR_OPS_003_ReplicaRuntimeMatchesTheDocument(t *testing.T) {
 	p50, p95, p99, limit, dur := float32(1.5), float32(12.25), float32(80), float32(2), float32(1.234)
-	withRuntime := replica("trove-api-1", "web", "n1", gen.Ready, false)
+	withRuntime := replica("quader-api-1", "web", "n1", gen.Ready, false)
 	withRuntime.Checks = map[string]gen.CheckResult{"database": {Status: gen.CheckResultStatusPass, DurationMs: &dur}, "draining": {Status: gen.CheckResultStatusPass}}
 	withRuntime.Runtime = &gen.ReplicaRuntime{
 		SampledAt: time.Date(2026, 11, 6, 9, 0, 10, 0, time.UTC), WindowSeconds: 10, Requests: 420, Errors: 3, InFlight: 7,
 		CpuCores: 0.75, CpuLimitCores: &limit, MemoryBytes: 310 << 20, MemoryLimitBytes: 1 << 30, Goroutines: 211,
 	}
 	withRuntime.Runtime.LatencyMs.P50, withRuntime.Runtime.LatencyMs.P95, withRuntime.Runtime.LatencyMs.P99 = &p50, &p95, &p99
-	idle := replica("trove-api-2", "web", "n1", gen.Ready, false)
+	idle := replica("quader-api-2", "web", "n1", gen.Ready, false)
 	idle.Runtime = &gen.ReplicaRuntime{SampledAt: time.Date(2026, 11, 6, 9, 0, 10, 0, time.UTC), WindowSeconds: 10, CpuLimitCores: &limit}
-	old := replica("trove-api-3", "web", "n2", gen.Ready, false)
+	old := replica("quader-api-3", "web", "n2", gen.Ready, false)
 	s := newSetup(t, func(o *Options) { o.Replicas = fakeReplicas{withRuntime, idle, old} }, authed)
 	h := apitest.New(t, EmbeddedYAML()).Handler(t, s.handler)
 	w := httptest.NewRecorder()
@@ -286,7 +286,7 @@ func TestR_OPS_003_ReplicaRuntimeMatchesTheDocument(t *testing.T) {
 	}
 }
 
-// requirementOf is the authorization step's form of an operation's x-trove-permission.
+// requirementOf is the authorization step's form of an operation's x-quader-permission.
 func requirementOf(t *testing.T, operationID string) Requirement {
 	t.Helper()
 	doc, err := LoadDocument(EmbeddedYAML())

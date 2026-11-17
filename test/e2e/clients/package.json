@@ -1,5 +1,5 @@
 {
-  "name": "trove-e2e-clients",
+  "name": "quader-e2e-clients",
   "version": "0.0.0",
   "private": true,
   "description": "The package-manager clients of the npm acceptance matrix (R-NPM-045), one exact version per gate row. Not published; installed into the clients image (test/e2e/clients/Dockerfile).",

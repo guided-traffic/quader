@@ -1,0 +1,996 @@
+# promtool test rules for the PrometheusRule of the chart (R-HA-045, R-VULN-024): one test per alert that fires on its
+# failure input, and one test on healthy input in which no alert fires. The rule file is rendered from ci/monitoring.yaml
+# as release quader in the namespace default: test/chart/vuln_rules_test.go renders it into rules.yaml next to a copy of this
+# file. The series carry the namespace label that a scrape through the Prometheus operator gives them.
+rule_files:
+  - rules.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # --- healthy: nothing fires ----------------------------------------------------------------------------
+  # The clock of a promtool test starts at 0, so a fresh last success is a value just below the
+  # evaluation time: the series says 89000 (1000 s old at 1500 min = 90000 s).
+  - name: healthy sources, no alert fires
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_source_last_success_timestamp_seconds{namespace="default",source="osv",ecosystem="npm",pod="w1"}', values: '89000x2000'}
+      - {series: 'quader_vuln_source_last_success_timestamp_seconds{namespace="default",source="osv",ecosystem="NuGet",pod="w1"}', values: '89000x2000'}
+      - {series: 'quader_vuln_source_consecutive_failures{namespace="default",source="osv",ecosystem="npm",pod="w1"}', values: '0x2000'}
+      - {series: 'quader_vuln_source_consecutive_failures{namespace="default",source="osv",ecosystem="NuGet",pod="w1"}', values: '2x2000'}
+      - {series: 'quader_vuln_claimed_name_matches{namespace="default",ecosystem="npm",kind="malicious",pod="w1"}', values: '0x2000'}
+      - {series: 'quader_vuln_claimed_name_matches{namespace="default",ecosystem="npm",kind="vulnerability",pod="w1"}', values: '5x2000'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="rejected",pod="w1"}', values: '0x2000'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="rejected_malicious",pod="w1"}', values: '0x2000'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="written",pod="w1"}', values: '0+1000x2000'}
+    alert_rule_test:
+      - {eval_time: 1500m, alertname: QuaderVulnerabilityRecordsRejected, exp_alerts: []}
+      - {eval_time: 1500m, alertname: QuaderVulnerabilityRecordsInvalid, exp_alerts: []}
+      - {eval_time: 1500m, alertname: QuaderVulnerabilityMaliciousRecordRejected, exp_alerts: []}
+      - {eval_time: 1500m, alertname: QuaderVulnerabilityDataStale, exp_alerts: []}
+      - {eval_time: 1500m, alertname: QuaderVulnerabilitySyncFailing, exp_alerts: []}
+      - {eval_time: 1500m, alertname: QuaderVulnerabilityClaimedNameMalicious, exp_alerts: []}
+      - {eval_time: 1500m, alertname: QuaderMirrorFailing, exp_alerts: []}
+      - {eval_time: 1500m, alertname: QuaderMirrorStale, exp_alerts: []}
+      - {eval_time: 1500m, alertname: QuaderBlobMissing, exp_alerts: []}
+
+  # --- QuaderVulnerabilityDataStale ------------------------------------------------------------------------
+  # The last success is at 1000 s, so the data is older than 86400 s from 87400 s (1457 min) on; the alert holds for 15 minutes first (fires from 1472 min).
+  - name: QuaderVulnerabilityDataStale fires when the last success is older than stale_after for 15 minutes
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_source_last_success_timestamp_seconds{namespace="default",source="osv",ecosystem="npm",pod="w1"}', values: '1000x2000'}
+      - {series: 'quader_vuln_source_last_success_timestamp_seconds{namespace="default",source="osv",ecosystem="npm",pod="w2"}', values: '1000x2000'}
+      - {series: 'quader_vuln_source_last_success_timestamp_seconds{namespace="default",source="osv",ecosystem="NuGet",pod="w1"}', values: '85000x2000'}
+    alert_rule_test:
+      - eval_time: 1450m
+        alertname: QuaderVulnerabilityDataStale
+        exp_alerts: []
+      - eval_time: 1480m
+        alertname: QuaderVulnerabilityDataStale
+        exp_alerts:
+          - exp_labels: {severity: warning, source: osv, ecosystem: npm}
+            exp_annotations:
+              summary: The advisory data of osv npm is older than vulnerabilities.stale_after.
+              description: No sync run of this source and ecosystem ended successfully within vulnerabilities.stale_after. Enforcement and evaluation continue on the stored data (R-VULN-024). A source that never synced has the value 0 and fires too. Check the worker pods, the task vuln-sync-osv or vuln-sync-kev, and the egress to the source.
+
+  - name: QuaderVulnerabilityDataStale fires on a source that never synced (the gauge is 0)
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_source_last_success_timestamp_seconds{namespace="default",source="kev",ecosystem="",pod="w1"}', values: '0x2000'}
+    alert_rule_test:
+      - eval_time: 1000m
+        alertname: QuaderVulnerabilityDataStale
+        exp_alerts: []
+      - eval_time: 1500m
+        alertname: QuaderVulnerabilityDataStale
+        exp_alerts:
+          - exp_labels: {severity: warning, source: kev}
+            exp_annotations:
+              summary: The advisory data of kev  is older than vulnerabilities.stale_after.
+              description: No sync run of this source and ecosystem ended successfully within vulnerabilities.stale_after. Enforcement and evaluation continue on the stored data (R-VULN-024). A source that never synced has the value 0 and fires too. Check the worker pods, the task vuln-sync-osv or vuln-sync-kev, and the egress to the source.
+
+  - name: QuaderVulnerabilityDataStale ignores the series of another namespace
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_source_last_success_timestamp_seconds{namespace="other",source="osv",ecosystem="npm",pod="w1"}', values: '1000x2000'}
+    alert_rule_test:
+      - {eval_time: 1500m, alertname: QuaderVulnerabilityDataStale, exp_alerts: []}
+
+  # --- QuaderVulnerabilitySyncFailing ----------------------------------------------------------------------
+  - name: QuaderVulnerabilitySyncFailing fires at the third consecutive failure and clears after a success
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_source_consecutive_failures{namespace="default",source="osv",ecosystem="npm",pod="w1"}', values: '0 1 2 3 3 3 0 0 0'}
+      - {series: 'quader_vuln_source_consecutive_failures{namespace="default",source="osv",ecosystem="NuGet",pod="w1"}', values: '1x9'}
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: QuaderVulnerabilitySyncFailing
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: QuaderVulnerabilitySyncFailing
+        exp_alerts:
+          - exp_labels: {severity: warning, source: osv, ecosystem: npm}
+            exp_annotations:
+              summary: Three consecutive sync runs of osv npm failed.
+              description: The last error is in GET /api/v1/vulnerabilities/sources and in the audit event vulnerability.source.failed (R-VULN-024). The data is not refreshed until a run succeeds.
+      - eval_time: 8m
+        alertname: QuaderVulnerabilitySyncFailing
+        exp_alerts: []
+
+  # --- QuaderVulnerabilityRecordsRejected, QuaderVulnerabilityMaliciousRecordRejected -----------------------
+  # The counters are created at 0 when the service is built (zeroRejected), so increase() sees the step. A record named MAL- that a
+  # bound rejected is counted under both results; written records, records that failed validation (result invalid) and another
+  # namespace never fire them.
+  - name: QuaderVulnerabilityRecordsRejected fires on a record rejected by a bound and not on written or invalid records
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="rejected",pod="w1"}', values: '0 0 0 2 2 2 2 2'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="NuGet",result="rejected",pod="w1"}', values: '0x8'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="NuGet",result="invalid",pod="w1"}', values: '0 0 0 9 9 9 9 9'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="written",pod="w1"}', values: '0+500x8'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="rejected_malicious",pod="w1"}', values: '0x8'}
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: QuaderVulnerabilityRecordsRejected
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: QuaderVulnerabilityRecordsRejected
+        exp_alerts:
+          - exp_labels: {severity: warning, source: osv, ecosystem: npm}
+            exp_annotations:
+              summary: Advisory records of osv npm were rejected by a size bound within the last seven days.
+              description: A record above a bound of one entry is not applied, and a record that was stored before keeps its older copy; the package it names may be missing from the data (R-VULN-004, Q-VULN-116). Records that fail validation are the result "invalid" and do not fire this alert. The worker logs each one at WARN with its entry, size and limit. If a legitimate record is too large, raise vulnerabilities.sources.osv.max_record_size.
+      - {eval_time: 6m, alertname: QuaderVulnerabilityMaliciousRecordRejected, exp_alerts: []}
+
+  # --- QuaderVulnerabilityRecordsInvalid -------------------------------------------------------------------
+  # At least ten invalid records in 24 hours and more than 1 % of the records processed in that time: a burst of new records that
+  # fail validation fires it; a record now and then, a count under the floor of ten, or a count that is a small share of a full
+  # sync's hundreds of thousands does not.
+  - name: QuaderVulnerabilityRecordsInvalid fires on a burst of records that fail validation
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="invalid",pod="w1"}', values: '0x1000 500x500'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="written",pod="w1"}', values: '0+10x1500'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="NuGet",result="invalid",pod="w1"}', values: '0x1500'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="NuGet",result="written",pod="w1"}', values: '0+10x1500'}
+    alert_rule_test:
+      - {eval_time: 900m, alertname: QuaderVulnerabilityRecordsInvalid, exp_alerts: []}
+      - eval_time: 1100m
+        alertname: QuaderVulnerabilityRecordsInvalid
+        exp_alerts:
+          - exp_labels: {severity: warning, source: osv, ecosystem: npm}
+            exp_annotations:
+              summary: More than 1 percent of the advisory records of osv npm failed validation within a day.
+              description: At least ten records, and more than one percent of those the sync processed in 24 hours, failed the rules of R-VULN-006 and were not applied; a record that was stored before keeps its older copy. A single record that fails is only counted and logged. Look at the worker log (message "an advisory record was rejected", attribute reason) for the first (R-VULN-004, Q-VULN-122).
+
+  - name: QuaderVulnerabilityRecordsInvalid stays silent for single records, for a count under the floor and for a small share of a full sync
+    interval: 1m
+    input_series:
+      # one record now and then
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="invalid",pod="w1"}', values: '0x300 1x300 2x300 3x300 4x300'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="written",pod="w1"}', values: '0+10x1500'}
+      # five at once in a quiet day: over 1 % of what was processed, under the floor of ten
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="NuGet",result="invalid",pod="w1"}', values: '0x1000 5x500'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="NuGet",result="written",pod="w1"}', values: '0+1x1500'}
+      # twelve at once in a day of a full sync: over the floor, a thousandth of the records processed
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="Go",result="invalid",pod="w1"}', values: '0x1000 12x500'}
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="Go",result="skipped",pod="w1"}', values: '0+1000x1500'}
+    alert_rule_test:
+      - {eval_time: 1100m, alertname: QuaderVulnerabilityRecordsInvalid, exp_alerts: []}
+      - {eval_time: 1500m, alertname: QuaderVulnerabilityRecordsInvalid, exp_alerts: []}
+
+  - name: QuaderVulnerabilityMaliciousRecordRejected fires on a rejected MAL- record and not on another namespace
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_sync_records_total{namespace="default",source="osv",ecosystem="npm",result="rejected_malicious",pod="w1"}', values: '0 0 1 1 1 1'}
+      - {series: 'quader_vuln_sync_records_total{namespace="other",source="osv",ecosystem="NuGet",result="rejected_malicious",pod="w9"}', values: '0 0 4 4 4 4'}
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: QuaderVulnerabilityMaliciousRecordRejected
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: QuaderVulnerabilityMaliciousRecordRejected
+        exp_alerts:
+          - exp_labels: {severity: critical, source: osv, ecosystem: npm}
+            exp_annotations:
+              summary: A malicious-package advisory record of osv npm was rejected, by a bound or by validation, within the last seven days.
+              description: The record named MAL-... is not applied, so the package it names is not flagged or blocked by it (R-VULN-004, Q-VULN-122). Find the entry in the worker log (message "an advisory record was rejected"); the cause is the bound of one entry (its size) or a rule of R-VULN-006 (it failed validation).
+
+  # --- QuaderVulnerabilityImageScansFailing -----------------------------------------------------------------
+  - name: QuaderVulnerabilityImageScansFailing fires when scans fail and none finishes, and stays silent when scans finish or none failed
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_image_scans_total{namespace="default",result="timeout",pod="w1"}', values: '0+1x200'}
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: QuaderVulnerabilityImageScansFailing
+        exp_alerts: []
+      - eval_time: 120m
+        alertname: QuaderVulnerabilityImageScansFailing
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: Container images are being scanned without one scan finishing.
+              description: Images whose scan does not finish show the evaluation scan_failed and are not reported as clean (R-VULN-034). The codes are the results of quader_vuln_image_scans_total; a repository page names the code per image in GET /api/v1/packages/{packageId}/versions/{version}/vulnerabilities.
+
+  - name: QuaderVulnerabilityImageScansFailing stays silent while scans finish
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_image_scans_total{namespace="default",result="timeout",pod="w1"}', values: '0+1x200'}
+      - {series: 'quader_vuln_image_scans_total{namespace="default",result="scanned",pod="w1"}', values: '0+5x200'}
+    alert_rule_test:
+      - {eval_time: 150m, alertname: QuaderVulnerabilityImageScansFailing, exp_alerts: []}
+
+  # --- QuaderVulnerabilityClaimedNameMalicious -------------------------------------------------------------
+  - name: QuaderVulnerabilityClaimedNameMalicious fires on a malicious match and not on a vulnerability match
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_claimed_name_matches{namespace="default",ecosystem="npm",kind="malicious",pod="w1"}', values: '0 0 1 1 1'}
+      - {series: 'quader_vuln_claimed_name_matches{namespace="default",ecosystem="NuGet",kind="vulnerability",pod="w1"}', values: '4x5'}
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: QuaderVulnerabilityClaimedNameMalicious
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: QuaderVulnerabilityClaimedNameMalicious
+        exp_alerts:
+          - exp_labels: {severity: critical}
+            exp_annotations:
+              summary: A malicious-package advisory names a package name that this installation treats as internal.
+              description: Look at GET /api/v1/vulnerabilities/claimed-name-matches. A public package of that name exists, which is how a dependency-confusion attempt looks (R-VULN-010, R-VULN-024).
+
+  - name: QuaderVulnerabilityClaimedNameMalicious ignores a malicious count of another namespace
+    interval: 1m
+    input_series:
+      - {series: 'quader_vuln_claimed_name_matches{namespace="other",ecosystem="npm",kind="malicious",pod="w1"}', values: '1x5'}
+    alert_rule_test:
+      - {eval_time: 3m, alertname: QuaderVulnerabilityClaimedNameMalicious, exp_alerts: []}
+
+  # --- QuaderMirrorFailing ---------------------------------------------------------------------------------
+  # Three failed pass attempts in a row, read from the gauge of the failures in a row (R-OPS-046, Q-OPS-171): it stays while the
+  # mirror keeps failing, however far apart the back-off puts the attempts, and it resets with a complete pass.
+  - name: QuaderMirrorFailing fires from the third failure in a row and stays while they last, and not for a mirror below three
+    interval: 1m
+    input_series:
+      - {series: 'quader_mirror_consecutive_failures{namespace="default",repo="npm-types",pod="w1"}', values: '0 1 2 3x2000'}
+      - {series: 'quader_mirror_consecutive_failures{namespace="default",repo="npm-types",pod="w2"}', values: '0 1 2 3x2000'}
+      - {series: 'quader_mirror_consecutive_failures{namespace="default",repo="quiet",pod="w1"}', values: '0 1 2x2000'}
+      - {series: 'quader_mirror_consecutive_failures{namespace="other",repo="elsewhere",pod="w1"}', values: '9x2000'}
+    alert_rule_test:
+      - {eval_time: 1m, alertname: QuaderMirrorFailing, exp_alerts: []}
+      - eval_time: 10m
+        alertname: QuaderMirrorFailing
+        exp_alerts:
+          - exp_labels: {severity: warning, repo: npm-types}
+            exp_annotations:
+              summary: The mirror npm-types has failed three pass attempts in a row.
+              description: The last error is in GET /api/v1/projects/{projectKey}/repositories/{repoKey}/mirror and in the audit event mirror.pass_failed (R-REPO-053, R-REPO-057). The pass in progress stays, and the dispatch continues it after the back-off; a complete pass resets the count. A paused mirror is not reported.
+      # Ten hours later, with the back-off spacing the attempts six hours apart, it still fires.
+      - eval_time: 600m
+        alertname: QuaderMirrorFailing
+        exp_alerts:
+          - exp_labels: {severity: warning, repo: npm-types}
+            exp_annotations:
+              summary: The mirror npm-types has failed three pass attempts in a row.
+              description: The last error is in GET /api/v1/projects/{projectKey}/repositories/{repoKey}/mirror and in the audit event mirror.pass_failed (R-REPO-053, R-REPO-057). The pass in progress stays, and the dispatch continues it after the back-off; a complete pass resets the count. A paused mirror is not reported.
+
+  - name: QuaderMirrorFailing resolves when a complete pass resets the count
+    interval: 1m
+    input_series:
+      - {series: 'quader_mirror_consecutive_failures{namespace="default",repo="npm-types",pod="w1"}', values: '3x30 0x100'}
+    alert_rule_test:
+      - {eval_time: 20m, alertname: QuaderMirrorFailing, exp_alerts: [{exp_labels: {severity: warning, repo: npm-types}, exp_annotations: {summary: The mirror npm-types has failed three pass attempts in a row., description: 'The last error is in GET /api/v1/projects/{projectKey}/repositories/{repoKey}/mirror and in the audit event mirror.pass_failed (R-REPO-053, R-REPO-057). The pass in progress stays, and the dispatch continues it after the back-off; a complete pass resets the count. A paused mirror is not reported.'}}]}
+      - {eval_time: 60m, alertname: QuaderMirrorFailing, exp_alerts: []}
+
+  # --- QuaderMirrorStale -----------------------------------------------------------------------------------
+  # The time the mirror next acts (a due pass, or the last write of the pass in progress) is an hour in the past: from 3600 s
+  # after it, and the alert holds for 30 minutes first. A mirror with no pass yet has a series too, because the row exists from the
+  # first dispatch; a deferral to a time ahead, or a paused mirror (no series), does not fire.
+  - name: QuaderMirrorStale fires when the next pass is an hour overdue for 30 minutes, also for a mirror that never completed one
+    interval: 1m
+    input_series:
+      - {series: 'quader_mirror_next_pass_timestamp_seconds{namespace="default",repo="never",pod="w1"}', values: '1000x600'}
+      - {series: 'quader_mirror_next_pass_timestamp_seconds{namespace="default",repo="never",pod="w2"}', values: '1000x600'}
+      - {series: 'quader_mirror_next_pass_timestamp_seconds{namespace="default",repo="on-schedule",pod="w1"}', values: '1000+60x600'}
+      - {series: 'quader_mirror_next_pass_timestamp_seconds{namespace="default",repo="deferred",pod="w1"}', values: '40000x600'}
+      - {series: 'quader_mirror_next_pass_timestamp_seconds{namespace="other",repo="elsewhere",pod="w1"}', values: '1000x600'}
+    alert_rule_test:
+      - {eval_time: 70m, alertname: QuaderMirrorStale, exp_alerts: []}
+      - {eval_time: 85m, alertname: QuaderMirrorStale, exp_alerts: []}
+      - eval_time: 120m
+        alertname: QuaderMirrorStale
+        exp_alerts:
+          - exp_labels: {severity: warning, repo: never}
+            exp_annotations:
+              summary: The mirror never is more than an hour behind its schedule.
+              description: Its next pass was due an hour ago and nothing started it, or the pass in progress has not written for an hour. No process claims the queue mirror, the passes are held back by a rate limit that lasts hours, or the job is lost (R-REPO-053, R-REPO-054). Check the pods that claim the queue, the status of the repository and quader_mirror_pending_packages. A paused mirror is not reported.
+
+  - name: QuaderMirrorStale stays quiet for a mirror without series
+    interval: 1m
+    input_series:
+      - {series: 'quader_mirror_interval_seconds{namespace="default",repo="paused",pod="w1"}', values: '3600x600'}
+    alert_rule_test:
+      - {eval_time: 400m, alertname: QuaderMirrorStale, exp_alerts: []}
+
+  # --- QuaderBridgeLeftOn ---------------------------------------------------------------------------------
+  - name: QuaderBridgeLeftOn fires when a web replica stays registered for 24 hours and not for a role of the cut shape
+    interval: 1m
+    input_series:
+      - {series: 'quader_build_info{namespace="default",role="web",pod="web-1"}', values: '1x1600'}
+      - {series: 'quader_build_info{namespace="default",role="api",pod="api-1"}', values: '1x1600'}
+    alert_rule_test:
+      - {eval_time: 1400m, alertname: QuaderBridgeLeftOn, exp_alerts: []}
+      - eval_time: 1500m
+        alertname: QuaderBridgeLeftOn
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: A web replica of the upgrade bridge has been running for 24 hours.
+              description: web.enabled is still true, so the web pods stay registered and hold the login secrets (R-HA-064, H-518). Finish the cut, once api, packages and their pools are ready; step 2 with web.routed false moves the edge onto them, step 3 with web.enabled false removes the bridge.
+
+  - name: QuaderBridgeLeftOn stays quiet after the cut
+    interval: 1m
+    input_series:
+      - {series: 'quader_build_info{namespace="default",role="api",pod="api-1"}', values: '1x1600'}
+      - {series: 'quader_build_info{namespace="other",role="web",pod="web-1"}', values: '1x1600'}
+    alert_rule_test:
+      - {eval_time: 1500m, alertname: QuaderBridgeLeftOn, exp_alerts: []}
+
+  # --- QuaderBlobMissing -----------------------------------------------------------------------------------
+  # A replica counts a blob it found missing once (R-HA-024): the alert fires at once and clears an hour after the last one.
+  - name: QuaderBlobMissing fires when a replica found the object of a blob missing within the last hour, and clears after it
+    interval: 1m
+    input_series:
+      - {series: 'quader_storage_blobs_damaged_total{namespace="default",status="missing",pod="p1"}', values: '0x10 1x200'}
+      - {series: 'quader_storage_blobs_damaged_total{namespace="default",status="missing",pod="p2"}', values: '0x210'}
+    alert_rule_test:
+      - {eval_time: 9m, alertname: QuaderBlobMissing, exp_alerts: []}
+      - eval_time: 12m
+        alertname: QuaderBlobMissing
+        exp_alerts:
+          - exp_labels: {severity: critical}
+            exp_annotations:
+              summary: The object store has lost the object of at least one blob within the last hour.
+              description: A read found no object behind a blob row and marked the blob missing (R-HA-024, R-STOR-027). The replicas log every such blob with its digest ("the object of a blob is missing from the object store") and every cached item of a remote repository with its repository and path. A remote repository fills its items again from the upstream; a file of a local repository answers 503 content_unavailable until its object is restored or the same content is uploaded again. Check the bucket, its lifecycle rules and who else writes to it.
+      - {eval_time: 75m, alertname: QuaderBlobMissing, exp_alerts: []}
+
+  - name: QuaderBlobMissing stays quiet for a corrupt blob and for another namespace
+    interval: 1m
+    input_series:
+      - {series: 'quader_storage_blobs_damaged_total{namespace="default",status="corrupt",pod="p1"}', values: '0x10 1x200'}
+      - {series: 'quader_storage_blobs_damaged_total{namespace="other",status="missing",pod="p1"}', values: '0x10 1x200'}
+    alert_rule_test:
+      - {eval_time: 12m, alertname: QuaderBlobMissing, exp_alerts: []}
+
+  # === R-HA-045: the alerts of the table ======================================================================
+  # The Deployments of release quader are quader-api, quader-packages, quader-worker, the pools quader-<role>-<pool> and the bridge
+  # quader-web. The series carry the labels of a scrape through the Prometheus operator (namespace, pod).
+
+  # Healthy input. The retries are of another kind than connection, the Deployments have two or more replicas, the histograms stay in
+  # the first bucket.
+  - name: "a healthy installation: none of the sixteen alerts of the table fires"
+    interval: 1m
+    input_series:
+      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-api\"}", values: "2x400"}
+      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-packages\"}", values: "3x400"}
+      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-worker\"}", values: "2x400"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p1\"}", values: "0x400"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p2\"}", values: "0x400"}
+      - {series: "quader_valkey_available{namespace=\"default\",pod=\"p1\"}", values: "1x400"}
+      - {series: "quader_valkey_available{namespace=\"default\",pod=\"p2\"}", values: "1x400"}
+      - {series: "quader_valkey_sentinels_reachable{namespace=\"default\",pod=\"p1\"}", values: "3x400"}
+      - {series: "quader_valkey_sentinels_reachable{namespace=\"default\",pod=\"p2\"}", values: "3x400"}
+      - {series: "quader_valkey_primary_views{namespace=\"default\",pod=\"p1\"}", values: "1x400"}
+      - {series: "quader_valkey_primary_changes_total{namespace=\"default\",pod=\"p1\"}", values: "1x400"}
+      - {series: "quader_build_info{namespace=\"default\",version=\"1.4.0\",pod=\"p1\"}", values: "1x400"}
+      - {series: "quader_build_info{namespace=\"default\",version=\"1.4.0\",pod=\"p2\"}", values: "1x400"}
+      - {series: "quader_jobs_oldest_queued_age_seconds{namespace=\"default\",kind=\"gc\",pod=\"p1\"}", values: "12x400"}
+      - {series: "quader_lease_lost_total{namespace=\"default\",task=\"gc\",pod=\"p1\"}", values: "0x400"}
+      - {series: "quader_spool_used_bytes{namespace=\"default\",pod=\"p1\"}", values: "1000x400"}
+      - {series: "quader_spool_free_bytes{namespace=\"default\",pod=\"p1\"}", values: "9000x400"}
+      - {series: "quader_gc_last_success_timestamp_seconds{namespace=\"default\",pod=\"p1\"}", values: "20000x400"}
+      - {series: "quader_db_retries_total{namespace=\"default\",kind=\"serialization\",pod=\"p1\"}", values: "0+1x400"}
+      - {series: "quader_http_requests_total{namespace=\"default\",code=\"503\",pod=\"p1\"}", values: "0+1x400"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"request\",le=\"0.005\",pod=\"p1\"}", values: "0+10x400"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"request\",le=\"+Inf\",pod=\"p1\"}", values: "0+10x400"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"0.005\",pod=\"p1\"}", values: "0+10x400"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"+Inf\",pod=\"p1\"}", values: "0+10x400"}
+    alert_rule_test:
+      - {eval_time: 300m, alertname: QuaderReplicasNotReady, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderDatabaseUnreachable, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderObjectStoreUnreachable, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderObjectStoreUnreachableSingleReplica, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderDatabasePoolSaturated, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderJobsStuck, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderLeaseLost, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderMixedVersions, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderSpoolNearlyFull, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderGCStale, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderValkeyUnavailable, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderValkeyUnavailableSingleReplica, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderValkeySentinelsDegraded, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderValkeyFailoverFlapping, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderValkeyPrimaryDisagreement, exp_alerts: []}
+
+  # A role or pool without redundancy fires on its own Deployment. The regex covers api, packages, worker, their pools and the bridge web;
+  # quader-bastion-api (another release) and quader-apiary do not match, and the series of another namespace is not read.
+  - name: "QuaderReplicasNotReady fires per Deployment of a role or pool below two replicas, and not for other Deployments"
+    interval: 1m
+    input_series:
+      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-api\"}", values: "1x60"}
+      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-packages\"}", values: "2x60"}
+      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-worker-vuln\"}", values: "0x60"}
+      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-web\"}", values: "2x60"}
+      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-bastion-api\"}", values: "0x60"}
+      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-apiary\"}", values: "0x60"}
+      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-api-ep-customers\"}", values: "2x60"}
+    alert_rule_test:
+      - {eval_time: 4m, alertname: QuaderReplicasNotReady, exp_alerts: []}
+      - eval_time: 10m
+        alertname: QuaderReplicasNotReady
+        exp_alerts:
+          - exp_labels: {severity: "critical", deployment: "quader-api"}
+            exp_annotations:
+              summary: "The Deployment quader-api has fewer than two available replicas."
+              description: "A role or pool with fewer than two available replicas has no redundancy, and a node drain or a rollout takes it away (R-HA-001, R-HA-059). Look at the pods of the Deployment, their readiness (GET /readyz?verbose=1) and the events. Needs kube-state-metrics. A Deployment scaled to one replica by choice fires too."
+          - exp_labels: {severity: "critical", deployment: "quader-worker-vuln"}
+            exp_annotations:
+              summary: "The Deployment quader-worker-vuln has fewer than two available replicas."
+              description: "A role or pool with fewer than two available replicas has no redundancy, and a node drain or a rollout takes it away (R-HA-001, R-HA-059). Look at the pods of the Deployment, their readiness (GET /readyz?verbose=1) and the events. Needs kube-state-metrics. A Deployment scaled to one replica by choice fires too."
+
+  # interval 15s is the scrape interval: the range selectors are left-open, so a one-minute rate needs more than one sample in the window
+  - name: "QuaderDatabaseUnreachable fires when connection retries and 503 answers go together for two minutes"
+    interval: 15s
+    input_series:
+      - {series: "quader_db_retries_total{namespace=\"default\",kind=\"connection\",pod=\"p1\"}", values: "0+1x240"}
+      - {series: "quader_http_requests_total{namespace=\"default\",code=\"503\",pod=\"p1\"}", values: "0+3x240"}
+    alert_rule_test:
+      - {eval_time: 1m, alertname: QuaderDatabaseUnreachable, exp_alerts: []}
+      - eval_time: 10m
+        alertname: QuaderDatabaseUnreachable
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "The replicas keep retrying their connection to PostgreSQL and answer 503."
+              description: "The primary is unreachable beyond the retry budget (database.retry, R-HA-009, R-HA-015), or the pooler in front of it is. Check the PostgreSQL primary, the Service that points to it and the pooler, and the database check of GET /readyz?verbose=1."
+
+  # A switchover of the primary that a drain causes retries connections and may leave a 503 behind for a few scrapes; the rate window of one
+  # minute lets that last about one minute, below the two minutes of `for` (Q-HA-290). With a window of five minutes the same blip held
+  # the expression true for five minutes and fired the alert in the drain variants of R-HA-059.
+  - name: "QuaderDatabaseUnreachable stays silent on a short burst of connection retries and 503 answers"
+    interval: 15s
+    input_series:
+      - {series: "quader_db_retries_total{namespace=\"default\",kind=\"connection\",pod=\"p1\"}", values: "0x12 5 10 10x200"}
+      - {series: "quader_http_requests_total{namespace=\"default\",code=\"503\",pod=\"p1\"}", values: "0x12 1 2 2x200"}
+    alert_rule_test:
+      - {eval_time: 4m, alertname: QuaderDatabaseUnreachable, exp_alerts: []}
+      - {eval_time: 6m, alertname: QuaderDatabaseUnreachable, exp_alerts: []}
+      - {eval_time: 20m, alertname: QuaderDatabaseUnreachable, exp_alerts: []}
+
+  - name: "QuaderDatabaseUnreachable stays silent on connection retries without a 503, and on a 503 without retries"
+    interval: 1m
+    input_series:
+      - {series: "quader_db_retries_total{namespace=\"default\",kind=\"connection\",pod=\"p1\"}", values: "0+1x60"}
+      - {series: "quader_http_requests_total{namespace=\"default\",code=\"500\",pod=\"p1\"}", values: "0+3x60"}
+      - {series: "quader_http_requests_total{namespace=\"default\",code=\"503\",pod=\"p2\"}", values: "5x60"}
+    alert_rule_test:
+      - {eval_time: 30m, alertname: QuaderDatabaseUnreachable, exp_alerts: []}
+
+  # p3 keeps its circuit closed: the single-replica alert fires after five minutes, the all-replica alert never does.
+  - name: "QuaderObjectStoreUnreachable fires when every replica has the circuit open, the single-replica alert when only some do"
+    interval: 1m
+    input_series:
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p1\"}", values: "0x10 1x50"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p2\"}", values: "0x10 1x50"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p3\"}", values: "0x60"}
+    alert_rule_test:
+      - {eval_time: 40m, alertname: QuaderObjectStoreUnreachable, exp_alerts: []}
+      - {eval_time: 12m, alertname: QuaderObjectStoreUnreachableSingleReplica, exp_alerts: []}
+      - eval_time: 30m
+        alertname: QuaderObjectStoreUnreachableSingleReplica
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "The circuit of the object store is open on some replicas and closed on others."
+              description: "The store is reachable from part of the replicas, so the cause is on the path of the affected pods (a node, a network policy, DNS, an egress rule), not the store (R-STOR-033, R-HA-010). Compare the pods by the label pod on quader_storage_s3_circuit_open."
+
+  - name: "QuaderObjectStoreUnreachable fires after two minutes when all replicas have the circuit open, and the single-replica alert stays silent"
+    interval: 1m
+    input_series:
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p1\"}", values: "0x10 1x50"}
+      - {series: "quader_storage_s3_circuit_open{namespace=\"default\",pod=\"p2\"}", values: "0x10 1x50"}
+    alert_rule_test:
+      - {eval_time: 11m, alertname: QuaderObjectStoreUnreachable, exp_alerts: []}
+      - eval_time: 15m
+        alertname: QuaderObjectStoreUnreachable
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "Every replica has the circuit of the object store open."
+              description: "Blob reads and writes fail on all replicas (R-STOR-033, R-HA-010). Metadata and cached content that does not need the store still answer. Check the S3 endpoint, its certificate and the credentials in the Secret."
+      - {eval_time: 30m, alertname: QuaderObjectStoreUnreachableSingleReplica, exp_alerts: []}
+
+  - name: "QuaderDatabasePoolSaturated fires when the 95th percentile of the request pool wait is above 100 ms for ten minutes, not the control alert"
+    interval: 1m
+    input_series:
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"request\",le=\"0.005\",pod=\"p1\"}", values: "0x60"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"request\",le=\"0.1\",pod=\"p1\"}", values: "0x60"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"request\",le=\"0.5\",pod=\"p1\"}", values: "0+10x60"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"request\",le=\"+Inf\",pod=\"p1\"}", values: "0+10x60"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"0.005\",pod=\"p1\"}", values: "0+10x60"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"+Inf\",pod=\"p1\"}", values: "0+10x60"}
+    alert_rule_test:
+      - {eval_time: 8m, alertname: QuaderDatabasePoolSaturated, exp_alerts: []}
+      - eval_time: 20m
+        alertname: QuaderDatabasePoolSaturated
+        exp_alerts:
+          - exp_labels: {severity: "warning", namespace: "default", db_pool: "request", pod: "p1"}
+            exp_annotations:
+              summary: "A replica waits more than 100 ms for a connection of its request pool (95th percentile)."
+              description: "The request pool, or every server connection of the request pooler, is busy (R-HA-016). If the database CPU is idle while the wait grows, raise database.pool.max_conns within the connection budget; otherwise the database is the limit. quader_db_pool_canceled_acquires_total counts the waits that ended in 503 database_timeout."
+      - {eval_time: 30m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
+
+  - name: "QuaderControlConnectionWaits fires when the 95th percentile of the control connection wait is above one second for five minutes, not the request alert"
+    interval: 1m
+    input_series:
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"0.005\",pod=\"p1\"}", values: "0x60"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"1\",pod=\"p1\"}", values: "0x60"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"2.5\",pod=\"p1\"}", values: "0+10x60"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"+Inf\",pod=\"p1\"}", values: "0+10x60"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"request\",le=\"0.005\",pod=\"p1\"}", values: "0+10x60"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"request\",le=\"+Inf\",pod=\"p1\"}", values: "0+10x60"}
+    alert_rule_test:
+      - {eval_time: 4m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
+      - eval_time: 15m
+        alertname: QuaderControlConnectionWaits
+        exp_alerts:
+          - exp_labels: {severity: "warning", namespace: "default", db_pool: "control", pod: "p1"}
+            exp_annotations:
+              summary: "A replica waits more than a second for its control connection (95th percentile)."
+              description: "The loops that readiness and job ownership depend on (change-log poll, database check, registry heartbeat, job heartbeats) wait for the one control connection (Q-HA-20). If this goes on, the invalidation and database checks fail on every replica (R-OPS-046). Check the pooler endpoint of the control connection and the database latency."
+      - {eval_time: 30m, alertname: QuaderDatabasePoolSaturated, exp_alerts: []}
+
+  - name: "QuaderJobsStuck fires when the oldest queued job is older than 900 s for five minutes, and not for 899 s or another namespace"
+    interval: 1m
+    input_series:
+      - {series: "quader_jobs_oldest_queued_age_seconds{namespace=\"default\",kind=\"mirror\",pod=\"p1\"}", values: "0x5 1000x60"}
+      - {series: "quader_jobs_oldest_queued_age_seconds{namespace=\"default\",kind=\"mirror\",pod=\"p2\"}", values: "0x5 1000x60"}
+    alert_rule_test:
+      - {eval_time: 8m, alertname: QuaderJobsStuck, exp_alerts: []}
+      - eval_time: 20m
+        alertname: QuaderJobsStuck
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "A queued job has been waiting for more than 15 minutes."
+              description: "The queue is not being claimed or the workers are behind (R-ARCH-016). Check that worker pods are ready and claim the queue named by the label kind of the series, and the jobs list on System status. The series is read from PostgreSQL by every replica, so it keeps reporting while no worker runs."
+
+  - name: "QuaderJobsStuck stays silent at 899 s and for the series of another namespace"
+    interval: 1m
+    input_series:
+      - {series: "quader_jobs_oldest_queued_age_seconds{namespace=\"default\",kind=\"gc\",pod=\"p1\"}", values: "899x60"}
+      - {series: "quader_jobs_oldest_queued_age_seconds{namespace=\"other\",kind=\"gc\",pod=\"p1\"}", values: "5000x60"}
+    alert_rule_test:
+      - {eval_time: 30m, alertname: QuaderJobsStuck, exp_alerts: []}
+
+  - name: "QuaderLeaseLost fires when a task lost its lease more than three times in 15 minutes, and not for one loss"
+    interval: 1m
+    input_series:
+      - {series: "quader_lease_lost_total{namespace=\"default\",task=\"gc\",pod=\"p1\"}", values: "0x2 1 2 3 4 5 6 7 8 9 10x40"}
+      - {series: "quader_lease_lost_total{namespace=\"default\",task=\"vuln-sync-osv\",pod=\"p1\"}", values: "0x5 1x40"}
+    alert_rule_test:
+      - {eval_time: 1m, alertname: QuaderLeaseLost, exp_alerts: []}
+      - eval_time: 8m
+        alertname: QuaderLeaseLost
+        exp_alerts:
+          - exp_labels: {severity: "warning", namespace: "default", task: "gc", pod: "p1"}
+            exp_annotations:
+              summary: "The singleton task gc lost its lease more than three times in 15 minutes."
+              description: "The worker that holds the lease loses its session connection to PostgreSQL repeatedly (R-HA-006, R-ARCH-017), so the task moves between replicas or stops. Look for a pooler in transaction mode on the session endpoint, idle-session timeouts and connection resets between the worker and the database."
+      - {eval_time: 40m, alertname: QuaderLeaseLost, exp_alerts: []}
+
+  - name: "QuaderMixedVersions fires when two versions run for two hours, and not for one"
+    interval: 1m
+    input_series:
+      - {series: "quader_build_info{namespace=\"default\",version=\"1.4.0\",pod=\"p1\"}", values: "1x200"}
+      - {series: "quader_build_info{namespace=\"default\",version=\"1.5.0\",pod=\"p2\"}", values: "1x200"}
+    alert_rule_test:
+      - {eval_time: 100m, alertname: QuaderMixedVersions, exp_alerts: []}
+      - eval_time: 130m
+        alertname: QuaderMixedVersions
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "Replicas of more than one Quader version have been running for two hours."
+              description: "A rolling upgrade is stuck, or a Deployment was left on an old image. Compare the label version of quader_build_info by pod and the image of each Deployment."
+
+  # p1 holds 9500 of 10000 bytes (95 percent) from minute 31 on, the alert holds ten minutes first; p2 stays at one percent.
+  - name: "QuaderSpoolNearlyFull fires when the used share of the spool is above 90 percent for ten minutes"
+    interval: 1m
+    input_series:
+      - {series: "quader_spool_used_bytes{namespace=\"default\",pod=\"p1\"}", values: "1000x30 9500x60"}
+      - {series: "quader_spool_free_bytes{namespace=\"default\",pod=\"p1\"}", values: "9000x30 500x60"}
+      - {series: "quader_spool_used_bytes{namespace=\"default\",pod=\"p2\"}", values: "100x90"}
+      - {series: "quader_spool_free_bytes{namespace=\"default\",pod=\"p2\"}", values: "9900x90"}
+    alert_rule_test:
+      - {eval_time: 30m, alertname: QuaderSpoolNearlyFull, exp_alerts: []}
+      - {eval_time: 38m, alertname: QuaderSpoolNearlyFull, exp_alerts: []}
+      - eval_time: 50m
+        alertname: QuaderSpoolNearlyFull
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "The upload spool of a replica is more than 90 percent used."
+              description: "Running uploads hold more than nine times what the spool volume has left (R-STOR-004). New uploads are refused with 503 once the budget or the minimum free space is exceeded. Raise spool.sizeLimit of the role, or lower config.storage.spool.max_bytes; look for uploads that do not end."
+
+  # The last run ended at 1000 s: older than 172800 s from 2897 minutes on, and the alert holds an hour first.
+  - name: "QuaderGCStale fires when the last successful run is older than two days for an hour, and stays silent without a series"
+    interval: 1m
+    input_series:
+      - {series: "quader_gc_last_success_timestamp_seconds{namespace=\"default\",pod=\"w1\"}", values: "1000x3100"}
+    alert_rule_test:
+      - {eval_time: 2800m, alertname: QuaderGCStale, exp_alerts: []}
+      - {eval_time: 2930m, alertname: QuaderGCStale, exp_alerts: []}
+      - eval_time: 3000m
+        alertname: QuaderGCStale
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "No garbage-collection run has ended successfully for more than two days."
+              description: "The tasks gc and gc-full do not finish (R-STOR-025). Blobs that nothing references stay in the object store until a run succeeds. The series exists after the first successful run of a worker process, so a worker that never completed a run reports nothing. Check the jobs of the task and the object store."
+
+  - name: "QuaderGCStale stays silent on a fresh last run and on a replica that never completed a run (no series)"
+    interval: 1m
+    input_series:
+      - {series: "quader_gc_last_success_timestamp_seconds{namespace=\"default\",pod=\"w1\"}", values: "170000x3100"}
+      - {series: "quader_build_info{namespace=\"default\",version=\"1.4.0\",pod=\"w2\"}", values: "1x3100"}
+    alert_rule_test:
+      - {eval_time: 3050m, alertname: QuaderGCStale, exp_alerts: []}
+
+  - name: "QuaderValkeyUnavailable fires when every replica is degraded for two minutes, the single-replica alert stays silent"
+    interval: 1m
+    input_series:
+      - {series: "quader_valkey_available{namespace=\"default\",pod=\"p1\"}", values: "1x5 0x60"}
+      - {series: "quader_valkey_available{namespace=\"default\",pod=\"p2\"}", values: "1x5 0x60"}
+    alert_rule_test:
+      - {eval_time: 6m, alertname: QuaderValkeyUnavailable, exp_alerts: []}
+      - eval_time: 10m
+        alertname: QuaderValkeyUnavailable
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "Every replica runs without Valkey."
+              description: "Every replica reports its valkey check degraded (R-HA-057, INV-12). Rate limits fall back to per-replica shares, flights run without the cross-replica lock and cache invalidation relies on the change-log poll. A failover of the primary lasts well below two minutes; check the Sentinels, the primary and the credentials."
+      - {eval_time: 30m, alertname: QuaderValkeyUnavailableSingleReplica, exp_alerts: []}
+
+  - name: "QuaderValkeyUnavailableSingleReplica fires when some replicas are degraded for five minutes, the all-replica alert stays silent"
+    interval: 1m
+    input_series:
+      - {series: "quader_valkey_available{namespace=\"default\",pod=\"p1\"}", values: "1x5 0x60"}
+      - {series: "quader_valkey_available{namespace=\"default\",pod=\"p2\"}", values: "1x65"}
+    alert_rule_test:
+      - {eval_time: 8m, alertname: QuaderValkeyUnavailableSingleReplica, exp_alerts: []}
+      - eval_time: 15m
+        alertname: QuaderValkeyUnavailableSingleReplica
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "Some replicas have lost Valkey while others have it."
+              description: "The cause is on the path of the affected pods, not Valkey (a node, a network policy, DNS) (R-HA-057). Compare the pods by the label pod on quader_valkey_available and read the reason of the valkey check in GET /api/v1/system/replicas."
+      - {eval_time: 30m, alertname: QuaderValkeyUnavailable, exp_alerts: []}
+
+  - name: "QuaderValkeySentinelsDegraded fires when a replica reaches fewer than two Sentinels for five minutes, and not at two"
+    interval: 1m
+    input_series:
+      - {series: "quader_valkey_sentinels_reachable{namespace=\"default\",pod=\"p1\"}", values: "3x5 1x60"}
+      - {series: "quader_valkey_sentinels_reachable{namespace=\"default\",pod=\"p2\"}", values: "3x65"}
+    alert_rule_test:
+      - {eval_time: 8m, alertname: QuaderValkeySentinelsDegraded, exp_alerts: []}
+      - eval_time: 15m
+        alertname: QuaderValkeySentinelsDegraded
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "A replica reaches fewer than two Sentinels."
+              description: "Without a majority of three Sentinels no failover can be elected (R-HA-056). The gauge counts the answers to a probe of every configured Sentinel (R-HA-057). Check the Sentinel pods and the path from the replica to each of them."
+
+  - name: "QuaderValkeySentinelsDegraded stays silent while every replica reaches two or three Sentinels"
+    interval: 1m
+    input_series:
+      - {series: "quader_valkey_sentinels_reachable{namespace=\"default\",pod=\"p1\"}", values: "3x5 2x60"}
+      - {series: "quader_valkey_sentinels_reachable{namespace=\"default\",pod=\"p2\"}", values: "3x65"}
+    alert_rule_test:
+      - {eval_time: 30m, alertname: QuaderValkeySentinelsDegraded, exp_alerts: []}
+
+  - name: "QuaderValkeyFailoverFlapping fires at the third primary change within an hour, and not for one"
+    interval: 1m
+    input_series:
+      - {series: "quader_valkey_primary_changes_total{namespace=\"default\",pod=\"p1\"}", values: "0x5 1 2 3 4 5x60"}
+      - {series: "quader_valkey_primary_changes_total{namespace=\"default\",pod=\"p2\"}", values: "0x5 1x60"}
+    alert_rule_test:
+      - {eval_time: 3m, alertname: QuaderValkeyFailoverFlapping, exp_alerts: []}
+      - eval_time: 20m
+        alertname: QuaderValkeyFailoverFlapping
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "The Valkey primary changed more than twice within an hour."
+              description: "Failovers repeat (Q-OPS-15). Look at the Valkey pods (restarts, memory, the node), the Sentinels' down-after-milliseconds against the network latency, and the log records \"valkey primary changed\"."
+
+  - name: "QuaderValkeyFailoverFlapping stays silent for a single failover"
+    interval: 1m
+    input_series:
+      - {series: "quader_valkey_primary_changes_total{namespace=\"default\",pod=\"p1\"}", values: "0x5 1x60"}
+    alert_rule_test:
+      - {eval_time: 30m, alertname: QuaderValkeyFailoverFlapping, exp_alerts: []}
+
+  - name: "QuaderValkeyPrimaryDisagreement fires when replicas name two primaries for five minutes, and not for one"
+    interval: 1m
+    input_series:
+      - {series: "quader_valkey_primary_views{namespace=\"default\",pod=\"p1\"}", values: "1x5 2x60"}
+      - {series: "quader_valkey_primary_views{namespace=\"default\",pod=\"p2\"}", values: "1x65"}
+    alert_rule_test:
+      - {eval_time: 8m, alertname: QuaderValkeyPrimaryDisagreement, exp_alerts: []}
+      - eval_time: 15m
+        alertname: QuaderValkeyPrimaryDisagreement
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "Replicas name different Valkey primaries."
+              description: "At least one replica is bound to a demoted primary (Q-OPS-15, R-ARCH-031), so locks, rate limits and cache signals are split between two servers. The registry in GET /api/v1/system/replicas shows each replica's primary; a restart of the replica that names the old one rebinds it."
+
+  # === R-HA-045, R-BAK-014: the alerts of the backup runs and of the revocation journal ========================
+  # The gauges of the backup are read from PostgreSQL by every replica, so every replica reports the same value; the series of a
+  # replica pair p1 and p2 stand for that. quader_backup_last_success_timestamp_seconds and quader_backup_last_failure_timestamp_seconds
+  # have no series until a run of that outcome exists (Q-OPS-180). The expected interval of the tests is 1h; the window of the
+  # clause for a backup that never ran is the chart's config.backup.expected_interval (24h in ci/monitoring.yaml).
+
+  - name: "QuaderBackupStale fires 90 minutes after the last success when the CronJob is suspended, and not before"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_last_success_timestamp_seconds{namespace=\"default\",pod=\"w1\"}", values: "600x300"}
+      - {series: "quader_backup_last_success_timestamp_seconds{namespace=\"default\",pod=\"w2\"}", values: "600x300"}
+      - {series: "quader_backup_expected_interval_seconds{namespace=\"default\",pod=\"w1\"}", values: "3600x300"}
+      - {series: "quader_backup_expected_interval_seconds{namespace=\"default\",pod=\"w2\"}", values: "3600x300"}
+    alert_rule_test:
+      - {eval_time: 99m, alertname: QuaderBackupStale, exp_alerts: []}
+      - eval_time: 101m
+        alertname: QuaderBackupStale
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "The last successful backup is older than one and a half times backup.expected_interval, or none has succeeded in a whole interval."
+              description: "No create run has ended successfully within 1.5 times config.backup.expected_interval, the condition of the overdue mark in the API and the UI (R-BAK-014). On an installation whose first backup never succeeded the alert fires one expected interval after the replicas first reported. Look at GET /api/v1/system/backups, the CronJob (suspended? missed its starting deadline?) and its Jobs, and the log of the last pod."
+
+  - name: "QuaderBackupStale stays silent while the last success is within one and a half intervals"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_last_success_timestamp_seconds{namespace=\"default\",pod=\"w1\"}", values: "89000x2000"}
+      - {series: "quader_backup_expected_interval_seconds{namespace=\"default\",pod=\"w1\"}", values: "3600x2000"}
+    alert_rule_test:
+      - {eval_time: 1500m, alertname: QuaderBackupStale, exp_alerts: []}
+
+  - name: "QuaderBackupStale fires on an installation that never had a backup once the replicas reported for a whole interval, and not before"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_expected_interval_seconds{namespace=\"default\",pod=\"w1\"}", values: "86400x2000"}
+    alert_rule_test:
+      - {eval_time: 5m, alertname: QuaderBackupStale, exp_alerts: []}
+      - {eval_time: 23h, alertname: QuaderBackupStale, exp_alerts: []}
+      - eval_time: 25h
+        alertname: QuaderBackupStale
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "The last successful backup is older than one and a half times backup.expected_interval, or none has succeeded in a whole interval."
+              description: "No create run has ended successfully within 1.5 times config.backup.expected_interval, the condition of the overdue mark in the API and the UI (R-BAK-014). On an installation whose first backup never succeeded the alert fires one expected interval after the replicas first reported. Look at GET /api/v1/system/backups, the CronJob (suspended? missed its starting deadline?) and its Jobs, and the log of the last pod."
+
+  - name: "QuaderBackupStale does not read the success of another namespace, and is silent on a young installation"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_last_success_timestamp_seconds{namespace=\"other\",pod=\"w1\"}", values: "89000x2000"}
+      - {series: "quader_backup_expected_interval_seconds{namespace=\"default\",pod=\"w1\"}", values: "86400x2000"}
+    alert_rule_test:
+      - {eval_time: 10m, alertname: QuaderBackupStale, exp_alerts: []}
+
+  - name: "QuaderBackupFailed fires for a run that failed after the last success, until the next success"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_last_success_timestamp_seconds{namespace=\"default\",pod=\"w1\"}", values: "600x20 5000x100"}
+      - {series: "quader_backup_last_failure_timestamp_seconds{namespace=\"default\",pod=\"w1\"}", values: "_x10 3000x110"}
+    alert_rule_test:
+      - {eval_time: 5m, alertname: QuaderBackupFailed, exp_alerts: []}
+      - eval_time: 15m
+        alertname: QuaderBackupFailed
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "The newest backup run failed and no backup has succeeded since."
+              description: "A create run ended failed or abandoned, or its lease expired in an active state, after the last success (R-BAK-014). A run interrupted by a drain does not count. The alert resolves with the next success. The cause is in GET /api/v1/system/backups (error code) and the log of the Job's pod; the exit codes are in R-BAK-013."
+      - {eval_time: 30m, alertname: QuaderBackupFailed, exp_alerts: []}
+
+  - name: "QuaderBackupFailed fires for a first backup that failed, when no success series exists"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_last_failure_timestamp_seconds{namespace=\"default\",pod=\"w1\"}", values: "_x10 3000x110"}
+    alert_rule_test:
+      - {eval_time: 5m, alertname: QuaderBackupFailed, exp_alerts: []}
+      - eval_time: 15m
+        alertname: QuaderBackupFailed
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "The newest backup run failed and no backup has succeeded since."
+              description: "A create run ended failed or abandoned, or its lease expired in an active state, after the last success (R-BAK-014). A run interrupted by a drain does not count. The alert resolves with the next success. The cause is in GET /api/v1/system/backups (error code) and the log of the Job's pod; the exit codes are in R-BAK-013."
+
+  - name: "QuaderBackupFailed stays silent after an interrupted run and its successful retry: an interrupted run leaves no failure series"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_last_success_timestamp_seconds{namespace=\"default\",pod=\"w1\"}", values: "600x20 5000x100"}
+      - {series: "quader_backup_expected_interval_seconds{namespace=\"default\",pod=\"w1\"}", values: "3600x120"}
+    alert_rule_test:
+      - {eval_time: 5m, alertname: QuaderBackupFailed, exp_alerts: []}
+      - {eval_time: 15m, alertname: QuaderBackupFailed, exp_alerts: []}
+      - {eval_time: 60m, alertname: QuaderBackupFailed, exp_alerts: []}
+
+  - name: "QuaderBackupFailed stays silent when the failure is older than the last success"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_last_success_timestamp_seconds{namespace=\"default\",pod=\"w1\"}", values: "5000x100"}
+      - {series: "quader_backup_last_failure_timestamp_seconds{namespace=\"default\",pod=\"w1\"}", values: "3000x100"}
+    alert_rule_test:
+      - {eval_time: 30m, alertname: QuaderBackupFailed, exp_alerts: []}
+
+  - name: "QuaderBackupRunningLong fires when the active run is older than half the expected interval"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_running_seconds{namespace=\"default\",pod=\"w1\"}", values: "0x5 1800+60x120"}
+      - {series: "quader_backup_expected_interval_seconds{namespace=\"default\",pod=\"w1\"}", values: "3600x130"}
+    alert_rule_test:
+      - {eval_time: 4m, alertname: QuaderBackupRunningLong, exp_alerts: []}
+      - eval_time: 30m
+        alertname: QuaderBackupRunningLong
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "A backup or delete run has been active for more than half of backup.expected_interval."
+              description: "The run holds the slot of the target and pins blobs against garbage collection while it lasts (R-BAK-007, R-BAK-010). A first backup of a large installation takes long; a run that makes no progress ends itself after config.backup.stall_timeout. Look at the progress in GET /api/v1/system/backups and the log of the pod."
+
+  - name: "QuaderBackupRunningLong stays silent for a short run"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_running_seconds{namespace=\"default\",pod=\"w1\"}", values: "100x100"}
+      - {series: "quader_backup_expected_interval_seconds{namespace=\"default\",pod=\"w1\"}", values: "3600x100"}
+    alert_rule_test:
+      - {eval_time: 60m, alertname: QuaderBackupRunningLong, exp_alerts: []}
+
+  - name: "QuaderBackupGlobalHoldLong fires when the hold on all blobs lasts 30 minutes, and not for a pinned hold"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_gc_hold{namespace=\"default\",mode=\"all\",pod=\"w1\"}", values: "0x5 1x100"}
+      - {series: "quader_backup_gc_hold{namespace=\"default\",mode=\"pinned\",pod=\"w1\"}", values: "1x105"}
+    alert_rule_test:
+      - {eval_time: 25m, alertname: QuaderBackupGlobalHoldLong, exp_alerts: []}
+      - eval_time: 40m
+        alertname: QuaderBackupGlobalHoldLong
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "A backup has held garbage collection for all blobs for 30 minutes."
+              description: "The hold mode all stops the collection of every blob while a backup run opens its snapshot or writes its pins (R-BAK-007). It is meant to last minutes. Look at the active run in GET /api/v1/system/backups; a run that is stuck ends itself after config.backup.stall_timeout."
+
+  - name: "QuaderBackupGlobalHoldLong stays silent for a hold that ends within minutes"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_gc_hold{namespace=\"default\",mode=\"all\",pod=\"w1\"}", values: "0x5 1x10 0x100"}
+    alert_rule_test:
+      - {eval_time: 40m, alertname: QuaderBackupGlobalHoldLong, exp_alerts: []}
+
+  - name: "QuaderBackupSourceDamage fires when the newest successful backup found damaged blobs"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_source_blobs_damaged{namespace=\"default\",pod=\"w1\"}", values: "0x5 3x20"}
+    alert_rule_test:
+      - {eval_time: 4m, alertname: QuaderBackupSourceDamage, exp_alerts: []}
+      - eval_time: 10m
+        alertname: QuaderBackupSourceDamage
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "The newest successful backup found blobs of the installation damaged or missing."
+              description: "The backup could not copy the objects of these blobs correctly (R-BAK-009, R-BAK-014), so a restore of it lacks them. The list is in the result of the run (GET /api/v1/system/backups) and the log. Restore the objects from the bucket's versions or upload the content again, then take a new backup."
+
+  - name: "QuaderBackupSourceDamage stays silent without damage"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_source_blobs_damaged{namespace=\"default\",pod=\"w1\"}", values: "0x30"}
+    alert_rule_test:
+      - {eval_time: 20m, alertname: QuaderBackupSourceDamage, exp_alerts: []}
+
+  - name: "QuaderBackupVerifyFindings fires when the newest verification had findings"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_last_verify_findings{namespace=\"default\",pod=\"w1\"}", values: "0x5 2x20"}
+    alert_rule_test:
+      - {eval_time: 4m, alertname: QuaderBackupVerifyFindings, exp_alerts: []}
+      - eval_time: 10m
+        alertname: QuaderBackupVerifyFindings
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "The newest verification of a backup found missing, damaged or mismatching objects."
+              description: "quader backup verify exited 5 (R-BAK-019, R-BAK-014). The findings are in its output and the run record. A backup with findings may not restore; take a new one and look at the target (lifecycle rules, deletions, a credential that can delete)."
+
+  - name: "QuaderBackupVerifyFindings stays silent for a clean verification"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_last_verify_findings{namespace=\"default\",pod=\"w1\"}", values: "0x30"}
+    alert_rule_test:
+      - {eval_time: 20m, alertname: QuaderBackupVerifyFindings, exp_alerts: []}
+
+  - name: "QuaderRevocationJournalBacklog fires when entries wait for shipping for 15 minutes, and not for a short backlog"
+    interval: 1m
+    input_series:
+      - {series: "quader_revocation_journal_pending{namespace=\"default\",pod=\"w1\"}", values: "0x5 4x10 0x30 7x40"}
+      - {series: "quader_revocation_journal_pending{namespace=\"default\",pod=\"w2\"}", values: "0x100"}
+    alert_rule_test:
+      - {eval_time: 12m, alertname: QuaderRevocationJournalBacklog, exp_alerts: []}
+      - {eval_time: 40m, alertname: QuaderRevocationJournalBacklog, exp_alerts: []}
+      - eval_time: 65m
+        alertname: QuaderRevocationJournalBacklog
+        exp_alerts:
+          - exp_labels: {severity: "warning"}
+            exp_annotations:
+              summary: "Entries of the revocation journal have waited for shipping to the blob bucket for 15 minutes."
+              description: "The outbox grows while the object store is out and ships afterwards, so a backlog of 15 minutes means the shipper does not write the _journal/ prefix of the blob bucket, or writes slower than entries arrive (R-HA-054). A restore taken now would replay a journal that lacks those entries, and a revocation among them would not be applied again. Check that worker pods are ready, the object store alerts, the shipper's log records and the write access of the credential to the prefix."
+
+  - name: "QuaderRevocationJournalBacklog stays silent with an empty outbox"
+    interval: 1m
+    input_series:
+      - {series: "quader_revocation_journal_pending{namespace=\"default\",pod=\"w1\"}", values: "0x60"}
+    alert_rule_test:
+      - {eval_time: 50m, alertname: QuaderRevocationJournalBacklog, exp_alerts: []}
+
+  # === R-HA-023, R-HA-045: the platform check ===================================================================
+  # quader_backup_check_ok{check} is 1 for a declared protection that holds, 0 for one that does not, and has no series for one that
+  # is not declared or that the credential may not read; every replica exports the stored report, so the series of two pods agree.
+  - name: "QuaderBackupCheckFailed fires when a declared protection has been missing for an hour, and names the check"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_check_ok{namespace=\"default\",check=\"archive_mode\",pod=\"w1\"}", values: "1x5 0x100"}
+      - {series: "quader_backup_check_ok{namespace=\"default\",check=\"object_versioning\",pod=\"w1\"}", values: "1x105"}
+      - {series: "quader_backup_check_ok{namespace=\"default\",check=\"archive_mode\",pod=\"w2\"}", values: "1x5 0x100"}
+    alert_rule_test:
+      - {eval_time: 30m, alertname: QuaderBackupCheckFailed, exp_alerts: []}
+      - eval_time: 80m
+        alertname: QuaderBackupCheckFailed
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "A platform protection that the installation declares does not hold."
+              description: "The task backup-check (R-HA-023) found that the point-in-time recovery of PostgreSQL or the versioning of the blob bucket that backup.recovery_window and backup.object_versioning declare is missing, or that the grace period of the garbage collection does not cover the window. The label check names it (archive_mode, object_versioning, noncurrent_expiry, grace_period); quader admin backup check prints the reason. A check the credential may not read, or that is not declared, has no series and does not fire."
+
+  - name: "QuaderBackupCheckFailed stays silent while every declared protection holds, and with no series at all"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_check_ok{namespace=\"default\",check=\"archive_mode\",pod=\"w1\"}", values: "1x100"}
+      - {series: "quader_backup_check_ok{namespace=\"default\",check=\"grace_period\",pod=\"w1\"}", values: "1x100"}
+    alert_rule_test:
+      - {eval_time: 90m, alertname: QuaderBackupCheckFailed, exp_alerts: []}
+
+  - name: "QuaderBackupCheckFailed stays silent for a failure of another namespace and for a failure that lasts less than an hour"
+    interval: 1m
+    input_series:
+      - {series: "quader_backup_check_ok{namespace=\"other\",check=\"archive_mode\",pod=\"w1\"}", values: "0x100"}
+      - {series: "quader_backup_check_ok{namespace=\"default\",check=\"archive_mode\",pod=\"w1\"}", values: "1x5 0x30 1x100"}
+    alert_rule_test:
+      - {eval_time: 50m, alertname: QuaderBackupCheckFailed, exp_alerts: []}
+      - {eval_time: 90m, alertname: QuaderBackupCheckFailed, exp_alerts: []}
+
+
+  # === R-HA-054, R-HA-045: a journal row that was set aside =====================================================
+  - name: "QuaderRevocationJournalQuarantined fires on an increase of the counter and resolves an hour after the last one"
+    interval: 1m
+    input_series:
+      - {series: "quader_revocation_journal_quarantined_total{namespace=\"default\",pod=\"w1\"}", values: "0x10 1x200"}
+      - {series: "quader_revocation_journal_quarantined_total{namespace=\"default\",pod=\"w2\"}", values: "0x210"}
+    alert_rule_test:
+      - {eval_time: 9m, alertname: QuaderRevocationJournalQuarantined, exp_alerts: []}
+      - eval_time: 12m
+        alertname: QuaderRevocationJournalQuarantined
+        exp_alerts:
+          - exp_labels: {severity: "critical"}
+            exp_annotations:
+              summary: "A change could not be written to the revocation journal and was set aside."
+              description: "An outbox row that cannot be encoded is moved to system_state.journal_quarantined so that it does not block the shipping of the rows behind it (R-HA-054). Any increase means that a change, possibly a revocation, is missing from the journal, and a restore from a backup or a platform restore would not apply it again. quader admin post-restore prints the quarantined rows; read the shipper's log records for the row and its error, repair or re-create the change, and take a new backup."
+      - {eval_time: 75m, alertname: QuaderRevocationJournalQuarantined, exp_alerts: []}
+
+  - name: "QuaderRevocationJournalQuarantined stays silent for a flat counter and for another namespace"
+    interval: 1m
+    input_series:
+      - {series: "quader_revocation_journal_quarantined_total{namespace=\"default\",pod=\"w1\"}", values: "3x100"}
+      - {series: "quader_revocation_journal_quarantined_total{namespace=\"other\",pod=\"w1\"}", values: "0x10 1x100"}
+    alert_rule_test:
+      - {eval_time: 50m, alertname: QuaderRevocationJournalQuarantined, exp_alerts: []}

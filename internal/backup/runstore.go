@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // DB is what the run store needs of the database: transactions for the writes and reads with the failover retry for the
@@ -84,10 +84,10 @@ type RunReader interface {
 	Last(ctx context.Context, op Operation, states ...State) (Run, bool, error)
 	// ActiveRuns returns every run in an active state, with the database's clock.
 	ActiveRuns(ctx context.Context) ([]Run, time.Time, error)
-	// HoldValid reports whether a valid hold of the kind exists (the gauge trove_backup_gc_hold).
+	// HoldValid reports whether a valid hold of the kind exists (the gauge quader_backup_gc_hold).
 	HoldValid(ctx context.Context, h Hold) (bool, error)
 	// JournalPending returns the revocation-journal backlog: the rows of revocation_outbox not yet shipped, and the age of
-	// the oldest (trove_revocation_journal_pending, R-HA-054).
+	// the oldest (quader_revocation_journal_pending, R-HA-054).
 	JournalPending(ctx context.Context) (rows int64, oldest time.Duration, err error)
 }
 
@@ -130,7 +130,7 @@ func (s *PGStore) Begin(ctx context.Context, r NewRun) (Run, error) {
 		}
 		return qs.InsertBackupRun(ctx, q.InsertBackupRunParams{
 			ID: r.ID, Operation: string(r.Operation), BackupID: r.BackupID, Trigger: string(r.Trigger), Target: r.Target,
-			Pod: r.Pod, TroveVersion: r.TroveVersion, JobName: r.JobName, LeaseSecs: r.Lease.Seconds(),
+			Pod: r.Pod, QuaderVersion: r.QuaderVersion, JobName: r.JobName, LeaseSecs: r.Lease.Seconds(),
 		})
 	})
 	if postgres.IsState(err, sqlstateUniqueViolation) {
@@ -412,7 +412,7 @@ func toRuns(rows []q.BackupRun) []Run {
 func toRun(r q.BackupRun) Run {
 	run := Run{
 		ID: r.ID.String(), Operation: Operation(r.Operation), State: State(r.State), Hold: Hold(r.Hold), Trigger: Trigger(r.Trigger),
-		Target: r.Target, Pod: r.Pod, TroveVersion: r.TroveVersion, Result: r.Result, Error: r.Error,
+		Target: r.Target, Pod: r.Pod, QuaderVersion: r.QuaderVersion, Result: r.Result, Error: r.Error,
 		StartedAt: r.StartedAt.Time, HeartbeatAt: r.HeartbeatAt.Time, LeaseExpiresAt: r.LeaseExpiresAt.Time,
 	}
 	if r.BackupID.Valid {

@@ -12,7 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // importState is the state of the tables in the first import of an installation: the autovacuum has not reached them, has analyzed
@@ -258,10 +258,10 @@ func TestR_VULN_028_TheEcosystemColumnsOfTheSyncsTablesHaveNoStatistics(t *testi
 	st.Exec(`INSERT INTO vuln_advisory (ecosystem, id, canonical_id, modified, kind, aliases, summary, severity, severity_source, record_sha256)
 		SELECT 'NuGet', 'GHSA-nu-' || g, 'GHSA-nu-' || g, now(), 'malicious', '{}', '', 'high', 'cvss', '\x00' FROM generate_series(0, 999) g`)
 	st.Exec(`ANALYZE vuln_advisory`)
-	if n := st.Number(`SELECT count(*) FROM pg_stats WHERE schemaname = 'trove' AND tablename = 'vuln_advisory' AND attname = 'ecosystem'`); n != 0 {
+	if n := st.Number(`SELECT count(*) FROM pg_stats WHERE schemaname = 'quader' AND tablename = 'vuln_advisory' AND attname = 'ecosystem'`); n != 0 {
 		t.Errorf("ANALYZE kept statistics of vuln_advisory.ecosystem")
 	}
-	if n := st.Number(`SELECT count(*) FROM pg_stats WHERE schemaname = 'trove' AND tablename = 'vuln_advisory' AND attname = 'id'`); n == 0 {
+	if n := st.Number(`SELECT count(*) FROM pg_stats WHERE schemaname = 'quader' AND tablename = 'vuln_advisory' AND attname = 'id'`); n == 0 {
 		t.Errorf("ANALYZE kept no statistics of vuln_advisory.id: the other columns keep theirs")
 	}
 }

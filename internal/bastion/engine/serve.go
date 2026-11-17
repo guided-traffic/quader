@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // withheldTail is R-REPO-041's withheld tail towards the client: the last 64 KiB of what the caller receives
@@ -33,7 +33,7 @@ type source struct {
 	open func(ctx context.Context) (io.ReadCloser, error)
 	// download is set for an artifact: a 200 or 206 served from the cache is a download event (R-BAS-016).
 	download func(q *rq)
-	// label is the source of the bytes counted in trove_bastion_bytes_served_total: cache (the default) or main.
+	// label is the source of the bytes counted in quader_bastion_bytes_served_total: cache (the default) or main.
 	label string
 }
 

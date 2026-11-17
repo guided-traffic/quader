@@ -10,15 +10,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/virtual"
-	vt "github.com/guided-traffic/trove/internal/virtual/virtualtest"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/virtual"
+	vt "github.com/guided-traffic/quader/internal/virtual/virtualtest"
 )
 
 // virtAdapter is the test format's virtual adapter; it records what the bridge hands it.
@@ -147,7 +147,7 @@ func (e *fakeEngine) Metadata(ctx context.Context, _ virtual.Caller, p *virtual.
 		{Member: local, Tier: virtual.TierLocal, Revision: virtual.Revision{RevSeq: rev}, Doc: doc},
 		{Member: remote, Tier: virtual.TierRemote, Revision: virtual.Revision{Digest: [32]byte{1}}, Doc: []byte("r"), CachedVersions: map[string]bool{"1.0.0": true}, Restricted: true, Stale: true},
 	})
-	return &virtual.Merged{Bytes: out, MergeFingerprint: [32]byte{9}, Partial: true, CacheStatus: "trove; detail=partial"}, err
+	return &virtual.Merged{Bytes: out, MergeFingerprint: [32]byte{9}, Partial: true, CacheStatus: "quader; detail=partial"}, err
 }
 
 func (e *fakeEngine) DeployTarget(v repository.Repository) (repository.Repository, error) {
@@ -346,7 +346,7 @@ func TestR_ARCH_015_BridgeMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(m.Bytes) != "merged" || m.MergeFingerprint[0] != 9 || !m.Partial || m.CacheStatus != "trove; detail=partial" {
+	if string(m.Bytes) != "merged" || m.MergeFingerprint[0] != 9 || !m.Partial || m.CacheStatus != "quader; detail=partial" {
 		t.Fatalf("merged = %+v", m)
 	}
 	if b.ad.gotVar != "full" {

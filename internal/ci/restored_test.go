@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 func TestR_CI_018_TheRestoreCutOff(t *testing.T) {

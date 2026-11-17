@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 )
 
 // anonymousKey is the credential key of every anonymous caller (R-BAS-019): the main installation's decision
@@ -82,7 +82,7 @@ func parseCredential(h http.Header) (c credential, ok bool) {
 // clients, Bearer for a browser, which Fetch Metadata headers reveal (the choice of internal/auth, Q-AUTH-173).
 func challenge(r *http.Request) string {
 	if r.Header.Get("Sec-Fetch-Mode") != "" || r.Header.Get("Sec-Fetch-Dest") != "" {
-		return `Bearer realm="trove"`
+		return `Bearer realm="quader"`
 	}
-	return `Basic realm="trove"`
+	return `Basic realm="quader"`
 }

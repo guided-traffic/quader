@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // TestR_API_018_PreflightIsAnsweredBeforeAuthentication: the chain refuses every
@@ -15,7 +15,7 @@ import (
 func TestR_API_018_PreflightIsAnsweredBeforeAuthentication(t *testing.T) {
 	router := httpserver.NewClientRouter()
 	router.HandleFunc("GET /api/v1/x", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(200) })
-	res, err := httpserver.NewResolver(nil, "http://trove.test", nil)
+	res, err := httpserver.NewResolver(nil, "http://quader.test", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

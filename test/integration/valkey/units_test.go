@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
+	"github.com/guided-traffic/quader/internal/cluster"
 )
 
 // TestR_BAS_016_ABatchIsChargedItsEventsInValkey: TakeNAt counts n units in one transaction of n INCR, with the

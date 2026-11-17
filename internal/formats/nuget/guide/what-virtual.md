@@ -15,10 +15,10 @@ Push, unlist, relist and delete through a virtual repository go to its deploymen
 
 ### Protection against dependency confusion
 
-A public package that carries the ID of an internal one, usually with a higher version, must never win. trove decides this on the server:
+A public package that carries the ID of an internal one, usually with a higher version, must never win. Quader decides this on the server:
 
 - **Namespace claims.** The first push of an ID to a local repository claims it (automatic claims are on by default), and an administrator can claim a whole prefix such as `Acme.*` before anything is pushed. A claimed ID resolves only from the claiming local member: the remote members are not asked, so neither a higher public version nor a missing internal one lets an upstream package in, and the answer is `404` when the local member lacks the version.
 - **Pin rules** of the virtual repository name, per ID pattern, the members that may serve it.
-- **The shadowing check.** The first push of an ID that a remote member already serves would replace the public package for every client of the virtual repositories that contain the local repository. trove refuses it with `403` `shadows_remote_package` unless the publisher holds the manage permission on the ID; when it cannot ask the upstream, the answer is `503` `shadow_check_unavailable`, nothing is stored, and you retry later.
+- **The shadowing check.** The first push of an ID that a remote member already serves would replace the public package for every client of the virtual repositories that contain the local repository. Quader refuses it with `403` `shadows_remote_package` unless the publisher holds the manage permission on the ID; when it cannot ask the upstream, the answer is `503` `shadow_check_unavailable`, nothing is stored, and you retry later.
 
 Your client adds one more layer: `<clear />` in `nuget.config` removes every other source, and package source mapping decides which source may serve which ID prefix. The section on configuring the client has both.

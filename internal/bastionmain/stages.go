@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Stages are the two middleware of the Bastion interface in the chain of the client listener of the default

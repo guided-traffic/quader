@@ -1,4 +1,4 @@
-Deleting needs the permission to delete on the repository, and the ownership of the image name. The registry API offers three deletions; the Docker CLI has no command for them, so use a tool that speaks the API (`skopeo delete`, `crane delete`, `curl -X DELETE`) or the package screen of trove.
+Deleting needs the permission to delete on the repository, and the ownership of the image name. The registry API offers three deletions; the Docker CLI has no command for them, so use a tool that speaks the API (`skopeo delete`, `crane delete`, `curl -X DELETE`) or the package screen of Quader.
 
 | Request | Effect |
 |---|---|
@@ -18,4 +18,4 @@ A remote repository is a cache: its images are removed through the package scree
 
 ### After a restore
 
-When trove is restored from a backup, an image that was deleted after the backup is withheld instead of served again, because it may have been removed on purpose: it answers `404` until an administrator reinstates it or confirms the deletion.
+When Quader is restored from a backup, an image that was deleted after the backup is withheld instead of served again, because it may have been removed on purpose: it answers `404` until an administrator reinstates it or confirms the deletion.

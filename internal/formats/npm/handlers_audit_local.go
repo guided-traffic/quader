@@ -8,15 +8,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/match"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/match"
 )
 
-// The audit in mode local (R-VULN-017): trove answers the bulk endpoint from its own advisory data, on local, remote and
+// The audit in mode local (R-VULN-017): quader answers the bulk endpoint from its own advisory data, on local, remote and
 // virtual repositories, and sends nothing out. A virtual repository answers itself and consults no member. The names the
 // installation treats as internal are withheld (R-VULN-010), the advisories of the others are read in one query for the
 // whole body and an advisory is listed when it affects at least one requested version of the name (R-VULN-009).
@@ -26,9 +26,9 @@ const auditEcosystem = "npm"
 
 // The texts of R-VULN-017; the guide quotes them (guide_test.go).
 const (
-	auditLocalNotice = "trove audited %d of %d packages from its own advisory data; %d internal names were not matched against public advisories"
+	auditLocalNotice = "Quader audited %d of %d packages from its own advisory data; %d internal names were not matched against public advisories"
 	// auditUnimported is the 503 before the npm data is complete.
-	auditUnimported = "trove's advisory data for npm is not imported yet"
+	auditUnimported = "Quader's advisory data for npm is not imported yet"
 	// auditMaxVersionsPerName and auditMaxVersions bound the versions of one name and of the whole body in mode local, which
 	// evaluates every version against every advisory of its name (S4, Q-VULN-71): a lockfile lists a handful of versions per
 	// name, and a body above these bounds is a request for work the answer does not need. 413 npm_too_large.
@@ -39,7 +39,7 @@ const (
 )
 
 // auditModeOf resolves the audit mode of a repository of the class (R-VULN-017, Q-VULN-44, Q-ARCH-341). npm.audit.mode
-// local answers from trove's data, which needs the installation's vulnerabilities.enabled and answers like disabled
+// local answers from quader's data, which needs the installation's vulnerabilities.enabled and answers like disabled
 // otherwise. forward needs a class that can forward (a local repository has no upstream) and answers like disabled
 // otherwise. A document that sets no mode is local while the installation answers audits from its own data, else forward
 // on remote and virtual repositories and disabled on local ones (R-NPM-038).
@@ -79,7 +79,7 @@ func localAuditAllowed(rq *formats.Request) error {
 	return nil
 }
 
-// handleAuditLocal answers POST -/npm/v1/security/advisories/bulk from trove's advisory data.
+// handleAuditLocal answers POST -/npm/v1/security/advisories/bulk from quader's advisory data.
 func (f *Format) handleAuditLocal(ctx context.Context, rq *formats.Request, w http.ResponseWriter) error {
 	if err := localAuditAllowed(rq); err != nil {
 		return err

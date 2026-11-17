@@ -16,7 +16,7 @@ export const COLLAPSE_AFTER_LINES = 3;
  * several repositories) and the repository's content page (one repository, R-UI-052) share it.
  */
 @Component({
-  selector: 'trove-install-command',
+  selector: 'quader-install-command',
   imports: [AddressField, CopyButton, ErrorNotice],
   templateUrl: './install-command.html',
   styleUrl: './install-panel.scss',

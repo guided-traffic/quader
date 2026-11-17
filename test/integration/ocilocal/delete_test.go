@@ -13,11 +13,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // fixture is a multi-platform image as a push leaves it: an index over three platform manifests, a second index that lists one of
@@ -224,7 +224,7 @@ func TestADeleteOfAWholeNameBeyondOneEventIsOneRemoval(t *testing.T) {
 // Mechanism of R-OCI-018, not a proof of its criteria: it checks one step of the cascade, the hook or the grammar of a reference;
 // the criteria are the index delete with a shared child, the 409 for a child and the conformance content-management category.
 func TestTheDeleteJobOfAWholeNameIsOneRemovalToo(t *testing.T) {
-	e := newEnv(t, "TROVE_STORAGE_DELETE_MAX_SYNC_ITEMS=5", "TROVE_STORAGE_DELETE_BATCH_SIZE=3")
+	e := newEnv(t, "QUADER_STORAGE_DELETE_MAX_SYNC_ITEMS=5", "QUADER_STORAGE_DELETE_BATCH_SIZE=3")
 	e.st.Start(t, testenv.ReplicaOptions{Name: "worker-1", Role: "worker"})
 	f := e.multiPlatform()
 	_ = f

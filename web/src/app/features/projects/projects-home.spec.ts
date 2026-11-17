@@ -15,7 +15,7 @@ const ALICE = '00000000-0000-0000-0000-000000000001';
 function visited(...refs: string[]): void {
   const now = Date.now();
   const repositories = refs.map((id, i) => ({ id, visits: 1, last: now - i * 1000 }));
-  new BrowserStorage().set('local', `trove.frequent.${ALICE}`, JSON.stringify({ repositories, projects: [] }));
+  new BrowserStorage().set('local', `quader.frequent.${ALICE}`, JSON.stringify({ repositories, projects: [] }));
 }
 
 afterEach(() => new BrowserStorage().clear('local'));

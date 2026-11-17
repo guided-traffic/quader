@@ -19,13 +19,13 @@ export interface ProjectMemberChoice {
 
 /** Adds a member to a project (R-UI-041, Q-UI-214): the user or group through the principal lookup and its role. */
 @Component({
-  selector: 'trove-project-member-dialog',
+  selector: 'quader-project-member-dialog',
   imports: [DialogTitle, DialogClose, PrincipalPicker, SelectField],
   template: `
-    <h2 troveDialogTitle i18n="@@project-members.add">Add member</h2>
+    <h2 quaderDialogTitle i18n="@@project-members.add">Add member</h2>
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
-        <trove-principal-picker
+        <quader-principal-picker
           i18n-label="@@project-members.find"
           label="Find a user or group"
           name="member-search"
@@ -35,7 +35,7 @@ export interface ProjectMemberChoice {
         />
         @if (chosen(); as c) {
           <p class="chosen"><span translate="no">{{ c }}</span></p>
-          <trove-select-field
+          <quader-select-field
             i18n-label="@@project-members.role"
             label="Role"
             name="new-role"
@@ -47,7 +47,7 @@ export interface ProjectMemberChoice {
         }
       </div>
       <div class="dialog-actions">
-        <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@project-members.cancel">Cancel</button>
+        <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@project-members.cancel">Cancel</button>
         <button class="btn btn-confirm" type="submit" [disabled]="!chosen()" i18n="@@project-members.add-confirm">
           Add member
         </button>

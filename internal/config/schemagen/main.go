@@ -1,5 +1,5 @@
 // Command schemagen writes the JSON Schema of the configuration tree and the files the chart
-// trove-bastion derives from the schema of the role bastion. It is run by `go generate ./internal/config`.
+// quader-bastion derives from the schema of the role bastion. It is run by `go generate ./internal/config`.
 package main
 
 import (
@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
-// The files of the chart trove-bastion that are generated from bastion.schema.json (R-BAS-046, Q-BAS-58).
+// The files of the chart quader-bastion that are generated from bastion.schema.json (R-BAS-046, Q-BAS-58).
 const (
 	chartSchemaFile  = "values.schema.json"
 	chartManagedFile = "chart-managed-keys.yaml"
@@ -23,7 +23,7 @@ const (
 func main() {
 	out := flag.String("out", "schema.json", "output file of the main configuration tree")
 	bastionOut := flag.String("bastion-out", "", "output file of the role bastion's tree (empty: not written)")
-	bastionChart := flag.String("bastion-chart", "", "directory of the chart trove-bastion whose config schema and managed-key list are written from the role's tree (empty: not written)")
+	bastionChart := flag.String("bastion-chart", "", "directory of the chart quader-bastion whose config schema and managed-key list are written from the role's tree (empty: not written)")
 	flag.Parse()
 	write(*out, config.MustDescribe().JSONSchema)
 	if *bastionOut != "" {
@@ -123,7 +123,7 @@ func managedRoots(node map[string]any, path string) []string {
 }
 
 func allManaged(node map[string]any) bool {
-	if marked, _ := node["x-trove-chart-managed"].(bool); marked {
+	if marked, _ := node["x-quader-chart-managed"].(bool); marked {
 		return true
 	}
 	props, _ := node["properties"].(map[string]any)

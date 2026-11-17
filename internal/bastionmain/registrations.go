@@ -8,19 +8,19 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The Bastion registrations of the main installation (R-BAS-004): a principal of the kind bastion plus the
 // row of the table bastion, the tokens of the type bst that belong to it, and the last contact of each
 // replica. The service owns the rules of the page; the management API (internal/api/v1) and the admin
-// commands (cmd/trove) call it.
+// commands (cmd/quader) call it.
 
 // namePattern is the name rule of R-BAS-004 and of the check principal_bastion_name (migration 00032).
 var namePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{0,19}$`)

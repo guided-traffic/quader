@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // fakeDB simulates the blobs and blob_gc_queue tables for the operations the

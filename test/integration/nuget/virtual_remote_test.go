@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 // mixedVirtual creates the virtual repository key with the configuration cfg and the members
@@ -28,7 +28,7 @@ func (e *renv) mixedVirtual(key, cfg string, members ...string) {
 // TestR_NUGET_017_AVirtualRepositoryMergesARemoteMemberThatGzipsAndPagesItsRegistration puts a
 // local repository and a remote of the counting upstream behind one virtual repository with the
 // local one as its deployment target, while the upstream codes every document with gzip whatever
-// trove asks for, as nuget.org's registration hive does (Q-NUGET-82). A package only the remote serves
+// quader asks for, as nuget.org's registration hive does (Q-NUGET-82). A package only the remote serves
 // comes through the virtual repository with every address on the virtual repository, an ID with
 // 200 versions in pages the upstream lists by address is merged whole, a version shows the same
 // entry through the virtual repository as through the remote, and a push through the virtual

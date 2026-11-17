@@ -6,7 +6,7 @@ import { e2eProject, expect, expectAccessible, repositories, repositoryApi, sign
 // downloads it, with the requests spread over three replicas.
 
 const repoKey = unique('ui-files');
-const content = `trove browser journey ${repoKey}\n`;
+const content = `quader browser journey ${repoKey}\n`;
 
 test.afterAll(async ({ admin }) => {
   await admin.delete(repositoryApi(repoKey));

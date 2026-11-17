@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Vulnerability scanning (R-VULN-011, R-VULN-014, Q-VULN-64): the indexes the findings' lookups need and 00035 did not give them.
 -- The two foreign keys of vuln_finding that are ON DELETE SET NULL (package_id, version_id) are looked up by every delete of a

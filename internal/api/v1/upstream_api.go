@@ -3,9 +3,9 @@ package v1
 import (
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The upstream-test operations of R-REPO-024. The saved test needs repositories:write-config or, for an

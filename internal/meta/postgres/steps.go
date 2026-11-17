@@ -22,7 +22,7 @@ const (
 )
 
 // EnforceMigrationPhases switches on the expand/contract rules of R-HA-018 for
-// the migration files: every file carries -- trove:phase, an expand step holds
+// the migration files: every file carries -- quader:phase, an expand step holds
 // no contract-class statement, and requiredSchema is the newest expand step.
 // Switched off until the first stable release (Q-ARCH-340): a file needs no
 // header, any step may drop, rename or tighten, and requiredSchema is the
@@ -37,9 +37,9 @@ type Step struct {
 	Version     int
 	Name        string // file name without ".sql", e.g. 00004_coordination
 	Phase       string // expand or contract; expand without a header while EnforceMigrationPhases is off
-	NoTx        bool   // -- trove:no-transaction
+	NoTx        bool   // -- quader:no-transaction
 	RequiresApp string // contract steps: the oldest release allowed to serve afterwards
-	// RequiresBackground are the background data migrations a contract step depends on (-- trove:requires-background
+	// RequiresBackground are the background data migrations a contract step depends on (-- quader:requires-background
 	// <name>, once per migration): the contract guard refuses the step until each has succeeded (R-HA-022, Q-HA-115).
 	RequiresBackground []string
 	SQL                string
@@ -134,7 +134,7 @@ var contractStatements = regexp.MustCompile(`(?i)\bdrop\s+(table|column|index|co
 
 // parseStep reads the header of one file (R-ARCH-026). With strict, the rules of
 // R-HA-018 apply: the phase header is required, and an expand step holds no
-// contract-class statement. Without, a file without -- trove:phase is an expand
+// contract-class statement. Without, a file without -- quader:phase is an expand
 // step and the phase does not restrict the SQL (Q-ARCH-340). Either way a contract
 // step names the release it requires, because the contract guard and compat_floor
 // read it, and requires-app stands on contract steps only.
@@ -149,7 +149,7 @@ func parseStep(name string, version int, raw []byte, strict bool) (Step, error) 
 			break // the header is the leading comment block
 		}
 		body := strings.TrimSpace(strings.TrimPrefix(t, "--"))
-		rest, ok := strings.CutPrefix(body, "trove:")
+		rest, ok := strings.CutPrefix(body, "quader:")
 		if !ok {
 			continue
 		}
@@ -158,10 +158,10 @@ func parseStep(name string, version int, raw []byte, strict bool) (Step, error) 
 		switch key {
 		case "phase":
 			if s.Phase != "" {
-				return s, fmt.Errorf("more than one trove:phase header")
+				return s, fmt.Errorf("more than one quader:phase header")
 			}
 			if arg != phaseExpand && arg != phaseContract {
-				return s, fmt.Errorf("trove:phase must be expand or contract, got %q", arg)
+				return s, fmt.Errorf("quader:phase must be expand or contract, got %q", arg)
 			}
 			s.Phase = arg
 		case "no-transaction":
@@ -169,39 +169,39 @@ func parseStep(name string, version int, raw []byte, strict bool) (Step, error) 
 		case "requires-app":
 			ver, ok := strings.CutPrefix(arg, ">=")
 			if !ok {
-				return s, fmt.Errorf("trove:requires-app must read \">= <version>\", got %q", arg)
+				return s, fmt.Errorf("quader:requires-app must read \">= <version>\", got %q", arg)
 			}
 			ver = strings.TrimSpace(ver)
 			if _, err := parseVersion(ver); err != nil || ver == "dev" {
-				return s, fmt.Errorf("trove:requires-app: %q is not a release version", ver)
+				return s, fmt.Errorf("quader:requires-app: %q is not a release version", ver)
 			}
 			s.RequiresApp = ver
 		case "requires-background":
 			if !backgroundName.MatchString(arg) {
-				return s, fmt.Errorf("trove:requires-background must name one background migration (lower-case letters, digits and underscores), got %q", arg)
+				return s, fmt.Errorf("quader:requires-background must name one background migration (lower-case letters, digits and underscores), got %q", arg)
 			}
 			if slices.Contains(s.RequiresBackground, arg) {
-				return s, fmt.Errorf("trove:requires-background %s is named twice", arg)
+				return s, fmt.Errorf("quader:requires-background %s is named twice", arg)
 			}
 			s.RequiresBackground = append(s.RequiresBackground, arg)
 		default:
-			return s, fmt.Errorf("unknown header trove:%s", key)
+			return s, fmt.Errorf("unknown header quader:%s", key)
 		}
 	}
 	if s.Phase == "" {
 		if strict {
-			return s, fmt.Errorf("missing -- trove:phase expand|contract header")
+			return s, fmt.Errorf("missing -- quader:phase expand|contract header")
 		}
 		s.Phase = phaseExpand
 	}
 	if s.Phase == phaseContract && s.RequiresApp == "" {
-		return s, fmt.Errorf("a contract step needs -- trove:requires-app >= <version>")
+		return s, fmt.Errorf("a contract step needs -- quader:requires-app >= <version>")
 	}
 	if s.Phase == phaseExpand && s.RequiresApp != "" {
-		return s, fmt.Errorf("trove:requires-app belongs to contract steps only")
+		return s, fmt.Errorf("quader:requires-app belongs to contract steps only")
 	}
 	if s.Phase == phaseExpand && len(s.RequiresBackground) > 0 {
-		return s, fmt.Errorf("trove:requires-background belongs to contract steps only")
+		return s, fmt.Errorf("quader:requires-background belongs to contract steps only")
 	}
 	body := stripSQLNoise(s.SQL)
 	if strings.TrimSpace(body) == "" {
@@ -213,7 +213,7 @@ func parseStep(name string, version int, raw []byte, strict bool) (Step, error) 
 		}
 	}
 	if s.NoTx && strings.Count(strings.TrimRight(strings.TrimSpace(body), ";"), ";") > 0 {
-		return s, fmt.Errorf("a trove:no-transaction step holds exactly one statement")
+		return s, fmt.Errorf("a quader:no-transaction step holds exactly one statement")
 	}
 	return s, nil
 }

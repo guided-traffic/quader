@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
+	"github.com/guided-traffic/quader/internal/audit"
 )
 
 var updateAuditActions = flag.Bool("update-audit-actions", false, "rewrite web/src/app/features/audit/audit-actions.fixture.ts")

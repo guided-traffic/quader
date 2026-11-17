@@ -35,11 +35,11 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
  * card (R-UI-093: the grade, its rule, the counts as a bar, when it was checked; N/A with why it is not evaluated), a block with
  * its reason (*malicious package*, or *blocked in triage* with the finding that blocks), and the open findings with severity,
  * identifier, status and fixed versions, each linking to the finding, 25 at a time from the findings API and narrowed by the bar's
- * segments (`<trove-version-findings>`, Q-UI-379). The report is the API's (`GET …/versions/{version}/vulnerabilities`); the page
+ * segments (`<quader-version-findings>`, Q-UI-379). The report is the API's (`GET …/versions/{version}/vulnerabilities`); the page
  * shows nothing it does not carry.
  */
 @Component({
-  selector: 'trove-package-vulnerabilities',
+  selector: 'quader-package-vulnerabilities',
   preserveWhitespaces: true,
   imports: [RouterLink, GradeCard, VersionFindings],
   template: `
@@ -50,7 +50,7 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
       @for (repo of r.repositories; track repo.repository) {
         <section class="vuln-repo" [attr.aria-labelledby]="'vuln-repo-' + $index">
           <h2 [id]="'vuln-repo-' + $index" translate="no">{{ repo.repository }}</h2>
-          <trove-grade-card
+          <quader-grade-card
             class="vuln-grade"
             [grade]="repo.grade"
             [packageName]="packageName()"
@@ -73,7 +73,7 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
             </p>
           }
           @if (repo.grade.grade !== 'N/A' && openCount({ packageId: r.packageId, version: r.version, repositories: [repo] }) > 0) {
-            <trove-version-findings
+            <quader-version-findings
               [repository]="repo.repository"
               [packageName]="packageName()"
               [versions]="findingVersions(repo, r.version)"

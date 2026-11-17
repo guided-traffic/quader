@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nupkg"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nupkg"
 )
 
 // withSecondEndRecord appends to an archive a copy of its central directory and end record, one
@@ -33,7 +33,7 @@ func otherNuspec(extra string) []byte {
 }
 
 // TestR_NUGET_015_APackageWhoseIdentityCannotBeCheckedIs502AndStoresNothing (Q-NUGET-84): an
-// upstream that serves package B under the path of package A, in an archive trove's reader
+// upstream that serves package B under the path of package A, in an archive quader's reader
 // refuses for any reason but "no package at all", is answered 502 upstream_package_mismatch and
 // nothing is stored. Before, every refusal of the reader meant "serve as it came without the
 // identity check", so B was cached under A for good, and with it the archives the push road

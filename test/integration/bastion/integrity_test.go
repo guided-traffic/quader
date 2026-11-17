@@ -138,7 +138,7 @@ func TestR_BAS_032_CorruptCacheContentAndForgedEntries(t *testing.T) {
 			if err == nil && got.Status == http.StatusOK && bytes.Equal(got.Body, bad) {
 				t.Fatal("a damaged artifact was delivered as a complete response")
 			}
-			if sumMetric(r.metrics(t), "trove_bastion_cache_corrupt_total") < 1 {
+			if sumMetric(r.metrics(t), "quader_bastion_cache_corrupt_total") < 1 {
 				t.Fatal("the corruption was not counted")
 			}
 			if left := st.list(t, "sha256"); len(left) != 0 {
@@ -169,7 +169,7 @@ func TestR_BAS_032_CorruptCacheContentAndForgedEntries(t *testing.T) {
 			if got, err := r.tryGet(path, w.full.token, addr); err != nil || got.Status != http.StatusOK || !bytes.Equal(got.Body, want) {
 				t.Fatalf("with a forged entry: %v %d", err, got.Status)
 			}
-			if sumMetric(r.metrics(t), "trove_bastion_cache_evictions_total", `stale`) < 1 {
+			if sumMetric(r.metrics(t), "quader_bastion_cache_evictions_total", `stale`) < 1 {
 				t.Fatalf("the forged entry was not deleted as stale")
 			}
 			// The signature check is not a one-off: a good entry is written again and is served without the main

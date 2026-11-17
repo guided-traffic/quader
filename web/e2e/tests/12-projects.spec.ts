@@ -120,7 +120,7 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     // The members screen shows the group as Owner; the last Owner cannot be removed (Q-AUTHZ-217).
     await nav.getByRole('link', { name: 'Members', exact: true }).click();
     await expect(bob.getByRole('heading', { name: 'Members', level: 1 })).toBeVisible();
-    const members = bob.locator('trove-project-members');
+    const members = bob.locator('quader-project-members');
     await expect(members.getByRole('rowheader', { name: groupName })).toBeVisible();
     await members.getByRole('button', { name: `Actions for group:${groupName}` }).click();
     await bob.getByRole('menuitem', { name: 'Remove member' }).click();
@@ -130,7 +130,7 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     await nav.getByRole('link', { name: 'Permission policies', exact: true }).click();
     await expect(bob.getByRole('heading', { name: 'Permission policies', level: 1 })).toBeVisible();
     // The header's action; the empty list offers the same action under its sentence once it has loaded (Q-UI-309).
-    await bob.locator('trove-page-header').getByRole('link', { name: 'Create policy' }).click();
+    await bob.locator('quader-page-header').getByRole('link', { name: 'Create policy' }).click();
     await expect(bob.getByRole('heading', { name: 'New permission policy', level: 1 })).toBeVisible();
     await expect(bob.getByText('Project policy of')).toBeVisible();
     const name = bob.getByLabel('Name', { exact: true }).first();
@@ -166,7 +166,7 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     await expect(tokens).toHaveAttribute('aria-expanded', 'false');
     await tokens.click();
     await bob.getByRole('button', { name: 'Create token' }).click();
-    const form = bob.locator('trove-token-form');
+    const form = bob.locator('quader-token-form');
     // An Owner's token always expires: no "never", and the cap is said.
     await expect(form.getByText('Never expires')).toHaveCount(0);
     await expect(form.getByText(/caps the lifetime of service-account tokens/)).toBeVisible();
@@ -177,7 +177,7 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
 
     const secret = bob.getByRole('region', { name: 'Your new token' });
     await expect(secret).toBeVisible();
-    expect(await secret.locator('#secret-value').inputValue()).toMatch(/^trv_sat_/);
+    expect(await secret.locator('#secret-value').inputValue()).toMatch(/^qdr_sat_/);
     await secret.getByRole('button', { name: 'I have copied it' }).click();
     await expect(bob.getByRole('row', { name: /browser journey/ })).toBeVisible();
     await expectAccessible(bob, 'project service account with a token');

@@ -14,13 +14,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The cache-fill policy of an endpoint (R-EP-019) through the whole request path: the
@@ -125,7 +125,7 @@ var fillEndpoints = fmt.Sprintf(`{"customers":{"listen":"127.0.0.1:0","base_url"
 	`"partners":{"listen":"127.0.0.1:0","base_url":"https://%s","surface":["packages"],"cache_fill":true}}`, customersHost, partnersHost)
 
 // TestR_EP_019_TheCacheFillPolicyOfAnEndpoint: no request on an endpoint without cache_fill makes
-// trove contact an upstream and the refusal is counted; the same
+// quader contact an upstream and the refusal is counted; the same
 // request through default fills the cache, after which customers is served from it; an endpoint
 // with cache_fill true lets a subject that may populate fill.
 func TestR_EP_019_TheCacheFillPolicyOfAnEndpoint(t *testing.T) {
@@ -156,23 +156,23 @@ func TestR_EP_019_TheCacheFillPolicyOfAnEndpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := e.stack.Start(t, testenv.ReplicaOptions{Name: "fill", Endpoints: fillEndpoints, Env: []string{
-		`TROVE_PROXY_OUTBOUND_TLS_CA_FILES=["` + ca + `"]`,
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.0/8","::1/128"]`,
+		`QUADER_PROXY_OUTBOUND_TLS_CA_FILES=["` + ca + `"]`,
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.0/8","::1/128"]`,
 	}})
 	var epoch string
 	for _, ep := range []string{"customers", "partners"} {
-		a := e.send(h.Addr("default"), "trove.test", "POST", "/api/v1/endpoints/"+ep+"/exposure-rules", e.opsPAT, []byte(`{"name":"relay","repository":"it/relay-remote"}`))
+		a := e.send(h.Addr("default"), "quader.test", "POST", "/api/v1/endpoints/"+ep+"/exposure-rules", e.opsPAT, []byte(`{"name":"relay","repository":"it/relay-remote"}`))
 		if a.Status != http.StatusCreated {
 			t.Fatalf("rule on %s: %d %s", ep, a.Status, a.Body)
 		}
-		epoch = a.Header.Get("Trove-Authz-Epoch")
+		epoch = a.Header.Get("Quader-Authz-Epoch")
 	}
 	get := func(addr, host, tok, path string) answer {
 		t.Helper()
-		return e.send(addr, host, "GET", "/api/relay/it/relay-remote/"+path, tok, nil, "Trove-Authz-Min-Epoch", epoch)
+		return e.send(addr, host, "GET", "/api/relay/it/relay-remote/"+path, tok, nil, "Quader-Authz-Min-Epoch", epoch)
 	}
 	refused := func() float64 {
-		return testenv.MetricValue(h.Metrics(t), `trove_endpoint_cache_fill_refused_total{endpoint="customers"}`)
+		return testenv.MetricValue(h.Metrics(t), `quader_endpoint_cache_fill_refused_total{endpoint="customers"}`)
 	}
 
 	t.Run("R-EP-019 an uncached file on customers: 403 populate_not_permitted, no upstream request, counted", func(t *testing.T) {
@@ -186,11 +186,11 @@ func TestR_EP_019_TheCacheFillPolicyOfAnEndpoint(t *testing.T) {
 			t.Fatalf("the upstream was asked %d times", n)
 		}
 		if got := refused(); got < 2 {
-			t.Fatalf("trove_endpoint_cache_fill_refused_total{customers} = %v", got)
+			t.Fatalf("quader_endpoint_cache_fill_refused_total{customers} = %v", got)
 		}
 	})
 	t.Run("R-EP-019 the same request through default fills the cache", func(t *testing.T) {
-		a := get(h.Addr("default"), "trove.test", e.opsPAT, file("1.0.0"))
+		a := get(h.Addr("default"), "quader.test", e.opsPAT, file("1.0.0"))
 		if a.Status != http.StatusOK || string(a.Body) != "left-pad 1.0.0" {
 			t.Fatalf("%d %s", a.Status, a.Body)
 		}

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // rev reads the _rev of a package the way npm does before it writes (R-NPM-009).
@@ -628,7 +628,7 @@ func TestR_NPM_019_WhoamiAndPing(t *testing.T) {
 			if ans.Status != 401 || strings.Contains(strings.ToLower(ans.Header.Get("WWW-Authenticate")), "otp") || ans.Header.Get("WWW-Authenticate") == "" {
 				t.Fatalf("%s %s anonymous: %d %q", r.Name, p, ans.Status, ans.Header.Get("WWW-Authenticate"))
 			}
-			bad := e.get(r, "npm-local", p, "trv_pat_notatoken")
+			bad := e.get(r, "npm-local", p, "qdr_pat_notatoken")
 			if bad.Status != 401 {
 				t.Fatalf("%s %s with an unknown token: %d", r.Name, p, bad.Status)
 			}

@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
 )
 
 // immutableCacheControl is the Cache-Control of a tarball (R-NPM-013): its bytes never

@@ -1,0 +1,11 @@
+{{- /*
+Three Deployments, always (R-HA-002): <fullname>-api runs "quader serve --role api", <fullname>-packages
+"--role packages" and <fullname>-worker "--role worker". No value renders --role all. Beside them one
+Deployment per path pool (<fullname>-<role>-<pool>, R-HA-062), per worker pool, per endpoint pool
+(<fullname>-<role>-ep-<name>, R-EP-008) and, with web.enabled, the bridge <fullname>-web (R-HA-064).
+templates/_units.tpl lists them; the PodDisruptionBudget, the autoscaler and the NetworkPolicy of each
+range over the same list.
+*/ -}}
+{{- range $unit := include "quader.units" . | fromYamlArray }}
+{{- include "quader.deployment" (dict "root" $ "unit" $unit) | nindent 0 }}
+{{- end }}

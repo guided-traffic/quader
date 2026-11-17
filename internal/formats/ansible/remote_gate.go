@@ -3,8 +3,8 @@ package ansible
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 // BeforeArtifact is the road every archive of a remote repository takes (R-ANS-018, Q-ANS-13): it returns the SHA-256 the version

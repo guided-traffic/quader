@@ -12,16 +12,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The unit tests of the operations of the Bastion interface that need no database: the check (R-BAS-011) with a
@@ -142,11 +142,11 @@ func TestR_BAS_011_ACheckRunsTheCallersCredentialThroughTheAuthenticationStage(t
 	exp := time.Date(2027, 1, 31, 0, 0, 0, 0, time.UTC)
 	cs := newCheckSetup(t, checkedCaller(&exp))
 	cs.shapes.shapes["it/npm-missing"] = bastionmain.Shape{Read: iface.ReadNone, Status: http.StatusNotFound}
-	w := cs.post(iface.PathCheck, `{"credential":"trv_sat_3kQ9","clientAddress":"203.0.113.7","repositories":["it/npm-all","it/npm-partner","it/npm-local","it/npm-missing"]}`)
+	w := cs.post(iface.PathCheck, `{"credential":"qdr_sat_3kQ9","clientAddress":"203.0.113.7","repositories":["it/npm-all","it/npm-partner","it/npm-local","it/npm-missing"]}`)
 	if w.Code != http.StatusUnprocessableEntity {
 		t.Fatalf("four repositories with max_repositories 3: %d %s", w.Code, w.Body)
 	}
-	w = cs.post(iface.PathCheck, `{"credential":"trv_sat_3kQ9","clientAddress":"203.0.113.7","repositories":["it/npm-all","it/npm-partner","it/npm-local"]}`)
+	w = cs.post(iface.PathCheck, `{"credential":"qdr_sat_3kQ9","clientAddress":"203.0.113.7","repositories":["it/npm-all","it/npm-partner","it/npm-local"]}`)
 	ans := decodeCheck(t, w)
 	if ans.Subject.Kind != iface.SubjectToken || ans.Subject.TokenID != callerTokenID || ans.Subject.PrincipalID != checkedPrincipalID || ans.Subject.ExpiresAt == nil || !ans.Subject.ExpiresAt.Equal(exp) {
 		t.Errorf("subject = %+v", ans.Subject)
@@ -165,7 +165,7 @@ func TestR_BAS_011_ACheckRunsTheCallersCredentialThroughTheAuthenticationStage(t
 	if r == nil {
 		t.Fatal("the authentication stage was not asked")
 	}
-	if got := r.Header.Get("Authorization"); got != "Bearer trv_sat_3kQ9" {
+	if got := r.Header.Get("Authorization"); got != "Bearer qdr_sat_3kQ9" {
 		t.Errorf("Authorization = %q", got)
 	}
 	if got := httpserver.InfoFrom(r.Context()).Client; got != netip.MustParseAddr("203.0.113.7") {
@@ -181,7 +181,7 @@ func TestR_BAS_011_ACheckRunsTheCallersCredentialThroughTheAuthenticationStage(t
 
 func TestR_BAS_011_AnExpiryIsAbsentForATokenThatDoesNotExpire(t *testing.T) {
 	cs := newCheckSetup(t, checkedCaller(nil))
-	w := cs.post(iface.PathCheck, `{"credential":"trv_sat_x","clientAddress":"2001:db8::7","repositories":["it/npm-all"]}`)
+	w := cs.post(iface.PathCheck, `{"credential":"qdr_sat_x","clientAddress":"2001:db8::7","repositories":["it/npm-all"]}`)
 	if ans := decodeCheck(t, w); ans.Subject.ExpiresAt != nil || strings.Contains(w.Body.String(), "expiresAt") {
 		t.Errorf("subject = %+v body %s", ans.Subject, w.Body)
 	}
@@ -198,12 +198,12 @@ func TestR_BAS_011_ASubjectIsInvalidAnonymousRefusedOrThrottled(t *testing.T) {
 		retry  int
 		shapes bool
 	}{
-		"revoked":           {invalid, `{"credential":"trv_pat_x","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`, iface.SubjectInvalid, 0, false},
-		"owner disabled":    {errs.E(errs.Unauthenticated, errs.CodePrincipalDisabled, "x"), `{"credential":"trv_pat_x","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`, iface.SubjectInvalid, 0, false},
+		"revoked":           {invalid, `{"credential":"qdr_pat_x","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`, iface.SubjectInvalid, 0, false},
+		"owner disabled":    {errs.E(errs.Unauthenticated, errs.CodePrincipalDisabled, "x"), `{"credential":"qdr_pat_x","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`, iface.SubjectInvalid, 0, false},
 		"refused anonymous": {errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "x"), `{"credential":null,"clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`, iface.SubjectAnonymousRefused, 0, false},
 		"throttled": {
 			errs.E(errs.RateLimited, errs.CodeRateLimited, "x", errs.WithRetryAfter(59500*time.Millisecond)),
-			`{"credential":"trv_pat_x","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`, iface.SubjectThrottled, 60, false,
+			`{"credential":"qdr_pat_x","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`, iface.SubjectThrottled, 60, false,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -234,7 +234,7 @@ func TestR_BAS_011_ASubjectIsInvalidAnonymousRefusedOrThrottled(t *testing.T) {
 		cs := newCheckSetup(t, func(*http.Request) (httpserver.Principal, error) {
 			return httpserver.Principal{}, errs.E(errs.Unavailable, errs.CodeDatabaseUnavailable, "x")
 		})
-		if w := cs.post(iface.PathCheck, `{"credential":"trv_pat_x","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`); w.Code != http.StatusServiceUnavailable {
+		if w := cs.post(iface.PathCheck, `{"credential":"qdr_pat_x","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`); w.Code != http.StatusServiceUnavailable {
 			t.Errorf("status %d", w.Code)
 		}
 	})

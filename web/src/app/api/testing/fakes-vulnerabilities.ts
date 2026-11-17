@@ -50,12 +50,12 @@ export function sampleFinding(over: Partial<VulnerabilityFinding> = {}): Vulnera
     project: 'web',
     repository: 'web/npm-remote',
     format: 'npm',
-    package: 'trove-test-vuln',
+    package: 'quader-test-vuln',
     version: '1.0.0',
     advisory: 'GHSA-aaaa-aaaa-0001',
     aliases: ['CVE-2026-1111'],
     kind: 'vulnerability',
-    summary: 'Prototype pollution in trove-test-vuln',
+    summary: 'Prototype pollution in quader-test-vuln',
     severity: 'high',
     cvss: { version: '3.1', score: 7.5, vector: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H' },
     knownExploited: false,
@@ -79,7 +79,7 @@ export function sampleAdvisory(over: Partial<VulnerabilityAdvisory> = {}): Vulne
     id: 'GHSA-aaaa-aaaa-0001',
     aliases: ['CVE-2026-1111'],
     kind: 'vulnerability',
-    summary: 'Prototype pollution in trove-test-vuln',
+    summary: 'Prototype pollution in quader-test-vuln',
     details: 'A crafted object can pollute the prototype.\n\n<script>window.pwned = 1</script>\n\nSee [the report](javascript:alert(1)).',
     // What the server's sanitizer of the README makes of `details` (R-UI-008): no script, no javascript: link.
     detailsHtml: '<p>A crafted object can pollute the prototype.</p>\n<p>See <a href="https://example.com/report">the report</a>.</p>',
@@ -88,7 +88,7 @@ export function sampleAdvisory(over: Partial<VulnerabilityAdvisory> = {}): Vulne
     knownExploited: false,
     knownExploitedAddedAt: null,
     cwe: ['CWE-1321'],
-    affected: [{ name: 'trove-test-vuln', ranges: [{ type: 'SEMVER', events: [{ introduced: '0' }, { fixed: '1.0.1' }] }], versions: [], fixed: ['1.0.1'] }],
+    affected: [{ name: 'quader-test-vuln', ranges: [{ type: 'SEMVER', events: [{ introduced: '0' }, { fixed: '1.0.1' }] }], versions: [], fixed: ['1.0.1'] }],
     fixedVersions: ['1.0.1'],
     references: [
       { type: 'ADVISORY', url: 'https://github.com/advisories/GHSA-aaaa-aaaa-0001' },
@@ -120,12 +120,12 @@ const SEED: readonly VulnerabilityFinding[] = [
   }),
   sampleFinding({
     id: FINDING_MAL,
-    package: 'trove-test-mal',
+    package: 'quader-test-mal',
     version: '1.0.0',
     advisory: 'MAL-2026-1234',
     aliases: [],
     kind: 'malicious',
-    summary: 'Malicious code in trove-test-mal',
+    summary: 'Malicious code in quader-test-mal',
     severity: 'critical',
     cvss: null,
     knownExploited: true,
@@ -209,7 +209,7 @@ export class FakeVulnerabilitiesApi extends VulnerabilitiesApi {
   rows: VulnerabilityFinding[] = SEED.map((f) => ({ ...f }));
   advisories = new Map<string, VulnerabilityAdvisory>([
     ['npm/GHSA-aaaa-aaaa-0001', sampleAdvisory()],
-    ['npm/MAL-2026-1234', sampleAdvisory({ id: 'MAL-2026-1234', kind: 'malicious', summary: 'Malicious code in trove-test-mal', severity: 'critical', cvss: null, aliases: [], references: [] })],
+    ['npm/MAL-2026-1234', sampleAdvisory({ id: 'MAL-2026-1234', kind: 'malicious', summary: 'Malicious code in quader-test-mal', severity: 'critical', cvss: null, aliases: [], references: [] })],
   ]);
   /** Rows the list pages through; set to a small number to test "Load more". */
   pageSize = 50;

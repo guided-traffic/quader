@@ -3,7 +3,7 @@ package all
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func TestCatalog(t *testing.T) {

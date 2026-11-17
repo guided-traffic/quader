@@ -23,7 +23,7 @@ const VERSIONS_PAGE = 20;
  * list. The command is the server's install snippet (R-API-030) for this repository, so it carries this installation's real address.
  */
 @Component({
-  selector: 'trove-repository-item-versions',
+  selector: 'quader-repository-item-versions',
   imports: [DatePipe, RouterLink, CopyButton, DataTable, GradeLabel, InstallCommand],
   template: `
     <div class="command-panel">
@@ -33,7 +33,7 @@ const VERSIONS_PAGE = 20;
           &ngsp;<code translate="no">{{ pkg().name }} {{ v }}</code>
         }
       </p>
-      <trove-install-command
+      <quader-install-command
         [format]="pkg().format"
         [name]="pkg().name"
         [version]="selected()"
@@ -41,7 +41,7 @@ const VERSIONS_PAGE = 20;
       />
     </div>
 
-    <trove-data-table
+    <quader-data-table
       [caption]="caption()"
       [columns]="columns()"
       [loaded]="versions.loaded()"
@@ -65,7 +65,7 @@ const VERSIONS_PAGE = 20;
             <td>
               @if (v.digest; as d) {
                 <code class="ellipsis" translate="no" [attr.title]="d">{{ shortDigest(d) }}</code>
-                <trove-copy-button [value]="d" [label]="copyDigestLabel" />
+                <quader-copy-button [value]="d" [label]="copyDigestLabel" />
               } @else {
                 –
               }
@@ -78,7 +78,7 @@ const VERSIONS_PAGE = 20;
           @if (scanned()) {
             <td>
               @if (gradeOf(v.version); as g) {
-                <trove-grade [grade]="g" />
+                <quader-grade [grade]="g" />
               }
             </td>
           }
@@ -95,21 +95,21 @@ const VERSIONS_PAGE = 20;
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
   styles: `
     :host {
       display: block;
-      padding: var(--trove-space-3) 0 var(--trove-space-3) var(--trove-space-6);
+      padding: var(--quader-space-3) 0 var(--quader-space-3) var(--quader-space-6);
     }
     .command-panel {
-      margin-block-end: var(--trove-space-3);
-      padding: var(--trove-space-3);
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-m);
+      margin-block-end: var(--quader-space-3);
+      padding: var(--quader-space-3);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-m);
     }
     .command-title {
-      margin: 0 0 var(--trove-space-2);
+      margin: 0 0 var(--quader-space-2);
       font-weight: 600;
     }
     .command-title code {

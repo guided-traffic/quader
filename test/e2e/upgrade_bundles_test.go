@@ -25,18 +25,18 @@ import (
 
 // upMarkedImage is the image of the working tree with the second UI bundle, built by `make image-marked`.
 func upMarkedImage() string {
-	if v := os.Getenv("TROVE_IMAGE_MARKED"); v != "" {
+	if v := os.Getenv("QUADER_IMAGE_MARKED"); v != "" {
 		return v
 	}
-	return "guidedtraffic/trove:dev-marked"
+	return "guidedtraffic/quader:dev-marked"
 }
 
-// imageTag is the tag of an image reference of the repository the dev values name (guidedtraffic/trove).
+// imageTag is the tag of an image reference of the repository the dev values name (guidedtraffic/quader).
 func imageTag(t testing.TB, image string) string {
 	t.Helper()
 	repo, tag, ok := strings.Cut(image, ":")
-	if !ok || strings.TrimPrefix(repo, "docker.io/") != "guidedtraffic/trove" {
-		t.Fatalf("%s: the dev values install guidedtraffic/trove:<tag>; the marked image must be a tag of that repository", image)
+	if !ok || strings.TrimPrefix(repo, "docker.io/") != "guidedtraffic/quader" {
+		t.Fatalf("%s: the dev values install guidedtraffic/quader:<tag>; the marked image must be a tag of that repository", image)
 	}
 	return tag
 }
@@ -110,12 +110,12 @@ func (s *bundleSampler) sample() {
 	}
 }
 
-// replicaOf is the replica that answered, from its X-Trove-Replica header; empty for an answer of no replica (the edge).
+// replicaOf is the replica that answered, from its X-Quader-Replica header; empty for an answer of no replica (the edge).
 func replicaOf(h http.Header) string {
 	if h == nil {
 		return ""
 	}
-	return h.Get("X-Trove-Replica")
+	return h.Get("X-Quader-Replica")
 }
 
 func (s *bundleSampler) finish() *bundleSampler {
@@ -195,7 +195,7 @@ func TestUpgrade_R_HA_020_AcrossTwoBundles(t *testing.T) {
 	upKindLoadImage(t, marked)
 
 	resetInstallation(t)
-	args := []string{"install", "trove", upChart(), "-n", cfg.namespace}
+	args := []string{"install", "quader", upChart(), "-n", cfg.namespace}
 	args = append(args, upReleaseValuesOf(t, "", marked)...)
 	args = append(args, "--set", "image.tag="+tag, "--wait", "--timeout", "15m")
 	if out, err := upHelm(t, "install-marked", 20*time.Minute, args...); err != nil {

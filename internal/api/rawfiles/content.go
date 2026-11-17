@@ -5,10 +5,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The content routes (R-API-025, Q-UI-106) are the transfer of /files/ for the UI: the session cookie reaches only the

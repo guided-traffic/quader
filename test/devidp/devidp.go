@@ -1,9 +1,9 @@
 // Package devidp is the sign-in provider of the UI development profile (deploy/ui-dev): an OpenID provider over TLS
 // whose authorization endpoint lists the profile's users as buttons and signs in the one that is chosen, without a
 // password. It serves the discovery document, the key set, the authorization code flow with PKCE (S256), the token
-// endpoint with client_secret_basic, userinfo and end_session, which is what trove's login asks of a provider
-// (docs/developer/login.md). trove creates each user at its first sign-in (just in time); what a user may do is
-// granted in trove, by the seed of make ui-renders or by hand.
+// endpoint with client_secret_basic, userinfo and end_session, which is what quader's login asks of a provider
+// (docs/developer/login.md). quader creates each user at its first sign-in (just in time); what a user may do is
+// granted in quader, by the seed of make ui-renders or by hand.
 //
 // It exists for local UI work and the renders of docs/developer/web-ui.md#renders-of-every-screen. Anyone who reaches
 // it signs in as any of its users, so it listens on the loopback address only and is never part of an installation.
@@ -31,8 +31,8 @@ import (
 
 // User is an account of the provider.
 type User struct {
-	Username string // preferred_username, the trove username
-	Name     string // name, trove's display name
+	Username string // preferred_username, the quader username
+	Name     string // name, quader's display name
 	Email    string
 	Kind     string // what the profile's seed makes of the user, shown on the sign-in page
 }
@@ -47,10 +47,10 @@ var Users = []User{
 
 // Config configures a Provider.
 type Config struct {
-	Issuer       string // the issuer as the browser and trove reach it, https://localhost:19090 for example
+	Issuer       string // the issuer as the browser and quader reach it, https://localhost:19090 for example
 	ClientID     string
 	ClientSecret string
-	// ClientBase is the origin of the client, trove's base URL (https://localhost:4200): a redirect URI and a post-logout
+	// ClientBase is the origin of the client, quader's base URL (https://localhost:4200): a redirect URI and a post-logout
 	// redirect URI must lie below it, as a provider allows only the URIs registered for a client.
 	ClientBase string
 	Users      []User        // Users when empty
@@ -73,8 +73,8 @@ type grant struct {
 	expires                                 time.Time
 }
 
-// New returns a Provider with a fresh RSA-2048 signing key. trove fetches the key set again when it meets an unknown
-// key ID, so a restart of the provider needs no restart of trove.
+// New returns a Provider with a fresh RSA-2048 signing key. quader fetches the key set again when it meets an unknown
+// key ID, so a restart of the provider needs no restart of quader.
 func New(cfg Config) (*Provider, error) {
 	if cfg.Issuer == "" || cfg.ClientID == "" || cfg.ClientSecret == "" || cfg.ClientBase == "" {
 		return nil, errors.New("devidp: the issuer, the client ID, the client secret and the client base are required")
@@ -287,7 +287,7 @@ func (p *Provider) idToken(g grant) (string, error) {
 	return input + "." + b64(sig), nil
 }
 
-// subject is stable across restarts, so trove's link of a user to its subject survives them.
+// subject is stable across restarts, so quader's link of a user to its subject survives them.
 func subject(u User) string { return "devidp-" + u.Username }
 
 func (p *Provider) userinfo(w http.ResponseWriter, r *http.Request) {

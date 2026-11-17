@@ -1,9 +1,9 @@
 package nuget
 
 import (
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/id"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/id"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // The format takes part in the vulnerability scanning through the optional adapter of the format contract (R-VULN-009,

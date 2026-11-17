@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Usage counters (R-STOR-003, Q-STOR-12). Writers never update a shared counter
 -- row: statement-level triggers on items and blobs append to storage_usage_deltas

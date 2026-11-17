@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // waitLatestPassJob waits until the latest mirror-pass job has the state. The pass writes its end (mirror_state.last_pass) in its

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/vuln/enforce"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/vuln/enforce"
 )
 
 // FillOutcome is the outcome of a [Engine.Fill] that did not fail.

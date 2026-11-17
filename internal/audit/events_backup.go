@@ -8,7 +8,7 @@ package audit
 //
 //   - system.backup.completed: a create run ended completed or completed_with_warnings. An interrupted run writes none.
 //   - system.backup.failed: a create run ended failed.
-//   - system.backup.deleted: a backup was deleted by retention or by trove backup delete.
+//   - system.backup.deleted: a backup was deleted by retention or by quader backup delete.
 //   - system.backup.target_adopted: a run adopted a target of an earlier incarnation (R-BAK-002).
 //   - system.restored: a restore finished; source is backup (R-BAK-021) or pitr (R-HA-025). journal is replayed, or skipped
 //     with --skip-revocation-journal.

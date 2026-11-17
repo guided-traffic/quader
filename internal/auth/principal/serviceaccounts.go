@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // ServiceAccount is the record of R-AUTH-020.
@@ -71,7 +71,7 @@ type NewServiceAccount struct {
 	Name        string
 	Description string
 	// Admin binds the system role admin in the transaction that creates the
-	// account (`trove admin service-account create --admin`, R-AUTH-015). It
+	// account (`quader admin service-account create --admin`, R-AUTH-015). It
 	// needs an [AdminBinder]; without one the call fails with [ErrAdminBinding].
 	// A project service account holds no system role: 422 role_not_allowed.
 	Admin bool

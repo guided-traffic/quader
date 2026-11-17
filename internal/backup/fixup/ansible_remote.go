@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/formatdata/ansible"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/formatdata/ansible"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The Ansible Galaxy purger (R-BAK-008, R-ANS-029): after a restore from a backup that left the remote caches out, it empties

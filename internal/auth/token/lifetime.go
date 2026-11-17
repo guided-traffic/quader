@@ -3,7 +3,7 @@ package token
 import (
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // minTTL is the shortest lifetime a request may ask for (R-AUTH-026).

@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/registration"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/formats/nuget/registration"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // Version is a version of a remote registration, ready for the renderer of the registration
 // documents: the row the renderer reads, and the members of the upstream's catalog entry that
-// trove does not compute and passes through (R-NUGET-015).
+// quader does not compute and passes through (R-NUGET-015).
 type Version struct {
 	Row    rows.RegistrationVersion
 	Extras registration.Passthrough
@@ -54,7 +54,7 @@ type dep struct {
 	Version string `json:"version,omitempty"`
 }
 
-// computed are the members of a catalog entry that the renderer writes itself or that trove
+// computed are the members of a catalog entry that the renderer writes itself or that quader
 // does not show: they are never passed through. readmeUrl is left out by R-NUGET-009 (README
 // access is R-NUGET-024's).
 func computed(k string) bool {
@@ -68,7 +68,7 @@ func computed(k string) bool {
 // Convert turns a leaf into a version: its identity by the rules of R-NUGET-003, the metadata
 // the documents render, the SemVer 2.0.0 flag over the version and the bounds of its dependency
 // ranges (R-NUGET-004), and the members to pass through. ok is false for a leaf that names no
-// version trove can parse: it is left out of every document, as the client would skip it.
+// version quader can parse: it is left out of every document, as the client would skip it.
 // lowerID is the ID of the request, the fallback of an entry that declares none.
 func Convert(l Leaf, lowerID string) (v Version, ok bool) {
 	e := l.Entry
@@ -196,11 +196,11 @@ func compact(raw json.RawMessage) json.RawMessage {
 	return b.Bytes()
 }
 
-// unknown returns the members of the catalog entry that no rule of trove names, in key order
+// unknown returns the members of the catalog entry that no rule of quader names, in key order
 // (R-NUGET-015: unknown properties are kept). A member that holds an address is dropped: the
 // documents carry no address of the upstream except the web links of people (projectUrl,
 // licenseUrl, iconUrl), and an unknown member could point anywhere, including to a resource of
-// the upstream trove has replaced (Q-NUGET-52).
+// the upstream quader has replaced (Q-NUGET-52).
 func unknown(e map[string]json.RawMessage) []registration.Member {
 	keys := make([]string, 0, len(e))
 	for k := range e {
@@ -263,7 +263,7 @@ func NewCollector(lowerID string) *Collector {
 	return &Collector{lowerID: lowerID, seen: map[string]bool{}}
 }
 
-// Add converts leaves; a leaf without a version trove can parse is left out (Convert).
+// Add converts leaves; a leaf without a version quader can parse is left out (Convert).
 func (c *Collector) Add(leaves []Leaf) {
 	for _, l := range leaves {
 		v, ok := Convert(l, c.lowerID)

@@ -130,7 +130,7 @@ func debImportedKeyWithFreshBinding(t testing.TB) string {
 		DefaultHash: crypto.SHA512,
 		Time:        func() time.Time { return created },
 	}
-	e, err := pgp.NewEntity("trove e2e imported key", "", "", cfg)
+	e, err := pgp.NewEntity("quader e2e imported key", "", "", cfg)
 	if err != nil {
 		t.Fatalf("make the key: %v", err)
 	}

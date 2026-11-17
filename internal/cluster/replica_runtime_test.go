@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // rowOf is the registry row a heartbeat's parameters become, as ListReplicas reads it back: PostgreSQL stores the
@@ -30,7 +30,7 @@ func rowOf(t *testing.T, p q.UpsertReplicaParams) q.ListReplicasRow {
 
 func testIdentity() ReplicaIdentity {
 	return ReplicaIdentity{
-		UID: "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10", Name: "trove-api-1", Version: "0.20.0", Revision: "abc", Role: "api",
+		UID: "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10", Name: "quader-api-1", Version: "0.20.0", Revision: "abc", Role: "api",
 		StartedAt: time.Date(2026, 11, 6, 9, 0, 0, 0, time.UTC), SecretKeyIDs: []string{"k1"}, ActiveSecretKeyID: "k1",
 	}
 }

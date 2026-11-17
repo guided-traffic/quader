@@ -253,7 +253,7 @@ func (f *fixtureRepo) checkout(args ...string) {
 
 // migration is the content of a fixture migration, with the header the runner requires.
 func migration(body string) string {
-	return "-- trove:phase expand\n" + body + "\n"
+	return "-- quader:phase expand\n" + body + "\n"
 }
 
 func expectProblems(t *testing.T, problems []string, wantSubstrings ...string) {

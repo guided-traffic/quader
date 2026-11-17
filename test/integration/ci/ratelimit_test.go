@@ -18,9 +18,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 // flood sends n requests of subject from addr, spread round robin over the replicas by workers goroutines, and
@@ -109,8 +109,8 @@ func TestR_CI_021_TheAddressBudgetIsOneAcrossReplicas(t *testing.T) {
 
 func TestR_CI_021_AnExemptAddressIsBoundedByTheSubjectBudget(t *testing.T) {
 	x := newXEnv(t, options{valkey: true, env: []string{
-		`TROVE_CI_EXCHANGE_RATE_LIMIT_EXEMPT_CIDRS=["198.51.100.0/24"]`,
-		"TROVE_CI_EXCHANGE_RATE_LIMIT_PER_SUBJECT_PER_MINUTE=6", "TROVE_CI_EXCHANGE_RATE_LIMIT_PER_SUBJECT_BURST=6",
+		`QUADER_CI_EXCHANGE_RATE_LIMIT_EXEMPT_CIDRS=["198.51.100.0/24"]`,
+		"QUADER_CI_EXCHANGE_RATE_LIMIT_PER_SUBJECT_PER_MINUTE=6", "QUADER_CI_EXCHANGE_RATE_LIMIT_PER_SUBJECT_BURST=6",
 	}})
 	a := x.web("web-a")
 	x.issuer(a)
@@ -200,7 +200,7 @@ func TestR_CI_021_ForgedTokensLeaveALegitimateProjectUnaffected(t *testing.T) {
 }
 
 func TestR_CI_021_GarbageCausesNoFetchAndFewAuditRows(t *testing.T) {
-	x := newXEnv(t, options{valkey: true, env: []string{`TROVE_CI_EXCHANGE_RATE_LIMIT_EXEMPT_CIDRS=["198.51.100.0/24"]`}})
+	x := newXEnv(t, options{valkey: true, env: []string{`QUADER_CI_EXCHANGE_RATE_LIMIT_EXEMPT_CIDRS=["198.51.100.0/24"]`}})
 	a := x.web("web-a")
 	x.issuer(a)
 	x.d.stub.Reset()
@@ -241,10 +241,10 @@ func (x *xenv) keyspace() string {
 // administrator of the stack), from the first of the primary and the replica containers that answers.
 func (x *xenv) valkeyKeys() []string {
 	x.t.Helper()
-	pattern := testenv.Get(x.t, "TROVE_TEST_VALKEY_KEY_PREFIX") + x.keyspace() + ":*"
-	user, pass := testenv.Get(x.t, "TROVE_TEST_VALKEY_ADMIN_USERNAME"), testenv.Get(x.t, "TROVE_TEST_VALKEY_ADMIN_PASSWORD")
-	nodes := strings.Split(testenv.Get(x.t, "TROVE_TEST_VALKEY_NODES"), ",")
-	for i, c := range strings.Split(testenv.Get(x.t, "TROVE_TEST_VALKEY_CONTAINERS"), ",")[:len(nodes)] {
+	pattern := testenv.Get(x.t, "QUADER_TEST_VALKEY_KEY_PREFIX") + x.keyspace() + ":*"
+	user, pass := testenv.Get(x.t, "QUADER_TEST_VALKEY_ADMIN_USERNAME"), testenv.Get(x.t, "QUADER_TEST_VALKEY_ADMIN_PASSWORD")
+	nodes := strings.Split(testenv.Get(x.t, "QUADER_TEST_VALKEY_NODES"), ",")
+	for i, c := range strings.Split(testenv.Get(x.t, "QUADER_TEST_VALKEY_CONTAINERS"), ",")[:len(nodes)] {
 		_, port, _ := strings.Cut(nodes[i], ":")
 		out, err := exec.Command("docker", "exec", c, "valkey-cli", "--tls", "--cacert", "/certs/ca.crt", "-p", port, "--user", user, "--pass", pass,
 			"--no-auth-warning", "--scan", "--pattern", pattern).Output()

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // DefaultBatch is the number of rows one claim reads.
@@ -23,7 +23,7 @@ type Options struct {
 	// pile up for a journal nobody reads.
 	Discard bool
 	// OnQuarantine is called for every row set aside because it cannot be encoded (the metric
-	// trove_revocation_journal_quarantined_total counts them). Optional.
+	// quader_revocation_journal_quarantined_total counts them). Optional.
 	OnQuarantine func(r journal.OutboxRow, err error)
 	// Batch is the largest number of rows one claim reads; zero means [DefaultBatch].
 	Batch int

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ansiblestub"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const docsPath = "v3/collections/acme/tools/versions/1.0.0/docs-blob/"

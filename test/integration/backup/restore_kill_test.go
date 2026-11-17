@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 var (
@@ -26,8 +26,8 @@ var (
 	binErr  error
 )
 
-// troveBinary builds cmd/trove once into .out of the repository.
-func troveBinary(t *testing.T) string {
+// quaderBinary builds cmd/quader once into .out of the repository.
+func quaderBinary(t *testing.T) string {
 	t.Helper()
 	binOnce.Do(func() {
 		_, file, _, _ := runtime.Caller(0)
@@ -36,20 +36,20 @@ func troveBinary(t *testing.T) string {
 		if binErr = os.MkdirAll(dir, 0o755); binErr != nil {
 			return
 		}
-		binPath = filepath.Join(dir, "trove")
-		cmd := exec.Command("go", "build", "-o", binPath, "./cmd/trove")
+		binPath = filepath.Join(dir, "quader")
+		cmd := exec.Command("go", "build", "-o", binPath, "./cmd/quader")
 		cmd.Dir = root
 		if out, err := cmd.CombinedOutput(); err != nil {
 			binErr = errors.New(string(out))
 		}
 	})
 	if binErr != nil {
-		t.Fatalf("build trove: %v", binErr)
+		t.Fatalf("build quader: %v", binErr)
 	}
 	return binPath
 }
 
-// proc is a running trove process.
+// proc is a running quader process.
 type proc struct {
 	cmd    *exec.Cmd
 	stdout bytes.Buffer
@@ -57,12 +57,12 @@ type proc struct {
 	done   chan struct{}
 }
 
-// startTrove starts `trove backup <args>` against the destination with a pod name of its own.
-func (d *destination) startTrove(t *testing.T, pod string, args ...string) *proc {
+// startQuader starts `quader backup <args>` against the destination with a pod name of its own.
+func (d *destination) startQuader(t *testing.T, pod string, args ...string) *proc {
 	t.Helper()
 	p := &proc{done: make(chan struct{})}
-	p.cmd = exec.Command(troveBinary(t), append([]string{"backup"}, args...)...)
-	p.cmd.Env = append(append([]string{}, d.environ...), "TROVE_POD_NAME="+pod)
+	p.cmd = exec.Command(quaderBinary(t), append([]string{"backup"}, args...)...)
+	p.cmd.Env = append(append([]string{}, d.environ...), "QUADER_POD_NAME="+pod)
 	p.cmd.Stdout, p.cmd.Stderr = &p.stdout, &p.stderr
 	if err := p.cmd.Start(); err != nil {
 		t.Fatal(err)
@@ -79,7 +79,7 @@ func (p *proc) wait(t *testing.T, within time.Duration) int {
 	case <-p.done:
 	case <-time.After(within):
 		_ = p.cmd.Process.Kill()
-		t.Fatalf("trove did not end within %s\nstdout:\n%s\nstderr:\n%s", within, p.stdout.String(), p.stderr.String())
+		t.Fatalf("quader did not end within %s\nstdout:\n%s\nstderr:\n%s", within, p.stdout.String(), p.stderr.String())
 	}
 	return p.cmd.ProcessState.ExitCode()
 }
@@ -98,7 +98,7 @@ func (p *proc) until(t *testing.T, what string, within time.Duration, cond func(
 	for time.Now().Before(deadline) {
 		select {
 		case <-p.done:
-			t.Fatalf("trove ended (exit %d) before %s\nstdout:\n%s\nstderr:\n%s", p.cmd.ProcessState.ExitCode(), what, p.stdout.String(), p.stderr.String())
+			t.Fatalf("quader ended (exit %d) before %s\nstdout:\n%s\nstderr:\n%s", p.cmd.ProcessState.ExitCode(), what, p.stdout.String(), p.stderr.String())
 		default:
 		}
 		if cond() {
@@ -133,7 +133,7 @@ func (d *destination) objectsInBlobPrefix() int {
 func (d *destination) resume(t *testing.T, id string) int {
 	t.Helper()
 	for i := range 6 {
-		p := d.startTrove(t, "restore-resume-"+string(rune('a'+i)), "restore", id, "--skip-revocation-journal")
+		p := d.startQuader(t, "restore-resume-"+string(rune('a'+i)), "restore", id, "--skip-revocation-journal")
 		code := p.wait(t, 3*time.Minute)
 		if code != backup.ExitTemporary {
 			if code != 0 {
@@ -174,14 +174,14 @@ func TestR_BAK_021_KillNine(t *testing.T) {
 	}
 
 	t.Run("R-BAK-021 kill -9 during step 2, the schema steps", func(t *testing.T) {
-		dst := src.destination("TROVE_BACKUP_COPY_CONCURRENCY=1")
-		p := dst.startTrove(t, "restore-first", "restore", id, "--skip-revocation-journal")
+		dst := src.destination("QUADER_BACKUP_COPY_CONCURRENCY=1")
+		p := dst.startQuader(t, "restore-first", "restore", id, "--skip-revocation-journal")
 		p.until(t, "a few migration steps", time.Minute, func() bool {
 			n, err := dst.stack.TryNumber("SELECT count(*) FROM schema_migration")
 			return err == nil && n >= 8 && n < int64(src.m.Schema.Step)-8
 		})
 		p.kill(t)
-		if got := dst.stack.Text("SELECT coalesce(obj_description('trove'::regnamespace, 'pg_namespace'), '')"); got != "trove-restore "+id {
+		if got := dst.stack.Text("SELECT coalesce(obj_description('quader'::regnamespace, 'pg_namespace'), '')"); got != "quader-restore "+id {
 			t.Fatalf("anchor = %q", got)
 		}
 		if n := dst.stack.Number("SELECT count(*) FROM schema_migration"); n >= int64(src.m.Schema.Step) {
@@ -192,8 +192,8 @@ func TestR_BAK_021_KillNine(t *testing.T) {
 	})
 
 	t.Run("R-BAK-021 kill -9 during step 3, the blob copy", func(t *testing.T) {
-		dst := src.destination("TROVE_BACKUP_COPY_CONCURRENCY=1")
-		p := dst.startTrove(t, "restore-first", "restore", id, "--skip-revocation-journal")
+		dst := src.destination("QUADER_BACKUP_COPY_CONCURRENCY=1")
+		p := dst.startQuader(t, "restore-first", "restore", id, "--skip-revocation-journal")
 		var seen int
 		p.until(t, "part of the blobs copied", 2*time.Minute, func() bool {
 			seen = dst.objectsInBlobPrefix()
@@ -212,7 +212,7 @@ func TestR_BAK_021_KillNine(t *testing.T) {
 
 	t.Run("R-BAK-021 kill -9 during step 4, the load transaction", func(t *testing.T) {
 		dst := src.destination()
-		p := dst.startTrove(t, "restore-first", "restore", id, "--skip-revocation-journal")
+		p := dst.startQuader(t, "restore-first", "restore", id, "--skip-revocation-journal")
 		p.until(t, "the COPY of the load", 3*time.Minute, func() bool {
 			n, err := dst.stack.TryNumber("SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND state = 'active' AND query ILIKE 'COPY%audit%'")
 			return err == nil && n > 0
@@ -231,14 +231,14 @@ func TestR_BAK_021_KillNine(t *testing.T) {
 	})
 }
 
-// TestR_BAK_020_CommandExitCodes runs the trove binary for the exit codes of a restore that does not start.
+// TestR_BAK_020_CommandExitCodes runs the quader binary for the exit codes of a restore that does not start.
 func TestR_BAK_020_CommandExitCodes(t *testing.T) {
 	src := newSource(t, 4)
 	id := string(src.id)
 
 	t.Run("R-BAK-020 --check exits 0, a key ring without the backup's key ID exits 6 with the message on stderr", func(t *testing.T) {
 		dst := src.destination()
-		p := dst.startTrove(t, "restore-check", "restore", id, "--check", "--skip-revocation-journal")
+		p := dst.startQuader(t, "restore-check", "restore", id, "--check", "--skip-revocation-journal")
 		if code := p.wait(t, time.Minute); code != 0 {
 			t.Fatalf("--check exit %d\n%s%s", code, p.stdout.String(), p.stderr.String())
 		}
@@ -249,8 +249,8 @@ func TestR_BAK_020_CommandExitCodes(t *testing.T) {
 			t.Fatalf("--check created %d relations", n)
 		}
 
-		other := src.destination("TROVE_SECRETS_ENCRYPTION_KEY_FILES=[\""+src.stack.KeyFile("2026-09.key", bytes.Repeat([]byte{1}, 32))+"\"]", "TROVE_SECRETS_ACTIVE_KEY_ID=2026-09")
-		p = other.startTrove(t, "restore-keys", "restore", id, "--skip-revocation-journal")
+		other := src.destination("QUADER_SECRETS_ENCRYPTION_KEY_FILES=[\""+src.stack.KeyFile("2026-09.key", bytes.Repeat([]byte{1}, 32))+"\"]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-09")
+		p = other.startQuader(t, "restore-keys", "restore", id, "--skip-revocation-journal")
 		if code := p.wait(t, time.Minute); code != 6 {
 			t.Fatalf("exit %d, want 6\n%s", code, p.stderr.String())
 		}
@@ -264,14 +264,14 @@ func TestR_BAK_020_CommandExitCodes(t *testing.T) {
 
 	t.Run("R-BAK-021 the whole command restores and a second pod after the first finished exits 0 saying so", func(t *testing.T) {
 		dst := src.destination()
-		p := dst.startTrove(t, "restore-one", "restore", id, "--skip-revocation-journal")
+		p := dst.startQuader(t, "restore-one", "restore", id, "--skip-revocation-journal")
 		if code := p.wait(t, 3*time.Minute); code != 0 {
 			t.Fatalf("exit %d\n%s%s", code, p.stdout.String(), p.stderr.String())
 		}
 		if n := dst.stack.Number("SELECT count(*) FROM items"); n != 4 {
 			t.Errorf("%d items", n)
 		}
-		p = dst.startTrove(t, "restore-two", "restore", id, "--skip-revocation-journal")
+		p = dst.startQuader(t, "restore-two", "restore", id, "--skip-revocation-journal")
 		if code := p.wait(t, time.Minute); code != 0 {
 			t.Fatalf("second restore exit %d, want 0\n%s", code, p.stderr.String())
 		}

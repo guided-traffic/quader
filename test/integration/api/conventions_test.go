@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 )
 
 func newWidgetTable(e *env) { e.exec(widgetSchema) }
@@ -49,11 +49,11 @@ func TestIdempotentCreate(t *testing.T) {
 		first := send(t, e.cluster(nodes[0]), "POST", "/test/widgets", map[string]any{"name": "replay-a"}, append(caller, "Idempotency-Key", "k-replay")...)
 		second := send(t, e.cluster(nodes[1]), "POST", "/test/widgets", map[string]any{"name": "replay-a"}, append(caller, "Idempotency-Key", "k-replay")...)
 		if first.Status != 201 || second.Status != 201 || second.Header.Get("Idempotency-Replayed") != "true" ||
-			string(first.Body) != string(second.Body) || first.Header.Get("X-Trove-Replica") == second.Header.Get("X-Trove-Replica") {
+			string(first.Body) != string(second.Body) || first.Header.Get("X-Quader-Replica") == second.Header.Get("X-Quader-Replica") {
 			t.Fatalf("%d/%d replayed=%q replicas %q/%q\n%s\n%s", first.Status, second.Status, second.Header.Get("Idempotency-Replayed"),
-				first.Header.Get("X-Trove-Replica"), second.Header.Get("X-Trove-Replica"), first.Body, second.Body)
+				first.Header.Get("X-Quader-Replica"), second.Header.Get("X-Quader-Replica"), first.Body, second.Body)
 		}
-		if n := e.scalar("SELECT count(*) FROM trove.widgets WHERE name = 'replay-a'"); n != 1 {
+		if n := e.scalar("SELECT count(*) FROM quader.widgets WHERE name = 'replay-a'"); n != 1 {
 			t.Fatalf("%d widgets, want 1", n)
 		}
 	})
@@ -76,7 +76,7 @@ func TestIdempotentCreate(t *testing.T) {
 		if first.Status != 409 || again.Status != 409 || again.Header.Get("Idempotency-Replayed") != "true" || again.Code(t) != "already_exists" {
 			t.Fatalf("%d %d replayed=%q\n%s", first.Status, again.Status, again.Header.Get("Idempotency-Replayed"), again.Body)
 		}
-		if n := e.scalar("SELECT count(*) FROM trove.widgets WHERE name = 'exists'"); n != 0 {
+		if n := e.scalar("SELECT count(*) FROM quader.widgets WHERE name = 'exists'"); n != 0 {
 			t.Fatal("the replay of a refusal created the widget")
 		}
 		if reused := send(t, e.cluster(nodes[1]), "POST", "/test/widgets", map[string]any{"name": "different"}, h...); reused.Status != 422 || reused.Code(t) != "idempotency_key_reused" {
@@ -90,10 +90,10 @@ func TestIdempotentCreate(t *testing.T) {
 		if a := send(t, e.cluster(nodes[0]), "POST", "/test/widgets", map[string]any{"name": "rolled-back"}, h...); a.Status != 500 {
 			t.Fatalf("%d %s", a.Status, a.Body)
 		}
-		if n := e.scalar("SELECT count(*) FROM trove.widgets WHERE name = 'rolled-back'"); n != 0 {
+		if n := e.scalar("SELECT count(*) FROM quader.widgets WHERE name = 'rolled-back'"); n != 0 {
 			t.Fatal("a failed create left the widget")
 		}
-		if n := e.scalar("SELECT count(*) FROM trove.api_idempotency_keys WHERE idem_key = 'k-rollback'"); n != 0 {
+		if n := e.scalar("SELECT count(*) FROM quader.api_idempotency_keys WHERE idem_key = 'k-rollback'"); n != 0 {
 			t.Fatal("a 5xx stored its outcome")
 		}
 		if b := send(t, e.cluster(nodes[1]), "POST", "/test/widgets", map[string]any{"name": "rolled-back"}, h...); b.Status != 201 || b.Header.Get("Idempotency-Replayed") != "" {
@@ -147,11 +147,11 @@ func TestIdempotentCreate(t *testing.T) {
 			if r.a.Status != 409 || r.a.Code(t) != "idempotency_in_progress" || r.a.Header.Get("Retry-After") != "1" {
 				t.Fatalf("duplicate %d: %d %s retry-after %q", i, r.a.Status, r.a.Body, r.a.Header.Get("Retry-After"))
 			}
-			// The 1.5 s of R-API-014 is enforced with TROVE_PERF_GATE=1 (the nightly performance run; Q-ARCH-220): on the
+			// The 1.5 s of R-API-014 is enforced with QUADER_PERF_GATE=1 (the nightly performance run; Q-ARCH-220): on the
 			// CPU-limited runners 50 duplicates on three in-process replicas took up to 1.59 s. Per change the bound is
 			// 2.5 s, which still fails a duplicate that waits for the first request, held here until the end of the test.
-			if bound := 2500 * time.Millisecond; r.d > bound || (os.Getenv("TROVE_PERF_GATE") == "1" && r.d > 1500*time.Millisecond) {
-				t.Errorf("duplicate %d took %s, want at most 1.5 s (2.5 s without TROVE_PERF_GATE=1)", i, r.d)
+			if bound := 2500 * time.Millisecond; r.d > bound || (os.Getenv("QUADER_PERF_GATE") == "1" && r.d > 1500*time.Millisecond) {
+				t.Errorf("duplicate %d took %s, want at most 1.5 s (2.5 s without QUADER_PERF_GATE=1)", i, r.d)
 			}
 		}
 		if longest > 1500 {
@@ -165,7 +165,7 @@ func TestIdempotentCreate(t *testing.T) {
 		if retry := send(t, e.cluster(nodes[2]), "POST", "/test/widgets", body, h...); retry.Status != 201 || retry.Header.Get("Idempotency-Replayed") != "true" || string(retry.Body) != string(first.Body) {
 			t.Fatalf("retry after the commit: %d replayed=%q", retry.Status, retry.Header.Get("Idempotency-Replayed"))
 		}
-		if n := e.scalar("SELECT count(*) FROM trove.widgets WHERE name = 'hold-1'"); n != 1 {
+		if n := e.scalar("SELECT count(*) FROM quader.widgets WHERE name = 'hold-1'"); n != 1 {
 			t.Fatalf("%d widgets, want 1", n)
 		}
 	})
@@ -206,7 +206,7 @@ func TestIdempotentCreate(t *testing.T) {
 	})
 
 	t.Run("R-API-014 the cleanup task deletes expired keys", func(t *testing.T) {
-		e.exec("INSERT INTO trove.api_idempotency_keys (principal_id, idem_key, method, route, request_sha256, response_status, expires_at) VALUES ($1, 'old', 'POST', 'x', decode(repeat('00', 32), 'hex'), 201, now() - interval '1 hour')", uuidV4())
+		e.exec("INSERT INTO quader.api_idempotency_keys (principal_id, idem_key, method, route, request_sha256, response_status, expires_at) VALUES ($1, 'old', 'POST', 'x', decode(repeat('00', 32), 'hex'), 201, now() - interval '1 hour')", uuidV4())
 		e.newNode("worker-1", nodeOpts{role: "worker"})
 		a := send(t, e.cluster(nodes[0]), "POST", "/api/v1/system/tasks/idempotency-cleanup/run", nil, e.admin.header()...)
 		// The real scheduler of the worker may have queued the task's first run
@@ -217,7 +217,7 @@ func TestIdempotentCreate(t *testing.T) {
 			t.Fatalf("%d %s", a.Status, a.Body)
 		}
 		waitFor(t, "the cleanup", 20*time.Second, func() bool {
-			return e.scalar("SELECT count(*) FROM trove.api_idempotency_keys WHERE idem_key = 'old'") == 0
+			return e.scalar("SELECT count(*) FROM quader.api_idempotency_keys WHERE idem_key = 'old'") == 0
 		})
 	})
 }

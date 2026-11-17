@@ -6,13 +6,13 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/id"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nupkg"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nuspec"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/id"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nupkg"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nuspec"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // incoming is a package that passed steps 1 to 4 of R-NUGET-005: the archive, the

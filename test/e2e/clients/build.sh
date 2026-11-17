@@ -3,15 +3,15 @@
 # the static forwarder (test/e2e/clients/fwd) for linux/<arch>, then test/e2e/clients/Dockerfile on the
 # pinned Node image. `make npm-clients-image` and deploy/dev/e2e.sh both call it.
 #
-#   build.sh [image]    default image trove-e2e-clients:dev
+#   build.sh [image]    default image quader-e2e-clients:dev
 #
-# Environment: TROVE_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
+# Environment: QUADER_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../deploy/dev" && pwd)/lib.sh"
 
-image="${1:-trove-e2e-clients:dev}"
-arch="${TROVE_E2E_CLIENTS_ARCH:-$(arch)}"
+image="${1:-quader-e2e-clients:dev}"
+arch="${QUADER_E2E_CLIENTS_ARCH:-$(arch)}"
 for v in E2E_CLIENTS_NODE_IMAGE E2E_CLIENTS_CURL_VERSION E2E_CLIENTS_JQ_VERSION; do
   [ -n "${!v:-}" ] || die "$v is not set in tools/versions.env"
 done

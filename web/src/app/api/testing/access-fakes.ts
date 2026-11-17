@@ -104,7 +104,7 @@ export function sampleToken(over: Partial<Token> = {}): Token {
   return {
     id: '00000000-0000-7000-8000-0000000000a1',
     type: 'pat',
-    hint: 'trv_pat_3kQ9',
+    hint: 'qdr_pat_3kQ9',
     owner: { kind: 'user', name: 'alice' },
     ownerIsAdmin: false,
     description: 'laptop npm',
@@ -127,7 +127,7 @@ export function sampleToken(over: Partial<Token> = {}): Token {
   };
 }
 
-export const SECRET_VALUE = 'trv_pat_ABCDEFGHIJKLMNOPQRSTUVWXYZ012345';
+export const SECRET_VALUE = 'qdr_pat_ABCDEFGHIJKLMNOPQRSTUVWXYZ012345';
 
 export class FakeIdentityApi extends IdentityApi {
   readonly calls: string[] = [];
@@ -596,7 +596,7 @@ export class FakeTokensApi extends TokensApi {
       id,
       type,
       token: SECRET_VALUE,
-      hint: 'trv_pat_ABCD',
+      hint: 'qdr_pat_ABCD',
       owner,
       description: request.description,
       scope: request.scope ?? { inherit: true },

@@ -1,5 +1,5 @@
--- trove:phase contract
--- trove:requires-app >= 0.1.0
+-- quader:phase contract
+-- quader:requires-app >= 0.1.0
 --
 -- The principal kind 'authenticated' goes, and 'anonymous' stays only as the actor of a request without a credential
 -- (R-AUTH-016, Q-AUTH-233, Q-AUTHZ-279): the visibility levels of 00073 replace both as a way to grant. Every grant row that

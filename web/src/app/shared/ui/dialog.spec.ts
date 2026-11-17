@@ -2,16 +2,16 @@ import { Component, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { seriousViolations } from '../../testing/axe';
-import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle, TroveDialog } from './dialog';
+import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle, QuaderDialog } from './dialog';
 
 @Component({
-  selector: 'trove-test-dialog',
+  selector: 'quader-test-dialog',
   imports: [DialogTitle, DialogClose],
   template: `
-    <h2 troveDialogTitle>Delete the thing</h2>
+    <h2 quaderDialogTitle>Delete the thing</h2>
     <div class="dialog-body"><p>{{ data.what }}</p><input aria-label="Name" /></div>
     <div class="dialog-actions">
-      <button type="button" class="btn btn-tertiary" troveDialogClose>Cancel</button>
+      <button type="button" class="btn btn-tertiary" quaderDialogClose>Cancel</button>
       <button type="button" class="btn btn-confirm" (click)="ref.close('done')">Delete</button>
     </div>
   `,
@@ -24,11 +24,11 @@ class TestDialog {
 const dialogEl = () => document.querySelector<HTMLElement>('[role="dialog"]');
 const turn = () => new Promise((resolve) => setTimeout(resolve));
 
-describe('trove dialog (Q-UI-126)', () => {
-  afterEach(() => TestBed.inject(TroveDialog)['dialog'].closeAll());
+describe('Quader dialog (Q-UI-126)', () => {
+  afterEach(() => TestBed.inject(QuaderDialog)['dialog'].closeAll());
 
   it('R-UI-044 is a modal dialog named by its title, with the data injected, and passes axe', async () => {
-    const ref = TestBed.inject(TroveDialog).open<TestDialog, { what: string }, string>(TestDialog, {
+    const ref = TestBed.inject(QuaderDialog).open<TestDialog, { what: string }, string>(TestDialog, {
       data: { what: 'It cannot be undone.' },
     });
     await turn();
@@ -43,7 +43,7 @@ describe('trove dialog (Q-UI-126)', () => {
   });
 
   it('closes with the value of the confirming button, and without one on the cancel button', async () => {
-    const dialog = TestBed.inject(TroveDialog);
+    const dialog = TestBed.inject(QuaderDialog);
     const confirmed = dialog.open<TestDialog, { what: string }, string>(TestDialog, { data: { what: 'x' } });
     await turn();
     const result = firstValueFrom(confirmed.closed);
@@ -62,7 +62,7 @@ describe('trove dialog (Q-UI-126)', () => {
     const opener = document.createElement('button');
     document.body.appendChild(opener);
     opener.focus();
-    const ref = TestBed.inject(TroveDialog).open<TestDialog, { what: string }, string>(TestDialog, {
+    const ref = TestBed.inject(QuaderDialog).open<TestDialog, { what: string }, string>(TestDialog, {
       data: { what: 'x' },
     });
     await turn();
@@ -74,7 +74,7 @@ describe('trove dialog (Q-UI-126)', () => {
   });
 
   it('closes on Escape, and not when disableClose is set', async () => {
-    const dialog = TestBed.inject(TroveDialog);
+    const dialog = TestBed.inject(QuaderDialog);
     const closable = dialog.open<TestDialog, { what: string }, string>(TestDialog, { data: { what: 'x' } });
     await turn();
     const gone = firstValueFrom(closable.closed);

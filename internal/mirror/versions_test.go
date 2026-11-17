@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // R-REPO-051 (Q-OCI-180): the engine counts versions, not items. A version of several items is stored whole, an artifact two versions
@@ -44,6 +44,6 @@ func TestR_REPO_051_AVersionOfSeveralItemsIsStoredWholeAndASharedArtifactOnce(t 
 		t.Errorf("summary %v: the five fills and the artifact the plan stored are counted", last)
 	}
 	if g.item(ResultStored) != 6 {
-		t.Errorf("trove_mirror_items_total{result=stored} = %v, want 6", g.item(ResultStored))
+		t.Errorf("quader_mirror_items_total{result=stored} = %v, want 6", g.item(ResultStored))
 	}
 }

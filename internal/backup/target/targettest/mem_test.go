@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 func TestMemConformance(t *testing.T) {

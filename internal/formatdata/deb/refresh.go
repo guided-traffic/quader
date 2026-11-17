@@ -4,9 +4,9 @@ import (
 	"context"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // runRefresh is the handler of the task deb-index-refresh (R-DEB-010, R-DEB-026, Q-DEB-33): it enqueues a deb-index job for each

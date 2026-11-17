@@ -34,7 +34,7 @@ func openStream(t *testing.T, addr, path string) (io.Reader, net.Conn) {
 func TestGracefulShutdown(t *testing.T) {
 	t.Run("R-ARCH-024 R-OPS-002 readiness turns 503 first, ping keeps answering 200 through the drain delay, then the listener refuses, and an in-flight request finishes", func(t *testing.T) {
 		h := start(t, "web", map[string]string{
-			"TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "600ms", "TROVE_SERVER_SHUTDOWN_TIMEOUT": "10s",
+			"QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "600ms", "QUADER_SERVER_SHUTDOWN_TIMEOUT": "10s",
 		})
 		clientAddr, opsAddr := h.app.ClientAddr().String(), h.app.OpsAddr().String()
 
@@ -122,7 +122,7 @@ func TestGracefulShutdown(t *testing.T) {
 
 	t.Run("Q-ARCH-18 a transfer that outlasts shutdown_timeout is cut and counted", func(t *testing.T) {
 		h := start(t, "web", map[string]string{
-			"TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s", "TROVE_SERVER_SHUTDOWN_TIMEOUT": "1s",
+			"QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s", "QUADER_SERVER_SHUTDOWN_TIMEOUT": "1s",
 		})
 		r, c := openStream(t, h.app.ClientAddr().String(), "/test/stream")
 		defer c.Close()
@@ -141,19 +141,19 @@ func TestGracefulShutdown(t *testing.T) {
 		fams, _ := h.app.tele.metrics.Registry().Gather()
 		var cut float64
 		for _, f := range fams {
-			if f.GetName() == "trove_http_transfers_cut_total" {
+			if f.GetName() == "quader_http_transfers_cut_total" {
 				for _, m := range f.GetMetric() {
 					cut += m.GetCounter().GetValue()
 				}
 			}
 		}
 		if cut != 1 {
-			t.Fatalf("trove_http_transfers_cut_total = %v, want 1", cut)
+			t.Fatalf("quader_http_transfers_cut_total = %v, want 1", cut)
 		}
 	})
 
 	t.Run("R-ARCH-024 a worker shuts down without a drain delay", func(t *testing.T) {
-		h := start(t, "worker", map[string]string{"TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "10s"})
+		h := start(t, "worker", map[string]string{"QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "10s"})
 		begin := time.Now()
 		if err := h.app.Shutdown(context.Background()); err != nil {
 			t.Fatal(err)
@@ -164,7 +164,7 @@ func TestGracefulShutdown(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-024 components stop in reverse start order after flush, and the shutdown phases run in order", func(t *testing.T) {
-		h := start(t, "web", map[string]string{"TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s"})
+		h := start(t, "web", map[string]string{"QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s"})
 		var order []string
 		a, b := &recComp{name: "a", log: &order}, &recComp{name: "b", log: &order}
 		h.app.comps = append(h.app.comps, a, b)

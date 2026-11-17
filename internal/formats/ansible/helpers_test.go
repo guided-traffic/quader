@@ -10,11 +10,11 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/ansibletest"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection/collectiontest"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/ansibletest"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection/collectiontest"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
 
 // noShadow lets a first publish of a name proceed: the shadowing check has nothing to ask in a repository without remote members.

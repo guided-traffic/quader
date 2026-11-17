@@ -38,7 +38,7 @@ export function problemsAt(
  * button that moves focus to its control. The summary is an alert, so it is announced when it appears.
  */
 @Component({
-  selector: 'trove-error-summary',
+  selector: 'quader-error-summary',
   template: `
     @if (items().length > 0) {
       <div class="summary" role="alert" tabindex="-1">
@@ -58,24 +58,24 @@ export function problemsAt(
   `,
   styles: `
     .summary {
-      margin-block: var(--trove-space-3);
-      padding: var(--trove-space-3) var(--trove-space-4);
-      border: 2px solid var(--trove-status-bad);
-      border-radius: var(--trove-radius-m);
+      margin-block: var(--quader-space-3);
+      padding: var(--quader-space-3) var(--quader-space-4);
+      border: 2px solid var(--quader-status-bad);
+      border-radius: var(--quader-radius-m);
     }
     .title {
-      margin: 0 0 var(--trove-space-2);
-      font: var(--trove-type-title-small);
+      margin: 0 0 var(--quader-space-2);
+      font: var(--quader-type-title-small);
     }
     ul {
       margin: 0;
-      padding-inline-start: var(--trove-space-4);
+      padding-inline-start: var(--quader-space-4);
     }
     .link {
       padding: 0;
       border: 0;
       background: none;
-      color: var(--trove-link);
+      color: var(--quader-link);
       font: inherit;
       text-decoration: underline;
       cursor: pointer;

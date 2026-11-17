@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // perfGateEnv switches on the percentile bounds of P-13 and P-14 with Valkey:
@@ -24,13 +24,13 @@ import (
 // limit of the shared runner pods throttles a process for 100 ms or more at a
 // time, and a loaded runner delays the whole process, which says nothing about
 // the message path.
-const perfGateEnv = "TROVE_PERF_GATE"
+const perfGateEnv = "QUADER_PERF_GATE"
 
 func perfGate() bool { return os.Getenv(perfGateEnv) == "1" }
 
 // checkLatency applies the bounds of one mode: the p50 bound always, the p99
 // bound always for the modes that are not tail-sensitive, and for the modes
-// marked gated only when TROVE_PERF_GATE=1.
+// marked gated only when QUADER_PERF_GATE=1.
 func checkLatency(t *testing.T, p50, p99, p50Bound, p99Bound time.Duration, gated bool) {
 	t.Helper()
 	if p50Bound > 0 && p50 > p50Bound {
@@ -62,7 +62,7 @@ func TestJobPickup(t *testing.T) {
 		poll   time.Duration
 		bound  func(poll time.Duration) time.Duration
 		p50    time.Duration // 0: no p50 bound
-		gated  bool          // the p99 bound is enforced with TROVE_PERF_GATE=1 only
+		gated  bool          // the p99 bound is enforced with QUADER_PERF_GATE=1 only
 		n      int
 		spread time.Duration
 	}{
@@ -161,7 +161,7 @@ func TestChangePropagation(t *testing.T) {
 		poll   time.Duration
 		bound  func(poll time.Duration) time.Duration
 		p50    time.Duration // 0: no p50 bound
-		gated  bool          // the p99 bound is enforced with TROVE_PERF_GATE=1 only
+		gated  bool          // the p99 bound is enforced with QUADER_PERF_GATE=1 only
 		n      int
 		spread time.Duration
 	}{

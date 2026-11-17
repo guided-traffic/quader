@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // failingRunner refuses every transaction: PostgreSQL is away.

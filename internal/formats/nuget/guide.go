@@ -3,7 +3,7 @@ package nuget
 import (
 	"embed"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // guideFiles are the Markdown templates of the guide, one file per section.
@@ -15,7 +15,7 @@ var guideFiles embed.FS
 // remote and a virtual repository is, and how the .NET CLI, nuget.exe and Visual Studio
 // configure, sign in, install, push, unlist, relist and delete, keep lock files and are
 // protected against dependency confusion through one, what an endpoint with exposure rules
-// changes, and what each answer of the protocol means. Every statement describes trove as the
+// changes, and what each answer of the protocol means. Every statement describes quader as the
 // requirements define it; the tests in guide_test.go pin the facts the text names to the code.
 //
 // Visual Studio has no command to push, unlist, relist or delete, so the publish and the

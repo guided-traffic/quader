@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/openpgp"
 )
 
 func TestAnalyzeRemoteSaysWhatEachPathOfAnArchiveIs(t *testing.T) {

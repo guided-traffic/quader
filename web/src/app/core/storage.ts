@@ -14,7 +14,7 @@ export class BrowserStorage {
   available(area: StorageArea): boolean {
     try {
       const s = this.area(area);
-      const probe = 'trove.probe';
+      const probe = 'quader.probe';
       s.setItem(probe, '1');
       s.removeItem(probe);
       return true;

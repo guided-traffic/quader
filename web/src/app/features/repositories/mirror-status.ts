@@ -155,14 +155,14 @@ function boundText(kind: string): string {
  * menu, **Run a full pass** post `…/mirror/run` here.
  */
 @Component({
-  selector: 'trove-mirror-status',
+  selector: 'quader-mirror-status',
   imports: [DatePipe, DecimalPipe, NgTemplateOutlet, CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, ErrorNotice],
   template: `
     <section class="status" aria-labelledby="mirror-status-heading">
       <h2 id="mirror-status-heading" i18n="@@mirror.status.heading">Mirror status</h2>
 
       @if (failure(); as f) {
-        <trove-error-notice [error]="f" (retry)="load()" />
+        <quader-error-notice [error]="f" (retry)="load()" />
       } @else if (status(); as s) {
         @if (info(); as i) {
           <p class="state" data-testid="mirror-state" [attr.data-state]="s.state">
@@ -254,7 +254,7 @@ function boundText(kind: string): string {
             }
           }
           @if (runFailure(); as f) {
-            <trove-error-notice [error]="f" />
+            <quader-error-notice [error]="f" />
           }
         </div>
 
@@ -446,41 +446,41 @@ function boundText(kind: string): string {
   `,
   styles: `
     .status {
-      margin-block-end: var(--trove-space-6);
+      margin-block-end: var(--quader-space-6);
     }
     h3 {
-      margin-block: var(--trove-space-4) var(--trove-space-2);
-      font: var(--trove-type-title-small);
+      margin-block: var(--quader-space-4) var(--quader-space-2);
+      font: var(--quader-type-title-small);
     }
     .state {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--trove-space-3);
-      margin-block: var(--trove-space-2);
+      gap: var(--quader-space-3);
+      margin-block: var(--quader-space-2);
     }
     .chip {
       display: inline-flex;
       align-items: center;
-      padding: var(--trove-space-1) var(--trove-space-3);
+      padding: var(--quader-space-1) var(--quader-space-3);
       border: 1px solid currentColor;
-      border-radius: var(--trove-radius-full);
+      border-radius: var(--quader-radius-full);
     }
     .chip.primary {
-      color: var(--trove-accent);
+      color: var(--quader-accent);
     }
     .buttons {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-3);
-      margin-block: var(--trove-space-3);
+      gap: var(--quader-space-3);
+      margin-block: var(--quader-space-3);
     }
     .split {
       display: inline-flex;
       gap: 2px;
     }
     .notices p {
-      margin-block: var(--trove-space-2);
+      margin-block: var(--quader-space-2);
     }
   `,
 })

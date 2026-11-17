@@ -43,7 +43,7 @@ export function referenceLinks(advisory: Pick<VulnerabilityAdvisory, 'references
  * `rel="nofollow noopener noreferrer"` and no `target`.
  */
 @Component({
-  selector: 'trove-advisory',
+  selector: 'quader-advisory',
   preserveWhitespaces: true,
   imports: [DatePipe, PackageReadmeView, SeverityBadge],
   template: `
@@ -60,7 +60,7 @@ export function referenceLinks(advisory: Pick<VulnerabilityAdvisory, 'references
         <dd>{{ kind() }}</dd>
         <dt i18n="@@vuln.adv.severity">Severity</dt>
         <dd>
-          <trove-severity [severity]="a.severity" [score]="a.cvss?.score ?? null" />
+          <quader-severity [severity]="a.severity" [score]="a.cvss?.score ?? null" />
           @if (a.cvss; as c) {
             <span class="secondary" translate="no">CVSS {{ c.version }} {{ c.vector }}</span>
           }
@@ -102,7 +102,7 @@ export function referenceLinks(advisory: Pick<VulnerabilityAdvisory, 'references
       <h3 translate="no">{{ a.summary }}</h3>
       @if (text(); as readme) {
         <div class="advisory-text" translate="no">
-          <trove-package-readme [readme]="readme" />
+          <quader-package-readme [readme]="readme" />
         </div>
       }
 

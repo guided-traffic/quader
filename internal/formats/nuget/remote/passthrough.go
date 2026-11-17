@@ -12,7 +12,7 @@ import (
 // package carry an "@id" in the upstream's catalog or registration, and an "@type". No client
 // reads those; they are dropped at every depth. What a client reads stays: the reasons, the
 // message and the alternate package's id and range of a deprecation, the severity of an advisory
-// and its advisoryUrl. advisoryUrl is a web link for people, like projectUrl, which trove never
+// and its advisoryUrl. advisoryUrl is a web link for people, like projectUrl, which quader never
 // follows: it is kept when it is an absolute http or https address without user info, and dropped
 // otherwise. Any other member that holds an address is dropped, as an unknown member of the entry
 // is (Q-NUGET-52).

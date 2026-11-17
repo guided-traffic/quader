@@ -8,11 +8,11 @@ import (
 	"testing"
 )
 
-// productionSet is the example values file of a production installation (deploy/helm/trove/examples/production.yaml).
+// productionSet is the example values file of a production installation (deploy/helm/quader/examples/production.yaml).
 func productionSet() string { return filepath.Join(chartDir, "examples", "production.yaml") }
 
 // productionDeployments are the Deployments the example renders: the three roles and the pool vuln of the worker.
-var productionDeployments = []string{"trove-api", "trove-packages", "trove-worker", "trove-worker-vuln"}
+var productionDeployments = []string{"quader-api", "quader-packages", "quader-worker", "quader-worker-vuln"}
 
 // TestR_HA_032_ProductionExample (R-HA-032, exit criterion E5.5): the production example values render, for every Deployment, a
 // PodDisruptionBudget, the two topology spread constraints and a HorizontalPodAutoscaler that owns the replica count.
@@ -97,7 +97,7 @@ func TestR_HA_042_ProductionExample(t *testing.T) {
 		if len(ops) != 1 || str(ops[0], "namespaceSelector", "matchLabels", "kubernetes.io/metadata.name") != "monitoring" {
 			t.Errorf("%s admits 8081 from %v, want the monitoring namespace", name, ops)
 		}
-		if strings.HasPrefix(name, "trove-worker") {
+		if strings.HasPrefix(name, "quader-worker") {
 			if http != nil {
 				t.Errorf("%s admits 8080 from %v, a worker opens no client port", name, http)
 			}
@@ -117,13 +117,13 @@ func TestR_HA_042_ProductionExample(t *testing.T) {
 // PrometheusRule, with the labels the Prometheus selects on and every alert of the requirement, the backup's among them.
 func TestR_HA_045_ProductionExample(t *testing.T) {
 	_, docs := render(t, []string{productionSet()})
-	sm := find(docs, "ServiceMonitor", "trove")
+	sm := find(docs, "ServiceMonitor", "quader")
 	if sm == nil {
-		t.Fatal("no ServiceMonitor trove")
+		t.Fatal("no ServiceMonitor quader")
 	}
-	pr := find(docs, "PrometheusRule", "trove")
+	pr := find(docs, "PrometheusRule", "quader")
 	if pr == nil {
-		t.Fatal("no PrometheusRule trove")
+		t.Fatal("no PrometheusRule quader")
 	}
 	for _, o := range []doc{sm, pr} {
 		if str(o, "metadata", "labels", "release") != "kube-prometheus-stack" {
@@ -148,9 +148,9 @@ func TestR_HA_045_ProductionExample(t *testing.T) {
 // side by side, both to the same Services, and a BackendTLSPolicy for every Service the route names.
 func TestR_HA_038_ProductionExample(t *testing.T) {
 	_, docs := render(t, []string{productionSet()})
-	route := find(docs, "HTTPRoute", "trove")
-	if route == nil || find(docs, "Ingress", "trove") == nil {
-		t.Fatalf("route %v, ingress %v", route != nil, find(docs, "Ingress", "trove") != nil)
+	route := find(docs, "HTTPRoute", "quader")
+	if route == nil || find(docs, "Ingress", "quader") == nil {
+		t.Fatalf("route %v, ingress %v", route != nil, find(docs, "Ingress", "quader") != nil)
 	}
 	if strings.Join(routeTable(t, route), " ") != strings.Join(edgeTable(docs), " ") {
 		t.Errorf("the route sends %v, the Ingress %v", routeTable(t, route), edgeTable(docs))

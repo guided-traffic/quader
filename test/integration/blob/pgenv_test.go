@@ -15,16 +15,16 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 
-// pgEnv is a database of its own (trove_blob_<random>) with the embedded
+// pgEnv is a database of its own (quader_blob_<random>) with the embedded
 // migrations applied, dropped when the test ends.
 type pgEnv struct {
 	db    *postgres.DB
@@ -35,10 +35,10 @@ type pgEnv struct {
 
 func newPG(tb testing.TB) *pgEnv {
 	tb.Helper()
-	host, user, secret := testenv.Get(tb, "TROVE_TEST_PG_HOST"), testenv.Get(tb, "TROVE_TEST_PG_USER"), testenv.Get(tb, "TROVE_TEST_PG_PASSWORD")
-	port, err := strconv.Atoi(testenv.Get(tb, "TROVE_TEST_PG_PORT"))
+	host, user, secret := testenv.Get(tb, "QUADER_TEST_PG_HOST"), testenv.Get(tb, "QUADER_TEST_PG_USER"), testenv.Get(tb, "QUADER_TEST_PG_PASSWORD")
+	port, err := strconv.Atoi(testenv.Get(tb, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		tb.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		tb.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
 	connect := func(database string) *pgx.Conn {
 		c, err := pgx.Connect(context.Background(), testenv.PgDSN(tb, database))
@@ -48,7 +48,7 @@ func newPG(tb testing.TB) *pgEnv {
 		tb.Cleanup(func() { _ = c.Close(context.Background()) })
 		return c
 	}
-	name := "trove_blob_" + runID(tb)
+	name := "quader_blob_" + runID(tb)
 	maint := connect("postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		tb.Fatalf("create database: %v", err)
@@ -66,7 +66,7 @@ func newPG(tb testing.TB) *pgEnv {
 		tb.Fatal(err)
 	}
 	cfg := config.Database{
-		Host: host, Port: port, Name: name, Schema: "trove",
+		Host: host, Port: port, Name: name, Schema: "quader",
 		UsernameFile: userFile, PasswordFile: passFile,
 		SSLMode: "verify-full", SSLRootCertFile: testenv.CAFile(tb),
 		ConnectTimeout: 5 * time.Second, TargetSessionAttrs: "read-write",
@@ -99,7 +99,7 @@ func newPG(tb testing.TB) *pgEnv {
 	}
 	tb.Cleanup(db.Close)
 	p := &pgEnv{db: db, admin: connect(name), cfg: cfg}
-	if _, err := p.admin.Exec(ctx, "SET search_path TO trove"); err != nil {
+	if _, err := p.admin.Exec(ctx, "SET search_path TO quader"); err != nil {
 		tb.Fatal(err)
 	}
 	p.repo = p.newRepo(tb, "generic-local")
@@ -110,8 +110,8 @@ func newPG(tb testing.TB) *pgEnv {
 // belongs to a project (Q-AUTHZ-206).
 func (p *pgEnv) newRepo(tb testing.TB, key string) int64 {
 	tb.Helper()
-	p.exec(tb, `INSERT INTO trove.project (id, key, display_name) VALUES (gen_random_uuid(), $1, $1) ON CONFLICT (key) DO NOTHING`, testenv.DefaultProject)
-	return p.scalarInt(tb, `INSERT INTO trove.repositories (key, format, class, project_id) SELECT $1, 'generic', 'local', id FROM trove.project WHERE key = $2 RETURNING id`, key, testenv.DefaultProject)
+	p.exec(tb, `INSERT INTO quader.project (id, key, display_name) VALUES (gen_random_uuid(), $1, $1) ON CONFLICT (key) DO NOTHING`, testenv.DefaultProject)
+	return p.scalarInt(tb, `INSERT INTO quader.repositories (key, format, class, project_id) SELECT $1, 'generic', 'local', id FROM quader.project WHERE key = $2 RETURNING id`, key, testenv.DefaultProject)
 }
 
 func (p *pgEnv) exec(tb testing.TB, sql string, args ...any) {
@@ -132,13 +132,13 @@ func (p *pgEnv) scalarInt(tb testing.TB, sql string, args ...any) int64 {
 
 func (p *pgEnv) count(tb testing.TB, from string, args ...any) int64 {
 	tb.Helper()
-	return p.scalarInt(tb, "SELECT count(*) FROM trove."+from, args...)
+	return p.scalarInt(tb, "SELECT count(*) FROM quader."+from, args...)
 }
 
 // state returns state and content_status of a blob row, ok=false when none.
 func (p *pgEnv) state(tb testing.TB, d blob.Digest) (state, status string, ok bool) {
 	tb.Helper()
-	err := p.admin.QueryRow(context.Background(), "SELECT state, content_status FROM trove.blobs WHERE sha256 = $1", d.Bytes()).Scan(&state, &status)
+	err := p.admin.QueryRow(context.Background(), "SELECT state, content_status FROM quader.blobs WHERE sha256 = $1", d.Bytes()).Scan(&state, &status)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", "", false
 	}

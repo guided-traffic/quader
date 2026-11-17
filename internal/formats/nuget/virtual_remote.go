@@ -3,12 +3,12 @@ package nuget
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/merge"
-	"github.com/guided-traffic/trove/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/merge"
+	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
 )
 
 // The documents a remote member of a virtual repository hands to the merge (R-NUGET-017,

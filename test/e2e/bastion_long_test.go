@@ -15,13 +15,13 @@ import (
 	"time"
 )
 
-// basLoopDuration is the length of the client loop of the drain: ten minutes (R-BAS-043), TROVE_E2E_BASTION_LOOP shortens it
+// basLoopDuration is the length of the client loop of the drain: ten minutes (R-BAS-043), QUADER_E2E_BASTION_LOOP shortens it
 // while the test is developed, never in CI.
 func basLoopDuration(t testing.TB) time.Duration {
-	if v := os.Getenv("TROVE_E2E_BASTION_LOOP"); v != "" {
+	if v := os.Getenv("QUADER_E2E_BASTION_LOOP"); v != "" {
 		d, err := time.ParseDuration(v)
 		if err != nil {
-			t.Fatalf("TROVE_E2E_BASTION_LOOP %q: %v", v, err)
+			t.Fatalf("QUADER_E2E_BASTION_LOOP %q: %v", v, err)
 		}
 		return d
 	}
@@ -110,7 +110,7 @@ func TestBastionLong_R_BAS_049_Drain(t *testing.T) {
 // PodDisruptionBudget refuses an eviction (deploy/dev/drain.sh picks the same way).
 func basDrainNode(t testing.TB, s *basSite) string {
 	t.Helper()
-	primary := strings.TrimSpace(kn(t, "get", "cluster", "trove-db", "-o", "jsonpath={.status.currentPrimary}"))
+	primary := strings.TrimSpace(kn(t, "get", "cluster", "quader-db", "-o", "jsonpath={.status.currentPrimary}"))
 	primaryNode := strings.TrimSpace(kn(t, "get", "pod", primary, "-o", "jsonpath={.spec.nodeName}"))
 	for _, p := range basReadyPods(t, s) {
 		if p.Node != primaryNode {
@@ -154,7 +154,7 @@ func TestBastionLong_R_BAS_049_AnonymousMissFlood(t *testing.T) {
 			}
 			var n float64
 			for _, p := range basReadyPods(t, site) {
-				n += msum(basMetrics(t, p.Name), "trove_bastion_main_in_flight", `class="anonymous"`)
+				n += msum(basMetrics(t, p.Name), "quader_bastion_main_in_flight", `class="anonymous"`)
 			}
 			if int64(n) > atomic.LoadInt64(&inflightMax) {
 				atomic.StoreInt64(&inflightMax, int64(n))

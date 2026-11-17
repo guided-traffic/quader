@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 // MaxArchitectures is the bound on the architectures of a suite (R-DEB-009).

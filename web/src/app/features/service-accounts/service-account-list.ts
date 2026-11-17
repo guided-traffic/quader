@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle, TroveDialog } from '../../shared/ui/dialog';
+import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle, QuaderDialog } from '../../shared/ui/dialog';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { newIdempotencyKey } from '../../api/client';
@@ -27,16 +27,16 @@ export interface ServiceAccountCreateData {
  * belongs to the project for good (R-UI-041).
  */
 @Component({
-  selector: 'trove-service-account-create-dialog',
+  selector: 'quader-service-account-create-dialog',
   imports: [DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
-    <h2 troveDialogTitle i18n="@@sa-create.title">New service account</h2>
+    <h2 quaderDialogTitle i18n="@@sa-create.title">New service account</h2>
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
         @if (error(); as e) {
-          <trove-error-notice [error]="e" />
+          <quader-error-notice [error]="e" />
         }
-        <trove-text-field
+        <quader-text-field
           width="name"
           i18n-label="@@sa-create.name"
           label="Name"
@@ -46,10 +46,10 @@ export interface ServiceAccountCreateData {
           [error]="fieldError('/name')"
           [hint]="nameHint"
         />
-        <trove-text-field width="full" i18n-label="@@sa-create.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
+        <quader-text-field width="full" i18n-label="@@sa-create.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
       </div>
       <div class="dialog-actions">
-        <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@sa-create.cancel">Cancel</button>
+        <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@sa-create.cancel">Cancel</button>
         <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@sa-create.submit">Create service account</button>
       </div>
     </form>
@@ -101,22 +101,22 @@ export class ServiceAccountCreateDialog {
  * paging. The hint says when to use one.
  */
 @Component({
-  selector: 'trove-service-account-list',
+  selector: 'quader-service-account-list',
   imports: [PageHeader, RouterLink, DataTable, FilterCategory, FilterPanel, FilterToggle, Needs, TextField],
   template: `
-    <trove-page-header heading="Service accounts" i18n-heading="@@sas.heading">
+    <quader-page-header heading="Service accounts" i18n-heading="@@sas.heading">
       <button actions class="btn btn-confirm" type="button" [disabled]="!session.has('identities:write')" aria-describedby="needs-sas" (click)="add()" i18n="@@sas.add">New service account</button>
-    </trove-page-header>
-    <trove-needs id="needs-sas" capability="identities:write" />
+    </quader-page-header>
+    <quader-needs id="needs-sas" capability="identities:write" />
     <p i18n="@@sas.hint">
       Use a service account for CI systems that cannot sign in through OpenID Connect and for long-running automation. Its tokens act as the account, not as a person.
     </p>
 
     <div class="list-layout" [class.panel-open]="panelOpen()">
       <div class="list-toolbar">
-        <trove-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
+        <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
       </div>
-      <trove-filter-panel
+      <quader-filter-panel
         #panel
         class="list-side"
         [(open)]="panelOpen"
@@ -125,13 +125,13 @@ export class ServiceAccountCreateDialog {
         (apply)="apply()"
         (clearAll)="clear()"
       >
-        <trove-filter-category i18n-label="@@sas.q" label="Name" [active]="!!q().trim()" [expanded]="!!q().trim()">
-          <trove-text-field width="name" i18n-label="@@sas.q" label="Name" name="q" [(value)]="q" />
-        </trove-filter-category>
-      </trove-filter-panel>
+        <quader-filter-category i18n-label="@@sas.q" label="Name" [active]="!!q().trim()" [expanded]="!!q().trim()">
+          <quader-text-field width="name" i18n-label="@@sas.q" label="Name" name="q" [(value)]="q" />
+        </quader-filter-category>
+      </quader-filter-panel>
 
       <div class="list-main">
-        <trove-data-table
+        <quader-data-table
           [caption]="caption"
           [columns]="columns"
           [sort]="sort()"
@@ -166,7 +166,7 @@ export class ServiceAccountCreateDialog {
               </td>
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
       </div>
     </div>
   `,
@@ -174,7 +174,7 @@ export class ServiceAccountCreateDialog {
 })
 export class ServiceAccountList {
   private readonly api = inject(IdentityApi);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly router = inject(Router);
   protected readonly session = inject(SessionStore);
 

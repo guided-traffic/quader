@@ -26,7 +26,7 @@ failovers under npm load, in [Drain and failover under npm load](#drain-and-fail
   status 0 stays a failure, wherever it happens. A request without a response is logged as `<code>:<text>` in the
   replica column.
 - **The M1 tests start from a fresh installation's own tools.** The administrator they seed with is made the way
-  [identity.md](identity.md#bootstrap-commands) says (`trove admin service-account create --admin`, `trove admin token
+  [identity.md](identity.md#bootstrap-commands) says (`quader admin service-account create --admin`, `quader admin token
   create` through `kubectl exec` into a worker pod); everything else is the management API. They run in the `scatter`
   profile (three `api` and three `packages` replicas, every request to another one) and `TestMain` returns the cluster to the default profile at
   the end.
@@ -55,11 +55,11 @@ deploy/dev/s3-stop.sh       scale the object store to 0 until s3-start.sh (its o
 deploy/dev/valkey-cli.sh    valkey-cli against the current primary (FLUSHALL of E1.11, CLIENT PAUSE of E1.8)
 deploy/dev/bastion.sh       the e2e Bastions of R-BAS-049: infra, install <volume|bucket>, status, down (the Bastion tests, below)
 deploy/dev/bastion*.yaml    their manifests and chart values; values-bastion.yaml is the main installation's `bastion` profile
-deploy/dev/restore-ns.sh    the second installation of the restore drill (namespace trove-restore): infra, install <backup id>, serve, down; restore-ns.yaml and values-restore.yaml are its manifests and chart values, values-restore-vuln.yaml the overlay of `TROVE_RESTORE_PROFILE=vuln` (the backup tests and the vulnerability tests, below)
-deploy/dev/pitr.sh, pitr.yaml, pitr-restore.yaml  the platform layer of R-HA-023 and the new cluster of the point-in-time drill (TROVE_PITR=1, below)
-deploy/dev/values-backup.yaml  the profile `backup`: garbage collection without a grace period (TROVE_PROFILE=backup)
-deploy/dev/gateway.yaml, values-edge.yaml  the profile `edge`: the Gateway `shared` of Envoy Gateway with its policies, and the chart values for the HTTPRoute and the 6 GiB transfers (TROVE_PROFILE=edge)
-deploy/dev/values-alerts.yaml  the profile `alerts`: the ServiceMonitor and the PrometheusRule of the chart, read by the Prometheus up.sh installs (TROVE_PROFILE=alerts)
+deploy/dev/restore-ns.sh    the second installation of the restore drill (namespace quader-restore): infra, install <backup id>, serve, down; restore-ns.yaml and values-restore.yaml are its manifests and chart values, values-restore-vuln.yaml the overlay of `QUADER_RESTORE_PROFILE=vuln` (the backup tests and the vulnerability tests, below)
+deploy/dev/pitr.sh, pitr.yaml, pitr-restore.yaml  the platform layer of R-HA-023 and the new cluster of the point-in-time drill (QUADER_PITR=1, below)
+deploy/dev/values-backup.yaml  the profile `backup`: garbage collection without a grace period (QUADER_PROFILE=backup)
+deploy/dev/gateway.yaml, values-edge.yaml  the profile `edge`: the Gateway `shared` of Envoy Gateway with its policies, and the chart values for the HTTPRoute and the 6 GiB transfers (QUADER_PROFILE=edge)
+deploy/dev/values-alerts.yaml  the profile `alerts`: the ServiceMonitor and the PrometheusRule of the chart, read by the Prometheus up.sh installs (QUADER_PROFILE=alerts)
 test/e2e/                   the Go tests, build tag `e2e`, package e2e
   env_test.go               kubectl, the API-server proxy to :8081, the driver and k6 helpers
   e03_cluster_test.go       E0.3, E0.7 (Pod Security, NetworkPolicy enforcement)
@@ -158,8 +158,8 @@ perf/k6/npm.js              the npm load scripts of R-ARCH-027 (P-1, P-3, P-5, P
 ## Running it
 
 ```shell
-make image VERSION=dev          # IMAGE defaults to guidedtraffic/trove:dev
-make dev-up                  # TROVE_DEV_HTTP_PORT=28080 make dev-up when 8080 is taken
+make image VERSION=dev          # IMAGE defaults to guidedtraffic/quader:dev
+make dev-up                  # QUADER_DEV_HTTP_PORT=28080 make dev-up when 8080 is taken
 make e2e SET=push            # E0.3, E0.4, E0.6, E0.7, E0.12, E0.14, E0.15, E0.16, E1.14, then E0.11 (CI, every change)
 make e2e SET=failover        # the E0.13 failovers and the E1.8 limits (CI: nightly and on dispatch, since 2026-11-01)
 make e2e SET=access-long     # E1.1, E1.11 with the browser journeys, E1.13 (CI, every change)
@@ -171,37 +171,37 @@ make e2e SET='^TestE06'      # any go test -run expression
 make e2e SET=clients         # build the npm clients image, start the client pods, run the smoke test (the pods stay up)
 make e2e SET=clients-down    # remove the client pods
 make e2e SET=npm             # the npm acceptance matrix and E2.2 to E2.12 but E2.11, and TestNPMProjectPartner (CI job e2e-npm, every change); three client pods
-make e2e SET=npm-closing     # the additions of the closing run (below); fails unless TROVE_E2E_NPM_CLOSING=1, which the set exports
+make e2e SET=npm-closing     # the additions of the closing run (below); fails unless QUADER_E2E_NPM_CLOSING=1, which the set exports
 make e2e SET=npm-ha          # E2.11: drain variant A and the failovers under the npm load, and the mirror's worker pool under failure (TestNPMHA_R_REPO_...; R-REPO-053, R-REPO-054, R-REPO-058); CI leg npm-ha: nightly and on dispatch, since 2026-11-01
 make e2e SET=npm-ha-crash    # E2.11: the pod crash under the npm load, three force-deletes (no CI leg since 2026-11-01; run by hand)
-make e2e SET=npm-ha-soak     # the pod crash with ten force-deletes over 20 minutes, then perf/k6/npm.js, and a mirror's clients-first measurement of R-REPO-055, its install-time ratio enforced with TROVE_PERF_GATE=1 in the nightly job (nightly)
-make e2e SET=cold-crash      # E5.2: a packages replica force-deleted during a cold npm ci and a cold dotnet restore of three clients each, then trove admin storage verify (nightly, lane 1, job e2e-nuget)
+make e2e SET=npm-ha-soak     # the pod crash with ten force-deletes over 20 minutes, then perf/k6/npm.js, and a mirror's clients-first measurement of R-REPO-055, its install-time ratio enforced with QUADER_PERF_GATE=1 in the nightly job (nightly)
+make e2e SET=cold-crash      # E5.2: a packages replica force-deleted during a cold npm ci and a cold dotnet restore of three clients each, then quader admin storage verify (nightly, lane 1, job e2e-nuget)
 make e2e SET=npm-ha-closing  # npm-ha, npm-ha-soak and the 5-minute Valkey outage under the npm load (the closing run's leg)
 make e2e SET=ha-faults       # E5.10: the database at 0 instances for 2 minutes, Sentinel quorum loss, FLUSHALL, a slow Valkey, the planned failover with its 10 s bound, a Valkey credential mismatch (about 45 minutes; nightly and by hand)
-make e2e SET=ha-pooler       # E5.10, R-HA-058: a pooler instance deleted, gracefully and forced, in the pooler profile (TROVE_POOLER=1; about 25 minutes; nightly and by hand)
+make e2e SET=ha-pooler       # E5.10, R-HA-058: a pooler instance deleted, gracefully and forced, in the pooler profile (QUADER_POOLER=1; about 25 minutes; nightly and by hand)
 make e2e SET=ha-suite        # the failure scenarios of R-HA-052 that npm-ha leaves out, under the same npm load: the audit forward cut by a pod deletion, the object-store outage, PostgreSQL and Valkey primary loss, node loss (about 50 minutes; nightly and by hand)
 make npm-clients-image       # only build the image into the local Docker
 make e2e SET=nuget-clients   # build the NuGet clients image, start the client pods, run the smoke test (the pods stay up)
 make e2e SET=nuget-clients-down  # remove the NuGet client pods
 make e2e SET=nuget           # every TestNuGet... but TestNuGetClosing... and TestNuGetHA...: local, remote and virtual repositories, a project's partner (TestNuGetProjectPartner), E3.2, E3.6 and E3.7 with the real clients; the test upstream and three client pods (Q-NUGET-34, Q-NUGET-70); CI job e2e-nuget on every change
-make e2e SET=nuget-closing   # the additions of the closing run (TestNuGetClosing: R-NUGET-030 and R-NUGET-031 with Valkey stopped; TestNuGetClosingPublic: the read-only subset against nuget.org; exports TROVE_E2E_NUGET_CLOSING=1); CI leg of a closing dispatch
+make e2e SET=nuget-closing   # the additions of the closing run (TestNuGetClosing: R-NUGET-030 and R-NUGET-031 with Valkey stopped; TestNuGetClosingPublic: the read-only subset against nuget.org; exports QUADER_E2E_NUGET_CLOSING=1); CI leg of a closing dispatch
 make e2e SET=nuget-ha        # TestNuGetHA: drain variant A, the PostgreSQL switchover and the Valkey failover under the npm and NuGet load together (R-HA-059, R-ARCH-024), and the status of a NuGet mirror from every replica (R-REPO-058); CI job e2e-nuget in the nightly workflow; starts both client pods and both test upstreams
 make e2e SET=drain-load      # E5.9: TestDrainLoad, drain variants B, C and E under the full load, the long-transfer probes and R-STOR-046's gc-full; both client pods; profile `drain`; all three variants in one cluster, for local runs; CI runs the legs drain-load-b, -c and -e (one variant each; needs about 12 cores and 10 GiB)
-make e2e SET=drain-load-pooler  # E5.9: TestDrainLoadPooler, drain variant D (an instance of the request pooler) under the same load, in the pooler profile (TROVE_POOLER=1, set by the set); CI job e2e-drain-pooler, nightly
+make e2e SET=drain-load-pooler  # E5.9: TestDrainLoadPooler, drain variant D (an instance of the request pooler) under the same load, in the pooler profile (QUADER_POOLER=1, set by the set); CI job e2e-drain-pooler, nightly
 make nuget-clients-image     # only build the NuGet clients image into the local Docker
 make nuget-clients-smoke     # the image like a pod against the counting NuGet test upstream, without a cluster
 make nuget-reference-check   # perf/nuget/reference against a regeneration (no cluster, no Docker)
-make e2e SET=oci-clients     # build the OCI clients images, start the Docker Engine and Podman pods of the namespace trove-e2e-clients, run the smoke test (the pods stay up)
+make e2e SET=oci-clients     # build the OCI clients images, start the Docker Engine and Podman pods of the namespace quader-e2e-clients, run the smoke test (the pods stay up)
 make e2e SET=oci             # every TestOCI... but the closing and long names: login, push and pull through local, remote, mirror, virtual and bound-host repositories with docker and podman, Buildx, the Kubernetes pull, the setup snippets (CI job e2e-oci, when the change touches the registry); three client pods and the counting OCI test upstream
-make e2e SET=oci-closing     # the additions of the closing run (TestOCIClosing: Valkey stopped; TestOCIClosingPublic: the read-only subset against Docker Hub; exports TROVE_E2E_OCI_CLOSING=1); CI leg of a closing dispatch
+make e2e SET=oci-closing     # the additions of the closing run (TestOCIClosing: Valkey stopped; TestOCIClosingPublic: the read-only subset against Docker Hub; exports QUADER_E2E_OCI_CLOSING=1); CI leg of a closing dispatch
 make e2e SET=oci-long        # TestOCILong: the drain of the pod that receives a push of a 300 MiB layer (CI: job e2e-oci of the nightly workflow)
 make oci-clients-image       # only build the two OCI clients images into the local Docker
 make e2e SET=bastion         # the short scenarios of R-BAS-049 with npm, pnpm, Yarn 4 and dotnet restore (CI job e2e-bastion, when the change touches the Bastion; nightly)
 make e2e SET=bastion-long    # the drain, the failure suite under client load (replica lost, main installation failing over, rolling upgrade of either side) and the anonymous miss flood (CI: nightly and on dispatch; a red long leg is a finding, not a blocker)
 make e2e SET=upgrade         # the upgrade across the cut from v0.16.0 (E6a.7) and the rolling upgrade with its rollback from the latest release (R-HA-020), under npm, NuGet and browser loops; replaces the installation and puts the current dev release back (CI: nightly and on dispatch; a red long leg is a finding, not a blocker)
-make e2e SET=vuln-pooler     # E5.13: the block through drain variant D on the cluster without the poolerss of R-HA-058 (TROVE_POOLER=1, set by the set); no client pods; about 6 minutes of `make e2e` (the variant takes 2.5 to 3.5 minutes: the pooler pod stops after its 90 s `preStop` sleep); the cluster stays in the pooler overlay until the next `make dev-up` (CI: job e2e-vuln, nightly)
-make e2e SET=backup-pitr      # the point-in-time restore drill of R-HA-025 (TROVE_PITR=1: the Barman Cloud plugin; CI: a step of the job e2e-backup; about 15 minutes)
-make e2e SET=backup          # the backup and restore suite (R-BAK-029): the drill into the namespace trove-restore, the drain and the kill -9 of a backup and a restore, the journal across a restore with E5.12's CI bullets (starts the issuer double); the profile backup, one npm client pod (CI: job e2e-backup of the nightly workflow, on dispatch; about 25 minutes)
+make e2e SET=vuln-pooler     # E5.13: the block through drain variant D on the cluster without the poolerss of R-HA-058 (QUADER_POOLER=1, set by the set); no client pods; about 6 minutes of `make e2e` (the variant takes 2.5 to 3.5 minutes: the pooler pod stops after its 90 s `preStop` sleep); the cluster stays in the pooler overlay until the next `make dev-up` (CI: job e2e-vuln, nightly)
+make e2e SET=backup-pitr      # the point-in-time restore drill of R-HA-025 (QUADER_PITR=1: the Barman Cloud plugin; CI: a step of the job e2e-backup; about 15 minutes)
+make e2e SET=backup          # the backup and restore suite (R-BAK-029): the drill into the namespace quader-restore, the drain and the kill -9 of a backup and a restore, the journal across a restore with E5.12's CI bullets (starts the issuer double); the profile backup, one npm client pod (CI: job e2e-backup of the nightly workflow, on dispatch; about 25 minutes)
 make e2e SET=edge            # E5.5: R-HA-039's 6 GiB upload, 17-minute download at 2 MiB/s and 1 GiB NuGet push, and R-HA-038, through the Ingress and through an HTTPRoute on Envoy Gateway (CI: job e2e-edge, nightly and on dispatch; about 90 minutes)
 make e2e SET=alerts          # E5.5: the alerts of R-HA-045 in their R-HA-052 scenarios and "Maintenance stays quiet" against the Prometheus of the profile alerts, on the cluster without the poolerss (CI: job e2e-alerts, nightly and on dispatch)
 make fuzz-npm FUZZ=FuzzMatch FUZZTIME=1m   # npm's fuzz targets (CI: 30 minutes, closing run only)
@@ -216,7 +216,7 @@ no host install and no host port is involved. `e2e.sh` refuses a `K6_IMAGE` whos
 neither `major.minor.patch` nor `dev`: with a commit hash the replicas would wait for the schema forever and never
 become ready, and it now logs an ERROR at start saying so ([Findings of the suite](#findings-of-the-suite)).
 
-Output: the machine-readable report is `.out/test-e2e.json` (`TROVE_E2E_REPORT=<file below .out/>` names another one; the nightly job `e2e-backup` writes the drill of `backup-pitr` to `.out/test-e2e-backup-pitr.json`) (`go test -json`, test names carry the
+Output: the machine-readable report is `.out/test-e2e.json` (`QUADER_E2E_REPORT=<file below .out/>` names another one; the nightly job `e2e-backup` writes the drill of `backup-pitr` to `.out/test-e2e-backup-pitr.json`) (`go test -json`, test names carry the
 requirement IDs), the artifacts are in `.out/e2e/`: per k6 run the console log (one line per request:
 `R <unix ms> <status> <replica> <ms> <path>`) and k6's own `summary.json`, the driver's JSON per run, the
 pod watch and the events of the drain, the logs of the drained pods, and the result files `e13-*.json`,
@@ -225,22 +225,22 @@ pod watch and the events of the drain, the logs of the drained pods, and the res
 
 | Variable | Default | Effect |
 |---|---|---|
-| `TROVE_DEV_SCHEME` | `https` | scheme of the edge for the host client and k6 |
-| `TROVE_DEV_OPS_SCHEME` | `https` | scheme of the pods' `:8081` as the API server proxy reaches it |
-| `TROVE_DEV_CA_FILE` | `.dev/pki/ca.crt` (written by `up.sh`) | PEM bundle that signs the edge's certificate: used by the Go client and mounted into the k6 container (`SSL_CERT_FILE`) |
-| `TROVE_E2E_K6_TARGET` | `https://localhost:30443` | what k6 requests: the edge's HTTPS NodePort, by the name its certificate carries |
-| `TROVE_E2E_K6_HOSTS_ADDR` | `<control-plane node address on the Docker network kind>:30443` | `host:port` that name resolves to inside the k6 container (so the certificate is verified for `localhost` while k6 reaches the node's address) |
-| `TROVE_E2E_OUT` | `.out/e2e` | artifact directory |
-| `TROVE_E2E_TIMEOUT` | `90m` | go test timeout |
-| `TROVE_E2E_DRIVER_BIN` | unset | a prebuilt linux driver binary instead of `go build` |
-| `TROVE_E2E_SCATTER_RETURN` | `1` | `0` leaves the cluster in the `scatter` profile after E0.11 |
-| `TROVE_E2E_RUN` | unset | replaces the `go test -run` expression of any set (`TROVE_E2E_RUN='TestNPMMatrix/rows/E2.1_npm11' deploy/dev/e2e.sh npm`) |
-| `TROVE_E2E_NPM_CRASH_SOAK` | unset | `1` makes `TestNPMHACrash` force-delete ten pods over 20 minutes instead of three; the sets `npm-ha-soak` and `npm-ha-closing` export it |
-| `TROVE_E2E_EVIDENCE` | `1` | `0` records no [stall evidence](#reading-a-stall) |
-| `TROVE_E2E_EVIDENCE_INTERVAL` | `1` | seconds between two samples of the host and of each node |
-| `TROVE_E2E_EVIDENCE_EDGE_INTERVAL` | `2` | seconds between two samples of the edge |
-| `TROVE_E2E_EVIDENCE_LOG_CAP_MIB` | `32` | most that is copied of one container's log |
-| `TROVE_E2E_EVIDENCE_MAX_SECONDS` | `21600` | a recorder's own end, should a run be killed before it can stop them |
+| `QUADER_DEV_SCHEME` | `https` | scheme of the edge for the host client and k6 |
+| `QUADER_DEV_OPS_SCHEME` | `https` | scheme of the pods' `:8081` as the API server proxy reaches it |
+| `QUADER_DEV_CA_FILE` | `.dev/pki/ca.crt` (written by `up.sh`) | PEM bundle that signs the edge's certificate: used by the Go client and mounted into the k6 container (`SSL_CERT_FILE`) |
+| `QUADER_E2E_K6_TARGET` | `https://localhost:30443` | what k6 requests: the edge's HTTPS NodePort, by the name its certificate carries |
+| `QUADER_E2E_K6_HOSTS_ADDR` | `<control-plane node address on the Docker network kind>:30443` | `host:port` that name resolves to inside the k6 container (so the certificate is verified for `localhost` while k6 reaches the node's address) |
+| `QUADER_E2E_OUT` | `.out/e2e` | artifact directory |
+| `QUADER_E2E_TIMEOUT` | `90m` | go test timeout |
+| `QUADER_E2E_DRIVER_BIN` | unset | a prebuilt linux driver binary instead of `go build` |
+| `QUADER_E2E_SCATTER_RETURN` | `1` | `0` leaves the cluster in the `scatter` profile after E0.11 |
+| `QUADER_E2E_RUN` | unset | replaces the `go test -run` expression of any set (`QUADER_E2E_RUN='TestNPMMatrix/rows/E2.1_npm11' deploy/dev/e2e.sh npm`) |
+| `QUADER_E2E_NPM_CRASH_SOAK` | unset | `1` makes `TestNPMHACrash` force-delete ten pods over 20 minutes instead of three; the sets `npm-ha-soak` and `npm-ha-closing` export it |
+| `QUADER_E2E_EVIDENCE` | `1` | `0` records no [stall evidence](#reading-a-stall) |
+| `QUADER_E2E_EVIDENCE_INTERVAL` | `1` | seconds between two samples of the host and of each node |
+| `QUADER_E2E_EVIDENCE_EDGE_INTERVAL` | `2` | seconds between two samples of the edge |
+| `QUADER_E2E_EVIDENCE_LOG_CAP_MIB` | `32` | most that is copied of one container's log |
+| `QUADER_E2E_EVIDENCE_MAX_SECONDS` | `21600` | a recorder's own end, should a run be killed before it can stop them |
 
 The suite runs over TLS by default: the scheme, the CA and the probe scheme are parameters (the defaults above),
 and nothing in the suite hard-codes `http`. What the move to TLS changed is listed in
@@ -270,7 +270,7 @@ How to read one:
    ```shell
    awk -F, '$2=="host" { if (p != "") printf "%s cpu some %6.0f ms in %.1f s  load1 %s\n", $1, ($4-p)/1000, ($1-t)/1000, $11; p=$4; t=$1 }' samples.csv
    ```
-   Replace `host` by `node:trove-worker` to see which node carried it (a node's cgroup has pressure of its own: look for the node that is far above the others). `mem_` and `cpu_full` are the same arithmetic with columns 8 and 6.
+   Replace `host` by `node:quader-worker` to see which node carried it (a node's cgroup has pressure of its own: look for the node that is far above the others). `mem_` and `cpu_full` are the same arithmetic with columns 8 and 6.
 2. **Did the edge hold connections?** `grep edge: samples.csv`: `edge_curr_conns` is the process's current connections (about 50 while k6 runs at 100 requests/s
    on kind), `edge_idle_pct` falls when HAProxy itself is busy. About 1,800 connections open as in F-124 reads here as a column, with the minute it began.
 3. **Was a Secret written again?** Compare `start` and `end` in `secrets.tsv`: the same name with another `uid` or a changed `resourceVersion` was written during the run;
@@ -286,12 +286,12 @@ a replaced edge pod ends its series and the next one starts a new `edge:<pod>`.
 
 ## The driver
 
-[test/e2e/cmd/driver](../../test/e2e/cmd/driver) runs in the pod `trove-e2e-driver`, which `e2e.sh`
-creates from the worker Deployment's pod template: the same ConfigMap (`/etc/trove/trove.yaml`), the same
-Secrets, the same security contexts, no probes, no ports. It carries `app.kubernetes.io/name=trove` and
-`trove/serve=true` because the Valkey NetworkPolicy admits exactly those pods, and a component label
+[test/e2e/cmd/driver](../../test/e2e/cmd/driver) runs in the pod `quader-e2e-driver`, which `e2e.sh`
+creates from the worker Deployment's pod template: the same ConfigMap (`/etc/quader/quader.yaml`), the same
+Secrets, the same security contexts, no probes, no ports. It carries `app.kubernetes.io/name=quader` and
+`quader/serve=true` because the Valkey NetworkPolicy admits exactly those pods, and a component label
 that no Service, PodDisruptionBudget or spread constraint selects. It runs on the control-plane node, so a
-drain of a worker node never evicts it. Its connections are named `trove:e2e-writer-…`, `…e2e-follower-…`
+drain of a worker node never evicts it. Its connections are named `quader:e2e-writer-…`, `…e2e-follower-…`
 and `…e2e-probe-…` with role `web`: it claims no job and holds no lease.
 
 | Command | What it does |
@@ -321,7 +321,7 @@ the exit criterion.
 |---|---|---|
 | E0.3 | `TestE03DevProfile` | two `api`, three `packages`, two `worker` and two pool `vuln` pods Ready, every pod's `:8081/readyz` 200 (through the API-server proxy), `/system/replicas` lists each pod under its `roles` entry (the pool's with `pool` `vuln`), `/system/ping` is `OK` through the Ingress; two PostgreSQL instances, two Valkey pods, three Sentinels. The 15-minute budget is measured by `make dev-up` itself (below) |
 | E0.4 | `TestE04MigrationFailure` | `helm upgrade` with a migration credential whose password is wrong. The Job fails for that real reason (SASL authentication, `28P01`); `helm upgrade` fails naming the Job; ping answers 200 throughout; no pod is replaced and no Deployment's generation changes; the release is `failed`; the repairing upgrade succeeds and the checks of E0.3 pass again |
-| E0.6 | `TestE06Lease` | the scheduler lease is read from `pg_locks` (class 1, object 1) joined to `pg_stat_activity` (`trove:<pod>:lease`), sampled every 200 ms from one psql session. One holder, a worker; no lease connection and no job lock of an `api` or `packages` replica. Then two faults: force-delete, and SIGKILL of the process |
+| E0.6 | `TestE06Lease` | the scheduler lease is read from `pg_locks` (class 1, object 1) joined to `pg_stat_activity` (`quader:<pod>:lease`), sampled every 200 ms from one psql session. One holder, a worker; no lease connection and no job lock of an `api` or `packages` replica. Then two faults: force-delete, and SIGKILL of the process |
 | E0.7 | `TestE07PodSecurity`, `TestE07NetworkPolicy` | the namespace enforces `restricted`, the pods run, a privileged pod is refused; from another namespace `:8080` of an `api` pod answers and `:8081` does not |
 | E0.11 | `TestE99Scatter` | switches to `scatter`, runs the E0.3 checks and the Valkey connection check, 60 sequential requests reach three replicas 20 times each, k6 at 100 requests/s records only 200 spread evenly over the three |
 | E0.12 | `TestE12Valkey` | `CLIENT LIST` on the primary; three new replicas started from the packages template with a wrong `primary_name`, a wrong password and an unreachable Sentinel (a replica that becomes ready with the Valkey check `timeout`, `connecting` or `no_sentinel` could not see its fault, Q-HA-13 (d); the wrong-primary and wrong-password cases then run again with a new replica, up to three times, [Q-HA-293](../spec/ha-and-helm.md#q-ha-293--a-replica-whose-first-valkey-attempt-ran-into-its-deadline-cannot-see-a-wrong-password-and-the-e012-test-says-so-instead-of-failing)); each is deleted with its normal grace period and the test waits until the registry no longer lists it, because a row of a serving role left to go stale counts towards the `n` that every fallback rate-limit share divides by (R-ARCH-034) and refused the transfer loop of E0.14 in the test that follows |
@@ -360,7 +360,7 @@ that `/readyz` is 200 on every replica at every sample, that every change reache
 job ran, and that the p99 of the propagation and of the pick-up stay under `epoch_poll_interval + 1 s` and
 `jobs.poll_interval + 1 s`, which are the bounds without Valkey.
 
-The monitor reads the replicas through the API server (`/api/v1/namespaces/trove/pods/<pod>:8081/proxy/…`),
+The monitor reads the replicas through the API server (`/api/v1/namespaces/quader/pods/<pod>:8081/proxy/…`),
 so the answer is the pod's own, not a Service's. The first four non-200 answers of each pod (status and body, so the failing
 check or the transport error) go to the test log, and `runLoadFault` keeps the pod's log (`kubectl logs --timestamps`, since a
 minute before the load) on its first failing sample, then every fifteenth, and at the end, with the previous instance of a
@@ -377,7 +377,7 @@ or replaces pods, and a container killed by its liveness probe takes its log wit
    R-HA-059's acceptance test has them on other nodes: an evicted synchronous standby held every commit about 6 s until
    CloudNativePG dropped it (`dataDurability: preferred`), and five uploads queued on one row lock met the lock timeout
    (`503 database_timeout`, run 42402849059).
-2. Start a watch on the trove pods (every transition with its arrival time), stream the logs of the pods
+2. Start a watch on the Quader pods (every transition with its arrival time), stream the logs of the pods
    that will be drained, start the driver `load` and k6.
 3. Enqueue six `system.probe` jobs of 150 steps at 1 s, so that both workers run some.
 4. `drain.sh <node>`: `kubectl drain --ignore-daemonsets --delete-emptydir-data`, wait for the rollouts,
@@ -386,7 +386,7 @@ or replaces pods, and a container killed by its liveness probe takes its log wit
    have resumed at a step strictly inside the run. At least one job must have moved.
 6. k6: only 200, no connection error, no dropped iteration. No container with exit code 137 or
    `OOMKilled` since the watch started. The kubelet's events for the drained pods hold no SIGKILL, no
-   `FailedKillPod`. No trove pod Pending longer than 60 s.
+   `FailedKillPod`. No Quader pod Pending longer than 60 s.
 7. The endpoint-removal time of the edge, measured and held to the drain delay ([below](#the-endpoint-removal-time-of-the-edge)).
 
 The dev profile gives the worker a `terminationGracePeriodSeconds` of 60 (the chart default is 300), so a
@@ -442,14 +442,14 @@ nightly run is its first.
 `TestE15TLS` has two subtests.
 
 1. **Plaintext is refused.** A pod of the namespace `default` sends a plaintext `GET` to `:8080` and `:8081` of a packages
-   pod and to the object store (`http://trove-s3.trove.svc:9000/`). The listeners answer `400` (net/http's "Client sent
+   pod and to the object store (`http://quader-s3.quader.svc:9000/`). The listeners answer `400` (net/http's "Client sent
    an HTTP request to an HTTPS server") or nothing; any `200` fails the test. (Valkey's plaintext port is 0, checked by
    E0.12. PostgreSQL's plaintext refusal is a CloudNativePG default that this suite does not probe.)
 2. **The listener certificate is renewed under load.**
-   - Per trove pod (two api, three packages, four worker) an *ephemeral container* with the pinned openssl image
-     (`OPENSSL_IMAGE`, same user as trove, `--target=trove`) looks at the certificate file every 100 ms with shell builtins
+   - Per Quader pod (two api, three packages, four worker) an *ephemeral container* with the pinned openssl image
+     (`OPENSSL_IMAGE`, same user as Quader, `--target=quader`) looks at the certificate file every 100 ms with shell builtins
      and, from a change of the file until both listeners serve it, reads every 100 ms ([Q-HA-292](../spec/ha-and-helm.md#q-ha-292--the-502-bursts-at-the-edge-are-not-dropped-syns-the-certificate-probe-of-e015-no-longer-spends-the-nodes-cpu): a probe that started five `openssl` processes every 100 ms took more CPU than the installation). It reads the serial of
-     `/var/run/secrets/trove/tls/tls.crt` as the kubelet mounts it into the trove container (read through
+     `/var/run/secrets/quader/tls/tls.crt` as the kubelet mounts it into the Quader container (read through
      `/proc/1/root`), and the serial `openssl s_client` receives from `127.0.0.1:8080` and `:8081` of that pod. It logs
      a line with the kernel uptime whenever one of the three changes, so *file arrival* and *served* are timed by the
      same clock inside one pod, which is what `reload_interval` bounds. (A worker serves `:8081` only.)
@@ -457,47 +457,47 @@ nightly run is its first.
      started (`startK6Closed`, `LOOP=closed` in [load.js](../../test/e2e/k6/load.js), Q-HA-288): at most 100 requests and
      connections are open, so a stall of the cluster slows the load down and does not pile it up (the open loop held
      about 1,000 connections at the edge). After 20 s the test triggers the renewal the way `cmctl renew`
-     does: it adds the `Issuing` condition to the status of the `Certificate` `trove-tls` (a JSON patch on the status
+     does: it adds the `Issuing` condition to the status of the `Certificate` `quader-tls` (a JSON patch on the status
      subresource; `privateKey.rotationPolicy: Always` makes it a new key too).
    - Asserted: k6 only `200`, with all 100 clients accounted for at every instant from the trigger until the last pod served the
      new certificate and every api pod answering in that window (`clientsRanThrough`, `replicasServed`; the number of requests
      of a closed loop follows the speed of the answers and is not asserted, Q-HA-291); on every pod the new serial is served within
      `server.tls.reload_interval + 1 s` (2 s + 1 s from the dev values) of the file changing, on both listeners;
-     `trove_tls_reloads_total{kind="listener"}` rose and `trove_tls_reload_errors_total` did not; pod UID, restart
+     `quader_tls_reloads_total{kind="listener"}` rose and `quader_tls_reload_errors_total` did not; pod UID, restart
      count and `process_start_time_seconds` of every pod are unchanged.
    - A request that k6 has not been answered when the test stops it ends as `context canceled` with status 0. Only
      those started in the last two seconds are set aside (the harness's own doing); an older one was unanswered for more
      than two seconds and fails the row. In run 42839263211 that was a stall of the whole cluster for the last 10 s of
      the load (Q-HA-288).
-   - The kubelet needs up to about a minute to refresh a Secret volume; that part is not bounded by trove and not
+   - The kubelet needs up to about a minute to refresh a Secret volume; that part is not bounded by Quader and not
      asserted, only logged (`everywhere_after_s`).
 
 ### E0.16
 
-`TestE16Endpoint`: the second endpoint `customers` (listener `:8443`, host `packages.trove.localhost`, wildcard
-`*.packages.trove.localhost`, surface `packages`, own certificate and wildcard pair, own Ingress; see
+`TestE16Endpoint`: the second endpoint `customers` (listener `:8443`, host `packages.quader.localhost`, wildcard
+`*.packages.quader.localhost`, surface `packages`, own certificate and wildcard pair, own Ingress; see
 [local-profile.md](local-profile.md#the-second-endpoint)).
 
 - Through the edge (`TLS` to the published port, name resolution bypassed, verified against the dev CA for the real
-  name): `packages.trove.localhost` and a host under the wildcard get the endpoint's edge certificate by SNI, and
+  name): `packages.quader.localhost` and a host under the wildcard get the endpoint's edge certificate by SNI, and
   `localhost` the default one; `/ui/`, `/`, `/files/…`, `/api/v1/system/ping`, `/api/v1/system/replicas` and an unknown
   `/api/v1/` path answer, on both hosts, one identical `401` `credentials_required` (an endpoint admits no anonymous
   request, R-EP-010, Q-EP-10; the authentication stage runs before the routing, so the surface is not visible without a
   credential); the default endpoint's ping still answers `200`.
 - On the endpoint's Service, from a pod in `default` (no trusted proxy): `Host: localhost` answers `421`, also with
-  `X-Forwarded-Host: packages.trove.localhost`, and an IP literal as host answers `421`; the endpoint's own hosts
+  `X-Forwarded-Host: packages.quader.localhost`, and an IP literal as host answers `421`; the endpoint's own hosts
   answer the same `401` `credentials_required` with identical bodies on `/ui/` and a management API path; the TLS listener of the pod hands out the exact pair for the exact host and the
   wildcard pair for a host under the wildcard (serials compared with the two Secrets).
   The `421` is tested here and not through the Ingress because HAProxy Ingress routes by `Host`: a request with the
   default endpoint's host goes to the default backend.
-- `trove_http_requests_total` carries both `endpoint` values and `trove_endpoint_listener_up{endpoint="customers"}` is 1.
+- `quader_http_requests_total` carries both `endpoint` values and `quader_endpoint_listener_up{endpoint="customers"}` is 1.
 
 ## The cut into roles (phase 6a)
 
 The dev profile runs every role ([values-dev.yaml](../../deploy/dev/values-dev.yaml)): `api` 2 replicas, `packages` 3, `worker` 2 and a
-worker pool `vuln` of 2 (the Deployments `trove-api`, `trove-packages`, `trove-worker`, `trove-worker-vuln`; the Services `trove-api` and
-`trove-packages`; the endpoint `customers` has `trove-ep-customers` for the packages pods and `trove-api-ep-customers` for the api pods). The scatter
-profile makes `api` 3 as well. There is no Deployment `trove-web` and no Service `trove` (the bridge `web.enabled` of R-HA-064 is used only by the [upgrade tests](#the-upgrade-tests), which install the old shape themselves and put the dev release back)
+worker pool `vuln` of 2 (the Deployments `quader-api`, `quader-packages`, `quader-worker`, `quader-worker-vuln`; the Services `quader-api` and
+`quader-packages`; the endpoint `customers` has `quader-ep-customers` for the packages pods and `quader-api-ep-customers` for the api pods). The scatter
+profile makes `api` 3 as well. There is no Deployment `quader-web` and no Service `quader` (the bridge `web.enabled` of R-HA-064 is used only by the [upgrade tests](#the-upgrade-tests), which install the old shape themselves and put the dev release back)
 The sizing and the PostgreSQL `max_connections` of 450 (the chart's budget is 303, 383 with the bridge, 403 with the bridge in the scatter profile) are
 [Q-HA-87](../spec/ha-and-helm.md#q-ha-87--the-dev-profiles-sizing-of-the-roles-and-its-postgresql-connection-budget).
 
@@ -506,21 +506,21 @@ family answers the `404` of an unknown path at the pod, so a helper over both ro
 
 | Helper ([env_test.go](../../test/e2e/env_test.go), [m1_env_test.go](../../test/e2e/m1_env_test.go)) | What it is |
 |---|---|
-| `selAPI`, `selPackages`, `selWorker` | label selectors of the role's pods; `selWorker` holds the main worker and the pool `vuln`; add `trove/pool=` (empty) or `trove/pool=vuln` for one Deployment |
-| `selServing`, `selTrove` | `api` and `packages` (the pods that open `:8080`); all three roles |
+| `selAPI`, `selPackages`, `selWorker` | label selectors of the role's pods; `selWorker` holds the main worker and the pool `vuln`; add `quader/pool=` (empty) or `quader/pool=vuln` for one Deployment |
+| `selServing`, `selQuader` | `api` and `packages` (the pods that open `:8080`); all three roles |
 | `readyAPIPods`, `readyPackagesPods`, `readyServingPods` | the names of the ready pods |
 | `apiForwards`, `packagesForwards`, `podForwardsOf(selector, port)` | port-forwards to the pods' listeners; the management API, sign-in and rate-limit tests use `apiForwards`, the package tests `packagesForwards`, the endpoint `customers` `podForwardsOf(selPackages, 8443)` |
 | `waitServingSettled` | waits for the rollouts of `api` and `packages` |
 | `awaitTokenRefusedOnPackagesPods` | a revocation reaches the packages pods within the bound of R-AUTHZ-028; the `revoke` helpers wait for `api` through the edge and call this for `packages` |
 | `checkReleaseServes(api, packages, worker)` | E0.3's checks per role; the registry names each pod under `roles` and, for the pool, `pool` |
 
-The npm and NuGet clients of the client pods reach the cluster through the edge (the in-cluster HAProxy Ingress, `TROVE_E2E_NPM_CLIENTS_TARGET`
+The npm and NuGet clients of the client pods reach the cluster through the edge (the in-cluster HAProxy Ingress, `QUADER_E2E_NPM_CLIENTS_TARGET`
 and its NuGet twin), so the edge's path split between `api` and `packages` is exercised by every package test; `pinClient` and `nugetPin` pin a
 client to one `packages` pod.
 
 | Test | Criterion | What it checks |
 |---|---|---|
-| `TestE03Roles` (in the sets `default`, `push` and `full`) | E6a.5, R-HA-002, R-HA-037, R-ARCH-001 | every Deployment has its replicas ready and none named `trove-web` exists; the registry lists each pod with its `roles` entry and the vuln pods with `pool` `vuln`; each role Service's EndpointSlices name the pods of its role alone and `sessionAffinity` is `None`; 90 requests of each family through the edge reach every pod of the role that serves the family and no other; with markers in the paths, package and raw-file requests appear in the access logs of the packages pods only and UI, sign-in and management requests in those of the api pods only (the logs are read since the start of the test, so a probe of another test does not count); at every pod, with an administrator token, a route of the other role's family answers the `404` of `/does-not-exist` with the same problem body |
+| `TestE03Roles` (in the sets `default`, `push` and `full`) | E6a.5, R-HA-002, R-HA-037, R-ARCH-001 | every Deployment has its replicas ready and none named `quader-web` exists; the registry lists each pod with its `roles` entry and the vuln pods with `pool` `vuln`; each role Service's EndpointSlices name the pods of its role alone and `sessionAffinity` is `None`; 90 requests of each family through the edge reach every pod of the role that serves the family and no other; with markers in the paths, package and raw-file requests appear in the access logs of the packages pods only and UI, sign-in and management requests in those of the api pods only (the logs are read since the start of the test, so a probe of another test does not count); at every pod, with an administrator token, a route of the other role's family answers the `404` of `/does-not-exist` with the same problem body |
 | `TestE14Drain` (set `push`, `drain`) | R-HA-059 variant A | the node hosts an `api`, a `packages` and a `worker` pod; the E0.14 steps below |
 | `TestDrainRoles` (set `drain-roles`, nightly) | E6a.6, R-HA-059 "A drain per role", [Q-HA-94](../spec/ha-and-helm.md#q-ha-94--the-load-of-the-drain-per-role) | in the scatter profile of the npm tests (three `api`, three `packages`, two `worker`, two of the pool `vuln`), each of `api`, `packages`, the main worker and the pool `vuln` is evicted pod by pod through the eviction API (repeated while the PodDisruptionBudget answers `429`), each after the replacement is ready, under k6 ping, the upload and download loop, a management call with a token every 250 ms, the driver's jobs and the npm load of `TestNPMHA` ([below](#drain-and-failover-under-npm-load): eight `npm ci` loops, a publish every 10 s, k6 at 120 requests/s of npm documents and tarballs, `npmHAFx` and `startNPMLoad` reused) with `npmLoadOpts.allDocuments`: k6 asks for the document of every package the fixture's lockfile locks (406: the 405 names of its 475 entries and the blob, against the 22 of `TestNPMHA`), because `npm ci` asks for tarballs only and a replaced `packages` replica has to render them again; the load runs 90 s to fill the replicas' caches, a warm-up of 2 minutes, the evictions, and 3 minutes after the last replacement is ready. k6 ping only `200`, no failed transfer or call; every `npm` command exits `0`, k6's npm requests only `2xx` and `304`, their p99 from the first eviction until 2 minutes after the last replacement is ready at most twice the warm-up's, and the p99 of the document requests on their own at most twice the warm-up's documents' (the tarballs of 1 to 5 MiB set the p99 of the mix); every replacement `packages` replica answered at least half of the documents with `200`; every acknowledged publish installs; the log has the p99 per kind (all, document, tarball) for the warm-up, the drain window and the window of the `packages` evictions plus 2 minutes; the pods of the other roles keep names, UIDs and restart counts, no SIGKILL, nothing `Pending` for 60 s, four probe jobs of the main worker finish with `attempt` 1 and at least one resumed from its cursor on another worker. Not part of it: the `dotnet` loops and NuGet's share of k6, the long-transfer probes, a browser journey loop and an advisory sync per pod (Q-HA-94). Artifacts: `e14-drain-roles.json` (the numbers of the conditions), `npm-load-drain-roles.json`, `k6-npm-drain-roles/`, `k6-drain-roles/`, `k6-drain-roles-xfer/` |
 
@@ -559,16 +559,16 @@ line that says `web` there names that profile.
 ## M1 tests
 
 The tests of the access core run in the `scatter` profile. `useScatter` switches to it once per process (`up.sh` with
-`TROVE_PROFILE=scatter`, three ready `api` and three ready `packages` pods) and `TestMain` switches back at the end, as `TestE99Scatter` does.
+`QUADER_PROFILE=scatter`, three ready `api` and three ready `packages` pods) and `TestMain` switches back at the end, as `TestE99Scatter` does.
 Subtest names carry the requirement IDs and the criterion, as the M0 tests do.
 
 **The harness** ([m1_env_test.go](../../test/e2e/m1_env_test.go)):
 
 | Piece | What it does |
 |---|---|
-| `api` | an HTTP client of the edge that sends a new connection per request (so the scatter profile's round robin shows in `X-Trove-Replica`), with a Bearer token or a cookie jar and the CSRF header; `rt` routes names to the edge's published port, to a port-forward for the test IdP's Service name and, for the per-address tests, to the `api` pods in turn |
-| `adminToken` | `trove admin service-account create e2e-admin --admin` and `trove admin token create` through `kubectl exec` into a worker pod: the bootstrap of a fresh installation. The account stays between runs, every run mints a token and revokes those of earlier runs |
-| `browser.oidcLogin` | the authorization code flow with PKCE: GET `/auth/oidc/keycloak/start`, the redirects followed by hand, the IdP's login form (found by its form id) posted with the user's password from the Secret `trove-keycloak`, the callback, the redirect into the UI. The trace records every hop and the answers of the start and the callback, so a test sees on which replicas they ran. It is an HTTP client, not a browser ([Q-AUTH-79](../spec/identity-and-authentication.md#q-auth-79--how-the-end-to-end-tests-drive-the-browser-login-of-e11-and-disable-the-break-glass-account)) |
+| `api` | an HTTP client of the edge that sends a new connection per request (so the scatter profile's round robin shows in `X-Quader-Replica`), with a Bearer token or a cookie jar and the CSRF header; `rt` routes names to the edge's published port, to a port-forward for the test IdP's Service name and, for the per-address tests, to the `api` pods in turn |
+| `adminToken` | `quader admin service-account create e2e-admin --admin` and `quader admin token create` through `kubectl exec` into a worker pod: the bootstrap of a fresh installation. The account stays between runs, every run mints a token and revokes those of earlier runs |
+| `browser.oidcLogin` | the authorization code flow with PKCE: GET `/auth/oidc/keycloak/start`, the redirects followed by hand, the IdP's login form (found by its form id) posted with the user's password from the Secret `quader-keycloak`, the callback, the redirect into the UI. The trace records every hop and the answers of the start and the callback, so a test sees on which replicas they ran. It is an HTTP client, not a browser ([Q-AUTH-79](../spec/identity-and-authentication.md#q-auth-79--how-the-end-to-end-tests-drive-the-browser-login-of-e11-and-disable-the-break-glass-account)) |
 | `apiForwards`, `packagesForwards` | a `kubectl port-forward` to every ready `api` or `packages` pod; a client that sends its requests to them in turn reaches the three replicas without the edge, from the address 127.0.0.1, a bucket of its own for the per-address limits of R-AUTH-038. Every test that exceeds such a limit uses it, so the edge address (the host, which every other test shares) keeps its budget. A forward is supervised: `kubectl port-forward` ends for good on the first connection through it that fails upstream (`lost connection to pod`) or when its stream to the kubelet breaks, (measured: a client that resets a connection through the forward, or a refused connection inside the pod, makes `kubectl` print `error: lost connection to pod` and exit; the listener is then gone for the next client), so the harness starts it again on the same local port, writes the end and its stderr to `.out/e2e/portforward-*.log`, and a client that finds the port closed in between (connection refused, nothing of its request sent) waits up to 30 s for the new process, then fails with that stderr. A request through one pod's forward that ends in a transport error is repeated over a new forward, twice at most, each repeat logged: a read by `getOverForward` or `safeOverForward` (GET, HEAD, conditional, Range), an idempotent write by `writeOverForward` (a PATCH with a JSON merge patch, R-API-013, or a PUT). The first attempt of a write may have been applied before the reset, so after a repeat `writeOverForward` reads the resource back and fails unless it shows the state the write sets (`ctlretry.StateShown`); a repeat answered 412 because the first attempt changed the ETag is accepted when the state is shown, and the resource read back is the answer. POST and DELETE are never repeated by these helpers, and a test that counts requests (the rate limits) sends once. A client bound to the parent test fails the parent when a subtest uses it: rebind it with `api.as(t)` (`replicaClients.as`) |
 | `withValkeyStopped` | `valkey-stop.sh`, the criterion, `valkey-start.sh` (also after a failure) |
 | `walkRetry` | a list read page by page; a 429 is waited out, because a walk with `limit=1` is more requests than the read class admits in a burst |
@@ -627,12 +627,12 @@ and minute, not per token.
 
 | Criterion | Test | What it checks |
 |---|---|---|
-| E1.1 | `TestE1_01Login` | alice signs in through the Ingress with the code flow and PKCE (the authorization request carries `code_challenge_method=S256`, `state`, `nonce` and the redirect URI of the edge; the realm enforces S256, so a completed exchange proves the verifier); created just in time (`origin: jit`, deleted before the test so the creation is observable); groups `team-web` and `platform-admins` from the claim `groups` through the rule `trove-(.+)`, bob only `team-web`. Logout: the answer names the IdP's end-session endpoint with `id_token_hint`, `client_id` and the post-logout URI; the browser follows it; the cookie of the ended session is refused on every replica within `auth.revocation_bound`; a second sign-in in the same browser needs no password before the logout (the control) and asks for it again after (R-AUTH-013: the IdP session ended). Break-glass: wrong password `401`, the generated password `204`, `isAdmin` via `break-glass`; `TROVE_AUTH_BREAK_GLASS_ENABLED=false` on the `trove-api` Deployment (R-AUTH-014: disabled): nine attempts over the three replicas get `403 local_login_disabled`, the earlier session `401 session_expired`; enabled again, the login works |
-| E1.8 | `TestE1_08RateLimits` | R-API-016: 400 reads with one token get `429` with `Retry-After`, `rate_limited` and the `RateLimit` fields of class `read` after the burst of 200, a second token is not slowed; the write class likewise at 50, and a token whose write budget is gone still reads. R-ARCH-034: 1000 requests with one token round robin over three replicas are admitted 200 times, not three bursts, and the same on one replica; with Valkey stopped the same bound holds (each replica's share, `trove_ratelimit_fallback{limiter="api_read"}` is 1 on all three), and sequential reads add no delay with the circuit open. The latency injection: `CLIENT PAUSE 4000 ALL` on the primary holds every check for `valkey.command_timeout`; exactly the 15 checks of `failure_threshold` 5 times three replicas are held, then thousands of fast requests. R-AUTH-038: 400 random well-formed tokens, Bearer and Basic alternating, are validated (401) 300 times and answer 429 after that, both kinds; a PAT used once before still works on all three replicas during the burst; 40 starts of the login flow get 429 from the 31st on; with Valkey stopped at most 300 validations and the 40 starts admit about 30 (each replica's share of 10), and `trove_ratelimit_fallback{limiter="auth.credential_failures"}` is 1 on each replica |
+| E1.1 | `TestE1_01Login` | alice signs in through the Ingress with the code flow and PKCE (the authorization request carries `code_challenge_method=S256`, `state`, `nonce` and the redirect URI of the edge; the realm enforces S256, so a completed exchange proves the verifier); created just in time (`origin: jit`, deleted before the test so the creation is observable); groups `team-web` and `platform-admins` from the claim `groups` through the rule `quader-(.+)`, bob only `team-web`. Logout: the answer names the IdP's end-session endpoint with `id_token_hint`, `client_id` and the post-logout URI; the browser follows it; the cookie of the ended session is refused on every replica within `auth.revocation_bound`; a second sign-in in the same browser needs no password before the logout (the control) and asks for it again after (R-AUTH-013: the IdP session ended). Break-glass: wrong password `401`, the generated password `204`, `isAdmin` via `break-glass`; `QUADER_AUTH_BREAK_GLASS_ENABLED=false` on the `quader-api` Deployment (R-AUTH-014: disabled): nine attempts over the three replicas get `403 local_login_disabled`, the earlier session `401 session_expired`; enabled again, the login works |
+| E1.8 | `TestE1_08RateLimits` | R-API-016: 400 reads with one token get `429` with `Retry-After`, `rate_limited` and the `RateLimit` fields of class `read` after the burst of 200, a second token is not slowed; the write class likewise at 50, and a token whose write budget is gone still reads. R-ARCH-034: 1000 requests with one token round robin over three replicas are admitted 200 times, not three bursts, and the same on one replica; with Valkey stopped the same bound holds (each replica's share, `quader_ratelimit_fallback{limiter="api_read"}` is 1 on all three), and sequential reads add no delay with the circuit open. The latency injection: `CLIENT PAUSE 4000 ALL` on the primary holds every check for `valkey.command_timeout`; exactly the 15 checks of `failure_threshold` 5 times three replicas are held, then thousands of fast requests. R-AUTH-038: 400 random well-formed tokens, Bearer and Basic alternating, are validated (401) 300 times and answer 429 after that, both kinds; a PAT used once before still works on all three replicas during the burst; 40 starts of the login flow get 429 from the 31st on; with Valkey stopped at most 300 validations and the 40 starts admit about 30 (each replica's share of 10), and `quader_ratelimit_fallback{limiter="auth.credential_failures"}` is 1 on each replica |
 | E1.11 | `TestE1_11Scatter` | every list operation (repositories, users, groups, service accounts, tokens, policies, role bindings, audit events, exposure rules, jobs) walked with `limit=1` returns what one page of 500 returns (read before and after, no duplicate, served by at least two replicas); an `Idempotency-Key` replayed 15 times is `201` with `Idempotency-Replayed: true`, the stored body and `Location`, from all three replicas, the same key with another body is `422 idempotency_key_reused` (R-API-051); a write on one replica is read back at once on the others, 24 times, and a new repository takes uploads on all three replicas at once (R-API-052); each of these two cases writes with a token of its own under `withWriteBudget` (18 and 41 writes, [Q-AUTH-188](../spec/identity-and-authentication.md#q-auth-188--the-write-cases-of-e111-each-get-a-token-of-their-own-and-a-guard-holds-them-to-the-write-budget)). R-AUTH-042, in three modes (Valkey up with 50 browser logins, Valkey stopped for its whole duration with 25 and every pod `degraded: valkey`, and `FLUSHALL` at the lockout, after the revocation and in the middle of 25 logins): break-glass lockout (five wrong passwords one after another over the three replicas, the correct one `429 break_glass_locked` with `Retry-After` on each, still locked after `FLUSHALL`, unlock through the API; five at once lock it as well), PAT revocation (the token worked on all three replicas, then 401 on all three within the 2 s of `auth.revocation_bound`, and after `FLUSHALL` too), re-authentication (the session's `authenticated_at` set back two hours: `401 reauthentication_required` on any replica, the silent round trip `purpose=reauth` needs no password and rotates the session, the old cookie is dead), logout, and the browser logins on varying replicas |
 | E1.11 journeys | `TestE1_11Journeys` | runs `npx playwright test` in `web/e2e` against the scatter profile and fails on any failure of any journey, including an axe violation of impact serious or critical on a visited screen; one subtest per journey, named by its title. A missing `npm ci` or browser is a failure that names the command to run, not a skip. See [Browser journeys](#browser-journeys) |
-| E1.13 | `TestE1_13Transfers` | R-HA-011: two loops of `curl -T` of 500 MB at 50 MB/s during `kubectl rollout restart deploy/trove-packages`: none fails, uploads overlapped the rollout, and what arrived has the SHA-256 that was sent. R-ARCH-024, download 1: a 400 MiB file of `generic-local` is downloaded during a rollout restart and matches ([Q-ARCH-76](../spec/architecture.md#q-arch-76--the-pace-of-the-download-that-a-rollout-restart-must-not-break): at 6 MB/s, so that the serving pod is drained while it transfers, which the test asserts). Download 2: at 2 MB/s (200 s, longer than the grace period) with the serving pod deleted after 3 s: the bytes stop arriving about 110 s later (the shutdown timeout; the pod's log says `requests cut at the shutdown deadline`), curl ends with an error, `curl -C -` resumes with `206` from another replica and the SHA-256 matches. Download 1 was red in about half of the runs until [finding 5](#findings-of-the-suite) was fixed; the cut download must end for curl within 15 s of its last bytes. R-HA-002: `POST /api/v1/system/tasks/gc/run` through an `api` pod is executed by a worker (the job's `replica`, and `job.ran_by` resolved through the replica table), and no job was ever run by an `api` or `packages` replica. E0.14: `TestE14Drain` runs `k6/transfer.js` next to the ping load (4 iterations/s: PUT, GET, SHA-256 compared) and fails on any transfer that is not 200/201, a wrong checksum or a dropped iteration |
-| E1.14 | `TestE1_14Exposure` | on `customers` (through its own Ingress): without a rule nothing is exposed (`404`) and a write is `403 endpoint_read_only`, a rule with `packages` on a generic repository is `422 dimension_not_supported`; a rule `paths.include: ["releases/**"]` makes `releases/1.0/app.zip` downloadable with a service-account token bound to `customers` while `internal/x.bin` and several missing paths answer the same 404 (problem body without `instance` and `requestId`, same content type and cache control); the same token is `401 invalid_token` on the default endpoint; a PAT is `401 invalid_token` on `customers` with no query of the token table (`api_token` is locked `ACCESS EXCLUSIVE` for 14 s: 41 PATs are answered in milliseconds, while an unknown PAT on the default endpoint, the control, waits for the lock and ends `503` after the statement timeout; the statistics views are no evidence, an idle backend flushes its counters up to a minute late) and `trove_endpoint_credentials_refused_total{reason="token_type"}` +41; an unbound SAT is refused with `reason="token_binding"`; no credential and a valid session cookie are `401 credentials_required`; an administrator token bound to `customers` reads the exposed file, gets the 404 for the internal one, lists only `generic-local` among the repositories and no `internal` folder. The rule lifecycle (created, narrowed with a merge patch, deleted) is read on every replica through a port-forward to its endpoint listener within the bound of R-AUTHZ-028 (Valkey up and stopped), and each change is one audit event (`endpoint.exposure.created`, `.updated`, `.deleted`). R-EP-015: 400 reads with one token get `429` after the burst with `Retry-After` and the policy `endpoint:external`, a second bound token is not slowed, the same token is not held on the default endpoint; 1000 requests with one token over the three replicas are admitted at most burst plus decay, with Valkey stopped too, where `trove_ratelimit_fallback{limiter="endpoint_external"}` is 1 on every replica |
+| E1.13 | `TestE1_13Transfers` | R-HA-011: two loops of `curl -T` of 500 MB at 50 MB/s during `kubectl rollout restart deploy/quader-packages`: none fails, uploads overlapped the rollout, and what arrived has the SHA-256 that was sent. R-ARCH-024, download 1: a 400 MiB file of `generic-local` is downloaded during a rollout restart and matches ([Q-ARCH-76](../spec/architecture.md#q-arch-76--the-pace-of-the-download-that-a-rollout-restart-must-not-break): at 6 MB/s, so that the serving pod is drained while it transfers, which the test asserts). Download 2: at 2 MB/s (200 s, longer than the grace period) with the serving pod deleted after 3 s: the bytes stop arriving about 110 s later (the shutdown timeout; the pod's log says `requests cut at the shutdown deadline`), curl ends with an error, `curl -C -` resumes with `206` from another replica and the SHA-256 matches. Download 1 was red in about half of the runs until [finding 5](#findings-of-the-suite) was fixed; the cut download must end for curl within 15 s of its last bytes. R-HA-002: `POST /api/v1/system/tasks/gc/run` through an `api` pod is executed by a worker (the job's `replica`, and `job.ran_by` resolved through the replica table), and no job was ever run by an `api` or `packages` replica. E0.14: `TestE14Drain` runs `k6/transfer.js` next to the ping load (4 iterations/s: PUT, GET, SHA-256 compared) and fails on any transfer that is not 200/201, a wrong checksum or a dropped iteration |
+| E1.14 | `TestE1_14Exposure` | on `customers` (through its own Ingress): without a rule nothing is exposed (`404`) and a write is `403 endpoint_read_only`, a rule with `packages` on a generic repository is `422 dimension_not_supported`; a rule `paths.include: ["releases/**"]` makes `releases/1.0/app.zip` downloadable with a service-account token bound to `customers` while `internal/x.bin` and several missing paths answer the same 404 (problem body without `instance` and `requestId`, same content type and cache control); the same token is `401 invalid_token` on the default endpoint; a PAT is `401 invalid_token` on `customers` with no query of the token table (`api_token` is locked `ACCESS EXCLUSIVE` for 14 s: 41 PATs are answered in milliseconds, while an unknown PAT on the default endpoint, the control, waits for the lock and ends `503` after the statement timeout; the statistics views are no evidence, an idle backend flushes its counters up to a minute late) and `quader_endpoint_credentials_refused_total{reason="token_type"}` +41; an unbound SAT is refused with `reason="token_binding"`; no credential and a valid session cookie are `401 credentials_required`; an administrator token bound to `customers` reads the exposed file, gets the 404 for the internal one, lists only `generic-local` among the repositories and no `internal` folder. The rule lifecycle (created, narrowed with a merge patch, deleted) is read on every replica through a port-forward to its endpoint listener within the bound of R-AUTHZ-028 (Valkey up and stopped), and each change is one audit event (`endpoint.exposure.created`, `.updated`, `.deleted`). R-EP-015: 400 reads with one token get `429` after the burst with `Retry-After` and the policy `endpoint:external`, a second bound token is not slowed, the same token is not held on the default endpoint; 1000 requests with one token over the three replicas are admitted at most burst plus decay, with Valkey stopped too, where `quader_ratelimit_fallback{limiter="endpoint_external"}` is 1 on every replica |
 
 ## Browser journeys
 
@@ -655,17 +655,17 @@ and, with `@axe-core/playwright`, `color-contrast` and the document-level rules 
 | `07-german-dark.spec.ts` | German, dark theme | R-UI-044, R-UI-045, R-UI-080 | the break-glass sign-in at `/ui/de/...`, six screens in German (the format chooser **Neues Repository** and the form **Neues npm-Repository** among them) with axe in the dark theme, the language menu back to English, sign-out |
 | `08-packages.spec.ts` | packages and client setup (E2.8); npm settings | R-UI-006, R-UI-008, R-UI-016, R-UI-021 | `beforeAll` creates an npm local repository and publishes a version to it with the npm protocol (`PUT /api/npm/<projectKey>/<key>/<name>`, a tarball built in the journey whose README carries a `<script>`, an `onerror` image, a `javascript:` link and an `<iframe>`). The version is found in the packages list through the repository filter; its README tab shows the Markdown (a heading with its `user-content-` anchor, the code block) and none of the hostile elements, and none of them ran; "Set up your client for this repository" opens the setup page, where the configure snippet of npm, pnpm, Yarn Berry and Yarn Classic, with the environment-variable credential, equals character for character what `setupSnippet` of the npm matrix writes for that repository, with the same file name ([Q-UI-82](../spec/api-and-ui.md#q-ui-82--the-packages-journey-compares-the-setup-page-with-the-matrixs-snippet-written-out)). The second journey creates a local npm repository with the creation form, **Guard the latest tag** off in **Advanced settings** (the API shows `{"npm": {"latestGuard": false}}`), reads it back in the settings page's closed section "npm settings" and turns it on again with that section's save (the API shows no `npm` member). The third journey creates a remote npm repository with the form and asserts the Mirror group of **Advanced settings** (mode pull-through with no members; mode mirror with the members empty at their defaults and the notice that the well-known upstream needs a bound; axe in both schemes), creates it in the default mode (the API fills the mirror defaults) and reads the mode back in the settings page's closed section "Mirror"; the mirror mode itself is refused by the server until the npm lister is built, so no `mode: mirror` is saved ([Q-UI-117](../spec/api-and-ui.md#q-ui-117--the-mirror-section-where-it-sits-what-it-writes-who-may-change-it)) |
 | `09-guides.spec.ts` | the guides (E2.13) | R-UI-049, R-API-053 | `beforeAll` creates a local npm repository and a virtual one over it with the local one as deployment target. The user menu's "Guides" opens the guides area (outside a project, [Q-UI-163](../spec/api-and-ui.md#q-ui-163--the-url-is-the-project-what-stays-outside-a-project-and-where-the-packages-of-a-project-come-from)) with generic and curl preselected, the first format of the catalog; choosing npm offers its four clients and the virtual class's guide; the virtual repository's section "How to use" shows the virtual repository's sections and names its deployment target; its configure snippet is read and equals, character for character, the first configure snippet of the client setup page that the tab's link opens, with the environment-variable credential; the setup page's link opens the guide of the same repository again ([Q-UI-87](../spec/api-and-ui.md#q-ui-87--the-guides-journey-compares-the-guide-with-the-setup-page)) |
-| `11-nuget.spec.ts` | NuGet clients, snippets, guide and settings | R-UI-018, R-UI-019, R-UI-021 | `beforeAll` creates a local NuGet repository and a virtual one over it with the local one as deployment target. Test 1: the setup page for the virtual repository offers NuGet with `.NET CLI (dotnet)`, `NuGet CLI (nuget.exe)` and `Visual Studio`; the .NET CLI's source command carries the repository's `index.json` URL and `--store-password-in-clear-text`, its `nuget.config` has `<clear />` and `%TROVE_TOKEN%`, its publish snippet names the local member; nuget.exe and Visual Studio show their source instructions; axe runs on the setup page and the guide in the light and in the dark scheme (`page.emulateMedia`). Test 2: the creation form creates a local NuGet repository with **Delete mode** **Delete for good** in **Advanced settings** (the API shows `{"nuget": {"deleteMode": "delete"}}`; **Forward search** is not offered for a local repository), the settings page's section "NuGet settings" reads it back and the default removes the member. No package is published ([Q-UI-95](../spec/api-and-ui.md#q-ui-95--what-the-nuget-browser-journey-covers)); run on the dev cluster 2026-11-02 (`SET=access-long`): the first run corrected two assertions of the journey (the nuget.exe snippet is rendered in the shell and in the PowerShell form, so the locator takes the first; the `deleteMode` select carries the option index as value, so the test reads the text of the selected option, which is the value's label from the schema since R-UI-088) |
-| `12-projects.spec.ts` | projects and delegated administration | R-UI-041, R-AUTHZ-026 | `beforeAll` creates a local generic repository and a group through the API; bob signs in first (JIT) and is added to the group. The administrator creates the project in the dialog of the admin list (key, display name, the group found through "Find a user or group") and lands on the project's settings (`/projects/<key>/settings`); the repository is created through the API and listed on the project's Repositories screen, and "Delete project" is disabled. bob, without any system role, has no Admin button and no project filter, finds the project on the start page (`/projects`), opens it, sees the project's side bar (Packages, Browse, Repositories, Members, Permission policies, Service accounts, Settings, none of the global entries) and the project in the breadcrumb, opens the project switcher (`aria-expanded`, axe, Escape returns the focus to its button), sees "Create repository" and "Edit project" but no "Delete project", sees the group as Owner on Members and is refused the removal of the last Owner, creates a project policy (through the header's **Create policy**: the empty list offers the same link under its sentence once it has loaded, Q-UI-309) with the lookup of principals and the project's repository as selector (`/projects/<key>/policies/<name>`), creates a project service account (`/projects/<key>/service-accounts/<name>`), issues a token (no "Never expires", the cap said, `trv_sat_` value shown once) and revokes it. The administrator then sees the policy and the account on the project's screens and the Project column of the admin list of service accounts. axe runs on every screen |
+| `11-nuget.spec.ts` | NuGet clients, snippets, guide and settings | R-UI-018, R-UI-019, R-UI-021 | `beforeAll` creates a local NuGet repository and a virtual one over it with the local one as deployment target. Test 1: the setup page for the virtual repository offers NuGet with `.NET CLI (dotnet)`, `NuGet CLI (nuget.exe)` and `Visual Studio`; the .NET CLI's source command carries the repository's `index.json` URL and `--store-password-in-clear-text`, its `nuget.config` has `<clear />` and `%QUADER_TOKEN%`, its publish snippet names the local member; nuget.exe and Visual Studio show their source instructions; axe runs on the setup page and the guide in the light and in the dark scheme (`page.emulateMedia`). Test 2: the creation form creates a local NuGet repository with **Delete mode** **Delete for good** in **Advanced settings** (the API shows `{"nuget": {"deleteMode": "delete"}}`; **Forward search** is not offered for a local repository), the settings page's section "NuGet settings" reads it back and the default removes the member. No package is published ([Q-UI-95](../spec/api-and-ui.md#q-ui-95--what-the-nuget-browser-journey-covers)); run on the dev cluster 2026-11-02 (`SET=access-long`): the first run corrected two assertions of the journey (the nuget.exe snippet is rendered in the shell and in the PowerShell form, so the locator takes the first; the `deleteMode` select carries the option index as value, so the test reads the text of the selected option, which is the value's label from the schema since R-UI-088) |
+| `12-projects.spec.ts` | projects and delegated administration | R-UI-041, R-AUTHZ-026 | `beforeAll` creates a local generic repository and a group through the API; bob signs in first (JIT) and is added to the group. The administrator creates the project in the dialog of the admin list (key, display name, the group found through "Find a user or group") and lands on the project's settings (`/projects/<key>/settings`); the repository is created through the API and listed on the project's Repositories screen, and "Delete project" is disabled. bob, without any system role, has no Admin button and no project filter, finds the project on the start page (`/projects`), opens it, sees the project's side bar (Packages, Browse, Repositories, Members, Permission policies, Service accounts, Settings, none of the global entries) and the project in the breadcrumb, opens the project switcher (`aria-expanded`, axe, Escape returns the focus to its button), sees "Create repository" and "Edit project" but no "Delete project", sees the group as Owner on Members and is refused the removal of the last Owner, creates a project policy (through the header's **Create policy**: the empty list offers the same link under its sentence once it has loaded, Q-UI-309) with the lookup of principals and the project's repository as selector (`/projects/<key>/policies/<name>`), creates a project service account (`/projects/<key>/service-accounts/<name>`), issues a token (no "Never expires", the cap said, `qdr_sat_` value shown once) and revokes it. The administrator then sees the policy and the account on the project's screens and the Project column of the admin list of service accounts. axe runs on every screen |
 | `18-virtual-members.spec.ts` | the member editor of a virtual repository | R-UI-022 | `beforeAll` creates two local npm repositories and an empty virtual one through the API. With the keyboard only (focus, arrow keys, Space, Enter): two members are added, one moved to the top (the live region says where), the default deployment target chosen, **Save changes** of the open section Members; the API then shows that order and target; the effective order and the explanation of a path follow; a removal and Discard changes |
 | `19-general-settings.spec.ts` | banner, maintenance mode and the default visibility level | R-UI-033, R-UI-053, R-OPS-024, R-OPS-025 | the default level is saved in its own section and read back from the API; the banner is saved and shows on another screen and on the sign-in page of an anonymous browser, its javascript link is text; the read-only mode asks first, a write through the API answers 503 with the message and a `Retry-After`, reads work, switching it off lifts the refusal. `afterEach` puts the settings back through the API |
 | `21-visibility.spec.ts` | visibility levels and the external flag | R-UI-053 to R-UI-057, R-AUTHZ-030, R-AUTHZ-034 | `beforeAll` creates a public and an internal project, two npm repositories in the public one and a package with a README. An administrator saves the default level and lowers the public project after the confirmation that names the repository; bob, made Owner of the public project, sets the artifacts of a repository to Public and its wiki to Internal; an anonymous browser finds the public project and a package page without a README tab and makes no README request; bob flagged external no longer finds the internal project. `afterAll` puts the default level and the flag back and deletes what it made |
 | `22-repository-setup.spec.ts` | a repository set up on one form, its settings as sections | R-UI-080 to R-UI-088 | `beforeAll` creates a local and a remote npm repository through the API. The chooser's search opens **New OCI (Docker) repository** (the breadcrumb names it); the suggested key shows no error, a wrong key shows its sentence only once left; class Remote offers Docker Hub, Quay, GitHub (ghcr.io) and GitLab, GitLab sets its URL and the further host `gitlab.com`, the create sends the URL alone and the API stores the host receiving the credential (no upstream is contacted); a virtual npm repository is created with both npm repositories as members and the deployment target preset to the local one; the settings page of the OCI remote has no tab, the key read-only, Visibility and Upstream open and every other section closed, and a changed description is saved as `{"description": …}` alone; axe in both schemes |
 | `23-search.spec.ts` | the search field of the top bar and its results page | R-UI-095 to R-UI-099 | `beforeAll` creates a project with an npm local repository and publishes a package through the npm route. Journey 1: bob, made a reader, types a part of the repository key and sees the repository and the package with the text bold, axe with the list open in both schemes; Down until the repository is the active entry and Enter opens its page; Enter without a pick opens `/search` with the repository and no link under `/admin`. Journey 2: the break-glass administrator's empty list ends with the **Admin area** group; `users` shows **Users, Admin area**; Enter without a pick opens `/search?q=users`; Down to the marked entry and Enter opens `/admin/users`. Journey 3: `/` focuses the field with the profile's shortcut preference on, not with it off, Ctrl+K either way. Journey 4: at 390 px the button opens the sheet, two Escapes close the list and the sheet, the focus is on the button. The repository and the package share the typed part (one found by its key, the other by the start of its name). Run on the kind cluster on 2026-11-12 (`SET=access-long`): the runs found the package named apart from the typed part, the admin entries' names spoken as "Users , Admin area" in Chrome, and a project's letter mark as visible text missing from its entry's name (axe `label-content-name-mismatch`); all three fixed, journeys 2 to 4 and `12-projects` green on the cluster, the last fix proven by CI |
 | `10-help.spec.ts` | the help area and the Documentation link (F-16) | R-UI-050, R-API-054, R-UI-044, R-UI-045 | two tests, the break-glass administrator in each: light and English, then dark and German. `/help` lists the manual and a page opens from the list; the "?" of the top bar on `/profile/tokens` opens `user/access-tokens`, on `/admin/groups` `admin/sign-in-and-identity`. Axe with `color-contrast` runs on each of the five screens per scheme (the manual's own text is English with `lang="en"`, Q-UI-89). No data is prepared |
-| `14-mirror.spec.ts` | the mirror panel and the upstream settings of a remote (F-54) | R-REPO-059, R-UI-021, R-REPO-024, R-REPO-033 | needs the npm test upstream: `TROVE_E2E_NPMSTUB_HOST` (`deploy/dev/e2e.sh` sets `TROVE_E2E_NPMSTUB=1` for `full`, `access` and `access-long`), whose address `https://npmstub.<ns>.svc/` the journeys type into the creation form; the browser never contacts it, trove does. Journey 1: the creation form creates an npm remote in mode mirror (the Mirror group of **Advanced settings**) against the stub with a storage limit and a pass interval (the notice that an unbounded mirror of another upstream is saved with a warning goes when the limit is typed); the API shows `mode: mirror`; the settings page's section Mirror shows the status above the settings with a state word, the headings of the last pass, the next pass, the last error, the rate-limit waits and the bound; **Pause** sends `{"remote":{"mirror":{"paused":true}}}` with `If-Match` and the state reads Paused, **Run a pass now** on a paused mirror says so, **Resume** reverts it (the API shows `paused` true and false); **Run a pass now** and, from the menu, **Run a full pass** answer with a queued or the running job and a link that opens the jobs filtered by `mirror-pass`; axe in both schemes and in the paused state. It asserts neither the end of a pass nor a count, which depend on a process that claims the queue `mirror` and on the stub's dataset, and it needs a build whose npm remote adapter can discover packages (otherwise the server refuses the create with `not_applicable`). Journey 2 (F-54): the creation form shows the preset URL of npm with its button pressed, authentication none, the periods in **Upstream details** with their defaults as values and no **Offline**; the stub's address, basic authentication, a username, a password and a metadata period are entered and **Test connection** shows that the upstream answered with the credentials accepted; **Show as API request** shows `<the password>` and never the value; the create stores `url`, `authMode`, `username`, `password: {set: true}` and the period, and no read of the repository holds the password; the settings page's open section Upstream shows the stored values with an empty password field and the sentence that one is stored, **Test connection** with **Offline** ticked says the upstream could not be reached with the reason `offline`, a save of the section keeps the stored password and the switch off again restores `online`. Not run against a backend yet |
+| `14-mirror.spec.ts` | the mirror panel and the upstream settings of a remote (F-54) | R-REPO-059, R-UI-021, R-REPO-024, R-REPO-033 | needs the npm test upstream: `QUADER_E2E_NPMSTUB_HOST` (`deploy/dev/e2e.sh` sets `QUADER_E2E_NPMSTUB=1` for `full`, `access` and `access-long`), whose address `https://npmstub.<ns>.svc/` the journeys type into the creation form; the browser never contacts it, Quader does. Journey 1: the creation form creates an npm remote in mode mirror (the Mirror group of **Advanced settings**) against the stub with a storage limit and a pass interval (the notice that an unbounded mirror of another upstream is saved with a warning goes when the limit is typed); the API shows `mode: mirror`; the settings page's section Mirror shows the status above the settings with a state word, the headings of the last pass, the next pass, the last error, the rate-limit waits and the bound; **Pause** sends `{"remote":{"mirror":{"paused":true}}}` with `If-Match` and the state reads Paused, **Run a pass now** on a paused mirror says so, **Resume** reverts it (the API shows `paused` true and false); **Run a pass now** and, from the menu, **Run a full pass** answer with a queued or the running job and a link that opens the jobs filtered by `mirror-pass`; axe in both schemes and in the paused state. It asserts neither the end of a pass nor a count, which depend on a process that claims the queue `mirror` and on the stub's dataset, and it needs a build whose npm remote adapter can discover packages (otherwise the server refuses the create with `not_applicable`). Journey 2 (F-54): the creation form shows the preset URL of npm with its button pressed, authentication none, the periods in **Upstream details** with their defaults as values and no **Offline**; the stub's address, basic authentication, a username, a password and a metadata period are entered and **Test connection** shows that the upstream answered with the credentials accepted; **Show as API request** shows `<the password>` and never the value; the create stores `url`, `authMode`, `username`, `password: {set: true}` and the period, and no read of the repository holds the password; the settings page's open section Upstream shows the stored values with an empty password field and the sentence that one is stored, **Test connection** with **Offline** ticked says the upstream could not be reached with the reason `offline`, a save of the section keeps the stored password and the switch off again restores `online`. Not run against a backend yet |
 | `16-backups.spec.ts` | the backups screen | R-UI-048, R-API-050 | the administrator opens Backups from the System status, finds the status, the filtered run list, the stored backups and the panel with the `kubectl` command, copies the command (at most 63 characters in the Job name), and the requests of the visit are all `GET`; it holds whether or not a run exists yet |
-| `vuln/15-vulnerabilities.spec.ts` | the vulnerability report, triage and package tab | R-VULN-022, R-VULN-023, R-VULN-029 | own config `playwright.vuln.config.ts` (it needs the scanning against the test advisory source, `TROVE_E2E_VULN=1`, the `scatter` profile); not part of `TestE1_11Journeys` yet, the e2e wave of the scanning starts it. Each journey creates a local npm repository and publishes the fixture packages through the API (`web/e2e/npm-publish.ts`), waits for the findings the commit hook wrote, and does through the UI only what it tests. Journey 1: the count of the finding's severity filters the list (URL), sort by detected, open the finding, dismiss it with `not_exploitable`, go back: the filter is kept and the count is 0; axe in both schemes; at least two replicas answered. Journey 2: three findings (`trove-test-vuln`, `trove-test-alias`, `left-pad`) selected and confirmed in one bulk change (three rows show Confirmed), "Export CSV" holds the three rows, no horizontal overflow at 390 px, and bob (read on the repository only) sees the rows and no selection column. Journey 3: the package tab shows one finding on `1.0.0` and "No known vulnerabilities." on `1.0.1`, the badge on `1.0.0` only; confirm and block the finding: the row is *Blocked*, the blocked count is 1, the page reads "Blocked in <repository>" and names *blocked in triage*, the tarball answers 403; lift the block and all of it reverts, the tarball answers 200. Journey 4: the sources screen shows the test source's state and the advisory page lists where it is used. They have not run against a backend yet |
+| `vuln/15-vulnerabilities.spec.ts` | the vulnerability report, triage and package tab | R-VULN-022, R-VULN-023, R-VULN-029 | own config `playwright.vuln.config.ts` (it needs the scanning against the test advisory source, `QUADER_E2E_VULN=1`, the `scatter` profile); not part of `TestE1_11Journeys` yet, the e2e wave of the scanning starts it. Each journey creates a local npm repository and publishes the fixture packages through the API (`web/e2e/npm-publish.ts`), waits for the findings the commit hook wrote, and does through the UI only what it tests. Journey 1: the count of the finding's severity filters the list (URL), sort by detected, open the finding, dismiss it with `not_exploitable`, go back: the filter is kept and the count is 0; axe in both schemes; at least two replicas answered. Journey 2: three findings (`quader-test-vuln`, `quader-test-alias`, `left-pad`) selected and confirmed in one bulk change (three rows show Confirmed), "Export CSV" holds the three rows, no horizontal overflow at 390 px, and bob (read on the repository only) sees the rows and no selection column. Journey 3: the package tab shows one finding on `1.0.0` and "No known vulnerabilities." on `1.0.1`, the badge on `1.0.0` only; confirm and block the finding: the row is *Blocked*, the blocked count is 1, the page reads "Blocked in <repository>" and names *blocked in triage*, the tarball answers 403; lift the block and all of it reverts, the tarball answers 200. Journey 4: the sources screen shows the test source's state and the advisory page lists where it is used. They have not run against a backend yet |
 
 The files run in this order, in one worker: the audit journey reads what the journeys before it did (the packages journey runs after it and is
 not read by it). A journey prepares
@@ -675,7 +675,7 @@ cleanup first.
 
 ### The break-glass rotation hold
 
-The dev cluster is long-lived, and the internal-secrets-operator rotates `trove-break-glass` every 24 h
+The dev cluster is long-lived, and the internal-secrets-operator rotates `quader-break-glass` every 24 h
 ([local-profile.md](local-profile.md#secrets)). For `login.break_glass.rotation_hold` (2 m) after the replicas
 notice the new file, the local login answers `503 break_glass_rotating` with a `Retry-After` (R-AUTH-014, Q-AUTH-14). A fresh
 cluster in CI never meets that window; a run on the dev cluster can. Every break-glass sign-in of the suite therefore goes
@@ -697,7 +697,7 @@ and in the Go test's log. To see it for real, rotate by hand and start the run a
 
 ### Every journey is scattered, and every page is checked
 
-- **Replicas.** The `replicas` fixture collects the `X-Trove-Replica` of every response the page received; a journey
+- **Replicas.** The `replicas` fixture collects the `X-Quader-Replica` of every response the page received; a journey
   asserts at least two. (The status screen's "Answered by" is checked to name one of the three, not to change: a screen
   makes a fixed number of API calls, and with the round robin of the edge pod that holds the browser's connection a
   given call can reach the same replica on every load; 8 reloads in a row did.) The scatter profile's
@@ -714,24 +714,24 @@ and in the Go test's log. To see it for real, rotate by hand and start the run a
 
 ### How the browser reaches the IdP
 
-The issuer is the Service name `trove-keycloak.trove.svc` ([local-profile.md](local-profile.md#the-test-idp)), which
+The issuer is the Service name `quader-keycloak.quader.svc` ([local-profile.md](local-profile.md#the-test-idp)), which
 no resolver on the host knows. `TestE1_11Journeys` opens a `kubectl port-forward` to the Service (the one the Go
-tests use, `keycloakAddr`) and passes its address as `TROVE_E2E_KEYCLOAK_ADDR`; `playwright.config.ts` adds
-`--host-resolver-rules=MAP trove-keycloak.trove.svc <address>` to Chromium, so the page keeps the issuer's name (and its
+tests use, `keycloakAddr`) and passes its address as `QUADER_E2E_KEYCLOAK_ADDR`; `playwright.config.ts` adds
+`--host-resolver-rules=MAP quader-keycloak.quader.svc <address>` to Chromium, so the page keeps the issuer's name (and its
 certificate check) and no hosts entry is needed. Without that variable the name must resolve on its own.
 
 ### Environment
 
 | Variable | Set by | Meaning |
 |---|---|---|
-| `TROVE_E2E_EDGE_URL` | `e2e.sh` | the edge, `https://localhost:<port>` |
-| `NODE_EXTRA_CA_CERTS` | `TestE1_11Journeys` (from `TROVE_E2E_CA_FILE`) | the dev CA for `global-setup.ts` and the Node side of the suite |
-| `TROVE_E2E_KEYCLOAK_ADDR` | `TestE1_11Journeys` | `host:port` of the port-forward to the test IdP |
-| `TROVE_E2E_ALICE_PASSWORD`, `TROVE_E2E_BOB_PASSWORD`, `TROVE_E2E_BREAKGLASS_PASSWORD` | `TestE1_11Journeys` | read from the Secrets `trove-keycloak` and `trove-break-glass` |
-| `TROVE_E2E_ADMIN_TOKEN` | `TestE1_11Journeys` | the token of the account `e2e-admin` (`adminToken`) |
+| `QUADER_E2E_EDGE_URL` | `e2e.sh` | the edge, `https://localhost:<port>` |
+| `NODE_EXTRA_CA_CERTS` | `TestE1_11Journeys` (from `QUADER_E2E_CA_FILE`) | the dev CA for `global-setup.ts` and the Node side of the suite |
+| `QUADER_E2E_KEYCLOAK_ADDR` | `TestE1_11Journeys` | `host:port` of the port-forward to the test IdP |
+| `QUADER_E2E_ALICE_PASSWORD`, `QUADER_E2E_BOB_PASSWORD`, `QUADER_E2E_BREAKGLASS_PASSWORD` | `TestE1_11Journeys` | read from the Secrets `quader-keycloak` and `quader-break-glass` |
+| `QUADER_E2E_ADMIN_TOKEN` | `TestE1_11Journeys` | the token of the account `e2e-admin` (`adminToken`) |
 | `PLAYWRIGHT_JSON_OUTPUT_NAME` | `TestE1_11Journeys` | `.out/playwright/results.json`, which the test turns into one subtest per journey |
-| `TROVE_E2E_OIDCSTUB_ISSUER`, `TROVE_E2E_CI_TOKEN_PASTE`, `TROVE_E2E_CI_TOKEN_EXCHANGE` | `TestE1_11Journeys` | the issuer URL of the [double](#the-oidc-issuer-double) and two ID tokens it minted with the claim set of a protected tag of the example project: the journey `13-ci` registers the issuer, pastes the first token into the claim tester and exchanges the second (`e2e.sh` deploys the double for the sets that run the journeys) |
-| `TROVE_E2E_PLAYWRIGHT_ARGS` | by hand | arguments for `npx playwright test`, to run one journey while it is written (`TROVE_E2E_PLAYWRIGHT_ARGS=tests/13-ci.spec.ts TROVE_E2E_RUN='^TestE1_11Journeys$' make e2e SET=access-long`) |
+| `QUADER_E2E_OIDCSTUB_ISSUER`, `QUADER_E2E_CI_TOKEN_PASTE`, `QUADER_E2E_CI_TOKEN_EXCHANGE` | `TestE1_11Journeys` | the issuer URL of the [double](#the-oidc-issuer-double) and two ID tokens it minted with the claim set of a protected tag of the example project: the journey `13-ci` registers the issuer, pastes the first token into the claim tester and exchanges the second (`e2e.sh` deploys the double for the sets that run the journeys) |
+| `QUADER_E2E_PLAYWRIGHT_ARGS` | by hand | arguments for `npx playwright test`, to run one journey while it is written (`QUADER_E2E_PLAYWRIGHT_ARGS=tests/13-ci.spec.ts QUADER_E2E_RUN='^TestE1_11Journeys$' make e2e SET=access-long`) |
 
 `TestE1_11Journeys` also unlocks the break-glass user first (a lockout left by `TestE1_11Scatter` would fail the first
 sign-in for a reason that is not the UI). `global-setup.ts` deletes the users `alice` and `bob`, as `TestE1_01Login`
@@ -758,9 +758,9 @@ and the journeys passed in the `access-long` leg of Test and Release run 4186464
 macOS (the browser download without `--with-deps`).
 
 **After a new image** the deployment does not restart on its own (the chart does not change, the tag is `dev`):
-`kubectl -n trove rollout restart deploy/trove-api deploy/trove-packages deploy/trove-worker deploy/trove-worker-vuln`, then wait for the rollout.
+`kubectl -n quader rollout restart deploy/quader-api deploy/quader-packages deploy/quader-worker deploy/quader-worker-vuln`, then wait for the rollout.
 
-By hand against a running profile (after `TROVE_PROFILE=scatter deploy/dev/up.sh`): export the variables above, forward
+By hand against a running profile (after `QUADER_PROFILE=scatter deploy/dev/up.sh`): export the variables above, forward
 the IdP and run `npx playwright test` in `web/e2e` (`--ui` or `--headed` to watch). The HTML report is
 `.out/playwright/report/index.html`; `npx playwright show-report .out/playwright/report` opens it.
 
@@ -772,7 +772,7 @@ Both are fixed in the same change; the journeys fail without the fix (axe, serio
    `--mat-form-field-filled-label-display: none`, so the sign-in form, the filters of the identity screens and the
    fields of the policy and token forms showed empty boxes, and axe reported `label` and `select-name` as critical (the
    label is hidden). jsdom has no layout and could not see it. Fix at the time: `--mat-form-field-filled-label-display: block`
-   in `main.scss` (Q-UI-67). Since Q-UI-126 was finished there is no Material field: the label of `trove-text-field` is a
+   in `main.scss` (Q-UI-67). Since Q-UI-126 was finished there is no Material field: the label of `quader-text-field` is a
    visible `<label for>` above the control.
 2. **The user menu button's accessible name ("User menu") did not contain its visible text (the user's name).**
    WCAG 2.5.3, axe `label-content-name-mismatch`, on every screen. Fix: no `aria-label`; the name is the visible user
@@ -786,11 +786,11 @@ every connection.
 
 | What | Result |
 |---|---|
-| `make dev-down`, then `make dev-up` (images pulled by the new nodes, the trove image built beforehand) | 156 s for both; `dev-up` itself 2 min 33 s (E0.3 budget: 15 min). Per task: HAProxy Ingress 57 s, PKI and secrets 64 s, Valkey operator 64 s, PostgreSQL, Valkey and SeaweedFS 2 min 22 s |
+| `make dev-down`, then `make dev-up` (images pulled by the new nodes, the Quader image built beforehand) | 156 s for both; `dev-up` itself 2 min 33 s (E0.3 budget: 15 min). Per task: HAProxy Ingress 57 s, PKI and secrets 64 s, Valkey operator 64 s, PostgreSQL, Valkey and SeaweedFS 2 min 22 s |
 | `make e2e SET=push` | 561 s: E0.14 171 s, E0.15 107 s, E0.12 98 s, E0.11 87 s, E0.6 68 s, E0.7 11 s, E0.4 9 s, E0.16 5 s |
 | `make e2e SET=failover` | 453 s: E0.13 364 s, E0.6 68 s, E0.4 9 s |
-| E0.15, certificate renewal under load (10 K requests) | k6 only `200` (9694 requests, 0 dropped); cert-manager issued 0.1 s after the trigger; on the four pods the new certificate was served 0.0 to 1.8 s after the mounted file changed (bound 3 s); the kubelet needed up to 65 s to refresh the Secret volume of the last pod; `trove_tls_reloads_total` +2 on a web pod (client and ops listener), +1 on a worker; reload errors 0; no restart, process start time unchanged |
-| E0.14, drain of `trove-worker2` | k6 16994 requests, only `200`, 0 dropped; drain 46.5 s; 2 jobs moved to the other worker, all `succeeded` with `attempt` 1 |
+| E0.15, certificate renewal under load (10 K requests) | k6 only `200` (9694 requests, 0 dropped); cert-manager issued 0.1 s after the trigger; on the four pods the new certificate was served 0.0 to 1.8 s after the mounted file changed (bound 3 s); the kubelet needed up to 65 s to refresh the Secret volume of the last pod; `quader_tls_reloads_total` +2 on a web pod (client and ops listener), +1 on a worker; reload errors 0; no restart, process start time unchanged |
+| E0.14, drain of `quader-worker2` | k6 16994 requests, only `200`, 0 dropped; drain 46.5 s; 2 jobs moved to the other worker, all `succeeded` with `attempt` 1 |
 | E0.13, PostgreSQL switchover | 4890 requests, only `200`, 0 dropped, slowest request 9.5 s (held in the retry) |
 | E0.13, PostgreSQL primary force-deleted | 6290 requests, only `200`, 0 dropped, slowest 17.9 s |
 | E0.13, PostgreSQL stopped 30 s | 6991 requests, `200` 6145 and `503` 846 (503 only), 0 dropped; `/readyz` 503 on 10 to 15 one-second samples per pod; `/healthz` never; no restart |
@@ -804,14 +804,14 @@ the transfer loop 174 s. Numbers the tests print:
 
 | What | Result |
 |---|---|
-| E1.8, 1000 requests with one token over three replicas | `read` class: 200 admitted (burst 200) in 0.9 s, 66 to 73 per replica; one replica alone: 200; Valkey stopped: 325 in 2.7 s (each replica's share plus the decay), `trove_ratelimit_fallback{limiter="api_read"}` 1 on all three |
+| E1.8, 1000 requests with one token over three replicas | `read` class: 200 admitted (burst 200) in 0.9 s, 66 to 73 per replica; one replica alone: 200; Valkey stopped: 325 in 2.7 s (each replica's share plus the decay), `quader_ratelimit_fallback{limiter="api_read"}` 1 on all three |
 | E1.8, `CLIENT PAUSE 4000 ALL` on the Valkey primary | 15 of 2975 requests held (400 ms or more), the first at +0.4 s and the last at +2.5 s: `failure_threshold` 5 times three replicas; 2847 fast requests after the last held one |
 | E1.8, 400 random well-formed tokens, Bearer and Basic alternating | 300 validated (401), 100 throttled (429), 50 of each kind; with Valkey stopped 300 validations in all and 40 starts of the login flow admit 30 |
 | E1.11, revocation of a PAT | last `200` 0 s (Valkey up) and 0.2 s (stopped) after the revocation answered, `401` on all three replicas |
-| E1.13, 500 MB at 50 MB/s during `kubectl rollout restart deploy/trove-web` | 8 uploads, 0 failed, 8 overlapped the rollout (48 s) |
+| E1.13, 500 MB at 50 MB/s during `kubectl rollout restart deploy/quader-web` | 8 uploads, 0 failed, 8 overlapped the rollout (48 s) |
 | E1.13, 400 MiB download | 6 MB/s during a rollout restart: the serving pod drained 25 s in, curl exit 0, SHA-256 matches. 2 MB/s with the serving pod deleted: the pod logs the cut and stops after 1 min 55 s, the resume is `206` from another replica, SHA-256 matches |
 | E1.14, rule lifecycle on each replica | created, narrowed and deleted rule visible on every replica within 10 ms to 1 s with Valkey, 0.1 to 1 s without (bounds 1 s and 2 s) |
-| E1.14, 1000 requests with one token on `customers` | 200 admitted with Valkey; 264 to 280 with Valkey stopped, `trove_ratelimit_fallback{limiter="endpoint_external"}` 1 on all three |
+| E1.14, 1000 requests with one token on `customers` | 200 admitted with Valkey; 264 to 280 with Valkey stopped, `quader_ratelimit_fallback{limiter="endpoint_external"}` 1 on all three |
 | E0.14 with the transfer loop | 1362 transfer requests (681 PUT, 681 GET), 0 failures, 0 wrong checksums, 0 dropped iterations; k6 17190 pings, only `200` |
 
 The k6 load pre-allocates 2000 virtual users. A request that the server holds while it retries the database occupies
@@ -851,7 +851,7 @@ profile after the fixes (`SET=push` and `SET=failover`, above): the measurements
    replica is ready or draining after it was ready; `503` when a gating check other than `draining` fails, or it
    never was ready). Regression: `TestGracefulShutdown` in
    [internal/app/lifecycle_test.go](../../internal/app/lifecycle_test.go) (ping during the drain delay is 200),
-   `TestServeProcess` in [cmd/trove/serve_process_test.go](../../cmd/trove/serve_process_test.go) (the process,
+   `TestServeProcess` in [cmd/quader/serve_process_test.go](../../cmd/quader/serve_process_test.go) (the process,
    SIGTERM, ping five times in the drain delay), `TestServing` in
    [internal/observability/health](../../internal/observability/health/health_test.go).
 3. **Fixed: readiness could flip during a short PostgreSQL outage** (first switchover run: 75 `503`, about 4 s on
@@ -883,9 +883,9 @@ profile after the fixes (`SET=push` and `SET=failover`, above): the measurements
    in [internal/app/version_check_test.go](../../internal/app/version_check_test.go)): the message names the version
    and the way out. CI and this page still pass `VERSION=dev`, which is now the default and no longer needed.
 
-5. **Fixed in trove: the end of a download was lost when the replica that served it exited right after its last response**
+5. **Fixed in Quader: the end of a download was lost when the replica that served it exited right after its last response**
    (`TestE1_13Transfers`, the download under a rollout restart; red in 4 of 8 runs, 2 of 2 on the day of the fix). The 400 MiB
-   file is downloaded at 6 MB/s through the edge while `kubectl rollout restart` replaces the pods. trove logged the
+   file is downloaded at 6 MB/s through the edge while `kubectl rollout restart` replaces the pods. Quader logged the
    request as `200` with `response_bytes` 419430400 and stopped 0.2 to 0.5 s later; curl had 396 to 399 MiB, got nothing more
    and ended after 2 min 33 s with `HTTP/2 stream 1 was not closed cleanly: PROTOCOL_ERROR` (exit 92). Cause: when the
    handler returned, the last 2 to 4 MiB were in the replica's kernel send queue, because the reader (curl at 6 MB/s through
@@ -908,15 +908,15 @@ profile after the fixes (`SET=push` and `SET=failover`, above): the measurements
    names the service account); the field is not filled. Not asserted by the suite, which reads the answers and the audit
    events; the access log is a finding for E1.5's "appears in the log stream".
 7. **Fixed in the profile: the object store did not survive E1.13.** Two 500 MB uploads at once were OOM-killed at the
-   1 GiB limit of SeaweedFS (`OOMKilled`, exit 137; trove answered `504` and `500`), and the drain of E0.14 with the
+   1 GiB limit of SeaweedFS (`OOMKilled`, exit 137; Quader answered `504` and `500`), and the drain of E0.14 with the
    transfer loop evicted the node that hosted it: every blob lives on its `emptyDir`, so every download after that was
    `503 content_unavailable`. `deploy/dev/s3.yaml` now has a 4 GiB limit and runs on the control-plane node, like the
    edge. A consequence for tests: the metadata of a blob outlives the store's data (an upload of bytes that already have
    a blob row writes no object), so the bytes the M1 tests upload depend on the store instance (`storeNonce`, the UID of
    its pod).
 8. **Fixed in the profile: the Keycloak client's redirect URI was `https://localhost:8080/…` whatever port the cluster
-   was created with.** `up.sh` now sets `KC_TROVE_BASE_URL` from the edge port.
-9. **Fixed in trove: a PostgreSQL switchover made a client below its rate limit receive `429`** (`TestNPMHA`, the switchover;
+   was created with.** `up.sh` now sets `KC_QUADER_BASE_URL` from the edge port.
+9. **Fixed in Quader: a PostgreSQL switchover made a client below its rate limit receive `429`** (`TestNPMHA`, the switchover;
    red in one run of three). k6 sent 120 requests/s on one token, below its `package_read` budget of 1,000 per 5 s, at exactly 120
    arrivals per second throughout; the switchover held the requests for 6 s; 4 to 5 s after the release, 153 requests were answered
    `429` on all three replicas. A window of 600 arrivals can exceed 1,000 only if it is charged requests that arrived before it: the
@@ -931,7 +931,7 @@ profile after the fixes (`SET=push` and `SET=failover`, above): the measurements
    rate is still held to its burst) and `TestAuthenticationStage` in [internal/httpserver/chain_test.go](../../internal/httpserver/chain_test.go)
    (`Received` lies before the authentication). After the fix the switchover ran three times in a row with k6 only `2xx` and `304`.
    Not run by this change: the integration tier's rate-limit tests (`test/integration`), whose stack was in use.
-10. **Fixed in trove: one replica lost its cached forwarded search right after the remote was created, and the claim's search
+10. **Fixed in Quader: one replica lost its cached forwarded search right after the remote was created, and the claim's search
    asked the upstream again** (`TestNuGetSearchClaimTiming`, `the upstream saw 1 new searches`; Test and Release run 41441061809
    on 17f0e54, and on the dev cluster 4 of 4 targeted runs with the same cache code). The test warms the three replicas within
    about one second of creating its remote (CI: 0.97, 1.01 and 1.05 s after the creation; locally 0.75, 0.78 and 0.84 s). A
@@ -955,7 +955,7 @@ profile after the fixes (`SET=push` and `SET=failover`, above): the measurements
 11. **Fixed in the harness: one `kubectl get pods` that did not reach the API server ended a drain test** (`TestDrainRoles`, twice
    on the dev cluster on 2026-11-06 at a load average of 16 to 27 on 20 CPUs: `Unable to connect to the server: net/http: TLS
    handshake timeout` in `livePods`, once before the first eviction and once during it). The listing is a read of the kind API
-   server, not of trove, so `podsOfIn` ([env_test.go](../../test/e2e/env_test.go)) repeats a call whose error says it never reached
+   server, not of Quader, so `podsOfIn` ([env_test.go](../../test/e2e/env_test.go)) repeats a call whose error says it never reached
    the server up to three times, 2 s apart; any other error, and a fourth unreachable answer, still fail the test.
 12. **Fixed in the harness: two requests through a broken `kubectl port-forward` failed the set `vuln`** (Test and Release run
    42160309458: `EOF` in the warm-up of `TestVuln_R_VULN_017_NPMAuditThroughEveryRepository` and in a refusal check of
@@ -971,7 +971,7 @@ profile after the fixes (`SET=push` and `SET=failover`, above): the measurements
 14. **Fixed in the harness: a scheduled KEV sync fell into the window of an audit test** (Test and Release run 42173973459,
    `TestVuln_R_VULN_017_NPMAuditThroughEveryRepository/no_request_to_an_upstream_during_the_audits`: the test advisory source saw 1 request
    at 06:41 UTC; `vuln-sync-kev` is scheduled `41 */6 * * *`, so it fires at 06:41 UTC, and the OSV sync every 15 minutes is the same hazard).
-   The request is the scheduler's (inferred from the time and the schedule; the run kept only the stub's counts), not an audit path's: the audits are answered from trove's data (the package documents are warmed
+   The request is the scheduler's (inferred from the time and the schedule; the run kept only the stub's counts), not an audit path's: the audits are answered from Quader's data (the package documents are warmed
    and the npm test upstream saw none). The test could not tell the two apart, and it did not print the request. The profile
    [values-vuln.yaml](../../deploy/dev/values-vuln.yaml) switches the three scheduled syncs off (no test relies on one: each
    starts its sync through the task API), and the two tests that assert on the source print its request log when they fail.
@@ -987,10 +987,10 @@ profile after the fixes (`SET=push` and `SET=failover`, above): the measurements
 The suite and the profile are TLS on every connection ([local-profile.md](local-profile.md)). What that meant for the
 harness:
 
-- `deploy/dev/e2e.sh` defaults to `TROVE_DEV_SCHEME=https`, `TROVE_DEV_OPS_SCHEME=https` and
-  `TROVE_DEV_CA_FILE=.dev/pki/ca.crt`. k6 requests `https://localhost:30443` (the edge's HTTPS NodePort; the
+- `deploy/dev/e2e.sh` defaults to `QUADER_DEV_SCHEME=https`, `QUADER_DEV_OPS_SCHEME=https` and
+  `QUADER_DEV_CA_FILE=.dev/pki/ca.crt`. k6 requests `https://localhost:30443` (the edge's HTTPS NodePort; the
   certificate names `localhost`) and resolves that name to the control-plane node's address on the Docker network
-  (`TROVE_E2E_K6_HOSTS_ADDR`); the CA is mounted into the k6 container as `SSL_CERT_FILE`. The edge URL for the host
+  (`QUADER_E2E_K6_HOSTS_ADDR`); the CA is mounted into the k6 container as `SSL_CERT_FILE`. The edge URL for the host
   stays `https://localhost:<port>`.
 - The API-server proxy to `:8081` is addressed as `https:<pod>:8081`; it does not verify the pod's certificate. The
   checks that matter for the certificate (E0.15, E0.16) connect differently, as described above.
@@ -1047,7 +1047,7 @@ test/e2e/clients/
   against the dev CA (the certificates of the edge and the listener both carry `localhost`,
   [deploy/dev/pki.yaml](../../deploy/dev/pki.yaml)). `fwd` relays bytes and terminates nothing. Its default target is
   the in-cluster HAProxy Ingress HTTPS port, `haproxy-ingress.ingress-controller.svc.cluster.local:443`
-  (`TROVE_E2E_NPM_CLIENTS_TARGET`; verified on the 0.16.3 chart: the smoke test and the matrix reach the cluster through it).
+  (`QUADER_E2E_NPM_CLIENTS_TARGET`; verified on the 0.16.3 chart: the smoke test and the matrix reach the cluster through it).
   `fwd -target-file /tmp/target` makes a test pin the client to one `packages` pod
   ([Pinning a client to a replica](#pinning-a-client-to-a-replica)).
   `fwd` logs one line, `target closed the connection first`, for a connection that the target ended before the client did, with
@@ -1056,16 +1056,16 @@ test/e2e/clients/
   the request. The dev edge keeps an idle connection for 90 s (`timeout-keep-alive` in
   [haproxy-values.yaml](../../deploy/dev/haproxy-values.yaml)), longer than npm's last retry delay of 60 s
   ([Q-HA-136](../spec/ha-and-helm.md#q-ha-136--the-dev-edge-keeps-an-idle-client-connection-longer-than-npms-longest-retry-delay)).
-  The lines are in the cluster-state artifact, `log-trove-trove-e2e-npm-<n>`.
-- **The CA is mounted, not baked.** `deploy/dev/e2e.sh` writes the dev CA into the ConfigMap `trove-e2e-npm-ca`, the pod
-  mounts it at `/etc/trove-ca/ca.crt` and sets `NODE_EXTRA_CA_CERTS`, which Node.js itself reads (npm, pnpm 10 and 11,
+  The lines are in the cluster-state artifact, `log-quader-quader-e2e-npm-<n>`.
+- **The CA is mounted, not baked.** `deploy/dev/e2e.sh` writes the dev CA into the ConfigMap `quader-e2e-npm-ca`, the pod
+  mounts it at `/etc/quader-ca/ca.crt` and sets `NODE_EXTRA_CA_CERTS`, which Node.js itself reads (npm, pnpm 10 and 11,
   both Yarn lines). Verified: the native pnpm 12 verifies the dev CA's certificate with that variable alone; none of its
   scenarios needs pnpm's `ca`/`cafile` setting. The pod follows the restricted Pod Security profile
   (non-root, read-only root filesystem, `/work` as `HOME`, `/tmp`, both emptyDir, no service account token) and runs on
   the control-plane node like the driver.
-- **Running a client.** `kubectl -n trove exec trove-e2e-npm-0 -- npm12 --version`. The Go side is
-  `npmClientExec(t, pod, argv...)` in `npm_clients_test.go`; `TROVE_E2E_NPM_CLIENTS_PODS` (default 1) sets how many pods
-  `e2e.sh clients` starts, `trove-e2e-npm-0` to `-<n-1>`.
+- **Running a client.** `kubectl -n quader exec quader-e2e-npm-0 -- npm12 --version`. The Go side is
+  `npmClientExec(t, pod, argv...)` in `npm_clients_test.go`; `QUADER_E2E_NPM_CLIENTS_PODS` (default 1) sets how many pods
+  `e2e.sh clients` starts, `quader-e2e-npm-0` to `-<n-1>`.
 - **The smoke test.** `TestNPMClients` has two subtests: `R-NPM-045 every gate row runs --version` compares every
   wrapper's output with the version in `package.json`, and `R-NPM-045 the base URL reaches the cluster with a verified
   certificate` requests `/api/v1/system/ping` from the pod through the forwarder with a plain Node.js `https.get`.
@@ -1082,7 +1082,7 @@ test/e2e/clients/
 |---|---|---|
 | `TestNPMClients` | R-NPM-045 | the smoke test: every wrapper prints its pinned version, the base URL reaches the cluster with a verified certificate |
 | `TestNPMMatrix` | E2.1, E2.7, E2.8, R-NPM-040, R-NPM-042, R-NPM-043 | the scenario table below for each of the eight rows, rows side by side |
-| `TestNPMReplicas` | E2.3, E2.10 | publish on replica A and `npm view` on replica B (20 rounds); a validator answered 304 by every replica and invalid after a publish elsewhere, for `npm-local` and for a remote after an upstream change; `npm unpublish` whose requests reach different replicas (read from each replica's `trove_npm_requests_total`); the scenario list of one row during `FLUSHALL` every 1.5 s, and during a Sentinel failover; an unpublish whose answer the edge drops; a cache invalidation in force on every replica within `epoch_poll_interval` plus 1 s |
+| `TestNPMReplicas` | E2.3, E2.10 | publish on replica A and `npm view` on replica B (20 rounds); a validator answered 304 by every replica and invalid after a publish elsewhere, for `npm-local` and for a remote after an upstream change; `npm unpublish` whose requests reach different replicas (read from each replica's `quader_npm_requests_total`); the scenario list of one row during `FLUSHALL` every 1.5 s, and during a Sentinel failover; an unpublish whose answer the edge drops; a cache invalidation in force on every replica within `epoch_poll_interval` plus 1 s |
 | `TestNPMCollapse` | E2.2, E2.9 | three `npm ci` at once against three replicas from the reference lockfile of [perf/npm](../../perf/npm) through a fresh virtual repository over `npm-local` and a fresh remote on the counting upstream (the lockfile's registry key is the only thing rewritten): exactly one tarball request each, at most one document request each; 100 concurrent misses on two replicas with `pg_stat_activity` and `pg_locks` sampled; Valkey stopped (bursts from client pods pinned to two replicas); a flight lock lost with `FLUSHALL` (at most one duplicate fetch, one cache entry); a killed holder |
 | `TestNPMUpstream` | E2.4, E2.5 | an install on a warm cache with the upstream down and the metadata expired; the negative cache; a claimed namespace never requested from the upstream; the shadowing check of R-REPO-048 with a `deploy` holder, a `manage` holder and the upstream down |
 | `TestNPMEndpoint` | E2.12 | every row lists and installs only the exposed versions of `@acme<run>/sdk` through the endpoint `customers` with a bound token, the hidden version is a 404, tarball URLs and bodies name only the endpoint, a narrowed rule invalidates the ETag on every replica, an uncached remote version is a 404 with no upstream request and the same install through `default` fills the cache |
@@ -1144,7 +1144,7 @@ restore the edge target with a `defer`.
 
 ### The closing run
 
-`SET=npm-closing` exports `TROVE_E2E_NPM_CLOSING=1` and runs `TestNPMClosing`; without the variable the test fails, so it cannot be absent from the closing run. The
+`SET=npm-closing` exports `QUADER_E2E_NPM_CLOSING=1` and runs `TestNPMClosing`; without the variable the test fails, so it cannot be absent from the closing run. The
 workflow adds this leg, and the three 30-minute fuzz legs of `make fuzz-npm`, when it is dispatched with `closing=true`.
 
 ### Findings of the npm tests
@@ -1225,7 +1225,7 @@ The fixture ([npm_load_test.go](../../test/e2e/npm_load_test.go), `npmHAFx`, onc
   tarballs), one `@e2e/ha-<run>-small` of 50 KiB (P-8 below);
 - the lockfile project: the corpus roots of `corpus.Reference(397)` plus the three local packages, resolved with `npm install` through
   `npm-all`. Its lockfile locks 475 packages (472 through `npm-remote`, 3 from `npm-local`; R-HA-059 asks for 400), and the install
-  fills trove's cache, so every loop runs with the cache warm. An `npm ci` of it takes 2.5 s on a quiet cluster.
+  fills Quader's cache, so every loop runs with the cache warm. An `npm ci` of it takes 2.5 s on a quiet cluster.
 
 **How a command is counted** ([Q-HA-65](../spec/ha-and-helm.md#q-ha-65--the-npm-part-of-r-ha-059s-load-before-nuget-exists-and-how-its-commands-are-counted)). Each loop is a shell
 script (`ciLoopScript`, `publishLoopScript`) started once in its pod with `setsid`, detached from the `kubectl exec` that started it. It
@@ -1237,10 +1237,10 @@ fault is therefore never a failed client command, and a loop that dies leaves no
 
 | Test | Injection | Load | Pass conditions |
 |---|---|---|---|
-| `TestNPMHA` drain | `drain.sh <node>`, 2 minutes after the load started; the load runs 3 more minutes after the drain returns; six `system.probe` jobs of 330 steps | all three | R-HA-059's: every `npm` command exits `0`; k6 only `2xx` and `304`, no connection error, no wrong tarball, no dropped iteration and 95 % of the rate; the p99 of the k6 requests from the first eviction until 2 minutes after the drain at most twice the p99 of the warm-up; every acknowledged publish installs afterwards; every probe job `succeeded` with `attempt` 1, at least one moved and resumed from its cursor; no container exit 137 or `OOMKilled`, no SIGKILL or `FailedKillPod` event; no trove pod `Pending` for more than 60 s; `drain.sh` returns within 10 minutes and the node is uncordoned |
+| `TestNPMHA` drain | `drain.sh <node>`, 2 minutes after the load started; the load runs 3 more minutes after the drain returns; six `system.probe` jobs of 330 steps | all three | R-HA-059's: every `npm` command exits `0`; k6 only `2xx` and `304`, no connection error, no wrong tarball, no dropped iteration and 95 % of the rate; the p99 of the k6 requests from the first eviction until 2 minutes after the drain at most twice the p99 of the warm-up; every acknowledged publish installs afterwards; every probe job `succeeded` with `attempt` 1, at least one moved and resumed from its cursor; no container exit 137 or `OOMKilled`, no SIGKILL or `FailedKillPod` event; no Quader pod `Pending` for more than 60 s; `drain.sh` returns within 10 minutes and the node is uncordoned |
 | `TestNPMHA` switchover | `failover.sh` (`dev-failover`) after 1 minute; 1 minute after | all three | every `npm` command exits `0`, every `npm ci` loop ran a command during the switchover; k6 as above; every acknowledged publish installs; `/healthz` 200 on every pod, no restart |
-| `TestNPMHA` Valkey failover | `valkey-failover.sh` (`dev-valkey-failover`) after 1 minute; 1 minute after | all three | as the switchover, and `/readyz` 200 on every pod throughout, and `trove_valkey_primary_changes_total` rises by exactly one on every `api`, `packages` and `worker` replica (R-HA-057) |
-| `TestNPMHACrash` | `kubectl delete pod --grace-period=0 --force` of a random `api`, `packages` or `worker` pod (the seed is logged), every 2 minutes: three times, ten with `TROVE_E2E_NPM_CRASH_SOAK=1` (`npm-ha-soak`, `npm-ha-closing`) | `npm ci` and publish loops (R-HA-052 adds k6 only to the drain and Valkey rows) | every `npm` command exits `0`; `trove admin storage verify`, run in the worker pod, exits `0` and reports no blob without its object (`requireStorageVerified`, [Q-HA-69](../spec/ha-and-helm.md#q-ha-69--the-storage-check-of-the-pod-crash-before-trove-admin-storage-verify-exists) revisited); every acknowledged publish installs; `/healthz` 200 on every pod that was not deleted; three `api`, three `packages` and four `worker` pods ready at the end |
+| `TestNPMHA` Valkey failover | `valkey-failover.sh` (`dev-valkey-failover`) after 1 minute; 1 minute after | all three | as the switchover, and `/readyz` 200 on every pod throughout, and `quader_valkey_primary_changes_total` rises by exactly one on every `api`, `packages` and `worker` replica (R-HA-057) |
+| `TestNPMHACrash` | `kubectl delete pod --grace-period=0 --force` of a random `api`, `packages` or `worker` pod (the seed is logged), every 2 minutes: three times, ten with `QUADER_E2E_NPM_CRASH_SOAK=1` (`npm-ha-soak`, `npm-ha-closing`) | `npm ci` and publish loops (R-HA-052 adds k6 only to the drain and Valkey rows) | every `npm` command exits `0`; `quader admin storage verify`, run in the worker pod, exits `0` and reports no blob without its object (`requireStorageVerified`, [Q-HA-69](../spec/ha-and-helm.md#q-ha-69--the-storage-check-of-the-pod-crash-before-quader-admin-storage-verify-exists) revisited); every acknowledged publish installs; `/healthz` 200 on every pod that was not deleted; three `api`, three `packages` and four `worker` pods ready at the end |
 | `TestNPMHAClosing` (closing run) | `valkey-stop.sh` after 1 minute; 2 minutes in, one `packages` pod deleted with its grace period; `valkey-start.sh` 5 minutes after the stop | all three | every `npm` command exits `0`; k6 as above; the replacement pod becomes ready with `valkey` degraded; `/readyz` 200 throughout on every pod but the deleted one and its replacement; after the return, `degraded` clears on every replica within `open_duration` plus `health_check_interval` plus 5 s (15 s in the dev profile, read through `driver info`), counted from the first moment a Sentinel names a primary again (`valkeyClearWatch` polls while `valkey-start.sh` still waits for the StatefulSets and the operator) |
 | `TestNPMPerf` | none | [perf/k6/npm.js](../../perf/k6/npm.js) | every request answered `200` or shed with the replica's `503 server_busy`; no restart of the target pod; the numbers are reported, not gated (below) |
 
@@ -1253,9 +1253,9 @@ the pod watch sees with a deletion timestamp; the warm-up is every k6 request be
 **Not built in M2, with where it lands:** the NuGet rows of the load (`dotnet restore`, `dotnet nuget push`, k6's 20 %) are built
 ([Drain and failover under NuGet load](#drain-and-failover-under-nuget-load)); the
 long-transfer probes of R-HA-059 and variants B to E are built ([The drain under the full load](#the-drain-under-the-full-load)); R-HA-057's "every replica writes to the new primary within 10 s", the alerts
-(`TroveValkeyUnavailable`; the dev profile runs no Prometheus) and the other Valkey rows in E5.10; the cold install with a replica killed, and `trove admin storage verify` after it, are built ([A replica killed during a cold install](#a-replica-killed-during-a-cold-install)). The
-(`TroveValkeyUnavailable`; the dev profile runs no Prometheus, [H-791](../spec/ha-and-helm.md#h-791--the-sentinel-alert-is-tested-as-a-rule-not-as-an-alert-of-a-running-installation)) and the other Valkey rows in E5.10, which
-are built now ([The failure suite ha-faults](#the-failure-suite-ha-faults)); `trove admin storage verify` in E5.2. The
+(`QuaderValkeyUnavailable`; the dev profile runs no Prometheus) and the other Valkey rows in E5.10; the cold install with a replica killed, and `quader admin storage verify` after it, are built ([A replica killed during a cold install](#a-replica-killed-during-a-cold-install)). The
+(`QuaderValkeyUnavailable`; the dev profile runs no Prometheus, [H-791](../spec/ha-and-helm.md#h-791--the-sentinel-alert-is-tested-as-a-rule-not-as-an-alert-of-a-running-installation)) and the other Valkey rows in E5.10, which
+are built now ([The failure suite ha-faults](#the-failure-suite-ha-faults)); `quader admin storage verify` in E5.2. The
 Valkey-primary-loss row of R-HA-052, which ran on every change until 2026-11-01 and now runs in the nightly failover set, is E0.13's (`valkey-kill.sh` under the ping load); its npm load
 joins with M5.
 
@@ -1311,9 +1311,9 @@ Valkey outage): 2,651 s in all, 44 minutes of tests; `npm-ha` alone is about 36 
 | Scenario | Result |
 |---|---|
 | fixture | 475 locked packages (3 from `npm-local`), tarballs of 1,049,373 to 5,244,966 bytes, 18 tokens (20 since k6 has three), 10 s |
-| drain variant A (`trove-worker2`: a `web` and a `worker` pod, a Sentinel, the Valkey replica and the PostgreSQL standby) | `drain.sh` 48 s; 939 `npm ci` and 35 publishes, all exit `0`, slowest command 4.3 s, every loop ran 15 to 17 commands between the first eviction and the end of the drain; k6 41,563 requests in 5 min 46 s, `document 200` 21,341, `document 304` 4,641, `tarball 200` 15,581, nothing else, no wrong tarball, 0 dropped; p99 292 ms in the warm-up (14,304 requests) and 255 ms from the first eviction until 2 minutes after the drain (20,070); the 35 publishes installed; 4 of 6 probe jobs moved and resumed at step 162 with `attempt` 1; longest `Pending` 0.7 s; no SIGKILL |
+| drain variant A (`quader-worker2`: a `web` and a `worker` pod, a Sentinel, the Valkey replica and the PostgreSQL standby) | `drain.sh` 48 s; 939 `npm ci` and 35 publishes, all exit `0`, slowest command 4.3 s, every loop ran 15 to 17 commands between the first eviction and the end of the drain; k6 41,563 requests in 5 min 46 s, `document 200` 21,341, `document 304` 4,641, `tarball 200` 15,581, nothing else, no wrong tarball, 0 dropped; p99 292 ms in the warm-up (14,304 requests) and 255 ms from the first eviction until 2 minutes after the drain (20,070); the 35 publishes installed; 4 of 6 probe jobs moved and resumed at step 162 with `attempt` 1; longest `Pending` 0.7 s; no SIGKILL |
 | PostgreSQL switchover | 9 s; 354 `npm ci` and 14 publishes, all exit `0`, every loop ran 2 or 3 commands during the switchover, slowest 8.8 s; k6 15,728 requests, only `2xx` and `304`; `/healthz` and `/readyz` 200 throughout. Before the fix of finding 9 one run of three had 153 `429`; after it, four runs of four had none |
-| Valkey failover | 2 s; 342 `npm ci` and 13 publishes, all exit `0`; k6 14,797 requests, only `2xx` and `304`, p99 236 ms; `/readyz` 200 on every pod throughout; `trove_valkey_primary_changes_total` +1 on each of the five replicas |
+| Valkey failover | 2 s; 342 `npm ci` and 13 publishes, all exit `0`; k6 14,797 requests, only `2xx` and `304`, p99 236 ms; `/readyz` 200 on every pod throughout; `quader_valkey_primary_changes_total` +1 on each of the five replicas |
 | pod crash, 10 force-deletes in 20 minutes (8 `web`, 2 `worker`) | 4,231 `npm ci` and 131 publishes, all exit `0`, slowest command 3.8 s; 131 versions listed, every tarball read with its integrity |
 | Valkey outage, 5 minutes, a `web` pod deleted at minute 2 | 1,193 `npm ci` and 44 publishes, all exit `0`; k6 52,426 requests, only `2xx` and `304`; the replacement ready with `valkey` degraded; `degraded` cleared on every replica 6.6 s after a Sentinel named a primary again (bound 15 s) |
 | R-ARCH-027, one `web` pod (reported, not gated) | p1 p50 2.5 ms / p99 4.5 ms; p3 0.8 / 1.8 ms; p5 0.8 / 1.7 ms; p7 2,000/s held, p99 3.7 ms; p8 1,000/s held, p99 10.7 ms; every request `200` |
@@ -1322,7 +1322,7 @@ Not verified here: a run of the leg on a CI runner (the runners were queued), an
 
 ### Findings of the scenarios under npm load
 
-1. **Fixed in trove: a PostgreSQL switchover made a client below its rate limit receive `429`** (finding 9 of
+1. **Fixed in Quader: a PostgreSQL switchover made a client below its rate limit receive `429`** (finding 9 of
    [the suite](#findings-of-the-suite)).
 2. **The harness: one token per `npm ci` loop met the `package_read` budget.** A loop asks for 475 tarballs every 2.5 s, and the budget
    is 1,000 per 5 s per token: four in ten commands got a `429` and waited 10 s for npm's retry (45,709 refusals on one replica over one
@@ -1355,23 +1355,23 @@ Not verified here: a run of the leg on a CI runner (the runners were queued), an
 [R-HA-059](../spec/ha-and-helm.md#r-ha-059--node-drain-without-outage) names five drains; variant A is the node drain of the sections above. B, C and D add one dependency to the
 node that is drained, E a running backup pod. Decisions: [Q-HA-170 to Q-HA-174](../spec/ha-and-helm.md#q-ha-170--a-variant-drain-evicts-the-releases-pods-and-the-variants-dependency-by-their-own-selectors-in-parallel-drains-and-nothing-else-on-the-node).
 
-`deploy/dev/drain.sh --also valkey|postgres|pooler… <node>` starts one `kubectl drain --pod-selector` per set of pods together: the release's (`app.kubernetes.io/name=trove,app.kubernetes.io/instance=trove`) and, for each
+`deploy/dev/drain.sh --also valkey|postgres|pooler… <node>` starts one `kubectl drain --pod-selector` per set of pods together: the release's (`app.kubernetes.io/name=quader,app.kubernetes.io/instance=quader`) and, for each
 `--also`, the dependency's. Nothing else on the node is evicted. The script logs when each run started and ended, fails if one failed, waits for the release's rollouts, uncordons, and then waits for the dependency to be
 whole again (its volume, where it has one, is bound to the node, so it cannot return before the uncordon):
 
 | `--also` | Selector (`--pod-selector`) | Whole again |
 |---|---|---|
-| `valkey` | `app.kubernetes.io/instance=trove-valkey`: the Valkey data pods (`component=valkey`) and the Sentinels (`component=sentinel`) | `sts_wait_ready` of `trove-valkey` (2) and `trove-valkey-sentinel` (3) |
-| `postgres` | `cnpg.io/cluster=trove-db,cnpg.io/podRole=instance` | `readyInstances` 2 and the `Ready` condition of `cluster/trove-db` |
-| `pooler` | `cnpg.io/poolerName` (every pod of the two poolers) | `rollout status` of `trove-db-pooler-rw` and `trove-db-pooler-control` |
+| `valkey` | `app.kubernetes.io/instance=quader-valkey`: the Valkey data pods (`component=valkey`) and the Sentinels (`component=sentinel`) | `sts_wait_ready` of `quader-valkey` (2) and `quader-valkey-sentinel` (3) |
+| `postgres` | `cnpg.io/cluster=quader-db,cnpg.io/podRole=instance` | `readyInstances` 2 and the `Ready` condition of `cluster/quader-db` |
+| `pooler` | `cnpg.io/poolerName` (every pod of the two poolers) | `rollout status` of `quader-db-pooler-rw` and `quader-db-pooler-control` |
 
-`kubectl drain --pod-selector` selects the pods of every namespace, so the restore installation of `trove-restore` (its release is named `trove` and its PostgreSQL cluster `trove-db`) must not exist while a
+`kubectl drain --pod-selector` selects the pods of every namespace, so the restore installation of `quader-restore` (its release is named `quader` and its PostgreSQL cluster `quader-db`) must not exist while a
 variant drains; `TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage` removes it when it ends. The labels of the Valkey and CloudNativePG pods were read from the cluster (`kubectl get pods --show-labels`); the pooler label
 is `cnpg.io/poolerName`, the CloudNativePG operator's own, and `Verify` fails if a pod of the dependency that was on the node is still the same pod afterwards, so a selector that matched nothing cannot pass.
 
 The harness, [drain_variants_test.go](../../test/e2e/drain_variants_test.go), brings no load: the caller's probes or load run between `prepareVariantDrain` and `Verify`. The blocks of the vulnerability scanning (E5.13) run it under their probes, E5.9 under the full load ([below](#the-drain-under-the-full-load)); `variantA` (nothing else on the node, `drainNodeVariantA`) is the fifth value, so one flow serves A to E.
 
-`Run` streams the log of every trove pod on the node into `drain-variant-<variant>-<pod>.log` of the artifacts directory before it starts `drain.sh`, so the shutdown record of an evicted pod (`shutting down`, `draining`, `stopped`, or the lines of an overrun with the goroutines, [Q-ARCH-456](../spec/architecture.md#q-arch-456--the-steps-after-the-close-phase-each-wait-at-most-the-ops-reserve-and-log-what-they-abandon-with-the-goroutines)) outlives the pod ([Q-HA-280](../spec/ha-and-helm.md#q-ha-280--the-drain-variants-keep-the-logs-of-the-evicted-pods-in-the-artifacts)).
+`Run` streams the log of every Quader pod on the node into `drain-variant-<variant>-<pod>.log` of the artifacts directory before it starts `drain.sh`, so the shutdown record of an evicted pod (`shutting down`, `draining`, `stopped`, or the lines of an overrun with the goroutines, [Q-ARCH-456](../spec/architecture.md#q-arch-456--the-steps-after-the-close-phase-each-wait-at-most-the-ops-reserve-and-log-what-they-abandon-with-the-goroutines)) outlives the pod ([Q-HA-280](../spec/ha-and-helm.md#q-ha-280--the-drain-variants-keep-the-logs-of-the-evicted-pods-in-the-artifacts)).
 
 ```go
 d := prepareVariantDrain(t, variantB)  // picks the node (moving a primary in the way), records the pods on it, starts the pod watch and the variant's monitors
@@ -1384,10 +1384,10 @@ d.Settle(t)                            // the release has its pods again, the ev
 
 | Variant | The node | Its own condition | How it is judged |
 |---|---|---|---|
-| B | the node of the Valkey primary (`valkeyPrimaryBySentinel`) that hosts an `api`, a `packages` and a main `worker` pod and not the PostgreSQL primary; a primary in the way is moved first with `failover.sh` or `valkey-failover.sh` (at most four attempts) | `trove_valkey_primary_changes_total` rises by at least 1 on every replica that existed before and is not on the node, and none of them answers `/readyz` other than 200 (`startMonitor` and the counter snapshot start in `Run`, right before `drain.sh`, so the monitor does not see the preparation's own recovery); a replacement's counter is logged | the primary is evicted without a planned failover first (Q-HA-171); the node must also host a Sentinel. `Run` puts a finalizer on the primary's pod, so the StatefulSet cannot start a pod of that name while the Sentinels decide, and removes it when a Sentinel names another primary; when none has done so 25 s after the eviction, the test sends `SENTINEL FAILOVER` (at most twice, never during a running failover) and logs it with a `::warning::` line, and 90 s without a failover fails the variant (Q-HA-181, [the hold](#variant-b-the-hold)); the log carries the failover events of the Sentinels that run afterwards |
+| B | the node of the Valkey primary (`valkeyPrimaryBySentinel`) that hosts an `api`, a `packages` and a main `worker` pod and not the PostgreSQL primary; a primary in the way is moved first with `failover.sh` or `valkey-failover.sh` (at most four attempts) | `quader_valkey_primary_changes_total` rises by at least 1 on every replica that existed before and is not on the node, and none of them answers `/readyz` other than 200 (`startMonitor` and the counter snapshot start in `Run`, right before `drain.sh`, so the monitor does not see the preparation's own recovery); a replacement's counter is logged | the primary is evicted without a planned failover first (Q-HA-171); the node must also host a Sentinel. `Run` puts a finalizer on the primary's pod, so the StatefulSet cannot start a pod of that name while the Sentinels decide, and removes it when a Sentinel names another primary; when none has done so 25 s after the eviction, the test sends `SENTINEL FAILOVER` (at most twice, never during a running failover) and logs it with a `::warning::` line, and 90 s without a failover fails the variant (Q-HA-181, [the hold](#variant-b-the-hold)); the log carries the failover events of the Sentinels that run afterwards |
 | C | the node of the PostgreSQL primary under the same conditions, not the Valkey primary | CloudNativePG has requested the switchover before the eviction: a poll every 250 ms of `.status.targetPrimary` of the cluster with its `targetPrimaryTimestamp` and of the time the old primary pod's deletion was requested (`deletionTimestamp` minus the grace period; the server's own, a second of resolution allowed) from before the drain; the target must name another instance when the pod is marked for deletion (Q-HA-172; the operator admits the eviction from the request, the promotion follows a few seconds later) | the switchover is never asked for once the node is picked (F-65) |
-| D | a node with an instance of the request pooler (`trove-db-pooler-rw`), the same hosting condition, neither primary | none of its own | needs the pooler profile (`TROVE_POOLER=1`, set `vuln-pooler`) |
-| E | `drainNodeVariantA`; 16 files of 1 MiB go into a generic repository of the run first, and a backup Job is made from the CronJob with `backoffLimit: 0`, a fresh `TROVE_BACKUP_TARGET_PREFIX`, `TROVE_BACKUP_COPY_BYTES_PER_SECOND=512KiB` and `TROVE_BACKUP_COPY_CONCURRENCY=1` and a preferred node affinity (weight 100) for the node (`bakJob.preferNode`, Q-HA-174); if its pod landed elsewhere the Job is deleted and made once more | the Job ends `Complete` within 15 minutes and ran at least two pods | the replacement pod is scheduled wherever it fits, so it is not `Pending` for the length of the drain |
+| D | a node with an instance of the request pooler (`quader-db-pooler-rw`), the same hosting condition, neither primary | none of its own | needs the pooler profile (`QUADER_POOLER=1`, set `vuln-pooler`) |
+| E | `drainNodeVariantA`; 16 files of 1 MiB go into a generic repository of the run first, and a backup Job is made from the CronJob with `backoffLimit: 0`, a fresh `QUADER_BACKUP_TARGET_PREFIX`, `QUADER_BACKUP_COPY_BYTES_PER_SECOND=512KiB` and `QUADER_BACKUP_COPY_CONCURRENCY=1` and a preferred node affinity (weight 100) for the node (`bakJob.preferNode`, Q-HA-174); if its pod landed elsewhere the Job is deleted and made once more | the Job ends `Complete` within 15 minutes and ran at least two pods | the replacement pod is scheduled wherever it fits, so it is not `Pending` for the length of the drain |
 
 #### Variant B: the hold
 
@@ -1404,23 +1404,23 @@ with no Sentinel having named another one, so the replicas' counter stayed at 0.
 `down-after-milliseconds`, which F-78 had suspected.
 
 `primaryHold` ([drain_variants_hold_test.go](../../test/e2e/drain_variants_hold_test.go)) puts the finalizer
-`e2e.trove.guided-traffic.com/hold-valkey-primary` on the primary's pod before `drain.sh` runs and removes it when the Sentinels name
+`e2e.quader.guided-traffic.com/hold-valkey-primary` on the primary's pod before `drain.sh` runs and removes it when the Sentinels name
 another pod, at the latest after 90 s. Every kubectl call of the hold has a 15 s bound, and the release is retried for 30 s (only
 `NotFound` and `Precondition failed` count as done). A test that cannot clean up (SIGKILL, a CI cancel) leaves the finalizer;
 `sweepHeldPods`, called by `TestMain`, removes it from every pod of the namespace at the start of the next run.
 
 When no Sentinel has named another primary 25 s after the eviction, the hold sends `SENTINEL FAILOVER`: never while a reachable
-Sentinel lists `failover_in_progress` in `SENTINEL MASTER trove-valkey` (the `-INPROG` answer is per Sentinel, and one that is not
+Sentinel lists `failover_in_progress` in `SENTINEL MASTER quader-valkey` (the `-INPROG` answer is per Sentinel, and one that is not
 leading would start a new epoch, and not when no Sentinel's flags could be read), to the first Sentinel that answers, at most once every
 3 s whatever the answer (a refusal included), and at most twice accepted (the second 10 s after an accepted first one, the election
 timeout). The rules are in [valkeyhold](../../test/e2e/valkeyhold/valkeyhold.go), which runs without a cluster
 (`go test ./test/e2e/valkeyhold/`, also in `make test`). Reading the log of a run: "was held in Terminating" gives the eviction, the Sentinels' answer and the release
 with their times, "assist:" lines every attempt, and a `::warning::` line (also appended to `$GITHUB_STEP_SUMMARY` when it is set) says the Sentinels did not manage by themselves, which is
-the platform's race and not trove's; the Sentinel events printed after it show which. `kubectl logs --timestamps` of the surviving
+the platform's race and not Quader's; the Sentinel events printed after it show which. `kubectl logs --timestamps` of the surviving
 Sentinels and `kubectl get pods -w` are the evidence to keep when it happens in CI. The pass condition is the one of the table; only
 the disturbance is fixed.
 
-Every variant also requires, as R-HA-059: no trove container killed (`SIGKILL`, exit 137 or OOM, from the pod watch of `selTrove`), no trove pod `Pending` for more than 60 s, `drain.sh` within 10 minutes, the node
+Every variant also requires, as R-HA-059: no Quader container killed (`SIGKILL`, exit 137 or OOM, from the pod watch of `selQuader`), no Quader pod `Pending` for more than 60 s, `drain.sh` within 10 minutes, the node
 uncordoned, no `Killing` event with `SIGKILL` for the pods on the node (`checkEvents`).
 
 Measured on the dev cluster (kind with three worker nodes, the profile `vuln`, 2026-11-08, `TestVulnLong_R_VULN_015_BlockHoldsThroughDrainVariants`, 824 s in all): B 112 s (`drain.sh` 28 s), C 101 s (`drain.sh` 42 s; the cluster named
@@ -1439,7 +1439,7 @@ scatter profile with the counting npm test upstream and three client pods: [test
 
 | Test | Injection | Load | Pass conditions |
 |---|---|---|---|
-| `TestHASuite_AuditDrain` | the counting upstream answers an audit after 20 s (`delay_ms.audit`); the `packages` pod with a client request in flight (`trove_http_requests_in_flight`) is deleted 1 s after the request reached the provider | one `npm audit` of a package without an advisory | R-NPM-038: the audit exits 0 ("found 0 vulnerabilities") after the 20 s; the provider logged one request; no SIGKILL event and no container exit 137 |
+| `TestHASuite_AuditDrain` | the counting upstream answers an audit after 20 s (`delay_ms.audit`); the `packages` pod with a client request in flight (`quader_http_requests_in_flight`) is deleted 1 s after the request reached the provider | one `npm audit` of a package without an advisory | R-NPM-038: the audit exits 0 ("found 0 vulnerabilities") after the 20 s; the provider logged one request; no SIGKILL event and no container exit 137 |
 | `TestHASuite_ObjectStoreOutage`, 30 s | `s3-stop.sh`; `s3-start.sh` 30 s after the stop returned | all three, plus a prober (below) | R-HA-052, R-HA-010, R-STOR-036: documents and the management API answer 200 throughout; tarballs answer `503` with `Retry-After` = `open_duration` rounded up, at least 5 (10 s in the dev profile), once the circuit is open; `curl -T` of 64 MiB with `Expect: 100-continue` is `503` with `Retry-After`, three in five before the body; no pod turns unready or restarts; a tarball and an upload succeed again within `open_duration` + 10 s of the return (`s3-start.sh` returns when the store stores a file); k6: every failure a tarball `503` inside the outage and the recovery bound; an `npm` command that overlaps the outage may fail (with the `503`), every other one exits 0 and every `npm ci` loop completes one after it ([Q-STOR-148](../spec/storage.md#q-stor-148--what-the-npm-loops-may-see-of-an-object-store-outage)); every acknowledged publish installs |
 | `TestHASuite_ObjectStoreOutage`, 5 min | as above; a `packages` pod deleted 60 s into the outage | as above | as above, and: the replacement pod is not ready at any of the samples taken every 2 s while the store is down (at least 20) and its restart count stays 0 (R-STOR-035); it is ready within 60 s of the return |
 | `TestHASuite_NodeLoss` | `docker stop` of the node `nodeLossNode` picks, 1 min into the load; the node comes back after the replacements and the scheduler lease are settled | all three | replacement pods ready (3 `api`, 3 `packages`, 4 `worker` outside the node) within `nodeFailureTolerationSeconds` + 60 s of the `unreachable` taint; the scheduler lease held by one live worker again, never by two connections (a 200 ms sample of `pg_locks`), within the server keepalive's `idle + interval x count` + 30 s of the stop when the holder was on the node; no `(task, scheduled_for)` slot twice; no job locked by an `api` or `packages` replica; the pods outside the node stay ready and are not restarted; k6 fails no request more than 10 s after the replacements are ready; a command running at the stop may fail with a network error, every later one exits 0 ([Q-HA-105](../spec/ha-and-helm.md#q-ha-105--what-the-npm-loops-may-see-of-a-lost-node)); the node, PostgreSQL (2 instances), Valkey and the Sentinels are whole again at the end |
@@ -1469,12 +1469,12 @@ not see met: a ready pod of the CloudNativePG operator, not being deleted, holds
 primary = current primary, every instance ready, phase "Cluster in healthy state"). It takes a ready standby on a schedulable node (a
 standby on a cordoned node is refused: the operator would switch the primary off it again), asks with a JSON patch that tests the primary
 it read (a switchover that started in between refuses the request), and returns when the new primary is current, every instance ready and
-the pod carries `cnpg.io/instanceRole=primary`, the label `trove-db-rw` selects.
+the pod carries `cnpg.io/instanceRole=primary`, the label `quader-db-rw` selects.
 
 **The prober of the outage test** asks once a second for a document of `npm-all` and `GET /api/v1/repositories` (metadata), for the 1 MiB tarball of the fixture (a blob),
 and every fifth second for an upload of a 64 MiB file to `generic-local` with `curl -T -H 'Expect: 100-continue'`, which records the bytes curl sent.
 
-**Dev scripts.** [s3-stop.sh](../../deploy/dev/s3-stop.sh) scales the Deployment `trove-s3` to 0 and waits for its pod; [s3-start.sh](../../deploy/dev/s3-start.sh) scales it to 1,
+**Dev scripts.** [s3-stop.sh](../../deploy/dev/s3-stop.sh) scales the Deployment `quader-s3` to 0 and waits for its pod; [s3-start.sh](../../deploy/dev/s3-start.sh) scales it to 1,
 waits for the pod and then until the filer stores and returns a file (the pod's readiness is a TCP check that the S3 gateway passes before the volume server has registered);
 [s3-outage.sh](../../deploy/dev/s3-outage.sh) (`make dev-s3-outage DURATION=60s`) is stop, sleep, start. The store's data directory is a PersistentVolumeClaim, so the
 objects survive a scale to 0 ([Q-STOR-147](../spec/storage.md#q-stor-147--the-dev-profiles-object-store-keeps-its-objects-over-an-outage)).
@@ -1499,7 +1499,7 @@ last run of each unless it says otherwise.
 | PostgreSQL primary loss | the fault took 31 s; 301 `npm` commands, all exit 0, 15 publishes installed; k6 18,146 requests, `document 200` 10,537, `document 304` 807, `tarball 200` 6,802, no failure, 345 dropped iterations (the requests that waited for the new primary); no pod unready, no restart |
 | Valkey primary loss | 145 s test; all `npm` commands exit 0; k6 only `2xx` and `304`; `/readyz` 200 throughout; three `packages` replicas reported `valkey` degraded for 4 to 5 samples (about a second apart; bound 20 s) |
 | node loss, a node with the operators (the first run, finding 4) | the node was declared lost 53 s after the stop, the replacements were ready 321 s after that (bound 120 s), the scheduler lease moved 374 s after the stop; every replica's `/readyz` answered `503` for about 5 minutes; 34 of 458 `npm` commands failed with the `503` |
-| node loss, `trove-worker` (an `api`, two `packages`, a `worker` and a `worker-vuln` pod, no operator or primary; standby elsewhere) | `docker stop` returned after 10 s; declared lost 44 s after the stop; the replacements were ready 65 s after the declaration and 109 s after the stop (bound 120 s); the scheduler lease, held by a worker on the node, moved to a live worker 109 s after the stop, never two holders in 1,711 samples; the pods outside the node were ready throughout and did not restart; 477 `npm` commands, 3 `npm ci` failed with `ECONNRESET` after 37 to 40 s (finding 5), 32 publishes installed; k6 39,642 requests, 781 without answer or `502`, none after the replacements were ready |
+| node loss, `quader-worker` (an `api`, two `packages`, a `worker` and a `worker-vuln` pod, no operator or primary; standby elsewhere) | `docker stop` returned after 10 s; declared lost 44 s after the stop; the replacements were ready 65 s after the declaration and 109 s after the stop (bound 120 s); the scheduler lease, held by a worker on the node, moved to a live worker 109 s after the stop, never two holders in 1,711 samples; the pods outside the node were ready throughout and did not restart; 477 `npm` commands, 3 `npm ci` failed with `ECONNRESET` after 37 to 40 s (finding 5), 32 publishes installed; k6 39,642 requests, 781 without answer or `502`, none after the replacements were ready |
 
 Not verified here: a run of the whole set in one go (the scenarios ran separately, in three groups, because the kind cluster is shared); the 5-minute outage after the fixes
 of findings 1 to 3 (the 30 s one ran after them); the node-loss test with the command rule of Q-HA-105 (the run above used `allExitZero` and failed on the three
@@ -1507,10 +1507,10 @@ commands); a run on a CI runner.
 
 ### Findings of the failure suite
 
-1. **Fixed in trove: a download that timed out in the transport answered `500`.** The first requests that met a store that was gone (the dial timed out after
+1. **Fixed in Quader: a download that timed out in the transport answered `500`.** The first requests that met a store that was gone (the dial timed out after
    5 s) became `500 internal` instead of `503 object_store_unavailable`: `mapStoreErr` returned any error that wraps `context.DeadlineExceeded` as it was, before it looked at
    the transient `StoreError` around it (8 of 3,379 failures in the 30 s run, 39 of 15,610 in the 5 minute run). Unit test `TestMapStoreErrTransportTimeout`.
-2. **Fixed in trove: `Retry-After` of an open circuit was always 5 s and uploads with `Expect: 100-continue` sent their whole body.** R-HA-010 states `open_duration` rounded up
+2. **Fixed in Quader: `Retry-After` of an open circuit was always 5 s and uploads with `Expect: 100-continue` sent their whole body.** R-HA-010 states `open_duration` rounded up
    (at least 5) and a refusal before the body; the dev profile's 10 s showed `Retry-After: 5`, and `Guard.Open` had no caller, so `curl -T` of 64 MiB sent 64 MiB and then received the `503`.
    Now the failure that opens the circuit, a call on the open circuit and a failing probe carry the circuit's `Retry-After`, and a write with `Expect: 100-continue` is refused
    by `Store.Ingest` before its body (the chain only marks the request; the first version refused in the chain before authorization and was corrected after the code review) ([Q-STOR-149](../spec/storage.md#q-stor-149--an-upload-that-waits-for-100-continue-is-refused-before-its-body-while-the-circuit-is-open)).
@@ -1523,7 +1523,7 @@ commands); a run on a CI runner.
    replacements could not become ready. `nodeLossNode` keeps the operators and the primaries off the node ([Q-HA-104](../spec/ha-and-helm.md#q-ha-104--the-node-of-the-node-loss-scenario)).
    A node with the standby alone was not run; the commits would wait for the detection time and the operator's reaction.
 5. **Observed, decided: `npm ci` commands that were running when a node stopped fail with `ECONNRESET`** ([Q-HA-105](../spec/ha-and-helm.md#q-ha-105--what-the-npm-loops-may-see-of-a-lost-node)).
-6. **Fixed in trove: the audit forward gave up after the remote's `readTimeoutMs` (15 s), not `npm.audit.timeout` (30 s).** The first run of `TestHASuite_AuditDrain` ended with `502 upstream_timeout` 15 s after
+6. **Fixed in Quader: the audit forward gave up after the remote's `readTimeoutMs` (15 s), not `npm.audit.timeout` (30 s).** The first run of `TestHASuite_AuditDrain` ended with `502 upstream_timeout` 15 s after
    the provider got the request, whatever the replica did ([Q-NPM-77](../spec/formats/npm.md#q-npm-77--the-wait-for-the-advisory-providers-answer-is-bounded-by-npmaudittimeout-alone)).
    Unit test `TestExchangeClientIsBoundByTheCallersContext`.
 7. **The dev profile: the object store lost its objects over a scale to 0** (`emptyDir`), after which the metadata named blobs the store did not have: every download of earlier
@@ -1555,15 +1555,15 @@ commands); a run on a CI runner.
 
 `make e2e SET=cold-crash` (`TestColdCrash`, [cold_crash_test.go](../../test/e2e/cold_crash_test.go); CI: leg `cold-crash` of the job `e2e-nuget` in the nightly
 workflow, edge port 8110, lane 1 after `nuget-ha`) is exit criterion E5.2 of the [roadmap](../coverage/roadmap.md): the cold-cache install with a replica
-killed mid-run, and `trove admin storage verify` after it. Decision: [Q-HA-220](../spec/ha-and-helm.md#q-ha-220--the-cold-install-crash-of-exit-criterion-e52-kills-one-packages-replica-once-the-upstream-has-served-a-share-of-the-packages-and-the-clients-go-through-the-edge).
+killed mid-run, and `quader admin storage verify` after it. Decision: [Q-HA-220](../spec/ha-and-helm.md#q-ha-220--the-cold-install-crash-of-exit-criterion-e52-kills-one-packages-replica-once-the-upstream-has-served-a-share-of-the-packages-and-the-clients-go-through-the-edge).
 The set needs both clients images and both counting test upstreams (the scatter profile, three `packages` replicas).
 
 | Subtest | What it does | Pass condition |
 |---|---|---|
-| `npm ci` | A fresh remote and virtual repository on the npm test upstream, whose tarballs answer 300 ms late; three clients (one per client pod, through the edge, not pinned) run `npm ci` of the reference lockfile (at least 500 packages) from an empty client cache; the test polls the upstream's counters and force-deletes a random ready `packages` pod once 100 tarballs were requested | No client had finished at the kill (otherwise the test fails and says the delay is too short); the three `npm ci` exit `0` with npm's default retries; the release settles to three `api`, three `packages` and four `worker` pods; `trove admin storage verify` exits `0` |
-| `dotnet restore` | The same with the NuGet test upstream (`.nupkg` files 400 ms late), `dotnet restore Reference.sln --no-cache`, the kill at 20 `.nupkg` requests | The three restores succeed and extract the same number of packages (at least 100); the release settles; `trove admin storage verify` exits `0` |
+| `npm ci` | A fresh remote and virtual repository on the npm test upstream, whose tarballs answer 300 ms late; three clients (one per client pod, through the edge, not pinned) run `npm ci` of the reference lockfile (at least 500 packages) from an empty client cache; the test polls the upstream's counters and force-deletes a random ready `packages` pod once 100 tarballs were requested | No client had finished at the kill (otherwise the test fails and says the delay is too short); the three `npm ci` exit `0` with npm's default retries; the release settles to three `api`, three `packages` and four `worker` pods; `quader admin storage verify` exits `0` |
+| `dotnet restore` | The same with the NuGet test upstream (`.nupkg` files 400 ms late), `dotnet restore Reference.sln --no-cache`, the kill at 20 `.nupkg` requests | The three restores succeed and extract the same number of packages (at least 100); the release settles; `quader admin storage verify` exits `0` |
 
-`requireStorageVerified` runs `trove admin storage verify` in the worker pod through `troveAdmin`, as an operator would, and requires exit status `0` and a last line with
+`requireStorageVerified` runs `quader admin storage verify` in the worker pod through `quaderAdmin`, as an operator would, and requires exit status `0` and a last line with
 no blob without its object, of another size or unchecked. The pod crash of `TestNPMHACrash` ends with it too. The test asserts no number of upstream requests: a
 replica killed while it fetches leaves a flight whose waiters fetch again, which the collapse tests (E2.2, E3.2) do not allow and this one does.
 ## The failure suite ha-faults
@@ -1577,13 +1577,13 @@ Q-HA-250 to Q-HA-258 on the same page.
 
 | Test | Injection | Pass conditions |
 |---|---|---|
-| `TestHAFaults_PostgresOutage` | [pg-stop.sh](../../deploy/dev/pg-stop.sh) `2m`: every instance of the CloudNativePG cluster fenced for 2 minutes, then unfenced | R-HA-052: no trove container restarts, `/healthz` 200 throughout; every replica turns unready and ready again; every pod ready and the edge answering within 30 s of the cluster reporting two ready instances; every k6 failure a `503` inside [start of the fence, healthy + 30 s]; an `npm` command that overlaps that window may fail, with the `503` in its output, every other one exits 0 and every `npm ci` loop completes a command afterwards ([Q-HA-251](../spec/ha-and-helm.md#q-ha-251--what-the-clients-may-see-of-the-database-at-0-instances-for-2-minutes)); every acknowledged publish installs |
-| `TestHAFaults_ValkeySentinelQuorumLoss` | [sentinel-scale.sh](../../deploy/dev/sentinel-scale.sh) `1`, 45 s, then `0`, 45 s, then `valkey-start.sh` | R-HA-057: `trove_valkey_sentinels_reachable` is 3 on every serving replica before, then 1 and 0 within `valkey.sentinel.refresh_interval` + 1 s of the scale returning (polled every 250 ms); every `npm` command exits 0, k6 only `2xx` and `304`, `/readyz` 200 and no replica reporting `valkey` degraded; `trove_valkey_primary_changes_total` unchanged (no failover) |
+| `TestHAFaults_PostgresOutage` | [pg-stop.sh](../../deploy/dev/pg-stop.sh) `2m`: every instance of the CloudNativePG cluster fenced for 2 minutes, then unfenced | R-HA-052: no Quader container restarts, `/healthz` 200 throughout; every replica turns unready and ready again; every pod ready and the edge answering within 30 s of the cluster reporting two ready instances; every k6 failure a `503` inside [start of the fence, healthy + 30 s]; an `npm` command that overlaps that window may fail, with the `503` in its output, every other one exits 0 and every `npm ci` loop completes a command afterwards ([Q-HA-251](../spec/ha-and-helm.md#q-ha-251--what-the-clients-may-see-of-the-database-at-0-instances-for-2-minutes)); every acknowledged publish installs |
+| `TestHAFaults_ValkeySentinelQuorumLoss` | [sentinel-scale.sh](../../deploy/dev/sentinel-scale.sh) `1`, 45 s, then `0`, 45 s, then `valkey-start.sh` | R-HA-057: `quader_valkey_sentinels_reachable` is 3 on every serving replica before, then 1 and 0 within `valkey.sentinel.refresh_interval` + 1 s of the scale returning (polled every 250 ms); every `npm` command exits 0, k6 only `2xx` and `304`, `/readyz` 200 and no replica reporting `valkey` degraded; `quader_valkey_primary_changes_total` unchanged (no failover) |
 | `TestHAFaults_ValkeyFlushAll` | three documents requested through two `packages` replicas while the upstream holds its answer for 4 s; `FLUSHALL` on the primary ([valkey-cli.sh](../../deploy/dev/valkey-cli.sh)) 2 s in | R-HA-057: every command exits 0, k6 only `2xx` and `304`, `/readyz` 200; every request for the documents answers 200 and the counting upstream recorded 1 or 2 requests for each ([Q-HA-255](../spec/ha-and-helm.md#q-ha-255--the-flushall-criterion-is-run-on-documents-that-are-in-flight)) |
-| `TestHAFaults_ValkeySlow` | [valkey-slow.sh](../../deploy/dev/valkey-slow.sh) `3m 2000`: `CLIENT PAUSE 2000 ALL` renewed after a 300 ms gap ([Q-HA-252](../spec/ha-and-helm.md#q-ha-252--the-slow-valkey-is-a-repeated-client-pause-on-the-primary-not-a-fault-proxy)) | R-HA-057: every command exits 0, k6 only `2xx` and `304`, `/readyz` 200; `trove_valkey_circuit_open` reached 1 on every `packages` replica; the k6 p99 during the fault at most the p99 before it + 2 x `valkey.command_timeout`; `degraded` cleared within `open_duration` + `health_check_interval` + 5 s of the end |
-| `TestHAFaults_ValkeyPlannedFailover` | `valkey-failover.sh` | R-HA-057: as `TestNPMHA`'s failover, and `trove_valkey_primary_changes_total` rose by one on every replica within 10 s of the request |
-| `TestHAFaults_ValkeyCredentialMismatch` | [valkey-credential.sh](../../deploy/dev/valkey-credential.sh) `break`: the default user's password changed on the Valkey pods and the trove pods' connections closed; a `packages` pod deleted; `fix` ([Q-HA-253](../spec/ha-and-helm.md#q-ha-253--the-valkey-credential-mismatch-is-injected-on-the-server-not-by-editing-the-secret)) | R-HA-007: `valkey` degraded on every serving replica, every command exits 0, k6 only `2xx` and `304`, `/readyz` 200 on the running pods; the replacement pod not ready at any of 15 samples 2 s apart; it turns ready and `degraded` clears after the fix |
-| `TestHAPooler_InstanceLoss` (set `ha-pooler`, `TROVE_POOLER=1`) | an instance of `trove-db-pooler-rw` and of `trove-db-pooler-control` deleted, gracefully and with `--grace-period=0 --force`, each time until the pooler has two ready instances on two nodes | R-HA-058: every command exits 0 and no trove container restarts; graceful: k6 only `2xx` and `304`, `/readyz` 200 throughout; forced: every k6 failure a `503` within `retry.max_elapsed` of the kill |
+| `TestHAFaults_ValkeySlow` | [valkey-slow.sh](../../deploy/dev/valkey-slow.sh) `3m 2000`: `CLIENT PAUSE 2000 ALL` renewed after a 300 ms gap ([Q-HA-252](../spec/ha-and-helm.md#q-ha-252--the-slow-valkey-is-a-repeated-client-pause-on-the-primary-not-a-fault-proxy)) | R-HA-057: every command exits 0, k6 only `2xx` and `304`, `/readyz` 200; `quader_valkey_circuit_open` reached 1 on every `packages` replica; the k6 p99 during the fault at most the p99 before it + 2 x `valkey.command_timeout`; `degraded` cleared within `open_duration` + `health_check_interval` + 5 s of the end |
+| `TestHAFaults_ValkeyPlannedFailover` | `valkey-failover.sh` | R-HA-057: as `TestNPMHA`'s failover, and `quader_valkey_primary_changes_total` rose by one on every replica within 10 s of the request |
+| `TestHAFaults_ValkeyCredentialMismatch` | [valkey-credential.sh](../../deploy/dev/valkey-credential.sh) `break`: the default user's password changed on the Valkey pods and the Quader pods' connections closed; a `packages` pod deleted; `fix` ([Q-HA-253](../spec/ha-and-helm.md#q-ha-253--the-valkey-credential-mismatch-is-injected-on-the-server-not-by-editing-the-secret)) | R-HA-007: `valkey` degraded on every serving replica, every command exits 0, k6 only `2xx` and `304`, `/readyz` 200 on the running pods; the replacement pod not ready at any of 15 samples 2 s apart; it turns ready and `degraded` clears after the fix |
+| `TestHAPooler_InstanceLoss` (set `ha-pooler`, `QUADER_POOLER=1`) | an instance of `quader-db-pooler-rw` and of `quader-db-pooler-control` deleted, gracefully and with `--grace-period=0 --force`, each time until the pooler has two ready instances on two nodes | R-HA-058: every command exits 0 and no Quader container restarts; graceful: k6 only `2xx` and `304`, `/readyz` 200 throughout; forced: every k6 failure a `503` within `retry.max_elapsed` of the kill |
 
 Spool exhaustion (R-HA-007, R-HA-052) is not an e2e run: `TestR_HA_052_SpoolExhaustionAnswers503AndEvictsNothing`
 ([test/integration/files](../../test/integration/files/spool_exhaustion_test.go)) runs a replica with a 6 MiB spool budget against the integration stack: an upload that declares 5 MiB while another holds
@@ -1591,7 +1591,7 @@ the budget answers `503` with `Retry-After` and leaves no spool file, one above 
 The dev profile's budget is 2 GiB per replica ([Q-HA-257](../spec/ha-and-helm.md#q-ha-257--where-each-remaining-row-of-r-ha-007-is-proven)). The backup and restore pod rows are `TestBackupDrain`'s subtests, whose
 names carry R-HA-007 and R-HA-052.
 
-**Not built.** An e2e run of the object store that rejects the credential (R-HA-007; unit tests prove the circuit and the log line, [H-793](../spec/ha-and-helm.md#h-793--the-dev-store-was-not-shown-to-reject-a-wrong-secret-key)). The firing of `TroveValkeySentinelsDegraded`: the profile `alerts` runs a Prometheus and waits for `TroveValkeyUnavailable` and the other alerts of its scenarios to fire, for this one only to resolve, so it is proven by `promtool test rules` ([Q-HA-256](../spec/ha-and-helm.md#q-ha-256--the-alerts-of-the-valkey-scenarios-are-proven-by-the-rule-tests-not-by-a-prometheus-in-the-e2e-run),
+**Not built.** An e2e run of the object store that rejects the credential (R-HA-007; unit tests prove the circuit and the log line, [H-793](../spec/ha-and-helm.md#h-793--the-dev-store-was-not-shown-to-reject-a-wrong-secret-key)). The firing of `QuaderValkeySentinelsDegraded`: the profile `alerts` runs a Prometheus and waits for `QuaderValkeyUnavailable` and the other alerts of its scenarios to fire, for this one only to resolve, so it is proven by `promtool test rules` ([Q-HA-256](../spec/ha-and-helm.md#q-ha-256--the-alerts-of-the-valkey-scenarios-are-proven-by-the-rule-tests-not-by-a-prometheus-in-the-e2e-run),
 H-791). A backup or restore pod cut off from the network (H-792). R-HA-058's other criteria in the pooler profile (the growth criterion of R-HA-016, the saturation run) are not part of `ha-pooler`.
 
 **First runs** (nightly dispatches 42587147342, 42595613488 and 42601429868 of the branch, 2026-11-09, on the large class beside other legs). Passed: `TestHAFaults_ValkeySentinelQuorumLoss` (the gauge followed the loss to 1 after 0.16 s and to 0 after 1.9 s, bound 6 s; back at 3 after 70 ms; 24 publishes installed),
@@ -1602,7 +1602,7 @@ The first run of the forced stop of the request pooler found a product defect: `
 **Dev scripts.** [pg-stop.sh](../../deploy/dev/pg-stop.sh) fences every instance (an `EXIT` trap removes the fence on any failure);
 [sentinel-scale.sh](../../deploy/dev/sentinel-scale.sh) stops the Valkey operator and scales the Sentinel StatefulSet (`valkey-start.sh` ends the fault);
 [valkey-slow.sh](../../deploy/dev/valkey-slow.sh) renews `CLIENT PAUSE` with a 300 ms gap from one connection inside the primary's pod;
-[valkey-credential.sh](../../deploy/dev/valkey-credential.sh) `break|fix` changes the default user's password on both Valkey pods and closes the trove pods' connections on the primary.
+[valkey-credential.sh](../../deploy/dev/valkey-credential.sh) `break|fix` changes the default user's password on both Valkey pods and closes the Quader pods' connections on the primary.
 
 ### Artifacts
 
@@ -1643,7 +1643,7 @@ The fixture (`nugetHAFx`, once per process):
   account holds 20, the bound per principal);
 - three packages `E2e.NugetHa<run>.Lib0..2` 1.0.0 in `nuget-ha-local`, pushed with `dotnet nuget push`;
 - the restore project: `Contoso.Text.Hosting` of the test upstream's corpus (a closure of 58 packages) and the three local packages, 61
-  packages in all (R-HA-059 asks for 60). One restore through `nuget-ha-all` fills trove's cache, so every loop runs with the cache warm
+  packages in all (R-HA-059 asks for 60). One restore through `nuget-ha-all` fills Quader's cache, so every loop runs with the cache warm
   and the test knows the number a restore extracts;
 - k6's input: the registration index and the version list of the three local packages and 17 remote ones, the `.nupkg` of 1.0.0 of about
   half of them, and the ETags and hashes read through the edge once.
@@ -1653,7 +1653,7 @@ The fixture (`nugetHAFx`, once per process):
 per command, and keep the output of a failed one. `dotnet` exits `0` on some failures, so two checks turn a silent failure into a record
 that fails the test: a restore that exits `0` but extracted other than the fixture's number of `.nupkg` files (exit status 96), and a push
 that exits `0` without "Your package was pushed." in its output (97); a missing archive is 95. A push whose acknowledgement is lost
-and which the client repeats answers `201` on the replay ([E3.6](../spec/formats/nuget.md), `trove_nuget_push_replayed_total`) and counts as one acknowledged push.
+and which the client repeats answers `201` on the replay ([E3.6](../spec/formats/nuget.md), `quader_nuget_push_replayed_total`) and counts as one acknowledged push.
 "Every acknowledged push installs afterwards" is one `dotnet restore` of a project of `PackageDownload` items with the exact version of each
 acknowledged push, through `nuget-ha-all`; the `.nupkg.sha512` the client writes for each version equals the hash of the archive the loop pushed.
 
@@ -1664,9 +1664,9 @@ acknowledged push, through `nuget-ha-all`; the `.nupkg.sha512` the client writes
 
 | Subtest | Injection | Load | Pass conditions |
 |---|---|---|---|
-| drain variant A (R-HA-059, R-ARCH-024) | `drain.sh <node>`, 2 minutes after the load started; 3 more minutes after it returns; six `system.probe` jobs of 330 steps | npm and NuGet | every `npm` and `dotnet` command exits `0`; every restore loop and `npm ci` loop ran a command during the drain; k6 (both scripts) only `2xx` and `304`, no connection error, no wrong tarball or package, no dropped iteration and 95 % of each rate; the p99 of all k6 requests from the first eviction until 2 minutes after the drain at most twice the warm-up's (the NuGet requests' own p99 is logged next to it); every acknowledged `npm publish` and `dotnet nuget push` installs; every probe job `succeeded` with `attempt` 1, at least one moved and resumed; no SIGKILL; no trove pod `Pending` for more than 60 s; `drain.sh` within 10 minutes and the node uncordoned; **R-ARCH-024**: the run reached 100 `npm ci`, 20 `npm publish`, 100 `dotnet restore` and 20 `dotnet nuget push` |
+| drain variant A (R-HA-059, R-ARCH-024) | `drain.sh <node>`, 2 minutes after the load started; 3 more minutes after it returns; six `system.probe` jobs of 330 steps | npm and NuGet | every `npm` and `dotnet` command exits `0`; every restore loop and `npm ci` loop ran a command during the drain; k6 (both scripts) only `2xx` and `304`, no connection error, no wrong tarball or package, no dropped iteration and 95 % of each rate; the p99 of all k6 requests from the first eviction until 2 minutes after the drain at most twice the warm-up's (the NuGet requests' own p99 is logged next to it); every acknowledged `npm publish` and `dotnet nuget push` installs; every probe job `succeeded` with `attempt` 1, at least one moved and resumed; no SIGKILL; no Quader pod `Pending` for more than 60 s; `drain.sh` within 10 minutes and the node uncordoned; **R-ARCH-024**: the run reached 100 `npm ci`, 20 `npm publish`, 100 `dotnet restore` and 20 `dotnet nuget push` |
 | PostgreSQL switchover | `failover.sh` after 1 minute; 1 minute after | npm and NuGet | every command exits `0`, every `npm ci` and restore loop ran a command during the switchover; k6 as above; every acknowledged publish and push installs; `/healthz` 200 on every pod, no restart |
-| Valkey failover | `valkey-failover.sh` after 1 minute; 1 minute after | npm and NuGet | as the switchover, and `/readyz` 200 on every pod throughout, and `trove_valkey_primary_changes_total` rises by exactly one on every `api`, `packages` and `worker` replica (R-HA-057) |
+| Valkey failover | `valkey-failover.sh` after 1 minute; 1 minute after | npm and NuGet | as the switchover, and `/readyz` 200 on every pod throughout, and `quader_valkey_primary_changes_total` rises by exactly one on every `api`, `packages` and `worker` replica (R-HA-057) |
 
 ### Artifacts
 
@@ -1686,16 +1686,16 @@ minutes for loading the NuGet clients image (2.3 GB).
 | Scenario | Result |
 |---|---|
 | fixtures | npm: 475 locked packages, 20 tokens, 23 s; NuGet: 61 packages per restore (58 from the upstream's corpus, 3 local), 12 tokens, 4 s |
-| drain variant A (`trove-worker3`: an `api`, a `packages`, a `worker` and a `worker-vuln` pod, a Sentinel) | `drain.sh` 38 s. npm: 543 `npm ci` and 34 publishes, all exit `0`, slowest 8.1 s. NuGet: 305 `dotnet restore` and 36 `dotnet nuget push`, all exit `0`, slowest 11.7 s; **R-ARCH-024: 543, 34, 305 and 36, against 100, 20, 100 and 20**. Every loop ran 6 to 8 commands (the push loop 4) during the drain. k6 npm 40,370 requests in 5 min 37 s (`document 200` 21,193, `document 304` 4,041, `tarball 200` 15,136), k6 NuGet 10,765 in 5 min 59 s (`registration` 2,156 and 2,152, `flat` 1,615 and 1,614 as `200` and `304`, `nupkg 200` 3,228); nothing else, no wrong tarball or package, 0 dropped. p99 of all k6 requests 741 ms in the warm-up (17,825 requests) and 789 ms from the first eviction until 2 minutes after the drain (23,649); alone: npm 771 and 845 ms, NuGet 358 and 400 ms. The 34 publishes and 36 pushes installed with their content. Six probe jobs, all `succeeded` with `attempt` 1, three moved and resumed at step 150 or 151. Longest `Pending` 1.4 s, four `Killing` events, no SIGKILL |
+| drain variant A (`quader-worker3`: an `api`, a `packages`, a `worker` and a `worker-vuln` pod, a Sentinel) | `drain.sh` 38 s. npm: 543 `npm ci` and 34 publishes, all exit `0`, slowest 8.1 s. NuGet: 305 `dotnet restore` and 36 `dotnet nuget push`, all exit `0`, slowest 11.7 s; **R-ARCH-024: 543, 34, 305 and 36, against 100, 20, 100 and 20**. Every loop ran 6 to 8 commands (the push loop 4) during the drain. k6 npm 40,370 requests in 5 min 37 s (`document 200` 21,193, `document 304` 4,041, `tarball 200` 15,136), k6 NuGet 10,765 in 5 min 59 s (`registration` 2,156 and 2,152, `flat` 1,615 and 1,614 as `200` and `304`, `nupkg 200` 3,228); nothing else, no wrong tarball or package, 0 dropped. p99 of all k6 requests 741 ms in the warm-up (17,825 requests) and 789 ms from the first eviction until 2 minutes after the drain (23,649); alone: npm 771 and 845 ms, NuGet 358 and 400 ms. The 34 publishes and 36 pushes installed with their content. Six probe jobs, all `succeeded` with `attempt` 1, three moved and resumed at step 150 or 151. Longest `Pending` 1.4 s, four `Killing` events, no SIGKILL |
 | PostgreSQL switchover | `failover.sh` 17 s. npm 219 `npm ci` and 15 publishes, NuGet 167 restores and 17 pushes, all exit `0`, slowest 15.7 s; every loop ran 2 or 3 commands during the switchover; k6 npm 16,776 and NuGet 4,865 requests, only `2xx` and `304`, p99 7.3 s and 7.2 s (requests held by the database retry); `/healthz` and `/readyz` 200 on every pod, no restart; every acknowledged publish and push installed |
-| Valkey failover | 2 s. npm 214 `npm ci` and 13 publishes, NuGet 159 restores and 15 pushes, all exit `0`, slowest 6.6 s; k6 npm 14,964 requests (p99 776 ms) and NuGet 4,409 (p99 354 ms), only `2xx` and `304`; `/readyz` 200 on every pod; `trove_valkey_primary_changes_total` +1 on each of the ten replicas |
+| Valkey failover | 2 s. npm 214 `npm ci` and 13 publishes, NuGet 159 restores and 15 pushes, all exit `0`, slowest 6.6 s; k6 npm 14,964 requests (p99 776 ms) and NuGet 4,409 (p99 354 ms), only `2xx` and `304`; `/readyz` 200 on every pod; `quader_valkey_primary_changes_total` +1 on each of the ten replicas |
 | the same drain in two runs before | 474 `npm ci`, 34 publishes, 283 restores, 37 pushes (drain.sh 39 s, p99 874 and 897 ms); 482, 34, 278, 36 |
 
 **CPU the scenario uses** (a sample of `docker stats` every few seconds over the 5 minutes of the drain's load, a mean over 64 samples):
 
 | Where | Mean | Peak |
 |---|---|---|
-| `trove-control-plane` (the six client pods with their forwarders, the driver pod, both HAProxy Ingress pods, the API server) | 10.3 cores | 12.8 |
+| `quader-control-plane` (the six client pods with their forwarders, the driver pod, both HAProxy Ingress pods, the API server) | 10.3 cores | 12.8 |
 | the three worker nodes together (the `api`, `packages`, `worker` pods, PostgreSQL, Valkey, S3, the test upstreams) | 5.0 cores | |
 | the two k6 containers | 0.8 cores | 1.3 |
 | **all** | **16.1 cores** (median 16.1) | 17.1 |
@@ -1870,11 +1870,11 @@ write the new digest there and run `make npm-reference`; the same commit carries
 ### In the cluster
 
 [deploy/dev/npmstub.yaml](../../deploy/dev/npmstub.yaml): Service `npmstub` on 443, one replica (the counters are in
-memory), a certificate of the dev CA for `npmstub.<ns>.svc` and, for the mirror's feed, `registry.npmjs.org` and `replicate.npmjs.com` ([the mirror tests](#the-mirror-tests)), the control token in Secret `trove-npmstub` (key
+memory), a certificate of the dev CA for `npmstub.<ns>.svc` and, for the mirror's feed, `registry.npmjs.org` and `replicate.npmjs.com` ([the mirror tests](#the-mirror-tests)), the control token in Secret `quader-npmstub` (key
 `control-token`, generated by the secret operator), TCP probes (an HTTP probe would be counted). `e2e.sh` builds
-(`make npm-stub-image`), loads and applies it when `TROVE_E2E_NPMSTUB=1` and exports `TROVE_E2E_NPMSTUB_HOST`. trove
+(`make npm-stub-image`), loads and applies it when `QUADER_E2E_NPMSTUB=1` and exports `QUADER_E2E_NPMSTUB_HOST`. Quader
 trusts the dev CA for upstreams through `proxy.outbound.tls.ca_files` (values-dev.yaml sets it to the `ca.crt` of Secret
-`trove-keycloak-tls`, which cert-manager fills with the dev CA that also signs the stub's certificate). Not verified in this change: that the default egress policy admits the pod address of the
+`quader-keycloak-tls`, which cert-manager fills with the dev CA that also signs the stub's certificate). Not verified in this change: that the default egress policy admits the pod address of the
 stub (the cluster was in use by another agent), and the pod itself (only the image was run locally).
 
 ### The reference lockfile
@@ -1902,10 +1902,10 @@ drain criterion): variants A to E of the drain test under the whole load of R-HA
 | `nuget-ha` | `TestNuGetHA` | A, and the PostgreSQL switchover and Valkey failover of R-HA-052 | profile `drain`, both client pods | job `e2e-nuget`, lane 1 |
 | `drain-load` | `TestDrainLoad` | B, C, E in one cluster (local) | profile `drain`, both client pods | none: CI runs the three legs below |
 | `drain-load-b`, `-c`, `-e` | `TestDrainLoad`, one subtest each | B, C, E | as `drain-load`, a cluster per variant | job `e2e-nuget`, legs after `nuget-ha` (`max-parallel: 1`), lane 1, ports 8113, 8114, 8115 |
-| `drain-load-pooler` | `TestDrainLoadPooler` | D | profile `drain` and `TROVE_POOLER=1` | job `e2e-drain-pooler`, lane 2 after `e2e-edge`, port 8116 |
+| `drain-load-pooler` | `TestDrainLoadPooler` | D | profile `drain` and `QUADER_POOLER=1` | job `e2e-drain-pooler`, lane 2 after `e2e-edge`, port 8116 |
 
 The profile `drain` ([values-drain.yaml](../../deploy/dev/values-drain.yaml), `up.sh`, `lib.sh`) is the scatter profile with
-`storage.gc.grace_period: 0s`; the sets export `TROVE_E2E_SCATTER_PROFILE=drain`, which `useScatter` ([m1_env_test.go](../../test/e2e/m1_env_test.go))
+`storage.gc.grace_period: 0s`; the sets export `QUADER_E2E_SCATTER_PROFILE=drain`, which `useScatter` ([m1_env_test.go](../../test/e2e/m1_env_test.go))
 passes to `up.sh` in place of `scatter`.
 
 **The flow of one drain**, in `drainUnderLoad`:
@@ -1928,12 +1928,12 @@ bytes (`dataFile`, as E1.13) in `generic-local/drain-load/1gib.bin`, uploaded on
 
 | Probe | Command | Started | Conditions |
 |---|---|---|---|
-| download 0 | `curl --limit-rate 2M -C - -D <dump> -o <file> .../1gib.bin`, started again (the partial file removed) until the first response's `X-Trove-Replica` names the `packages` pod on the drained node; after a cut the client runs the same command again (2 s later, at most six invocations, a dump per invocation) | with the load | exit `0` of the last invocation, SHA-256 of the file, exactly one cut and it by that pod, the next invocation answered `206`; no response other than `200` and `206` |
+| download 0 | `curl --limit-rate 2M -C - -D <dump> -o <file> .../1gib.bin`, started again (the partial file removed) until the first response's `X-Quader-Replica` names the `packages` pod on the drained node; after a cut the client runs the same command again (2 s later, at most six invocations, a dump per invocation) | with the load | exit `0` of the last invocation, SHA-256 of the file, exactly one cut and it by that pod, the next invocation answered `206`; no response other than `200` and `206` |
 | download 1 | the same, whichever replica answers | with the load | exit `0`, SHA-256; at most one cut per pod, and only by a pod the pod watch saw evicted |
 
 | upload 0 to 3 | `curl -T` of 400 MiB (`dataFile`) at `--limit-rate 2M` to `drain-load/up-<run>-<variant>-<i>.bin`, repeated from the start after a failure, at most three attempts | right before the fault | the last attempt answers `200`/`201`; at most one failed attempt, ending after the first eviction and after at least 30 s (a faster failure is a refusal, F-119, and fails the test); the file downloads with the SHA-256 of the source |
 
-A cut is an invocation of curl that received a body (`200`, `206`) and ended with an error; the pod named in its last response (`X-Trove-Replica`) cut it
+A cut is an invocation of curl that received a body (`200`, `206`) and ended with an error; the pod named in its last response (`X-Quader-Replica`) cut it
 (`responseBlocks` reads the dump). The command of the table has `--retry 5 --retry-all-errors`; curl's retry starts at byte 0 and does not resume
 (the first run: the answer to the retry was `200` and the probe took 15m52s), so the probe has no `--retry` and the next invocation is the client's resume
 ([Q-HA-241](../spec/ha-and-helm.md#q-ha-241--the-long-transfer-probes-hold-one-download-on-the-evicted-pod-and-the-uploads-are-repeated-by-the-client)). An evicted pod keeps serving a
@@ -2087,19 +2087,19 @@ stub.Publish("Contoso.Util", "2.2.0", nil)
 
 [deploy/dev/nugetstub.yaml](../../deploy/dev/nugetstub.yaml): the Services `nugetstub` (API host: index, registrations) and
 `nugetstub-content` (content host: flat container, search) on 443 in front of one pod (the counters are in memory), a certificate
-of the dev CA for both names, the control token in Secret `trove-nugetstub` (key `control-token`), TCP probes (an HTTP probe would
+of the dev CA for both names, the control token in Secret `quader-nugetstub` (key `control-token`), TCP probes (an HTTP probe would
 be counted). `deploy/dev/e2e.sh` (marker `M3 nuget-stub`) builds the image (`make nuget-stub-image`), loads it, applies the
-manifest and restarts the Deployment when `TROVE_E2E_NUGETSTUB=1` (the sets `nuget`, `nuget-closing` and `nuget-ha` export it), and
-exports `TROVE_E2E_NUGETSTUB_HOST` (`nugetstub.<ns>.svc`) and `TROVE_E2E_NUGETSTUB_CONTENT_HOST` (`nugetstub-content.<ns>.svc`).
+manifest and restarts the Deployment when `QUADER_E2E_NUGETSTUB=1` (the sets `nuget`, `nuget-closing` and `nuget-ha` export it), and
+exports `QUADER_E2E_NUGETSTUB_HOST` (`nugetstub.<ns>.svc`) and `QUADER_E2E_NUGETSTUB_CONTENT_HOST` (`nugetstub-content.<ns>.svc`).
 
-- The upstream URL of a remote repository under test is `https://$TROVE_E2E_NUGETSTUB_HOST/v3/index.json`; its `extraHosts`
-  name `$TROVE_E2E_NUGETSTUB_CONTENT_HOST` (R-NUGET-014), because the index names that second host for the files and the search.
-- trove trusts the dev CA for upstreams through `proxy.outbound.tls.ca_files` ([values-dev.yaml](../../deploy/dev/values-dev.yaml): the
-  `ca.crt` of Secret `trove-keycloak-tls`, which cert-manager fills with the dev CA that signs the stub's certificate). Nothing was
+- The upstream URL of a remote repository under test is `https://$QUADER_E2E_NUGETSTUB_HOST/v3/index.json`; its `extraHosts`
+  name `$QUADER_E2E_NUGETSTUB_CONTENT_HOST` (R-NUGET-014), because the index names that second host for the files and the search.
+- Quader trusts the dev CA for upstreams through `proxy.outbound.tls.ca_files` ([values-dev.yaml](../../deploy/dev/values-dev.yaml): the
+  `ca.crt` of Secret `quader-keycloak-tls`, which cert-manager fills with the dev CA that signs the stub's certificate). Nothing was
   added for NuGet.
 - Verified on the dev cluster (2026-11-01): the stub starts, a client pod of the NuGet image restores and installs `Contoso.Util`
-  from `https://nugetstub.trove.svc/v3/index.json` with both clients (so the CA, the two Services and the name in the documents
-  work from inside the cluster), and the `ca.crt` of Secret `trove-keycloak-tls` is the dev CA. Not verified: a fetch by a trove
+  from `https://nugetstub.quader.svc/v3/index.json` with both clients (so the CA, the two Services and the name in the documents
+  work from inside the cluster), and the `ca.crt` of Secret `quader-keycloak-tls` is the dev CA. Not verified: a fetch by a Quader
   replica (the cluster ran a release without the NuGet format).
 
 The CI jobs for the stub's reference check are added with the CI work package.
@@ -2135,9 +2135,9 @@ test/e2e/nugetclients/
   the test upstream and reaches the dev edge through the forwarder (linux/arm64); push, install, search and delete by nuget.exe on Mono
   pass against the local repositories ([The NuGet tests](#the-nuget-tests)). Not verified: linux/amd64 and the symbol push
   by nuget.exe on Mono.
-- **Trust.** `entrypoint.sh` writes `$SSL_CERT_FILE` (`/tmp/trove-ca/bundle.crt`: the system roots plus the CA mounted at
-  `/etc/trove-ca/ca.crt`), runs `cert-sync --user` on it (the Mono store below `$HOME/.config/.mono/certs`, `HOME=/work`), then writes
-  `/tmp/trove-ca/ready`, which the readiness probe checks, and executes `fwd`. The pod sets `SSL_CERT_FILE` in its environment,
+- **Trust.** `entrypoint.sh` writes `$SSL_CERT_FILE` (`/tmp/quader-ca/bundle.crt`: the system roots plus the CA mounted at
+  `/etc/quader-ca/ca.crt`), runs `cert-sync --user` on it (the Mono store below `$HOME/.config/.mono/certs`, `HOME=/work`), then writes
+  `/tmp/quader-ca/ready`, which the readiness probe checks, and executes `fwd`. The pod sets `SSL_CERT_FILE` in its environment,
   so every `kubectl exec` has it. `smoke.sh` checks both runtimes both ways: with the CA a restore and an install succeed over
   TLS, without it (system roots only; an empty Mono store) both fail on the certificate.
 - **State per test.** `NUGET_PACKAGES` (the global packages folder) and `NUGET_HTTP_CACHE_PATH` default to folders in `HOME`
@@ -2147,26 +2147,26 @@ test/e2e/nugetclients/
   (without it `dotnet` prints a workload warning on a read-only install) and `NUGET_XMLDOC_MODE=skip` are set in the image.
 - **The base URL is the real one**, as for npm: `fwd -listen 127.0.0.1:<edge port> -to <target>` is the only process; the clients
   use `https://localhost:<port>/api/nuget/<projectKey>/<repoKey>/v3/index.json` and verify `localhost` against the dev CA. The pod also maps
-  `packages.trove.localhost` to the forwarder (the customers endpoint of the dev profile). `TROVE_E2E_NUGET_CLIENTS_PODS` (default 1;
-  3 for the sets `nuget*`), `TROVE_E2E_NUGET_CLIENTS_TARGET` and `TROVE_E2E_NUGET_CLIENTS_IMAGE_BUILD=0` act as their npm
-  counterparts. The pods are `trove-e2e-nuget-<i>`, the ConfigMap with the CA `trove-e2e-nuget-ca`; the tests read
-  `TROVE_E2E_NUGET_CLIENTS_POD_PREFIX` and `TROVE_E2E_NUGET_CLIENTS_PODS`.
-- **Running a client.** `kubectl -n trove exec trove-e2e-nuget-0 -- dotnet --version`, `... -- nuget help`. The Go side is
+  `packages.quader.localhost` to the forwarder (the customers endpoint of the dev profile). `QUADER_E2E_NUGET_CLIENTS_PODS` (default 1;
+  3 for the sets `nuget*`), `QUADER_E2E_NUGET_CLIENTS_TARGET` and `QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD=0` act as their npm
+  counterparts. The pods are `quader-e2e-nuget-<i>`, the ConfigMap with the CA `quader-e2e-nuget-ca`; the tests read
+  `QUADER_E2E_NUGET_CLIENTS_POD_PREFIX` and `QUADER_E2E_NUGET_CLIENTS_PODS`.
+- **Running a client.** `kubectl -n quader exec quader-e2e-nuget-0 -- dotnet --version`, `... -- nuget help`. The Go side is
   `nugetClientExec` (output, fails the test on a non-zero exit) and `nugetClientTry` (output of both streams plus the error, for a
   command expected to fail) in [nuget_clients_test.go](../../test/e2e/nuget_clients_test.go). `dotnet package search` hides the
   HTTP status of a failing source; `dotnet restore` prints it (`NU1301 ... 401 (Unauthorized)`), and `dotnet` exits 0 on some
   failures, so a test reads the output as well as the exit code.
 - **The smoke test.** `TestNuGetClients` has three subtests: `dotnet --version` equals the tag of `E2E_NUGETCLIENTS_SDK_IMAGE`,
   `nuget help` starts with `NuGet Version: <pinned>.`, and both clients, asked for a source on the dev edge, get an HTTP status of
-  trove (401 or 404) and no certificate error. Without the change (no pod, wrong CA) the third subtest fails with the certificate error
+  Quader (401 or 404) and no certificate error. Without the change (no pod, wrong CA) the third subtest fails with the certificate error
   of the clients: seen on 2026-11-01 when `.dev/pki/ca.crt` was the CA of a cluster that had been recreated.
 - **A stale CA looks like a client bug.** `.dev/pki/ca.crt` is written by `up.sh` and is not refreshed when the cluster is
-  recreated another way; compare with `kubectl -n trove get secret trove-dev-ca -o jsonpath='{.data.ca\.crt}' | base64 -d`, or set
-  `TROVE_DEV_CA_FILE`.
+  recreated another way; compare with `kubectl -n quader get secret quader-dev-ca -o jsonpath='{.data.ca\.crt}' | base64 -d`, or set
+  `QUADER_DEV_CA_FILE`.
 - **CI.** The job `e2e-nuget` of [releasing.md](releasing.md#ci) runs the set `nuget` on every change (edge port 8088, cluster
-  `trove-nuget-<run id>`), the set `nuget-closing` on a closing dispatch (port 8089) and the set `nuget-ha` nightly (port 8090, in
+  `quader-nuget-<run id>`), the set `nuget-closing` on a closing dispatch (port 8089) and the set `nuget-ha` nightly (port 8090, in
   [performance.yml](../../.github/workflows/performance.yml)). The job builds the clients image with `make nuget-clients-image` first
-  and sets `TROVE_E2E_NUGET_CLIENTS_IMAGE_BUILD=0`, so the set loads it instead of building it again. The fuzz targets of the closing run
+  and sets `QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD=0`, so the set loads it instead of building it again. The fuzz targets of the closing run
   are in [releasing.md](releasing.md#ci) too.
 - **Sets that name no test yet.** `nuget-closing` is declared `empty_ok` in [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) and names `TestNuGetClosing` since phase 4; `nuget-ha` was one too until `TestNuGetHA` landed ([Drain and failover under NuGet load](#drain-and-failover-under-nuget-load)).
   While no `func Test...` in `test/e2e/*_test.go` matches the expression of an `empty_ok` set, the script logs a notice and exits 0 before it looks for a cluster
@@ -2205,7 +2205,7 @@ different web replicas. Verified on the dev cluster (linux/arm64, .NET SDK of `E
   arguments return the same bytes for the whole run, another description makes other bytes of one version. `nugetPackSymbols` adds
   `IncludeSymbols` and the `snupkg` format; `dotnet nuget push` pushes the `.snupkg` that lies next to the `.nupkg` by itself.
 - **Credentials** come from a `nuget.config` that is written the way the setup snippets print it (`<clear />`, user name `token`,
-  `ClearTextPassword` = `%TROVE_TOKEN%`, which both clients expand from the environment, on Mono too). A scenario never touches the
+  `ClearTextPassword` = `%QUADER_TOKEN%`, which both clients expand from the environment, on Mono too). A scenario never touches the
   user's `NuGet.Config` in `HOME`, which all scenarios of a pod share.
 - **The push without credentials** needs an anonymously readable feed, because the client reads the service index first
   ([Q-NUGET-65](../spec/formats/nuget.md#q-nuget-65--how-the-push-criteria-of-r-nuget-012-get-an-anonymously-readable-feed)).
@@ -2237,7 +2237,7 @@ different web replicas. Verified on the dev cluster (linux/arm64, .NET SDK of `E
 ### Remote and virtual repositories, E3.2
 
 - **The pair per test** ([Q-NUGET-68](../spec/formats/nuget.md#q-nuget-68--the-repositories-of-the-remote-and-virtual-e2e-tests-a-fresh-pair-per-test-and-a-short-circuit-period-where-the-test-stops-the-upstream)).
-  `upstreamRepos(t, purpose, settings)` creates `nuget-<purpose>-<run>-remote` (the URL `https://$TROVE_E2E_NUGETSTUB_HOST/v3/index.json`, the content
+  `upstreamRepos(t, purpose, settings)` creates `nuget-<purpose>-<run>-remote` (the URL `https://$QUADER_E2E_NUGETSTUB_HOST/v3/index.json`, the content
   host in `extraHosts`) and `…-all` (members `nuget-e2e` and the remote, deployment target `nuget-e2e`), a read policy for the publisher, and waits until
   every replica reads both. The repositories go with `t.Cleanup`. The circuit of a remote opens after 5 failures for 300 s: the stopped-upstream
   test creates its remote with threshold 3 and 5 s, or the repository would stay refused for five minutes after the upstream is back.
@@ -2266,11 +2266,11 @@ different web replicas. Verified on the dev cluster (linux/arm64, .NET SDK of `E
 ### The dropped answer (E3.6)
 
 `TestNuGetPushRetry` makes the Ingress drop the answer of one push. [dropOneAnswerOf](../../test/e2e/npm_replicas_test.go) puts HAProxy rules into the
-`config-backend` annotation of trove's Ingress (`http-response silent-drop` for the first answer of a `PUT` whose path ends in `/v3/package` or `/v3/package/`
+`config-backend` annotation of Quader's Ingress (`http-response silent-drop` for the first answer of a `PUT` whose path ends in `/v3/package` or `/v3/package/`
 with status 201, counted in a stick table; [Q-NUGET-69](../spec/formats/nuget.md#q-nuget-69--how-the-edge-drops-the-answer-of-a-push-the-ingress-rule-of-the-npm-test-with-a-path-and-a-status)).
 The 201 matters: a push first draws the 401 of the credential challenge, and that answer is not the one to lose. The client prints "The response ended
 prematurely", repeats the push, and the repeat finds the version stored; `dotnet nuget push` exits 0. The evidence that it was repeated is
-`trove_nuget_push_replayed_total`, summed over the `api` and `packages` pods, rising. The edge has two HAProxy pods with a stick table each, so two answers are lost and
+`quader_nuget_push_replayed_total`, summed over the `api` and `packages` pods, rising. The edge has two HAProxy pods with a stick table each, so two answers are lost and
 the third attempt is the one that succeeds (the client tries three times, R-NUGET-032). The test restores the annotation at its end.
 
 ### The customer endpoint (E3.7)
@@ -2278,14 +2278,14 @@ the third attempt is the one that succeeds (the client tries three times, R-NUGE
 `TestNuGetEndpoint` ([Q-NUGET-71](../spec/formats/nuget.md#q-nuget-71--the-customer-endpoint-test-a-package-id-of-the-run-an-exact-range-for-the-hidden-version-and-what-the-clients-can-and-cannot-show))
 pushes four versions of `E2e.Nuget<run>.Sdk` and one of another package to `nuget-customers`, creates the exposure rule (from 2.0, no pre-releases), a service
 account `e2e-nuget-cust` with `read` and a token bound to `customers`, waits until all three replicas serve only the exposed versions on their `:8443` listener,
-and then checks, through the edge and the host `packages.trove.localhost` (the pods resolve it to their forwarder): the version list, the three registration
+and then checks, through the edge and the host `packages.quader.localhost` (the pods resolve it to their forwarder): the version list, the three registration
 hives and the search list exactly 2.0.0 and 2.1.0; the `.nupkg` of 1.9.0 is a 404; the service index has no `PackagePublish` and the index of the default endpoint has;
 `PUT <feed>/v3/package` answers 403 `endpoint_read_only`, and `dotnet nuget push` fails in the client. `dotnet restore` of `*` takes 2.1.0; `dotnet add package`
 of `[1.9.0]` and of `[9.9.9]` both fail with `NU1102`; nuget.exe restores a `packages.config` with 2.1.0 and fails on one with 1.9.0.
 
 ### The closing run
 
-`make e2e SET=nuget-closing` runs `TestNuGetClosing` (it fails, never skips, without `TROVE_E2E_NUGET_CLOSING=1`, which the set exports). With Valkey and the Sentinels
+`make e2e SET=nuget-closing` runs `TestNuGetClosing` (it fails, never skips, without `QUADER_E2E_NUGET_CLOSING=1`, which the set exports). With Valkey and the Sentinels
 stopped (`withValkeyStopped`, every web pod ready with `valkey` degraded): the documents of a package on all three replicas; 51 iterations of `dotnet nuget push` of a
 `.nupkg` with its `.snupkg` through a virtual repository, each followed by `dotnet restore --no-http-cache` of the package, 17 on each of three clients at once
 (also once with Valkey running); the cold restore of the reference solution with at most three requests per `.nupkg` (one per replica); twelve concurrent restores
@@ -2323,7 +2323,7 @@ Run on the dev cluster on 2026-11-02 after the fix wave of phase 4 (`make e2e SE
 - nuget.exe installs through the remote; the restore through the virtual repository extracts both packages.
 - The registration of `newtonsoft.json` through the remote and through the virtual repository: 86 versions in 2 inlined pages,
   978 addresses, 287 web links left out.
-- The registration of `serilog` through both: 602 versions in 10 pages of trove's own, all listed by address, every address the
+- The registration of `serilog` through both: 602 versions in 10 pages of Quader's own, all listed by address, every address the
   serving repository's.
 
 At e0c2cfa, before the fix wave, three of the cases failed: the search listed nothing (the forwarded search was not built), and
@@ -2463,7 +2463,7 @@ defer run.Close()
 
 tok, _ := stub.Mint(oidcstub.MintOptions{Claims: map[string]any{"ref": "main", "ref_type": "branch"}})
 stub.Rotate()                                                // a new key; the old stays published
-tok2, _ := stub.Mint(oidcstub.MintOptions{})                 // signed by the new key: an unknown kid for trove
+tok2, _ := stub.Mint(oidcstub.MintOptions{})                 // signed by the new key: an unknown kid for quader
 _ = stub.RemoveKey(oldKID)                                   // revoke
 _ = stub.SetFault(oidcstub.Fault{Delay: oidcstub.Duration(4 * time.Second), Target: oidcstub.TargetJWKS})
 fetches := stub.Counts().JWKS
@@ -2494,24 +2494,24 @@ defaults of `net/http`, no connection limit, `ReadHeaderTimeout` 10 s, `IdleTime
 `kubectl port-forward` to the Service, and that path is what a burst of new connections stresses: every new TLS connection is a new forwarded
 stream. So a test that needs many tokens at once does not mint from every job at the same moment: `oidcDouble.mintAll`
 ([ci_env_test.go](../../test/e2e/ci_env_test.go)) mints them before the measured window, `mintWorkers` (6) at a time over a pooled keep-alive
-client, and fails the test if one mint is refused; `TestCIHAPodDelete` uses it, so its window holds trove's exchanges only.
+client, and fails the test if one mint is refused; `TestCIHAPodDelete` uses it, so its window holds Quader's exchanges only.
 
 ### In the cluster
 
 [deploy/dev/oidcstub.yaml](../../deploy/dev/oidcstub.yaml): Service `${STUB}` with port 443 (issuer), 8444 (control) and 8080 (plain HTTP,
 the target of the redirect-out-of-TLS fault), one replica (keys and counters are in memory), a certificate of the dev CA for
-`${STUB}.<ns>.svc`, the control token in Secret `trove-${STUB}` (key `control-token`, generated by the secret operator, handed to the container
+`${STUB}.<ns>.svc`, the control token in Secret `quader-${STUB}` (key `control-token`, generated by the secret operator, handed to the container
 as `OIDCSTUB_CONTROL_TOKEN`), TCP probes. The issuer it announces is `https://${STUB}.<ns>.svc` (`-public-url`). `deploy/dev/e2e.sh` (marker
 `M4 oidc-stub`) builds the image (`make oidc-stub-image`), loads it, applies the manifest once per double and restarts the Deployment when
-`TROVE_E2E_OIDCSTUB=1`: `STUB=oidcstub` always, and `STUB=oidcstub-single` as well when `TROVE_E2E_OIDCSTUB_SINGLE=1` (the second issuer of the
-single-use tests, with keys, counters and control token of its own). It exports `TROVE_E2E_OIDCSTUB_HOST` (`oidcstub.<ns>.svc`),
-`TROVE_E2E_OIDCSTUB_CONTROL_URL` (`https://oidcstub.<ns>.svc:8444`) and `TROVE_E2E_OIDCSTUB_SINGLE_HOST`. The sets `ci`, `ci-ha`, `access-long`,
-`access` and `full` set the switch. trove trusts the dev CA through `trustedCA` ([values-dev.yaml](../../deploy/dev/values-dev.yaml), R-HA-043, mounted at `/etc/trove/ca/ca.crt`),
-and the CI issuer names the same file as its `ca_bundle_ref` (`file:/etc/trove/ca/ca.crt`), as an instance behind a private CA is
+`QUADER_E2E_OIDCSTUB=1`: `STUB=oidcstub` always, and `STUB=oidcstub-single` as well when `QUADER_E2E_OIDCSTUB_SINGLE=1` (the second issuer of the
+single-use tests, with keys, counters and control token of its own). It exports `QUADER_E2E_OIDCSTUB_HOST` (`oidcstub.<ns>.svc`),
+`QUADER_E2E_OIDCSTUB_CONTROL_URL` (`https://oidcstub.<ns>.svc:8444`) and `QUADER_E2E_OIDCSTUB_SINGLE_HOST`. The sets `ci`, `ci-ha`, `access-long`,
+`access` and `full` set the switch. Quader trusts the dev CA through `trustedCA` ([values-dev.yaml](../../deploy/dev/values-dev.yaml), R-HA-043, mounted at `/etc/quader/ca/ca.crt`),
+and the CI issuer names the same file as its `ca_bundle_ref` (`file:/etc/quader/ca/ca.crt`), as an instance behind a private CA is
 registered (R-CI-001, Q-CI-31).
 
 Verified on kind (2026-11-03): the manifest applies and the pod serves; the certificate of the dev CA takes about 15 s to be issued on the first start;
-the default egress policy admits the pod address of the double (trove fetched discovery and keys from it in every run of the sets `ci` and `ci-ha`).
+the default egress policy admits the pod address of the double (Quader fetched discovery and keys from it in every run of the sets `ci` and `ci-ha`).
 
 ### Validating the double against a real GitLab
 
@@ -2552,17 +2552,17 @@ In every case: all claims are strings except `aud`, `exp`, `iat`, `nbf` and `run
 instance runners take untagged jobs:
 
 ```sh
-export TROVE_GITLAB_URL=https://gitlab.example.com        # example: the instance's external URL, which is its issuer
-export TROVE_GITLAB_TOKEN=...                             # example: a personal access token of an administrator, scope api
-export TROVE_GITLAB_CA_FILE=/path/to/internal-ca.pem      # example, only for an instance behind an internal CA
+export QUADER_GITLAB_URL=https://gitlab.example.com        # example: the instance's external URL, which is its issuer
+export QUADER_GITLAB_TOKEN=...                             # example: a personal access token of an administrator, scope api
+export QUADER_GITLAB_CA_FILE=/path/to/internal-ca.pem      # example, only for an instance behind an internal CA
 make oidc-fixtures                                        # about 5 minutes; then the double's fixture tests run
 git diff test/oidcstub/testdata                           # IDs, times and SHAs change on every run; a changed claim name or type is the finding
 ```
 
-The recorder ([cmd/record-gitlab](../../test/oidcstub/cmd/record-gitlab)) creates the group `trove-oidc-validation` on the first run and reuses
+The recorder ([cmd/record-gitlab](../../test/oidcstub/cmd/record-gitlab)) creates the group `quader-oidc-validation` on the first run and reuses
 it afterwards. The group holds the subgroups `billing` and `partner`, the project `billing/invoice-api` with the protected tag rule `v*`, the
 environments `production` (protected) and `staging`, an inactive pipeline schedule, and the fork `partner/invoice-api`. It also creates the
-user `trove-oidcv-partner`, a Reporter of the parent and a Maintainer of `partner`, whose merge request GitLab cannot move into the parent. It
+user `quader-oidcv-partner`, a Reporter of the parent and a Maintainer of `partner`, whose merge request GitLab cannot move into the parent. It
 commits `.gitlab-ci.yml` to `main`, starts one pipeline per case, closes its merge requests and writes the fixtures. The jobs print only the
 base64url-decoded header and payload of their ID tokens and the length, prefix and dot count of `CI_JOB_TOKEN`, never a raw token or a
 signature. One job, `signature-check`, leaves one ID token as an artifact: its audience is `https://signature-check.invalid` and its job
@@ -2579,7 +2579,7 @@ The fixtures are anonymized before they are written:
 The recorder refuses to write a file that still contains the host, its domain or a user's e-mail address.
 
 **What the double is checked against** ([fixture_test.go](../../test/oidcstub/fixture_test.go); the tests carry no requirement ID in their
-names, they are no evidence for trove's requirements):
+names, they are no evidence for Quader's requirements):
 
 | Test | Checks |
 |---|---|
@@ -2599,15 +2599,15 @@ recorded instance's list, which depends on the instance's features. Not recorded
 
 ```sh
 # A CA and a certificate for localhost, 127.0.0.1 and the container name (any tool; openssl shown), in $PWD/ssl.
-docker network create trove-oidcv
-docker run -d --name trove-oidcv-gl --hostname trove-oidcv-gl --network trove-oidcv -p 127.0.0.1:8929:8929 --shm-size 256m \
+docker network create quader-oidcv
+docker run -d --name quader-oidcv-gl --hostname quader-oidcv-gl --network quader-oidcv -p 127.0.0.1:8929:8929 --shm-size 256m \
   --env-file gitlab.env -v "$PWD/ssl:/etc/gitlab/ssl-local:ro" gitlab/gitlab-ee:19.0.1-ee.0
 # gitlab.env: GITLAB_ROOT_PASSWORD=<generated> and GITLAB_OMNIBUS_CONFIG=external_url 'https://localhost:8929';
 #   nginx['ssl_certificate'] = '/etc/gitlab/ssl-local/tls.crt'; nginx['ssl_certificate_key'] = '/etc/gitlab/ssl-local/tls.key';
 #   letsencrypt['enable'] = false   (about 4 minutes to the sign-in page)
 # Create an instance runner (POST /api/v4/user/runners, runner_type instance_type, run_untagged true) and start
-# gitlab/gitlab-runner:v18.11.3 on the same network with executor "shell", url https://trove-oidcv-gl:8929 and the CA as tls-ca-file.
-TROVE_GITLAB_URL=https://localhost:8929 TROVE_GITLAB_CA_FILE=ssl/ca.crt TROVE_GITLAB_TOKEN=... make oidc-fixtures
+# gitlab/gitlab-runner:v18.11.3 on the same network with executor "shell", url https://quader-oidcv-gl:8929 and the CA as tls-ca-file.
+QUADER_GITLAB_URL=https://localhost:8929 QUADER_GITLAB_CA_FILE=ssl/ca.crt QUADER_GITLAB_TOKEN=... make oidc-fixtures
 ```
 
 </details>
@@ -2624,9 +2624,9 @@ sections above.
 
 | What | Where |
 |---|---|
-| image | `make oci-stub-image` (`OCI_STUB_IMAGE`, default `trove-e2e-ocistub:dev`), built from [test/ocistub/Containerfile](../../test/ocistub/Containerfile) on the release base image |
-| manifest | [deploy/dev/ocistub.yaml](../../deploy/dev/ocistub.yaml): Services `ocistub`, `ocistub-auth`, `ocistub-cdn`, one pod, a certificate of the dev CA for the three names, the control token in Secret `trove-ocistub` |
-| wiring in `deploy/dev/e2e.sh` | marker `T16 oci-stub`: `TROVE_E2E_OCISTUB=1` (the sets `oci*`) builds the image, loads it into kind, applies the manifest, restarts the pod and exports `TROVE_E2E_OCISTUB_HOST`, `TROVE_E2E_OCISTUB_REALM_HOST` and `TROVE_E2E_OCISTUB_CDN_HOST` (`ocistub.<ns>.svc`, `ocistub-auth.<ns>.svc`, `ocistub-cdn.<ns>.svc`). A remote repository names the registry as its URL and the other two in `extraHosts` (`ociRemoteBody`) |
+| image | `make oci-stub-image` (`OCI_STUB_IMAGE`, default `quader-e2e-ocistub:dev`), built from [test/ocistub/Containerfile](../../test/ocistub/Containerfile) on the release base image |
+| manifest | [deploy/dev/ocistub.yaml](../../deploy/dev/ocistub.yaml): Services `ocistub`, `ocistub-auth`, `ocistub-cdn`, one pod, a certificate of the dev CA for the three names, the control token in Secret `quader-ocistub` |
+| wiring in `deploy/dev/e2e.sh` | marker `T16 oci-stub`: `QUADER_E2E_OCISTUB=1` (the sets `oci*`) builds the image, loads it into kind, applies the manifest, restarts the pod and exports `QUADER_E2E_OCISTUB_HOST`, `QUADER_E2E_OCISTUB_REALM_HOST` and `QUADER_E2E_OCISTUB_CDN_HOST` (`ocistub.<ns>.svc`, `ocistub-auth.<ns>.svc`, `ocistub-cdn.<ns>.svc`). A remote repository names the registry as its URL and the other two in `extraHosts` (`ociRemoteBody`) |
 
 ## The OCI clients
 
@@ -2637,8 +2637,8 @@ the pins.
 
 ```mermaid
 flowchart LR
-  subgraph clients["namespace trove-e2e-clients (Pod Security level privileged)"]
-    subgraph pod["pod trove-e2e-oci-i (x3), one network namespace"]
+  subgraph clients["namespace quader-e2e-clients (Pod Security level privileged)"]
+    subgraph pod["pod quader-e2e-oci-i (x3), one network namespace"]
       d["container docker<br/>dockerd + CLI + Buildx<br/>fwd on 127.0.0.1:edge port"]
       p["container podman"]
     end
@@ -2646,22 +2646,22 @@ flowchart LR
   d -- "https, localhost:edge port" --> h["HAProxy Ingress<br/>round robin per request"]
   p --> d
   h --> r["packages x3 (scatter)"]
-  r --> s["ocistub (trove namespace)<br/>registry, realm, CDN"]
+  r --> s["ocistub (quader namespace)<br/>registry, realm, CDN"]
   n["control-plane node<br/>containerd + fwd + certs.d"] -- "kubelet pull of the Kubernetes row" --> h
 ```
 
 | What | Where |
 |---|---|
-| images | `make oci-clients-image` runs [test/e2e/ociclients/build.sh](../../test/e2e/ociclients/build.sh): the forwarder of the npm clients (`test/e2e/clients/fwd`) for `linux/<arch>`, [Dockerfile.docker](../../test/e2e/ociclients/Dockerfile.docker) on the pinned dind image (`trove-e2e-ociclients-docker:dev`) and [Dockerfile.podman](../../test/e2e/ociclients/Dockerfile.podman) on the pinned Podman image (`trove-e2e-ociclients-podman:dev`). Both are test images, never pushed; the pins are build arguments without a default |
-| pod | [deploy/dev/oci-clients.yaml](../../deploy/dev/oci-clients.yaml): the Namespace `trove-e2e-clients` with Pod Security `privileged` (dockerd and Podman need a privileged container, root and a writable root file system, which the level `restricted` of the namespace `trove` refuses) and the Pod, rendered once per client with `sed` by [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (marker T16 oci-clients). The pods run on the control-plane node like the npm and NuGet clients, mount no ServiceAccount token and hold no credential. Their volumes are emptyDirs (`/var/lib/docker`, `/var/lib/containers`, `/work`) |
-| trust | the dev CA is a ConfigMap (`trove-e2e-oci-ca`), never in an image. [entrypoint-docker.sh](../../test/e2e/ociclients/entrypoint-docker.sh) puts it into `/etc/docker/certs.d/<host>/ca.crt` for `localhost:<edge port>` and `oci-mirror.trove.localhost:<edge port>` and into the system trust (BuildKit inside dockerd fetches the token of `buildx build --push` with a client that reads the system trust, not `certs.d`); [entrypoint-podman.sh](../../test/e2e/ociclients/entrypoint-podman.sh) puts it into `/etc/containers/certs.d/<host>/ca.crt` |
+| images | `make oci-clients-image` runs [test/e2e/ociclients/build.sh](../../test/e2e/ociclients/build.sh): the forwarder of the npm clients (`test/e2e/clients/fwd`) for `linux/<arch>`, [Dockerfile.docker](../../test/e2e/ociclients/Dockerfile.docker) on the pinned dind image (`quader-e2e-ociclients-docker:dev`) and [Dockerfile.podman](../../test/e2e/ociclients/Dockerfile.podman) on the pinned Podman image (`quader-e2e-ociclients-podman:dev`). Both are test images, never pushed; the pins are build arguments without a default |
+| pod | [deploy/dev/oci-clients.yaml](../../deploy/dev/oci-clients.yaml): the Namespace `quader-e2e-clients` with Pod Security `privileged` (dockerd and Podman need a privileged container, root and a writable root file system, which the level `restricted` of the namespace `quader` refuses) and the Pod, rendered once per client with `sed` by [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (marker T16 oci-clients). The pods run on the control-plane node like the npm and NuGet clients, mount no ServiceAccount token and hold no credential. Their volumes are emptyDirs (`/var/lib/docker`, `/var/lib/containers`, `/work`) |
+| trust | the dev CA is a ConfigMap (`quader-e2e-oci-ca`), never in an image. [entrypoint-docker.sh](../../test/e2e/ociclients/entrypoint-docker.sh) puts it into `/etc/docker/certs.d/<host>/ca.crt` for `localhost:<edge port>` and `oci-mirror.quader.localhost:<edge port>` and into the system trust (BuildKit inside dockerd fetches the token of `buildx build --push` with a client that reads the system trust, not `certs.d`); [entrypoint-podman.sh](../../test/e2e/ociclients/entrypoint-podman.sh) puts it into `/etc/containers/certs.d/<host>/ca.crt` |
 | address | the forwarder in the Docker container listens on `127.0.0.1:<edge port>` and relays to `haproxy-ingress.ingress-controller.svc.cluster.local:443`; the pod shares one network namespace, so both clients reach it as `localhost:<edge port>`, the host of the setup snippets, and verify the edge's certificate for `localhost`. `ociPin` writes a packages pod's address into the forwarder's target file (`/tmp/target`), which pins a pod to one replica until `ociUnpin` |
-| daemon | dockerd starts through the image's own entrypoint with `--host=unix:///var/run/docker.sock` only (without arguments the image opens an unauthenticated TCP listener, which every pod of the cluster could reach). `daemon.json` names `https://oci-mirror.trove.localhost:<edge port>` in `registry-mirrors` (the Docker Engine row) |
-| the bound host | the endpoint `ocimirror` of [values-dev.yaml](../../deploy/dev/values-dev.yaml) (port 8444, host `oci-mirror.trove.localhost`, `hostRoots` to the repository `e2e/oci-engine-mirror`, anonymous requests admitted, the certificates `trove-ocimirror-tls` and `trove-ocimirror-edge-tls` in [pki.yaml](../../deploy/dev/pki.yaml)). `lib.sh` sets its `baseUrl` to the edge port the cluster was created with. A binding to a repository that does not exist is no binding (R-EP-006), so the endpoint is inert until `TestOCIEngineMirror` creates the repository |
-| node setup | the kubelet pulls the image of the Kubernetes row, and the containerd of a kind node reaches neither the pod's forwarder nor the edge's host port. `oci_node_setup` of e2e.sh copies a forwarder to the control-plane node (`/usr/local/bin/trove-fwd`, `127.0.0.1:<edge port>` to the edge's NodePort on the node's address) and the dev CA with a `hosts.toml` into `/etc/containerd/certs.d/localhost:<edge port>`. [deploy/dev/kind.yaml](../../deploy/dev/kind.yaml) sets `config_path` of the node's containerd (its default configuration has none); a cluster created before that is refused with the command to create it again |
+| daemon | dockerd starts through the image's own entrypoint with `--host=unix:///var/run/docker.sock` only (without arguments the image opens an unauthenticated TCP listener, which every pod of the cluster could reach). `daemon.json` names `https://oci-mirror.quader.localhost:<edge port>` in `registry-mirrors` (the Docker Engine row) |
+| the bound host | the endpoint `ocimirror` of [values-dev.yaml](../../deploy/dev/values-dev.yaml) (port 8444, host `oci-mirror.quader.localhost`, `hostRoots` to the repository `e2e/oci-engine-mirror`, anonymous requests admitted, the certificates `quader-ocimirror-tls` and `quader-ocimirror-edge-tls` in [pki.yaml](../../deploy/dev/pki.yaml)). `lib.sh` sets its `baseUrl` to the edge port the cluster was created with. A binding to a repository that does not exist is no binding (R-EP-006), so the endpoint is inert until `TestOCIEngineMirror` creates the repository |
+| node setup | the kubelet pulls the image of the Kubernetes row, and the containerd of a kind node reaches neither the pod's forwarder nor the edge's host port. `oci_node_setup` of e2e.sh copies a forwarder to the control-plane node (`/usr/local/bin/quader-fwd`, `127.0.0.1:<edge port>` to the edge's NodePort on the node's address) and the dev CA with a `hosts.toml` into `/etc/containerd/certs.d/localhost:<edge port>`. [deploy/dev/kind.yaml](../../deploy/dev/kind.yaml) sets `config_path` of the node's containerd (its default configuration has none); a cluster created before that is refused with the command to create it again |
 
 How a command runs: `ociClient` ([oci_env_test.go](../../test/e2e/oci_env_test.go)) is one scenario with one tool in one pod. Everything it writes lives below `/work/<tool>-<scenario>-<run>`; every command gets a
-`DOCKER_CONFIG` and a `REGISTRY_AUTH_FILE` of its own below it, so no scenario meets the login of another, and the token as `$TROVE_TOKEN`, the variable of the setup snippets. Test images are
+`DOCKER_CONFIG` and a `REGISTRY_AUTH_FILE` of its own below it, so no scenario meets the login of another, and the token as `$QUADER_TOKEN`, the variable of the setup snippets. Test images are
 `FROM scratch` plus one file (`ociClient.build`): no client needs a base image from a public registry, and the payload makes the digest the test's own.
 
 What the real clients do that a unit test would not guess:
@@ -2698,7 +2698,7 @@ deployment target; deleted with the test), so the cache a test starts with is em
 | `TestOCIMirror_R_REPO_055_APassRunsWhileClientsPull` | R-REPO-055, R-OCI-026 | set `oci`: a pass of an OCI mirror (catalog, `library/*` and 1,000 tags of `bulk/tags`, each manifest held 100 ms) runs in a process of the pool while `docker` and `podman` on three pods pull `library/alpine:3`, `library/busybox:latest` and `library/nginx:1` through the same remote; every pull succeeds, the upstream never holds more than 8 + 3 − 1 + 2 requests open, the pass ends `complete` |
 | `TestOCILong_R_REPO_058_DrainOfTheNodeOfAMirrorPass` | R-REPO-058, R-OCI-026 | set `oci-long`: the node of the pool process that runs a pass of 400 tags (each manifest held 300 ms) is drained while `docker` pulls through the remote; the pass ends `complete` in the other process, and at most `concurrency` manifests were served twice |
 | `TestOCILong_R_OCI_011_DrainOfThePodThatReceivesAPush` | R-OCI-011, R-HA-052 | set `oci-long`: `docker push` of an image with a 300 MiB layer, the client pod's forwarder pinned to one packages pod; once the session has received 48 MiB the pod's node is drained and the forwarder released to the edge; the push exits 0, the pulled image has the pushed digest, and after the abandoned session is aged past `session_ttl` and a collection run (`POST /api/v1/system/tasks/gc/run`) the bucket holds no multipart upload (`aws s3api list-multipart-uploads`, a Job) |
-| `TestOCIClosing` | R-OCI-032 | set `oci-closing`, the closing run (`TROVE_E2E_OCI_CLOSING=1`): with Valkey stopped, `docker push` and `docker pull` through local, remote and virtual repositories, and six concurrent pulls on three replicas that cost one to three upstream requests per layer (one per replica) |
+| `TestOCIClosing` | R-OCI-032 | set `oci-closing`, the closing run (`QUADER_E2E_OCI_CLOSING=1`): with Valkey stopped, `docker push` and `docker pull` through local, remote and virtual repositories, and six concurrent pulls on three replicas that cost one to three upstream requests per layer (one per replica) |
 | `TestOCIClosingPublic` | R-OCI-025, R-OCI-026, R-OCI-035 | the read-only subset against Docker Hub: a pull-through remote of `https://registry-1.docker.io/` pulls `library/busybox:latest` anonymously (as `busybox` and `library/busybox`, one cached copy), and a mirror with `tags: ["latest"]` of `library/busybox` stores it. Docker Hub's request count is not observable from outside, and the test does not assert the six manifest `GET` requests of R-OCI-035 |
 
 ### Running it
@@ -2713,7 +2713,7 @@ make e2e SET=oci-clients-down  # remove the pods and their namespace
 make oci-clients-image       # only build the two images into the local Docker
 ```
 
-`TROVE_E2E_OCI_CLIENTS_PODS` (default 3), `TROVE_E2E_OCI_CLIENTS_TARGET` and `TROVE_E2E_OCI_CLIENTS_IMAGE_BUILD=0` act as for the npm clients; `TROVE_E2E_REUSE_CLIENTS=1` keeps pods that already run.
+`QUADER_E2E_OCI_CLIENTS_PODS` (default 3), `QUADER_E2E_OCI_CLIENTS_TARGET` and `QUADER_E2E_OCI_CLIENTS_IMAGE_BUILD=0` act as for the npm clients; `QUADER_E2E_REUSE_CLIENTS=1` keeps pods that already run.
 
 ### Measured on the dev cluster
 
@@ -2735,9 +2735,9 @@ the amd64 images were not run.
 
 | What | Where |
 |---|---|
-| image | `make deb-stub-image` (`DEB_STUB_IMAGE`, default `trove-e2e-debstub:dev`), built from [test/debstub/Containerfile](../../test/debstub/Containerfile) on the release base image |
-| manifest | [deploy/dev/debstub.yaml](../../deploy/dev/debstub.yaml): Service `debstub` on 443, one pod on the control-plane node, a certificate of the dev CA for `debstub.<ns>.svc`, the control token in Secret `trove-debstub` |
-| wiring in `deploy/dev/e2e.sh` | marker `T17 deb-stub`: `TROVE_E2E_DEBSTUB=1` (the set `deb`) builds the image, loads it into kind, applies the manifest, restarts the pod and exports `TROVE_E2E_DEBSTUB_HOST` (`debstub.<ns>.svc`). A remote repository names `https://<host>/debian/` (or `/flatroot/`) as its URL and the stub's key `a`, read from the control API (`GET /-/stub/keyring?names=a`), as `deb.upstreamKeys` (`debFixture.remoteRepo`) |
+| image | `make deb-stub-image` (`DEB_STUB_IMAGE`, default `quader-e2e-debstub:dev`), built from [test/debstub/Containerfile](../../test/debstub/Containerfile) on the release base image |
+| manifest | [deploy/dev/debstub.yaml](../../deploy/dev/debstub.yaml): Service `debstub` on 443, one pod on the control-plane node, a certificate of the dev CA for `debstub.<ns>.svc`, the control token in Secret `quader-debstub` |
+| wiring in `deploy/dev/e2e.sh` | marker `T17 deb-stub`: `QUADER_E2E_DEBSTUB=1` (the set `deb`) builds the image, loads it into kind, applies the manifest, restarts the pod and exports `QUADER_E2E_DEBSTUB_HOST` (`debstub.<ns>.svc`). A remote repository names `https://<host>/debian/` (or `/flatroot/`) as its URL and the stub's key `a`, read from the control API (`GET /-/stub/keyring?names=a`), as `deb.upstreamKeys` (`debFixture.remoteRepo`) |
 
 ## The APT clients
 
@@ -2754,25 +2754,25 @@ The tag of a pin is the release the client stands for and never moves: [renovate
 
 ```mermaid
 flowchart LR
-  subgraph clients["namespace trove-e2e-apt (Pod Security level baseline)"]
-    subgraph pod["pod trove-e2e-apt-debian13 (and debian12, ubuntu2404, ubuntu2204)"]
+  subgraph clients["namespace quader-e2e-apt (Pod Security level baseline)"]
+    subgraph pod["pod quader-e2e-apt-debian13 (and debian12, ubuntu2404, ubuntu2204)"]
       a["apt, apt-get, curl, sqv or gpgv<br/>fwd on 127.0.0.1:edge port"]
     end
   end
   a -- "https, localhost:edge port" --> h["HAProxy Ingress<br/>round robin per request"]
   h --> r["packages x3 (scatter)"]
-  r --> s["debstub (trove namespace)"]
+  r --> s["debstub (quader namespace)"]
   w["worker x2<br/>deb-index builds"] --- r
 ```
 
 | What | Where |
 |---|---|
-| images | `make apt-clients-image` runs [test/e2e/aptclients/build.sh](../../test/e2e/aptclients/build.sh): the forwarder of the npm clients (`test/e2e/clients/fwd`) for `linux/<arch>`, then the one [Dockerfile](../../test/e2e/aptclients/Dockerfile) on each pinned base image (`trove-e2e-aptclients-<debian13\|debian12\|ubuntu2404\|ubuntu2204>:dev`). Test images, never pushed; the base is a build argument without a default |
-| what the image adds | `curl` (the upload of the publish snippet and the key fetch of the configure snippet), a `sudo` that runs its arguments (the snippets write below `/etc/apt` with `sudo` and the pod is root), the forwarder, and an [entrypoint](../../test/e2e/aptclients/entrypoint.sh) that removes the image's own sources (the client talks to trove only) and writes `Acquire::https::CAInfo` and the `cacert` of curl. `apt` and the verifiers are put on hold before curl is installed, so a dependency of curl that would upgrade them fails the build; curl itself is the image's archive version (Q-DEB-105) |
-| pods | [deploy/dev/apt-clients.yaml](../../deploy/dev/apt-clients.yaml), rendered once per image with `sed` by [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (marker `T17 apt-clients`): pods `trove-e2e-apt-<image>` in the namespace `trove-e2e-apt` (Pod Security `baseline`: root, but no privileged container, no host path and no added capability; Q-DEB-106), on the control-plane node like the other client pods, no ServiceAccount token, no credential. The dev CA is the ConfigMap `trove-e2e-apt-ca`, never in an image |
+| images | `make apt-clients-image` runs [test/e2e/aptclients/build.sh](../../test/e2e/aptclients/build.sh): the forwarder of the npm clients (`test/e2e/clients/fwd`) for `linux/<arch>`, then the one [Dockerfile](../../test/e2e/aptclients/Dockerfile) on each pinned base image (`quader-e2e-aptclients-<debian13\|debian12\|ubuntu2404\|ubuntu2204>:dev`). Test images, never pushed; the base is a build argument without a default |
+| what the image adds | `curl` (the upload of the publish snippet and the key fetch of the configure snippet), a `sudo` that runs its arguments (the snippets write below `/etc/apt` with `sudo` and the pod is root), the forwarder, and an [entrypoint](../../test/e2e/aptclients/entrypoint.sh) that removes the image's own sources (the client talks to Quader only) and writes `Acquire::https::CAInfo` and the `cacert` of curl. `apt` and the verifiers are put on hold before curl is installed, so a dependency of curl that would upgrade them fails the build; curl itself is the image's archive version (Q-DEB-105) |
+| pods | [deploy/dev/apt-clients.yaml](../../deploy/dev/apt-clients.yaml), rendered once per image with `sed` by [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (marker `T17 apt-clients`): pods `quader-e2e-apt-<image>` in the namespace `quader-e2e-apt` (Pod Security `baseline`: root, but no privileged container, no host path and no added capability; Q-DEB-106), on the control-plane node like the other client pods, no ServiceAccount token, no credential. The dev CA is the ConfigMap `quader-e2e-apt-ca`, never in an image |
 | address | the forwarder listens on `127.0.0.1:<edge port>` and relays to `haproxy-ingress.ingress-controller.svc.cluster.local:443`, so a source `https://localhost:<edge port>/api/deb/<project>/<repository>/`, the address of the setup snippets, works unchanged and APT verifies the edge's certificate for `localhost` |
 
-How a command runs: `aptTry` ([deb_clients_test.go](../../test/e2e/deb_clients_test.go)) is `kubectl exec` of `sh -c` in the pod; `aptClient` ([deb_env_test.go](../../test/e2e/deb_env_test.go)) is one scenario in one pod. It starts from a pod without the files of an earlier scenario (the snippets' source, key and credential files, the lists, the test packages) and removes them again at its end, and it passes the publisher's token as `$TROVE_TOKEN`, the variable of the setup snippets. The scenario runs the `apt.configure.shell` snippet the setup API renders for the repository, unchanged; `apt-get update --error-on=any` is the only form of update, so a warning fails the row; nothing sets `trusted=yes`.
+How a command runs: `aptTry` ([deb_clients_test.go](../../test/e2e/deb_clients_test.go)) is `kubectl exec` of `sh -c` in the pod; `aptClient` ([deb_env_test.go](../../test/e2e/deb_env_test.go)) is one scenario in one pod. It starts from a pod without the files of an earlier scenario (the snippets' source, key and credential files, the lists, the test packages) and removes them again at its end, and it passes the publisher's token as `$QUADER_TOKEN`, the variable of the setup snippets. The scenario runs the `apt.configure.shell` snippet the setup API renders for the repository, unchanged; `apt-get update --error-on=any` is the only form of update, so a warning fails the row; nothing sets `trusted=yes`.
 
 What the real clients do that a unit test would not guess:
 
@@ -2789,15 +2789,15 @@ The e2e tier of [R-DEB-035](../spec/formats/debian.md#r-deb-035--test-suites), T
 | `TestAPTClients` | R-DEB-035 | the pinned release, APT series and verifier of each image; the edge's certificate is verified with the dev CA |
 | `TestDebLocal` | R-DEB-035, R-DEB-006, R-DEB-016, R-DEB-018 | per image: a package is uploaded with `curl` from the pod, the index state read waits for its `changeSeq`, the configure snippet runs, `apt-get update --error-on=any` and `apt-get install` install it and the installed script prints its line; the credential file has the mode 600 and the source is verified; a keyring that holds the key of another repository must fail with a signature failure, and the repository's key accepts again; an anonymous request for the key of a repository that requires authentication is 401 |
 | `TestDebAnonymous` | R-DEB-035, R-DEB-004 | a repository that grants `read` to anonymous: the configure snippet writes no credential file, and update and install work on all four images |
-| `TestDebRemote` | R-DEB-035, R-DEB-019, R-DEB-021, R-DEB-022 | a pull-through remote over the stub with the key `a`: all four images update and install `trove-hello` (and its dependency `libtrove1`); the three images after the first cost the stub no request |
-| `TestDebFlatRoot` | R-DEB-003, R-DEB-035 | Ubuntu 24.04 installs `trove-flat` from the flat root `deb <repo URL> ./` of a remote whose URL is the stub's `/flatroot/`; the stub counted `GET /flatroot/InRelease`, the canonical path of the directory, which the remote asked for after APT asked it for `/./InRelease` |
+| `TestDebRemote` | R-DEB-035, R-DEB-019, R-DEB-021, R-DEB-022 | a pull-through remote over the stub with the key `a`: all four images update and install `quader-hello` (and its dependency `libquader1`); the three images after the first cost the stub no request |
+| `TestDebFlatRoot` | R-DEB-003, R-DEB-035 | Ubuntu 24.04 installs `quader-flat` from the flat root `deb <repo URL> ./` of a remote whose URL is the stub's `/flatroot/`; the stub counted `GET /flatroot/InRelease`, the canonical path of the directory, which the remote asked for after APT asked it for `/./InRelease` |
 | `TestDebRotation` | R-DEB-017, R-DEB-016, R-DEB-035 | the table of R-DEB-017 on Debian 13 (`sqv`), Ubuntu 24.04 (`gpgv` 2.4) and Ubuntu 22.04 (`gpgv` 2.2): before the next key, while both keys sign and after the promotion, a keyring of the old key only, of both keys and of the new key only updates or fails as the table says; the suite is signed by one, then two, then one key (the `signedBy` of the index state). On Debian 13 once more with an imported next key created an hour ago whose only self-signature is 30 s old (Q-DEB-40): the build waits for the rule of R-DEB-016 and the client that holds only the new key verifies |
-| `TestDebMirror` | R-DEB-024, R-REPO-050, R-REPO-051 | `debian-mirror`: a mirror of the suite `stable` (components `main`, the architecture of the clients, `includePatterns: ["trove-*", "libtrove1"]`) runs a pass on a worker; the stub's connections are cut (`down: reset`); all four images update and install `trove-hello` from the mirror alone |
-| `TestDebVirtual` | R-DEB-025, R-DEB-027, R-REPO-023 | `apt`: a virtual repository over a local member (the deployment target) and a verified remote member over the stub; the test waits until the merged `Packages.gz` lists a package of each (the bound is `deb.virtual_index_interval` + 60 s), then all four images install the local package and `trove-hello` (with its dependency) through it; the claim row: `trove-tools` 0.1, first uploaded to the local member, is installed instead of the remote's higher version, and the merged index lists the name once, from `members/<local>/` |
-| `TestDebClosing` | R-DEB-031 | set `deb-closing`, the closing run (`TROVE_E2E_DEB_CLOSING=1`): with Valkey stopped (`withValkeyStopped`, the serving pods report degraded), on each of the four images an upload to a local repository, `apt-get update --error-on=any` and `apt-get install` of it, an install of `trove-hello` through a pull-through remote, and an install of a local and a remote package through a virtual repository (built before Valkey stopped) |
-| `TestDebClosingPublic` | R-DEB-019, R-DEB-020, R-DEB-035 | the read-only check against the Debian archive: the key `https://ftp-master.debian.org/keys/archive-key-13.asc` is fetched and refused unless its one certificate has the fingerprint pinned in the test (`04B54C3CDCA79751B16BC6B5225629DF75B188BD`); a pull-through remote of `https://deb.debian.org/debian/` with that key, `debian:13` with the source `Suites: trixie` runs `apt-get update --error-on=any` and `apt-get install hello` anonymously, `hello` prints its line, and the remote sent at most 30 requests (`trove_remote_upstream_requests_total` of the repository, summed over the serving pods; the archive's own count is not observable from outside) |
+| `TestDebMirror` | R-DEB-024, R-REPO-050, R-REPO-051 | `debian-mirror`: a mirror of the suite `stable` (components `main`, the architecture of the clients, `includePatterns: ["quader-*", "libquader1"]`) runs a pass on a worker; the stub's connections are cut (`down: reset`); all four images update and install `quader-hello` from the mirror alone |
+| `TestDebVirtual` | R-DEB-025, R-DEB-027, R-REPO-023 | `apt`: a virtual repository over a local member (the deployment target) and a verified remote member over the stub; the test waits until the merged `Packages.gz` lists a package of each (the bound is `deb.virtual_index_interval` + 60 s), then all four images install the local package and `quader-hello` (with its dependency) through it; the claim row: `quader-tools` 0.1, first uploaded to the local member, is installed instead of the remote's higher version, and the merged index lists the name once, from `members/<local>/` |
+| `TestDebClosing` | R-DEB-031 | set `deb-closing`, the closing run (`QUADER_E2E_DEB_CLOSING=1`): with Valkey stopped (`withValkeyStopped`, the serving pods report degraded), on each of the four images an upload to a local repository, `apt-get update --error-on=any` and `apt-get install` of it, an install of `quader-hello` through a pull-through remote, and an install of a local and a remote package through a virtual repository (built before Valkey stopped) |
+| `TestDebClosingPublic` | R-DEB-019, R-DEB-020, R-DEB-035 | the read-only check against the Debian archive: the key `https://ftp-master.debian.org/keys/archive-key-13.asc` is fetched and refused unless its one certificate has the fingerprint pinned in the test (`04B54C3CDCA79751B16BC6B5225629DF75B188BD`); a pull-through remote of `https://deb.debian.org/debian/` with that key, `debian:13` with the source `Suites: trixie` runs `apt-get update --error-on=any` and `apt-get install hello` anonymously, `hello` prints its line, and the remote sent at most 30 requests (`quader_remote_upstream_requests_total` of the repository, summed over the serving pods; the archive's own count is not observable from outside) |
 
-The stub keeps its architecture `all` packages in `binary-all` only, as the real archive does besides listing them in every architecture index; a virtual repository's `Release` lists no `all` architecture and APT finds the `all` files in the architecture indexes (R-DEB-011), so the virtual rows install packages of the client's architecture (`trove-hello`) and the local member's `all` files, which the local class lists under every architecture. A remote member whose upstream lists `all` packages in `binary-all` only would not show them through a virtual repository; the Debian and Ubuntu archives list them in both.
+The stub keeps its architecture `all` packages in `binary-all` only, as the real archive does besides listing them in every architecture index; a virtual repository's `Release` lists no `all` architecture and APT finds the `all` files in the architecture indexes (R-DEB-011), so the virtual rows install packages of the client's architecture (`quader-hello`) and the local member's `all` files, which the local class lists under every architecture. A remote member whose upstream lists `all` packages in `binary-all` only would not show them through a virtual repository; the Debian and Ubuntu archives list them in both.
 
 The rotation table runs one client per cell in turn, not three pods: a cell replaces the keyring file of the one client and clears its lists, which is what a client container with that keyring would see (Q-DEB-107). The time rules of Q-DEB-30 are not in this set: one cluster shares one clock, and the integration asserts of R-DEB-010 and R-DEB-016 prove them.
 
@@ -2812,7 +2812,7 @@ make e2e SET=apt-clients-down # remove the pods and their namespace
 make apt-clients-image        # only build the four images into the local Docker
 ```
 
-`TROVE_E2E_APT_CLIENTS_TARGET` and `TROVE_E2E_APT_CLIENTS_IMAGE_BUILD=0` act as for the other client pods; `TROVE_E2E_REUSE_CLIENTS=1` keeps pods that already run.
+`QUADER_E2E_APT_CLIENTS_TARGET` and `QUADER_E2E_APT_CLIENTS_IMAGE_BUILD=0` act as for the other client pods; `QUADER_E2E_REUSE_CLIENTS=1` keeps pods that already run.
 
 ### Not covered by the Debian tests
 
@@ -2824,7 +2824,7 @@ make apt-clients-image        # only build the four images into the local Docker
 [test/osvstub](../../test/osvstub) is the advisory source of the vulnerability-scanning tests
 ([R-VULN-029](../spec/vulnerability-scanning.md#r-vuln-029--acceptance-suite)). It stands in for osv.dev's bucket and for the
 CISA catalog: the sync of [R-VULN-004](../spec/vulnerability-scanning.md#r-vuln-004--online-synchronization) and the import of
-R-VULN-005 read the fixture from it, and the tests read what trove requested from its request log. Like the other doubles it is a Go
+R-VULN-005 read the fixture from it, and the tests read what Quader requested from its request log. Like the other doubles it is a Go
 package (`New(cfg) *Stub`, an `http.Handler`, so `httptest.NewTLSServer(osvstub.New(cfg))` works), a container
 ([cmd/osvstub](../../test/osvstub/cmd/osvstub), [Containerfile](../../test/osvstub/Containerfile)) and a pod of the dev cluster, all
 the same code; it reaches no network, and `Stub.Start` and the container answer TLS only.
@@ -2868,30 +2868,30 @@ All identifiers are synthetic (`GHSA-aaaa-…`, `MAL-2026-…`) and follow the r
 
 | Ecosystem | Record | Package and versions | What it is for |
 |---|---|---|---|
-| npm | `GHSA-aaaa-aaaa-0001` | `trove-test-vuln`: `1.0.0` affected, `1.0.1` fixed | SEMVER range, CVSS 3.1 `…/C:H/I:N/A:N` (7.5, high) |
-| npm | `MAL-2026-1234` | `trove-test-mal@1.0.0` | `versions[]` only, no severity |
+| npm | `GHSA-aaaa-aaaa-0001` | `quader-test-vuln`: `1.0.0` affected, `1.0.1` fixed | SEMVER range, CVSS 3.1 `…/C:H/I:N/A:N` (7.5, high) |
+| npm | `MAL-2026-1234` | `quader-test-mal@1.0.0` | `versions[]` only, no severity |
 | npm | `MAL-2026-1235` | `@acme/ui` `1.0.0`, `2.0.0` | malicious record on a claimed internal name |
-| npm | `GHSA-aaaa-bbbb-cccc` and `CVE-2026-0001` | `trove-test-alias`: `2.0.0` affected, `2.1.0` fixed | the alias group of R-VULN-006 (each names the other) |
+| npm | `GHSA-aaaa-bbbb-cccc` and `CVE-2026-0001` | `quader-test-alias`: `2.0.0` affected, `2.1.0` fixed | the alias group of R-VULN-006 (each names the other) |
 | npm | `GHSA-aaaa-aaaa-0003` | `left-pad`, `last_affected: 1.3.0` | a name of the npm test upstream's own corpus |
-| npm | `GHSA-aaaa-aaaa-0004` | `trove-test-cvss` | CVSS 4.0 (9.3) and 3.1 (7.5) vectors |
-| npm | `GHSA-aaaa-aaaa-0005` | `trove-test-qualitative` | `database_specific.severity: MODERATE` and no vector |
-| npm | `GHSA-aaaa-aaaa-0006` | `trove-test-nosev` | no severity at all |
-| npm | `GHSA-aaaa-aaaa-0007` | `trove-test-badrange` | `fixed: "not-a-version"` (unevaluable) |
-| npm | `GHSA-aaaa-aaaa-0008` | `trove-test-list`: `1.0.0`, `1.2.0` | a `versions[]` list on a non-`MAL-` record |
-| npm | `GHSA-aaaa-aaaa-0009` | `trove-test-withdrawn` | `withdrawn` set; the archive keeps it |
+| npm | `GHSA-aaaa-aaaa-0004` | `quader-test-cvss` | CVSS 4.0 (9.3) and 3.1 (7.5) vectors |
+| npm | `GHSA-aaaa-aaaa-0005` | `quader-test-qualitative` | `database_specific.severity: MODERATE` and no vector |
+| npm | `GHSA-aaaa-aaaa-0006` | `quader-test-nosev` | no severity at all |
+| npm | `GHSA-aaaa-aaaa-0007` | `quader-test-badrange` | `fixed: "not-a-version"` (unevaluable) |
+| npm | `GHSA-aaaa-aaaa-0008` | `quader-test-list`: `1.0.0`, `1.2.0` | a `versions[]` list on a non-`MAL-` record |
+| npm | `GHSA-aaaa-aaaa-0009` | `quader-test-withdrawn` | `withdrawn` set; the archive keeps it |
 | NuGet | `GHSA-aaaa-aaaa-0101` | `Newtonsoft.Json`: `13.0.1` affected, `13.0.3` fixed | ECOSYSTEM range, CVSS 3.1 7.5 (high) |
 | NuGet | `MAL-2026-1301` | `Contoso.Json.Codecs@1.0.0` | malicious, `versions[]` only |
 | NuGet | `GHSA-aaaa-aaaa-0102` | `Contoso.Util`: `2.0.0` | `last_affected`, CVSS 5.3 (medium) |
 
 The NuGet names and versions are those of the NuGet test upstream's default corpus; `TestNuGetFixtureMatchesTheNuGetUpstream` fails when the two drift. The npm
-packages `trove-test-*` are not in the npm test upstream's generated corpus: a test publishes them (to a local repository, or through the upstream's
+packages `quader-test-*` are not in the npm test upstream's generated corpus: a test publishes them (to a local repository, or through the upstream's
 `/-/stub/publish`) and `left-pad` is in its corpus.
 
 **Toggles** (off at start; `PUT /-/stub/toggles/<name>` `{"on":true}` adds the records with a new `modified`, `false` removes them):
 
 | Toggle | Adds |
 |---|---|
-| `late` | `GHSA-aaaa-aaaa-0002` for `trove-test-late` (`2.0.0` affected, `2.0.1` fixed, high), and for NuGet `GHSA-aaaa-aaaa-0103` for `Contoso.Util@2.1.0` (fixed `2.2.0`) |
+| `late` | `GHSA-aaaa-aaaa-0002` for `quader-test-late` (`2.0.0` affected, `2.0.1` fixed, high), and for NuGet `GHSA-aaaa-aaaa-0103` for `Contoso.Util@2.1.0` (fixed `2.2.0`) |
 | `invalid-id` | a record with the id `../x` |
 | `big-details` | `GHSA-aaaa-aaaa-0010`, `details` of 100 KiB |
 | `js-reference` | `GHSA-aaaa-aaaa-0011`, one reference is `javascript:alert(1)` |
@@ -2954,9 +2954,9 @@ bytes. `Counts` has `total`, `kinds` (`"npm/record"`, `"NuGet/archive"`, `"kev"`
 ### In the cluster
 
 [deploy/dev/osvstub.yaml](../../deploy/dev/osvstub.yaml): the Service `osvstub` on 443 in front of one pod (the dataset and the log are in memory), a certificate of the dev CA,
-the control token in Secret `trove-osvstub` (key `control-token`), TCP probes (an HTTP probe would be counted). [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (marker `M4b osv-stub`) builds
-the image (`make osv-stub-image`), loads it into kind, applies the manifest and restarts the Deployment when `TROVE_E2E_OSVSTUB=1`, and exports `TROVE_E2E_OSVSTUB_HOST`
-(`osvstub.<ns>.svc`). The base URL of the source is `https://$TROVE_E2E_OSVSTUB_HOST/`; trove trusts the dev CA for upstreams through `proxy.outbound.tls.ca_files`
+the control token in Secret `quader-osvstub` (key `control-token`), TCP probes (an HTTP probe would be counted). [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (marker `M4b osv-stub`) builds
+the image (`make osv-stub-image`), loads it into kind, applies the manifest and restarts the Deployment when `QUADER_E2E_OSVSTUB=1`, and exports `QUADER_E2E_OSVSTUB_HOST`
+(`osvstub.<ns>.svc`). The base URL of the source is `https://$QUADER_E2E_OSVSTUB_HOST/`; Quader trusts the dev CA for upstreams through `proxy.outbound.tls.ca_files`
 ([values-dev.yaml](../../deploy/dev/values-dev.yaml)). The sets `vuln` and `vuln-long` export the switch ([the vulnerability tests](#the-vulnerability-tests)); their profile points
 the installation at the Service (`values-vuln.yaml`).
 
@@ -2968,16 +2968,16 @@ included) and the clients' audits read what they wrote.
 
 The tests of GitLab CI OIDC (M4, [R-CI-028](../spec/gitlab-ci-oidc.md#r-ci-028--reference-pipeline-npm-and-nuget-from-gitlab-ci), roadmap E4.1 and E4.4 to
 E4.7) run the reference pipeline of the specification's Examples with the real npm and .NET clients of the [npm](#the-npm-client-matrix) and
-[NuGet](#the-nuget-clients) client pods, against the [issuer double](#the-oidc-issuer-double) and a chart-installed trove in the scatter profile
+[NuGet](#the-nuget-clients) client pods, against the [issuer double](#the-oidc-issuer-double) and a chart-installed Quader in the scatter profile
 (three `web` replicas, every request to another one). No test runs against a real GitLab (Q-CI-25).
 
 | Set | Tests | Runs | Cluster |
 |---|---|---|---|
 | `ci` | `TestCIPipeline`, `TestCITokens`, `TestCITasks` | every change, job `e2e-ci` of Test and Release, edge port 8091 | two npm and two NuGet client pods, the double |
 | `ci-ha` | `TestCIHADrain`, `TestCIHAValkeyStopped`, `TestCIHASingleUse`, `TestCIHAPodDelete` | nightly and on dispatch, job `e2e-ci` of HA and Performance (nightly), edge port 8092; by hand | the same and the second double `oidcstub-single` |
-| `access-long` | `TestE1_11Journeys` with the journey `13-ci` | every change, job `e2e` | the double (`TROVE_E2E_OIDCSTUB=1` is set by the set) |
+| `access-long` | `TestE1_11Journeys` with the journey `13-ci` | every change, job `e2e` | the double (`QUADER_E2E_OIDCSTUB=1` is set by the set) |
 
-`make e2e SET=ci` and `SET=ci-ha`; `TROVE_E2E_RUN='^TestCIPipeline$'` runs one test. The long legs are nightly because a drain, a failover and
+`make e2e SET=ci` and `SET=ci-ha`; `QUADER_E2E_RUN='^TestCIPipeline$'` runs one test. The long legs are nightly because a drain, a failover and
 an outage take minutes (owner, [promt.md](../projektplan/promt.md) step 4). A red long leg is a finding, not a release blocker.
 
 | File | Responsibility |
@@ -2992,18 +2992,18 @@ an outage take minutes (owner, [promt.md](../projektplan/promt.md) step 4). A re
 The pipeline is not typed again in the tests. `specExamples` reads [docs/spec/gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md), section Examples: the
 issuer and mapping bodies (the issuer's URL becomes the double's, with `ca_bundle_ref` naming the dev CA), the `.gitlab-ci.yml` (the hidden job's
 `before_script` and the `script` of `publish-npm` and `push-nuget`, run in one `bash -e -o pipefail` as the runner does) and the `nuget.config`;
-the example host becomes `localhost:<edge port>`. A job gets its variables (`TROVE_URL`, `CI_*` from the claims), its ID token as a variable
+the example host becomes `localhost:<edge port>`. A job gets its variables (`QUADER_URL`, `CI_*` from the claims), its ID token as a variable
 (never a line of the log), a checkout of the repository (`package.json`, the lockfile, the solution and the project) and runs inside the client
 pod, whose forwarder carries `https://localhost:<port>` to the edge. The pod has `curl` and `jq` ([Q-CI-45](../spec/gitlab-ci-oidc.md#q-ci-45--curl-and-jq-in-the-client-images-of-the-end-to-end-tests));
 `npm` is the row `npm11`. The ID token is minted by the double with the claim set of a recorded fixture ([testdata](../../test/oidcstub/testdata)),
-whose IDs and paths are those of the Examples. After the script the harness copies `$TROVE_TOKEN` into a file of the pod, so that a test can try the
+whose IDs and paths are those of the Examples. After the script the harness copies `$QUADER_TOKEN` into a file of the pod, so that a test can try the
 token the job revoked; the file is outside the log. The job's log goes to `.out/e2e/ci-job-<name>-<run>-<id>.log`.
 
 ### The tests
 
 | Test | Criterion | What it asserts |
 |---|---|---|
-| `TestCIPipeline` protected tag | R-CI-028, E4.1, R-CI-020 | both jobs exit 0; `@acme-billing/invoice-client` 1.4.0 is in `npm-internal` and `Acme.Billing.InvoiceApi` 1.4.0 in `nuget-internal`; `GET /api/v1/ci/issuances?jobId=` lists one record per job with `projectId` 1234, `ref` `v1.4.0` and the `sha` of the token; the closing `DELETE /api/v1/tokens/current` revoked the token before its expiry and the next request with it gets 401; no log contains a `trv_cit_` value, the ID token or a part of it; the audit entry of the publish (`artifact.deployed` in the repository) carries the issuance's `token_id`, and `token.revoked` has the reason `owner` |
+| `TestCIPipeline` protected tag | R-CI-028, E4.1, R-CI-020 | both jobs exit 0; `@acme-billing/invoice-client` 1.4.0 is in `npm-internal` and `Acme.Billing.InvoiceApi` 1.4.0 in `nuget-internal`; `GET /api/v1/ci/issuances?jobId=` lists one record per job with `projectId` 1234, `ref` `v1.4.0` and the `sha` of the token; the closing `DELETE /api/v1/tokens/current` revoked the token before its expiry and the next request with it gets 401; no log contains a `qdr_cit_` value, the ID token or a part of it; the audit entry of the publish (`artifact.deployed` in the repository) carries the issuance's `token_id`, and `token.revoked` has the reason `owner` |
 | `TestCIPipeline` unprotected branch | R-CI-028, R-CI-011, E4.1 | the exchange succeeds through `acme-read` (read scope only); `npm ci` installs, `npm publish` and `dotnet nuget push` get 403; version 1.4.1 exists in neither repository |
 | `TestCIPipeline` fork in the parent | R-CI-012, E4.4 | with the claim shape of [id-token-merge-request-fork-in-parent.json](../../test/oidcstub/testdata/id-token-merge-request-fork-in-parent.json): the exchange is refused `no_matching_mapping`, then `cross_project_source_denied` once a mapping pins the fork's namespace; the refusal prints `error`, `error_description`, `reason` and `requestId`; with `crossProjectSource: read_only` the token installs and `npm publish` gets 403 |
 | `TestCIPipeline` dry run | R-CI-019, R-UI-036, E4.5 | for each of the five claim sets above, `POST /api/v1/ci/issuers/{issuer}/evaluate` (the API of the claim tester) selects the mappings the exchange used, its scope is contained in the issued scope (the dry run reads no policy; what the issued scope adds are the reads of the mapping's policy), and its rendered inline grants equal the frozen ones of the issuance |
@@ -3019,7 +3019,7 @@ token the job revoked; the file is outside the log. The job's log goes to `.out/
 ### Findings of these tests
 
 - **The Example's `dotnet nuget push` got 401 on the service index** of an installation that does not serve anonymous requests: the client fetches the index before it
-  sends the API key, and only the source `trove` (`nuget-all`) had credentials. The `nuget.config` of the Examples now names `nuget-internal` as a source with the same
+  sends the API key, and only the source `quader` (`nuget-all`) had credentials. The `nuget.config` of the Examples now names `nuget-internal` as a source with the same
   credentials ([Q-CI-44](../spec/gitlab-ci-oidc.md#q-ci-44--the-examples-nugetconfig-names-the-push-source)); the user manual has the same file.
 - **A job names the instance UID of its replica**, not the pod name; `TestCITasks` maps it through the replica list.
 - **The double must not be evicted by a drain**: its keys and counters are in memory, so `oidcstub.yaml` pins it to the control-plane node like the driver and the client pods. The first run
@@ -3038,10 +3038,10 @@ Measured on the owner's dev cluster (kind, four nodes, an arm64 host with the am
 | `make e2e SET=ci`, twice in a row | 15 tests and subtests passed both times, 104 s and 108 s of `go test` (`TestCIPipeline` 47 to 50 s with the fixture, `TestCITokens` 34 s of which the expiry takes 31 s, `TestCITasks` 0.1 to 2 s) |
 | a job of the reference pipeline | the npm job 0.7 to 1.3 s, the NuGet job 2.1 to 2.6 s (exchange, restore or install, publish and revocation, every request to another replica) |
 | E4.6 revocation bound | the revoked token failed on every replica after 37 to 42 ms (bound: 2 s); the token with `ttl=30` answered 401 on all three replicas a second after its expiry |
-| `make e2e SET=ci-ha`, once | 4 tests passed in 379 s: `TestCIHADrain` 65 s (the drain of `trove-worker` took 18 s, two pipeline runs overlapped it), `TestCIHAValkeyStopped` 52 s, `TestCIHASingleUse` 151 s (250 ID tokens, 500 exchanges, 500 package requests, no 429 or 5xx, across `valkey-failover.sh` and `FLUSHALL`), `TestCIHAPodDelete` 111 s (619 exchanges by 50 jobs, all 200, while `trove-web-…` was deleted) |
+| `make e2e SET=ci-ha`, once | 4 tests passed in 379 s: `TestCIHADrain` 65 s (the drain of `quader-worker` took 18 s, two pipeline runs overlapped it), `TestCIHAValkeyStopped` 52 s, `TestCIHASingleUse` 151 s (250 ID tokens, 500 exchanges, 500 package requests, no 429 or 5xx, across `valkey-failover.sh` and `FLUSHALL`), `TestCIHAPodDelete` 111 s (619 exchanges by 50 jobs, all 200, while `quader-web-…` was deleted) |
 | the journey `13-ci` | passed in 42 s of Playwright time, during development with that one check left out, against the backend with every step and both colour schemes, except the axe check of the issuance detail dialog, which fails with `scrollable-region-focusable` (the two `<pre>` blocks of grants and claims and the dialog content scroll without keyboard access): a finding of the UI, open until the screen is fixed; the check stays in the journey |
 
-The first runs of `ci-ha` failed for reasons of the tests, not of trove: the double was evicted by the drain (it now sits on the control-plane node),
+The first runs of `ci-ha` failed for reasons of the tests, not of Quader: the double was evicted by the drain (it now sits on the control-plane node),
 and the single-use test retried a 429 so hard that the budget never refilled (it is paced now). The nightly job has not run yet; the set was run by hand.
 
 ### Not covered
@@ -3103,24 +3103,24 @@ Bastion's own Ingress. The Bastion is described in [bastion.md](bastion.md), its
 
 ```mermaid
 flowchart LR
-  subgraph trove["namespace trove"]
-    c["client pods<br/>npm, pnpm, Yarn 4, dotnet<br/>(trove-e2e-npm-i, trove-e2e-nuget-i)"]
+  subgraph quader["namespace quader"]
+    c["client pods<br/>npm, pnpm, Yarn 4, dotnet<br/>(quader-e2e-npm-i, quader-e2e-nuget-i)"]
     m["main installation<br/>profile bastion"]
     pg[("PostgreSQL")]
     s3[("SeaweedFS")]
   end
-  subgraph tb["namespace trove-bastion"]
+  subgraph tb["namespace quader-bastion"]
     v["bastion-volume x2<br/>volume backend, routeByPath"]
     b["bastion-bucket x2<br/>bucket backend"]
     vk[("bastion-valkey<br/>2 + 3 Sentinels")]
   end
-  c -- "https, hosts bastion-*.trove.localhost" --> h["HAProxy Ingress<br/>ingress-controller"]
+  c -- "https, hosts bastion-*.quader.localhost" --> h["HAProxy Ingress<br/>ingress-controller"]
   h -- "HTTPS, verified" --> v
   h -- "HTTPS, verified" --> b
   v -- "bst token, :8080" --> m
   b -- "bst token, :8080" --> m
   b --> vk
-  b -- "bucket trove-bastion-partners" --> s3
+  b -- "bucket quader-bastion-partners" --> s3
   m --> pg
 ```
 
@@ -3129,15 +3129,15 @@ flowchart LR
 `make e2e SET=bastion` (and `bastion-long`) starts the npm and the NuGet client pods (two each, outside the Bastion's namespace, with the hosts of the Bastions as host aliases of
 their forwarders), and the first test calls `basFx` ([bastion_env_test.go](../../test/e2e/bastion_env_test.go)), which does, once per run:
 
-1. `up.sh` with `TROVE_PROFILE=bastion`: the main installation with [values-bastion.yaml](../../deploy/dev/values-bastion.yaml) (`bastions.trusted_proxies` the pod range, so the
+1. `up.sh` with `QUADER_PROFILE=bastion`: the main installation with [values-bastion.yaml](../../deploy/dev/values-bastion.yaml) (`bastions.trusted_proxies` the pod range, so the
    Bastions' forwarded client address counts, and both Bastion base URLs in `server.additional_base_urls`; R-BAS-017). The profile is returned to `default` at the end of the run, like
-   the scatter profile, unless `TROVE_E2E_BASTION_KEEP=1`.
-2. `deploy/dev/bastion.sh infra`: the namespace `trove-bastion` (Pod Security `restricted`), the dev CA as an Issuer and as the trust bundle, the bucket credentials copied from
-   `trove-s3`, and [bastion.yaml](../../deploy/dev/bastion.yaml): the certificates of the two hosts, the signing key and Valkey password (internal-secrets-operator), the Valkey
-   `bastion-valkey` with its NetworkPolicy, and the Job that makes the bucket `trove-bastion-partners`.
+   the scatter profile, unless `QUADER_E2E_BASTION_KEEP=1`.
+2. `deploy/dev/bastion.sh infra`: the namespace `quader-bastion` (Pod Security `restricted`), the dev CA as an Issuer and as the trust bundle, the bucket credentials copied from
+   `quader-s3`, and [bastion.yaml](../../deploy/dev/bastion.yaml): the certificates of the two hosts, the signing key and Valkey password (internal-secrets-operator), the Valkey
+   `bastion-valkey` with its NetworkPolicy, and the Job that makes the bucket `quader-bastion-partners`.
 3. The registrations `partners` and `partners-bucket` through the management API, their old tokens revoked, one `bst` token each, written into the Secrets `bastion-token-volume`
    and `bastion-token-bucket` that the chart reads (R-BAS-004, R-BAS-006).
-4. `deploy/dev/bastion.sh install volume|bucket` (in parallel): `helm upgrade --install` of [deploy/helm/trove-bastion](../../deploy/helm/trove-bastion) with
+4. `deploy/dev/bastion.sh install volume|bucket` (in parallel): `helm upgrade --install` of [deploy/helm/quader-bastion](../../deploy/helm/quader-bastion) with
    [bastion-chart-common.yaml](../../deploy/dev/bastion-chart-common.yaml) and `bastion-chart-volume.yaml` or `bastion-chart-bucket.yaml`, the Docker network ranges as
    `networkPolicy.ingress.probeCIDRs`, and the image ID as a pod annotation, so that a rebuilt image rolls the pods and an unchanged one rolls nothing. When the releases existed, the
    deployments are restarted and the Valkey is flushed, so that no block, answer or cached byte of an earlier run is in them.
@@ -3173,33 +3173,33 @@ their forwarders), and the first test calls `basFx` ([bastion_env_test.go](../..
 
 | Test | Row of R-BAS-049 | What it asserts |
 |---|---|---|
-| `TestBastion_R_BAS_049_ColdAndWarmCache` | cold cache, warm cache | per Bastion and per client (npm, pnpm, Yarn 4, `dotnet restore`): a cold run sends every tarball or `.nupkg` once, each answered `200`; a second run with an empty client cache within 90 s sends no tarball, `.nupkg` or document (npm adds `npm view`, for a document request); `trove_bastion_requests_total{class=artifact,result=hit}` rises by 20 on the warm `npm ci` of 20 tarballs (R-BAS-040); after 90 s exactly one request per artifact, each a `304` that transferred nothing |
+| `TestBastion_R_BAS_049_ColdAndWarmCache` | cold cache, warm cache | per Bastion and per client (npm, pnpm, Yarn 4, `dotnet restore`): a cold run sends every tarball or `.nupkg` once, each answered `200`; a second run with an empty client cache within 90 s sends no tarball, `.nupkg` or document (npm adds `npm view`, for a document request); `quader_bastion_requests_total{class=artifact,result=hit}` rises by 20 on the warm `npm ci` of 20 tarballs (R-BAS-040); after 90 s exactly one request per artifact, each a `304` that transferred nothing |
 | `TestBastion_R_BAS_049_RoutingByPath` | R-BAS-033 | every tarball path of the pnpm set requested twice at the volume Bastion, after one warm-up round, causes at most one request to the main installation, both replicas serve hits; a failure logs the content feed entries each replica applied since the warm-up (F-116) |
 | `TestBastion_R_BAS_049_ReadOnly` | read-only | `npm publish` of a 1.5 MB package exits non-zero with `E403` and the main installation's URL, the Bastion read less than 64 KiB of the upload, the package does not exist at the main installation; `dotnet nuget push` exits non-zero with `403` |
 | `TestBastion_R_BAS_049_HiddenContent` | hidden content | what `$PART` may not read is a `404` identical to the main installation's, with the Bastion holding it for `$FULL` or not; narrowing the permission hides the cached open package within 20 s |
 | `TestBastion_R_BAS_049_TokenRevoked` | token revoked | a loop at 20 requests a second; the revocation returns; the last `200` is at most 5 s after it and every later answer is a `401`; both replicas refused requests |
 | `TestBastion_R_BAS_049_FailedAuthenticationTimeout` | failed-authentication timeout | from a client pod, 20 random well-formed tokens are `401` (asked at the main installation), the 21st and later are `429 auth_timeout` with `Retry-After`, none of the later reaches the main installation, and `$FULL` keeps working |
-| `TestBastion_R_BAS_049_NetworkPolicy` | R-BAS-047 | the live policy of the bucket Bastion is `policyTypes: [Ingress]` without egress rules, 8443 from the ingress controller's namespace and 8081; a probe pod (`TROVE_E2E_OPENSSL_IMAGE`, TLS handshake and status line, as `TestE07NetworkPolicy`) in `default` is refused at a Bastion pod's 8443 and 8081; the same probe in the admitted namespace reaches 8443 and is refused at 8081, so each refusal is the policy's; the Bastion serves through its Ingress meanwhile |
+| `TestBastion_R_BAS_049_NetworkPolicy` | R-BAS-047 | the live policy of the bucket Bastion is `policyTypes: [Ingress]` without egress rules, 8443 from the ingress controller's namespace and 8081; a probe pod (`QUADER_E2E_OPENSSL_IMAGE`, TLS handshake and status line, as `TestE07NetworkPolicy`) in `default` is refused at a Bastion pod's 8443 and 8081; the same probe in the admitted namespace reaches 8443 and is refused at 8081, so each refusal is the policy's; the Bastion serves through its Ingress meanwhile |
 | `TestBastion_R_BAS_049_ChartRender` | R-BAS-045 | `helm template` with the required values only: Deployment with two replicas, PDB, Ingress with the edge-limit annotations, NetworkPolicy, no Secret, Role or claim; `edgeLimit.requestsPerSecond=50` fails and names both values |
 | `TestBastion_R_BAS_049_Metrics` | R-BAS-040 | every metric of the table is exported by both replicas of both Bastions |
-| `TestBastion_R_BAS_049_MainUnreachable` | main installation unreachable | an egress policy of the test (`e2e-cut-main-bucket`: DNS, the Bastion's Valkey, the bucket, nothing else; the chart renders no egress rule) is applied to the bucket Bastion's pods and the `api` and `packages` pods of the main installation are deleted (a policy stops new connections only; a replica that was restarted instead could not use its answers, R-BAS-026); both replicas report `main_reachable 0` within 60 s; the warm `npm ci` and `dotnet restore` succeed; a cold package and an unseen token get `503 main_unreachable` with `Retry-After: 30`; 135 s after the last answer everything is `503`; the gauge stays 0 for two minutes (the `for` of `TroveBastionMainUnreachable`); after the test's policy is deleted both replicas are reachable within 40 s and the audit buffers empty |
+| `TestBastion_R_BAS_049_MainUnreachable` | main installation unreachable | an egress policy of the test (`e2e-cut-main-bucket`: DNS, the Bastion's Valkey, the bucket, nothing else; the chart renders no egress rule) is applied to the bucket Bastion's pods and the `api` and `packages` pods of the main installation are deleted (a policy stops new connections only; a replica that was restarted instead could not use its answers, R-BAS-026); both replicas report `main_reachable 0` within 60 s; the warm `npm ci` and `dotnet restore` succeed; a cold package and an unseen token get `503 main_unreachable` with `Retry-After: 30`; 135 s after the last answer everything is `503`; the gauge stays 0 for two minutes (the `for` of `QuaderBastionMainUnreachable`); after the test's policy is deleted both replicas are reachable within 40 s and the audit buffers empty |
 | `TestBastion_R_BAS_049_InterfaceMismatch` | interface mismatch | Q-BAS-111: the main installation at version 2 makes both replicas report the mismatch (main version 2, own 1) for a minute, the Bastion serves warm content, a cold package is `503`; the Bastion at version 2 clears it and a cold package is `200`; cleanup restores both |
 | `TestBastion_R_BAS_049_EdgeLimit` | R-BAS-038 | 20,000 requests from one address through 200 connections: some `429` are the ingress's (no problem document) and are not counted by the Bastion, none is shed, no replica restarts |
-| `TestBastion_R_BAS_049_FloodingAddress` | flooding address | 2,000 requests from one address, paced at 80 a second (below the ingress's limit, above the Bastion's), block it (`trove_bastion_blocks_total`), then 60 requests answer `429 address_blocked`, both replicas count `blocked` refusals, a client pod's address is served |
+| `TestBastion_R_BAS_049_FloodingAddress` | flooding address | 2,000 requests from one address, paced at 80 a second (below the ingress's limit, above the Bastion's), block it (`quader_bastion_blocks_total`), then 60 requests answer `429 address_blocked`, both replicas count `blocked` refusals, a client pod's address is served |
 | `TestBastion_R_BAS_007_Journey` | R-BAS-007 | the browser journey: the card of `partners` shows both replicas' last contact; a registration is created, a token of 20 days issued, copied once (clipboard compared), gone after a reload, with the warning mark |
 | `TestBastionLong_R_BAS_049_Drain` | drain | `kubectl drain` of a replica's node (not the PostgreSQL primary's) two minutes into a ten-minute loop of `npm ci` and `dotnet restore`: zero failed runs, the replica is rescheduled |
 | `TestBastionLong_R_BAS_049_ReplicaLost` | replica lost | per backend (volume, bucket), a replica is force-deleted (`--grace-period=0 --force`) 30 s into the load of Q-BAS-142; no command of the three loops fails after the client's own retries, the pair is ready again, the surviving replica's `result=hit` counter for artifacts rises, and the main installation sends the warm artifacts again not at all (bucket) or at most once per replica (volume, Q-BAS-143) |
 | `TestBastionLong_R_BAS_049_MainFailover` | main installation failing over | under the load through the bucket Bastion, one after the other: `failover.sh` (PostgreSQL switchover), `valkey-failover.sh`, a `packages` pod of the main installation force-deleted; no command fails, the three loops each had a command during every fault, the interface never mismatched, the replicas were never all unreachable for two minutes (Q-BAS-141, Q-BAS-144) |
-| `TestBastionLong_R_BAS_049_RollingUpgradeMain` | rolling upgrade, main installation | under the same load: `kubectl rollout restart` of `trove-packages`, of `trove-api`, and `up.sh` (`helm upgrade` with the migration Job) with a changed pod annotation `e2e-roll` of both Deployments; the same conditions |
+| `TestBastionLong_R_BAS_049_RollingUpgradeMain` | rolling upgrade, main installation | under the same load: `kubectl rollout restart` of `quader-packages`, of `quader-api`, and `up.sh` (`helm upgrade` with the migration Job) with a changed pod annotation `e2e-roll` of both Deployments; the same conditions |
 | `TestBastionLong_R_BAS_049_RollingUpgradeBastion` | rolling upgrade, Bastion | per backend: `kubectl rollout restart` of the Bastion's Deployment, and `bastion.sh install` (`helm upgrade`) with a changed pod annotation `e2e-roll`; the same conditions (with the volume backend the caches start empty after each, so the warm loops refill from the main installation) |
 | `TestBastionLong_R_BAS_049_AnonymousMissFlood` | anonymous miss flood | 10,000 anonymous requests for random names: at most 30 reach the main installation per minute, at most 16 (the anonymous quarter of `max_concurrent`) in flight |
 
 **The failure suite's load and judgement** ([bastion_load_test.go](../../test/e2e/bastion_load_test.go), Q-BAS-141 to Q-BAS-144). `underLoad` warms the clients, publishes a pool of cold packages
 to the main installation (`bas<run>-lc-<scenario>-<n>`, 100 to 250 of them), then runs three loops until the last fault is over, every command recorded with its start, end, result and the tail of a failure's output:
 `npm ci` (empty client cache each run, the set of the other scenarios), `dotnet restore` (empty client cache each run) and one `npm install --no-save` of the next package of the pool, which the Bastion has
-not been asked for, so every run is a miss forwarded to the main installation. The clients run with their default retries. Each loop pauses after a command (2 s, 2 s and 1 s): back to back, one client address sends about 200 requests a second, above the Bastion's per-address limit of 50 (burst 200, R-BAS-035), and the Bastion's `429` makes npm wait 10 s and 60 s (Q-BAS-142). A sampler reads `trove_bastion_interface_mismatch` and `trove_bastion_main_reachable`
+not been asked for, so every run is a miss forwarded to the main installation. The clients run with their default retries. Each loop pauses after a command (2 s, 2 s and 1 s): back to back, one client address sends about 200 requests a second, above the Bastion's per-address limit of 50 (burst 200, R-BAS-035), and the Bastion's `429` makes npm wait 10 s and 60 s (Q-BAS-142). A sampler reads `quader_bastion_interface_mismatch` and `quader_bastion_main_reachable`
 of every running replica every 2 s. Each fault is followed by 30 s of load; after the last one the load stops and a subtest per fault (named with the requirement IDs) requires: every command that ran during the
-fault or its 30 s exited 0; each loop had a command during the fault itself; the mismatch gauge never rose; the replicas were never all unreachable for two minutes (the condition of `TroveBastionMainUnreachable`);
+fault or its 30 s exited 0; each loop had a command during the fault itself; the mismatch gauge never rose; the replicas were never all unreachable for two minutes (the condition of `QuaderBastionMainUnreachable`);
 and the scenario's own conditions. A failed command outside every fault, and a cold pool that ran out before the load ended, fail the scenario itself. The record of the run (commands, faults, link statistics) is
 `bastion-load-<variant>-<scenario>.json` in the artifact directory. A Bastion's rolling restart with the volume backend drops its caches (an ephemeral volume), so the loops refill them from the main installation.
 The cold loop is `npm` only; a NuGet miss loop would need NuGet packages published per run (Q-BAS-142).
@@ -3215,7 +3215,7 @@ bucket Bastion, 837 commands in 9 min 56 s (`npm ci` 238, `dotnet restore` 182, 
 
 **Diagnostics of a failure.** A failed Bastion install (`basInstall`) and a failed grace-period install of the interface-mismatch scenario write
 `bastion-diag-<test>/` into the artifact directory ([bastion_diag_test.go](../../test/e2e/bastion_diag_test.go)): the pods, the events and the logs (previous
-containers too) of the namespace `trove-bastion` and of the main installation, taken before the scenario replaces the pods. The mismatch scenario records every
+containers too) of the namespace `quader-bastion` and of the main installation, taken before the scenario replaces the pods. The mismatch scenario records every
 install of its warm-up loop and, on a failure, says when the last one succeeded relative to the moment the mismatch was seen, which tells answers that
 expired from a cache that was never warm.
 
@@ -3224,13 +3224,13 @@ expired from a cache that was never warm.
 ```shell
 make image VERSION=dev && make dev-up
 make e2e SET=bastion          # the short scenarios; the profile and the Bastions are made by the first test (about 40 minutes)
-make e2e SET=bastion-long     # the failure suite, the drain (TROVE_E2E_BASTION_LOOP shortens the loop while a test is written) and the anonymous flood
-TROVE_E2E_BASTION_KEEP=1 make e2e SET=bastion TROVE_E2E_RUN='^TestBastion_R_BAS_049_ReadOnly$'   # one test; the Bastions and the profile stay
+make e2e SET=bastion-long     # the failure suite, the drain (QUADER_E2E_BASTION_LOOP shortens the loop while a test is written) and the anonymous flood
+QUADER_E2E_BASTION_KEEP=1 make e2e SET=bastion QUADER_E2E_RUN='^TestBastion_R_BAS_049_ReadOnly$'   # one test; the Bastions and the profile stay
 deploy/dev/bastion.sh status | down
 ```
 
 The journey needs `npm ci` in `web/` and `npx playwright install --with-deps chromium`, like the journeys of E1.11. CI: job `e2e-bastion` of Test and Release runs the set `bastion` when
-the change touches `internal/bastion`, `internal/bastionmain`, `deploy/helm/trove-bastion`, `docs/spec/bastion.md` or the suite's own files (a scope step diffs against the base of the
+the change touches `internal/bastion`, `internal/bastionmain`, `deploy/helm/quader-bastion`, `docs/spec/bastion.md` or the suite's own files (a scope step diffs against the base of the
 push or the pull request, and the job is green after it otherwise), and Semantic Release needs it; job `e2e-bastion` of HA and Performance (nightly) runs both sets.
 
 ### Findings of the Bastion tests
@@ -3239,16 +3239,16 @@ The first runs of the suite found these; each is fixed, with a test, or recorded
 
 | Finding | Cause | Fix |
 |---|---|---|
-| The Bastion could not use the profile's Valkey: `NOAUTH` from the Sentinels | the chart `trove-bastion` had no Sentinel credential; the Sentinels of a Valkey that requires a password need `valkey.sentinel.username_file` and `password_file` (R-BAS-046, R-ARCH-031) | `secrets.valkeySentinel`, `BastionSentinel` in `internal/config/bastion_role.go`, the generated schema, `_helpers.tpl`, `TestR_BAS_002_…`, the manual |
+| The Bastion could not use the profile's Valkey: `NOAUTH` from the Sentinels | the chart `quader-bastion` had no Sentinel credential; the Sentinels of a Valkey that requires a password need `valkey.sentinel.username_file` and `password_file` (R-BAS-046, R-ARCH-031) | `secrets.valkeySentinel`, `BastionSentinel` in `internal/config/bastion_role.go`, the generated schema, `_helpers.tpl`, `TestR_BAS_002_…`, the manual |
 | A warm run on the bucket Bastion sent a document request to the main installation | the names of a target's `Vary` are learned per replica, so the replica that did not fetch a document did not find the entry its peer wrote under the key with the values (R-BAS-018, R-BAS-023) | `saveEntry` also writes the entry at the plain key, `learnVaryFromCache` reads the names there ([entries.go](../../internal/bastion/engine/entries.go)); `TestR_BAS_023_AnotherReplicaServesTheDocumentAPeerKeptWithoutKnowingItsVary` |
 | `npm publish` and `dotnet nuget push` through a Bastion got `401 credentials_required`, not `403 bastion_read_only` | the write probe carries no credential and the authentication stage refused it on an endpoint that refuses anonymous requests (R-BAS-014) | fixed on main (Q-BAS-118) |
 | `$PART` read a document `$FULL` had cached and got a `304` it had not asked for | a partial reader's `304` to the shared entry's validator was passed on (R-BAS-023) | fixed on main (Q-BAS-107); this suite found it first |
 | A warm run could not tell a client that never asked from a Bastion that served | pnpm 11 and later ignore `npm_config_store_dir`: its store is below `$HOME/.local`, so a "warm" run found everything locally | the wipe removes `$HOME/.local`, and every warm run asserts that the Bastion's hit counter rose by the number of artifacts |
-| The main installation answered `421 misdirected_request` to the Bastions' handshake | after the fix wave it checks the host of the request before it recognizes a Bastion; the Service name the Bastions call is not a host it serves | `https://trove-api.trove.svc:8080` and `https://trove-packages.trove.svc:8080` are listed in `server.additional_base_urls` of the profile (the Bastions' `bastion.main.url` and `bastion.main.packages_url`) |
+| The main installation answered `421 misdirected_request` to the Bastions' handshake | after the fix wave it checks the host of the request before it recognizes a Bastion; the Service name the Bastions call is not a host it serves | `https://quader-api.quader.svc:8080` and `https://quader-packages.quader.svc:8080` are listed in `server.additional_base_urls` of the profile (the Bastions' `bastion.main.url` and `bastion.main.packages_url`) |
 | A NetworkPolicy did not cut the Bastion off | a policy stops new connections only; the replicas kept the connection they held | the scenario restarts the replicas after the cut, so every connection is new (the answers and bytes are in Valkey and the bucket) |
 | The flood did not reach the Bastion's own stage | the edge limit (100 requests a second) refused 90 % of a fast flood first | the flood of R-BAS-037 is paced below the edge limit and above the Bastion's (80 a second) |
 | `kubectl debug` was refused by the Pod Security Standard | the default profile adds `SYS_PTRACE` | `--profile=restricted` with an `IfNotPresent` image |
-| `go build -overlay` of the version alone made the main installation fail to start | `internal/api/v1/document.go` checks `x-trove-bastion-interface` of the embedded OpenAPI document against the constant | the overlay replaces the embedded copy as well |
+| `go build -overlay` of the version alone made the main installation fail to start | `internal/api/v1/document.go` checks `x-quader-bastion-interface` of the embedded OpenAPI document against the constant | the overlay replaces the embedded copy as well |
 
 Measured on the dev cluster: the first token loop was refused 54 ms after the revocation returned (bound: 5 s); a narrowed permission reached a Bastion in under 1 s; the edge refused 19,897 of 20,000 requests in one second (limit 100 a second per address, 50 connections); 2,000 requests at 80 a second blocked the address after 301 `rate_limited` answers.
 
@@ -3270,8 +3270,8 @@ criteria E4b.1 (the drain of a full synchronization), E4b.4 to E4b.6 and E4b.8 o
 
 ```mermaid
 flowchart LR
-  subgraph trove["namespace trove"]
-    c["client pods x3<br/>npm 10-12, pnpm 10-12, Yarn 1 and 4<br/>dotnet 8, 9, 10<br/>(trove-e2e-npm-i, trove-e2e-nuget-i)"]
+  subgraph quader["namespace quader"]
+    c["client pods x3<br/>npm 10-12, pnpm 10-12, Yarn 1 and 4<br/>dotnet 8, 9, 10<br/>(quader-e2e-npm-i, quader-e2e-nuget-i)"]
     w["web x3 (scatter)<br/>worker x2"]
     pg[("PostgreSQL")]
     osv["osvstub<br/>advisories, KEV"]
@@ -3288,12 +3288,12 @@ flowchart LR
 
 ### What is deployed
 
-`make e2e SET=vuln` (and `vuln-long`) starts the three test upstreams (`TROVE_E2E_NPMSTUB=1`, `TROVE_E2E_NUGETSTUB=1`, `TROVE_E2E_OSVSTUB=1`), three npm and three NuGet client pods, and the first
+`make e2e SET=vuln` (and `vuln-long`) starts the three test upstreams (`QUADER_E2E_NPMSTUB=1`, `QUADER_E2E_NUGETSTUB=1`, `QUADER_E2E_OSVSTUB=1`), three npm and three NuGet client pods, and the first
 test calls `vulnFx` ([vuln_env_test.go](../../test/e2e/vuln_env_test.go)), which does, once per run:
 
-1. `up.sh` with `TROVE_PROFILE=vuln`: the chart with [values-scatter.yaml](../../deploy/dev/values-scatter.yaml) (three `api` and three `packages` replicas, the edge balancing every request on its own; the profile's worker pool `vuln` runs the queue of the scanning) and
-   [values-vuln.yaml](../../deploy/dev/values-vuln.yaml) (`vulnerabilities.sources.osv.base_url` and `kev.url` at the Service `osvstub`, `public_upstreams` with `npmstub.trove.svc` and
-   `nugetstub.trove.svc` next to the public hosts); two `worker` replicas come from [values-dev.yaml](../../deploy/dev/values-dev.yaml), which switches both advisory sources off (`vulnerabilities.sources.osv.mode` and `kev.mode`: no test cluster reaches the public hosts, and the npm audit default is `forward` again, which the npm matrix expects); `values-vuln.yaml` turns them back on at the stub and switches the three scheduled syncs (`maintenance.tasks.vuln-sync-osv`, `vuln-sync-osv-full`, `vuln-sync-kev`) off, so that a request the source sees in a test's window is one the test caused (finding 14); the tests start each sync through the task API, which runs a disabled task. The profile is returned to `default` at the end of the run.
+1. `up.sh` with `QUADER_PROFILE=vuln`: the chart with [values-scatter.yaml](../../deploy/dev/values-scatter.yaml) (three `api` and three `packages` replicas, the edge balancing every request on its own; the profile's worker pool `vuln` runs the queue of the scanning) and
+   [values-vuln.yaml](../../deploy/dev/values-vuln.yaml) (`vulnerabilities.sources.osv.base_url` and `kev.url` at the Service `osvstub`, `public_upstreams` with `npmstub.quader.svc` and
+   `nugetstub.quader.svc` next to the public hosts); two `worker` replicas come from [values-dev.yaml](../../deploy/dev/values-dev.yaml), which switches both advisory sources off (`vulnerabilities.sources.osv.mode` and `kev.mode`: no test cluster reaches the public hosts, and the npm audit default is `forward` again, which the npm matrix expects); `values-vuln.yaml` turns them back on at the stub and switches the three scheduled syncs (`maintenance.tasks.vuln-sync-osv`, `vuln-sync-osv-full`, `vuln-sync-kev`) off, so that a request the source sees in a test's window is one the test caused (finding 14); the tests start each sync through the task API, which runs a disabled task. The profile is returned to `default` at the end of the run.
 2. The three upstreams are reset (the source's dataset back to its fixture, the counters and modes of the npm and NuGet upstreams).
 3. The repositories (`ensureRepo` creates them or brings them to the settings; keys another suite defines differently, `npm-all` and `nuget-all` of the CI tests, get their members again):
 
@@ -3311,7 +3311,7 @@ test calls `vulnFx` ([vuln_env_test.go](../../test/e2e/vuln_env_test.go)), which
 4. One package per client row and per SDK for everything a test changes (Q-VULN-59): `e2e-vtri-<run>-<row>` for the eight npm rows, `E2e.Vtri<run>.L8|L9|L10` for the three SDKs,
    `…-replicas` and `…-valkey` for the replica tests, `e2e-vmal-<run>-mal` and `-malv` with a `MAL-` record for the switch of `blockMalicious`, and `…-pub` for the publish test. The package
    goes to the upstream (`/-/stub/publish`) and its record to the source (`POST /-/stub/records`: `GHSA-e2e-<run>-<label>`, version 1.0.0 affected, 1.0.1 fixed, CVSS 3.1 high). The
-   fixed names of the source (`trove-test-vuln`, `trove-test-mal`, `trove-test-alias`, `Newtonsoft.Json`, `Contoso.Json.Codecs`) are only read.
+   fixed names of the source (`quader-test-vuln`, `quader-test-mal`, `quader-test-alias`, `Newtonsoft.Json`, `Contoso.Json.Codecs`) are only read.
 5. A full synchronization (`vuln-sync-osv-full` with `acceptShrink`: a drain run of the long set leaves 100,000 records behind) through the task API, waited for with the job table and the
    evaluation (`vuln_pending_evaluation` empty, no `vuln-evaluate` queued or running).
 
@@ -3335,22 +3335,22 @@ Every test runs against the one environment; the npm rows and the SDKs run side 
 | Test | Criterion | What it does |
 |---|---|---|
 | `TestVuln_SetupSurvivesABrokenForward` | R-VULN-029 (the harness) | runs first and needs no environment: kills the kubectl process of forwards of its own to the npm and NuGet upstreams and a packages pod. After the connection to it was accepted, a control call, a publish and a ping are repeated once on the new forward and answered; after the stub answered a publish (the answer dropped, the client sees `EOF`), the repeat's 409 is accepted when the stub lists the version that was sent (npm and NuGet) and refused when it lists other dependencies; a 409 without a transport error fails |
-| `TestVuln_R_VULN_017_NPMAuditThroughEveryRepository` | R-VULN-017, E4b.5 | each row installs `trove-test-vuln@1.0.0` (through `npm-all`, cached in `npm-remote`) and `trove-test-alias@2.0.0` (`npm-local`), then `npm audit`, `pnpm audit` or `yarn npm audit` through `npm-local`, `npm-remote` and `npm-all`: exit non-zero, both advisories reported (Yarn 4 audits a tree per repository, below); pnpm 10 and Yarn 1 are `not applicable` with the reasons of Q-NPM-65; the npm upstream and the source saw no request during the audits |
-| `TestVuln_R_VULN_017_NPMAuditBody` | R-VULN-017 | the wire: a tree with `@acme/ui` (claimed), `trove-test-mal`, `trove-test-vuln`, `trove-test-alias`, through every repository and two replicas: the malicious advisory is `critical` with `CWE-506`, `@acme/ui` is withheld and the `npm-notice` says `1 internal name`, both replicas answer the same bytes, the legacy endpoints answer `501`, no request upstream |
-| `TestVuln_R_VULN_015_NPMBlockedInstallMalicious` | R-VULN-015, R-VULN-016, E4b.4 | every row: `install trove-test-mal@1.0.0` through `npm-all` fails with `403` (npm: `E403` and the text `trove blocked … malicious package (MAL-2026-1234)`), nothing in `node_modules`; then on the wire `403`, `no-store`, `vulnerability_blocked` and the text, no tarball request at the npm upstream, no item stored |
+| `TestVuln_R_VULN_017_NPMAuditThroughEveryRepository` | R-VULN-017, E4b.5 | each row installs `quader-test-vuln@1.0.0` (through `npm-all`, cached in `npm-remote`) and `quader-test-alias@2.0.0` (`npm-local`), then `npm audit`, `pnpm audit` or `yarn npm audit` through `npm-local`, `npm-remote` and `npm-all`: exit non-zero, both advisories reported (Yarn 4 audits a tree per repository, below); pnpm 10 and Yarn 1 are `not applicable` with the reasons of Q-NPM-65; the npm upstream and the source saw no request during the audits |
+| `TestVuln_R_VULN_017_NPMAuditBody` | R-VULN-017 | the wire: a tree with `@acme/ui` (claimed), `quader-test-mal`, `quader-test-vuln`, `quader-test-alias`, through every repository and two replicas: the malicious advisory is `critical` with `CWE-506`, `@acme/ui` is withheld and the `npm-notice` says `1 internal name`, both replicas answer the same bytes, the legacy endpoints answer `501`, no request upstream |
+| `TestVuln_R_VULN_015_NPMBlockedInstallMalicious` | R-VULN-015, R-VULN-016, E4b.4 | every row: `install quader-test-mal@1.0.0` through `npm-all` fails with `403` (npm: `E403` and the text `Quader blocked … malicious package (MAL-2026-1234)`), nothing in `node_modules`; then on the wire `403`, `no-store`, `vulnerability_blocked` and the text, no tarball request at the npm upstream, no item stored |
 | `TestVuln_R_VULN_015_NPMBlockedInstallInTriage` | R-VULN-015, R-VULN-016, E4b.4 | every row: install a package of its own (finding `needs_triage`), confirm and block the finding through the API, wipe the client's installed packages and caches (pnpm's store below `$HOME/.local` too), `install` and the lockfile install (`npm ci`, `--frozen-lockfile`, `--immutable`) fail with `403` and no retry; lift the block (`blocked` to `confirmed`): the install succeeds; the upstream served the tarball once |
 | `TestVuln_R_VULN_018_NuGetRestoreAudit` | R-VULN-018, E4b.5 | each SDK: `dotnet restore` of `Newtonsoft.Json 13.0.1` reports `NU1903` with `https://github.com/advisories/GHSA-aaaa-aaaa-0101` through `nuget-all`, and through `nuget-remote` with `nuget-local` as a second source; through `nuget-remote` alone it reports nothing; the malicious `Contoso.Json.Codecs 1.0.0` through `nuget-remote-open` reports `NU1904`; `<NuGetAuditSuppress Include="<url>" />` removes the warning |
-| `TestVuln_R_VULN_015_NuGetBlockedRestoreInTriage` | R-VULN-015, R-VULN-016, E4b.4 | each SDK: restore of a package of its own through `nuget-remote`, confirm and block the finding, restore with the packages folder and the HTTP cache removed fails with the `403`, lift, restore succeeds; and on the wire the refusal is one line `vulnerability_blocked: trove blocked …` as `text/plain`, `no-store` |
-| `TestVuln_R_VULN_018_NuGetVulnerabilityInfoOnTheWire` | R-VULN-018 | on every replica: `nuget-remote` (off) lists no resource and answers `404`, `nuget-local` and `nuget-all` list `VulnerabilityInfo/6.7.0` with the one entry `trove`; the page is keyed by lowercased IDs with the severity, url and interval of the rule, has the same `ETag` on every replica and answers `304` |
+| `TestVuln_R_VULN_015_NuGetBlockedRestoreInTriage` | R-VULN-015, R-VULN-016, E4b.4 | each SDK: restore of a package of its own through `nuget-remote`, confirm and block the finding, restore with the packages folder and the HTTP cache removed fails with the `403`, lift, restore succeeds; and on the wire the refusal is one line `vulnerability_blocked: Quader blocked …` as `text/plain`, `no-store` |
+| `TestVuln_R_VULN_018_NuGetVulnerabilityInfoOnTheWire` | R-VULN-018 | on every replica: `nuget-remote` (off) lists no resource and answers `404`, `nuget-local` and `nuget-all` list `VulnerabilityInfo/6.7.0` with the one entry `quader`; the page is keyed by lowercased IDs with the severity, url and interval of the rule, has the same `ETag` on every replica and answers `304` |
 | `TestVuln_R_VULN_027_AcrossReplicasAndWithoutValkey` | R-VULN-027, R-VULN-002, E4b.8 | clients dialing a replica each: a block set through A refuses B on GET, HEAD, a conditional request and a Range request; a dismissal through A lifts it at B's next request; `blockMalicious` through A is in force on B within 2 s both ways; the same with Valkey stopped, and a sync triggered through the task API starts within `jobs.poll_interval` plus 1 s |
 | `TestVuln_R_VULN_011_PublishEvaluatesInTheCommit` | R-VULN-011, R-VULN-001 | `npm publish` to `npm-local` through `npm-all`: the finding is there at the first read, through six requests on several replicas |
 | `TestVuln_R_VULN_010_ClaimedNamesAreInternal` | R-VULN-010 | `@acme/ui` in `npm-vuln-internal` has no finding although the source holds a `MAL-` record for it, is listed as a claimed-name match and downloads |
-| `TestVuln_R_VULN_011_R_VULN_018_AnAdvisoryAppearsLate` | R-VULN-011, R-VULN-018 | `trove-test-late@2.0.0` cached in `npm-remote`; the `late` toggle of the source and one sync: the finding exists, and the page of the NuGet clients has a new `ETag` on every replica; again with Valkey stopped for a new NuGet advisory |
+| `TestVuln_R_VULN_011_R_VULN_018_AnAdvisoryAppearsLate` | R-VULN-011, R-VULN-018 | `quader-test-late@2.0.0` cached in `npm-remote`; the `late` toggle of the source and one sync: the finding exists, and the page of the NuGet clients has a new `ETag` on every replica; again with Valkey stopped for a new NuGet advisory |
 | `TestVuln_R_VULN_022_Journeys` | R-VULN-022, R-VULN-023, E4b.6 | [web/e2e/vuln](../../web/e2e/vuln) with axe: the report with its filters and the dismissal, the bulk triage, the CSV, 390 px, a reader without selection, the package page with its tab, the block and the lift, the sources screen and the advisory page |
 | `TestVulnLong_R_VULN_004_FullSyncDrainedMidRun` | R-VULN-004, E4b.1 | the source holds 100,000 filler records and the import takes 2 s a batch (`throttleImport`, Q-VULN-133); `vuln-sync-osv-full` runs on a worker; once it has committed batches the node is drained (the PostgreSQL primary is moved away first): the job runs on a second worker (so it was released and queued again; the queued state is logged when the one-second sampling sees it), its attempt is unchanged (a queued job shows one less), the second run starts at or after the checkpoint, the ecosystem holds every record; the pool `vuln` of the profile has a grace period of 30 s so that the release is due 14 s after the signal (Q-VULN-92) |
 | `TestVulnLong_R_VULN_027_ClientsWithValkeyStopped` | R-VULN-027, E4b.8 | the tests above that drive clients (audits, the endpoint's body, the blocked installs and restores, the NuGet resource) once more with Valkey stopped |
 | `TestVulnLong_R_VULN_011_SwitchoverDuringEvaluation` | R-VULN-011, R-HA-052, E5.13 | the repository `npm-vuln-bulk` stores 20,000 packages with four versions each (0.9.0, 1.0.0, 1.0.1, 1.1.0), seeded in the tables under the names of the source's filler records; a full sync imports the 20,000 filler records (introduced 0, fixed 1.0.1), which queues them all; once the `vuln-evaluate` job has committed batches, `failover.sh` switches the PostgreSQL primary over. The job ends `succeeded` (a later attempt is allowed and logged); the findings of the repository are exactly the 40,000 of the two affected versions of every name (missing and unexpected computed with `EXCEPT` against the rule, not counted), no identity exists twice, every finding has exactly one `detected` event, nothing waits in `vuln_pending_evaluation`, no finding lacks its package or version |
-| `TestVulnLong_R_VULN_015_BlockHoldsDuringFailures` | R-VULN-015, R-VULN-016, R-VULN-027, R-HA-059, R-HA-052, E5.13 | four versions are probed through the edge by one loop each, 10 requests a second as GET, HEAD and Range GET in turn, with the replica named in `X-Trove-Replica`: the tarball of an npm version and the `.nupkg` of a NuGet version, each blocked in triage after its cache fill, and the tarball of `trove-test-mal` and the `.nupkg` of `Contoso.Json.Codecs` (malicious, never stored). Three faults, each after 10 to 20 s of probing and followed by 30 to 40 s: the drain of the node of variant A (R-HA-059; the PostgreSQL and Valkey primaries are moved away first), `valkey-failover.sh`, `failover.sh`. Every answer is `403` (the GET with `vulnerability_blocked` in the body); a `200`, `206` or `304` is a breach of R-VULN-015, any other status or a transport error a failed request; the drain's probes reach the three `packages` replicas and the replacement of the drained one |
+| `TestVulnLong_R_VULN_015_BlockHoldsDuringFailures` | R-VULN-015, R-VULN-016, R-VULN-027, R-HA-059, R-HA-052, E5.13 | four versions are probed through the edge by one loop each, 10 requests a second as GET, HEAD and Range GET in turn, with the replica named in `X-Quader-Replica`: the tarball of an npm version and the `.nupkg` of a NuGet version, each blocked in triage after its cache fill, and the tarball of `quader-test-mal` and the `.nupkg` of `Contoso.Json.Codecs` (malicious, never stored). Three faults, each after 10 to 20 s of probing and followed by 30 to 40 s: the drain of the node of variant A (R-HA-059; the PostgreSQL and Valkey primaries are moved away first), `valkey-failover.sh`, `failover.sh`. Every answer is `403` (the GET with `vulnerability_blocked` in the body); a `200`, `206` or `304` is a breach of R-VULN-015, any other status or a transport error a failed request; the drain's probes reach the three `packages` replicas and the replacement of the drained one |
 | `TestVulnLong_R_VULN_015_BlockHoldsThroughDrainVariants` | R-VULN-015, R-VULN-016, R-VULN-027, R-HA-059, E5.13 | the same four versions (a label of their own, `variants`) and the same probes, from 20 s before the drain until 40 s after `drain.sh` returned, through drain variants B, C and E of [the harness](#drain-variants-b-to-e), one subtest each: B (the Valkey primary and a Sentinel; the primary change reaches every replica that ran through, none turns unready), C (the PostgreSQL primary; CloudNativePG has requested the switchover before the eviction), E (a running backup pod; the backup Job completes with `backoffLimit` 0). Every answer is the refusal from a replica, the requests reach the three `packages` replicas and the replacement of the one on the node |
 | `TestVulnPooler_R_VULN_015_BlockHoldsThroughDrainVariantD` | R-VULN-015, R-VULN-016, R-VULN-027, R-HA-058, R-HA-059, E5.13 | set `vuln-pooler` only: the cluster runs the transaction-mode poolers (`database.pooler.mode: transaction`, two ready pooler pods on two nodes, checked first and failing otherwise); the same probes through drain variant D, the drain of a node with an instance of the request pooler |
 | `TestVulnLong_R_VULN_004_FullSyncWorkerKilledMidRun` | R-VULN-004, H-523, E5.13 | the source holds 60,000 filler records; once the full sync has committed batches (the job is read as running once more right before the kill) the container's process is ended with SIGKILL through the node's container runtime (`sigkill` of E0.6; a deleted pod, even with `--grace-period=0 --force`, gets SIGTERM, drains and releases the job): the reaper ends the job `failed` with `attempts_exhausted` within the lease plus a poll (MaxAttempts is 1, a killed worker releases nothing, so this is not a resumption); the next full run succeeds, the ecosystem is `complete` and holds the source's records, the advisory table agrees with the state, `vuln_sync_touched` is empty, the evaluation catches up |
@@ -3362,9 +3362,9 @@ holds; npm and pnpm audit one tree through all three.
 ### The restore drill of the vulnerability data
 
 `TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage` ([vuln_restore_test.go](../../test/e2e/vuln_restore_test.go), decisions Q-VULN-125 to Q-VULN-127) restores a backup of the installation under test into the
-namespace `trove-restore` and judges the vulnerability data before and after the restored installation's first synchronization. It needs the fixture of `vulnFx` and the Job and restore helpers of the backup tests, not the
-profile `backup`. `t.Setenv("TROVE_RESTORE_PROFILE", "vuln")` makes [restore-ns.sh](../../deploy/dev/restore-ns.sh) layer [values-restore-vuln.yaml](../../deploy/dev/values-restore-vuln.yaml): the test advisory source and the test
-upstreams of the main namespace, the three scheduled syncs off, two `packages` replicas; each replica is reached through a port-forward of its own and its `X-Trove-Replica` is checked. The restored installation has the
+namespace `quader-restore` and judges the vulnerability data before and after the restored installation's first synchronization. It needs the fixture of `vulnFx` and the Job and restore helpers of the backup tests, not the
+profile `backup`. `t.Setenv("QUADER_RESTORE_PROFILE", "vuln")` makes [restore-ns.sh](../../deploy/dev/restore-ns.sh) layer [values-restore-vuln.yaml](../../deploy/dev/values-restore-vuln.yaml): the test advisory source and the test
+upstreams of the main namespace, the three scheduled syncs off, two `packages` replicas; each replica is reached through a port-forward of its own and its `X-Quader-Replica` is checked. The restored installation has the
 source's base URL and the dev CA like every drill ([Q-BAK-60](../spec/backup-and-restore.md#q-bak-60--e512s-ci-bullets-run-in-the-backup-and-restore-of-testbackupjournal-with-the-issuer-double-started-by-the-set-against-a-restored-installation-configured-like-its-source)).
 
 Twelve packages (npm through `npm-remote`, one NuGet through `nuget-remote`, version 1.0.0 cached before any record exists) are put into the states of the table in Q-VULN-126: `rb`, `rn` blocked, `rd` dismissed, `rm`
@@ -3381,14 +3381,14 @@ replicas, `cw` is resolved `advisory_withdrawn`, `cn` has one new finding, `cr` 
 make image VERSION=dev && make dev-up
 make e2e SET=vuln          # the short set: the profile, the upstreams, the clients and the tests (about 20 minutes)
 make e2e SET=vuln-long     # the drain of a full sync, the client tests with Valkey stopped, and the scanning under the failure suite (E5.13)
-TROVE_E2E_RUN='^TestVulnLong_R_VULN_015_BlockHoldsDuringFailures$' make e2e SET=vuln-long   # variant A and the failovers
-TROVE_E2E_RUN='^TestVulnLong_R_VULN_015_BlockHoldsThroughDrainVariants$' make e2e SET=vuln-long   # variants B, C and E
-TROVE_E2E_RUN='^TestVulnLong_R_VULN_026_' make e2e SET=vuln-long   # the restore drill
+QUADER_E2E_RUN='^TestVulnLong_R_VULN_015_BlockHoldsDuringFailures$' make e2e SET=vuln-long   # variant A and the failovers
+QUADER_E2E_RUN='^TestVulnLong_R_VULN_015_BlockHoldsThroughDrainVariants$' make e2e SET=vuln-long   # variants B, C and E
+QUADER_E2E_RUN='^TestVulnLong_R_VULN_026_' make e2e SET=vuln-long   # the restore drill
 make e2e SET=vuln-pooler    # variant D on the cluster without the poolerss; leaves the cluster in the pooler overlay until the next make dev-up
-TROVE_E2E_REUSE_CLIENTS=1 make e2e SET=vuln TROVE_E2E_RUN='^TestVuln_R_VULN_017_'   # one test; client pods that are running stay
+QUADER_E2E_REUSE_CLIENTS=1 make e2e SET=vuln QUADER_E2E_RUN='^TestVuln_R_VULN_017_'   # one test; client pods that are running stay
 ```
 
-The journeys need `npm ci` in `web/` and `npx playwright install chromium` (CI: `--with-deps`), like the journeys of E1.11; `TROVE_E2E_PLAYWRIGHT_ARGS` narrows them (`-g <title>`). The
+The journeys need `npm ci` in `web/` and `npx playwright install chromium` (CI: `--with-deps`), like the journeys of E1.11; `QUADER_E2E_PLAYWRIGHT_ARGS` narrows them (`-g <title>`). The
 node of `vuln-long` that is drained must not host the PostgreSQL primary: the test moves it first. CI: job `e2e-vuln` of Test and Release runs the set `vuln` when the change touches
 the scanning ([releasing.md](releasing.md#ci)), job `e2e-vuln` of HA and Performance (nightly) runs both sets.
 
@@ -3400,7 +3400,7 @@ the scanning ([releasing.md](releasing.md#ci)), job `e2e-vuln` of HA and Perform
 | The tests after the drain found no findings | the source's reset after the drain removed the records of this run's packages | the run remembers its records and adds them again before the synchronization that follows the reset |
 | The audit saw a request at the npm upstream | npm fetches the document of every flagged package; a replica that has not cached the (negative) answer asks the upstream | the audit test warms the documents through every replica first and then asserts no request of any kind; the long run needs the same |
 | The bulk dialog of the report failed axe: `color-contrast`, `#5b6270 on #d4d7dd, 4.25` | the first field of the dialog opens under the pointer that clicked "Change status"; the hover layer darkens the filled field and the label in `on-surface-variant` falls under 4.5:1 (the dark scheme measures 4.47) | At the time `--mat-form-field-filled-hover-label-text-color: var(--mat-sys-on-surface)` in `main.scss`; the filled Material field is gone (Q-UI-126), the label is above a plain field. `expectAccessible` names the colours it measured |
-| The package journey of the UI package waited for `Vulnerabilities (1)` and found 2 | the tab counts the repositories: `trove-test-vuln` is cached in `npm-remote` by the client tests of the same cluster | the journey uses `trove-test-cvss`, which no other test touches; the local repositories of the journeys declare `matchPublicAdvisories: always`, because the first publish of a name makes an automatic claim and a claimed name of a repository without the setting is internal (R-VULN-010) |
+| The package journey of the UI package waited for `Vulnerabilities (1)` and found 2 | the tab counts the repositories: `quader-test-vuln` is cached in `npm-remote` by the client tests of the same cluster | the journey uses `quader-test-cvss`, which no other test touches; the local repositories of the journeys declare `matchPublicAdvisories: always`, because the first publish of a name makes an automatic claim and a claimed name of a repository without the setting is internal (R-VULN-010) |
 | The dismissal step of the first journey found two elements for `Not exploitable` | the detail's `dd` and the history row | the locator is the definition |
 | `dotnet restore` of the .NET 8 SDK failed with an IOException on `NuGet-Migrations` | NuGet runs its migrations once per HOME under a named mutex, and the runtime of .NET 8 cannot create one in the pod (the cause was not investigated; the directories the .NET 10 runtime makes for its shared memory do not help); .NET 9 and 10 can, and a restore that finds the marker `$HOME/.local/share/NuGet/Migrations/1` takes no mutex | the entrypoint of the clients image writes the marker (an empty file) |
 | A virtual repository of another suite had other members | `npm-all` and `nuget-all` are keys of the CI tests (`npm-internal`, `nuget-internal` as members); a create that answers 409 changes nothing | `ensureRepo` sets the members again; the claimed scope lives in `npm-vuln-internal`, not `npm-internal` |
@@ -3411,10 +3411,10 @@ the scanning ([releasing.md](releasing.md#ci)), job `e2e-vuln` of HA and Perform
 
 | Finding | Cause | Fix |
 |---|---|---|
-| The restore Job failed: `proxy.outbound.tls.ca_files: open /var/run/secrets/trove-dev/keycloak-ca.crt: no such file` | the Job checks the key at start, and the global `extraVolumes` reach the Deployments only (Q-HA-149) | the Jobs take volumes of their own values: `backup.extraVolumes`, `restore.extraVolumes` and `postRestore.extraVolumes` (with the mounts); `values-restore.yaml` and `values-dev.yaml` set the CA volume for them; `TestR_HA_030_BackupSecrets` asserts that each Job gets only its own list. Since `trustedCA` (R-HA-043) mounts the CA bundle in every pod of the release, the Jobs included, the dev values use it and carry no CA volume of their own |
+| The restore Job failed: `proxy.outbound.tls.ca_files: open /var/run/secrets/quader-dev/keycloak-ca.crt: no such file` | the Job checks the key at start, and the global `extraVolumes` reach the Deployments only (Q-HA-149) | the Jobs take volumes of their own values: `backup.extraVolumes`, `restore.extraVolumes` and `postRestore.extraVolumes` (with the mounts); `values-restore.yaml` and `values-dev.yaml` set the CA volume for them; `TestR_HA_030_BackupSecrets` asserts that each Job gets only its own list. Since `trustedCA` (R-HA-043) mounts the CA bundle in every pod of the release, the Jobs included, the dev values use it and carry no CA volume of their own |
 | After the restore the `packages` pods answered `404` to the publisher's token | the replay window starts at the newest audit event, before the snapshot, and replays `authz.policy.updated` entries the database already holds; the journaled selector of kind `key` carries a key and a class that the stored row does not, so the update never matched and was suspended, which cleared the policy's entries | `canonicalSelector` in [journal_replay.go](../../internal/authz/journal_replay.go) compares and writes only what a kind stores (`TestR_AUTHZ_031_APolicyUpdateAlreadyInEffectIsNotSuspended`) |
 | Variant B, once in four runs (2026-11-08): the counter of every replica stayed 0 and 0 | the evicted Valkey primary (the Valkey pods use `emptyDir`, so the pod is rescheduled at once) can return before Sentinel's `down-after-milliseconds` (5 s) fires, and then no failover happens; the next two runs failed over and passed | the test names the case: "variant B caused no failover: the evicted primary returned before down-after-milliseconds" when the Sentinels name the same primary before and after; the condition is unchanged |
-| Variant C failed twice, once with the order and once with a hanging drain | the old primary pod was marked for deletion 0.6 to 3 s before `.status.currentPrimary` changed (the operator admits the eviction once the switchover is requested); and an installation left in `trove-restore` by `TestBackupJournal` held the drain on its PodDisruptionBudget | the condition is the request before the eviction, read from `targetPrimaryTimestamp` and the pod's `deletionTimestamp` (Q-HA-172); `prepareVariantDrain` removes `trove-restore` first |
+| Variant C failed twice, once with the order and once with a hanging drain | the old primary pod was marked for deletion 0.6 to 3 s before `.status.currentPrimary` changed (the operator admits the eviction once the switchover is requested); and an installation left in `quader-restore` by `TestBackupJournal` held the drain on its PodDisruptionBudget | the condition is the request before the eviction, read from `targetPrimaryTimestamp` and the pod's `deletionTimestamp` (Q-HA-172); `prepareVariantDrain` removes `quader-restore` first |
 | `cr` came back `blocked`, not `resolved` | the replay window also holds the block that preceded the resolution, and the evaluation's re-detection is journaled | `cr` is judged `blocked` before the first sync (Q-VULN-126) |
 | Variant B could not find a node with the Valkey primary and without the PostgreSQL primary | the first picker moved one primary and then the other back | one picker for B and C that moves the other primary away, then its own |
 | Variant E exceeded 15 minutes | at 256 KiB/s the copy restarts in the second pod and covers the whole installation | 512 KiB/s |
@@ -3425,7 +3425,7 @@ The nightly run 42177273488 failed `TestVulnLong_R_VULN_011_SwitchoverDuringEval
 
 | Test | Cause | Fix |
 |---|---|---|
-| `R_VULN_011` | the seeding built `trove-test-filler-` names with `lpad(i::text, 4, '0')`, which cuts the numbers 10000 to 19999 to four digits: a duplicate key on the 10,001st package. The same cut was in the expected advisory identifier | the number is padded to `greatest(4, length)`, as the source's `%04d` (Q-VULN-93) |
+| `R_VULN_011` | the seeding built `quader-test-filler-` names with `lpad(i::text, 4, '0')`, which cuts the numbers 10000 to 19999 to four digits: a duplicate key on the 10,001st package. The same cut was in the expected advisory identifier | the number is padded to `greatest(4, length)`, as the source's `%04d` (Q-VULN-93) |
 | `R_VULN_004` drained | the sync got faster (Q-VULN-90, Q-VULN-91): 100,000 records in under a minute, and a worker keeps its jobs until 44 s after SIGTERM (`internal/app/shutdown.go`, 60 s grace), so the job finished on its worker | the pool `vuln` of the profile `vuln` has a 30 s grace period: release 14 s after SIGTERM (Q-VULN-92) |
 | `R_VULN_004` drained, on kind after that | a product defect: the statement of the alias closure took 13 s for 2,000 names against 50,000 rows that no ANALYZE had seen (63 s against 231,012), hit the statement timeout and ended the sync `database_timeout`; the performance run V-1 failed the same way | the statement looks the names up by construction (Q-VULN-94), integration test `TestR_VULN_028_TheGroupRowsRoundDoesNotDependOnTheStatistics` |
 | `R_VULN_011` once | the first write after the fixture was answered 429: the fixture's writes fill the write class's window of 5 s | `buildVulnEnv` waits one window after its last write |
@@ -3452,8 +3452,8 @@ mirror is described in [mirror.md](mirror.md). A mirror is a feature of the form
 
 ```mermaid
 flowchart LR
-  subgraph trove["namespace trove"]
-    c["client pods x3<br/>npm 11, dotnet 10<br/>(trove-e2e-npm-i, trove-e2e-nuget-i)"]
+  subgraph quader["namespace quader"]
+    c["client pods x3<br/>npm 11, dotnet 10<br/>(quader-e2e-npm-i, quader-e2e-nuget-i)"]
     p["packages x3 (scatter)<br/>the client-serving replicas"]
     w["worker pool mirror x2<br/>claims the queue mirror alone"]
     pg[("PostgreSQL")]
@@ -3479,7 +3479,7 @@ Each set starts the counting test upstream of its format (`npm`, `npm-ha`, `npm-
 ([mirror_env_test.go](../../test/e2e/mirror_env_test.go)), which does, once per run:
 
 1. `up.sh` for the set's scatter profile (`scatter` or the `drain` of `nuget-ha`; [values-scatter.yaml](../../deploy/dev/values-scatter.yaml): three `api` and three `packages` replicas, the edge balancing every request on its
-   own), then `up.sh` again with `TROVE_HELM_EXTRA=--set-json worker.pools=[...]`, the worker pools `vuln` of [values-dev.yaml](../../deploy/dev/values-dev.yaml) and `mirror` of two processes that claim the queue `mirror` alone (R-HA-062; a Helm value replaces a list, so it names both, and it lives in
+   own), then `up.sh` again with `QUADER_HELM_EXTRA=--set-json worker.pools=[...]`, the worker pools `vuln` of [values-dev.yaml](../../deploy/dev/values-dev.yaml) and `mirror` of two processes that claim the queue `mirror` alone (R-HA-062; a Helm value replaces a list, so it names both, and it lives in
    `mirrorPoolValues` of the harness). The two `worker` replicas of values-dev.yaml stay and claim every other queue. No profile carries the pool: it is on the release only in the tests that need it, so the pod counts the other tests of these sets assert are unchanged (Q-REPO-306). The state of the release is recorded (`mirrorPoolOn`, set by every `up.sh` run), `mirrorFx` asks for the pool on each call and `npmHAFx`, which the HA tests that count four workers call, asks for it off, so the order of the test files decides nothing between these tests (the sets without mirror tests never have the pool) ([Q-HA-294](../spec/ha-and-helm.md#q-ha-294--the-worker-pool-of-the-mirror-tests-is-a-state-the-tests-name-not-what-the-first-mirror-test-of-a-process-leaves-behind)). The three `packages`
    replicas are the client-serving ones; no process that serves clients claims the queue `mirror`. The profile returns to `default` at the end of the run (`TestMain`), and with it the pool goes.
 2. The mirrors of an earlier, killed run are deleted, the test upstreams of the set are reset, and (when the npm test upstream is deployed) the names of the public registry are made to resolve to it
@@ -3493,7 +3493,7 @@ Every repository of the run carries the run's six hex digits (`npm-mirror0-<run>
 removes the DNS rewrite and starts a test upstream a test left stopped.
 
 **The public registry's name.** `feed` is offered only for `https://registry.npmjs.org/` (R-REPO-051) and its replication service is `replicate.npmjs.com`, a second host name of the stub
-(`-replication-hosts`). `ensurePublicNPMNames` adds two `rewrite name exact` lines to the Corefile of CoreDNS (each ends with the comment `# trove-e2e-mirror`), restarts CoreDNS, and waits until a
+(`-replication-hosts`). `ensurePublicNPMNames` adds two `rewrite name exact` lines to the Corefile of CoreDNS (each ends with the comment `# quader-e2e-mirror`), restarts CoreDNS, and waits until a
 client pod resolves both names to the ClusterIP of `npmstub`; the stub's certificate ([npmstub.yaml](../../deploy/dev/npmstub.yaml)) carries both names and the dev CA signs it (the test
 also verifies it for each name). The remote's URL is then the real one. `restorePublicNPMNames` removes the lines again at the end of the process; a run that was killed leaves them
 (`kubectl -n kube-system edit configmap coredns`: delete the lines with the marker, restart `coredns`), and the next run finds them and removes them. Nothing else in these sets
@@ -3513,13 +3513,13 @@ these records in the artifact directory (`.out/e2e/`, uploaded always by both wo
 | File | Written by | Content |
 |---|---|---|
 | `clients-first-npm-events.jsonl` | `readings.event`, also logged by the test | per pair `baseline-created` (key), `baseline-ci-start`, `baseline-ci-end` (`duration_ms`: the timed window of the install, which lies inside the interval from `ci-start` to `ci-end`; the two events also cover the client's set-up and clean-up), `loaded-created` (key), `pass-requested`, `pass-started` (pod, packages filled), `loaded-ci-start`, `loaded-ci-end` (`duration_ms`, the same), `drop-start`, `drop-end`, `no-pass-running`; after the pairs `ratio` |
-| `clients-first-npm-pg.jsonl` | one `psql` session on the primary (`kubectl exec`, application name `trove-e2e-readings`, started again at most 5 times after the first start when the exec ends; sessions left by an earlier run are ended at the start and the end), one sample every 250 ms | first line `settings` (`log_min_duration_statement`, `log_parameter_max_length`, `track_wal_io_timing`, `synchronous_standby_names`, `server_version`); a `log_min_duration_statement` of `-1` there means the cluster has no slow log (it was created before the setting; see [the local profile](local-profile.md)); then `sample`: `activity` (the sessions that are not idle and not waiting for work (wait event type `Activity`), counted by backend type, state, wait event type, wait event and the first 48 characters of the query; the sampler's own session left out), `replication` (sync state, write, flush and replay lag in ms, bytes the standby's flush is behind), `wal` (`pg_stat_wal`), `io` (`pg_stat_io`: every row that wrote, evicted or synced, the WAL rows among them with their write and fsync times; the counters run since the statistics were last reset and a clean restart of the server keeps them, so a window is the difference of two samples), `checkpointer` |
+| `clients-first-npm-pg.jsonl` | one `psql` session on the primary (`kubectl exec`, application name `quader-e2e-readings`, started again at most 5 times after the first start when the exec ends; sessions left by an earlier run are ended at the start and the end), one sample every 250 ms | first line `settings` (`log_min_duration_statement`, `log_parameter_max_length`, `track_wal_io_timing`, `synchronous_standby_names`, `server_version`); a `log_min_duration_statement` of `-1` there means the cluster has no slow log (it was created before the setting; see [the local profile](local-profile.md)); then `sample`: `activity` (the sessions that are not idle and not waiting for work (wait event type `Activity`), counted by backend type, state, wait event type, wait event and the first 48 characters of the query; the sampler's own session left out), `replication` (sync state, write, flush and replay lag in ms, bytes the standby's flush is behind), `wal` (`pg_stat_wal`), `io` (`pg_stat_io`: every row that wrote, evicted or synced, the WAL rows among them with their write and fsync times; the counters run since the statistics were last reset and a clean restart of the server keeps them, so a window is the difference of two samples), `checkpointer` |
 | `clients-first-npm-pressure.jsonl` | a goroutine of the test, once a second | what the test process sees: `/proc/pressure/cpu`, `io`, `memory` (`some` and `full`: `avg10`, `total`; these are the whole machine's, whichever cgroup reads them), the test process's own cgroup `cpu.stat` (`usage_usec`, `nr_throttled`, `throttled_usec`) and `cpu.pressure`, `/proc/loadavg`. That cgroup is the job's, not the kind nodes'. A file that does not exist (macOS, a runner without pressure stall information) is recorded once as a line `{"kind":"absent","file":...}` and not again |
-| `clients-first-npm-nodes.jsonl` | a helper container (`docker run --rm --cgroupns=host`, the pinned tools image `INTEGRATION_TOOLS_IMAGE`, named `trove-e2e-readings-nodes-<cluster>`; the next start removes a leftover one first, the readings remove it when they stop, and a run that was killed leaves it until its loop ends after an hour), once a second; each block is stamped when it reaches the test | the root of the cgroup tree as the Docker daemon of the kind nodes sees it, which is the cgroup that holds the nodes: `cpu.stat` (`usage_usec`, `nr_throttled`, `throttled_usec`), `cpu.pressure` and `io.pressure`. On the `large` runner that daemon is the job's Docker-in-Docker container, so this is the CPU and IO of the cluster, the stubs and the clients together; absent files are recorded once |
-| `clients-first-npm-cluster-logs/` | `deploy/dev/cluster-logs.sh`, called by the test | the logs of every pod of `trove` and `ingress-controller`, whole and compressed; only when a loaded install took more than `installBudget` times the best baseline, whether the bound is enforced or only logged |
+| `clients-first-npm-nodes.jsonl` | a helper container (`docker run --rm --cgroupns=host`, the pinned tools image `INTEGRATION_TOOLS_IMAGE`, named `quader-e2e-readings-nodes-<cluster>`; the next start removes a leftover one first, the readings remove it when they stop, and a run that was killed leaves it until its loop ends after an hour), once a second; each block is stamped when it reaches the test | the root of the cgroup tree as the Docker daemon of the kind nodes sees it, which is the cgroup that holds the nodes: `cpu.stat` (`usage_usec`, `nr_throttled`, `throttled_usec`), `cpu.pressure` and `io.pressure`. On the `large` runner that daemon is the job's Docker-in-Docker container, so this is the CPU and IO of the cluster, the stubs and the clients together; absent files are recorded once |
+| `clients-first-npm-cluster-logs/` | `deploy/dev/cluster-logs.sh`, called by the test | the logs of every pod of `quader` and `ingress-controller`, whole and compressed; only when a loaded install took more than `installBudget` times the best baseline, whether the bound is enforced or only logged |
 
 The cluster logs are taken at that point because the pool's processes, which ran the pass, exist until `TestMain` switches the profile back, and the cluster state of a failed
-job is taken after that. The PostgreSQL pod's log holds the statements of the role `trove` above 50 ms (`log_min_duration_statement`, set on the role `trove`, so the operator's own statements, which run as `postgres`, never reach the log; bound values left out by `log_parameter_max_length`).
+job is taken after that. The PostgreSQL pod's log holds the statements of the role `quader` above 50 ms (`log_min_duration_statement`, set on the role `quader`, so the operator's own statements, which run as `postgres`, never reach the log; bound values left out by `log_parameter_max_length`).
 
 **Joining them.** The kind nodes, the test and the samplers share the host's clock, so a time in the events, a sample and a line of a pod log (`kubectl logs --timestamps`) are one
 axis. The duration of the cache commit's last transaction is the difference between the `occurred_at` of the `artifact.cached` audit event (the transaction's `now()`) and the time
@@ -3531,20 +3531,20 @@ of its log line (written after the commit). `slot_wait_ms` on the upstream recor
 | wait events `WALSync` or `WALWrite`, and `fsync_time_ms` of the WAL rows growing | the primary's disk |
 | wait event type `Lock` | commits that contend with each other |
 | active backends with no wait event | CPU in the database |
-| sessions `idle in transaction` | trove between two statements |
+| sessions `idle in transaction` | Quader between two statements |
 | an autovacuum worker, or `num_requested` or `write_time` of the checkpointer growing | background work of the database |
-| high `avg10` or a growing `total` in the pressure files, `nr_throttled` growing | the machine (the nodes file for the cluster's cgroup, the pressure file for the test's), not trove |
-| no statement above 50 ms in the primary's log while trove measured the stall | the stall is not one slow statement: per-statement logging rules out only that. The time is then between statements (`idle in transaction` in the sampler) or spread over several (`active` backends) |
+| high `avg10` or a growing `total` in the pressure files, `nr_throttled` growing | the machine (the nodes file for the cluster's cgroup, the pressure file for the test's), not Quader |
+| no statement above 50 ms in the primary's log while Quader measured the stall | the stall is not one slow statement: per-statement logging rules out only that. The time is then between statements (`idle in transaction` in the sampler) or spread over several (`active` backends) |
 
 ### The tests
 
 | Test | Criterion | What it does |
 |---|---|---|
-| `TestNPMMirror_R_REPO_055_ClientsFirst/npm` | R-REPO-055, E6b.6 | the remotes are mirrors of `https://registry.npmjs.org/` (the stub), `limits.maxConcurrentFetches` 8, `mirror.concurrency` 4, `maxVersionsPerPackage` 1, `maxBytes` 4 GiB, so B = 2 and the bound is 8 + 3 − 1 + 2 = 12; the stub holds a document 20 ms and a tarball 120 ms. Three pairs, each on new remotes: `npm ci` of the reference project of [perf/npm/reference](../../perf/npm/reference) (707 packages, its lockfile's addresses pointed at the remote) through a remote whose mirror is paused (the baseline), then the same through a remote whose pass was requested and has filled packages (the pass lists 1,005 names: the 700 of the corpus and the 300 extras). The criterion is the median of the three loaded times within 120 % of the best of the three baselines, enforced with `TROVE_PERF_GATE=1` (the nightly job, on the `large` class since Q-REPO-211; per change the ratio is logged, Q-REPO-197, after Test and Release run 42111093693 measured 136 % on a GitHub-hosted runner with the open requests at 9 of 12) (the machine's speed without the pass: installs of 20 s and 23 s were measured among the 12 s ones when the host was busy, and a slow baseline must not make the pass look free); `trove_mirror_preempted_total` is logged over the three pairs and not asserted there, because a client no longer waits behind a fetch's commit (Q-REPO-235), so a fast install pre-empts nothing (Q-REPO-253); the pass is in a pod of the pool `mirror`, with the method `feed`. The last pass goes on to its end: `complete`, no failed package, at least 300 packages, each extra tarball served once, and the stub never held more than 12 requests open since that pass began. Its readings (events, PostgreSQL, runner and node pressure, cluster logs of a slow install) are described under [Reading a slow install](#reading-a-slow-install) |
-| `TestNPMMirror_R_REPO_055_ClientsFirst/preemption` | R-REPO-055, Q-REPO-253 | the contention forced: 84 packages are published (`e2e-preempt-<run>-NNN`); a remote of the private stub takes the 84 names, the stub holds a tarball 1.5 s while the subtest runs (its delay is keyed by the kind of request for the whole stub; the subtests run one after another and each resets it), and the pass runs with two background fetches in their exchange; 24 distinct tarballs of the last names are requested at once, once the stub holds the pass's two fetches open, through the three client-serving replicas (9 slots): every one answers 200 and `trove_mirror_preempted_total` of the remote grows; the remote is deleted and the pass halted in the subtest's cleanup, a failure included. The budget of 8 is the binding limit: 24 requests make 3 waves of about 1.55 s, the last waits about 3.1 s of the 10 s queue timeout |
+| `TestNPMMirror_R_REPO_055_ClientsFirst/npm` | R-REPO-055, E6b.6 | the remotes are mirrors of `https://registry.npmjs.org/` (the stub), `limits.maxConcurrentFetches` 8, `mirror.concurrency` 4, `maxVersionsPerPackage` 1, `maxBytes` 4 GiB, so B = 2 and the bound is 8 + 3 − 1 + 2 = 12; the stub holds a document 20 ms and a tarball 120 ms. Three pairs, each on new remotes: `npm ci` of the reference project of [perf/npm/reference](../../perf/npm/reference) (707 packages, its lockfile's addresses pointed at the remote) through a remote whose mirror is paused (the baseline), then the same through a remote whose pass was requested and has filled packages (the pass lists 1,005 names: the 700 of the corpus and the 300 extras). The criterion is the median of the three loaded times within 120 % of the best of the three baselines, enforced with `QUADER_PERF_GATE=1` (the nightly job, on the `large` class since Q-REPO-211; per change the ratio is logged, Q-REPO-197, after Test and Release run 42111093693 measured 136 % on a GitHub-hosted runner with the open requests at 9 of 12) (the machine's speed without the pass: installs of 20 s and 23 s were measured among the 12 s ones when the host was busy, and a slow baseline must not make the pass look free); `quader_mirror_preempted_total` is logged over the three pairs and not asserted there, because a client no longer waits behind a fetch's commit (Q-REPO-235), so a fast install pre-empts nothing (Q-REPO-253); the pass is in a pod of the pool `mirror`, with the method `feed`. The last pass goes on to its end: `complete`, no failed package, at least 300 packages, each extra tarball served once, and the stub never held more than 12 requests open since that pass began. Its readings (events, PostgreSQL, runner and node pressure, cluster logs of a slow install) are described under [Reading a slow install](#reading-a-slow-install) |
+| `TestNPMMirror_R_REPO_055_ClientsFirst/preemption` | R-REPO-055, Q-REPO-253 | the contention forced: 84 packages are published (`e2e-preempt-<run>-NNN`); a remote of the private stub takes the 84 names, the stub holds a tarball 1.5 s while the subtest runs (its delay is keyed by the kind of request for the whole stub; the subtests run one after another and each resets it), and the pass runs with two background fetches in their exchange; 24 distinct tarballs of the last names are requested at once, once the stub holds the pass's two fetches open, through the three client-serving replicas (9 slots): every one answers 200 and `quader_mirror_preempted_total` of the remote grows; the remote is deleted and the pass halted in the subtest's cleanup, a failure included. The budget of 8 is the binding limit: 24 requests make 3 waves of about 1.55 s, the last waits about 3.1 s of the 10 s queue timeout |
 | `TestNuGetMirror_R_REPO_055_ClientsFirst` | R-REPO-055, E6b.6 | set `nuget`: the same shape for NuGet: the stub lists `Catalog/3.0.0` (`Mode.Catalog`) and holds a `.nupkg` 100 ms; the pass uses `feed`; `dotnet restore` of the reference solution ([perf/nuget/reference](../../perf/nuget/reference), 174 packages) through the same remote succeeds while it runs, the stub never holds more than 12 requests open; the pass ends `complete` with every package |
 | `TestNPMHA_R_REPO_058_MirrorStatusFromEveryReplica`, `TestNuGetHA_R_REPO_058_MirrorStatusFromEveryReplica` | R-REPO-058 | sets `npm-ha` and `nuget-ha`: after a complete pass of a mirror of that format (the npm one over names the test publishes, the NuGet one the clients-first test's mirror): the status `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/mirror` is byte-identical (as JSON) through each of the three `api` pods, which serve the operation; a `packages` pod answers `404` (logged: the management API is the `api` role's, R-ARCH-001) |
-| `TestNPMHA_R_REPO_058_TwoMirrorClaimantsOneJobPerRepository` | R-REPO-058 | set `npm-ha`: six mirrors (private URL, `names`, three packages each) are created at once and asked for a pass by three callers each, in three rounds 62 s apart, so that `mirror-dispatch` ticks (every minute, on either process of the pool) between them; the job table, read throughout, never holds two unfinished `mirror-pass` jobs of one repository; every request answers `202` or `409`; every pass ends `complete`; the task was enqueued at least twice; the metric `trove_jobs_claimed_total{kind="mirror-dispatch"}` of each process is logged |
+| `TestNPMHA_R_REPO_058_TwoMirrorClaimantsOneJobPerRepository` | R-REPO-058 | set `npm-ha`: six mirrors (private URL, `names`, three packages each) are created at once and asked for a pass by three callers each, in three rounds 62 s apart, so that `mirror-dispatch` ticks (every minute, on either process of the pool) between them; the job table, read throughout, never holds two unfinished `mirror-pass` jobs of one repository; every request answers `202` or `409`; every pass ends `complete`; the task was enqueued at least twice; the metric `quader_jobs_claimed_total{kind="mirror-dispatch"}` of each process is logged |
 | `TestNPMHA_R_REPO_058_ValkeyStoppedForAWholeMirrorPass` | R-REPO-058 | set `npm-ha`: Valkey and the Sentinels are stopped before the pass is requested (every `api` and `packages` pod reports `degraded: valkey`) and started after it: the pass of 40 packages ends `complete`, the stub served each tarball once, the status is the same through the three `api` pods, and after the restart too |
 | `TestNPMMirror_R_REPO_059_RestoreWithTheUpstreamStopped`, `TestNuGetMirror_R_REPO_059_RestoreWithTheUpstreamStopped` | E6b.3, R-REPO-059 | sets `npm` and `nuget`: the stub of the format is scaled to zero after a complete pass: `npm install` of three mirrored versions (`e2e-mirror-<run>-000` to `002`) or `dotnet restore` of `Newtonsoft.Json 13.0.3` through the same remote succeeds with an empty client cache; the stub is started again and the npm extras republished |
 | [web/e2e/tests/14-mirror.spec.ts](../../web/e2e/tests/14-mirror.spec.ts), run by `TestE1_11Journeys` (set `access-long`) | R-REPO-059, R-UI-021 | the section Mirror (status, pause, resume, run a pass, run a full pass, with axe in both schemes) and the upstream settings of a remote, among the other journeys (the status and the answer to a run request do not depend on which process runs a pass) |
@@ -3555,18 +3555,18 @@ of its log line (written after the commit). `slot_wait_ms` on the upstream recor
 | `TestNPMHA_R_REPO_054_ThrottledUpstreamAcrossAMirrorMove` | R-REPO-054, R-REPO-053, R-HA-059, R-HA-052 | the same remotes (ranges `0*` and `1*` of the extras) with the upstream rate-limiting the tarball requests when the pass has filled 20 packages. **(1)** `429` with `Retry-After: 30` for 45 s from the first throttled request; when the first answer has gone out a client installs a stored version through the remote (the upstream must see no request for it), then the node of the pass's process is drained (`deploy/dev/drain.sh`): the job is released with the wait stored in `rate_limited_until`, and the process that claims it must send nothing until it is over (Q-REPO-187). **(2)** `503` with the `SlowDown` body and no `Retry-After` for the next 8 tarball requests; the pass's pod is force-deleted at the first answer. Pass conditions: in the upstream's request log (`GET /-/stub/requests`, Q-REPO-198) no request of any kind arrives between 500 ms after a throttled answer and the end of the wait it named less 1 s (for `SlowDown`: the floor of one second less 200 ms); at least one and at most 6 (12) throttled answers (no burst after the move); the pass ends `complete` with 100 packages; every tarball was served, at most `concurrency` of them twice and none more often (the throttled answers are taken out of the counts, [Q-REPO-201](../spec/repositories-and-proxy.md#q-repo-201--a-throttled-answer-is-not-a-fetch-the-per-name-bound-of-the-tarballs-counts-what-the-upstream-served)) |
 | `TestNPMHA_R_REPO_053_PostgresSwitchoverAndValkeyFailoverDuringAMirrorPass` | R-REPO-053, R-REPO-026, R-HA-052, R-HA-057 | a pass of 100 packages (range `2*`): a PostgreSQL switchover (`deploy/dev/failover.sh`) at 15 packages and a Valkey planned failover (`valkey-failover.sh`) at 45. The processes stay: the pass ends `complete` with each package counted once, and the test upstream served every tarball exactly once (a lost commit of a deleted pending row fills the package again, which stores nothing twice) |
 
-The environment is built once per process, so one failed request of the setup fails every mirror test of the set. Each set runs its tests by file name; the HA tests sort after the failovers of `TestNPMHA` and `TestNuGetHA` (`npm_ha_worker_pool_*`, `nuget_ha_worker_pool_*`), which count four worker pods (`troveSettled`), so that the pool comes after them. The restore tests take the mirror the clients-first test leaves (`needNPMMirror`, `needNuGetMirror` build it when a test runs alone).
+The environment is built once per process, so one failed request of the setup fails every mirror test of the set. Each set runs its tests by file name; the HA tests sort after the failovers of `TestNPMHA` and `TestNuGetHA` (`npm_ha_worker_pool_*`, `nuget_ha_worker_pool_*`), which count four worker pods (`quaderSettled`), so that the pool comes after them. The restore tests take the mirror the clients-first test leaves (`needNPMMirror`, `needNuGetMirror` build it when a test runs alone).
 
 ### Running it
 
 ```shell
 make image VERSION=dev && make dev-up
-make e2e SET=npm TROVE_E2E_RUN='^TestNPMMirror'            # the npm side (likewise SET=nuget '^TestNuGetMirror', SET=oci '^TestOCIMirror')
-make e2e SET=npm-ha TROVE_E2E_RUN='^TestNPMHA_'             # the HA side: the pool's tests, without the failovers of TestNPMHA
-TROVE_E2E_REUSE_CLIENTS=1 make e2e SET=npm-ha TROVE_E2E_RUN='^TestNPMHA_R_REPO_058_Valkey'   # one test; client pods that are running stay
+make e2e SET=npm QUADER_E2E_RUN='^TestNPMMirror'            # the npm side (likewise SET=nuget '^TestNuGetMirror', SET=oci '^TestOCIMirror')
+make e2e SET=npm-ha QUADER_E2E_RUN='^TestNPMHA_'             # the HA side: the pool's tests, without the failovers of TestNPMHA
+QUADER_E2E_REUSE_CLIENTS=1 make e2e SET=npm-ha QUADER_E2E_RUN='^TestNPMHA_R_REPO_058_Valkey'   # one test; client pods that are running stay
 ```
 
-CI: the sets `npm`, `nuget`, `oci` and `access-long` (the journey) of Test and Release ([releasing.md](releasing.md#ci)), the sets `npm-ha`, `nuget-ha`, `oci-long` and `npm-ha-soak` (the clients-first ratio, `TROVE_PERF_GATE=1`) of HA and Performance (nightly).
+CI: the sets `npm`, `nuget`, `oci` and `access-long` (the journey) of Test and Release ([releasing.md](releasing.md#ci)), the sets `npm-ha`, `nuget-ha`, `oci-long` and `npm-ha-soak` (the clients-first ratio, `QUADER_PERF_GATE=1`) of HA and Performance (nightly).
 
 ### Measured on the dev cluster
 
@@ -3578,13 +3578,13 @@ CI: the sets `npm`, `nuget`, `oci` and `access-long` (the journey) of Test and R
 | the same with a pass running, before the slot came first (Q-REPO-179) | 41 s (308 %), two requests of 31 s each |
 | the same with the pass, after it: with / without, in three pairs | 11.6 s / 11.8 s (98 %), 11.1 s / 12.5 s (89 %), 11.4 s / 11.6 s (98 %) in one run; 11.3 s / 11.9 s (95 %), 11.2 s / 11.6 s (96 %), 11.2 s / 11.7 s (96 %) in another; the criterion is the median of the three against the best baseline: 98 % and 97 % |
 | open requests at the stub (bound 12 = 8 + 3 − 1 + 2) | at most 9 in every run, with and without the pass |
-| `trove_mirror_preempted_total` | 0 to 2 per pass; 5 and 6 over the three pairs of a run |
+| `quader_mirror_preempted_total` | 0 to 2 per pass; 5 and 6 over the three pairs of a run |
 | `dotnet restore` of 174 packages with the NuGet pass | 4.5 s to 4.8 s; at most 9 open requests; the pass `complete` with 185 packages |
 | the npm pass of the load | 1,005 packages, 591 items, 3.5 MB, method `feed`, `complete`, each of the 300 extra tarballs served once |
 | a pass with Valkey stopped | 40 packages `complete` in 30 s to 80 s; the status the same through the three `api` pods, before and after Valkey returns |
 | two claimants | 18 accepted and 36 refused (`409`) run requests over 2 min 6 s, `mirror-dispatch` enqueued twice and claimed by both processes of the pool, 977 samples of the job table, never two unfinished `mirror-pass` jobs of one repository |
 | restore with the upstreams stopped | `npm install` 0.3 s and `dotnet restore` of `Newtonsoft.Json 13.0.3` 1.2 s to 1.3 s |
-| the drain (the former set `mirror-long`) | the pass of 300 packages ran in a pool process on the node `trove-worker`; `drain.sh` returned after 37 s; the job went to the other process of the pool with its attempt unchanged; 300 tarballs served, 2 of them twice (`concurrency` is 2) |
+| the drain (the former set `mirror-long`) | the pass of 300 packages ran in a pool process on the node `quader-worker`; `drain.sh` returned after 37 s; the job went to the other process of the pool with its attempt unchanged; 300 tarballs served, 2 of them twice (`concurrency` is 2) |
 | duration | the former set `mirror` 9.5 to 10 minutes of tests (the first test builds the profile: about 100 s), the former set `mirror-long` 4 minutes 40 s |
 | the failure suite after F-65 (the former set `mirror-long`, 2026-11-06, Q-HA-126 and Q-HA-127) | whole set 25 min 51 s, every scenario passed; the pass progressed again 1 min 47 s after the pod crash, 1 min 55 s after the node loss (the primary switched over before the stop), 1 min 12 s after the freeze (the Valkey primary failed over first); an earlier run of the clearance alone cleared a node of the primary, the Valkey primary and the CloudNativePG operator (the operator in charge again after 3 s, the Valkey operator after 17 s). With the `scheduler` lease's holder and the standby moved onto the frozen node first (the configuration of nightly run 42211913572), the pass progressed again 2 min 7 s after the freeze; `failover.sh` took 14 to 18 s per switchover |
 
@@ -3594,14 +3594,14 @@ CI: the sets `npm`, `nuget`, `oci` and `access-long` (the journey) of Test and R
 |---|---|---|
 | `npm ci` with a pass running took 41 s against 12 s (308 %), two tarball requests of 31 s | a background fetch that led a flight waited for its background slot while it held the cross-replica flight; the yield window of a signal (30 s) keeps the slot away, so every client that asked for that item waited for the flight for the window, and the pass's own fetch was not yet running, so no signal could pre-empt it | the slot comes first: a background request takes it before it enters a flight (Q-REPO-179, [mirror.md](mirror.md#the-remote-engines-side-c1)). The code review of the engine's author found the same cause independently while this set was built; the set measured it (12 s with a pass running, 95 % to 99 % of the time without it) |
 | No pass ever started in the pool: the job failed with `mirror: the npm format has no discovery` | the mirror host of a worker needs the engine's set of invalidation rows, which `wireInvalidation` builds only for a process with a client listener; the host could not be built, and the lazy host answered `Lister` as a format without discovery without saying why | the area `mirror-engine` builds an engine, a set of invalidations and a format host of a worker's own, and `Ready` reports a build error (Q-ARCH-316, Q-ARCH-319); the first run of this set met it, and the engine's reviews had found it independently |
-| `deploy/dev/drain.sh` failed in the profile `mirror`: `deployment "trove-worker-vuln" not found` | the script waited for the Deployments `trove-worker-vuln` by name | it waits for every Deployment of the roles `api`, `packages` and `worker` (the pools of the profile in use) |
+| `deploy/dev/drain.sh` failed in the profile `mirror`: `deployment "quader-worker-vuln" not found` | the script waited for the Deployments `quader-worker-vuln` by name | it waits for every Deployment of the roles `api`, `packages` and `worker` (the pools of the profile in use) |
 | The set judged `npm ci` on one loaded run, which a host stall of a few seconds can fail; and one pair showed no pre-emption | an install lasts 12 s and the budget is 20 %; the pre-emptions depend on whether the pass has a fetch in flight when the first client waits | the median of three loaded installs against the best of three baselines, and the pre-emption count over the three pairs, numbers fixed in the test (`clientsFirstPairs`) |
 | The browser journeys 08 (the third) and 14 (the first) fail on the form of a remote in the creation form: `getByRole('textbox', { name: 'Pass interval in seconds' })` resolved to 2 elements (`strict mode violation`): `f-remote-mirror-intervalSeconds` and `f-remote-mirror-fullPassIntervalSeconds`, whose name "Full pass interval in seconds" contains the first | a text match of an accessible name is a substring match, and the form has a second field since the Mirror section was extended; [08-packages.spec.ts](../../web/e2e/tests/08-packages.spec.ts) line 286 (`interval`, step "mode mirror shows the members with their defaults…") and [14-mirror.spec.ts](../../web/e2e/tests/14-mirror.spec.ts) line 67 | not fixed here (`web/e2e` is the UI wave's): `{ name: 'Pass interval in seconds', exact: true }`; the journeys 02, 08 (first and second) and 11 pass, and so does the second journey of 14. `TestMirror_R_REPO_059_BrowserJourney` stays red until then |
 | Three failure-suite scenarios of the first nightly run (node loss, the 429 drain, the switchover) failed within a second with `write policy …: 412`, and the drain test after them failed with 104 tarballs served twice (it passed with 2 the day before), the throttling test with nine requests inside a wait | the account reads the remotes through one policy that lists them. Deleting a remote with content is a job (`202`); the job's end removes the row and moves the version of the policies that name it (R-AUTHZ-028). The next scenario's grant read the policy, the job finished, and the write on the old version answered `412`. The scenario had created its remote before the grant failed and registered its cleanup after the create, so the remote stayed, unpaused, until the end of the process: its passes ran against the test upstream during the scenarios after it (the stub's log shows requests for the names `-000` to `-003`, the range of the 429 scenario, one second apart while the next scenario ran; the 104 tarballs served twice by the drain test are the size of one such range and are explained by it, not measured separately) | the cleanup is registered before the create, `drop` waits until the repository answers `404`, and `ensurePolicy` reads the version again and writes again on `412`, five times at most ([Q-REPO-199](../spec/repositories-and-proxy.md#q-repo-199--the-scenarios-of-the-failure-suite-do-not-outlive-each-other-the-remote-is-removed-and-gone-before-the-next-scenario-and-a-policy-write-that-meets-a-moved-version-is-read-and-written-again)) |
 | The frozen-node scenario ended with "no install ran during the loss" | the loop that watches the pass stopped as soon as the pass had progressed 10 packages (1 min 11 s after the freeze), before the node controller had marked the paused node `NotReady` and removed its serving pods from the endpoints, which is when the scenario's clients' path counts as whole | the loop also runs until one install has been made while the loss lasts; the conditions on the installs are unchanged |
 | The throttling scenario with the killed process reported nine requests "inside a wait" with `503` and no `Retry-After` | the requests were those of the remote a failed scenario had left behind (the previous row): the upstream's throttle is global, each remote waits on its own, and the check read both. In the stub's log the pass's own requests for one tarball lie 1.01 s and 1.36 s apart, the wait of at least one second and the second wait of `[1 s, 2 s]` | none beyond the previous row: the check is unchanged and reads the request log of one remote |
 | The node-loss subtest of the pass lost its process and saw the pass progress after 6 min 51 s (bound 5 min) and three of four installs answer `503` (nightly run 42192042297) | the node hosted the PostgreSQL standby and the CloudNativePG operator. The primary's commits waited for the synchronous standby (`canceling wait for synchronous replication` in the primary's log from 2 s after the stop) until Kubernetes had replaced the operator after its toleration of 300 s and the new operator dropped the standby (09:20:16, stop 09:14:18); the pass progressed 53 s later. The frozen-node subtest, whose node had neither, took 1 min 5 s. The harness had moved only the PostgreSQL primary | `clearNode` moves the operators, the Valkey primary and the PostgreSQL primary first ([Q-REPO-200](../spec/repositories-and-proxy.md#q-repo-200--the-node-lost-under-a-pass-is-cleared-of-the-operators-and-the-primaries-first)); the standby may stay: the local run with the standby on the lost node progressed after 1 min 3 s and no install failed |
-| The node-loss subtest failed in the clearance: `failover.sh` "switchover did not finish in 3 minutes (primary trove-db-2, ready 2, phase 'Cluster in healthy state')" (nightly run 42211913572, F-65) | the clearance cordoned the node of the primary and the CloudNativePG operator first; the operator switches a primary off a cordoned node by itself (event `SwitchingOver … unschedulable node`), so `failover.sh`, 14 s later, found the primary moved and asked to switch back to the old one on the cordoned node, which the operator undid; reproduced on the dev cluster with the same error | the primaries are moved before the cordon, the operators' replacements must hold their leases, and `failover.sh` waits for the operator and a settled cluster and refuses a standby on a cordoned node ([Q-HA-126](../spec/ha-and-helm.md#q-ha-126--the-node-clearance-moves-the-primaries-before-the-cordon-and-failoversh-waits-for-what-a-switchover-needs), [the clearance](#the-failure-suite-under-npm-load)) |
+| The node-loss subtest failed in the clearance: `failover.sh` "switchover did not finish in 3 minutes (primary quader-db-2, ready 2, phase 'Cluster in healthy state')" (nightly run 42211913572, F-65) | the clearance cordoned the node of the primary and the CloudNativePG operator first; the operator switches a primary off a cordoned node by itself (event `SwitchingOver … unschedulable node`), so `failover.sh`, 14 s later, found the primary moved and asked to switch back to the old one on the cordoned node, which the operator undid; reproduced on the dev cluster with the same error | the primaries are moved before the cordon, the operators' replacements must hold their leases, and `failover.sh` waits for the operator and a settled cluster and refuses a standby on a cordoned node ([Q-HA-126](../spec/ha-and-helm.md#q-ha-126--the-node-clearance-moves-the-primaries-before-the-cordon-and-failoversh-waits-for-what-a-switchover-needs), [the clearance](#the-failure-suite-under-npm-load)) |
 | The frozen-node subtest of the same run: the pass did not continue in another process for 15 minutes; the test upstream saw no request of it from the pause to the unpause of the cleanup, and the paused process went on 0.2 s after that | a pass moves through the next `mirror-dispatch`, which only the holder of the `scheduler` lease enqueues; the lease is a session-level advisory lock, and a paused process's kernel keeps answering the server's keepalive, so a paused holder keeps it for as long as the pause lasts. The run's artifacts cannot name the holder; the mechanism is reproduced by `TestLeases_R_HA_006_FrozenHolder` (34 s held against a 4 s keepalive bound) and on the dev cluster (`docker pause` of the holder's node: the lock stayed for the whole 172 s of the pause) | the lease sessions carry `idle_session_timeout` at the keepalive's bound, 120 s with the defaults ([Q-HA-127](../spec/ha-and-helm.md#q-ha-127--a-lease-session-that-stays-silent-is-ended-by-the-server-within-the-keepalives-bound)) |
 | Both throttling subtests failed on "served 3 / 4 / 6 times" with the pass `complete`, no request inside a wait and 3 and 8 throttled answers | the stub's counters count the refused requests of a path too, and the `SlowDown` throttle refuses the first eight tarball requests, which the two fetches in flight repeat on a few names; the per-name bound read them as fetches | the refused requests are subtracted per path from the request log ([Q-REPO-201](../spec/repositories-and-proxy.md#q-repo-201--a-throttled-answer-is-not-a-fetch-the-per-name-bound-of-the-tarballs-counts-what-the-upstream-served)); a name fetched three times without a refusal still fails |
 
@@ -3627,7 +3627,7 @@ flowchart LR
     t["go test<br/>helm, kubectl, kind"]
     b["Playwright loop<br/>web/e2e/upgrade"]
   end
-  subgraph trove["namespace trove"]
+  subgraph quader["namespace quader"]
     c["client pods x2 per kind<br/>npm ci / npm publish<br/>dotnet restore loops"]
     r["release: old, then new<br/>web | api, packages, worker"]
     pg[("PostgreSQL<br/>dropped and created")]
@@ -3639,24 +3639,24 @@ flowchart LR
   h --> r
   r --> pg
   r --> s
-  repo[("guided-traffic.github.io/trove<br/>docker.io/guidedtraffic/trove")] -. "old chart, old image" .-> r
+  repo[("guided-traffic.github.io/quader<br/>docker.io/guidedtraffic/quader")] -. "old chart, old image" .-> r
 ```
 
 ### What it does
 
 The tests replace the installation, so they are a set of their own and end by putting the current dev release back.
 
-1. **Reset** ([upgrade_env_test.go](../../test/e2e/upgrade_env_test.go) `resetInstallation`): `helm uninstall trove`, `DROP DATABASE trove WITH (FORCE)` and
-   `CREATE DATABASE trove OWNER trove` on the primary of `trove-db`, and `FLUSHALL` on Valkey (`valkey-cli.sh`). There are no down migrations, and the upgrade is to run the
+1. **Reset** ([upgrade_env_test.go](../../test/e2e/upgrade_env_test.go) `resetInstallation`): `helm uninstall quader`, `DROP DATABASE quader WITH (FORCE)` and
+   `CREATE DATABASE quader OWNER quader` on the primary of `quader-db`, and `FLUSHALL` on Valkey (`valkey-cli.sh`). There are no down migrations, and the upgrade is to run the
    migration Job on the schema of the older release, so the older release gets an empty database and migrates it itself. The object store keeps its blobs; they are addressed by content and nothing
    references them. PostgreSQL, Valkey, S3, the IdP, the test upstreams and the Secrets of the dev profile stay.
-2. **The old release** (`installPrior`): the chart `trove` at the version of the tag from the Helm repository the release pipeline publishes to
-   (`https://guided-traffic.github.io/trove/`), the image `guidedtraffic/trove:<version>` (the kind nodes pull it from Docker Hub themselves), and the dev values of that
+2. **The old release** (`installPrior`): the chart `quader` at the version of the tag from the Helm repository the release pipeline publishes to
+   (`https://guided-traffic.github.io/quader/`), the image `guidedtraffic/quader:<version>` (the kind nodes pull it from Docker Hub themselves), and the dev values of that
    tag's own checkout (`git show <tag>:deploy/dev/values-dev.yaml` and `values-scatter.yaml`), with the node ranges and the edge port that
    [release-values.sh](../../deploy/dev/release-values.sh) adds. The tags must be in the checkout (`git fetch --tags`; a shallow clone needs `fetch-depth: 0`); a missing
    tag fails the test with that hint. `TestUpgrade_R_HA_064_AcrossTheCut` starts from `v0.16.0`, the last release before the cut (its chart has no `packages:` key and renders one
    `web` Deployment); `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` starts from the highest `vX.Y.Z` tag that is an ancestor of `HEAD` and does not point at it, resolved at run time.
-3. **The fixtures** (`buildUpgradeFixture`) are made through the API of the old release and are served by the new one: the administrator `e2e-admin` (`trove admin` in
+3. **The fixtures** (`buildUpgradeFixture`) are made through the API of the old release and are served by the new one: the administrator `e2e-admin` (`quader admin` in
    the worker pod, which every release has), the npm repositories `npm-local`, `npm-remote` (over the counting npm test upstream) and `npm-all` (virtual, deploy target `npm-local`) with the
    400-package lockfile of the HA load ([npm_load_test.go](../../test/e2e/npm_load_test.go) `buildNPMHAFixture`), the NuGet repositories `nuget-e2e` (local), a remote over the counting NuGet
    test upstream and a virtual repository over both, and one NuGet package pushed through the virtual repository into the local one.
@@ -3667,19 +3667,19 @@ The tests replace the installation, so they are a set of their own and end by pu
    because `dotnet restore` exits 0 on some failures), and one loop of the browser journey [web/e2e/upgrade/16-upgrade.spec.ts](../../web/e2e/upgrade/16-upgrade.spec.ts) on the host (one
    Playwright run per iteration, [playwright.upgrade.config.ts](../../web/e2e/playwright.upgrade.config.ts): the break-glass sign-in, the repository list, the status screen, a reload, sign-out, with the CSP watch of `support.ts`).
    The clients run with their default retries; a record is written per iteration, so a `kubectl exec` that breaks never counts as a failed iteration.
-5. **The steps** (`upgradeToTree`): `helm upgrade --wait --timeout 15m` of the chart of the working tree with the image `guidedtraffic/trove:dev` (loaded into the nodes first) and the values of
+5. **The steps** (`upgradeToTree`): `helm upgrade --wait --timeout 15m` of the chart of the working tree with the image `guidedtraffic/quader:dev` (loaded into the nodes first) and the values of
    `release-values.sh scatter` (the dev values, the scatter profile and the image ID annotation of up.sh), plus the step's own arguments. A sampler reads `GET /api/v1/system/replicas` every 2 s during
    a step: the distinct version sets are the proof that the step ran in the mixed-version window, and its request outcomes are logged (not gated; the clients' iterations are the pass condition).
-6. **The end** (`restoreCurrentRelease`, a `t.Cleanup` that runs also after a failure): a release of the old shape (`trove-web` present) or one that helm does not know is reset; then
+6. **The end** (`restoreCurrentRelease`, a `t.Cleanup` that runs also after a failure): a release of the old shape (`quader-web` present) or one that helm does not know is reset; then
    `up.sh` in the default profile upgrades or installs the current dev release, which later sets expect.
 
 ### The tests
 
 | Test | Criterion | What it does |
 |---|---|---|
-| `TestUpgrade_R_HA_064_AcrossTheCut` | E6a.7, R-HA-064, R-HA-020 | `v0.16.0` installed. Guard (subtest): `helm upgrade` with the defaults (`web.enabled: false`) fails, its output names `web.enabled`, `--set web.enabled=true` and "three upgrades", the Deployments' UIDs and generations and the release revision are unchanged, the registry still lists only the old replicas; `helm template` with the same values renders `trove-api` and no `trove-web`. Then the fixtures and the loops, 45 s of the old release, step 1 (`--set web.enabled=true`): the registry lists the roles `api`, `packages`, `web`, `worker` of the version under test only. Guard after step 1 (subtest, Q-HA-130): `helm upgrade` with `web.enabled: false` fails because the Ingress `trove` still routes to the Service `trove`, names `--set web.enabled=true --set web.routed=false` and "three upgrades", and changes nothing; 45 s; step 2 (`--set web.enabled=true --set web.routed=false`): the Ingress `trove` routes to the role Services and no path to `trove`, `trove-web` and the Service `trove` still exist; 45 s; step 3 (`web.enabled: false`): the roles `api`, `packages`, `worker`, no `trove-web` Deployment, no Service `trove`; 45 s. After step 2 (subtest): `GET /api/v1/system/migrations` as for the rolling test below. No iteration of any loop failed (a journey iteration that met a `404` for a hashed asset of the other release and no answer of 500 or above is counted as a finding, Q-HA-99), every loop ran an iteration during each step, the edge answered no request with `503` for want of a backend while the loops ran (`requireEdgeServed`, Q-HA-131), every acknowledged publish installs and every listed tarball matches its integrity |
-| `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` | R-HA-020, R-HA-052 "Rolling upgrade" and "Rollback", E5.4 | the previous release installed, the fixtures and loops, `helm upgrade --wait` to the working tree (migration Job first). R-HA-020's verification (subtest): `kubectl rollout status` of every Deployment, the registry lists only the version under test, and `GET /api/v1/system/migrations` (`requireMigrationsDone`) answered by a replica of the version under test shows no pending step, the schema the binary requires, and every background migration the binary declares `succeeded` within 3 minutes (a `failed` one fails at once); `trove migrate status` in the worker must agree with it. Then `helm rollback` to the revision the upgrade started from under the same loops: the registry lists only the previous release, which serves the migrated schema (R-HA-019: no down migrations), read with `trove migrate status` in its worker, because the previous release has no such route. Both windows: zero failed iterations; the edge answered no request with `503` for want of a backend while the loops ran (Q-HA-131) |
-| `TestUpgrade_R_HA_020_AcrossTwoBundles` ([upgrade_bundles_test.go](../../test/e2e/upgrade_bundles_test.go)) | R-HA-020 (the UI's hashed files, Q-HA-120), F-58 | instead of a release, the chart of the working tree with the image of `make image-marked` (`guidedtraffic/trove:dev-marked`, `TROVE_IMAGE_MARKED`): the same code with the second UI bundle, nearly every hashed name different (Q-HA-124). The fixtures and loops, 45 s, `helm upgrade --wait` to the image under test, 45 s. A sampler reads `/ui/en/` through the edge twice a second during the upgrade and asks the edge three times for the `main-<hash>.js` that index names. Subtest: the rollout is complete, the index names another main script after the upgrade than before (two bundles, read until twelve answers in a row agree, so a draining old replica is not counted), the sampler saw both, every index and every main script it asked for answered `200`, and at least one main script was answered by a replica whose own index names the other one, which only the shared asset store can do. Then zero failed iterations of every loop, strict (`requireClean` with no release named): a journey that meets a `404` for a hashed asset fails the test |
+| `TestUpgrade_R_HA_064_AcrossTheCut` | E6a.7, R-HA-064, R-HA-020 | `v0.16.0` installed. Guard (subtest): `helm upgrade` with the defaults (`web.enabled: false`) fails, its output names `web.enabled`, `--set web.enabled=true` and "three upgrades", the Deployments' UIDs and generations and the release revision are unchanged, the registry still lists only the old replicas; `helm template` with the same values renders `quader-api` and no `quader-web`. Then the fixtures and the loops, 45 s of the old release, step 1 (`--set web.enabled=true`): the registry lists the roles `api`, `packages`, `web`, `worker` of the version under test only. Guard after step 1 (subtest, Q-HA-130): `helm upgrade` with `web.enabled: false` fails because the Ingress `quader` still routes to the Service `quader`, names `--set web.enabled=true --set web.routed=false` and "three upgrades", and changes nothing; 45 s; step 2 (`--set web.enabled=true --set web.routed=false`): the Ingress `quader` routes to the role Services and no path to `quader`, `quader-web` and the Service `quader` still exist; 45 s; step 3 (`web.enabled: false`): the roles `api`, `packages`, `worker`, no `quader-web` Deployment, no Service `quader`; 45 s. After step 2 (subtest): `GET /api/v1/system/migrations` as for the rolling test below. No iteration of any loop failed (a journey iteration that met a `404` for a hashed asset of the other release and no answer of 500 or above is counted as a finding, Q-HA-99), every loop ran an iteration during each step, the edge answered no request with `503` for want of a backend while the loops ran (`requireEdgeServed`, Q-HA-131), every acknowledged publish installs and every listed tarball matches its integrity |
+| `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` | R-HA-020, R-HA-052 "Rolling upgrade" and "Rollback", E5.4 | the previous release installed, the fixtures and loops, `helm upgrade --wait` to the working tree (migration Job first). R-HA-020's verification (subtest): `kubectl rollout status` of every Deployment, the registry lists only the version under test, and `GET /api/v1/system/migrations` (`requireMigrationsDone`) answered by a replica of the version under test shows no pending step, the schema the binary requires, and every background migration the binary declares `succeeded` within 3 minutes (a `failed` one fails at once); `quader migrate status` in the worker must agree with it. Then `helm rollback` to the revision the upgrade started from under the same loops: the registry lists only the previous release, which serves the migrated schema (R-HA-019: no down migrations), read with `quader migrate status` in its worker, because the previous release has no such route. Both windows: zero failed iterations; the edge answered no request with `503` for want of a backend while the loops ran (Q-HA-131) |
+| `TestUpgrade_R_HA_020_AcrossTwoBundles` ([upgrade_bundles_test.go](../../test/e2e/upgrade_bundles_test.go)) | R-HA-020 (the UI's hashed files, Q-HA-120), F-58 | instead of a release, the chart of the working tree with the image of `make image-marked` (`guidedtraffic/quader:dev-marked`, `QUADER_IMAGE_MARKED`): the same code with the second UI bundle, nearly every hashed name different (Q-HA-124). The fixtures and loops, 45 s, `helm upgrade --wait` to the image under test, 45 s. A sampler reads `/ui/en/` through the edge twice a second during the upgrade and asks the edge three times for the `main-<hash>.js` that index names. Subtest: the rollout is complete, the index names another main script after the upgrade than before (two bundles, read until twelve answers in a row agree, so a draining old replica is not counted), the sampler saw both, every index and every main script it asked for answered `200`, and at least one main script was answered by a replica whose own index names the other one, which only the shared asset store can do. Then zero failed iterations of every loop, strict (`requireClean` with no release named): a journey that meets a `404` for a hashed asset fails the test |
 
 **The UI's hashed files.** Between two releases that both have the shared asset store a page loads on the replicas of both
 ([web-ui.md](web-ui.md#the-shared-asset-store)); the rolling test from the previous release stays strict also while that release
@@ -3689,23 +3689,23 @@ v0.16.0 counts the skew as Q-HA-99 says. Both images of the test across two bund
 the window in the bundles the index names, not in the registry's versions.
 
 **A contract step.** R-HA-021 allows a contract step only one release at a time or with downtime. The rolling test reads the migrations added since the previous release (`git diff --diff-filter=A <tag> HEAD` on
-the migrations directory) and, when one carries `-- trove:phase contract`, fails with a message that names the step and the policy: the upgrade is not zero-downtime then, and a test that
+the migrations directory) and, when one carries `-- quader:phase contract`, fails with a message that names the step and the policy: the upgrade is not zero-downtime then, and a test that
 cannot assert it says so instead of skipping. Today none is added.
 
 **`GET /api/v1/system/migrations`.** R-HA-020's verification reads it with the administrator's token through the edge (`upMigrations`), after the upgrade and only from a replica of the version under
 test: the releases before this one have no such route, so an answer of a pod of the release before that the edge still reaches while it drains (`404`, or another `binary.version`) is read again, for
-up to 90 s. `trove migrate status` in the worker runs the same code (`postgres.Report`) and is the cross-check; it alone reads the rollback's release
+up to 90 s. `quader migrate status` in the worker runs the same code (`postgres.Report`) and is the cross-check; it alone reads the rollback's release
 ([Q-HA-116](../spec/ha-and-helm.md#q-ha-116--the-upgrade-tests-read-get-apiv1systemmigrations-from-the-release-under-test), which supersedes Q-HA-96).
 
 ### Running it
 
 ```shell
-make image && make dev-up                  # the dev profile must be up; make image tags guidedtraffic/trove:dev
-make image-marked                          # guidedtraffic/trove:dev-marked, the second UI bundle of the test across two bundles
+make image && make dev-up                  # the dev profile must be up; make image tags guidedtraffic/quader:dev
+make image-marked                          # guidedtraffic/quader:dev-marked, the second UI bundle of the test across two bundles
 git fetch --tags                           # the release tags are the test's input
 (cd web && npm ci && npx playwright install chromium)
 make e2e SET=upgrade                       # the three tests
-TROVE_E2E_RUN='^TestUpgrade_R_HA_020' make e2e SET=upgrade     # one of them
+QUADER_E2E_RUN='^TestUpgrade_R_HA_020' make e2e SET=upgrade     # one of them
 ```
 
 The set builds the client images and starts two npm and two NuGet client pods and both counting test upstreams, as the other sets do. It needs the cluster to reach `docker.io` and
@@ -3715,7 +3715,7 @@ The set builds the client images and starts two npm and two NuGet client pods an
 ### What the CI leg provides
 
 The CI leg of the set (HA and Performance, nightly and on dispatch; [performance.yml](../../.github/workflows/performance.yml)) must provide: a checkout with all tags (`fetch-depth: 0`); `make image` before the set (the
-tag `guidedtraffic/trove:dev`) and `make image-marked` (the tag `guidedtraffic/trove:dev-marked`); Node from `web/.nvmrc`, `npm ci` in `web/` and `npx playwright install --with-deps chromium`; network access to Docker Hub and to `guided-traffic.github.io`; the dev profile
+tag `guidedtraffic/quader:dev`) and `make image-marked` (the tag `guidedtraffic/quader:dev-marked`); Node from `web/.nvmrc`, `npm ci` in `web/` and `npx playwright install --with-deps chromium`; network access to Docker Hub and to `guided-traffic.github.io`; the dev profile
 (`make dev-up`) as for every e2e leg; a step timeout above the measured duration of the set.
 
 ### Measured on the dev cluster
@@ -3738,7 +3738,7 @@ tag `guidedtraffic/trove:dev`) and `make image-marked` (the tag `guidedtraffic/t
 
 The set took 20 min 36 s with both tests, the return to the dev release after each included.
 
-`TestUpgrade_R_HA_020_AcrossTwoBundles`, the same machine, 2026-11-06 (`guidedtraffic/trove:dev-marked` to `guidedtraffic/trove:dev`, both of the working tree): the upgrade took 42 s; during it the index named the main script of the first bundle 42 times and of the second 29 times, and the 213 requests for the main scripts the indexes named all answered `200`, 81 of them by a replica whose own index names the other bundle; 180 `npm ci`, 14 publishes, 204 `dotnet restore` and 25 browser journeys, none failed and none met the asset skew (8 journeys ran during the upgrade). The first `api` replica of the second bundle published 244 new files of 270 in 1.2 s, the next one found them all in 7 ms. The test took 257 s, the return to the dev release included. With the store in the image under test, the other two tests passed in the same session: the rolling test from v0.19.5 (the migration 00043 applied, the rollback to v0.19.5 on it) with 271 `npm ci`, 29 publishes, 333 `dotnet restore` and 44 journeys, none failed and none met the skew, since the bundle did not change; the cut test with 2 of 24 journeys counted against v0.16.0 (Q-HA-99), whose files the store cannot have. Before the fix of Q-HA-98 the first run ended at step 1 after 5 minutes; the guard
+`TestUpgrade_R_HA_020_AcrossTwoBundles`, the same machine, 2026-11-06 (`guidedtraffic/quader:dev-marked` to `guidedtraffic/quader:dev`, both of the working tree): the upgrade took 42 s; during it the index named the main script of the first bundle 42 times and of the second 29 times, and the 213 requests for the main scripts the indexes named all answered `200`, 81 of them by a replica whose own index names the other bundle; 180 `npm ci`, 14 publishes, 204 `dotnet restore` and 25 browser journeys, none failed and none met the asset skew (8 journeys ran during the upgrade). The first `api` replica of the second bundle published 244 new files of 270 in 1.2 s, the next one found them all in 7 ms. The test took 257 s, the return to the dev release included. With the store in the image under test, the other two tests passed in the same session: the rolling test from v0.19.5 (the migration 00043 applied, the rollback to v0.19.5 on it) with 271 `npm ci`, 29 publishes, 333 `dotnet restore` and 44 journeys, none failed and none met the skew, since the bundle did not change; the cut test with 2 of 24 journeys counted against v0.16.0 (Q-HA-99), whose files the store cannot have. Before the fix of Q-HA-98 the first run ended at step 1 after 5 minutes; the guard
 subtest passed in 0.9 s in every run.
 
 ### Findings of the upgrade tests
@@ -3746,57 +3746,57 @@ subtest passed in 0.9 s in every run.
 | Finding | Cause | Fix |
 |---|---|---|
 | Step 1 failed: the migration Job refused `the connection budget needs 403 connections but the server allows 400 (max_connections)` | the scatter profile has `api` 3, and the bridge in it holds 18 pods at their surge (20 connections each) beside `web`; the dev PostgreSQL was sized for `api` 2 (383) | `max_connections` 450 in [postgres.yaml](../../deploy/dev/postgres.yaml) ([Q-HA-98](../spec/ha-and-helm.md#q-ha-98--the-connection-budget-of-the-bridge-in-the-scatter-profile)); an existing cluster restarts its instances once when `make dev-up` applies it |
-| The journey stayed on a blank login page in 2 of 25 iterations during step 1 | The UI's assets are named after their content: of the requests for `main-*.js`, `polyfills-*.js` and `chunk-*.js` that one page load makes, the ones that reach a pod of the other release answer `404` (`trove-web-5bb78c9659-*` of the image under test against `trove-web-59876cdf84-*` of v0.16.0 in the trace). The pods of v0.16.0 cannot be changed. The rolling upgrade from v0.19.0 meets no skew because the bundle did not change | the shared asset store (F-58, [Q-HA-120](../spec/ha-and-helm.md#q-ha-120--how-a-replica-serves-a-hashed-ui-file-of-the-other-release)) between releases that both have it, proved by `TestUpgrade_R_HA_020_AcrossTwoBundles`. The cut test still counts the skew against v0.16.0 as a finding and gates every other failure ([Q-HA-99](../spec/ha-and-helm.md#q-ha-99--the-uis-hashed-assets-across-an-upgrade)) |
+| The journey stayed on a blank login page in 2 of 25 iterations during step 1 | The UI's assets are named after their content: of the requests for `main-*.js`, `polyfills-*.js` and `chunk-*.js` that one page load makes, the ones that reach a pod of the other release answer `404` (`quader-web-5bb78c9659-*` of the image under test against `quader-web-59876cdf84-*` of v0.16.0 in the trace). The pods of v0.16.0 cannot be changed. The rolling upgrade from v0.19.0 meets no skew because the bundle did not change | the shared asset store (F-58, [Q-HA-120](../spec/ha-and-helm.md#q-ha-120--how-a-replica-serves-a-hashed-ui-file-of-the-other-release)) between releases that both have it, proved by `TestUpgrade_R_HA_020_AcrossTwoBundles`. The cut test still counts the skew against v0.16.0 as a finding and gates every other failure ([Q-HA-99](../spec/ha-and-helm.md#q-ha-99--the-uis-hashed-assets-across-an-upgrade)) |
 | `GET /api/v1/system/migrations` answered `404` (finding F-59) | the endpoint was specified (R-HA-018) and not built | built (`getMigrationStatus`, [Q-HA-114](../spec/ha-and-helm.md#q-ha-114--which-background-migrations-the-migration-report-lists-before-r-ha-022s-table-exists), [Q-HA-115](../spec/ha-and-helm.md#q-ha-115--how-a-contract-step-declares-the-background-migration-it-depends-on-and-what-the-guard-does-with-it)); the tests read it ([Q-HA-116](../spec/ha-and-helm.md#q-ha-116--the-upgrade-tests-read-get-apiv1systemmigrations-from-the-release-under-test)). The read of the endpoint has not run on kind yet |
-| One journey iteration of 14 failed in step 2 of the then two-step cut (nightly run 42194413882, F-64): `TimeoutError` waiting for the sign-in form, no `ASSET-SKEW` line | the edge answered `GET /ui/en/login?local=1` with `503` (`trove_trove_http/<NOSRV>`, `SC--`): Helm deleted the Service `trove` and moved the Ingress in one apply, HAProxy Ingress emptied the backend at once and took the new routes with its next reload, 1.4 s later; 509 requests met the gap, the npm clients repeated theirs | the cut takes three steps, each changing either the edge or the backends ([Q-HA-130](../spec/ha-and-helm.md#q-ha-130--the-cut-moves-the-edge-and-removes-the-bridge-in-two-separate-upgrades)); both tests read the edge's access lines for answers without a backend ([Q-HA-131](../spec/ha-and-helm.md#q-ha-131--the-upgrade-tests-read-the-edges-access-lines-for-answers-without-a-backend)); the trace of a failed iteration is kept per test |
+| One journey iteration of 14 failed in step 2 of the then two-step cut (nightly run 42194413882, F-64): `TimeoutError` waiting for the sign-in form, no `ASSET-SKEW` line | the edge answered `GET /ui/en/login?local=1` with `503` (`quader_quader_http/<NOSRV>`, `SC--`): Helm deleted the Service `quader` and moved the Ingress in one apply, HAProxy Ingress emptied the backend at once and took the new routes with its next reload, 1.4 s later; 509 requests met the gap, the npm clients repeated theirs | the cut takes three steps, each changing either the edge or the backends ([Q-HA-130](../spec/ha-and-helm.md#q-ha-130--the-cut-moves-the-edge-and-removes-the-bridge-in-two-separate-upgrades)); both tests read the edge's access lines for answers without a backend ([Q-HA-131](../spec/ha-and-helm.md#q-ha-131--the-upgrade-tests-read-the-edges-access-lines-for-answers-without-a-backend)); the trace of a failed iteration is kept per test |
 | The guard, the steps, the registry's roles and the rollback of a release (R-HA-064, R-HA-020, R-HA-052) | none: they behave as specified | |
 
 ### Not covered by the upgrade tests
 
 - A downgrade across the cut: the rollback of each of R-HA-064's steps is not run under the loops.
-- A rolling restart of the Deployments (R-HA-052's first row) is the drain tests'; the upgrade of the dependencies (PostgreSQL, Valkey) is not part of trove's release.
+- A rolling restart of the Deployments (R-HA-052's first row) is the drain tests'; the upgrade of the dependencies (PostgreSQL, Valkey) is not part of Quader's release.
 - The cluster-minimum-version gate of R-HA-020 (a feature answers `503 cluster_upgrade_in_progress` while an older replica lives) has no feature to gate yet.
 - The k6 load of the drain tests and the 1 GiB transfers do not run under the upgrade; the loops are the clients' (Q-HA-97).
 
 ## The backup tests
 
 Work package WP5.10 (the end-to-end suite and the drill): the e2e tier of [R-BAK-029](../spec/backup-and-restore.md#r-bak-029--backup-and-restore-test-suite) on the dev cluster, the row
-"Restore drill, trove backup" of [R-HA-052](../spec/ha-and-helm.md#r-ha-052--failure-injection-test-suite) and the exit criteria E5.1, E5.11 and E5.12 of the
+"Restore drill, Quader backup" of [R-HA-052](../spec/ha-and-helm.md#r-ha-052--failure-injection-test-suite) and the exit criteria E5.1, E5.11 and E5.12 of the
 [roadmap](../coverage/roadmap.md). The lane is described in [backup.md](backup.md). Decisions: Q-BAK-45 to Q-BAK-48 and Q-HA-154 to Q-HA-156 in the
 [specification](../spec/backup-and-restore.md#q-bak-45--the-restore-drill-runs-in-a-second-namespace-of-the-dev-cluster).
 
 ```mermaid
 flowchart LR
-  subgraph trove["namespace trove (the source)"]
+  subgraph quader["namespace quader (the source)"]
     l["the load: publish, delete, trash,<br/>gc every 10 s (grace 0s)"]
     r["api, packages, worker"]
-    cj["CronJob trove-backup<br/>Jobs made from it"]
-    s3[("SeaweedFS<br/>trove-blobs, trove-backups")]
+    cj["CronJob quader-backup<br/>Jobs made from it"]
+    s3[("SeaweedFS<br/>quader-blobs, quader-backups")]
   end
-  subgraph rs["namespace trove-restore (restore-ns.sh)"]
-    j["Job trove-restore"]
+  subgraph rs["namespace quader-restore (restore-ns.sh)"]
+    j["Job quader-restore"]
     db[("fresh CloudNativePG")]
     vk[("fresh Valkey")]
     r2["api, packages, worker<br/>after the final helm upgrade"]
   end
   l --> r
   cj -- "create" --> s3
-  j -- "reads the target, writes<br/>trove-restore-blobs" --> s3
+  j -- "reads the target, writes<br/>quader-restore-blobs" --> s3
   j --> db
   r2 --> db
   r2 --> vk
   t["the test"] -. "port-forwards, npm view in a client pod" .-> r2
 ```
 
-**The profile.** `backup` ([values-backup.yaml](../../deploy/dev/values-backup.yaml), `TROVE_PROFILE=backup`) is the dev profile with `storage.gc.grace_period: 0s`. With the default of 24 hours a blob
+**The profile.** `backup` ([values-backup.yaml](../../deploy/dev/values-backup.yaml), `QUADER_PROFILE=backup`) is the dev profile with `storage.gc.grace_period: 0s`. With the default of 24 hours a blob
 nothing references any more is not collectable, so the hold of R-BAK-007 would not be exercised. `TestMain` returns the cluster to the default profile. The dev profile itself carries
-the backup target (the bucket `trove-backups` of the dev SeaweedFS, `backup.target.sse.mode: none` because the dev SeaweedFS has no KMS and answers an SSE-S3 write with a 500) and the CronJob
-`trove-backup`.
+the backup target (the bucket `quader-backups` of the dev SeaweedFS, `backup.target.sse.mode: none` because the dev SeaweedFS has no KMS and answers an SSE-S3 write with a 500) and the CronJob
+`quader-backup`.
 
 **The second installation** ([restore-ns.sh](../../deploy/dev/restore-ns.sh), [restore-ns.yaml](../../deploy/dev/restore-ns.yaml), [values-restore.yaml](../../deploy/dev/values-restore.yaml)). `infra` removes an earlier
-one and creates the namespace `trove-restore` (Pod Security restricted), a copy of the dev CA, of the S3 login, of the CA of the S3 certificate and of the **key ring** (a restore refuses a key ring that does not open
-the backup's canary rows, R-BAK-020 check 3), a CloudNativePG cluster with one instance whose `postInitApplicationSQL` creates the schema `trove` (R-BAK-020 check 4 needs the schema and no relation), a Valkey
-with three Sentinels, and an empty bucket `trove-restore-blobs` in the dev SeaweedFS (a Job in the main namespace). `install <backup id>` is `helm install` of the chart with the sequence of R-BAK-021: every role
+one and creates the namespace `quader-restore` (Pod Security restricted), a copy of the dev CA, of the S3 login, of the CA of the S3 certificate and of the **key ring** (a restore refuses a key ring that does not open
+the backup's canary rows, R-BAK-020 check 3), a CloudNativePG cluster with one instance whose `postInitApplicationSQL` creates the schema `quader` (R-BAK-020 check 4 needs the schema and no relation), a Valkey
+with three Sentinels, and an empty bucket `quader-restore-blobs` in the dev SeaweedFS (a Job in the main namespace). `install <backup id>` is `helm install` of the chart with the sequence of R-BAK-021: every role
 at zero, `restore.enabled`, `restore.backupId`. `serve` is the final `helm upgrade` with `restore.enabled` off, which renders the migration Job and starts one replica of each role. The target to read from is
 the bucket the source writes to; the Jobs of the second namespace use the dev SeaweedFS of the main namespace with the same login, which the suite does not separate (H-566).
 
@@ -3811,10 +3811,10 @@ the bucket the source writes to; the Jobs of the second namespace use the dev Se
 
 1. *Scenario 1.* A reference data set (12 files of 1 MiB, four npm and four NuGet packages) is published; the load then publishes an npm and a NuGet package and a file every 0.7 s, deletes a file every third round,
    marks a file trashed every fourth (the trash can has no API, R-STOR-022 is P1, so the row of the item is marked `trashed_at`), empties the trash every ninth round and posts `POST /api/v1/system/tasks/gc/run` every 10 s. A Job
-   made from the CronJob runs with `TROVE_BACKUP_COPY_BYTES_PER_SECOND=2MiB` and one copy worker, so that it runs for a while beside the load; the test requires that the load published npm, NuGet and
+   made from the CronJob runs with `QUADER_BACKUP_COPY_BYTES_PER_SECOND=2MiB` and one copy worker, so that it runs for a while beside the load; the test requires that the load published npm, NuGet and
    file items **during** the Job. The backup is restored with the commands of R-BAK-021. In the restored database every untrashed file item is fetched with `GET /files/…` and its bytes hash to the recorded digest; the
    objects of **all** referenced blobs, trashed items included, are read from the restored bucket by a Job (`blob-check`, the AWS CLI image of the profile) and hashed; `npm view <name> versions` of a client pod lists
-   exactly the versions of the restored database for every package; the version lists of the NuGet flat container equal the database's; `trove backup verify <id> --deep` as a Job exits 0.
+   exactly the versions of the restored database for every package; the version lists of the NuGet flat container equal the database's; `quader backup verify <id> --deep` as a Job exits 0.
 2. *Scenario 3.* Two Jobs from the CronJob created together: one is Complete, the other Failed with exit code 3 (the pod failure policy fails the Job without a retry).
 3. *Scenario 9.* `.out/e2e/backup-timings.json` (an artifact of the leg `e2e-backup`): the duration of the backup Job, the duration of the restore Job and its phases (`phasesSeconds` of the restore's JSON output), the
    time of the final `helm upgrade`, the numbers of the drain tests.
@@ -3823,17 +3823,17 @@ the bucket the source writes to; the Jobs of the second namespace use the dev Se
 five seconds `deploy/dev/drain.sh <node>` drains the node; the Job (`backoffLimit: 0`) ends Complete, because an eviction is ignored by the pod failure policy. A `kill -9` (a forced deletion with grace period 0) of the
 next backup pod during the copy: with a lease of 20 s and a heartbeat of 2 s the retry pod of the same Job takes over after the lease and the Job ends Complete (Q-BAK-44). The restore Job, with
 `restore.backoffLimit: 0`, is drained during its blob copy and ends Complete; a second restore with the default budget is killed during the copy, and its next pod resumes from the anchor. The restore has no rate
-limit and copies server-side, which ends step 3 in seconds, so the restore Jobs of this test stream (`TROVE_BACKUP_COPY_SERVER_SIDE=never`) with one worker through the pod. The restore Job has no scheduling values, so the
+limit and copies server-side, which ends step 3 in seconds, so the restore Jobs of this test stream (`QUADER_BACKUP_COPY_SERVER_SIDE=never`) with one worker through the pod. The restore Job has no scheduling values, so the
 test steers its pod: every worker node but the one to drain is cordoned while the Job is created, and uncordoned as soon as the pod has left the drained node. The number of pods a Job
 created is counted from its `SuccessfulCreate` events, because an evicted or killed pod is gone from the list.
 
 **E5.12** (`TestBackupJournal`). After a backup: a service-account token is revoked, a user (alice, signed in through the test IdP) is disabled, an npm version is unpublished with the real npm client, a NuGet
 package is pushed and deleted. The journal ships to the blob bucket (5 s interval); the backup is restored. The restore Job's output lists `token.revoked … applied`; the revoked token answers 401 on the restored
-installation, the administrator's token of the snapshot still works; alice is disabled; `npm view` does not list the unpublished version until `trove admin npm reinstate` (R-NPM-047); another build of the NuGet version
+installation, the administrator's token of the snapshot still works; alice is disabled; `npm view` does not list the unpublished version until `quader admin npm reinstate` (R-NPM-047); another build of the NuGet version
 number is refused and the journaled bytes are accepted (R-NUGET-033); the first overview (`/api/v1/system/overview`) equals the `blobs` table (R-STOR-047); the backup summary of the restored installation names the restore
 origin and the runs (R-API-050, R-UI-048; the browser journey `16-backups.spec.ts` runs against the source installation).
 
-E5.12's CI bullets ([backup_ci_test.go](../../test/e2e/backup_ci_test.go), Q-BAK-60) run in the same cycle; the set `backup` starts the issuer double (`TROVE_E2E_OIDCSTUB=1`). Before the snapshot the test
+E5.12's CI bullets ([backup_ci_test.go](../../test/e2e/backup_ci_test.go), Q-BAK-60) run in the same cycle; the set `backup` starts the issuer double (`QUADER_E2E_OIDCSTUB=1`). Before the snapshot the test
 registers a CI issuer of the double with single-use subject tokens and a clock skew of 5 s, two policies on `bak-npm`, and four mappings of the issuer's system tier: M0 (priority 5, project R), M1 (10) and M2 (20, read and
 deploy) for project P, M3 (30) for project Q; an exchange for P names M1. After the snapshot M1 is disabled (a `PUT` with `enabled: false`) and a subject token for R is minted. After the restore: the restore's output lists
 `ci.mapping.disabled` of M1 as applied and of M2 and M3 as suspended, M0 stays enabled, a fresh token for P answers `400 no_matching_mapping` (R-CI-020, Q-CI-11); the token minted before the restore finished answers `400
@@ -3860,12 +3860,12 @@ The runs of 2026-11-07 each ran on this cluster after `make image`; `TestBackupD
 | Finding | Cause | Fix |
 |---|---|---|
 | The first backup Job of the dev cluster failed at the probe of the target: `PutObject … InternalError (HTTP 500)` | the default `backup.target.sse.mode` is `s3` and the dev SeaweedFS has no KMS | `backup.target.sse.mode: none` in `values-dev.yaml` and `values-restore.yaml` (Q-HA-156) |
-| `helm upgrade` of the dev release failed at the migration Job: `migration 00002_storage_core.sql was changed after this database applied it` | the dev database was installed with an earlier build; before the first stable release a changed migration file needs a new database (Q-ARCH-340) | the database `trove` was dropped and created again by hand (the steps of `resetInstallation`); no product change |
-| The load's scenario waited for two minutes for the first trashed item: `relation "blob_gc_queue" does not exist` | the trigger of `items` names its tables without a schema and psql's `search_path` was `public`; the replicas set `search_path` to the schema | the load's SQL sets `search_path` to `trove` first; no product change (a statement written by hand outside a replica needs the same) |
+| `helm upgrade` of the dev release failed at the migration Job: `migration 00002_storage_core.sql was changed after this database applied it` | the dev database was installed with an earlier build; before the first stable release a changed migration file needs a new database (Q-ARCH-340) | the database `quader` was dropped and created again by hand (the steps of `resetInstallation`); no product change |
+| The load's scenario waited for two minutes for the first trashed item: `relation "blob_gc_queue" does not exist` | the trigger of `items` names its tables without a schema and psql's `search_path` was `public`; the replicas set `search_path` to the schema | the load's SQL sets `search_path` to `quader` first; no product change (a statement written by hand outside a replica needs the same) |
 | The npm client call failed with `npm: No such file or directory` | the client pods have the wrappers `npm10` to `npm12`, not `npm` | `npm11`, as the CI tests do |
 | 294 `GET /files/…` of the restored installation answered `429 rate_limited` | the read class of the token (R-API-016) | the test honours `Retry-After` |
 | A drain test counted one pod for a Job that had been drained | the evicted pod is deleted, so it is gone from the list | the pods a Job created are counted from its `SuccessfulCreate` events |
-| The restore Job of the drain test ended before the drain started | the restore has no rate limit and copies server-side, which takes under a second on this data | the restore Jobs of the drain tests stream through the pod with one worker (`TROVE_BACKUP_COPY_SERVER_SIDE=never`); the restore Job has no scheduling values, so the test steers its pod by cordoning |
+| The restore Job of the drain test ended before the drain started | the restore has no rate limit and copies server-side, which takes under a second on this data | the restore Jobs of the drain tests stream through the pod with one worker (`QUADER_BACKUP_COPY_SERVER_SIDE=never`); the restore Job has no scheduling values, so the test steers its pod by cordoning |
 | The overview of the restored installation was 2 blobs behind the `blobs` table, and the table had 259 rows more than at the end of the restore | the restore recounts the usage counters and they equal the table at its end (`1106 totals, 0 deltas, 1106 live, 1106 rows`); `ui_assets` is a transient table, so the replicas that start publish the blobs of the UI bundle again, and the usage fold follows | no defect; the test judges the equality at the end of the restore and again once the roles have started and the fold has run |
 | The restored database listed no backup run | `backup_run` is a transient table (R-BAK-004): the run is the source installation's record | the test reads the run and the stored backups from the source's API and the restore origin from the restored one |
 | A replayed update of an exposure rule from `releases/**` to `releases/2.0/**` was `suspended`, not applied | the comparator compares patterns as strings, never by glob containment (Q-EP-79), so the rule is disabled | as specified (R-EP-020): the test narrows one rule provably (a pattern leaves the include list) and one unprovably, and expects the second disabled |
@@ -3886,16 +3886,16 @@ The runs of 2026-11-07 each ran on this cluster after `make image`; `TestBackupD
 ## The point-in-time restore drill
 
 The second restore drill of exit criterion E5.1 ([roadmap](../coverage/roadmap.md)): the platform layer of [R-HA-023](../spec/ha-and-helm.md#r-ha-023--backup-of-postgresql-object-storage-and-keys)
-restored by the steps of [R-HA-025](../spec/ha-and-helm.md#r-ha-025--restore-procedure), on the installation itself. The trove-backup drill into an empty namespace is
-[above](#the-backup-tests). Decisions: [Q-HA-210](../spec/ha-and-helm.md#q-ha-210--the-platform-layer-of-r-ha-023-in-the-dev-stack-is-opt-in-trove_pitr1-installs-the-barman-cloud-plugin-by-pinned-manifest-and-keeps-the-archive-on-the-dev-seaweedfs-over-tls)
+restored by the steps of [R-HA-025](../spec/ha-and-helm.md#r-ha-025--restore-procedure), on the installation itself. The quader-backup drill into an empty namespace is
+[above](#the-backup-tests). Decisions: [Q-HA-210](../spec/ha-and-helm.md#q-ha-210--the-platform-layer-of-r-ha-023-in-the-dev-stack-is-opt-in-quader_pitr1-installs-the-barman-cloud-plugin-by-pinned-manifest-and-keeps-the-archive-on-the-dev-seaweedfs-over-tls)
 and [Q-HA-211](../spec/ha-and-helm.md#q-ha-211--the-point-in-time-drill-restores-the-installations-own-database-into-a-new-cluster-and-does-steps-5-and-7-of-r-ha-025-with-the-commands).
 
-**The platform layer in the dev stack.** `TROVE_PITR=1 make dev-up` (the set `backup-pitr` exports it) installs the Barman Cloud plugin of CloudNativePG
+**The platform layer in the dev stack.** `QUADER_PITR=1 make dev-up` (the set `backup-pitr` exports it) installs the Barman Cloud plugin of CloudNativePG
 (`DEV_BARMAN_PLUGIN_*` in [versions.env](../../tools/versions.env): the release manifest by SHA-256, the operator and sidecar images by digest, fetched by
-`make dev-charts` in CI), applies the `ObjectStore` [pitr.yaml](../../deploy/dev/pitr.yaml) and adds `spec.plugins` to the Cluster `trove-db`. The WAL goes to
-`s3://trove-pg-archive/` on the dev SeaweedFS over TLS (the dev CA as `endpointCA`). It is off by default: it adds a Deployment, a sidecar to both PostgreSQL pods
+`make dev-charts` in CI), applies the `ObjectStore` [pitr.yaml](../../deploy/dev/pitr.yaml) and adds `spec.plugins` to the Cluster `quader-db`. The WAL goes to
+`s3://quader-pg-archive/` on the dev SeaweedFS over TLS (the dev CA as `endpointCA`). It is off by default: it adds a Deployment, a sidecar to both PostgreSQL pods
 and a rolling restart of the cluster. The switch is sticky for a cluster that exists. [pitr.sh](../../deploy/dev/pitr.sh) is the PostgreSQL side: `backup` (a `Backup`
-of method `plugin`), `archive-wal` (`pg_switch_wal` and wait for the archiver), `restore <time>` (the Cluster `trove-db-pitr` from
+of method `plugin`), `archive-wal` (`pg_switch_wal` and wait for the archiver), `restore <time>` (the Cluster `quader-db-pitr` from
 [pitr-restore.yaml](../../deploy/dev/pitr-restore.yaml): `bootstrap.recovery` from the plugin's external cluster with `recoveryTarget.targetTime`), `down`.
 
 **The drill** (`TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLayer`, [backup_pitr_test.go](../../test/e2e/backup_pitr_test.go), `make e2e SET=backup-pitr`,
@@ -3908,26 +3908,26 @@ CI: a step of the nightly job `e2e-backup`). Stages, each stops the drill when i
 | after *t* | *t* from `clock_timestamp()` of the primary, then the token is revoked, `post.bin` and npm 1.1.0 are written, `gone` is deleted and collected (grace 0 s, so the versioned bucket gets a delete marker), the revocation journal is shipped, `pitr.sh archive-wal` | the blob row of `gone` is collected |
 | step 1 | `helm upgrade` with `postRestore.hold=true` and every role and pool at zero (Q-HA-212), then the running backup Job is deleted | no replica is left |
 | step 2 | `pitr.sh restore <t>` | the new database holds `keep` and `gone`, not `post`; the token is **not** revoked in it |
-| steps 3 and 4 | `helm upgrade` with `config.database.host`, `secrets.database` and `secrets.databaseCA` of `trove-db-pitr`, `postRestore.enabled` (journal credentials `static`, the dev login) | the Job's output lists `token.revoked` as applied and a `storage verify:` line with at least one blob without object (Q-HA-213); the token is revoked in the new database; `keyspace_id` differs; the deletion pause is set |
-| step 5 | `trove admin storage restore-versions --before <t> --credentials-file …` as a one-off Job with the pod template of the post-restore Job (`pitrAdminJob`) | the totals line reports at least one blob restored and none still without object |
-| step 6 | `helm upgrade` with the normal values on the new cluster | the roles are live and the administrator's token works; `trove admin storage verify` in the worker pod exits 0 with no blob without its object |
+| steps 3 and 4 | `helm upgrade` with `config.database.host`, `secrets.database` and `secrets.databaseCA` of `quader-db-pitr`, `postRestore.enabled` (journal credentials `static`, the dev login) | the Job's output lists `token.revoked` as applied and a `storage verify:` line with at least one blob without object (Q-HA-213); the token is revoked in the new database; `keyspace_id` differs; the deletion pause is set |
+| step 5 | `quader admin storage restore-versions --before <t> --credentials-file …` as a one-off Job with the pod template of the post-restore Job (`pitrAdminJob`) | the totals line reports at least one blob restored and none still without object |
+| step 6 | `helm upgrade` with the normal values on the new cluster | the roles are live and the administrator's token works; `quader admin storage verify` in the worker pod exits 0 with no blob without its object |
 | the result | reads through the edge | `keep` and `gone` answer 200 with their SHA-256; `post.bin` 404; the packument lists only 1.0.0; the revoked token answers 401 |
-| step 7 | an S3 Job (the object written after *t* is still there), `kubectl exec deploy/trove-worker -- trove admin maintenance resume-deletions`, a collection run | the object written after *t* was not deleted while the pause was set; the command reports the post-restore's pause cleared and `system_state` holds none |
+| step 7 | an S3 Job (the object written after *t* is still there), `kubectl exec deploy/quader-worker -- quader admin maintenance resume-deletions`, a collection run | the object written after *t* was not deleted while the pause was set; the command reports the post-restore's pause cleared and `system_state` holds none |
 
-The test's cleanup returns the release to `trove-db` (`helm upgrade` with the profile's values) and deletes `trove-db-pitr`. Every `helm upgrade` of the drill passes `--force-conflicts` ([Q-HA-289](../spec/ha-and-helm.md#q-ha-289--the-point-in-time-drill-and-the-dev-stacks-release-install-take-over-the-replica-counts-that-earlier-tests-set-with-kubectl)): a Deployment whose `spec.replicas` an earlier test scaled with `kubectl` would otherwise stop the upgrade. Start the set on a cluster whose PostgreSQL has finished the rollout that `TROVE_PITR=1` causes (`kubectl -n trove wait --for=condition=Ready cluster/trove-db`); the migration Job fails while the primary restarts. **Not verified by the drill:** the ETag
+The test's cleanup returns the release to `quader-db` (`helm upgrade` with the profile's values) and deletes `quader-db-pitr`. Every `helm upgrade` of the drill passes `--force-conflicts` ([Q-HA-289](../spec/ha-and-helm.md#q-ha-289--the-point-in-time-drill-and-the-dev-stacks-release-install-take-over-the-replica-counts-that-earlier-tests-set-with-kubectl)): a Deployment whose `spec.replicas` an earlier test scaled with `kubectl` would otherwise stop the upgrade. Start the set on a cluster whose PostgreSQL has finished the rollout that `QUADER_PITR=1` causes (`kubectl -n quader wait --for=condition=Ready cluster/quader-db`); the migration Job fails while the primary restarts. **Not verified by the drill:** the ETag
 bullet, the orphan sweep after the resume and the run with `backup.revocation_journal.enabled: false` of R-HA-025's acceptance criteria. Steps 5 and 7 call the product's commands; step 7 runs in a pod of the started installation because the post-restore Job and its credentials ConfigMap are gone after the upgrade of step 6.
 
 ## The edge and alert tests
 
 Exit criterion E5.5 of the [roadmap](../coverage/roadmap.md) has three parts that need a cluster: R-HA-038 and R-HA-039 through an HTTPRoute on an existing
 Gateway as well as through the Ingress, and the alerts of R-HA-045 in their R-HA-052 scenarios. Each is a profile of the dev stack that installs what it needs
-(`TROVE_PROFILE=edge` and `alerts`, [local-profile.md](local-profile.md#the-edge-profile)) and a set; the production example values it also names are
+(`QUADER_PROFILE=edge` and `alerts`, [local-profile.md](local-profile.md#the-edge-profile)) and a set; the production example values it also names are
 rendered by the chart tests ([helm-chart.md](helm-chart.md)).
 
 ### The edge set
 
 `make e2e SET=edge` ([edge_test.go](../../test/e2e/edge_test.go)) switches the cluster to the profile `edge` and starts one NuGet and one npm client pod
-(`TROVE_E2E_NUGET_CLIENTS_WORK` sizes the work volume of the NuGet pod, 4Gi by default, enough for the 1 GiB package). `TestEdge_R_HA_039_TransfersThroughTheIngressAndTheGateway` has, for each of the two edges:
+(`QUADER_E2E_NUGET_CLIENTS_WORK` sizes the work volume of the NuGet pod, 4Gi by default, enough for the 1 GiB package). `TestEdge_R_HA_039_TransfersThroughTheIngressAndTheGateway` has, for each of the two edges:
 
 | Subtest | What it shows |
 |---|---|
@@ -3939,7 +3939,7 @@ rendered by the chart tests ([helm-chart.md](helm-chart.md)).
 
 `curl` runs in the NuGet pod and reaches an edge by name with `--connect-to localhost:<port>:<Service>:443`: the URL stays `https://localhost:<port>`, so the
 certificate is verified for `localhost` with the dev CA, and the connection goes to the Service of the Ingress controller or of the Gateway's proxy
-(`envoy-gateway-system`, found by the labels the controller puts on it). `dotnet` and `npm` need the forwarder of their pod (the base URL trove hands back is the
+(`envoy-gateway-system`, found by the labels the controller puts on it). `dotnet` and `npm` need the forwarder of their pod (the base URL Quader hands back is the
 same for both edges), which the test points at an edge through `/tmp/target` and returns to the Ingress at the end. The uploads and downloads of 6 GiB and 2 GiB are streamed and rate-limited because two runs of this set on the shared large runner (2026-11-09) ended with "the runner lost communication" about six minutes after the set began, when the pod wrote its 8 GiB of files beside the spool and the blob store; the cause was not proved (no log of the host survived). Every transfer of minutes runs detached in the pod
 (`nohup`, an exit file and an output file that the test polls), so no exec session to the API server has to last 17 minutes. The two 2 GiB reads run side by side;
 the uploads run one after the other, because a `packages` pod spools one upload of 6 GiB (`spool.sizeLimit: 10Gi` in [values-edge.yaml](../../deploy/dev/values-edge.yaml)).
@@ -3956,21 +3956,21 @@ the store answered the upload with `503` after a minute; it allows 400 now ([s3.
 
 `make e2e SET=alerts` ([alerts_test.go](../../test/e2e/alerts_test.go)) switches to the profile `alerts` on the cluster without the poolers, waits until the Prometheus has loaded the rules of the chart, scrapes every replica and has kube-state-metrics series, and records the alerts
 that already fire after two minutes (none on a fresh cluster; on a cluster that earlier suites used, for example the claimed-name match that the vulnerability tests leave
-in the database, `TroveVulnerabilityClaimedNameMalicious`): "Maintenance stays quiet" leaves exactly those names out of its reading. It reads the Prometheus through the API server's Service proxy (`/api/v1/alerts`, `/api/v1/query`). The tests run in the order of the file
-(`TroveValkeyFailoverFlapping` stays firing for an hour after its own scenario, so "Maintenance stays quiet" is first):
+in the database, `QuaderVulnerabilityClaimedNameMalicious`): "Maintenance stays quiet" leaves exactly those names out of its reading. It reads the Prometheus through the API server's Service proxy (`/api/v1/alerts`, `/api/v1/query`). The tests run in the order of the file
+(`QuaderValkeyFailoverFlapping` stays firing for an hour after its own scenario, so "Maintenance stays quiet" is first):
 
 | Test | Scenario of R-HA-052 and R-OPS-046 | What it requires |
 |---|---|---|
-| `TestAlerts_R_OPS_046_MaintenanceStaysQuiet` | drain variants A, B, C and E (`prepareVariantDrain` of [drain_variants_test.go](../../test/e2e/drain_variants_test.go), variant A added for it), the planned failover of Valkey, a rolling restart of the three roles | each drain having run (its own conditions are the drain tests'), then no alert of the chart firing at any evaluation of the window (`max_over_time(ALERTS{alertstate="firing"}[window])`), except `TroveValkeyFailoverFlapping` when the window held two or more primary changes ([Q-HA-264](../spec/ha-and-helm.md#q-ha-264--maintenance-stays-quiet-runs-the-drain-variants-a-b-c-and-e-the-planned-failover-and-the-rolling-restarts-without-client-load-and-reads-the-window-back-from-the-prometheus)) |
-| `TestAlerts_R_OPS_046_ValkeyOutage` | Valkey and the Sentinels stopped for 5 minutes | `TroveValkeyUnavailable` fires; `trove_valkey_available` is 0 on every replica and `trove_valkey_degraded_total` grows (R-OPS-045); both resolve after the return |
-| `TestAlerts_R_OPS_046_OneReplicaCutOffFromValkey` | a NetworkPolicy denies one pod the egress to the Valkey pods | `TroveValkeyUnavailableSingleReplica` fires and `TroveValkeyUnavailable` does not; it resolves when the policy is lifted |
-| `TestAlerts_R_OPS_046_ValkeyFailoverFlapping` | three `SENTINEL FAILOVER` | each one raises `trove_valkey_primary_changes_total` by one on every replica, the fast path is subscribed again and `trove_valkey_primary_views` is back to 1 (R-OPS-045); `TroveValkeyFailoverFlapping` fires |
-| `TestAlerts_R_OPS_045_SlowValkey` | `CLIENT PAUSE 4000 ALL` ([Q-OPS-197](../spec/operations-and-observability.md)) | `trove_valkey_errors_total{kind="timeout"}` grows and a circuit opens |
-| `TestAlerts_R_OPS_046_PostgreSQLOutage` | PostgreSQL fenced for 3 minutes under a read loop | `TroveDatabaseUnreachable` fires and resolves |
-| `TestAlerts_R_OPS_046_RoleBelowTwoReplicas` | the worker Deployment scaled to one replica | `TroveReplicasNotReady` fires for `trove-worker` only and resolves ([Q-HA-264](../spec/ha-and-helm.md)) |
-| `TestAlerts_R_OPS_046_BackupFailedAndStale` | the process of a backup run killed with kill -9 from the node; then the interval lowered to a minute with the CronJob suspended | `TroveBackupFailed` fires and a successful run resolves it; `TroveBackupStale` fires and resolves ([Q-OPS-196](../spec/operations-and-observability.md)) |
+| `TestAlerts_R_OPS_046_MaintenanceStaysQuiet` | drain variants A, B, C and E (`prepareVariantDrain` of [drain_variants_test.go](../../test/e2e/drain_variants_test.go), variant A added for it), the planned failover of Valkey, a rolling restart of the three roles | each drain having run (its own conditions are the drain tests'), then no alert of the chart firing at any evaluation of the window (`max_over_time(ALERTS{alertstate="firing"}[window])`), except `QuaderValkeyFailoverFlapping` when the window held two or more primary changes ([Q-HA-264](../spec/ha-and-helm.md#q-ha-264--maintenance-stays-quiet-runs-the-drain-variants-a-b-c-and-e-the-planned-failover-and-the-rolling-restarts-without-client-load-and-reads-the-window-back-from-the-prometheus)) |
+| `TestAlerts_R_OPS_046_ValkeyOutage` | Valkey and the Sentinels stopped for 5 minutes | `QuaderValkeyUnavailable` fires; `quader_valkey_available` is 0 on every replica and `quader_valkey_degraded_total` grows (R-OPS-045); both resolve after the return |
+| `TestAlerts_R_OPS_046_OneReplicaCutOffFromValkey` | a NetworkPolicy denies one pod the egress to the Valkey pods | `QuaderValkeyUnavailableSingleReplica` fires and `QuaderValkeyUnavailable` does not; it resolves when the policy is lifted |
+| `TestAlerts_R_OPS_046_ValkeyFailoverFlapping` | three `SENTINEL FAILOVER` | each one raises `quader_valkey_primary_changes_total` by one on every replica, the fast path is subscribed again and `quader_valkey_primary_views` is back to 1 (R-OPS-045); `QuaderValkeyFailoverFlapping` fires |
+| `TestAlerts_R_OPS_045_SlowValkey` | `CLIENT PAUSE 4000 ALL` ([Q-OPS-197](../spec/operations-and-observability.md)) | `quader_valkey_errors_total{kind="timeout"}` grows and a circuit opens |
+| `TestAlerts_R_OPS_046_PostgreSQLOutage` | PostgreSQL fenced for 3 minutes under a read loop | `QuaderDatabaseUnreachable` fires and resolves |
+| `TestAlerts_R_OPS_046_RoleBelowTwoReplicas` | the worker Deployment scaled to one replica | `QuaderReplicasNotReady` fires for `quader-worker` only and resolves ([Q-HA-264](../spec/ha-and-helm.md)) |
+| `TestAlerts_R_OPS_046_BackupFailedAndStale` | the process of a backup run killed with kill -9 from the node; then the interval lowered to a minute with the CronJob suspended | `QuaderBackupFailed` fires and a successful run resolves it; `QuaderBackupStale` fires and resolves ([Q-OPS-196](../spec/operations-and-observability.md)) |
 
-Not covered: `TroveObjectStoreUnreachable`, `TroveValkeyPrimaryDisagreement` and `TroveControlConnectionWaits` are tested by their rule tests only (the scenarios
+Not covered: `QuaderObjectStoreUnreachable`, `QuaderValkeyPrimaryDisagreement` and `QuaderControlConnectionWaits` are tested by their rule tests only (the scenarios
 need a blocked Sentinel path and a test build that holds the control connection); the faults run without client load ([Q-HA-264](../spec/ha-and-helm.md)).
 
 ### Running it
@@ -4001,10 +4001,10 @@ The tag of an image pin is the Python the release runs on and never moves ([reno
 
 | Part | What it is |
 |---|---|
-| images | `make ansible-clients-image` runs [test/e2e/ansibleclients/build.sh](../../test/e2e/ansibleclients/build.sh): the forwarder of the npm clients for `linux/<arch>`, then the one [Dockerfile](../../test/e2e/ansibleclients/Dockerfile) per client (`trove-e2e-ansibleclients-<core217\|core221>:dev`). Test images, never pushed; the base, the version and the series are build arguments without a default |
-| what the image adds | `curl` (the upload through `/files/`), the forwarder, the entrypoint, and `trove-clean` ([clean.sh](../../test/e2e/ansibleclients/clean.sh)): it runs a command in a new home that is removed afterwards, so that no `ansible.cfg`, `~/.netrc`, galaxy cache or installed collection of an earlier scenario reaches it |
+| images | `make ansible-clients-image` runs [test/e2e/ansibleclients/build.sh](../../test/e2e/ansibleclients/build.sh): the forwarder of the npm clients for `linux/<arch>`, then the one [Dockerfile](../../test/e2e/ansibleclients/Dockerfile) per client (`quader-e2e-ansibleclients-<core217\|core221>:dev`). Test images, never pushed; the base, the version and the series are build arguments without a default |
+| what the image adds | `curl` (the upload through `/files/`), the forwarder, the entrypoint, and `quader-clean` ([clean.sh](../../test/e2e/ansibleclients/clean.sh)): it runs a command in a new home that is removed afterwards, so that no `ansible.cfg`, `~/.netrc`, galaxy cache or installed collection of an earlier scenario reaches it |
 | trust | the pod's environment sets `SSL_CERT_FILE` to the mounted dev CA; `ansible-galaxy` has no CA option and uses the default verify paths of Python. Nothing is baked into an image |
-| pods | [deploy/dev/ansible-clients.yaml](../../deploy/dev/ansible-clients.yaml), rendered once per image with `sed` by [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (marker `F0 ansible`): pods `trove-e2e-ansible-<core217\|core221>` in the namespace `trove-e2e-ansible` (Pod Security `baseline`), on the control-plane node, no ServiceAccount token, no credential. The dev CA is the ConfigMap `trove-e2e-ansible-ca` |
+| pods | [deploy/dev/ansible-clients.yaml](../../deploy/dev/ansible-clients.yaml), rendered once per image with `sed` by [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (marker `F0 ansible`): pods `quader-e2e-ansible-<core217\|core221>` in the namespace `quader-e2e-ansible` (Pod Security `baseline`), on the control-plane node, no ServiceAccount token, no credential. The dev CA is the ConfigMap `quader-e2e-ansible-ca` |
 | tests | [ansible_clients_test.go](../../test/e2e/ansible_clients_test.go): `ansiblePod`, `ansibleTry` (a script in a clean home through `kubectl exec`), `ansibleEdge`, and `TestAnsibleClients`; the harness is [ansible_env_test.go](../../test/e2e/ansible_env_test.go) |
 
 ### The Ansible tests
@@ -4038,7 +4038,7 @@ make e2e SET=ansible-clients-down  # remove the pods and their namespace
 make ansible-clients-image         # only build the two images into the local Docker
 ```
 
-`TROVE_E2E_ANSIBLE_CLIENTS_TARGET` and `TROVE_E2E_ANSIBLE_CLIENTS_IMAGE_BUILD=0` act as for the other client pods. The set `ansible` (`TROVE_E2E_ANSIBLESTUB=1` deploys the counting Galaxy test upstream of [ansible-remote.md](ansible-remote.md)) and `ansible-closing` are selected in the same marker. CI runs `ansible` as the job `e2e (ansible)` of Test and Release on every change that touches the format; it does not hold Semantic Release back.
+`QUADER_E2E_ANSIBLE_CLIENTS_TARGET` and `QUADER_E2E_ANSIBLE_CLIENTS_IMAGE_BUILD=0` act as for the other client pods. The set `ansible` (`QUADER_E2E_ANSIBLESTUB=1` deploys the counting Galaxy test upstream of [ansible-remote.md](ansible-remote.md)) and `ansible-closing` are selected in the same marker. CI runs `ansible` as the job `e2e (ansible)` of Test and Release on every change that touches the format; it does not hold Semantic Release back.
 
 ```shell
 make e2e SET=ansible          # every TestAnsible... and TestAnsibleClients

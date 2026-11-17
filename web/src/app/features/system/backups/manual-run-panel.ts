@@ -10,7 +10,7 @@ import { manualRunCommand } from './backups-model';
  * twice from one visit gives the same name, which Kubernetes refuses the second time (the first Job exists).
  */
 @Component({
-  selector: 'trove-manual-run-panel',
+  selector: 'quader-manual-run-panel',
   imports: [CopyButton],
   template: `
     <section class="card" aria-labelledby="bk-manual">
@@ -20,7 +20,7 @@ import { manualRunCommand } from './backups-model';
       </p>
       <div class="command">
         <pre class="code-block" translate="no" tabindex="0">{{ command() }}</pre>
-        <trove-copy-button
+        <quader-copy-button
           [value]="command()"
           [label]="copyLabel"
         />
@@ -45,7 +45,7 @@ import { manualRunCommand } from './backups-model';
     .command {
       display: flex;
       align-items: flex-start;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
 
       pre {
         flex: 1;

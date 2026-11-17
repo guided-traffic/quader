@@ -46,7 +46,7 @@ func ReferenceFiles(c *Corpus, min int) map[string][]byte {
 		"EndGlobal\n"
 
 	cfg := "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<configuration>\n  <packageSources>\n    <clear />\n" +
-		"    <add key=\"trove\" value=\"" + ReferenceFeed + "\" />\n  </packageSources>\n</configuration>\n"
+		"    <add key=\"quader\" value=\"" + ReferenceFeed + "\" />\n  </packageSources>\n</configuration>\n"
 
 	return map[string][]byte{
 		"Reference.sln":              []byte(sln),

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // The status and the run operation with the real engine (E6b.5; R-REPO-056, R-REPO-057). The permissions, the refusals and the
@@ -116,14 +116,14 @@ func TestR_REPO_056_AStatusFollowsARunningPassAndEveryReplicaAnswersTheSame(t *t
 	})
 
 	t.Run("R-REPO-057 the items counter grew by the stored tarballs, and the audit store holds the populate events and one mirror.pass_completed", func(t *testing.T) {
-		if got := r.metric(run, "trove_mirror_items_total", "result", "stored"); got != packages {
-			t.Errorf("trove_mirror_items_total{result=stored} = %v, want %d", got, packages)
+		if got := r.metric(run, "quader_mirror_items_total", "result", "stored"); got != packages {
+			t.Errorf("quader_mirror_items_total{result=stored} = %v, want %d", got, packages)
 		}
-		if got := r.metric(run, "trove_mirror_passes_total", "kind", "full", "outcome", "complete"); got != 1 {
-			t.Errorf("trove_mirror_passes_total{full,complete} = %v, want 1", got)
+		if got := r.metric(run, "quader_mirror_passes_total", "kind", "full", "outcome", "complete"); got != 1 {
+			t.Errorf("quader_mirror_passes_total{full,complete} = %v, want 1", got)
 		}
-		if got := r.metric(run, "trove_mirror_bytes_total"); got <= 0 {
-			t.Errorf("trove_mirror_bytes_total = %v", got)
+		if got := r.metric(run, "quader_mirror_bytes_total"); got <= 0 {
+			t.Errorf("quader_mirror_bytes_total = %v", got)
 		}
 		populate := `SELECT count(*) FROM audit_event WHERE action = 'authz.write.allowed' AND repository = $1 AND actor_type = 'system'
 			AND actor_name = 'mirror' AND reason = 'mirror' AND details->>'reason' = 'mirror' AND `

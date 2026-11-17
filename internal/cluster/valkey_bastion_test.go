@@ -20,7 +20,7 @@ type bastionFixture struct {
 	store *BastionStore
 }
 
-const bastionPrefix = "trove-bastion:packages.example.com:"
+const bastionPrefix = "quader-bastion:packages.example.com:"
 
 func newBastionFixture(t *testing.T) *bastionFixture {
 	t.Helper()
@@ -250,7 +250,7 @@ func TestR_BAS_034_WithoutValkeyEveryCallIsUnavailableAndCounted(t *testing.T) {
 		t.Fatalf("Marked on an unreachable Valkey: %v", err)
 	}
 	if got := degradedCount(t, reg, MechanismBastionState); got < 1 {
-		t.Fatalf("trove_valkey_degraded_total{mechanism=bastion_state} = %v", got)
+		t.Fatalf("quader_valkey_degraded_total{mechanism=bastion_state} = %v", got)
 	}
 }
 
@@ -261,7 +261,7 @@ func degradedCount(t *testing.T, reg *prometheus.Registry, mechanism string) flo
 		t.Fatal(err)
 	}
 	for _, mf := range mfs {
-		if mf.GetName() != "trove_valkey_degraded_total" {
+		if mf.GetName() != "quader_valkey_degraded_total" {
 			continue
 		}
 		for _, m := range mf.GetMetric() {

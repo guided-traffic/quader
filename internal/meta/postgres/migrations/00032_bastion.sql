@@ -1,6 +1,6 @@
--- trove:phase expand
+-- quader:phase expand
 --
--- The trove Bastion on the main installation (R-BAS-004, R-BAS-010, Q-BAS-23, Q-BAS-48), beta phase 5b,
+-- The quader Bastion on the main installation (R-BAS-004, R-BAS-010, Q-BAS-23, Q-BAS-48), beta phase 5b,
 -- expand class (R-HA-018). A Bastion registration is a principal of the kind 'bastion' (the kind and the
 -- token type 'bst' are admitted by 00033, the one contract step of this feature) plus the row of this
 -- table, the way a service account is a principal plus a service_account row. It holds no grant, no role

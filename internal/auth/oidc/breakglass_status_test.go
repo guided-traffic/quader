@@ -3,7 +3,7 @@ package oidc
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func TestR_AUTH_014_BreakGlassPasswordStatus(t *testing.T) {

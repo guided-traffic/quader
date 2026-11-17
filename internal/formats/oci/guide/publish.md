@@ -1,11 +1,11 @@
-{{if eq .Class "virtual"}}A push through a virtual repository is executed on its deployment target{{if .PublishTarget}}, `{{.PublishTarget}}`{{end}}; without a target it is refused. The snippets name the repository you chose, and trove forwards the push.{{else}}Tag the image with the reference of the snippet and push it. The client uploads each layer, then the manifest; trove stores the manifest exactly as sent.{{end}}
+{{if eq .Class "virtual"}}A push through a virtual repository is executed on its deployment target{{if .PublishTarget}}, `{{.PublishTarget}}`{{end}}; without a target it is refused. The snippets name the repository you chose, and Quader forwards the push.{{else}}Tag the image with the reference of the snippet and push it. The client uploads each layer, then the manifest; Quader stores the manifest exactly as sent.{{end}}
 
 {{if eq .Client "docker"}}### Multi-platform images
 
 `docker buildx build --push` with several `--platform` values pushes one manifest per platform and then the index that lists them. `docker manifest create` and `docker manifest push` build a Docker manifest list from images that are pushed already.
 {{else}}### Multi-platform images
 
-`podman manifest create`, `podman build --platform linux/amd64,linux/arm64 --manifest <name> .` and `podman manifest push --all <name> <reference>` push an OCI image index together with the manifests it lists; without `--all` only the index itself is sent, and trove refuses it with `MANIFEST_BLOB_UNKNOWN` because the manifests it lists are not stored.
+`podman manifest create`, `podman build --platform linux/amd64,linux/arm64 --manifest <name> .` and `podman manifest push --all <name> <reference>` push an OCI image index together with the manifests it lists; without `--all` only the index itself is sent, and Quader refuses it with `MANIFEST_BLOB_UNKNOWN` because the manifests it lists are not stored.
 {{end}}
 ### Tags
 

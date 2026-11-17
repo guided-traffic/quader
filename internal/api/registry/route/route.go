@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // APIVersionHeader and APIVersion are the header every response below /v2/ carries (R-OCI-003): Docker clients read it to

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 func httpsGet(t *testing.T, ca *tlstest.CA, url string) (int, string, *tls.ConnectionState, error) {
@@ -54,7 +54,7 @@ func TestListenerTLSWiring(t *testing.T) {
 	t.Run("R-ARCH-035 both listeners serve TLS from server.tls, the ops listener by inheritance", func(t *testing.T) {
 		dir := t.TempDir()
 		certFile, keyFile := ca.Issue(t, tlstest.Options{}).Files(t, dir, "tls")
-		h := start(t, "web", map[string]string{"TROVE_SERVER_TLS_CERTIFICATES": certificatesEnv(certFile, keyFile)})
+		h := start(t, "web", map[string]string{"QUADER_SERVER_TLS_CERTIFICATES": certificatesEnv(certFile, keyFile)})
 		clientURL := "https://" + h.app.ClientAddr().String()
 		opsURL := "https://" + h.app.OpsAddr().String()
 		if code, body, _, err := httpsGet(t, ca, clientURL+"/api/v1/system/ping"); err != nil || code != 200 || body != "OK" {
@@ -67,7 +67,7 @@ func TestListenerTLSWiring(t *testing.T) {
 			if resp, err := (&http.Client{Timeout: 2 * time.Second}).Get(u); err == nil {
 				resp.Body.Close()
 				if resp.StatusCode == 200 || resp.Header.Get("X-Request-Id") != "" {
-					t.Errorf("plaintext %s reached trove: %d", u, resp.StatusCode)
+					t.Errorf("plaintext %s reached quader: %d", u, resp.StatusCode)
 				}
 			}
 		}
@@ -76,11 +76,11 @@ func TestListenerTLSWiring(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, l := range []string{"client", "ops"} {
-			series := fmt.Sprintf(`trove_tls_certificate_expiry_timestamp_seconds{kind="listener",listener=%q,name=%q}`, l, certFile)
+			series := fmt.Sprintf(`quader_tls_certificate_expiry_timestamp_seconds{kind="listener",listener=%q,name=%q}`, l, certFile)
 			if !strings.Contains(metrics, series) {
 				t.Errorf("metrics lack %s", series)
 			}
-			if !strings.Contains(metrics, fmt.Sprintf(`trove_tls_reload_errors_total{kind="listener",listener=%q,name=%q} 0`, l, certFile)) {
+			if !strings.Contains(metrics, fmt.Sprintf(`quader_tls_reload_errors_total{kind="listener",listener=%q,name=%q} 0`, l, certFile)) {
 				t.Errorf("reload error counter of the %s listener not exported at 0", l)
 			}
 		}
@@ -90,7 +90,7 @@ func TestListenerTLSWiring(t *testing.T) {
 		dir := t.TempDir()
 		certFile, keyFile := filepath.Join(dir, "tls.crt"), filepath.Join(dir, "tls.key")
 		h := start(t, "web", map[string]string{
-			"TROVE_SERVER_TLS_CERTIFICATES": certificatesEnv(certFile, keyFile), "TROVE_SERVER_TLS_RELOAD_INTERVAL": "1s",
+			"QUADER_SERVER_TLS_CERTIFICATES": certificatesEnv(certFile, keyFile), "QUADER_SERVER_TLS_RELOAD_INTERVAL": "1s",
 		})
 		time.Sleep(500 * time.Millisecond) // several check rounds
 		if h.app.Health().Ready() {
@@ -109,8 +109,8 @@ func TestListenerTLSWiring(t *testing.T) {
 		if code, body, _, err := insecureGet(opsURL + "/readyz?verbose=1"); err != nil || code != 503 || !strings.Contains(body, "tls") {
 			t.Fatalf("readyz under an unverified probe: %d %q %v", code, body, err)
 		}
-		if code, body, _, err := insecureGet(opsURL + "/metrics"); err != nil || code != 200 || !strings.Contains(body, `trove_tls_temporary_certificate{listener="ops"} 1`) {
-			t.Fatalf("metrics: %d %v\n%s", code, err, grepLines(body, "trove_tls_"))
+		if code, body, _, err := insecureGet(opsURL + "/metrics"); err != nil || code != 200 || !strings.Contains(body, `quader_tls_temporary_certificate{listener="ops"} 1`) {
+			t.Fatalf("metrics: %d %v\n%s", code, err, grepLines(body, "quader_tls_"))
 		}
 		if _, _, _, err := insecureGet("https://" + h.app.ClientAddr().String() + "/api/v1/system/ping"); err == nil {
 			t.Fatal("the client listener answered a handshake without a configured certificate")
@@ -123,8 +123,8 @@ func TestListenerTLSWiring(t *testing.T) {
 		for {
 			code, _, cs, err := httpsGet(t, ca, "https://"+h.app.OpsAddr().String()+"/readyz")
 			if err == nil && code == 200 && cs.PeerCertificates[0].SerialNumber.Int64() == 77 {
-				if _, m, _, _ := httpsGet(t, ca, "https://"+h.app.OpsAddr().String()+"/metrics"); !strings.Contains(m, `trove_tls_temporary_certificate{listener="ops"} 0`) {
-					t.Errorf("the temporary certificate is not marked retired:\n%s", grepLines(m, "trove_tls_temporary"))
+				if _, m, _, _ := httpsGet(t, ca, "https://"+h.app.OpsAddr().String()+"/metrics"); !strings.Contains(m, `quader_tls_temporary_certificate{listener="ops"} 0`) {
+					t.Errorf("the temporary certificate is not marked retired:\n%s", grepLines(m, "quader_tls_temporary"))
 				}
 				break
 			}
@@ -139,7 +139,7 @@ func TestListenerTLSWiring(t *testing.T) {
 		dir := t.TempDir()
 		certFile, keyFile := ca.Issue(t, tlstest.Options{Serial: big.NewInt(88)}).Files(t, dir, "tls")
 		h := start(t, "web", map[string]string{
-			"TROVE_SERVER_TLS_CERTIFICATES": certificatesEnv(certFile, keyFile), "TROVE_SERVER_TLS_RELOAD_INTERVAL": "1s",
+			"QUADER_SERVER_TLS_CERTIFICATES": certificatesEnv(certFile, keyFile), "QUADER_SERVER_TLS_RELOAD_INTERVAL": "1s",
 		})
 		opsURL := "https://" + h.app.OpsAddr().String()
 		tlstest.WriteFile(t, keyFile, ca.Issue(t, tlstest.Options{}).KeyPEM) // a key of another certificate
@@ -149,8 +149,8 @@ func TestListenerTLSWiring(t *testing.T) {
 			t.Fatalf("after a broken rotation: %d %v", code, err)
 		}
 		_, metrics, _, _ := httpsGet(t, ca, opsURL+"/metrics")
-		if !strings.Contains(metrics, fmt.Sprintf(`trove_tls_reload_errors_total{kind="listener",listener="client",name=%q} 1`, certFile)) {
-			t.Errorf("the refused rotation is not counted:\n%s", grepLines(metrics, "trove_tls_"))
+		if !strings.Contains(metrics, fmt.Sprintf(`quader_tls_reload_errors_total{kind="listener",listener="client",name=%q} 1`, certFile)) {
+			t.Errorf("the refused rotation is not counted:\n%s", grepLines(metrics, "quader_tls_"))
 		}
 	})
 }

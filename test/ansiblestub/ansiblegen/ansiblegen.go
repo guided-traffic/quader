@@ -33,8 +33,8 @@ type Spec struct {
 	Dependencies map[string]string
 	// RequiresAnsible is the content of meta/runtime.yml; default ">=2.14.0".
 	RequiresAnsible string
-	Authors         []string // default ["trove test <ansiblestub@trove.invalid>"]
-	Description     string   // default "trove test collection <ns>.<name>"
+	Authors         []string // default ["quader test <ansiblestub@quader.invalid>"]
+	Description     string   // default "quader test collection <ns>.<name>"
 	License         []string // default ["GPL-3.0-or-later"]
 	Tags            []string // default ["test"]
 	// Extra adds files (path to content) to the archive; the stub's digest modes use it to make a second, different archive of
@@ -79,11 +79,11 @@ type file struct {
 func (s Spec) files() []file {
 	runtime := "requires_ansible: '" + orDefault(s.RequiresAnsible, ">=2.14.0") + "'\n"
 	files := map[string]string{
-		"README.md":                        "# " + s.FullName() + "\n\nA test collection of the trove counting stub, version " + s.Version + ".\n",
+		"README.md":                        "# " + s.FullName() + "\n\nA test collection of the quader counting stub, version " + s.Version + ".\n",
 		"meta/runtime.yml":                 runtime,
 		"plugins/README.md":                "No plugins.\n",
 		"roles/hello/tasks/main.yml":       "---\n- name: Say hello\n  ansible.builtin.debug:\n    msg: hello from " + s.FullName() + " " + s.Version + "\n",
-		"roles/hello/meta/main.yml":        "---\ngalaxy_info:\n  author: trove\n  description: hello\n  license: GPL-3.0-or-later\n  min_ansible_version: '2.14'\n  platforms: []\ndependencies: []\n",
+		"roles/hello/meta/main.yml":        "---\ngalaxy_info:\n  author: quader\n  description: hello\n  license: GPL-3.0-or-later\n  min_ansible_version: '2.14'\n  platforms: []\ndependencies: []\n",
 		"docs/" + s.Name + "/overview.rst": "Overview of " + s.FullName() + "\n",
 	}
 	for k, v := range s.Extra {
@@ -146,10 +146,10 @@ func Collection(s Spec) (Archive, error) {
 			"namespace":     s.Namespace,
 			"name":          s.Name,
 			"version":       s.Version,
-			"authors":       orSlice(s.Authors, []string{"trove test <ansiblestub@trove.invalid>"}),
+			"authors":       orSlice(s.Authors, []string{"quader test <ansiblestub@quader.invalid>"}),
 			"readme":        "README.md",
 			"tags":          orSlice(s.Tags, []string{"test"}),
-			"description":   orDefault(s.Description, "trove test collection "+s.FullName()),
+			"description":   orDefault(s.Description, "quader test collection "+s.FullName()),
 			"license":       orSlice(s.License, []string{"GPL-3.0-or-later"}),
 			"license_file":  nil,
 			"dependencies":  deps,
@@ -225,7 +225,7 @@ func Role(s RoleSpec) ([]byte, error) {
 	top := s.Repo + "-" + s.Tag
 	members := []file{
 		{name: top, dir: true},
-		{name: top + "/README.md", data: []byte("# " + s.Repo + "\n\nA test role of the trove counting stub, tag " + s.Tag + ".\n")},
+		{name: top + "/README.md", data: []byte("# " + s.Repo + "\n\nA test role of the quader counting stub, tag " + s.Tag + ".\n")},
 		{name: top + "/defaults", dir: true},
 		{name: top + "/defaults/main.yml", data: []byte("---\nrole_greeting: hello from " + s.User + "/" + s.Repo + " " + s.Tag + "\n")},
 		{name: top + "/meta", dir: true},

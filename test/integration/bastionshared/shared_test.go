@@ -11,15 +11,15 @@ import (
 
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
 )
 
 // answerKey is the key of an answer record as R-BAS-034 and docs/developer/valkey.md name it.
 func answerKey(s *setup, kind shared.AnswerKind, hash string) string {
-	return "trove-bastion:" + s.prefix + ":ans:v1:" + string(kind) + ":" + hash
+	return "quader-bastion:" + s.prefix + ":ans:v1:" + string(kind) + ":" + hash
 }
 
 func rawGet(t *testing.T, c valkey.Client, key string) (string, bool) {
@@ -165,7 +165,7 @@ func TestR_BAS_034_TheKeysAreBelowThePrefixOfTheBastion(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		a.g.FailedAuth(ctx, addr)
 	}
-	base := "trove-bastion:" + s.prefix + ":"
+	base := "quader-bastion:" + s.prefix + ":"
 	part := strings.NewReplacer(".", "-").Replace(addr)
 	for _, k := range []string{"block:v1:" + part, "block:level:v1:" + part, "timeout:v1:" + part} {
 		if _, ok := rawGet(t, adm, base+k); !ok {
@@ -256,11 +256,11 @@ func TestR_BAS_034_ValkeyBeingUnavailableMakesNothingFailAndSaysSo(t *testing.T)
 	if !a.g.Blocked(ctx, addr).Allowed || !a.g.Request(ctx, addr, false).Allowed {
 		t.Fatal("the guard refused a first request")
 	}
-	if got := metricValue(t, a.reg, "trove_valkey_available", nil); got != 0 {
-		t.Fatalf("trove_valkey_available = %v, want 0", got)
+	if got := metricValue(t, a.reg, "quader_valkey_available", nil); got != 0 {
+		t.Fatalf("quader_valkey_available = %v, want 0", got)
 	}
-	if got := metricValue(t, a.reg, "trove_ratelimit_fallback", map[string]string{"limiter": "bastion.requests_anonymous"}); got != 1 {
-		t.Fatalf("trove_ratelimit_fallback{limiter=bastion.requests_anonymous} = %v, want 1", got)
+	if got := metricValue(t, a.reg, "quader_ratelimit_fallback", map[string]string{"limiter": "bastion.requests_anonymous"}); got != 1 {
+		t.Fatalf("quader_ratelimit_fallback{limiter=bastion.requests_anonymous} = %v, want 1", got)
 	}
 }
 
@@ -448,7 +448,7 @@ func TestR_BAS_037_AFloodIsBlockedOnBothReplicasForFifteenThenThirtyMinutes(t *t
 	expectBlocked(15*time.Minute, 30*time.Minute)
 	if n := metricValue(t, a.reg, metrics.BlocksTotal, map[string]string{"reason": metrics.BlockRefusals}) +
 		metricValue(t, b.reg, metrics.BlocksTotal, map[string]string{"reason": metrics.BlockRefusals}); n < 2 {
-		t.Fatalf("trove_bastion_blocks_total over the replicas = %v, want at least 2", n)
+		t.Fatalf("quader_bastion_blocks_total over the replicas = %v, want at least 2", n)
 	}
 	s.clk.advance(31 * time.Minute)
 	for _, r := range []*replica{a, b} {

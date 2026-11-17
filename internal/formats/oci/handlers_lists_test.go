@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
 
 func listHost(t *testing.T, st *memStore, mods ...func(*formattest.HostOptions)) *formattest.Host {
@@ -430,7 +430,7 @@ func TestACutAnnotationSetIsReportedInAHeader(t *testing.T) {
 	m.AnnotationsCut = true
 	st.putManifest(m)
 	resp := get(t, listHost(t, st), "app/referrers/"+digestText(digestN(9)))
-	if resp.Header().Get("Trove-Annotations-Cut") != "true" {
+	if resp.Header().Get("Quader-Annotations-Cut") != "true" {
 		t.Fatalf("headers %v", resp.Header())
 	}
 }

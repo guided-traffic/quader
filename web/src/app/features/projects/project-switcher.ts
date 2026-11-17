@@ -14,7 +14,7 @@ const SHOWN = 20;
  * link to the project (its repositories). `label` names the project in the button.
  */
 @Component({
-  selector: 'trove-project-switcher',
+  selector: 'quader-project-switcher',
   imports: [RouterLink, VisibilityIcon],
   host: {
     '(document:click)': 'outside($event)',
@@ -33,7 +33,7 @@ const SHOWN = 20;
       <span class="switcher-text">
         <span class="switcher-name" translate="no">
           @if (context.current(); as project) {
-            <trove-visibility-icon [level]="project.visibility" />
+            <quader-visibility-icon [level]="project.visibility" />
           }
           {{ label() }}
         </span>

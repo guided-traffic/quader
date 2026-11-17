@@ -102,7 +102,7 @@ func (m *model) implementedReqs() int {
 	return n
 }
 
-func (m *model) troveOnlyReqs() []requirement {
+func (m *model) quaderOnlyReqs() []requirement {
 	var out []requirement
 	for _, r := range m.Reqs {
 		if len(r.Covers) == 0 {

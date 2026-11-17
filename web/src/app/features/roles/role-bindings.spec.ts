@@ -53,7 +53,7 @@ describe('System roles (R-UI-024)', () => {
     const auditor = root.querySelectorAll('section.card')[2] as HTMLElement;
     auditor.querySelector('tbody button')!.dispatchEvent(new Event('click'));
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'Unbind').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Unbind').click();
     await sleep(fixture, 300);
     expect((get(RolesApi) as FakeRolesApi).calls).toContain('unbind auditor user:bob');
   });
@@ -112,7 +112,7 @@ describe('System roles (R-UI-024)', () => {
     const auditor = root.querySelectorAll('section.card')[2] as HTMLElement;
     auditor.querySelector('tbody button')!.dispatchEvent(new Event('click'));
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'Unbind').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Unbind').click();
     await sleep(fixture, 300);
     expect(text(root)).toContain('This role binding is declared in the system configuration and can only be removed there.');
   });

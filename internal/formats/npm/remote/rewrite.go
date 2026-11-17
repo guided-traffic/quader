@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
 )
 
 // TarballPrefix is the URL every tarball of a package lies under on the serving

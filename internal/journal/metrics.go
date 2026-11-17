@@ -3,17 +3,17 @@ package journal
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // MetricPending is the revocation-journal backlog gauge (R-HA-054, R-OPS-008): the rows of revocation_outbox not yet
-// shipped. The alert TroveRevocationJournalBacklog reads it. Every web and worker replica reads it from PostgreSQL, so
+// shipped. The alert QuaderRevocationJournalBacklog reads it. Every web and worker replica reads it from PostgreSQL, so
 // dashboards use max (R-OPS-007).
-const MetricPending = "trove_revocation_journal_pending"
+const MetricPending = "quader_revocation_journal_pending"
 
 // MetricQuarantined counts outbox rows that could not be encoded as journal objects and were set aside (audit finding L4).
-// Any increase means a revocation is missing from the journal; the alert TroveRevocationJournalQuarantined reads it.
-const MetricQuarantined = "trove_revocation_journal_quarantined_total"
+// Any increase means a revocation is missing from the journal; the alert QuaderRevocationJournalQuarantined reads it.
+const MetricQuarantined = "quader_revocation_journal_quarantined_total"
 
 // Metrics holds the families of the journal.
 type Metrics struct {

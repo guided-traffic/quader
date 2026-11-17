@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
+	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // TestR_AUTHZ_026_PrincipalLookupBounds covers Q-AUTHZ-182: a prefix of two

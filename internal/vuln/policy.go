@@ -1,8 +1,8 @@
 package vuln
 
 import (
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // Enforcement is the installation-wide `vulnerabilities.enforcement` (R-VULN-015).

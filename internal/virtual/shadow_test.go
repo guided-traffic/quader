@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/virtual"
-	vt "github.com/guided-traffic/trove/internal/virtual/virtualtest"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/virtual"
+	vt "github.com/guided-traffic/quader/internal/virtual/virtualtest"
 )
 
 var ciBot, lead = subjectFor("user-ci-bot"), subjectFor("user-lead")
@@ -46,7 +46,7 @@ func (w *world) shadow(sub authz.Subject, name string) (virtual.ShadowOutcome, e
 }
 
 func shadowCount(t *testing.T, w *world, outcome string) float64 {
-	return counter(t, w.reg, "trove_shadow_checks_total", map[string]string{"repo": "it/npm-local", "outcome": outcome})
+	return counter(t, w.reg, "quader_shadow_checks_total", map[string]string{"repo": "it/npm-local", "outcome": outcome})
 }
 
 func TestR_REPO_048_Outcomes(t *testing.T) {

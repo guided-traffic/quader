@@ -26,8 +26,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/npm/manifest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/npm/manifest"
 )
 
 // Limits bound what a tarball may cost. A zero field takes its default

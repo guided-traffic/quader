@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/scope"
 )
 
 // addressedFixture has two npm repositories and a virtual one over the first, with the rule of

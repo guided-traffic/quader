@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/virtual"
-	vt "github.com/guided-traffic/trove/internal/virtual/virtualtest"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/virtual"
+	vt "github.com/guided-traffic/quader/internal/virtual/virtualtest"
 )
 
 const tgz = "left-pad/-/1.0.0.tgz"
@@ -28,13 +28,13 @@ func TestR_REPO_019_ArtifactTiers(t *testing.T) {
 			t.Fatalf("body %q err %v", rec.Body.String(), err)
 		}
 		if got := rec.Header().Get(virtual.ResolvedFromHeader); got != "npm-local" {
-			t.Fatalf("Trove-Resolved-From = %q", got)
+			t.Fatalf("Quader-Resolved-From = %q", got)
 		}
 		if slices.Contains(w.arts.Calls(), "fetch:npm-remote") || slices.Contains(w.arts.Calls(), "cached:npm-remote") {
 			t.Fatalf("a lower tier was asked: %v", w.arts.Calls())
 		}
-		if n := counter(t, w.reg, "trove_virtual_resolutions_total", map[string]string{"repo": "it/npm-all", "source": "local"}); n != 1 {
-			t.Fatalf("trove_virtual_resolutions_total{local} = %v", n)
+		if n := counter(t, w.reg, "quader_virtual_resolutions_total", map[string]string{"repo": "it/npm-all", "source": "local"}); n != 1 {
+			t.Fatalf("quader_virtual_resolutions_total{local} = %v", n)
 		}
 	})
 
@@ -58,7 +58,7 @@ func TestR_REPO_019_ArtifactTiers(t *testing.T) {
 		if err != nil || rec.Body.String() != "upstream-bytes" || rec.Header().Get(virtual.ResolvedFromHeader) != "npm-remote" {
 			t.Fatalf("body %q err %v", rec.Body.String(), err)
 		}
-		if n := counter(t, w.reg, "trove_virtual_resolutions_total", map[string]string{"source": "upstream"}); n != 1 {
+		if n := counter(t, w.reg, "quader_virtual_resolutions_total", map[string]string{"source": "upstream"}); n != 1 {
 			t.Fatalf("source upstream = %v", n)
 		}
 	})
@@ -75,7 +75,7 @@ func TestR_REPO_019_ArtifactTiers(t *testing.T) {
 		if got := w.arts.Calls(); !slices.Equal(got, []string{"local:npm-local", "cached:npm-remote", "fetch:npm-remote"}) {
 			t.Fatalf("calls %v", got)
 		}
-		if n := counter(t, w.reg, "trove_virtual_resolutions_total", map[string]string{"source": "cache"}); n != 0 {
+		if n := counter(t, w.reg, "quader_virtual_resolutions_total", map[string]string{"source": "cache"}); n != 0 {
 			t.Fatalf("source cache = %v: the cache tier did not serve", n)
 		}
 	})
@@ -147,7 +147,7 @@ func TestR_REPO_019_ArtifactTiers(t *testing.T) {
 		}
 	})
 
-	t.Run("R-REPO-019 no Trove-Resolved-From on an endpoint with exposure rules", func(t *testing.T) {
+	t.Run("R-REPO-019 no Quader-Resolved-From on an endpoint with exposure rules", func(t *testing.T) {
 		w := newWorld(t)
 		vt.Put(w.arts.LocalItems, "npm-local", tgz, "x")
 		vt.Put(w.arts.UpstreamItems, "npm-remote", "right-pad/-/1.0.0.tgz", "y")
@@ -176,7 +176,7 @@ func TestR_REPO_019_NotFoundAndFailure(t *testing.T) {
 		if k, code := kind(err); k != errs.NotFound || code != errs.CodeNotFound {
 			t.Fatalf("err = %v", err)
 		}
-		if n := counter(t, w.reg, "trove_virtual_resolutions_total", map[string]string{"source": "none"}); n != 1 {
+		if n := counter(t, w.reg, "quader_virtual_resolutions_total", map[string]string{"source": "none"}); n != 1 {
 			t.Fatalf("source none = %v", n)
 		}
 	})

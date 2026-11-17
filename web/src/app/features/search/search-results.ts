@@ -33,15 +33,15 @@ const PAGE = 25;
  * admin area (R-UI-099). It takes over the stopgap's page of Q-UI-390 (Q-UI-415).
  */
 @Component({
-  selector: 'trove-search-results',
+  selector: 'quader-search-results',
   imports: [DatePipe, RouterLink, CopyButton, DataTable, FormatIconView, PageHeader, TabContent, TabGroup, TabPage, VisibilityIcon],
   template: `
-    <trove-page-header [heading]="heading" [description]="description()" />
+    <quader-page-header [heading]="heading" [description]="description()" />
 
-    <trove-tab-group [selectedIndex]="tab()" (selectedIndexChange)="choose($event)">
-      <trove-tab [label]="labels.repository">
-        <ng-template troveTabContent>
-          <trove-data-table
+    <quader-tab-group [selectedIndex]="tab()" (selectedIndexChange)="choose($event)">
+      <quader-tab [label]="labels.repository">
+        <ng-template quaderTabContent>
+          <quader-data-table
             [caption]="labels.repository"
             [columns]="repositoryColumns"
             [loaded]="tooShort() || repositories.loaded()"
@@ -66,7 +66,7 @@ const PAGE = 25;
                 </td>
                 <td class="format-cell">
                   <span class="format-name"
-                    ><trove-format-icon [format]="row.format" /><span translate="no">{{ formatLabel(row.format) }}</span></span
+                    ><quader-format-icon [format]="row.format" /><span translate="no">{{ formatLabel(row.format) }}</span></span
                   >
                 </td>
                 <td class="class-cell">
@@ -77,17 +77,17 @@ const PAGE = 25;
                 <!-- No address field: who searches opens the repository; copying is the button's (Q-UI-330). -->
                 <td class="actions">
                   @if (row.addresses[0]; as a) {
-                    <trove-copy-button [value]="a" [label]="copyValueLabel(a)" [quiet]="true" />
+                    <quader-copy-button [value]="a" [label]="copyValueLabel(a)" [quiet]="true" />
                   }
                 </td>
               </tr>
             }
-          </trove-data-table>
+          </quader-data-table>
         </ng-template>
-      </trove-tab>
-      <trove-tab [label]="labels.package">
-        <ng-template troveTabContent>
-          <trove-data-table
+      </quader-tab>
+      <quader-tab [label]="labels.package">
+        <ng-template quaderTabContent>
+          <quader-data-table
             [caption]="labels.package"
             [columns]="packageColumns"
             [loaded]="tooShort() || packages.loaded()"
@@ -116,7 +116,7 @@ const PAGE = 25;
                 </td>
                 <td class="format-cell">
                   <span class="format-name"
-                    ><trove-format-icon [format]="row.format" /><span translate="no">{{ formatLabel(row.format) }}</span></span
+                    ><quader-format-icon [format]="row.format" /><span translate="no">{{ formatLabel(row.format) }}</span></span
                   >
                 </td>
                 <td translate="no">{{ row.latestVersion }}</td>
@@ -125,12 +125,12 @@ const PAGE = 25;
                 </td>
               </tr>
             }
-          </trove-data-table>
+          </quader-data-table>
         </ng-template>
-      </trove-tab>
-      <trove-tab [label]="labels.project">
-        <ng-template troveTabContent>
-          <trove-data-table
+      </quader-tab>
+      <quader-tab [label]="labels.project">
+        <ng-template quaderTabContent>
+          <quader-data-table
             [caption]="labels.project"
             [columns]="projectColumns"
             [loaded]="tooShort() || projects.loaded()"
@@ -149,16 +149,16 @@ const PAGE = 25;
                   <span class="secondary" translate="no">{{ p.key }}</span>
                 </th>
                 <td>{{ p.description }}</td>
-                <td class="level"><trove-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
+                <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
                 <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
                 <td class="num">{{ p.repositories }}</td>
                 <td class="num">{{ p.members }}</td>
               </tr>
             }
-          </trove-data-table>
+          </quader-data-table>
         </ng-template>
-      </trove-tab>
-    </trove-tab-group>
+      </quader-tab>
+    </quader-tab-group>
   `,
 })
 export class SearchResults {

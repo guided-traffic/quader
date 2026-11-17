@@ -3,34 +3,34 @@
 # shares the dev PKI, the SeaweedFS and the encryption keys of the main one (a restore needs the source's keys, R-BAK-028) and has
 # its own database, Valkey and blob bucket, as a restore into a new cluster would.
 #
-#   Issuer trove-dev-ca        the dev CA again, in this namespace (restore-ns.sh copies the CA's Secret first)
-#   Certificate trove-tls      trove's listeners (chart tls.secretName), for the Service names of this namespace
-#   Cluster trove-db           CloudNativePG, one instance, the database trove owned by the role trove, and the schema trove that
+#   Issuer quader-dev-ca        the dev CA again, in this namespace (restore-ns.sh copies the CA's Secret first)
+#   Certificate quader-tls      quader's listeners (chart tls.secretName), for the Service names of this namespace
+#   Cluster quader-db           CloudNativePG, one instance, the database quader owned by the role quader, and the schema quader that
 #                              R-BAK-020 check 4 requires (the provisioning of R-HA-014): a database with a schema and no relation
 #   Secret restore-valkey-auth the Valkey password (internal-secrets-operator, as secrets.yaml)
 #   Valkey restore-valkey      two data pods and three Sentinels over TLS, as the main installation's, so the restored installation
 #                              starts against the Valkey topology the chart is written for
 #   NetworkPolicy              admits the chart's serving pods to it on the TLS ports only
-#   Job trove-s3-restore-bucket (namespace ${NS}) creates the empty blob bucket trove-restore-blobs in the dev SeaweedFS
+#   Job quader-s3-restore-bucket (namespace ${NS}) creates the empty blob bucket quader-restore-blobs in the dev SeaweedFS
 #
 # ${RESTORE_NS}, ${NS} and the images are substituted by restore-ns.sh.
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
-  name: trove-dev-ca
+  name: quader-dev-ca
   namespace: ${RESTORE_NS}
 spec:
   ca:
-    secretName: trove-dev-ca
+    secretName: quader-dev-ca
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: trove-tls
+  name: quader-tls
   namespace: ${RESTORE_NS}
 spec:
-  secretName: trove-tls
-  commonName: trove
+  secretName: quader-tls
+  commonName: quader
   duration: 2160h
   renewBefore: 720h
   privateKey:
@@ -38,30 +38,30 @@ spec:
     size: 256
   usages: [digital signature, key encipherment, server auth, client auth]
   dnsNames:
-    - trove
-    - trove.${RESTORE_NS}
-    - trove.${RESTORE_NS}.svc
-    - trove.${RESTORE_NS}.svc.cluster.local
-    - trove-api
-    - trove-api.${RESTORE_NS}
-    - trove-api.${RESTORE_NS}.svc
-    - trove-api.${RESTORE_NS}.svc.cluster.local
-    - trove-packages
-    - trove-packages.${RESTORE_NS}
-    - trove-packages.${RESTORE_NS}.svc
-    - trove-packages.${RESTORE_NS}.svc.cluster.local
+    - quader
+    - quader.${RESTORE_NS}
+    - quader.${RESTORE_NS}.svc
+    - quader.${RESTORE_NS}.svc.cluster.local
+    - quader-api
+    - quader-api.${RESTORE_NS}
+    - quader-api.${RESTORE_NS}.svc
+    - quader-api.${RESTORE_NS}.svc.cluster.local
+    - quader-packages
+    - quader-packages.${RESTORE_NS}
+    - quader-packages.${RESTORE_NS}.svc
+    - quader-packages.${RESTORE_NS}.svc.cluster.local
     - localhost
   ipAddresses:
     - 127.0.0.1
   issuerRef:
-    name: trove-dev-ca
+    name: quader-dev-ca
     kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: trove-db
+  name: quader-db
   namespace: ${RESTORE_NS}
 spec:
   instances: 1
@@ -76,10 +76,10 @@ spec:
       client_connection_check_interval: "10s"
   bootstrap:
     initdb:
-      database: trove
-      owner: trove
+      database: quader
+      owner: quader
       postInitApplicationSQL:
-        - CREATE SCHEMA trove AUTHORIZATION trove
+        - CREATE SCHEMA quader AUTHORIZATION quader
   storage:
     size: 2Gi
   resources:
@@ -122,7 +122,7 @@ spec:
     certManager:
       issuer:
         kind: Issuer
-        name: trove-dev-ca
+        name: quader-dev-ca
   persistence:
     enabled: false
   podDisruptionBudget:
@@ -142,7 +142,7 @@ metadata:
   name: restore-valkey-clients
   namespace: ${RESTORE_NS}
   labels:
-    app.kubernetes.io/part-of: trove-dev
+    app.kubernetes.io/part-of: quader-dev
 spec:
   podSelector:
     matchLabels:
@@ -153,28 +153,28 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: trove
-              trove/serve: "true"
+              app.kubernetes.io/name: quader
+              quader/serve: "true"
       ports:
         - {port: 16379, protocol: TCP}
         - {port: 36379, protocol: TCP}
 ---
-# The blob bucket of the restored installation, in the SeaweedFS of the dev profile (trove-s3, namespace ${NS}). The identity is
+# The blob bucket of the restored installation, in the SeaweedFS of the dev profile (quader-s3, namespace ${NS}). The identity is
 # the profile's; the bucket is made empty on every run, which R-BAK-020 check 5 requires.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: trove-s3-restore-bucket
+  name: quader-s3-restore-bucket
   namespace: ${NS}
   labels:
-    app.kubernetes.io/name: trove-s3-restore-bucket
-    app.kubernetes.io/part-of: trove-dev
+    app.kubernetes.io/name: quader-s3-restore-bucket
+    app.kubernetes.io/part-of: quader-dev
 spec:
   backoffLimit: 6
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: trove-s3-restore-bucket
+        app.kubernetes.io/name: quader-s3-restore-bucket
     spec:
       restartPolicy: OnFailure
       automountServiceAccountToken: false
@@ -198,8 +198,8 @@ spec:
               export AWS_SECRET_ACCESS_KEY="$(cat /secrets/secret-access-key)"
               export AWS_DEFAULT_REGION=us-east-1
               export AWS_CA_BUNDLE=/tls/ca.crt
-              s3() { aws --endpoint-url https://trove-s3.${NS}.svc:9000 "$@"; }
-              b=trove-restore-blobs
+              s3() { aws --endpoint-url https://quader-s3.${NS}.svc:9000 "$@"; }
+              b=quader-restore-blobs
               if s3 s3api head-bucket --bucket "$b" 2>/dev/null; then s3 s3 rb "s3://$b" --force; fi
               s3 s3api create-bucket --bucket "$b"
               echo "bucket: $b ($(s3 s3api list-objects-v2 --bucket "$b" --query 'length(Contents || `[]`)' --output text) objects)"
@@ -218,13 +218,13 @@ spec:
           emptyDir: {}
         - name: s3-secret
           secret:
-            secretName: trove-s3
+            secretName: quader-s3
             defaultMode: 0440
             items:
               - {key: access-key-id, path: access-key-id}
               - {key: secret-access-key, path: secret-access-key}
         - name: tls
           secret:
-            secretName: trove-s3-tls
+            secretName: quader-s3-tls
             items:
               - {key: ca.crt, path: ca.crt}

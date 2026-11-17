@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // TestR_OPS_003_RoleValues: the registry's vocabulary is the --role name (Q-OPS-161), and only the roles that fill client

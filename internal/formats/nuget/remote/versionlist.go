@@ -41,7 +41,7 @@ func VersionListBounded(doc []byte, max int64, maxEntries int) ([]string, error)
 		list, found = []string{}, true
 		for dec.More() {
 			if len(list) >= maxEntries {
-				return nil, invalid("The upstream's version list has more than " + strconv.Itoa(maxEntries) + " versions; trove reads at most that many of one ID.")
+				return nil, invalid("The upstream's version list has more than " + strconv.Itoa(maxEntries) + " versions; Quader reads at most that many of one ID.")
 			}
 			var s string
 			if err := dec.Decode(&s); err != nil {

@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // presetCatalog has a format with two presets, as a container registry format has: the default whose token service is on a host

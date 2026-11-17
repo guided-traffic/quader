@@ -7,9 +7,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 // R-REPO-026, R-ARCH-027: concurrent cold requests of one artifact through a virtual repository that has a remote member, on

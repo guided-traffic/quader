@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/match"
-	vmetrics "github.com/guided-traffic/trove/internal/vuln/metrics"
-	vsync "github.com/guided-traffic/trove/internal/vuln/sync"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/match"
+	vmetrics "github.com/guided-traffic/quader/internal/vuln/metrics"
+	vsync "github.com/guided-traffic/quader/internal/vuln/sync"
 )
 
 // The wiring of the advisory sync (docs/developer/vulnerabilities.md): the service over the database, the

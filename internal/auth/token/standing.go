@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // Standing reads a token by its ID for a job that continues a request the token authenticated (Q-AUTHZ-260, Q-AUTHZ-261): the row as it

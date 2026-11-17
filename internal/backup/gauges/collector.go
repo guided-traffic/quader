@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // Reuse is how long a replica keeps the values of an evaluation before it reads PostgreSQL again (R-BAK-014): the database

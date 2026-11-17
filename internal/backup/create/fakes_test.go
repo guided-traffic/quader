@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/backup/target/targettest"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/target/targettest"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // fakeRuns is an in-memory RunStore with the fencing of the real one.
@@ -310,7 +310,7 @@ func digestOf(b []byte) format.Digest { return format.Digest(sha256.Sum256(b)) }
 
 func testConfig() config.Backup {
 	return config.Backup{
-		Target:           config.BackupTarget{Bucket: "backups", Prefix: "trove", SSE: config.BackupSSE{Mode: "s3"}},
+		Target:           config.BackupTarget{Bucket: "backups", Prefix: "quader", SSE: config.BackupSSE{Mode: "s3"}},
 		Database:         config.BackupDatabase{Parallel: 2, LockTimeout: time.Minute, MigrationWait: time.Minute},
 		Copy:             config.BackupCopy{Concurrency: 4, ServerSide: "auto", PartSize: 5 * config.MiB, CheckExisting: "auto"},
 		CompressionLevel: 3, LeaseDuration: time.Minute, HeartbeatInterval: 100 * time.Millisecond, StallTimeout: time.Minute,
@@ -354,7 +354,7 @@ func (e *env) build() *Pipeline {
 	e.t.Helper()
 	e.deps = Deps{
 		Cfg: e.cfg, SourceRef: format.StorageRef{Bucket: "blobs", Prefix: "b"}, Instance: "pod-1", Version: "0.1.0", Revision: "abc",
-		BackupRole: "trove_backup", Store: e.runs, Facts: e.facts, Grants: e.facts, Pins: e.runs, Snapshot: e.snap, Source: e.src,
+		BackupRole: "quader_backup", Store: e.runs, Facts: e.facts, Grants: e.facts, Pins: e.runs, Snapshot: e.snap, Source: e.src,
 		BlobState: e.facts, Target: e.mem, Prune: e.prune, Events: e.events, Metrics: nil, Registry: tables.New(),
 		Now:   func() time.Time { return e.now },
 		Sleep: func(context.Context, time.Duration) error { return nil },
@@ -372,7 +372,7 @@ func (e *env) create(opts backup.CreateOptions) (*backup.Result, error) {
 
 func (e *env) manifest(id string) *format.Manifest {
 	e.t.Helper()
-	b, ok := e.mem.Data("trove/backups/" + id + "/manifest.json")
+	b, ok := e.mem.Data("quader/backups/" + id + "/manifest.json")
 	if !ok {
 		e.t.Fatalf("no manifest for %s; keys: %v", id, e.mem.Keys())
 	}

@@ -5,9 +5,9 @@ package identity
 import (
 	"testing"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/auth/token"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/auth/token"
 )
 
 // Q-AUTH-209: a token and a service account state whether the owner holds the administrator role now, so that the screens can say

@@ -1,4 +1,4 @@
-// Package debstub is the counting test upstream for trove's APT remote repositories, mirror and virtual repositories: a stub Debian
+// Package debstub is the counting test upstream for quader's APT remote repositories, mirror and virtual repositories: a stub Debian
 // archive that serves a deterministic, generated package set, signs its releases with test keys, counts every request and fails on
 // command. Everything is generated in code (installable .deb files, Packages and Sources indexes, Release documents, the by-hash
 // tree, pdiffs, flat repositories, a large index), so nothing is recorded or downloaded. It answers over TLS only.
@@ -12,8 +12,8 @@
 //	/flat/binary/             a flat repository with a directory ("deb <host>/flat binary/")
 //	/flatroot/                a flat repository with the root as directory ("deb <host>/flatroot ./", requested as /./InRelease)
 //
-// The Release documents are signed by the keys of KeyNames with the OpenPGP module directly, not through trove's own signer, so
-// that trove's verifier is tested against an independent implementation. Mode holds the switches of R-DEB-035; Throttle the
+// The Release documents are signed by the keys of KeyNames with the OpenPGP module directly, not through quader's own signer, so
+// that quader's verifier is tested against an independent implementation. Mode holds the switches of R-DEB-035; Throttle the
 // rate-limit answers of R-REPO-059; NewGeneration publishes a new release of an archive.
 //
 // Use it in a Go test through Start, or as a container (cmd/debstub, Containerfile). A test reads what the upstream saw through
@@ -29,7 +29,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
 )
 
 // DefaultBulkParagraphs is the size of the large index: the 70,000 paragraphs of the bounds tests.
@@ -165,7 +165,7 @@ func (s *Server) makeArchives() ([]*archive, error) {
 		}
 		a := newArchive(flat.id, name, name, []string{flat.base + flat.prefix})
 		a.flat, a.base, a.filePrefix = true, flat.base, flat.prefix
-		p, err := buildPkg(pkgDef{name: "trove-flat", version: "1.0-1", desc: "a package of a flat repository"}, "all")
+		p, err := buildPkg(pkgDef{name: "quader-flat", version: "1.0-1", desc: "a package of a flat repository"}, "all")
 		if err != nil {
 			return nil, err
 		}
@@ -218,7 +218,7 @@ func (s *Server) NewGeneration(id string) (time.Time, error) {
 		arch = "all"
 	}
 	n := cur.n + 1
-	p, err := buildPkg(pkgDef{name: fmt.Sprintf("trove-zz-g%03d", n), version: "1.0-1", comp: "main", desc: fmt.Sprintf("a package of generation %d", n)}, arch)
+	p, err := buildPkg(pkgDef{name: fmt.Sprintf("quader-zz-g%03d", n), version: "1.0-1", comp: "main", desc: fmt.Sprintf("a package of generation %d", n)}, arch)
 	if err != nil {
 		return time.Time{}, err
 	}

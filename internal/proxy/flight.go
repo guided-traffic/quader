@@ -6,12 +6,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The reasons a fetch goes on without the cross-replica lock
-// (trove_flight_lock_bypass_total, R-ARCH-033).
+// (quader_flight_lock_bypass_total, R-ARCH-033).
 const (
 	bypassValkey      = "valkey_unavailable" //nolint:gosec // G101: a metric label, not a credential
 	bypassWaitTimeout = "wait_timeout"

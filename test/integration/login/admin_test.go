@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/auth/token"
 )
 
 // TestR_AUTH_015_IdentityCommands runs the bootstrap commands of the identity
@@ -18,7 +18,7 @@ import (
 func TestR_AUTH_015_IdentityCommands(t *testing.T) {
 	e := newEnv(t)
 	e.start(2, e.defaultAuth())
-	bin := buildTrove(t)
+	bin := buildQuader(t)
 	cfgEnv := adminEnvFor(t, e)
 	conn := connect(t, e.cfg.Name)
 	count := func(query string, args ...any) int {
@@ -37,7 +37,7 @@ func TestR_AUTH_015_IdentityCommands(t *testing.T) {
 
 	t.Run("R-AUTH-015 service-account create --admin binds the system role admin in the creating transaction", func(t *testing.T) {
 		before := count(`SELECT epoch FROM ` + schemaName + `.cluster_epoch WHERE area = 'authz'`)
-		code, out, errOut := runTrove(t, bin, cfgEnv, "admin", "service-account", "create", "bootstrap", "--admin", "--description", "bootstrap")
+		code, out, errOut := runQuader(t, bin, cfgEnv, "admin", "service-account", "create", "bootstrap", "--admin", "--description", "bootstrap")
 		if code != 0 || !strings.Contains(out, "bootstrap") {
 			t.Fatalf("exit %d\n%s\n%s", code, out, errOut)
 		}
@@ -54,7 +54,7 @@ func TestR_AUTH_015_IdentityCommands(t *testing.T) {
 
 	var secret string
 	t.Run("R-AUTH-015 token create prints a service-account token once, on stdout only", func(t *testing.T) {
-		code, out, errOut := runTrove(t, bin, cfgEnv, "admin", "token", "create", "--service-account", "bootstrap")
+		code, out, errOut := runQuader(t, bin, cfgEnv, "admin", "token", "create", "--service-account", "bootstrap")
 		secret = strings.TrimSpace(out)
 		if _, err := token.Check(secret); code != 0 || err != nil || strings.Contains(errOut, secret) {
 			t.Fatalf("exit %d\n%q\n%s", code, out, errOut)
@@ -65,13 +65,13 @@ func TestR_AUTH_015_IdentityCommands(t *testing.T) {
 	})
 
 	t.Run("R-AUTH-015 token create for an unknown service account fails", func(t *testing.T) {
-		if code, _, _ := runTrove(t, bin, cfgEnv, "admin", "token", "create", "--service-account", "nobody"); code == 0 {
+		if code, _, _ := runQuader(t, bin, cfgEnv, "admin", "token", "create", "--service-account", "nobody"); code == 0 {
 			t.Fatal("exit 0")
 		}
 	})
 
 	t.Run("R-AUTH-015 token revoke --value-stdin revokes the token", func(t *testing.T) {
-		code, out, errOut := runTroveStdin(t, bin, cfgEnv, secret, "admin", "token", "revoke", "--value-stdin")
+		code, out, errOut := runQuaderStdin(t, bin, cfgEnv, secret, "admin", "token", "revoke", "--value-stdin")
 		if code != 0 || !strings.Contains(out, "1 tokens revoked") {
 			t.Fatalf("exit %d\n%s\n%s", code, out, errOut)
 		}
@@ -86,7 +86,7 @@ func TestR_AUTH_015_IdentityCommands(t *testing.T) {
 		if code, _ := b.whoami(); code != http.StatusOK {
 			t.Fatalf("whoami %d", code)
 		}
-		if code, out, errOut := runTrove(t, bin, cfgEnv, "admin", "user", "disable", "alice"); code != 0 || !strings.Contains(out, "alice disabled") {
+		if code, out, errOut := runQuader(t, bin, cfgEnv, "admin", "user", "disable", "alice"); code != 0 || !strings.Contains(out, "alice disabled") {
 			t.Fatalf("exit %d\n%s\n%s", code, out, errOut)
 		}
 		if !eventually(t, 3*time.Second, func() bool {
@@ -102,7 +102,7 @@ func TestR_AUTH_015_IdentityCommands(t *testing.T) {
 	})
 
 	t.Run("R-AUTH-015 token revoke --id of an unknown token fails", func(t *testing.T) {
-		if code, _, _ := runTrove(t, bin, cfgEnv, "admin", "token", "revoke", "--id", "00000000-0000-0000-0000-000000000001"); code == 0 {
+		if code, _, _ := runQuader(t, bin, cfgEnv, "admin", "token", "revoke", "--id", "00000000-0000-0000-0000-000000000001"); code == 0 {
 			t.Fatal("exit 0")
 		}
 	})

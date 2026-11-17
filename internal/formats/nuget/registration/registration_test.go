@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden documents in testdata")
 
-const feed = Feed("https://trove.example.com/api/nuget/nuget-local/v3/")
+const feed = Feed("https://quader.example.com/api/nuget/nuget-local/v3/")
 
 var published = time.Date(2026, 10, 28, 9, 14, 3, 987654000, time.UTC)
 
@@ -159,8 +159,8 @@ func TestR_NUGET_009_CatalogEntryFields(t *testing.T) {
 		"summary": `"Widgets in short."`, "language": `"en-US"`, "minClientVersion": `"4.1.0"`, "requireLicenseAcceptance": `false`,
 		"projectUrl": `"https://acme.example/widgets"`, "iconUrl": `"https://acme.example/icon.png"`,
 		"licenseUrl": `"https://licenses.nuget.org/MIT"`, "licenseExpression": `"MIT"`,
-		"@id":            `"https://trove.example.com/api/nuget/nuget-local/v3/registration-semver2/acme.widgets/1.2.3.json"`,
-		"packageContent": `"https://trove.example.com/api/nuget/nuget-local/v3/flatcontainer/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg"`,
+		"@id":            `"https://quader.example.com/api/nuget/nuget-local/v3/registration-semver2/acme.widgets/1.2.3.json"`,
+		"packageContent": `"https://quader.example.com/api/nuget/nuget-local/v3/flatcontainer/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg"`,
 		"tags":           `["widgets","ui"]`,
 	} {
 		if string(full[k]) != want {
@@ -184,11 +184,11 @@ func TestR_NUGET_009_CatalogEntryFields(t *testing.T) {
 
 	groups := full["dependencyGroups"]
 	const wantGroups = `[{"targetFramework":"net8.0","dependencies":[` +
-		`{"id":"Acme.Core","range":"[2.0.0, )","registration":"https://trove.example.com/api/nuget/nuget-local/v3/registration-semver2/acme.core/index.json"},` +
-		`{"id":"Unrelated","registration":"https://trove.example.com/api/nuget/nuget-local/v3/registration-semver2/unrelated/index.json"},` +
+		`{"id":"Acme.Core","range":"[2.0.0, )","registration":"https://quader.example.com/api/nuget/nuget-local/v3/registration-semver2/acme.core/index.json"},` +
+		`{"id":"Unrelated","registration":"https://quader.example.com/api/nuget/nuget-local/v3/registration-semver2/unrelated/index.json"},` +
 		`{"id":"Ünicode.Dep","range":"1.0.0"}]},` +
 		`{"targetFramework":"netstandard2.0"},` +
-		`{"dependencies":[{"id":"Flat.Dep","range":"1.0.0","registration":"https://trove.example.com/api/nuget/nuget-local/v3/registration-semver2/flat.dep/index.json"}]}]`
+		`{"dependencies":[{"id":"Flat.Dep","range":"1.0.0","registration":"https://quader.example.com/api/nuget/nuget-local/v3/registration-semver2/flat.dep/index.json"}]}]`
 	if string(groups) != wantGroups {
 		t.Errorf("dependencyGroups:\n got: %s\nwant: %s", groups, wantGroups)
 	}

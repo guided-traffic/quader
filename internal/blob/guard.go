@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // Guard decorates an ObjectStore with the circuit breaker of R-STOR-033 and the

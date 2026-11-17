@@ -6,8 +6,8 @@ import { FilterCategory, FilterPanel, FilterToggle } from './filter-panel';
 @Component({
   imports: [FilterPanel, FilterCategory, FilterToggle],
   template: `
-    <trove-filter-toggle [(open)]="open" [activeCount]="count()" [controls]="panel.panelId" />
-    <trove-filter-panel
+    <quader-filter-toggle [(open)]="open" [activeCount]="count()" [controls]="panel.panelId" />
+    <quader-filter-panel
       #panel
       [(open)]="open"
       [activeCount]="count()"
@@ -15,13 +15,13 @@ import { FilterCategory, FilterPanel, FilterToggle } from './filter-panel';
       (apply)="applied = applied + 1"
       (clearAll)="cleared = cleared + 1"
     >
-      <trove-filter-category label="Class" [active]="count() > 0" [expanded]="count() > 0">
+      <quader-filter-category label="Class" [active]="count() > 0" [expanded]="count() > 0">
         <input aria-label="Class value" />
-      </trove-filter-category>
-      <trove-filter-category label="Format">
+      </quader-filter-category>
+      <quader-filter-category label="Format">
         <input aria-label="Format value" />
-      </trove-filter-category>
-    </trove-filter-panel>
+      </quader-filter-category>
+    </quader-filter-panel>
   `,
 })
 class Host {

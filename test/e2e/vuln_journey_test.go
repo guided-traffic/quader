@@ -25,19 +25,19 @@ func TestVuln_R_VULN_022_Journeys(t *testing.T) {
 	// The journeys sign in with the break-glass password and as bob; a lockout left by an earlier test would fail the first of
 	// them for a reason that is not the UI.
 	e.adm.do(http.MethodPost, "/api/v1/users/admin/unlock", nil).want(t, "unlock break-glass", 204)
-	// TROVE_E2E_PLAYWRIGHT_ARGS narrows a run while a journey is written; a set of CI never sets it.
-	args := append([]string{"playwright", "test", "--config", "playwright.vuln.config.ts"}, strings.Fields(os.Getenv("TROVE_E2E_PLAYWRIGHT_ARGS"))...)
+	// QUADER_E2E_PLAYWRIGHT_ARGS narrows a run while a journey is written; a set of CI never sets it.
+	args := append([]string{"playwright", "test", "--config", "playwright.vuln.config.ts"}, strings.Fields(os.Getenv("QUADER_E2E_PLAYWRIGHT_ARGS"))...)
 	cmd := exec.Command("npx", args...)
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(),
-		"TROVE_E2E_VULN=1",
-		"TROVE_E2E_EDGE_URL="+cfg.edgeURL,
-		"TROVE_E2E_KEYCLOAK_ADDR="+keycloakAddr(t),
+		"QUADER_E2E_VULN=1",
+		"QUADER_E2E_EDGE_URL="+cfg.edgeURL,
+		"QUADER_E2E_KEYCLOAK_ADDR="+keycloakAddr(t),
 		"NODE_EXTRA_CA_CERTS="+cfg.caFile,
-		"TROVE_E2E_ALICE_PASSWORD="+secretValue(t, "trove-keycloak", "alice-password"),
-		"TROVE_E2E_BOB_PASSWORD="+secretValue(t, "trove-keycloak", "bob-password"),
-		"TROVE_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "trove-break-glass", "password"),
-		"TROVE_E2E_ADMIN_TOKEN="+adminToken(t),
+		"QUADER_E2E_ALICE_PASSWORD="+secretValue(t, "quader-keycloak", "alice-password"),
+		"QUADER_E2E_BOB_PASSWORD="+secretValue(t, "quader-keycloak", "bob-password"),
+		"QUADER_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "quader-break-glass", "password"),
+		"QUADER_E2E_ADMIN_TOKEN="+adminToken(t),
 	)
 	reportFile := filepath.Join(cfg.repo, ".out", "playwright", "vuln-results.json")
 	_ = os.Remove(reportFile)

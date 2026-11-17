@@ -10,8 +10,8 @@ const testSchema = `{
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "guard":    {"type": "boolean", "x-trove-classes": ["local"]},
-    "strategy": {"type": "string", "enum": ["a", "b"], "x-trove-classes": ["virtual"]},
+    "guard":    {"type": "boolean", "x-quader-classes": ["local"]},
+    "strategy": {"type": "string", "enum": ["a", "b"], "x-quader-classes": ["virtual"]},
     "limit":    {"type": "integer", "minimum": 1}
   }
 }`
@@ -102,7 +102,7 @@ func TestSettingsSchemaRegistration(t *testing.T) {
 		"not an object schema":     `{"type": "string"}`,
 		"unknown members allowed":  `{"type": "object", "properties": {}}`,
 		"does not compile":         `{"type": "object", "additionalProperties": false, "properties": {"a": {"type": "nope"}}}`,
-		"a class that is none":     `{"type": "object", "additionalProperties": false, "properties": {"a": {"type": "string", "x-trove-classes": ["cloud"]}}}`,
+		"a class that is none":     `{"type": "object", "additionalProperties": false, "properties": {"a": {"type": "string", "x-quader-classes": ["cloud"]}}}`,
 		"additionalProperties yes": `{"type": "object", "additionalProperties": true}`,
 	} {
 		t.Run("R-ARCH-008 a settings schema that is "+name+" panics at registration", func(t *testing.T) {

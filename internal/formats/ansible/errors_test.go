@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 func writeError(t *testing.T, method, target string, err error) *httptest.ResponseRecorder {
@@ -76,8 +76,8 @@ func TestR_ANS_007_ErrorsHaveTheGalaxyShapeOfTheirRoute(t *testing.T) {
 
 func TestR_ANS_007_ChallengeAllowAndRetryAfter(t *testing.T) {
 	const p = "/api/ansible/web/ansible-local/v3/collections/a/b/"
-	w := writeError(t, "GET", p, errs.E(errs.Unauthenticated, errs.CodeUnauthenticated, "x", errs.WithChallenge(`Bearer realm="trove"`)))
-	if got := w.Header().Get("WWW-Authenticate"); got != `Basic realm="trove"` {
+	w := writeError(t, "GET", p, errs.E(errs.Unauthenticated, errs.CodeUnauthenticated, "x", errs.WithChallenge(`Bearer realm="quader"`)))
+	if got := w.Header().Get("WWW-Authenticate"); got != `Basic realm="quader"` {
 		t.Errorf("WWW-Authenticate = %q: a Galaxy client that retries on a challenge sends Basic", got)
 	}
 	w = writeError(t, "DELETE", p, errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, "x", errs.WithAllow("GET", "HEAD")))

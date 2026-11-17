@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/jobs"
+	"github.com/guided-traffic/quader/internal/jobs"
 )
 
 // R-DEB-010: the periodic task runs the remote part of its own registry only. A process that builds several replicas one after the other

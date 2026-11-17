@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
 
 // upstreamTags is an upstream's tags list as a registry pages it: the tags after `last`, at most n, in byte order.
@@ -40,7 +40,7 @@ func newPaging(t *testing.T, hidden ...string) *pagingFixture {
 	pf := &pagingFixture{}
 	m := &formattest.MemRemote{Docs: map[string][]byte{
 		TaglistPath("whole"): []byte(`{"name":"whole","tags":["a","b","c","d"]}`),
-		TaglistPath("cut"):   []byte(`{"name":"cut","tags":["a","b","c"],"x-trove-truncated":true}`),
+		TaglistPath("cut"):   []byte(`{"name":"cut","tags":["a","b","c"],"x-quader-truncated":true}`),
 	}}
 	m.Queries = func(_ context.Context, _ *formats.Request, q formats.Query) (*formats.QueryResult, error) {
 		pf.passed = append(pf.passed, q)
@@ -90,7 +90,7 @@ func lastOf(link string) string {
 }
 
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestALinkFollowsEveryPageThatIsNotTheEndOfTheList(t *testing.T) {
 	pf := newPaging(t)
 	for _, c := range []struct {
@@ -131,7 +131,7 @@ func TestALinkFollowsEveryPageThatIsNotTheEndOfTheList(t *testing.T) {
 }
 
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestATagTheCallerMayNotReadIsInNoPageAndNoLink(t *testing.T) {
 	pf := newPaging(t, "b", "e")
 	for _, path := range []string{"whole/tags/list?n=1", "cut/tags/list?n=1"} {
@@ -164,10 +164,10 @@ func TestATagTheCallerMayNotReadIsInNoPageAndNoLink(t *testing.T) {
 }
 
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestOfflineTheStoredWindowAnswersAndReferrersAre404(t *testing.T) {
 	m := &formattest.MemRemote{Docs: map[string][]byte{
-		TaglistPath("cut"): []byte(`{"name":"cut","tags":["a","b","c"],"x-trove-truncated":true}`),
+		TaglistPath("cut"): []byte(`{"name":"cut","tags":["a","b","c"],"x-quader-truncated":true}`),
 	}} // no Queries: the engine answers formats.ErrOffline, as it does for an offline repository and a caller who may not fill
 	tw := newTwin()
 	h := formattest.NewHost(New(), formattest.HostOptions{Class: formats.Remote, Remote: m, Data: tw, Resolver: proceedResolver{}})

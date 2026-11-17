@@ -6,8 +6,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/vuln"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/vuln"
 )
 
 // evaluatorPort is the fake of the vuln.Evaluator port: the verdict of a remote miss is named by the test, and every call is

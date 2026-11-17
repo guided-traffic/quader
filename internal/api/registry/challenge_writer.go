@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
 )
 
 // challengeWriter replaces the bare challenge of an authz.Unauthenticated error ("Bearer", R-AUTHZ-016: the generic one that

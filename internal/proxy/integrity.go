@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // withheldTail is the part of an artifact the leader's own client does not get until

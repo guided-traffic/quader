@@ -11,10 +11,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 type targetEnv struct {
@@ -37,7 +37,7 @@ func newTargetEnv(t *testing.T, sse string, opts ...s3.TargetOption) *targetEnv 
 	}
 	var b config.Backup
 	b.Target = config.BackupTarget{
-		Endpoint: srv.URL, Region: "us-east-1", Bucket: "b", Prefix: "trove", ForcePathStyle: true, AllowInsecureEndpoint: true,
+		Endpoint: srv.URL, Region: "us-east-1", Bucket: "b", Prefix: "quader", ForcePathStyle: true, AllowInsecureEndpoint: true,
 		Credentials: config.StorageS3Credentials{Source: "static", AccessKeyIDFile: write("id", "AKIDBACKUP"), SecretAccessKeyFile: write("secret", "backup-secret")},
 		SSE:         config.BackupSSE{Mode: sse},
 	}

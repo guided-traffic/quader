@@ -3,9 +3,9 @@ package ci
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/subject"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // EvaluateRequest is the body of the dry run (R-CI-019): a claim set, never a token, so nobody has to
@@ -114,7 +114,7 @@ type Issuers interface {
 	RefreshDue(ctx context.Context) (int, error)
 	// ApplyDeclared creates or replaces the issuers of ci.issuers by name with source
 	// "configuration" and disables, with removed_from_configuration, the configuration issuers no
-	// longer declared (Q-CI-16). It runs in the transaction of `trove migrate` (no replica calls it),
+	// longer declared (Q-CI-16). It runs in the transaction of `quader migrate` (no replica calls it),
 	// fails with an error naming both when a declared name or URL belongs to an API issuer, and
 	// notifies ci_mappings.
 	ApplyDeclared(ctx context.Context, tx meta.Tx, declared []DeclaredIssuer) error

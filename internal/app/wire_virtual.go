@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // AreaVirtual is the routing of virtual repositories and their claims.

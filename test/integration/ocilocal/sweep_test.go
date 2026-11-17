@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	ocidata "github.com/guided-traffic/trove/internal/formatdata/oci"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func (e *env) sweeper(grace time.Duration, now func() time.Time) *ocidata.Sweeper {
@@ -245,7 +245,7 @@ func TestTheJobRunsOnAWorkerAsAnHourlyMaintenanceTask(t *testing.T) {
 	if e.itemCount(repoLocal, p) != 0 {
 		t.Error("the blob stayed")
 	}
-	if got := testenv.MetricValue(worker.Metrics(t), "trove_oci_sweep_blobs_removed_total"); got != 1 {
-		t.Errorf("trove_oci_sweep_blobs_removed_total = %v, want 1", got)
+	if got := testenv.MetricValue(worker.Metrics(t), "quader_oci_sweep_blobs_removed_total"); got != 1 {
+		t.Errorf("quader_oci_sweep_blobs_removed_total = %v, want 1", got)
 	}
 }

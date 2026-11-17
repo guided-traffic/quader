@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Adapter is the format's part of the view (formats.ViewAdapter), in the terms of

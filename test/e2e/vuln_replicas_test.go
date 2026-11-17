@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // maliciousRecord is a MAL- record of a package: its version 1.0.0 is malicious.
@@ -185,12 +185,12 @@ func TestVuln_R_VULN_027_AcrossReplicasAndWithoutValkey(t *testing.T) {
 					id, running := e.task(t, "vuln-sync-osv", nil)
 					if running {
 						waitFor(t, "the running synchronization to end", 5*time.Minute, time.Second, func() bool {
-							return sql(t, `SELECT count(*) FROM trove.job WHERE kind LIKE 'vuln-sync-osv%' AND state IN ('queued', 'running', 'cancelling')`) == "0"
+							return sql(t, `SELECT count(*) FROM quader.job WHERE kind LIKE 'vuln-sync-osv%' AND state IN ('queued', 'running', 'cancelling')`) == "0"
 						})
 						continue
 					}
 					e.waitJob(t, id, 5*time.Minute)
-					v, err := strconv.ParseFloat(sql(t, `SELECT extract(epoch FROM started_at - created_at) FROM trove.job WHERE id = '`+id+`'`), 64)
+					v, err := strconv.ParseFloat(sql(t, `SELECT extract(epoch FROM started_at - created_at) FROM quader.job WHERE id = '`+id+`'`), 64)
 					if err != nil {
 						t.Fatal(err)
 					}

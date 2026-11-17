@@ -1,5 +1,5 @@
--- trove:phase expand
--- trove:no-transaction
+-- quader:phase expand
+-- quader:no-transaction
 --
 -- Projects (R-AUTHZ-026, Q-REPO-212), expand class (R-HA-018): the unique index behind the constraint
 -- repositories_project_key of 00024 (a repository key is unique within its project), built without

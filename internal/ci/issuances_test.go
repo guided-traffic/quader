@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Q-CI-26: a project Owner's record shows the contributions of its project's tier only.

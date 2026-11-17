@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
 )
 
 func conformanceOpts(m *blobtest.Store) blob.ConformanceOptions {
-	return blob.ConformanceOptions{Prefix: "trove", Replica: "unit", HTTP: &http.Client{Transport: m}}
+	return blob.ConformanceOptions{Prefix: "quader", Replica: "unit", HTTP: &http.Client{Transport: m}}
 }
 
 func TestConformance(t *testing.T) {
@@ -39,7 +39,7 @@ func TestConformance(t *testing.T) {
 		m := blobtest.New()
 		var outside []string
 		m.SetFault(func(op, key string) error {
-			if (op == "put" || op == "delete" || op == "create_multipart") && !strings.HasPrefix(key, "trove/_probe/") {
+			if (op == "put" || op == "delete" || op == "create_multipart") && !strings.HasPrefix(key, "quader/_probe/") {
 				outside = append(outside, op+" "+key)
 			}
 			return nil
@@ -69,7 +69,7 @@ func TestConformance(t *testing.T) {
 		if len(failed) == 0 {
 			t.Fatal("no check reported the missing permission")
 		}
-		err := blob.StartupCheck(context.Background(), m, "trove", "unit")
+		err := blob.StartupCheck(context.Background(), m, "quader", "unit")
 		if !blob.IsConfig(err) || !strings.Contains(err.Error(), "delete") {
 			t.Fatalf("startup check: %v", err)
 		}
@@ -134,7 +134,7 @@ func TestStartupCheck(t *testing.T) {
 	fast := blob.WithAwaitBackoff(time.Millisecond, 5*time.Millisecond)
 	t.Run("R-STOR-035 the startup check writes, reads back, deletes and lists", func(t *testing.T) {
 		m := blobtest.New()
-		if err := blob.StartupCheck(context.Background(), m, "trove", "r1"); err != nil {
+		if err := blob.StartupCheck(context.Background(), m, "quader", "r1"); err != nil {
 			t.Fatal(err)
 		}
 		if m.Count("put") != 1 || m.Count("get") != 1 || m.Count("delete") != 2 || m.Count("list") != 1 || len(m.Keys("")) != 0 || m.OpenUploads() != 0 { // the second delete is the clean-up of the part-identity check (a multipart upload of a part number sent twice)
@@ -150,7 +150,7 @@ func TestStartupCheck(t *testing.T) {
 			}
 			return nil
 		})
-		if err := blob.AwaitStartupCheck(context.Background(), m, "trove", "r1", log, fast); err != nil {
+		if err := blob.AwaitStartupCheck(context.Background(), m, "quader", "r1", log, fast); err != nil {
 			t.Fatal(err)
 		}
 		if n.Load() != 7 {
@@ -166,7 +166,7 @@ func TestStartupCheck(t *testing.T) {
 			}
 			return nil
 		})
-		if err := blob.AwaitStartupCheck(context.Background(), m, "trove", "r1", log, fast); err != nil {
+		if err := blob.AwaitStartupCheck(context.Background(), m, "quader", "r1", log, fast); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -176,7 +176,7 @@ func TestStartupCheck(t *testing.T) {
 			m.SetFault(func(op, _ string) error {
 				return &blob.StoreError{Op: op, Code: code, Status: 404, Kind: blob.KindConfig}
 			})
-			err := blob.AwaitStartupCheck(context.Background(), m, "trove", "r1", log, fast)
+			err := blob.AwaitStartupCheck(context.Background(), m, "quader", "r1", log, fast)
 			if !blob.IsConfig(err) || !strings.Contains(err.Error(), code) {
 				t.Fatalf("%s: got %v", code, err)
 			}
@@ -188,7 +188,7 @@ func TestStartupCheck(t *testing.T) {
 	t.Run("R-STOR-035 a store that returns other bytes than were written stops the replica", func(t *testing.T) {
 		m := blobtest.New()
 		m.SetGetBody(func(rc io.ReadCloser) io.ReadCloser { rc.Close(); return io.NopCloser(strings.NewReader("other")) })
-		err := blob.AwaitStartupCheck(context.Background(), m, "trove", "r1", log, fast)
+		err := blob.AwaitStartupCheck(context.Background(), m, "quader", "r1", log, fast)
 		if err == nil || !strings.Contains(err.Error(), "differ") {
 			t.Fatalf("got %v", err)
 		}
@@ -198,7 +198,7 @@ func TestStartupCheck(t *testing.T) {
 		m.SetFault(func(string, string) error { return &blob.StoreError{Kind: blob.KindTransient} })
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 		defer cancel()
-		if err := blob.AwaitStartupCheck(ctx, m, "trove", "r1", log, fast); !errors.Is(err, context.DeadlineExceeded) {
+		if err := blob.AwaitStartupCheck(ctx, m, "quader", "r1", log, fast); !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("got %v", err)
 		}
 	})

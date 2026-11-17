@@ -1,6 +1,6 @@
 package postgres
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // Registrations of the tables of 00032_bastion (R-BAS-004, R-BAK-004), so that the migration test passes
 // and every table carries its export class from its migration on.

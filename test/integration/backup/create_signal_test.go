@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_BAK_012_SIGTERMEndsTheRunInterrupted: a drain during copying ends the run as interrupted - pins gone, hold none, no
@@ -26,8 +26,8 @@ func TestR_BAK_012_SIGTERMEndsTheRunInterrupted(t *testing.T) {
 		in.mustUpload(in.repo, n, randomBlob(300<<10))
 	}
 	r := in.newRig(t)
-	cmd := exec.Command(troveBinary(t), "backup", "create", "--no-prune")
-	cmd.Env = in.processEnv(t, r, "TROVE_BACKUP_COPY_SERVER_SIDE=never", "TROVE_BACKUP_COPY_BYTES_PER_SECOND=64KiB")
+	cmd := exec.Command(quaderBinary(t), "backup", "create", "--no-prune")
+	cmd.Env = in.processEnv(t, r, "QUADER_BACKUP_COPY_SERVER_SIDE=never", "QUADER_BACKUP_COPY_BYTES_PER_SECOND=64KiB")
 	var errb bytes.Buffer
 	cmd.Stderr = &errb
 	if err := cmd.Start(); err != nil {
@@ -38,7 +38,7 @@ func TestR_BAK_012_SIGTERMEndsTheRunInterrupted(t *testing.T) {
 	defer func() { _ = cmd.Process.Kill() }()
 	testenv.WaitFor(t, "the run is copying with pins left", 60*time.Second, func() bool {
 		var n int64
-		_ = in.admin.QueryRow(context.Background(), `SELECT count(*) FROM trove.backup_run r JOIN trove.backup_blob_pin p ON p.run_id = r.id WHERE r.state = 'copying'`).Scan(&n)
+		_ = in.admin.QueryRow(context.Background(), `SELECT count(*) FROM quader.backup_run r JOIN quader.backup_blob_pin p ON p.run_id = r.id WHERE r.state = 'copying'`).Scan(&n)
 		return n > 0
 	})
 	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
@@ -53,16 +53,16 @@ func TestR_BAK_012_SIGTERMEndsTheRunInterrupted(t *testing.T) {
 	case <-time.After(30 * time.Second):
 		t.Fatal("the run did not end within the grace period")
 	}
-	if st := scalarText(in, `SELECT state FROM trove.backup_run`); st != "interrupted" {
+	if st := scalarText(in, `SELECT state FROM quader.backup_run`); st != "interrupted" {
 		t.Fatalf("state = %s (%s)", st, errb.String())
 	}
-	if h := scalarText(in, `SELECT hold FROM trove.backup_run`); h != "none" {
+	if h := scalarText(in, `SELECT hold FROM quader.backup_run`); h != "none" {
 		t.Fatalf("hold = %s", h)
 	}
-	if n := in.number(`SELECT count(*) FROM trove.backup_blob_pin`); n != 0 {
+	if n := in.number(`SELECT count(*) FROM quader.backup_blob_pin`); n != 0 {
 		t.Fatalf("pins left: %d", n)
 	}
-	if n := in.number(`SELECT count(*) FROM trove.audit_event WHERE action = 'system.backup.failed'`); n != 0 {
+	if n := in.number(`SELECT count(*) FROM quader.audit_event WHERE action = 'system.backup.failed'`); n != 0 {
 		t.Fatalf("failed events: %d", n)
 	}
 	if keys := listManifests(t, r); len(keys) != 0 {
@@ -70,12 +70,12 @@ func TestR_BAK_012_SIGTERMEndsTheRunInterrupted(t *testing.T) {
 	}
 }
 
-// TestR_BAK_015_TheBackupRole: with the grants of trove migrate the backup role creates a backup and cannot write the data
+// TestR_BAK_015_TheBackupRole: with the grants of quader migrate the backup role creates a backup and cannot write the data
 // tables; a role without them is refused at the start with exit 2 naming the privilege.
 func TestR_BAK_015_TheBackupRole(t *testing.T) {
 	ctx := context.Background()
 	maint := dialDB(t, "postgres")
-	granted, bare := "trove_bak_g_"+runID(), "trove_bak_b_"+runID()
+	granted, bare := "quader_bak_g_"+runID(), "quader_bak_b_"+runID()
 	for _, role := range []string{granted, bare} {
 		if _, err := maint.Exec(ctx, `CREATE ROLE `+role+` LOGIN PASSWORD 'pw'`); err != nil {
 			t.Fatal(err)
@@ -86,11 +86,11 @@ func TestR_BAK_015_TheBackupRole(t *testing.T) {
 	in.mustUpload(in.repo, "a", "alpha-content")
 	for _, role := range []string{granted, bare} {
 		in.exec(`GRANT CONNECT ON DATABASE ` + in.dbName + ` TO ` + role)
-		in.exec(`GRANT USAGE ON SCHEMA trove TO ` + role)
+		in.exec(`GRANT USAGE ON SCHEMA quader TO ` + role)
 	}
 	// The bare role can read but not write the run record: the privilege check names the first thing it lacks.
-	in.exec(`GRANT SELECT ON ALL TABLES IN SCHEMA trove TO ` + bare)
-	in.exec(`GRANT SELECT ON ALL SEQUENCES IN SCHEMA trove TO ` + bare)
+	in.exec(`GRANT SELECT ON ALL TABLES IN SCHEMA quader TO ` + bare)
+	in.exec(`GRANT SELECT ON ALL SEQUENCES IN SCHEMA quader TO ` + bare)
 	cfg := in.dbCfg
 	cfg.BackupRole = granted
 	if _, err := postgres.Migrate(ctx, cfg, postgres.MigrateOptions{
@@ -114,7 +114,7 @@ func TestR_BAK_015_TheBackupRole(t *testing.T) {
 			t.Fatal(err)
 		}
 		c := dialAs(t, in, granted)
-		if _, err := c.Exec(ctx, `DELETE FROM trove.items`); err == nil || !strings.Contains(err.Error(), "42501") {
+		if _, err := c.Exec(ctx, `DELETE FROM quader.items`); err == nil || !strings.Contains(err.Error(), "42501") {
 			t.Fatalf("DELETE FROM items = %v, want 42501", err)
 		}
 	})

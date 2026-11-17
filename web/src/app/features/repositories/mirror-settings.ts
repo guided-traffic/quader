@@ -94,7 +94,7 @@ interface NumberMember {
  * `/remote/mirror/...`) appear at their controls.
  */
 @Component({
-  selector: 'trove-mirror-settings',
+  selector: 'quader-mirror-settings',
   imports: [],
   template: `
     <div class="mirror" [id]="sectionId" tabindex="-1">
@@ -291,24 +291,24 @@ interface NumberMember {
     .mode {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       max-inline-size: 36rem;
-      margin: 0 0 var(--trove-space-4);
+      margin: 0 0 var(--quader-space-4);
       padding: 0;
       border: 0;
 
       legend {
-        margin-block-end: var(--trove-space-2);
+        margin-block-end: var(--quader-space-2);
         font-weight: 600;
       }
     }
     .mode-option {
       display: grid;
       grid-template-columns: auto 1fr;
-      column-gap: var(--trove-space-2);
-      padding: var(--trove-space-3);
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-l);
+      column-gap: var(--quader-space-2);
+      padding: var(--quader-space-3);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-l);
 
       input {
         grid-row: 1 / span 2;
@@ -325,8 +325,8 @@ interface NumberMember {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--trove-space-3);
-      margin-block-end: var(--trove-space-4);
+      gap: var(--quader-space-3);
+      margin-block-end: var(--quader-space-4);
     }
   `,
 })

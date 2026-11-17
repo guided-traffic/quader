@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	imp "github.com/guided-traffic/trove/internal/importer"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	imp "github.com/guided-traffic/quader/internal/importer"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 func seedNuGet(t *testing.T, s *nugetstub.Server) {

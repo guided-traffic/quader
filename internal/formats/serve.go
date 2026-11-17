@@ -9,8 +9,8 @@ import (
 	"path"
 	"runtime/debug"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver/content"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver/content"
 )
 
 // ServeMode says what a stored item is served for, and so how far ServeCheck may
@@ -49,7 +49,7 @@ const (
 //     set it (the format, the remote or the virtual engine, an error's headers):
 //     it tells whether the addressed repository proxies an upstream and whether
 //     the item was fetched lately, which the endpoint's consumers are not to see,
-//     as they do not see Trove-Resolved-From (R-EP-018, Q-EP-60).
+//     as they do not see Quader-Resolved-From (R-EP-018, Q-EP-60).
 func ServeRoute(f Format, w http.ResponseWriter, rq *Request, sameOrigin bool) {
 	tw := &trackWriter{ResponseWriter: w}
 	if rq.Endpoint.Rules {

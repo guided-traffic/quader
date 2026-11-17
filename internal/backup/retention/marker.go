@@ -8,14 +8,14 @@ import (
 	"io"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // CheckMarker reads the target marker and compares it with the installation ID and incarnation of the source
 // (R-BAK-002). Every delete run, and the pruning phase of a create run, does it before it deletes anything. A target without
-// a marker has never been written by a trove installation, so there is nothing to delete and the run exits 2; a marker of
+// a marker has never been written by a quader installation, so there is nothing to delete and the run exits 2; a marker of
 // another installation or incarnation is [format.ErrForeignTarget] (exit 4).
 func CheckMarker(ctx context.Context, store target.Store, l format.Layout, facts backup.Facts) error {
 	sf, err := facts.SystemFacts(ctx)

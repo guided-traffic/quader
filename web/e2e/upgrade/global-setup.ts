@@ -9,7 +9,7 @@ export default async function globalSetup(): Promise<void> {
   if (!process.env['NODE_EXTRA_CA_CERTS']) {
     throw new Error('NODE_EXTRA_CA_CERTS is not set: the dev CA is needed to verify the edge');
   }
-  const edge = new URL(process.env['TROVE_E2E_EDGE_URL'] ?? 'https://localhost:8080');
+  const edge = new URL(process.env['QUADER_E2E_EDGE_URL'] ?? 'https://localhost:8080');
   await new Promise<void>((resolve, reject) => {
     const socket = tls.connect({ host: edge.hostname, port: Number(edge.port || 443), servername: edge.hostname, rejectUnauthorized: true }, () => {
       socket.end();

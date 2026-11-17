@@ -31,23 +31,23 @@ import { PageHeader } from '../../shared/ui/page-header';
  * repositories, policies and service accounts have screens of their own in the project's sidebar.
  */
 @Component({
-  selector: 'trove-project-settings',
+  selector: 'quader-project-settings',
   imports: [PageHeader, DatePipe, ErrorNotice, Needs, Disclosure, TextField, VisibilityLevelControl],
   template: `
-    <trove-page-header heading="Settings" i18n-heading="@@project.settings" />
+    <quader-page-header heading="Settings" i18n-heading="@@project.settings" />
 
     @if (loadError(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     }
     @if (actionError(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
 
     @if (record(); as p) {
       <div class="settings">
         <form (submit)="save($event)" novalidate>
           <div class="row">
-            <trove-text-field
+            <quader-text-field
               width="name"
               i18n-label="@@project-dialog.display-name"
               label="Display name"
@@ -57,9 +57,9 @@ import { PageHeader } from '../../shared/ui/page-header';
               [readonly]="!canEdit()"
               [error]="displayNameError()"
             />
-            <trove-text-field width="name" i18n-label="@@project.key" label="Key" name="key" [value]="p.key" [readonly]="true" />
+            <quader-text-field width="name" i18n-label="@@project.key" label="Key" name="key" [value]="p.key" [readonly]="true" />
           </div>
-          <trove-text-field
+          <quader-text-field
             width="full"
             i18n-label="@@project.description-optional"
             label="Description (optional)"
@@ -72,20 +72,20 @@ import { PageHeader } from '../../shared/ui/page-header';
           @if (canEdit()) {
             <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirty()" i18n="@@project.save-changes">Save changes</button>
           } @else {
-            <trove-needs capability="projects:write" [project]="p.key" />
+            <quader-needs capability="projects:write" [project]="p.key" />
           }
         </form>
 
-        <trove-disclosure
+        <quader-disclosure
           i18n-heading="@@project.visibility"
           heading="Visibility"
           [hint]="visibilitySummary()"
         >
           <form (submit)="saveVisibility($event)" novalidate>
             @if (visibilityError(); as e) {
-              <trove-error-notice [error]="e" />
+              <quader-error-notice [error]="e" />
             }
-            <trove-visibility-level
+            <quader-visibility-level
               i18n-label="@@project.visibility-level"
               label="Visibility level"
               subject="project"
@@ -100,12 +100,12 @@ import { PageHeader } from '../../shared/ui/page-header';
                 <span class="visually-hidden" i18n="@@project.save-visibility"> (visibility)</span>
               </button>
             } @else {
-              <p class="muted" i18n="@@project.visibility-read-only">Only an administrator of trove sets the visibility of a project.</p>
+              <p class="muted" i18n="@@project.visibility-read-only">Only an administrator of Quader sets the visibility of a project.</p>
             }
           </form>
-        </trove-disclosure>
+        </quader-disclosure>
 
-        <trove-disclosure
+        <quader-disclosure
           i18n-heading="@@project.details"
           heading="Details"
           i18n-hint="@@project.details-hint"
@@ -136,10 +136,10 @@ import { PageHeader } from '../../shared/ui/page-header';
             <dt i18n="@@project.updated">Last changed</dt>
             <dd>{{ p.updatedAt | date: 'medium' }}</dd>
           </dl>
-        </trove-disclosure>
+        </quader-disclosure>
 
         @if (canWrite()) {
-          <trove-disclosure
+          <quader-disclosure
             i18n-heading="@@project.advanced"
             heading="Advanced"
             i18n-hint="@@project.advanced-hint"
@@ -164,7 +164,7 @@ import { PageHeader } from '../../shared/ui/page-header';
             >
               Delete project
             </button>
-          </trove-disclosure>
+          </quader-disclosure>
         }
       </div>
     }
@@ -172,15 +172,15 @@ import { PageHeader } from '../../shared/ui/page-header';
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .settings {
-      max-inline-size: var(--trove-settings-measure);
+      max-inline-size: var(--quader-settings-measure);
     }
     form {
-      padding-block-end: var(--trove-space-6);
+      padding-block-end: var(--quader-space-6);
     }
     .row {
       display: grid;
       grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
-      gap: var(--trove-space-6);
+      gap: var(--quader-space-6);
     }
     @media (max-width: 40rem) {
       .row {

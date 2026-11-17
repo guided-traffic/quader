@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// ServerFields are the values trove sets in the stored manifest of a version;
+// ServerFields are the values quader sets in the stored manifest of a version;
 // a client never supplies them (R-NPM-007).
 type ServerFields struct {
 	Name         string // the version's name, for _id
@@ -38,7 +38,7 @@ func HasInstallScript(packaged Manifest, f Facts) bool {
 	return false
 }
 
-// Stored returns the manifest trove stores for a version: the request's
+// Stored returns the manifest quader stores for a version: the request's
 // manifest with every server-controlled field removed and then set from s.
 // "dist.tarball" is not stored; it is added when a document is rendered.
 // "hasInstallScript" is written only when true, as the registry does, and

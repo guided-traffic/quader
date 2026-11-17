@@ -8,12 +8,12 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The upstream-test operations (upstream_test.go) test the repository service
@@ -104,4 +104,4 @@ func (e *env) serveComponent(db *postgres.DB, repos v1.RepositoryServices) *node
 }
 
 // testHost is the Host of the base URL the component server resolves.
-const testHost = "trove.test"
+const testHost = "quader.test"

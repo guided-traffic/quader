@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup"
 )
 
 func TestR_BAK_026_KMSNeedsAStoreThatNamesTheKey(t *testing.T) {

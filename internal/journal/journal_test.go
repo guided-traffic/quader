@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 const id1 = "0192f0c4-7a1e-7c3b-9d2e-5b8f1a2c3d4e"
@@ -37,15 +37,15 @@ func TestObject(t *testing.T) {
 		}
 	})
 	t.Run("R-HA-054 the key is the UTC day and the entry ID", func(t *testing.T) {
-		k := Key("trove", NewObject(row()))
-		if k != "trove/_journal/revocations/2026/10/28/"+id1+".json" {
+		k := Key("quader", NewObject(row()))
+		if k != "quader/_journal/revocations/2026/10/28/"+id1+".json" {
 			t.Fatalf("Key = %q", k)
 		}
-		if got, ok := ParseKey("trove", k); !ok || got != id1 {
+		if got, ok := ParseKey("quader", k); !ok || got != id1 {
 			t.Fatalf("ParseKey = %q, %v", got, ok)
 		}
-		for _, bad := range []string{"trove/_journal/revocations/x.json", "other/_journal/revocations/2026/10/28/" + id1 + ".json", "trove/_journal/revocations/2026/10/28/nope.json"} {
-			if _, ok := ParseKey("trove", bad); ok {
+		for _, bad := range []string{"quader/_journal/revocations/x.json", "other/_journal/revocations/2026/10/28/" + id1 + ".json", "quader/_journal/revocations/2026/10/28/nope.json"} {
+			if _, ok := ParseKey("quader", bad); ok {
 				t.Errorf("ParseKey accepted %q", bad)
 			}
 		}
@@ -73,8 +73,8 @@ func TestObject(t *testing.T) {
 		}
 	})
 	t.Run("R-HA-054 DayPrefixes covers the replay window", func(t *testing.T) {
-		got := DayPrefixes("trove", time.Date(2026, 10, 28, 23, 58, 0, 0, time.UTC), time.Date(2026, 10, 30, 1, 0, 0, 0, time.UTC))
-		if len(got) != 3 || got[0] != "trove/_journal/revocations/2026/10/28/" || got[2] != "trove/_journal/revocations/2026/10/30/" {
+		got := DayPrefixes("quader", time.Date(2026, 10, 28, 23, 58, 0, 0, time.UTC), time.Date(2026, 10, 30, 1, 0, 0, 0, time.UTC))
+		if len(got) != 3 || got[0] != "quader/_journal/revocations/2026/10/28/" || got[2] != "quader/_journal/revocations/2026/10/30/" {
 			t.Fatalf("DayPrefixes = %v", got)
 		}
 	})

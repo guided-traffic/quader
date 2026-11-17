@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func TestDownloadBuffers(t *testing.T) {

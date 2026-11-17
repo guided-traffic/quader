@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The types of the synthetic steps: a producer chain a -> b -> c.

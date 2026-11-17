@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The NuGet format's tables (M3, WP3.S; R-NUGET-005, R-NUGET-006, R-NUGET-020,
 -- R-NUGET-021). The package's revision counter is packages.rev_seq of the core, not
@@ -11,7 +11,7 @@
 -- of objects in the object store, not a table, so it has no line here.
 --
 -- Deferred on purpose: the trigram index nuget_version_id_trgm of the specification's
--- sketch. It needs CREATE EXTENSION pg_trgm, which no migration of trove runs and
+-- sketch. It needs CREATE EXTENSION pg_trgm, which no migration of quader runs and
 -- which a managed PostgreSQL may not allow the application's role; search reads
 -- search_doc, whose ID tokens answer a prefix or a word, and the latest-version
 -- index answers an ID (Q-NUGET-12).

@@ -3,8 +3,8 @@ package authz
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // TestR_AUTHZ_005_TheCatalogsNameRuleFoldsEveryPatternSurface: grants, token

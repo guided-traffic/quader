@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestZKeysHavePrefixAndTTL scans the primary after writing through every
@@ -37,10 +37,10 @@ func TestZKeysHavePrefixAndTTL(t *testing.T) {
 			for _, k := range keys {
 				total++
 				// The stack's Valkey is shared with the Bastion's integration tests, whose keys are the Bastion's own
-				// keyspace (R-BAS-034, trove-bastion:<prefix>:): every one of them has a TTL too.
-				bastion := strings.HasPrefix(k, "trove-bastion:")
-				if !strings.HasPrefix(k, "trove:") && !bastion {
-					t.Errorf("key %q does not start with the prefix trove: or the Bastion's trove-bastion:", k)
+				// keyspace (R-BAS-034, quader-bastion:<prefix>:): every one of them has a TTL too.
+				bastion := strings.HasPrefix(k, "quader-bastion:")
+				if !strings.HasPrefix(k, "quader:") && !bastion {
+					t.Errorf("key %q does not start with the prefix quader: or the Bastion's quader-bastion:", k)
 				}
 				if !strings.HasPrefix(k, runPrefix) && !bastion {
 					continue

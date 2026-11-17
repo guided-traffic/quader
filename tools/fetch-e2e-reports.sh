@@ -16,7 +16,7 @@
 # not proven, and the evidence job says so. This script never decides what a report proves.
 #
 # Environment: GITHUB_TOKEN (permission actions: read), GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_API_URL (default https://api.github.com).
-# TROVE_E2E_REPORT_RUNS_RELEASE (default 40) and TROVE_E2E_REPORT_RUNS_NIGHTLY (default 14) bound how many runs are searched.
+# QUADER_E2E_REPORT_RUNS_RELEASE (default 40) and QUADER_E2E_REPORT_RUNS_NIGHTLY (default 14) bound how many runs are searched.
 set +x
 set -euo pipefail
 
@@ -40,7 +40,7 @@ call() {
 }
 
 : > "$tmp/candidates.jsonl"
-for entry in "release.yml:${TROVE_E2E_REPORT_RUNS_RELEASE:-40}" "performance.yml:${TROVE_E2E_REPORT_RUNS_NIGHTLY:-14}"; do
+for entry in "release.yml:${QUADER_E2E_REPORT_RUNS_RELEASE:-40}" "performance.yml:${QUADER_E2E_REPORT_RUNS_NIGHTLY:-14}"; do
   workflow="${entry%%:*}"
   count="${entry##*:}"
   call "$api/repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?branch=main&status=completed&per_page=$count" |

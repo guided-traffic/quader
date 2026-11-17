@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // TestR_HA_052_SpoolExhaustionAnswers503AndEvictsNothing is the spool rows of R-HA-007 and R-HA-052 at the HTTP surface of a

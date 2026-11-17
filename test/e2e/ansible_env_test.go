@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/ansiblestub"
 )
 
 const ansiblePublisher = "e2e-ansible" // the publisher: read, deploy and delete on every repository named ansible-*
@@ -144,7 +144,7 @@ func ansibleReadableOnEveryReplica(t testing.TB, token string, keys ...string) {
 
 // ── the clients ──────────────────────────────────────────────────────────────
 
-// ansibleClient is one scenario in the pod of one image. Every command runs in a clean home (trove-clean), so there is nothing to reset.
+// ansibleClient is one scenario in the pod of one image. Every command runs in a clean home (quader-clean), so there is nothing to reset.
 type ansibleClient struct {
 	t   testing.TB
 	img ansibleImage
@@ -155,10 +155,10 @@ func (fx *ansibleFixture) client(t testing.TB, img ansibleImage) *ansibleClient 
 	return &ansibleClient{t: t, img: img, fx: fx}
 }
 
-// sh runs a shell script in a clean home with the publisher's token as $TROVE_TOKEN and the environment given.
+// sh runs a shell script in a clean home with the publisher's token as $QUADER_TOKEN and the environment given.
 func (c *ansibleClient) sh(script string, env ...string) (string, error) {
 	c.t.Helper()
-	return ansibleTry(c.t, c.img, append([]string{"TROVE_TOKEN=" + c.fx.token}, env...), script)
+	return ansibleTry(c.t, c.img, append([]string{"QUADER_TOKEN=" + c.fx.token}, env...), script)
 }
 
 func (c *ansibleClient) must(script string, env ...string) string {
@@ -170,9 +170,9 @@ func (c *ansibleClient) must(script string, env ...string) string {
 	return out
 }
 
-// ansibleCfg is the ansible.cfg of one server named trove; extra lines (a token, a username) follow the url.
+// ansibleCfg is the ansible.cfg of one server named quader; extra lines (a token, a username) follow the url.
 func ansibleCfg(url string, extra ...string) string {
-	return "[galaxy]\nserver_list = trove\n\n[galaxy_server.trove]\nurl=" + url + "\n" + strings.Join(extra, "\n") + "\n"
+	return "[galaxy]\nserver_list = quader\n\n[galaxy_server.quader]\nurl=" + url + "\n" + strings.Join(extra, "\n") + "\n"
 }
 
 // withCfg is a script that first writes an ansible.cfg into the clean home.
@@ -180,8 +180,8 @@ func withCfg(cfg, script string) string {
 	return "printf %s " + shellQuoteWord(cfg) + " >ansible.cfg\n" + script
 }
 
-// tokenEnvVar is the variable the client reads the token of the server trove from (R-ANS-025, Q-ANS-22).
-const tokenEnvVar = "ANSIBLE_GALAXY_SERVER_TROVE_TOKEN"
+// tokenEnvVar is the variable the client reads the token of the server quader from (R-ANS-025, Q-ANS-22).
+const tokenEnvVar = "ANSIBLE_GALAXY_SERVER_QUADER_TOKEN"
 
 // collection is a collection the tests publish: built in the pod with ansible-galaxy collection init and build.
 type collection struct {
@@ -228,9 +228,9 @@ var (
 // ansibleStubHost is the host of the Galaxy test upstream as deploy/dev/e2e.sh exports it.
 func ansibleStubHost(t testing.TB) string {
 	t.Helper()
-	host := os.Getenv("TROVE_E2E_ANSIBLESTUB_HOST")
+	host := os.Getenv("QUADER_E2E_ANSIBLESTUB_HOST")
 	if host == "" {
-		t.Fatal("TROVE_E2E_ANSIBLESTUB_HOST is not set; run `deploy/dev/e2e.sh ansible`")
+		t.Fatal("QUADER_E2E_ANSIBLESTUB_HOST is not set; run `deploy/dev/e2e.sh ansible`")
 	}
 	return host
 }
@@ -241,7 +241,7 @@ func ansibleStub(t testing.TB) *stubControl {
 	t.Helper()
 	host := ansibleStubHost(t)
 	ansibleStubOnce.Do(func() {
-		ansibleStubVal = newStubControl(t, "svc/ansiblestub", host, "trove-ansiblestub", 30*time.Second)
+		ansibleStubVal = newStubControl(t, "svc/ansiblestub", host, "quader-ansiblestub", 30*time.Second)
 	})
 	return ansibleStubVal
 }
@@ -264,7 +264,7 @@ func (s *stubControl) ansibleCounts(t testing.TB) ansiblestub.Counts {
 
 // ── the setup snippets ───────────────────────────────────────────────────────
 
-// setupSnippets are the snippets of the client setup of a repository by id (credentials=env: the token is the reference $TROVE_TOKEN).
+// setupSnippets are the snippets of the client setup of a repository by id (credentials=env: the token is the reference $QUADER_TOKEN).
 func (fx *ansibleFixture) setupSnippets(t testing.TB, key, pkg, version string) map[string]string {
 	t.Helper()
 	q := "client=ansible-galaxy&credentials=env&package=" + pkg + "&version=" + version

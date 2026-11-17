@@ -66,7 +66,7 @@ perspective.
 - The format's serve check refuses a withheld manifest item and a tag item that points at it with the 404 of a missing manifest, on
   `/v2/` and on `/files/`, from facts read with the item (no query of its own); the tags list and the referrers answer omit it; a
   push of the same digest is refused until the mark is gone.
-- `trove admin oci reinstate <projectKey>/<repoKey> <name>@<digest>` is the way back. It removes the mark only while the manifest
+- `quader admin oci reinstate <projectKey>/<repoKey> <name>@<digest>` is the way back. It removes the mark only while the manifest
   row and its item are stored with that digest, so it brings back the same bytes and never admits new ones; it writes `oci.reinstate`
   (not journaled, because it restores access rather than removing it). An administrator who confirms the withdrawal deletes the
   manifest through the management item API: the mark stays, so the digest stays refused.
@@ -81,11 +81,11 @@ perspective.
 
 ### H-606 · A forged journal entry withholds a manifest until an administrator acts
 
-The journal bucket is outside trove's own trust: whoever can write an object into it can name a manifest of a local OCI repository
+The journal bucket is outside Quader's own trust: whoever can write an object into it can name a manifest of a local OCI repository
 that the restored database holds, and the replay then withholds it. This costs availability of that image (404 on every route) until
-`trove admin oci reinstate` or the confirming delete; it costs no data, no integrity and no access, because the replay deletes
+`quader admin oci reinstate` or the confirming delete; it costs no data, no integrity and no access, because the replay deletes
 nothing and a reinstate brings back the same bytes. **Dormant until a restore runs with a journal that somebody else wrote to.** What
-makes it real is a credential for the journal bucket that is not trove's own; the replay output lists every withheld manifest so
+makes it real is a credential for the journal bucket that is not Quader's own; the replay output lists every withheld manifest so
 the effect is visible.
 
 ### H-607 · The layers of a withheld image stay downloadable by digest
@@ -108,7 +108,7 @@ the manifest, and pushes it again after more than the grace.
 
 The journal records the deletion and not the later push of the same bytes (a push writes no journal entry). After a restore the replay
 therefore withholds a manifest that was deleted and then pushed again after the snapshot, although it is live in the installation that was
-lost. This is the conservative direction: availability of that image is lost until `trove admin oci reinstate`, never integrity or
+lost. This is the conservative direction: availability of that image is lost until `quader admin oci reinstate`, never integrity or
 access. **Live after every restore that follows a delete and a re-push**; the replay output lists every withheld manifest.
 
 ### H-756 · The memory bound of the crafted manifests is measured on the heap of the test process

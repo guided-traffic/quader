@@ -3,7 +3,7 @@ package ansible
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // TestR_ANS_035_TheDocsBlobDocumentIsMetadataOfItsVersion: the stored document of a version's documentation is classified as metadata of

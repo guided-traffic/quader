@@ -23,7 +23,7 @@ type Handler func(Message)
 
 // pubsub owns the replica's one Pub/Sub connection (R-ARCH-031). The
 // connection is a dedicated one on the current primary, named
-// trove:<instance>:pubsub. A single goroutine drives it: it subscribes every
+// quader:<instance>:pubsub. A single goroutine drives it: it subscribes every
 // wanted channel, and when the connection breaks or the primary changes, it
 // reconnects and subscribes them all again. Which channels are wanted is a
 // local fact, so a subscription made while Valkey is down takes effect when it
@@ -184,7 +184,7 @@ func (p *pubsub) session(c valkey.Client) error {
 	disconnected := ded.SetPubSubHooks(valkey.PubSubHooks{OnMessage: p.dispatch})
 
 	ctx, cancel := context.WithTimeout(v.ctx, v.cfg.CommandTimeout)
-	err := ded.Do(ctx, ded.B().ClientSetname().ConnectionName("trove:"+v.instance+":pubsub").Build()).Error()
+	err := ded.Do(ctx, ded.B().ClientSetname().ConnectionName("quader:"+v.instance+":pubsub").Build()).Error()
 	cancel()
 	if err != nil {
 		return err

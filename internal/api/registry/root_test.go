@@ -10,18 +10,18 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/api/registry"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/api/registry"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 func withPrincipal(r *http.Request, p httpserver.Principal) *http.Request {
-	ctx := httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://trove.test"})
+	ctx := httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://quader.test"})
 	return r.WithContext(httpserver.WithPrincipal(ctx, p))
 }
 
@@ -59,7 +59,7 @@ func TestTheVersionCheckAnswersAccordingToTheCredential(t *testing.T) {
 					t.Fatalf("body %q", w.Body.String())
 				}
 			case 401:
-				if want := `Bearer realm="https://trove.test/v2/_token",service="trove.test"`; w.Header().Get("WWW-Authenticate") != want {
+				if want := `Bearer realm="https://quader.test/v2/_token",service="quader.test"`; w.Header().Get("WWW-Authenticate") != want {
 					t.Fatalf("challenge %q", w.Header().Get("WWW-Authenticate"))
 				}
 			}

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // R-OCI-004: a repository whose artifacts are public is pulled without a login, through the token flow of Docker (ping, anonymous
@@ -27,12 +27,12 @@ func TestR_OCI_004_AnonymousPullThroughV2AndPushWithoutLoginFails(t *testing.T) 
 	}
 
 	ping := e.send("default", req{method: "GET", path: "/v2/"})
-	if ping.Code != http.StatusUnauthorized || !strings.HasPrefix(ping.Header().Get("WWW-Authenticate"), `Bearer realm="http://trove.test/v2/_token"`) {
+	if ping.Code != http.StatusUnauthorized || !strings.HasPrefix(ping.Header().Get("WWW-Authenticate"), `Bearer realm="http://quader.test/v2/_token"`) {
 		t.Fatalf("ping: %d %v", ping.Code, ping.Header())
 	}
 	tokenFor := func(scope string) string {
 		t.Helper()
-		a := e.send("default", req{method: "GET", path: "/v2/_token?service=trove.test&scope=" + url.QueryEscape(scope)})
+		a := e.send("default", req{method: "GET", path: "/v2/_token?service=quader.test&scope=" + url.QueryEscape(scope)})
 		if a.Code != http.StatusOK {
 			t.Fatalf("anonymous token for %q: %d %s", scope, a.Code, a.Body.String())
 		}
@@ -57,7 +57,7 @@ func TestR_OCI_004_AnonymousPullThroughV2AndPushWithoutLoginFails(t *testing.T) 
 		if hc != http.StatusUnauthorized || hc != mc || hch != mch || hb != mb {
 			t.Errorf("%s: hidden %d %q %s\nmissing %d %q %s", what, hc, hch, hb, mc, mch, mb)
 		}
-		if !strings.HasPrefix(hch, `Bearer realm="http://trove.test/v2/_token",service="trove.test"`) {
+		if !strings.HasPrefix(hch, `Bearer realm="http://quader.test/v2/_token",service="quader.test"`) {
 			t.Errorf("%s: the 401 carries no registry challenge: %q", what, hch)
 		}
 	}

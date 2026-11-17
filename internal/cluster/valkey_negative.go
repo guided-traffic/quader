@@ -16,7 +16,7 @@ import (
 const MaxNegativeTTL = 24*time.Hour + 5*time.Second
 
 // NegativeEntry is a remembered upstream 404 or 410 for one flight key
-// (R-REPO-028). It can make trove answer 404 and nothing else: nothing is
+// (R-REPO-028). It can make quader answer 404 and nothing else: nothing is
 // served, admitted or granted because of one (Q-ARCH-16).
 type NegativeEntry struct {
 	// Status is 404 or 410.
@@ -44,7 +44,7 @@ type NegativeStore interface {
 	Record(ctx context.Context, repoID int64, f FlightKey, e NegativeEntry, ttl time.Duration) error
 }
 
-// negativeCache is the cache label of trove_valkey_cache_lookups_total.
+// negativeCache is the cache label of quader_valkey_cache_lookups_total.
 const negativeCache = "negative"
 
 type negativeStore struct{ v *Valkey }

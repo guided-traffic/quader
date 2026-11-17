@@ -17,7 +17,7 @@ export function importStateText(state: AnsibleImportTask['state']): string {
  * tasks of its deployment target. A task is final when it is created and is deleted after the retention period; the version stays.
  */
 @Component({
-  selector: 'trove-ansible-import-tasks',
+  selector: 'quader-ansible-import-tasks',
   imports: [DatePipe, DataTable],
   template: `
     <section class="imports" aria-labelledby="ansible-imports-heading">
@@ -26,7 +26,7 @@ export function importStateText(state: AnsibleImportTask['state']): string {
         Every publish that got as far as reading the archive has a task. It is already final when ansible-galaxy first asks, and it is kept
         for a limited time; the published version stays.
       </p>
-      <trove-data-table
+      <quader-data-table
         [caption]="caption"
         [columns]="columns"
         [loaded]="list.loaded()"
@@ -69,20 +69,20 @@ export function importStateText(state: AnsibleImportTask['state']): string {
             </td>
           </tr>
         }
-      </trove-data-table>
+      </quader-data-table>
     </section>
   `,
   styles: `
     .imports {
-      margin-block-end: var(--trove-space-6);
+      margin-block-end: var(--quader-space-6);
     }
     .reason {
-      margin: var(--trove-space-1) 0 0;
+      margin: var(--quader-space-1) 0 0;
       max-width: 40rem;
     }
     .messages {
-      margin: var(--trove-space-1) 0 0;
-      padding-inline-start: var(--trove-space-4);
+      margin: var(--quader-space-1) 0 0;
+      padding-inline-start: var(--quader-space-4);
     }
     .level {
       font-weight: 600;

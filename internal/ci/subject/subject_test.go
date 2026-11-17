@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/jws"
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/ci/subject"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/auth/jws"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 const issuerURL = "https://gitlab.example.com"
@@ -311,10 +311,10 @@ func TestR_CI_004_TheAudienceCases(t *testing.T) {
 		want    reason.Reason
 	}{
 		{"two allowed audiences, exactly those two", []string{"https://packages.example.com", "https://packages.internal.example.com"}, []string{"https://packages.example.com", "https://packages.internal.example.com"}, ""},
-		{"vault beside trove under the defaults", nil, []string{"https://packages.example.com", "https://vault.example.com"}, reason.AudienceNotExclusive},
+		{"vault beside quader under the defaults", nil, []string{"https://packages.example.com", "https://vault.example.com"}, reason.AudienceNotExclusive},
 		{"the npm audience under the defaults", nil, "npm:packages.example.com", ""},
 		{"the base URL and the npm audience under the defaults", nil, []string{"https://packages.example.com", "npm:packages.example.com"}, ""},
-		{"trove's npm audience and the public registry's", nil, []string{"npm:packages.example.com", "npm:registry.npmjs.org"}, reason.AudienceNotExclusive},
+		{"quader's npm audience and the public registry's", nil, []string{"npm:packages.example.com", "npm:registry.npmjs.org"}, reason.AudienceNotExclusive},
 		{"the public registry's npm audience alone", nil, "npm:registry.npmjs.org", reason.AudienceInvalid},
 		{"another service under the defaults", nil, "https://other.example.com", reason.AudienceInvalid},
 	}
@@ -339,7 +339,7 @@ func TestR_CI_004_TheAudienceCases(t *testing.T) {
 			expectReason(t, err, c.want, raw)
 		})
 	}
-	t.Run("R-CI-004 without exclusive_audience another recipient beside trove is accepted", func(t *testing.T) {
+	t.Run("R-CI-004 without exclusive_audience another recipient beside quader is accepted", func(t *testing.T) {
 		s := settings()
 		s.ExclusiveAudience = false
 		raw := mint(t, stub, oidcstub.MintOptions{Claims: map[string]any{"aud": []string{"https://packages.example.com", "https://vault.example.com"}}})

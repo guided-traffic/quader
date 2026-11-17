@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nugettest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nugettest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // docStore is the data port the document tests read: the twin, which holds real rows, with a
@@ -90,7 +90,7 @@ func newDocFixture(t *testing.T) *docFixture {
 	t.Helper()
 	f := New()
 	st := newDocStore()
-	h := formattest.NewHost(f, formattest.HostOptions{Data: st, BaseURL: "https://trove.example.com"})
+	h := formattest.NewHost(f, formattest.HostOptions{Data: st, BaseURL: "https://quader.example.com"})
 	st.bind(h)
 	return &docFixture{t: t, f: f, host: h, store: st}
 }

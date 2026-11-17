@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // npm on an endpoint with exposure rules (R-NPM-048, R-EP-018), on the fixture of R-EP-012: a
@@ -22,7 +22,7 @@ import (
 // the virtual repository of the fixture, its members and its remote (R-EP-019) join with the
 // remote and virtual classes of npm.
 
-// customersHost is the host of the endpoint customers: it shares no label with trove.test, so
+// customersHost is the host of the endpoint customers: it shares no label with quader.test, so
 // a body that names the default endpoint's host is found by a substring search.
 const customersHost = "registry.acme.test"
 
@@ -79,7 +79,7 @@ func newExposureEnvOn(t *testing.T, n int, endpoints string) *exposureEnv {
 	if a.Status != http.StatusCreated {
 		t.Fatalf("create the rule: %d %s", a.Status, a.Body)
 	}
-	x.epoch = a.Header.Get("Trove-Authz-Epoch")
+	x.epoch = a.Header.Get("Quader-Authz-Epoch")
 	return x
 }
 
@@ -93,7 +93,7 @@ func (x *exposureEnv) api(method, path string, body any, hdr ...string) testenv.
 // customer-acme's token, at the epoch of the last rule write.
 func (x *exposureEnv) onCustomers(r *testenv.Replica, method, path string, body any, hdr ...string) testenv.Answer {
 	x.t.Helper()
-	hdr = append(hdr, "Trove-Authz-Min-Epoch", x.epoch)
+	hdr = append(hdr, "Quader-Authz-Min-Epoch", x.epoch)
 	return x.st.DoAt(r.Addr("customers"), customersHost, method, "/api/npm/it/npm-customers/"+path, x.acmeSAT, body, hdr...)
 }
 
@@ -250,7 +250,7 @@ func TestR_EP_018_ARuleChangeFailsTheEarlierValidatorOnEveryReplica(t *testing.T
 	if a.Status != http.StatusOK {
 		t.Fatalf("narrow the rule: %d %s", a.Status, a.Body)
 	}
-	x.epoch = a.Header.Get("Trove-Authz-Epoch")
+	x.epoch = a.Header.Get("Quader-Authz-Epoch")
 	for _, r := range x.reps {
 		b := x.onCustomers(r, "GET", "@acme%2fsdk", nil, "If-None-Match", etag)
 		if got := versionNames(document(t, b)); !slices.Equal(got, []string{"2.1.0"}) {

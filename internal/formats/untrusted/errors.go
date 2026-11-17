@@ -3,7 +3,7 @@ package untrusted
 import (
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // CodeRefused is the code of content that the helpers refuse because of its

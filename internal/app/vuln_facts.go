@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/vuln/report"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/vuln/report"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // vulnerabilityFacts builds the block vulnerabilityData of GET /api/v1/system/info (R-OPS-004, R-VULN-024) from

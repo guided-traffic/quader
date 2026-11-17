@@ -9,7 +9,7 @@ package e2e
 // The clients are the ones the criteria name. curl runs in the NuGet clients pod and reaches an edge by name with --connect-to: the request still
 // says https://localhost:<port>, so the certificate is verified for `localhost` and the base URL is the one the setup snippets print, while the
 // connection goes to the Service of the edge under test. `dotnet nuget push` and `npm publish` need the forwarder of their pod, which the test
-// points at one edge after the other (the base URL they get back from trove is the same for both).
+// points at one edge after the other (the base URL they get back from quader is the same for both).
 //
 // One difference from the criteria's wording: the slow download reads a 2 GiB object, not the 6 GiB one. At 2 MiB/s a 6 GiB object takes 51
 // minutes; 2 GiB take 17, which is the "longer than 15 minutes" the criterion asks for, and the 6 GiB object is downloaded at full speed and
@@ -32,7 +32,7 @@ import (
 
 const edgeIngressTarget = "haproxy-ingress.ingress-controller.svc.cluster.local:443"
 
-// The sizes of R-HA-039 and R-HA-038. TROVE_E2E_EDGE_SMOKE=1 shrinks them for a run of the harness while it is being developed (the files, the
+// The sizes of R-HA-039 and R-HA-038. QUADER_E2E_EDGE_SMOKE=1 shrinks them for a run of the harness while it is being developed (the files, the
 // time of the slow read and the floor it must exceed); the set `edge` never sets it, and a run with it proves nothing about the criteria.
 var (
 	edgeBigMiB    = edgeSized(6*1024, 192)      // R-HA-039: above the 5 GiB single-request limit of S3
@@ -43,14 +43,14 @@ var (
 )
 
 func edgeSized(full, smoke int) int {
-	if os.Getenv("TROVE_E2E_EDGE_SMOKE") == "1" {
+	if os.Getenv("QUADER_E2E_EDGE_SMOKE") == "1" {
 		return smoke
 	}
 	return full
 }
 
 func edgeFloor(full time.Duration) time.Duration {
-	if os.Getenv("TROVE_E2E_EDGE_SMOKE") == "1" {
+	if os.Getenv("QUADER_E2E_EDGE_SMOKE") == "1" {
 		return 5 * time.Second
 	}
 	return full
@@ -94,12 +94,12 @@ func edgeFx(t testing.TB) *edgeEnv {
 
 func buildEdgeFixture(t testing.TB) (*edgeEnv, error) {
 	switchProfile(t, "edge")
-	for _, d := range []string{"trove-api", "trove-packages", "trove-worker"} {
+	for _, d := range []string{"quader-api", "quader-packages", "quader-worker"} {
 		kn(t, "rollout", "status", "deployment/"+d, "--timeout=5m")
 	}
 	waitServingSettled(t)
-	waitFor(t, "the HTTPRoute trove to be accepted by the Gateway", 3*time.Minute, 3*time.Second, func() bool {
-		out, err := kubectl("-n", cfg.namespace, "get", "httproute", "trove", "-o",
+	waitFor(t, "the HTTPRoute quader to be accepted by the Gateway", 3*time.Minute, 3*time.Second, func() bool {
+		out, err := kubectl("-n", cfg.namespace, "get", "httproute", "quader", "-o",
 			`jsonpath={.status.parents[0].conditions[?(@.type=="Accepted")].status}/{.status.parents[0].conditions[?(@.type=="ResolvedRefs")].status}`)
 		return err == nil && out == "True/True"
 	})
@@ -163,7 +163,7 @@ func (fx *edgeEnv) sh(t testing.TB, script string) string {
 
 // curlBase is the curl invocation that reaches the edge by name: https://localhost:<port> is connected to the Service of the route.
 func (fx *edgeEnv) curlBase(r edgeRoute) string {
-	return fmt.Sprintf("curl -sS --cacert /etc/trove-ca/ca.crt --connect-to localhost:%s:%s -H 'Authorization: Bearer %s'", fx.port, r.target, fx.token)
+	return fmt.Sprintf("curl -sS --cacert /etc/quader-ca/ca.crt --connect-to localhost:%s:%s -H 'Authorization: Bearer %s'", fx.port, r.target, fx.token)
 }
 
 func (fx *edgeEnv) url(path string) string { return "https://localhost:" + fx.port + path }
@@ -347,7 +347,7 @@ func (fx *edgeEnv) nugetPush(t *testing.T, r edgeRoute) {
 	// knows the feed wants them, the 401 closes the connection under a body of 1 GiB, and the client reports a broken pipe and not the status.
 	// a package of 1 GiB: a content file of random bytes in a package that dotnet packs
 	c.write("pack.csproj", []byte(`<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>`+id+`</PackageId><Version>`+version+`</Version><Authors>trove end-to-end</Authors><Description>1 GiB</Description><NuGetAudit>false</NuGetAudit></PropertyGroup>
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><PackageId>`+id+`</PackageId><Version>`+version+`</Version><Authors>quader end-to-end</Authors><Description>1 GiB</Description><NuGetAudit>false</NuGetAudit></PropertyGroup>
   <ItemGroup><None Include="blob.bin" Pack="true" PackagePath="content/" /></ItemGroup>
 </Project>
 `))
@@ -369,12 +369,12 @@ func (fx *edgeEnv) npmScoped(t *testing.T, r edgeRoute) {
 	hostPath := strings.TrimPrefix(registry, "https:")
 	setup := fmt.Sprintf(`rm -rf %[1]s && mkdir -p %[1]s/home && cd %[1]s && dd if=/dev/urandom of=blob.bin bs=1M count=%[2]d status=none \
  && printf '{"name":"@acme/ui","version":"%[3]s","files":["blob.bin"]}' >package.json \
- && printf 'registry=%[4]s\n%[5]s:_authToken=${TROVE_TOKEN}\n' >.npmrc`, dir, edgeNpmMiB, version, registry, hostPath)
+ && printf 'registry=%[4]s\n%[5]s:_authToken=${QUADER_TOKEN}\n' >.npmrc`, dir, edgeNpmMiB, version, registry, hostPath)
 	if out, err := execIn(fx.npmPd, 9*time.Minute, "sh", "-c", setup); err != nil {
 		t.Fatalf("npm project: %v\n%s", err, tail(out, 1000))
 	}
 	env := []string{
-		"env", "-C", dir, "HOME=" + dir + "/home", "NODE_EXTRA_CA_CERTS=/etc/trove-ca/ca.crt", "TROVE_TOKEN=" + fx.token,
+		"env", "-C", dir, "HOME=" + dir + "/home", "NODE_EXTRA_CA_CERTS=/etc/quader-ca/ca.crt", "QUADER_TOKEN=" + fx.token,
 		"npm_config_update_notifier=false", "npm_config_fund=false", "npm_config_audit=false",
 	}
 	start := time.Now()
@@ -386,7 +386,7 @@ func (fx *edgeEnv) npmScoped(t *testing.T, r edgeRoute) {
 		t.Fatalf("npm view @acme/ui through the %s: %v\n%s", r.name, err, tail(out, 800))
 	}
 	// the packument by the path of the criterion, with the encoded slash, served by a packages pod
-	body := fx.sh(t, fx.curlBase(r)+` -D /work/h.txt `+fx.url("/api/npm/"+repoRef("npm-edge-"+r.name)+"/@acme%2fui")+`; echo; grep -i '^x-trove-replica' /work/h.txt`)
+	body := fx.sh(t, fx.curlBase(r)+` -D /work/h.txt `+fx.url("/api/npm/"+repoRef("npm-edge-"+r.name)+"/@acme%2fui")+`; echo; grep -i '^x-quader-replica' /work/h.txt`)
 	if !strings.Contains(body, `"@acme/ui"`) || !strings.Contains(body, version) {
 		t.Fatalf("the packument through the %s does not name @acme/ui %s:\n%s", r.name, version, tail(body, 800))
 	}
@@ -405,8 +405,8 @@ func (fx *edgeEnv) npmScoped(t *testing.T, r edgeRoute) {
 	}
 	served := ""
 	for _, l := range strings.Split(ui, "\n") {
-		if strings.HasPrefix(strings.ToLower(l), "x-trove-replica:") {
-			served = strings.TrimSpace(l[len("x-trove-replica:"):])
+		if strings.HasPrefix(strings.ToLower(l), "x-quader-replica:") {
+			served = strings.TrimSpace(l[len("x-quader-replica:"):])
 		}
 	}
 	if !strings.Contains(ui, "CODE=200") || !apis[served] {

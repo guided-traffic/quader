@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/npm/npmtest"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/npm/npmtest"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // scanning is the advisory data of a test: the formats.VulnerabilityData of a host that has wired the scanning.
@@ -126,11 +126,11 @@ func decodeAnswer(t *testing.T, r *formattest.Response) auditAnswer {
 	return a
 }
 
-// TestR_VULN_017_LocalAnswersFromTrovesData: in mode local a local, a remote and a virtual repository answer the bulk
+// TestR_VULN_017_LocalAnswersFromQuadersData: in mode local a local, a remote and a virtual repository answer the bulk
 // endpoint from the advisory data, send nothing to a provider, and list an advisory only when it affects a requested
 // version.
-func TestR_VULN_017_LocalAnswersFromTrovesData(t *testing.T) {
-	adv := vulnAdvisory("GHSA-aaaa-aaaa-0001", "trove-test-vuln", advisory.SeverityHigh,
+func TestR_VULN_017_LocalAnswersFromQuadersData(t *testing.T) {
+	adv := vulnAdvisory("GHSA-aaaa-aaaa-0001", "quader-test-vuln", advisory.SeverityHigh,
 		advisory.Affected{Ranges: []advisory.Range{rng(intro("1.0.0"), fixed("1.0.1"))}})
 	adv.Aliases = []string{"CVE-2026-1"}
 	adv.CWEIDs = []string{"CWE-79"}
@@ -139,12 +139,12 @@ func TestR_VULN_017_LocalAnswersFromTrovesData(t *testing.T) {
 		t.Run(string(class), func(t *testing.T) {
 			data := newScanning(adv)
 			h := localHost(t, class, `{}`, data)
-			r := audit(t, h, auditBulkPath, `{"trove-test-vuln":["1.0.0","1.0.1"],"unrelated":["1.0.0"]}`)
+			r := audit(t, h, auditBulkPath, `{"quader-test-vuln":["1.0.0","1.0.1"],"unrelated":["1.0.0"]}`)
 			a := decodeAnswer(t, r)
-			if len(a) != 1 || len(a["trove-test-vuln"]) != 1 {
+			if len(a) != 1 || len(a["quader-test-vuln"]) != 1 {
 				t.Fatalf("answer %s", r.Body)
 			}
-			got := a["trove-test-vuln"][0]
+			got := a["quader-test-vuln"][0]
 			if got.URL != "https://github.com/advisories/GHSA-aaaa-aaaa-0001" || got.Title != "summary of GHSA-aaaa-aaaa-0001" ||
 				got.Severity != "high" || got.VulnerableVersions != ">=1.0.0 <1.0.1" || !slices.Equal(got.CWE, []string{"CWE-79"}) ||
 				got.CVSS.Score != 7.5 || got.CVSS.VectorString == nil || *got.CVSS.VectorString != "CVSS:3.1/AV:N" {
@@ -156,7 +156,7 @@ func TestR_VULN_017_LocalAnswersFromTrovesData(t *testing.T) {
 			if r.Header().Get("npm-notice") != "" || r.Header().Get("Cache-Control") != "no-store" {
 				t.Errorf("headers %v", r.Header())
 			}
-			if len(data.asked) != 1 || !slices.Equal(data.asked[0], []string{"trove-test-vuln", "unrelated"}) {
+			if len(data.asked) != 1 || !slices.Equal(data.asked[0], []string{"quader-test-vuln", "unrelated"}) {
 				t.Errorf("the advisories were read in %d queries: %v", len(data.asked), data.asked)
 			}
 			if !slices.Equal(data.counted, []string{"local/ok"}) {
@@ -166,7 +166,7 @@ func TestR_VULN_017_LocalAnswersFromTrovesData(t *testing.T) {
 	}
 	t.Run("no requested version is affected", func(t *testing.T) {
 		h := localHost(t, formats.Remote, `{}`, newScanning(adv))
-		r := audit(t, h, auditBulkPath, `{"trove-test-vuln":["1.0.1","0.9.0"]}`)
+		r := audit(t, h, auditBulkPath, `{"quader-test-vuln":["1.0.1","0.9.0"]}`)
 		if r.Code != 200 || strings.TrimSpace(r.Body.String()) != "{}" {
 			t.Errorf("%d %s", r.Code, r.Body)
 		}
@@ -261,11 +261,11 @@ func TestR_VULN_017_SeverityTitleAndCWE(t *testing.T) {
 	}
 	mal := advisory.Advisory{
 		Ecosystem: "npm", ID: "MAL-2026-1234", CanonicalID: "MAL-2026-1234", Kind: advisory.KindMalicious, Severity: advisory.SeverityNone,
-		Affected: []advisory.Affected{{Name: "trove-test-mal", Versions: []string{"1.0.0"}}},
+		Affected: []advisory.Affected{{Name: "quader-test-mal", Versions: []string{"1.0.0"}}},
 	}
 	h := localHost(t, formats.Remote, `{}`, newScanning(mal))
-	got := decodeAnswer(t, audit(t, h, auditBulkPath, `{"trove-test-mal":["1.0.0"]}`))["trove-test-mal"][0]
-	if got.Severity != "critical" || got.Title != "Malicious code in trove-test-mal" || !slices.Equal(got.CWE, []string{"CWE-506"}) ||
+	got := decodeAnswer(t, audit(t, h, auditBulkPath, `{"quader-test-mal":["1.0.0"]}`))["quader-test-mal"][0]
+	if got.Severity != "critical" || got.Title != "Malicious code in quader-test-mal" || !slices.Equal(got.CWE, []string{"CWE-506"}) ||
 		got.URL != "https://osv.dev/vulnerability/MAL-2026-1234" {
 		t.Errorf("malicious: %+v", got)
 	}
@@ -276,18 +276,18 @@ func TestR_VULN_017_SeverityTitleAndCWE(t *testing.T) {
 func TestR_VULN_017_InternalNamesAreWithheld(t *testing.T) {
 	mal := advisory.Advisory{
 		Ecosystem: "npm", ID: "MAL-2026-1234", CanonicalID: "MAL-2026-1234", Kind: advisory.KindMalicious,
-		Affected: []advisory.Affected{{Name: "trove-test-mal", Versions: []string{"1.0.0"}}},
+		Affected: []advisory.Affected{{Name: "quader-test-mal", Versions: []string{"1.0.0"}}},
 	}
 	ui := vulnAdvisory("GHSA-aaaa-aaaa-0009", "@acme/ui", advisory.SeverityHigh, advisory.Affected{EveryVersion: true})
 	data := newScanning(mal, ui)
 	data.internal["@acme/ui"] = true
 	h := localHost(t, formats.Remote, `{}`, data)
-	r := audit(t, h, auditBulkPath, `{"@acme/ui":["1.0.0"],"trove-test-mal":["1.0.0"]}`)
+	r := audit(t, h, auditBulkPath, `{"@acme/ui":["1.0.0"],"quader-test-mal":["1.0.0"]}`)
 	a := decodeAnswer(t, r)
-	if _, ok := a["@acme/ui"]; ok || len(a["trove-test-mal"]) != 1 {
+	if _, ok := a["@acme/ui"]; ok || len(a["quader-test-mal"]) != 1 {
 		t.Errorf("answer %s", r.Body)
 	}
-	if want := "trove audited 1 of 2 packages from its own advisory data; 1 internal names were not matched against public advisories"; r.Header().Get("npm-notice") != want {
+	if want := "Quader audited 1 of 2 packages from its own advisory data; 1 internal names were not matched against public advisories"; r.Header().Get("npm-notice") != want {
 		t.Errorf("notice %q", r.Header().Get("npm-notice"))
 	}
 	if len(data.asked) != 1 || slices.Contains(data.asked[0], "@acme/ui") {
@@ -316,7 +316,7 @@ func TestR_VULN_017_TheDataIsNotComplete(t *testing.T) {
 }
 
 // TestR_VULN_017_WhereLocalStillAnswers501: the cache view and an endpoint with exposure rules, npm 6's endpoints, and
-// the modes that do not answer from trove's data.
+// the modes that do not answer from quader's data.
 func TestR_VULN_017_WhereLocalStillAnswers501(t *testing.T) {
 	for _, c := range []struct {
 		name   string

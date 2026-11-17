@@ -7,7 +7,7 @@ import { expectAccessible, renderScreen } from '../testing/screen';
 import { spokenText } from '../testing/axe';
 import { FormatIcon, FormatIconView, formatIcon } from './format-icon';
 
-/** The formats trove has today; the UI holds no such list (FMT-001), the spec does to cover each answer. */
+/** The formats Quader has today; the UI holds no such list (FMT-001), the spec does to cover each answer. */
 const FORMATS = ['generic', 'npm', 'nuget', 'oci', 'deb', 'ansible'] as const;
 
 /** The files a logo names: its mark and its variant for a dark ground. */
@@ -57,14 +57,14 @@ describe('formatIcon', () => {
     for (const file of logos) {
       expect(named).toContain(file);
     }
-    expect(notice).toContain('trove is not affiliated with, sponsored or endorsed by any of them.');
+    expect(notice).toContain('Quader is not affiliated with, sponsored or endorsed by any of them.');
     expect(notice).toContain('Debian is a registered trademark owned by Software in the Public Interest, Inc.');
     expect(notice).toContain('Creative Commons Attribution 2.0');
     expect(notice).toContain('Apache License, Version 2.0');
   });
 
   it('Q-UI-226 no logo carries a script, an event handler, a foreign object or a reference outside its own file', () => {
-    // The files are served at trove's origin without the page's CSP; opened on their own, an SVG document would run its
+    // The files are served at Quader's origin without the page's CSP; opened on their own, an SVG document would run its
     // script there. The owners' files are taken unchanged, so this is checked rather than cleaned.
     const svgs = FORMATS.flatMap((f) => files(formatIcon(f))).filter((p) => p.endsWith('.svg'));
     for (const path of svgs) {

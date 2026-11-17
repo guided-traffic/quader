@@ -12,10 +12,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // R-REPO-053, R-REPO-057: the dispatch task enqueues the pass of a mirrored remote, the pass runs as a job on the queue mirror,
@@ -371,7 +371,7 @@ func TestR_REPO_052_TheByteBoundHoldsAcrossPassesWhileTheFoldCountsWhatWasStored
 	w := newWorld(5)
 	e := newEnv(t, w, "mirror", nil, settings{"maxBytes": 250})
 	e.persistFiles()
-	rep := e.start("rep-a", "all", "TROVE_STORAGE_USAGE_FOLD_INTERVAL=1s")
+	rep := e.start("rep-a", "all", "QUADER_STORAGE_USAGE_FOLD_INTERVAL=1s")
 	counter := func() int64 {
 		return e.st.Number(`SELECT COALESCE((SELECT logical_bytes FROM repository_usage WHERE repo_id = $1), 0)`, e.repoN)
 	}

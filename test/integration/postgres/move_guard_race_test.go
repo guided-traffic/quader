@@ -21,21 +21,21 @@ func TestR_REPO_060_AMemberWriteAndAMoveOfItsRepositoryAreSerialisedByTheDatabas
 	ensureRuntimeRole(t, st)
 	_, name, admin := migrated(t, st)
 	const web, shop = "bbbbbbbb-0000-0000-0000-000000000001", "bbbbbbbb-0000-0000-0000-000000000002"
-	mustExec(t, admin, "INSERT INTO trove.project (id, key, display_name) VALUES ($1, 'web', 'Web'), ($2, 'shop', 'Shop')", web, shop)
-	mustExec(t, admin, `INSERT INTO trove.repositories (key, format, class, project_id) VALUES
+	mustExec(t, admin, "INSERT INTO quader.project (id, key, display_name) VALUES ($1, 'web', 'Web'), ($2, 'shop', 'Shop')", web, shop)
+	mustExec(t, admin, `INSERT INTO quader.repositories (key, format, class, project_id) VALUES
 		('npm-web', 'npm', 'local', $1), ('npm-all', 'npm', 'virtual', $1)`, web)
 
-	const addMember = `INSERT INTO trove.virtual_members (virtual_id, position, member_id)
-		SELECT v.id, 0, m.id FROM trove.repositories v, trove.repositories m WHERE v.key = 'npm-all' AND m.key = 'npm-web'`
+	const addMember = `INSERT INTO quader.virtual_members (virtual_id, position, member_id)
+		SELECT v.id, 0, m.id FROM quader.repositories v, quader.repositories m WHERE v.key = 'npm-all' AND m.key = 'npm-web'`
 	const policy = "bbbbbbbb-0000-0000-0000-000000000011"
-	mustExec(t, admin, "INSERT INTO trove.authz_policy (id, name, project_id) VALUES ($1, 'web/files', $2)", policy, web)
-	const addSelector = `INSERT INTO trove.authz_policy_selector (policy_id, ordinal, kind, repository_id)
-		SELECT 'bbbbbbbb-0000-0000-0000-000000000011'::uuid, 0, 'key', id FROM trove.repositories WHERE key = 'npm-web'`
-	const move = `UPDATE trove.repositories SET project_id = $1::uuid WHERE key = 'npm-web'`
+	mustExec(t, admin, "INSERT INTO quader.authz_policy (id, name, project_id) VALUES ($1, 'web/files', $2)", policy, web)
+	const addSelector = `INSERT INTO quader.authz_policy_selector (policy_id, ordinal, kind, repository_id)
+		SELECT 'bbbbbbbb-0000-0000-0000-000000000011'::uuid, 0, 'key', id FROM quader.repositories WHERE key = 'npm-web'`
+	const move = `UPDATE quader.repositories SET project_id = $1::uuid WHERE key = 'npm-web'`
 	reset := func() {
-		mustExec(t, admin, "DELETE FROM trove.virtual_members")
-		mustExec(t, admin, "DELETE FROM trove.authz_policy_selector")
-		mustExec(t, admin, "UPDATE trove.repositories SET project_id = $1::uuid", web)
+		mustExec(t, admin, "DELETE FROM quader.virtual_members")
+		mustExec(t, admin, "DELETE FROM quader.authz_policy_selector")
+		mustExec(t, admin, "UPDATE quader.repositories SET project_id = $1::uuid", web)
 	}
 	// run starts sql on c in the background; the result arrives on the channel.
 	run := func(c *pgx.Conn, sql string, args ...any) <-chan error {
@@ -155,8 +155,8 @@ func TestR_REPO_060_AMemberWriteAndAMoveOfItsRepositoryAreSerialisedByTheDatabas
 // assertNoForeignSelector requires that no key selector of a project policy names a repository of another project.
 func assertNoForeignSelector(t *testing.T, admin *pgx.Conn) {
 	t.Helper()
-	if n := scalar[int](t, admin, `SELECT count(*) FROM trove.authz_policy_selector s
-		JOIN trove.authz_policy a ON a.id = s.policy_id JOIN trove.repositories r ON r.id = s.repository_id
+	if n := scalar[int](t, admin, `SELECT count(*) FROM quader.authz_policy_selector s
+		JOIN quader.authz_policy a ON a.id = s.policy_id JOIN quader.repositories r ON r.id = s.repository_id
 		WHERE a.project_id IS NOT NULL AND a.project_id IS DISTINCT FROM r.project_id`); n != 0 {
 		t.Errorf("%d key selectors of project policies name a repository of another project", n)
 	}
@@ -165,8 +165,8 @@ func assertNoForeignSelector(t *testing.T, admin *pgx.Conn) {
 // assertNoForeignMember requires that no member row names a repository of another project than its virtual repository.
 func assertNoForeignMember(t *testing.T, admin *pgx.Conn) {
 	t.Helper()
-	if n := scalar[int](t, admin, `SELECT count(*) FROM trove.virtual_members vm
-		JOIN trove.repositories v ON v.id = vm.virtual_id JOIN trove.repositories m ON m.id = vm.member_id
+	if n := scalar[int](t, admin, `SELECT count(*) FROM quader.virtual_members vm
+		JOIN quader.repositories v ON v.id = vm.virtual_id JOIN quader.repositories m ON m.id = vm.member_id
 		WHERE v.project_id IS DISTINCT FROM m.project_id`); n != 0 {
 		t.Errorf("%d member rows name a repository of another project", n)
 	}

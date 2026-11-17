@@ -9,7 +9,7 @@ import { CdkMenuTrigger } from '@angular/cdk/menu';
  * moves the focus into the open submenu, as the toggle would have. Escape and the left arrow close it as before.
  */
 @Directive({
-  selector: '[troveOpenSubmenuOnClick]',
+  selector: '[quaderOpenSubmenuOnClick]',
 })
 export class OpenSubmenuOnClick {
   private readonly trigger = inject(CdkMenuTrigger);

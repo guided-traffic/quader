@@ -16,14 +16,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
-var tokenPattern = regexp.MustCompile(`trv_(?:pat|sat|cit)_[0-9A-Za-z]{5,}`)
+var tokenPattern = regexp.MustCompile(`qdr_(?:pat|sat|cit)_[0-9A-Za-z]{5,}`)
 
 func errCode(err error) string {
 	if e, ok := errs.As(err); ok {
@@ -109,7 +109,7 @@ func TestE1_2_NoTokenValueInTheDatabase(t *testing.T) {
 
 func scanTables(t *testing.T, e *env) []string {
 	t.Helper()
-	rows, err := e.admin.Query(context.Background(), `SELECT table_name FROM information_schema.tables WHERE table_schema = 'trove' AND table_type = 'BASE TABLE' AND table_name NOT LIKE 'audit_event_%'`)
+	rows, err := e.admin.Query(context.Background(), `SELECT table_name FROM information_schema.tables WHERE table_schema = 'quader' AND table_type = 'BASE TABLE' AND table_name NOT LIKE 'audit_event_%'`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func scanTables(t *testing.T, e *env) []string {
 		if err := rows.Scan(&n); err != nil {
 			t.Fatal(err)
 		}
-		out = append(out, "trove."+n)
+		out = append(out, "quader."+n)
 	}
 	return out
 }
@@ -461,7 +461,7 @@ func TestR_AUTH_029_RevocationEndpoints(t *testing.T) {
 		}
 	})
 	t.Run("a value of unknown or malformed form", func(t *testing.T) {
-		res, err := a.tokens.RevokeByValue(ctx, admin, "trv_pat_"+strings.Repeat("0", 49))
+		res, err := a.tokens.RevokeByValue(ctx, admin, "qdr_pat_"+strings.Repeat("0", 49))
 		if !errors.Is(err, token.ErrMalformed) {
 			t.Fatalf("a checksum mismatch: %v", err)
 		}

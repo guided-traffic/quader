@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/release"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/release"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/openpgp"
 )
 
 // The remote class (R-DEB-019 to R-DEB-023). The remote engine owns the request path, the freshness, the collapsing of concurrent
@@ -22,7 +22,7 @@ import (
 // archive's files are (below remote.url, at the path the client asks for), what a release document must be before it is stored
 // (parsed, and verified against deb.upstreamKeys when the remote has them), and what is recorded of it in the transaction that stores
 // it. The gate of the pool files is remote_gate.go, the shadowing check remote_names.go, the answers a client sees handlers_remote.go.
-// The upstream's files are passed through byte for byte: trove signs nothing of a remote (Q-DEB-13).
+// The upstream's files are passed through byte for byte: quader signs nothing of a remote (Q-DEB-13).
 
 // remoteAdapter embeds the defaults of the contract: no pass-through queries.
 type remoteAdapter struct {
@@ -394,7 +394,7 @@ func dirCandidates(p string) []string {
 	return out
 }
 
-// Rewrite is the identity: the upstream's documents are passed through byte for byte, because trove never signs a remote's files and
+// Rewrite is the identity: the upstream's documents are passed through byte for byte, because quader never signs a remote's files and
 // the client verifies them against the upstream's keys (R-DEB-019, Q-DEB-13).
 func (remoteAdapter) Rewrite(_ context.Context, _ formats.RemoteContext, _ formats.Path, doc []byte, _ formats.LinkBuilder) ([]byte, error) {
 	return doc, nil

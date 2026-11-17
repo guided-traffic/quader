@@ -3,12 +3,12 @@ package project
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Service is the domain API of projects (R-AUTHZ-026). The HTTP operations are thin
@@ -20,7 +20,7 @@ import (
 // project). A write transaction notifies the change area authz (a move also
 // repo_config; a member's role reaches the grant index of every replica through it),
 // records its audit event of internal/audit/events_projects.go in that transaction,
-// and returns the epoch the transaction produced for the header Trove-Authz-Epoch
+// and returns the epoch the transaction produced for the header Quader-Authz-Epoch
 // (R-AUTHZ-032). expected is the version the client saw (If-Match);
 // errs.AnyRevision is the deliberate blind write.
 //

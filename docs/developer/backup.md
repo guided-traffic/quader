@@ -25,7 +25,7 @@ and [ADR-158](../decisions.md#adr-158--a-journal-object-is-an-envelope-around-th
 ## Layout
 
 ```text
-cmd/trove/
+cmd/quader/
   backup.go               dispatcher, backupEnv, exit mapping, output helpers (shared, stable)
   backup_create.go        create                      -> newCreator
   backup_list.go          list                        -> newLister
@@ -97,11 +97,11 @@ pool to a `BlobSink`, loads, migrates forward, runs the fix-ups of `fixup.Fixups
 
 The revocation journal is independent of the backup: the audit writer inserts a `revocation_outbox` row in the transaction of the
 change, a worker job (`journal.Shipper`) writes `journal.Object`s to the blob bucket, and a replay (`journal.Replayer`) applies the
-handlers that the domains registered. `trove backup restore` and `trove admin post-restore` run the same replay.
+handlers that the domains registered. `quader backup restore` and `quader admin post-restore` run the same replay.
 
 ### The S3 target adapter
 
-`s3.NewTarget(ctx, cfg config.Backup, f *outbound.Factory, opts ...s3.TargetOption) (*s3.Target, error)` is how `cmd/trove` turns the
+`s3.NewTarget(ctx, cfg config.Backup, f *outbound.Factory, opts ...s3.TargetOption) (*s3.Target, error)` is how `cmd/quader` turns the
 configuration into a `target.Store`; `NewTargetWithClient` takes an HTTP client from `internal/outbound` instead of a factory. The
 `Target` builds its own client from `backup.target` only (endpoint, region, `ca_file`, credential chain, encryption): it never
 reads `storage.s3`, so the runtime blob-store credential cannot reach it (R-BAK-015, Q-STOR-165). `Endpoint()` and `Bucket()` give
@@ -157,7 +157,7 @@ test fails otherwise (R-BAK-004).
   conditional create, request counts); `format` has golden shapes and a schema check.
 - Integration: [test/integration/postgres/backup_runstore_test.go](../../test/integration/postgres/backup_runstore_test.go) runs the run
   store, the hold check and `storage_usage_recount()` against the shared PostgreSQL (`make test-integration`).
-- Command wiring: `TestBackupCommands` in [cmd/trove/main_test.go](../../cmd/trove/main_test.go).
+- Command wiring: `TestBackupCommands` in [cmd/quader/main_test.go](../../cmd/quader/main_test.go).
 - The scenarios of R-BAK-029 as a suite: `test/integration/backup/scenario_*_test.go` run scenarios 1, 2, 5, 7 and 10 against the shared stack
   with the real S3 store ([scenario_env_test.go](../../test/integration/backup/scenario_env_test.go) has the helpers: `sourceOf`,
   `deepVerify`, `downloadsMatch`). Scenario 1 (`TestR_BAK_029_ConsistencyUnderLoad`) runs a publish, delete, trash and collect loop with grace
@@ -169,7 +169,7 @@ test fails otherwise (R-BAK-004).
 
 ## Restore
 
-`trove backup restore` is [internal/backup/restore](../../internal/backup/restore) over four ports; `cmd/trove/backup_restore.go` joins them.
+`quader backup restore` is [internal/backup/restore](../../internal/backup/restore) over four ports; `cmd/quader/backup_restore.go` joins them.
 
 | File | Responsibility |
 |---|---|
@@ -189,7 +189,7 @@ the load transaction), `fixed` (set with the fix-ups). A step is skipped when th
 `Deps.Hook` names the points (`step2:anchored`, `step2:migrated:<n>`, `step3:copied:<n>`, `load:<table>`, `step5` to `step9`); the tests
 stop the restore there, and the kill tests run the binary.
 
-**The journal.** `restoreJournal` in `cmd/trove/backup_restore.go` opens the reader of the source's bucket and prefix with
+**The journal.** `restoreJournal` in `cmd/quader/backup_restore.go` opens the reader of the source's bucket and prefix with
 `replay.OpenJournal` and builds the replayer over the restore's session; `Reachable` (check 8) lists today's day prefix.
 
 **The remote-cache purge (step 7).** The purgers need `fixup.Env.Items`, the storage delete path. `Deps.Items` builds it on the restore's
@@ -199,7 +199,7 @@ on removal needs its stand-in replaced there. Test: `restore_caches_test.go`.
 
 **Tests.** Unit: `go test ./internal/backup/restore/ ./internal/meta/postgres/ -run 'R_BAK'` (the checks table, the phases, the load order).
 Integration, against the shared stack: `restore_full_test.go` (the end-to-end criteria and the derived state), `restore_checks_test.go`
-(every check, the edited migration, the lock), `restore_kill_test.go` (`kill -9` at steps 2, 3 and 4 with the `trove` binary built into
+(every check, the edited migration, the lock), `restore_kill_test.go` (`kill -9` at steps 2, 3 and 4 with the `quader` binary built into
 `.out/restore-it`, and the exit codes of the command). A backup is built by hand from the `format` package (`restore_fixture_test.go`).
 ## The backups screen
 
@@ -226,8 +226,8 @@ system screens in [web/src/app/features/system/backups/](../../web/src/app/featu
 
 ## The chart
 
-The CronJob `<fullname>-backup` runs `trove backup create --trigger schedule`, the Job `<fullname>-restore` runs `trove backup restore <id>`
-(with `restore.enabled`); both read the shared `trove.yaml`, run as a ServiceAccount of their own and take the exit codes of
+The CronJob `<fullname>-backup` runs `quader backup create --trigger schedule`, the Job `<fullname>-restore` runs `quader backup restore <id>`
+(with `restore.enabled`); both read the shared `quader.yaml`, run as a ServiceAccount of their own and take the exit codes of
 [exit.go](../../internal/backup/exit.go) as their failure policy (2, 3, 4 and 6 fail the Job, an eviction is ignored, 75 and 1 are
 retried). Both are rendered only with their switch, `backup.enabled` (off by default, Q-HA-17) and `restore.enabled`. The alerts of R-BAK-014
 (with `backup.enabled` only) and those of the journal are rules of the chart over the metric names of [metrics.go](../../internal/backup/metrics.go) and
@@ -237,10 +237,10 @@ each Job and the tests are in [helm-chart.md](helm-chart.md#the-backup-and-resto
 ## The platform check
 
 The task `backup-check` (R-HA-023, `40 5 * * *`, queue `maintenance`) runs [platform.Checker](../../internal/backup/platform/platform.go) and stores
-its report in `system_state` under `backup_check`; every replica sets `trove_backup_check_ok{check}` from that row in its database gauges
+its report in `system_state` under `backup_check`; every replica sets `quader_backup_check_ok{check}` from that row in its database gauges
 (`exportBackupCheck` in [wire_backup_check.go](../../internal/app/wire_backup_check.go), Q-OPS-185). Only what `backup.recovery_window` and
 `backup.object_versioning` declare is checked (`archive_mode`, `grace_period`, `object_versioning`, `noncurrent_expiry`); a setting the
-credential may not read is unknown and has no series (`s3.ErrProtectionUnknown`). `trove admin backup check` runs the same checks on
+credential may not read is unknown and has no series (`s3.ErrProtectionUnknown`). `quader admin backup check` runs the same checks on
 demand and exits 5 when one fails. The bucket reads are `VersioningStatus` and `NoncurrentExpiryDays` of
 [internal/blob/s3/protection.go](../../internal/blob/s3/protection.go). Tests: `TestR_HA_023_*` in `internal/backup/platform` and
 `test/integration/backup/platform_check_test.go`.
@@ -256,8 +256,8 @@ demand and exits 5 when one fails. The bucket reads are `VersioningStatus` and `
 ## Target operations: list, verify, delete, prune
 
 Code: [listing](../../internal/backup/listing), [retention](../../internal/backup/retention), [verify](../../internal/backup/verify);
-wiring in [cmd/trove/backup_targetops.go](../../cmd/trove/backup_targetops.go) and the three command files. Decisions:
-[Q-BAK-28, Q-BAK-29, Q-BAK-30](../spec/backup-and-restore.md#q-bak-28--trove-backup-list---json-is-flat-schemastep-and-keyids-stand-at-the-top-of-each-entry).
+wiring in [cmd/quader/backup_targetops.go](../../cmd/quader/backup_targetops.go) and the three command files. Decisions:
+[Q-BAK-28, Q-BAK-29, Q-BAK-30](../spec/backup-and-restore.md#q-bak-28--quader-backup-list---json-is-flat-schemastep-and-keyids-stand-at-the-top-of-each-entry).
 
 | File | Responsibility |
 |---|---|
@@ -286,8 +286,8 @@ further was deleted.
 delete through the real adapter against the stack's S3 store (encryption mode `none`: the stack's store rejects SSE-S3).
 
 Not built: a Facts implementation for the delete runs reads `installation_id`, `incarnation` and the `restore_in_progress` key in
-[backup_targetops.go](../../cmd/trove/backup_targetops.go) and does not check the schema step; the create package's `Facts` replaces it.
-R-BAK-027 (client-side encryption) is P1 and left: `trove backup list` prints the field when a manifest carries it.
+[backup_targetops.go](../../cmd/quader/backup_targetops.go) and does not check the schema step; the create package's `Facts` replaces it.
+R-BAK-027 (client-side encryption) is P1 and left: `quader backup list` prints the field when a manifest carries it.
 
 ## The read side: API, info block and gauges
 
@@ -302,7 +302,7 @@ One reading of `backup_run` serves every replica-side view, so the API, the UI, 
 | [../../internal/api/v1/backups_api.go](../../internal/api/v1/backups_api.go) | `ListBackupRuns`, `GetBackupRun`, `GetBackupSummary`, `backupInfo` (the `backup` block of `GET /system/info`), `BackupServices` (the options: reader, expected interval, `manual_run`, the `restored_from` reader) |
 | [../../internal/app/wire_backup_gauges.go](../../internal/app/wire_backup_gauges.go) | `laneMetrics` (registers `backup.NewMetrics` and `journal.NewMetrics` once per replica), `registerBackupGauges` (the database gauge source `backup`), `backupAPI` (the options of the API) |
 
-- **Where the numbers come from.** The pins left (`trove_backup_pinned_blobs`) are `progress.pinsLeft` of the active run, written by
+- **Where the numbers come from.** The pins left (`quader_backup_pinned_blobs`) are `progress.pinsLeft` of the active run, written by
   its heartbeat; no read names the pin table, and a test of the package fails if one does. The duration is `finished_at - started_at`;
   the sizes and the damaged count are the newest successful create run's `result`.
 - **Clocks.** A lease is compared with the database's clock, which `RunReader.ActiveRuns` returns
@@ -330,7 +330,7 @@ link them (`internal/backup/fixup` imports both, `internal/app` binds them).
 | [formatdata/nuget/restore_purge.go](../../internal/formatdata/nuget/restore_purge.go) | `PurgeRemoteCaches` for NuGet: no tombstone, no index rows beyond the cache entries |
 | [backup/fixup/npm.go](../../internal/backup/fixup/npm.go), [nuget.go](../../internal/backup/fixup/nuget.go) | the `fixup.RegisterPurger` registrations |
 | [meta/postgres/queries/backup_formats.sql](../../internal/meta/postgres/queries/backup_formats.sql) | the statements of all of the above |
-| [cmd/trove/admin_npm.go](../../cmd/trove/admin_npm.go) | `trove admin npm reinstate <projectKey>/<repoKey> <name>@<version>` |
+| [cmd/quader/admin_npm.go](../../cmd/quader/admin_npm.go) | `quader admin npm reinstate <projectKey>/<repoKey> <name>@<version>` |
 | [backup/tables/classes_test.go](../../internal/backup/tables/classes_test.go) | reads the export-class table of R-STOR-047 from the spec page and compares it with the registrations; the format tables are all `data` |
 
 - **The storage delete path of a purger.** A purger gets `fixup.Env.Items`, a `fixup.CacheEraser`; the restore sets it to the item store
@@ -343,7 +343,7 @@ link them (`internal/backup/fixup` imports both, `internal/app` binds them).
   branch of `BeforeArtifactWith`), which hides the restore from npm's tarball gate.
 - **Tests.** Unit: the entry validation of both handlers, the registrations, the table classes. Integration
   ([test/integration/backup/formats_*_test.go](../../test/integration/backup)): every outcome of both replay tables against the shared
-  PostgreSQL with a replica serving the protocol routes on top, the producer's entry read by the handler, `trove admin npm reinstate` run
+  PostgreSQL with a replica serving the protocol routes on top, the producer's entry read by the handler, `quader admin npm reinstate` run
   as a built binary, the purgers against the npm and NuGet test upstreams, and the restore bound of R-NPM-025. The restore-level client
   runs (`npm`, `dotnet`) are the end-to-end suite's.
 
@@ -358,9 +358,9 @@ link them (`internal/backup/fixup` imports both, `internal/app` binds them).
 | [blob/s3/journalstore.go](../../internal/blob/s3/journalstore.go) | `JournalStore`: put, list (with versions on request), get |
 | [jobs/journal.go](../../internal/jobs/journal.go), [app/wire_journal.go](../../internal/app/wire_journal.go) | the job kind `revocation-journal-ship` and the timer that enqueues it |
 | `journal_replay.go` in `internal/auth/token`, `internal/auth/principal`, `internal/authz`, `internal/project` | the handlers and comparators of the identity and authorization events |
-| [blob/restoreversions](../../internal/blob/restoreversions/restoreversions.go), [blob/s3/versions.go](../../internal/blob/s3/versions.go), [cmd/trove/admin_restoreversions.go](../../cmd/trove/admin_restoreversions.go) | `trove admin storage restore-versions`: finds the blobs without an object, lists the versions of each key, removes the delete markers younger than *t* |
-| [maintenance](../../internal/maintenance/deletions.go), [cmd/trove/admin_maintenance.go](../../cmd/trove/admin_maintenance.go), [queries/maintenance.sql](../../internal/meta/postgres/queries/maintenance.sql) | `trove admin maintenance pause-deletions` and `resume-deletions`: the deletion pause in `system_state`, one audit event per change |
-| [backup/postrestore](../../internal/backup/postrestore/postrestore.go), [cmd/trove/admin_postrestore.go](../../cmd/trove/admin_postrestore.go) | `trove admin post-restore`: replica rows, deletion pause, sessions, the fix-ups of orders jobs, system state and revisions, `restored_at`, replay, `system.restored` |
+| [blob/restoreversions](../../internal/blob/restoreversions/restoreversions.go), [blob/s3/versions.go](../../internal/blob/s3/versions.go), [cmd/quader/admin_restoreversions.go](../../cmd/quader/admin_restoreversions.go) | `quader admin storage restore-versions`: finds the blobs without an object, lists the versions of each key, removes the delete markers younger than *t* |
+| [maintenance](../../internal/maintenance/deletions.go), [cmd/quader/admin_maintenance.go](../../cmd/quader/admin_maintenance.go), [queries/maintenance.sql](../../internal/meta/postgres/queries/maintenance.sql) | `quader admin maintenance pause-deletions` and `resume-deletions`: the deletion pause in `system_state`, one audit event per change |
+| [backup/postrestore](../../internal/backup/postrestore/postrestore.go), [cmd/quader/admin_postrestore.go](../../cmd/quader/admin_postrestore.go) | `quader admin post-restore`: replica rows, deletion pause, sessions, the fix-ups of orders jobs, system state and revisions, `restored_at`, replay, `system.restored` |
 
 After the audit of the journal: the reader returns every copy and every version (`journal.AllVersions`, `Object.Warning`), the replayer
 starts at `min(t, newest audit event) - margin` (`Options.Newest`), the shipper quarantines a row that cannot be encoded
@@ -371,7 +371,7 @@ writes the same form by hand (keep them equal).
 
 Queries are in [journal.sql](../../internal/meta/postgres/queries/journal.sql). A handler takes IDs only, applies a removal as recorded
 or runs `journal.ApplyUpdate` with its comparator, and returns a `Result`; `ci.token.revoked` is replayed by the token package because
-`RecordCIRevoked` lives there. The gauge `trove_revocation_journal_pending` is the gauge package's (`Outbox.Pending`). Tests:
+`RecordCIRevoked` lives there. The gauge `quader_revocation_journal_pending` is the gauge package's (`Outbox.Pending`). Tests:
 `go test ./internal/journal/... ./internal/authz ./internal/project ./internal/auth/token` and the integration files
 `test/integration/backup/journal_*_test.go`. Post-restore refuses to run when no fix-up is registered for the orders it needs, so it
 works only together with the restore package's fix-ups.
@@ -393,7 +393,7 @@ works only together with the restore package's fix-ups.
 - **Cost.** A revoke-all writes its events through `audit.RecordAllTx`: one `InsertAuditEvents` and one `InsertRevocationOutbox` per 500
   events. `TestR_AUTH_016_ADisableCostsTheSameStatementsForOneTokenAndForThousands` counts 14 statements for a disable with one token
   and 18 for one with 1,200.
-- **Every journaled event has a handler.** `TestR_HA_054_EveryJournaledEventHasAReplayHandler` in [cmd/trove](../../cmd/trove/journal_handlers_test.go)
+- **Every journaled event has a handler.** `TestR_HA_054_EveryJournaledEventHasAReplayHandler` in [cmd/quader](../../cmd/quader/journal_handlers_test.go)
   walks the audit registry in the binary that replays; an event that is flagged and has no handler fails it, unless `handlerPending`
   lists it with its gap (today none).
 - **The Bastion feed.** Every new journaled event is classified in [feed.go](../../internal/bastionmain/feed.go): `repository.disabled`
@@ -428,7 +428,7 @@ works only together with the restore package's fix-ups.
   makes the update rule suspend (Q-CI-68). A lifetime bound of 0 or less reads as unbounded, as the writer stores it, and migration
   `ci_bounds` refuses a negative skew and a bound of zero in the schema (Q-CI-69).
 - **The format catalog.** The exposure handler reads the name rule and the range syntax of a rule's format from `catalog.Default()`. The
-  binary that replays must register the formats (`internal/formats/all`, which the `trove` binary links); without them every update of
+  binary that replays must register the formats (`internal/formats/all`, which the `quader` binary links); without them every update of
   an exposure rule is suspended, never applied.
 - **Tests.** Unit: `TestR_EP_020_TheComparator`, `TestR_EP_020_JournaledStatesAreReadStrictly`, `TestR_CI_020_TheIssuerComparator`,
   `TestR_CI_020_TheMappingComparator`, `TestR_CI_020_JournaledRecordsAreReadStrictly`, `TestR_CI_020_ADisabledMappingSuspendsTheLaterMappingsOfItsTier`,
@@ -442,21 +442,21 @@ works only together with the restore package's fix-ups.
 
 ## The platform layer and the point-in-time drill
 
-The platform layer of R-HA-023 (WAL archive and base backups through the Barman Cloud plugin) is part of the dev stack behind `TROVE_PITR=1`, and the
+The platform layer of R-HA-023 (WAL archive and base backups through the Barman Cloud plugin) is part of the dev stack behind `QUADER_PITR=1`, and the
 point-in-time restore of R-HA-025 is drilled by the set `backup-pitr`. Nothing of it is code of the product except the commands the drill calls
-(`trove admin post-restore`, [internal/backup/postrestore](../../internal/backup/postrestore); `trove admin storage restore-versions`,
-[internal/blob/restoreversions](../../internal/blob/restoreversions); `trove admin maintenance pause-deletions` and `resume-deletions`,
+(`quader admin post-restore`, [internal/backup/postrestore](../../internal/backup/postrestore); `quader admin storage restore-versions`,
+[internal/blob/restoreversions](../../internal/blob/restoreversions); `quader admin maintenance pause-deletions` and `resume-deletions`,
 [internal/maintenance](../../internal/maintenance)) and the chart's post-restore Job; the dev stack side is
 [deploy/dev/pitr.sh](../../deploy/dev/pitr.sh), [pitr.yaml](../../deploy/dev/pitr.yaml) and [pitr-restore.yaml](../../deploy/dev/pitr-restore.yaml). What the drill does, its stages
-and what it leaves out: [e2e.md](e2e.md#the-point-in-time-restore-drill). `restore-versions` removes only the delete markers younger than *t* from the keys of the blobs that `trove admin storage verify` finds without an
+and what it leaves out: [e2e.md](e2e.md#the-point-in-time-restore-drill). `restore-versions` removes only the delete markers younger than *t* from the keys of the blobs that `quader admin storage verify` finds without an
 object ([Q-HA-270](../spec/ha-and-helm.md#q-ha-270--restore-versions-removes-the-delete-markers-younger-than-t-from-the-keys-of-referenced-blobs-without-an-object-and-nothing-else));
 its tests are `internal/blob/restoreversions` (a versioned fake store) and [test/integration/restoreversions](../../test/integration/restoreversions) (the binary against the
 versioned bucket of the integration stack).
 
 ## The create pipeline
 
-`trove backup create` is [internal/backup/create](../../internal/backup/create), written against the ports of `internal/backup` and
-`target.Store`; [cmd/trove/backup_create.go](../../cmd/trove/backup_create.go) joins PostgreSQL, the blob store and the S3 target and
+`quader backup create` is [internal/backup/create](../../internal/backup/create), written against the ports of `internal/backup` and
+`target.Store`; [cmd/quader/backup_create.go](../../cmd/quader/backup_create.go) joins PostgreSQL, the blob store and the S3 target and
 opens the connections when the run starts, with the run's context (a SIGTERM ends it).
 
 | File | Responsibility |
@@ -477,7 +477,7 @@ lock, `LOCK TABLE`, the snapshot, the export connections, `COPY`, the referenced
 Its queries are [backup_snapshot.sql](../../internal/meta/postgres/queries/backup_snapshot.sql). The collector's side of the hold is in
 [blob/gc.go](../../internal/blob/gc.go) (`claim`, `globalHold`).
 
-A retry pod after a `kill -9` meets the dead run's young heartbeat. `backup_run.job_name` (from `TROVE_JOB_NAME`, which the chart sets
+A retry pod after a `kill -9` meets the dead run's young heartbeat. `backup_run.job_name` (from `QUADER_JOB_NAME`, which the chart sets
 from the pod's `job-name` label on the backup Job) tells `AcquireSlot` that the active run belongs to the same Job, whose pod is gone,
 so it waits for the lease instead of answering exit 3; a run of another Job or without a Job name still gets exit 3 at once
 ([Q-BAK-44](../spec/backup-and-restore.md#q-bak-44--a-retry-pod-of-the-same-job-takes-over-a-dead-run-at-once-any-other-pod-meets-the-heartbeat-rule)).

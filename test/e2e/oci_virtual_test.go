@@ -45,8 +45,8 @@ func TestOCIVirtual(t *testing.T) {
 		if !d.holds(viaVirtual, local) {
 			t.Fatalf("podman holds %q after pulling app:1 through the virtual repository, want the local digest %s (not the upstream's %s)", d.digests(viaVirtual), local, upstream)
 		}
-		if from := fx.head(t, repos.all, "app", "1").Header.Get("Trove-Resolved-From"); !strings.Contains(from, repos.local) {
-			t.Errorf("Trove-Resolved-From is %q, want the local member %s", from, repos.local)
+		if from := fx.head(t, repos.all, "app", "1").Header.Get("Quader-Resolved-From"); !strings.Contains(from, repos.local) {
+			t.Errorf("Quader-Resolved-From is %q, want the local member %s", from, repos.local)
 		}
 		if n := s.ociCounts(t).RepositoryRequests("app"); n != 0 {
 			t.Errorf("the upstream saw %d requests for app, want none: the local member answers first", n)

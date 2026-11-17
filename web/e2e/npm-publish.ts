@@ -26,7 +26,7 @@ function tarEntry(name: string, content: Buffer): Buffer {
  * `README.md` in the tarball when `readme` is given. `project` is the project of the repository; it defaults to the one of the journeys.
  */
 export function npmPublishBody(repoKey: string, name: string, version: string, readme?: string, project = e2eProject): object {
-  const manifest = { name, version, description: 'A package of the trove browser journeys', license: 'MIT' };
+  const manifest = { name, version, description: 'A package of the Quader browser journeys', license: 'MIT' };
   const tgz = gzipSync(
     Buffer.concat([
       tarEntry('package/package.json', Buffer.from(JSON.stringify(manifest, null, 2))),

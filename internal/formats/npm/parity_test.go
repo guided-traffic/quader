@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/document"
-	"github.com/guided-traffic/trove/internal/formats/npm/remote"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats/npm/document"
+	"github.com/guided-traffic/quader/internal/formats/npm/remote"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // TestR_NPM_011_RemoteFormsAreTheLocalFormsOfTheSameDocument pins the two renderings of the

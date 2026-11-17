@@ -26,9 +26,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // stackEnv is one test's installation on the harness.
@@ -37,7 +37,7 @@ type stackEnv struct {
 	stack *testenv.Stack
 }
 
-// newStackEnv creates a database trove_repo_<random> and migrates it. No replica
+// newStackEnv creates a database quader_repo_<random> and migrates it. No replica
 // has Valkey: every bound of this suite holds without it (R-REPO-049).
 func newStackEnv(t *testing.T) *stackEnv {
 	t.Helper()
@@ -71,11 +71,11 @@ func (e *stackEnv) newReplica(name string, o stackOpts) *stackReplica {
 		o.poll = 200 * time.Millisecond
 	}
 	env := []string{
-		"TROVE_CLUSTER_EPOCH_POLL_INTERVAL=" + o.poll.String(),
-		"TROVE_JOBS_POLL_INTERVAL=200ms",
+		"QUADER_CLUSTER_EPOCH_POLL_INTERVAL=" + o.poll.String(),
+		"QUADER_JOBS_POLL_INTERVAL=200ms",
 	}
 	if o.deleteBatch > 0 {
-		env = append(env, "TROVE_STORAGE_DELETE_BATCH_SIZE="+strconv.Itoa(o.deleteBatch))
+		env = append(env, "QUADER_STORAGE_DELETE_BATCH_SIZE="+strconv.Itoa(o.deleteBatch))
 	}
 	h := e.stack.Start(t, testenv.ReplicaOptions{Name: name, Role: o.role, Env: env})
 	return &stackReplica{Replica: h, svc: h.App.RepositoryService(), reader: h.App.Repositories()}
@@ -141,10 +141,10 @@ func (e *stackEnv) failAudit(action string) (lift func()) {
 	if action != "" {
 		when = " WHEN (NEW.action = " + quote(action) + ")"
 	}
-	e.exec(`CREATE OR REPLACE FUNCTION trove.refuse_audit() RETURNS trigger LANGUAGE plpgsql AS
+	e.exec(`CREATE OR REPLACE FUNCTION quader.refuse_audit() RETURNS trigger LANGUAGE plpgsql AS
 		$$ BEGIN RAISE EXCEPTION 'audit store unavailable'; END $$`)
-	e.exec("CREATE TRIGGER refuse_audit BEFORE INSERT ON trove.audit_event FOR EACH ROW" + when + " EXECUTE FUNCTION trove.refuse_audit()")
-	return func() { e.exec("DROP TRIGGER IF EXISTS refuse_audit ON trove.audit_event") }
+	e.exec("CREATE TRIGGER refuse_audit BEFORE INSERT ON quader.audit_event FOR EACH ROW" + when + " EXECUTE FUNCTION quader.refuse_audit()")
+	return func() { e.exec("DROP TRIGGER IF EXISTS refuse_audit ON quader.audit_event") }
 }
 
 func quote(s string) string {

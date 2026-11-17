@@ -14,21 +14,21 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The producers of the revocation journal that a security review found without an entry (R-HA-054): a disabled or deleted
@@ -248,7 +248,7 @@ func TestR_AUTH_016_ADisableCostsTheSameStatementsForOneTokenAndForThousands(t *
 	src := tw.open(tw.src)
 	small, large := seedUser(src, "small"), seedUser(src, "large")
 	src.exec(`INSERT INTO api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at)
-		SELECT gen_random_uuid(), 'pat', sha256(convert_to(p.id::text || g::text, 'UTF8')), 'trv_pat_x', p.id, 'bulk', '{}'::jsonb, 'admin-cli', now() + interval '1 day'
+		SELECT gen_random_uuid(), 'pat', sha256(convert_to(p.id::text || g::text, 'UTF8')), 'qdr_pat_x', p.id, 'bulk', '{}'::jsonb, 'admin-cli', now() + interval '1 day'
 		  FROM principal p, generate_series(1, CASE WHEN p.name = 'large' THEN 1200 ELSE 1 END) g
 		 WHERE p.kind = 'user' AND p.name IN ('small', 'large')`)
 	src.close()

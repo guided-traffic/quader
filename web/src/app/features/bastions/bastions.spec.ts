@@ -19,7 +19,7 @@ import { BastionList } from './bastion-list';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
 const card = (root: HTMLElement, name: string): HTMLElement =>
-  [...root.querySelectorAll<HTMLElement>('trove-bastion-card')].find((c) => c.querySelector('h2')?.textContent?.trim() === name)!;
+  [...root.querySelectorAll<HTMLElement>('quader-bastion-card')].find((c) => c.querySelector('h2')?.textContent?.trim() === name)!;
 
 describe('Bastions screen (R-BAS-007)', () => {
   it('R-BAS-007 lists the registrations with the last contact of every replica, and passes axe', async () => {
@@ -31,7 +31,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const rows = partners.querySelectorAll('table')[0]!.querySelectorAll('tbody tr');
     expect(rows).toHaveLength(2);
     const first = text(rows[0]!);
-    for (const part of ['trove-bastion-7d9c-x2k4q', '198.51.100.20', '0.15.0', 'https://packages.example.com']) {
+    for (const part of ['quader-bastion-7d9c-x2k4q', '198.51.100.20', '0.15.0', 'https://packages.example.com']) {
       expect(first).toContain(part);
     }
     expect(text(partners.querySelectorAll('table')[0]!.querySelector('thead')!)).toContain('Interface version');
@@ -90,7 +90,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     buttonByText(root, 'New Bastion').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-bastion-create-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-bastion-create-dialog') as HTMLElement;
     typeAndLeave(dialog, 'Name', 'Partners');
     await settle(fixture);
     expect(text(dialog)).toContain('must start with a lower-case letter');
@@ -108,12 +108,12 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     buttonByText(root, 'New Bastion').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-bastion-create-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-bastion-create-dialog') as HTMLElement;
     typeInto(dialog, 'Name', 'partners');
     buttonByText(dialog, 'Create Bastion').click();
     await settle(fixture);
     expect((get(BastionsApi) as FakeBastionsApi).calls).toContain('create partners');
-    expect(overlay().querySelector('trove-bastion-create-dialog')).toBeTruthy();
+    expect(overlay().querySelector('quader-bastion-create-dialog')).toBeTruthy();
     expect(text(overlay())).toContain('conflict');
   });
 
@@ -122,7 +122,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const partners = card(root, 'partners');
     buttonByText(partners, 'Issue token').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-bastion-token-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-bastion-token-dialog') as HTMLElement;
     typeInto(dialog, 'Description', 'partners 2027');
     typeInto(dialog, 'Lifetime in days', '365');
     buttonByText(dialog, 'Issue token').click();
@@ -130,19 +130,19 @@ describe('Bastions screen (R-BAS-007)', () => {
     const api = get(BastionsApi) as FakeBastionsApi;
     expect(api.calls).toContain('createToken partners partners 2027 31536000');
     expect(api.keys).toHaveLength(1);
-    const secret = card(root, 'partners').querySelector('trove-token-secret') as HTMLElement;
+    const secret = card(root, 'partners').querySelector('quader-token-secret') as HTMLElement;
     expect(secret).toBeTruthy();
     expect((secret.querySelector('input') as HTMLInputElement).value).toBe(BASTION_SECRET);
     expect(text(secret)).toContain('shown only once');
     // R-UI-043: the value is in the component only, and no other card shows it.
-    expect(storedText()).not.toContain('trv_');
-    expect(card(root, 'standby').querySelector('trove-token-secret')).toBeNull();
+    expect(storedText()).not.toContain('qdr_');
+    expect(card(root, 'standby').querySelector('quader-token-secret')).toBeNull();
     // The list was read again and shows the new token by its hint, not by its value.
-    expect(text(card(root, 'partners'))).toContain('trv_bst_Zz09');
+    expect(text(card(root, 'partners'))).toContain('qdr_bst_Zz09');
     expect(await seriousViolations(root)).toEqual([]);
     buttonByText(secret, 'I have copied it').click();
     await settle(fixture);
-    expect(root.querySelector('trove-token-secret')).toBeNull();
+    expect(root.querySelector('quader-token-secret')).toBeNull();
     expect(root.innerHTML).not.toContain(BASTION_SECRET);
   });
 
@@ -150,7 +150,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     buttonByText(card(root, 'partners'), 'Issue token').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-bastion-token-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-bastion-token-dialog') as HTMLElement;
     typeInto(dialog, 'Lifetime in days', '0');
     buttonByText(dialog, 'Issue token').click();
     await settle(fixture);
@@ -168,11 +168,11 @@ describe('Bastions screen (R-BAS-007)', () => {
     (get(BastionsApi) as FakeBastionsApi).tokenLimit = 1;
     buttonByText(card(root, 'partners'), 'Issue token').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-bastion-token-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-bastion-token-dialog') as HTMLElement;
     buttonByText(dialog, 'Issue token').click();
     await settle(fixture);
-    expect(overlay().querySelector('trove-bastion-token-dialog')).toBeTruthy();
-    expect(root.querySelector('trove-token-secret')).toBeNull();
+    expect(overlay().querySelector('quader-bastion-token-dialog')).toBeTruthy();
+    expect(root.querySelector('quader-token-secret')).toBeNull();
   });
 
   it('R-UI-042 a repeated issue whose first answer was lost revokes the lost token and issues again with a new key', async () => {
@@ -182,11 +182,11 @@ describe('Bastions screen (R-BAS-007)', () => {
     api.bastions = [sampleBastion({ tokens: [sampleBastionToken({ id: 't-lost', description: 'lost' })] })];
     buttonByText(card(root, 'partners'), 'Issue token').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-bastion-token-dialog') as HTMLElement, 'Issue token').click();
+    buttonByText(overlay().querySelector('quader-bastion-token-dialog') as HTMLElement, 'Issue token').click();
     await sleep(fixture, 100);
     expect(api.calls.filter((c) => c.startsWith('revokeToken'))).toEqual(['revokeToken partners t-lost']);
     expect(api.keys).toHaveLength(1);
-    expect(root.querySelector('trove-token-secret')).toBeTruthy();
+    expect(root.querySelector('quader-token-secret')).toBeTruthy();
   });
 
   it('R-API-007 R-UI-042 issuing a token with a session whose sign-in is not recent keeps the non-secret entries as a draft, never a token', async () => {
@@ -196,16 +196,16 @@ describe('Bastions screen (R-BAS-007)', () => {
     api.failure = new ApiError(401, { code: 'reauthentication_required' }, 'req-1');
     buttonByText(card(root, 'partners'), 'Issue token').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-bastion-token-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-bastion-token-dialog') as HTMLElement;
     typeInto(dialog, 'Description', 'partners 2027');
     typeInto(dialog, 'Lifetime in days', '365');
     buttonByText(dialog, 'Issue token').click();
     await settle(fixture);
-    const stored = browserStorage.entries('session').filter(([k]) => k.startsWith('trove.draft:'));
+    const stored = browserStorage.entries('session').filter(([k]) => k.startsWith('quader.draft:'));
     expect(stored).toHaveLength(1);
     expect(JSON.parse(stored[0]![1])).toEqual({ bastion: 'partners', description: 'partners 2027', days: '365' });
-    expect(storedText()).not.toContain('trv_');
-    expect(root.querySelector('trove-token-secret')).toBeNull();
+    expect(storedText()).not.toContain('qdr_');
+    expect(root.querySelector('quader-token-secret')).toBeNull();
     browserStorage.clear('session');
   });
 
@@ -217,18 +217,18 @@ describe('Bastions screen (R-BAS-007)', () => {
       },
     });
     await settle(fixture);
-    const dialogs = overlay().querySelectorAll('trove-bastion-token-dialog');
+    const dialogs = overlay().querySelectorAll('quader-bastion-token-dialog');
     expect(dialogs).toHaveLength(1);
     const dialog = dialogs[0] as HTMLElement;
     expect(text(dialog)).toContain('partners');
     expect((dialog.querySelector('input[name="description"]') as HTMLInputElement).value).toBe('partners 2027');
     expect((dialog.querySelector('input[name="days"]') as HTMLInputElement).value).toBe('365');
-    expect(browserStorage.entries('session').filter(([k]) => k.startsWith('trove.draft:'))).toHaveLength(0);
+    expect(browserStorage.entries('session').filter(([k]) => k.startsWith('quader.draft:'))).toHaveLength(0);
     buttonByText(dialog, 'Issue token').click();
     await sleep(fixture, 100);
     expect((get(BastionsApi) as FakeBastionsApi).calls).toContain('createToken partners partners 2027 31536000');
-    expect(card(root, 'partners').querySelector('trove-token-secret')).toBeTruthy();
-    expect(overlay().querySelectorAll('trove-bastion-token-dialog')).toHaveLength(0);
+    expect(card(root, 'partners').querySelector('quader-token-secret')).toBeTruthy();
+    expect(overlay().querySelectorAll('quader-bastion-token-dialog')).toHaveLength(0);
   });
 
   it('R-BAS-004 disables a registration after a confirmation, with the ETag it read, and enables it again', async () => {
@@ -236,7 +236,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const api = get(BastionsApi) as FakeBastionsApi;
     buttonByText(card(root, 'partners'), 'Disable').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'Disable').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Disable').click();
     await sleep(fixture, 100);
     expect(api.calls).toContain('setEnabled partners false');
     expect(api.ifMatch).toEqual(['"1"']);
@@ -267,7 +267,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     buttonByText(card(root, 'partners'), 'Delete').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     expect((buttonByText(dialog, 'Delete') as HTMLButtonElement).disabled).toBe(true);
     type(dialog.querySelector<HTMLInputElement>('#confirm-name')!, 'partners');
     await settle(fixture);
@@ -282,7 +282,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     buttonByText(card(root, 'partners'), 'Revoke').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     expect(text(dialog)).toContain('Last used');
     buttonByText(dialog, 'Revoke').click();
     await sleep(fixture, 100);
@@ -322,12 +322,12 @@ describe('Bastions screen (R-BAS-007)', () => {
         (g(BastionsApi) as FakeBastionsApi).listFailure = new ApiError(503, { code: 'unavailable' }, 'req-1');
       },
     });
-    expect(again.root.querySelector('trove-error-notice')).toBeTruthy();
-    expect(again.root.querySelector('trove-bastion-card')).toBeNull();
+    expect(again.root.querySelector('quader-error-notice')).toBeTruthy();
+    expect(again.root.querySelector('quader-bastion-card')).toBeNull();
     (again.get(BastionsApi) as FakeBastionsApi).listFailure = null;
     buttonByText(again.root, 'Retry').click();
     await settle(again.fixture);
-    expect(again.root.querySelector('trove-bastion-card')).toBeTruthy();
+    expect(again.root.querySelector('quader-bastion-card')).toBeTruthy();
     void fixture;
   });
 });

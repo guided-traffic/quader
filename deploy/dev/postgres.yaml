@@ -1,20 +1,20 @@
-# PostgreSQL for the local profile (R-HA-051, R-HA-013): the CloudNativePG cluster trove-db with
+# PostgreSQL for the local profile (R-HA-051, R-HA-013): the CloudNativePG cluster quader-db with
 # a primary and one standby, synchronous replication with dataDurability preferred (a stopped
 # standby does not pause writes on a laptop), the keepalive settings of R-HA-013 and the
-# database trove owned by the role trove (single-role mode, R-HA-014).
+# database quader owned by the role quader (single-role mode, R-HA-014).
 #
-# CloudNativePG creates the Secrets trove-db-app (username, password) and trove-db-ca (ca.crt),
-# and the Services trove-db-rw, trove-db-ro and trove-db-r. The chart reads the first two
+# CloudNativePG creates the Secrets quader-db-app (username, password) and quader-db-ca (ca.crt),
+# and the Services quader-db-rw, quader-db-ro and quader-db-r. The chart reads the first two
 # directly (secrets.database, secrets.databaseCA), so the profile runs verify-full like
 # production. The image is substituted by lib.sh (render) from DEV_CNPG_POSTGRES_IMAGE.
 #
-# WAL archiving to the bucket trove-pg-archive is off here: TROVE_PITR=1 (up.sh) adds the Barman Cloud plugin
+# WAL archiving to the bucket quader-pg-archive is off here: QUADER_PITR=1 (up.sh) adds the Barman Cloud plugin
 # entry of spec.plugins to this Cluster and applies pitr.yaml, which point-in-time recovery (R-HA-023,
 # R-HA-025) needs.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: trove-db
+  name: quader-db
 spec:
   instances: 2
   imageName: ${DEV_CNPG_POSTGRES_IMAGE}
@@ -34,27 +34,27 @@ spec:
       dataDurability: preferred
   certificates:
     # The server certificate the operator issues names the Services of the cluster only. The request and the control pooler
-    # of the pooler profile (pooler.yaml, TROVE_POOLER=1) present the same certificate, and trove verifies it with verify-full
+    # of the pooler profile (pooler.yaml, QUADER_POOLER=1) present the same certificate, and quader verifies it with verify-full
     # against the pooler's Service (R-HA-015, R-HA-058), so the Services of both poolers are named too.
     serverAltDNSNames:
-      - trove-db-pooler-rw
-      - trove-db-pooler-rw.${NS}
-      - trove-db-pooler-rw.${NS}.svc
-      - trove-db-pooler-rw.${NS}.svc.cluster.local
-      - trove-db-pooler-control
-      - trove-db-pooler-control.${NS}
-      - trove-db-pooler-control.${NS}.svc
-      - trove-db-pooler-control.${NS}.svc.cluster.local
+      - quader-db-pooler-rw
+      - quader-db-pooler-rw.${NS}
+      - quader-db-pooler-rw.${NS}.svc
+      - quader-db-pooler-rw.${NS}.svc.cluster.local
+      - quader-db-pooler-control
+      - quader-db-pooler-control.${NS}
+      - quader-db-pooler-control.${NS}.svc
+      - quader-db-pooler-control.${NS}.svc.cluster.local
   bootstrap:
     initdb:
-      database: trove
-      owner: trove
+      database: quader
+      owner: quader
       postInitApplicationSQL:
-        # the slow-statement log, for the role trove alone: a statement or COMMIT of trove above 50 ms shows in the primary's log, which the e2e cluster state keeps.
+        # the slow-statement log, for the role quader alone: a statement or COMMIT of quader above 50 ms shows in the primary's log, which the e2e cluster state keeps.
         # Per-statement logging rules out one slow statement only: the time is then between statements (idle in transaction) or spread over several (active). Set on the
         # role, not the database: the role survives the DROP DATABASE of the upgrade set, and the operator's own statements (ALTER ROLE ... PASSWORD) run as postgres, so they
         # never reach that log. Bootstrap runs once: an existing cluster keeps its settings (docs/developer/local-profile.md says how to set it there).
-        - ALTER ROLE trove SET log_min_duration_statement = '50ms'
+        - ALTER ROLE quader SET log_min_duration_statement = '50ms'
   storage:
     size: 2Gi
   resources:

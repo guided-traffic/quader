@@ -5,8 +5,8 @@ package packages
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_AUTHZ_034_TheReadmeIsWikiContent: a repository whose artifacts are public and whose wiki is internal serves its packages to

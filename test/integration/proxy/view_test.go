@@ -9,11 +9,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestViewReadsWhatTheEngineStored is Q-ARCH-294 at the engine: the read-only view of the role api, built without upstream
@@ -86,7 +86,7 @@ func TestViewReadsWhatTheEngineStored(t *testing.T) {
 	t.Run("Q-ARCH-294 the view sees the circuit the engine opened and the offline mode of the settings", func(t *testing.T) {
 		_ = r.metadata(rem, "pkg/busy")
 		_ = r.metadata(rem, "pkg/busy")
-		waitFor(t, "the circuit to open", 2*time.Second, func() bool { return r.metric("trove_remote_upstream_up", "repo", "view") == 0 })
+		waitFor(t, "the circuit to open", 2*time.Second, func() bool { return r.metric("quader_remote_upstream_up", "repo", "view") == 0 })
 		var peek proxy.Peek
 		waitFor(t, "the view to see the open circuit", 5*time.Second, func() bool {
 			var err error

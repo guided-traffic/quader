@@ -3,9 +3,9 @@ package listing
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // Lister implements [backup.Lister] over a target. It writes nothing (R-BAK-018).
@@ -34,14 +34,14 @@ func (l *Lister) List(ctx context.Context, opts backup.ListOptions) ([]backup.Li
 	return out, nil
 }
 
-// Describe turns a manifest into the line of `trove backup list`.
+// Describe turns a manifest into the line of `quader backup list`.
 func Describe(m *format.Manifest) backup.Listing {
 	opts, enc := m.Options, m.Encryption
 	return backup.Listing{
 		BackupID:      m.BackupID,
 		Complete:      true,
 		SnapshotAt:    m.SnapshotAt,
-		TroveVersion:  m.Trove.Version,
+		QuaderVersion: m.Quader.Version,
 		SchemaStep:    m.Schema.Step,
 		DatabaseBytes: DatabaseBytes(m),
 		BlobCount:     m.Blobs.Referenced,

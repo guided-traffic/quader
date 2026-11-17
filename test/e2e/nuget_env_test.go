@@ -12,7 +12,7 @@ package e2e
 //
 // Everything a client needs beyond the base URL (a cache directory, no telemetry) goes through the environment of the
 // command; the registry, the source and the credentials come from a nuget.config of the scenario's directory, written
-// the way the setup snippets of R-NUGET-026 print it (`<clear />`, `%TROVE_TOKEN%`).
+// the way the setup snippets of R-NUGET-026 print it (`<clear />`, `%QUADER_TOKEN%`).
 
 import (
 	"crypto/rand"
@@ -131,7 +131,7 @@ type nugetClient struct {
 	fx  *nugetFixture
 	pod int
 	tag string
-	// token is what %TROVE_TOKEN% expands to in the scenario's nuget.config.
+	// token is what %QUADER_TOKEN% expands to in the scenario's nuget.config.
 	token string
 }
 
@@ -151,7 +151,7 @@ func (c *nugetClient) argv(cmd ...string) []string {
 		"NUGET_PACKAGES=" + c.packages(),
 		"NUGET_HTTP_CACHE_PATH=" + c.dir() + "/httpcache",
 		"NUGET_PLUGINS_CACHE_PATH=" + c.dir() + "/plugins",
-		"TROVE_TOKEN=" + c.token,
+		"QUADER_TOKEN=" + c.token,
 	}, cmd...)
 }
 
@@ -182,24 +182,24 @@ func (c *nugetClient) write(rel string, content []byte) {
 }
 
 // config writes nuget.config the way the snippets print it. A repository that is not anonymously readable gets the
-// credentials section: user name token, password %TROVE_TOKEN%.
+// credentials section: user name token, password %QUADER_TOKEN%.
 func (c *nugetClient) config(feed string, credentials bool) {
 	c.t.Helper()
 	creds := ""
 	if credentials {
 		creds = `
   <packageSourceCredentials>
-    <trove>
+    <quader>
       <add key="Username" value="token" />
-      <add key="ClearTextPassword" value="%TROVE_TOKEN%" />
-    </trove>
+      <add key="ClearTextPassword" value="%QUADER_TOKEN%" />
+    </quader>
   </packageSourceCredentials>`
 	}
 	c.write("nuget.config", []byte(`<?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
     <clear />
-    <add key="trove" value="`+feed+`" protocolVersion="3" />
+    <add key="quader" value="`+feed+`" protocolVersion="3" />
   </packageSources>`+creds+`
 </configuration>
 `))
@@ -279,7 +279,7 @@ func (fx *nugetFixture) packWith(t testing.TB, pod int, id, version, description
 	}
 	if readme {
 		extra += "\n    <PackageReadmeFile>readme.md</PackageReadmeFile>"
-		c.write("readme.md", []byte("# "+id+"\n\nThe README of a trove end-to-end package.\n"))
+		c.write("readme.md", []byte("# "+id+"\n\nThe README of a quader end-to-end package.\n"))
 	}
 	itemGroup := ""
 	if readme {
@@ -290,7 +290,7 @@ func (fx *nugetFixture) packWith(t testing.TB, pod int, id, version, description
     <TargetFramework>net10.0</TargetFramework>
     <PackageId>`+id+`</PackageId>
     <Version>`+version+`</Version>
-    <Authors>trove end-to-end</Authors>
+    <Authors>quader end-to-end</Authors>
     <Description>`+xmlText(description)+`</Description>
     <NuGetAudit>false</NuGetAudit>`+extra+`
   </PropertyGroup>`+itemGroup+`

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // UsageFoldBatch is the number of delta rows one fold iteration takes (R-STOR-003).

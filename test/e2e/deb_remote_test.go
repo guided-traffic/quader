@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/debstub"
+	"github.com/guided-traffic/quader/test/debstub"
 )
 
 func TestDebRemote(t *testing.T) {
@@ -22,23 +22,23 @@ func TestDebRemote(t *testing.T) {
 	t.Cleanup(func() { s.resetAll(t) })
 
 	repo := fx.remoteRepo(t, "debian", debstub.ArchiveBase+"/", nil)
-	hello := regexp.MustCompile(`^hello from trove-hello \S+ \((amd64|arm64)\)$`)
+	hello := regexp.MustCompile(`^hello from quader-hello \S+ \((amd64|arm64)\)$`)
 	var afterFirst int
 
 	for i, img := range aptImages {
-		t.Run("R-DEB-035 R-DEB-019 R-DEB-022 "+img.name+" updates and installs trove-hello through the pull-through remote", func(t *testing.T) {
+		t.Run("R-DEB-035 R-DEB-019 R-DEB-022 "+img.name+" updates and installs quader-hello through the pull-through remote", func(t *testing.T) {
 			c := fx.client(t, img)
 			c.configure(repo)
 			c.mustUpdate()
-			if out, err := c.install("trove-hello"); err != nil {
-				t.Fatalf("apt-get install trove-hello on %s: %v\n%s", img.name, err, tailLines(out, 30))
+			if out, err := c.install("quader-hello"); err != nil {
+				t.Fatalf("apt-get install quader-hello on %s: %v\n%s", img.name, err, tailLines(out, 30))
 			}
-			// trove-hello depends on libtrove1 (>= 1.2): both come from the remote, and the script is the package's
-			if out := c.must(`/usr/bin/trove-hello`); !hello.MatchString(trimLine(out)) {
-				t.Fatalf("trove-hello printed %q", trimLine(out))
+			// quader-hello depends on libquader1 (>= 1.2): both come from the remote, and the script is the package's
+			if out := c.must(`/usr/bin/quader-hello`); !hello.MatchString(trimLine(out)) {
+				t.Fatalf("quader-hello printed %q", trimLine(out))
 			}
-			if out := c.must(`dpkg-query -W -f '${Version}\n' libtrove1`); trimLine(out) == "" {
-				t.Fatalf("libtrove1 is not installed after trove-hello: %q", out)
+			if out := c.must(`dpkg-query -W -f '${Version}\n' libquader1`); trimLine(out) == "" {
+				t.Fatalf("libquader1 is not installed after quader-hello: %q", out)
 			}
 			if i == 0 {
 				afterFirst = s.debCounts(t).Total()
@@ -75,11 +75,11 @@ func TestDebFlatRoot(t *testing.T) {
 		c.configure(repo)
 		aptWrite(t, img, debSourceFile(repo), []byte("Types: deb\nURIs: "+"https://"+aptEdge(t)+debRepoPath(repo)+"\nSuites: ./\nSigned-By: "+debKeyFile(repo)+"\n"))
 		c.mustUpdate()
-		if out, err := c.install("trove-flat"); err != nil {
-			t.Fatalf("apt-get install trove-flat: %v\n%s", err, tailLines(out, 30))
+		if out, err := c.install("quader-flat"); err != nil {
+			t.Fatalf("apt-get install quader-flat: %v\n%s", err, tailLines(out, 30))
 		}
-		if out := c.must(`/usr/bin/trove-flat`); !regexp.MustCompile(`^hello from trove-flat \S+ \(\w+\)$`).MatchString(trimLine(out)) {
-			t.Fatalf("trove-flat printed %q", trimLine(out))
+		if out := c.must(`/usr/bin/quader-flat`); !regexp.MustCompile(`^hello from quader-flat \S+ \(\w+\)$`).MatchString(trimLine(out)) {
+			t.Fatalf("quader-flat printed %q", trimLine(out))
 		}
 		// APT asks the remote for <repo URL>/./InRelease (Q-DEB-39); the remote asks its upstream for the canonical path of the directory
 		if n := s.debCounts(t).Requests("GET", debstub.FlatRootBase+"/InRelease"); n == 0 {

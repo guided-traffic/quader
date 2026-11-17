@@ -12,7 +12,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // Options tune Conformance.

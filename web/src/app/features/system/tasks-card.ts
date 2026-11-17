@@ -18,7 +18,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
  * run in progress shows its progress and reloads the list when it ends.
  */
 @Component({
-  selector: 'trove-tasks-card',
+  selector: 'quader-tasks-card',
   imports: [DataTable, DatePipe, ErrorNotice, JobProgress],
   template: `
     <section class="card" aria-labelledby="card-tasks">
@@ -29,12 +29,12 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
         </button>
       </div>
       @if (failure(); as f) {
-        <trove-error-notice [error]="f" (retry)="tasks.reload()" />
+        <quader-error-notice [error]="f" (retry)="tasks.reload()" />
       } @else if (valueOf(tasks); as list) {
         @if (list.length === 0) {
           <p class="empty" i18n="@@tasks.empty">No maintenance task is registered.</p>
         } @else {
-          <trove-data-table [caption]="caption" [columns]="columns">
+          <quader-data-table [caption]="caption" [columns]="columns">
             @for (t of list; track t.name) {
               <tr>
                 <th scope="row" translate="no">{{ t.name }}</th>
@@ -63,7 +63,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
                     <span i18n="@@tasks.running">A run is in progress.</span>
                   }
                   @if (active().get(t.name); as id) {
-                    <trove-job-progress
+                    <quader-job-progress
                       [jobId]="id"
                       [label]="runLabel(t.name)"
                       (finished)="completed(t)"
@@ -82,10 +82,10 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
                 </td>
               </tr>
             }
-          </trove-data-table>
+          </quader-data-table>
         }
         @if (runFailure(); as f) {
-          <trove-error-notice [error]="f" />
+          <quader-error-notice [error]="f" />
         }
       } @else {
         <p role="status" i18n="@@system.loading">Loading.</p>

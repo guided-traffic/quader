@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/listing"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/listing"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // DefaultConcurrency is the number of pool objects checked at once.
@@ -29,9 +29,9 @@ type Verifier struct {
 	// begin the row is logged and does not stop the verification (R-BAK-019).
 	Runs   backup.RunStore
 	Timing backup.Timing
-	// Target, Pod and TroveVersion complete the run row; NewRunID returns a UUIDv7.
-	Target, Pod, TroveVersion string
-	NewRunID                  func() string
+	// Target, Pod and QuaderVersion complete the run row; NewRunID returns a UUIDv7.
+	Target, Pod, QuaderVersion string
+	NewRunID                   func() string
 	// Concurrency is the number of pool objects checked at once; the default is [DefaultConcurrency].
 	Concurrency int
 	Log         *slog.Logger
@@ -56,7 +56,7 @@ func (v *Verifier) Verify(ctx context.Context, opts backup.VerifyOptions) (*back
 		var err error
 		run, err = v.Runs.Begin(ctx, backup.NewRun{
 			ID: v.NewRunID(), Operation: backup.OpVerify, BackupID: string(opts.ID), Trigger: backup.TriggerManual,
-			Target: v.Target, Pod: v.Pod, TroveVersion: v.TroveVersion, Lease: v.Timing.Lease,
+			Target: v.Target, Pod: v.Pod, QuaderVersion: v.QuaderVersion, Lease: v.Timing.Lease,
 		})
 		if err != nil {
 			log.Warn("the verification is not recorded: the run row could not be written", "err", err)

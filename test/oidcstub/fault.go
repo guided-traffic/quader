@@ -75,7 +75,7 @@ const (
 )
 
 // NonJSONMarker is in the body of the NotJSON fault. A test asserts that it appears nowhere in
-// what trove records about the failure (R-CI-003: no byte of a body in last_error).
+// what quader records about the failure (R-CI-003: no byte of a body in last_error).
 const NonJSONMarker = "oidcstub-body-marker-4f9c1e"
 
 func (f Fault) validate() error {
@@ -101,7 +101,7 @@ func (f Fault) applies(target string) bool { return f.Target == "" || f.Target =
 // no-transform=true" and a weak ETag over the key set, with 304 for a request that sends it back
 // in If-None-Match. DefaultCache is what a new double announces.
 type Cache struct {
-	// NoHeader leaves Cache-Control out (trove then uses its default refresh interval).
+	// NoHeader leaves Cache-Control out (quader then uses its default refresh interval).
 	NoHeader bool `json:"no_header,omitempty"`
 	// MaxAge is the max-age of Cache-Control.
 	MaxAge Duration `json:"max_age"`

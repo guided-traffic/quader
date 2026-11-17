@@ -106,7 +106,7 @@ schemas declare them.
 | npm | `latestGuard` (on); `audit.*` | `serveRemovedVersions` (off); `audit.*` | `latestStrategy` (`highest-member-latest`), `distTagStrategy` (`member-order`); `audit.*` |
 | npm `audit` (every class) | `mode` (no static default: derived), `providerURL` (null: the upstream), `timeout` (`30s`), `maxBodySize` (`1MiB`) | | |
 | nuget | `deleteMode` (`unlist`); `vulnerabilityInfo` (derived) | `forwardSearch` (on); `vulnerabilityInfo` | `vulnerabilityInfo` |
-| deb | `architectures` (`amd64`, `arm64`), `compression` (none), `origin` (`trove`), `label` (derived: the key) | `upstreamKeys` (none), `mirror.suites` (none), `.components` (`main`), `.architectures` (`amd64`), `.translations` (`en`), `.sources` (off) | as local, plus `suites` (none), `components` (`main`) |
+| deb | `architectures` (`amd64`, `arm64`), `compression` (none), `origin` (`quader`), `label` (derived: the key) | `upstreamKeys` (none), `mirror.suites` (none), `.components` (`main`), `.architectures` (`amd64`), `.translations` (`en`), `.sources` (off) | as local, plus `suites` (none), `components` (`main`) |
 | ansible | none | `authUrl` (none), `clientId` (`cloud-services`), `fetchDocumentation` (on) | none |
 
 `deb.upstreamKeys` stays a detail although a Debian remote without keys cannot be a mirror or a member of a virtual repository
@@ -224,7 +224,7 @@ Acceptance criteria:
 ### R-UI-083 · Details on demand
 Priority: **MVP** · Covers: UI-031
 
-- The form's section **Advanced settings** (`<trove-settings-section>`, closed) has the sentence "Notes, paths and the settings of
+- The form's section **Advanced settings** (`<quader-settings-section>`, closed) has the sentence "Notes, paths and the settings of
   the format. The defaults suit most repositories." and these groups, each under its own heading, where they apply:
   **Administrator notes**; **Paths** (include and exclude patterns, the pattern syntax); **Access details** (Hide existence);
   **Mirror** (a remote of a format with `mirror`: the mode, and in mode mirror the members of `remote.mirror` and the format's own
@@ -258,21 +258,21 @@ Priority: **MVP** · Covers: UI-031
 Acceptance criteria:
 
 - An OCI remote shows 300 in both cache periods; in mode mirror, 3600 as the pass interval and 4 as the concurrent fetches; a
-  local Debian repository shows the architectures `amd64` and `arm64` and the origin `trove`. A create that changes none of them
+  local Debian repository shows the architectures `amd64` and `arm64` and the origin `quader`. A create that changes none of them
   writes none of them.
 
 ### R-UI-085 · A field is as wide as its expected input
 Priority: **MVP** · Covers: UI-031
 
-- Five widths, as tokens in `_tokens.scss` and classes in `_controls.scss`, and the input `width` of `<trove-text-field>`
+- Five widths, as tokens in `_tokens.scss` and classes in `_controls.scss`, and the input `width` of `<quader-text-field>`
   ([Q-UI-349](#q-ui-349--five-field-widths)):
 
   | Class | Token | Width | For |
   |---|---|---|---|
-  | `field-w-number` | `--trove-field-width-number` | 6 rem | a count of up to six digits |
-  | `field-w-duration` | `--trove-field-width-duration` | 8 rem | a period in seconds, up to eight digits |
-  | `field-w-bytes` | `--trove-field-width-bytes` | 13 rem | a byte count, up to nineteen digits |
-  | `field-w-name` | `--trove-field-width-name` | 28 rem, half the column | a key, a name, a host, a select |
+  | `field-w-number` | `--quader-field-width-number` | 6 rem | a count of up to six digits |
+  | `field-w-duration` | `--quader-field-width-duration` | 8 rem | a period in seconds, up to eight digits |
+  | `field-w-bytes` | `--quader-field-width-bytes` | 13 rem | a byte count, up to nineteen digits |
+  | `field-w-name` | `--quader-field-width-name` | 28 rem, half the column | a key, a name, a host, a select |
   | `field-w-full` | — | the column | a URL, a description, a list, a key block |
 
 - A field is never wider than its column; a narrower column shrinks it and its text scrolls inside it.
@@ -399,7 +399,7 @@ Which registries are presets is [Q-REPO-321](#q-repo-321--which-registries-are-p
 each from a workstation: the four OCI registries answer `GET /v2/` with `401` and the token services above; the npm registry's
 `-/ping`, the NuGet service index and Galaxy's `/api/` answer 200; `dists/trixie/InRelease`, `debian-security/dists/trixie-security/InRelease`
 and `dists/noble/InRelease` (archive, security and ports of Ubuntu, over `https`) answer 200. Not verified: a pull or install through a
-trove remote of each new preset; the builder does one each by hand and records it (CI is not assumed to reach these hosts).
+Quader remote of each new preset; the builder does one each by hand and records it (CI is not assumed to reach these hosts).
 
 Acceptance criteria:
 
@@ -780,7 +780,7 @@ guessing it. The development agent would revisit it if the edit form ever needs 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) As built (Q-REPO-280 (a)): a Bearer challenge is reachable, `authenticated: null` | No second request | — | A wrong password and a token service the repository cannot reach both pass the test (D12) |
-| (b) Check the realm's host always; with a typed credential, ask the token service once without scope, as a client's login does (chosen) | Q-REPO-280's option (b), without an anonymous request | The test judges what the owner asked to check before the save | A second request to a second host; a credential oracle from trove's address (H-971) |
+| (b) Check the realm's host always; with a typed credential, ask the token service once without scope, as a client's login does (chosen) | Q-REPO-280's option (b), without an anonymous request | The test judges what the owner asked to check before the save | A second request to a second host; a credential oracle from Quader's address (H-971) |
 | (c) Ask the token service also without a credential | One more verdict | — | Anonymous scope-less requests answer 200, 401 or 403 by registry (verified), so the answer means nothing |
 
 **Choice:** (b). The owner's demand to check the connection settings before the save is the revisit condition of Q-REPO-280.
@@ -794,8 +794,8 @@ development agent would revisit the scope-less request for a registry whose toke
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) URL only; `deb.upstreamKeys` stays the operator's (chosen) | Q-DEB-14 (a) stands | trove does not follow two archives' key changes; Q-DEB-14 rejected built-in keys | A Debian remote from a preset is unverified until keys are given |
-| (b) Each preset brings its archive keyring | Built-in keys | A verified remote in one click | Q-DEB-14 (d), rejected: every key change of two archives becomes a trove release |
+| (a) URL only; `deb.upstreamKeys` stays the operator's (chosen) | Q-DEB-14 (a) stands | Quader does not follow two archives' key changes; Q-DEB-14 rejected built-in keys | A Debian remote from a preset is unverified until keys are given |
+| (b) Each preset brings its archive keyring | Built-in keys | A verified remote in one click | Q-DEB-14 (d), rejected: every key change of two archives becomes a Quader release |
 
 **Choice:** (a). The keys stay a detail in the Debian settings; the help of `upstreamKeys` names the keyring file a Debian or Ubuntu
 host already has.
@@ -846,16 +846,16 @@ Into [egress.md](../security/egress.md), section "What this does not cover", aft
 of that section:
 
 ```markdown
-### H-971 · The upstream test tells its caller whether a credential is accepted, from trove's address
+### H-971 · The upstream test tells its caller whether a credential is accepted, from Quader's address
 
 Stage: the upstream tests of R-REPO-024 and R-REPO-064 ([repository/upstream.go](../../internal/repository/upstream.go)).
 
 Subject: the accounts of an upstream registry and of its token service. A holder of `repositories:write-config`, or the Owner of a
 project, can send a typed credential to a registry, or since R-REPO-064 to its token service, and read `authenticated`; the registry
-sees trove's egress address, not the caller's, so its per-address limits and blocks fall on trove. Live today for upstreams that
+sees Quader's egress address, not the caller's, so its per-address limits and blocks fall on Quader. Live today for upstreams that
 answer the probe with Basic; live for token services once R-REPO-064 is built. What bounds it: the API's rate limit per principal,
 the audit record of the request, and that the caller must already be able to configure a repository. What makes it real: a caller
-who guesses another account's password through trove.
+who guesses another account's password through Quader.
 ```
 
 ## 3 · Work packages
@@ -905,7 +905,7 @@ the rest after it), `README.md` (different lines), `docs/coverage/*` (regenerate
 | WP | Content | Requirements |
 |---|---|---|
 | **WP5 · The creation flow** | The chooser (`repository-format-chooser.ts`, tiles as links, filter, Enter) and the form (`repository-create.{ts,html,scss}` in place of `repository-wizard.*`): routes `new` and `new/:format` in both route tables, the title, Class, the key from `suggestedKey` and its check, Description, T-18's visibility control preset from R-REPO-063, B1's upstream section, the Members group with the member picker extracted from `virtual-members.ts` (`member-picker.ts`, used by both) and the deployment target, **Advanced settings** with its groups (`repository-fields.ts` split into notes, paths and access details; `format-settings.ts` with a filter that sends the `mirror` member to the Mirror group), **Show as API request**, the validation timing, the summary that opens closed regions, the draft and the unsaved guard | R-UI-080, -081, -083, -084, -085, -086, -088; R-UI-021, R-UI-022, R-UI-055 as changed |
-| **WP6 · The settings page** | `repository-detail.*` as one column of `<trove-settings-section>`s in the order of R-UI-087, a merge patch per section with its own `If-Match` and conflict handling, the unsaved marker of a closed section, **Advanced** (disable and enable with a confirmation, move, delete), **How to use**, **Details**, **API**; `format-settings.ts` and `mirror-settings.ts` with their defaults as values, **Automatic**, the widths; the style guide's "What does not follow this page yet" without the repository's settings | R-UI-084, -085, -086, -087, -088; R-UI-049 as changed |
+| **WP6 · The settings page** | `repository-detail.*` as one column of `<quader-settings-section>`s in the order of R-UI-087, a merge patch per section with its own `If-Match` and conflict handling, the unsaved marker of a closed section, **Advanced** (disable and enable with a confirmation, move, delete), **How to use**, **Details**, **API**; `format-settings.ts` and `mirror-settings.ts` with their defaults as values, **Automatic**, the widths; the style guide's "What does not follow this page yet" without the repository's settings | R-UI-084, -085, -086, -087, -088; R-UI-049 as changed |
 | **WP7 · Journeys and manual** | The journeys below; the manual pages below; `web-ui.md` (the screens, the routes, the member picker), `e2e.md` (journey 22), README lines 133 ("on the Mirror tab" → "in the Mirror section") and 135 (the wizard → the chooser and the form) | all of B2's |
 
 **Tests by tier.**

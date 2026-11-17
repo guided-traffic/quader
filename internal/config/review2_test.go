@@ -74,7 +74,7 @@ func TestBootstrapAnonymousReadEndpoints(t *testing.T) {
 
 func TestBootstrapAnonymousReadLocalhostNames(t *testing.T) {
 	t.Run("R-OPS-002 a name below .localhost (RFC 6761) counts as loopback for the guard", func(t *testing.T) {
-		for _, u := range []string{"https://packages.trove.localhost:8080", "https://trove.localhost"} {
+		for _, u := range []string{"https://packages.quader.localhost:8080", "https://quader.localhost"} {
 			file := "system:\n  bootstrap_anonymous_read: true\nserver:\n  endpoints:\n    customers:\n      listen: \":8443\"\n      base_url: " + u + "\n"
 			if _, err := loadEdge(t, file); err != nil {
 				t.Errorf("%s: %v", u, err)
@@ -115,7 +115,7 @@ func TestEndpointHostRules(t *testing.T) {
 		if _, err := loadEdge(t, "server:\n  base_url: http://10.0.0.5:8080\n"); err != nil {
 			t.Fatalf("a development base_url without host checking: %v", err)
 		}
-		_, err := loadEdge(t, "server:\n  base_url: http://10.0.0.5:8080\n  endpoints:\n    default:\n      hosts: [trove.example.com]\n")
+		_, err := loadEdge(t, "server:\n  base_url: http://10.0.0.5:8080\n  endpoints:\n    default:\n      hosts: [quader.example.com]\n")
 		if err == nil || !strings.Contains(err.Error(), "base_url") {
 			t.Fatalf("err = %v", err)
 		}

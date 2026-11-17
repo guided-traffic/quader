@@ -1,5 +1,5 @@
 import { Component, Injectable, inject, signal } from '@angular/core';
-import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle, TroveDialog } from './ui/dialog';
+import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle, QuaderDialog } from './ui/dialog';
 import { firstValueFrom } from 'rxjs';
 
 export interface ConfirmData {
@@ -23,10 +23,10 @@ export interface ConfirmResult {
 
 /** A confirmation that names what is affected and, for large deletes, asks for the name (R-UI-011). */
 @Component({
-  selector: 'trove-confirm-dialog',
+  selector: 'quader-confirm-dialog',
   imports: [DialogTitle, DialogClose],
   template: `
-    <h2 troveDialogTitle>{{ data.title }}</h2>
+    <h2 quaderDialogTitle>{{ data.title }}</h2>
     <div class="dialog-body">
       @for (line of data.lines; track $index) {
         <p>{{ line }}</p>
@@ -66,7 +66,7 @@ export interface ConfirmResult {
       }
     </div>
     <div class="dialog-actions">
-      <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@confirm.cancel">Cancel</button>
+      <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@confirm.cancel">Cancel</button>
       <button class="btn btn-confirm" type="button" [disabled]="!ready()" (click)="confirm()">
         {{ data.confirmLabel }}
       </button>
@@ -76,13 +76,13 @@ export interface ConfirmResult {
     .field {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-1);
-      margin-block: var(--trove-space-3);
+      gap: var(--quader-space-1);
+      margin-block: var(--quader-space-3);
     }
     .check-row {
       display: flex;
-      gap: var(--trove-space-2);
-      margin-block-start: var(--trove-space-3);
+      gap: var(--quader-space-2);
+      margin-block-start: var(--quader-space-3);
     }
   `,
 })
@@ -104,7 +104,7 @@ export class ConfirmDialog {
 
 @Injectable({ providedIn: 'root' })
 export class Confirm {
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
 
   /** Resolves with the answer when confirmed, null when cancelled. */
   async ask(data: ConfirmData): Promise<ConfirmResult | null> {

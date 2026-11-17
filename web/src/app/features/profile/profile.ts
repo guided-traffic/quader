@@ -21,23 +21,23 @@ import { ProfileNav } from './profile-nav';
  * Profile (R-UI-029, R-AUTH-017): identity as the identity provider delivered it (read-only fields), then the quiet sections
  * of the page (Q-UI-333): the preferences of R-API-021 (open), the groups with their source and the system roles of the caller.
  * There is no password, no unlock and no editable email or display name: users have no password
- * in trove and both attributes are replaced at every login. A missing group claim is a notice,
+ * in Quader and both attributes are replaced at every login. A missing group claim is a notice,
  * not a dialog (R-AUTH-008). Preferences are saved with `If-Match`; a 412 opens the conflict
  * dialog with their version against yours.
  */
 @Component({
-  selector: 'trove-profile',
+  selector: 'quader-profile',
   imports: [DatePipe, Checkbox, Disclosure, ErrorNotice, PageHeader, ProfileAvatar, ProfileNav, SelectField, TextField],
   templateUrl: './profile.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .settings {
-      max-inline-size: var(--trove-settings-measure);
+      max-inline-size: var(--quader-settings-measure);
     }
     .row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: var(--trove-space-6);
+      gap: var(--quader-space-6);
     }
     @media (max-width: 40rem) {
       .row {

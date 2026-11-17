@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
 )
 
 // WithTLSMetrics records the expiry, reload and reload-error families of the

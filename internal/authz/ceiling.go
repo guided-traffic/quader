@@ -3,7 +3,7 @@ package authz
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Ceiling is the endpoint exposure of R-EP-013 (R-AUTHZ-001 item 3,

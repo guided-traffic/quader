@@ -11,7 +11,7 @@ import (
 )
 
 // TestR_AUTHZ_010_DeclaredRoleBindingsReachTheMigrationJob: authz.role_bindings under
-// config is rendered into the file of the migration Job, which applies it (trove
+// config is rendered into the file of the migration Job, which applies it (quader
 // migrate, R-AUTHZ-010, Q-AUTHZ-170), and into the file of the replicas unchanged.
 func TestR_AUTHZ_010_DeclaredRoleBindingsReachTheMigrationJob(t *testing.T) {
 	_, docs := render(t, []string{filepath.Join(chartDir, "ci", "ha-ingress.yaml")})
@@ -22,7 +22,7 @@ func TestR_AUTHZ_010_DeclaredRoleBindingsReachTheMigrationJob(t *testing.T) {
 			t.Fatalf("no ConfigMap %s", configMap)
 		}
 		var cfg map[string]any
-		if err := yaml.Unmarshal([]byte(str(cm, "data", "trove.yaml")), &cfg); err != nil {
+		if err := yaml.Unmarshal([]byte(str(cm, "data", "quader.yaml")), &cfg); err != nil {
 			t.Fatal(err)
 		}
 		return at(cfg, "authz", "role_bindings")
@@ -32,21 +32,21 @@ func TestR_AUTHZ_010_DeclaredRoleBindingsReachTheMigrationJob(t *testing.T) {
 		map[string]any{"role": "auditor", "group": "gh-wds18-k8s-main-auditors"},
 	}
 	t.Run("R-AUTHZ-010 the migration Job's file carries the declaration", func(t *testing.T) {
-		if got := bindings(t, "trove-migrate"); !reflect.DeepEqual(got, want) {
+		if got := bindings(t, "quader-migrate"); !reflect.DeepEqual(got, want) {
 			t.Fatalf("authz.role_bindings = %#v", got)
 		}
-		job := find(docs, "Job", "trove-migrate")
+		job := find(docs, "Job", "quader-migrate")
 		pod := at(job, "spec", "template", "spec")
 		mounted := false
 		for _, m := range list(pod, "containers", "0", "volumeMounts") {
-			mounted = mounted || str(m, "mountPath") == "/etc/trove/trove.yaml" && str(m, "name") == "config"
+			mounted = mounted || str(m, "mountPath") == "/etc/quader/quader.yaml" && str(m, "name") == "config"
 		}
-		if !mounted || str(volumeNamed(pod, "config"), "configMap", "name") != "trove-migrate" {
-			t.Fatal("the migration Job does not read its ConfigMap as /etc/trove/trove.yaml")
+		if !mounted || str(volumeNamed(pod, "config"), "configMap", "name") != "quader-migrate" {
+			t.Fatal("the migration Job does not read its ConfigMap as /etc/quader/quader.yaml")
 		}
 	})
 	t.Run("R-AUTHZ-010 the replicas' file carries the same declaration", func(t *testing.T) {
-		if got := bindings(t, "trove-config"); !reflect.DeepEqual(got, want) {
+		if got := bindings(t, "quader-config"); !reflect.DeepEqual(got, want) {
 			t.Fatalf("authz.role_bindings = %#v", got)
 		}
 	})

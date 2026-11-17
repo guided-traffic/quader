@@ -18,16 +18,16 @@ import { ErrorNotice } from '../../shared/error-notice';
  * The idempotency key is generated when the dialog opens and kept until it closes (R-UI-042).
  */
 @Component({
-  selector: 'trove-user-create-dialog',
+  selector: 'quader-user-create-dialog',
   imports: [DialogTitle, DialogClose, Checkbox, ErrorNotice, SelectField, TextField],
   template: `
-    <h2 troveDialogTitle i18n="@@user-create.title">Add user</h2>
+    <h2 quaderDialogTitle i18n="@@user-create.title">Add user</h2>
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
         @if (error(); as e) {
-          <trove-error-notice [error]="e" />
+          <quader-error-notice [error]="e" />
         }
-        <trove-text-field
+        <quader-text-field
           width="name"
           i18n-label="@@user-create.username"
           label="User name"
@@ -38,16 +38,16 @@ import { ErrorNotice } from '../../shared/error-notice';
           i18n-hint="@@user-create.username-hint"
           hint="Lower-case letters, digits and . _ @ + -"
         />
-        <trove-text-field width="name" i18n-label="@@user-create.display-name" label="Display name" name="displayName" [(value)]="displayName" [error]="fieldError('/displayName')" />
-        <trove-text-field width="name" i18n-label="@@user-create.email" label="Email" name="email" type="email" [(value)]="email" [error]="fieldError('/email')" />
-        <trove-checkbox [checked]="shownExternal()" describedBy="user-create-external-note" (checkedChange)="chosenExternal.set($event)">
+        <quader-text-field width="name" i18n-label="@@user-create.display-name" label="Display name" name="displayName" [(value)]="displayName" [error]="fieldError('/displayName')" />
+        <quader-text-field width="name" i18n-label="@@user-create.email" label="Email" name="email" type="email" [(value)]="email" [error]="fieldError('/email')" />
+        <quader-checkbox [checked]="shownExternal()" describedBy="user-create-external-note" (checkedChange)="chosenExternal.set($event)">
           <ng-container i18n="@@user-create.external">External user</ng-container>
-        </trove-checkbox>
+        </quader-checkbox>
         <p id="user-create-external-note" class="muted" i18n="@@user-create.external-note">
           Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.
         </p>
         @if (providers().length > 1) {
-          <trove-select-field
+          <quader-select-field
             i18n-label="@@user-create.provider"
             label="Link to the identity provider"
             name="provider"
@@ -58,7 +58,7 @@ import { ErrorNotice } from '../../shared/error-notice';
         }
       </div>
       <div class="dialog-actions">
-        <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@user-create.cancel">Cancel</button>
+        <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@user-create.cancel">Cancel</button>
         <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@user-create.submit">Add user</button>
       </div>
     </form>

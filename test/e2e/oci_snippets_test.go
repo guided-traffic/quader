@@ -4,7 +4,7 @@ package e2e
 
 // The rendered setup snippets of R-OCI-030, run by the clients they are written for, the way the npm matrix runs the snippets of R-NPM-041:
 // the configure snippet signs the client in, the publish snippet pushes an image, the install snippet pulls it again. The snippets are
-// those the setup API answers for the repository (credentials=env, so the token is the reference $TROVE_TOKEN the shell expands), run
+// those the setup API answers for the repository (credentials=env, so the token is the reference $QUADER_TOKEN the shell expands), run
 // unchanged by `sh -c`.
 
 import (

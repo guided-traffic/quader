@@ -6,15 +6,15 @@ import { defineConfig, devices } from '@playwright/test';
  * started by `TestE1_11Journeys` (test/e2e/e1_11_scatter_test.go), which supplies the environment below.
  * By hand: see docs/developer/e2e.md.
  *
- * TROVE_E2E_EDGE_URL            the edge, e.g. https://localhost:28080
- * TROVE_E2E_KEYCLOAK_ADDR       host:port of a forward to the test IdP's Service (port 8443); the browser maps
- *                               the issuer's name trove-keycloak.trove.svc to it. Unset: the name must resolve.
- * TROVE_E2E_ALICE_PASSWORD, TROVE_E2E_BOB_PASSWORD, TROVE_E2E_BREAKGLASS_PASSWORD
- * TROVE_E2E_ADMIN_TOKEN         a bearer token of an administrator: journeys prepare and clean up through the API
+ * QUADER_E2E_EDGE_URL            the edge, e.g. https://localhost:28080
+ * QUADER_E2E_KEYCLOAK_ADDR       host:port of a forward to the test IdP's Service (port 8443); the browser maps
+ *                               the issuer's name quader-keycloak.quader.svc to it. Unset: the name must resolve.
+ * QUADER_E2E_ALICE_PASSWORD, QUADER_E2E_BOB_PASSWORD, QUADER_E2E_BREAKGLASS_PASSWORD
+ * QUADER_E2E_ADMIN_TOKEN         a bearer token of an administrator: journeys prepare and clean up through the API
  * NODE_EXTRA_CA_CERTS           the dev CA; global-setup.ts verifies both TLS endpoints against it
  */
-const edge = process.env['TROVE_E2E_EDGE_URL'] ?? 'https://localhost:8080';
-const keycloak = process.env['TROVE_E2E_KEYCLOAK_ADDR'];
+const edge = process.env['QUADER_E2E_EDGE_URL'] ?? 'https://localhost:8080';
+const keycloak = process.env['QUADER_E2E_KEYCLOAK_ADDR'];
 
 export default defineConfig({
   testDir: './tests',
@@ -51,7 +51,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
-          args: keycloak ? [`--host-resolver-rules=MAP trove-keycloak.trove.svc ${keycloak}`] : [],
+          args: keycloak ? [`--host-resolver-rules=MAP quader-keycloak.quader.svc ${keycloak}`] : [],
         },
       },
     },

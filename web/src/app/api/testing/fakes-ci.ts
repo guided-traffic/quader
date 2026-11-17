@@ -51,7 +51,7 @@ export function sampleIssuer(over: Partial<CiIssuer> = {}): CiIssuer {
     enabled: true,
     discoveryUrl: null,
     jwksUri: null,
-    allowedAudiences: ['https://trove.example.com', 'npm:trove.example.com'],
+    allowedAudiences: ['https://quader.example.com', 'npm:quader.example.com'],
     exclusiveAudience: true,
     allowedAlgorithms: ['RS256'],
     allowedTyp: ['JWT'],
@@ -296,7 +296,7 @@ export class FakeCiApi extends CiApi {
       source: 'api',
       mappingCount: 0,
       version: 1,
-      allowedAudiences: input.allowedAudiences ?? ['https://trove.example.com'],
+      allowedAudiences: input.allowedAudiences ?? ['https://quader.example.com'],
     });
     this.issuers = [...this.issuers, created];
     return { value: created, etag: '"1"' };
@@ -526,7 +526,7 @@ export class FakeCiApi extends CiApi {
     if (!m || m.tier !== this.tierOf(project)) throw problem(404, 'not_found');
     return (
       this.snippets.get(`${issuer}/${mapping}/${format}`) ??
-      `# ${format} snippet for ${issuer}/${mapping}\nid_tokens:\n  TROVE_ID_TOKEN:\n    aud: https://trove.example.com\n`
+      `# ${format} snippet for ${issuer}/${mapping}\nid_tokens:\n  QUADER_ID_TOKEN:\n    aud: https://quader.example.com\n`
     );
   }
 

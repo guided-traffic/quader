@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Authorization (M1, WP1.3): permission policies with their selectors, patterns
 -- and entries (R-AUTHZ-021, R-AUTHZ-028) and the role bindings of the fixed system

@@ -38,8 +38,8 @@ describe('System status screen', () => {
     const t = text(root);
     expect(t).toContain('All ready');
     expect(t).toContain('0.1.1');
-    expect(t).toContain('https://trove.example.net');
-    expect(t).toContain('trove-api-0');
+    expect(t).toContain('https://quader.example.net');
+    expect(t).toContain('quader-api-0');
     expect(t).toContain('No live worker replica');
     expect(root.querySelectorAll('table th[scope="row"]').length).toBeGreaterThan(1);
   });
@@ -49,13 +49,13 @@ describe('System status screen', () => {
       const sample = (name: string, roleName: string, node: string, pool: string | null = null) =>
         sampleReplica({ name, instanceUid: name, node, pool, roles: [roleName as 'api' | 'packages' | 'worker'] });
       system.replicasResult = [
-        sample('trove-api-0', 'api', 'n1'),
-        sample('trove-api-1', 'api', 'n2'),
-        sample('trove-packages-0', 'packages', 'n1'),
-        sample('trove-packages-1', 'packages', 'n2'),
-        sample('trove-worker-0', 'worker', 'n1'),
-        sample('trove-worker-1', 'worker', 'n2'),
-        sample('trove-worker-vuln-0', 'worker', 'n1', 'vuln'),
+        sample('quader-api-0', 'api', 'n1'),
+        sample('quader-api-1', 'api', 'n2'),
+        sample('quader-packages-0', 'packages', 'n1'),
+        sample('quader-packages-1', 'packages', 'n2'),
+        sample('quader-worker-0', 'worker', 'n1'),
+        sample('quader-worker-1', 'worker', 'n2'),
+        sample('quader-worker-vuln-0', 'worker', 'n1', 'vuln'),
       ];
       system.infoResult = sampleInfo({
         replicas: {
@@ -80,7 +80,7 @@ describe('System status screen', () => {
     const worker = root.querySelectorAll<HTMLElement>('section.role')[2]!;
     const pools = [...worker.querySelectorAll('section.pool > h4')].map(spoken);
     expect(pools).toEqual(['Main live 2, ready 2, degraded 0', 'Pool vuln live 1, ready 1, degraded 0']);
-    expect(text(worker)).toContain('trove-worker-vuln-0');
+    expect(text(worker)).toContain('quader-worker-vuln-0');
     // The pool has one ready replica, so it is not drain-safe, and the warning is on the pool, not on the role.
     const warnings = [...worker.querySelectorAll('p.warning')].map((w) => w.textContent?.trim());
     expect(warnings).toHaveLength(1);
@@ -91,13 +91,13 @@ describe('System status screen', () => {
   it('R-UI-038 Q-UI-107 a group web appears during the upgrade across the cut and says so with its replicas', async () => {
     const { root } = await render((system) => {
       system.replicasResult = [
-        sampleReplica({ name: 'trove-api-0', instanceUid: 'a' }),
-        sampleReplica({ name: 'trove-web-0', instanceUid: 'b', roles: ['web'], node: 'node-b' }),
+        sampleReplica({ name: 'quader-api-0', instanceUid: 'a' }),
+        sampleReplica({ name: 'quader-web-0', instanceUid: 'b', roles: ['web'], node: 'node-b' }),
       ];
     });
     const headings = [...root.querySelectorAll('section.role > h3 > span:first-child')].map((h) => h.textContent?.trim());
     expect(headings).toEqual(['api', 'packages', 'worker', 'web']);
-    expect(text(root)).toContain('trove-web-0');
+    expect(text(root)).toContain('quader-web-0');
   });
 
   it('R-UI-038 Q-UI-107 no live packages replica is reported by the group', async () => {

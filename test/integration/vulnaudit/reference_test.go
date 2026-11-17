@@ -18,13 +18,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
-// The reference comparison of R-VULN-017 (roadmap exit criterion E4b.5): trove's own advisory data, imported from the test
+// The reference comparison of R-VULN-017 (roadmap exit criterion E4b.5): quader's own advisory data, imported from the test
 // advisory source with the OSV records recorded on the day the public answers were taken (test/osvstub/testdata/reference),
 // answers the bulk body of the reference lockfile with the GHSA identifiers and severities of the public registry's answer
 // recorded on that day. A second body of real packages with known advisories (the control, control-request.json) is compared
@@ -73,28 +73,28 @@ func keys[V any](m map[string]V) []string {
 
 func set(m map[string]bool) string { return strings.Join(keys(m), "|") }
 
-// compare lists every difference between the recorded public answer and trove's, per name and identifier.
-func compare(public, trove entries) (diffs []string, names, ids, matches int) {
+// compare lists every difference between the recorded public answer and quader's, per name and identifier.
+func compare(public, quader entries) (diffs []string, names, ids, matches int) {
 	all := map[string]bool{}
 	for n := range public {
 		all[n] = true
 	}
-	for n := range trove {
+	for n := range quader {
 		all[n] = true
 	}
 	for _, name := range keys(all) {
 		names++
-		for _, id := range keys(union(public[name], trove[name])) {
+		for _, id := range keys(union(public[name], quader[name])) {
 			ids++
 			p, okP := public[name][id]
-			g, okT := trove[name][id]
+			g, okT := quader[name][id]
 			switch {
 			case okP && !okT:
-				diffs = append(diffs, fmt.Sprintf("%s: %s is in the public answer (%s) and not in trove's", name, id, set(p)))
+				diffs = append(diffs, fmt.Sprintf("%s: %s is in the public answer (%s) and not in quader's", name, id, set(p)))
 			case !okP && okT:
-				diffs = append(diffs, fmt.Sprintf("%s: %s is in trove's answer (%s) and not in the public one", name, id, set(g)))
+				diffs = append(diffs, fmt.Sprintf("%s: %s is in quader's answer (%s) and not in the public one", name, id, set(g)))
 			case set(p) != set(g):
-				diffs = append(diffs, fmt.Sprintf("%s: %s has severity %s in the public answer and %s in trove's", name, id, set(p), set(g)))
+				diffs = append(diffs, fmt.Sprintf("%s: %s has severity %s in the public answer and %s in quader's", name, id, set(p), set(g)))
 			default:
 				matches++
 			}
@@ -175,7 +175,7 @@ func TestR_VULN_017_TheReferenceLockfileMatchesThePublicAnswer(t *testing.T) {
 		t.Fatalf("the recorded request of %s is not the bulk body of perf/npm/reference/package-lock.json any more: run `make osv-reference-refresh`", ref.Taken)
 	}
 
-	// The test advisory source serves the reference records; trove imports them through the task API.
+	// The test advisory source serves the reference records; quader imports them through the task API.
 	osv := osvstub.New(osvstub.Config{})
 	if err := osv.Toggle(osvstub.ToggleReference, true); err != nil {
 		t.Fatal(err)
@@ -226,14 +226,14 @@ func TestR_VULN_017_TheReferenceLockfileMatchesThePublicAnswer(t *testing.T) {
 		cas = append(cas, strconv.Quote(p))
 	}
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnauditref", Env: []string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strings.Join(cas, ",") + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
-		"TROVE_VULNERABILITIES_SOURCES_OSV_BASE_URL=" + osvSrv.URL + "/",
-		`TROVE_VULNERABILITIES_SOURCES_OSV_ECOSYSTEMS=["npm"]`,
-		"TROVE_VULNERABILITIES_SOURCES_KEV_MODE=off",
-		`TROVE_MAINTENANCE_TASKS={"vuln-sync-osv":{"enabled":false,"schedule":"*/15 * * * *"},"vuln-sync-osv-full":{"enabled":false,"schedule":"17 3 * * 0"},` +
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strings.Join(cas, ",") + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
+		"QUADER_VULNERABILITIES_SOURCES_OSV_BASE_URL=" + osvSrv.URL + "/",
+		`QUADER_VULNERABILITIES_SOURCES_OSV_ECOSYSTEMS=["npm"]`,
+		"QUADER_VULNERABILITIES_SOURCES_KEV_MODE=off",
+		`QUADER_MAINTENANCE_TASKS={"vuln-sync-osv":{"enabled":false,"schedule":"*/15 * * * *"},"vuln-sync-osv-full":{"enabled":false,"schedule":"17 3 * * 0"},` +
 			`"vuln-sync-kev":{"enabled":false,"schedule":"41 */6 * * *"}}`,
-		"TROVE_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "TROVE_JOBS_POLL_INTERVAL=200ms",
+		"QUADER_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "QUADER_JOBS_POLL_INTERVAL=200ms",
 	}})
 	rita, reader := st.User("rita"), st.User("reader")
 	st.Bind("admin", rita)

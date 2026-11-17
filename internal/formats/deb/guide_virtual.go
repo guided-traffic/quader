@@ -1,6 +1,6 @@
 package deb
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // virtualGuideSections are the sections the virtual class adds to the guide (R-DEB-029): what a virtual repository is and what its index
 // lists, and what the state of a build says about a member. The configure, authenticate, install and publish sections of the local class

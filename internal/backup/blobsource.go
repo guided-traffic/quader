@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // StoreSource is the [BlobSource] over the blob store's object client (R-BAK-006). It only reads. The client is the one

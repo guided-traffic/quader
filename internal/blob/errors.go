@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Sentinel causes of the *errs.Error values the pipeline returns, so that a

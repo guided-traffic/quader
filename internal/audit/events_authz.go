@@ -44,7 +44,7 @@ func init() {
 	Register(EventType{Name: "authz.policy.created", Category: CategoryAuthz, Mode: Transactional, Schema: policy})
 	Register(EventType{Name: "authz.policy.updated", Category: CategoryAuthz, Mode: Transactional, Journal: JournalRevocation, Schema: policy})
 	Register(EventType{Name: "authz.policy.deleted", Category: CategoryAuthz, Mode: Transactional, Journal: JournalRevocation, Schema: policy})
-	// source and previousSource are set by trove migrate, which applies
+	// source and previousSource are set by quader migrate, which applies
 	// authz.role_bindings with the actor system:configuration (R-AUTHZ-010,
 	// Q-AUTHZ-170): source configuration, and previousSource api for a binding
 	// the configuration took over from the API.

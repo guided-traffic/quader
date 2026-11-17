@@ -54,7 +54,7 @@ import { PageHeader } from '../../shared/ui/page-header';
  * reason next to the member it names.
  */
 @Component({
-  selector: 'trove-ci-mapping-editor',
+  selector: 'quader-ci-mapping-editor',
   imports: [
     PageHeader,
     Checkbox,

@@ -3,7 +3,7 @@
 package e2e
 
 // The addition of the full run of Test and Release on the commit that closes the phase (R-ANS-028, R-ANS-032): the Ansible clients with
-// Valkey stopped. The workflow starts it only when it is dispatched with closing=true; a run of it without TROVE_E2E_ANSIBLE_CLOSING=1 is a
+// Valkey stopped. The workflow starts it only when it is dispatched with closing=true; a run of it without QUADER_E2E_ANSIBLE_CLOSING=1 is a
 // failure, never a skip, so it cannot go missing from the closing run (deploy/dev/e2e.sh ansible-closing).
 
 import (
@@ -13,7 +13,7 @@ import (
 
 func requireAnsibleClosingRun(t testing.TB) {
 	t.Helper()
-	if os.Getenv("TROVE_E2E_ANSIBLE_CLOSING") != "1" {
+	if os.Getenv("QUADER_E2E_ANSIBLE_CLOSING") != "1" {
 		t.Fatal("this test belongs to the closing run: start it with deploy/dev/e2e.sh ansible-closing (the closing=true dispatch of the workflow)")
 	}
 }

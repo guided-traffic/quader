@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -34,8 +34,8 @@ func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
 // The hosts of the endpoints (R-EP-003): the default endpoint checks no host, the
 // further ones check theirs.
 const (
-	customersHost = "packages.trove.test"
-	partnersHost  = "partners.trove.test"
+	customersHost = "packages.quader.test"
+	partnersHost  = "partners.quader.test"
 )
 
 // endpointsJSON is server.endpoints of every replica: two further endpoints with
@@ -65,7 +65,7 @@ type env struct {
 	acmeID, botID string
 }
 
-// newEnv creates the installation trove_ep_<random>, migrates it and seeds it.
+// newEnv creates the installation quader_ep_<random>, migrates it and seeds it.
 // valkey false points every replica at a Sentinel that never answers: the state
 // "Valkey stopped".
 func newEnv(t *testing.T, valkey bool) *env {
@@ -129,7 +129,7 @@ var files = map[string]string{
 func (e *env) seedFiles(r *replica) {
 	e.t.Helper()
 	for path, content := range files {
-		a := e.send(r.def, "trove.test", "PUT", "/files/it/"+path, e.opsPAT, []byte(content), "Content-Type", "application/octet-stream")
+		a := e.send(r.def, "quader.test", "PUT", "/files/it/"+path, e.opsPAT, []byte(content), "Content-Type", "application/octet-stream")
 		if a.Status != 201 {
 			e.t.Fatalf("seed %s: %d %s", path, a.Status, a.Body)
 		}
@@ -172,7 +172,7 @@ func (e *env) pick() *replica {
 // api sends a management API request to the next replica's default endpoint.
 func (e *env) api(method, path string, body any, hdr ...string) answer {
 	e.t.Helper()
-	return e.send(e.pick().def, "trove.test", method, path, e.opsPAT, body, hdr...)
+	return e.send(e.pick().def, "quader.test", method, path, e.opsPAT, body, hdr...)
 }
 
 // onCustomers sends a request to a replica's customers listener.

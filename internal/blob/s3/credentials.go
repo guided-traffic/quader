@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
-	trove "github.com/guided-traffic/trove/internal/config"
+	quader "github.com/guided-traffic/quader/internal/config"
 )
 
 // fileReread is how long static credentials are served from memory before the
@@ -29,7 +29,7 @@ var errNoRegion = errors.New("no region in the environment either")
 
 // awsConfig builds the SDK configuration: region, HTTP client, retryer,
 // checksum behaviour and the credential source of R-STOR-031.
-func awsConfig(ctx context.Context, cfg trove.StorageS3, hc *http.Client) (aws.Config, error) {
+func awsConfig(ctx context.Context, cfg quader.StorageS3, hc *http.Client) (aws.Config, error) {
 	reqCalc, respVal := aws.RequestChecksumCalculationWhenSupported, aws.ResponseChecksumValidationWhenSupported
 	if cfg.Checksums.RequestCalculation == "when_required" {
 		reqCalc = aws.RequestChecksumCalculationWhenRequired
@@ -119,7 +119,7 @@ func (f *fileCredentials) Retrieve(context.Context) (aws.Credentials, error) {
 			return aws.Credentials{}, err
 		}
 	}
-	f.current = aws.Credentials{AccessKeyID: id, SecretAccessKey: secret, SessionToken: token, Source: "trove static files"}
+	f.current = aws.Credentials{AccessKeyID: id, SecretAccessKey: secret, SessionToken: token, Source: "quader static files"}
 	f.read = f.now()
 	return f.current, nil
 }

@@ -12,9 +12,9 @@ import {
   signal,
 } from '@angular/core';
 
-/** The bubble of a tooltip: the reference's small dark label (`--trove-inverse-surface`). */
+/** The bubble of a tooltip: the reference's small dark label (`--quader-inverse-surface`). */
 @Component({
-  selector: 'trove-tooltip',
+  selector: 'quader-tooltip',
   // Hidden from assistive technology: the element's description (below) carries the text once.
   host: { 'aria-hidden': 'true' },
   template: `{{ text() }}`,
@@ -23,11 +23,11 @@ import {
       display: block;
       box-sizing: border-box;
       max-inline-size: 20rem;
-      padding: var(--trove-space-1) var(--trove-space-2);
-      border-radius: var(--trove-radius-m);
-      background: var(--trove-inverse-surface);
-      color: var(--trove-on-inverse-surface);
-      font: var(--trove-type-body-small);
+      padding: var(--quader-space-1) var(--quader-space-2);
+      border-radius: var(--quader-radius-m);
+      background: var(--quader-inverse-surface);
+      color: var(--quader-on-inverse-surface);
+      font: var(--quader-type-body-small);
       overflow-wrap: anywhere;
     }
   `,
@@ -42,7 +42,7 @@ export class TooltipBubble {
  * (a hidden message the CDK links with `aria-describedby`); an element whose name already says everything needs no tooltip.
  */
 @Directive({
-  selector: '[troveTooltip]',
+  selector: '[quaderTooltip]',
   host: {
     '(mouseenter)': 'show()',
     '(mouseleave)': 'hideSoon()',
@@ -52,7 +52,7 @@ export class TooltipBubble {
   },
 })
 export class Tooltip implements OnDestroy {
-  readonly troveTooltip = input.required<string>();
+  readonly quaderTooltip = input.required<string>();
 
   private readonly overlay = inject(Overlay);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -65,7 +65,7 @@ export class Tooltip implements OnDestroy {
     // The element is always described by the text (a hidden message the CDK keeps), so a screen reader announces it on
     // focus whether or not the bubble is showing.
     effect(() => {
-      const text = this.troveTooltip();
+      const text = this.quaderTooltip();
       const el = this.host.nativeElement;
       if (this.described !== null) this.describer.removeDescription(el, this.described);
       this.describer.describe(el, text);
@@ -88,7 +88,7 @@ export class Tooltip implements OnDestroy {
       scrollStrategy: this.overlay.scrollStrategies.close(),
     });
     const bubble = ref.attach(new ComponentPortal(TooltipBubble)).instance;
-    bubble.text.set(this.troveTooltip());
+    bubble.text.set(this.quaderTooltip());
     // Hoverable: moving from the element onto the tooltip keeps it open.
     ref.overlayElement.addEventListener('mouseenter', () => clearTimeout(this.timer));
     ref.overlayElement.addEventListener('mouseleave', () => this.hideSoon());

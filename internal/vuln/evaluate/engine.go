@@ -9,14 +9,14 @@ import (
 	"sort"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/match"
-	vmetrics "github.com/guided-traffic/trove/internal/vuln/metrics"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/match"
+	vmetrics "github.com/guided-traffic/quader/internal/vuln/metrics"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // BatchNames is the number of package names (and of queued advisories) one batch of the jobs evaluates in one transaction

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // What a client sees of a virtual repository besides its generated index (handlers_dists.go): the package files, by the member paths
@@ -15,7 +15,7 @@ func init() {
 }
 
 // resolvedFromHeader names the member that served a package file (R-REPO-019); an endpoint with exposure rules sends none (R-EP-018).
-const resolvedFromHeader = "Trove-Resolved-From"
+const resolvedFromHeader = "Quader-Resolved-From"
 
 // handleVirtualPool is GET pool/<path> on a virtual repository: a client with an index from elsewhere asks for a package file by its
 // own path, and the artifact tiers of R-REPO-019 step 6 resolve it among the members: the local ones in order, the caches of the remote

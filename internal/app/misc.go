@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/buildinfo"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/buildinfo"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 type httpHandler = http.Handler

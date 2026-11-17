@@ -1,6 +1,6 @@
 package repository
 
-import "github.com/guided-traffic/trove/internal/vuln"
+import "github.com/guided-traffic/quader/internal/vuln"
 
 // weakensVulnerabilities lists what the new member does less than the stored one: scanning off, fewer public advisories
 // matched (always above auto above never), the malicious block off, the block on missing data off.

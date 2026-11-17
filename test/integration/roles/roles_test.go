@@ -20,20 +20,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/app"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
 
 const (
 	password = "correct horse battery staple 1"
-	origin   = "http://trove.test"
+	origin   = "http://quader.test"
 )
 
 // installation is one database with a local, a remote and a virtual npm repository, a generic repository, the upstream the
@@ -68,9 +68,9 @@ func newInstallation(t *testing.T) *installation {
 		t.Fatal(err)
 	}
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "roles", Valkey: true, Env: []string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
 	}})
 	in := &installation{t: t, st: st, stub: stub, pw: testenv.WriteFile(t, dir, "break-glass", password)}
 	for _, p := range corpus.Default().Packages {
@@ -118,7 +118,7 @@ func (in *installation) start(role string) *testenv.Replica {
 	in.t.Helper()
 	opts := testenv.ReplicaOptions{Name: role + "-" + testenv.RandHex(2), Role: role}
 	if role != "packages" {
-		opts.Env = []string{"TROVE_AUTH_BREAK_GLASS_ENABLED=true", "TROVE_AUTH_BREAK_GLASS_PASSWORD_FILE=" + in.pw}
+		opts.Env = []string{"QUADER_AUTH_BREAK_GLASS_ENABLED=true", "QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE=" + in.pw}
 	}
 	return in.st.Start(in.t, opts)
 }
@@ -217,12 +217,12 @@ func seen(t *testing.T, a testenv.Answer) string {
 func TestR_ARCH_001_AFamilyOfTheOtherRoleIsAnUnknownPath(t *testing.T) {
 	in := newInstallation(t)
 	// CORS and the general rate limits are on: their headers are what an unserved family must not carry.
-	edge := []string{`TROVE_API_CORS_ALLOWED_ORIGINS=["` + allowedOrigin + `"]`, "TROVE_API_RATE_LIMITS_ENABLED=true"}
+	edge := []string{`QUADER_API_CORS_ALLOWED_ORIGINS=["` + allowedOrigin + `"]`, "QUADER_API_RATE_LIMITS_ENABLED=true"}
 	replicas := map[string]*testenv.Replica{}
 	for _, role := range []string{"api", "packages"} {
 		opts := testenv.ReplicaOptions{Name: role + "-" + testenv.RandHex(2), Role: role, Env: slices.Clone(edge)}
 		if role == "api" {
-			opts.Env = append(opts.Env, "TROVE_AUTH_BREAK_GLASS_ENABLED=true", "TROVE_AUTH_BREAK_GLASS_PASSWORD_FILE="+in.pw)
+			opts.Env = append(opts.Env, "QUADER_AUTH_BREAK_GLASS_ENABLED=true", "QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE="+in.pw)
 		}
 		replicas[role] = in.st.Start(t, opts)
 	}
@@ -310,7 +310,7 @@ func TestR_ARCH_001_AFamilyOfTheOtherRoleIsAnUnknownPath(t *testing.T) {
 	if got := in.probe(replicas["api"], http.MethodGet, "/api/v1/system/ping", in.admin); got.Header.Get("RateLimit-Policy") == "" || got.Header.Get("Content-Security-Policy") == "" {
 		t.Errorf("the management API on api carries no rate limit or API header: %v", got.Header)
 	}
-	if got := in.probe(replicas["packages"], http.MethodGet, "/files/it/gen-local/x", ""); got.Header.Get("Www-Authenticate") != `Basic realm="trove"` {
+	if got := in.probe(replicas["packages"], http.MethodGet, "/files/it/gen-local/x", ""); got.Header.Get("Www-Authenticate") != `Basic realm="quader"` {
 		t.Errorf("/files/ on packages without a credential: %d %v", got.Status, got.Header)
 	}
 	if got := in.probe(replicas["api"], http.MethodGet, "/api/v1/users/me/preferences", "", "Cookie", ended); got.Code(t) != "session_expired" {
@@ -493,14 +493,14 @@ func TestQ_UI_106_ContentRoutesAreOfTheApiFamily(t *testing.T) {
 // replica does not.
 func TestQ_OPS_165_FetchShareCountsTheReplicasThatFill(t *testing.T) {
 	in := newInstallation(t)
-	quick := []string{"TROVE_SYSTEM_HEARTBEAT_INTERVAL=1s", "TROVE_SYSTEM_HEARTBEAT_STALE_AFTER=5s"}
+	quick := []string{"QUADER_SYSTEM_HEARTBEAT_INTERVAL=1s", "QUADER_SYSTEM_HEARTBEAT_STALE_AFTER=5s"}
 	start := func(role, pool string) *testenv.Replica {
 		opts := testenv.ReplicaOptions{Name: role + "-" + testenv.RandHex(2), Role: role, Env: append([]string{}, quick...)}
 		if pool != "" {
-			opts.Env = append(opts.Env, "TROVE_POOL_NAME="+pool)
+			opts.Env = append(opts.Env, "QUADER_POOL_NAME="+pool)
 		}
 		if role != "packages" {
-			opts.Env = append(opts.Env, "TROVE_AUTH_BREAK_GLASS_ENABLED=true", "TROVE_AUTH_BREAK_GLASS_PASSWORD_FILE="+in.pw)
+			opts.Env = append(opts.Env, "QUADER_AUTH_BREAK_GLASS_ENABLED=true", "QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE="+in.pw)
 		}
 		return in.st.Start(t, opts)
 	}

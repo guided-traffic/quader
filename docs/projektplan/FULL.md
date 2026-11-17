@@ -1,4 +1,4 @@
-# trove · Full product plan after the beta
+# Quader · Full product plan after the beta
 
 **Status:** ⚪ not started · 🟡 in progress or partly done · 🟢 done
 **Last updated:** 2026-11-10
@@ -6,14 +6,14 @@
 Everything that goes beyond the beta release in [BETA.md](BETA.md): the beta phase, the remaining
 registry types, and platform features. Releases after the beta are cut by Semantic Release from the
 commits on `main`, as before it; no block or milestone has a version number expected beforehand, and
-trove stays on major version 0 until the owner decides otherwise
+Quader stays on major version 0 until the owner decides otherwise
 ([ADR-124](../decisions.md#adr-124--releases-stay-on-major-version-0)). Order and scope follow the
 [roadmap](../coverage/roadmap.md); per-feature detail is in the [feature catalog](../features/README.md)
 and, once written, in the [spec](../spec/README.md).
 
 Every registry needs **integration tests** (protocol over HTTP against PostgreSQL, Valkey with
 Sentinel and S3 in containers, plus the format conformance kit) and **e2e tests** (its real clients
-against trove deployed by the Helm chart on several replicas, through local, remote and virtual
+against Quader deployed by the Helm chart on several replicas, through local, remote and virtual
 repositories) before it counts as done.
 
 ## Where we are
@@ -34,7 +34,7 @@ repositories) before it counts as done.
 
 - ⚪ Beta feedback collected, triaged and worked off
 - ⚪ Upgrade path from the beta to the next releases tested (rolling upgrade, data kept)
-- 🟡 Import tooling: copy existing packages from the registries trove replaces into trove ([import.md](../spec/import.md), R-IMP-001 to R-IMP-009). Built: `trove admin import` for npm and NuGet, with integration tests. Open: Ansible Galaxy (waits for that format), and e2e rows with real clients installing imported packages
+- 🟡 Import tooling: copy existing packages from the registries Quader replaces into Quader ([import.md](../spec/import.md), R-IMP-001 to R-IMP-009). Built: `quader admin import` for npm and NuGet, with integration tests. Open: Ansible Galaxy (waits for that format), and e2e rows with real clients installing imported packages
 - 🟢 User documentation: getting started, client setup per registry, administration, backup and restore, operations runbook ([docs/manual](../manual/README.md))
 - ⚪ The release that closes the beta phase (cut by Semantic Release)
 
@@ -49,8 +49,8 @@ follow the [roadmap's format order](../coverage/roadmap.md#p1-format-expansion-o
 - 🟢 Local: publish (multipart or raw body, import tasks) and install of collections, immutability and tombstones, reindex, the package screens; integration area `ansiblelocal`. Roles only through remote and virtual repositories (Q-ANS-6)
 - 🟢 Remote: proxy of the public Galaxy: pull-through of collections (paged version lists, the announced digest verified, the identity inside the archive checked) and of roles by translation from allowed hosts, the mirror of the collections the patterns select (Q-ANS-52); integration areas `ansibleremote` and `mirror`. 🟡 The Automation Hub's token exchange (Q-ANS-51), also for the mirror's listing, is tested against the stub realm only (H-842)
 - 🟢 Virtual: one endpoint for internal and public content: merged version lists, first match, publish through the deploy target, versions a path grant hides stay hidden through the virtual repository; integration area `ansiblevirtual`
-- 🟢 Authentication with trove tokens: `ansible.cfg` with the token variable, `--token` with `--server`, Basic, and netrc for roles (R-ANS-006, Q-ANS-54); e2e row `Auth` on both clients
-- 🟢 Migration of the content of the existing Galaxy instance: `trove admin import ansible` for collections, integration-tested against the stub and run against the owner's galaxy_ng on 2026-11-11: the dry run, then the copy of its 3 collections and 7 versions into `test/galaxy` of the owner's installation (0 conflicts, 0 failures), and `ansible-galaxy` 2.21 installed two of them from there
+- 🟢 Authentication with Quader tokens: `ansible.cfg` with the token variable, `--token` with `--server`, Basic, and netrc for roles (R-ANS-006, Q-ANS-54); e2e row `Auth` on both clients
+- 🟢 Migration of the content of the existing Galaxy instance: `quader admin import ansible` for collections, integration-tested against the stub and run against the owner's galaxy_ng on 2026-11-11: the dry run, then the copy of its 3 collections and 7 versions into `test/galaxy` of the owner's installation (0 conflicts, 0 failures), and `ansible-galaxy` 2.21 installed two of them from there
 - 🟢 Integration tests: `ansiblelocal`, `ansibleremote`, `ansiblevirtual`, the mirror rows of `mirror`, the importer, the conformance kit for all three classes, against the counting stub `test/ansiblestub`
 - 🟢 E2E tests: the set `ansible` with ansible-core 2.17.14 and 2.21.6 (collection publish and install, `requirements.yml`, `role install`, digest refusal, pasted snippets, Valkey stopped, virtual and mirror rows) passed on kind on 2026-11-10, 67 tests and subtests, and the CI leg `e2e (ansible)` ran green on the push of 47f5df19 (Test and Release 42902356913). One name with versions in both a local and a remote member is not run with the real clients (H-868)
 - 🟢 Client setup instructions in the UI: the setup page offers `ansible-galaxy` with eight snippets, the guide per class, the repository screens with import tasks and tombstones; journey `20-ansible`
@@ -109,10 +109,10 @@ parallel.
 
 ### M6 · npm and NuGet completion
 - ⚪ `npm login` (web and legacy flows), `npm search`, deprecate, single-version documents
-- ⚪ npm audit forwarding to the upstream as an opt-in (trove answers audits from its own advisory data from beta phase 6), external dependency rewrite, metadata recalculation, upload without the npm client
+- ⚪ npm audit forwarding to the upstream as an opt-in (Quader answers audits from its own advisory data from beta phase 6), external dependency rewrite, metadata recalculation, upload without the npm client
 - ⚪ Further upstream registries with their own credentials
 - ⚪ NuGet autocomplete, symbol server and symbol proxy
-- ⚪ NuGet vulnerability information passed through from the upstream and in registrations (trove's own `VulnerabilityInfo` ships in beta phase 6), embedded icon, license and README, metadata reindex
+- ⚪ NuGet vulnerability information passed through from the upstream and in registrations (Quader's own `VulnerabilityInfo` ships in beta phase 6), embedded icon, license and README, metadata reindex
 - ⚪ Revisit pnpm 11 and 12 unpublishing through a virtual repository (Q-NPM-49 point 5): whether a write through a virtual repository may accept the merge's _rev for packages only the deployment target holds
 - ⚪ Integration and e2e tests extended for every addition
 
@@ -142,7 +142,7 @@ parallel.
 - ⚪ **To be discussed with the owner, not decided:** resolving a GitLab group's ID to the IDs of its subgroups, so a
   mapping can pin a whole group by immutable ID (GitLab's ID tokens carry only the direct namespace's ID, H-27, observed on
   GitLab 19.0.1). Parked by the owner on 2026-11-02, explicitly without confirming that it is built. His first thought:
-  each trove user would have to bring their own GitLab token for it, because a lookup with a credential of trove's own
+  each Quader user would have to bring their own GitLab token for it, because a lookup with a credential of Quader's own
   could show a user groups and projects that the user cannot see in GitLab. Until then the beta pins groups by a list of
   `namespace_id`s or, on a self-managed instance, by a path glob ([gitlab-ci.md](../manual/admin/gitlab-ci.md))
 
@@ -157,9 +157,9 @@ parallel.
 - ⚪ Curation policies at the remote-repository boundary: vulnerable and too-new versions, dry run, waivers, compliant-version fallback (spec page to write); blocking of malicious versions, blocks set in triage and the advisory data source ship in beta phase 6, and a policy-based severity threshold, which the beta does not have, may come here ([Q-VULN-20](../spec/vulnerability-scanning.md#q-vuln-20--which-findings-block-a-download-and-who-sets-and-lifts-a-block))
 - ⚪ Further risk facts for curation (licenses, end of life, project health); curation audit
 
-### M13 · trove Bastion
+### M13 · Quader Bastion
 
-Moved into the beta as [phase 5b](BETA.md#phase-5b--trove-bastion-m13) (owner, 2026-11-02).
+Moved into the beta as [phase 5b](BETA.md#phase-5b--quader-bastion-m13) (owner, 2026-11-02).
 
 ## D · Further registries (P2)
 
@@ -211,16 +211,16 @@ all four columns green.
   merge verified member releases and re-sign; the screens, the setup and the guides; clients Debian 13 and 12, Ubuntu 24.04 and 22.04.
   Evidence: [apt-work-packages.md, Closing](apt-work-packages.md#24--closing). Stays: local source packages, snapshots, debug-symbol and
   installer packages, `dput`, translations and `Contents` for local and virtual repositories, mirrors of flat archives, `Valid-Until` on
-  trove's own releases, keys in a key service, Debian vulnerability matching, copy and move, exposure rules, the Bastion and nested virtual
+  Quader's own releases, keys in a key service, Debian vulnerability matching, copy and move, exposure rules, the Bastion and nested virtual
   repositories (debian.md, Deferred); the nightly set `deb-long`, the Debian pass beside clients and under a drain in the e2e sets, a build
-  trigger on a change of claims (H-725) and the metric `trove_deb_remote_parse_total`.
+  trigger on a change of claims (H-725) and the metric `quader_deb_remote_parse_total`.
 
 ## E · Further platform work (P2)
 
 - ⚪ Push and pull replication between installations
 - ⚪ Query language for files, packages and properties
 - ⚪ Presigned download redirects for large artifacts
-- ⚪ Client-side encryption of the stored content in the format of s3-encryption-proxy, imported as a module; trove then always
+- ⚪ Client-side encryption of the stored content in the format of s3-encryption-proxy, imported as a module; Quader then always
   streams downloads itself ([R-STOR-048](../spec/storage.md#r-stor-048--client-side-encryption-of-stored-content), the ticket with its open decisions)
 - ⚪ Further storage back ends (Google Cloud Storage, Azure Blob Storage), sharding over several buckets
 - ⚪ Email notice of expiring tokens

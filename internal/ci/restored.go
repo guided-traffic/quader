@@ -2,8 +2,8 @@ package ci
 
 import "time"
 
-// The CI parts of a restore (R-CI-029 "After a restore", R-CI-018, R-BAK-004, R-BAK-022). A restore of a trove
-// backup, or a point-in-time restore followed by `trove admin post-restore`, leaves the CI state as follows:
+// The CI parts of a restore (R-CI-029 "After a restore", R-CI-018, R-BAK-004, R-BAK-022). A restore of a quader
+// backup, or a point-in-time restore followed by `quader admin post-restore`, leaves the CI state as follows:
 //
 //   - ci_issuers, ci_mappings, ci_token_issuances and ci_subject_token_uses are `data` and come back as of the
 //     snapshot (internal/meta/postgres/tables_ci.go); the issuers' version and mappings_version and the mappings'

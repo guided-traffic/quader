@@ -6,10 +6,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// TestJobQueueGauges runs the query behind trove_jobs_queued and trove_jobs_oldest_queued_age_seconds against PostgreSQL.
+// TestJobQueueGauges runs the query behind quader_jobs_queued and quader_jobs_oldest_queued_age_seconds against PostgreSQL.
 func TestJobQueueGauges(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
@@ -58,7 +58,7 @@ func TestJobQueueGauges(t *testing.T) {
 	})
 }
 
-// TestValkeyPrimaryViews runs the query behind trove_valkey_primary_views against PostgreSQL.
+// TestValkeyPrimaryViews runs the query behind quader_valkey_primary_views against PostgreSQL.
 func TestValkeyPrimaryViews(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()

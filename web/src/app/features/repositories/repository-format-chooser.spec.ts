@@ -39,7 +39,7 @@ describe('The format chooser of a new repository (R-UI-080)', () => {
       '/projects/web/repositories/new/deb',
       '/projects/web/repositories/new/ansible',
     ]);
-    for (const t of tiles(r.root)) expect(t.querySelector('trove-format-icon.tile-icon')).not.toBeNull();
+    for (const t of tiles(r.root)) expect(t.querySelector('quader-format-icon.tile-icon')).not.toBeNull();
     expect([...r.root.querySelectorAll('button')].some((b) => /Next/.test(b.textContent ?? ''))).toBe(false);
     expect(r.root.querySelector('[role="listbox"]')).toBeNull();
     await expectAccessible(r.root);

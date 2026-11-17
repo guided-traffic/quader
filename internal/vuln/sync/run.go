@@ -6,9 +6,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/vuln/match"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/vuln/match"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // RunOSV is the body of the jobs vuln-sync-osv (full false) and vuln-sync-osv-full (full true): it syncs every ecosystem in

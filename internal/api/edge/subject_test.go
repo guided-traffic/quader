@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // serve runs a request through the chain of the named endpoint, which stores the
@@ -19,7 +19,7 @@ func serve(t *testing.T, endpoint string, p httpserver.Principal, handler func(*
 	t.Helper()
 	fills := true
 	s := config.Server{
-		Listen: ":8080", OpsListen: ":8081", BaseURL: "https://trove.example.com", MaxInFlight: 4096,
+		Listen: ":8080", OpsListen: ":8081", BaseURL: "https://quader.example.com", MaxInFlight: 4096,
 		Endpoints: map[string]config.Endpoint{
 			"customers": {Listen: ":8443", BaseURL: "https://packages.example.com"},
 			"partners":  {Listen: ":8444", BaseURL: "https://partners.example.com", CacheFill: &fills},
@@ -51,7 +51,7 @@ func serve(t *testing.T, endpoint string, p httpserver.Principal, handler func(*
 	req.Host, req.RemoteAddr = "packages.example.com", "192.0.2.9:4000"
 	switch endpoint {
 	case "default":
-		req.Host = "trove.example.com"
+		req.Host = "quader.example.com"
 	case "partners":
 		req.Host = "partners.example.com"
 	}

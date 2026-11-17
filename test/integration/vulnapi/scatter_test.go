@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_VULN_020_Scatter: with three replicas of one installation, paging 120 findings with limit=1 yields 120 distinct ids,
@@ -17,8 +17,8 @@ func TestR_VULN_020_Scatter(t *testing.T) {
 	e := newEnv(t)
 	replicas := []*testenv.Replica{
 		e.r,
-		e.st.Start(t, testenv.ReplicaOptions{Name: "web2", Env: []string{"TROVE_API_RATE_LIMITS_ENABLED=false"}}),
-		e.st.Start(t, testenv.ReplicaOptions{Name: "web3", Env: []string{"TROVE_API_RATE_LIMITS_ENABLED=false"}}),
+		e.st.Start(t, testenv.ReplicaOptions{Name: "web2", Env: []string{"QUADER_API_RATE_LIMITS_ENABLED=false"}}),
+		e.st.Start(t, testenv.ReplicaOptions{Name: "web3", Env: []string{"QUADER_API_RATE_LIMITS_ENABLED=false"}}),
 	}
 	e.st.Exec(`INSERT INTO vuln_finding (id, repo_id, ecosystem, package_name, version, advisory_id, kind, severity, severity_rank, fix_available, status, advisory_modified, detected_at)
 		SELECT gen_random_uuid(), r.id, 'npm', 'pkg-' || lpad(n::text, 3, '0'), '1.0.0', 'GHSA-aaaa-aaaa-0001', 'vulnerability',

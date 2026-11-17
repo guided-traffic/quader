@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // overviewCounts is every number the statements of queries/overview.sql return, flat, so two readings subtract.
@@ -83,32 +83,32 @@ func readOverview(t *testing.T, qs *q.Queries) overviewCounts {
 func TestR_OPS_004_OverviewStatements(t *testing.T) {
 	st := getStack(t)
 	_, _, admin := migrated(t, st)
-	mustExec(t, admin, "SET search_path = trove, public")
+	mustExec(t, admin, "SET search_path = quader, public")
 	qs := q.New(admin)
 	before := readOverview(t, qs)
 
 	for _, sql := range []string{
-		"INSERT INTO trove.repositories (key, format, class, project_id) VALUES ('ov-local', 'npm', 'local', (SELECT id FROM trove.project WHERE key = 'it')), ('ov-remote', 'npm', 'remote', (SELECT id FROM trove.project WHERE key = 'it')), ('ov-virtual', 'npm', 'virtual', (SELECT id FROM trove.project WHERE key = 'it'))",
-		"UPDATE trove.repositories SET lifecycle = 'deleting' WHERE key = 'ov-virtual'",
-		"INSERT INTO trove.packages (repo_id, name, display_name) SELECT id, 'left-pad', 'left-pad' FROM trove.repositories WHERE key = 'ov-local'",
-		"INSERT INTO trove.package_versions (package_id, version, display_version) SELECT id, '1.0.0', '1.0.0' FROM trove.packages WHERE name = 'left-pad'",
-		"INSERT INTO trove.package_versions (package_id, version, display_version, trashed_at) SELECT id, '0.9.0', '0.9.0', now() FROM trove.packages WHERE name = 'left-pad'",
-		"INSERT INTO trove.principal (id, kind, name) VALUES ('0c000000-0000-0000-0000-000000000001', 'user', 'ov-alice')",
-		"INSERT INTO trove.principal (id, kind, name, status) VALUES ('0c000000-0000-0000-0000-000000000002', 'user', 'ov-bob', 'disabled')",
-		"INSERT INTO trove.principal (id, kind, name) VALUES ('0c000000-0000-0000-0000-000000000003', 'group', 'ov-group')",
-		"INSERT INTO trove.principal (id, kind, name) VALUES ('0c000000-0000-0000-0000-000000000004', 'service_account', 'ov-robot')",
-		"INSERT INTO trove.principal (id, kind, name) VALUES ('0c000000-0000-0000-0000-000000000005', 'bastion', 'ov-bastion')",
-		"INSERT INTO trove.api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at) VALUES " +
-			"('0c000000-0000-0000-0000-0000000000b1', 'pat', decode(repeat('a1', 32), 'hex'), 'trv_pat_…a1', '0c000000-0000-0000-0000-000000000001', 'live', '{}', 'api', now() + interval '1 day'), " +
-			"('0c000000-0000-0000-0000-0000000000b2', 'pat', decode(repeat('a2', 32), 'hex'), 'trv_pat_…a2', '0c000000-0000-0000-0000-000000000001', 'expired', '{}', 'api', now() - interval '1 hour')",
-		"INSERT INTO trove.api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at, revoked_at, revocation_reason) VALUES " +
-			"('0c000000-0000-0000-0000-0000000000b3', 'pat', decode(repeat('a3', 32), 'hex'), 'trv_pat_…a3', '0c000000-0000-0000-0000-000000000001', 'revoked', '{}', 'api', now() + interval '1 day', now(), 'owner')",
-		"INSERT INTO trove.project (id, key, display_name) VALUES ('0c000000-0000-0000-0000-0000000000c1', 'ov-project', 'Overview')",
-		"UPDATE trove.storage_usage_totals SET blobs = blobs + 5, physical_bytes = physical_bytes + 1000 WHERE id = 1",
-		"INSERT INTO trove.blob_gc_queue (sha256, enqueued_at) VALUES (decode(repeat('ef', 32), 'hex'), now())",
-		"INSERT INTO trove.job (id, kind, state) VALUES ('0c000000-0000-0000-0000-0000000000d1', 'ov', 'queued'), " +
+		"INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('ov-local', 'npm', 'local', (SELECT id FROM quader.project WHERE key = 'it')), ('ov-remote', 'npm', 'remote', (SELECT id FROM quader.project WHERE key = 'it')), ('ov-virtual', 'npm', 'virtual', (SELECT id FROM quader.project WHERE key = 'it'))",
+		"UPDATE quader.repositories SET lifecycle = 'deleting' WHERE key = 'ov-virtual'",
+		"INSERT INTO quader.packages (repo_id, name, display_name) SELECT id, 'left-pad', 'left-pad' FROM quader.repositories WHERE key = 'ov-local'",
+		"INSERT INTO quader.package_versions (package_id, version, display_version) SELECT id, '1.0.0', '1.0.0' FROM quader.packages WHERE name = 'left-pad'",
+		"INSERT INTO quader.package_versions (package_id, version, display_version, trashed_at) SELECT id, '0.9.0', '0.9.0', now() FROM quader.packages WHERE name = 'left-pad'",
+		"INSERT INTO quader.principal (id, kind, name) VALUES ('0c000000-0000-0000-0000-000000000001', 'user', 'ov-alice')",
+		"INSERT INTO quader.principal (id, kind, name, status) VALUES ('0c000000-0000-0000-0000-000000000002', 'user', 'ov-bob', 'disabled')",
+		"INSERT INTO quader.principal (id, kind, name) VALUES ('0c000000-0000-0000-0000-000000000003', 'group', 'ov-group')",
+		"INSERT INTO quader.principal (id, kind, name) VALUES ('0c000000-0000-0000-0000-000000000004', 'service_account', 'ov-robot')",
+		"INSERT INTO quader.principal (id, kind, name) VALUES ('0c000000-0000-0000-0000-000000000005', 'bastion', 'ov-bastion')",
+		"INSERT INTO quader.api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at) VALUES " +
+			"('0c000000-0000-0000-0000-0000000000b1', 'pat', decode(repeat('a1', 32), 'hex'), 'qdr_pat_…a1', '0c000000-0000-0000-0000-000000000001', 'live', '{}', 'api', now() + interval '1 day'), " +
+			"('0c000000-0000-0000-0000-0000000000b2', 'pat', decode(repeat('a2', 32), 'hex'), 'qdr_pat_…a2', '0c000000-0000-0000-0000-000000000001', 'expired', '{}', 'api', now() - interval '1 hour')",
+		"INSERT INTO quader.api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at, revoked_at, revocation_reason) VALUES " +
+			"('0c000000-0000-0000-0000-0000000000b3', 'pat', decode(repeat('a3', 32), 'hex'), 'qdr_pat_…a3', '0c000000-0000-0000-0000-000000000001', 'revoked', '{}', 'api', now() + interval '1 day', now(), 'owner')",
+		"INSERT INTO quader.project (id, key, display_name) VALUES ('0c000000-0000-0000-0000-0000000000c1', 'ov-project', 'Overview')",
+		"UPDATE quader.storage_usage_totals SET blobs = blobs + 5, physical_bytes = physical_bytes + 1000 WHERE id = 1",
+		"INSERT INTO quader.blob_gc_queue (sha256, enqueued_at) VALUES (decode(repeat('ef', 32), 'hex'), now())",
+		"INSERT INTO quader.job (id, kind, state) VALUES ('0c000000-0000-0000-0000-0000000000d1', 'ov', 'queued'), " +
 			"('0c000000-0000-0000-0000-0000000000d2', 'ov', 'running'), ('0c000000-0000-0000-0000-0000000000d3', 'ov', 'cancelling')",
-		"INSERT INTO trove.job (id, kind, state, finished_at) VALUES ('0c000000-0000-0000-0000-0000000000d4', 'ov', 'failed', now() - interval '1 hour'), " +
+		"INSERT INTO quader.job (id, kind, state, finished_at) VALUES ('0c000000-0000-0000-0000-0000000000d4', 'ov', 'failed', now() - interval '1 hour'), " +
 			"('0c000000-0000-0000-0000-0000000000d5', 'ov', 'failed', now() - interval '2 days'), ('0c000000-0000-0000-0000-0000000000d6', 'ov', 'succeeded', now())",
 	} {
 		mustExec(t, admin, sql)
@@ -140,13 +140,13 @@ func TestR_OPS_004_OverviewStatements(t *testing.T) {
 func TestR_OPS_003_ReplicaRuntimeColumn(t *testing.T) {
 	st := getStack(t)
 	_, _, admin := migrated(t, st)
-	mustExec(t, admin, "SET search_path = trove, public")
+	mustExec(t, admin, "SET search_path = quader, public")
 	ctx := context.Background()
 	sys := config.System{HeartbeatInterval: time.Hour, HeartbeatStaleAfter: 3 * time.Hour}
 
-	mustExec(t, admin, "INSERT INTO trove.replica (instance_uid, name, version, revision, roles, state, secret_key_ids, active_secret_key_id, started_at, heartbeat_at) "+
+	mustExec(t, admin, "INSERT INTO quader.replica (instance_uid, name, version, revision, roles, state, secret_key_ids, active_secret_key_id, started_at, heartbeat_at) "+
 		"VALUES ('0c000000-0000-0000-0000-0000000000e1', 'ov-old', '0.19.4', 'old', '{api}', 'ready', '{k1}', 'k1', now(), now())")
-	if raw := scalar[string](t, admin, "SELECT runtime::text FROM trove.replica WHERE name = 'ov-old'"); raw != "{}" {
+	if raw := scalar[string](t, admin, "SELECT runtime::text FROM quader.replica WHERE name = 'ov-old'"); raw != "{}" {
 		t.Errorf("the default of a row without the column: %s", raw)
 	}
 

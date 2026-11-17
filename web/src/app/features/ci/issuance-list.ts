@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
-import { DIALOG_DATA, DialogClose, DialogTitle, TroveDialog } from '../../shared/ui/dialog';
+import { DIALOG_DATA, DialogClose, DialogTitle, QuaderDialog } from '../../shared/ui/dialog';
 import { CiApi, CiIssuance, CiIssuanceDetail, IssuanceFilters, CiRevokeRequest } from '../../api/ci-api';
 import { collectAll } from '../../api/pagination';
 import { ApiError } from '../../api/problem';
@@ -28,13 +28,13 @@ export interface IssuanceDetailData {
  * audit store. It holds no token and no hash: a token value is never shown again.
  */
 @Component({
-  selector: 'trove-ci-issuance-detail',
+  selector: 'quader-ci-issuance-detail',
   imports: [DatePipe, DialogTitle, DialogClose, ErrorNotice],
   template: `
-    <h2 troveDialogTitle i18n="@@ci.issuance.title">Issued token</h2>
+    <h2 quaderDialogTitle i18n="@@ci.issuance.title">Issued token</h2>
     <div class="dialog-body" tabindex="0">
       @if (error(); as e) {
-        <trove-error-notice [error]="e" />
+        <quader-error-notice [error]="e" />
       }
       <dl class="facts">
         <dt i18n="@@ci.issuance.state">State</dt>
@@ -91,24 +91,24 @@ export interface IssuanceDetailData {
       <pre translate="no" tabindex="0" i18n-aria-label="@@ci.issuance.claims" aria-label="Claims at the time of the exchange">{{ claims }}</pre>
     </div>
     <div class="dialog-actions">
-      <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@ci.close">Close</button>
+      <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@ci.close">Close</button>
     </div>
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
     pre {
-      margin: 0 0 var(--trove-space-3);
-      padding: var(--trove-space-2) var(--trove-space-3);
+      margin: 0 0 var(--quader-space-3);
+      padding: var(--quader-space-2) var(--quader-space-3);
       overflow: auto;
       max-block-size: 14rem;
-      border: 1px solid var(--trove-border);
-      border-radius: var(--trove-radius-s);
-      font-family: var(--trove-font-mono);
+      border: 1px solid var(--quader-border);
+      border-radius: var(--quader-radius-s);
+      font-family: var(--quader-font-mono);
       font-size: 0.8125rem;
     }
     h3 {
-      margin: var(--trove-space-3) 0 var(--trove-space-1);
-      font: var(--trove-type-title-small);
+      margin: var(--quader-space-3) 0 var(--quader-space-1);
+      font: var(--quader-type-title-small);
     }
   `,
 })
@@ -149,55 +149,55 @@ function dayStart(value: string, plusDays = 0): string | undefined {
  * the job and the state only, and has no bulk revoke.
  */
 @Component({
-  selector: 'trove-ci-issuance-list',
+  selector: 'quader-ci-issuance-list',
   imports: [DatePipe, ErrorNotice, DataTable, FilterCategory, FilterPanel, FilterToggle, SelectField, TextField],
   template: `
     <div class="list-layout" [class.panel-open]="panelOpen()">
       <div class="list-toolbar">
-        <trove-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
+        <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
         @if (canRevoke()) {
           <button class="btn btn-default" type="button" [disabled]="!revocable() || busy()" aria-describedby="ci-revoke-note" (click)="revokeMatching()" i18n="@@ci.issuances.revoke-matching">
             Revoke matching tokens
           </button>
         }
       </div>
-      <trove-filter-panel #panel class="list-side" [(open)]="panelOpen" [activeCount]="activeCount()" (apply)="apply()" (clearAll)="clear()">
+      <quader-filter-panel #panel class="list-side" [(open)]="panelOpen" [activeCount]="activeCount()" (apply)="apply()" (clearAll)="clear()">
         @if (!fixedIssuer()) {
-          <trove-filter-category i18n-label="@@ci.issuances.f.issuer" label="Issuer" [active]="!!issuerFilter().trim()" [expanded]="!!issuerFilter().trim()">
-            <trove-text-field width="name" i18n-label="@@ci.issuances.f.issuer" label="Issuer" name="issuer" [(value)]="issuerFilter" />
-          </trove-filter-category>
+          <quader-filter-category i18n-label="@@ci.issuances.f.issuer" label="Issuer" [active]="!!issuerFilter().trim()" [expanded]="!!issuerFilter().trim()">
+            <quader-text-field width="name" i18n-label="@@ci.issuances.f.issuer" label="Issuer" name="issuer" [(value)]="issuerFilter" />
+          </quader-filter-category>
         }
         @if (!project()) {
-          <trove-filter-category i18n-label="@@ci.issuances.f.project-id" label="GitLab project ID" [active]="!!projectId().trim()" [expanded]="!!projectId().trim()">
-            <trove-text-field width="bytes" i18n-label="@@ci.issuances.f.project-id" label="GitLab project ID" name="projectId" [(value)]="projectId" />
-          </trove-filter-category>
-          <trove-filter-category i18n-label="@@ci.issuances.f.project-path" label="Project path" [active]="!!projectPath().trim()" [expanded]="!!projectPath().trim()">
-            <trove-text-field width="name" i18n-label="@@ci.issuances.f.project-path" label="Project path" name="projectPath" [(value)]="projectPath" />
-          </trove-filter-category>
-          <trove-filter-category i18n-label="@@ci.issuances.f.pipeline" label="Pipeline ID" [active]="!!pipelineId().trim()" [expanded]="!!pipelineId().trim()">
-            <trove-text-field width="bytes" i18n-label="@@ci.issuances.f.pipeline" label="Pipeline ID" name="pipelineId" [(value)]="pipelineId" />
-          </trove-filter-category>
+          <quader-filter-category i18n-label="@@ci.issuances.f.project-id" label="GitLab project ID" [active]="!!projectId().trim()" [expanded]="!!projectId().trim()">
+            <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.project-id" label="GitLab project ID" name="projectId" [(value)]="projectId" />
+          </quader-filter-category>
+          <quader-filter-category i18n-label="@@ci.issuances.f.project-path" label="Project path" [active]="!!projectPath().trim()" [expanded]="!!projectPath().trim()">
+            <quader-text-field width="name" i18n-label="@@ci.issuances.f.project-path" label="Project path" name="projectPath" [(value)]="projectPath" />
+          </quader-filter-category>
+          <quader-filter-category i18n-label="@@ci.issuances.f.pipeline" label="Pipeline ID" [active]="!!pipelineId().trim()" [expanded]="!!pipelineId().trim()">
+            <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.pipeline" label="Pipeline ID" name="pipelineId" [(value)]="pipelineId" />
+          </quader-filter-category>
         }
-        <trove-filter-category i18n-label="@@ci.issuances.f.job" label="Job ID" [active]="!!jobId().trim()" [expanded]="!!jobId().trim()">
-          <trove-text-field width="bytes" i18n-label="@@ci.issuances.f.job" label="Job ID" name="jobId" [(value)]="jobId" />
-        </trove-filter-category>
+        <quader-filter-category i18n-label="@@ci.issuances.f.job" label="Job ID" [active]="!!jobId().trim()" [expanded]="!!jobId().trim()">
+          <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.job" label="Job ID" name="jobId" [(value)]="jobId" />
+        </quader-filter-category>
         @if (!project()) {
-          <trove-filter-category i18n-label="@@ci.issuances.f.mapping" label="Mapping" [active]="!!mapping().trim()" [expanded]="!!mapping().trim()">
-            <trove-text-field width="name" i18n-label="@@ci.issuances.f.mapping" label="Mapping" name="mapping" [(value)]="mapping" />
-          </trove-filter-category>
+          <quader-filter-category i18n-label="@@ci.issuances.f.mapping" label="Mapping" [active]="!!mapping().trim()" [expanded]="!!mapping().trim()">
+            <quader-text-field width="name" i18n-label="@@ci.issuances.f.mapping" label="Mapping" name="mapping" [(value)]="mapping" />
+          </quader-filter-category>
         }
-        <trove-filter-category i18n-label="@@ci.issuances.f.state" label="State" [active]="!!state()" [expanded]="!!state()">
-          <trove-select-field i18n-label="@@ci.issuances.f.state" label="State" name="state" [options]="stateOptions" [(value)]="state" />
-        </trove-filter-category>
+        <quader-filter-category i18n-label="@@ci.issuances.f.state" label="State" [active]="!!state()" [expanded]="!!state()">
+          <quader-select-field i18n-label="@@ci.issuances.f.state" label="State" name="state" [options]="stateOptions" [(value)]="state" />
+        </quader-filter-category>
         @if (!project()) {
-          <trove-filter-category i18n-label="@@ci.issuances.f.from" label="Issued from" [active]="!!from()" [expanded]="!!from()">
-            <trove-text-field width="bytes" i18n-label="@@ci.issuances.f.from" label="Issued from" name="from" type="date" [(value)]="from" />
-          </trove-filter-category>
-          <trove-filter-category i18n-label="@@ci.issuances.f.to" label="Issued until" [active]="!!to()" [expanded]="!!to()">
-            <trove-text-field width="bytes" i18n-label="@@ci.issuances.f.to" label="Issued until" name="to" type="date" [(value)]="to" />
-          </trove-filter-category>
+          <quader-filter-category i18n-label="@@ci.issuances.f.from" label="Issued from" [active]="!!from()" [expanded]="!!from()">
+            <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.from" label="Issued from" name="from" type="date" [(value)]="from" />
+          </quader-filter-category>
+          <quader-filter-category i18n-label="@@ci.issuances.f.to" label="Issued until" [active]="!!to()" [expanded]="!!to()">
+            <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.to" label="Issued until" name="to" type="date" [(value)]="to" />
+          </quader-filter-category>
         }
-      </trove-filter-panel>
+      </quader-filter-panel>
 
       <div class="list-main">
         @if (canRevoke() && !revocable()) {
@@ -213,13 +213,13 @@ function dayStart(value: string, plusDays = 0): string | undefined {
           }
         }
         @if (actionError(); as e) {
-          <trove-error-notice [error]="e" />
+          <quader-error-notice [error]="e" />
         }
         @if (list.error(); as e) {
-          <trove-error-notice [error]="e" (retry)="list.reload()" />
+          <quader-error-notice [error]="e" (retry)="list.reload()" />
         }
         @if (list.error()?.status !== 501) {
-          <trove-data-table
+          <quader-data-table
             [caption]="caption"
             [columns]="columns()"
             [loaded]="list.loaded()"
@@ -256,7 +256,7 @@ function dayStart(value: string, plusDays = 0): string | undefined {
                 </td>
               </tr>
             }
-          </trove-data-table>
+          </quader-data-table>
         }
       </div>
     </div>
@@ -275,7 +275,7 @@ export class IssuanceList {
   readonly project = input<string | null>(null);
 
   private readonly api = inject(CiApi);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly confirmer = inject(Confirm);
   private readonly notifier = inject(Notifier);
   private readonly session = inject(SessionStore);

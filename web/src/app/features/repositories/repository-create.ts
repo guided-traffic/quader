@@ -95,7 +95,7 @@ interface CreateDraft {
  * `Idempotency-Key` generated when the form opened (R-UI-042), and opens the new repository's content page.
  */
 @Component({
-  selector: 'trove-repository-create',
+  selector: 'quader-repository-create',
   imports: [
     RouterLink,
     Disclosure,

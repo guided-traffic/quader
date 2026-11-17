@@ -8,10 +8,10 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
-// The token format of R-AUTH-022 as far as the Bastion checks it (R-BAS-006): "trv_bst_", 43 base62 digits of
+// The token format of R-AUTH-022 as far as the Bastion checks it (R-BAS-006): "qdr_bst_", 43 base62 digits of
 // the random part and 6 base62 digits of CRC-32/IEEE over everything before them, 57 characters in all. The
 // Bastion links none of the main installation's token code (R-BAS-001), so the check is written here and
 // TestR_BAS_006_TheSyntaxCheckAgreesWithTheMainInstallationsFormat holds it equal to internal/auth/token.
@@ -25,14 +25,14 @@ const (
 
 // ErrTokenMalformed is the error of a token file whose content is not a Bastion token: the wrong prefix, the
 // wrong length, a character outside base62, or a failed checksum. It names no part of the value.
-var ErrTokenMalformed = errors.New("mainclient: the token is not a well-formed Bastion token (trv_bst_, 57 characters, checksum)")
+var ErrTokenMalformed = errors.New("mainclient: the token is not a well-formed Bastion token (qdr_bst_, 57 characters, checksum)")
 
-// TokenType returns the type ("pat", "sat", "cit" or "bst") of a syntactically valid trove token string:
+// TokenType returns the type ("pat", "sat", "cit" or "bst") of a syntactically valid quader token string:
 // the prefix, the length, the alphabet and the checksum hold (R-AUTH-022). It is the one syntax check of the
 // Bastion: the request flow refuses a credential that fails it before any request (R-BAS-019), and
 // [ParseToken] reads the token file with it.
 func TokenType(raw string) (string, bool) {
-	if len(raw) != tokenLength || !strings.HasPrefix(raw, "trv_") || raw[7] != '_' {
+	if len(raw) != tokenLength || !strings.HasPrefix(raw, "qdr_") || raw[7] != '_' {
 		return "", false
 	}
 	typ := raw[4:7]

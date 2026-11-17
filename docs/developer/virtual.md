@@ -135,7 +135,7 @@ R-NPM-033 withhold every name any claim or pin rule covers).
 | Operation | Declaration | Behavior |
 |---|---|---|
 | `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/claims` | `read` on the repository | the claims sorted by pattern (byte order), `ETag: "<claims_version>"`, `304` on `If-None-Match`; a repository that cannot hold claims answers an empty list |
-| `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/claims` | `manage` on the repository, `x-trove-if-match: required` | replaces the manual set; `removeAuto` lists automatic claims to drop; 428 without `If-Match` (the shared step), 412 with `currentEtag` when stale |
+| `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/claims` | `manage` on the repository, `x-quader-if-match: required` | replaces the manual set; `removeAuto` lists automatic claims to drop; 428 without `If-Match` (the shared step), 412 with `currentEtag` when stale |
 
 `Service.PutClaims(ctx, caller, key, pre, in, guard)` runs in one transaction under the row lock: compare `claims_version`, validate
 (`invalid_pattern`, `invalid_value`, `out_of_range`, `not_applicable`), call `guard` when the request adds, keeps, narrows or removes a
@@ -221,12 +221,12 @@ what it needs of its neighbours it declares as interfaces ([Q-REPO-111](../spec/
 | [types.go](../../internal/virtual/types.go) | `Descriptor`, `Caller`, `Plan`, `Member`, `Part`, `Merged`, `Strategy`, `Tier` and the seams: `Router`, `Decider`, `Locals`, `Remotes`, `Tiers`, `Merger` |
 | [engine.go](../../internal/virtual/engine.go) | `Options`, `New`, `Start`/`Stop` (the `metadata_changed` subscription), `Plan`, `planFingerprint`, `DeployTarget` |
 | [internal/formathost/virtual.go](../../internal/formathost/virtual.go) | `tiers.forMember`: the request for a member of the addressed virtual repository, made with `Request.Member` so that the member's decisions (read check, populate check, revalidation) carry the addressed key (Q-ARCH-252); `virtual.RemoteCall.Addressed` is the same repository on the engine's call |
-| [artifact.go](../../internal/virtual/artifact.go) | `Artifact`: the three tiers, `Trove-Resolved-From`, the 404-or-failure rule of step 7, the failure after the first byte |
+| [artifact.go](../../internal/virtual/artifact.go) | `Artifact`: the three tiers, `Quader-Resolved-From`, the 404-or-failure rule of step 7, the failure after the first byte |
 | [metadata.go](../../internal/virtual/metadata.go) | `Metadata`: strategy, cache lookup and validation, `build` (one goroutine per member), `mergeFingerprint`, `firstMatch` |
 | [mcache.go](../../internal/virtual/mcache.go) | the registered cache `merged_metadata`: key, entry, `weigh`, `onMergedChange`, the payload of `metadata_changed` |
 | [shadow.go](../../internal/virtual/shadow.go) | `ShadowCheck`, `ShadowOutcome` and its error |
 | [explain.go](../../internal/virtual/explain.go) | `Explain` and the `Explanation` of the API |
-| [metrics.go](../../internal/virtual/metrics.go) | `trove_virtual_resolutions_total`, `trove_shadow_checks_total` |
+| [metrics.go](../../internal/virtual/metrics.go) | `quader_virtual_resolutions_total`, `quader_shadow_checks_total` |
 | [virtualtest](../../internal/virtual/virtualtest/) | the fakes and fixtures: repositories with members, `Rows` (package rows), `Merger` (a test format), `Remote` (a programmable remote engine), `Artifacts` (tiers), `Router`, `NewDecider` (the real decision point over a few grants) |
 | [formathost/virtual.go](../../internal/formathost/virtual.go) | `NewResolver` (the `formats.Resolver` over the engine), `NewVirtualLocals` (`Locals` over the package rows and the item store) |
 | [api/v1/resolution_api.go](../../internal/api/v1/resolution_api.go) | `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/resolution?path=` |
@@ -250,9 +250,9 @@ the `503` is the answer when nothing serves the item, also for a caller who may 
 a local member's lost object is the answer ([Q-REPO-204](../spec/repositories-and-proxy.md#q-repo-204--through-a-virtual-repository-a-remote-members-lost-cached-copy-is-a-miss-of-the-cache-tier-a-local-members-loss-is-the-answer)). Each tier costs one statement
 (the item lookup of the member, which carries the check's rows; `Cached` and `GateWith` for a remote member), so a file of the second member costs two ([Q-ARCH-290](../spec/architecture.md#q-arch-290--what-does-a-download-of-a-file-of-a-virtual-repository-cost-in-statements),
 [download-statements.md](download-statements.md)).
-The first hit is served with `Trove-Resolved-From: <member>` (never on an endpoint with rules). A member
+The first hit is served with `Quader-Resolved-From: <member>` (never on an endpoint with rules). A member
 the caller may not fill is not consulted in the third tier; when the reason is the endpoint's `cache_fill: false`
-(`Subject.Endpoint != "" && !Subject.CacheFill`), `Options.FillRefused` counts it in `trove_endpoint_cache_fill_refused_total`, the remote
+(`Subject.Endpoint != "" && !Subject.CacheFill`), `Options.FillRefused` counts it in `quader_endpoint_cache_fill_refused_total`, the remote
 engine's family (`proxy.Engine.FillRefused`, Q-EP-58). Nothing found: 404 if every consulted member said "not found" (or refused to
 populate, which counts as a miss), else the failure of the first member that failed transiently. A failure after the first byte ends the
 request.
@@ -275,8 +275,8 @@ with the first format that needs a latest-version request, as a new strategy.
 | Hit | the entry is not expired and one `Locals.RevSeqs` call returns the recorded revisions; otherwise the entry is removed and the document is built again. No message is needed |
 | Expiry | the earlier of `virtual.mergedMetadataTtlSeconds` after the merge and the earliest `ExpiresAt` of the remote documents; the cache's safety TTL is 2 hours |
 | Not cached | a partial merge, an entry already expired (a stale remote document), a path with no package name, a period of 0, `proxy.merged_metadata_cache_bytes: 0` |
-| Partial | a remote member that failed transiently and has no copy is left out; `Cache-Status: trove; detail=partial`. A member that answers not found, or that the caller may not populate and that has nothing stored, is a miss and not a reason for `partial` |
-| Cache-Status | `trove; hit; ttl=<s>` for a hit, `trove; fwd=miss` for a built document, `trove; detail=partial` |
+| Partial | a remote member that failed transiently and has no copy is left out; `Cache-Status: quader; detail=partial`. A member that answers not found, or that the caller may not populate and that has nothing stored, is a miss and not a reason for `partial` |
+| Cache-Status | `quader; hit; ttl=<s>` for a hit, `quader; fwd=miss` for a built document, `quader; detail=partial` |
 | Early eviction | the signal `metadata_changed` with `PackageChanged(repoID, name)` drops the entries that contain the member and the package; a coarse signal or a payload that does not parse drops everything. The area `cache_invalidation` drops by `invalidation.ParsePayload`: `virt` the entries of that virtual repository under the prefix (whole segments), `add` the entries that contain that remote repository under the prefix, `del` nothing; `claims`, `repo_config` and an unknown kind flush |
 | Fill rule | the cache's `Load` (R-ARCH-018): a result computed while one of the three areas changed is served and not stored |
 

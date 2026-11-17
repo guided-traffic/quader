@@ -9,7 +9,7 @@ import "testing"
 func TestR_DEB_027_AReaderWhoMayNotFillGetsA404ForAFileTheRemoteMemberHasNotStored(t *testing.T) {
 	e := newEnv(t, options{fillAction: "deploy"})
 	e.ready("local-tool")
-	hello, _ := find(e.packages(rApt, "stable", e.admin), "trove-hello", "")
+	hello, _ := find(e.packages(rApt, "stable", e.admin), "quader-hello", "")
 	path := hello.Value("Filename")
 	if a := e.get(rApt, path, e.alice); a.Status != 404 {
 		t.Errorf("a reader, file not stored: %d", a.Status)

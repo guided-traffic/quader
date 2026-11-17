@@ -28,11 +28,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/e2e/valkeyhold"
+	"github.com/guided-traffic/quader/test/e2e/valkeyhold"
 )
 
 const (
-	holdFinalizer = "e2e.trove.guided-traffic.com/hold-valkey-primary"
+	holdFinalizer = "e2e.quader.guided-traffic.com/hold-valkey-primary"
 	// holdCap bounds the hold: Sentinel's down-after-milliseconds (5 s) plus the election and the promotion take about 10 s, so a
 	// failover that has not happened after this long did not happen because of the Sentinels, not because of the hold. It stays below
 	// the 2 minutes past its grace period after which the Valkey operator reports PodTerminationStalled for a Terminating pod.
@@ -110,7 +110,7 @@ func sweepHeldPods() {
 func holdSentinelPrimary() (string, bool) {
 	for _, s := range sentinelPods {
 		out, err := holdKubectl("exec", s, "-c", "sentinel", "--", "sh", "-c",
-			`exec valkey-cli --tls --cacert /tls/ca.crt -h 127.0.0.1 -p 36379 --no-auth-warning -a "$VALKEY_PASSWORD" sentinel get-master-addr-by-name trove-valkey`)
+			`exec valkey-cli --tls --cacert /tls/ca.crt -h 127.0.0.1 -p 36379 --no-auth-warning -a "$VALKEY_PASSWORD" sentinel get-master-addr-by-name quader-valkey`)
 		host := strings.TrimSpace(strings.SplitN(out, "\n", 2)[0])
 		if err == nil && host != "" && host != "(nil)" && !strings.Contains(host, "ERR") {
 			return strings.SplitN(host, ".", 2)[0], true
@@ -119,7 +119,7 @@ func holdSentinelPrimary() (string, bool) {
 	return "", false
 }
 
-var sentinelPods = []string{"trove-valkey-sentinel-0", "trove-valkey-sentinel-1", "trove-valkey-sentinel-2"}
+var sentinelPods = []string{"quader-valkey-sentinel-0", "quader-valkey-sentinel-1", "quader-valkey-sentinel-2"}
 
 const sentinelCLI = `exec valkey-cli --tls --cacert /tls/ca.crt -h 127.0.0.1 -p 36379 --no-auth-warning -a "$VALKEY_PASSWORD" `
 
@@ -128,7 +128,7 @@ const sentinelCLI = `exec valkey-cli --tls --cacert /tls/ca.crt -h 127.0.0.1 -p 
 // accept and start a new epoch.
 func failoverInProgress() (inProgress, readable bool) {
 	for _, s := range sentinelPods {
-		out, err := holdKubectl("exec", s, "-c", "sentinel", "--", "sh", "-c", sentinelCLI+"sentinel master trove-valkey")
+		out, err := holdKubectl("exec", s, "-c", "sentinel", "--", "sh", "-c", sentinelCLI+"sentinel master quader-valkey")
 		if err != nil {
 			continue
 		}
@@ -148,7 +148,7 @@ func failoverInProgress() (inProgress, readable bool) {
 func sentinelFailoverCommand() (string, bool) {
 	var last string
 	for _, s := range sentinelPods {
-		out, err := holdKubectl("exec", s, "-c", "sentinel", "--", "sh", "-c", sentinelCLI+"sentinel failover trove-valkey")
+		out, err := holdKubectl("exec", s, "-c", "sentinel", "--", "sh", "-c", sentinelCLI+"sentinel failover quader-valkey")
 		last = strings.TrimSpace(out)
 		if err != nil {
 			last = strings.TrimSpace(last + " " + err.Error())

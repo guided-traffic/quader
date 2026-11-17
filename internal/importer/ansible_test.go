@@ -20,9 +20,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/ansiblestub"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/ansiblestub"
 )
 
 // galaxyVersion is one version of a collection in the fake source.
@@ -169,7 +169,7 @@ type published struct {
 	auth          string
 }
 
-// fakeTarget is a trove Ansible repository: the discovery document, the version documents, the publish and the task.
+// fakeTarget is a quader Ansible repository: the discovery document, the version documents, the publish and the task.
 type fakeTarget struct {
 	srv         *httptest.Server
 	mu          sync.Mutex
@@ -184,7 +184,7 @@ type fakeTarget struct {
 
 func newFakeTarget(t *testing.T) *fakeTarget {
 	t.Helper()
-	f := &fakeTarget{description: "trove Ansible Galaxy API", stored: map[string][]byte{}, failTask: map[string]string{}, refuse: map[string]int{}, tasks: map[string]string{}}
+	f := &fakeTarget{description: "Quader Ansible Galaxy API", stored: map[string][]byte{}, failTask: map[string]string{}, refuse: map[string]int{}, tasks: map[string]string{}}
 	f.srv = httptest.NewServer(http.HandlerFunc(f.serve))
 	t.Cleanup(f.srv.Close)
 	return f
@@ -309,7 +309,7 @@ func (f *fakeTarget) publish(w http.ResponseWriter, r *http.Request) {
 
 func ansibleRun(t *testing.T, g *fakeGalaxy, f *fakeTarget, mutate func(*Options)) (*Report, error) {
 	t.Helper()
-	format, src, dst, err := Build(factory(), Params{Format: "ansible", From: g.srv.URL + "/api/", To: f.srv.URL + targetRoot, Token: "trv_secret"})
+	format, src, dst, err := Build(factory(), Params{Format: "ansible", From: g.srv.URL + "/api/", To: f.srv.URL + targetRoot, Token: "qdr_secret"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -372,7 +372,7 @@ func TestR_ANS_027_ASourceIsImportedInTheOrderOfPublicationAndASecondRunSkipsEve
 	var order []string
 	for _, pub := range f.published {
 		order = append(order, pub.version)
-		if pub.auth != "Bearer trv_secret" {
+		if pub.auth != "Bearer qdr_secret" {
 			t.Errorf("publish carried Authorization %q", pub.auth)
 		}
 		if pub.declared != sum(pub.body) || !strings.HasPrefix(string(pub.body), "archive:") {
@@ -568,12 +568,12 @@ func TestR_ANS_027_ASourceWhoseDownloadAddressIsForeignIsRefusedAsForeignHost(t 
 	}
 }
 
-func TestR_ANS_027_PreflightWantsATroveRepositoryThatListsV3(t *testing.T) {
+func TestR_ANS_027_PreflightWantsAQuaderRepositoryThatListsV3(t *testing.T) {
 	a := &Ansible{}
 	for name, tc := range map[string]struct {
 		desc string
 		ok   bool
-	}{"trove": {"trove Ansible Galaxy API", true}, "another galaxy": {"Galaxy API", false}} {
+	}{"quader": {"Quader Ansible Galaxy API", true}, "another galaxy": {"Galaxy API", false}} {
 		f := newFakeTarget(t)
 		f.description = tc.desc
 		_, _, dst, err := Build(factory(), Params{Format: "ansible", From: "https://s.example/api/", To: f.srv.URL + targetRoot, Token: "t"})
@@ -662,7 +662,7 @@ func TestR_ANS_027_TheImporterCopiesTheCollectionsOfTheCountingStubAndASecondRun
 	}
 	target := newFakeTarget(t)
 	build := func() Options {
-		format, src, dst, err := Build(factory, Params{Format: "ansible", From: run.APIRoot(), To: target.srv.URL + targetRoot, Token: "trv_x", ExtraHosts: []string{"*.localhost"}})
+		format, src, dst, err := Build(factory, Params{Format: "ansible", From: run.APIRoot(), To: target.srv.URL + targetRoot, Token: "qdr_x", ExtraHosts: []string{"*.localhost"}})
 		if err != nil {
 			t.Fatal(err)
 		}

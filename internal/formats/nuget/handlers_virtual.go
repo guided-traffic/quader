@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/document"
-	"github.com/guided-traffic/trove/internal/formats/nuget/merge"
-	"github.com/guided-traffic/trove/internal/formats/nuget/registration"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/document"
+	"github.com/guided-traffic/quader/internal/formats/nuget/merge"
+	"github.com/guided-traffic/quader/internal/formats/nuget/registration"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
 // The documents and files of virtual repositories (R-NUGET-017). The virtual engine plans
@@ -262,7 +262,7 @@ func (f *Format) virtualRegistration(ctx context.Context, rq *formats.Request, w
 // virtualFile serves a file of a version through a virtual repository: the tiers of
 // R-REPO-019 step 6 (the local members, the caches of the remote members, then their
 // upstreams), the first member that has it wins and the answer names it in
-// Trove-Resolved-From. A version the endpoint hides is a missing one.
+// Quader-Resolved-From. A version the endpoint hides is a missing one.
 func (f *Format) virtualFile(ctx context.Context, rq *formats.Request, w http.ResponseWriter, lowerID, ver, path, mediaType string) error {
 	if err := rq.Host.Authorize(ctx, rq, formats.Target{Package: lowerID, Version: ver, Path: path, Actions: []formats.Action{formats.ActionRead}}); err != nil {
 		return err

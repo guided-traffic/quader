@@ -3,8 +3,8 @@ package ansible
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 // Store is the data port of the Ansible Galaxy format (Q-ARCH-193): everything the format needs of its own tables

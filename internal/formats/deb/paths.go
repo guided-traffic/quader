@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The layout of R-DEB-003 and R-DEB-008. A local repository stores a package file at its canonical pool path and generates the

@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/manifest"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/publish"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
-	"github.com/guided-traffic/trove/internal/formats/npm/tarball"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/manifest"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/publish"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats/npm/tarball"
 )
 
 // maxSigstoreBytes bounds a provenance bundle: a Sigstore bundle is a few
@@ -252,7 +252,7 @@ func validateTarball(ctx context.Context, sp formats.Spooled, lim tarball.Limits
 // the package.json, and the deadline. A publish does not come through here: it
 // validates with the limits of npm.publish.*, which are the format's own and above
 // these (R-NPM-007), and answers 400 where Inspect answers 422. What the archive
-// rules refuse as ambiguous or forbidden is content trove does not read, 422
+// rules refuse as ambiguous or forbidden is content quader does not read, 422
 // content_refused; a bound that is crossed is 413.
 func (f *Format) Inspect(ctx context.Context, in formats.InspectInput) (*formats.Inspection, error) {
 	lim := in.Limits

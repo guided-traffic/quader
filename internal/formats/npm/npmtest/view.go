@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // The package view of the twin (R-API-029, R-EP-016): the reads internal/formatdata/npm

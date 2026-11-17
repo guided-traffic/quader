@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The job kinds and the task of the Debian format (R-DEB-010, R-DEB-023, R-DEB-026, Q-DEB-6, Q-DEB-33).

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // Clients first across processes (E6b.4; R-REPO-055): a client-serving replica and a process that claims the queue mirror, the real
@@ -82,7 +82,7 @@ func TestR_REPO_055_AClientFetchThatHasToWaitPreemptsThePassOfAnotherProcess(t *
 
 	results := make(chan fetchResult, clients)
 	t.Run("R-REPO-055 eight client fetches take the client-serving replica's eight slots without a wait", func(t *testing.T) {
-		waited := r.metric(web, "trove_remote_fetch_queue_wait_seconds_sum")
+		waited := r.metric(web, "quader_remote_fetch_queue_wait_seconds_sum")
 		for i := range slots {
 			r.startFetch(web, tarballPath(fmt.Sprintf("@acme/c%03d", i), "1.0.0"), results)
 		}
@@ -90,7 +90,7 @@ func TestR_REPO_055_AClientFetchThatHasToWaitPreemptsThePassOfAnotherProcess(t *
 		if got := r.traf.inflight(); got != 2+slots {
 			t.Errorf("%d tarball fetches at the stub, want the 2 of the pass and the 8 of the clients", got)
 		}
-		if w := r.metric(web, "trove_remote_fetch_queue_wait_seconds_sum") - waited; w > 0.05 {
+		if w := r.metric(web, "quader_remote_fetch_queue_wait_seconds_sum") - waited; w > 0.05 {
 			t.Errorf("the eight client fetches waited %.3f s for their slots in all", w)
 		}
 	})
@@ -101,17 +101,17 @@ func TestR_REPO_055_AClientFetchThatHasToWaitPreemptsThePassOfAnotherProcess(t *
 		ninth = time.Now()
 		r.startFetch(web, tarballPath(fmt.Sprintf("@acme/c%03d", slots), "1.0.0"), results)
 		testenv.WaitFor(t, "the pass's process to pre-empt the background fetches", 5*time.Second, func() bool {
-			return r.metric(run, "trove_mirror_preempted_total") >= 2
+			return r.metric(run, "quader_mirror_preempted_total") >= 2
 		})
 		time.Sleep(time.Until(ninth.Add(time.Second)))
 		if got := r.traf.inflight(); got > slots {
 			t.Errorf("%d tarball fetches at the stub 1 s after the ninth began, want at most %d", got, slots)
 		}
-		if got := r.metric(run, "trove_mirror_preempted_total"); got != 2 {
-			t.Errorf("trove_mirror_preempted_total = %v, want 2", got)
+		if got := r.metric(run, "quader_mirror_preempted_total"); got != 2 {
+			t.Errorf("quader_mirror_preempted_total = %v, want 2", got)
 		}
-		if got := r.metric(run, "trove_mirror_items_total", "result", "preempted"); got != 2 {
-			t.Errorf("trove_mirror_items_total{result=preempted} = %v, want 2", got)
+		if got := r.metric(run, "quader_mirror_items_total", "result", "preempted"); got != 2 {
+			t.Errorf("quader_mirror_items_total{result=preempted} = %v, want 2", got)
 		}
 	})
 

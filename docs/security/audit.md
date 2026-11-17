@@ -19,7 +19,7 @@ the requirements are R-OPS-014 to R-OPS-017 in [operations-and-observability.md]
 
 ## Who may read the trail through the API
 
-Reading is a capability, `audit:read` (R-AUTHZ-010), declared as the `x-trove-permission` of the three operations and enforced by the
+Reading is a capability, `audit:read` (R-AUTHZ-010), declared as the `x-quader-permission` of the three operations and enforced by the
 authorization step of the management API before any handler runs ([authorize.go](../../internal/api/v1/authorize.go)). The roles
 that hold it are `admin`, `security-admin` and `auditor`; a token holds it only if its scope names it as a system item and the
 subject holds the role. An anonymous caller is refused with 401, an authenticated caller without the capability with 403, and the
@@ -52,11 +52,11 @@ allowed.
 
 ## Retention, who writes it, and what a replica does when it differs
 
-`trove migrate up` writes `audit.retention_days` into `audit_policy` when the value differs, then calls the maintenance function,
+`quader migrate up` writes `audit.retention_days` into `audit_policy` when the value differs, then calls the maintenance function,
 under the migration lock ([audit.go](../../internal/meta/postgres/audit.go), `syncAuditPolicy`). A lowered value therefore drops
 the now-expired partitions at the next migrate, which the chart runs on every upgrade. A replica reconciles at start-up
 ([store.go](../../internal/audit/store.go), `SyncRetention`): when the configured value differs from the stored one it logs a warning
-that names `trove migrate`, and in single-role mode it writes the row itself. `0` keeps every partition. A value below 90 logs a
+that names `quader migrate`, and in single-role mode it writes the row itself. `0` keeps every partition. A value below 90 logs a
 warning in the migrate Job and in every replica.
 
 ## Where an event can be lost, and where else it is
@@ -66,10 +66,10 @@ warning in the migrate Job and in every replica.
   ([recorder.go](../../internal/audit/recorder.go), `RecordTx`; the log copy is an `After` hook).
 - An asynchronous event is prepared on the request path and written in batches. While PostgreSQL is away the writer keeps its batch
   and retries; the buffer (`audit.async_buffer`) fills behind it; an event that finds it full is written to the log stream and
-  counted in `trove_audit_events_dropped_total`. At shutdown the writer flushes under the shutdown deadline and writes what is left
+  counted in `quader_audit_events_dropped_total`. At shutdown the writer flushes under the shutdown deadline and writes what is left
   to the log stream.
 - An event that reached the table is also written as a `log: audit` record after the commit. For an event that never reached the
-  table, the log record is the only copy, which is why shipping the stream out of trove matters ([H-39](#h-39--audit-records-are-not-tamper-evident)).
+  table, the log record is the only copy, which is why shipping the stream out of Quader matters ([H-39](#h-39--audit-records-are-not-tamper-evident)).
 
 ## The revocation journal row
 
@@ -114,15 +114,15 @@ The check of a Bastion writes `token.rejected` with the caller's address and the
 
 ### H-39 · Audit records are not tamper-evident
 
-In two-role mode, trove's runtime role can only insert and read audit events, and it cannot shorten
+In two-role mode, Quader's runtime role can only insert and read audit events, and it cannot shorten
 their retention (R-OPS-015). Nothing makes the records tamper-evident, though:
 
 - the schema owner and any superuser can alter or delete rows;
-- in single-role mode, trove's own role is the schema owner, so a compromised replica can too;
+- in single-role mode, Quader's own role is the schema owner, so a compromised replica can too;
 - the runtime role can insert forged events in either mode.
 
 Integrity against those holders rests on shipping the `log: audit` stream to a store outside
-trove's control, for example object storage with object lock or a SIEM. Neither trove nor the
+Quader's control, for example object storage with object lock or a SIEM. Neither Quader nor the
 chart enforces that (Q-OPS-4). The gap is live from the first release for every installation that
 does not ship logs externally. For single-role installations it also covers a compromised replica.
 It becomes real for anyone who obtains the owner credential of the migration Job, a superuser
@@ -135,12 +135,12 @@ Stage: `RecordTx` and `Record` ([row.go](../../internal/audit/row.go), `toRow`; 
 Live today. The writer checks that details and a journal entry are JSON objects and bounds their size; it does not look inside. A
 producer that puts a token value, a hash, a password or an authorization code into `details` or into the entry stores it in
 `audit_event` or `revocation_outbox` and, for the log copy, writes it to the log stream, where only the logger's pattern scrubber
-([redact.go](../../internal/observability/redact.go)) stands in the way for trove-format tokens. Subject: every secret a
+([redact.go](../../internal/observability/redact.go)) stands in the way for Quader-format tokens. Subject: every secret a
 producer might hold at the moment it records an event. The data schemas of the registry list the allowed keys but are not enforced at
 insert.
 
 What makes it real: a producer change that adds a field carrying a credential. The stored copy and the exported copy are not scrubbed;
-the log copy is scrubbed for trove token patterns only.
+the log copy is scrubbed for Quader token patterns only.
 
 ### H-122 · A crashed replica loses the buffered asynchronous events and its open summaries
 
@@ -162,7 +162,7 @@ Live today. R-OPS-017 audits the export and nothing else, so a holder of `audit:
 filters, and leave no trace of what they looked for; a compromised credential with the capability reads the whole history this way as
 well. The refusal of a caller without the capability is recorded (`authz.denied`), and the request log (`log: request`) has the access, but the
 audit trail does not say who read which events. What makes it real: an `audit:read` credential in the wrong hands. Mitigations
-outside trove: grant the capability to few principals, and ship the `log: request` stream, which records every access, to the same place as the audit stream.
+outside Quader: grant the capability to few principals, and ship the `log: request` stream, which records every access, to the same place as the audit stream.
 
 The gaps of the Bastion interface's audit events are recorded with the Bastion's mechanisms on [the spec page](../spec/bastion.md#what-this-does-not-cover)
 and linked from [bastion.md](bastion.md#what-this-does-not-cover): [H-439](../spec/bastion.md#h-439--download-events-enter-the-audit-trail-with-the-time-the-bastion-reports)

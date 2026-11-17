@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/guided-traffic/trove/internal/auth/jws"
-	"github.com/guided-traffic/trove/internal/ci/subject"
+	"github.com/guided-traffic/quader/internal/auth/jws"
+	"github.com/guided-traffic/quader/internal/ci/subject"
 )
 
 // The stored form of a key set (R-CI-003 "Data model": the last good key set, public keys only) and its reading.

@@ -49,7 +49,7 @@ func rootDocument(noV1 bool) map[string]any {
 	if noV1 {
 		delete(versions, "v1")
 	}
-	return map[string]any{"available_versions": versions, "current_version": "v3", "description": "trove counting stub of the Galaxy API", "server_version": "stub"}
+	return map[string]any{"available_versions": versions, "current_version": "v3", "description": "quader counting stub of the Galaxy API", "server_version": "stub"}
 }
 
 // limitOffset reads the paging parameters: limit defaults to 100 and is clamped to 1..100, offset to 0 and up.
@@ -171,8 +171,8 @@ func versionDocument(base string, c *collectionDef, v *versionDef, a announced, 
 		"name":         c.name, "namespace": map[string]any{"name": c.ns},
 		"signatures": signatures,
 		"metadata": map[string]any{
-			"authors": []string{"trove test <ansiblestub@trove.invalid>"}, "dependencies": deps,
-			"description":   "trove test collection " + c.fullName(),
+			"authors": []string{"quader test <ansiblestub@quader.invalid>"}, "dependencies": deps,
+			"description":   "quader test collection " + c.fullName(),
 			"documentation": "https://example.invalid/" + c.ns + "/" + c.name + "/docs", "homepage": "https://example.invalid/" + c.ns + "/" + c.name,
 			"issues": "https://example.invalid/" + c.ns + "/" + c.name + "/issues", "license": []string{"GPL-3.0-or-later"}, "license_file": nil,
 			"readme": "README.md", "repository": "https://example.invalid/" + c.ns + "/" + c.name, "tags": []string{"test"},
@@ -238,7 +238,7 @@ func docsDocument(c *collectionDef, v *versionDef, mode string) map[string]any {
 			"doc": map[string]any{
 				"module": "ping_host", "short_description": "Pings a host of " + c.fullName(),
 				"description":   []string{"Sends C(count) probes to I(host) and reports the round trip.", "See U(https://example.com/ping)."},
-				"version_added": v.version, "author": []string{"trove test"},
+				"version_added": v.version, "author": []string{"quader test"},
 				"options": []map[string]any{
 					{"name": "host", "type": "str", "required": true, "description": []string{"The host to ping."}},
 					{"name": "count", "type": "int", "default": 3, "description": []string{"How many probes."}},

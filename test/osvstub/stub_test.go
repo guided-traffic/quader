@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 const token = "control-token"
@@ -471,7 +471,7 @@ func TestMutableDataset(t *testing.T) { // R-VULN-004: add, replace, withdraw; R
 	f := newServer(t, Config{})
 	before := f.stub.Info().Ecosystems["npm"]
 
-	adv := ghsa("GHSA-aaaa-aaaa-9002", "added later", nil, Affected{Package: npmPkg("trove-test-new"), Ranges: semver(Introduced("0"), Fixed("2.0.0"))})
+	adv := ghsa("GHSA-aaaa-aaaa-9002", "added later", nil, Affected{Package: npmPkg("quader-test-new"), Ranges: semver(Introduced("0"), Fixed("2.0.0"))})
 	r := f.mustControl(http.MethodPost, "/-/stub/records", map[string]any{"ecosystem": "npm", "record": json.RawMessage(adv.JSON())})
 	var added struct{ Modified string }
 	_ = json.Unmarshal(r.body, &added)
@@ -531,7 +531,7 @@ func TestMutableDataset(t *testing.T) { // R-VULN-004: add, replace, withdraw; R
 	}
 }
 
-func TestToggles(t *testing.T) { // R-VULN-006, R-VULN-001 (trove-test-late)
+func TestToggles(t *testing.T) { // R-VULN-006, R-VULN-001 (quader-test-late)
 	f := newServer(t, Config{})
 	var info Info
 	_ = json.Unmarshal(f.mustControl(http.MethodGet, "/-/stub/dataset", nil).body, &info)
@@ -885,11 +885,11 @@ func TestFixtureRecords(t *testing.T) { // R-VULN-029
 		t.Fatalf("no %s", id)
 		return Advisory{}
 	}
-	if a := byID("npm", IDVuln); a.Affected[0].Package.Name != "trove-test-vuln" || a.Affected[0].Ranges[0].Events[1]["fixed"] != "1.0.1" || a.Severity[0].Type != "CVSS_V3" || !strings.HasPrefix(a.Severity[0].Score, "CVSS:3.1/") {
-		t.Errorf("trove-test-vuln: %+v", a)
+	if a := byID("npm", IDVuln); a.Affected[0].Package.Name != "quader-test-vuln" || a.Affected[0].Ranges[0].Events[1]["fixed"] != "1.0.1" || a.Severity[0].Type != "CVSS_V3" || !strings.HasPrefix(a.Severity[0].Score, "CVSS:3.1/") {
+		t.Errorf("quader-test-vuln: %+v", a)
 	}
-	if a := byID("npm", IDMal); a.Affected[0].Package.Name != "trove-test-mal" || a.Affected[0].Versions[0] != "1.0.0" || len(a.Affected[0].Ranges) != 0 || len(a.Severity) != 0 {
-		t.Errorf("trove-test-mal: %+v", a)
+	if a := byID("npm", IDMal); a.Affected[0].Package.Name != "quader-test-mal" || a.Affected[0].Versions[0] != "1.0.0" || len(a.Affected[0].Ranges) != 0 || len(a.Severity) != 0 {
+		t.Errorf("quader-test-mal: %+v", a)
 	}
 	if a := byID("npm", IDAlias); a.Aliases[0] != "CVE-2026-0001" || byID("npm", IDAliasCVE).Aliases[0] != IDAlias {
 		t.Error("alias pair")

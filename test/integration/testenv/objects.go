@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // objects is a client of the installation's object store below its prefix, as an operator holds one: what it does
-// happens behind trove's back (an out-of-band deletion, ha-and-helm.md R-HA-024).
+// happens behind quader's back (an out-of-band deletion, ha-and-helm.md R-HA-024).
 func (s *Stack) objects(tb testing.TB) (blob.ObjectStore, string) {
 	tb.Helper()
 	cfg := blobtest.Storage(tb, tb.TempDir()).S3

@@ -1,6 +1,6 @@
 package token
 
-import "github.com/guided-traffic/trove/internal/auth/scope"
+import "github.com/guided-traffic/quader/internal/auth/scope"
 
 // The scope is defined once, in internal/auth/scope; these names are the same
 // types and calls under the spelling the token area has always used, so the

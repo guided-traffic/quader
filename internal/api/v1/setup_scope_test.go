@@ -4,9 +4,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm"
-	"github.com/guided-traffic/trove/internal/formats/oci"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm"
+	"github.com/guided-traffic/quader/internal/formats/oci"
 )
 
 // TestR_API_030_OnlyAConfigureTemplateThatReadsTheVariantComesTwice: a scope adds the scoped copy of
@@ -15,8 +15,8 @@ import (
 func TestR_API_030_OnlyAConfigureTemplateThatReadsTheVariantComesTwice(t *testing.T) {
 	ids := func(scope string) []string {
 		ss, err := renderSnippets(setupInput{
-			Templates: (&oci.Format{}).SetupTemplates(), Client: "docker", Credentials: credEnv, TokenEnvVar: "TROVE_TOKEN", Scope: scope,
-			Data: formats.SetupData{RegistryURL: "https://trove.example.net/v2/web/x/", ImagePrefix: "trove.example.net/web/x", RequiresAuth: true},
+			Templates: (&oci.Format{}).SetupTemplates(), Client: "docker", Credentials: credEnv, TokenEnvVar: "QUADER_TOKEN", Scope: scope,
+			Data: formats.SetupData{RegistryURL: "https://quader.example.net/v2/web/x/", ImagePrefix: "quader.example.net/web/x", RequiresAuth: true},
 		})
 		if err != nil {
 			t.Fatal(err)

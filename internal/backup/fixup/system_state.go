@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 func init() {
@@ -35,7 +35,7 @@ func rewriteSystemState(ctx context.Context, tx meta.Tx, env Env) error {
 		return err
 	}
 	if env.Manifest == nil {
-		// A platform restore (trove admin post-restore) has no backup to record.
+		// A platform restore (quader admin post-restore) has no backup to record.
 		return nil
 	}
 	return set("restored_from", map[string]any{

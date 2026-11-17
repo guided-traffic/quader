@@ -31,7 +31,7 @@ func TestVersionCheck(t *testing.T) {
 		})
 	}
 	t.Run("R-ARCH-031 the refusal names the version and the floor", func(t *testing.T) {
-		want := "valkey 8.1.5 is not supported; trove requires 9.0 or later"
+		want := "valkey 8.1.5 is not supported; Quader requires 9.0 or later"
 		if got := checkServer("valkey", "8.1.5"); got != want {
 			t.Fatalf("reason = %q, want %q", got, want)
 		}

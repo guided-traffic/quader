@@ -8,7 +8,7 @@ package audit
 // repository column), the claimed-name match concerns a repository's claims, and the sync events are system events.
 //
 // Transactional (written in the transaction of the change): vulnerability.finding.status_changed (the triager's change, or
-// each change of a bulk set-status, all with one bulk id), vulnerability.finding.reopened (trove's reopen of a dismissed
+// each change of a bulk set-status, all with one bulk id), vulnerability.finding.reopened (quader's reopen of a dismissed
 // finding), vulnerability.source.imported (an import of mode repository) and vulnerability.advisory.kind_changed (the sync's
 // change of an alias group's canonical record to one of another kind). Asynchronous: the security events
 // vulnerability.download_blocked (at most once a minute per repository, version and client address, R-OPS-015) and

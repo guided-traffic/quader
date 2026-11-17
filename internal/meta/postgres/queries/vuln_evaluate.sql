@@ -194,7 +194,7 @@ UPDATE vuln_finding SET advisory_modified = to_timestamp(sqlc.arg(advisory_modif
  WHERE id = sqlc.arg(id)::text::uuid;
 
 -- name: VulnSetFindingStatus :execrows
--- trove's own status change: a re-detection or a reopen, only when the finding still has the status and the revision the evaluation
+-- quader's own status change: a re-detection or a reopen, only when the finding still has the status and the revision the evaluation
 -- read, so that a triage that came between is never overwritten (Q-VULN-65). The resolution is cleared. The dismissal's reason and
 -- comment go when the finding moves away from dismissed (also from a resolution that came from dismissed); a triage comment on
 -- any other status stays (the history keeps what went).
@@ -230,7 +230,7 @@ SELECT seq::bigint AS seq, change::text AS change, extract(epoch FROM now() - at
 DELETE FROM vuln_finding_event WHERE finding_id = sqlc.arg(finding_id)::text::uuid AND seq = sqlc.arg(seq)::bigint;
 
 -- name: VulnResolveFindings :many
--- trove resolves findings: the previous status is kept in status_before_resolution. Only a finding that is not resolved yet
+-- quader resolves findings: the previous status is kept in status_before_resolution. Only a finding that is not resolved yet
 -- changes, so a batch retried after a lost commit changes nothing the second time. The old status is returned for the events.
 WITH old AS (
     SELECT id, status FROM vuln_finding WHERE id = ANY(sqlc.arg(ids)::text[]::uuid[]) AND status <> 'resolved' FOR UPDATE

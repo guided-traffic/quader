@@ -1,6 +1,6 @@
--- trove:phase expand
+-- quader:phase expand
 --
--- The trove Bastion (R-BAS-004, R-HA-018): the checks that 00032 and 00033 added NOT VALID are validated
+-- The quader Bastion (R-BAS-004, R-HA-018): the checks that 00032 and 00033 added NOT VALID are validated
 -- here, under a lock that lets reads and writes through.
 
 ALTER TABLE principal VALIDATE CONSTRAINT principal_bastion_name;

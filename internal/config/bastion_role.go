@@ -13,13 +13,13 @@ import (
 
 // This file is the configuration schema of the role bastion (R-BAS-001, R-BAS-046, Q-BAS-50): a tree of its
 // own, loaded by LoadBastion, with its own JSON Schema (bastion.schema.json, written by go generate and
-// included by the chart trove-bastion as the schema of its `config` value, R-HA-029's mechanism). It shares the
+// included by the chart quader-bastion as the schema of its `config` value, R-HA-029's mechanism). It shares the
 // machinery of the main tree (the loader, the tags, the units, the secrets) and none of its sections: a key of
 // another section stops startup with an error that names the key and the role.
 //
 // The keys marked `chart:"managed"` are the ones the chart renders from its own values (a mounted file, the
 // replica count): the schema has them so that the binary can read them, and the chart refuses a value for them
-// under `config`. Their schema nodes carry x-trove-chart-managed.
+// under `config`. Their schema nodes carry x-quader-chart-managed.
 
 // BastionRole is the value of --role that selects the Bastion (R-BAS-001).
 const BastionRole = "bastion"
@@ -69,9 +69,9 @@ type BastionSettings struct {
 
 // BastionMain is the connection to the main installation (R-BAS-006, R-BAS-021, R-BAS-025, R-BAS-027).
 type BastionMain struct {
-	URL                   string        `yaml:"url" default:"" validate:"required" doc:"The main endpoint of the main installation, for example https://trove.example.com; https only (R-BAS-044)."`
-	PackagesURL           string        `yaml:"packages_url" default:"" doc:"The Service of the main installation's role packages, for example https://trove-packages.trove.svc:8080; the forwarded package and raw-file requests and the probes go there, everything else to url. Empty means url for both; https only (R-BAS-044)."`
-	TokenFile             string        `yaml:"token_file" default:"" secret:"file" chart:"managed" doc:"File with the trv_bst_ token, read again every token_reload_interval (R-BAS-006); required to serve."`
+	URL                   string        `yaml:"url" default:"" validate:"required" doc:"The main endpoint of the main installation, for example https://quader.example.com; https only (R-BAS-044)."`
+	PackagesURL           string        `yaml:"packages_url" default:"" doc:"The Service of the main installation's role packages, for example https://quader-packages.quader.svc:8080; the forwarded package and raw-file requests and the probes go there, everything else to url. Empty means url for both; https only (R-BAS-044)."`
+	TokenFile             string        `yaml:"token_file" default:"" secret:"file" chart:"managed" doc:"File with the qdr_bst_ token, read again every token_reload_interval (R-BAS-006); required to serve."`
 	CAFile                string        `yaml:"ca_file" default:"" chart:"managed" doc:"CA bundle that verifies the main installation, added to the system roots (trustedCA of the chart)."`
 	ConnectTimeout        time.Duration `yaml:"connect_timeout" default:"5s" validate:"min=100ms,max=2m"`
 	ResponseHeaderTimeout time.Duration `yaml:"response_header_timeout" default:"30s" validate:"min=1s,max=10m" doc:"How long the main installation may take to answer a request before the Bastion answers 504 main_timeout (R-BAS-021)."`
@@ -116,7 +116,7 @@ type BastionCache struct {
 
 // BastionCacheVolume is the local volume of the volume backend.
 type BastionCacheVolume struct {
-	Dir string `yaml:"dir" default:"/var/cache/trove-bastion" chart:"managed" doc:"Mount point of the cache volume; rendered by the chart."`
+	Dir string `yaml:"dir" default:"/var/cache/quader-bastion" chart:"managed" doc:"Mount point of the cache volume; rendered by the chart."`
 }
 
 // BastionCacheBucket is the Bastion's own bucket of the bucket backend (R-BAS-030).
@@ -124,7 +124,7 @@ type BastionCacheBucket struct {
 	Endpoint       string                   `yaml:"endpoint" default:"" doc:"Empty means AWS endpoint resolution for the region; https only (R-BAS-044)."`
 	Region         string                   `yaml:"region" default:""`
 	Bucket         string                   `yaml:"bucket" default:"" doc:"The Bastion's own bucket; required with the bucket backend."`
-	Prefix         string                   `yaml:"prefix" default:"trove-bastion"`
+	Prefix         string                   `yaml:"prefix" default:"quader-bastion"`
 	ForcePathStyle bool                     `yaml:"force_path_style" default:"false" doc:"True for SeaweedFS, MinIO and Ceph RGW."`
 	CAFile         string                   `yaml:"ca_file" default:"" chart:"managed" doc:"CA bundle that verifies the bucket endpoint, added to the system roots (trustedCA of the chart)."`
 	Credentials    BastionBucketCredentials `yaml:"credentials"`
@@ -192,17 +192,17 @@ type BastionAudit struct {
 
 // BastionToken is the warning about the Bastion token's expiry (R-BAS-006).
 type BastionToken struct {
-	WarnBefore time.Duration `yaml:"warn_before" default:"720h" validate:"min=1h" doc:"The log warns and TroveBastionTokenExpiresSoon fires below this remaining lifetime of the token (R-BAS-006)."`
+	WarnBefore time.Duration `yaml:"warn_before" default:"720h" validate:"min=1h" doc:"The log warns and QuaderBastionTokenExpiresSoon fires below this remaining lifetime of the token (R-BAS-006)."`
 }
 
-// BastionValkey is the optional Valkey of the Bastion (R-BAS-034): the keys of the chart trove (R-HA-056) with
+// BastionValkey is the optional Valkey of the Bastion (R-BAS-034): the keys of the chart quader (R-HA-056) with
 // the mode none as the default. The credentials are chart-managed files.
 type BastionValkey struct {
 	Mode                 string           `yaml:"mode" default:"none" validate:"oneof=none|sentinel|standalone" doc:"none: no Valkey (the default); sentinel; standalone is for development only."`
 	Sentinel             BastionSentinel  `yaml:"sentinel"`
 	Address              string           `yaml:"address" default:"" doc:"Standalone mode only."`
 	Database             int              `yaml:"database" default:"0" validate:"min=0"`
-	KeyPrefix            string           `yaml:"key_prefix" default:"" doc:"Part of every key, trove-bastion:<key_prefix>:…; empty means the host of server.base_url (R-BAS-034)."`
+	KeyPrefix            string           `yaml:"key_prefix" default:"" doc:"Part of every key, quader-bastion:<key_prefix>:…; empty means the host of server.base_url (R-BAS-034)."`
 	UsernameFile         string           `yaml:"username_file" default:"" chart:"managed" doc:"Empty means the default user; rendered by the chart from secrets.valkey."`
 	PasswordFile         string           `yaml:"password_file" default:"" secret:"file" chart:"managed"`
 	TLS                  BastionValkeyTLS `yaml:"tls"`
@@ -390,7 +390,7 @@ func (v *BastionValkey) ValidateFor(cmd Command, r *Report) {
 }
 
 // Valkey returns the section in the form of the main tree, which the Valkey client reads. The key prefix is the
-// Bastion's keyspace trove-bastion:<key_prefix>: (R-BAS-034).
+// Bastion's keyspace quader-bastion:<key_prefix>: (R-BAS-034).
 func (v BastionValkey) Valkey() Valkey {
 	return Valkey{
 		Mode: v.Mode, Sentinel: ValkeySentinel(v.Sentinel), Address: v.Address, Database: v.Database,
@@ -403,7 +403,7 @@ func (v BastionValkey) Valkey() Valkey {
 }
 
 // BastionKeyspace starts every Valkey key of a Bastion (R-BAS-034).
-const BastionKeyspace = "trove-bastion:"
+const BastionKeyspace = "quader-bastion:"
 
 // ValidateFor requires what a serving Bastion needs (R-BAS-001, R-BAS-006, R-BAS-030, R-BAS-032, R-BAS-034).
 func (c *BastionConfig) ValidateFor(cmd Command, r *Report) {

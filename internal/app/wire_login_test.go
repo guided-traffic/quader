@@ -5,9 +5,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/login"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/login"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 func TestLoginRoutes(t *testing.T) {

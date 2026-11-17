@@ -42,10 +42,10 @@ const (
 
 // restoreNS is the namespace of the second installation.
 var restoreNS = func() string {
-	if v := os.Getenv("TROVE_E2E_RESTORE_NAMESPACE"); v != "" {
+	if v := os.Getenv("QUADER_E2E_RESTORE_NAMESPACE"); v != "" {
 		return v
 	}
-	return "trove-restore"
+	return "quader-restore"
 }()
 
 // ── the profile and the fixture ──────────────────────────────────────────────
@@ -181,17 +181,17 @@ func retrying(f func() (reply, error)) (reply, error) {
 
 // bakSQL runs a statement on the primary and returns the error instead of failing a test, for the load's goroutine.
 func bakSQL(ctx context.Context, query string) (string, error) {
-	prim, err := kubectlCtx(ctx, "-n", cfg.namespace, "get", "cluster", "trove-db", "-o", "jsonpath={.status.currentPrimary}")
+	prim, err := kubectlCtx(ctx, "-n", cfg.namespace, "get", "cluster", "quader-db", "-o", "jsonpath={.status.currentPrimary}")
 	if err != nil {
 		return "", err
 	}
-	return kubectlCtx(ctx, "-n", cfg.namespace, "exec", strings.TrimSpace(prim), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-F", "|", "-c", "SET search_path TO trove; "+query)
+	return kubectlCtx(ctx, "-n", cfg.namespace, "exec", strings.TrimSpace(prim), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", "|", "-c", "SET search_path TO quader; "+query)
 }
 
 // krSQL runs a statement on the database of the restored installation.
 func krSQL(t testing.TB, query string) string {
 	t.Helper()
-	out, err := kubectl("-n", restoreNS, "exec", "trove-db-1", "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-F", "|", "-c", query)
+	out, err := kubectl("-n", restoreNS, "exec", "quader-db-1", "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", "|", "-c", query)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,7 +287,7 @@ func startBakLoad(a *api, run string) *bakLoad {
 			case i%4 == 3 && len(files) > 4: // a trashed item: the trash can has no API yet (R-STOR-022 is P1), so its row is marked
 				victim := files[0]
 				files = files[1:]
-				q := fmt.Sprintf(`UPDATE trove.items SET trashed_at = now() WHERE kind = 'file' AND trashed_at IS NULL AND path = '%s'`, victim)
+				q := fmt.Sprintf(`UPDATE quader.items SET trashed_at = now() WHERE kind = 'file' AND trashed_at IS NULL AND path = '%s'`, victim)
 				if _, err := bakSQL(ctx, q); err != nil {
 					if ctx.Err() == nil {
 						l.fail("trash %s: %v", victim, err)
@@ -297,7 +297,7 @@ func startBakLoad(a *api, run string) *bakLoad {
 				}
 			}
 			if i%9 == 8 { // the trash is emptied: its rows go and release their blobs
-				if _, err := bakSQL(ctx, `DELETE FROM trove.items WHERE trashed_at < now() - interval '5 seconds'`); err != nil && ctx.Err() == nil {
+				if _, err := bakSQL(ctx, `DELETE FROM quader.items WHERE trashed_at < now() - interval '5 seconds'`); err != nil && ctx.Err() == nil {
 					l.fail("empty the trash: %v", err)
 				} else {
 					l.note(func(s *bakStats) { s.Emptied++ })
@@ -348,11 +348,11 @@ type bakJob struct {
 	preferNode string
 }
 
-// bakCreateJob creates the Job from cronjob/trove-backup the way `kubectl create job --from` does (R-BAK-012) and applies the
+// bakCreateJob creates the Job from cronjob/quader-backup the way `kubectl create job --from` does (R-BAK-012) and applies the
 // changes of the description to it.
 func bakCreateJob(t testing.TB, j bakJob) {
 	t.Helper()
-	out := kn(t, "create", "job", j.name, "--from=cronjob/trove-backup", "--dry-run=client", "-o", "json")
+	out := kn(t, "create", "job", j.name, "--from=cronjob/quader-backup", "--dry-run=client", "-o", "json")
 	var job map[string]any
 	if err := json.Unmarshal([]byte(out), &job); err != nil {
 		t.Fatal(err)
@@ -506,8 +506,8 @@ type restored struct {
 // openRestored forwards the Services of the restored installation and returns clients with the token.
 func openRestored(t testing.TB, token string) *restored {
 	t.Helper()
-	fa := portForwardIn(t, restoreNS, "svc/trove-api", 8080)
-	fp := portForwardIn(t, restoreNS, "svc/trove-packages", 8080)
+	fa := portForwardIn(t, restoreNS, "svc/quader-api", 8080)
+	fp := portForwardIn(t, restoreNS, "svc/quader-packages", 8080)
 	t.Cleanup(func() { stopForward(fa); stopForward(fp) })
 	mk := func(f *forward) *api {
 		return newAPI(t, withRoute(&route{pins: map[string]string{"localhost": f.addr}})).withToken(token)

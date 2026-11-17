@@ -41,7 +41,7 @@ func TestNuGetHA(t *testing.T) {
 	})
 
 	t.Run("R-HA-051 R-HA-052 R-HA-057 R-NUGET-030 dev-valkey-failover during the npm ci and dotnet restore loops: no failed iteration, k6 only 2xx and 304, /readyz 200 throughout, every replica follows the new primary once", func(t *testing.T) {
-		const changes = "trove_valkey_primary_changes_total"
+		const changes = "quader_valkey_primary_changes_total"
 		var before map[string]float64
 		r := runFullFault(t, h, nh, "valkey-failover", time.Minute, time.Minute, func() {
 			before = replicaMetric(t, changes)

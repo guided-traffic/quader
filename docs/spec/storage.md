@@ -2,7 +2,7 @@
 
 Status: specification — not implemented
 
-This page specifies how trove keeps package content and the metadata that describes it: the
+This page specifies how Quader keeps package content and the metadata that describes it: the
 content-addressed blob store on S3-compatible object storage (INV-4), the PostgreSQL schema for
 repositories, items, packages, versions, blobs, blob references and properties (INV-3), the upload
 pipeline (spooling, single-pass hashing, size limits, multipart transfer, deduplication, deploy by
@@ -13,7 +13,7 @@ concurrent uploads, the integrity scrub and orphan sweep, quotas and capacity th
 and cleanup policies, the S3 configuration and credential chain, the consistency assumptions about
 the object store, the behavior while the object store is unavailable, which role runs each part
 of the storage work across any number of replicas (R-STOR-046), and what storage contributes to
-trove's own backup and restore (R-STOR-047). Repository semantics (classes, virtual resolution,
+Quader's own backup and restore (R-STOR-047). Repository semantics (classes, virtual resolution,
 pull-through) are in [repositories-and-proxy.md](repositories-and-proxy.md); the permission model
 is in [authorization.md](authorization.md); the format plug-in interface, the job framework, the
 Valkey usage map and the shutdown order are in [architecture.md](architecture.md); Helm values,
@@ -77,7 +77,7 @@ Every blob MUST be stored as exactly one S3 object whose key is derived only fro
 
 `<h0…h63>` is the lowercase hexadecimal SHA-256 of the content; `<h0h1>` and `<h2h3>` are its
 first and second byte. Example: content with SHA-256
-`5be0c1d2…` *(example)* lies at `trove/sha256/5b/e0/5be0c1d2…`. With an empty prefix the key
+`5be0c1d2…` *(example)* lies at `quader/sha256/5b/e0/5be0c1d2…`. With an empty prefix the key
 starts at `sha256/` (no leading slash).
 
 - The key MUST NOT contain any part of a project key, repository key, item path, file name or user input.
@@ -87,16 +87,16 @@ starts at `sha256/` (no leading slash).
 - The two-level fan-out (65,536 leaf prefixes) is fixed and not configurable. It spreads requests
   over many key prefixes, which object stores use to partition request rates, and it lets the
   orphan sweep (R-STOR-026) work prefix by prefix and resume.
-- trove writes only these key families below `<prefix>/`:
+- Quader writes only these key families below `<prefix>/`:
 
   | Key family | Content | Lifecycle |
   |---|---|---|
   | `sha256/…` | Blobs | Created by the upload pipeline, deleted only by garbage collection (R-STOR-024) and the orphan sweep (R-STOR-026). |
   | `_uploads/<session-id>/data`, `_uploads/<session-id>/tail-<writer>` | The S3 multipart upload of a multi-request upload session, and the session's tail of less than one part, one object per request that wrote it (R-STOR-011, P1) | Everything below `_uploads/<session-id>/` is deleted on finalize, abort or expiry; a superseded tail is deleted once its successor is recorded; the orphan sweep removes leftovers (R-STOR-026). |
   | `_probe/<replica-id>` | Startup and conformance probe objects (R-STOR-035) | Deleted after each probe. |
-  | `_journal/revocations/<yyyy>/<mm>/<dd>/<id>.json` | Revocation journal entries ([ha-and-helm.md](ha-and-helm.md) R-HA-054) | Written by the shipping job (a re-ship writes identical content); never deleted by trove; expired only by an operator lifecycle rule. |
+  | `_journal/revocations/<yyyy>/<mm>/<dd>/<id>.json` | Revocation journal entries ([ha-and-helm.md](ha-and-helm.md) R-HA-054) | Written by the shipping job (a re-ship writes identical content); never deleted by Quader; expired only by an operator lifecycle rule. |
 
-  Any other object below `<prefix>/` is foreign: trove reports it and never deletes it.
+  Any other object below `<prefix>/` is foreign: Quader reports it and never deletes it.
 - A backup copies only `sha256/` objects that its database snapshot references; the other key
   families are not part of a backup ([backup-and-restore.md](backup-and-restore.md) R-BAK-001).
   A backup target never lies below `<prefix>/`, and `<prefix>/` never lies below a backup target
@@ -108,11 +108,11 @@ starts at `sha256/` (no leading slash).
 
 Acceptance criteria:
 
-- After `curl -fsS -H "Authorization: Bearer $TROVE_TOKEN" -T widget.bin https://trove.example.com/files/web/generic-local/tools/widget.bin`
-  *(example)*, `aws s3api head-object --bucket trove-blobs --key trove/sha256/<h0h1>/<h2h3>/<hex>`
+- After `curl -fsS -H "Authorization: Bearer $QUADER_TOKEN" -T widget.bin https://quader.example.com/files/web/generic-local/tools/widget.bin`
+  *(example)*, `aws s3api head-object --bucket quader-blobs --key quader/sha256/<h0h1>/<h2h3>/<hex>`
   succeeds, where `<hex>` is the output of `shasum -a 256 widget.bin`.
 - Uploading the same file to a second repository and a second path creates no second object
-  (`aws s3api list-objects-v2 --prefix trove/sha256/<h0h1>/<h2h3>/` lists it once).
+  (`aws s3api list-objects-v2 --prefix quader/sha256/<h0h1>/<h2h3>/` lists it once).
 - A path containing `../`, `%2F` or a key of another tenant has no effect on the object key (unit
   test over the key function: input is a 32-byte digest, nothing else).
 
@@ -443,7 +443,7 @@ never counts.
 
 Acceptance criteria:
 
-- `trove migrate` on an empty database creates the tables; the migration test lists every
+- `quader migrate` on an empty database creates the tables; the migration test lists every
   foreign key to `blobs` with index and triggers present.
 - A property value of 2,400 four-byte characters can be stored and found by key and value.
 - Two items with paths `a/b` and `a/b0` in one repository: a subtree query for `a/b` returns only
@@ -546,7 +546,7 @@ storage:
   upload:
     max_size: 10GiB           # default (proposed); must not exceed storage.spool.max_bytes
   spool:
-    dir: /var/lib/trove/spool  # default (proposed)
+    dir: /var/lib/quader/spool  # default (proposed)
     max_bytes: 50GiB          # default (proposed); budget shared by all concurrent uploads of a replica
     min_free_bytes: 2GiB      # default (proposed)
     memory_threshold: 1MiB    # default (proposed)
@@ -554,8 +554,8 @@ storage:
 ```
 
 Metrics (names per [operations-and-observability.md](operations-and-observability.md)
-conventions): `trove_spool_used_bytes` (the budget that running uploads hold), `trove_spool_free_bytes` (free space of the spool volume),
-`trove_storage_upload_rejections_total{reason}`.
+conventions): `quader_spool_used_bytes` (the budget that running uploads hold), `quader_spool_free_bytes` (free space of the spool volume),
+`quader_storage_upload_rejections_total{reason}`.
 
 Acceptance criteria:
 
@@ -667,8 +667,8 @@ storage:
 Acceptance criteria:
 
 - Publishing the same npm tarball to `npm-a` and `npm-b`
-  (`npm publish --registry https://trove.example.com/api/npm/web/npm-b/`) causes exactly one S3
-  `PutObject` (S3 request metric `trove_storage_s3_requests_total{operation="put"}` grows by one) and
+  (`npm publish --registry https://quader.example.com/api/npm/web/npm-b/`) causes exactly one S3
+  `PutObject` (S3 request metric `quader_storage_s3_requests_total{operation="put"}` grows by one) and
   two item rows referencing one blob row.
 - Race test (Go integration test against PostgreSQL and the per-change S3 store of
   [ha-and-helm.md](ha-and-helm.md) R-HA-051, run in CI): 32 goroutines upload
@@ -755,8 +755,8 @@ Response sketch:
   "created": { "at": "2026-10-28T09:14:03.117Z", "by": "user:alice" },
   "digests": { "sha256": "5be0c1d2…", "sha512": "…", "sha1": "…", "md5": "…" },
   "declaredDigests": { "sha256": "5be0c1d2…" },
-  "downloadUrl": "https://trove.example.com/files/web/generic-local/tools/widget/2.3/widget-2.3.bin",
-  "itemUrl": "https://trove.example.com/api/v1/projects/web/repositories/generic-local/items?path=tools%2Fwidget%2F2.3%2Fwidget-2.3.bin"
+  "downloadUrl": "https://quader.example.com/files/web/generic-local/tools/widget/2.3/widget-2.3.bin",
+  "itemUrl": "https://quader.example.com/api/v1/projects/web/repositories/generic-local/items?path=tools%2Fwidget%2F2.3%2Fwidget-2.3.bin"
 }
 ```
 
@@ -771,7 +771,7 @@ at a path the format writes (a version's tarball path) would block its next writ
 
 Acceptance criteria:
 
-- `curl -fsS -u ci:$TROVE_TOKEN -T widget.bin https://trove.example.com/files/web/generic-local/tools/widget.bin`
+- `curl -fsS -u ci:$QUADER_TOKEN -T widget.bin https://quader.example.com/files/web/generic-local/tools/widget.bin`
   answers `201` with the JSON above; repeating it answers `200`.
 - `curl -X PUT …/files/web/generic-local/empty-folder/` answers `201`; the folder appears in the
   listing (R-STOR-017) with no children.
@@ -780,10 +780,10 @@ Acceptance criteria:
 ### R-STOR-008 · Deploy by checksum and checksum-first transfer
 Priority: **P1** · Covers: ART-004, STOR-003
 
-A client can create a file item from content trove already stores without sending the bytes.
+A client can create a file item from content Quader already stores without sending the bytes.
 
 - **Explicit form.** `PUT /files/{projectKey}/{repoKey}/{path}` with an empty body, the header
-  `Trove-Deploy-By-Checksum: ?1` (a structured-field boolean) and
+  `Quader-Deploy-By-Checksum: ?1` (a structured-field boolean) and
   `Repr-Digest: sha-256=:<base64>:`. If a `live` blob with that SHA-256 and `content_status = 'ok'`
   exists **and the caller can read at least one untrashed item that references it**, the item is
   created through the normal commit transaction and the answer is `201` with the R-STOR-007 item
@@ -818,7 +818,7 @@ storage:
 Acceptance criteria:
 
 - After uploading `widget.bin` to `generic-a`, a user with read on `generic-a` runs
-  `curl -X PUT -H "Trove-Deploy-By-Checksum: ?1" -H "Repr-Digest: sha-256=:$(openssl dgst -sha256 -binary widget.bin | base64):" …/files/web/generic-b/widget.bin`
+  `curl -X PUT -H "Quader-Deploy-By-Checksum: ?1" -H "Repr-Digest: sha-256=:$(openssl dgst -sha256 -binary widget.bin | base64):" …/files/web/generic-b/widget.bin`
   and gets `201`; no S3 request is made.
 - A user without read on `generic-a` gets `404` for the same request.
 - `curl -T big.bin -H "Expect: 100-continue" -H "Repr-Digest: sha-256=:…:"` for stored content
@@ -836,8 +836,8 @@ Priority: **P1** · Covers: ART-003
   unambiguous: the keys end at the first `;`, and only the parameters after it are percent-decoded; file names that contain `;` stay legal and
   are never parsed. This position also serves build tools that template a deploy base URL and
   append the artifact path (Maven distribution URLs).
-- Alternatively the header `Trove-Properties` carries a structured-field dictionary of string
-  or inner-list values (`Trove-Properties: ci.run="8812", targets=("linux" "darwin")`
+- Alternatively the header `Quader-Properties` carries a structured-field dictionary of string
+  or inner-list values (`Quader-Properties: ci.run="8812", targets=("linux" "darwin")`
   *(example)*).
 - Deploy-time properties are written in the commit transaction and follow the property model
   (R-STOR-020); they require `annotate` in addition to `deploy`. Without `annotate` the deploy
@@ -845,7 +845,7 @@ Priority: **P1** · Covers: ART-003
 
 Acceptance criteria:
 
-- `curl -T w.jar "https://trove.example.com/files/web/maven-local;build.number=17/com/acme/w/1.0/w-1.0.jar"`
+- `curl -T w.jar "https://quader.example.com/files/web/maven-local;build.number=17/com/acme/w/1.0/w-1.0.jar"`
   stores the file at `com/acme/w/1.0/w-1.0.jar` with property `build.number=17`.
 - A file named `a;b=c.txt` uploaded to `…/files/web/generic-local/dir/a;b=c.txt` keeps its name and
   gets no property.
@@ -888,7 +888,7 @@ Acceptance criteria:
   any sidecar ever being uploaded.
 
 ### R-STOR-011 · Multi-request upload sessions
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 Some protocols upload one blob over several requests: the OCI chunked blob upload (see the OCI
 format page once written) and resumable generic uploads. The Service spreads requests at random
@@ -991,7 +991,7 @@ part hold:
    empty object is.
 3. State `assembled`: the commit protocol of R-STOR-005 runs, with a server-side copy of the
    staging object to the content address as its object write (`CopyObject` up to 5 GiB,
-   `UploadPartCopy` above); a deduplication hit copies nothing. No byte passes through trove.
+   `UploadPartCopy` above); a deduplication hit copies nothing. No byte passes through Quader.
 4. The state becomes `done` in the transaction that links the item (the same transaction as step
    3's commit, [Q-STOR-171](#q-stor-171--a-session-ends-in-the-transaction-that-links-the-item)),
    every object below `_uploads/<session-id>/` is deleted after it, and the answer is `201`.
@@ -1026,7 +1026,7 @@ enforce `session_max_age` themselves (step 2), so a delayed or paused collection
 the clean-up. `session_max_age` MUST be shorter than `storage.orphans.multipart_max_age` and than
 the bucket's lifecycle rule (R-STOR-006). Startup refuses a value not below `multipart_max_age`;
 keeping the lifecycle rule at one day or longer is the operator's part, because the permissions of
-R-STOR-031 do not let trove read it. The orphan sweep (R-STOR-026) removes what an aborted run
+R-STOR-031 do not let Quader read it. The orphan sweep (R-STOR-026) removes what an aborted run
 left: until it is a task of its own, the full collection sweep (`gc-full`) does, for the staging
 area, with `session_max_age` as the age
 ([Q-STOR-172](#q-stor-172--the-full-collection-sweep-removes-what-no-session-stands-for-until-the-orphan-sweep-is-a-task-of-its-own)).
@@ -1140,7 +1140,7 @@ content) resolve the item (virtual and remote resolution:
   the client as incomplete and is never taken for the whole file. A remote-cache fill that the
   fetching replica streams to its own client while the fetch runs follows the withheld-tail rule
   of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-041 instead.
-- **User content is never rendered as part of trove's origin.** Responses carrying stored
+- **User content is never rendered as part of Quader's origin.** Responses carrying stored
   content MUST include these headers:
   - `X-Content-Type-Options: nosniff`;
   - `Content-Security-Policy: sandbox; default-src 'none'`;
@@ -1218,13 +1218,13 @@ Acceptance criteria:
 - A test handler that deletes `Content-Security-Policy` and sets
   `Cross-Origin-Resource-Policy: cross-origin` before writing still sends the sandbox CSP and
   `same-site`.
-- `npm install @acme/widget --registry https://trove.example.com/api/npm/web/npm-all/` and
+- `npm install @acme/widget --registry https://quader.example.com/api/npm/web/npm-all/` and
   `dotnet restore` against the NuGet source download through this path.
 
 ### R-STOR-013 · Download integrity verification
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
-- For full-content `GET` responses streamed through trove, the server MUST compute the SHA-256
+- For full-content `GET` responses streamed through Quader, the server MUST compute the SHA-256
   of the bytes it sends and hold back the final `storage.download.hold_back` bytes until the S3
   body has ended and the digest matches the blob's SHA-256.
 - When the digest does not match, or the S3 body does not deliver exactly the blob's size, the
@@ -1234,7 +1234,7 @@ Priority: **MVP** · Covers: trove-only
 - Only evidence about the stored object changes its status: an S3 response whose
   `Content-Length` differs from the blob's size, or a body read to its end whose SHA-256 differs,
   MUST set the blob's `content_status` to `corrupt` and emit an audit event and the metric
-  `trove_storage_blobs_damaged_total{status="corrupt"}`. A transport error while reading the body
+  `quader_storage_blobs_damaged_total{status="corrupt"}`. A transport error while reading the body
   (connection reset, idle timeout, unexpected end of the body) aborts the response the same way
   but MUST NOT change the status, as for the scrub (R-STOR-027). A check that is on by default must
   not take content offline (R-STOR-012 answers `500` for a `corrupt` blob) because of a network
@@ -1242,7 +1242,7 @@ Priority: **MVP** · Covers: trove-only
 - Ranged responses and presigned redirects (R-STOR-014) cannot be verified this way; see H-11.
 - The check is on by default (Q-STOR-6). `storage.download.verify: false` disables it for
   replicas whose CPU, not their network, limits download throughput. The reads of the UI's shared asset store are verified
-  whatever the setting says, because their bytes run in the browser as trove's code
+  whatever the setting says, because their bytes run in the browser as Quader's code
   ([api-and-ui.md](api-and-ui.md#q-ui-143--a-file-of-the-shared-store-is-verified-whatever-storagedownloadverify-says)).
 
 Configuration:
@@ -1259,7 +1259,7 @@ Acceptance criteria:
 - Overwriting an object in the S3 store with different bytes of the same length (`aws s3 cp`
   directly into the bucket) and downloading the item with `curl --http1.1` makes `curl` report a partial
   transfer (exit code 18), and the blob shows `content_status = 'corrupt'`.
-- A fault proxy that resets the connection between trove and the S3 store in the middle of a download
+- A fault proxy that resets the connection between Quader and the S3 store in the middle of a download
   makes `curl` report a partial transfer, and the blob keeps `content_status = 'ok'`; the next
   download succeeds.
 
@@ -1280,7 +1280,7 @@ Specified now because the download path must leave room for it; implementation i
 - A virtual repository redirects only when the member that serves the item has the switch on.
 - Authorization happens before the URL is issued; download statistics are counted at issuance.
 - An installation that encrypts its stored content on the client side ([R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content))
-  cannot redirect: the object store holds only ciphertext, so every download is decrypted and streamed by trove, and
+  cannot redirect: the object store holds only ciphertext, so every download is decrypted and streamed by Quader, and
   `presignedDownloads: true` is refused there.
 - URLs are signed against `storage.s3.presign.endpoint` when set (a public host name in front
   of an in-cluster object store), otherwise against the configured endpoint. With temporary
@@ -1305,20 +1305,20 @@ Acceptance criteria:
 - Files below `min_size` are streamed (`200`).
 
 ### R-STOR-048 · Client-side encryption of stored content
-Priority: **P2** · Covers: trove-only
+Priority: **P2** · Covers: quader-only
 
-Decided by the owner on 2026-11-06: trove will store the content of its blobs encrypted in the object store, in the
+Decided by the owner on 2026-11-06: Quader will store the content of its blobs encrypted in the object store, in the
 storage format of [s3-encryption-proxy](https://github.com/guided-traffic/s3-encryption-proxy) (s3ep), with s3ep
 imported as a Go module. Not built. This block is the ticket for that work ([FULL.md](../projektplan/FULL.md), block E);
 the points under "Open before it is built" are decided when it is planned.
 
 Why: the object store, its operators, its backups and anybody who can read the bucket see only ciphertext, and the key
-encryption key stays with trove. An object trove writes is readable through s3ep with the same key and metadata prefix,
-and the other way round, so an operator can read a blob without trove.
+encryption key stays with Quader. An object Quader writes is readable through s3ep with the same key and metadata prefix,
+and the other way round, so an operator can read a blob without Quader.
 
 What it means:
 
-- trove is always the proxy: every download is decrypted and streamed by trove. Presigned redirects (R-STOR-014) are
+- Quader is always the proxy: every download is decrypted and streamed by Quader. Presigned redirects (R-STOR-014) are
   refused while it is on. Server-side encryption (R-STOR-032) stays possible beneath it.
 - Each blob has one random 256-bit data key; the content is an AES-256-GCM segment chain closed by a sealed trailer (the
   plaintext's length and CRC32C). The data key is wrapped by an AES-256 key encryption key and stored in four object
@@ -1340,19 +1340,19 @@ not in this repository.
 
 Open before it is built, each a decision with the spec edits it causes:
 
-1. **Where the glue lives.** As a supported package of the s3ep repository that trove imports, with the
-   interoperability test in s3ep's CI; or as `internal/blob/s3enc` in trove, pinning s3ep's `pkg/encryption` by
+1. **Where the glue lives.** As a supported package of the s3ep repository that Quader imports, with the
+   interoperability test in s3ep's CI; or as `internal/blob/s3enc` in Quader, pinning s3ep's `pkg/encryption` by
    pseudo-version (its module path carries no `/v5`, so a release tag cannot be required). s3ep's `pkg/` is not a
    declared public API, and stored-data compatibility is not owed across its major releases, which favours the first.
-2. **The seam to `blob.ObjectStore`.** s3enc uploads from one stream; trove drives the multipart calls itself: parts
+2. **The seam to `blob.ObjectStore`.** s3enc uploads from one stream; Quader drives the multipart calls itself: parts
    read from the spool with per-part checksums and retries (R-STOR-006), and upload sessions that append parts across
-   requests and replicas (R-STOR-011). Either an encrypting `ObjectStore` that maps trove's calls onto the segment chain
+   requests and replicas (R-STOR-011). Either an encrypting `ObjectStore` that maps Quader's calls onto the segment chain
    (a retried part must produce the same ciphertext, and a session's chain state, its segment index, running CRC32C and
-   wrapped data key, must live in PostgreSQL so that any replica continues it), or trove's upload path uses the stream
+   wrapped data key, must live in PostgreSQL so that any replica continues it), or Quader's upload path uses the stream
    API for an encrypted installation and gives up its own part control there.
 3. **Server-side copies.** The segments are authenticated under the object key, so an object copied to another key
    cannot be read. That hits the finalize of an upload session (R-STOR-011 copies `_uploads/<session-id>/data` to the
-   content address, "no byte passes through trove") and the backup copy from `<prefix>/sha256/…` to `pool/sha256/…`
+   content address, "no byte passes through Quader") and the backup copy from `<prefix>/sha256/…` to `pool/sha256/…`
    ([backup-and-restore.md](backup-and-restore.md)) with its restore. Either re-encrypt, streamed through a replica (one
    read and one write of the blob, multi-gigabyte blobs included), or bind the segments to a name that does not change
    with the copy (the content address `sha256/<hex>`), which keeps server-side copies but loses reading through s3ep,
@@ -1378,7 +1378,7 @@ Open before it is built, each a decision with the spec edits it causes:
    PostgreSQL. A project is charged the logical size in any case (Q-STOR-155).
 9. **Cost.** AES-256-GCM on the `packages` pods for every upload and download; a ranged read costs a `HEAD` and a ranged
    `GET` instead of one `GET`. The throughput targets are measured again with encryption on.
-10. **Dependencies.** The sketch requires newer patch releases of `aws-sdk-go-v2` than trove pins (`v1.47.8` against
+10. **Dependencies.** The sketch requires newer patch releases of `aws-sdk-go-v2` than Quader pins (`v1.47.8` against
     `v1.47.5`, `service/s3` `v1.114.9` against `v1.114.6`) and adds `feature/s3/transfermanager` (v0.x): one version of
     each, raised everywhere.
 11. **The Bastion.** Its cache backend is a store of its own (R-BAS-030); whether it encrypts too.
@@ -1386,8 +1386,8 @@ Open before it is built, each a decision with the spec edits it causes:
 Acceptance criteria, once built:
 
 - With encryption on, `aws s3api get-object` of a blob returns ciphertext whose metadata carries the four format keys;
-  a download through trove returns the original bytes (SHA-256 matches); the object read through s3ep with the same key
-  and prefix returns the same bytes, and an object written through s3ep is served by trove.
+  a download through Quader returns the original bytes (SHA-256 matches); the object read through s3ep with the same key
+  and prefix returns the same bytes, and an object written through s3ep is served by Quader.
 - A blob whose stored bytes were altered fails authentication: the download is aborted (R-STOR-013) and the blob is
   marked `corrupt`.
 - `presignedDownloads: true` is refused while encryption is on.
@@ -1396,7 +1396,7 @@ Acceptance criteria, once built:
 ### R-STOR-015 · Download statistics
 Priority: **P1** · Covers: ART-029
 
-- A download counts when trove answers `200` with the full content, `206` for a range starting
+- A download counts when Quader answers `200` with the full content, `206` for a range starting
   at byte 0, or issues a presigned redirect; `HEAD`, `304`, sidecars and requests with
   `?stats=false` do not count.
 - Through a virtual repository the count goes to the item of the serving member.
@@ -1456,7 +1456,7 @@ Priority: **MVP** · Covers: ART-027, ART-001
   "contentStatus": "ok",
   "package": { "name": "@acme/widget", "version": "1.4.0", "lead": true },
   "upstreamUrl": null,
-  "downloadUrl": "https://trove.example.com/files/web/npm-local/@acme/widget/-/widget-1.4.0.tgz"
+  "downloadUrl": "https://quader.example.com/files/web/npm-local/@acme/widget/-/widget-1.4.0.tgz"
 }
 ```
 
@@ -1467,7 +1467,7 @@ malformed path; `401`; `403`; `404`.
 
 Acceptance criteria:
 
-- After `dotnet nuget push Acme.Widget.1.4.0.nupkg --source https://trove.example.com/api/nuget/web/nuget-local/v3/index.json --api-key $TROVE_TOKEN`
+- After `dotnet nuget push Acme.Widget.1.4.0.nupkg --source https://quader.example.com/api/nuget/web/nuget-local/v3/index.json --api-key $QUADER_TOKEN`
   the item of the `.nupkg` shows `package.name = "acme.widget"`, `version = "1.4.0"`,
   `lead = true`.
 
@@ -1486,7 +1486,7 @@ Priority: **P1** · Covers: ART-028, ART-042
   `sandbox`, no scripts), JSON
   (the same entries) otherwise. Under the repository's checksum policy (R-STOR-010) sidecar
   entries appear next to files.
-- The HTML index is rendered by trove, not stored content, so it carries no `Content-Disposition`.
+- The HTML index is rendered by Quader, not stored content, so it carries no `Content-Disposition`.
   It still carries `nosniff` and `Cross-Origin-Resource-Policy: same-site` (`same-origin` when the
   session cookie authenticated the request, [architecture.md](architecture.md) R-ARCH-007). The core's writer
   wrapper of R-STOR-012 selects this header set for a folder `GET` before the handler runs, so the
@@ -1695,7 +1695,7 @@ Priority: **P1** · Covers: ART-021, ART-022, ART-023, ART-024, ART-025
   holds a set of values. Keys: 1–255 characters, no control characters and none of `= , ; |`.
   Values: up to 2,400 characters, no control characters except tab. At most
   `storage.properties.max_values_per_item` values per item.
-- Keys starting with `trove.` are reserved for system-maintained properties and cannot be
+- Keys starting with `quader.` are reserved for system-maintained properties and cannot be
   written by clients.
 - Writable in local repositories and remote caches; readable but not writable through virtual
   repositories (`405`).
@@ -1813,7 +1813,7 @@ Priority: **P1** · Covers: ART-036, RET-038
   - The purge, permanent removal and the manual purge of R-STOR-023 leave them in place, so a
     version number stays reserved after its content is gone.
   - Only a restore of the version (R-STOR-023) and the deletion of the whole repository remove
-    one, and `trove admin npm reinstate` for a tombstone that a restore's journal replay wrote for
+    one, and `quader admin npm reinstate` for a tombstone that a restore's journal replay wrote for
     a version that is still stored with its integrity ([formats/npm.md](formats/npm.md)
     R-NPM-047). None of them admits other bytes under the version number (R-NPM-008).
   - Tombstones do not appear in the trash-can listing.
@@ -1967,14 +1967,14 @@ DELETE FROM blobs WHERE sha256 = $1 AND state = 'deleting';
 4. *A row becomes `live` only after its object write succeeded* (R-STOR-005, R-STOR-006).
 
 From 1–4: every committed reference points at a `live` row whose object exists. Damage from
-outside trove (objects deleted or altered directly in the bucket) is detected by the scrub
+outside Quader (objects deleted or altered directly in the bucket) is detected by the scrub
 (R-STOR-027), not prevented.
 
 The hold check (2b) only ever keeps a blob, so it cannot weaken 1–4. It gives a running backup
 liveness: a blob that the backup's snapshot references stays in the bucket until the backup has
 copied it. [backup-and-restore.md](backup-and-restore.md) R-BAK-007 proves this and needs from
 this protocol only that (2b) starts after (2) of the same blob. A held blob stays `live`, its
-queue entry stays, `trove_gc_candidates_held_total` grows, and the next run considers it again.
+queue entry stays, `quader_gc_candidates_held_total` grows, and the next run considers it again.
 A run that finds a valid `all` hold when it reaches its candidates skips them and ends; the
 per-blob check still guards the race, and the early exit only saves the locking.
 
@@ -2041,7 +2041,7 @@ backup ([ha-and-helm.md](ha-and-helm.md) R-HA-023 to R-HA-025) to any moment wit
 `grace_period` finds every blob it references still in the bucket, because a blob is deleted no
 earlier than `grace_period` after its last reference disappeared (longer restore windows need
 bucket versioning with noncurrent-version expiry at least that long, R-HA-024); (c) defense in
-depth. trove's own backups do not depend on it: the hold (2b) keeps every blob a running backup
+depth. Quader's own backups do not depend on it: the hold (2b) keeps every blob a running backup
 still has to copy, whatever the grace period is, and a completed backup holds its blobs in its own
 target ([backup-and-restore.md](backup-and-restore.md) R-BAK-006, R-BAK-007).
 
@@ -2080,11 +2080,11 @@ storage:
     delete_concurrency: 8    # default (proposed)
 ```
 
-Metrics (the `trove_gc_*` family of
+Metrics (the `quader_gc_*` family of
 [operations-and-observability.md](operations-and-observability.md) R-OPS-008):
-`trove_gc_deleted_blobs_total`, `trove_gc_reclaimed_bytes_total`,
-`trove_gc_candidates_kept_total`, `trove_gc_candidates_held_total` (kept by a backup hold,
-R-BAK-007), `trove_gc_deleting_rows`.
+`quader_gc_deleted_blobs_total`, `quader_gc_reclaimed_bytes_total`,
+`quader_gc_candidates_kept_total`, `quader_gc_candidates_held_total` (kept by a backup hold,
+R-BAK-007), `quader_gc_deleting_rows`.
 
 Acceptance criteria:
 
@@ -2157,7 +2157,7 @@ requirement fixes the two collection tasks, their parameters and results.
 
 - A dry run reports what would be deleted and changes nothing, the trash purge included.
 
-**Schedule syntax** (Q-STOR-4). Every schedule in trove uses this dialect and one parser:
+**Schedule syntax** (Q-STOR-4). Every schedule in Quader uses this dialect and one parser:
 maintenance tasks (`maintenance.tasks.<name>`), retention policies (R-STOR-040) and any later
 schedule.
 
@@ -2258,7 +2258,7 @@ maintenance:
 
 Acceptance criteria:
 
-- `aws s3 cp junk.bin s3://trove-blobs/trove/sha256/00/00/<64 hex>` with a back-dated test
+- `aws s3 cp junk.bin s3://quader-blobs/quader/sha256/00/00/<64 hex>` with a back-dated test
   clock is removed by a sweep, reported by a dry run before that, and an object with a
   non-hex name under `sha256/` is only reported.
 - A sweep cancelled at prefix `7f` and triggered again with `resume: true` continues at `7f`
@@ -2267,7 +2267,7 @@ Acceptance criteria:
   answers `422`.
 
 ### R-STOR-027 · Integrity scrub
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - **Existence check**: every `live` blob MUST be checked with `HeadObject` at least once per
   `storage.scrub.check_interval` (oldest `checked_at` first). `404` sets `content_status = 'missing'`;
@@ -2279,8 +2279,8 @@ Priority: **P1** · Covers: trove-only
   SHA-256 mismatch sets `corrupt`.
 - Every detection (here, in R-STOR-013, and a download or a document read that the store answers "no such
   object", [ha-and-helm.md](ha-and-helm.md) R-HA-024, Q-STOR-151) increments the counter
-  `trove_storage_blobs_damaged_total{status}` and writes an audit event per blob; the gauge
-  `trove_storage_blobs_damaged{status}` reports the current number of damaged blobs from the
+  `quader_storage_blobs_damaged_total{status}` and writes an audit event per blob; the gauge
+  `quader_storage_blobs_damaged{status}` reports the current number of damaged blobs from the
   latest storage summary (R-STOR-028).
 - `GET /api/v1/storage/damaged-blobs` lists damaged blobs with their referencing items
   (permission: `storage.read` or system administrator).
@@ -2291,7 +2291,7 @@ Priority: **P1** · Covers: trove-only
   heals by itself: a read of the blob after its last existence check is 30 s old asks the store again, and an
   object that is back sets `ok` (R-STOR-012, Q-STOR-153); `POST /api/v1/storage/damaged-blobs/{sha256}/recheck` re-runs both checks
   (permission: system administrator).
-- **Operator check**: `trove admin storage verify [--since <RFC 3339 time>] [--concurrency N] [--max-items N] [--json]` asks the
+- **Operator check**: `quader admin storage verify [--since <RFC 3339 time>] [--concurrency N] [--max-items N] [--json]` asks the
   store for the object of every `live` blob row, with the runtime database role and the runtime object-store credential, and
   changes nothing (it neither sets `content_status` nor writes an audit event; the scrub's marks stay the scrub's). It reads the
   `blobs` table in pages of 1,000 rows by digest, so its memory does not grow with the table, and runs `--concurrency` existence
@@ -2331,7 +2331,7 @@ Acceptance criteria:
   API lists the items referencing it; re-uploading the same file with `curl -T` resets it to
   `ok`.
 - An S3 outage during a scrub run leaves every status unchanged.
-- With the object of one blob deleted behind trove's back, `trove admin storage verify` exits `5` and prints the items that reference
+- With the object of one blob deleted behind Quader's back, `quader admin storage verify` exits `5` and prints the items that reference
   the blob, a trashed one marked; with the object back it exits `0`. A cut-off after every row checks nothing
   (`TestR_HA_024_StorageVerifyNamesTheItemsWhoseObjectIsGone`, `TestR_HA_025_StorageVerifySinceNarrowsTheRun`).
 
@@ -2419,7 +2419,7 @@ measured.
   Defaults (proposed) as shown. Used capacity is physical bytes (all `live` blobs, including
   trash and content awaiting collection).
 - Per repository: `config.storage.quota` (bytes of untrashed logical content; default none).
-- Above `warnPercent`: warning log, metric `trove_storage_quota_used_ratio`, an event for
+- Above `warnPercent`: warning log, metric `quader_storage_quota_used_ratio`, an event for
   webhooks ([operations-and-observability.md](operations-and-observability.md)) and a banner in
   the UI. At or above `limitPercent`, or when a repository quota would be exceeded: every upload
   is rejected with `507 Insufficient Storage` and problem code `quota_exceeded` (type
@@ -2466,7 +2466,7 @@ Acceptance criteria:
   has passed since the uploads that filled it, and accepts uploads to other repositories.
 
 ### R-STOR-049 · The storage of a project
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A project is charged the logical size of the files it holds (Q-STOR-155). The physical figure of the object store stays a
 figure of the installation.
@@ -2512,13 +2512,13 @@ object-store client, and the file is reloaded like the other bundles (Q-STOR-14)
 and integration profiles use TLS, so no profile needs the exception. Where the endpoint rules below name plain HTTP as
 a permitted form, this paragraph governs.
 
-- trove talks to one bucket through the S3 API with Signature Version 4 (AWS SDK for Go v2).
+- Quader talks to one bucket through the S3 API with Signature Version 4 (AWS SDK for Go v2).
   Any store that implements the operations below and meets R-STOR-035 is supported (AWS S3,
   MinIO, Ceph RGW and similar).
 - Operations used: `PutObject`, `GetObject` (with `Range`), `HeadObject`, `DeleteObject`,
   `DeleteObjects` (optional), `ListObjectsV2`, `CreateMultipartUpload`, `UploadPart`,
   `UploadPartCopy`, `CompleteMultipartUpload`, `AbortMultipartUpload`, `ListMultipartUploads`,
-  and presigning for R-STOR-014. trove never creates or configures the bucket.
+  and presigning for R-STOR-014. Quader never creates or configures the bucket.
 - Configuration is read at startup; a change needs a rolling restart (Helm, INV-13). All
   replicas MUST use the same bucket and prefix; the prefix is fixed for the life of an
   installation (changing it makes all content unreachable).
@@ -2536,7 +2536,7 @@ a permitted form, this paragraph governs.
   payload checksums (SDK options `RequestChecksumCalculation` and `ResponseChecksumValidation`,
   [aws package](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/aws)); `ca_file` for private CAs.
 - Every key can be overridden by environment variables per INV-15, for example
-  `TROVE_STORAGE_S3_BUCKET`.
+  `QUADER_STORAGE_S3_BUCKET`.
 
 Configuration:
 
@@ -2545,8 +2545,8 @@ storage:
   s3:
     endpoint: ""                 # default (proposed): empty = AWS endpoint resolution for region; a host without a scheme means https://
     region: eu-central-1         # example
-    bucket: trove-blobs        # example; required
-    prefix: trove              # default (proposed)
+    bucket: quader-blobs        # example; required
+    prefix: quader              # default (proposed)
     force_path_style: false      # default (proposed)
     allow_insecure_endpoint: false  # default (proposed)
     ca_file: ""                  # default (proposed): system trust store
@@ -2570,7 +2570,7 @@ Priority: **MVP** · Covers: STOR-021
 
 | `credentials.source` | Behavior |
 |---|---|
-| `default` (default, proposed) | The AWS SDK default chain: environment variables, shared config files, web identity token (used by [IAM roles for service accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)), container credentials (used by [EKS Pod Identity](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html)), instance metadata. No secret in trove's configuration. |
+| `default` (default, proposed) | The AWS SDK default chain: environment variables, shared config files, web identity token (used by [IAM roles for service accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)), container credentials (used by [EKS Pod Identity](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html)), instance metadata. No secret in Quader's configuration. |
 | `webIdentity` | Exchange the projected service-account token in `web_identity_token_file` for temporary credentials of `role_arn` at `sts_endpoint` (AssumeRoleWithWebIdentity). For S3-compatible stores with an STS that trusts the Kubernetes service-account issuer, and for AWS outside EKS. |
 | `static` | Access key ID and secret read from files (`access_key_id_file`, `secret_access_key_file`, optional `session_token_file`), mounted from a Kubernetes Secret. Files are re-read on change so rotated keys apply without restart. Inline values are rejected (INV-15). |
 
@@ -2592,11 +2592,11 @@ storage:
   s3:
     credentials:
       source: default                      # default (proposed): default | webIdentity | static
-      role_arn: ""                         # example: arn:aws:iam::123456789012:role/trove
+      role_arn: ""                         # example: arn:aws:iam::123456789012:role/quader
       web_identity_token_file: ""          # example: /var/run/secrets/tokens/s3
       sts_endpoint: ""                     # example: https://minio.example.com
-      access_key_id_file: ""               # example: /var/run/secrets/trove-s3/access-key-id
-      secret_access_key_file: ""           # example: /var/run/secrets/trove-s3/secret-access-key
+      access_key_id_file: ""               # example: /var/run/secrets/quader-s3/access-key-id
+      secret_access_key_file: ""           # example: /var/run/secrets/quader-s3/secret-access-key
       session_token_file: ""
 ```
 
@@ -2617,7 +2617,7 @@ Priority: **P1** · Covers: STOR-022
   The mode is sent on every `PutObject` and `CreateMultipartUpload`.
 - With `kms`, the credentials need `kms:GenerateDataKey` (writes, multipart) and `kms:Decrypt`
   (reads, multipart completion, presigned downloads).
-- SSE with customer-provided keys is not supported: it would make trove hold the data key and break
+- SSE with customer-provided keys is not supported: it would make Quader hold the data key and break
   presigned redirects. Client-side encryption is planned as
   [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content) (P2, not built), in the format of
   s3-encryption-proxy.
@@ -2646,12 +2646,12 @@ Priority: **MVP** · Covers: STOR-024, STOR-017
   explicit dial, TLS-handshake, response-header and idle timeouts. Body transfers have no fixed
   total timeout; they fail when no byte moves for `storage.s3.http.idle_transfer_timeout`.
 - Over HTTP/2, the store may send at most `storage.s3.http.receive_window` bytes of one object
-  ahead of what trove has read; the transport's own default, 4 MiB, would let every slow download
+  ahead of what Quader has read; the transport's own default, 4 MiB, would let every slow download
   hold that much in memory ([architecture.md](architecture.md) Q-ARCH-241). Over HTTP/1.1, which
   AWS S3 speaks, the kernel's socket buffer holds what is in flight and the key has no effect.
 - Retries: the SDK's standard retryer with `retry.max_attempts` and exponential backoff capped at
   `retry.max_backoff`, for throttling, `5xx` and network errors on idempotent operations (all
-  operations trove uses are idempotent on content-addressed keys). Streaming `GetObject` bodies
+  operations Quader uses are idempotent on content-addressed keys). Streaming `GetObject` bodies
   are not retried after the first byte reached the client.
 - The pool and `storage.s3.multipart.max_concurrent_parts` protect one replica. The store sees
   their sum over all replicas, which grows with the replica count; sizing the store for it is
@@ -2664,9 +2664,9 @@ Priority: **MVP** · Covers: STOR-024, STOR-017
   A plain `AccessDenied`, a missing bucket and the other `4xx` answers are answers about the request and do not count
   ([ha-and-helm.md](ha-and-helm.md) Q-HA-254). When the circuit opens on such an answer, the replica logs one `WARN` line with
   `credential_source` (`storage.s3.credentials.source`) and the store's code, never a key or a secret (R-HA-007).
-- Metrics: `trove_storage_s3_requests_total{operation,outcome}`,
-  `trove_storage_s3_request_duration_seconds{operation}`, `trove_storage_s3_bytes_total{direction}`,
-  `trove_storage_s3_circuit_open`.
+- Metrics: `quader_storage_s3_requests_total{operation,outcome}`,
+  `quader_storage_s3_request_duration_seconds{operation}`, `quader_storage_s3_bytes_total{direction}`,
+  `quader_storage_s3_circuit_open`.
 
 Configuration:
 
@@ -2693,7 +2693,7 @@ Acceptance criteria:
 
 - Injecting two `503 SlowDown` answers through a fault proxy before a `PutObject` succeeds makes
   the upload succeed; six consecutive failures make the next download answer `503` within
-  milliseconds and `trove_storage_s3_circuit_open` report 1.
+  milliseconds and `quader_storage_s3_circuit_open` report 1.
 
 ### R-STOR-034 · Outbound proxy for object-store traffic
 Priority: **P1** · Covers: STOR-025
@@ -2713,7 +2713,7 @@ storage:
   s3:
     http:
       proxy_url: ""                  # default (proposed): empty = environment
-      proxy_credentials_file: ""     # example: /var/run/secrets/trove-proxy/credentials
+      proxy_credentials_file: ""     # example: /var/run/secrets/quader-proxy/credentials
       no_proxy: ""                   # example: .svc.cluster.local,10.0.0.0/8
 ```
 
@@ -2748,7 +2748,7 @@ object store. Operators MUST use a store that satisfies them.
   logs the failing step once per minute. Exiting would turn a store outage into a crash loop whose
   restart back-off (up to five minutes in Kubernetes) delays readiness after the store returns;
   [ha-and-helm.md](ha-and-helm.md) R-HA-008 and R-HA-034 treat a wait for the schema the same way.
-- **Conformance check**: `trove admin storage check` runs the startup check plus multipart
+- **Conformance check**: `quader admin storage check` runs the startup check plus multipart
   upload and abort, a completion that names a part (a part number sent twice must not end up in an
   object that names the other upload's ETag, R-STOR-011), ranged read, server-side copy (the object write of an upload session's
   finalize, R-STOR-011), `DeleteObjects`, presigning, read-after-delete and
@@ -2764,7 +2764,7 @@ storage:
 
 Acceptance criteria:
 
-- `trove admin storage check` passes against SeaweedFS (local profile, every change) and against
+- `quader admin storage check` passes against SeaweedFS (local profile, every change) and against
   MinIO (every change) and AWS S3 (once an AWS account exists); against a bucket without `s3:DeleteObject` it reports exactly that
   failure.
 - A replica started with a wrong bucket name exits with a non-zero status and a log line naming
@@ -2774,7 +2774,7 @@ Acceptance criteria:
   started again.
 
 ### R-STOR-036 · Behavior during an object-store outage
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 | Operation | While S3 is unreachable or the circuit is open |
 |---|---|
@@ -2786,7 +2786,7 @@ Priority: **MVP** · Covers: trove-only
 | Remote-repository miss | Behavior defined in [repositories-and-proxy.md](repositories-and-proxy.md) (it MAY pass the upstream body through without caching). |
 | Garbage collection, orphan sweep, scrub | Back off; claimed `deleting` rows are retried later; no status becomes `missing` because of errors. |
 | Retention runs | Continue; their deletions touch only PostgreSQL. |
-| Readiness | Object storage gates only a replica's first readiness (Q-STOR-1, INV-12 as revised): a replica becomes ready only after the startup check of R-STOR-035 passed, so a rollout with a broken S3 configuration stalls. Afterwards an outage leaves running replicas ready ([operations-and-observability.md](operations-and-observability.md) R-OPS-001, `health.require_object_store: false`): `/readyz` answers `200` with `"degraded": ["objectStore"]`, the circuit breaker fails blob operations per request (R-STOR-033), and `trove_storage_s3_circuit_open` feeds the shared-outage and single-replica alerts ([ha-and-helm.md](ha-and-helm.md) R-HA-045). With the opt-in `health.require_object_store: true`, R-OPS-001's `objectStore` check gates readiness continuously with that page's failure and success thresholds; this is meant for installations behind a load balancer that can fail over to another installation. |
+| Readiness | Object storage gates only a replica's first readiness (Q-STOR-1, INV-12 as revised): a replica becomes ready only after the startup check of R-STOR-035 passed, so a rollout with a broken S3 configuration stalls. Afterwards an outage leaves running replicas ready ([operations-and-observability.md](operations-and-observability.md) R-OPS-001, `health.require_object_store: false`): `/readyz` answers `200` with `"degraded": ["objectStore"]`, the circuit breaker fails blob operations per request (R-STOR-033), and `quader_storage_s3_circuit_open` feeds the shared-outage and single-replica alerts ([ha-and-helm.md](ha-and-helm.md) R-HA-045). With the opt-in `health.require_object_store: true`, R-OPS-001's `objectStore` check gates readiness continuously with that page's failure and success thresholds; this is meant for installations behind a load balancer that can fail over to another installation. |
 
 There is no storage-specific readiness configuration: the opt-in uses the thresholds of R-OPS-001,
 so one hysteresis mechanism exists.
@@ -2798,14 +2798,14 @@ Acceptance criteria:
   store lets the publish succeed without manual steps; no blob is marked `missing`.
 - With defaults, the local profile's S3 store stopped for five minutes: `/readyz` keeps answering
   `200` with `"degraded": ["objectStore"]` on every running replica, the UI and
-  `GET /api/v1/repositories` keep working, and `trove_storage_s3_circuit_open` reports 1 on every
+  `GET /api/v1/repositories` keep working, and `quader_storage_s3_circuit_open` reports 1 on every
   replica. A replica started during the outage stays not ready. With
   `health.require_object_store: true`, every replica's `/readyz` answers `503` after R-OPS-001's
   failure threshold.
 
 ## Retention and cleanup
 
-Retention policies run inside trove's job framework and delete through the normal delete path,
+Retention policies run inside Quader's job framework and delete through the normal delete path,
 so format indexes, the trash can, audit events and webhooks behave exactly as for a manual delete.
 Retention policies are instance-wide and managed by system administrators; they name repositories with the
 selectors of an instance context ([authorization.md](authorization.md) R-AUTHZ-004: `<projectGlob>/<keyGlob>` or a
@@ -2821,7 +2821,7 @@ Priority: **P1** · Covers: RET-001, RET-013, RET-019
 - The key `disable-all` is reserved, because `/api/v1/retention/policies/disable-all` (R-STOR-041)
   sits where a policy key would. A create with it answers `422 reserved_name`
   ([api-and-ui.md](api-and-ui.md) R-API-004). The key schema in the OpenAPI document lists it
-  under `x-trove-reserved-names`. Matching is exact, as in the router, so `Disable-All` is not
+  under `x-quader-reserved-names`. Matching is exact, as in the router, so `Disable-All` is not
   reserved.
 - A policy is created disabled; a create request with `"enabled": true` is rejected with `422`.
   Enabling and disabling are separate calls. Disabled policies can be dry-run, edited and
@@ -3305,7 +3305,7 @@ Acceptance criteria:
 ## Roles, scale-out and backups
 
 ### R-STOR-046 · Storage work per role and across replicas
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Every storage mechanism runs on the role INV-2 assigns, behaves the same on any number of replicas
 of that role, and uses no state that an earlier request left on one replica (INV-18). The expected
@@ -3371,7 +3371,7 @@ Acceptance criteria:
   Valkey client or calls a session-level advisory-lock function.
 
 ### R-STOR-047 · Storage state in backups and restores
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 [backup-and-restore.md](backup-and-restore.md) owns the backup job, its format and the restore
 procedure (INV-19). This requirement states what storage provides to them and what a restore
@@ -3415,7 +3415,7 @@ leaves for storage.
   the orphan sweep (R-STOR-026) removes what the restored database does not reference.
 - **Platform restores.** A point-in-time restore of the platform's database backup relies on the
   grace period or bucket versioning instead ([ha-and-helm.md](ha-and-helm.md) R-HA-024, R-STOR-024
-  "Grace period"), and on the deletion pause that `trove admin post-restore` sets (R-HA-025).
+  "Grace period"), and on the deletion pause that `quader admin post-restore` sets (R-HA-025).
 
 Acceptance criteria:
 
@@ -3428,15 +3428,15 @@ Acceptance criteria:
 ## Configuration reference
 
 <details>
-<summary>All storage, retention and storage-task keys of trove.yaml</summary>
+<summary>All storage, retention and storage-task keys of quader.yaml</summary>
 
 ```yaml
 storage:
   s3:
     endpoint: ""                         # default (proposed)
     region: eu-central-1                 # example
-    bucket: trove-blobs                # example; required
-    prefix: trove                      # default (proposed)
+    bucket: quader-blobs                # example; required
+    prefix: quader                      # default (proposed)
     force_path_style: false              # default (proposed)
     allow_insecure_endpoint: false       # default (proposed)
     ca_file: ""                          # default (proposed)
@@ -3485,7 +3485,7 @@ storage:
       min_size: 1MiB                     # default (proposed)
     startup_check: true                  # default (proposed)
   spool:
-    dir: /var/lib/trove/spool          # default (proposed)
+    dir: /var/lib/quader/spool          # default (proposed)
     max_bytes: 50GiB                     # default (proposed)
     min_free_bytes: 2GiB                 # default (proposed)
     memory_threshold: 1MiB               # default (proposed)
@@ -3597,7 +3597,7 @@ keep their own interval keys. There is no storage key for Valkey: storage uses i
 | STOR-032, STOR-033 | P2 | Specified as R-STOR-014 so the download path leaves room for it. |
 | STOR-034 | P2 | CDN-signed download URLs. |
 | STOR-035 | P2 | Client choice of the redirect target. |
-| STOR-041 | Out of scope | Embedded database compaction; trove has no embedded database. |
+| STOR-041 | Out of scope | Embedded database compaction; Quader has no embedded database. |
 | ART-005 | P2 | Deploy an archive and extract it on arrival. |
 | ART-007 | P2 | Client-driven multipart upload with presigned part URLs; R-STOR-011 sessions are the server-side counterpart. |
 | ART-010 | P2 | SHA-256 backfill operation; not needed (see STOR-005). |
@@ -3640,7 +3640,7 @@ keep their own interval keys. There is no storage key for Valkey: storage uses i
   read. Without the SHA-256 restriction, a crafted SHA-1 collision could bind a victim's path to
   attacker-chosen bytes. Unknown and unreadable content answer the same `404` (R-STOR-008).
 - **Stored content is served as an attachment in a sandbox.** Anyone with `deploy` can upload HTML
-  or SVG; served inline from trove's origin it would run script with the session of whoever
+  or SVG; served inline from Quader's origin it would run script with the session of whoever
   opens it (the UI session cookie is same-origin). `Content-Disposition: attachment`, `nosniff`,
   `Content-Security-Policy: sandbox; default-src 'none'` and
   `Cross-Origin-Resource-Policy: same-site` close that path; directory indexes escape every name
@@ -3650,7 +3650,7 @@ keep their own interval keys. There is no storage key for Valkey: storage uses i
   `attachment` and the sandbox, still does; that residual is H-3 in
   [architecture.md](architecture.md), which the optional content origin (R-ARCH-029, P1) narrows.
 - **The bucket is a trust boundary.** Principals with access to the bucket read every blob of
-  every repository, bypassing trove's permissions. The IAM policy of R-STOR-031 grants trove
+  every repository, bypassing Quader's permissions. The IAM policy of R-STOR-031 grants Quader
   only its prefix; operators keep S3 Block Public Access on, require TLS (`aws:SecureTransport`
   in the bucket policy) and grant no other principal access to the prefix. Residual risk: H-11.
 - **Credentials.** S3 credentials come from workload identity or from mounted files, never from
@@ -3710,7 +3710,7 @@ opt-in.
 dependency that every replica shares there is no healthy replica to move to, so (a) only removes
 the parts that still work, including the UI and API operators need to diagnose the outage. The
 single-replica case that (c) targets is already visible through the alert
-`TroveObjectStoreUnreachableSingleReplica` ([ha-and-helm.md](ha-and-helm.md) R-HA-045), and
+`QuaderObjectStoreUnreachableSingleReplica` ([ha-and-helm.md](ha-and-helm.md) R-HA-045), and
 clients retry its `503` onto other replicas. Gating the first readiness keeps the one protection
 (a) offers that matters: new pods with a wrong bucket, endpoint or credential never become ready,
 so a rolling update stalls instead of replacing working replicas. The opt-in costs one boolean that
@@ -3823,7 +3823,7 @@ counts 0–6 from Sunday or 1–7 with Sunday = 1.
 
 **Rationale:** One parser for every schedule, in the syntax Kubernetes operators already read
 (Q-OPS-7 in [operations-and-observability.md](operations-and-observability.md) decided the same
-and points to R-STOR-025 as the normative dialect). Kubernetes itself accepts `?` as `*`; trove
+and points to R-STOR-025 as the normative dialect). Kubernetes itself accepts `?` as `*`; Quader
 rejects it on purpose. Strict rejection turns the dangerous case of (d), an expression
 from a 1 = Sunday dialect, into a loud `422` instead of a cleanup on the wrong day. UTC avoids
 daylight-saving runs that are skipped or doubled. Option (c) can be added later as a separate field
@@ -4037,7 +4037,7 @@ uses task `scrub`, moves the damaged-blob API to `/api/v1/storage/damaged-blobs`
 damage counter and gauge. R-STOR-028 keeps the read path `GET /api/v1/storage/summary`, starts
 recomputation only through the task, and defines the figures, `shareOfLogicalBytes` as a 0–1
 ratio, and the listed repositories. R-STOR-045 uses task `remote-cache-cleanup`. The GC
-metrics are renamed to the `trove_gc_*` family of R-OPS-008, and the configuration reference is
+metrics are renamed to the `quader_gc_*` family of R-OPS-008, and the configuration reference is
 updated. The matching edits on the operations, API and HA pages are cross-page consequences.
 
 ### Q-STOR-11 · Multi-request uploads across replicas
@@ -4057,7 +4057,7 @@ have at least 5 MiB, and consecutive part numbers when parts carry checksums.
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Staged chunk objects, assembled at finalize | The earlier R-STOR-011: each chunk becomes an object; finalize assembles them with `UploadPartCopy` when every chunk but the last has 5 MiB, otherwise by streaming all chunks through the finalizing replica | Simple chunk requests; no part bookkeeping | With small chunks the finalize request streams the whole blob through one replica, so its duration grows with the blob and a drain cuts it, losing the assembly; a client that streams the whole blob in one `PATCH` loses everything when that request is cut |
-| (b) One S3 multipart upload per session, parts of a fixed size, a bounded tail, progress in PostgreSQL | Each request appends to the session's multipart upload in parts of `part_size`, records every part, hash state and offset in PostgreSQL under a writer claim, and keeps fewer than `part_size` leftover bytes as a tail object that it writes under its own key and records with its SHA-256; finalize completes the upload and copies it server-side to the content address | Per-request work is bounded by the chunk plus one part; a long streamed request records progress at every part, so a drain loses at most one part and the client resumes on any replica; finalize moves no byte through trove; a stale writer can at worst fail the session, never corrupt it, because `CompleteMultipartUpload` checks every part's ETag and the stale writer's tail lands under a key the session never records | A part table and a writer claim; small chunks rewrite the tail, up to one part per request; one server-side copy at finalize |
+| (b) One S3 multipart upload per session, parts of a fixed size, a bounded tail, progress in PostgreSQL | Each request appends to the session's multipart upload in parts of `part_size`, records every part, hash state and offset in PostgreSQL under a writer claim, and keeps fewer than `part_size` leftover bytes as a tail object that it writes under its own key and records with its SHA-256; finalize completes the upload and copies it server-side to the content address | Per-request work is bounded by the chunk plus one part; a long streamed request records progress at every part, so a drain loses at most one part and the client resumes on any replica; finalize moves no byte through Quader; a stale writer can at worst fail the session, never corrupt it, because `CompleteMultipartUpload` checks every part's ETag and the stale writer's tail lands under a key the session never records | A part table and a writer claim; small chunks rewrite the tail, up to one part per request; one server-side copy at finalize |
 | (c) Session affinity | Route all requests of a session to one replica and keep the bytes in its spool | No staging in S3 | Contradicts INV-12 and INV-18 (no affinity); a drain or crash loses the session; the spool must hold whole blobs |
 | (d) Session state in Valkey, bytes in S3 | Hash state, offset and part list in Valkey | No PostgreSQL write per part | A Valkey failover or flush loses every open session and costs its client a complete re-upload, more than the one retry [architecture.md](architecture.md) R-ARCH-032 allows for state in Valkey; part lists exceed R-ARCH-030's 1 KiB value limit |
 
@@ -4189,7 +4189,7 @@ other jobs, acceptance criteria with a paused and with a drained collector), R-S
 through the job state), R-STOR-044 (append-only `SKIP LOCKED` outbox), R-STOR-046.
 Cross-page: [ha-and-helm.md](ha-and-helm.md) R-HA-006 (garbage collection, the orphan sweep and
 retention runs leave the list of lease holders) and R-HA-002 (its acceptance criterion identifies
-the GC worker through `job.locked_by`, not `trove_lease_held`);
+the GC worker through `job.locked_by`, not `quader_lease_held`);
 [architecture.md](architecture.md) R-ARCH-016 (registration table: queue `maintenance` for the
 storage tasks, `default` for retention runs) and Q-ARCH-14 (its rationale no longer names
 garbage-collection decisions as what the lease fence protects).
@@ -4339,7 +4339,7 @@ R-STOR-017 omits the entries the caller may not read and pages with a cursor; a 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-R-STOR-012 says a GET on a folder returns the directory index, whose links are relative to the folder; R-STOR-015 counts a download when trove answers 200, or 206 from byte 0.
+R-STOR-012 says a GET on a folder returns the directory index, whose links are relative to the folder; R-STOR-015 counts a download when Quader answers 200, or 206 from byte 0.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4472,13 +4472,13 @@ Status: **Decided by the development agent** — selected from the options below
 
 Context: the object-store row of R-HA-052 and the acceptance criteria of R-HA-010 stop the store of the local profile by scaling it to 0. The store
 was one pod on an `emptyDir`, so a scale to 0 deleted every object while the metadata kept naming them: after the return every download of content
-written before the outage answered `503 content_unavailable`, and so did every `npm ci` of the load's lockfile, whatever trove did (R-STOR-036: no
+written before the outage answered `503 content_unavailable`, and so did every `npm ci` of the load's lockfile, whatever Quader did (R-STOR-036: no
 blob is marked missing because of errors, which holds only for a store that still has its objects).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A PersistentVolumeClaim for the data directory (chosen) | `deploy/dev/s3.yaml` claims 20 Gi of the cluster's default class (local-path in kind); `s3-stop.sh` scales the Deployment to 0 and `s3-start.sh` back | The outage is the one the spec names; the objects are there after the return, as they are after a real store's outage | The volume is bound to the control-plane node the store already runs on; a store that was wiped by an earlier outage had been wiped with the cluster anyway |
-| (b) Cut the store off the network instead of stopping it | A NetworkPolicy or a Service without endpoints | The data stays on the `emptyDir` | A connection that trove's pool holds open keeps working through its conntrack entry, so the outage is partial and depends on what the pool held; the chart's policies are ingress rules only (ADR-154) |
+| (b) Cut the store off the network instead of stopping it | A NetworkPolicy or a Service without endpoints | The data stays on the `emptyDir` | A connection that Quader's pool holds open keeps working through its conntrack entry, so the outage is partial and depends on what the pool held; the chart's policies are ingress rules only (ADR-154) |
 | (c) Keep the `emptyDir` and rebuild every fixture after an outage | The scenario re-creates the content of the repositories it uses | No change to the profile | Every other test's content is gone after the scenario, and the metadata of earlier runs names objects that no longer exist |
 
 **Choice:** (a).
@@ -4493,7 +4493,7 @@ the local profile moves to a store that cannot use a volume.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: R-HA-052 states the pass condition of the object-store row for the service ("metadata, UI and API succeed throughout; blob transfers answer `503`
-with `Retry-After`") and not for the clients of the load. An `npm ci` with trove's cache warm still reads every tarball of its lockfile, which are
+with `Retry-After`") and not for the clients of the load. An `npm ci` with Quader's cache warm still reads every tarball of its lockfile, which are
 blobs: during the outage they answer `503`, and npm's default retries (two retries, 10 s to 60 s apart, `Retry-After` is not read) end after about
 half a minute, so a command that overlaps an outage of 5 minutes cannot succeed.
 
@@ -4565,7 +4565,7 @@ leaving pod) was counted as outside the outage because the k6 line carries the r
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: finding F-62 ([repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-202). [ha-and-helm.md](ha-and-helm.md) R-HA-024 says that a read
-of a missing object counts `trove_storage_blobs_damaged_total{status="missing"}` and marks the blob `content_status = 'missing'`; `blob.Store.Open`
+of a missing object counts `quader_storage_blobs_damaged_total{status="missing"}` and marks the blob `content_status = 'missing'`; `blob.Store.Open`
 returned `ErrNotFound` and marked nothing, so the loss was invisible to every other request and to the counter. A remote repository's refill needs
 the mark as well: the commit protocol deduplicates against a live row that is `ok` (R-STOR-005) and would not write the object again. The mark
 changes only a row that is `ok`, so it never undoes a repair that came after it; a repair that came between the read and the mark (a commit of the
@@ -4573,7 +4573,7 @@ same content) it would undo.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Every read that the store answers "no such object" marks the blob, then looks for the object once more; an object that is there again makes the row `ok` (chosen) | `Store.markMissing` in `Store.Open`: `MarkBlobDamaged`, then `HeadObject`, then `MarkBlobOK` | One rule for every reader (downloads, documents, ranged reads); the counter and `TroveBlobMissing` see local and cached losses alike; whichever order a repair and the mark take, the row ends `ok` when the object is there | One `HeadObject` per detection; a detection that a concurrent repair overtook is counted once |
+| (a) Every read that the store answers "no such object" marks the blob, then looks for the object once more; an object that is there again makes the row `ok` (chosen) | `Store.markMissing` in `Store.Open`: `MarkBlobDamaged`, then `HeadObject`, then `MarkBlobOK` | One rule for every reader (downloads, documents, ranged reads); the counter and `QuaderBlobMissing` see local and cached losses alike; whichever order a repair and the mark take, the row ends `ok` when the object is there | One `HeadObject` per detection; a detection that a concurrent repair overtook is counted once |
 | (b) Mark only from the remote engine's path | A file of a local repository keeps asking the store | The counter and the alert would miss the losses of local repositories, which are the data loss R-HA-024 is about |
 | (c) Look before the mark | No row changes for an object that is back | A repair between the look and the mark is still undone |
 | (d) Mark without a look | Simplest | The race above leaves an object that is there marked `missing`; a local file then answers `503` until the next upload of the same content |
@@ -4586,7 +4586,7 @@ What it means for a local repository (unchanged answer, a new mark): the first r
 repair), by a remote's refill of the same content, and by the recheck of a read once the mark is 30 s old ([Q-STOR-153](#q-stor-153--a-missing-mark-heals-by-itself-a-read-asks-the-store-again-once-per-blob-and-30-s)),
 which finds an object that an operator restored, or that a store answering 404 for objects that exist (a wrong `storage.s3.prefix` that the start-up
 check cannot see, because it writes its own probe below whatever prefix it is given, R-STOR-035) had hidden. Such a store marks every blob that is read
-while it does; `TroveBlobMissing` fires at the first, and the marks heal within 30 s of the next read after the prefix is corrected.
+while it does; `QuaderBlobMissing` fires at the first, and the marks heal within 30 s of the next read after the prefix is corrected.
 What counts as "no such object" is the client's mapping ([internal/blob/s3/errors.go](../../internal/blob/s3/errors.go)): the codes
 `NoSuchKey` and `NotFound`, and any other `404` that is not `NoSuchBucket` or `NoSuchUpload`. So a gateway, load balancer or proxy in
 front of the store that answers `404` while it is rolled out or misrouted marks every blob that is read meanwhile, exactly as a wrong prefix
@@ -4606,11 +4606,11 @@ outlived its loss was found in review (amended 2026-11-06): Q-STOR-153 makes it 
 `markDamaged`). Tests: `TestDownloadVerification` (`internal/blob/download_test.go`), `TestR_HA_024_ALocalTarballWhoseObjectIsMissingIs503AndItsBlobIsMarkedMissing`
 (`test/integration/npm/remote_lost_test.go`).
 
-### Q-STOR-152 · The chart renders TroveBlobMissing, severity critical
+### Q-STOR-152 · The chart renders QuaderBlobMissing, severity critical
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: [ha-and-helm.md](ha-and-helm.md) R-HA-045 lists `TroveBlobMissing` (`increase(trove_storage_blobs_damaged_total{status="missing"}[1h]) > 0`,
+Context: [ha-and-helm.md](ha-and-helm.md) R-HA-045 lists `QuaderBlobMissing` (`increase(quader_storage_blobs_damaged_total{status="missing"}[1h]) > 0`,
 for 0m) among the alerts the chart does not render yet. Until Q-STOR-151 nothing produced the counter outside a test. F-62 was an object store that
 lost its data without anyone being told.
 
@@ -4626,8 +4626,8 @@ log lines that name the digest and, for a cached item, the repository and the pa
 **Rationale:** an object store that loses objects is an incident whatever repository the object served. The development agent would revisit the
 severity if remote caches are seen to page operators for losses that healed themselves.
 
-**Applied in the spec:** [ha-and-helm.md](ha-and-helm.md) R-HA-045 (status). Chart: `deploy/helm/trove/templates/_rules.tpl`,
-`deploy/helm/trove/tests/rules_test.yaml`, `test/chart/vuln_rules_test.go`.
+**Applied in the spec:** [ha-and-helm.md](ha-and-helm.md) R-HA-045 (status). Chart: `deploy/helm/quader/templates/_rules.tpl`,
+`deploy/helm/quader/tests/rules_test.yaml`, `test/chart/vuln_rules_test.go`.
 
 ### Q-STOR-153 · A missing mark heals by itself: a read asks the store again, once per blob and 30 s
 
@@ -4745,7 +4745,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The restore recomputes the counters in Go | Queries over `items` and `blobs` in the restore | No migration | The counters and the triggers that maintain them are the migrations' (R-STOR-003); a second description of the sums in Go would drift |
-| (b) `storage_usage_recount()` in migration 00046 and `BackupBlobHeld` in `queries/backup.sql` (chosen) | The function deletes the deltas and recomputes `repository_usage` from untrashed items and `storage_usage_totals` from live blobs in the caller's transaction; the query is the statement of R-BAK-007 that the per-blob transaction runs as step 2b | The sums stay next to the triggers; a test compares the function with the triggers' results; the collector's work package calls one named query | A function in the schema, which `trove migrate` has to apply before a restore can run it |
+| (b) `storage_usage_recount()` in migration 00046 and `BackupBlobHeld` in `queries/backup.sql` (chosen) | The function deletes the deltas and recomputes `repository_usage` from untrashed items and `storage_usage_totals` from live blobs in the caller's transaction; the query is the statement of R-BAK-007 that the per-blob transaction runs as step 2b | The sums stay next to the triggers; a test compares the function with the triggers' results; the collector's work package calls one named query | A function in the schema, which `quader migrate` has to apply before a restore can run it |
 
 **Choice:** (b).
 
@@ -4767,7 +4767,7 @@ Context: the owner chose "als Blob gespeichert" for the uploaded avatar (R-API-0
 
 **Choice:** (a). The blob is addressed by the SHA-256 of the PNG the server made, which is also the avatar's URL (Q-API-207). The object lives under the blob store's own key (`<prefix>/sha256/<h0h1>/<h2h3>/<digest>`), not under a prefix of its own: nothing distinguishes it from other content, and the references decide when it goes. The row is the whole of the avatar's metadata: user, digest, size, time of the change.
 
-**Rationale:** the question is not where 100 KiB fits but how many rules for stored content the installation should have. (a) reuses all of them and adds one table; the cost, an object-store read per avatar, is paid once per browser per avatar. The development agent revisits this if avatars become the dominant object-store reads of an installation (a metric `trove_http_requests_total` for the route would show it) and a per-replica cache of the 256 px images is wanted.
+**Rationale:** the question is not where 100 KiB fits but how many rules for stored content the installation should have. (a) reuses all of them and adds one table; the cost, an object-store read per avatar, is paid once per browser per avatar. The development agent revisits this if avatars become the dominant object-store reads of an installation (a metric `quader_http_requests_total` for the route would show it) and a per-replica cache of the 256 px images is wanted.
 
 **Applied:** R-API-055 (Storage); `internal/meta/postgres/migrations` (`user_avatars`), `internal/avatar/store.go`. Test: `TestR_API_055_AvatarLifecycle` (the object is read back from the bucket).
 
@@ -4813,7 +4813,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Re-read every written object and hash it | A full read of the blob store after the copy | Catches a tampered pool object | Doubles the transfer of a restore that is bounded by transfer |
-| (b) Hash while streaming, check the size after a server-side copy (chosen) | `s3.BlobSink.Put` hashes the stream and never completes a multipart upload or sends a single request whose SHA-256 differs from the digest; `CopyFrom` confirms the size with `HeadObject` | A restore costs one pass; a streamed object is never made visible with wrong bytes | A pool object altered in place keeps its size and passes a server-side copy (H-558); `trove backup verify --deep` is the check |
+| (b) Hash while streaming, check the size after a server-side copy (chosen) | `s3.BlobSink.Put` hashes the stream and never completes a multipart upload or sends a single request whose SHA-256 differs from the digest; `CopyFrom` confirms the size with `HeadObject` | A restore costs one pass; a streamed object is never made visible with wrong bytes | A pool object altered in place keeps its size and passes a server-side copy (H-558); `quader backup verify --deep` is the check |
 
 **Choice:** (b). A part is buffered in memory (`storage.s3.multipart.part_size`), an object up to `multipart.threshold` is buffered whole; no spool file is used.
 **Rationale:** A restore must finish at the speed of the store. Revisit if the store reports the full-object SHA-256 of a copy: the sink would compare it, as R-BAK-006 requires of the create run.
@@ -4898,14 +4898,14 @@ Status: **Decided by the development agent** — selected from the options below
 
 The expiry and the cleaning go on batch after batch (200 rows) for a time budget of two minutes each per run, and the staging sweep takes at most 25 pages per run; the sweep lists the multipart uploads of the staging area 500 at a time when the store pages (`blob.MultipartPager`), and re-read the deletion pause before every batch; a backlog is the next run's, and a pause set during the step ends it. The sweep saves where it stopped (`system_state` key `upload_sweep_cursor`) and the next run goes on from there, so that live sessions at the start of the listing do not use every run's pages; when both listings are done the cursor is cleared.
 
-### Q-STOR-173 · The sessions are counted by `trove_storage_upload_sessions_total`, not by an OCI metric
+### Q-STOR-173 · The sessions are counted by `quader_storage_upload_sessions_total`, not by an OCI metric
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `trove_oci_upload_sessions_total{outcome}`, as R-OCI-034 wrote it | The OCI handlers count what they see | The name the OCI page already has | They see neither the sessions the collection run expires nor those the service aborts (a size limit, a damaged tail); the counter would need the service to call the format, or the format to count what it cannot see |
-| (b) `trove_storage_upload_sessions_total{outcome}`, counted where the sessions end (chosen) | `completed` when a finalize commits, `aborted` when a session is cancelled, fails or exceeds its size, `expired` when a request refuses an open session past its age or the collection run aborts one; each counted once, by the call that changed the state | One counter for every format that will use the sessions; no cross-package call; the family sits beside the other `trove_storage_*` families of `blob.Metrics` | R-OCI-034 names another family; the OCI page points here |
+| (a) `quader_oci_upload_sessions_total{outcome}`, as R-OCI-034 wrote it | The OCI handlers count what they see | The name the OCI page already has | They see neither the sessions the collection run expires nor those the service aborts (a size limit, a damaged tail); the counter would need the service to call the format, or the format to count what it cannot see |
+| (b) `quader_storage_upload_sessions_total{outcome}`, counted where the sessions end (chosen) | `completed` when a finalize commits, `aborted` when a session is cancelled, fails or exceeds its size, `expired` when a request refuses an open session past its age or the collection run aborts one; each counted once, by the call that changed the state | One counter for every format that will use the sessions; no cross-package call; the family sits beside the other `quader_storage_*` families of `blob.Metrics` | R-OCI-034 names another family; the OCI page points here |
 | (c) Both | The service counts, an OCI alias | One name per audience | Two series for one fact |
 
 **Choice:** (b).
@@ -4942,7 +4942,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (b). A finalize that sends the tail as the last part takes a claim of its own for that step (`UploadClaimCompleting`), so that two continuations do not upload it twice; the one that does not get it is told to retry.
 
-**Rationale:** the store's behaviour is not under trove's control, the deadline of the client side is; the rest is the part-identity rule, which the startup check enforces. SeaweedFS 4.51 keeps both uploads of a part number and assembles the one whose ETag is named, which the check and the integration test pin. The development agent would revisit (b) for a deployment whose parts are larger than its lease allows, which (c) would serve.
+**Rationale:** the store's behaviour is not under Quader's control, the deadline of the client side is; the rest is the part-identity rule, which the startup check enforces. SeaweedFS 4.51 keeps both uploads of a part number and assembles the one whose ETag is named, which the check and the integration test pin. The development agent would revisit (b) for a deployment whose parts are larger than its lease allows, which (c) would serve.
 
 **Applied:** R-STOR-011 *Stream* step 3 and *Finalize* step 2; R-STOR-035; `internal/uploads/append.go` (`sendPart`, `partDeadline`), `internal/blob/conformance.go` (`checkPartIdentity`), `internal/config/storage.go` (the rules `writer_lease` below `session_ttl` and a part sendable at 32 MiB/s within three quarters of the lease), `StartupCheck` (runs `checkPartIdentity`). Tests: `TestR_STOR_011_APartUploadCannotOutliveItsClaim`, `TestR_STOR_011_AStaleWriterSendsNoPartAfterTheRecordedOne`, `TestR_STOR_011_TheStoreAssemblesThePartThatIsNamedWhenANumberIsSentTwice`.
 
@@ -5210,11 +5210,11 @@ long for installations with many virtual repositories.
 
 **Applied in the spec:** R-STOR-028. Code: [publish_virtual.go](../../internal/items/publish_virtual.go).
 
-### Q-STOR-200 · `trove admin storage verify` reads the live blob rows, reports their items, changes nothing, and `--since` selects rows by their creation or state change
+### Q-STOR-200 · `quader admin storage verify` reads the live blob rows, reports their items, changes nothing, and `--since` selects rows by their creation or state change
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-HA-024 and R-HA-025 name `trove admin storage verify --since <t − storage.gc.grace_period>` and say it prints the number of referenced blobs whose objects are missing; R-HA-052's pod-crash row and exit criterion E5.2 need "no item without its object". The spec did not say what the command reads, what it writes, which credential it holds, how it stays within memory on a large table or what `--since` selects. Verified in this repository: `blobs` has no column for the time a row's object was last needed; its time columns are `created_at`, `state_changed_at`, `checked_at` and `deep_checked_at`; only `items`, `remote_cache_entries`, `ui_assets` and `user_avatars` reference `blobs`.
+Context: R-HA-024 and R-HA-025 name `quader admin storage verify --since <t − storage.gc.grace_period>` and say it prints the number of referenced blobs whose objects are missing; R-HA-052's pod-crash row and exit criterion E5.2 need "no item without its object". The spec did not say what the command reads, what it writes, which credential it holds, how it stays within memory on a large table or what `--since` selects. Verified in this repository: `blobs` has no column for the time a row's object was last needed; its time columns are `created_at`, `state_changed_at`, `checked_at` and `deep_checked_at`; only `items`, `remote_cache_entries`, `ui_assets` and `user_avatars` reference `blobs`.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5223,11 +5223,11 @@ Context: R-HA-024 and R-HA-025 name `trove admin storage verify --since <t − s
 | (c) Compare the table with a listing of the bucket | `ListObjectsV2` of the prefix against `blobs` | One request per 1,000 objects, not per blob | Reads every object key of the prefix, including orphans and the objects of other installations in a shared bucket; the listing is eventually consistent on some stores (R-STOR-035) |
 | (d) Check only the blobs `items` references | A join in the page query | Fewer checks | A blob that is `live` and unreferenced is still a row whose object must exist (R-STOR-005 writes the object first); a second arm of SQL for no saving at the sizes in question |
 
-**Choice:** (b). The package is [internal/blob/verify](../../internal/blob/verify/verify.go), the command [admin_storage.go](../../cmd/trove/admin_storage.go), the queries `VerifyBlobPage`, `VerifyBlobItems` and `VerifyBlobItemCount` in [blob.sql](../../internal/meta/postgres/queries/blob.sql). The run reads `state = 'live'` rows (a `deleting` row's object may be gone by design) with the web database role (it only reads) and the runtime credential. `--since <t>` keeps the rows with `GREATEST(created_at, state_changed_at) >= t`: the rows written or changed since the cut-off. A missing object and a size different from `blobs.size` are findings; a transient store error after three attempts is "not checked" and exits `75` when nothing else is wrong, so a store outage never reads as a clean run or as a loss.
+**Choice:** (b). The package is [internal/blob/verify](../../internal/blob/verify/verify.go), the command [admin_storage.go](../../cmd/quader/admin_storage.go), the queries `VerifyBlobPage`, `VerifyBlobItems` and `VerifyBlobItemCount` in [blob.sql](../../internal/meta/postgres/queries/blob.sql). The run reads `state = 'live'` rows (a `deleting` row's object may be gone by design) with the web database role (it only reads) and the runtime credential. `--since <t>` keeps the rows with `GREATEST(created_at, state_changed_at) >= t`: the rows written or changed since the cut-off. A missing object and a size different from `blobs.size` are findings; a transient store error after three attempts is "not checked" and exits `75` when nothing else is wrong, so a store outage never reads as a clean run or as a loss.
 
 **Rationale:** the question after a crash or a restore is "which item cannot be served", and an operator cannot ask the API for it while the replicas are held not ready (R-HA-025). The command is a report: it leaves `content_status` to the scrub so that running it in the middle of an incident changes nothing a replica reads. Not verified: that the rows a point-in-time restore brings back and a GC deleted after *t* are exactly the rows that `--since <t − grace_period>` selects. They are the rows that were `deleting` or unreferenced at the time of the delete, which `blobs` does not date; `--since` therefore narrows a run, and a restore procedure that wants every lost object runs the command without it. The development agent revisits this when `blobs` gains a column that dates the last reference, or when a table is large enough that a full run is too slow (then a per-prefix split of the digest range, `--concurrency` aside).
 
-**Applied in the spec:** R-STOR-027 (the operator check and its acceptance criterion), R-HA-052's pod-crash row. Code and tests: [verify.go](../../internal/blob/verify/verify.go), [admin_storage.go](../../cmd/trove/admin_storage.go), `test/integration/storageverify`.
+**Applied in the spec:** R-STOR-027 (the operator check and its acceptance criterion), R-HA-052's pod-crash row. Code and tests: [verify.go](../../internal/blob/verify/verify.go), [admin_storage.go](../../cmd/quader/admin_storage.go), `test/integration/storageverify`.
 ### Q-STOR-211 · R-STOR-046's drain criterion runs a real full collection run on the evicted worker and judges the retention half on the probe jobs until retention runs exist
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -5272,14 +5272,14 @@ Context: `TestGarbageCollection` ("the full sweep finds an unreferenced blob..."
 
 ## What this does not cover
 
-### H-11 · Object-store principals bypass trove's authorization and integrity checks
+### H-11 · Object-store principals bypass Quader's authorization and integrity checks
 
 Anyone who can read the bucket prefix reads every blob of every repository; anyone who can write
-it can replace content. trove detects replacement only on full streamed downloads (R-STOR-013)
+it can replace content. Quader detects replacement only on full streamed downloads (R-STOR-013)
 and in the scrub (R-STOR-027): ranged downloads and presigned redirects deliver whatever the
 bucket holds, and between two scrub passes altered content can be served this way. There is no
 client-side encryption and no object signature. Live today for every installation; the exposure
-is the set of principals with access to the bucket, which trove cannot see. Mitigations are
+is the set of principals with access to the bucket, which Quader cannot see. Mitigations are
 operational: least-privilege bucket policy, no other principals on the prefix, S3 Object Lock or
 versioning to make replacement detectable and reversible.
 
@@ -5310,7 +5310,7 @@ replica's budget; adding replicas raises the number of connections needed, not t
 The cluster-scope limiter of [architecture.md](architecture.md) R-ARCH-034 counts requests per
 second, not bodies in flight, so it does not bound this. Live in the MVP for every principal with
 `deploy` on any repository; it becomes real where upload clients are not all trusted. Mitigation
-outside trove: per-client connection limits and request-body timeouts at the edge proxy
+outside Quader: per-client connection limits and request-body timeouts at the edge proxy
 ([ha-and-helm.md](ha-and-helm.md) R-HA-039). A per-principal limit on bodies in flight would have
 to count across replicas and release the slots of a crashed replica; it is not specified on this
 page.

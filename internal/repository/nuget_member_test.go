@@ -3,16 +3,16 @@ package repository
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 const nugetLikeSchema = `{
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "deleteMode":    {"type": "string", "enum": ["unlist", "delete"], "x-trove-classes": ["local"]},
-    "forwardSearch": {"type": "boolean", "x-trove-classes": ["remote"]}
+    "deleteMode":    {"type": "string", "enum": ["unlist", "delete"], "x-quader-classes": ["local"]},
+    "forwardSearch": {"type": "boolean", "x-quader-classes": ["remote"]}
   }
 }`
 

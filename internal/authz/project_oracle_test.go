@@ -3,7 +3,7 @@ package authz
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // What an Owner without a policies capability can learn from the policy operations

@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-const mod = "github.com/guided-traffic/trove"
+const mod = "github.com/guided-traffic/quader"
 
 func pkg(rel string, imports ...string) Package {
 	full := mod + "/" + rel
@@ -106,7 +106,7 @@ func TestLayers(t *testing.T) {
 	})
 	t.Run("R-ARCH-002 allowed edges pass", func(t *testing.T) {
 		wantClean(t, CheckLayers(mod, []Package{
-			pkg("cmd/trove", "internal/app", "internal/config", "internal/buildinfo"),
+			pkg("cmd/quader", "internal/app", "internal/config", "internal/buildinfo"),
 			pkg("internal/app", "internal/httpserver", "internal/meta/postgres", "internal/cluster"),
 			pkg("internal/httpserver", "internal/api/v1", "internal/formats", "internal/auth/session", "internal/errs"),
 			pkg("internal/api/v1", "internal/repository", "internal/jobs", "internal/api/v1/gen"),
@@ -753,10 +753,10 @@ func TestSQLSourceRules(t *testing.T) {
 	}
 
 	t.Run("R-ARCH-018 LISTEN, NOTIFY and pg_notify are named in Go and in sqlc files, and so is WaitForNotification", func(t *testing.T) {
-		must(t, "R-ARCH-018", "internal/proxy/listen.go", "LISTEN trove_changes")
+		must(t, "R-ARCH-018", "internal/proxy/listen.go", "LISTEN quader_changes")
 		must(t, "R-ARCH-018", "internal/proxy/listen.go", "pg_notify")
 		must(t, "R-ARCH-018", "internal/proxy/listen.go", "WaitForNotification")
-		must(t, "R-ARCH-018", "internal/proxy/notify.sql", "NOTIFY trove_changes")
+		must(t, "R-ARCH-018", "internal/proxy/notify.sql", "NOTIFY quader_changes")
 	})
 	t.Run("R-ARCH-018 a write to cluster_epoch or cluster_change outside internal/cluster is named", func(t *testing.T) {
 		must(t, "R-ARCH-018", "internal/repository/epoch.go", "UPDATE cluster_epoch")

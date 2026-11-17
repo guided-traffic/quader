@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/id"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/id"
 )
 
 // guideClasses are the classes the guide is written for. The descriptor lists the local class only until the
@@ -30,7 +30,7 @@ func guideData(class formats.Class, client string, anonymous, rules bool) format
 		PublishTarget: map[formats.Class]string{formats.Local: "nuget-local", formats.Virtual: "nuget-local"}[class],
 		Anonymous:     anonymous,
 		ExposureRules: rules,
-		TokenEnvVar:   "TROVE_TOKEN",
+		TokenEnvVar:   "QUADER_TOKEN",
 	}
 }
 
@@ -121,9 +121,9 @@ func statusOf(code string) (int, bool) {
 	return 0, false
 }
 
-// TestR_UI_049_TheNuGetTroubleshootingCodesAreTroves: every row of the troubleshooting table names a code of the
-// problem catalog, under the status trove answers it with.
-func TestR_UI_049_TheNuGetTroubleshootingCodesAreTroves(t *testing.T) {
+// TestR_UI_049_TheNuGetTroubleshootingCodesAreQuaders: every row of the troubleshooting table names a code of the
+// problem catalog, under the status quader answers it with.
+func TestR_UI_049_TheNuGetTroubleshootingCodesAreQuaders(t *testing.T) {
 	text := renderGuide(t, guideData(formats.Virtual, ClientDotnet, false, false))["nuget.troubleshooting"]
 	rows := troubleshootingRow.FindAllStringSubmatch(text, -1)
 	if len(rows) < 30 {
@@ -225,7 +225,7 @@ func TestR_UI_049_TheNuGetGuideNamesTheAddressAndThePackageSourceMapping(t *test
 	for _, class := range guideClasses {
 		for _, client := range clientIDs() {
 			got := renderGuide(t, guideData(class, client, false, false))["nuget.configure"]
-			for _, want := range []string{"https://trove.example.com/api/nuget/", "v3/index.json", "<clear />", "<packageSourceMapping>", "Acme.*"} {
+			for _, want := range []string{"https://quader.example.com/api/nuget/", "v3/index.json", "<clear />", "<packageSourceMapping>", "Acme.*"} {
 				if !strings.Contains(got, want) {
 					t.Errorf("%s %s: the configure section lacks %q", class, client, want)
 				}

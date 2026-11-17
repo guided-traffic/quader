@@ -3,8 +3,8 @@ package repository
 import (
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // IsReservedKey reports whether key is one of the literal sub-paths of

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestHeldDownloadCost measures what a download held open costs the replica
@@ -30,9 +30,9 @@ func TestHeldDownloadCost(t *testing.T) {
 		name := fmt.Sprintf("f%d.bin", size)
 		t.Run(fmt.Sprintf("Q-ARCH-328 R-ARCH-005 %d KiB held downloads", size>>10), func(t *testing.T) {
 			// A replica of its own per size, so the pooled buffers of another size are not counted.
-			r := in.start(t, fmt.Sprintf("cost%d", size>>10), fmt.Sprintf("TROVE_RUNTIME_MEMORY_LIMIT_BYTES=%d", 8<<30), "GOGC=10",
-				"TROVE_CACHE_RENDITION_BYTES=0", "TROVE_PROXY_METADATA_CACHE_BYTES=0", "TROVE_PROXY_MERGED_METADATA_CACHE_BYTES=0",
-				"TROVE_PROXY_QUERY_CACHE_BYTES=0")
+			r := in.start(t, fmt.Sprintf("cost%d", size>>10), fmt.Sprintf("QUADER_RUNTIME_MEMORY_LIMIT_BYTES=%d", 8<<30), "GOGC=10",
+				"QUADER_CACHE_RENDITION_BYTES=0", "QUADER_PROXY_METADATA_CACHE_BYTES=0", "QUADER_PROXY_MERGED_METADATA_CACHE_BYTES=0",
+				"QUADER_PROXY_QUERY_CACHE_BYTES=0")
 			in.deploy(t, r, name, size)
 			cost := func() (heap, stacks, rss float64) {
 				m := r.metrics(t, "go_memstats_heap_inuse_bytes", "go_memstats_stack_inuse_bytes")
@@ -52,11 +52,11 @@ func TestHeldDownloadCost(t *testing.T) {
 			}
 			var held float64
 			testenv.WaitFor(t, "downloads held", 30*time.Second, func() bool {
-				held = r.metric(t, "trove_http_memory_slots_in_use")
+				held = r.metric(t, "quader_http_memory_slots_in_use")
 				return held >= n/2
 			})
 			time.Sleep(2 * time.Second)
-			held = r.metric(t, "trove_http_memory_slots_in_use")
+			held = r.metric(t, "quader_http_memory_slots_in_use")
 			h1, s1, r1 := cost()
 			if held < n/2 {
 				t.Fatalf("only %.0f of %d downloads of %d KiB were still held when the cost was read: the replica's socket buffers took the rest, so this size measures nothing here", held, n, size>>10)

@@ -186,7 +186,7 @@ describe('What the opened field offers (R-UI-096)', () => {
       projects: [{ id: 'web', visits: 2, last: now }],
     };
     const { root, fixture, get } = await render('sam', {
-      setup: () => new BrowserStorage().set('local', `trove.frequent.${SAM}`, JSON.stringify(stored)),
+      setup: () => new BrowserStorage().set('local', `quader.frequent.${SAM}`, JSON.stringify(stored)),
     });
     const repos = get(RepositoriesApi) as FakeRepositoriesApi;
     const before = repos.listFilters.length;
@@ -198,7 +198,7 @@ describe('What the opened field offers (R-UI-096)', () => {
     expect(groupNames(root)).toEqual(['Places', 'Frequently visited repositories', 'Frequently visited projects']);
     const frequent = [...root.querySelectorAll('[role="group"]')][1]!;
     expect(said(options(frequent))).toEqual(['releases · web', 'generic-local · web']);
-    expect(new BrowserStorage().get('local', `trove.frequent.${SAM}`)).toContain('platform/collections');
+    expect(new BrowserStorage().get('local', `quader.frequent.${SAM}`)).toContain('platform/collections');
     // Opened again, nothing changed: no second request.
     input(root).dispatchEvent(new Event('blur'));
     await open(fixture, root);

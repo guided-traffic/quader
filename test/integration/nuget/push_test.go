@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_NUGET_006_APushIsStoredAuditedAndJournaled: a push of a package answers 201, stores the
@@ -117,7 +117,7 @@ func TestR_NUGET_006_APushNeedsDeployOnTheDeclaredID(t *testing.T) {
 		if ans.Status != c.status {
 			t.Errorf("%s: %d %s", name, ans.Status, ans.Body)
 		}
-		if c.status == 401 && ans.Header.Get("WWW-Authenticate") != `Basic realm="trove"` {
+		if c.status == 401 && ans.Header.Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Errorf("%s: challenge %q", name, ans.Header.Get("WWW-Authenticate"))
 		}
 	}
@@ -183,8 +183,8 @@ func TestR_NUGET_006_AReplayChangesNothing(t *testing.T) {
 	if got := e.st.Number(`SELECT count(*) FROM revocation_outbox`); got != outbox {
 		t.Errorf("the outbox grew by %d", got-outbox)
 	}
-	if sumSeries(a.Metrics(t), "trove_nuget_push_replayed_total{")+sumSeries(b.Metrics(t), "trove_nuget_push_replayed_total{") != 2 {
-		t.Error("trove_nuget_push_replayed_total did not count the two replays")
+	if sumSeries(a.Metrics(t), "quader_nuget_push_replayed_total{")+sumSeries(b.Metrics(t), "quader_nuget_push_replayed_total{") != 2 {
+		t.Error("quader_nuget_push_replayed_total did not count the two replays")
 	}
 	rebuilt := nupkg(t, pkgSpec{id: "Acme.Widgets", version: "1.2.3.0", description: "rebuilt"})
 	if ans := e.push(b, "nuget-local", e.tokDev, rebuilt); ans.Status != 409 || code(t, ans) != "nuget_version_exists" {

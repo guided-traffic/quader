@@ -3,7 +3,7 @@ package oci
 import (
 	"embed"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // guideFiles are the Markdown templates of the guide, one file per section.
@@ -14,7 +14,7 @@ var guideFiles embed.FS
 // Guide is the guide of the OCI format (R-OCI-030, api-and-ui.md R-UI-049): what a local, a remote and a virtual repository is, and how
 // the Docker CLI and Podman sign in, pull, push (a multi-platform image too), delete, and what the Kubernetes image pull secret is, what
 // the Docker Engine mirror of a bound host changes, why a Docker Hub remote should be authenticated, and what each answer of the
-// registry means. Every statement describes trove as the requirements define it; guide_test.go pins the facts the text names to the code.
+// registry means. Every statement describes quader as the requirements define it; guide_test.go pins the facts the text names to the code.
 func (f *Format) Guide() []formats.GuideSection {
 	return supportedOnly(f.Descriptor(), guideSections())
 }

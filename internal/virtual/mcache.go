@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/proxy/invalidation"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/proxy/invalidation"
 )
 
 // CacheMerged is the registered cache of merged documents (R-ARCH-018). It lives in memory of the
@@ -77,7 +77,7 @@ type mergedEntry struct {
 	// partial: a member was left out because it could not be asked (R-REPO-020).
 	partial bool
 	// source and status describe the build that made the entry: the tier that served it for
-	// trove_virtual_resolutions_total and the Cache-Status of the response that built it.
+	// quader_virtual_resolutions_total and the Cache-Status of the response that built it.
 	source, status string
 }
 

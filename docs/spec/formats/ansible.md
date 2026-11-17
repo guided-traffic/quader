@@ -8,11 +8,11 @@ The documentation of a collection version (the Documentation and Contents tabs, 
 `docs-blob/` for the three classes, the three operations, the fetch job and the counting stub); the screens and the end-to-end rows are the work of builder B2. The plan is
 [galaxy-docs-work-packages.md](../../projektplan/galaxy-docs-work-packages.md).
 
-This page specifies how trove serves Ansible content to `ansible-galaxy`: the format `ansible` for local, remote and virtual
+This page specifies how Quader serves Ansible content to `ansible-galaxy`: the format `ansible` for local, remote and virtual
 repositories; the subset of the Galaxy API that `ansible-galaxy collection install`, `collection publish`, `role install` and a
 `requirements.yml` call; how a local repository takes collection archives and validates them; how a remote repository proxies the
 public Galaxy (and a second Galaxy-compatible hub) and what a mirror of it keeps; how roles are served and what is left out; how a
-virtual repository merges its members and takes publishes; how trove tokens reach the Galaxy clients; what trove can say about the
+virtual repository merges its members and takes publishes; how Quader tokens reach the Galaxy clients; what Quader can say about the
 digest, the signatures and the vulnerabilities of a collection; how the content of an existing Galaxy instance is imported; the
 client setup instructions; and the test suites. Mechanisms shared by all formats are owned by other pages and only refined here:
 
@@ -34,21 +34,21 @@ External references, normative wherever this page does not say otherwise: the Ga
 [galaxy_ng v3 API documentation](https://docs.ansible.com/projects/galaxy-ng/en/latest/community/api_v3.html) describe it, and the
 behaviour of `ansible-galaxy` in ansible-core (section "Client and library behaviour this page relies on"); [semantic versioning
 2.0.0](https://semver.org/spec/v2.0.0.html); [netrc](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html).
-The Galaxy protocol is a third-party standard; trove implements the subset below and no more.
+The Galaxy protocol is a third-party standard; Quader implements the subset below and no more.
 
 ## Conventions on this page
 
 | Placeholder | Meaning |
 |---|---|
-| `<base>` | trove's public base URL of the endpoint the request arrived on; `https://trove.example.com` in examples (# example) |
+| `<base>` | Quader's public base URL of the endpoint the request arrived on; `https://quader.example.com` in examples (# example) |
 | `<repo URL>` | `<base>/api/ansible/<projectKey>/<repoKey>/` with its trailing slash; this is the Galaxy server URL a client is configured with, and route paths below are relative to it |
 | `<ns>`, `<name>` | the namespace and the name of a collection (`community`, `general`); the collection is `<ns>.<name>` |
-| `$TROVE_TOKEN` | a trove token (`trv_pat_…`, `trv_sat_…` or `trv_cit_…`, INV-8) |
+| `$QUADER_TOKEN` | a Quader token (`qdr_pat_…`, `qdr_sat_…` or `qdr_cit_…`, INV-8) |
 
 Project and repository keys used in examples (# example): the project `web` with `ansible-local` (local), `galaxy` (remote of
 `https://galaxy.ansible.com/api/`, mode `pullThrough`), `galaxy-mirror` (remote of the same upstream, mode `mirror`) and `ansible`
 (virtual over `ansible-local` and `galaxy`, deploy target `ansible-local`). A client is configured with the server URL
-`https://trove.example.com/api/ansible/web/ansible/`.
+`https://quader.example.com/api/ansible/web/ansible/`.
 
 Priorities: every requirement below is **P1**, as the catalog page rates its entries and as the owner set the unit F0.
 
@@ -62,14 +62,14 @@ Versions checked: the **public Galaxy** (`https://galaxy.ansible.com/api/`, answ
 `cli/galaxy.py` and `module_utils/urls.py` were read from the wheel); **ansible-core 2.17.14** (the oldest the catalog names; the same
 files were compared with 2.21.6 and the differences listed below); **ansible-core 2.15.8** (installed on the development host; a
 collection and a role were installed from the public Galaxy with `-vvvv` and the requests read from the log). The wire behaviour of
-2.17 to 2.21 against trove is **not** yet observed; the e2e set (R-ANS-032) proves it.
+2.17 to 2.21 against Quader is **not** yet observed; the e2e set (R-ANS-032) proves it.
 
 | Fact | How it was verified | Where this page uses it |
 |---|---|---|
 | The client first requests the configured server URL and expects a JSON object with `available_versions` (2.21.6); when that fails, or a `GalaxyError` is raised, it requests `<url>/api/` once and uses that URL as the API root; 2.17.14 without `available_versions` assumes `v1` and `v2`, 2.21.6 treats it as an error | `g_connect` in `api.py` of 2.21.6 and 2.17.14 | The repository URL answers the discovery document itself (R-ANS-003, Q-ANS-3) |
 | The public Galaxy answers `GET /api/` with `{"available_versions":{"v3":"v3/","v1":"v1/"}}` | `curl` | The shape of the discovery document |
 | Every later URL is `<api root>` + the value of `available_versions[v3]` + `collections/<ns>/<name>/versions/?limit=100`, then `.../versions/<version>/`, with a trailing slash; a `next` link of the version list is followed after `urljoin(api root, link)`; a link without scheme must start with `/` | `get_collection_versions`, `get_collection_version_metadata` in 2.21.6; the request log of 2.15.8 (`/api/v3/collections/geerlingguy/mac/versions/?limit=100`, then `.../versions/5.0.0/`, then the download) | R-ANS-004 |
-| The fields of a version document that the client reads: `namespace.name`, `collection.name`, `version`, `download_url` (must be absolute or start with `/`), `artifact.sha256`, `metadata.dependencies`, `href`, `signatures` (list of objects with `signature`), `requires_ansible`; of the version list: `data[].version`, `data[].requires_ansible` and `links.next`; of the collection document: `updated_at`, `created_at` (cache invalidation) | `get_collection_version_metadata`, `get_collection_versions`, `get_collection_metadata` in 2.21.6 | The documents trove renders (R-ANS-004) |
+| The fields of a version document that the client reads: `namespace.name`, `collection.name`, `version`, `download_url` (must be absolute or start with `/`), `artifact.sha256`, `metadata.dependencies`, `href`, `signatures` (list of objects with `signature`), `requires_ansible`; of the version list: `data[].version`, `data[].requires_ansible` and `links.next`; of the collection document: `updated_at`, `created_at` (cache invalidation) | `get_collection_version_metadata`, `get_collection_versions`, `get_collection_metadata` in 2.21.6 | The documents Quader renders (R-ANS-004) |
 | The public Galaxy serves `GET /api/v3/collections/<ns>/<name>/...` as a **302** to `/api/v3/plugin/ansible/content/published/collections/index/<ns>/<name>/...`; its version list has `meta.count`, `links.{first,previous,next,last}` and `data[]` ordered newest first, `limit` at most 100 on the collection index (the version list's cap was not probed); a missing collection answers 404 `{"errors":[{"status":"404","code":"not_found","title":"Not found."}]}` | `curl -D -` | The remote adapter follows redirects of the upstream; the error shape (R-ANS-007) |
 | The version document of the public Galaxy is large (community.general 10.0.0: 848,148 bytes, because `metadata.contents` lists every plugin) and its `download_url` is `https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/artifacts/<ns>-<name>-<version>.tar.gz`, which answers 302 to a signed `https://galaxy.ansible.com/api/pulp/content/published/<file>?expires=…&validate_token=…` on the same host | `curl` | Bound of a stored document and the trimmed rendering (R-ANS-017, Q-ANS-10) |
 | The documentation of a version is **not** in the version document. The public Galaxy and the owner's galaxy_ng serve it at the version's `href` plus `docs-blob/` (`…/collections/index/<ns>/<name>/versions/<version>/docs-blob/`) as `{"docs_blob":{"contents":[…],"collection_readme":{"name","html"},"documentation_files":[{"name","html"}]}}`. The version document carries `metadata.contents` (`name`, `description`, `content_type` per entry) and, outside `metadata`, `manifest`, `files`, `git_url` and `git_commit_sha`; it has no `docs_blob` member (checked on both servers). An item of `docs_blob.contents` is `{content_name, content_type, doc_strings, readme_file, readme_html}`; `doc_strings` is `{doc, return, examples, metadata}` in the form ansible-doc prints it, except that `doc.options` and `return` are lists of named objects (`name` plus the fields) with `suboptions` and `contains` nested the same way; `readme_*` are set for roles. Sizes of the `docs-blob/` answer on 2026-11-11: community.general 10.0.0 3,472,149 bytes (833 entries: 591 module, 77 module_utils, 42 doc_fragments, 34 lookup, 26 callback, 21 filter, 13 inventory, 10 become, 10 connection, 4 cache, 3 test, 2 action; 709 with `doc_strings`, a median entry 3.6 KB, the largest 59 KB), community.general 14.0.1 3.3 MB, fortinet.fortios 2.6.0 6.5 MB, amazon.aws 12.1.0 2.0 MB, cisco.ios 11.6.0 1.2 MB, ansible.netcommon 8.7.1 155 KB. The owner's `hans_fischer.common` 1.5.0: 4,122 bytes, 32 entries (8 module, 8 filter, 16 module_utils), **every `doc_strings` null**, `collection_readme.html` set, `documentation_files` empty | `curl` (GET, 2026-11-11); `galaxy_importer/schema.py` (`DocsBlob`, `DocsBlobContentItem`) and `loaders/doc_string.py` (`_transform_doc_strings`) of galaxy-importer, master | R-ANS-033 to R-ANS-036, Q-ANS-56 |
@@ -78,11 +78,11 @@ collection and a role were installed from the public Galaxy with `-vvvv` and the
 | Publishing is `POST <api root>v3/artifacts/collections/` with `multipart/form-data` of two parts, `sha256` (the hex digest of the archive) and `file`; the answer is JSON with `task` (resolved with `urljoin(api root, task)`); the client then polls that URL with GET, reading `state`, `finished_at`, `messages[].level/message` and, when `state` is `failed`, `error.code` and `error.description`; a 404 while polling is retried | `publish_collection`, `wait_import_task` in 2.21.6 | R-ANS-008, R-ANS-009 |
 | The galaxy_ng documentation shows the part order `file`, then `sha256`; the client sends `sha256` first | the documentation page of the v3 API; `prepare_multipart` call in 2.21.6 | A publish handler accepts both orders (R-ANS-008) |
 | The client sends a configured `token=` or `--token` as `Authorization: Token <token>` (class `GalaxyToken`), a configured `username` and `password` as Basic, and a `token` with `auth_url` as a Bearer token it obtains from that URL with a refresh-token grant; the download of the archive carries the same header with `unredirected_headers=['Authorization']`; a role archive is downloaded with `open_url` **without** that header, which falls back to `~/.netrc` (a preemptive Basic header for the host) | `token.py`, `cli/galaxy.py` lines 650 to 690, `_download_file`, `role.py` `fetch`, `urls.py` `_configure_auth` in 2.21.6 | R-ANS-006, R-ANS-015 |
-| A token can come from the environment: the variable is `ANSIBLE_GALAXY_SERVER_<SERVER>_<KEY>` with the server name and key upper-cased (`ANSIBLE_GALAXY_SERVER_TROVE_TOKEN`); `ansible.cfg` itself has no variable expansion for the token | `load_galaxy_server_defs` in `config/manager.py` of 2.21.6 | The setup snippets (R-ANS-025) |
+| A token can come from the environment: the variable is `ANSIBLE_GALAXY_SERVER_<SERVER>_<KEY>` with the server name and key upper-cased (`ANSIBLE_GALAXY_SERVER_QUADER_TOKEN`); `ansible.cfg` itself has no variable expansion for the token | `load_galaxy_server_defs` in `config/manager.py` of 2.21.6 | The setup snippets (R-ANS-025) |
 | `role install <owner>.<role>` requests `GET <api root>v1/roles/?owner__username=<owner>&name=<role>` (owner is everything before the last dot), then `v1/roles/<id>/versions/?page_size=50`, follows `next_link` relative to the host root, and downloads `download_url` of the chosen version (or the `github_user`/`github_repo` archive of the role); `RoleDistributionServer` takes the first server whose `available_versions` has `v1` | `lookup_role_by_name`, `fetch_role_related`, `role.py` in 2.21.6; the request log of 2.15.8 | R-ANS-014, R-ANS-020 |
 | On the public Galaxy a role's `download_url` is a GitHub archive (`https://github.com/<user>/<repo>/archive/<tag>.tar.gz`), not a file Galaxy stores; GitHub answers 302 to `codeload.github.com`; two fetches of one tag a few seconds apart had the same SHA-256 | `curl` on `/api/v1/roles/16/versions/` and on the archive | Roles carry no digest (R-ANS-014, H-840) |
 | The signatures of a version are `signatures[]` of its document; the client verifies them locally against `--keyring` with `gpg` over the `MANIFEST.json` of the archive; without a keyring it skips verification | `collection/__init__.py` `verify_file_signatures`, `gpg.py` in 2.21.6 | R-ANS-013, Q-ANS-14 |
-| The collection name grammar of the client is `[a-zA-Z0-9_]` for namespace and name; trove's stricter rule is its own decision | `validate_collection_name` in 2.21.6 | Q-ANS-5 |
+| The collection name grammar of the client is `[a-zA-Z0-9_]` for namespace and name; Quader's stricter rule is its own decision | `validate_collection_name` in 2.21.6 | Q-ANS-5 |
 | Galaxy errors on v3 URLs are read as `errors[].detail`, `.title`, `.code`; on v1 URLs as `default` | `GalaxyError` in 2.21.6 | R-ANS-007 |
 | OSV lists no Ansible ecosystem (the list of 2026-11-10 has Go, Maven, npm, NuGet, PyPI, … and no Ansible; `Ansible/all.zip` answers 404) | `curl` on `ecosystems.txt` | Q-ANS-15, H-841 |
 | ansible-core 2.17.14 and 2.21.6 differ in `api.py` only in the `v2` fallback and in how a retry error is read; `token.py` and the role code are the same for the calls above | `diff` of the two wheels | The supported matrix (R-ANS-001) |
@@ -96,7 +96,7 @@ Not verified, and to be proven by the package that builds the mechanism:
 - the grammar Galaxy applies to namespaces and names when publishing, and its maximum upload size;
 - the size of a full mirror of the public Galaxy: 4,685 collections were listed on 2026-11-10 (`meta.count` of the collection index); the
   versions and bytes were not counted (H-846);
-- the behaviour of ansible-core 2.17 to 2.21 against trove, `ansible-galaxy collection download` and `verify`, and `--ignore-certs`;
+- the behaviour of ansible-core 2.17 to 2.21 against Quader, `ansible-galaxy collection download` and `verify`, and `--ignore-certs`;
 - whether the core accepts a package-less metadata document and a package name with a slash for the role documents (R-ANS-020).
 
 </details>
@@ -106,7 +106,7 @@ Not verified, and to be proven by the package that builds the mechanism:
 ### R-ANS-001 · The format `ansible`, its classes and the repository address
 Priority: **P1** · Covers: PKG-ANSIBLE-001
 
-trove MUST offer the format `ansible` for all three repository classes of INV-5 ([Q-ANS-1](#q-ans-1--one-format-ansible-at-apiansible-on-the-page-formatsansiblemd-with-the-prefix-r-ans)).
+Quader MUST offer the format `ansible` for all three repository classes of INV-5 ([Q-ANS-1](#q-ans-1--one-format-ansible-at-apiansible-on-the-page-formatsansiblemd-with-the-prefix-r-ans)).
 
 Format registration (R-REPO-003):
 
@@ -141,7 +141,7 @@ format (R-STOR, R-EP-014); `/files/` deploys nothing into the repository (R-STOR
 Acceptance criteria:
 
 - `GET /api/v1/formats` lists `ansible` with the three classes and the settings schema of R-ANS-019.
-- `ansible-galaxy collection install community.general -s https://trove.example.com/api/ansible/web/ansible/` resolves against a
+- `ansible-galaxy collection install community.general -s https://quader.example.com/api/ansible/web/ansible/` resolves against a
   virtual repository with a local and a remote member.
 
 ### R-ANS-002 · Names, versions and canonical paths
@@ -153,7 +153,7 @@ Collection identity ([Q-ANS-5](#q-ans-5--collection-names-are-lower-case-version
   folds upper case to lower case for a *request* (a remote may serve what the client's own grammar `[a-zA-Z0-9_]` accepts) and
   refuses anything else. The package name is `<ns>.<name>` (no dot occurs inside a part, so it parses back uniquely). A *publish* of a
   name with upper case, or a part that breaks the rule above, is refused 422 `invalid_name` (Galaxy's own rule was not verified; the
-  rule is trove's).
+  rule is Quader's).
 - **Version**: a semantic version 2.0.0 string (`1.2.3`, `1.0.0-rc.1`, `2.0.0+build.5`); `ansible-galaxy` requires it. Stored as
   written; precedence is by semver rules with build metadata ignored; two versions that differ only in build metadata are the same
   version for immutability (R-ANS-008). A version that is not semver is refused 422 `invalid_version`. The list order of a version
@@ -193,7 +193,7 @@ Priority: **P1** · Covers: PKG-ANSIBLE-002
 {
   "available_versions": { "v3": "v3/", "v1": "v1/" },
   "current_version": "v3",
-  "description": "trove Ansible Galaxy API"
+  "description": "Quader Ansible Galaxy API"
 }
 ```
 
@@ -211,7 +211,7 @@ Priority: **P1** · Covers: PKG-ANSIBLE-002
 
 Acceptance criteria:
 
-- `curl -u x:$TROVE_TOKEN <repo URL>` returns the document; on a local repository without `v1`, on a remote with both.
+- `curl -u x:$QUADER_TOKEN <repo URL>` returns the document; on a local repository without `v1`, on a remote with both.
 - `ansible-galaxy collection install` against a private repository without a token fails with a 401 naming the server.
 
 ### R-ANS-004 · Collection documents, version lists and version documents
@@ -229,7 +229,7 @@ the public Galaxy:
 - **The version document** carries what the client reads (section "Client and library behaviour"): `version`, `href`, `created_at`,
   `updated_at`, `requires_ansible`, `marks: []`, `artifact{filename,sha256,size}`, `collection{id,name,href}`, `download_url`,
   `name`, `namespace{name}`, `signatures` and `metadata{authors,dependencies,description,documentation,homepage,issues,license,
-  license_file,readme,repository,tags}`. trove omits `metadata.contents` and the members `manifest`, `files`, `git_url` and `git_commit_sha`
+  license_file,readme,repository,tags}`. Quader omits `metadata.contents` and the members `manifest`, `files`, `git_url` and `git_commit_sha`
   that the public Galaxy writes beside `metadata`: no client in the matrix reads them, and they make a document of the public Galaxy
   848 KB ([Q-ANS-10](#q-ans-10--the-version-document-leaves-out-the-plugin-listing)). The documentation of the version is a document of its own
   at `docs-blob/` below the version (R-ANS-035), not a member of this one.
@@ -278,21 +278,21 @@ Acceptance criteria:
 Priority: **P1** · Covers: PKG-ANSIBLE-012, PKG-ANSIBLE-013
 
 Authentication is [identity-and-authentication.md](../identity-and-authentication.md) R-AUTH-001, R-AUTH-002, R-AUTH-033 and R-AUTH-037.
-The Galaxy clients send a trove token in these forms; the stage accepts all four on the routes of this format
+The Galaxy clients send a Quader token in these forms; the stage accepts all four on the routes of this format
 ([Q-ANS-4](#q-ans-4--the-authorization-scheme-token-is-accepted-on-the-routes-that-declare-it)):
 
-| How the client is configured | What goes on the wire | What trove does |
+| How the client is configured | What goes on the wire | What Quader does |
 |---|---|---|
 | `token=` in `ansible.cfg`, `ANSIBLE_GALAXY_SERVER_<NAME>_TOKEN`, `--token` | `Authorization: Token <token>` | The scheme `Token` is read as the token on a route whose declaration says so (`Route.TokenScheme`); the checks are those of `Bearer` (syntax, lookup, type, binding, scope), the method label is `galaxy_token` |
 | `username=` and `password=` | `Authorization: Basic base64(user:password)` | The password is the token; the user name is ignored; needs `auth.basic` (R-AUTH-033) |
 | `~/.netrc` (role archive download; also every API call that carries no header) | preemptive `Authorization: Basic` for the host | As Basic; one `machine` line serves every repository on the host |
-| `auth_url` with `token=` | Bearer token obtained from `auth_url` by the client | Not a way to reach trove (its tokens are not obtained from an SSO); a `Bearer <trove token>` from `curl` or another tool is accepted |
+| `auth_url` with `token=` | Bearer token obtained from `auth_url` by the client | Not a way to reach Quader (its tokens are not obtained from an SSO); a `Bearer <quader token>` from `curl` or another tool is accepted |
 
-- **The scheme `Token` is accepted nowhere else.** On a route without the declaration the header is "not a trove token" and rejected
+- **The scheme `Token` is accepted nowhere else.** On a route without the declaration the header is "not a Quader token" and rejected
   without a lookup, as today. The declaration is a field of the route (as `APIKey` is for NuGet), so the stage and the dispatcher agree
   by the dispatcher's own match; the session cookie is not accepted on these routes either when the header is present.
 - A credential that is present and invalid is a rejection and never falls through to anonymous (R-AUTH-001). A 401 carries
-  `WWW-Authenticate: Basic realm="trove"` (the path is below `/api/`), so a client that retries on a challenge sends Basic.
+  `WWW-Authenticate: Basic realm="quader"` (the path is below `/api/`), so a client that retries on a challenge sends Basic.
 - Anonymous access follows the endpoint's rule (R-AUTH-037) and the repository's `public` artifacts level
   ([authorization.md](../authorization.md) R-AUTHZ-033); an
   anonymously readable repository serves every `GET` route without a token and needs a token for `POST v3/artifacts/collections/`.
@@ -302,7 +302,7 @@ The Galaxy clients send a trove token in these forms; the stage accepts all four
 
 Acceptance criteria:
 
-- `Authorization: Token $TROVE_TOKEN` on `GET <repo URL>v3/collections/…` returns 200; on `GET /api/npm/…` it returns 401.
+- `Authorization: Token $QUADER_TOKEN` on `GET <repo URL>v3/collections/…` returns 200; on `GET /api/npm/…` it returns 401.
 - `ansible-galaxy collection publish` with `token=` in `ansible.cfg` succeeds against a repository with `deploy` for the token's
   principal; the audit event names that principal and `galaxy_token`.
 - `ansible-galaxy role install` through a remote repository authenticated only by `~/.netrc` succeeds.
@@ -323,7 +323,7 @@ Actions ([authorization.md](../authorization.md) R-AUTHZ-007 gains the Ansible t
 **Errors.** `WriteError` renders in the shape the client reads, chosen by the route (R-ARCH-023, [Q-ANS-29](#q-ans-29--the-galaxy-error-shape-renders-the-registry-code-without-its-prefix)):
 
 - below `v3/` and at the root: `{"errors":[{"status":"404","code":"not_found","title":"Not found.","detail":"…"}]}` with
-  `Content-Type: application/json`; `code` is trove's registry code without the format's prefix (`ansible_version_exists` is `version_exists`), and the generic
+  `Content-Type: application/json`; `code` is Quader's registry code without the format's prefix (`ansible_version_exists` is `version_exists`), and the generic
   codes under the names a Galaxy uses (`not_authenticated`, `permission_denied`, `not_found`,
   `invalid_name`, `invalid_version`, `version_exists`, `version_tombstoned`, `sha256_mismatch`, `invalid_archive`,
   `payload_too_large`, `no_deploy_target`, `upstream_unavailable`); `detail` is a sentence a person can act on;
@@ -377,7 +377,7 @@ Limits: the archive size is bounded by the repository and the system upload limi
 
 Acceptance criteria:
 
-- `ansible-galaxy collection publish <file> -s <repo URL> --token=$TROVE_TOKEN` prints the import messages, ends successfully and
+- `ansible-galaxy collection publish <file> -s <repo URL> --token=$QUADER_TOKEN` prints the import messages, ends successfully and
   `ansible-galaxy collection install` of the same version from the same server installs it.
 - A second publish of the same file answers 202 and installs identical bytes; a publish of another archive with the same version
   answers 409 `version_exists` with `detail` naming the version.
@@ -533,18 +533,18 @@ Acceptance criteria:
 ### R-ANS-013 · Digests and signatures
 Priority: **P1** · Covers: PKG-ANSIBLE-005
 
-([Q-ANS-14](#q-ans-14--signatures-pass-through-trove-signs-nothing-and-verifies-nothing) and [Q-ANS-13](#q-ans-13--the-announced-sha-256-is-always-verified-the-first-recorded-digest-stays).)
+([Q-ANS-14](#q-ans-14--signatures-pass-through-quader-signs-nothing-and-verifies-nothing) and [Q-ANS-13](#q-ans-13--the-announced-sha-256-is-always-verified-the-first-recorded-digest-stays).)
 
 - **The digest of a collection is the SHA-256 of the archive.** A local repository computes it while spooling (R-STOR-002) and states
   it in `artifact.sha256` and `Repr-Digest`; a remote repository compares the digest its version document announces with the bytes it
   fetched (R-ANS-018) and serves the version document's value; the client compares again after the download. This is the only
   integrity path the protocol has, and the existing one (R-REPO-041, `ChecksumAlwaysVerified`).
 - **Signatures.** The protocol carries them as `signatures[]` in the version document, each a detached OpenPGP signature of the
-  archive's `MANIFEST.json`, verified by the client against its own keyring. A **local** version has `signatures: []`: trove holds no
+  archive's `MANIFEST.json`, verified by the client against its own keyring. A **local** version has `signatures: []`: Quader holds no
   signing key for the format and uploads no signature (the catalog specifies none). A **remote** version document is served with
-  the upstream's `signatures` unchanged; trove does not verify them, so a client that sets `--keyring` verifies the upstream's
+  the upstream's `signatures` unchanged; Quader does not verify them, so a client that sets `--keyring` verifies the upstream's
   signature itself against keys it trusts, and a client without a keyring skips the check, exactly as against the upstream
-  ([H-839](#h-839--a-remotes-signatures-are-passed-through-and-not-verified-by-trove)). A **virtual** version document carries the
+  ([H-839](#h-839--a-remotes-signatures-are-passed-through-and-not-verified-by-quader)). A **virtual** version document carries the
   signatures of the member whose document it serves.
 - **Vulnerabilities.** The vulnerability pipeline (vulnerability-scanning.md) matches stored versions to OSV advisories by ecosystem
   and name. OSV has no Ansible ecosystem (verified 2026-11-10), so the format has no `VulnerabilityAdapter` and no `ImageScanned`
@@ -564,11 +564,11 @@ Roles are an older packaging than collections. A role is not an archive that Gal
 versions (git tags) and for each a `download_url` that is a GitHub archive (verified). A role also has no manifest with a name,
 version and digest that a registry could validate. Hence ([Q-ANS-6](#q-ans-6--roles-are-served-by-translation-from-a-remote-only-collections-are-the-stored-artifact)):
 
-| Role source in a client | Through trove |
+| Role source in a client | Through Quader |
 |---|---|
 | `ansible-galaxy role install <owner>.<role>` (Galaxy role) | **Served by a remote repository** of a Galaxy (and by a virtual repository over one), by translation of the role API and pull-through of the archive (R-ANS-020) |
 | `requirements.yml` `roles:` entry with `name: <owner>.<role>` or `src: <owner>.<role>` | As above |
-| `src: https://…/x.git` or `git+https://…` with or without `scm: git`; `src: <url>.tar.gz` | **Not served and not seen by trove**: the client clones or downloads on its own; trove has no Git format ([H-844](#h-844--git-and-url-roles-bypass-trove)) |
+| `src: https://…/x.git` or `git+https://…` with or without `scm: git`; `src: <url>.tar.gz` | **Not served and not seen by Quader**: the client clones or downloads on its own; Quader has no Git format ([H-844](#h-844--git-and-url-roles-bypass-quader)) |
 | Publish of a role (`ansible-galaxy role import`, `role init` plus upload) | **Not offered**: a local repository has no `v1` API and no role route; the guide tells the author to wrap the role into a collection (`roles/` directory of a collection) |
 | A role in the content of the existing Galaxy instance | **Not imported**: reported as `notKept` (R-ANS-027) |
 
@@ -582,11 +582,11 @@ The client downloads a role archive without the token header and uses `~/.netrc`
 
 - The setup snippet for a repository that is not anonymously readable writes the `~/.netrc` line
   `machine <host> login <user> password <token>` with the key word `password` (the only secret key word netrc defines), where the
-  token is the environment variable (R-ANS-025). The user name is any fixed word; trove ignores it.
-- The role archive route accepts Basic with a trove token as the password (and `Token` and `Bearer`, as every route of the format),
-  and answers 401 with `WWW-Authenticate: Basic realm="trove"` without a credential, so a client that waits for a challenge also
+  token is the environment variable (R-ANS-025). The user name is any fixed word; Quader ignores it.
+- The role archive route accepts Basic with a Quader token as the password (and `Token` and `Bearer`, as every route of the format),
+  and answers 401 with `WWW-Authenticate: Basic realm="quader"` without a credential, so a client that waits for a challenge also
   works.
-- An identity token as netrc password (TOK-005) is a trove token like any other; no second kind exists.
+- An identity token as netrc password (TOK-005) is a Quader token like any other; no second kind exists.
 - One `machine` line serves every repository on the host, which is exactly the scope of the token; a token scoped to one repository
   is not usable for a role in another, and that is the intended narrowing.
 
@@ -649,7 +649,7 @@ Priority: **P1** · Covers: PKG-ANSIBLE-008, PKG-ANSIBLE-009
   stays and remains downloadable by path. The remote does not track removal marks (`TracksVersionRemoval` false, H-848).
 - **No browsing of uncached content** (PKG-ANSIBLE-008). The artifact browser lists what the cache holds, never the upstream's
   catalogue; the Galaxy index (`v3/collections/` without a name) is not served by a remote, so a client cannot list the upstream
-  through trove. The mirror (R-ANS-021) is the only thing that reads the index.
+  through Quader. The mirror (R-ANS-021) is the only thing that reads the index.
 - **Errors.** An upstream 404 for a collection or version is a negative entry (300 s) and 404 to the client; an upstream 401 or 403 is
   `upstream_unavailable` with the status in `detail` (a hub credential problem, R-ANS-019); a 429 follows the engine's rules.
 
@@ -688,7 +688,7 @@ Priority: **P1** · Covers: PKG-ANSIBLE-009
 Acceptance criteria:
 
 - The stub serves an archive that differs from its document's `sha256`: `ansible-galaxy collection install` fails, no item exists,
-  `trove_remote_integrity_failures_total` increments.
+  `quader_remote_integrity_failures_total` increments.
 - The stub changes the `sha256` of a cached version: the cached archive keeps being served and a `proxy.upstream_digest_changed` event exists.
 
 ### R-ANS-019 · Remote repository: a hub behind single sign-on
@@ -723,7 +723,7 @@ obtains from a single-sign-on realm with a long-lived **offline token** (a refre
   the repository needs `remote.authMode: bearer` (the stored secret is the refresh token) and the endpoint's host is the upstream's or an
   `extraHosts` entry with `sendCredentials`, because the refresh token is in the body of the request, where the hop policy cannot withhold it.
   The service checks all four when the document is saved (`validate_ansible.go`) and the engine again at every exchange.
-- The `x-trove-classes` of both settings is `remote`.
+- The `x-quader-classes` of both settings is `remote`.
 
 Acceptance criteria (with the stub's realm; the service itself is not reachable from the tests):
 
@@ -750,7 +750,7 @@ serves the three role operations of the client, in the `v1` shape:
 - **Translation.** `download_url` of each served version entry is rewritten to the role archive route of this repository and
   `next_link`/`previous_link` to this repository's address. A version entry whose `download_url` is not an `https` URL on a host of
   `remote.extraHosts` (the defaults are the GitHub hosts) is **dropped from the served list** and counted in
-  `trove_ansible_role_versions_dropped_total`, so a client can never be sent to download from elsewhere than the operator allowed. A role
+  `quader_ansible_role_versions_dropped_total`, so a client can never be sent to download from elsewhere than the operator allowed. A role
   document's other fields pass unchanged (`github_user`, `github_repo`, `github_branch`, `summary_fields`, …).
 - **Archive.** The first request for a role archive path fetches the upstream URL that the versions document recorded for exactly that
   path (the URL map of R-REPO-043, same rule: the path is built from the document's own role id and version name, a document cannot
@@ -814,7 +814,7 @@ A virtual repository serves local and remote Ansible repositories behind one ser
   walk the same plan.
 - **Version list.** The union of the members' versions; for a version in several members the entry of the lowest (tier, position)
   wins, and a local member's version never loses to a remote's. If the SHA-256 of the same version differs between members, the
-  entry stays the winner's and a metric `trove_ansible_virtual_digest_conflicts_total` counts it once per merge that is built
+  entry stays the winner's and a metric `quader_ansible_virtual_digest_conflicts_total` counts it once per merge that is built
   (the client reads the winner's document and archive, so it is consistent). The digest of a remote version is the one its version
   document announces, so the merge reads the document of every version that a local and a remote member both hold, and of no other
   ([Q-ANS-45](#q-ans-45--the-digest-conflict-is-looked-for-in-the-versions-a-local-and-a-remote-member-share)). Order: semver descending; `meta.count` is the merged count; pagination is cut after
@@ -899,16 +899,16 @@ The setup templates (R-API-030) and the guide (R-UI-049) of the format ([Q-ANS-2
 
 | Template id ([Q-ANS-48](#q-ans-48--the-setup-snippets-ids-by-the-cores-convention-a-hostname-template-function-and-powershell-and-cmd-forms-of-the-token-variable)) | Section | File or language | Content |
 |---|---|---|---|
-| `ansible-galaxy.ansible-cfg.configure` | configure | `ansible.cfg`, ini | `[galaxy]` `server_list = trove` and `[galaxy_server.trove]` `url=<repo URL>`; the token line is **not** written (below) |
-| `ansible-galaxy.token-env.configure`, `ansible-galaxy.token-env-powershell.configure`, `ansible-galaxy.token-env-cmd.configure` | configure | shell, PowerShell, cmd | `export ANSIBLE_GALAXY_SERVER_TROVE_TOKEN="${TROVE_TOKEN}"` and the forms of the other two shells; for a repository that is not anonymously readable, else a comment that none is needed |
-| `ansible-galaxy.netrc.configure` | configure | shell | `touch ~/.netrc && chmod 600 ~/.netrc` and a `printf` that appends `machine <host name> login trove password ${TROVE_TOKEN}` (the host name alone, by the template function `hostname`); a command and not a file, because netrc expands no variable (needed for roles, R-ANS-015; Q-ANS-54); for a repository that is not anonymously readable |
+| `ansible-galaxy.ansible-cfg.configure` | configure | `ansible.cfg`, ini | `[galaxy]` `server_list = quader` and `[galaxy_server.quader]` `url=<repo URL>`; the token line is **not** written (below) |
+| `ansible-galaxy.token-env.configure`, `ansible-galaxy.token-env-powershell.configure`, `ansible-galaxy.token-env-cmd.configure` | configure | shell, PowerShell, cmd | `export ANSIBLE_GALAXY_SERVER_QUADER_TOKEN="${QUADER_TOKEN}"` and the forms of the other two shells; for a repository that is not anonymously readable, else a comment that none is needed |
+| `ansible-galaxy.netrc.configure` | configure | shell | `touch ~/.netrc && chmod 600 ~/.netrc` and a `printf` that appends `machine <host name> login quader password ${QUADER_TOKEN}` (the host name alone, by the template function `hostname`); a command and not a file, because netrc expands no variable (needed for roles, R-ANS-015; Q-ANS-54); for a repository that is not anonymously readable |
 | `ansible-galaxy.collection.install` | install | shell | `ansible-galaxy collection install <package>` with the version spec `:<version>`; the package placeholder is the collection |
-| `ansible-galaxy.requirements.install` | install | yaml, `requirements.yml` | `collections:` with the package, `source: trove` naming the server and the version as a key of the entry; the `roles:` example is a comment (remote and virtual repositories only) |
-| `ansible-galaxy.collection.publish` | publish | shell | `ansible-galaxy collection publish <archive> --server <repo URL> --token=${TROVE_TOKEN}`, shown only to a caller who holds `deploy` on the publish target |
+| `ansible-galaxy.requirements.install` | install | yaml, `requirements.yml` | `collections:` with the package, `source: quader` naming the server and the version as a key of the entry; the `roles:` example is a comment (remote and virtual repositories only) |
+| `ansible-galaxy.collection.publish` | publish | shell | `ansible-galaxy collection publish <archive> --server <repo URL> --token=${QUADER_TOKEN}`, shown only to a caller who holds `deploy` on the publish target |
 
 - **Why the token is an environment variable, not a line in `ansible.cfg`.** The setup never receives a credential (R-API-030) and
   `ansible.cfg` has no variable expansion for `token` (verified), so a literal reference there would be sent as the token. The client
-  reads `ANSIBLE_GALAXY_SERVER_<NAME>_TOKEN`; the server name in the template is `trove`, so the variable name is fixed. A user who
+  reads `ANSIBLE_GALAXY_SERVER_<NAME>_TOKEN`; the server name in the template is `quader`, so the variable name is fixed. A user who
   prefers the file writes `token=` themselves; the guide says that and warns it ends up on disk.
 - A snippet for a **virtual** repository with a deploy target names the virtual repository in `url` and in the publish command.
 - A snippet for a **local** repository adds the note that roles are not served (R-ANS-003) and a `server_list` with the virtual repository
@@ -929,7 +929,7 @@ Priority: **P1** · Covers: PKG-ANSIBLE-004
 
 - A `ViewAdapter` gives the package screens (R-API-029): the versions of a collection ordered by semver, the metadata block
   (`requires_ansible`, dependencies, authors, license, tags, repository and issue links), the README of a version read from the archive
-  by streaming up to it (the entry named by `collection_info.readme`, text limit 64 KiB, never executed or rendered as HTML by trove), the
+  by streaming up to it (the entry named by `collection_info.readme`, text limit 64 KiB, never executed or rendered as HTML by Quader), the
   size of a version, and (local) the publisher and time. The metadata members `describe` (`view.go`) emits are `sha256`, `requiresAnsible`
   (string), `dependencies` (object, collection to version range), `authors` (list) and the links `homepage`, `repositoryUrl`,
   `documentationUrl` and `bugsUrl` (the names the other formats use); the licenses and the tags travel in the generic `licenses` and
@@ -944,18 +944,18 @@ Priority: **P1** · Covers: PKG-ANSIBLE-004
   tab. The settings of the format (`authUrl`, `clientId`, remote only) come from the format's settings schema, like every format's.
 
 ### R-ANS-027 · Import of the content of an existing Galaxy
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 The copy of an existing Galaxy's collections into a local repository is one more `Format` of the importer ([import.md](../import.md)
 R-IMP-009; the [`Format` interface](../../../internal/importer/types.go): `ID`, `ValidName`, `Preflight`, `Search`, `Plan`, `Held`, `Publish`, `Finish`)
-([Q-ANS-21](#q-ans-21--the-galaxy-import-is-one-more-format-of-the-importer-collections-only)). `trove admin import ansible --from <source API root> --to <repo URL> [flags]`; the flags, the state file, the report and the exit
+([Q-ANS-21](#q-ans-21--the-galaxy-import-is-one-more-format-of-the-importer-collections-only)). `quader admin import ansible --from <source API root> --to <repo URL> [flags]`; the flags, the state file, the report and the exit
 codes are those of R-IMP-001 to R-IMP-008, and nothing in the runner, the report or the state file changes.
 
 | Seam | For Ansible |
 |---|---|
 | `ID` | `ansible` |
 | `ValidName` | `<ns>.<name>` by R-ANS-002 (the source's names are folded to lower case; a name the target refuses is `invalid_name`) |
-| `Preflight` | `GET <to>`: the discovery document is a trove one (`description` starts with `trove`) and `v3` is listed; a `GET v3/collections/` of the target is not needed |
+| `Preflight` | `GET <to>`: the discovery document is a Quader one (`description` starts with `quader`) and `v3` is listed; a `GET v3/collections/` of the target is not needed |
 | `Search` | the index of the source: `GET v3/collections/?limit=100&offset=…` (or the source's own listing, below), all pages, filtered by the text on `<ns>.<name>`; without `--search` and `--package` the command is refused as R-IMP-003 says, with the hint that `--search ''` lists everything |
 | `Plan` | the version list of the source (`v3/collections/<ns>/<name>/versions/` pages) and, per version, the version document: `download_url` (host-checked against `--from` and `--source-extra-host`, R-IMP-002), `artifact.sha256`, `created_at`; the versions in the order of the source's publication times, semver where times tie |
 | `Held` | the target's version list (`v3/collections/<ns>/<name>/versions/`) and, per version, the version document's `artifact.sha256` |
@@ -964,8 +964,8 @@ codes are those of R-IMP-001 to R-IMP-008, and nothing in the runner, the report
 
 - **Digests.** A source version without `artifact.sha256` is `no_digest`; there is no switch around it.
 - **Kept**: the archives (hence their manifest and README), the order of publication. **Not kept** (reported under `notKept`): publication
-  and update times (trove sets its own, Q-IMP-5), download counts, deprecation flags, the source's namespace metadata and owners,
-  signatures of the source (trove stores none for a local version), **and every role** of the source (roles cannot be published to a
+  and update times (Quader sets its own, Q-IMP-5), download counts, deprecation flags, the source's namespace metadata and owners,
+  signatures of the source (Quader stores none for a local version), **and every role** of the source (roles cannot be published to a
   local repository, R-ANS-014; the report names the role count when the source's v1 API answers).
 - **The source's API.** The importer speaks the Galaxy v3 documents of R-ANS-004 (the public Galaxy's own shape, also the galaxy_ng
   shape) at the API root it is given; for a source whose `v3` collection routes are served below a prefix (`content/<repo>/`), the
@@ -977,18 +977,18 @@ codes are those of R-IMP-001 to R-IMP-008, and nothing in the runner, the report
 - The format is [`internal/importer/ansible.go`](../../../internal/importer/ansible.go); the importer's tool page is
   [developer/import.md](../../developer/import.md) and the operator's page [manual/admin/import.md](../../manual/admin/import.md).
 - The importer's tests use the counting stub of R-ANS-032 as the source and a local repository of the integration stack as the target.
-  The unit tests of the format run against a small Galaxy and trove target of their own in the test file.
+  The unit tests of the format run against a small Galaxy and Quader target of their own in the test file.
 - **The roles of the source** are counted once per run, through `GET v1/roles/?page_size=1` (the `count` of the answer), and named under
   `notKept` of the first collection that is planned ([Q-ANS-43](#q-ans-43--the-roles-of-the-source-are-reported-once-per-run-with-the-first-collection)); a source without `v1` reports nothing. A collection the source marks `deprecated` is named under `notKept` too.
 
 Acceptance criteria:
 
-- `trove admin import ansible --package acme.tools` against the stub copies every version, `ansible-galaxy collection install` from the
+- `quader admin import ansible --package acme.tools` against the stub copies every version, `ansible-galaxy collection install` from the
   target installs bytes with the source's SHA-256, a second run reports every version `skipped`.
 - A source archive whose bytes differ from its announced `sha256` is `failed digest_mismatch` and the target holds nothing of it.
 
 ### R-ANS-028 · Ansible on n replicas, without Valkey and during a drain
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - Every route works on any replica: the documents are computed from PostgreSQL rows or stored in the cache entries, the merged documents
   are cached per replica and invalidated through the change areas (R-ARCH-018), nothing is kept in a replica's memory that another cannot
@@ -1006,7 +1006,7 @@ Acceptance criteria:
 - With Valkey stopped, publish, install through the remote and install through the virtual repository still succeed.
 
 ### R-ANS-029 · Ansible data in backups and restores
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - `ansible_collection_versions`, `ansible_tombstones` and `ansible_import_tasks` are exported with the repository (R-BAK-004); a restore
   checks that every version row has its item and the other way round (R-BAK-022's check), and an archive without a row gets one from the
@@ -1025,7 +1025,7 @@ Acceptance criteria:
 - A restore from a backup that predates a deletion keeps the tombstone (the version number is 409 on publish) after the replay.
 
 ### R-ANS-030 · Audit events and metrics
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 Audit events (operations-and-observability.md R-OPS-*): `package.published` and `artifact.deployed` as for every format (actor: the
 token's principal; the method label `galaxy_token` where it applies); `ansible.import_task.failed` (the refused archive and its code, a
@@ -1033,13 +1033,13 @@ security-relevant event for repeated failures of one principal); `ansible.versio
 `ansible.hub.exchange_failed` (no token in the event); the generic proxy events for a remote (`proxy.upstream_digest_changed`, the
 integrity failure).
 
-Metrics (`trove_ansible_*`): `trove_ansible_publish_total{outcome}` (`completed`, `failed`, `exists`, `tombstoned`),
-`trove_ansible_role_versions_dropped_total{repo}`, `trove_ansible_virtual_digest_conflicts_total{repo}`,
-`trove_ansible_document_bytes{kind}` (histogram of stored document sizes), `trove_ansible_hub_exchanges_total{outcome}`; the series of a
+Metrics (`quader_ansible_*`): `quader_ansible_publish_total{outcome}` (`completed`, `failed`, `exists`, `tombstoned`),
+`quader_ansible_role_versions_dropped_total{repo}`, `quader_ansible_virtual_digest_conflicts_total{repo}`,
+`quader_ansible_document_bytes{kind}` (histogram of stored document sizes), `quader_ansible_hub_exchanges_total{outcome}`; the series of a
 deleted repository are forgotten as for other formats (the metrics-forget test of NuGet is the pattern).
 
 ### R-ANS-031 · Limits for untrusted content
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 The archive a client uploads, an upstream's archive that a fill inspects and the documents an upstream sends are untrusted
 (R-ARCH-028); the format tightens `untrusted.DefaultLimits` and states its own:
@@ -1069,7 +1069,7 @@ a duplicate member name, a `MANIFEST.json` with a name that differs from the fil
 and a version document whose `download_url` points to another collection's path.
 
 ### R-ANS-032 · Test suites
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 The testing rule of the phase run asks for integration over HTTP against PostgreSQL, Valkey with Sentinel and S3, the conformance kit, a
 counting stub of the public Galaxy, and e2e with the real client on several replicas ([Q-ANS-23](#q-ans-23--the-test-strategy-a-counting-stub-integration-areas-per-class-and-an-e2e-set-ansible-with-two-client-images)).
@@ -1103,11 +1103,11 @@ counting stub of the public Galaxy, and e2e with the real client on several repl
 - The assertions of the e2e tests name R-ANS IDs; a leg that is red is a finding, not a blocker of the release (CLAUDE.md, CI until the
   first stable release).
 
-### R-ANS-033 · The documentation of a collection version: what trove keeps, per class
-Priority: **P1** · Covers: trove-only
+### R-ANS-033 · The documentation of a collection version: what Quader keeps, per class
+Priority: **P1** · Covers: quader-only
 
-The owner's galaxy_ng shows a collection's documentation (README, modules, plugins, roles, each with its page; Q-ANS-56 records why trove
-shows it too). In trove it is the **wiki part** of the repository (R-ANS-037). "The documentation of a version" is: the README, the Markdown
+The owner's galaxy_ng shows a collection's documentation (README, modules, plugins, roles, each with its page; Q-ANS-56 records why Quader
+shows it too). In Quader it is the **wiki part** of the repository (R-ANS-037). "The documentation of a version" is: the README, the Markdown
 files of the collection's `docs/` directory, and one **entry** per content item of the collection: a module, a plugin of any type, a role.
 An entry has a type, a name, a short description and, where the source documents it, the documentation of the plugin in the Galaxy form
 (`doc`, `return`, `examples`, R-ANS-035). The documentation is **derived data**: nothing in it is a source of truth for the archive, and it
@@ -1115,13 +1115,13 @@ can be rebuilt (below).
 
 | Class | Where the documentation comes from | What is kept | When |
 |---|---|---|---|
-| **Local** | **Generated by trove** from the archive at publish (R-ANS-034) | Rows of the three tables below, `source = 'generated'` | In the commit transaction of the publish; rebuilt by the `ansible-reindex` job |
+| **Local** | **Generated by Quader** from the archive at publish (R-ANS-034) | Rows of the three tables below, `source = 'generated'` | In the commit transaction of the publish; rebuilt by the `ansible-reindex` job |
 | **Remote**, pull-through | The upstream's `docs-blob/` document, taken as it is (R-ANS-035, R-ANS-042) | The document as a stored remote document (R-REPO-043, bounded) **and** the rows derived from it, `source = 'upstream'` | After the version document is filled, by a job (R-ANS-042), or by a client's request for the route; only when the setting `ansible.fetchDocumentation` is on (default `true`) |
 | **Remote**, mirror | As pull-through, for every version the pass keeps | As pull-through | The pass queues the same job after the archive (R-ANS-040) |
 | **Virtual** | The member that serves the version document (first match, R-ANS-022) | Nothing of its own | A read resolves the winner and reads its rows (R-ANS-041) |
 
 - **The tables** (data port `internal/formatdata/ansible`; migrations **00071** `ansible_doc_tables` (the first three tables) and **00072**
-  `ansible_doc_fetches` (the fourth); each file starts with `-- trove:phase expand`
+  `ansible_doc_fetches` (the fourth); each file starts with `-- quader:phase expand`
   and comments its tables as 00070 does; `name` and `version` are `text COLLATE "C"` with the length checks of 00070; every column below is the
   contract, the indexes beyond the primary keys are the builder's):
 
@@ -1197,7 +1197,7 @@ Acceptance criteria:
 - A remote with `fetchDocumentation: false` makes no request for `docs-blob/` against the stub (its counters show it).
 
 ### R-ANS-034 · Generating the documentation of a local publish
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 `Inspect` (R-ANS-010) reads the archive once as a stream (Q-ANS-30) and additionally collects the documentation inputs. The generator is a
 leaf package of the format (`internal/formats/ansible/docgen`, no I/O, no database); the archive reader hands it members, it hands back entries
@@ -1262,11 +1262,11 @@ Acceptance criteria:
 - No test, no code path of the generator imports `os/exec`: `go list -deps` of the package contains no `os/exec` (a test).
 
 ### R-ANS-035 · The documentation as a protocol document, per class
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 One new route in the route table of the format: `ansible.version.docs`, `GET v3/collections/{ns}/{name}/versions/{version}/docs-blob/`, kind
 Metadata, action `read`, classes all, gated by the wiki check of R-AUTHZ-034 (R-ANS-037). It is the document a Galaxy-compatible tool and another
-trove (as the upstream of a remote) read; no client of the matrix does. The version document keeps leaving `metadata.contents` out
+Quader (as the upstream of a remote) read; no client of the matrix does. The version document keeps leaving `metadata.contents` out
 ([Q-ANS-62](#q-ans-62--the-documentation-is-served-at-docs-blob-and-the-version-document-keeps-leaving-the-plugin-listing-out)); a tool that wants the list reads this document.
 
 - **Shape** (the Galaxy's, as observed on both servers, Client and library behaviour above):
@@ -1312,7 +1312,7 @@ trove (as the upstream of a remote) read; no client of the matrix does. The vers
   The upstream's `html` and `readme_html` members are **untrusted HTML**: `Rewrite` serves the stored document with every one of them run through the
   Host's sanitizer (R-ANS-039); the rest of the document passes unchanged. The engine's rules apply as they are: the credential and its host rule,
   the egress check, the rate limit, the circuit and the one-flight rule. Who triggers the fetch: a client's request for this route (another
-  trove, a Galaxy-compatible tool) and the job of R-ANS-042; **a UI read never queries the upstream** (R-API-029), it reads rows.
+  Quader, a Galaxy-compatible tool) and the job of R-ANS-042; **a UI read never queries the upstream** (R-API-029), it reads rows.
 - **Virtual**: the member that serves the version document (R-ANS-022, first match over the same plan) serves this document too, through its own
   class (R-ANS-041); a caller who may not fill a remote member's cache (R-AUTHZ-008) gets the documentation of the cached or local members only.
 - **Setting.** `ansible.fetchDocumentation` (boolean, remote only, default `true`; the format's settings schema, R-ANS-026) switches the **job**
@@ -1332,7 +1332,7 @@ Acceptance criteria:
 - A remote whose upstream answers 404 for `docs-blob/` has state `none` and its screen shows no documentation, not an error.
 
 ### R-ANS-036 · The documentation operations of the screens, their rendering and the search
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 Three management operations under the package, read by the UI (api-and-ui.md, [Q-UI-240](../api-and-ui.md#q-ui-240--an-ansible-package-has-a-documentation-tab-and-a-contents-tab-the-readme-tab-is-its-first-page), R-API-029's family; each is declared wiki content in the OpenAPI document, Q-API-260, R-ANS-037). They
 are bound to the generic package and version (the ids of R-API-029), because the screen already holds them; a `repository` query parameter
@@ -1374,14 +1374,14 @@ plan of R-ANS-022. The answer names the repository it was read from.
   `search` vector (prefix match of a term over the words of short description, description, option names and return names; the terms are
   reduced to letters and digits for the vector, never put into a query text). Matching entries keep the order above; a `files` item
   matches by its title. `q` is evaluated in SQL over the rows of one version (at most 5,000), no index is needed beyond the primary key and the
-  vector's own. The search is **inside the documentation of one version**; trove has no search across collections here.
+  vector's own. The search is **inside the documentation of one version**; Quader has no search across collections here.
 - **The entry** (`getPackageVersionDocEntry`): `{type, name, fullName, shortDescription, hasDocs, source, builtAt, versionAdded, deprecated,
   description[], notes[], requirements[], author[], options[], returnValues[], examples, seealso[], attributes[], extendsFragments[],
   readmeHtml}` where `description`, `notes`, `requirements` and the `description` of an option or return value are **arrays of sanitized HTML
   strings**, one per paragraph; names, types, `returned`, `version_added`, authors, choices, defaults and samples are text and typed JSON
   values (the UI shows them as text, a default of `1000` as `1000`); `options` and `returnValues` are the named lists of R-ANS-035 with
   `suboptions` and `contains` nested to a depth of 12 (deeper is dropped with the warning kept in the tree's `warnings`); `examples` is the text
-  (the UI shows it in a code block; trove does not highlight, does not run); `seealso` entries carry `module`, `description` and `link` (a link is kept only
+  (the UI shows it in a code block; Quader does not highlight, does not run); `seealso` entries carry `module`, `description` and `link` (a link is kept only
   for `http` and `https`); `extendsFragments` is the list of fragment names that were **not** merged (H-891); `readmeHtml` is set for roles. `fullName` is
   `<ns>.<name>.<content name>`. An entry that does not exist is `404 not_found`; one with `hasDocs` false answers 200 with the header
   fields and no sections.
@@ -1411,7 +1411,7 @@ Acceptance criteria:
 - A caller who may read the repository and not its wiki gets what R-ANS-037 says for each of the three operations (the wiki check of R-AUTHZ-034 answered no).
 
 ### R-ANS-037 · The documentation is wiki content: which routes, documents and fields the wiki check gates
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 Task T-18 gives a repository a **wiki part** whose visibility is set apart from its artifacts. [R-AUTHZ-034](../authorization.md) is the one
 requirement that defines the wiki part, **the wiki check** that format code calls, and what a caller gets who may read a repository's artifacts and
@@ -1425,7 +1425,7 @@ is gated by the wiki check of R-AUTHZ-034, and what the Galaxy client and the UI
 | The member `metadata.docs` of the version details (R-ANS-036) | **yes**: it announces documentation | The member is **absent**; the details of the version are otherwise as before |
 | The generic `readme` operation and the member `hasReadme` of the version details, for the format `ansible` | **yes**: the README is the first page of the documentation. What a README is per format is R-AUTHZ-034's; for `ansible` the README and the Documentation tab are one thing | As R-AUTHZ-034 decides for the generic README: `hasReadme` is false, the operation answers as for a version without a README |
 | The stored rows and documents of R-ANS-033 and R-ANS-035 | **yes** (the data the above read); no other code path reads them | Not reachable except through the surfaces above |
-| `metadata.contents` and `metadata.docs_blob` of a version document, were they served | **yes**: both are wiki fields. **Today trove serves neither** (Q-ANS-10, Q-ANS-62), so no field is to be removed; a future change that serves one gates it | The **fields are absent** from the document |
+| `metadata.contents` and `metadata.docs_blob` of a version document, were they served | **yes**: both are wiki fields. **Today Quader serves neither** (Q-ANS-10, Q-ANS-62), so no field is to be removed; a future change that serves one gates it | The **fields are absent** from the document |
 | The version document (`description`, `homepage`, `documentation`, `issues` and `repository` links, `metadata.readme`, which is a **file name**, not the README text), the version list, the collection document, the archive, the import tasks | **no**: artifact and management content | They follow the artifact check as before |
 | The `warnings` of the tree | **no**: shown only to a caller who holds `deploy`, as the import task is | `deploy` |
 
@@ -1457,7 +1457,7 @@ Acceptance criteria:
 - The `wiki` row of R-ANS-046 (a user who reads the artifacts and not the wiki) runs against T-18's real check.
 
 ### R-ANS-038 · Tests of the documentation: unit and integration
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - **Unit.** `docgen` (R-ANS-034): the crafted sources of its acceptance criteria and a corpus of module sources written for the tests in the shape of real
   ones (options with suboptions, choices, defaults of several types, return values with `contains`, a sidecar, the markup macros), the markup converter with a table of macros and
@@ -1483,9 +1483,9 @@ Acceptance criteria: the tests above exist and pass; the coverage generator list
 the IDs (`docs/coverage/implemented.txt` is not touched by this specification).
 
 ### R-ANS-039 · Rendering and sanitizing: Markdown, HTML and the Ansible markup
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
-Three kinds of text reach a browser or a client from the documentation, and each leaves trove sanitized by the policy of the README renderer
+Three kinds of text reach a browser or a client from the documentation, and each leaves Quader sanitized by the policy of the README renderer
 (R-UI-008, `internal/packages/readme`: goldmark, bluemonday, the link and image rules, the `ui.readme.external_image_origins` list):
 
 | Text | Arrives as | Rendered by | Sanitized by |
@@ -1521,7 +1521,7 @@ Acceptance criteria:
 - A kit Host without a renderer makes the Markdown rows of a local `docs-blob/` fail with 500 `internal`, not serve unrendered text.
 
 ### R-ANS-040 · A mirror keeps the documentation of the versions it keeps
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 A remote in mode `mirror` (R-ANS-021) with `ansible.fetchDocumentation` on queues, after the archive of each version it keeps, the documentation fetch job
 of R-ANS-042 for that version; the pass does not wait for it and a job that fails does not fail the pass. The job's fetches go through the pass's
@@ -1536,7 +1536,7 @@ Acceptance criteria:
 - A stub in mode `docs_500` leaves the pass completed and the versions `unavailable` with `upstream_error`; the jobs retry with the engine's backoff.
 
 ### R-ANS-041 · A virtual repository shows the winner's documentation
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 The virtual class serves `docs-blob/`, and its package screens read documentation, from the member that serves the version document (R-ANS-022, first
 match), through that member's class: a local member renders its rows, a remote member serves its stored document through `Rewrite`. The member is the
@@ -1554,7 +1554,7 @@ Acceptance criteria:
 - A caller who may not read the first member's repository gets the second member's documentation, and the answer does not name the first.
 
 ### R-ANS-042 · The job that fetches a remote's documentation
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - **Kind and keys.** `ansible-docs-fill` (queue `index`, dedup `Coalesce` on the key `ansible-docs:<repoId>:<name>:<version>`, at most 5 attempts, the engine's
   backoff, a timeout of 5 minutes per attempt), registered in `internal/formatdata/ansible/jobs.go` beside `ansible-reindex`. Its handler is built by the
@@ -1577,7 +1577,7 @@ Acceptance criteria:
 - With the stub in mode `docs_huge` the fetch row is `unavailable` with `too_large`, the job is not retried, and no row of the other tables exists.
 
 ### R-ANS-043 · Storage and bounds of the documentation
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - **Where it lives.** In the rows of R-ANS-033 (PostgreSQL) and, for a remote, as one stored remote document per version (the object store, as every
   document, bounded by `MaxDocumentBytes`). No blob of the documentation is written for a local version: the archive stays the one source.
@@ -1595,7 +1595,7 @@ Acceptance criteria:
 - The stored document of a remote is evicted and the screens still show the documentation; the route fetches it again.
 
 ### R-ANS-044 · Reindex, restore and the generator version
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 The `ansible-reindex` job (R-ANS-012) gains a documentation step: for every stored archive after the checkpoint it regenerates the rows of a version that has
 none or whose `generator` is below `docgen.Version` (the archive is read anyway); for a remote repository it re-derives the rows from the stored `docs/` documents
@@ -1608,17 +1608,17 @@ Acceptance criteria:
 - A bumped `Version` rebuilds every row once; a second reindex rebuilds none.
 
 ### R-ANS-045 · Metrics and audit of the documentation
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
-Metric families (R-ANS-030's rules, no label with a repository or collection name): `trove_ansible_docs_generated_total{outcome}` (`completed`, `truncated`, `refused`),
-`trove_ansible_docs_fill_total{outcome}` (`available`, `none`, `upstream_error`, `too_large`, `invalid_document`) and `trove_ansible_docs_read_total{operation,outcome}` for the
+Metric families (R-ANS-030's rules, no label with a repository or collection name): `quader_ansible_docs_generated_total{outcome}` (`completed`, `truncated`, `refused`),
+`quader_ansible_docs_fill_total{outcome}` (`available`, `none`, `upstream_error`, `too_large`, `invalid_document`) and `quader_ansible_docs_read_total{operation,outcome}` for the
 three operations and the route (`ok`, `not_found`, `denied`). No audit event: generation and fill are derived data, and a read is not audited unless R-AUTHZ-034 decides
 that a wiki read is. The import task of a publish carries the warnings (R-ANS-034).
 
 Acceptance criteria: each series moves in the integration test of its path and no label value is a name of the user's data.
 
 ### R-ANS-046 · End-to-end rows per class
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 Real clients found three defects in F0 that integration missed, so the set `ansible` (kind, `make e2e`) gets a row per class, each with the real client for the
 protocol and a browser journey for the screen. The source tree of the collection is checked in under `test/e2e/testdata/ansible_docs/` (a namespace with two modules
@@ -1724,7 +1724,7 @@ Each change is made by the work package that builds its mechanism, in the same c
 | Catalog ID or topic | Priority | Note |
 |---|---|---|
 | Deletion by the Galaxy API (`DELETE` of a collection or a version), namespaces (`v3/namespaces/`), collection deprecation, `move`/`copy` between repositories of the Galaxy API | P2 | `ansible-galaxy` does not call them; deletion is the management API's |
-| Signing: trove-held keys, uploaded signatures, server-side signature verification of a remote's signatures | P2 | H-839; the protocol is ready (`signatures[]`) |
+| Signing: Quader-held keys, uploaded signatures, server-side signature verification of a remote's signatures | P2 | H-839; the protocol is ready (`signatures[]`) |
 | Vulnerability evaluation of collections | P2 | H-841; needs an advisory source |
 | Exposure rules and the Bastion for the format | P2 | Q-ANS-25 |
 | Git and URL roles through a proxy; role publish | P2 | Not offered by design (R-ANS-014) |
@@ -1743,7 +1743,7 @@ Each change is made by the work package that builds its mechanism, in the same c
   journaled replay (R-ANS-008, R-ANS-012, R-ANS-029).
 - **The digest is always checked.** A remote compares the SHA-256 its document announces with the bytes it fetched whatever the
   policy says, keeps the first digest it recorded for a version and writes an event when the upstream changes it (R-ANS-018).
-- **Roles come from GitHub through trove only from hosts the operator named, and without a digest.** A role version whose
+- **Roles come from GitHub through Quader only from hosts the operator named, and without a digest.** A role version whose
   archive is on an unlisted host is dropped from the list (R-ANS-020, H-840).
 - **Dependency confusion.** A collection's `dependencies` are resolved by the client through the same server, so claims, pin rules and
   the shadowing check (R-ANS-022, R-ANS-024) keep an internal name away from a public member; a role named in `requirements.yml` by Git
@@ -1752,7 +1752,7 @@ Each change is made by the work package that builds its mechanism, in the same c
   to the realm, and the access token is kept in a replica's cache for its lifetime and no longer (R-ANS-019).
 - **Documentation is text from the publisher or the upstream, shown to other people.** It is scanned and decoded under bounds, never executed, never stored as HTML for a
   local entry, converted by an escaping-first converter and sanitized by the one policy of R-UI-008 before it reaches a browser; an upstream's HTML is sanitized on the way
-  out. A screen never makes trove query an upstream (R-ANS-034 to R-ANS-039, H-893; [ansible-documentation.md](../../security/ansible-documentation.md)).
+  out. A screen never makes Quader query an upstream (R-ANS-034 to R-ANS-039, H-893; [ansible-documentation.md](../../security/ansible-documentation.md)).
 - **Documentation is wiki content.** Every surface that reads it asks one function, which calls the wiki check of R-AUTHZ-034 (R-ANS-037, H-894).
 - **Task documents name no secret.** An import task is readable by whoever reads the repository and names the collection and the
   version (R-ANS-009).
@@ -1838,7 +1838,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `[a-z0-9_]+` parts, no leading `_`, at least one letter, at most 64 characters; fold upper case in requests, refuse it on publish; semver 2.0.0; path `collections/<ns>/<name>/<ns>-<name>-<version>.tar.gz` (chosen) | One name per collection; path patterns per collection | Matches what the public Galaxy holds (names are lower case); no two spellings of one collection (dependency confusion by case) | Galaxy's own publish grammar was not verified; the rule is trove's and may refuse a name Galaxy accepts |
+| (a) `[a-z0-9_]+` parts, no leading `_`, at least one letter, at most 64 characters; fold upper case in requests, refuse it on publish; semver 2.0.0; path `collections/<ns>/<name>/<ns>-<name>-<version>.tar.gz` (chosen) | One name per collection; path patterns per collection | Matches what the public Galaxy holds (names are lower case); no two spellings of one collection (dependency confusion by case) | Galaxy's own publish grammar was not verified; the rule is Quader's and may refuse a name Galaxy accepts |
 | (b) The client's grammar `[a-zA-Z0-9_]` | Accept what the client accepts | Never refuses what the client builds | Two spellings of one name would need the folding anyway |
 | (c) A flat path `<file>` | Fewer directories | Equals the download file name | Path patterns and listings cannot be per collection |
 
@@ -1855,10 +1855,10 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Roles only through remote and virtual repositories, by translation of the `v1` role API and pull-through of the archive; no role publish, no Git roles (chosen) | The catalog's rule, made concrete from the verified role flow | Roles on the public Galaxy are GitHub archives, so nothing is "stored" by Galaxy that trove could publish; the owner's clients keep working for public roles | No digest to verify (H-840); GitHub is a dependency of the role path |
-| (b) No roles at all | Collections only | Smallest, strongest | Fails the catalog entry; a `requirements.yml` with a public role would not resolve through trove |
-| (c) Local role publish as a tarball | A new stored role kind with a `v1` API of trove's own | Full control | Roles have no manifest to validate or identify; reproduces a deprecated packaging; the catalog says roles cannot be published |
-| (d) A Git proxy for `scm: git` roles | The Git protocol | Covers the third role source | trove has no Git format; a large new surface |
+| (a) Roles only through remote and virtual repositories, by translation of the `v1` role API and pull-through of the archive; no role publish, no Git roles (chosen) | The catalog's rule, made concrete from the verified role flow | Roles on the public Galaxy are GitHub archives, so nothing is "stored" by Galaxy that Quader could publish; the owner's clients keep working for public roles | No digest to verify (H-840); GitHub is a dependency of the role path |
+| (b) No roles at all | Collections only | Smallest, strongest | Fails the catalog entry; a `requirements.yml` with a public role would not resolve through Quader |
+| (c) Local role publish as a tarball | A new stored role kind with a `v1` API of Quader's own | Full control | Roles have no manifest to validate or identify; reproduces a deprecated packaging; the catalog says roles cannot be published |
+| (d) A Git proxy for `scm: git` roles | The Git protocol | Covers the third role source | Quader has no Git format; a large new surface |
 
 **Choice:** (a).
 
@@ -1866,7 +1866,7 @@ Status: **Decided by the development agent** — selected from the options below
 revisit it if the owner's instance holds roles that matter: the import would then wrap them into collections or a role format would be
 specified.
 
-**Applied in the spec:** R-ANS-003, R-ANS-014, R-ANS-015, R-ANS-020; [H-840](#h-840--a-role-archive-has-no-announced-digest-and-the-source-is-not-byte-stable), [H-844](#h-844--git-and-url-roles-bypass-trove).
+**Applied in the spec:** R-ANS-003, R-ANS-014, R-ANS-015, R-ANS-020; [H-840](#h-840--a-role-archive-has-no-announced-digest-and-the-source-is-not-byte-stable), [H-844](#h-844--git-and-url-roles-bypass-quader).
 
 ### Q-ANS-7 · Role archives are pulled from the hosts of the role's versions and cached without a digest
 
@@ -1876,7 +1876,7 @@ Status: **Decided by the development agent** — selected from the options below
 |---|---|---|---|
 | (a) The archive URL a versions document names is recorded in the URL map of that document's own role; hosts must be in `remote.extraHosts` (default the GitHub hosts); first fetch is stored (chosen) | The rule of R-REPO-043 reused | No client-chosen host, no template; a client cannot fetch an arbitrary repository through the remote | The versions document must be fetched before the archive (a client always does) |
 | (b) Build `https://github.com/<user>/<repo>/archive/<ref>.tar.gz` from the request path | A fixed template | No dependency on a prior document | Turns the remote into an open GitHub archive proxy |
-| (c) Redirect the client to the upstream URL | trove stores nothing | No bytes through trove | The client would download from GitHub directly, bypassing egress control and the cache |
+| (c) Redirect the client to the upstream URL | Quader stores nothing | No bytes through Quader | The client would download from GitHub directly, bypassing egress control and the cache |
 
 **Choice:** (a).
 
@@ -1984,15 +1984,15 @@ Revisit if the engine gains a per-path announced-digest store.
 
 **Applied in the spec:** R-ANS-001, R-ANS-011, R-ANS-013, R-ANS-018.
 
-### Q-ANS-14 · Signatures pass through; trove signs nothing and verifies nothing
+### Q-ANS-14 · Signatures pass through; Quader signs nothing and verifies nothing
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `signatures[]` of a remote version pass through unchanged; a local version has none; no verification, no keys (chosen) | The protocol is ready, trove adds nothing | The client verifies against its own keyring as against the upstream; no key store or trust decision in trove | A remote of an unsigned or tampered signature is not caught by trove (H-839) |
+| (a) `signatures[]` of a remote version pass through unchanged; a local version has none; no verification, no keys (chosen) | The protocol is ready, Quader adds nothing | The client verifies against its own keyring as against the upstream; no key store or trust decision in Quader | A remote of an unsigned or tampered signature is not caught by Quader (H-839) |
 | (b) Verify a remote's signatures against configured keys on fill (as R-DEB-020 does for APT) | `internal/openpgp` exists | Catches a bad signature once, for every client | A key configuration and a trust policy for a feature the owner's clients may not use; the signature covers `MANIFEST.json` inside the archive, so verifying means reading the archive on fill |
-| (c) trove signs local collections | A signing service as galaxy_ng has | Signed internal content | A key lifecycle per repository (the Debian format's cost) for no stated demand |
+| (c) Quader signs local collections | A signing service as galaxy_ng has | Signed internal content | A key lifecycle per repository (the Debian format's cost) for no stated demand |
 
 **Choice:** (a).
 
@@ -2074,7 +2074,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `id` becomes `<member key>-<upstream id>`, decoded by the last `-` (chosen) | No stored mapping | Stateless, valid on any replica, validated against the current members | Not numeric; verified only by reading: the client uses it as a path segment (`_urljoin`) and never as a number |
-| (b) A table of trove-assigned numeric ids | Numeric ids | Looks like Galaxy's | A table and a sweep for a rarely used feature |
+| (b) A table of Quader-assigned numeric ids | Numeric ids | Looks like Galaxy's | A table and a sweep for a rarely used feature |
 | (c) Roles not through a virtual repository | Simpler | | The recommended client target would not install roles |
 
 **Choice:** (a). Revisit if a client rejects a non-numeric id (the e2e set proves it).
@@ -2116,8 +2116,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `ansible.cfg` without the token, plus `ANSIBLE_GALAXY_SERVER_TROVE_TOKEN=${TROVE_TOKEN}` (chosen) | Verified variable name | The setup never holds a credential (R-API-030); `ansible.cfg` does not expand variables | Two snippets for one configuration |
-| (b) `token=${TROVE_TOKEN}` in the file | One snippet | Matches the catalog's example | The literal would be sent as the token |
+| (a) `ansible.cfg` without the token, plus `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN=${QUADER_TOKEN}` (chosen) | Verified variable name | The setup never holds a credential (R-API-030); `ansible.cfg` does not expand variables | Two snippets for one configuration |
+| (b) `token=${QUADER_TOKEN}` in the file | One snippet | Matches the catalog's example | The literal would be sent as the token |
 | (c) The API fills the token into the file | One snippet | | Violates R-API-030 |
 
 **Choice:** (a). **Rationale:** the only form that works. Revisit if ansible-core expands environment variables in ini values.
@@ -2183,8 +2183,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `errors[]` below `v3/` and the root, `default` below `v1/` (chosen) | The shapes `GalaxyError` reads | The client prints trove's `detail` | Two shapes |
-| (b) trove's problem-details everywhere | One shape | | The client would print only the HTTP reason |
+| (a) `errors[]` below `v3/` and the root, `default` below `v1/` (chosen) | The shapes `GalaxyError` reads | The client prints Quader's `detail` | Two shapes |
+| (b) Quader's problem-details everywhere | One shape | | The client would print only the HTTP reason |
 
 **Choice:** (a). **Rationale:** the client's own parser decides. Revisit if the client changes its parser.
 
@@ -2518,7 +2518,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) One image per release on the official Python image of a Python the release supports, `ansible-core==<exact>` installed under a constraints file that pins every dependency (chosen) | ansible-core 2.17.14 on Python 3.11 (the release supports 3.10 to 3.12), 2.21.6 on Python 3.13 (3.12 to 3.14); the constraints are frozen from the first build | The same bytes of the client on every run; a floating dependency cannot turn a client failure into a trove finding | The constraints files are edited by hand when the release moves |
+| (a) One image per release on the official Python image of a Python the release supports, `ansible-core==<exact>` installed under a constraints file that pins every dependency (chosen) | ansible-core 2.17.14 on Python 3.11 (the release supports 3.10 to 3.12), 2.21.6 on Python 3.13 (3.12 to 3.14); the constraints are frozen from the first build | The same bytes of the client on every run; a floating dependency cannot turn a client failure into a Quader finding | The constraints files are edited by hand when the release moves |
 | (b) The newest of each series, unpinned dependencies | | Nothing to maintain | A run that is red tomorrow for a reason in jinja2 or cryptography |
 | (c) The newest ansible-core (2.22.0, which needs Python 3.13) as the second client | | The newest client | The catalog and R-ANS-001 name 2.17 and 2.21; a third release is H-864 |
 
@@ -2534,7 +2534,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `SSL_CERT_FILE` in the pod's environment points at the mounted dev CA; the tests run each command through `trove-clean`, which makes a new home and removes it (chosen) | The environment of the pod reaches every exec | `ansible-galaxy` has no option for a CA file and uses Python's default verify paths, which OpenSSL reads from this variable; no ansible.cfg, `~/.netrc`, galaxy cache or collection of an earlier scenario can reach a command | The CA file replaces the system store for the pod; only the edge is asked, and trove asks the stub and the public Galaxy itself |
+| (a) `SSL_CERT_FILE` in the pod's environment points at the mounted dev CA; the tests run each command through `quader-clean`, which makes a new home and removes it (chosen) | The environment of the pod reaches every exec | `ansible-galaxy` has no option for a CA file and uses Python's default verify paths, which OpenSSL reads from this variable; no ansible.cfg, `~/.netrc`, galaxy cache or collection of an earlier scenario can reach a command | The CA file replaces the system store for the pod; only the edge is asked, and Quader asks the stub and the public Galaxy itself |
 | (b) The CA in the system store of the image | | No variable | The CA is baked into an image, or an entrypoint edits the system store at start |
 | (c) `--ignore-certs` | | Nothing to mount | Does not test the certificate path the setup snippets describe |
 
@@ -2600,7 +2600,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A shell command: `printf 'machine %s login trove password %s\n' <host> "${TROVE_TOKEN}" >>~/.netrc` after `touch` and `chmod 600` (chosen) | The shell expands the reference | A netrc file expands no variable; the pasted file of the first version held the reference as the password, the client sent it as Basic in place of its Token header, and every request answered 401 (seen in the e2e set with ansible-core 2.17 and 2.21) | One more way to write a credential into a file, as the Debian snippet does for `auth.conf` |
+| (a) A shell command: `printf 'machine %s login quader password %s\n' <host> "${QUADER_TOKEN}" >>~/.netrc` after `touch` and `chmod 600` (chosen) | The shell expands the reference | A netrc file expands no variable; the pasted file of the first version held the reference as the password, the client sent it as Basic in place of its Token header, and every request answered 401 (seen in the e2e set with ansible-core 2.17 and 2.21) | One more way to write a credential into a file, as the Debian snippet does for `auth.conf` |
 | (b) A file snippet with the reference | | Matches the table of R-ANS-025 as first written | Never works |
 | (c) A placeholder the reader replaces | | | A line that is wrong until edited |
 
@@ -2609,17 +2609,17 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Applied in the spec:** R-ANS-025, R-ANS-015.
 
-### Q-ANS-56 · trove stores and shows the documentation of a collection: generated for a local publish, kept as received for a remote
+### Q-ANS-56 · Quader stores and shows the documentation of a collection: generated for a local publish, kept as received for a remote
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: task T-19 (owner, 2026-11-11). galaxy_ng shows the README, the modules, the plugins and the roles of a collection with their pages. The
 documentation is not in the archive as such: galaxy-importer builds `docs_blob` at import, by running `ansible-doc` (Client and library behaviour
-above). So the question is what trove, which never ran a collection through an importer, can honestly offer for a **local** publish.
+above). So the question is what Quader, which never ran a collection through an importer, can honestly offer for a **local** publish.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Local: generated by trove at publish from the archive's text; remote: kept as received; virtual: the winner's (chosen) | R-ANS-033 to R-ANS-036 | The owner's own collections are local ones and the screen he asked for needs exactly this; no process is run; the three classes show the same screens | A parser to maintain; the result is weaker than ansible-doc's where fragments matter (H-891) |
+| (a) Local: generated by Quader at publish from the archive's text; remote: kept as received; virtual: the winner's (chosen) | R-ANS-033 to R-ANS-036 | The owner's own collections are local ones and the screen he asked for needs exactly this; no process is run; the three classes show the same screens | A parser to maintain; the result is weaker than ansible-doc's where fragments matter (H-891) |
 | (b) Local: only the README and the contents list (file names), remote: as received | No parsing | Cheap and cannot be wrong | The pages "Modules (8)" would open empty for a local collection: the screen exists to read what a module takes |
 | (c) Pass through from an upstream only | Remote and virtual only | Nothing to generate | Nothing for a local repository, the class the owner publishes his collections to |
 | (d) Run `ansible-doc` as the importer does | Exact output, fragments merged | Fidelity | A Python and ansible-core installation in the image, a process that loads plugin code of uploaded archives: rejected as a trust boundary (R-ARCH-028) and as a second runtime |
@@ -2723,8 +2723,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A route `…/versions/<v>/docs-blob/` in the Galaxy's shape; `metadata.contents` stays out of the version document (chosen) | R-ANS-035; Q-ANS-10 stands | Another trove or a Galaxy-compatible tool reads the documentation where it expects it; a trove remote over a trove repository works; installs read the small document as before | One more route in the frozen table |
-| (b) No protocol route; the UI operations only | Smaller surface | Less to build | A remote over another trove has no documentation; the route is nearly free once the rows exist |
+| (a) A route `…/versions/<v>/docs-blob/` in the Galaxy's shape; `metadata.contents` stays out of the version document (chosen) | R-ANS-035; Q-ANS-10 stands | Another Quader or a Galaxy-compatible tool reads the documentation where it expects it; a Quader remote over a Quader repository works; installs read the small document as before | One more route in the frozen table |
+| (b) No protocol route; the UI operations only | Smaller surface | Less to build | A remote over another Quader has no documentation; the route is nearly free once the rows exist |
 | (c) Bring `metadata.contents` back into the version document | The Galaxy's full document | Same bytes as the public Galaxy | 848 KB for every `ansible-galaxy` install of a large collection; Q-ANS-10's reason is unchanged: no client reads it |
 
 **Choice:** (a). **Rationale:** the correction to Q-ANS-10: the documentation was never a member of `metadata`; it is a sub-resource (verified on both servers), so
@@ -2748,7 +2748,7 @@ over one version's rows, so it can match descriptions and parameter names withou
 
 **Applied in the spec:** R-ANS-036; api-and-ui.md R-API-029 (a pointer).
 
-### Q-ANS-64 · Plugin prose is the Ansible markup converted by trove; Markdown goes through the README renderer; reStructuredText is not rendered
+### Q-ANS-64 · Plugin prose is the Ansible markup converted by Quader; Markdown goes through the README renderer; reStructuredText is not rendered
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -2989,16 +2989,16 @@ Status: **Decided by the development agent** — selected from the options below
 
 ## What this does not cover
 
-### H-839 · A remote's signatures are passed through and not verified by trove
+### H-839 · A remote's signatures are passed through and not verified by Quader
 
-A remote version document's `signatures[]` reach the client unchanged (R-ANS-013, Q-ANS-14). trove neither verifies them nor holds keys,
-so a bad or missing signature at the upstream is not caught by trove; only a client with `--keyring` catches it. Live today for every
+A remote version document's `signatures[]` reach the client unchanged (R-ANS-013, Q-ANS-14). Quader neither verifies them nor holds keys,
+so a bad or missing signature at the upstream is not caught by Quader; only a client with `--keyring` catches it. Live today for every
 remote that serves signed versions; real for a fleet whose clients do not set a keyring (the default of `ansible-galaxy`).
 
 ### H-840 · A role archive has no announced digest and the source is not byte-stable
 
 A role archive is a GitHub archive of a tag (R-ANS-020); the upstream announces no digest, and a tag can move or GitHub's archive bytes can
-change. trove stores the first fetch and serves it ever after, so a cached copy can differ from what GitHub serves later, and a never
+change. Quader stores the first fetch and serves it ever after, so a cached copy can differ from what GitHub serves later, and a never
 cached role is fetched without verification beyond its form. Live whenever a remote serves roles; two fetches seconds apart were equal
 (2026-11-10), longer spans were not observed. Under `integrity.checksumPolicy: require` roles are refused.
 
@@ -3021,15 +3021,15 @@ storage or a large archive can run into the request or ingress timeout, and the 
 idempotent retry makes the retry safe but pays the upload again. Live for archives that take longer than the timeout to upload and
 inspect; none is expected for the sizes collections have (the public Galaxy's largest version document describes 2.6 MB of archive).
 
-### H-844 · Git and URL roles bypass trove
+### H-844 · Git and URL roles bypass Quader
 
 A `requirements.yml` entry with `scm: git`, a `git+https` source or a tarball URL is fetched by the client from where it names, never
-through trove (R-ANS-014). Egress control, the cache and the dependency-confusion rules do not see it. Live for every project whose
-requirements file has such entries; trove can only document it.
+through Quader (R-ANS-014). Egress control, the cache and the dependency-confusion rules do not see it. Live for every project whose
+requirements file has such entries; Quader can only document it.
 
-### H-845 · Galaxy namespaces are not entities of trove
+### H-845 · Galaxy namespaces are not entities of Quader
 
-The public Galaxy requires a namespace to exist before a publish; trove has no namespace object: the first publisher of `<ns>.<name>`
+The public Galaxy requires a namespace to exist before a publish; Quader has no namespace object: the first publisher of `<ns>.<name>`
 claims the name by the repository's ownership rules (`autoClaim`, R-AUTHZ-018) and namespace claims (R-REPO-023) restrict who may. An
 operator who expects Galaxy's namespace-first workflow sets claims for the namespaces. Live today; a difference in workflow rather than a
 hole, recorded because the owner's current system may rely on it.
@@ -3091,7 +3091,7 @@ of the format; the first request names the reason.
 
 ### H-861 · The digest conflict counter counts a merge that is built, not a request
 
-`trove_ansible_virtual_digest_conflicts_total` is raised when a merge is built (R-ANS-022, Q-ANS-45). A merge the engine serves from its
+`quader_ansible_virtual_digest_conflicts_total` is raised when a merge is built (R-ANS-022, Q-ANS-45). A merge the engine serves from its
 merged-metadata cache is not built again, so a conflict that stays for a day is counted once per cache period and per replica, not per
 install; and a remote member the caller may not fill takes part with its cached versions only and is read only for the versions it has
 cached, so a conflict in an uncached version is not counted for that caller. Live today for any virtual repository with a local and a
@@ -3107,7 +3107,7 @@ Live for a virtual repository over two remotes of a Galaxy each; dormant with on
 ### H-864 · Only two ansible-core releases are tested
 
 The e2e set runs ansible-core 2.17.14 and 2.21.6 (R-ANS-032, Q-ANS-49). The releases between them, and 2.22, which PyPI offers and which needs
-Python 3.13, are not run. Live: a change of the client between 2.17 and 2.21, in how it reads a document or retries, would meet trove for the
+Python 3.13, are not run. Live: a change of the client between 2.17 and 2.21, in how it reads a document or retries, would meet Quader for the
 first time in a user's pipeline. The differences in the source (`api.py`, `token.py`, the role code) were compared for 2.17.14 and 2.21.6 only.
 
 ### H-865 · The dependencies of the client images are pinned by version, not by hash
@@ -3118,7 +3118,7 @@ not be noticed by the build. Dormant: PyPI refuses a replacement of a file; real
 ### H-866 · The guide's statements about the client are not run
 
 The guide says what `ansible-galaxy` caches (`~/.ansible/galaxy_cache`, `--clear-response-cache`), which server a role install takes and that a
-role with a Git source bypasses trove. They are read from the documentation and the source (the verification table above); the tests prove the
+role with a Git source bypasses Quader. They are read from the documentation and the source (the verification table above); the tests prove the
 install, publish and credential paths, not these sentences. Live for the cache statement: a client release that renames the flag makes the
 guide wrong without a test failing.
 
@@ -3126,8 +3126,8 @@ guide wrong without a test failing.
 
 ansible-core 2.17 and 2.21 use a netrc line of the host for every request to it and send Basic in place of their `Token` header (seen in the
 e2e set: a line that held a wrong password turned every install into a 401 although the token in the environment was right). The setup writes
-the line because roles need it (R-ANS-015), and trove cannot change the order of the client. Live for a user who keeps an old or wrong line
-for the host; the guide and the manual say so, and no check of trove can see it, because the request arrives with the wrong credential.
+the line because roles need it (R-ANS-015), and Quader cannot change the order of the client. Live for a user who keeps an old or wrong line
+for the host; the guide and the manual say so, and no check of Quader can see it, because the request arrives with the wrong credential.
 
 ### H-868 · The versions of one name in two members are not run with the real clients
 
@@ -3148,7 +3148,7 @@ publishes a documented version often; dormant for a pull-through remote that onl
 ### H-891 · Documentation fragments are not merged into the documentation of a generated entry
 
 ansible-doc merges `extends_documentation_fragment` (fragments of the same collection, of `ansible.builtin` and of other collections) into a plugin's
-options, notes and requirements. trove's generator shows the plugin's own `DOCUMENTATION` and lists the fragment names (`extendsFragments`), so a
+options, notes and requirements. Quader's generator shows the plugin's own `DOCUMENTATION` and lists the fragment names (`extendsFragments`), so a
 parameter that a plugin takes through a fragment is missing from its parameter table, and `module_utils` and `doc_fragments` files are listed without a
 page. Live for every generated entry that extends a fragment (collections with a shared connection or authentication fragment); an entry of a **remote** is not affected, its upstream merged them. The owner's `hans_fischer.common` 1.5.0 has none to show:
 its `doc_strings` are null on his galaxy_ng.
@@ -3164,7 +3164,7 @@ documentation although the author wrote some.
 ### H-893 · An upstream's HTML and the sanitizer policy can differ in what they keep
 
 A remote's `collection_readme.html`, `documentation_files[].html` and `readme_html` are HTML rendered by the upstream (galaxy-importer: Python-Markdown
-`extra` and a small allowlist) and are sanitized again by trove's policy (R-UI-008) before they are shown or served. Constructs the upstream kept and the policy removes
+`extra` and a small allowlist) and are sanitized again by Quader's policy (R-UI-008) before they are shown or served. Constructs the upstream kept and the policy removes
 (images from origins not on `ui.readme.external_image_origins`, which become links; `style` and `class` attributes other than `language-*`) are lost, and
 the document served at `docs-blob/` by a remote is therefore not byte-identical to the stored one. Live for any upstream README with an external image
 (the usual badge); the stored document keeps the original. reStructuredText READMEs are not rendered by anyone in this chain (Q-ANS-64).

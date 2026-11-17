@@ -8,18 +8,18 @@ import (
 // The names, identifiers and versions of the fixture, for the tests of the packages that use the stub.
 const (
 	// NPM test packages (published by the test through the npm test upstream's control API or a repository).
-	NPMVuln        = "trove-test-vuln"        // 1.0.0 affected, 1.0.1 fixed, CVSS 3.1 (7.5, high)
-	NPMMal         = "trove-test-mal"         // 1.0.0 malicious (MAL-2026-1234)
-	NPMLate        = "trove-test-late"        // 2.0.0 affected once the toggle ToggleLate is on
-	NPMAlias       = "trove-test-alias"       // GHSA-aaaa-bbbb-cccc and CVE-2026-0001, 2.0.0 affected, 2.1.0 fixed
-	NPMCVSS        = "trove-test-cvss"        // CVSS 4.0 and 3.1 vectors, 1.0.0 affected, 1.0.1 fixed
-	NPMQualitative = "trove-test-qualitative" // database_specific.severity MODERATE only
-	NPMNoSeverity  = "trove-test-nosev"       // no severity at all
-	NPMBadRange    = "trove-test-badrange"    // fixed: "not-a-version"
-	NPMList        = "trove-test-list"        // versions[] only: 1.0.0, 1.2.0
-	NPMWithdrawn   = "trove-test-withdrawn"   // a withdrawn record
-	NPMAcmeUI      = "@acme/ui"               // a MAL- record, as the claimed internal name
-	NPMLeftPad     = "left-pad"               // last_affected 1.3.0 (the npm test upstream's own advisory is <=1.3.0)
+	NPMVuln        = "quader-test-vuln"        // 1.0.0 affected, 1.0.1 fixed, CVSS 3.1 (7.5, high)
+	NPMMal         = "quader-test-mal"         // 1.0.0 malicious (MAL-2026-1234)
+	NPMLate        = "quader-test-late"        // 2.0.0 affected once the toggle ToggleLate is on
+	NPMAlias       = "quader-test-alias"       // GHSA-aaaa-bbbb-cccc and CVE-2026-0001, 2.0.0 affected, 2.1.0 fixed
+	NPMCVSS        = "quader-test-cvss"        // CVSS 4.0 and 3.1 vectors, 1.0.0 affected, 1.0.1 fixed
+	NPMQualitative = "quader-test-qualitative" // database_specific.severity MODERATE only
+	NPMNoSeverity  = "quader-test-nosev"       // no severity at all
+	NPMBadRange    = "quader-test-badrange"    // fixed: "not-a-version"
+	NPMList        = "quader-test-list"        // versions[] only: 1.0.0, 1.2.0
+	NPMWithdrawn   = "quader-test-withdrawn"   // a withdrawn record
+	NPMAcmeUI      = "@acme/ui"                // a MAL- record, as the claimed internal name
+	NPMLeftPad     = "left-pad"                // last_affected 1.3.0 (the npm test upstream's own advisory is <=1.3.0)
 
 	// NuGet test packages: names and versions of the NuGet test upstream's default corpus.
 	NuGetHigh   = "Newtonsoft.Json"     // 13.0.1 affected (high), 13.0.3 fixed
@@ -113,7 +113,7 @@ func nugetPkg(name string) Package { return Package{Ecosystem: "NuGet", Name: na
 func ghsa(id, summary string, sev []Severity, aff ...Affected) Advisory {
 	return Advisory{
 		SchemaVersion: SchemaVersion, ID: id, Published: "2026-09-01T00:00:00Z", Summary: summary,
-		Details: summary + ". Synthetic record of the trove test advisory source.", Severity: sev, Affected: aff,
+		Details: summary + ". Synthetic record of the quader test advisory source.", Severity: sev, Affected: aff,
 		References: ref(id), DatabaseSpecific: map[string]any{"github_reviewed": true},
 	}
 }
@@ -122,7 +122,7 @@ func malicious(id, name string, pkg Package, versions ...string) Advisory {
 	return Advisory{
 		SchemaVersion: SchemaVersion, ID: id, Published: "2026-09-02T00:00:00Z",
 		Summary:          "Malicious code in " + name + " (" + pkg.Ecosystem + ")",
-		Details:          "Synthetic malicious-package record of the trove test advisory source.",
+		Details:          "Synthetic malicious-package record of the quader test advisory source.",
 		Affected:         []Affected{{Package: pkg, Versions: versions}},
 		References:       []Reference{{Type: "WEB", URL: "https://example.org/osvstub/" + id}},
 		DatabaseSpecific: map[string]any{"malicious-packages-origins": []any{}},
@@ -132,30 +132,30 @@ func malicious(id, name string, pkg Package, versions ...string) Advisory {
 // DefaultFixture is the dataset for the test packages of test/npmstub and test/nugetstub. Every call builds the
 // same set. The ids are synthetic (GHSA-aaaa-…, MAL-2026-…): none is a real advisory.
 func DefaultFixture() *Fixture {
-	vuln := ghsa(IDVuln, "trove-test-vuln before 1.0.1", []Severity{{Type: "CVSS_V3", Score: cvssHigh}},
+	vuln := ghsa(IDVuln, "quader-test-vuln before 1.0.1", []Severity{{Type: "CVSS_V3", Score: cvssHigh}},
 		Affected{Package: npmPkg(NPMVuln), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
-	alias := ghsa(IDAlias, "trove-test-alias before 2.1.0", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
+	alias := ghsa(IDAlias, "quader-test-alias before 2.1.0", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
 		Affected{Package: npmPkg(NPMAlias), Ranges: semver(Introduced("2.0.0"), Fixed("2.1.0"))})
 	alias.Aliases = []string{IDAliasCVE}
-	aliasCVE := ghsa(IDAliasCVE, "trove-test-alias before 2.1.0 (the CVE record)", nil,
+	aliasCVE := ghsa(IDAliasCVE, "quader-test-alias before 2.1.0 (the CVE record)", nil,
 		Affected{Package: npmPkg(NPMAlias), Ranges: semver(Introduced("2.0.0"), Fixed("2.1.0"))})
 	aliasCVE.Aliases = []string{IDAlias}
 	aliasCVE.DatabaseSpecific = nil
 	leftPad := ghsa(IDLeftPad, "left-pad pads too much", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
 		Affected{Package: npmPkg(NPMLeftPad), Ranges: semver(Introduced("0"), LastAffected("1.3.0"))})
-	both := ghsa(IDCVSS, "trove-test-cvss before 1.0.1", []Severity{{Type: "CVSS_V3", Score: cvssHigh}, {Type: "CVSS_V4", Score: cvss4}},
+	both := ghsa(IDCVSS, "quader-test-cvss before 1.0.1", []Severity{{Type: "CVSS_V3", Score: cvssHigh}, {Type: "CVSS_V4", Score: cvss4}},
 		Affected{Package: npmPkg(NPMCVSS), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
-	qualitative := ghsa(IDQualitative, "trove-test-qualitative before 1.0.1", nil,
+	qualitative := ghsa(IDQualitative, "quader-test-qualitative before 1.0.1", nil,
 		Affected{Package: npmPkg(NPMQualitative), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
 	qualitative.DatabaseSpecific = map[string]any{"github_reviewed": true, "severity": "MODERATE"}
-	nosev := ghsa(IDNoSeverity, "trove-test-nosev before 1.0.1", nil,
+	nosev := ghsa(IDNoSeverity, "quader-test-nosev before 1.0.1", nil,
 		Affected{Package: npmPkg(NPMNoSeverity), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
 	nosev.DatabaseSpecific = nil
-	badRange := ghsa(IDBadRange, "trove-test-badrange with a fixed that is no version", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
+	badRange := ghsa(IDBadRange, "quader-test-badrange with a fixed that is no version", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
 		Affected{Package: npmPkg(NPMBadRange), Ranges: semver(Introduced("0"), Fixed("not-a-version"))})
-	list := ghsa(IDList, "trove-test-list 1.0.0 and 1.2.0", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
+	list := ghsa(IDList, "quader-test-list 1.0.0 and 1.2.0", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
 		Affected{Package: npmPkg(NPMList), Versions: []string{"1.0.0", "1.2.0"}})
-	withdrawn := ghsa(IDWithdrawn, "trove-test-withdrawn before 1.0.1", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
+	withdrawn := ghsa(IDWithdrawn, "quader-test-withdrawn before 1.0.1", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
 		Affected{Package: npmPkg(NPMWithdrawn), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
 	withdrawn.Withdrawn = "2026-09-20T00:00:00Z"
 
@@ -164,18 +164,18 @@ func DefaultFixture() *Fixture {
 	nugetMedium := ghsa(IDNuGetMedium, "Contoso.Util up to 2.0.0", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
 		Affected{Package: nugetPkg(NuGetMedium), Ranges: ecosystemRange(Introduced("0"), LastAffected("2.0.0"))})
 
-	late := ghsa(IDLate, "trove-test-late 2.0.0", []Severity{{Type: "CVSS_V3", Score: cvssHigh}},
+	late := ghsa(IDLate, "quader-test-late 2.0.0", []Severity{{Type: "CVSS_V3", Score: cvssHigh}},
 		Affected{Package: npmPkg(NPMLate), Ranges: semver(Introduced("2.0.0"), Fixed("2.0.1"))})
 	nugetLate := ghsa(IDNuGetLate, "Contoso.Util 2.1.0", []Severity{{Type: "CVSS_V3", Score: cvssHigh}},
 		Affected{Package: nugetPkg(NuGetLate), Ranges: ecosystemRange(Introduced("2.1.0"), Fixed("2.2.0"))})
 
 	invalid := ghsa(IDInvalid, "a record whose id is no identifier", nil,
-		Affected{Package: npmPkg("trove-test-badid"), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
+		Affected{Package: npmPkg("quader-test-badid"), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
 	big := ghsa(IDBigDetails, "a record with details of 100 KiB", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
-		Affected{Package: npmPkg("trove-test-big"), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
+		Affected{Package: npmPkg("quader-test-big"), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
 	big.Details = strings.Repeat("Synthetic details of a record that is much too long. ", DetailsSize/52+1)[:DetailsSize]
 	js := ghsa(IDJSReference, "a record with a javascript: reference", []Severity{{Type: "CVSS_V3", Score: cvssMedium}},
-		Affected{Package: npmPkg("trove-test-js"), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
+		Affected{Package: npmPkg("quader-test-js"), Ranges: semver(Introduced("0"), Fixed("1.0.1"))})
 	js.References = []Reference{{Type: "WEB", URL: "javascript:alert(1)"}, {Type: "ADVISORY", URL: "https://advisories.example.org/osvstub/" + IDJSReference}}
 
 	f := &Fixture{

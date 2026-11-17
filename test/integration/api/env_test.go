@@ -26,13 +26,13 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/secrets"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/secrets"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -68,15 +68,15 @@ type env struct {
 	admin, reader, alice, bob, carol person
 }
 
-// newEnv creates the installation trove_api_<random>. valkey false points every
+// newEnv creates the installation quader_api_<random>. valkey false points every
 // replica at a Sentinel that never answers.
 func newEnv(t *testing.T, valkey bool, envs ...string) *env {
 	t.Helper()
 	e := &env{t: t, stack: testenv.NewStack(t, testenv.StackOptions{Valkey: valkey, Name: "api", Env: envs})}
 	// The sealed column the key-ring tests register exists in every database,
 	// because the registry is process-wide.
-	e.exec("CREATE TABLE trove.vault_items (id text PRIMARY KEY, secret text)")
-	e.exec("GRANT ALL ON trove.vault_items TO PUBLIC")
+	e.exec("CREATE TABLE quader.vault_items (id text PRIMARY KEY, secret text)")
+	e.exec("GRANT ALL ON quader.vault_items TO PUBLIC")
 	mint := func(u testenv.Person, sc scope.Scope) person { return person{Person: u, token: e.stack.Token(u, sc)} }
 	adm, rdr := e.stack.User("api-admin"), e.stack.User("reader")
 	e.stack.Bind("admin", adm)
@@ -108,7 +108,7 @@ func ringEnv(active string, files ...string) []string {
 	for i, f := range files {
 		quoted[i] = strconv.Quote(f)
 	}
-	return []string{"TROVE_SECRETS_ENCRYPTION_KEY_FILES=[" + strings.Join(quoted, ",") + "]", "TROVE_SECRETS_ACTIVE_KEY_ID=" + active}
+	return []string{"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[" + strings.Join(quoted, ",") + "]", "QUADER_SECRETS_ACTIVE_KEY_ID=" + active}
 }
 
 // keyFile writes a key of 32 times fill and returns its path.
@@ -190,7 +190,7 @@ func apiConfig() config.API {
 
 // rateLimitsOn turns the management API's classes on at their defaults, which
 // are the budgets the rate-limit tests state (read 50/s with a burst of 200).
-var rateLimitsOn = []string{"TROVE_API_RATE_LIMITS_ENABLED=true"}
+var rateLimitsOn = []string{"QUADER_API_RATE_LIMITS_ENABLED=true"}
 
 func waitFor(t testing.TB, what string, within time.Duration, cond func() bool) {
 	t.Helper()

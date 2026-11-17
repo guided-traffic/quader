@@ -1,6 +1,6 @@
 package nuget
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // Registrations of the tables migration 00017_nuget creates, so that every table carries
 // its export class from its migration on (R-BAK-004). Every one of them is data and
@@ -9,8 +9,8 @@ import "github.com/guided-traffic/trove/internal/backup/tables"
 // (Q-NUGET-6), and the symbol rows.
 //
 // A table registered twice panics at start-up, so the registration lives here and nowhere
-// else. This package is linked by the composition root and by cmd/trove/registry.go, which
-// `trove migrate` needs to check the migrated schema against the registry.
+// else. This package is linked by the composition root and by cmd/quader/registry.go, which
+// `quader migrate` needs to check the migrated schema against the registry.
 func init() {
 	// The NuGet format (00017_nuget, R-NUGET-005, R-NUGET-006, R-NUGET-020, R-NUGET-021,
 	// R-NUGET-033).

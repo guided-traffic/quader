@@ -4,8 +4,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/vuln/match"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln/match"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // R-VULN-006, Q-VULN-61 (S1 of the fix wave): a withdrawn record is never the canonical record of a group that has another, even

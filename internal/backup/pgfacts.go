@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // PGFacts is the small reads of the create pipeline over PostgreSQL at READ COMMITTED: the system facts of R-BAK-009, the
@@ -167,7 +167,7 @@ func (f *PGFacts) CheckGrants(ctx context.Context) error {
 	}
 	if len(missing) > 0 {
 		return Failf(ExitUsage, CodeBackupRoleGrant,
-			"the database role of the backup lacks privileges (%s); trove migrate grants them to database.backup_role (R-BAK-015)", strings.Join(missing, ", "))
+			"the database role of the backup lacks privileges (%s); quader migrate grants them to database.backup_role (R-BAK-015)", strings.Join(missing, ", "))
 	}
 	return nil
 }

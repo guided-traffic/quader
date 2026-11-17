@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // stage returns a middleware that records its name when a request enters it.
@@ -61,7 +61,7 @@ func TestMiddlewareOrder(t *testing.T) {
 			rec.add("handler")
 			w.WriteHeader(204)
 		})
-		res, err := NewResolver(nil, "https://trove.example.com", nil)
+		res, err := NewResolver(nil, "https://quader.example.com", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -245,7 +245,7 @@ func TestIdentificationHeaders(t *testing.T) {
 		}
 	})
 
-	t.Run("R-OPS-002 X-Trove-Replica follows server.replica_header", func(t *testing.T) {
+	t.Run("R-OPS-002 X-Quader-Replica follows server.replica_header", func(t *testing.T) {
 		router := newTestRouter("GET /x", func(http.ResponseWriter, *http.Request) {})
 		authed := func(r *http.Request) (Principal, error) {
 			if r.Header.Get("Authorization") != "" {
@@ -258,12 +258,12 @@ func TestIdentificationHeaders(t *testing.T) {
 			auth, anon  string
 			anonMissing string
 		}{
-			{ReplicaAuthenticated, "trove-web-1", "", "/nope"},
-			{ReplicaAlways, "trove-web-1", "trove-web-1", "/nope"},
+			{ReplicaAuthenticated, "quader-web-1", "", "/nope"},
+			{ReplicaAlways, "quader-web-1", "quader-web-1", "/nope"},
 			{ReplicaNever, "", "", "/nope"},
 		}
 		for _, c := range cases {
-			h := Chain{Router: router, Authenticate: authed, Replica: "trove-web-1", ReplicaHeader: c.mode}.Handler()
+			h := Chain{Router: router, Authenticate: authed, Replica: "quader-web-1", ReplicaHeader: c.mode}.Handler()
 			req := httptest.NewRequest("GET", "/x", nil)
 			req.Header.Set("Authorization", "Bearer x")
 			w := httptest.NewRecorder()
@@ -311,12 +311,12 @@ func TestAuthenticationStage(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-005 the handler sees the principal and the resolved request info", func(t *testing.T) {
-		res, _ := NewResolver(nil, "https://trove.example.com", nil)
+		res, _ := NewResolver(nil, "https://quader.example.com", nil)
 		router := newTestRouter("GET /x", func(w http.ResponseWriter, r *http.Request) {
 			if p := PrincipalFrom(r.Context()); p.Name != "alice" {
 				t.Errorf("principal = %+v", p)
 			}
-			if i := InfoFrom(r.Context()); i.BaseURL != "https://trove.example.com" || i.Client.String() != "192.0.2.1" {
+			if i := InfoFrom(r.Context()); i.BaseURL != "https://quader.example.com" || i.Client.String() != "192.0.2.1" {
 				t.Errorf("info = %+v", i)
 			}
 		})

@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/tagorder"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/tagorder"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The tags of a name: the upstream's tags list read page by page, and the choice of the tags a mirror keeps (oci.md "Mirror discovery",

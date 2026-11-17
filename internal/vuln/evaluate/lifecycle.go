@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // The rules of the finding lifecycle of R-VULN-012 that need no database: what the evaluation of a version finds, and what a

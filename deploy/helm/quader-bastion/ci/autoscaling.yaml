@@ -1,0 +1,19 @@
+# Autoscaling: bastion.replicas is autoscaling.maxReplicas, the Deployment has no replicas field.
+config:
+  server:
+    base_url: https://packages.example.com
+    trusted_proxies: ["10.244.0.0/16"]                # example: the ingress controller's pods
+  bastion:
+    main:
+      url: https://quader.example.com
+secrets:
+  mainToken:
+    existingSecret: quader-bastion-token
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+tls:
+  certManager:
+    issuerRef:
+      name: internal-ca

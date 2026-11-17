@@ -1,4 +1,4 @@
-// trove design tokens. Components read these custom properties and never a literal colour or
+// Quader design tokens. Components read these custom properties and never a literal colour or
 // length, so both themes and the density stay one-place changes. The page palette of the design
 // language (Q-UI-88, Q-UI-128, docs/developer/design-language.md) is set here; no component library
 // supplies tokens (Q-UI-126).
@@ -6,231 +6,232 @@
 :root {
   color-scheme: light dark;
 
-  --trove-space-1: 4px;
-  --trove-space-2: 8px;
-  --trove-space-3: 12px;
-  --trove-space-4: 16px;
-  --trove-space-5: 20px;
-  --trove-space-6: 24px;
-  --trove-space-8: 32px;
+  --quader-space-1: 4px;
+  --quader-space-2: 8px;
+  --quader-space-3: 12px;
+  --quader-space-4: 16px;
+  --quader-space-5: 20px;
+  --quader-space-6: 24px;
+  --quader-space-8: 32px;
 
   // Typography (Q-UI-128): the reference's type, measured on the owner's GitLab 19.0.1. Inter with the cv05 form of the
   // lower-case l is what its "GitLab Sans" is (web/node_modules/@fontsource-variable/inter, OFL-1.1, wired in
   // angular.json); text is 14 px on 21 px, small text 12 px, headings 600 with the fluid sizes of its heading scale.
-  --trove-font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', Ubuntu,
+  --quader-font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans', Ubuntu,
     Cantarell, 'Helvetica Neue', sans-serif;
-  --trove-font-features: 'cv05' 1;
-  --trove-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --trove-text-size: 0.875rem;
-  --trove-text-line: 1.5;
-  --trove-text-muted-size: 0.75rem;
-  --trove-heading-1: clamp(1.5rem, 0.8333rem + 1.3889vw, 1.875rem);
-  --trove-heading-2: clamp(1.3125rem, 0.8681rem + 0.9259vw, 1.5625rem);
-  --trove-heading-3: clamp(1.125rem, 0.9028rem + 0.463vw, 1.25rem);
-  --trove-type-title-large: 400 1.375rem / 1.75rem var(--trove-font-sans);
-  --trove-type-title-medium: 500 1rem / 1.5rem var(--trove-font-sans);
-  --trove-type-title-small: 500 0.875rem / 1.25rem var(--trove-font-sans);
-  --trove-type-headline-small: 400 1.5rem / 2rem var(--trove-font-sans);
-  --trove-type-label-large: 500 0.875rem / 1.25rem var(--trove-font-sans);
-  --trove-type-label-medium: 500 0.75rem / 1rem var(--trove-font-sans);
-  --trove-type-label-small: 500 0.688rem / 1rem var(--trove-font-sans);
-  --trove-type-body-small: 400 0.75rem / 1rem var(--trove-font-sans);
-  --trove-heading-weight: 600;
-  --trove-heading-tracking: -0.01em;
+  --quader-font-features: 'cv05' 1;
+  --quader-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --quader-text-size: 0.875rem;
+  --quader-text-line: 1.5;
+  --quader-text-muted-size: 0.75rem;
+  --quader-heading-1: clamp(1.5rem, 0.8333rem + 1.3889vw, 1.875rem);
+  --quader-heading-2: clamp(1.3125rem, 0.8681rem + 0.9259vw, 1.5625rem);
+  --quader-heading-3: clamp(1.125rem, 0.9028rem + 0.463vw, 1.25rem);
+  --quader-type-title-large: 400 1.375rem / 1.75rem var(--quader-font-sans);
+  --quader-type-title-medium: 500 1rem / 1.5rem var(--quader-font-sans);
+  --quader-type-title-small: 500 0.875rem / 1.25rem var(--quader-font-sans);
+  --quader-type-headline-small: 400 1.5rem / 2rem var(--quader-font-sans);
+  --quader-type-label-large: 500 0.875rem / 1.25rem var(--quader-font-sans);
+  --quader-type-label-medium: 500 0.75rem / 1rem var(--quader-font-sans);
+  --quader-type-label-small: 500 0.688rem / 1rem var(--quader-font-sans);
+  --quader-type-body-small: 400 0.75rem / 1rem var(--quader-font-sans);
+  --quader-heading-weight: 600;
+  --quader-heading-tracking: -0.01em;
 
   // Radii and elevation: the reference's (8 px for controls and menus, 12 px for cards, 16 px for panels and dialogs).
   // A surface is told apart by its fill; the shadow is faint in the light scheme and gone in the dark one.
-  --trove-radius-s: 4px;
-  --trove-radius-m: 8px;
-  --trove-radius-l: 12px;
-  --trove-radius-xl: 16px;
-  --trove-radius-full: 9999px;
-  --trove-elevation-1: 0 1px 2px light-dark(rgb(5 5 6 / 6%), transparent);
-  --trove-elevation-2: 0 4px 12px light-dark(rgb(5 5 6 / 12%), rgb(0 0 0 / 55%));
+  --quader-radius-s: 4px;
+  --quader-radius-m: 8px;
+  --quader-radius-l: 12px;
+  --quader-radius-xl: 16px;
+  --quader-radius-full: 9999px;
+  --quader-elevation-1: 0 1px 2px light-dark(rgb(5 5 6 / 6%), transparent);
+  --quader-elevation-2: 0 4px 12px light-dark(rgb(5 5 6 / 12%), rgb(0 0 0 / 55%));
 
-  // Content area (Q-UI-128): a theme change moves every accent-coloured control with --trove-accent; a positive status is
-  // --trove-status-ok.
+  // Content area (Q-UI-128): a theme change moves every accent-coloured control with --quader-accent; a positive status is
+  // --quader-status-ok.
   // The page palette (Q-UI-128): the reference's semantic colours, light from its token set and dark as measured on the
   // owner's GitLab 19.0.1, where the two agree token for token. The accent as text and focus ring is one step deeper than
   // the confirm button's #1f75cb in the light scheme (#2f68b4; #1f75cb gives 4.0:1 on a filled field) and a hair lighter
-  // than #63a6e9 in the dark one (#66a8ea; 4.49:1 on a filled field); trove's confirm button keeps the exact pair
-  // (--trove-accent-fill). The page is white / #18171d, text #3a383f / #ececef, muted text #626168 / #bfbfc3, hairlines
+  // than #63a6e9 in the dark one (#66a8ea; 4.49:1 on a filled field); Quader's confirm button keeps the exact pair
+  // (--quader-accent-fill). The page is white / #18171d, text #3a383f / #ececef, muted text #626168 / #bfbfc3, hairlines
   // #dcdcde / #4c4b51, menus and dialogs white / #28272d. A pair that misses WCAG AA is moved in its own hue (R-UI-044);
   // palette.spec.ts recomputes the pairs.
-  --trove-surface: light-dark(#ffffff, #18171d);
-  --trove-on-surface: light-dark(#3a383f, #ececef);
-  --trove-surface-variant: light-dark(#ececef, #3a383f);
-  --trove-surface-container: light-dark(#ffffff, #28272d);
-  --trove-dialog-bg: light-dark(#ffffff, #28272d);
-  --trove-border: light-dark(#dcdcde, #4c4b51);
-  --trove-border-strong: light-dark(#89888d, #737278);
-  --trove-text-muted: light-dark(#626168, #bfbfc3);
-  --trove-inverse-surface: light-dark(#28272d, #ececef);
-  --trove-on-inverse-surface: light-dark(#ececef, #28272d);
-  --trove-inverse-accent: light-dark(#66a8ea, #2f68b4);
-  --trove-error: light-dark(#ba1a1a, #ffb4ab);
-  --trove-error-container: light-dark(#ffdad6, #93000a);
-  --trove-on-error-container: light-dark(#93000a, #ffdad6);
-  --trove-heading: light-dark(#18171d, #ffffff);
-  --trove-accent: light-dark(#2f68b4, #66a8ea);
-  --trove-link: light-dark(#2f5ca0, #9dc7f1);
-  --trove-accent-container: light-dark(#e9f3fc, #1d283e);
-  --trove-on-accent-container: light-dark(#18171d, #ececef);
+  --quader-surface: light-dark(#ffffff, #18171d);
+  --quader-on-surface: light-dark(#3a383f, #ececef);
+  --quader-surface-variant: light-dark(#ececef, #3a383f);
+  --quader-surface-container: light-dark(#ffffff, #28272d);
+  --quader-dialog-bg: light-dark(#ffffff, #28272d);
+  --quader-border: light-dark(#dcdcde, #4c4b51);
+  --quader-border-strong: light-dark(#89888d, #737278);
+  --quader-text-muted: light-dark(#626168, #bfbfc3);
+  --quader-inverse-surface: light-dark(#28272d, #ececef);
+  --quader-on-inverse-surface: light-dark(#ececef, #28272d);
+  --quader-inverse-accent: light-dark(#66a8ea, #2f68b4);
+  --quader-error: light-dark(#ba1a1a, #ffb4ab);
+  --quader-error-container: light-dark(#ffdad6, #93000a);
+  --quader-on-error-container: light-dark(#93000a, #ffdad6);
+  --quader-heading: light-dark(#18171d, #ffffff);
+  --quader-accent: light-dark(#2f68b4, #66a8ea);
+  --quader-link: light-dark(#2f5ca0, #9dc7f1);
+  --quader-accent-container: light-dark(#e9f3fc, #1d283e);
+  --quader-on-accent-container: light-dark(#18171d, #ececef);
   // A raised surface (table frame, panel in the page) and a card: the reference's card is a strong fill (#ececef /
   // #3a383f) around a body on the page's fill, 12 px round outside and 8 px inside.
-  --trove-surface-raised: light-dark(#ffffff, #18171d);
-  --trove-card-bg: light-dark(#ececef, #3a383f);
-  --trove-table-head-bg: light-dark(#fbfafd, #28272d);
-  --trove-row-hover: light-dark(#e9f3fc, #1d283e);
-  --trove-focus-ring: 2px solid var(--trove-accent);
+  --quader-surface-raised: light-dark(#ffffff, #18171d);
+  --quader-card-bg: light-dark(#ececef, #3a383f);
+  --quader-table-head-bg: light-dark(#fbfafd, #28272d);
+  --quader-row-hover: light-dark(#e9f3fc, #1d283e);
+  --quader-focus-ring: 2px solid var(--quader-accent);
   // The current tab's line: the reference's blue of the focus ring (#1f75cb / #428fdc).
-  --trove-tab-indicator: light-dark(#1f75cb, #428fdc);
+  --quader-tab-indicator: light-dark(#1f75cb, #428fdc);
 
   // The frame: top bar and sidebar on one fill, the content as a panel set into it (Q-UI-127, Q-UI-128). The
   // reference's neutral theme: #ececef / #28272d around white / #18171d panels; the current entry is tinted in the
   // reference's blue, its text in that blue's deep (light) or pale (dark) step and heavier, so its state is not carried
   // by colour alone (R-UI-044). palette.spec.ts computes the pairs (text 4.5:1, marks 3:1).
-  --trove-nav-bg: light-dark(#ececef, #28272d);
-  --trove-nav-bg-deep: var(--trove-nav-bg);
-  --trove-nav-bg-nested: var(--trove-nav-bg);
-  --trove-nav-fg: light-dark(#3a383f, #ececef);
-  --trove-nav-fg-muted: light-dark(#626168, #bfbfc3);
-  --trove-nav-hover: light-dark(rgb(5 5 6 / 6%), rgb(255 255 255 / 8%));
-  --trove-nav-active: light-dark(rgb(31 117 203 / 16%), rgb(104 168 232 / 25%));
-  --trove-nav-active-fg: light-dark(#0a335c, #cae0f7);
-  --trove-nav-accent: light-dark(#0a335c, #cae0f7);
-  --trove-nav-border: light-dark(#dcdcde, #4c4b51);
-  --trove-nav-width: 15rem;
-  --trove-topbar-height: 3rem;
-  --trove-breadcrumb-height: 2.5rem;
-  --trove-panel-radius: var(--trove-radius-xl);
-  --trove-panel-gap: 8px;
+  --quader-nav-bg: light-dark(#ececef, #28272d);
+  --quader-nav-bg-deep: var(--quader-nav-bg);
+  --quader-nav-bg-nested: var(--quader-nav-bg);
+  --quader-nav-fg: light-dark(#3a383f, #ececef);
+  --quader-nav-fg-muted: light-dark(#626168, #bfbfc3);
+  --quader-nav-hover: light-dark(rgb(5 5 6 / 6%), rgb(255 255 255 / 8%));
+  --quader-nav-active: light-dark(rgb(31 117 203 / 16%), rgb(104 168 232 / 25%));
+  --quader-nav-active-fg: light-dark(#0a335c, #cae0f7);
+  --quader-nav-accent: light-dark(#0a335c, #cae0f7);
+  --quader-nav-border: light-dark(#dcdcde, #4c4b51);
+  --quader-nav-width: 15rem;
+  --quader-topbar-height: 3rem;
+  --quader-breadcrumb-height: 2.5rem;
+  --quader-panel-radius: var(--quader-radius-xl);
+  --quader-panel-gap: 8px;
   // The one column of a settings page and of an object's form (the style guide's Settings pages). A container query cannot
   // read a property, so the two `@container content (max-width: 56rem)` of the audit log and the rule editor repeat the value.
-  --trove-settings-measure: 56rem;
+  --quader-settings-measure: 56rem;
   // A client address alone on its line fills the line up to this measure: 70 characters of the monospace face at
   // 0.875rem with the field's padding and the copy button (Q-UI-301). In a list the column sets the width (Q-UI-300).
-  --trove-address-measure: 40rem;
+  --quader-address-measure: 40rem;
   // The top bar's search field: white with a dark hairline (light), a light veil with a light hairline (dark), 12 px
   // round. The reference's hairlines (alpha 24 % / 16 %) give 1.7:1 against the frame; the outline here is the field
   // outline's grey, deepened in the light scheme to keep 3:1 (WCAG 1.4.11).
-  --trove-search-bg: light-dark(#ffffff, rgb(255 255 255 / 8%));
-  --trove-search-fg: light-dark(#3a383f, #ececef);
-  --trove-search-muted: light-dark(#626168, #bfbfc3);
-  --trove-search-border: light-dark(#858489, #737278);
-  --trove-search-radius: var(--trove-radius-l);
+  --quader-search-bg: light-dark(#ffffff, rgb(255 255 255 / 8%));
+  --quader-search-fg: light-dark(#3a383f, #ececef);
+  --quader-search-muted: light-dark(#626168, #bfbfc3);
+  --quader-search-border: light-dark(#858489, #737278);
+  --quader-search-radius: var(--quader-radius-l);
   // Menus (CDK menu): the reference's dropdown, white / #28272d with a grey hairline, 8 px round; an item under the
   // pointer takes the neutral veil of a tertiary button.
-  --trove-menu-bg: light-dark(#ffffff, #28272d);
-  --trove-menu-border: light-dark(#bfbfc3, #4c4b51);
-  --trove-menu-hover: var(--trove-btn-tertiary-bg-hover);
-  // The logo's hues (web/scripts/brand-logo.mjs; the inline mark of shared/brand/trove-mark.ts reads them).
-  --trove-brand-blue: light-dark(#0a84ff, #1fb6ff);
-  --trove-brand-red: light-dark(#ff1f4b, #ff2d55);
+  --quader-menu-bg: light-dark(#ffffff, #28272d);
+  --quader-menu-border: light-dark(#bfbfc3, #4c4b51);
+  --quader-menu-hover: var(--quader-btn-tertiary-bg-hover);
+  // The mark's colours (owner, 2026-11-17; the same values as web/scripts/brand-logo.mjs writes into the SVG files): the
+  // stones and the wordmark, and the one coloured stone. The inline mark of shared/brand/quader-mark.ts reads them.
+  --quader-mark-stone: light-dark(#28272d, #ececef);
+  --quader-mark-accent: light-dark(#b4690e, #e9a13b);
   // The plate behind a format logo that has no variant of its own for a dark ground (Debian's swirl is 1.9:1 to 2.3:1 on
   // the dark surfaces), shared/format-icon.ts, Q-UI-226: none in the light scheme, the light text tone in the dark one.
-  --trove-logo-plate: light-dark(transparent, #ececef);
+  --quader-logo-plate: light-dark(transparent, #ececef);
 
-  // Controls (_controls.scss, Q-UI-126, Q-UI-128): buttons, text fields, selects and checkboxes of trove's own, in the
+  // Controls (_controls.scss, Q-UI-126, Q-UI-128): buttons, text fields, selects and checkboxes of Quader's own, in the
   // reference's measures (32 px, 8 px round, label weight 400) and colours. The default button is white with a grey
   // hairline (light) or a grey veil without one (dark); the confirm button the reference's blue; a field white with a
   // grey outline (light) or a dark veil (dark). Translucent fills are measured over what they sit on (palette.spec.ts).
   // Everything that folds (the style guide's "Opening and closing"); 0 under prefers-reduced-motion.
-  --trove-motion-duration: 200ms;
-  --trove-motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --quader-motion-duration: 200ms;
+  --quader-motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
 
-  --trove-control-height: 32px;
+  --quader-control-height: 32px;
   // The style guide's field widths (Forms; Q-UI-334), at 14 px Inter: a count of up to six digits, a period in seconds of up to
   // eight, a byte count of up to nineteen, and a name, a key, a host or a choice: half the form column.
-  --trove-field-width-number: 6rem;
-  --trove-field-width-duration: 8rem;
-  --trove-field-width-bytes: 13rem;
-  --trove-field-width-name: 28rem;
-  --trove-control-radius: var(--trove-radius-m);
-  --trove-control-bg: light-dark(#ffffff, rgb(5 5 6 / 40%));
-  --trove-control-fg: light-dark(#3a383f, #ececef);
-  --trove-control-border: light-dark(#89888d, #737278);
-  --trove-control-border-hover: light-dark(#626168, #a4a3a8);
-  --trove-control-placeholder: light-dark(#737278, #89888d);
-  --trove-control-disabled-bg: light-dark(#fbfafd, #212026);
-  --trove-control-disabled-fg: light-dark(#89888d, #89888d);
-  --trove-accent-fill: light-dark(#1f75cb, #63a6e9);
-  --trove-accent-fill-hover: light-dark(#2f68b4, #9dc7f1);
-  --trove-on-accent: light-dark(#ffffff, #18171d);
-  --trove-btn-default-bg: light-dark(#ffffff, rgb(137 136 141 / 40%));
-  --trove-btn-default-bg-hover: light-dark(#ececef, rgb(137 136 141 / 64%));
-  --trove-btn-default-border: light-dark(#bfbfc3, transparent);
-  --trove-btn-default-border-hover: light-dark(#89888d, transparent);
-  --trove-btn-tertiary-bg-hover: light-dark(rgb(164 163 168 / 16%), rgb(137 136 141 / 40%));
-  --trove-danger-fill: light-dark(#dd2b0e, #f6806d);
-  --trove-on-danger: light-dark(#ffffff, #18171d);
+  --quader-field-width-number: 6rem;
+  --quader-field-width-duration: 8rem;
+  --quader-field-width-bytes: 13rem;
+  --quader-field-width-name: 28rem;
+  --quader-control-radius: var(--quader-radius-m);
+  --quader-control-bg: light-dark(#ffffff, rgb(5 5 6 / 40%));
+  --quader-control-fg: light-dark(#3a383f, #ececef);
+  --quader-control-border: light-dark(#89888d, #737278);
+  --quader-control-border-hover: light-dark(#626168, #a4a3a8);
+  --quader-control-placeholder: light-dark(#737278, #89888d);
+  --quader-control-disabled-bg: light-dark(#fbfafd, #212026);
+  --quader-control-disabled-fg: light-dark(#89888d, #89888d);
+  --quader-accent-fill: light-dark(#1f75cb, #63a6e9);
+  --quader-accent-fill-hover: light-dark(#2f68b4, #9dc7f1);
+  --quader-on-accent: light-dark(#ffffff, #18171d);
+  --quader-btn-default-bg: light-dark(#ffffff, rgb(137 136 141 / 40%));
+  --quader-btn-default-bg-hover: light-dark(#ececef, rgb(137 136 141 / 64%));
+  --quader-btn-default-border: light-dark(#bfbfc3, transparent);
+  --quader-btn-default-border-hover: light-dark(#89888d, transparent);
+  --quader-btn-tertiary-bg-hover: light-dark(rgb(164 163 168 / 16%), rgb(137 136 141 / 40%));
+  --quader-danger-fill: light-dark(#dd2b0e, #f6806d);
+  --quader-on-danger: light-dark(#ffffff, #18171d);
   // Status colours reinforce an icon and a text, never replace them (R-UI-044); the pairs keep
   // a contrast ratio of at least 4.5:1 on the surface of their scheme. Green is OK's alone: no
   // other token is green, so green always means a positive status (Q-UI-96), except the good
   // grades S, A and B of a version below (Q-UI-370).
-  --trove-status-ok: light-dark(#2f7549, #52b87a);
-  --trove-status-warn: light-dark(#995715, #d99530);
-  --trove-status-bad: light-dark(#c02f12, #f6806d);
+  --quader-status-ok: light-dark(#2f7549, #52b87a);
+  --quader-status-warn: light-dark(#995715, #d99530);
+  --quader-status-bad: light-dark(#c02f12, #f6806d);
   // Badges (_controls.scss, Q-UI-128): the reference's status pills, a pale fill with deep text in the light scheme and
   // a full fill with near-black text in the dark one. A status (an icon and a word with .ok, .warn or .bad) is drawn as
-  // one. The positive badge is green like --trove-status-ok and means the same.
-  --trove-badge-neutral-bg: light-dark(#dcdcde, #a4a3a8);
-  --trove-badge-neutral-fg: light-dark(#4c4b51, #18171d);
-  --trove-badge-neutral-icon: light-dark(#737278, #18171d);
-  --trove-badge-ok-bg: light-dark(#c3e6cd, #52b87a);
-  --trove-badge-ok-fg: light-dark(#306440, #17291c);
-  --trove-badge-ok-icon: light-dark(#108548, #17291c);
-  --trove-badge-warn-bg: light-dark(#f5d9a8, #d99530);
-  --trove-badge-warn-fg: light-dark(#894b16, #382315);
-  --trove-badge-warn-icon: light-dark(#ab6100, #382315);
-  --trove-badge-bad-bg: light-dark(#fdd4cd, #f6806d);
-  --trove-badge-bad-fg: light-dark(#a32c12, #3e1a14);
-  --trove-badge-bad-icon: light-dark(#a32c12, #3e1a14);
-  --trove-badge-info-bg: light-dark(#cbe2f9, #63a6e9);
-  --trove-badge-info-fg: light-dark(#2f5ca0, #1d283e);
-  --trove-badge-info-icon: light-dark(#1f75cb, #1d283e);
+  // one. The positive badge is green like --quader-status-ok and means the same.
+  --quader-badge-neutral-bg: light-dark(#dcdcde, #a4a3a8);
+  --quader-badge-neutral-fg: light-dark(#4c4b51, #18171d);
+  --quader-badge-neutral-icon: light-dark(#737278, #18171d);
+  --quader-badge-ok-bg: light-dark(#c3e6cd, #52b87a);
+  --quader-badge-ok-fg: light-dark(#306440, #17291c);
+  --quader-badge-ok-icon: light-dark(#108548, #17291c);
+  --quader-badge-warn-bg: light-dark(#f5d9a8, #d99530);
+  --quader-badge-warn-fg: light-dark(#894b16, #382315);
+  --quader-badge-warn-icon: light-dark(#ab6100, #382315);
+  --quader-badge-bad-bg: light-dark(#fdd4cd, #f6806d);
+  --quader-badge-bad-fg: light-dark(#a32c12, #3e1a14);
+  --quader-badge-bad-icon: light-dark(#a32c12, #3e1a14);
+  --quader-badge-info-bg: light-dark(#cbe2f9, #63a6e9);
+  --quader-badge-info-fg: light-dark(#2f5ca0, #1d283e);
+  --quader-badge-info-icon: light-dark(#1f75cb, #1d283e);
   // The marks of the vulnerability trend (R-VULN-022): one per severity, none of them green and none of them the
   // accent. Every pair keeps 3:1 against the page and the raised surface (WCAG 1.4.11); the legend and the table
   // name the level, so the colour is never the only carrier (R-UI-044). palette.spec.ts holds the pairs.
-  --trove-chart-critical: light-dark(#b3261e, #ff8a80);
-  --trove-chart-high: light-dark(#c2570c, #ff9d57);
-  --trove-chart-medium: light-dark(#8a5a00, #ffc857);
-  --trove-chart-low: light-dark(#347da0, #5cb3d6);
-  --trove-chart-none: light-dark(#5b6270, #9aa1ad);
-  --trove-chart-unknown: light-dark(#8577e6, #a99cff);
+  --quader-chart-critical: light-dark(#b3261e, #ff8a80);
+  --quader-chart-high: light-dark(#c2570c, #ff9d57);
+  --quader-chart-medium: light-dark(#8a5a00, #ffc857);
+  --quader-chart-low: light-dark(#347da0, #5cb3d6);
+  --quader-chart-none: light-dark(#5b6270, #9aa1ad);
+  --quader-chart-unknown: light-dark(#8577e6, #a99cff);
   // The grade of a version (R-UI-090, Q-UI-370): the owner's cogpit scale, the same in both schemes from S to E; S, A and B
   // are the greens of a good grade, the only greens beside the positive status. A letter takes the dark ink, the light one on
   // E, or S's mint; each keeps 4.5:1 on its fill. N/A is quiet: the scheme's grey, its letter in the muted tone. The crest's
   // fill runs from the highlight to the shadow, 25 % each way (grade-shield.ts). palette.spec.ts holds the pairs.
-  --trove-grade-s: #1f5f55;
-  --trove-grade-a: #3e8e72;
-  --trove-grade-b: #8fd3b6;
-  --trove-grade-c: #e9ac4b;
-  --trove-grade-d: #c8691c;
-  --trove-grade-e: #c23b33;
-  --trove-grade-na: light-dark(#ececef, #3a383f);
-  --trove-grade-na-ink: light-dark(#626168, #bfbfc3);
-  --trove-grade-rim: #d4b25a;
-  --trove-grade-s-ink: #a8f0d4;
-  --trove-grade-ink: #0b1220;
-  --trove-grade-ink-light: #ffffff;
-  --trove-grade-highlight: #ffffff;
-  --trove-grade-shadow: #000000;
+  --quader-grade-s: #1f5f55;
+  --quader-grade-a: #3e8e72;
+  --quader-grade-b: #8fd3b6;
+  --quader-grade-c: #e9ac4b;
+  --quader-grade-d: #c8691c;
+  --quader-grade-e: #c23b33;
+  --quader-grade-na: light-dark(#ececef, #3a383f);
+  --quader-grade-na-ink: light-dark(#626168, #bfbfc3);
+  --quader-grade-rim: #d4b25a;
+  --quader-grade-s-ink: #a8f0d4;
+  --quader-grade-ink: #0b1220;
+  --quader-grade-ink-light: #ffffff;
+  --quader-grade-highlight: #ffffff;
+  --quader-grade-shadow: #000000;
   // The grade card is as wide as cogpit's drawer at most (R-UI-093).
-  --trove-grade-card-measure: 40rem;
+  --quader-grade-card-measure: 40rem;
   // The severity bar (R-UI-092): cogpit's colours, High one step deeper than its #d9403a so that the white count keeps 4.5:1;
   // Unknown is hatched in two greys of the scheme with the text colour on them; a severity without findings is its colour at
   // 28 % over the surface with the text colour (severity-bar.ts).
-  --trove-sev-critical: #7f1d1d;
-  --trove-sev-high: #c9302a;
-  --trove-sev-medium: #e8a33d;
-  --trove-sev-low: #f5d68e;
-  --trove-sev-ink: #1c1204;
-  --trove-sev-ink-light: #ffffff;
-  --trove-sev-unknown: light-dark(#b9bdc4, #45505c);
-  --trove-sev-unknown-light: light-dark(#e0e3e6, #26303c);
-  --trove-banner-bg: light-dark(#ecdcff, #5f00c0);
-  --trove-banner-fg: light-dark(#5f00c0, #ecdcff);
+  --quader-sev-critical: #7f1d1d;
+  --quader-sev-high: #c9302a;
+  --quader-sev-medium: #e8a33d;
+  --quader-sev-low: #f5d68e;
+  --quader-sev-ink: #1c1204;
+  --quader-sev-ink-light: #ffffff;
+  --quader-sev-unknown: light-dark(#b9bdc4, #45505c);
+  --quader-sev-unknown-light: light-dark(#e0e3e6, #26303c);
+  --quader-banner-bg: light-dark(#ecdcff, #5f00c0);
+  --quader-banner-fg: light-dark(#5f00c0, #ecdcff);
 }
 
 // An explicit user choice (R-API-021) overrides prefers-color-scheme by setting data-theme on
@@ -245,6 +246,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --trove-motion-duration: 0ms;
+    --quader-motion-duration: 0ms;
   }
 }

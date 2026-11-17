@@ -3,7 +3,7 @@ package nuget
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // reasonUnavailable is the reason of a member that took no part in a merge because it could
@@ -20,7 +20,7 @@ type virtualMetrics struct {
 func newVirtualMetrics(m *observability.Metrics) *virtualMetrics {
 	v := &virtualMetrics{
 		repos: m.Repos(),
-		counter: m.NewCounterVec("trove_nuget_virtual_member_skipped_total",
+		counter: m.NewCounterVec("quader_nuget_virtual_member_skipped_total",
 			"Answers of a virtual repository that left out a member (reason unavailable: the member could not be asked, so the merge is partial and not cached).", "repo", "reason"),
 	}
 	v.repos.DeleteOnForget(v.counter) // the series leave with the repository (R-OPS-007)
@@ -32,5 +32,5 @@ func (v *virtualMetrics) skipped(repoKey, reason string) {
 	if v == nil {
 		return
 	}
-	v.counter.WithLabelValues(v.repos.Value("trove_nuget_virtual_member_skipped_total", repoKey), reason).Inc()
+	v.counter.WithLabelValues(v.repos.Value("quader_nuget_virtual_member_skipped_total", repoKey), reason).Inc()
 }

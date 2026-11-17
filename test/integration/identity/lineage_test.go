@@ -11,10 +11,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The token lineage under rotation and concurrency (R-AUTH-027, R-AUTH-029,
@@ -262,7 +262,7 @@ func TestR_AUTH_029_ARevocationAndADerivationAtTheSameTime(t *testing.T) {
 		raw, _ := token.Generate(token.TypePAT)
 		sum := sha256.Sum256([]byte(raw))
 		if _, err := tx.Exec(ctx, `INSERT INTO api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at, derived_from)
-			VALUES ($1::uuid, 'pat', $2, 'trv_pat_x', $3::uuid, 'child', '{}'::jsonb, 'api', now() + interval '10 minutes', $4::uuid)`,
+			VALUES ($1::uuid, 'pat', $2, 'qdr_pat_x', $3::uuid, 'child', '{}'::jsonb, 'api', now() + interval '10 minutes', $4::uuid)`,
 			child, sum[:], alice.ID, parent.Record.ID); err != nil {
 			t.Fatal(err)
 		}

@@ -26,15 +26,15 @@ the verifying reader or a range.
 | [usagefold.go](../../internal/blob/usagefold.go) | `UsageFolder`: the fold loop of the usage counters (R-STOR-003) and its `Fold` iteration |
 | [conformance.go](../../internal/blob/conformance.go) | startup check, conformance checks, `AwaitStartupCheck` |
 | [sql.go](../../internal/blob/sql.go), [tables.go](../../internal/blob/tables.go), [metrics.go](../../internal/blob/metrics.go), [errors.go](../../internal/blob/errors.go) | the `DB` interface, the `blobRows` seam and its sqlc implementation, export-class registration, metric families, `errs` mapping |
-| [restoreversions/restoreversions.go](../../internal/blob/restoreversions/restoreversions.go), [s3/versions.go](../../internal/blob/s3/versions.go) | `trove admin storage restore-versions` (R-HA-025 step 5, [backup.md](backup.md#the-platform-layer-and-the-point-in-time-drill)): runs `verify`, lists the versions of each key without an object (`Client.ListVersions`), removes the delete markers younger than *t* (`Client.DeleteVersion`); never an object version |
-| [verify/verify.go](../../internal/blob/verify/verify.go), [verify/pg.go](../../internal/blob/verify/pg.go) | `trove admin storage verify` ([below](#storage-verify-r-stor-027-q-stor-200)): `Run` over a `Source` (the pages and the items) and an `Objects` (`Head`), `PGSource` |
+| [restoreversions/restoreversions.go](../../internal/blob/restoreversions/restoreversions.go), [s3/versions.go](../../internal/blob/s3/versions.go) | `quader admin storage restore-versions` (R-HA-025 step 5, [backup.md](backup.md#the-platform-layer-and-the-point-in-time-drill)): runs `verify`, lists the versions of each key without an object (`Client.ListVersions`), removes the delete markers younger than *t* (`Client.DeleteVersion`); never an object version |
+| [verify/verify.go](../../internal/blob/verify/verify.go), [verify/pg.go](../../internal/blob/verify/pg.go) | `quader admin storage verify` ([below](#storage-verify-r-stor-027-q-stor-200)): `Run` over a `Source` (the pages and the items) and an `Objects` (`Head`), `PGSource` |
 | [s3/client.go](../../internal/blob/s3/client.go) | `s3.Client` (the `ObjectStore`), `NewFromFactory` |
 | [s3/credentials.go](../../internal/blob/s3/credentials.go) | credential sources of R-STOR-031, SDK configuration |
 | [s3/errors.go](../../internal/blob/s3/errors.go), [s3/idle.go](../../internal/blob/s3/idle.go) | SDK error classification; stall detection |
 
 ## Key layout and digests (R-STOR-001, R-STOR-002)
 
-`blob.Key("trove", d)` is `trove/sha256/<h0h1>/<h2h3>/<hex>`; with an empty prefix the key starts at `sha256/`. The
+`blob.Key("quader", d)` is `quader/sha256/<h0h1>/<h2h3>/<hex>`; with an empty prefix the key starts at `sha256/`. The
 function takes a 32-byte digest and nothing else, so no repository, path or user input reaches a key. `ParseKey` is its
 inverse and refuses every key that does not follow the layout exactly (the orphan sweep will report those as foreign).
 
@@ -96,7 +96,7 @@ call wrote the object, inserted the row, or deduplicated.
 
 ## Transfer (R-STOR-006)
 
-Up to `storage.s3.multipart.threshold`: one `PutObject`. Above it, trove's own multipart upload (Q-ARCH-4): part size is
+Up to `storage.s3.multipart.threshold`: one `PutObject`. Above it, Quader's own multipart upload (Q-ARCH-4): part size is
 `part_size`, raised so the content fits 10,000 parts (whole MiB, `blob.PartSize`); each part is an
 `io.SectionReader` on the spool file; `multipart.concurrency` parts per upload, `multipart.max_concurrent_parts` per
 `Store`. Any failure or cancellation aborts the upload with a context of its own. After `CompleteMultipartUpload` the
@@ -123,9 +123,9 @@ standard retryer (`retry.max_attempts`, `retry.max_backoff`). A transfer in whic
 
 `blob.NewGuard(store, cfg.S3.CircuitBreaker, …)` wraps any `ObjectStore`: `failure_threshold` consecutive transient
 failures open the circuit for `open_duration`, then one probe request goes through. Config errors, 404 and other 4xx
-are answers, not failures; a cancelled caller is no evidence. Metrics: `trove_storage_s3_requests_total{operation,outcome}`
-(the specification writes `op`, which R-OPS-007 does not allow), `trove_storage_s3_request_duration_seconds`,
-`trove_storage_s3_bytes_total{direction}`, `trove_storage_s3_circuit_open`. The composition root builds
+are answers, not failures; a cancelled caller is no evidence. Metrics: `quader_storage_s3_requests_total{operation,outcome}`
+(the specification writes `op`, which R-OPS-007 does not allow), `quader_storage_s3_request_duration_seconds`,
+`quader_storage_s3_bytes_total{direction}`, `quader_storage_s3_circuit_open`. The composition root builds
 `blob.NewMetrics(m)` once and passes it to the spool, the guard and the collector.
 
 Endpoint: a `storage.s3.endpoint` (and `presign.endpoint`) without a scheme is a host and means `https://`
@@ -146,7 +146,7 @@ Gaps against the specification, all visible at construction (nothing is silently
 - `http.max_connections`, `tls_handshake_timeout`, `idle_conn_timeout`: the outbound factory has
   no options for them, so its defaults apply (`proxy_url` and `no_proxy` as host patterns are passed through; CIDR
   patterns in `no_proxy` are not).
-- `trove_storage_s3_requests_total` counts calls of the `ObjectStore` interface, not the SDK's retry attempts.
+- `quader_storage_s3_requests_total` counts calls of the `ObjectStore` interface, not the SDK's retry attempts.
 
 ## Download verification (R-STOR-013, Q-STOR-6)
 
@@ -160,8 +160,8 @@ returned as stored (H-11).
 
 A store that answers "no such object" (`ErrNotFound`), for a full or a ranged read, marks the blob `missing` (`markMissing`,
 R-HA-024, [Q-STOR-151](../spec/storage.md#q-stor-151--a-read-that-finds-no-object-marks-the-blob-missing-and-looks-once-more-after-the-mark)):
-`MarkBlobDamaged` changes only an `ok` row, so the detection is counted (`trove_storage_blobs_damaged_total{status="missing"}`, the alert
-`TroveBlobMissing`) and logged with the digest once per blob. Then the object is looked for once more (`HeadObject`): a commit of the same
+`MarkBlobDamaged` changes only an `ok` row, so the detection is counted (`quader_storage_blobs_damaged_total{status="missing"}`, the alert
+`QuaderBlobMissing`) and logged with the digest once per blob. Then the object is looked for once more (`HeadObject`): a commit of the same
 content that wrote it again between the read and the mark would otherwise be undone, so a row whose object is there again is set `ok`. The
 error stays `ErrNotFound`; `items.Store.Open` answers it `503 content_unavailable`, and a remote repository fills the item again
 ([proxy.md](proxy.md#lost-content-r-stor-027-q-repo-202-to-q-repo-204)). The mark is cleared by the commit protocol's repair (the next
@@ -216,7 +216,7 @@ session step: `uploadSessionsAborted, uploadSessionsCleaned, uploadObjectsDelete
    aborted ones and, once their idle time has passed, of the finished ones, deletes their rows, and in a full sweep removes what no session row
    stands for below `<prefix>/_uploads/` ([Q-STOR-170](../spec/storage.md#q-stor-170--the-collection-run-aborts-a-live-session-for-its-idle-time-and-an-open-one-for-its-age),
    [Q-STOR-172](../spec/storage.md#q-stor-172--the-full-collection-sweep-removes-what-no-session-stands-for-until-the-orphan-sweep-is-a-task-of-its-own)).
-   The step takes at most 25 batches of 200 per run, lists the staging area in pages (the optional `MultipartPager` of the store, 500 uploads at a time), re-reads the deletion pause before every batch, keeps the position of the staging sweep in `system_state` (`upload_sweep_cursor`) so that successive runs progress, and counts the sessions it expires in `trove_storage_upload_sessions_total{outcome="expired"}` ([Q-STOR-173](../spec/storage.md#q-stor-173--the-sessions-are-counted-by-trove_storage_upload_sessions_total-not-by-an-oci-metric)).
+   The step takes at most 25 batches of 200 per run, lists the staging area in pages (the optional `MultipartPager` of the store, 500 uploads at a time), re-reads the deletion pause before every batch, keeps the position of the staging sweep in `system_state` (`upload_sweep_cursor`) so that successive runs progress, and counts the sessions it expires in `quader_storage_upload_sessions_total{outcome="expired"}` ([Q-STOR-173](../spec/storage.md#q-stor-173--the-sessions-are-counted-by-quader_storage_upload_sessions_total-not-by-an-oci-metric)).
    A failure of the step is counted in `errors` and logged; it does not stop the blob collection below it. A dry run counts the sessions it
    would abort and changes nothing;
 1. reads the deletion pause (`system_state` key `deletions_paused_at`; see below) and ends with `paused: true` if set;
@@ -297,10 +297,10 @@ the figure over HTTP.
 
 ## Storage verify (R-STOR-027, Q-STOR-200)
 
-`trove admin storage verify` ([cmd/trove/admin_storage.go](../../cmd/trove/admin_storage.go)) checks that the object of every `live` blob row is in the store.
+`quader admin storage verify` ([cmd/quader/admin_storage.go](../../cmd/quader/admin_storage.go)) checks that the object of every `live` blob row is in the store.
 It is a command of the binary like `admin backup check`: it loads the configuration without a role, opens the database in the `web` role and the S3 client
 of `storage.s3` (the runtime credential, so it needs no permission the replicas lack), and never opens Valkey, so it runs in any pod of the installation
-(`kubectl exec deploy/trove-worker -- trove admin storage verify`) and, with the replicas held not ready, in a one-off pod of the release's configuration.
+(`kubectl exec deploy/quader-worker -- quader admin storage verify`) and, with the replicas held not ready, in a one-off pod of the release's configuration.
 
 | Part | Responsibility |
 |---|---|
@@ -327,27 +327,27 @@ and delete visibility to the next read and list (A1), concurrent writes of ident
 multipart object invisible until completion and complete after, an aborted upload leaving neither object nor listed
 upload (A2), a completion that assembles the part it names and refuses an ETag the store never issued (a part number sent twice, A2), a server-side copy that replaces its destination and reports a missing source as not found (the object write of
 a session's finalize, R-STOR-011), `DeleteObjects` (optional: its failure names `storage.gc.batch_delete`) and a presigned
-URL. Everything it writes lies below `<prefix>/_probe/` and is removed. Conditional writes are not checked: trove uses none.
+URL. Everything it writes lies below `<prefix>/_probe/` and is removed. Conditional writes are not checked: Quader uses none.
 
-The command `trove admin storage check` is not written yet; it is `RunConformance` plus a printed report.
+The command `quader admin storage check` is not written yet; it is `RunConformance` plus a printed report.
 
 ### Running it against another S3
 
-The integration tests are the check. `TestConformance` needs only the `TROVE_TEST_S3_*` variables, no PostgreSQL and no
+The integration tests are the check. `TestConformance` needs only the `QUADER_TEST_S3_*` variables, no PostgreSQL and no
 Valkey:
 
 ```sh
-export TROVE_TEST_S3_ENDPOINT=https://s3.example.com        # example
-export TROVE_TEST_S3_REGION=eu-central-1                    # example
-export TROVE_TEST_S3_ACCESS_KEY=… TROVE_TEST_S3_SECRET_KEY=…
-export TROVE_TEST_S3_BUCKET_BLOBS=trove-conformance         # example; the test writes below it/<run id>/ and removes it
-export TROVE_TEST_S3_FORCE_PATH_STYLE=true                  # false for virtual-hosted addressing
+export QUADER_TEST_S3_ENDPOINT=https://s3.example.com        # example
+export QUADER_TEST_S3_REGION=eu-central-1                    # example
+export QUADER_TEST_S3_ACCESS_KEY=… QUADER_TEST_S3_SECRET_KEY=…
+export QUADER_TEST_S3_BUCKET_BLOBS=quader-conformance         # example; the test writes below it/<run id>/ and removes it
+export QUADER_TEST_S3_FORCE_PATH_STYLE=true                  # false for virtual-hosted addressing
 go test -tags integration -run Conformance -v ./test/integration/blob/...
 ```
 
-Store-specific settings (all optional): `TROVE_TEST_S3_PAYLOAD_CHECKSUM` (`sha256` default, `md5`, `none`),
-`TROVE_TEST_S3_REQUEST_CHECKSUM` and `TROVE_TEST_S3_RESPONSE_CHECKSUM` (`when_supported` default, `when_required`),
-`TROVE_TEST_S3_BATCH_DELETE` (`true` default). Against SeaweedFS (the stack) the checks pass with the defaults, with
+Store-specific settings (all optional): `QUADER_TEST_S3_PAYLOAD_CHECKSUM` (`sha256` default, `md5`, `none`),
+`QUADER_TEST_S3_REQUEST_CHECKSUM` and `QUADER_TEST_S3_RESPONSE_CHECKSUM` (`when_supported` default, `when_required`),
+`QUADER_TEST_S3_BATCH_DELETE` (`true` default). Against SeaweedFS (the stack) the checks pass with the defaults, with
 `md5`, and with `none` plus `when_required`. The stack's gateway is https with a private CA, which the suite passes as
 `storage.s3.ca_file`; the presigned fetch must use `Client.HTTPClient()` (or a client with `WithRootCAs`) to trust it. SeaweedFS creates a missing bucket on the first write, so a wrong bucket name is
 not an error there; the credential test uses a wrong secret key instead.
@@ -359,11 +359,11 @@ not an error there; the credential test uses a wrong secret key instead.
 | unit | [internal/blob](../../internal/blob/), [s3](../../internal/blob/s3/), [blobtest](../../internal/blob/blobtest/) | key layout, spool admission and cleanup on every error path, single pass digests, the commit protocol and its branches against a fake database, multipart (threshold, parts, concurrency, abort, checksums), the breaker, verification, the mark of a missing object, its repair and its recheck once per interval (`TestDownloadVerification`, Q-STOR-151, Q-STOR-153), conformance logic, the SDK adapter against a fake endpoint (retries, error mapping, stall, credentials) |
 | integration | [test/integration/blob](../../test/integration/blob/) | SeaweedFS conformance; the 100-upload race through four replicas; the race with deletes and collection; the collector killed or cancelled at random points; the drain; hand-over; `AS001`; the usage fold (counters after uploads, an overwrite and a delete against a recount; two loops and four callers on 50,000 and 40,000 deltas with the deadlock counter of the database; a deleted repository with unfolded deltas; a backlog of 25,000 under an interval of one hour); a table added by a newer release; pause, hold, dry run; checkpoint resume; the job handler; verification of a corrupted object |
 
-`make test` runs the unit tier, `make test-integration` the integration tier (`TROVE_TEST_BLOB_RACE_SECONDS` stretches the race test from 15 s to a soak run). The
+`make test` runs the unit tier, `make test-integration` the integration tier (`QUADER_TEST_BLOB_RACE_SECONDS` stretches the race test from 15 s to a soak run). The
 unit fake (`fakedb_test.go`) simulates only the table operations the commit protocol and the download path use; the real locking
 behavior is what the integration tier checks, with the collector's reference check mutated away to see the tests fail.
 
-`TROVE_TEST_PG_POOLED=1` runs the blob and the coordination integration suites with the main pool through PgBouncer in transaction mode
+`QUADER_TEST_PG_POOLED=1` runs the blob and the coordination integration suites with the main pool through PgBouncer in transaction mode
 (`testenv.PgPooled`; the role defaults of R-HA-014 are set by `testenv.ThroughPgBouncer`). CI should run the suite once each way.
 
 An object-store response without `Content-Length` has `ObjectInfo.Size == -1` (unknown), never 0: the early size check

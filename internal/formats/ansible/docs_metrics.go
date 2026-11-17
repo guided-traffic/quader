@@ -3,17 +3,17 @@ package ansible
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // The metric families of the documentation (R-ANS-045). No label holds the name of a repository or a collection: the outcomes are a closed
 // set.
 const (
-	metricDocsGenerated = "trove_ansible_docs_generated_total"
-	metricDocsFill      = "trove_ansible_docs_fill_total"
-	metricDocsRead      = "trove_ansible_docs_read_total"
+	metricDocsGenerated = "quader_ansible_docs_generated_total"
+	metricDocsFill      = "quader_ansible_docs_fill_total"
+	metricDocsRead      = "quader_ansible_docs_read_total"
 )
 
 // The outcomes of a generation, of a fill and of a read.

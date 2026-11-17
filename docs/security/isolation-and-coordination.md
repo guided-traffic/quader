@@ -80,7 +80,7 @@ default endpoint reads it as well ([roles-and-trust-boundaries.md](roles-and-tru
 ## Transactions and a lost COMMIT
 
 A write runs in one transaction on the main pool. When the connection breaks during `COMMIT`, the server may or may not have
-applied the transaction. Trove records that outcome as unknown and does not retry it ([tx.go](../../internal/meta/postgres/tx.go),
+applied the transaction. Quader records that outcome as unknown and does not retry it ([tx.go](../../internal/meta/postgres/tx.go),
 `attempt`; [retry.go](../../internal/meta/postgres/retry.go), `outcomeUnknownError`). The decision is that the client receives
 `503` ([spec architecture.md](../spec/architecture.md) Q-ARCH-24). The handler-level mapping to the code `database_unavailable`
 was not traced line by line in this pass.
@@ -126,7 +126,7 @@ design requires it for isolation; the code does not enforce it.
 Stage: a write request whose transaction loses its connection during `COMMIT` ([tx.go](../../internal/meta/postgres/tx.go),
 `attempt`).
 
-Live on every write whose connection breaks during `COMMIT`, which is rare but not excluded by any setting. Trove does not retry
+Live on every write whose connection breaks during `COMMIT`, which is rare but not excluded by any setting. Quader does not retry
 it, and the client gets `503`. A management create sent with an `Idempotency-Key`
 ([R-API-014](../spec/api-and-ui.md#r-api-014--idempotency-keys-for-creates), [api-edge.md](api-edge.md#stored-outcomes-of-idempotent-requests))
 stores its outcome in the transaction of the change, so its retry either replays the stored outcome or runs again on a database that
@@ -162,4 +162,4 @@ replica (Q-REPO-182); it can still hide a real window for 30 s while 4096 forged
 
 What makes it real: write access to the Valkey Pub/Sub of the installation. Such an account can already delay jobs with a forged
 `jobs` signal and flush caches' early evictions, and it can read the keys of the flight locks; the mirror's loss is a delay that the
-next pass makes up. An operator sees it in `trove_mirror_preempted_total{repo}` growing while no client fetch waits.
+next pass makes up. An operator sees it in `quader_mirror_preempted_total{repo}` growing while no client fetch waits.

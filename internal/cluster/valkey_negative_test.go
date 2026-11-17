@@ -29,10 +29,10 @@ func newNegativeFixture(t *testing.T) *negativeFixture {
 }
 
 func negKeyName(repoID int64, f FlightKey) string {
-	return "trove:" + testKS + ":neg:v1:" + strconv.FormatInt(repoID, 10) + ":" + f.String()
+	return "quader:" + testKS + ":neg:v1:" + strconv.FormatInt(repoID, 10) + ":" + f.String()
 }
 
-// lookups reads trove_valkey_cache_lookups_total{cache="negative",result=result}.
+// lookups reads quader_valkey_cache_lookups_total{cache="negative",result=result}.
 func lookups(t *testing.T, reg *prometheus.Registry, result string) float64 {
 	t.Helper()
 	mfs, err := reg.Gather()
@@ -40,7 +40,7 @@ func lookups(t *testing.T, reg *prometheus.Registry, result string) float64 {
 		t.Fatal(err)
 	}
 	for _, mf := range mfs {
-		if mf.GetName() != "trove_valkey_cache_lookups_total" {
+		if mf.GetName() != "quader_valkey_cache_lookups_total" {
 			continue
 		}
 		for _, m := range mf.GetMetric() {
@@ -231,8 +231,8 @@ func TestNegativeStoreUnavailable(t *testing.T) {
 		if n := fx.srv.keyCommands(key) - before; n != 0 {
 			t.Fatalf("%d commands for %s reached the server with the breaker open", n, key)
 		}
-		if got := gaugeValue(t, fx.reg, "trove_valkey_degraded_total", MechanismNegativeCache); got != 2 {
-			t.Fatalf("trove_valkey_degraded_total{negative_cache} = %v, want 2", got)
+		if got := gaugeValue(t, fx.reg, "quader_valkey_degraded_total", MechanismNegativeCache); got != 2 {
+			t.Fatalf("quader_valkey_degraded_total{negative_cache} = %v, want 2", got)
 		}
 		if got := lookups(t, fx.reg, "unavailable"); got != 1 {
 			t.Fatalf("lookups{unavailable} = %v, want 1 (Record is not a lookup)", got)

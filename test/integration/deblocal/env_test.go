@@ -11,10 +11,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	_ "github.com/guided-traffic/trove/internal/formats/all"
-	"github.com/guided-traffic/trove/test/debstub/debgen"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	_ "github.com/guided-traffic/quader/internal/formats/all"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -67,7 +67,7 @@ func newEnvOpts(t *testing.T, o envOpts) *env {
 		o.replicas = 1
 	}
 	cfg := o.cfg
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "deblocal", Valkey: o.valkey, Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "deblocal", Valkey: o.valkey, Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
 	e := &env{t: t, st: st}
 	e.alice, e.bob, e.carol = st.User("alice"), st.User("bob"), st.User("carol")
 	st.Repository(repo, "local", "deb", cfg)
@@ -84,7 +84,7 @@ func newEnvOpts(t *testing.T, o envOpts) *env {
 	for i := 1; i <= o.replicas; i++ {
 		e.rs = append(e.rs, st.Start(t, testenv.ReplicaOptions{
 			Name: fmt.Sprintf("web-%d", i), Role: "all",
-			Env: append([]string{"TROVE_DEB_INDEX_WAIT_MAX=2s", "TROVE_DEB_INDEX_DELAY=1s"}, o.env...),
+			Env: append([]string{"QUADER_DEB_INDEX_WAIT_MAX=2s", "QUADER_DEB_INDEX_DELAY=1s"}, o.env...),
 		}))
 	}
 	e.r = e.rs[0]

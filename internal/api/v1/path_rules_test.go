@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 func TestR_API_004_ItemPathsFollowTheCanonicalRules(t *testing.T) {

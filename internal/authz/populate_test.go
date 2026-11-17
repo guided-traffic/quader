@@ -3,8 +3,8 @@ package authz
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // populateFixture is the remote side of the team example: npmjs fills on read,

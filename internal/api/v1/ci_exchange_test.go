@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // The decoding of the exchange's body (R-CI-007): form and JSON, a parameter sent twice, the body limit, the content

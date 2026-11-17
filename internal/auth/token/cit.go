@@ -7,17 +7,17 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The CI token seam (R-CI-017, R-AUTHZ-014, Q-CI-17). The exchange (internal/ci, work package W4)
-// issues a trv_cit_ token through [Service.IssueCITx]; the use of the token reads the bundle back
+// issues a qdr_cit_ token through [Service.IssueCITx]; the use of the token reads the bundle back
 // through [Info.CI], checked by [claims.DecodeFrozen]. The revocations of the token service record
 // ci.token.revoked for the CI tokens among the ones they end (recordCIRevoked).
 
@@ -53,7 +53,7 @@ type CITIssued struct {
 	ExpiresAt time.Time
 }
 
-// IssueCITx creates a trv_cit_ token in the caller's transaction (created_via 'ci-exchange'): the token row with
+// IssueCITx creates a qdr_cit_ token in the caller's transaction (created_via 'ci-exchange'): the token row with
 // ci_context and the expiry issued_at + ttl on the database clock, no user token list entry (R-CI-017: the owner
 // is a mapping principal, never listed to a user), no per-principal limit of active tokens, and the event
 // token.created with the CI fields (ciIssuer, ciMappings, ciClaims, R-OPS-016). A new token needs no cache

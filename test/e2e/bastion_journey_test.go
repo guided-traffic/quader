@@ -25,14 +25,14 @@ func TestBastion_R_BAS_007_Journey(t *testing.T) {
 	cmd := exec.Command("npx", "playwright", "test", "--config", "playwright.bastion.config.ts")
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(),
-		"TROVE_E2E_EDGE_URL="+cfg.edgeURL,
+		"QUADER_E2E_EDGE_URL="+cfg.edgeURL,
 		"NODE_EXTRA_CA_CERTS="+cfg.caFile,
-		"TROVE_E2E_ALICE_PASSWORD="+secretValue(t, "trove-keycloak", "alice-password"),
-		"TROVE_E2E_BOB_PASSWORD="+secretValue(t, "trove-keycloak", "bob-password"),
-		"TROVE_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "trove-break-glass", "password"),
-		"TROVE_E2E_ADMIN_TOKEN="+adminToken(t),
-		"TROVE_E2E_BASTION_REGISTRATION="+env.vol.reg,
-		"TROVE_E2E_BASTION_REPLICAS="+strings.Join(podNames(basReadyPods(t, env.vol)), ","),
+		"QUADER_E2E_ALICE_PASSWORD="+secretValue(t, "quader-keycloak", "alice-password"),
+		"QUADER_E2E_BOB_PASSWORD="+secretValue(t, "quader-keycloak", "bob-password"),
+		"QUADER_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "quader-break-glass", "password"),
+		"QUADER_E2E_ADMIN_TOKEN="+adminToken(t),
+		"QUADER_E2E_BASTION_REGISTRATION="+env.vol.reg,
+		"QUADER_E2E_BASTION_REPLICAS="+strings.Join(podNames(basReadyPods(t, env.vol)), ","),
 	)
 	reportFile := filepath.Join(cfg.repo, ".out", "playwright", "bastion-results.json")
 	_ = os.Remove(reportFile)

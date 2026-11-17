@@ -5,8 +5,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-3);
-  margin-block-end: var(--trove-space-3);
+  gap: var(--quader-space-3);
+  margin-block-end: var(--quader-space-3);
 
   h1 {
     margin: 0;
@@ -18,13 +18,13 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--trove-space-3);
-  margin-block-end: var(--trove-space-3);
+  gap: var(--quader-space-3);
+  margin-block-end: var(--quader-space-3);
 
   .field {
     display: flex;
     flex-direction: column;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
   }
 }
 
@@ -37,41 +37,41 @@
 
 .field-error {
   display: flex;
-  gap: var(--trove-space-1);
-  margin: var(--trove-space-1) 0 0;
-  color: var(--trove-status-bad);
+  gap: var(--quader-space-1);
+  margin: var(--quader-space-1) 0 0;
+  color: var(--quader-status-bad);
 }
 
 .hint {
-  margin: var(--trove-space-1) 0 0;
+  margin: var(--quader-space-1) 0 0;
   font-size: 0.8125rem;
-  color: var(--trove-text-muted);
+  color: var(--quader-text-muted);
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: minmax(0, 36rem);
-  gap: var(--trove-space-4);
-  margin-block-end: var(--trove-space-4);
+  gap: var(--quader-space-4);
+  margin-block-end: var(--quader-space-4);
 
   .field {
     display: flex;
     flex-direction: column;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
   }
 }
 
 .check-row {
   display: flex;
   align-items: flex-start;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 }
 
 .card {
-  margin-block: var(--trove-space-4);
-  padding: var(--trove-space-4);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-l);
+  margin-block: var(--quader-space-4);
+  padding: var(--quader-space-4);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-l);
 
   h2 {
     margin-block-start: 0;
@@ -87,8 +87,8 @@
 .error-detail {
   display: block;
   max-inline-size: 60ch;
-  color: var(--trove-text-muted);
-  font-size: var(--trove-text-muted-size);
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
   font-weight: 400;
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -100,10 +100,10 @@ table.data {
 
   th,
   td {
-    padding: var(--trove-space-1) var(--trove-space-3);
+    padding: var(--quader-space-1) var(--quader-space-3);
     text-align: start;
     vertical-align: top;
-    border-block-end: 1px solid var(--trove-border);
+    border-block-end: 1px solid var(--quader-border);
   }
 
   td.num {
@@ -115,7 +115,7 @@ table.data {
 dl.facts {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
-  gap: var(--trove-space-1) var(--trove-space-4);
+  gap: var(--quader-space-1) var(--quader-space-4);
   margin: 0;
 
   dt {
@@ -131,29 +131,29 @@ dl.facts {
 .material-icons.inline {
   font-size: 1.125rem;
   vertical-align: middle;
-  margin-inline-end: var(--trove-space-1);
+  margin-inline-end: var(--quader-space-1);
 }
 
 .ok {
-  color: var(--trove-status-ok);
+  color: var(--quader-status-ok);
 }
 
 .warn {
-  color: var(--trove-status-warn);
+  color: var(--quader-status-warn);
 }
 
 .bad {
-  color: var(--trove-status-bad);
+  color: var(--quader-status-bad);
 }
 
 .banner-warning {
   display: flex;
   align-items: flex-start;
-  gap: var(--trove-space-2);
-  margin-block: var(--trove-space-3);
-  padding: var(--trove-space-3) var(--trove-space-4);
-  border: 1px solid var(--trove-status-warn);
-  border-radius: var(--trove-radius-m);
+  gap: var(--quader-space-2);
+  margin-block: var(--quader-space-3);
+  padding: var(--quader-space-3) var(--quader-space-4);
+  border: 1px solid var(--quader-status-warn);
+  border-radius: var(--quader-radius-m);
 
   p {
     margin: 0;
@@ -161,22 +161,22 @@ dl.facts {
 }
 
 .empty {
-  margin-block: var(--trove-space-6);
-  color: var(--trove-text-muted);
+  margin-block: var(--quader-space-6);
+  color: var(--quader-text-muted);
 }
 
 .row-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
 }
 
 .code-block {
   margin: 0;
-  padding: var(--trove-space-3);
+  padding: var(--quader-space-3);
   overflow-x: auto;
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-m);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-m);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.8125rem;
 }

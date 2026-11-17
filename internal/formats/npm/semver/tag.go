@@ -3,7 +3,7 @@ package semver
 import (
 	"maps"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // MaxTagLength is the longest dist-tag name (R-NPM-007).
@@ -13,7 +13,7 @@ const MaxTagLength = 128
 // MaxTagLength characters from letters, digits, "." "_" and "-", starting with
 // a letter or digit, and not a valid SemVer range. A tag that is a range ("1",
 // "1.x", "v1.4", "x", "1.2.3") cannot be told apart from a version selector in
-// "npm install pkg@1.x", and npm's own dist-tag command refuses it, so trove
+// "npm install pkg@1.x", and npm's own dist-tag command refuses it, so quader
 // does too. The range test is the strict one of npm's dist-tag command.
 func ValidateTag(tag string) error {
 	if !validTagText(tag) {

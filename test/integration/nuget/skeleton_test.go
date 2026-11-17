@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_NUGET_001_ARepositoryCanBeCreatedAndItsServiceIndexAnswers: the format is registered, a
@@ -165,14 +165,14 @@ func TestR_NUGET_001_ARepositoryCanBeCreatedAndItsServiceIndexAnswers(t *testing
 }
 
 // TestR_NUGET_012_TheServiceIndexChallengesAndAuthenticates: an anonymous request is challenged
-// with exactly Basic realm="trove" in the native error shape, a trove token works as the Basic
+// with exactly Basic realm="quader" in the native error shape, a quader token works as the Basic
 // password with any user name and as a Bearer token, and a revoked or unknown token is a 401.
 func TestR_NUGET_012_TheServiceIndexChallengesAndAuthenticates(t *testing.T) {
 	e := newEnv(t)
 	a := e.replica("web-a")
 	t.Run("R-NUGET-012 an anonymous request is challenged, never answered 404", func(t *testing.T) {
 		ans := e.get(a, "nuget-local", "v3/index.json", "")
-		if ans.Status != 401 || ans.Header.Get("WWW-Authenticate") != `Basic realm="trove"` {
+		if ans.Status != 401 || ans.Header.Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Fatalf("%d, WWW-Authenticate %q", ans.Status, ans.Header.Get("WWW-Authenticate"))
 		}
 		line(t, ans)
@@ -190,8 +190,8 @@ func TestR_NUGET_012_TheServiceIndexChallengesAndAuthenticates(t *testing.T) {
 		}
 	})
 	t.Run("R-NUGET-012 an unknown token is a 401 with the challenge", func(t *testing.T) {
-		ans := e.get(a, "nuget-local", "v3/index.json", "trv_pat_"+strings.Repeat("A", 43))
-		if ans.Status != 401 || ans.Header.Get("WWW-Authenticate") != `Basic realm="trove"` {
+		ans := e.get(a, "nuget-local", "v3/index.json", "qdr_pat_"+strings.Repeat("A", 43))
+		if ans.Status != 401 || ans.Header.Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Fatalf("%d, WWW-Authenticate %q", ans.Status, ans.Header.Get("WWW-Authenticate"))
 		}
 	})

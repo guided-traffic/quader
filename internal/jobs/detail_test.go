@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // reworded wraps an error with a text of its own that does not contain the wrapped error's text.
@@ -17,7 +17,7 @@ func (r reworded) Error() string {
 func (r reworded) Unwrap() error { return r.err }
 
 func TestJobDetail(t *testing.T) {
-	db := errors.New(`FATAL: password authentication failed for user "trove" (SQLSTATE 28P01)`)
+	db := errors.New(`FATAL: password authentication failed for user "quader" (SQLSTATE 28P01)`)
 	unavailable := errs.E(errs.Unavailable, errs.CodeDatabaseUnavailable, "The principal cannot be resolved right now.", errs.WithCause(db), errs.WithOp("principal.load"))
 	const shown = "database_unavailable: The principal cannot be resolved right now."
 	for _, tc := range []struct {

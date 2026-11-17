@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
 // TestR_BAS_032_WithoutASigningKeyTheVolumeKeepsPlainEntriesAndStillVerifiesTheBytes: the configuration allows

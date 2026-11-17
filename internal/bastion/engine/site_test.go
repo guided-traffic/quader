@@ -12,9 +12,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // readCounter reads the value of a counter or gauge.
@@ -136,7 +136,7 @@ func (s *site) doFn(f mainclient.Forward) (*mainclient.Response, error) {
 	tok := tokenOf(f.Request.Header)
 	sub, r, ok := s.subject(tok)
 	if !ok {
-		return resp(http.StatusUnauthorized, marking(iface.ClassPass, "", "", iface.Subject{Kind: iface.SubjectInvalid}), http.Header{"Www-Authenticate": {`Basic realm="trove"`}}, "invalid"), nil
+		return resp(http.StatusUnauthorized, marking(iface.ClassPass, "", "", iface.Subject{Kind: iface.SubjectInvalid}), http.Header{"Www-Authenticate": {`Basic realm="quader"`}}, "invalid"), nil
 	}
 	repo := s.repoOf(path)
 	if repo != s.repo || r.read == iface.ReadNone {
@@ -154,7 +154,7 @@ func (s *site) doFn(f mainclient.Forward) (*mainclient.Response, error) {
 			return resp(http.StatusNotFound, marking(iface.ClassPass, r.read, repo, sub), nil, `{"code":"not_found"}`), nil
 		}
 		etag := `"` + sha(body) + `"`
-		hdr := http.Header{"Etag": {etag}, "Content-Type": {"application/octet-stream"}, "X-Trove-Replica": {"web-1"}, "Cache-Status": {"main;hit"}, "Set-Cookie": {"a=b"}}
+		hdr := http.Header{"Etag": {etag}, "Content-Type": {"application/octet-stream"}, "X-Quader-Replica": {"web-1"}, "Cache-Status": {"main;hit"}, "Set-Cookie": {"a=b"}}
 		if f.IfNoneMatch == etag {
 			return resp(http.StatusNotModified, marking(iface.ClassArtifact, r.read, repo, sub), hdr, ""), nil
 		}

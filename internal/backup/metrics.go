@@ -3,7 +3,7 @@ package backup
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // The metric families of the backup lane (R-BAK-014, operations-and-observability.md R-OPS-008). The gauges are read from
@@ -12,24 +12,24 @@ import (
 // are the contract of the alert rules in the chart (R-HA-045). The families that carry a timestamp of an event that may never
 // have happened (the last success, the last failure) have no series until it did, so a rule can tell "never" from a value.
 const (
-	MetricLastSuccess      = "trove_backup_last_success_timestamp_seconds"
-	MetricLastFailure      = "trove_backup_last_failure_timestamp_seconds"
-	MetricExpectedInterval = "trove_backup_expected_interval_seconds"
-	MetricLastDuration     = "trove_backup_last_duration_seconds"
-	MetricLastDatabase     = "trove_backup_last_database_bytes"
-	MetricLastBlob         = "trove_backup_last_blob_bytes"
-	MetricLastCopied       = "trove_backup_last_copied_bytes"
-	MetricRunning          = "trove_backup_running"
-	MetricRunningSeconds   = "trove_backup_running_seconds"
-	MetricGCHold           = "trove_backup_gc_hold"
-	MetricPinnedBlobs      = "trove_backup_pinned_blobs"
-	MetricSnapshotOpen     = "trove_backup_snapshot_open_seconds"
-	MetricSourceDamaged    = "trove_backup_source_blobs_damaged"
-	MetricLastVerify       = "trove_backup_last_verify_timestamp_seconds"
-	MetricLastVerifyFinds  = "trove_backup_last_verify_findings"
-	MetricCopiedObjects    = "trove_backup_copied_objects_total"
-	MetricCopiedBytes      = "trove_backup_copied_bytes_total"
-	MetricCheckOK          = "trove_backup_check_ok"
+	MetricLastSuccess      = "quader_backup_last_success_timestamp_seconds"
+	MetricLastFailure      = "quader_backup_last_failure_timestamp_seconds"
+	MetricExpectedInterval = "quader_backup_expected_interval_seconds"
+	MetricLastDuration     = "quader_backup_last_duration_seconds"
+	MetricLastDatabase     = "quader_backup_last_database_bytes"
+	MetricLastBlob         = "quader_backup_last_blob_bytes"
+	MetricLastCopied       = "quader_backup_last_copied_bytes"
+	MetricRunning          = "quader_backup_running"
+	MetricRunningSeconds   = "quader_backup_running_seconds"
+	MetricGCHold           = "quader_backup_gc_hold"
+	MetricPinnedBlobs      = "quader_backup_pinned_blobs"
+	MetricSnapshotOpen     = "quader_backup_snapshot_open_seconds"
+	MetricSourceDamaged    = "quader_backup_source_blobs_damaged"
+	MetricLastVerify       = "quader_backup_last_verify_timestamp_seconds"
+	MetricLastVerifyFinds  = "quader_backup_last_verify_findings"
+	MetricCopiedObjects    = "quader_backup_copied_objects_total"
+	MetricCopiedBytes      = "quader_backup_copied_bytes_total"
+	MetricCheckOK          = "quader_backup_check_ok"
 )
 
 // Metrics holds the families. Build it once per process with NewMetrics; a nil *Metrics records nothing.
@@ -57,7 +57,7 @@ func NewMetrics(m *observability.Metrics) *Metrics {
 	return &Metrics{
 		LastSuccess:        m.NewGaugeVec(MetricLastSuccess, "finished_at of the newest completed or completed_with_warnings create run; absent until one exists."),
 		LastFailure:        m.NewGaugeVec(MetricLastFailure, "The newest failed or abandoned create run, or a create run in an active state whose lease expired; interrupted runs do not count; absent until one exists."),
-		ExpectedInterval:   g(MetricExpectedInterval, "backup.expected_interval of this replica's configuration: the threshold of TroveBackupStale."),
+		ExpectedInterval:   g(MetricExpectedInterval, "backup.expected_interval of this replica's configuration: the threshold of QuaderBackupStale."),
 		LastDuration:       g(MetricLastDuration, "Duration of the newest successful create run."),
 		LastDatabase:       g(MetricLastDatabase, "Database bytes of the newest successful create run."),
 		LastBlob:           g(MetricLastBlob, "Referenced blob bytes of the newest successful create run."),

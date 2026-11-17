@@ -5,10 +5,10 @@ import (
 	"encoding/hex"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
-	"github.com/guided-traffic/trove/internal/formats/oci/tagorder"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/formats/oci/tagorder"
 )
 
 // The package screens of the format (R-OCI-031, R-API-029): an image name is a package and its tags are its versions, newest first by

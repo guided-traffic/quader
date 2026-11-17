@@ -11,11 +11,11 @@ import { importStateText } from '../repositories/ansible-import-tasks';
  * R-ANS-009, readable by whoever reads the repository, and not wiki content.
  */
 @Component({
-  selector: 'trove-ansible-import-log',
+  selector: 'quader-ansible-import-log',
   imports: [DatePipe, ErrorNotice],
   template: `
     @if (list.error(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     } @else if (!list.loaded()) {
       <p role="status" i18n="@@pkg.loading">Loading.</p>
     } @else if (list.items().length === 0) {
@@ -55,22 +55,22 @@ import { importStateText } from '../repositories/ansible-import-tasks';
   `,
   styles: `
     .task {
-      margin-block-end: var(--trove-space-4);
-      padding-block-end: var(--trove-space-3);
-      border-block-end: 1px solid var(--trove-border);
+      margin-block-end: var(--quader-space-4);
+      padding-block-end: var(--quader-space-3);
+      border-block-end: 1px solid var(--quader-border);
     }
     .task-head {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--trove-space-3);
+      gap: var(--quader-space-3);
     }
     .reason {
-      margin-block: var(--trove-space-2) 0;
+      margin-block: var(--quader-space-2) 0;
     }
     .messages {
-      margin: var(--trove-space-2) 0 0;
-      padding-inline-start: var(--trove-space-6);
+      margin: var(--quader-space-2) 0 0;
+      padding-inline-start: var(--quader-space-6);
     }
     .level {
       font-weight: 600;

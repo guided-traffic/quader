@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 func at(s string) *time.Time {

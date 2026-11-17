@@ -1,7 +1,7 @@
 # Developer documentation
 
 Status: phases 1 to 6 are built: the foundation (M0), the access core (M1), the npm registry (M2), the NuGet registry (M3), projects, the GitLab CI OIDC federation,
-the trove Bastion and the vulnerability scanning (M4b). The repository holds the Go binary,
+the Quader Bastion and the vulnerability scanning (M4b). The repository holds the Go binary,
 its configuration, the database and cache layers, the S3 blob layer, the system and management APIs, the ops
 endpoints, the OIDC login and the break-glass account, the tokens, the permission policies and the grant index,
 the endpoints and exposure rules, the generic repository format with raw transfer under `/files/`, the npm and NuGet formats with their local, remote (pull-through proxy) and virtual repositories, the OCI (Docker) registry below `/v2/` with its token service, upload sessions, local, remote, mirror and virtual classes ([oci.md](oci.md)), the audit
@@ -14,7 +14,7 @@ end-to-end wave's. The contracts of the backup lane exist (phase 7, [backup.md](
 ## What to have in your head first
 
 - **Four parts, one direction.** The [feature catalog](../features/README.md) says *what* a full-featured
-  repository manager does. The [specification](../spec/README.md) says *how* trove does it, one
+  repository manager does. The [specification](../spec/README.md) says *how* Quader does it, one
   requirement at a time (`R-<AREA>-nnn`). [Coverage](../coverage/README.md) measures the gap, and
   [decisions.md](../decisions.md) records *why*.
 - **Owner constraints are fixed.** Go 1.27.4, Angular 22, PostgreSQL, S3-compatible storage, Helm, OIDC
@@ -49,7 +49,7 @@ end-to-end wave's. The contracts of the backup lane exist (phase 7, [backup.md](
 | [architecture.md](architecture.md) | Components, layers, request path, startup and shutdown, coordination, configuration and secrets |
 | [build-and-test.md](build-and-test.md) | Build, generate, lint and test targets, the test tiers and their build tags, and the in-process harness (`testenv`: a stack, replicas through `app.New`, seeded principals and real tokens) |
 | [releasing.md](releasing.md) | The CI jobs and their make targets, semantic-release and the release pipeline (Docker Hub and the Helm chart repository), the Renovate policy, the secrets and settings the pipeline needs |
-| [configuration.md](configuration.md) | How `trove.yaml`, environment variables and flags combine, and how a key is added |
+| [configuration.md](configuration.md) | How `quader.yaml`, environment variables and flags combine, and how a key is added |
 | [coverage.md](coverage.md) | The requirement coverage generator, its rules and its evidence record |
 | [database.md](database.md) | PostgreSQL connections, pools, migrations, sqlc and the job and change tables |
 | [blob-store.md](blob-store.md) | The S3 blob layer: keys, spool, commit, download, garbage collection |
@@ -67,7 +67,7 @@ end-to-end wave's. The contracts of the backup lane exist (phase 7, [backup.md](
 | [audit.md](audit.md) | Audit trail: registry, recorder, journal row, query, partitions, how to add an event type |
 | [repositories.md](repositories.md) | The repository model: service, snapshot and unknown-key lookup, validation, patterns, deletion job, the format registry and the generic format |
 | [proxy.md](proxy.md) | The pull-through proxy: the upstream clients of remote repositories (settings applied to the outbound client, credentials, secret references, the client cache, the foreign-host check, the upstream test); the engine adds its sections |
-| [system-state.md](system-state.md) | The banner and the read-only maintenance mode: `internal/sysstate`, the four doors that refuse a write, the declaration `x-trove-maintenance`, how to add a write path or a task |
+| [system-state.md](system-state.md) | The banner and the read-only maintenance mode: `internal/sysstate`, the four doors that refuse a write, the declaration `x-quader-maintenance`, how to add a write path or a task |
 | [virtual.md](virtual.md) | Virtual repositories: members, deploy target and pin rules as rows, namespace claims and their API, the routing (`Route`, `AutoClaim`, `ExposureSet`), the detach of a deleted member; the virtual engine (`Plan`, tiers, the merged-metadata cache, the shadowing check, the explanation API) and the seam to bind the proxy engine to |
 | [packages.md](packages.md) | The package screens' API: the read model across repositories (`internal/packages/view`), the visibility filter (`authz.ReadScoper`) and the statements that count with it, the format's `ViewAdapter`, the README renderer (`internal/packages/readme`), the client setup snippets and the tests that pin them (R-API-029, R-API-030, R-UI-008, Q-API-164 to Q-API-168) |
 | [npm.md](npm.md) | The npm format: the route table, classification, error shape, publish, the data port and the leaf libraries `name`, `semver`, `manifest`, `tarball`, `publish` (R-NPM-001 to R-NPM-008, R-NPM-041, R-NPM-043, R-NPM-044, R-ARCH-028); the package documents with their validators and rendition cache, tarballs and the serve-time check, dist-tags, unpublish and the removal hooks, whoami and ping (R-NPM-009 to R-NPM-017, R-NPM-019, R-NPM-047); the remote and virtual classes are in its sections; deprecate (P1) is not built |
@@ -80,14 +80,14 @@ end-to-end wave's. The contracts of the backup lane exist (phase 7, [backup.md](
 | [proxy.md](proxy.md) | The pull-through proxy: the cache invalidation of remote repositories (rows, the per-replica matcher the engine asks, the invalidate and entry-list operations, the fold task); the engine sections are added as it is built |
 | [login.md](login.md) | The OIDC login, the server-side session, CSRF, logout and the break-glass account: files, flows, seams to the identity, api and audit areas, configuration, tests |
 | [identity.md](identity.md) | Principals, groups, service accounts, tokens, the authentication stage, caches and revocation propagation, the failed-credential throttle |
-| [authorization.md](authorization.md) | Permission policies, roles, the evaluation, the compiled grant index and its invalidation, epochs and `Trove-Authz-Min-Epoch`, how an operation declares its permission, the populate check and `MemberUsable`, package ownership |
+| [authorization.md](authorization.md) | Permission policies, roles, the evaluation, the compiled grant index and its invalidation, epochs and `Quader-Authz-Min-Epoch`, how an operation declares its permission, the populate check and `MemberUsable`, package ownership |
 | [projects.md](projects.md) | Projects, members and roles: the role in the decision path, the two selector contexts, the stored names of a project's policies, the project service (members, the last Owner, the move of a repository), error codes, audit events, the schema and the tests |
-| [bastion.md](bastion.md) | The trove Bastion (phase 5b): the contracts of the eight work packages: package tree, the seams and who implements each, the interface guard, the request flows (hit, check, miss, write probe), the schema and configuration it added, how to run the role locally; status: contracts laid, work packages pending |
+| [bastion.md](bastion.md) | The Quader Bastion (phase 5b): the contracts of the eight work packages: package tree, the seams and who implements each, the interface guard, the request flows (hit, check, miss, write probe), the schema and configuration it added, how to run the role locally; status: contracts laid, work packages pending |
 | [ci-oidc.md](ci-oidc.md) | GitLab CI OIDC federation: the contracts laid for beta phase 5 (schema, the `internal/ci` packages and interfaces, the token and evaluation seam, the gate, API, configuration, events, tasks), the project tier, the work packages W1 to W7 and their files; status: contracts laid, work packages pending |
 | [download-statements.md](download-statements.md) | The statements of a download: the budget of R-ARCH-027 per route, measured; `GetLiveItem` reading the rows of the serve check and the cache entry; how a format adds its rows |
 | [vulnerabilities.md](vulnerabilities.md) | Vulnerability scanning (phase 6, M4b): the contracts of the work packages and a section per package A to G (the packages and layers, the ports `States`, `Evaluator` and `Advisories`, the download policy and verdict, the format contract's optional vulnerability adapter, the schema, the API operations, configuration, coordination, audit, metrics and errors), the work packages S and A to H with the files each owns, the contract files; status: built and integrated |
 | [mirror.md](mirror.md) | The mirror mode of remote repositories (phase 6b): the contract wave, the four work packages A to D with the directories each owns, the engine (work package C2: its files, how a pass runs and ends, what the status reads, the seams of its tests), the tests each package writes, the rules every package keeps; status: the engine is built, the host of the remote engine and the formats' discovery are their own work packages |
-| [import.md](import.md) | The import tooling (R-IMP-001 to R-IMP-009): `trove admin import` as a client of the source and of the target's publish protocol, the `importer.Format` seam, the runner, the state file, the report, how to add a format, the tests |
+| [import.md](import.md) | The import tooling (R-IMP-001 to R-IMP-009): `quader admin import` as a client of the source and of the target's publish protocol, the `importer.Format` seam, the runner, the state file, the report, how to add a format, the tests |
 | [files.md](files.md) | Raw transfer under `/files/`: the generic layer over the item store, deploy, download with Range, folders, the items API, deletes, activity and download statistics |
 | [items.md](items.md) | The item store: the one commit and its order, the storage hooks, spool, read, listing rows, subtree delete and the `items-delete` job |
 | [formats.md](formats.md) | The format contract: `formats.Format`, the registry and its start-up checks, the `Host`, the storage hooks, the dispatcher for `/api/<format>/<repoKey>/`, content headers and error shapes, the wiring, how to add a format |
@@ -101,13 +101,13 @@ end-to-end wave's. The contracts of the backup lane exist (phase 7, [backup.md](
 
 One fact per line; each links to the page that explains it.
 
-- **Start-up:** `trove serve` loads the configuration, builds the components of its role and waits for the
+- **Start-up:** `quader serve` loads the configuration, builds the components of its role and waits for the
   PostgreSQL schema check, then becomes ready ([architecture.md](architecture.md)).
 - **Configuration:** defaults, then the file, then the environment, then flags; strict validation; the
-  effective view is printed by `trove admin config validate` ([configuration.md](configuration.md)).
+  effective view is printed by `quader admin config validate` ([configuration.md](configuration.md)).
 - **Requests:** the middleware chain assigns `X-Request-Id`, applies the client address and the body limits,
   then the handler; every error is written as `application/problem+json` ([http-api.md](http-api.md)).
-- **Migrations:** `trove migrate up` holds the migration advisory lock and applies each step in its own
+- **Migrations:** `quader migrate up` holds the migration advisory lock and applies each step in its own
   transaction; a replica waits, not ready, until the schema is current ([database.md](database.md)).
 - **Cross-replica change:** every replica polls the change log; a Valkey message only evicts early
   ([coordination.md](coordination.md)).
@@ -120,16 +120,16 @@ One fact per line; each links to the page that explains it.
 - **Blobs:** content-addressed keys under `<prefix>/sha256/…`; the S3 client sits behind an outbound factory
   ([blob-store.md](blob-store.md)).
 - **Health:** readiness checks, watched loops and the liveness watchdog ([observability.md](observability.md)).
-- **Login:** `GET /auth/oidc/{providerId}/start` writes a flow row and sets `__Host-trv_oidc_binding`; the callback
+- **Login:** `GET /auth/oidc/{providerId}/start` writes a flow row and sets `__Host-qdr_oidc_binding`; the callback
   checks the binding, exchanges the code with PKCE, verifies the ID token, provisions the principal and creates the
   session in a second transaction ([login.md](login.md), Q-AUTH-32).
 - **Break-glass login:** `POST /auth/local/login` reserves an attempt before it verifies the password, and refuses while
   the lockout or the rotation hold applies ([login.md](login.md), Q-AUTH-171 and Q-AUTH-14).
-- **Token request:** a `Bearer` value `trv_pat_…` or `trv_sat_…` is hashed and looked up; the auth caches answer
+- **Token request:** a `Bearer` value `qdr_pat_…` or `qdr_sat_…` is hashed and looked up; the auth caches answer
   while the change log is fresh; the scope is intersected with the subject's permissions ([identity.md](identity.md)).
 - **Decision:** the subject (who, and the endpoint the listener accepted the request on, which fixes the exposure ceiling)
   and the action go to `authz`, which denies by default; the request takes the grant index once and asks every question
-  of it; the index is per replica and a request may name the epoch it must see with `Trove-Authz-Min-Epoch`
+  of it; the index is per replica and a request may name the epoch it must see with `Quader-Authz-Min-Epoch`
   ([authorization.md](authorization.md)).
 - **Format request:** `/api/<format>/<projectKey>/<repoKey>/…` reaches the dispatcher, which splits the path with `qname.ParseAddress`
   and cleans it, asks the format's `Match`, takes the request's index, runs the coarse check, resolves the repository by its project and
@@ -141,7 +141,7 @@ One fact per line; each links to the page that explains it.
 ## Repository layout
 
 ```text
-trove/
+quader/
 ├── Makefile                  # the task runner: build, generate, lint, scans, test, web, chart, image, dev profile, integration, Silo
 ├── go.mod                    # go 1.27.4; sqlc and oapi-codegen as tool directives
 ├── tools/versions.env        # pins of every tool and image that is not a Go module or an npm package
@@ -151,7 +151,7 @@ trove/
 ├── package.json              # release tooling only (semantic-release); its lockfile is package-lock.json, web/ has its own
 ├── .releaserc.json           # semantic-release: conventional commits, releases from main
 ├── renovate.json             # Renovate: the Go, npm, GitHub Actions, Docker and tools/versions.env managers
-├── cmd/trove/                # main.go (dispatch), serve.go, migrate.go, admin.go (dispatch), admin_login.go and admin_identity.go
+├── cmd/quader/                # main.go (dispatch), serve.go, migrate.go, admin.go (dispatch), admin_login.go and admin_identity.go
 │                             # (the recovery and bootstrap commands of R-AUTH-015)
 ├── api/openapi.yaml          # OpenAPI 3.1 source of truth; go generate copies it into internal/api/v1
 ├── internal/
@@ -170,9 +170,9 @@ trove/
 │   │                         # session/ (UI sessions, CSRF, the session cache), oidc/ (providers, login flow, callback, break-glass),
 │   │                         # jws/ (compact JWS and JWK sets, a leaf the login and the CI validation share)
 │   ├── authz/                # decision point: engine, compiled grant index, epochs, policy and role service, decision audit
-│   ├── bastion/              # the trove Bastion's own code (R-BAS-001, bastion.md): iface (the wire contract), answers, metrics, mainclient, cache, shared, guard, downloads, engine, server; its own packages import no subsystem of the main installation and the role enables none (archtest, transitive, with the listed exceptions of its dependency closure)
+│   ├── bastion/              # the Quader Bastion's own code (R-BAS-001, bastion.md): iface (the wire contract), answers, metrics, mainclient, cache, shared, guard, downloads, engine, server; its own packages import no subsystem of the main installation and the role enables none (archtest, transitive, with the listed exceptions of its dependency closure)
 │   ├── bastionmain/          # the main installation's side of the Bastion: the seams of the work packages (recognition, token authenticator, read-shape resolver, route observer, chain stages)
-│   ├── backup/               # trove backup: contracts, run record, lease; format/ target/ fixup/ tables/ (backup.md)
+│   ├── backup/               # quader backup: contracts, run record, lease; format/ target/ fixup/ tables/ (backup.md)
 │   ├── journal/              # the revocation journal: object, ports, replay handlers (backup.md)
 │   ├── blob/                 # store, spool, digests, commit, download, GC; s3/ is the S3 client; blobtest/ fixtures
 │   ├── buildinfo/            # version, commit and build date from -ldflags
@@ -209,7 +209,7 @@ trove/
 │   └── webui/                # go:embed of the Angular build; dist/index.html is the committed placeholder
 ├── web/                      # Angular workspace: angular.json, src/, scripts/ (build-embed, check-budget), .nvmrc
 ├── deploy/
-│   ├── helm/trove/           # the chart: templates/, values.yaml, values.schema.json, ci/ value sets
+│   ├── helm/quader/           # the chart: templates/, values.yaml, values.schema.json, ci/ value sets
 │   └── dev/                  # the local profile: kind, HAProxy Ingress, cert-manager, CloudNativePG, valkey-operator, internal-secrets-operator, SeaweedFS, scripts
 ├── test/
 │   ├── integration/          # build tag `integration`: area folders with an env_test.go: api/, apikey/, audit/, authz/, endpoints/, files/,
@@ -271,7 +271,7 @@ rules are in [coverage.md](coverage.md).
 | `PKG-<FORMAT>-nnn` | [docs/features/formats/](../features/formats/README.md), one prefix per format page | The prefix is a short form shown by the page's first entry, e.g. `alpine.md` uses `PKG-APK`, `rubygems.md` uses `PKG-GEMS` |
 | Priority | Every catalog entry and requirement | `MVP`, `P1`, `P2`, `Later`, `Out of scope`; rubric in [features/README.md](../features/README.md#priority-rubric) |
 | `INV-n` | [spec/README.md](../spec/README.md#design-invariants) | Design invariants |
-| `R-<AREA>-nnn` | [docs/spec/](../spec/README.md), one prefix per page (page table there) | `### R-<AREA>-nnn · <Title>`, then `Priority: **<P>** · Covers: <catalog IDs>` or `Covers: trove-only` |
+| `R-<AREA>-nnn` | [docs/spec/](../spec/README.md), one prefix per page (page table there) | `### R-<AREA>-nnn · <Title>`, then `Priority: **<P>** · Covers: <catalog IDs>` or `Covers: quader-only` |
 | `Q-<AREA>-n` | `## Decisions` of each spec page | Status line, options table, the development agent's choice, rationale with a revisit condition, and what the choice changed; format in [spec/README.md](../spec/README.md#requirement-format) |
 | `H-n` | `## What this does not cover` of the one page that records the gap: the spec page for a gap the specification owns, the security page of its mechanism for a gap docs/security owns; the security page of the mechanism links a spec-owned gap under its number | Unique across all spec and security pages; see [security/README.md](../security/README.md#form) |
 

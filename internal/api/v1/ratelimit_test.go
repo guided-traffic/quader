@@ -9,11 +9,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 func limitedChain(t *testing.T, cfg config.APIRateLimits, opts ...func(*RateLimitOptions)) (http.Handler, *prometheus.Registry) {
@@ -52,7 +52,7 @@ func asPrincipal(r *http.Request, p httpserver.Principal) *http.Request {
 	return r.WithContext(httpserver.WithPrincipal(r.Context(), p))
 }
 
-// rejectedByClass reads trove_api_rate_limited_total by class; it fails the test when the counter is not registered.
+// rejectedByClass reads quader_api_rate_limited_total by class; it fails the test when the counter is not registered.
 func rejectedByClass(t *testing.T, reg *prometheus.Registry) map[string]float64 {
 	t.Helper()
 	mfs, err := reg.Gather()
@@ -60,7 +60,7 @@ func rejectedByClass(t *testing.T, reg *prometheus.Registry) map[string]float64 
 		t.Fatal(err)
 	}
 	for _, mf := range mfs {
-		if mf.GetName() != "trove_api_rate_limited_total" {
+		if mf.GetName() != "quader_api_rate_limited_total" {
 			continue
 		}
 		got := map[string]float64{}
@@ -69,7 +69,7 @@ func rejectedByClass(t *testing.T, reg *prometheus.Registry) map[string]float64 
 		}
 		return got
 	}
-	t.Fatal("trove_api_rate_limited_total missing")
+	t.Fatal("quader_api_rate_limited_total missing")
 	return nil
 }
 
@@ -285,7 +285,7 @@ func TestRateLimitStage(t *testing.T) {
 			t.Fatalf("4th anonymous read of a public repository: %d %v", last.Code, last.Header())
 		}
 		if got := rejectedByClass(t, reg)["package_anonymous"]; got != 1 {
-			t.Fatalf("trove_api_rate_limited_total{class=package_anonymous} = %v, want 1", got)
+			t.Fatalf("quader_api_rate_limited_total{class=package_anonymous} = %v, want 1", got)
 		}
 	})
 

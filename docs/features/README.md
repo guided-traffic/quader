@@ -2,8 +2,8 @@
 
 This directory is the feature catalog of a full-featured binary repository manager: what such a
 system does, feature by feature, precise enough to implement it compatibly. It is the yardstick
-trove is built and measured against. The catalog describes required behavior independent of
-trove's design; the design lives in [docs/spec/](../spec/README.md), the measured state and the
+Quader is built and measured against. The catalog describes required behavior independent of
+Quader's design; the design lives in [docs/spec/](../spec/README.md), the measured state and the
 work list in [docs/coverage/](../coverage/README.md).
 
 ## Entry format
@@ -29,7 +29,7 @@ features.
 
 ## Priority rubric
 
-The priority is trove's, judged against the owner's goals: a self-hosted repository manager
+The priority is Quader's, judged against the owner's goals: a self-hosted repository manager
 with Go 1.27.4 backend, Angular 22 UI, PostgreSQL, S3, high availability, Helm deployment, OIDC
 login, tokens, fine-grained permissions, GitLab CI OIDC federation and pull-through proxying; npm
 and NuGet first.

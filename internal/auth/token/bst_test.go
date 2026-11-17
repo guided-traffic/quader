@@ -13,7 +13,7 @@ func TestR_BAS_005_ABastionTokenIsUnknownBeforeAnyLookup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if typ, err := Check(raw); err != nil || typ != TypeBST || len(raw) != Length || raw[:8] != "trv_bst_" {
+	if typ, err := Check(raw); err != nil || typ != TypeBST || len(raw) != Length || raw[:8] != "qdr_bst_" {
 		t.Fatalf("Check(%q) = %v, %v", raw, typ, err)
 	}
 	db := &downDB{}

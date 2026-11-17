@@ -3,14 +3,14 @@
 # and the image pinned in tools/versions.env (DEV_HAPROXY_INGRESS_CHART_VERSION, DEV_HAPROXY_INGRESS_IMAGE).
 #
 # The edge runs on the control-plane node, two replicas. The control-plane node is never drained or
-# killed by the tests, so the drain test (E0.14) measures trove and not the edge. The kind port mapping
+# killed by the tests, so the drain test (E0.14) measures quader and not the edge. The kind port mapping
 # (kind.yaml) also lives on that node. It makes the source address of every proxied request predictable:
 # it comes from the control-plane node's pod range, which values-dev.yaml trusts as
 # config.server.trusted_proxies and nothing wider. Production runs its own redundant edge (R-HA-059).
 #
-# TLS: clients reach the edge on https://localhost:<TROVE_DEV_HTTP_PORT> (NodePort 30443, certificate
-# trove-edge-tls from cert-manager, named by trove's Ingress). The edge talks HTTPS to trove and verifies
-# trove's certificate against the dev CA (ingress.backendTLS in values-dev.yaml). The plain NodePort 30080
+# TLS: clients reach the edge on https://localhost:<QUADER_DEV_HTTP_PORT> (NodePort 30443, certificate
+# quader-edge-tls from cert-manager, named by quader's Ingress). The edge talks HTTPS to quader and verifies
+# quader's certificate against the dev CA (ingress.backendTLS in values-dev.yaml). The plain NodePort 30080
 # is not mapped to the host.
 controller:
   ingressClass: haproxy

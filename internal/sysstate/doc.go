@@ -7,7 +7,7 @@
 // write in read-only mode (the management API's shared step, the format dispatcher, the files service, the scheduler) ask
 // [Store.RefuseWrite] or [Store.Maintenance].
 //
-// This is not the deletion pause of R-HA-025 (internal/maintenance, `trove admin maintenance pause-deletions`): that flag stops only
+// This is not the deletion pause of R-HA-025 (internal/maintenance, `quader admin maintenance pause-deletions`): that flag stops only
 // garbage collection, the orphan sweep, retention and cap enforcement, and is set by a restore; the read-only mode refuses client
 // writes and is set by an administrator through the API.
 package sysstate

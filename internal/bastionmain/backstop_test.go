@@ -6,12 +6,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_BAS_014_AForwardReachesOnlyThePackageFamilies is the route-family backstop (Q-BAS-115): a request that
-// carries Trove-Bastion-Authorization with a valid Bastion token is a forward whatever its path, and a forward
+// carries Quader-Bastion-Authorization with a valid Bastion token is a forward whatever its path, and a forward
 // whose path, decoded segment by segment as the router decodes it, lies outside /api/<format>/ and /files/
 // answers 404 not_found before any stage behind runs - never bastion_token_invalid, which a Bastion reads as the
 // refusal of its own token. The paths are the management API, the interface itself, the login tree and the UI,
@@ -23,7 +23,7 @@ func TestR_BAS_014_AForwardReachesOnlyThePackageFamilies(t *testing.T) {
 		"/auth/oidc/start", "/ui/", "/ui/bastions", "/", "/api", "/api/", "/api/v1", "//api/npm/x", "/api%2Fv1/tokens",
 	} {
 		for _, method := range []string{http.MethodGet, http.MethodPost, http.MethodDelete} {
-			r := httptest.NewRequest(method, "https://trove.example.com"+path, nil)
+			r := httptest.NewRequest(method, "https://quader.example.com"+path, nil)
 			r.Header.Set(iface.HeaderAuthorization, "Bearer "+tokValid)
 			r.Header.Set(iface.HeaderInterface, version())
 			r.Header.Set("Authorization", "Bearer "+pat)
@@ -53,11 +53,11 @@ func TestR_BAS_014_AForwardReachesOnlyThePackageFamilies(t *testing.T) {
 	}
 }
 
-// TestR_BAS_008_AnInterfaceCallCarriesNoTroveBastionAuthorization: the interface accepts the Bastion token in
-// Authorization only on a request without Trove-Bastion-Authorization (Q-BAS-115). With that header the request is
+// TestR_BAS_008_AnInterfaceCallCarriesNoQuaderBastionAuthorization: the interface accepts the Bastion token in
+// Authorization only on a request without Quader-Bastion-Authorization (Q-BAS-115). With that header the request is
 // a forward, also when its path decodes to an interface route, and a forward never reaches an interface handler;
 // without it a path the router decodes to an interface route is one.
-func TestR_BAS_008_AnInterfaceCallCarriesNoTroveBastionAuthorization(t *testing.T) {
+func TestR_BAS_008_AnInterfaceCallCarriesNoQuaderBastionAuthorization(t *testing.T) {
 	t.Run("the Bastion token in both headers on the handshake is a forward, refused", func(t *testing.T) {
 		r := forwarded(iface.PathHandshake, "Authorization", "Bearer "+tokValid, iface.HeaderAuthorization, "Bearer "+tokValid, iface.HeaderInterface, version())
 		w, seen := run(t, RecognizeOptions{Tokens: &fakeTokens{}}, r)
@@ -65,7 +65,7 @@ func TestR_BAS_008_AnInterfaceCallCarriesNoTroveBastionAuthorization(t *testing.
 			t.Fatalf("status %d, reached %v", w.Code, seen != nil)
 		}
 	})
-	t.Run("another credential in Trove-Bastion-Authorization leaves an interface path an ordinary request", func(t *testing.T) {
+	t.Run("another credential in Quader-Bastion-Authorization leaves an interface path an ordinary request", func(t *testing.T) {
 		r := forwarded(iface.PathHandshake, "Authorization", "Bearer "+tokValid, iface.HeaderAuthorization, "Bearer "+pat, iface.HeaderInterface, version())
 		tokens := &fakeTokens{}
 		w, seen := run(t, RecognizeOptions{Tokens: tokens}, r)

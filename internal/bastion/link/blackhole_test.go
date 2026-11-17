@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/link"
+	"github.com/guided-traffic/quader/internal/bastion/link"
 )
 
 // TestR_BAS_027_ACallThatTheMainInstallationNeverAnswersIsCutAtUnreachableAfter: a connection that swallows the

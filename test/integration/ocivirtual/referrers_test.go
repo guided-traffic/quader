@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 // referrers reads the digests and artifact types of a referrers answer.

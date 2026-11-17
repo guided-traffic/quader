@@ -3,7 +3,7 @@ package nuget
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // TestR_NUGET_015_ClassifyIsTheRequestDescriptorOfACanonicalPath holds Classify to the table of

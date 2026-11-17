@@ -15,8 +15,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/tlsfiles"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
 func listener(t *testing.T, spec tlsfiles.Spec) (*tlsfiles.Reloader, *prometheus.Registry) {
@@ -96,7 +96,7 @@ func TestReloader(t *testing.T) {
 			time.Sleep(10 * time.Millisecond)
 		}
 		if v, _ := metric(t, reg, tlsfiles.FamilyReloads, certFile); v != 1 {
-			t.Errorf("trove_tls_reloads_total = %v, want 1", v)
+			t.Errorf("quader_tls_reloads_total = %v, want 1", v)
 		}
 	})
 
@@ -177,7 +177,7 @@ func TestReloader(t *testing.T) {
 			t.Errorf("serving %d, want the old 301", got)
 		}
 		if v, _ := metric(t, reg, tlsfiles.FamilyReloadErrors, certFile); v != 1 {
-			t.Errorf("trove_tls_reload_errors_total = %v, want 1 (one distinct content)", v)
+			t.Errorf("quader_tls_reload_errors_total = %v, want 1 (one distinct content)", v)
 		}
 		if r.Loaded() != nil {
 			t.Error("Loaded fails although a pair has been served")
@@ -222,12 +222,12 @@ func TestReloader(t *testing.T) {
 		tlstest.WriteFile(t, certFile, nil)
 		_ = r.Reload()
 		if v, _ := metric(t, reg, tlsfiles.FamilyReloadErrors, certFile); v != 0 {
-			t.Fatalf("trove_tls_reload_errors_total = %v after one empty read, want 0", v)
+			t.Fatalf("quader_tls_reload_errors_total = %v after one empty read, want 0", v)
 		}
 		tlstest.WriteFile(t, certFile, []byte("not a certificate"))
 		_ = r.Reload()
 		if v, _ := metric(t, reg, tlsfiles.FamilyReloadErrors, certFile); v != 1 {
-			t.Fatalf("trove_tls_reload_errors_total = %v for the broken content, want 1", v)
+			t.Fatalf("quader_tls_reload_errors_total = %v for the broken content, want 1", v)
 		}
 		// An empty file that stays empty is refused on the second pass and counted once.
 		tlstest.WriteFile(t, certFile, nil)
@@ -235,7 +235,7 @@ func TestReloader(t *testing.T) {
 			_ = r.Reload()
 		}
 		if v, _ := metric(t, reg, tlsfiles.FamilyReloadErrors, certFile); v != 2 {
-			t.Errorf("trove_tls_reload_errors_total = %v with a file that stays empty, want 2", v)
+			t.Errorf("quader_tls_reload_errors_total = %v with a file that stays empty, want 2", v)
 		}
 		if got := serialOf(t, r, "localhost").Int64(); got != 451 {
 			t.Errorf("serving %d, want the old 451", got)
@@ -300,7 +300,7 @@ func TestReloader(t *testing.T) {
 func TestSNI(t *testing.T) {
 	ca := tlstest.NewCA(t, "test ca")
 	dir := t.TempDir()
-	def := ca.Issue(t, tlstest.Options{Serial: big.NewInt(1), DNSNames: []string{"trove.example"}, IPs: []net.IP{net.IPv4(127, 0, 0, 1)}})
+	def := ca.Issue(t, tlstest.Options{Serial: big.NewInt(1), DNSNames: []string{"quader.example"}, IPs: []net.IP{net.IPv4(127, 0, 0, 1)}})
 	wild := ca.Issue(t, tlstest.Options{Serial: big.NewInt(2), DNSNames: []string{"*.registry.example"}})
 	exact := ca.Issue(t, tlstest.Options{Serial: big.NewInt(3), DNSNames: []string{"docker.registry.example"}})
 	rsaLeaf := ca.Issue(t, tlstest.Options{Serial: big.NewInt(4), DNSNames: []string{"rsa.example"}, RSA: true})
@@ -317,7 +317,7 @@ func TestSNI(t *testing.T) {
 		name, sni string
 		want      int64
 	}{
-		{"R-ARCH-035 SNI picks the pair whose name matches", "trove.example", 1},
+		{"R-ARCH-035 SNI picks the pair whose name matches", "quader.example", 1},
 		{"R-ARCH-035 SNI matches a wildcard certificate", "npm.registry.example", 2},
 		{"R-ARCH-035 SNI prefers the exact name over a wildcard listed first", "docker.registry.example", 3},
 		{"R-ARCH-035 SNI is case-insensitive and ignores a trailing dot", "NPM.Registry.Example.", 2},

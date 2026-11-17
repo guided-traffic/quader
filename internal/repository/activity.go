@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // DefaultActivityInterval is how often a replica writes the activity of its

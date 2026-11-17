@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
 
 // upstreamHost is the origin of the remote repository of the kit's check 4.

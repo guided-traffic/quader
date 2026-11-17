@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/merge"
+	"github.com/guided-traffic/quader/internal/formats/npm/merge"
 )
 
 // settingsSchema is the JSON Schema 2020-12 of the npm member of a repository document

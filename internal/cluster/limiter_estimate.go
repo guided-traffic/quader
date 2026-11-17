@@ -7,12 +7,12 @@ import (
 
 // Estimate is the counting form of a limiter that needs the number: the events of bucket inside the sliding
 // window, rounded up (previous x (1 - elapsed / W) + current, the estimate of the other forms). With add it
-// counts one event first and the number includes it; without, it reads only. The trove Bastion uses it for
+// counts one event first and the number includes it; without, it reads only. The quader Bastion uses it for
 // the counters that lead to a block or a timeout (R-BAS-036, R-BAS-037), which compare the number with a
 // threshold of their own.
 //
 // It never falls back: while Valkey cannot be used it returns [ErrUnavailable] (and marks the limiter as in
-// its fallback for trove_ratelimit_fallback), and the caller counts in its own memory with the share of the
+// its fallback for quader_ratelimit_fallback), and the caller counts in its own memory with the share of the
 // threshold that is its own.
 func (l *Limiter) Estimate(ctx context.Context, bucket string, add bool) (int, error) {
 	if l.scope != ScopeCluster {

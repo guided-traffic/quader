@@ -13,15 +13,15 @@ value crosses a boundary. The code that implements each rule is linked. Open gap
 
 | Role | Process | Serves | Background work and leases | Chart |
 |---|---|---|---|---|
-| `api` | `trove serve --role api` | the route families `ui`, `api`, `ci_exchange` on the endpoints whose surface holds them; the ops listener | none: no job loop, no lease pool; holds the session store, the OIDC client secrets and the break-glass password ([roles.go](../../internal/app/roles.go), `SubsystemsFor`) | Deployment `<fullname>-api`, its path pools and endpoint pools |
-| `packages` | `trove serve --role packages` | the route families `packages`, `files`; tokens only, a session cookie counts as absent; the ops listener | none; builds no session store, login or CI exchange and reads no login secret | Deployment `<fullname>-packages`, its path pools and endpoint pools |
-| `web` | `trove serve --role web` | every family: `api` and `packages` in one process, the bridge of the upgrade across the cut | none; holds what `api` and `packages` hold ([H-518](#h-518--the-bridge-and-the-development-role-hold-both-halves-of-the-cut)) | Deployment `<fullname>-web` and the pools of further endpoints |
-| `worker` | `trove serve --role worker` | the ops listener only | the job claim loop, scheduler and reaper; the lease pool | Deployment `<fullname>-worker` |
-| `all` | `trove serve --role all` | both listeners | both sets | not rendered by the chart; for a local run outside the chart ([spec INV-2](../spec/README.md#design-invariants)) |
-| migration | `trove migrate up` | nothing: no listener | none; after the schema steps it applies the role bindings of `authz.role_bindings` under the migration lock ([permissions](permissions.md#role-bindings-from-the-configuration)) | Job `<fullname>-migrate` ([migrate.yaml](../../deploy/helm/trove/templates/migrate.yaml)) |
-| backup | `trove backup create --trigger schedule` | no client traffic; `/metrics` on the operations port while a run lasts ([backup_create.go](../../cmd/trove/backup_create.go), `serveBackupMetrics`) | one run at a time, decided by the `backup_run` row (R-BAK-010) | CronJob `<fullname>-backup` ([backup.yaml](../../deploy/helm/trove/templates/backup.yaml)), with `backup.enabled` |
-| restore | `trove backup restore <id>` | nothing | the restore of one backup into an empty installation; no replica runs meanwhile | Job `<fullname>-restore` ([restore.yaml](../../deploy/helm/trove/templates/restore.yaml)), with `restore.enabled` |
-| post-restore | `trove admin post-restore --restored-to <time>` | nothing | the clean-up after a restore and the replay of the revocation journal | Job `<fullname>-post-restore-<hash>` ([post-restore.yaml](../../deploy/helm/trove/templates/post-restore.yaml)), with `postRestore.enabled` |
+| `api` | `quader serve --role api` | the route families `ui`, `api`, `ci_exchange` on the endpoints whose surface holds them; the ops listener | none: no job loop, no lease pool; holds the session store, the OIDC client secrets and the break-glass password ([roles.go](../../internal/app/roles.go), `SubsystemsFor`) | Deployment `<fullname>-api`, its path pools and endpoint pools |
+| `packages` | `quader serve --role packages` | the route families `packages`, `files`; tokens only, a session cookie counts as absent; the ops listener | none; builds no session store, login or CI exchange and reads no login secret | Deployment `<fullname>-packages`, its path pools and endpoint pools |
+| `web` | `quader serve --role web` | every family: `api` and `packages` in one process, the bridge of the upgrade across the cut | none; holds what `api` and `packages` hold ([H-518](#h-518--the-bridge-and-the-development-role-hold-both-halves-of-the-cut)) | Deployment `<fullname>-web` and the pools of further endpoints |
+| `worker` | `quader serve --role worker` | the ops listener only | the job claim loop, scheduler and reaper; the lease pool | Deployment `<fullname>-worker` |
+| `all` | `quader serve --role all` | both listeners | both sets | not rendered by the chart; for a local run outside the chart ([spec INV-2](../spec/README.md#design-invariants)) |
+| migration | `quader migrate up` | nothing: no listener | none; after the schema steps it applies the role bindings of `authz.role_bindings` under the migration lock ([permissions](permissions.md#role-bindings-from-the-configuration)) | Job `<fullname>-migrate` ([migrate.yaml](../../deploy/helm/quader/templates/migrate.yaml)) |
+| backup | `quader backup create --trigger schedule` | no client traffic; `/metrics` on the operations port while a run lasts ([backup_create.go](../../cmd/quader/backup_create.go), `serveBackupMetrics`) | one run at a time, decided by the `backup_run` row (R-BAK-010) | CronJob `<fullname>-backup` ([backup.yaml](../../deploy/helm/quader/templates/backup.yaml)), with `backup.enabled` |
+| restore | `quader backup restore <id>` | nothing | the restore of one backup into an empty installation; no replica runs meanwhile | Job `<fullname>-restore` ([restore.yaml](../../deploy/helm/quader/templates/restore.yaml)), with `restore.enabled` |
+| post-restore | `quader admin post-restore --restored-to <time>` | nothing | the clean-up after a restore and the replay of the revocation journal | Job `<fullname>-post-restore-<hash>` ([post-restore.yaml](../../deploy/helm/quader/templates/post-restore.yaml)), with `postRestore.enabled` |
 
 What the backup, restore and post-restore Jobs hold, and what each of them never holds, is on
 [backup-and-restore.md](backup-and-restore.md#who-holds-what).
@@ -54,7 +54,7 @@ What the backup, restore and post-restore Jobs hold, and what each of them never
 |---|---|---|---|---|
 | Edge to client listener | the edge reports the client address and the forwarded host and scheme, in one header family | make a client's own entries count as the edge's | `server.trusted_proxies`, `server.forwarded_header`, per endpoint `trusted_proxies` | [clientaddr.go](../../internal/httpserver/clientaddr.go) |
 | Client to an endpoint | the listener picks the endpoint; `Host` picks a host of that endpoint | reach another endpoint's content by a header | the listener of the endpoint, `endpoints.<name>.hosts` | [endpoint.go](../../internal/httpserver/endpoint.go) |
-| Kubelet and monitoring to the ops listener | nothing: no authentication on `:8081` | (not enforced by trove) | `server.ops_tls`, `metrics.auth`, the chart's NetworkPolicy | [ops.go](../../internal/httpserver/ops.go) |
+| Kubelet and monitoring to the ops listener | nothing: no authentication on `:8081` | (not enforced by Quader) | `server.ops_tls`, `metrics.auth`, the chart's NetworkPolicy | [ops.go](../../internal/httpserver/ops.go) |
 | Client to trace context | a peer named in `tracing.trusted_peers` may continue its trace | a client choose the trace ID | `tracing.incoming_context`, `tracing.trusted_peers` | [tracing.go](../../internal/observability/tracing.go) |
 | Replicas to PostgreSQL, Valkey, object store | the server's certificate, checked by the client | a plaintext connection unless named with `allow_insecure` | `database.ssl_mode`, `valkey.tls`, `storage.s3` | [transport-encryption.md](transport-encryption.md) |
 | Replicas to Valkey data | the value a Valkey read returns | grant access or supply served content (INV-3) | the key families of [valkey.go](../../internal/cluster/valkey_keys.go) | this page, below |
@@ -91,7 +91,7 @@ and `forwardedFor`).
 - The forwarded scheme and host count only when the peer is trusted, and then only for an origin listed in
   `server.additional_base_urls` or equal to `server.base_url`. Every other case generates URLs from `server.base_url`.
 - On an endpoint that checks hosts, a forwarded host counts only when it lies in the endpoint's host set. Otherwise it is
-  ignored and counted in `trove_endpoint_forwarded_host_ignored_total`
+  ignored and counted in `quader_endpoint_forwarded_host_ignored_total`
   ([clientaddr.go](../../internal/httpserver/clientaddr.go), `resolveHost`).
 
 The rule gives the right answer only when the edge appends the address it sees to the selected family. See
@@ -102,7 +102,7 @@ The rule gives the right answer only when the edge appends the address it sees t
 The endpoint of a request is the one whose listener accepted the connection. Only the middleware chain of that listener
 places it into the request context ([endpoint.go](../../internal/httpserver/endpoint.go), `EndpointFrom`). `Host` and the
 forwarded host choose among that endpoint's own hosts. A host outside the set answers `421 Misdirected Request` with the
-problem code `misdirected_request` and is counted in `trove_endpoint_misdirected_total`
+problem code `misdirected_request` and is counted in `quader_endpoint_misdirected_total`
 ([errs/codes.go](../../internal/errs/codes.go), [errs.go](../../internal/errs/errs.go)). The decision is
 [ADR-128](../decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling)
 and [spec/endpoints.md](../spec/endpoints.md) Q-EP-1.
@@ -113,7 +113,7 @@ and [spec/endpoints.md](../spec/endpoints.md) Q-EP-1.
 ([config/trace.go](../../internal/config/trace.go)). With `trusted_peers`, an incoming `traceparent` is continued only when
 the TCP peer lies in `tracing.trusted_peers`, which is empty by default; then no incoming context is continued
 ([tracing.go](../../internal/observability/tracing.go), `peerTrusted` and `continues`). A context that is not continued
-becomes a span link, so the trace ID the client receives in `X-Request-Id` and the request log carry the trove-generated ID.
+becomes a span link, so the trace ID the client receives in `X-Request-Id` and the request log carry the Quader-generated ID.
 
 - `tracing.trusted_peers` refuses a catch-all prefix (`0.0.0.0/0`, `::/0`) at load
   ([config/trace.go](../../internal/config/trace.go), `Validate`).
@@ -147,8 +147,8 @@ is an `https` origin other than localhost ([config/finalize.go](../../internal/c
 
 Valkey holds shared ephemeral state: the coordination keys, the negative cache of remote repositories and the counters of the
 rate limits ([api-edge.md](api-edge.md); [spec INV-3](../spec/README.md#design-invariants), [architecture.md](../spec/architecture.md) Q-ARCH-16). Nothing
-trove serves is read from it, and no positive authentication or authorization result is. A value read from Valkey can make
-trove refuse a request or fetch from an upstream again; it cannot grant access or supply content. Change messages on the
+Quader serves is read from it, and no positive authentication or authorization result is. A value read from Valkey can make
+Quader refuse a request or fetch from an upstream again; it cannot grant access or supply content. Change messages on the
 Valkey channel only evict caches early and never advance the applied epoch ([changelog.go](../../internal/cluster/changelog.go),
 `handleMessage`), so a forged or lost message cannot suppress a change, because the poll applies every change again.
 
@@ -178,7 +178,7 @@ operator names an edge. Subject: the client address in the request log, the per-
 ([api-edge.md](api-edge.md)) and the source address of every audit event ([audit/row.go](../../internal/audit/row.go)).
 
 What makes it real: an edge that forwards a client's header unchanged, or sets none, listed as a trusted proxy. The edge's
-configuration is outside trove, and trove cannot check it.
+configuration is outside Quader, and Quader cannot check it.
 
 ### H-63 · Anonymous read of installation facts and the replica list while the bootstrap switch is on
 
@@ -220,12 +220,12 @@ operator who stops after the first step: with `web.enabled: true` every host sta
 accept session cookies on package routes. After the second step (`web.routed: false`) the edge no longer sends requests to them, but
 the pods keep running behind the Service `<fullname>` and stay reachable inside the cluster wherever a NetworkPolicy admits their port,
 until the third step removes them. The mitigation is the duration, and the chart bounds it by a signal, not by a refusal: the
-alert `TroveBridgeLeftOn` (PrometheusRule, `metrics.prometheusRule.enabled`) fires when a `web` replica has been registered for 24
+alert `QuaderBridgeLeftOn` (PrometheusRule, `metrics.prometheusRule.enabled`) fires when a `web` replica has been registered for 24
 hours, and `NOTES.txt` names the next step. The guard of R-HA-064 acts only on the second and third steps: it refuses the upgrade
 that moves the edge while a Deployment of the target shape is not ready, and refuses the third while the edge still routes to the
 bridge (Q-HA-130, Q-HA-132).
 
-In the chart the bridge is `web.enabled: true` ([_secrets.tpl](../../deploy/helm/trove/templates/_secrets.tpl),
-[_units.tpl](../../deploy/helm/trove/templates/_units.tpl)): its pods mount the login secrets (`secrets.oidc[]`,
+In the chart the bridge is `web.enabled: true` ([_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl),
+[_units.tpl](../../deploy/helm/quader/templates/_units.tpl)): its pods mount the login secrets (`secrets.oidc[]`,
 `secrets.breakGlass`) while the edge sends every request to them (step 1) or while they run unrouted (step 2). How long an
 installation stays on the first two steps the chart cannot tell; the alert and `NOTES.txt` are the only reminders.

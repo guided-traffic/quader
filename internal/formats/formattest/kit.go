@@ -7,8 +7,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest/crafted"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest/crafted"
 )
 
 // Check is one of the checks of R-ARCH-010 that the kit runs, numbered as the spec numbers them. Check 14, the matching corpus of

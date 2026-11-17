@@ -18,8 +18,8 @@ import (
 	"testing"
 	"testing/iotest"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/npm/manifest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/npm/manifest"
 )
 
 func validate(t testing.TB, data []byte, lim Limits) (*Result, error) {

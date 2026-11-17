@@ -27,16 +27,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // DefaultBaseURL is the response base URL of the in-memory Host.
-const DefaultBaseURL = "https://trove.test"
+const DefaultBaseURL = "https://quader.test"
 
 // HostOptions configure [NewHost]. The zero value is a local repository "main"
 // of the format, with every authorization allowed and no data port.

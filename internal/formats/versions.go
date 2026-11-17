@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The versions a caller's own grants let it read (R-AUTHZ-005, Q-AUTHZ-255). The decision point decides a version on

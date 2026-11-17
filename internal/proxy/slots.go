@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // slots are the fetch slots of R-REPO-040: per-replica counters, no coordination

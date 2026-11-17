@@ -11,7 +11,7 @@ sql:
         emit_json_tags: false
         emit_empty_slices: true
         # The enum helpers sqlc generates (Null types) implement database/sql/driver
-        # interfaces, which no trove package imports (R-ARCH-026). Plain strings
+        # interfaces, which no quader package imports (R-ARCH-026). Plain strings
         # carry the values; the CHECK of the type keeps them valid.
         overrides:
           # The blob store reads and writes these as plain times: its package may

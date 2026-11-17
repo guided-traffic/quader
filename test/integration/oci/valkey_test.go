@@ -32,10 +32,10 @@ func TestRegistryWorksWithValkeyStopped(t *testing.T) {
 		loc := p.startUpload(p.next(), bearer(tok), r, name)
 		a := p.do(call{rep: p.next(), method: "PATCH", path: loc, cred: bearer(tok), body: data[:10], hdr: []string{"Content-Type", octet}})
 		want(t, a, 202, "")
-		loc = hdr(a, "Location")[len("http://trove.test"):]
+		loc = hdr(a, "Location")[len("http://quader.test"):]
 		a = p.do(call{rep: p.next(), method: "PATCH", path: loc, cred: bearer(tok), body: data[10:], hdr: []string{"Content-Type", octet}})
 		want(t, a, 202, "")
-		loc = hdr(a, "Location")[len("http://trove.test"):]
+		loc = hdr(a, "Location")[len("http://quader.test"):]
 		want(t, p.do(call{rep: p.next(), method: "PUT", path: withDigest(loc, digestOf(data)), cred: bearer(tok)}), 201, "")
 	}
 	cat := p.do(call{rep: p.next(), method: "GET", path: "/v2/_catalog", cred: p.as("reader")})

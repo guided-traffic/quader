@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/ci/claims"
 )
 
 // Type is a token type, from the prefix (R-AUTH-022). The values match
@@ -15,13 +15,13 @@ type Type string
 
 // The token types and their prefixes.
 const (
-	TypePAT Type = "pat" // trv_pat_
-	TypeSAT Type = "sat" // trv_sat_
-	TypeCIT Type = "cit" // trv_cit_
+	TypePAT Type = "pat" // qdr_pat_
+	TypeSAT Type = "sat" // qdr_sat_
+	TypeCIT Type = "cit" // qdr_cit_
 	// TypeBST is the Bastion token (R-BAS-004): issued for a Bastion registration and accepted by the Bastion
 	// interface only. Check accepts its syntax, so a scanner and the interface see one format; Service.Check
 	// refuses it as unknown, before any database lookup, on every other route (R-BAS-005).
-	TypeBST Type = "bst" // trv_bst_
+	TypeBST Type = "bst" // qdr_bst_
 )
 
 // Info is what a successful validation yields: the token row's facts and the

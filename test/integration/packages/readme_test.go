@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const hostileReadme = `# Hostile
@@ -21,7 +21,7 @@ const hostileReadme = `# Hostile
 
 ![own](/api/npm/it/npm-local/left-pad)
 
-<img src="http://trove.test/files/it/npm-local/x.png">
+<img src="http://quader.test/files/it/npm-local/x.png">
 
 [js](javascript:alert(1)) <a href="https://example.com" target="_blank">out</a>
 
@@ -33,7 +33,7 @@ const hostileReadme = `# Hostile
 // TestR_API_029_ReadmeIsRenderedAndSanitizedOnTheServer: the acceptance cases of
 // R-API-029 and R-UI-008 through the API.
 func TestR_API_029_ReadmeIsRenderedAndSanitizedOnTheServer(t *testing.T) {
-	e := newEnv(t, `TROVE_UI_README_EXTERNAL_IMAGE_ORIGINS=["https://img.example"]`)
+	e := newEnv(t, `QUADER_UI_README_EXTERNAL_IMAGE_ORIGINS=["https://img.example"]`)
 	e.seed()
 	e.publish("npm-local", spec{Name: "hostile", Version: "1.0.0", Readme: hostileReadme})
 	e.publish("npm-local", spec{Name: "bare", Version: "1.0.0", Readme: "-"})
@@ -49,7 +49,7 @@ func TestR_API_029_ReadmeIsRenderedAndSanitizedOnTheServer(t *testing.T) {
 		t.Fatalf("%v", r)
 	}
 	// The listed origin keeps its image, the unlisted badge becomes a link, the images
-	// of trove's own origin are gone.
+	// of quader's own origin are gone.
 	if num(r["externalImagesBlocked"]) != 1 {
 		t.Errorf("externalImagesBlocked = %v\n%s", r["externalImagesBlocked"], html)
 	}
@@ -62,7 +62,7 @@ func TestR_API_029_ReadmeIsRenderedAndSanitizedOnTheServer(t *testing.T) {
 			t.Errorf("%q is missing in\n%s", want, html)
 		}
 	}
-	for _, bad := range []string{"<script", "onerror", "javascript:", "target=", "<form", "<input", "left-pad", "trove.test", "alert(1)</script"} {
+	for _, bad := range []string{"<script", "onerror", "javascript:", "target=", "<form", "<input", "left-pad", "quader.test", "alert(1)</script"} {
 		if strings.Contains(html, bad) {
 			t.Errorf("%q survived in\n%s", bad, html)
 		}
@@ -102,7 +102,7 @@ func TestR_API_029_ReadmeIsRenderedAndSanitizedOnTheServer(t *testing.T) {
 		}
 	})
 	t.Run("a changed list of image origins changes the tag", func(t *testing.T) {
-		other := e.st.Start(t, testenv.ReplicaOptions{Name: "web2", Env: []string{`TROVE_UI_README_EXTERNAL_IMAGE_ORIGINS=["https://img.example","https://img.shields.example"]`}})
+		other := e.st.Start(t, testenv.ReplicaOptions{Name: "web2", Env: []string{`QUADER_UI_README_EXTERNAL_IMAGE_ORIGINS=["https://img.example","https://img.shields.example"]`}})
 		b := e.st.Do(other, "GET", "/api/v1/packages/"+id+"/versions/1.0.0/readme", e.tokB, nil)
 		if b.Status != 200 || b.Header.Get("ETag") == a.Header.Get("ETag") {
 			t.Fatalf("%d, tag %q vs %q", b.Status, b.Header.Get("ETag"), a.Header.Get("ETag"))

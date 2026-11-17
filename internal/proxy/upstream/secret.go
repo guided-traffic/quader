@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // RefreshInterval is how long a resolved secretRef is used before the file or the
@@ -42,7 +42,7 @@ type resolver struct {
 }
 
 // resolve reads a reference. The rules of R-OPS-029 are checked again here, so a
-// row that was written around the API cannot route a trove file or variable to an
+// row that was written around the API cannot route a quader file or variable to an
 // upstream.
 func (r resolver) resolve(ref repository.SecretRef) (observability.Secret, error) {
 	if why := ref.Valid(); why != "" {

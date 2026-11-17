@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The mirror mode of a remote repository (repositories-and-proxy.md R-REPO-050 to R-REPO-052): remote.mode and the
@@ -140,7 +140,7 @@ func checkDelegatedMirror(v *validation, stored, next *RemoteSettings) {
 	}
 	if !sameMirrorButPause(base.Mirror, next.Mirror) {
 		v.add("/remote/mirror", errs.CodeMirrorRestricted,
-			"a project Owner keeps the mirror settings an administrator of trove chose; it may change paused only")
+			"a project Owner keeps the mirror settings an administrator of Quader chose; it may change paused only")
 	}
 }
 
@@ -151,7 +151,7 @@ func checkDelegatedMirrorScope(v *validation, stored, next *RemoteSettings, cur,
 	if stored == nil || stored.Mode != ModeMirror || next.Mode != ModeMirror {
 		return
 	}
-	const why = "a project Owner keeps what an administrator of trove chose for a mirror; turn the mode back to pullThrough to change it"
+	const why = "a project Owner keeps what an administrator of Quader chose for a mirror; turn the mode back to pullThrough to change it"
 	if !sameStrings(cur.IncludePatterns, nd.IncludePatterns) {
 		v.add("/includePatterns", errs.CodeMirrorRestricted, why)
 	}
@@ -177,7 +177,7 @@ func checkDelegatedFormatMirror(v *validation, cur, nd *Document) {
 	}
 	if !bytes.Equal(curMirror, mirrorMemberOfFormat(nd)) {
 		v.add("/"+nd.Format+"/mirror", errs.CodeMirrorRestricted,
-			"a project Owner keeps the mirror settings an administrator of trove chose; the format's mirror member is not its to change")
+			"a project Owner keeps the mirror settings an administrator of Quader chose; the format's mirror member is not its to change")
 	}
 }
 

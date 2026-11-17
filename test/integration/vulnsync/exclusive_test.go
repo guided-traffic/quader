@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // R-VULN-004: one OSV sync runs at a time: both kinds share the dedup key, and a manual run while another is open answers 409
@@ -38,8 +38,8 @@ func TestR_VULN_004_OneOSVSyncRunsAtATime(t *testing.T) {
 // never deletes its data.
 func TestR_VULN_003_AnOffSourceKeepsItsData(t *testing.T) {
 	for _, tc := range []struct{ name, env string }{
-		{"source off", "TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off"},
-		{"scanning off", "TROVE_VULNERABILITIES_ENABLED=false"},
+		{"source off", "QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"},
+		{"scanning off", "QUADER_VULNERABILITIES_ENABLED=false"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			e := newEnv(t, options{})

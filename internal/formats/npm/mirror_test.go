@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // Contract tests of the npm format's part of the mirror mode: R-REPO-050 (the catalog fact), R-REPO-051 (discovery, the plan),

@@ -30,7 +30,7 @@ export const GRADE_SORT_MAX = 1000;
  * browser, worst last ascending and first descending (Q-UI-373).
  */
 @Component({
-  selector: 'trove-repository-items',
+  selector: 'quader-repository-items',
   imports: [DatePipe, DecimalPipe, RouterLink, DataTable, GradeLabel, RepositoryItemVersions],
   template: `
     <div class="toolbar">
@@ -47,7 +47,7 @@ export const GRADE_SORT_MAX = 1000;
       </div>
     </div>
 
-    <trove-data-table
+    <quader-data-table
       [caption]="caption()"
       [columns]="columns()"
       [sort]="sort()"
@@ -94,7 +94,7 @@ export const GRADE_SORT_MAX = 1000;
           @if (graded()) {
             <td>
               @if (p.vulnerabilityGrade; as g) {
-                <trove-grade [grade]="g" />
+                <quader-grade [grade]="g" />
               }
             </td>
           }
@@ -108,14 +108,14 @@ export const GRADE_SORT_MAX = 1000;
             <div [id]="'versions-' + p.id" class="collapse-region" [class.open]="isOpen(p.id)">
               <div>
                 @if (opened().has(p.id)) {
-                  <trove-repository-item-versions [pkg]="p" [repository]="repository()" [shape]="shape()" [scanned]="graded()" />
+                  <quader-repository-item-versions [pkg]="p" [repository]="repository()" [shape]="shape()" [scanned]="graded()" />
                 }
               </div>
             </div>
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
     @if (gradeSorted() && list.hasMore()) {
       <p class="content-note" i18n="@@repo.content.grade-sort-partial">
         Sorted by grade among the first {{ list.items().length }} entries; the list holds more.

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // NuGet on an endpoint with exposure rules (R-NUGET-034, R-EP-018), on the fixture of the spec's
@@ -77,7 +77,7 @@ func newExposureEnv(t *testing.T, replicas int) *exposureEnv {
 	if a.Status != http.StatusCreated {
 		t.Fatalf("create the rule: %d %s", a.Status, a.Body)
 	}
-	x.epoch = a.Header.Get("Trove-Authz-Epoch")
+	x.epoch = a.Header.Get("Quader-Authz-Epoch")
 	return x
 }
 
@@ -90,7 +90,7 @@ func (x *exposureEnv) api(method, path string, body any, hdr ...string) testenv.
 // bound token, at the epoch of the last rule write.
 func (x *exposureEnv) onCustomers(r *testenv.Replica, method, path string, body any, hdr ...string) testenv.Answer {
 	x.t.Helper()
-	hdr = append(hdr, "Trove-Authz-Min-Epoch", x.epoch)
+	hdr = append(hdr, "Quader-Authz-Min-Epoch", x.epoch)
 	return x.st.DoAt(r.Addr("customers"), customersHost, method, "/api/nuget/it/nuget-customers/"+path, x.acmeSAT, body, hdr...)
 }
 
@@ -289,7 +289,7 @@ func TestR_EP_018_NuGetRuleChangeFailsTheEarlierValidatorOnEveryReplica(t *testi
 	if a.Status != http.StatusOK {
 		t.Fatalf("narrow the rule: %d %s", a.Status, a.Body)
 	}
-	x.epoch = a.Header.Get("Trove-Authz-Epoch")
+	x.epoch = a.Header.Get("Quader-Authz-Epoch")
 	for _, r := range x.reps {
 		b := x.onCustomers(r, "GET", path, nil, "If-None-Match", etag)
 		if got := listed(t, b); !slices.Equal(got, []string{"2.1.0"}) {
@@ -345,7 +345,7 @@ func newVirtualExposureEnv(t *testing.T) *exposureEnv {
 	if a.Status != http.StatusCreated {
 		t.Fatalf("create the rule on the virtual repository: %d %s", a.Status, a.Body)
 	}
-	x.epoch = a.Header.Get("Trove-Authz-Epoch")
+	x.epoch = a.Header.Get("Quader-Authz-Epoch")
 	return x
 }
 
@@ -373,7 +373,7 @@ func (s searchAnswer) versions(i int) []string {
 func (x *exposureEnv) searchOnCustomers(token, query string) (searchAnswer, testenv.Answer) {
 	x.t.Helper()
 	a := x.st.DoAt(x.reps[0].Addr("customers"), customersHost, "GET", "/api/nuget/it/nuget-customers/v3/search?"+query, token, nil,
-		"Trove-Authz-Min-Epoch", x.epoch)
+		"Quader-Authz-Min-Epoch", x.epoch)
 	var s searchAnswer
 	jsonOf(x.t, a, &s)
 	return s, a
@@ -407,7 +407,7 @@ func TestR_NUGET_034_SearchThroughAVirtualRepositoryOnAnEndpointWithRules(t *tes
 		})
 	}
 	t.Run("R-NUGET-034 Q-AUTHZ-163 the token scoped to the virtual key does not open the member on its own", func(t *testing.T) {
-		a := x.st.DoAt(r.Addr("customers"), customersHost, "GET", "/api/nuget/it/nuget-internal/v3/search?q=acme", x.acmeScoped, nil, "Trove-Authz-Min-Epoch", x.epoch)
+		a := x.st.DoAt(r.Addr("customers"), customersHost, "GET", "/api/nuget/it/nuget-internal/v3/search?q=acme", x.acmeScoped, nil, "Quader-Authz-Min-Epoch", x.epoch)
 		if a.Status != http.StatusNotFound {
 			t.Fatalf("the member addressed on its own: %d %s", a.Status, a.Body)
 		}

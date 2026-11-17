@@ -1,10 +1,10 @@
 # TLS and certificates
 
-This page explains where trove uses TLS, which Secrets and files carry the certificates, how client certificates work on trove's listeners, how trove verifies PostgreSQL, Valkey and the object store, and how certificates are rotated while trove keeps running. It ends with a cert-manager example and a list of common failures.
+This page explains where Quader uses TLS, which Secrets and files carry the certificates, how client certificates work on Quader's listeners, how Quader verifies PostgreSQL, Valkey and the object store, and how certificates are rotated while Quader keeps running. It ends with a cert-manager example and a list of common failures.
 
-## Where trove uses TLS
+## Where Quader uses TLS
 
-Every connection trove accepts or makes can be encrypted. The listeners serve plain HTTP until a certificate is configured; the Helm chart turns TLS on for them by default. Outgoing connections verify their peer by default, and PostgreSQL, Valkey, the object store and the span export each need an explicit switch for plaintext.
+Every connection Quader accepts or makes can be encrypted. The listeners serve plain HTTP until a certificate is configured; the Helm chart turns TLS on for them by default. Outgoing connections verify their peer by default, and PostgreSQL, Valkey, the object store and the span export each need an explicit switch for plaintext.
 
 | Connection | Configured by | Default | Material read again |
 |---|---|---|---|
@@ -16,7 +16,7 @@ Every connection trove accepts or makes can be encrypted. The listeners serve pl
 | Remote repositories to their upstreams | `proxy.outbound.tls` | system roots, TLS 1.2 or later | on use, at most every 10 s |
 | Span export (tracing) | `tracing.ca_file` | off | once, at start |
 
-## TLS on trove's own listeners
+## TLS on Quader's own listeners
 
 ### Client listener
 
@@ -37,7 +37,7 @@ Each further endpoint has its own listener and its own certificate set. Without 
 
 With `server.ops_tls.inherit: true` (the default) the ops listener serves the client listener's pairs and asks for no client certificate, because the kubelet's probes cannot present one. With `inherit: false` it has its own block of the same keys. The chart sets this for you: `tls.ops.secretName` gives the ops listener a pair of its own.
 
-If a replica starts while its certificate is missing or broken, the ops listener answers with a temporary certificate that trove generates in memory (valid for one hour, never written to disk). The probes then reach `/healthz` (200) and `/readyz` (503, check `tls` failing), so the pod is not restarted, and the gauge `trove_tls_temporary_certificate{listener="ops"}` is 1. The client and endpoint listeners refuse handshakes until their pair loads. The temporary certificate chains to no CA, so a scraper that verifies the ops listener fails until the real pair loads.
+If a replica starts while its certificate is missing or broken, the ops listener answers with a temporary certificate that Quader generates in memory (valid for one hour, never written to disk). The probes then reach `/healthz` (200) and `/readyz` (503, check `tls` failing), so the pod is not restarted, and the gauge `quader_tls_temporary_certificate{listener="ops"}` is 1. The client and endpoint listeners refuse handshakes until their pair loads. The temporary certificate chains to no CA, so a scraper that verifies the ops listener fails until the real pair loads.
 
 ## Certificates in the Helm chart
 
@@ -46,7 +46,7 @@ The chart never creates a Secret. Create each Secret before the install, for exa
 ```yaml
 tls:
   enabled: true                         # default; false = plain HTTP inside the cluster
-  secretName: trove-tls                 # example; required while enabled; keys tls.crt and tls.key
+  secretName: quader-tls                 # example; required while enabled; keys tls.crt and tls.key
   certKey: tls.crt                      # default
   keyKey: tls.key                       # default
   minVersion: "1.2"                     # default: 1.2 | 1.3
@@ -56,42 +56,42 @@ tls:
     key: ca.crt                         # default
     auth: require                       # default: require | verify_if_given
   ops:
-    secretName: trove-ops-tls           # example; default "" = :8081 serves the pair of tls.secretName
+    secretName: quader-ops-tls           # example; default "" = :8081 serves the pair of tls.secretName
 ingress:
   backendTLS:
     controller: haproxy                 # default: haproxy | traefik | ingress-nginx | manual
-    verify: true                        # default: the controller verifies trove's certificate
-    caSecret: trove-tls                 # example; a Secret with ca.crt, required with verify on haproxy and ingress-nginx
+    verify: true                        # default: the controller verifies Quader's certificate
+    caSecret: quader-tls                 # example; a Secret with ca.crt, required with verify on haproxy and ingress-nginx
     clientCertSecret: ""                # default; haproxy: the pair the controller presents when tls.clientCA is set
 ```
 
 Set `tls.ops.secretName` when you run worker replicas or endpoint pools: without it every pod holds the private key of the main listener, because its ops listener inherits that pair.
 
-The ingress controller connects to trove over HTTPS. With HAProxy Ingress the chart has the controller verify trove's certificate for the name `<fullname>.<namespace>.svc`, so that name must be in the certificate; an endpoint's Ingress verifies `<fullname>-ep-<name>.<namespace>.svc` against the endpoint's certificate. A cert-manager Secret carries `ca.crt`, so `caSecret` can name the same Secret as `tls.secretName`.
+The ingress controller connects to Quader over HTTPS. With HAProxy Ingress the chart has the controller verify Quader's certificate for the name `<fullname>.<namespace>.svc`, so that name must be in the certificate; an endpoint's Ingress verifies `<fullname>-ep-<name>.<namespace>.svc` against the endpoint's certificate. A cert-manager Secret carries `ca.crt`, so `caSecret` can name the same Secret as `tls.secretName`.
 
 <details>
 <summary>Secrets and where the pods see them</summary>
 
 | Chart value | Keys read | Mounted at | Used for |
 |---|---|---|---|
-| `tls.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/trove/tls/` | client listener, and the ops listener while it inherits |
-| `tls.clientCA.secretName` | `ca.crt` | `/var/run/secrets/trove/tls-client-ca/ca.crt` | client certificates on `:8080` (main `api` and `packages` pods only) |
-| `tls.ops.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/trove/tls-ops/` | ops listener |
-| `endpoints.<name>.tls.existingSecret`, `extraSecrets` | `tls.crt`, `tls.key` | `/var/run/secrets/trove/endpoints/<name>/<n>/` (`n` = position) | endpoint listener |
-| `endpoints.<name>.tls.clientCaSecret` | `ca.crt` | `/var/run/secrets/trove/endpoints/<name>/client-ca/ca.crt` | client certificates on the endpoint |
-| `secrets.databaseCA` | `ca.crt` | `/var/run/secrets/trove/database-ca/ca.crt` | `database.ssl_root_cert_file` |
-| `secrets.databaseClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/trove/database-client/` | client certificate to PostgreSQL |
-| `secrets.valkeyCA` | `ca.crt` | `/var/run/secrets/trove/valkey-ca/ca.crt` | `valkey.tls.ca_file` |
-| `secrets.valkeyClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/trove/valkey-client/` | client certificate to Valkey |
-| `secrets.s3CA` | `ca.crt` | `/var/run/secrets/trove/s3-ca/ca.crt` | `storage.s3.ca_file` |
+| `tls.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls/` | client listener, and the ops listener while it inherits |
+| `tls.clientCA.secretName` | `ca.crt` | `/var/run/secrets/quader/tls-client-ca/ca.crt` | client certificates on `:8080` (main `api` and `packages` pods only) |
+| `tls.ops.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls-ops/` | ops listener |
+| `endpoints.<name>.tls.existingSecret`, `extraSecrets` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`n` = position) | endpoint listener |
+| `endpoints.<name>.tls.clientCaSecret` | `ca.crt` | `/var/run/secrets/quader/endpoints/<name>/client-ca/ca.crt` | client certificates on the endpoint |
+| `secrets.databaseCA` | `ca.crt` | `/var/run/secrets/quader/database-ca/ca.crt` | `database.ssl_root_cert_file` |
+| `secrets.databaseClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/database-client/` | client certificate to PostgreSQL |
+| `secrets.valkeyCA` | `ca.crt` | `/var/run/secrets/quader/valkey-ca/ca.crt` | `valkey.tls.ca_file` |
+| `secrets.valkeyClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/valkey-client/` | client certificate to Valkey |
+| `secrets.s3CA` | `ca.crt` | `/var/run/secrets/quader/s3-ca/ca.crt` | `storage.s3.ca_file` |
 
-The chart sets these file paths in the configuration itself; setting the same keys under `config` fails the render. The complete list of values is in the [full reference](https://github.com/guided-traffic/trove/blob/main/README.md#-full-reference).
+The chart sets these file paths in the configuration itself; setting the same keys under `config` fails the render. The complete list of values is in the [full reference](https://github.com/guided-traffic/quader/blob/main/README.md#-full-reference).
 
 </details>
 
 ## Client certificates (mutual TLS)
 
-A listener can ask its clients for a certificate. This is meant for the connection from your ingress controller to trove, not for user sign-in: a client certificate is checked against the CA bundle and nothing else, it does not identify a user, and a user still needs a session or a token.
+A listener can ask its clients for a certificate. This is meant for the connection from your ingress controller to Quader, not for user sign-in: a client certificate is checked against the CA bundle and nothing else, it does not identify a user, and a user still needs a session or a token.
 
 | Listener | Setting | Behaviour |
 |---|---|---|
@@ -100,7 +100,7 @@ A listener can ask its clients for a certificate. This is meant for the connecti
 | Further endpoint | `endpoints.<name>.tls.clientCaSecret` | always required; never inherited from the client listener |
 | Ops listener | never set by the chart | the probes cannot present a certificate |
 
-With HAProxy Ingress and `tls.clientCA`, also set `ingress.backendTLS.clientCertSecret` to a Secret with a `tls.crt` and `tls.key` that the CA signed; the render fails otherwise. trove checks no revocation lists and no OCSP: a revoked client certificate is accepted until it expires, so issue short-lived certificates.
+With HAProxy Ingress and `tls.clientCA`, also set `ingress.backendTLS.clientCertSecret` to a Secret with a `tls.crt` and `tls.key` that the CA signed; the render fails otherwise. Quader checks no revocation lists and no OCSP: a revoked client certificate is accepted until it expires, so issue short-lived certificates.
 
 ## TLS to PostgreSQL, Valkey and the object store
 
@@ -119,7 +119,7 @@ A client certificate is optional (`secrets.databaseClientCert`).
 
 ### Valkey and Sentinel
 
-`valkey.tls.mode` is `verify-full` (default), `verify-ca` (needs `ca_file`) or `disable` (needs `valkey.allow_insecure`). The Sentinel connections use the same TLS settings while `valkey.sentinel.tls` is `true`. Name the CA of your Valkey certificates in `secrets.valkeyCA`. In Sentinel mode trove logs a warning at start when the Sentinels have no password or when the data nodes are verified against the system roots; both are warnings, not errors.
+`valkey.tls.mode` is `verify-full` (default), `verify-ca` (needs `ca_file`) or `disable` (needs `valkey.allow_insecure`). The Sentinel connections use the same TLS settings while `valkey.sentinel.tls` is `true`. Name the CA of your Valkey certificates in `secrets.valkeyCA`. In Sentinel mode Quader logs a warning at start when the Sentinels have no password or when the data nodes are verified against the system roots; both are warnings, not errors.
 
 ### Object store
 
@@ -129,12 +129,12 @@ An endpoint without a scheme is reached over `https`; an `http://` endpoint need
 
 ### How it works
 
-trove reads every certificate, key and CA file again and compares the content, not the file time, so both a Kubernetes Secret update and a file replaced on disk are noticed.
+Quader reads every certificate, key and CA file again and compares the content, not the file time, so both a Kubernetes Secret update and a file replaced on disk are noticed.
 
 - Listener pairs and client CAs are checked every `reload_interval` (10 s). New handshakes use the new certificate; open connections keep the one they negotiated until they close.
 - PostgreSQL files apply to the next new connection, Valkey files to the next handshake. Pooled connections are replaced after `database.pool.max_conn_lifetime` and `valkey.max_conn_lifetime` (30 minutes each by default).
 - Object-store and upstream CA files apply to the next connection after a check, at most every 10 s.
-- A file that does not load (half-written, key and certificate not matching, expired, garbage) leaves the previous material in service, adds one to `trove_tls_reload_errors_total` and logs an error that names the file. A pair whose validity starts in the future waits and is checked again on every pass.
+- A file that does not load (half-written, key and certificate not matching, expired, garbage) leaves the previous material in service, adds one to `quader_tls_reload_errors_total` and logs an error that names the file. A pair whose validity starts in the future waits and is checked again on every pass.
 - `tracing.ca_file` is the exception: it is read once at start, so a new collector CA needs a restart.
 
 At start the behaviour is stricter: a listener pair that does not load keeps the replica unready until it loads, and a PostgreSQL, Valkey or `storage.s3.ca_file` file that does not load ends the process.
@@ -143,13 +143,13 @@ At start the behaviour is stricter: a listener pair that does not load keeps the
 
 1. Update the Secret, or let cert-manager renew it.
 2. Wait until the kubelet has updated the mounted files and one `reload_interval` has passed.
-3. Check that `trove_tls_reloads_total` for the listener has increased and `trove_tls_certificate_expiry_timestamp_seconds` shows the new expiry.
+3. Check that `quader_tls_reloads_total` for the listener has increased and `quader_tls_certificate_expiry_timestamp_seconds` shows the new expiry.
 
 For files outside Kubernetes, replace the files in place. Writing the key and the certificate one after the other is safe (a pass that sees half a rotation keeps the old pair and counts one error); replacing each file by a rename avoids that error.
 
 ### Rotate a CA
 
-1. Put the old and the new CA into the bundle that trove trusts (for example `ca.crt` of `secrets.databaseCA`).
+1. Put the old and the new CA into the bundle that Quader trusts (for example `ca.crt` of `secrets.databaseCA`).
 2. Rotate the server certificates to the new CA.
 3. Remove the old CA from the bundle.
 
@@ -159,24 +159,24 @@ Each step applies to the next connection or handshake.
 
 | Metric | Meaning |
 |---|---|
-| `trove_tls_certificate_expiry_timestamp_seconds` | expiry of each served certificate, and the earliest expiry in each CA bundle |
-| `trove_tls_reloads_total` | changed files that loaded and replaced the previous content |
-| `trove_tls_reload_errors_total` | changed files that did not load; the old material stays in service |
+| `quader_tls_certificate_expiry_timestamp_seconds` | expiry of each served certificate, and the earliest expiry in each CA bundle |
+| `quader_tls_reloads_total` | changed files that loaded and replaced the previous content |
+| `quader_tls_reload_errors_total` | changed files that did not load; the old material stays in service |
 
-The labels are `kind` (`listener`, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>`, `ops`, empty for outgoing connections) and `name` (the file). Alert on `trove_tls_certificate_expiry_timestamp_seconds - time() < 14 * 86400` and on `increase(trove_tls_reload_errors_total[15m]) > 0`. trove keeps serving a loaded certificate after it has expired, and the probes do not notice, so the expiry alert is the only warning before clients start refusing the connection.
+The labels are `kind` (`listener`, `database`, `valkey`, `objectstore`, `outbound`), `listener` (`client`, `client:<endpoint>`, `ops`, empty for outgoing connections) and `name` (the file). Alert on `quader_tls_certificate_expiry_timestamp_seconds - time() < 14 * 86400` and on `increase(quader_tls_reload_errors_total[15m]) > 0`. Quader keeps serving a loaded certificate after it has expired, and the probes do not notice, so the expiry alert is the only warning before clients start refusing the connection.
 
 ## cert-manager example
 
-A Certificate for the main listener of a release `trove` in the namespace `trove`. The names cover the base URL host, the Service name the ingress controller verifies, and the ops Service name for a monitoring system that verifies the ops listener.
+A Certificate for the main listener of a release `quader` in the namespace `quader`. The names cover the base URL host, the Service name the ingress controller verifies, and the ops Service name for a monitoring system that verifies the ops listener.
 
 ```yaml
 apiVersion: cert-manager.io/v1         # example
 kind: Certificate                       # example
 metadata:
-  name: trove-tls                       # example
-  namespace: trove                      # example
+  name: quader-tls                       # example
+  namespace: quader                      # example
 spec:
-  secretName: trove-tls                 # example; the value of tls.secretName and ingress.backendTLS.caSecret
+  secretName: quader-tls                 # example; the value of tls.secretName and ingress.backendTLS.caSecret
   duration: 2160h                       # example: 90 days
   renewBefore: 720h                     # example
   privateKey:
@@ -185,15 +185,15 @@ spec:
     rotationPolicy: Always              # example: a renewal also changes the key
   usages: [digital signature, key encipherment, server auth]   # example
   dnsNames:
-    - trove.example.com                 # example: the host of server.base_url
-    - trove.trove.svc                   # example: <fullname>.<namespace>.svc, verified by HAProxy Ingress
-    - trove-ops.trove.svc               # example: the ops Service, if your scraper verifies it
+    - quader.example.com                 # example: the host of server.base_url
+    - quader.quader.svc                   # example: <fullname>.<namespace>.svc, verified by HAProxy Ingress
+    - quader-ops.quader.svc               # example: the ops Service, if your scraper verifies it
   issuerRef:
     name: internal-ca                   # example: your Issuer or ClusterIssuer
     kind: ClusterIssuer                 # example
 ```
 
-cert-manager renews the Secret before it expires; trove picks up the new pair without a restart. Further endpoints get Certificates of their own with the endpoint's hosts and `<fullname>-ep-<name>.<namespace>.svc`.
+cert-manager renews the Secret before it expires; Quader picks up the new pair without a restart. Further endpoints get Certificates of their own with the endpoint's hosts and `<fullname>-ep-<name>.<namespace>.svc`.
 
 ## Common failures
 
@@ -201,10 +201,10 @@ cert-manager renews the Secret before it expires; trove picks up the new pair wi
 |---|---|---|
 | The chart does not render: `tls.secretName` is required | `tls.enabled` is `true` by default | Create the Secret and set `tls.secretName` |
 | Pods stay unready; `/readyz?verbose=1` shows the `tls` check failing | The listener Secret is missing, uses other key names, or holds a key that does not match the certificate, or a certificate that is expired or not valid yet | Check the Secret's `tls.crt` and `tls.key` and the error log line that names the file |
-| The ingress answers with a gateway error | The controller talks plain HTTP to trove (wrong `ingress.backendTLS.controller`), or cannot verify trove's certificate | Set the controller you run; make sure the certificate holds `<fullname>.<namespace>.svc` and `caSecret` holds its CA |
+| The ingress answers with a gateway error | The controller talks plain HTTP to Quader (wrong `ingress.backendTLS.controller`), or cannot verify Quader's certificate | Set the controller you run; make sure the certificate holds `<fullname>.<namespace>.svc` and `caSecret` holds its CA |
 | A client gets `400` "Client sent an HTTP request to an HTTPS server" | Plain HTTP sent to a TLS listener | Use `https://` |
-| A renewed certificate is not served | The file did not load, or the mount uses `subPath` (a hand-written manifest) | Look for `trove_tls_reload_errors_total` and the error log; mount the Secret as a directory |
-| Clients refuse an expired certificate | The renewal stopped producing new content; trove keeps serving the loaded pair | Fix the issuer; alert on the expiry metric |
+| A renewed certificate is not served | The file did not load, or the mount uses `subPath` (a hand-written manifest) | Look for `quader_tls_reload_errors_total` and the error log; mount the Secret as a directory |
+| Clients refuse an expired certificate | The renewal stopped producing new content; Quader keeps serving the loaded pair | Fix the issuer; alert on the expiry metric |
 | The process ends at start naming a database, Valkey or object-store file | A configured CA or client certificate file is missing or unreadable | Check the Secret named in `secrets.*` |
 | The configuration is refused: `verify-ca` without a root file, or plaintext without the insecure switch | The validation rules above | Add the CA file, or set the explicit switch if plaintext is intended |
 | Connections to PostgreSQL or Valkey fail with a certificate error | `verify-full` against the system roots for a server with a private CA, or a host name the certificate does not hold | Set `secrets.databaseCA` or `secrets.valkeyCA`; connect by a name in the certificate |

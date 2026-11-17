@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 const (
@@ -83,7 +83,7 @@ func (s *Service) granularity() time.Duration {
 
 // FlushLastUsed writes the buffered last-used times in one statement. It is
 // best effort (R-AUTH-031): a failed flush drops its batch, counts
-// trove_auth_lastused_flush_failures_total and returns the error to the caller,
+// quader_auth_lastused_flush_failures_total and returns the error to the caller,
 // which logs it; a token used again is recorded again.
 func (s *Service) FlushLastUsed(ctx context.Context) error {
 	batch := s.used.take()

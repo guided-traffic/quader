@@ -3,8 +3,8 @@ package deb
 import (
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 // The bounds of one replacement of coordinates (R-DEB-009).

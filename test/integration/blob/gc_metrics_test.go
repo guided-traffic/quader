@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // gaugeValue reads a gauge without labels from the registry; present is false when the family has no series.
@@ -34,21 +34,21 @@ func TestGCLastSuccessMetric(t *testing.T) {
 	c := blob.NewCollector(r.cfg.GC, r.cfg.S3.Prefix, r.obj, p.db, blob.WithCollectorLogger(quiet), blob.WithCollectorMetrics(blob.NewMetrics(m)))
 	ctx := context.Background()
 
-	t.Run("R-OPS-007 a dry run does not move trove_gc_last_success_timestamp_seconds", func(t *testing.T) {
+	t.Run("R-OPS-007 a dry run does not move quader_gc_last_success_timestamp_seconds", func(t *testing.T) {
 		if _, err := c.Run(ctx, blob.RunOptions{Mode: blob.GCIncremental, DryRun: true}); err != nil {
 			t.Fatal(err)
 		}
-		if v, _ := gaugeValue(t, m, "trove_gc_last_success_timestamp_seconds"); v != 0 {
+		if v, _ := gaugeValue(t, m, "quader_gc_last_success_timestamp_seconds"); v != 0 {
 			t.Fatalf("a dry run set the gauge to %v", v)
 		}
 	})
 
-	t.Run("R-OPS-007 a run that finished sets trove_gc_last_success_timestamp_seconds to its end", func(t *testing.T) {
+	t.Run("R-OPS-007 a run that finished sets quader_gc_last_success_timestamp_seconds to its end", func(t *testing.T) {
 		before := time.Now()
 		if _, err := c.Run(ctx, blob.RunOptions{Mode: blob.GCIncremental}); err != nil {
 			t.Fatal(err)
 		}
-		v, ok := gaugeValue(t, m, "trove_gc_last_success_timestamp_seconds")
+		v, ok := gaugeValue(t, m, "quader_gc_last_success_timestamp_seconds")
 		if !ok || v < float64(before.Unix()) || v > float64(time.Now().Unix())+1 {
 			t.Fatalf("gauge = %v (present %v), want a time between %d and now", v, ok, before.Unix())
 		}

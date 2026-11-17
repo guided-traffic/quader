@@ -33,9 +33,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/jws"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/auth/jws"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // Failure is a refusal of the validation with the reason of R-CI-004's brackets. Detail may name a

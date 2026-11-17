@@ -47,5 +47,5 @@ jobs:
         env:
           LOG_LEVEL: ${{ inputs.logLevel || 'info' }}
           RENOVATE_AUTODISCOVER: 'true'
-          RENOVATE_AUTODISCOVER_FILTER: 'guided-traffic/trove'
+          RENOVATE_AUTODISCOVER_FILTER: 'guided-traffic/quader'
           RENOVATE_REQUIRE_CONFIG: 'required'

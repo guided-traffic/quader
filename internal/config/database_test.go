@@ -33,7 +33,7 @@ func TestDatabaseTLSProblem(t *testing.T) {
 		})
 	}
 	t.Run("R-HA-015 the load refuses require without a CA file naming ssl_mode", func(t *testing.T) {
-		env := minimalEnv("TROVE_STORAGE_S3_BUCKET=blobs", "TROVE_DATABASE_SSL_MODE=require")
+		env := minimalEnv("QUADER_STORAGE_S3_BUCKET=blobs", "QUADER_DATABASE_SSL_MODE=require")
 		_, err := Load(Options{File: "/c.yaml", ReadFile: fakeFS(map[string]string{"/c.yaml": ""}), Environ: env, Command: CommandMigrate})
 		if !hasIssue(err, "database.ssl_mode") {
 			t.Fatalf("got %v", err)
@@ -59,7 +59,7 @@ func TestDatabaseLeaseSessionBound(t *testing.T) {
 	})
 }
 
-// R-IMP-001, Q-IMP-1: `trove admin import` opens no database, so an empty configuration loads for it; another admin command still
+// R-IMP-001, Q-IMP-1: `quader admin import` opens no database, so an empty configuration loads for it; another admin command still
 // needs the database's keys.
 func TestR_IMP_001_TheImportCommandNeedsNoDatabase(t *testing.T) {
 	opts := func(cmd Command) Options {

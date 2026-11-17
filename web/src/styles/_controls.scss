@@ -1,4 +1,4 @@
-// trove's own controls (Q-UI-126): buttons, text fields, selects and checkboxes as plain HTML elements with
+// Quader's own controls (Q-UI-126): buttons, text fields, selects and checkboxes as plain HTML elements with
 // classes. The behaviour of the composite widgets (dialog, menu, tabs) comes
 // from @angular/cdk and @angular/aria; this file is only the look. Every colour and length is a token of
 // _tokens.scss. The design language: flat controls of one height (32 px) and radius, labels above the
@@ -19,15 +19,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--trove-space-1);
-  min-block-size: var(--trove-control-height);
-  padding: 0 var(--trove-space-3);
+  gap: var(--quader-space-1);
+  min-block-size: var(--quader-control-height);
+  padding: 0 var(--quader-space-3);
   border: 1px solid transparent;
-  border-radius: var(--trove-control-radius);
+  border-radius: var(--quader-control-radius);
   background: transparent;
-  color: var(--trove-control-fg);
+  color: var(--quader-control-fg);
   font: inherit;
-  font-size: var(--trove-text-size);
+  font-size: var(--quader-text-size);
   font-weight: 400;
   line-height: 1rem;
   text-decoration: none;
@@ -36,15 +36,15 @@
   transition: background-color 80ms linear;
 
   &:focus-visible {
-    outline: var(--trove-focus-ring);
+    outline: var(--quader-focus-ring);
     outline-offset: 2px;
   }
 
   &:disabled,
   &[aria-disabled='true'] {
     border-color: transparent;
-    background: var(--trove-control-disabled-bg);
-    color: var(--trove-control-disabled-fg);
+    background: var(--quader-control-disabled-bg);
+    color: var(--quader-control-disabled-fg);
     cursor: not-allowed;
   }
 
@@ -54,28 +54,28 @@
 }
 
 .btn-confirm:not(:disabled, [aria-disabled='true']) {
-  background: var(--trove-accent-fill);
-  color: var(--trove-on-accent);
+  background: var(--quader-accent-fill);
+  color: var(--quader-on-accent);
 
   &:hover {
-    background: var(--trove-accent-fill-hover);
+    background: var(--quader-accent-fill-hover);
   }
 }
 
 .btn-default:not(:disabled, [aria-disabled='true']) {
-  border-color: var(--trove-btn-default-border);
-  background: var(--trove-btn-default-bg);
+  border-color: var(--quader-btn-default-border);
+  background: var(--quader-btn-default-bg);
 
   &:hover {
-    border-color: var(--trove-btn-default-border-hover);
-    background: var(--trove-btn-default-bg-hover);
+    border-color: var(--quader-btn-default-border-hover);
+    background: var(--quader-btn-default-bg-hover);
   }
 }
 
 .btn-tertiary:not(:disabled, [aria-disabled='true']),
 .btn-icon:not(:disabled, [aria-disabled='true']) {
   &:hover {
-    background: var(--trove-btn-tertiary-bg-hover);
+    background: var(--quader-btn-tertiary-bg-hover);
   }
 }
 
@@ -85,8 +85,8 @@
 }
 
 .btn-danger:not(:disabled, [aria-disabled='true']) {
-  background: var(--trove-danger-fill);
-  color: var(--trove-on-danger);
+  background: var(--quader-danger-fill);
+  color: var(--quader-on-danger);
 
   &:hover {
     filter: brightness(0.92);
@@ -94,7 +94,7 @@
 }
 
 .btn-icon {
-  inline-size: var(--trove-control-height);
+  inline-size: var(--quader-control-height);
   padding: 0;
 }
 
@@ -105,16 +105,16 @@
 // The reference's small button keeps the text size and only loses height and padding.
 .btn-sm {
   min-block-size: 24px;
-  padding: 0 var(--trove-space-2);
+  padding: 0 var(--quader-space-2);
 }
 
 // ---- Tabs as links ---------------------------------------------------------------------------------------
 //
 //   <nav class="tab-nav" aria-label="…"><a class="tab-link" [attr.aria-current]="… ? 'page' : null">…</a></nav>
-//   <trove-tab-group> (shared/ui/tabs.ts): a tablist of <button class="tab-link" role="tab" aria-selected>
+//   <quader-tab-group> (shared/ui/tabs.ts): a tablist of <button class="tab-link" role="tab" aria-selected>
 //
 // The reference's tab strip (Q-UI-128), for views that are links and for tabs that switch a view in place: the labels in the text colour at 14 px, 16 px above and
-// below; the current one at weight 600 over a 2 px line in --trove-tab-indicator; under the pointer a neutral veil and
+// below; the current one at weight 600 over a 2 px line in --quader-tab-indicator; under the pointer a neutral veil and
 // a line in the strong border colour; the strip on a hairline.
 
 // The strip keeps its tabs on one line and scrolls sideways where they do not fit (UI-A-12): a strip of two rows reads as two
@@ -127,7 +127,7 @@
   // scrollbar where the scrollbars are shown (a desktop with a mouse).
   overflow-y: hidden;
   scrollbar-width: thin;
-  border-block-end: 1px solid var(--trove-border);
+  border-block-end: 1px solid var(--quader-border);
 
   > * {
     flex: none;
@@ -136,13 +136,13 @@
 
 .tab-link {
   position: relative;
-  padding: var(--trove-space-4) var(--trove-space-3);
+  padding: var(--quader-space-4) var(--quader-space-3);
   border: 0;
   background: none;
-  color: var(--trove-control-fg);
+  color: var(--quader-control-fg);
   cursor: pointer;
   font: inherit;
-  font-size: var(--trove-text-size);
+  font-size: var(--quader-text-size);
   line-height: 1rem;
   text-decoration: none;
 
@@ -154,15 +154,15 @@
   }
 
   &:hover {
-    background: var(--trove-btn-tertiary-bg-hover);
+    background: var(--quader-btn-tertiary-bg-hover);
 
     &::before {
-      border-block-end-color: var(--trove-border-strong);
+      border-block-end-color: var(--quader-border-strong);
     }
   }
 
   &:focus-visible {
-    outline: var(--trove-focus-ring);
+    outline: var(--quader-focus-ring);
     outline-offset: -2px;
   }
 
@@ -171,7 +171,7 @@
     font-weight: 600;
 
     &::before {
-      border-block-end-color: var(--trove-tab-indicator);
+      border-block-end-color: var(--quader-tab-indicator);
     }
   }
 }
@@ -181,19 +181,19 @@
 //   <span class="badge">disabled</span>  <span class="badge ok|warn|bad|info"><span class="material-icons">…</span>…</span>
 //
 // The reference's badge (Q-UI-128): a pill 20 px high, 12 px text at weight 400, an optional 12 px icon 4 px before it;
-// neutral grey unless it carries a status class. Every status of trove, an icon and a word in a span with .ok, .warn or
+// neutral grey unless it carries a status class. Every status of Quader, an icon and a word in a span with .ok, .warn or
 // .bad, is drawn as one, so a list shows "Active" the way the reference shows "Admin".
 
 .badge,
 span:is(.ok, .warn, .bad):has(> .material-icons) {
-  --badge-bg: var(--trove-badge-neutral-bg);
-  --badge-fg: var(--trove-badge-neutral-fg);
-  --badge-icon: var(--trove-badge-neutral-icon);
+  --badge-bg: var(--quader-badge-neutral-bg);
+  --badge-fg: var(--quader-badge-neutral-fg);
+  --badge-icon: var(--quader-badge-neutral-icon);
 
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
   min-block-size: 20px;
   padding: 2px 6px;
   border: 0;
@@ -215,35 +215,35 @@ span:is(.ok, .warn, .bad):has(> .material-icons) {
 
 .badge.ok,
 span.ok:has(> .material-icons) {
-  --badge-bg: var(--trove-badge-ok-bg);
-  --badge-fg: var(--trove-badge-ok-fg);
-  --badge-icon: var(--trove-badge-ok-icon);
+  --badge-bg: var(--quader-badge-ok-bg);
+  --badge-fg: var(--quader-badge-ok-fg);
+  --badge-icon: var(--quader-badge-ok-icon);
 
   color: var(--badge-fg);
 }
 
 .badge.warn,
 span.warn:has(> .material-icons) {
-  --badge-bg: var(--trove-badge-warn-bg);
-  --badge-fg: var(--trove-badge-warn-fg);
-  --badge-icon: var(--trove-badge-warn-icon);
+  --badge-bg: var(--quader-badge-warn-bg);
+  --badge-fg: var(--quader-badge-warn-fg);
+  --badge-icon: var(--quader-badge-warn-icon);
 
   color: var(--badge-fg);
 }
 
 .badge.bad,
 span.bad:has(> .material-icons) {
-  --badge-bg: var(--trove-badge-bad-bg);
-  --badge-fg: var(--trove-badge-bad-fg);
-  --badge-icon: var(--trove-badge-bad-icon);
+  --badge-bg: var(--quader-badge-bad-bg);
+  --badge-fg: var(--quader-badge-bad-fg);
+  --badge-icon: var(--quader-badge-bad-icon);
 
   color: var(--badge-fg);
 }
 
 .badge.info {
-  --badge-bg: var(--trove-badge-info-bg);
-  --badge-fg: var(--trove-badge-info-fg);
-  --badge-icon: var(--trove-badge-info-icon);
+  --badge-bg: var(--quader-badge-info-bg);
+  --badge-fg: var(--quader-badge-info-fg);
+  --badge-icon: var(--quader-badge-info-icon);
 }
 
 // ---- Text fields, selects, checkboxes ----------------------------------------------------------------
@@ -258,31 +258,31 @@ span.bad:has(> .material-icons) {
 .select-input,
 .area-input {
   box-sizing: border-box;
-  min-block-size: var(--trove-control-height);
-  padding: var(--trove-space-1) var(--trove-space-3);
-  border: 1px solid var(--trove-control-border);
-  border-radius: var(--trove-control-radius);
-  background: var(--trove-control-bg);
-  color: var(--trove-control-fg);
+  min-block-size: var(--quader-control-height);
+  padding: var(--quader-space-1) var(--quader-space-3);
+  border: 1px solid var(--quader-control-border);
+  border-radius: var(--quader-control-radius);
+  background: var(--quader-control-bg);
+  color: var(--quader-control-fg);
   font: inherit;
   font-size: 0.875rem;
 
   &::placeholder {
-    color: var(--trove-control-placeholder);
+    color: var(--quader-control-placeholder);
   }
 
   &:hover:not(:disabled, :focus-visible) {
-    border-color: var(--trove-control-border-hover);
+    border-color: var(--quader-control-border-hover);
   }
 
   &:focus-visible {
-    outline: var(--trove-focus-ring);
+    outline: var(--quader-focus-ring);
     outline-offset: 1px;
   }
 
   &:disabled {
-    background: var(--trove-control-disabled-bg);
-    color: var(--trove-control-disabled-fg);
+    background: var(--quader-control-disabled-bg);
+    color: var(--quader-control-disabled-fg);
     cursor: not-allowed;
   }
 }
@@ -297,19 +297,19 @@ span.bad:has(> .material-icons) {
 }
 
 .field-w-number {
-  inline-size: var(--trove-field-width-number);
+  inline-size: var(--quader-field-width-number);
 }
 
 .field-w-duration {
-  inline-size: var(--trove-field-width-duration);
+  inline-size: var(--quader-field-width-duration);
 }
 
 .field-w-bytes {
-  inline-size: var(--trove-field-width-bytes);
+  inline-size: var(--quader-field-width-bytes);
 }
 
 .field-w-name {
-  inline-size: var(--trove-field-width-name);
+  inline-size: var(--quader-field-width-name);
 }
 
 .field-w-full {
@@ -322,17 +322,17 @@ span.bad:has(> .material-icons) {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  column-gap: var(--trove-space-2);
+  column-gap: var(--quader-space-2);
 
   > .btn {
-    margin-block-end: var(--trove-space-3);
+    margin-block-end: var(--quader-space-3);
   }
 }
 
 .text-input[aria-invalid='true'],
 .select-input[aria-invalid='true'],
 .area-input[aria-invalid='true'] {
-  border-color: var(--trove-status-bad);
+  border-color: var(--quader-status-bad);
   border-width: 2px;
 }
 
@@ -346,10 +346,10 @@ input[type='radio'] {
   inline-size: 1rem;
   block-size: 1rem;
   margin: 0.125rem 0 0;
-  accent-color: var(--trove-accent-fill);
+  accent-color: var(--quader-accent-fill);
 
   &:focus-visible {
-    outline: var(--trove-focus-ring);
+    outline: var(--quader-focus-ring);
     outline-offset: 2px;
   }
 }
@@ -364,7 +364,7 @@ input[type='radio'] {
 //
 // A closed region is `visibility: hidden`, so its content is out of the tab order and out of the accessibility tree. An
 // element that a screen adds and removes with @if takes animate.enter="collapse-in" animate.leave="collapse-out" and the
-// class collapse-animated, and a native <details> animates by itself. --trove-motion-duration is 0 for prefers-reduced-motion.
+// class collapse-animated, and a native <details> animates by itself. --quader-motion-duration is 0 for prefers-reduced-motion.
 
 [hidden] {
   display: none !important;
@@ -377,8 +377,8 @@ input[type='radio'] {
   grid-template-rows: 0fr;
   visibility: hidden;
   transition:
-    grid-template-rows var(--trove-motion-duration) var(--trove-motion-easing),
-    visibility 0s linear var(--trove-motion-duration);
+    grid-template-rows var(--quader-motion-duration) var(--quader-motion-easing),
+    visibility 0s linear var(--quader-motion-duration);
 
   > * {
     min-block-size: 0;
@@ -389,24 +389,24 @@ input[type='radio'] {
     grid-template-rows: 1fr;
     visibility: visible;
     transition:
-      grid-template-rows var(--trove-motion-duration) var(--trove-motion-easing),
+      grid-template-rows var(--quader-motion-duration) var(--quader-motion-easing),
       visibility 0s;
 
     // Once it is open nothing clips the content, a focus ring included.
     > * {
-      animation: trove-collapse-settle 0s linear var(--trove-motion-duration) forwards;
+      animation: quader-collapse-settle 0s linear var(--quader-motion-duration) forwards;
     }
   }
 }
 
-@keyframes trove-collapse-settle {
+@keyframes quader-collapse-settle {
   to {
     overflow: visible;
   }
 }
 
 .expand-chevron {
-  transition: transform var(--trove-motion-duration) var(--trove-motion-easing);
+  transition: transform var(--quader-motion-duration) var(--quader-motion-easing);
 }
 
 [aria-expanded='true'] > .expand-chevron {
@@ -423,14 +423,14 @@ input[type='radio'] {
 }
 
 .collapse-in {
-  animation: trove-collapse-in var(--trove-motion-duration) var(--trove-motion-easing);
+  animation: quader-collapse-in var(--quader-motion-duration) var(--quader-motion-easing);
 }
 
 .collapse-out {
-  animation: trove-collapse-out var(--trove-motion-duration) var(--trove-motion-easing) forwards;
+  animation: quader-collapse-out var(--quader-motion-duration) var(--quader-motion-easing) forwards;
 }
 
-@keyframes trove-collapse-in {
+@keyframes quader-collapse-in {
   from {
     grid-template-rows: 0fr;
   }
@@ -439,7 +439,7 @@ input[type='radio'] {
   }
 }
 
-@keyframes trove-collapse-out {
+@keyframes quader-collapse-out {
   from {
     grid-template-rows: 1fr;
   }
@@ -449,67 +449,67 @@ input[type='radio'] {
 }
 
 .panel-in {
-  animation: trove-panel-in var(--trove-motion-duration) var(--trove-motion-easing);
+  animation: quader-panel-in var(--quader-motion-duration) var(--quader-motion-easing);
 }
 
 .panel-out {
-  animation: trove-panel-out var(--trove-motion-duration) var(--trove-motion-easing) forwards;
+  animation: quader-panel-out var(--quader-motion-duration) var(--quader-motion-easing) forwards;
 }
 
-@keyframes trove-panel-in {
+@keyframes quader-panel-in {
   from {
     opacity: 0;
-    transform: translateX(var(--trove-space-6));
+    transform: translateX(var(--quader-space-6));
   }
 }
 
-@keyframes trove-panel-out {
+@keyframes quader-panel-out {
   to {
     opacity: 0;
-    transform: translateX(var(--trove-space-6));
+    transform: translateX(var(--quader-space-6));
   }
 }
 
 .dropdown-in {
-  animation: trove-dropdown-in var(--trove-motion-duration) var(--trove-motion-easing);
+  animation: quader-dropdown-in var(--quader-motion-duration) var(--quader-motion-easing);
 }
 
 .dropdown-out {
-  animation: trove-dropdown-out var(--trove-motion-duration) var(--trove-motion-easing) forwards;
+  animation: quader-dropdown-out var(--quader-motion-duration) var(--quader-motion-easing) forwards;
 }
 
-@keyframes trove-dropdown-in {
+@keyframes quader-dropdown-in {
   from {
     opacity: 0;
-    transform: translateY(calc(-1 * var(--trove-space-2)));
+    transform: translateY(calc(-1 * var(--quader-space-2)));
   }
 }
 
-@keyframes trove-dropdown-out {
+@keyframes quader-dropdown-out {
   to {
     opacity: 0;
-    transform: translateY(calc(-1 * var(--trove-space-2)));
+    transform: translateY(calc(-1 * var(--quader-space-2)));
   }
 }
 
 // A sidebar folds to nothing beside the panel, which takes the space as it goes.
 .sidebar-in {
   overflow: hidden;
-  animation: trove-sidebar-in var(--trove-motion-duration) var(--trove-motion-easing);
+  animation: quader-sidebar-in var(--quader-motion-duration) var(--quader-motion-easing);
 }
 
 .sidebar-out {
   overflow: hidden;
-  animation: trove-sidebar-out var(--trove-motion-duration) var(--trove-motion-easing) forwards;
+  animation: quader-sidebar-out var(--quader-motion-duration) var(--quader-motion-easing) forwards;
 }
 
-@keyframes trove-sidebar-in {
+@keyframes quader-sidebar-in {
   from {
     inline-size: 0;
   }
 }
 
-@keyframes trove-sidebar-out {
+@keyframes quader-sidebar-out {
   to {
     inline-size: 0;
   }
@@ -517,9 +517,9 @@ input[type='radio'] {
 
 // A <pre> whose visible lines change: --lines is the number of lines it shows.
 .code-block.folding {
-  max-block-size: calc(var(--lines) * 1lh + 2 * var(--trove-space-3) + 1lh);
+  max-block-size: calc(var(--lines) * 1lh + 2 * var(--quader-space-3) + 1lh);
   overflow: hidden auto;
-  transition: max-block-size var(--trove-motion-duration) var(--trove-motion-easing);
+  transition: max-block-size var(--quader-motion-duration) var(--quader-motion-easing);
 }
 
 details {
@@ -529,8 +529,8 @@ details {
     block-size: 0;
     overflow: clip;
     transition:
-      block-size var(--trove-motion-duration) var(--trove-motion-easing),
-      content-visibility var(--trove-motion-duration) allow-discrete;
+      block-size var(--quader-motion-duration) var(--quader-motion-easing),
+      content-visibility var(--quader-motion-duration) allow-discrete;
   }
 
   &[open]::details-content {
@@ -542,7 +542,7 @@ details {
 .text-input[readonly],
 .area-input[readonly] {
   border-color: transparent;
-  background: var(--trove-control-disabled-bg);
+  background: var(--quader-control-disabled-bg);
 }
 
 // One separator for a line of facts (the repository list's project · format · class, a source line): a middle dot with the same
@@ -550,25 +550,25 @@ details {
 // Where the line wraps, no line starts with a dot: every child carries its dot in front, and the box starts that dot's width
 // further left, where the dot of each line's first child is clipped (the clip leaves room for a focus ring around).
 .dot-separated {
-  --trove-dot: calc(2 * var(--trove-space-2) + 0.3em);
+  --quader-dot: calc(2 * var(--quader-space-2) + 0.3em);
 
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  margin-inline-start: calc(-1 * var(--trove-dot));
-  clip-path: inset(-0.5rem -0.5rem -0.5rem calc(var(--trove-dot) - 0.25rem));
+  margin-inline-start: calc(-1 * var(--quader-dot));
+  clip-path: inset(-0.5rem -0.5rem -0.5rem calc(var(--quader-dot) - 0.25rem));
 
   > *::before {
     content: '·';
     display: inline-block;
-    inline-size: var(--trove-dot);
+    inline-size: var(--quader-dot);
     text-align: center;
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
   }
 }
 
 .dot-before::before {
   content: '·';
-  margin-inline: var(--trove-space-2);
-  color: var(--trove-text-muted);
+  margin-inline: var(--quader-space-2);
+  color: var(--quader-text-muted);
 }

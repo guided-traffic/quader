@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // TestR_BAS_010_AForwardAndACheckAreViaABastion: the subject of a recognized forward and of the caller of a check carries ViaBastion, so

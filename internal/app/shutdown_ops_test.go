@@ -40,7 +40,7 @@ func stalledOpsPeer(t *testing.T, addr string) net.Conn {
 func TestShutdownOpsListener(t *testing.T) {
 	t.Run("R-ARCH-024 R-HA-011 a peer on the ops listener that never reads its responses is reset at the ops bound and does not hold the exit to the end of the grace period", func(t *testing.T) {
 		// drain 0, timeout 1 s: the plan's exit deadline is 1 s + 0.8 s - 0.1 s = 1.7 s after the signal.
-		h := start(t, "web", map[string]string{"TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s", "TROVE_SERVER_SHUTDOWN_TIMEOUT": "1s"})
+		h := start(t, "web", map[string]string{"QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s", "QUADER_SERVER_SHUTDOWN_TIMEOUT": "1s"})
 		h.app.budget = scaledBudget()
 		stalledOpsPeer(t, h.app.OpsAddr().String())
 		time.Sleep(300 * time.Millisecond) // the server keeps writing until the socket buffers are full

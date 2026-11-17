@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // seed writes 33 events: 12 transactions of one to five events, so that several
@@ -91,7 +91,7 @@ func TestR_OPS_017_QueryOrdersNewestFirstAndPagesByKeyset(t *testing.T) {
 	s, w := seed(t, e)
 	ctx := context.Background()
 
-	want := scalar[[]string](t, e.admin, "SELECT array_agg(id::text ORDER BY occurred_at DESC, id DESC) FROM trove.audit_event")
+	want := scalar[[]string](t, e.admin, "SELECT array_agg(id::text ORDER BY occurred_at DESC, id DESC) FROM quader.audit_event")
 	if len(want) != 33 {
 		t.Fatalf("seeded %d events", len(want))
 	}
@@ -102,7 +102,7 @@ func TestR_OPS_017_QueryOrdersNewestFirstAndPagesByKeyset(t *testing.T) {
 			}
 		}
 		// A transaction wrote several events at one instant: the page boundary must cross one.
-		if n := scalar[int](t, e.admin, "SELECT max(c) FROM (SELECT count(*) c FROM trove.audit_event GROUP BY occurred_at) x"); n < 3 {
+		if n := scalar[int](t, e.admin, "SELECT max(c) FROM (SELECT count(*) c FROM quader.audit_event GROUP BY occurred_at) x"); n < 3 {
 			t.Fatalf("no ties in the seed (max %d)", n)
 		}
 	})
@@ -161,7 +161,7 @@ func TestR_OPS_017_QueryFilters(t *testing.T) {
 
 	expect := func(t *testing.T, f audit.Filter, where string) {
 		t.Helper()
-		want := scalar[[]string](t, e.admin, "SELECT coalesce(array_agg(id::text ORDER BY occurred_at DESC, id DESC), '{}') FROM trove.audit_event WHERE "+where)
+		want := scalar[[]string](t, e.admin, "SELECT coalesce(array_agg(id::text ORDER BY occurred_at DESC, id DESC), '{}') FROM quader.audit_event WHERE "+where)
 		if len(want) == 0 {
 			t.Fatalf("the filter %q matches nothing in the seed", where)
 		}
@@ -187,7 +187,7 @@ func TestR_OPS_017_QueryFilters(t *testing.T) {
 	})
 	t.Run("R-OPS-017 actor by name and by id", func(t *testing.T) {
 		expect(t, audit.Filter{Actor: "bob"}, "actor_name = 'bob'")
-		id := scalar[string](t, e.admin, "SELECT actor_id::text FROM trove.audit_event WHERE actor_name = 'cy' LIMIT 1")
+		id := scalar[string](t, e.admin, "SELECT actor_id::text FROM quader.audit_event WHERE actor_name = 'cy' LIMIT 1")
 		expect(t, audit.Filter{Actor: id}, "actor_id = '"+id+"'")
 	})
 	t.Run("R-OPS-017 repository, resource type and id", func(t *testing.T) {
@@ -195,7 +195,7 @@ func TestR_OPS_017_QueryFilters(t *testing.T) {
 		expect(t, audit.Filter{ResourceType: "repository", ResourceID: "repo-1"}, "resource_type = 'repository' AND resource_id = 'repo-1'")
 	})
 	t.Run("R-OPS-017 the time range is inclusive at the start and exclusive at the end", func(t *testing.T) {
-		mid := scalar[time.Time](t, e.admin, "SELECT occurred_at FROM trove.audit_event ORDER BY occurred_at, id OFFSET 15 LIMIT 1")
+		mid := scalar[time.Time](t, e.admin, "SELECT occurred_at FROM quader.audit_event ORDER BY occurred_at, id OFFSET 15 LIMIT 1")
 		expect(t, audit.Filter{From: mid}, "occurred_at >= '"+mid.Format(time.RFC3339Nano)+"'")
 		expect(t, audit.Filter{To: mid}, "occurred_at < '"+mid.Format(time.RFC3339Nano)+"'")
 		res, err := s.Query(context.Background(), audit.Filter{From: mid.Add(24 * time.Hour)}, audit.Page{})
@@ -222,8 +222,8 @@ func TestR_OPS_017_QueryFilters(t *testing.T) {
 func TestR_OPS_017_QueryReadsEventsOfEarlierMonths(t *testing.T) {
 	e := newEnv(t)
 	s := audit.NewStore(e.open())
-	mustExec(t, e.admin, "SELECT trove.audit_create_partitions('2026-01-01Z', '2026-01-31Z')")
-	mustExec(t, e.admin, `INSERT INTO trove.audit_event (id, occurred_at, action, category, outcome, actor_type)
+	mustExec(t, e.admin, "SELECT quader.audit_create_partitions('2026-01-01Z', '2026-01-31Z')")
+	mustExec(t, e.admin, `INSERT INTO quader.audit_event (id, occurred_at, action, category, outcome, actor_type)
 		VALUES ('018c1111-2222-7333-8444-555566667777', '2026-01-15T10:00:00Z', 'probe.thing.created', 'system', 'success', 'user')`)
 	res, err := s.Query(context.Background(), audit.Filter{
 		From: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),

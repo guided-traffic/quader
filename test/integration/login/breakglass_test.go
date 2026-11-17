@@ -15,10 +15,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const (
@@ -78,7 +78,7 @@ func TestR_AUTH_014_BreakGlass(t *testing.T) {
 	})
 
 	t.Run("R-AUTH-020 a service account name with its token as password gets 401 invalid_credentials", func(t *testing.T) {
-		resp, body := e.browser().localLogin("sa:ci-bot", "trv_sat_0000000000000000000000000000000000000000000000000")
+		resp, body := e.browser().localLogin("sa:ci-bot", "qdr_sat_0000000000000000000000000000000000000000000000000")
 		if resp.StatusCode != http.StatusUnauthorized || !strings.Contains(body, "invalid_credentials") {
 			t.Fatalf("%d %s", resp.StatusCode, body)
 		}
@@ -103,11 +103,11 @@ func TestR_AUTH_014_BreakGlass(t *testing.T) {
 		}
 	})
 
-	bin := buildTrove(t)
+	bin := buildQuader(t)
 	cfgEnv := adminEnvFor(t, e)
 
-	t.Run("R-AUTH-015 trove admin break-glass status shows the lock and the live sessions", func(t *testing.T) {
-		code, out, errOut := runTrove(t, bin, cfgEnv, "admin", "break-glass", "status")
+	t.Run("R-AUTH-015 quader admin break-glass status shows the lock and the live sessions", func(t *testing.T) {
+		code, out, errOut := runQuader(t, bin, cfgEnv, "admin", "break-glass", "status")
 		var st struct {
 			Enabled      bool    `json:"enabled"`
 			LockedUntil  *string `json:"lockedUntil"`
@@ -118,8 +118,8 @@ func TestR_AUTH_014_BreakGlass(t *testing.T) {
 		}
 	})
 
-	t.Run("R-AUTH-015 trove admin break-glass unlock clears the lock at once on every replica", func(t *testing.T) {
-		if code, out, errOut := runTrove(t, bin, cfgEnv, "admin", "break-glass", "unlock"); code != 0 || !strings.Contains(out, "unlocked") {
+	t.Run("R-AUTH-015 quader admin break-glass unlock clears the lock at once on every replica", func(t *testing.T) {
+		if code, out, errOut := runQuader(t, bin, cfgEnv, "admin", "break-glass", "unlock"); code != 0 || !strings.Contains(out, "unlocked") {
 			t.Fatalf("exit %d\n%s\n%s", code, out, errOut)
 		}
 		for range 3 {
@@ -134,7 +134,7 @@ func TestR_AUTH_014_BreakGlass(t *testing.T) {
 		if resp, _ := b.localLogin("admin", bgPassword); resp.StatusCode != http.StatusNoContent {
 			t.Fatal("login")
 		}
-		if code, out, errOut := runTrove(t, bin, cfgEnv, "admin", "break-glass", "end-sessions"); code != 0 {
+		if code, out, errOut := runQuader(t, bin, cfgEnv, "admin", "break-glass", "end-sessions"); code != 0 {
 			t.Fatalf("exit %d\n%s\n%s", code, out, errOut)
 		}
 		if !eventually(t, 2*time.Second, func() bool {
@@ -157,7 +157,7 @@ func TestR_AUTH_014_BreakGlass(t *testing.T) {
 	t.Run("R-AUTH-015 sessions end --all ends every session in batches", func(t *testing.T) {
 		b := e.browser()
 		b.mustLogin("corp")
-		if code, out, errOut := runTrove(t, bin, cfgEnv, "admin", "sessions", "end", "--all"); code != 0 || !strings.Contains(out, "sessions ended") {
+		if code, out, errOut := runQuader(t, bin, cfgEnv, "admin", "sessions", "end", "--all"); code != 0 || !strings.Contains(out, "sessions ended") {
 			t.Fatalf("exit %d\n%s\n%s", code, out, errOut)
 		}
 		if !eventually(t, 2*time.Second, func() bool { code, _ := b.whoami(); return code == http.StatusUnauthorized }) {
@@ -260,11 +260,11 @@ func TestR_AUTH_014_DisabledAccount(t *testing.T) {
 	})
 }
 
-// buildTrove builds the binary once per test that needs it.
-func buildTrove(t *testing.T) string {
+// buildQuader builds the binary once per test that needs it.
+func buildQuader(t *testing.T) string {
 	t.Helper()
-	bin := filepath.Join(t.TempDir(), "trove")
-	cmd := exec.Command("go", "build", "-o", bin, "github.com/guided-traffic/trove/cmd/trove")
+	bin := filepath.Join(t.TempDir(), "quader")
+	cmd := exec.Command("go", "build", "-o", bin, "github.com/guided-traffic/quader/cmd/quader")
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("go build: %v\n%s", err, out)
@@ -272,25 +272,25 @@ func buildTrove(t *testing.T) string {
 	return bin
 }
 
-// adminEnvFor is the environment of a trove admin command against the test's
+// adminEnvFor is the environment of a quader admin command against the test's
 // database: the pod's configuration, here as variables.
 func adminEnvFor(t *testing.T, e *env) []string {
 	t.Helper()
 	return []string{
-		"TROVE_DATABASE_HOST=" + e.cfg.Host, "TROVE_DATABASE_PORT=" + strconv.Itoa(e.cfg.Port), "TROVE_DATABASE_NAME=" + e.cfg.Name,
-		"TROVE_DATABASE_USERNAME_FILE=" + e.cfg.UsernameFile, "TROVE_DATABASE_PASSWORD_FILE=" + e.cfg.PasswordFile,
-		"TROVE_DATABASE_SSL_MODE=verify-full", "TROVE_DATABASE_SSL_ROOT_CERT_FILE=" + testenv.CAFile(t),
-		"TROVE_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true", "TROVE_LOG_LEVEL=warn",
+		"QUADER_DATABASE_HOST=" + e.cfg.Host, "QUADER_DATABASE_PORT=" + strconv.Itoa(e.cfg.Port), "QUADER_DATABASE_NAME=" + e.cfg.Name,
+		"QUADER_DATABASE_USERNAME_FILE=" + e.cfg.UsernameFile, "QUADER_DATABASE_PASSWORD_FILE=" + e.cfg.PasswordFile,
+		"QUADER_DATABASE_SSL_MODE=verify-full", "QUADER_DATABASE_SSL_ROOT_CERT_FILE=" + testenv.CAFile(t),
+		"QUADER_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true", "QUADER_LOG_LEVEL=warn",
 	}
 }
 
-func runTrove(t *testing.T, bin string, env []string, args ...string) (code int, stdout, stderr string) {
+func runQuader(t *testing.T, bin string, env []string, args ...string) (code int, stdout, stderr string) {
 	t.Helper()
-	return runTroveStdin(t, bin, env, "", args...)
+	return runQuaderStdin(t, bin, env, "", args...)
 }
 
-// runTroveStdin is runTrove with standard input.
-func runTroveStdin(t *testing.T, bin string, env []string, stdin string, args ...string) (code int, stdout, stderr string) {
+// runQuaderStdin is runQuader with standard input.
+func runQuaderStdin(t *testing.T, bin string, env []string, stdin string, args ...string) (code int, stdout, stderr string) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()

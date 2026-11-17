@@ -9,9 +9,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/packages"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/packages"
 )
 
 // recordedSignals is the formathost.Signaler of the fixture: like cluster.Signals it

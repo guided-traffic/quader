@@ -11,14 +11,14 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // End reasons of a session row (ui_session.end_reason).
@@ -61,7 +61,7 @@ type Options struct {
 	Audit audit.Recorder
 	Log   *slog.Logger
 	// Metrics registers the session families; AuthMetrics counts the cache
-	// bypasses in the family the identity area owns (trove_auth_cache_bypassed_total).
+	// bypasses in the family the identity area owns (quader_auth_cache_bypassed_total).
 	Metrics     prometheus.Registerer
 	AuthMetrics *principal.Metrics
 

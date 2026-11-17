@@ -11,22 +11,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // The form of a registry token (R-OCI-005, ADR-163):
 //
 //	payload = "1" ":" <key id> ":" <claims as JSON>
-//	signed  = "trv_rgt_" + base64url(payload)                 // RFC 4648 §5, no padding
+//	signed  = "qdr_rgt_" + base64url(payload)                 // RFC 4648 §5, no padding
 //	token   = signed + "." + base64url(HMAC-SHA-256(key, signed))
 //
 // The key ID stands before the claims, so the verifier finds the key and checks the MAC before it parses anything the
 // client sent; the MAC covers the exact characters the client presents, so no canonical form of the claims is needed.
 const (
 	// Prefix starts every registry token. It is not one of the prefixes of R-AUTH-022, so the scanner pattern there does not
-	// match a registry token and the syntax step of a trove token refuses it.
-	Prefix = "trv_rgt_" //nolint:gosec // G101: a prefix, not a credential
+	// match a registry token and the syntax step of a quader token refuses it.
+	Prefix = "qdr_rgt_" //nolint:gosec // G101: a prefix, not a credential
 	// MaxLength bounds a registry token; a longer value is refused before anything is decoded.
 	MaxLength = 4096
 	// MaxEntries bounds the entries of a grant and the scope entries a token request may carry (R-OCI-004).
@@ -37,7 +37,7 @@ const (
 	// by less, and a token issued further in the future was not issued by a replica.
 	MaxClockSkew = time.Minute
 	// KeyInfo is the HKDF info of the MAC keys (R-ARCH-021).
-	KeyInfo = "trove registry token v1"
+	KeyInfo = "quader registry token v1"
 
 	payloadVersion = "1"
 	keySize        = sha256.Size
@@ -62,10 +62,10 @@ var (
 // Is reports whether raw has the prefix of a registry token. It decides nothing about validity.
 func Is(raw string) bool { return strings.HasPrefix(raw, Prefix) }
 
-// Binding names the trove token a registry token was issued for (R-OCI-005): its ID for the request log and the audit
+// Binding names the quader token a registry token was issued for (R-OCI-005): its ID for the request log and the audit
 // actor, its type for the endpoint's token types, and the SHA-256 of its secret, the key of the token cache of R-AUTH-023.
 // The hash allows no guess of the secret (256 bits of entropy, R-AUTH-023); it lets the verifier ask the cache without a
-// second index, and a holder of the key ring cannot mint a token for a live trove token without having read it (H-579).
+// second index, and a holder of the key ring cannot mint a token for a live quader token without having read it (H-579).
 type Binding struct {
 	TokenID      string
 	TokenType    string
@@ -110,7 +110,7 @@ type wireEntry struct {
 	Actions Actions `json:"a"`
 }
 
-// bindable reports whether a registry token may be bound to a trove token of the type: the types of R-AUTH-022 that
+// bindable reports whether a registry token may be bound to a quader token of the type: the types of R-AUTH-022 that
 // authenticate a request on the client listener. A Bastion token never does (R-BAS-005).
 func bindable(typ string) bool { return typ == "pat" || typ == "sat" || typ == "cit" }
 
@@ -180,7 +180,7 @@ func (s *Signer) Issue(c Claims) (string, error) {
 // Verify checks a presented registry token without any lookup (R-OCI-005): the length, the form, the named key, the MAC,
 // then the claims, the expiry at now, the issue time (at most [MaxClockSkew] ahead of now), the span against the configured
 // lifetime and the endpoint the request arrived on. What it returns is authentic; the state of
-// the bound trove token is the stage's to check.
+// the bound quader token is the stage's to check.
 func (s *Signer) Verify(raw, endpoint string, now time.Time) (Claims, error) {
 	if len(raw) > MaxLength || !Is(raw) {
 		return Claims{}, ErrMalformed
@@ -284,7 +284,7 @@ func (c Claims) check() error {
 		}
 	} else if c.PrincipalID == "" || c.PrincipalKind == "" || c.Binding.TokenID == "" || !bindable(c.Binding.TokenType) ||
 		c.Binding.SecretSHA256 == [32]byte{} {
-		return fmt.Errorf("%w: a token of a principal needs the principal and its trove token", ErrMalformed)
+		return fmt.Errorf("%w: a token of a principal needs the principal and its Quader token", ErrMalformed)
 	}
 	for _, e := range c.Grant.Entries {
 		if !e.Repo.Valid() || e.Name == "" || e.Actions == 0 || e.Actions&^All != 0 {

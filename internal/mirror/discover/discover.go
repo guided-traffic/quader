@@ -211,7 +211,7 @@ type RateLimited interface {
 	// RetryAfter is the wait the upstream asked for, and whether it named one (Retry-After or a reset header).
 	RetryAfter() (time.Duration, bool)
 	// RateLimitReason is one of too_many_requests, slow_down, retry_after and quota_header
-	// (the reason label of trove_mirror_rate_limited_total).
+	// (the reason label of quader_mirror_rate_limited_total).
 	RateLimitReason() string
 }
 

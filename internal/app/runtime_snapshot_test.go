@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability/health"
 )
 
 // TestR_OPS_003_HeartbeatCarriesCheckDurations: the heartbeat stores how long each check's last run took (Q-OPS-175),
@@ -48,7 +48,7 @@ func TestR_OPS_003_HeartbeatCarriesCheckDurations(t *testing.T) {
 		h := health.New(config.Health{CheckTimeout: time.Second, FailureThreshold: 1, SuccessThreshold: 1})
 		h.AddReadiness("database", func(context.Context) error { time.Sleep(2 * time.Millisecond); return nil }, false)
 		h.Refresh(t.Context())
-		a := &App{health: h, id: Identity{Instance: "trove-api-1", UID: "u-1", Role: config.RoleAPI}, startedAt: time.Now()}
+		a := &App{health: h, id: Identity{Instance: "quader-api-1", UID: "u-1", Role: config.RoleAPI}, startedAt: time.Now()}
 		reps, err := localReplicas{a}.Replicas(t.Context())
 		if err != nil || len(reps) != 1 {
 			t.Fatalf("%v %v", reps, err)
@@ -104,7 +104,7 @@ func TestR_OPS_003_RuntimeSnapshotReachesTheAPI(t *testing.T) {
 // runtime snapshot's window, the probes and scrapes of the ops listener do not.
 func TestR_OPS_003_OnlyTheClientListenerCountsIntoTheWindow(t *testing.T) {
 	cfg := &config.Config{}
-	tele, err := newTelemetry(cfg, Identity{Instance: "trove-api-1", Role: config.RoleAPI}, io.Discard)
+	tele, err := newTelemetry(cfg, Identity{Instance: "quader-api-1", Role: config.RoleAPI}, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}

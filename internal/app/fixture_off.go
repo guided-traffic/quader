@@ -2,7 +2,7 @@
 
 package app
 
-import "github.com/guided-traffic/trove/internal/httpserver"
+import "github.com/guided-traffic/quader/internal/httpserver"
 
 // fixtureBuild is false in every release build.
 const fixtureBuild = false

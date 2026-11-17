@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
 )
 
 // TestFillAliasesAndMediaType: a metadata document is stored with the media type the upstream sent, and a path the format names as

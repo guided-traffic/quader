@@ -38,7 +38,7 @@ const PRESETS: Readonly<Record<string, number>> = {
  * zone live in the query parameters (R-UI-003).
  */
 @Component({
-  selector: 'trove-audit-log',
+  selector: 'quader-audit-log',
   imports: [
     PageHeader,
     DatePipe,

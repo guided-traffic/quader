@@ -1,60 +1,60 @@
 # Configuration
 
-This page explains where trove reads its configuration from, how configuration keys map to environment variables and Helm values, how the configuration is validated at start-up, which changes need a restart and which apply while trove runs, and which settings you change in the UI instead of the file. It closes with the important keys of each area and their defaults.
+This page explains where Quader reads its configuration from, how configuration keys map to environment variables and Helm values, how the configuration is validated at start-up, which changes need a restart and which apply while Quader runs, and which settings you change in the UI instead of the file. It closes with the important keys of each area and their defaults.
 
 ## Where configuration comes from
 
-trove reads one YAML file, `trove.yaml`, and then the environment. Every key has a built-in default unless it says otherwise, so a file only needs the keys you change.
+Quader reads one YAML file, `quader.yaml`, and then the environment. Every key has a built-in default unless it says otherwise, so a file only needs the keys you change.
 
 | Source | Precedence | Notes |
 |---|---|---|
 | Built-in defaults | lowest | The defaults below and in the full reference |
-| The configuration file | overrides the defaults | `--config <file>`, else the variable `TROVE_CONFIG_FILE`, else `/etc/trove/trove.yaml`. A file you name must exist; a missing default file is not an error. |
-| Environment variables | override the file | `TROVE_<KEY PATH>`, see below |
+| The configuration file | overrides the defaults | `--config <file>`, else the variable `QUADER_CONFIG_FILE`, else `/etc/quader/quader.yaml`. A file you name must exist; a missing default file is not an error. |
+| Environment variables | override the file | `QUADER_<KEY PATH>`, see below |
 | Command-line flags | highest | `--role` sets `process.role`, `--log-level` sets `log.level` |
 
-With the Helm chart, the `config` value is rendered into the ConfigMap `<fullname>-config` and mounted at `/etc/trove/trove.yaml` in every pod and in the migration Job. Environment overrides go into `extraEnv` (or `web.extraEnv`, `worker.extraEnv`, `migrations.extraEnv`). The chart manages some keys itself and fails the render when you set them inside `config`: the file paths of every mounted Secret, `storage.spool.dir`, the encryption key list, `server.tls` and `server.ops_tls` while `tls.enabled` is on (from the `tls` values) and `server.endpoints` (from the `endpoints` values). It also sets a few variables from the pod, such as the memory limit (`TROVE_RUNTIME_MEMORY_LIMIT_BYTES`) and the termination grace period.
+With the Helm chart, the `config` value is rendered into the ConfigMap `<fullname>-config` and mounted at `/etc/quader/quader.yaml` in every pod and in the migration Job. Environment overrides go into `extraEnv` (or `web.extraEnv`, `worker.extraEnv`, `migrations.extraEnv`). The chart manages some keys itself and fails the render when you set them inside `config`: the file paths of every mounted Secret, `storage.spool.dir`, the encryption key list, `server.tls` and `server.ops_tls` while `tls.enabled` is on (from the `tls` values) and `server.endpoints` (from the `endpoints` values). It also sets a few variables from the pod, such as the memory limit (`QUADER_RUNTIME_MEMORY_LIMIT_BYTES`) and the termination grace period.
 
 Some settings are not configuration at all but data in PostgreSQL, changed through the UI or the management API: repositories, users, groups, service accounts, tokens, permission policies and role bindings, the exposure rules of endpoints, and the runtime authentication settings described [below](configuration.md#settings-in-the-ui-versus-the-configuration-file).
 
 ## Environment variables
 
-The variable of a key is `TROVE_` followed by the key path in upper case, with dots replaced by underscores.
+The variable of a key is `QUADER_` followed by the key path in upper case, with dots replaced by underscores.
 
 | Key | Variable |
 |---|---|
-| `log.level` | `TROVE_LOG_LEVEL` |
-| `database.ssl_mode` | `TROVE_DATABASE_SSL_MODE` |
-| `auth.break_glass.password_file` | `TROVE_AUTH_BREAK_GLASS_PASSWORD_FILE` |
-| `server.trusted_proxies` (a list) | `TROVE_SERVER_TRUSTED_PROXIES='["10.244.3.17"]'` |
-| `log.levels` (a map) | `TROVE_LOG_LEVELS='{"proxy":"debug"}'` |
+| `log.level` | `QUADER_LOG_LEVEL` |
+| `database.ssl_mode` | `QUADER_DATABASE_SSL_MODE` |
+| `auth.break_glass.password_file` | `QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE` |
+| `server.trusted_proxies` (a list) | `QUADER_SERVER_TRUSTED_PROXIES='["10.244.3.17"]'` |
+| `log.levels` (a map) | `QUADER_LOG_LEVELS='{"proxy":"debug"}'` |
 
-A list or a map is one key, and its variable takes a JSON value. A `TROVE_` variable that is not a key stops the start with an error that suggests the closest valid variable. A few names are reserved and are not keys: `TROVE_CONFIG_FILE`, `TROVE_POD_NAME`, `TROVE_POD_NAMESPACE`, `TROVE_NODE_NAME` and `TROVE_POOL_NAME`, which the chart sets.
+A list or a map is one key, and its variable takes a JSON value. A `QUADER_` variable that is not a key stops the start with an error that suggests the closest valid variable. A few names are reserved and are not keys: `QUADER_CONFIG_FILE`, `QUADER_POD_NAME`, `QUADER_POD_NAMESPACE`, `QUADER_NODE_NAME` and `QUADER_POOL_NAME`, which the chart sets.
 
-Keys that hold a secret end in `_file` and take a file path only, never the secret itself. trove reads the file where the key says, usually again on every use. With the chart you never set these paths: you name an existing Secret under `secrets` and the chart mounts it and fills in the path.
+Keys that hold a secret end in `_file` and take a file path only, never the secret itself. Quader reads the file where the key says, usually again on every use. With the chart you never set these paths: you name an existing Secret under `secrets` and the chart mounts it and fills in the path.
 
 ## Validation at start-up
 
-Every command (`serve`, `migrate`, `admin`) validates the file and the environment before it does anything else, and reports every problem in one pass: an unknown key (with its line and the closest valid key), an unknown `TROVE_` variable, a value of the wrong type or outside its range, and rules across keys, such as a TLS client certificate without its key. `serve` additionally requires a role, the Valkey addresses, the bucket and the encryption keys. A replica with an invalid configuration does not start.
+Every command (`serve`, `migrate`, `admin`) validates the file and the environment before it does anything else, and reports every problem in one pass: an unknown key (with its line and the closest valid key), an unknown `QUADER_` variable, a value of the wrong type or outside its range, and rules across keys, such as a TLS client certificate without its key. `serve` additionally requires a role, the Valkey addresses, the bucket and the encryption keys. A replica with an invalid configuration does not start.
 
 Check a configuration without starting anything:
 
 ```shell
-trove admin config validate --config trove.yaml                    # table: key, value, source, variable
-trove admin config validate --config trove.yaml --format json      # the same as JSON
+quader admin config validate --config quader.yaml                    # table: key, value, source, variable
+quader admin config validate --config quader.yaml --format json      # the same as JSON
 ```
 
 The output shows every key with its effective value and its source (`default`, `file`, `env`, `flag:<name>` or `file:<path>`); secrets are redacted. One rule is checked only where the sign-in is built and therefore not by this command: `server.base_url` must suit the configured OIDC providers.
 
-With the chart, `values.schema.json` checks the chart's own values during `helm install` and `helm upgrade`, but the `config` subtree is checked by trove itself. With the default `migrations.mode: hook`, the migration Job loads the same file first, so a misspelled key in `config` stops `helm install` or `helm upgrade` at the Job, before any Deployment changes. Read the Job's log to find the key.
+With the chart, `values.schema.json` checks the chart's own values during `helm install` and `helm upgrade`, but the `config` subtree is checked by Quader itself. With the default `migrations.mode: hook`, the migration Job loads the same file first, so a misspelled key in `config` stops `helm install` or `helm upgrade` at the Job, before any Deployment changes. Read the Job's log to find the key.
 
 ## What needs a restart and what applies live
 
-trove reads the configuration file and the environment once, at start. A change to either needs new pods; the chart rolls the pods by itself when the rendered `trove.yaml` or the list of encryption key names changes. Files that hold credentials and certificates are read again while trove runs, so rotating a Secret needs no restart.
+Quader reads the configuration file and the environment once, at start. A change to either needs new pods; the chart rolls the pods by itself when the rendered `quader.yaml` or the list of encryption key names changes. Files that hold credentials and certificates are read again while Quader runs, so rotating a Secret needs no restart.
 
 | What changes | When it takes effect |
 |---|---|
-| Any key in `trove.yaml` or in the environment | At the next start of the process; the chart rolls the pods |
+| Any key in `quader.yaml` or in the environment | At the next start of the process; the chart rolls the pods |
 | The encryption keys (`secrets.encryption_key_files`, `secrets.active_key_id`) | At the next start; the keys are read once. Adding or removing a key name in `secrets.encryption.keys` rolls the pods |
 | Listener certificates (`server.tls`, `server.ops_tls`, endpoint certificates) | Live: polled every `reload_interval` (10 s by default) once the kubelet has updated the mounted Secret |
 | PostgreSQL credentials and TLS files | Live: read again for every new connection |
@@ -84,20 +84,20 @@ Endpoints are split the same way: an endpoint's listener, hosts, certificates an
 
 ## Important keys by area
 
-The tables below list the keys an installation most often sets. Every key with its default, including the Helm values, is in the [full reference](https://github.com/guided-traffic/trove/blob/main/README.md#-full-reference). Durations take units such as `500ms`, `30s`, `1h`; sizes take `KiB`, `MiB`, `GiB` or a plain number of bytes.
+The tables below list the keys an installation most often sets. Every key with its default, including the Helm values, is in the [full reference](https://github.com/guided-traffic/quader/blob/main/README.md#-full-reference). Durations take units such as `500ms`, `30s`, `1h`; sizes take `KiB`, `MiB`, `GiB` or a plain number of bytes.
 
 <details>
 <summary>Server, base URL and client address</summary>
 
 | Key | Default | Meaning |
 |---|---|---|
-| `server.base_url` | empty | The HTTPS origin users and clients reach, such as `https://trove.example.com`. Empty is for development only and logs a warning every hour; the chart requires it. |
+| `server.base_url` | empty | The HTTPS origin users and clients reach, such as `https://quader.example.com`. Empty is for development only and logs a warning every hour; the chart requires it. |
 | `server.additional_base_urls` | `[]` | Further origins a trusted proxy may select through the forwarded host and scheme |
 | `server.trusted_proxies` | `[]` | Addresses or CIDRs of the edge that sets the forwarding header. Without them, the TCP peer is the client. A `/0` prefix is refused. |
 | `server.forwarded_header` | `x-forwarded-for` | The one header family the edge rewrites: `x-forwarded-for` or `forwarded`. The other is never read. |
 | `server.listen`, `server.ops_listen` | `:8080`, `:8081` | The client and ops listeners |
 | `server.max_in_flight` | `4096` | Concurrent requests per replica; beyond it, and beyond what the memory limit admits, a request gets `503` |
-| `server.replica_header` | `authenticated` | When responses carry `X-Trove-Replica`: `authenticated`, `always` or `never` |
+| `server.replica_header` | `authenticated` | When responses carry `X-Quader-Replica`: `authenticated`, `always` or `never` |
 | `health.shutdown_drain_delay` | `5s` | How long a stopping `api` or `packages` replica keeps serving; must exceed the time your ingress controller needs to drop an endpoint |
 
 </details>
@@ -110,7 +110,7 @@ The tables below list the keys an installation most often sets. Every key with i
 | `database.host` | none, required | Host name of the PostgreSQL primary or its pooler; a comma-separated list is allowed |
 | `database.port` | `5432` | Port |
 | `database.name` | none, required | Database name |
-| `database.schema` | `trove` | Schema trove creates and uses |
+| `database.schema` | `quader` | Schema Quader creates and uses |
 | `database.session_host` | empty (`host`) | A direct host for the connections that hold session locks (the migration and the job leases), when `host` is a pooler |
 | `database.pooler.mode` | `none` | `none`, `session` or `transaction`: the kind of pooler `host` points at |
 | `database.pool.health_check_period` | `30s` | How often idle connections past `max_conn_lifetime` are closed; it adds to the time a connection needs to leave a draining pooler instance |
@@ -133,7 +133,7 @@ The tables below list the keys an installation most often sets. Every key with i
 | `valkey.address` | empty | The server in standalone mode |
 | `valkey.tls.mode` | `verify-full` | `verify-full`, `verify-ca` (needs `ca_file`) or `disable` (needs `allow_insecure`) |
 | `valkey.tls.ca_file` | empty (system roots) | CA of the servers; the chart sets it from `secrets.valkeyCA` |
-| `valkey.key_prefix` | `trove:` | Prefix of every key trove writes; must end in `:` |
+| `valkey.key_prefix` | `quader:` | Prefix of every key Quader writes; must end in `:` |
 | `valkey.command_timeout` | `500ms` | Time limit of one command |
 
 </details>
@@ -146,7 +146,7 @@ The tables below list the keys an installation most often sets. Every key with i
 | `storage.s3.bucket` | empty, required to serve | Bucket of the blobs; with the chart it may come from an S3 provisioner's Secret (`secrets.s3.bucketKey`) |
 | `storage.s3.region` | empty | Region; required when the environment names none |
 | `storage.s3.endpoint` | empty | Endpoint of an S3-compatible store; empty uses AWS endpoint resolution, a host without a scheme means `https://` |
-| `storage.s3.prefix` | `trove` | Key prefix inside the bucket |
+| `storage.s3.prefix` | `quader` | Key prefix inside the bucket |
 | `storage.s3.force_path_style` | `false` | `true` for SeaweedFS, MinIO and Ceph RGW |
 | `storage.s3.credentials.source` | `default` | `default` (the SDK's chain, which can reach the node's metadata service), `static` (key files) or `webIdentity` |
 | `storage.s3.sse.mode` | `none` | Server-side encryption: `none`, `s3` or `kms` |
@@ -244,7 +244,7 @@ The scanning of stored packages against public advisory data is being built in t
 | `ui.readme.max_source_bytes` | `512KiB` | Largest README that is rendered; a longer one is cut |
 | `ui.readme.external_image_origins` | `[]` | Exact `https` origins whose images a README may show; every other external image is shown as a link |
 | `ui.deploy.max_upload_bytes` | `100MiB` | Largest file the UI uploads; a larger upload through the UI is answered `413` before its body is read, `0` is unlimited. Package clients and `curl` with a token upload through `/files/` and are bound by `storage.upload.max_size` only |
-| `ui.client_setup.token_env_var` | `TROVE_TOKEN` | The environment variable the client setup snippets read a token from |
+| `ui.client_setup.token_env_var` | `QUADER_TOKEN` | The environment variable the client setup snippets read a token from |
 | `ui.client_setup.token_ttl` | `720h` | Lifetime of a token the setup dialog creates; at most the personal-token maximum |
 
 </details>
@@ -301,7 +301,7 @@ Each class allows `requests_per_second` on average and `burst` at once. The limi
 
 With `database.pooler.mode: transaction` the installation has to provide what the chart cannot (the full rules are R-HA-058 and R-HA-059 rule 5 of the specification):
 
-- Role defaults for the login of the application: `ALTER ROLE <login> IN DATABASE <database> SET statement_timeout = '30s'`, and the same for `lock_timeout` (`5s`), `idle_in_transaction_session_timeout` (`60s`) and `search_path` (the schema). trove refuses to start, naming the login and the setting, when one differs from its configuration.
+- Role defaults for the login of the application: `ALTER ROLE <login> IN DATABASE <database> SET statement_timeout = '30s'`, and the same for `lock_timeout` (`5s`), `idle_in_transaction_session_timeout` (`60s`) and `search_path` (the schema). Quader refuses to start, naming the login and the setting, when one differs from its configuration.
 - `database.session_host` (direct) and `database.control_host` (a second pooler with a pool of its own). The pooler's certificate must name its Services when `ssl_mode` is `verify-full`.
 - At least two instances of each pooler on different nodes and a PodDisruptionBudget.
-- A stop that waits for trove's connections: a `preStop` sleep on the pooler container of at least `max_conn_lifetime` + `max_conn_lifetime_jitter` + `health_check_period` (390 s with the recommended `5m`, `1m` and the default `30s`), and a termination grace period longer than the sleep. The CloudNativePG pooler does not wait for clients on `SIGTERM`; without the sleep a node drain drops the connections of the instance and some requests fail.
+- A stop that waits for Quader's connections: a `preStop` sleep on the pooler container of at least `max_conn_lifetime` + `max_conn_lifetime_jitter` + `health_check_period` (390 s with the recommended `5m`, `1m` and the default `30s`), and a termination grace period longer than the sleep. The CloudNativePG pooler does not wait for clients on `SIGTERM`; without the sleep a node drain drops the connections of the instance and some requests fail.

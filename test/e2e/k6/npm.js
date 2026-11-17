@@ -20,7 +20,7 @@ import exec from 'k6/execution';
 import crypto from 'k6/crypto';
 import { SharedArray } from 'k6/data';
 
-const TARGET = __ENV.TARGET || 'http://trove-control-plane:30080';
+const TARGET = __ENV.TARGET || 'http://quader-control-plane:30080';
 const HOST = __ENV.HOST || 'localhost';
 // one token per line; an iteration takes them in turn (npm_load_test.go haK6Tokens)
 const TOKENS = open('/out/token').split('\n').map((s) => s.trim()).filter((s) => s);
@@ -48,7 +48,7 @@ export const options = {
 const etags = {};
 
 function line(t0, res, kind, note, path) {
-  const replica = res.status === 0 ? `${res.error_code || 0}:${res.error || 'error'}` : (res.headers['X-Trove-Replica'] || '-');
+  const replica = res.status === 0 ? `${res.error_code || 0}:${res.error || 'error'}` : (res.headers['X-Quader-Replica'] || '-');
   console.log(`N ${t0} ${res.status} ${String(replica).replace(/\s+/g, '_')} ${Date.now() - t0} ${kind} ${note} ${path}`);
 }
 

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // ReservedOCIPrefix is the path the OCI distribution API owns (R-HA-041,

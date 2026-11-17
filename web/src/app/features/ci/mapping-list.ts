@@ -21,7 +21,7 @@ import { ErrorNotice } from '../../shared/error-notice';
  * mappings (Q-CI-26) of one issuer or of all, and every link and write goes to the project routes.
  */
 @Component({
-  selector: 'trove-ci-mapping-list',
+  selector: 'quader-ci-mapping-list',
   imports: [RouterLink, ErrorNotice, DataTable, Needs, ProjectNeeds],
   template: `
     <div class="toolbar">
@@ -35,19 +35,19 @@ import { ErrorNotice } from '../../shared/error-notice';
       }
     </div>
     @if (project(); as key) {
-      <trove-project-needs id="needs-ci-mappings" [state]="state()" capability="ci:write" />
+      <quader-project-needs id="needs-ci-mappings" [state]="state()" capability="ci:write" />
     } @else {
-      <trove-needs id="needs-ci-mappings" capability="ci:write" />
+      <quader-needs id="needs-ci-mappings" capability="ci:write" />
     }
     <p class="muted" i18n="@@ci.mappings.order">
       Evaluated in this order. In a tier the first mapping that matches wins and later ones are not looked at; the matches of the tiers are combined.
     </p>
 
     @if (error(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     }
     @if (error()?.status !== 501) {
-      <trove-data-table
+      <quader-data-table
         [caption]="caption"
         [columns]="columns()"
         [loaded]="loaded()"
@@ -89,7 +89,7 @@ import { ErrorNotice } from '../../shared/error-notice';
             </td>
           </tr>
         }
-      </trove-data-table>
+      </quader-data-table>
     }
   `,
   styleUrl: '../../shared/access/access.scss',

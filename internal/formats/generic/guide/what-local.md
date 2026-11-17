@@ -1,4 +1,4 @@
-A generic local repository{{if .Repository}}, `{{.Repository}}`,{{end}} stores files of any kind at paths you choose: installers, archives, documents, build outputs, content of formats trove has no repository type for. trove does not look into a file. It keeps the bytes and the media type they were uploaded with, computes their digests, and serves them back as stored. There are no package names, versions or metadata documents, and no file is refused for what it contains.
+A generic local repository{{if .Repository}}, `{{.Repository}}`,{{end}} stores files of any kind at paths you choose: installers, archives, documents, build outputs, content of formats Quader has no repository type for. Quader does not look into a file. It keeps the bytes and the media type they were uploaded with, computes their digests, and serves them back as stored. There are no package names, versions or metadata documents, and no file is refused for what it contains.
 
 Every address below `{{.RegistryURL}}` names a file or a folder:
 
@@ -13,4 +13,4 @@ Uploading to a path that holds no file needs the deploy permission. Uploading th
 
 ### A download is as trustworthy as its uploader
 
-trove neither scans nor validates what a generic repository stores. A browser never runs a stored file as part of trove's pages: every file is served as an attachment, with a sandbox policy. A downloaded installer is still exactly as trustworthy as the account that uploaded it, so check it against a digest its publisher gave you (see the section on downloads).
+Quader neither scans nor validates what a generic repository stores. A browser never runs a stored file as part of Quader's pages: every file is served as an attachment, with a sandbox policy. A downloaded installer is still exactly as trustworthy as the account that uploaded it, so check it against a digest its publisher gave you (see the section on downloads).

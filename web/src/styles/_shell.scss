@@ -3,15 +3,15 @@
 // width, and the menus of the top bar. Global and scoped to the root element (the menus open in the overlay, outside
 // it), because the root component's own stylesheet is held to the component style budget.
 
-trove-root {
+quader-root {
   .skip-link {
     position: absolute;
     inset-block-start: 0;
     inset-inline-start: 0;
     z-index: 1000;
-    padding: var(--trove-space-2) var(--trove-space-4);
-    background: var(--trove-surface);
-    color: var(--trove-on-surface);
+    padding: var(--quader-space-2) var(--quader-space-4);
+    background: var(--quader-surface);
+    color: var(--quader-on-surface);
     transform: translateY(-100%);
 
     &:focus {
@@ -26,14 +26,14 @@ trove-root {
     display: grid;
     grid-template-columns: minmax(max-content, 1fr) minmax(0, 40rem) minmax(max-content, 1fr);
     align-items: center;
-    gap: var(--trove-space-3);
-    block-size: var(--trove-topbar-height);
-    padding-inline: var(--trove-space-3) var(--trove-space-2);
-    background: var(--trove-nav-bg);
-    color: var(--trove-nav-fg);
+    gap: var(--quader-space-3);
+    block-size: var(--quader-topbar-height);
+    padding-inline: var(--quader-space-3) var(--quader-space-2);
+    background: var(--quader-nav-bg);
+    color: var(--quader-nav-fg);
 
     :is(a, button, input):focus-visible {
-      outline: 2px solid var(--trove-nav-accent);
+      outline: 2px solid var(--quader-nav-accent);
       outline-offset: 2px;
     }
   }
@@ -41,7 +41,7 @@ trove-root {
   .topbar-start {
     display: flex;
     align-items: center;
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
     min-inline-size: 0;
   }
 
@@ -49,38 +49,38 @@ trove-root {
     display: flex;
     align-items: center;
     justify-self: end;
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
   }
 
   // Icon buttons and quiet buttons on the frame take its text colour and its hover fill.
   .topbar .btn-icon,
   .topbar .btn-tertiary {
-    color: var(--trove-nav-fg);
+    color: var(--quader-nav-fg);
 
     &:hover {
-      background: var(--trove-nav-hover);
+      background: var(--quader-nav-hover);
     }
   }
 
   .product {
     display: inline-flex;
     align-items: center;
-    gap: var(--trove-space-2);
-    padding: var(--trove-space-1) var(--trove-space-2);
-    border-radius: var(--trove-control-radius);
-    color: var(--trove-nav-fg);
+    gap: var(--quader-space-2);
+    padding: var(--quader-space-1) var(--quader-space-2);
+    border-radius: var(--quader-control-radius);
+    color: var(--quader-nav-fg);
     font-size: 1.125rem;
     font-weight: 700;
-    letter-spacing: 0.04em;
     text-decoration: none;
 
     &:hover {
-      background: var(--trove-nav-hover);
+      background: var(--quader-nav-hover);
     }
   }
 
+  // The mark as high as the bar's controls; 32 px puts each stone and joint of its 16 px grid on whole pixels.
   .product-mark {
-    block-size: 1.5rem;
+    block-size: 2rem;
   }
 
   // The search field and its list are _search.scss's (R-UI-095); below 36 rem the field is a button (Q-UI-403).
@@ -99,7 +99,20 @@ trove-root {
 
     .admin-button,
     .docs-link {
-      padding-inline: var(--trove-space-2);
+      padding-inline: var(--quader-space-2);
+    }
+  }
+
+  // Below 360 px the bar has no room for the name beside the mark (a signed-in administrator's bar needs 353 px with
+  // it); the name stays the link's accessible name.
+  @media (max-width: 22.49rem) {
+    .product-name {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
   }
 
@@ -116,13 +129,13 @@ trove-root {
     }
   }
 
-  // The round avatar: the user's generated robot (TroveAvatar) on the strong surface fill; decoration, the name is in the
+  // The round avatar: the user's generated robot (QuaderAvatar) on the strong surface fill; decoration, the name is in the
   // button's accessible name.
   .avatar {
     inline-size: 2rem;
     block-size: 2rem;
     border-radius: 50%;
-    background: var(--trove-surface-variant);
+    background: var(--quader-surface-variant);
   }
 
   // ---- Frame, sidebar and panel ----------------------------------------------------------------
@@ -131,19 +144,19 @@ trove-root {
     flex: 1 1 auto;
     display: flex;
     min-block-size: 0;
-    background: var(--trove-nav-bg);
+    background: var(--quader-nav-bg);
   }
 
   .sidebar {
     flex: none;
     display: flex;
     flex-direction: column;
-    inline-size: var(--trove-nav-width);
-    background: var(--trove-nav-bg);
-    color: var(--trove-nav-fg);
+    inline-size: var(--quader-nav-width);
+    background: var(--quader-nav-bg);
+    color: var(--quader-nav-fg);
 
     :is(a, button):focus-visible {
-      outline: 2px solid var(--trove-nav-accent);
+      outline: 2px solid var(--quader-nav-accent);
       outline-offset: -2px;
     }
   }
@@ -151,10 +164,10 @@ trove-root {
   // Below the pinned width the sidebar is a drawer over the content, with a backdrop that closes it.
   .sidebar.drawer {
     position: fixed;
-    inset-block: var(--trove-topbar-height) 0;
+    inset-block: var(--quader-topbar-height) 0;
     inset-inline-start: 0;
     z-index: 20;
-    box-shadow: var(--trove-elevation-2);
+    box-shadow: var(--quader-elevation-2);
   }
 
   .backdrop {
@@ -162,17 +175,17 @@ trove-root {
     border: 0;
     cursor: default;
     position: fixed;
-    inset: var(--trove-topbar-height) 0 0;
+    inset: var(--quader-topbar-height) 0 0;
     z-index: 19;
     background: rgb(0 0 0 / 40%);
   }
 
   // The area's name on top of its sidebar, in the current entry's colour (the reference's context header).
   .context-title {
-    margin: var(--trove-space-1) 0 0;
-    padding: var(--trove-space-2) var(--trove-space-4);
-    color: var(--trove-nav-accent);
-    font-size: var(--trove-text-size);
+    margin: var(--quader-space-1) 0 0;
+    padding: var(--quader-space-2) var(--quader-space-4);
+    color: var(--quader-nav-accent);
+    font-size: var(--quader-text-size);
     font-weight: 600;
   }
 
@@ -181,30 +194,30 @@ trove-root {
   .project-switcher {
     position: relative;
     display: block;
-    margin: var(--trove-space-1) var(--trove-space-2) 0;
+    margin: var(--quader-space-1) var(--quader-space-2) 0;
   }
 
   .switcher-button {
     display: flex;
     align-items: center;
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
     inline-size: 100%;
     box-sizing: border-box;
     min-block-size: 40px;
-    padding: var(--trove-space-1);
+    padding: var(--quader-space-1);
     border: 0;
-    border-radius: var(--trove-radius-m);
+    border-radius: var(--quader-radius-m);
     background: none;
-    color: var(--trove-nav-fg);
+    color: var(--quader-nav-fg);
     font: inherit;
-    font-size: var(--trove-text-size);
+    font-size: var(--quader-text-size);
     font-weight: 600;
     text-align: start;
     cursor: pointer;
 
     &:hover,
     &[aria-expanded='true'] {
-      background: var(--trove-nav-hover);
+      background: var(--quader-nav-hover);
     }
   }
 
@@ -216,9 +229,9 @@ trove-root {
     justify-content: center;
     inline-size: 2rem;
     block-size: 2rem;
-    border-radius: var(--trove-radius-m);
-    background: var(--trove-accent-fill);
-    color: var(--trove-on-accent);
+    border-radius: var(--quader-radius-m);
+    background: var(--quader-accent-fill);
+    color: var(--quader-on-accent);
     font-size: 0.875rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -239,7 +252,7 @@ trove-root {
   .switcher-chevron {
     flex: none;
     font-size: 1rem;
-    color: var(--trove-nav-fg-muted);
+    color: var(--quader-nav-fg-muted);
   }
 
   .switcher-panel {
@@ -249,36 +262,36 @@ trove-root {
     z-index: 5;
     display: flex;
     flex-direction: column;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
     box-sizing: border-box;
     max-block-size: 24rem;
-    padding: var(--trove-space-2);
+    padding: var(--quader-space-2);
     overflow-y: auto;
-    border: 1px solid var(--trove-menu-border);
-    border-radius: var(--trove-radius-m);
-    background: var(--trove-menu-bg);
-    color: var(--trove-control-fg);
-    box-shadow: var(--trove-elevation-2);
+    border: 1px solid var(--quader-menu-border);
+    border-radius: var(--quader-radius-m);
+    background: var(--quader-menu-bg);
+    color: var(--quader-control-fg);
+    box-shadow: var(--quader-elevation-2);
   }
 
   .switcher-search {
     box-sizing: border-box;
     inline-size: 100%;
-    block-size: var(--trove-control-height);
-    padding: 0 var(--trove-space-3);
-    border: 1px solid var(--trove-search-border);
-    border-radius: var(--trove-search-radius);
-    background: var(--trove-search-bg);
-    color: var(--trove-search-fg);
+    block-size: var(--quader-control-height);
+    padding: 0 var(--quader-space-3);
+    border: 1px solid var(--quader-search-border);
+    border-radius: var(--quader-search-radius);
+    background: var(--quader-search-bg);
+    color: var(--quader-search-fg);
     font: inherit;
     font-size: 0.875rem;
   }
 
   .switcher-heading {
-    margin: var(--trove-space-1) var(--trove-space-1) 0;
+    margin: var(--quader-space-1) var(--quader-space-1) 0;
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--trove-nav-fg-muted);
+    color: var(--quader-nav-fg-muted);
   }
 
   .switcher-list {
@@ -293,21 +306,21 @@ trove-root {
   .switcher-all {
     display: flex;
     align-items: baseline;
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
     min-block-size: 2rem;
     box-sizing: border-box;
-    padding: var(--trove-space-1) var(--trove-space-2);
-    border-radius: var(--trove-radius-s);
+    padding: var(--quader-space-1) var(--quader-space-2);
+    border-radius: var(--quader-radius-s);
     color: inherit;
     font-size: 0.875rem;
     text-decoration: none;
 
     &:hover {
-      background: var(--trove-menu-hover);
+      background: var(--quader-menu-hover);
     }
 
     &:focus-visible {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: -2px;
     }
 
@@ -318,25 +331,25 @@ trove-root {
 
   .switcher-key {
     margin-inline-start: auto;
-    color: var(--trove-nav-fg-muted);
+    color: var(--quader-nav-fg-muted);
     font-size: 0.75rem;
   }
 
   .switcher-empty {
-    margin: var(--trove-space-1);
+    margin: var(--quader-space-1);
     font-size: 0.875rem;
   }
 
   .switcher-all {
-    border-block-start: 1px solid var(--trove-border);
+    border-block-start: 1px solid var(--quader-border);
     border-radius: 0;
-    margin-block-start: var(--trove-space-1);
+    margin-block-start: var(--quader-space-1);
   }
 
   .sidebar nav {
     flex: 1 1 auto;
     overflow-y: auto;
-    padding: var(--trove-space-1) var(--trove-space-2) var(--trove-space-3);
+    padding: var(--quader-space-1) var(--quader-space-2) var(--quader-space-3);
   }
 
   .nav-list {
@@ -353,24 +366,24 @@ trove-root {
     position: relative;
     display: flex;
     align-items: center;
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
     inline-size: 100%;
     box-sizing: border-box;
     min-block-size: 28px;
-    padding: 2px var(--trove-space-1);
+    padding: 2px var(--quader-space-1);
     border: 0;
-    border-radius: var(--trove-radius-m);
+    border-radius: var(--quader-radius-m);
     background: none;
-    color: var(--trove-nav-fg);
+    color: var(--quader-nav-fg);
     font: inherit;
-    font-size: var(--trove-text-size);
+    font-size: var(--quader-text-size);
     font-weight: 425;
     text-align: start;
     text-decoration: none;
     cursor: pointer;
 
     &:hover {
-      background: var(--trove-nav-hover);
+      background: var(--quader-nav-hover);
     }
 
     .nav-icon {
@@ -389,8 +402,8 @@ trove-root {
     // The current page: tinted in the blue, the text and icon in its deep or pale step and at weight 500, so the state
     // is not carried by colour alone (R-UI-044).
     &.active:not(:hover) {
-      background: var(--trove-nav-active);
-      color: var(--trove-nav-active-fg);
+      background: var(--quader-nav-active);
+      color: var(--quader-nav-active-fg);
     }
 
     &.active .nav-label {
@@ -404,24 +417,24 @@ trove-root {
 
   // A nested entry has no icon; its label lines up with the labels of the entries above.
   .nested .nav-link {
-    padding-inline-start: calc(var(--trove-space-1) + 24px + var(--trove-space-2));
+    padding-inline-start: calc(var(--quader-space-1) + 24px + var(--quader-space-2));
   }
 
   .group-toggle {
     .chevron {
       flex: none;
       font-size: 1rem;
-      color: var(--trove-nav-fg-muted);
+      color: var(--quader-nav-fg-muted);
     }
 
     &.has-active .nav-icon {
-      color: var(--trove-nav-accent);
+      color: var(--quader-nav-accent);
     }
   }
 
   .sidebar-foot {
     flex: none;
-    padding: var(--trove-space-1) var(--trove-space-2) var(--trove-space-2);
+    padding: var(--quader-space-1) var(--quader-space-2) var(--quader-space-2);
   }
 
   // The content: a panel on the page's fill, set into the frame with 16 px corners and an 8 px gap to the window's
@@ -431,9 +444,9 @@ trove-root {
     display: flex;
     flex-direction: column;
     min-inline-size: 0;
-    margin: 0 var(--trove-panel-gap) var(--trove-panel-gap) 0;
-    border-radius: var(--trove-panel-radius);
-    background: var(--trove-surface);
+    margin: 0 var(--quader-panel-gap) var(--quader-panel-gap) 0;
+    border-radius: var(--quader-panel-radius);
+    background: var(--quader-surface);
     overflow: hidden;
   }
 
@@ -448,9 +461,9 @@ trove-root {
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    min-block-size: var(--trove-breadcrumb-height);
-    padding: 0 var(--trove-space-2) 0 var(--trove-space-3);
-    border-block-end: 1px solid var(--trove-border);
+    min-block-size: var(--quader-breadcrumb-height);
+    padding: 0 var(--quader-space-2) 0 var(--quader-space-3);
+    border-block-end: 1px solid var(--quader-border);
 
     ol {
       display: flex;
@@ -459,34 +472,34 @@ trove-root {
       margin: 0;
       padding: 0;
       list-style: none;
-      color: var(--trove-text-muted);
-      font-size: var(--trove-text-muted-size);
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-muted-size);
       line-height: 1rem;
     }
 
     li + li::before {
       content: '/';
-      margin-inline: var(--trove-space-2);
-      color: var(--trove-control-disabled-fg);
+      margin-inline: var(--quader-space-2);
+      color: var(--quader-control-disabled-fg);
     }
 
     a {
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
       text-decoration: none;
 
       &:hover {
-        color: var(--trove-link);
+        color: var(--quader-link);
         text-decoration: underline;
       }
 
       &:focus-visible {
-        outline: var(--trove-focus-ring);
+        outline: var(--quader-focus-ring);
         outline-offset: 2px;
       }
     }
 
     [aria-current='page'] {
-      color: var(--trove-on-surface);
+      color: var(--quader-on-surface);
       font-weight: 600;
     }
   }
@@ -500,13 +513,13 @@ trove-root {
   .content {
     container-type: inline-size;
     container-name: content;
-    padding: var(--trove-space-6) var(--trove-space-8);
+    padding: var(--quader-space-6) var(--quader-space-8);
     outline: none;
   }
 
   @media (max-width: 1023.98px) {
     .content {
-      padding: var(--trove-space-4);
+      padding: var(--quader-space-4);
     }
   }
 
@@ -518,7 +531,7 @@ trove-root {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: max(var(--trove-space-8), 12vh) var(--trove-space-4) var(--trove-space-8);
+    padding: max(var(--quader-space-8), 12vh) var(--quader-space-4) var(--quader-space-8);
     outline: none;
 
     // The screen's host element is the flex item; without a width it shrinks to its content.
@@ -531,27 +544,28 @@ trove-root {
   // The column of a bare screen: the wordmark, a centred heading, then the screen's content at full width.
   .bare-panel {
     h1 {
-      margin: 0 0 var(--trove-space-6);
-      font: var(--trove-type-title-large);
+      margin: 0 0 var(--quader-space-6);
+      font: var(--quader-type-title-large);
       text-align: center;
       outline: none;
     }
   }
 
-  // The horizontal logo above the heading (web/public/brand, web/scripts/brand-logo.mjs).
+  // The lockup above the heading (<quader-mark [wordmark]="true">, shared/brand/quader-mark.ts), 48 px high: a multiple
+  // of 16 px, so every stone and joint sits on whole pixels.
   .bare-logo {
-    display: block;
-    block-size: 4rem;
-    inline-size: auto;
-    margin: 0 auto var(--trove-space-3);
+    display: flex;
+    justify-content: center;
+    block-size: 3rem;
+    margin: 0 0 var(--quader-space-5);
   }
 
   .bare a:not(.btn):not(.tab-link) {
-    color: var(--trove-link);
+    color: var(--quader-link);
     text-underline-offset: 0.2em;
 
     &:focus-visible {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: 2px;
     }
   }
@@ -562,11 +576,11 @@ trove-root {
   // (inline-block), so it is not a link inside a block of text: a cell with a link, a badge and a second line is not
   // running text, and axe's `link-in-text-block` (colour as the only mark, WCAG 1.4.1) does not apply to it.
   .content a:not(.btn):not(.tab-link) {
-    color: var(--trove-link);
+    color: var(--quader-link);
     text-underline-offset: 0.2em;
 
     &:focus-visible {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: 2px;
     }
   }
@@ -581,30 +595,30 @@ trove-root {
   }
 }
 
-// ---- Menus (CDK menu, in the overlay outside trove-root) ---------------------------------------
+// ---- Menus (CDK menu, in the overlay outside quader-root) ---------------------------------------
 
 .menu {
   display: flex;
   flex-direction: column;
   min-inline-size: 12rem;
-  padding: var(--trove-space-1);
-  border: 1px solid var(--trove-menu-border);
-  border-radius: var(--trove-radius-m);
-  background: var(--trove-menu-bg);
-  color: var(--trove-control-fg);
-  box-shadow: var(--trove-elevation-2);
+  padding: var(--quader-space-1);
+  border: 1px solid var(--quader-menu-border);
+  border-radius: var(--quader-radius-m);
+  background: var(--quader-menu-bg);
+  color: var(--quader-control-fg);
+  box-shadow: var(--quader-elevation-2);
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
   inline-size: 100%;
   box-sizing: border-box;
   min-block-size: 2rem;
-  padding: var(--trove-space-1) var(--trove-space-3);
+  padding: var(--quader-space-1) var(--quader-space-3);
   border: 0;
-  border-radius: var(--trove-radius-s);
+  border-radius: var(--quader-radius-s);
   background: none;
   color: inherit;
   font: inherit;
@@ -615,12 +629,12 @@ trove-root {
 
   &:hover,
   &:focus {
-    background: var(--trove-menu-hover);
+    background: var(--quader-menu-hover);
     outline: none;
   }
 
   &:focus-visible {
-    outline: var(--trove-focus-ring);
+    outline: var(--quader-focus-ring);
     outline-offset: -2px;
   }
 
@@ -639,12 +653,12 @@ trove-root {
 
 .menu-heading {
   margin: 0;
-  padding: var(--trove-space-2) var(--trove-space-3);
+  padding: var(--quader-space-2) var(--quader-space-3);
   font-size: 0.875rem;
   font-weight: 600;
 }
 
 .menu-divider {
-  margin-block: var(--trove-space-1);
-  border-block-start: 1px solid var(--trove-border);
+  margin-block: var(--quader-space-1);
+  border-block-start: 1px solid var(--quader-border);
 }

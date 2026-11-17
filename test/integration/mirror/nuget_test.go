@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 // NuGet discovery against the counting NuGet stub (E6b.3; docs/spec/formats/nuget.md "Mirror discovery", R-REPO-051).

@@ -1,4 +1,4 @@
-// Layout shared by the identity, token, settings and permission screens (ui-b). Only trove
+// Layout shared by the identity, token, settings and permission screens (ui-b). Only Quader
 // tokens are used, so both themes follow (R-UI-044).
 
 :host {
@@ -9,8 +9,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-3);
-  margin-block-end: var(--trove-space-4);
+  gap: var(--quader-space-3);
+  margin-block-end: var(--quader-space-4);
 
   h1 {
     margin: 0;
@@ -19,8 +19,8 @@
 }
 
 .subject {
-  margin: 0 0 var(--trove-space-4);
-  font: var(--trove-type-title-medium);
+  margin: 0 0 var(--quader-space-4);
+  font: var(--quader-type-title-medium);
   overflow-wrap: anywhere;
 }
 
@@ -28,19 +28,19 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--trove-space-3);
-  margin-block-end: var(--trove-space-3);
+  gap: var(--quader-space-3);
+  margin-block-end: var(--quader-space-3);
 }
 
 .card {
-  margin-block: var(--trove-space-4);
-  padding: var(--trove-space-4);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-l);
+  margin-block: var(--quader-space-4);
+  padding: var(--quader-space-4);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-l);
 
   h2 {
-    margin-block: 0 var(--trove-space-3);
-    font: var(--trove-type-title-medium);
+    margin-block: 0 var(--quader-space-3);
+    font: var(--quader-type-title-medium);
   }
 }
 
@@ -54,10 +54,10 @@ table.data {
 
   th,
   td {
-    padding: var(--trove-space-1) var(--trove-space-3);
+    padding: var(--quader-space-1) var(--quader-space-3);
     text-align: start;
     vertical-align: top;
-    border-block-end: 1px solid var(--trove-border);
+    border-block-end: 1px solid var(--quader-border);
   }
 
   td.actions {
@@ -69,7 +69,7 @@ table.data {
 dl.facts {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: var(--trove-space-1) var(--trove-space-4);
+  gap: var(--quader-space-1) var(--quader-space-4);
   margin: 0;
 
   dt {
@@ -90,11 +90,11 @@ fieldset.form-grid {
 }
 
 .preview {
-  margin-block: var(--trove-space-3);
+  margin-block: var(--quader-space-3);
 
   h3 {
-    margin-block: 0 var(--trove-space-1);
-    font: var(--trove-type-title-small);
+    margin-block: 0 var(--quader-space-1);
+    font: var(--quader-type-title-small);
   }
 
   p {
@@ -114,14 +114,14 @@ fieldset.form-grid {
 .row-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2);
-  margin-block-start: var(--trove-space-3);
+  gap: var(--quader-space-2);
+  margin-block-start: var(--quader-space-3);
 }
 
 .field-error {
-  margin: 0 0 var(--trove-space-3);
-  color: var(--trove-status-bad);
-  font: var(--trove-type-body-small);
+  margin: 0 0 var(--quader-space-3);
+  color: var(--quader-status-bad);
+  font: var(--quader-type-body-small);
 }
 
 
@@ -132,19 +132,19 @@ fieldset.form-grid {
 
 // Status colours always come with an icon and a text; they only reinforce (R-UI-044).
 .ok {
-  color: var(--trove-status-ok);
+  color: var(--quader-status-ok);
 }
 
 .warn {
-  color: var(--trove-status-warn);
+  color: var(--quader-status-warn);
 }
 
 .bad {
-  color: var(--trove-status-bad);
+  color: var(--quader-status-bad);
 }
 
 .muted {
-  color: var(--trove-text-muted);
+  color: var(--quader-text-muted);
 }
 
 .visually-hidden {
@@ -158,20 +158,20 @@ fieldset.form-grid {
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
   list-style: none;
-  margin: 0 0 var(--trove-space-4);
+  margin: 0 0 var(--quader-space-4);
   padding: 0;
 
   a {
     display: inline-block;
-    padding: var(--trove-space-1) var(--trove-space-3);
-    border-radius: var(--trove-radius-full);
-    color: var(--trove-accent);
+    padding: var(--quader-space-1) var(--quader-space-3);
+    border-radius: var(--quader-radius-full);
+    color: var(--quader-accent);
 
     &.active {
-      background: var(--trove-accent-container);
-      color: var(--trove-on-accent-container);
+      background: var(--quader-accent-container);
+      color: var(--quader-on-accent-container);
       font-weight: 600;
     }
   }
@@ -181,9 +181,9 @@ fieldset.form-grid {
 .user-avatar {
   inline-size: 3rem;
   block-size: 3rem;
-  margin-inline-end: var(--trove-space-3);
+  margin-inline-end: var(--quader-space-3);
   border-radius: 50%;
-  background: var(--trove-surface-variant);
+  background: var(--quader-surface-variant);
   vertical-align: middle;
 }
 
@@ -191,7 +191,7 @@ fieldset.form-grid {
 th.person {
   display: flex;
   align-items: center;
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
 
   .avatar {
     flex: none;

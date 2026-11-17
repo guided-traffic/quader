@@ -6,7 +6,7 @@ import { advisoryArchive, advisoryMirror, gradedPackage, vendorPackages } from '
 /**
  * The data of `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): three projects, repositories of every
  * format and class with short and long keys, a few published packages and files, the three kinds of user of R-UI-067 and
- * an empty project and repository for the empty states. Everything is created through trove's public API and is
+ * an empty project and repository for the empty states. Everything is created through Quader's public API and is
  * idempotent: a second run finds what the first made and adds nothing.
  */
 
@@ -152,7 +152,7 @@ export class Api {
   }
 
   static async of(ctx: APIRequestContext, origin: string): Promise<Api> {
-    const csrf = (await ctx.storageState()).cookies.find((c) => c.name === '__Host-trv_csrf')?.value ?? '';
+    const csrf = (await ctx.storageState()).cookies.find((c) => c.name === '__Host-qdr_csrf')?.value ?? '';
     return new Api(ctx, csrf, origin);
   }
 

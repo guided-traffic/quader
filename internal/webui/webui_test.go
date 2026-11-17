@@ -11,13 +11,13 @@ import (
 )
 
 const indexHTML = `<!doctype html><html lang="en"><head><base href="/ui/en/">` +
-	`<link rel="stylesheet" href="styles-ABCD1234.css" nonce="TROVE_CSP_NONCE"></head>` +
-	`<body><trove-root ngcspnonce="TROVE_CSP_NONCE"></trove-root>` +
-	`<script src="main-ABCD1234.js" type="module" nonce="TROVE_CSP_NONCE"></script></body></html>`
+	`<link rel="stylesheet" href="styles-ABCD1234.css" nonce="QUADER_CSP_NONCE"></head>` +
+	`<body><quader-root ngcspnonce="QUADER_CSP_NONCE"></quader-root>` +
+	`<script src="main-ABCD1234.js" type="module" nonce="QUADER_CSP_NONCE"></script></body></html>`
 
 func builtFS() fstest.MapFS {
 	m := fstest.MapFS{
-		"index.html": {Data: []byte("<style nonce=\"TROVE_CSP_NONCE\"></style>placeholder")},
+		"index.html": {Data: []byte("<style nonce=\"QUADER_CSP_NONCE\"></style>placeholder")},
 	}
 	for _, l := range []string{"en", "de"} {
 		m[l+"/index.html"] = &fstest.MapFile{Data: []byte(strings.ReplaceAll(indexHTML, "/ui/en/", "/ui/"+l+"/"))}
@@ -115,10 +115,10 @@ func TestIndexNonce(t *testing.T) {
 
 	t.Run("R-UI-001 image origins are added to img-src without wildcard", func(t *testing.T) {
 		h := newHandler(t, builtFS(), func(o *Options) {
-			o.ImageOrigins = []string{"https://badges.example.net", "https://trove-content.example.net:8443"}
+			o.ImageOrigins = []string{"https://badges.example.net", "https://quader-content.example.net:8443"}
 		})
 		csp := do(h, "GET", "/ui/en/").Header().Get("Content-Security-Policy")
-		if !strings.Contains(csp, "img-src 'self' data: https://badges.example.net https://trove-content.example.net:8443;") {
+		if !strings.Contains(csp, "img-src 'self' data: https://badges.example.net https://quader-content.example.net:8443;") {
 			t.Fatalf("img-src wrong: %s", csp)
 		}
 	})

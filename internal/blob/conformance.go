@@ -17,7 +17,7 @@ import (
 // This file is the object-store check of R-STOR-035. The startup check is what
 // a replica runs before its first readiness; the conformance check is the
 // operator's evidence that a store meets assumptions A1 and A2 (and the
-// behaviour trove relies on besides): `trove admin storage check`, and the
+// behaviour quader relies on besides): `quader admin storage check`, and the
 // integration tier against every store of the CI matrix (R-STOR-030). It
 // changes nothing outside <prefix>/_probe/.
 
@@ -78,7 +78,7 @@ type ConformanceCheck struct {
 	// Name says what is checked.
 	Name string
 	// Assumption is the row of R-STOR-035's table the check backs, or "" for a
-	// behaviour trove relies on besides.
+	// behaviour quader relies on besides.
 	Assumption string
 	// Optional marks a feature a store may lack, with a setting that works
 	// around it (DeleteObjects: storage.gc.batch_delete: false).

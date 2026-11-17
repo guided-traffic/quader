@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // factory is an outbound factory that admits the loopback addresses of the test servers.
@@ -332,7 +332,7 @@ func idx(s []string, v string) int {
 
 func TestR_IMP_007_TheStateFileKeepsWhatIsDoneSurvivesACutLineAndBelongsToOneImport(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state")
-	j, err := OpenJournal(path, "npm", "https://src.example/", "https://trove.example/api/npm/p/r/")
+	j, err := OpenJournal(path, "npm", "https://src.example/", "https://quader.example/api/npm/p/r/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -346,7 +346,7 @@ func TestR_IMP_007_TheStateFileKeepsWhatIsDoneSurvivesACutLineAndBelongsToOneImp
 	_, _ = f.WriteString(`{"kind":"package","package":{"name":"b","vers`)
 	_ = f.Close()
 
-	j, err = OpenJournal(path, "npm", "https://src.example/", "https://trove.example/api/npm/p/r/")
+	j, err = OpenJournal(path, "npm", "https://src.example/", "https://quader.example/api/npm/p/r/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -360,7 +360,7 @@ func TestR_IMP_007_TheStateFileKeepsWhatIsDoneSurvivesACutLineAndBelongsToOneImp
 		t.Fatal(err)
 	}
 	_ = j.Close()
-	j, err = OpenJournal(path, "npm", "https://src.example/", "https://trove.example/api/npm/p/r/")
+	j, err = OpenJournal(path, "npm", "https://src.example/", "https://quader.example/api/npm/p/r/")
 	if err != nil {
 		t.Fatalf("a record after a cut line made the file unreadable: %v", err)
 	}
@@ -369,7 +369,7 @@ func TestR_IMP_007_TheStateFileKeepsWhatIsDoneSurvivesACutLineAndBelongsToOneImp
 	}
 	_ = j.Close()
 
-	for _, other := range [][3]string{{"nuget", "https://src.example/", "https://trove.example/api/npm/p/r/"}, {"npm", "https://other.example/", "https://trove.example/api/npm/p/r/"}, {"npm", "https://src.example/", "https://trove.example/api/npm/p/other/"}} {
+	for _, other := range [][3]string{{"nuget", "https://src.example/", "https://quader.example/api/npm/p/r/"}, {"npm", "https://other.example/", "https://quader.example/api/npm/p/r/"}, {"npm", "https://src.example/", "https://quader.example/api/npm/p/other/"}} {
 		if _, err := OpenJournal(path, other[0], other[1], other[2]); err == nil || !strings.Contains(err.Error(), "another import") {
 			t.Errorf("a state file of another import was opened: %v", err)
 		}

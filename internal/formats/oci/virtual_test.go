@@ -8,11 +8,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // noTarget is the resolution of a virtual repository that has no deployment target (R-REPO-021).
@@ -50,8 +50,8 @@ func TestAWalkServesTheFirstMemberThatHasTheItemAndNamesIt(t *testing.T) {
 	if err := walk(context.Background(), rqWith(false), rec, steps, errManifestUnknown); err != nil {
 		t.Fatal(err)
 	}
-	if calls != 2 || rec.Header().Get("Trove-Resolved-From") != "second" {
-		t.Fatalf("calls %d, resolved from %q", calls, rec.Header().Get("Trove-Resolved-From"))
+	if calls != 2 || rec.Header().Get("Quader-Resolved-From") != "second" {
+		t.Fatalf("calls %d, resolved from %q", calls, rec.Header().Get("Quader-Resolved-From"))
 	}
 }
 
@@ -60,8 +60,8 @@ func TestAWalkNamesNoMemberOnAnEndpointWithRules(t *testing.T) {
 	if err := walk(context.Background(), rqWith(true), rec, []step{{memberOf("a"), ok}}, errManifestUnknown); err != nil {
 		t.Fatal(err)
 	}
-	if got := rec.Header().Get("Trove-Resolved-From"); got != "" {
-		t.Fatalf("Trove-Resolved-From = %q on an endpoint with exposure rules", got)
+	if got := rec.Header().Get("Quader-Resolved-From"); got != "" {
+		t.Fatalf("Quader-Resolved-From = %q on an endpoint with exposure rules", got)
 	}
 }
 

@@ -7,9 +7,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // A format is registered once per process, and a process may hold several
@@ -105,21 +105,21 @@ type metrics struct {
 func newMetrics(m *observability.Metrics) *metrics {
 	met := &metrics{
 		repos: m.Repos(),
-		requests: m.NewCounterVec("trove_npm_requests_total",
+		requests: m.NewCounterVec("quader_npm_requests_total",
 			"npm protocol requests by repository class, operation and status code.", "class", "operation", "status"),
-		duration: m.NewHistogramVec("trove_npm_request_duration_seconds",
+		duration: m.NewHistogramVec("quader_npm_request_duration_seconds",
 			"Time from the start of an npm protocol operation to the end of its handler.", observability.HTTPBuckets(), "class", "operation"),
-		retries: m.NewCounterVec("trove_npm_publish_retries_acknowledged_total",
+		retries: m.NewCounterVec("quader_npm_publish_retries_acknowledged_total",
 			"Publish requests acknowledged as the retry of a publish whose answer was lost (R-NPM-007 step 4).", "repo"),
-		conflicts: m.NewCounterVec("trove_npm_virtual_version_conflicts_total",
+		conflicts: m.NewCounterVec("quader_npm_virtual_version_conflicts_total",
 			"Versions that members of a virtual repository hold with different integrity (R-NPM-030).", "repo"),
-		removed: m.NewCounterVec("trove_npm_removed_upstream_versions_total",
+		removed: m.NewCounterVec("quader_npm_removed_upstream_versions_total",
 			"Versions a refreshed upstream document no longer lists (R-NPM-026).", "repo"),
-		stale: m.NewCounterVec("trove_npm_stale_upstream_documents_total",
+		stale: m.NewCounterVec("quader_npm_stale_upstream_documents_total",
 			"Fetched upstream documents that were older than the stored one and were not stored (R-NPM-024).", "repo"),
-		revalidated: m.NewCounterVec("trove_npm_tarball_document_revalidations_total",
+		revalidated: m.NewCounterVec("quader_npm_tarball_document_revalidations_total",
 			"Tarball requests that revalidated the package document first, by outcome (R-NPM-025).", "repo", "outcome"),
-		withheld: m.NewCounterVec("trove_npm_audit_names_withheld_total",
+		withheld: m.NewCounterVec("quader_npm_audit_names_withheld_total",
 			"Names of audit requests not sent to the advisory provider, by the forwarding remote and the reason (R-NPM-038).", "repo", "reason"),
 	}
 	// The series of a repository that leaves the snapshot go with its name (R-OPS-007).
@@ -139,24 +139,24 @@ func (m *metrics) retryAcknowledged(repoKey string) {
 	if m == nil {
 		return
 	}
-	m.retries.WithLabelValues(m.repos.Value("trove_npm_publish_retries_acknowledged_total", repoKey)).Inc()
+	m.retries.WithLabelValues(m.repos.Value("quader_npm_publish_retries_acknowledged_total", repoKey)).Inc()
 }
 
 func (m *metrics) versionConflicts(repoKey string, n int) {
 	if m != nil && n > 0 {
-		m.conflicts.WithLabelValues(m.repos.Value("trove_npm_virtual_version_conflicts_total", repoKey)).Add(float64(n))
+		m.conflicts.WithLabelValues(m.repos.Value("quader_npm_virtual_version_conflicts_total", repoKey)).Add(float64(n))
 	}
 }
 
 func (m *metrics) removedVersions(repoKey string, n int) {
 	if m != nil && n > 0 {
-		m.removed.WithLabelValues(m.repos.Value("trove_npm_removed_upstream_versions_total", repoKey)).Add(float64(n))
+		m.removed.WithLabelValues(m.repos.Value("quader_npm_removed_upstream_versions_total", repoKey)).Add(float64(n))
 	}
 }
 
 func (m *metrics) staleDocument(repoKey string) {
 	if m != nil {
-		m.stale.WithLabelValues(m.repos.Value("trove_npm_stale_upstream_documents_total", repoKey)).Inc()
+		m.stale.WithLabelValues(m.repos.Value("quader_npm_stale_upstream_documents_total", repoKey)).Inc()
 	}
 }
 
@@ -165,7 +165,7 @@ func (m *metrics) staleDocument(repoKey string) {
 // be asked and the stored marks decided (Q-NPM-13).
 func (m *metrics) revalidation(repoKey, outcome string) {
 	if m != nil {
-		m.revalidated.WithLabelValues(m.repos.Value("trove_npm_tarball_document_revalidations_total", repoKey), outcome).Inc()
+		m.revalidated.WithLabelValues(m.repos.Value("quader_npm_tarball_document_revalidations_total", repoKey), outcome).Inc()
 	}
 }
 
@@ -177,7 +177,7 @@ func (m *metrics) auditWithheld(repoKey string, byReason map[string]int) {
 	}
 	for _, reason := range withheldReasons() {
 		if n := byReason[reason]; n > 0 {
-			m.withheld.WithLabelValues(m.repos.Value("trove_npm_audit_names_withheld_total", repoKey), reason).Add(float64(n))
+			m.withheld.WithLabelValues(m.repos.Value("quader_npm_audit_names_withheld_total", repoKey), reason).Add(float64(n))
 		}
 	}
 }

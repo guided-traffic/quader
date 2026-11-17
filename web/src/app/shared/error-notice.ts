@@ -8,7 +8,7 @@ import { describeProblem } from '../core/http/problem-messages';
  * ("give this ID to your administrator"). A 503 and a lost connection offer "Retry".
  */
 @Component({
-  selector: 'trove-error-notice',
+  selector: 'quader-error-notice',
   imports: [],
   template: `
     <div class="notice" role="alert">
@@ -35,12 +35,12 @@ import { describeProblem } from '../core/http/problem-messages';
     .notice {
       display: flex;
       align-items: flex-start;
-      gap: var(--trove-space-3);
-      padding: var(--trove-space-3) var(--trove-space-4);
-      border: 1px solid var(--trove-error);
-      border-radius: var(--trove-radius-m);
-      background: var(--trove-error-container);
-      color: var(--trove-on-error-container);
+      gap: var(--quader-space-3);
+      padding: var(--quader-space-3) var(--quader-space-4);
+      border: 1px solid var(--quader-error);
+      border-radius: var(--quader-radius-m);
+      background: var(--quader-error-container);
+      color: var(--quader-on-error-container);
     }
     .body {
       flex: 1 1 auto;
@@ -49,7 +49,7 @@ import { describeProblem } from '../core/http/problem-messages';
       margin: 0;
     }
     .hint {
-      margin-block-start: var(--trove-space-1);
+      margin-block-start: var(--quader-space-1);
     }
   `,
 })

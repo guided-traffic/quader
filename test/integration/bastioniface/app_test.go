@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_BAS_008_TheRecognizeStageIsInTheChainOfTheComposedReplica: a replica composed by app.New (the real chain
@@ -42,7 +42,7 @@ func TestR_BAS_008_TheRecognizeStageIsInTheChainOfTheComposedReplica(t *testing.
 		t.Errorf("a forwarded request with such a token: %d %s %s", a.Status, a.Header.Get("Content-Type"), a.Body)
 	}
 
-	// A token of another type in Trove-Bastion-Authorization leaves the request ordinary: whatever the main
+	// A token of another type in Quader-Bastion-Authorization leaves the request ordinary: whatever the main
 	// installation says to the request, it carries no mark of a Bastion.
 	a = s.Do(r, http.MethodGet, "/api/npm/it/npm-all/lodash", "", nil, iface.HeaderAuthorization, "Bearer "+pat, iface.HeaderInterface, v)
 	for k := range a.Header {
@@ -56,7 +56,7 @@ func TestR_BAS_008_TheRecognizeStageIsInTheChainOfTheComposedReplica(t *testing.
 
 	m := r.Metrics(t)
 	for _, want := range []string{
-		`trove_bastion_interface_requests_total{bastion="unknown",operation="handshake",outcome="invalid_token"} 1`,
+		`quader_bastion_interface_requests_total{bastion="unknown",operation="handshake",outcome="invalid_token"} 1`,
 	} {
 		if !strings.Contains(m, want) {
 			t.Errorf("metrics lack %s", want)

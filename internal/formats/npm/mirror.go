@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The npm format's part of the mirror mode (R-REPO-050 to R-REPO-052, the section "Mirror discovery" of

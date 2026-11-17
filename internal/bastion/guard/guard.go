@@ -5,8 +5,8 @@
 // [New] implements [Guard] over internal/bastion/shared (local, or Valkey when configured); the engine asks it
 // at the steps of R-BAS-018 and reports what it observes. The guard counts and decides; it never answers a
 // request itself: the engine renders the refusal ([Verdict]) as the problem details of R-BAS-029 with
-// Retry-After and the RateLimit fields, and counts it in trove_bastion_refused_total under Verdict.Reason.
-// The guard counts the blocks it sets (trove_bastion_blocks_total, trove_bastion_blocked_addresses).
+// Retry-After and the RateLimit fields, and counts it in quader_bastion_refused_total under Verdict.Reason.
+// The guard counts the blocks it sets (quader_bastion_blocks_total, quader_bastion_blocked_addresses).
 package guard
 
 import (
@@ -15,7 +15,7 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // Credentialed says whether a request carries a credential: it selects the stricter anonymous limits
@@ -32,7 +32,7 @@ type Verdict struct {
 	Code   string
 	// RetryAfter is the Retry-After of the refusal.
 	RetryAfter time.Duration
-	// Reason is the label of trove_bastion_refused_total (metrics.Refused*); the engine counts the refusal.
+	// Reason is the label of quader_bastion_refused_total (metrics.Refused*); the engine counts the refusal.
 	Reason string
 	// Quiet says the request is not logged one by one: a blocked address answers many requests, and the guard
 	// logs one line per block instead (R-BAS-037). The engine keeps it out of the request log.

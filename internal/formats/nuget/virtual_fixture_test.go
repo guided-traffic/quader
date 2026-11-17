@@ -3,9 +3,9 @@ package nuget
 import (
 	"encoding/json"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/merge"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/merge"
 )
 
 // mergeFixture is the fixture of check 5 (R-ARCH-010): member documents of the registration

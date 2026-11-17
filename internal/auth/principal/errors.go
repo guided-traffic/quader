@@ -3,8 +3,8 @@ package principal
 import (
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // Refusals of the Provisioner and the Manager. The login flow maps each to the

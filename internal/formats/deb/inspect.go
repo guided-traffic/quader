@@ -7,10 +7,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
-	"github.com/guided-traffic/trove/internal/formats/deb/debfile"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/internal/formats/deb/debfile"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // MediaType is the type of a package file (R-DEB-005).
@@ -33,7 +33,7 @@ func invalidField(field, reason string) error {
 }
 
 // readPackage reads a package file from the spool within the bounds of R-DEB-034 and applies the grammars of R-DEB-002 to what it
-// declares: a package trove cannot index is refused, never stored unindexed (Q-DEB-4).
+// declares: a package quader cannot index is refused, never stored unindexed (Q-DEB-4).
 func readPackage(ra io.ReaderAt, size int64, lim untrusted.Limits) (*incoming, error) {
 	p, err := debfile.Read(ra, size, lim)
 	if err != nil {

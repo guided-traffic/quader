@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The request body rules of R-API-003 and R-API-017: JSON only, bounded in

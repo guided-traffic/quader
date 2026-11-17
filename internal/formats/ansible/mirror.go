@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection"
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
-	"github.com/guided-traffic/trove/internal/formats/ansible/version"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/formats/ansible/version"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The mirror's discovery (R-ANS-021, R-REPO-050 to R-REPO-052; ansible.md "Mirror discovery", Q-ANS-16). The remote adapter implements
@@ -280,7 +280,7 @@ func (remoteAdapter) MirrorPlan(ctx context.Context, u discover.Upstream, name s
 		}
 		v, _, err := galaxydoc.ParseUpstreamVersion(doc)
 		if err != nil {
-			return discover.Plan{}, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a version document that trove cannot use: "+err.Error()+".", errs.WithCause(err))
+			return discover.Plan{}, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a version document that Quader cannot use: "+err.Error()+".", errs.WithCause(err))
 		}
 		plan.Items = append(plan.Items, discover.Item{Version: p.raw, Path: ArtifactPath(ns, n, p.raw), Size: v.Size, Prerelease: pre})
 	}

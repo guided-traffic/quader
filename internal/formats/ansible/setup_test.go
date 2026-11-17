@@ -7,7 +7,7 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // renderSetup runs a template with the identity quoting functions of the API plus the real hostname.
@@ -29,7 +29,7 @@ func renderSetup(t *testing.T, tpl formats.SetupTemplate, d formats.SetupData) s
 }
 
 func setupData(auth bool) formats.SetupData {
-	return formats.SetupData{RegistryURL: "https://trove.example.com:8443/api/ansible/web/galaxy/", Repository: "web/galaxy", Project: "web", Key: "galaxy", RequiresAuth: auth}
+	return formats.SetupData{RegistryURL: "https://quader.example.com:8443/api/ansible/web/galaxy/", Repository: "web/galaxy", Project: "web", Key: "galaxy", RequiresAuth: auth}
 }
 
 func templateByID(t *testing.T, id string) formats.SetupTemplate {
@@ -43,13 +43,13 @@ func templateByID(t *testing.T, id string) formats.SetupTemplate {
 	return formats.SetupTemplate{}
 }
 
-// TestR_ANS_025_TheTokenIsAnEnvironmentVariableAndNeverInTheConfigFile: the ansible.cfg snippet names the server trove with the
+// TestR_ANS_025_TheTokenIsAnEnvironmentVariableAndNeverInTheConfigFile: the ansible.cfg snippet names the server quader with the
 // repository address and holds no credential line (the file has no variable expansion), the token comes from the variable
-// ANSIBLE_GALAXY_SERVER_TROVE_TOKEN in the spelling of each shell (Q-ANS-22), and an anonymously readable repository gets no
+// ANSIBLE_GALAXY_SERVER_QUADER_TOKEN in the spelling of each shell (Q-ANS-22), and an anonymously readable repository gets no
 // credential line at all.
 func TestR_ANS_025_TheTokenIsAnEnvironmentVariableAndNeverInTheConfigFile(t *testing.T) {
 	cfg := renderSetup(t, templateByID(t, "ansible-galaxy.ansible-cfg.configure"), setupData(true))
-	for _, want := range []string{"server_list = trove", "[galaxy_server.trove]", "url=https://trove.example.com:8443/api/ansible/web/galaxy/\n"} {
+	for _, want := range []string{"server_list = quader", "[galaxy_server.quader]", "url=https://quader.example.com:8443/api/ansible/web/galaxy/\n"} {
 		if !strings.Contains(cfg, want) {
 			t.Errorf("ansible.cfg lacks %q:\n%s", want, cfg)
 		}
@@ -58,9 +58,9 @@ func TestR_ANS_025_TheTokenIsAnEnvironmentVariableAndNeverInTheConfigFile(t *tes
 		t.Errorf("ansible.cfg spells a token:\n%s", cfg)
 	}
 	for id, want := range map[string]string{
-		"ansible-galaxy.token-env.configure":            "export ANSIBLE_GALAXY_SERVER_TROVE_TOKEN=\"" + formats.SetupTokenRef + "\"\n",
-		"ansible-galaxy.token-env-powershell.configure": "$env:ANSIBLE_GALAXY_SERVER_TROVE_TOKEN = \"" + formats.SetupTokenRefPS + "\"\n",
-		"ansible-galaxy.token-env-cmd.configure":        "set ANSIBLE_GALAXY_SERVER_TROVE_TOKEN=" + formats.SetupTokenRefWin + "\n",
+		"ansible-galaxy.token-env.configure":            "export ANSIBLE_GALAXY_SERVER_QUADER_TOKEN=\"" + formats.SetupTokenRef + "\"\n",
+		"ansible-galaxy.token-env-powershell.configure": "$env:ANSIBLE_GALAXY_SERVER_QUADER_TOKEN = \"" + formats.SetupTokenRefPS + "\"\n",
+		"ansible-galaxy.token-env-cmd.configure":        "set ANSIBLE_GALAXY_SERVER_QUADER_TOKEN=" + formats.SetupTokenRefWin + "\n",
 	} {
 		tpl := templateByID(t, id)
 		if got := renderSetup(t, tpl, setupData(true)); got != want {
@@ -81,7 +81,7 @@ func TestR_ANS_025_TheTokenIsAnEnvironmentVariableAndNeverInTheConfigFile(t *tes
 func TestR_ANS_025_TheNetrcSnippetIsACommandThatNamesTheHostAlone(t *testing.T) {
 	tpl := templateByID(t, "ansible-galaxy.netrc.configure")
 	got := renderSetup(t, tpl, setupData(true))
-	want := "printf 'machine %s login trove password %s\\n' trove.example.com \"" + formats.SetupTokenRef + "\" >>~/.netrc\n"
+	want := "printf 'machine %s login quader password %s\\n' quader.example.com \"" + formats.SetupTokenRef + "\" >>~/.netrc\n"
 	if !strings.Contains(got, want) {
 		t.Errorf("netrc = %q, want a line %q", got, want)
 	}
@@ -118,7 +118,7 @@ func TestR_ANS_025_TheInstallSnippetsTakeThePackageAndTheVersion(t *testing.T) {
 func TestR_ANS_025_TheGuideTextRendersForEveryClass(t *testing.T) {
 	for _, class := range []formats.Class{formats.Local, formats.Remote, formats.Virtual} {
 		for _, anonymous := range []bool{false, true} {
-			d := formats.GuideData{SetupData: setupData(!anonymous), Class: class, Client: ClientGalaxy, Anonymous: anonymous, TokenEnvVar: "TROVE_TOKEN"}
+			d := formats.GuideData{SetupData: setupData(!anonymous), Class: class, Client: ClientGalaxy, Anonymous: anonymous, TokenEnvVar: "QUADER_TOKEN"}
 			if class != formats.Remote {
 				d.PublishTarget = "galaxy"
 			}

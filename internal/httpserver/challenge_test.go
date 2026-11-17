@@ -4,7 +4,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_AUTH_002_ARefusedReadOnAPackageRouteCarriesTheBasicChallenge: the decision point answers a caller without a credential with the
@@ -17,8 +17,8 @@ func TestR_AUTH_002_ARefusedReadOnAPackageRouteCarriesTheBasicChallenge(t *testi
 		header     map[string]string
 		want       string
 	}{
-		{"a package route", "/api/npm/web/npm-all/lodash", nil, `Basic realm="trove"`},
-		{"a raw file", "/files/web/generic/x.bin", nil, `Basic realm="trove"`},
+		{"a package route", "/api/npm/web/npm-all/lodash", nil, `Basic realm="quader"`},
+		{"a raw file", "/files/web/generic/x.bin", nil, `Basic realm="quader"`},
 		{"the management API", "/api/v1/projects", nil, "Bearer"},
 		{"another route", "/ui/", nil, "Bearer"},
 		{"a browser on a package route", "/api/npm/web/npm-all/lodash", map[string]string{"Sec-Fetch-Mode": "navigate"}, "Bearer"},
@@ -36,9 +36,9 @@ func TestR_AUTH_002_ARefusedReadOnAPackageRouteCarriesTheBasicChallenge(t *testi
 		})
 	}
 	t.Run("R-AUTH-002 another error is left as it is", func(t *testing.T) {
-		own := errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "x", errs.WithChallenge(`Bearer realm="trove", error="invalid_token"`))
+		own := errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "x", errs.WithChallenge(`Bearer realm="quader", error="invalid_token"`))
 		r := httptest.NewRequest("GET", "/api/npm/web/npm-all/lodash", nil)
-		if e, _ := errs.As(PackageChallenge(r, own)); e.Challenge != `Bearer realm="trove", error="invalid_token"` {
+		if e, _ := errs.As(PackageChallenge(r, own)); e.Challenge != `Bearer realm="quader", error="invalid_token"` {
 			t.Errorf("challenge = %q", e.Challenge)
 		}
 		forbidden := errs.E(errs.Forbidden, errs.CodeForbidden, "x")

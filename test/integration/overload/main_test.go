@@ -1,6 +1,6 @@
 //go:build integration
 
-// Package overload runs the trove binary against the integration stack with a
+// Package overload runs the quader binary against the integration stack with a
 // small memory budget and drives more concurrent downloads than fit: the replica
 // sheds the excess with 503 and stays alive (R-ARCH-005, R-HA-036). It runs the
 // binary rather than the in-process replica because the memory limit and the
@@ -14,10 +14,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-// binary is the trove executable built once for the package.
+// binary is the quader executable built once for the package.
 var binary string
 
 func TestMain(m *testing.M) {
@@ -25,13 +25,13 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "integration environment: %v\n", err)
 		os.Exit(1)
 	}
-	dir, err := os.MkdirTemp("", "trove-it-overload-")
+	dir, err := os.MkdirTemp("", "quader-it-overload-")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	binary = filepath.Join(dir, "trove")
-	cmd := exec.Command("go", "build", "-o", binary, "github.com/guided-traffic/trove/cmd/trove")
+	binary = filepath.Join(dir, "quader")
+	cmd := exec.Command("go", "build", "-o", binary, "github.com/guided-traffic/quader/cmd/quader")
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		fmt.Fprintf(os.Stderr, "go build: %v\n%s", err, out)

@@ -13,15 +13,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
-const registry = "https://trove.example.com/files/generic-local/"
+const registry = "https://quader.example.com/files/generic-local/"
 
 func guideData(anonymous, rules bool, target string) formats.GuideData {
 	return formats.GuideData{
@@ -30,7 +30,7 @@ func guideData(anonymous, rules bool, target string) formats.GuideData {
 			RequiresAuth: !anonymous,
 		},
 		Class: formats.Local, Client: ClientCurl, PublishTarget: target, Anonymous: anonymous, ExposureRules: rules,
-		TokenEnvVar: "TROVE_TOKEN",
+		TokenEnvVar: "QUADER_TOKEN",
 	}
 }
 
@@ -133,10 +133,10 @@ func TestR_GENERIC_016_TheTokenIsNoArgumentOfCurl(t *testing.T) {
 
 var troubleshootingRow = regexp.MustCompile("(?m)^\\| (\\d{3}) \\| `([a-z_]+)` \\|")
 
-// TestR_GENERIC_016_TheTroubleshootingCodesAreTroves: every row of the
-// troubleshooting table names a code of the problem catalog, under the status trove
+// TestR_GENERIC_016_TheTroubleshootingCodesAreQuaders: every row of the
+// troubleshooting table names a code of the problem catalog, under the status quader
 // answers it with, and the table covers the statuses /files/ answers.
-func TestR_GENERIC_016_TheTroubleshootingCodesAreTroves(t *testing.T) {
+func TestR_GENERIC_016_TheTroubleshootingCodesAreQuaders(t *testing.T) {
 	text := renderGuide(t, guideData(false, false, "generic-local"))["generic.troubleshooting"]
 	rows := troubleshootingRow.FindAllStringSubmatch(text, -1)
 	if len(rows) < 25 {
@@ -194,10 +194,10 @@ func TestR_GENERIC_016_TheGuideStatesTheLimits(t *testing.T) {
 	}
 }
 
-// TestR_GENERIC_016_TheDigestsTheGuideNamesAreTroves: the ETag is the quoted
+// TestR_GENERIC_016_TheDigestsTheGuideNamesAreQuaders: the ETag is the quoted
 // hexadecimal SHA-256, and the Repr-Digest the publish section builds with openssl and
-// base64 is one trove parses and checks.
-func TestR_GENERIC_016_TheDigestsTheGuideNamesAreTroves(t *testing.T) {
+// base64 is one quader parses and checks.
+func TestR_GENERIC_016_TheDigestsTheGuideNamesAreQuaders(t *testing.T) {
 	body := []byte("installer bytes")
 	sum := sha256.Sum256(body)
 	if got := (items.Item{Digest: sum}).ETag(); got != `"`+hex.EncodeToString(sum[:])+`"` {

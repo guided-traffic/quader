@@ -20,7 +20,7 @@ import { PageHeader } from '../../shared/ui/page-header';
  * choices live in the query, so the setup page and the repository screen link to it prepared.
  */
 @Component({
-  selector: 'trove-guide-page',
+  selector: 'quader-guide-page',
   imports: [PageHeader, RouterLink, CopyButton, AddressField, ErrorNotice, GuideView],
   templateUrl: './guide-page.html',
   styleUrl: './guide-page.scss',

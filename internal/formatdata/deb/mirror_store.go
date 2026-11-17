@@ -3,9 +3,9 @@ package deb
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // mirrorStore is the group of the data port that lists what the parsed indexes offer a mirror pass (R-DEB-024, Mirror discovery). The

@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/create"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target/targettest"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/create"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target/targettest"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // waitGone waits until the blob row is gone (collected and settled).
@@ -39,7 +39,7 @@ func (in *install) waitGone(d blob.Digest) {
 }
 
 // TestR_BAK_007_AHeldBlobIsNotCollectedUntilTheRunHasCopiedIt is the first and second criterion: with a grace period of 0 and a
-// pause after step 4, a blob whose only reference is gone stays live, trove_gc_candidates_held_total counts it, and the run
+// pause after step 4, a blob whose only reference is gone stays live, quader_gc_candidates_held_total counts it, and the run
 // completes; the first collection after the run deletes it. With a pause between steps 1 and 3 a collection run deletes nothing.
 func TestR_BAK_007_AHeldBlobIsNotCollectedUntilTheRunHasCopiedIt(t *testing.T) {
 	t.Run("pinned: the blob stays live, the run completes, the next collection deletes it", func(t *testing.T) {
@@ -89,7 +89,7 @@ func TestR_BAK_007_AHeldBlobIsNotCollectedUntilTheRunHasCopiedIt(t *testing.T) {
 				if point != create.PointPinsCommitted {
 					return nil
 				}
-				if got := scalarText(in, `SELECT hold FROM trove.backup_run`); got != "all" {
+				if got := scalarText(in, `SELECT hold FROM quader.backup_run`); got != "all" {
 					return fmt.Errorf("hold = %s, want all", got)
 				}
 				res, err := in.collect(ctx)
@@ -141,7 +141,7 @@ func TestR_BAK_007_AStalledRunLosesItsHoldAndFailsWithHoldLost(t *testing.T) {
 	if keys := listManifests(t, r); len(keys) != 0 {
 		t.Fatalf("a manifest exists: %v", keys)
 	}
-	if st := scalarText(in, `SELECT state FROM trove.backup_run`); st != "failed" {
+	if st := scalarText(in, `SELECT state FROM quader.backup_run`); st != "failed" {
 		t.Fatalf("state = %s", st)
 	}
 }
@@ -223,7 +223,7 @@ func TestR_BAK_007_ARandomInterleavingNeverLosesABlobOfACompletedBackup(t *testi
 				return
 			}
 			time.Sleep(time.Duration(rng.IntN(60)) * time.Millisecond)
-			if _, err := in.web.Main().Exec(context.Background(), `DELETE FROM trove.items WHERE path = $1`, p); err != nil && ctx.Err() == nil {
+			if _, err := in.web.Main().Exec(context.Background(), `DELETE FROM quader.items WHERE path = $1`, p); err != nil && ctx.Err() == nil {
 				t.Errorf("churn delete: %v", err)
 			}
 		})
@@ -240,7 +240,7 @@ func TestR_BAK_007_ARandomInterleavingNeverLosesABlobOfACompletedBackup(t *testi
 		delete(live, victim)
 		mu.Unlock()
 		if victim != "" {
-			if _, err := in.web.Main().Exec(context.Background(), `DELETE FROM trove.items WHERE path = $1`, victim); err != nil && ctx.Err() == nil {
+			if _, err := in.web.Main().Exec(context.Background(), `DELETE FROM quader.items WHERE path = $1`, victim); err != nil && ctx.Err() == nil {
 				t.Errorf("delete: %v", err)
 			}
 		}

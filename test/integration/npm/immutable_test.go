@@ -60,7 +60,7 @@ func TestR_NPM_008_AVersionIsNeverAcceptedAgainWithOtherBytes(t *testing.T) {
 func TestR_NPM_007_AcknowledgedRetry(t *testing.T) {
 	e := newEnv(t)
 	a := e.replica("web-a")
-	b := e.replica("web-b", "TROVE_NPM_PUBLISH_RETRY_WINDOW=2s")
+	b := e.replica("web-b", "QUADER_NPM_PUBLISH_RETRY_WINDOW=2s")
 	p := pkg{Name: "@acme/ui", Version: "1.0.3", Sigstore: []byte(`{"bundle":1}`)}
 	first := e.mustPublish(a, "npm-local", e.tokA, p)
 	if first.Header.Get("npm-notice") != "" {
@@ -85,7 +85,7 @@ func TestR_NPM_007_AcknowledgedRetry(t *testing.T) {
 		}
 		// the repo label is capped by the metrics section (R-OPS-007); which keys get a series
 		// of their own is not this format's decision, so the test sums over the label
-		if got := sumSeries(b.Metrics(t), "trove_npm_publish_retries_acknowledged_total{"); got != 1 {
+		if got := sumSeries(b.Metrics(t), "quader_npm_publish_retries_acknowledged_total{"); got != 1 {
 			t.Fatalf("retries acknowledged = %v", got)
 		}
 	})
@@ -126,7 +126,7 @@ func TestR_NPM_007_AcknowledgedRetry(t *testing.T) {
 		}
 	})
 	t.Run("R-NPM-007 a window of zero turns the acknowledgement off", func(t *testing.T) {
-		c := e.replica("web-c", "TROVE_NPM_PUBLISH_RETRY_WINDOW=0s")
+		c := e.replica("web-c", "QUADER_NPM_PUBLISH_RETRY_WINDOW=0s")
 		if ans := e.publish(c, "npm-local", e.tokA, p); ans.Status != 409 {
 			t.Fatalf("%d %s", ans.Status, ans.Body)
 		}

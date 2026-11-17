@@ -55,7 +55,7 @@ control: the admin area's screens are decided by the API as before, and the oper
 
 ## What the browser keeps
 
-The frequently visited repositories and projects are kept in `localStorage` under `trove.frequent.<principal ID>` (R-UI-096):
+The frequently visited repositories and projects are kept in `localStorage` under `quader.frequent.<principal ID>` (R-UI-096):
 qualified names, keys, visit counts and times, no secret (R-UI-043). A stored repository is shown only after the repository list has
 confirmed that the caller still sees it (`GET /api/v1/repositories?name=…`, R-API-063), which answers a name that does not exist and
 one the caller may not see alike.
@@ -91,9 +91,9 @@ unreleased product.
 
 ### H-987 · The frequently visited names stay in the browser profile
 
-Component: the store `trove.frequent.<principal ID>` of R-UI-096.
+Component: the store `quader.frequent.<principal ID>` of R-UI-096.
 
 Subject: a user on a shared operating-system account or browser profile. Sign-out does not clear the store, so whoever can read the
 profile's storage reads the qualified names of the repositories and the keys of the projects the user opened, and how often. Live
-once the UI keeps the store; today's `trove.recent-repositories` holds the same kind of names under one key for every user of a
+once the UI keeps the store; today's `quader.recent-repositories` holds the same kind of names under one key for every user of a
 browser. What makes it real: a shared workstation.

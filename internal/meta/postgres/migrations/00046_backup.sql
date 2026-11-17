@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The backup lane (R-BAK-009, R-BAK-010, R-BAK-007, R-STOR-047).
 --
@@ -23,7 +23,7 @@ CREATE TABLE backup_run (
     trigger          text        NOT NULL CHECK (trigger IN ('schedule', 'manual')),
     target           text        NOT NULL,
     pod              text        NOT NULL,
-    trove_version    text        NOT NULL,
+    quader_version    text        NOT NULL,
     snapshot_at      timestamptz,
     progress         jsonb       NOT NULL DEFAULT '{}',
     result           jsonb,

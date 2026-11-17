@@ -1,6 +1,6 @@
 package ci
 
-import "github.com/guided-traffic/trove/internal/config"
+import "github.com/guided-traffic/quader/internal/config"
 
 // DeclaredFromConfig converts an entry of ci.issuers (R-CI-001, Q-CI-16) to the input the issuer
 // service applies: the same fields, the keys left out stay nil and take the defaults of R-CI-001 when

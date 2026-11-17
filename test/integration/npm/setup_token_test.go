@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // TestR_AUTHZ_013_ASetupTokenOfAVirtualRepositoryReadsThroughIt is the token the client
@@ -71,8 +71,8 @@ func TestR_AUTHZ_013_ASetupTokenFillsAndReadsARemoteMemberThroughTheVirtualRepos
 	if got.Status != 200 || integrityOf(got.Body) != v.Dist.Integrity {
 		t.Fatalf("the uncached tarball through %s: %d %.300s", rAll, got.Status, got.Body)
 	}
-	if from := got.Header.Get("Trove-Resolved-From"); from != rRemote {
-		t.Errorf("Trove-Resolved-From = %q", from)
+	if from := got.Header.Get("Quader-Resolved-From"); from != rRemote {
+		t.Errorf("Quader-Resolved-From = %q", from)
 	}
 	if direct := r.view(rep, rRemote, p.Name, tok); direct.Status != 404 {
 		t.Errorf("the remote member addressed directly: %d %.200s", direct.Status, direct.Body)

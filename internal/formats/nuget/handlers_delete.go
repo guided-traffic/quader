@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
 // The operations on a stored version (R-NUGET-007): DELETE v3/package/{id}/{version}

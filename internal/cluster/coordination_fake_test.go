@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // fakeBus is a Bus that records what is published and delivers to subscribers.
@@ -53,7 +53,7 @@ func (b *fakeBus) subscribe(_ context.Context, ch Channel, h Handler) (func(), e
 }
 
 func (b *fakeBus) channel(f *ChannelFamily, parts ...string) (Channel, error) {
-	return Channel{name: "trove:test:" + join("", f.mechanism, f.version, parts)}, nil
+	return Channel{name: "quader:test:" + join("", f.mechanism, f.version, parts)}, nil
 }
 
 func (b *fakeBus) OnSubscribed(fn func(bool)) {

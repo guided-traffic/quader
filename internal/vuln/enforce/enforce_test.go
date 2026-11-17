@@ -12,12 +12,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/metrics"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/metrics"
 )
 
 type states map[string]advisory.DataState
@@ -55,7 +55,7 @@ type names struct{ calls int }
 
 func (n *names) VersionNames(context.Context, int64) (string, string, bool, error) {
 	n.calls++
-	return "trove-test-mal", "1.0.0", true, nil
+	return "quader-test-mal", "1.0.0", true, nil
 }
 
 type fixture struct {
@@ -76,7 +76,7 @@ func newFixture(t *testing.T, st states, enforcement vuln.Enforcement) *fixture 
 	f := &fixture{rec: &recorder{}, m: m, now: time.Unix(1_700_000_000, 0), n: &names{}, ev: &evaluator{}}
 	f.e = New(Options{
 		Enabled: true, Enforcement: enforcement, States: st, Evaluator: f.ev, Names: f.n, Metrics: m, Audit: f.rec,
-		BaseURL: "https://trove.example.com/", Now: func() time.Time { return f.now },
+		BaseURL: "https://quader.example.com/", Now: func() time.Time { return f.now },
 	})
 	return f
 }
@@ -128,7 +128,7 @@ func TestR_VULN_015_DecideAppliesThePolicyToTheLookupsRow(t *testing.T) {
 func TestR_VULN_016_TheRefusalNamesWhatBlockedAndIsNeverCached(t *testing.T) {
 	f := newFixture(t, states{"npm": {Complete: true}}, vuln.EnforceBlocks)
 	err := f.e.Refuse(context.Background(), Download{
-		Addressed: "npm-all", Store: "npm-remote", RepoID: "5", Format: "npm", Path: "trove-test-mal/-/trove-test-mal-1.0.0.tgz",
+		Addressed: "npm-all", Store: "npm-remote", RepoID: "5", Format: "npm", Path: "quader-test-mal/-/quader-test-mal-1.0.0.tgz",
 		VersionID: 9, Stored: true, Block: f.e.Decide(scanned, malRow(), 9),
 		Source: audit.Source{ClientAddr: "10.0.0.1"},
 	})
@@ -136,7 +136,7 @@ func TestR_VULN_016_TheRefusalNamesWhatBlockedAndIsNeverCached(t *testing.T) {
 	if !ok || e.Kind != errs.Forbidden || e.Code != errs.CodeVulnerabilityBlocked {
 		t.Fatalf("refusal = %v", err)
 	}
-	want := "trove blocked trove-test-mal@1.0.0 in npm-all: malicious package (MAL-2026-1234). Details: https://trove.example.com/ui/vulnerabilities/findings/01933b2a-0000"
+	want := "Quader blocked quader-test-mal@1.0.0 in npm-all: malicious package (MAL-2026-1234). Details: https://quader.example.com/ui/vulnerabilities/findings/01933b2a-0000"
 	if e.Detail != want {
 		t.Errorf("text = %q\nwant   %q", e.Detail, want)
 	}
@@ -150,7 +150,7 @@ func TestR_VULN_016_TheRefusalNamesWhatBlockedAndIsNeverCached(t *testing.T) {
 		t.Errorf("extensions = %v", e.Extensions)
 	}
 	if n := counter(t, f.m.DownloadsBlocked.WithLabelValues("npm", "malicious", "enforce")); n != 1 {
-		t.Errorf("trove_vuln_downloads_blocked_total{enforce} = %v", n)
+		t.Errorf("quader_vuln_downloads_blocked_total{enforce} = %v", n)
 	}
 }
 
@@ -186,7 +186,7 @@ func TestR_VULN_016_TheAuditEventIsDeduplicatedPerMinuteRepositoryVersionAndClie
 	if err := json.Unmarshal(ev.Details, &det); err != nil {
 		t.Fatal(err)
 	}
-	if ev.Type != audit.EventVulnDownloadBlocked || ev.Repository != "npm-remote" || det["package"] != "trove-test-mal" || det["version"] != "1.0.0" ||
+	if ev.Type != audit.EventVulnDownloadBlocked || ev.Repository != "npm-remote" || det["package"] != "quader-test-mal" || det["version"] != "1.0.0" ||
 		det["reason"] != "malicious" || det["enforced"] != true || det["stored"] != true || det["advisory"] != "MAL-2026-1234" {
 		t.Errorf("event %+v details %v", ev, det)
 	}
@@ -218,7 +218,7 @@ func TestR_VULN_015_ReportModeCountsAndRefusesNothing(t *testing.T) {
 		t.Fatalf("report mode refuses: %v", err)
 	}
 	if n := counter(t, f.m.DownloadsBlocked.WithLabelValues("npm", "malicious", "report")); n != 1 {
-		t.Errorf("trove_vuln_downloads_blocked_total{mode=report} = %v", n)
+		t.Errorf("quader_vuln_downloads_blocked_total{mode=report} = %v", n)
 	}
 	if len(f.rec.evs) != 1 || !strings.Contains(string(f.rec.evs[0].Details), `"enforced":false`) {
 		t.Errorf("events = %+v", f.rec.evs)
@@ -229,7 +229,7 @@ func TestR_VULN_015_ReportModeCountsAndRefusesNothing(t *testing.T) {
 // without a finding links the advisory page.
 func TestR_VULN_015_TheMissGateAppliesTheEvaluationAndTheMissingDataRule(t *testing.T) {
 	f := newFixture(t, states{"npm": {Complete: true}}, vuln.EnforceBlocks)
-	m := Miss{Package: "trove-test-mal", Version: "1.0.0", Path: "trove-test-mal/-/trove-test-mal-1.0.0.tgz"}
+	m := Miss{Package: "quader-test-mal", Version: "1.0.0", Path: "quader-test-mal/-/quader-test-mal-1.0.0.tgz"}
 	m.Repo.Name = qr("npm-remote")
 	if err := f.e.gate(context.Background(), scanned, m); err != nil {
 		t.Fatalf("nothing blocks: %v", err)
@@ -240,14 +240,14 @@ func TestR_VULN_015_TheMissGateAppliesTheEvaluationAndTheMissingDataRule(t *test
 	if !ok || e.Code != errs.CodeVulnerabilityBlocked {
 		t.Fatalf("gate = %v", err)
 	}
-	if !strings.HasSuffix(e.Detail, "Details: https://trove.example.com/ui/vulnerabilities/advisories/npm/MAL-2026-1234") ||
-		!strings.Contains(e.Detail, "trove-test-mal@1.0.0 in it/npm-remote: malicious package (MAL-2026-1234)") {
+	if !strings.HasSuffix(e.Detail, "Details: https://quader.example.com/ui/vulnerabilities/advisories/npm/MAL-2026-1234") ||
+		!strings.Contains(e.Detail, "quader-test-mal@1.0.0 in it/npm-remote: malicious package (MAL-2026-1234)") {
 		t.Errorf("text = %q", e.Detail)
 	}
 	if _, has := e.Extensions["findingId"]; has {
 		t.Error("a miss without a finding names a finding")
 	}
-	if len(f.ev.calls) != 2 || f.ev.calls[0].Repo.Key != "npm-remote" || f.ev.calls[0].Name != "trove-test-mal" || f.ev.calls[0].Version != "1.0.0" {
+	if len(f.ev.calls) != 2 || f.ev.calls[0].Repo.Key != "npm-remote" || f.ev.calls[0].Name != "quader-test-mal" || f.ev.calls[0].Version != "1.0.0" {
 		t.Errorf("EvaluateMiss calls = %+v", f.ev.calls)
 	}
 	// A block the evaluation found and a report-mode installation: counted, not refused.

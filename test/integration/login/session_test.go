@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/oidc"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/oidc"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 func TestR_AUTH_013_Logout(t *testing.T) {
@@ -38,7 +38,7 @@ func TestR_AUTH_013_Logout(t *testing.T) {
 		_ = json.Unmarshal([]byte(body), &out)
 		u, _ := url.Parse(out.RedirectTo)
 		q := u.Query()
-		if !strings.HasPrefix(out.RedirectTo, e.idp.issuer+"/end_session?") || q.Get("client_id") != "trove" ||
+		if !strings.HasPrefix(out.RedirectTo, e.idp.issuer+"/end_session?") || q.Get("client_id") != "quader" ||
 			q.Get("post_logout_redirect_uri") != e.baseURL+"/ui/logged-out" || strings.Count(q.Get("id_token_hint"), ".") != 2 {
 			t.Fatalf("redirectTo %s", out.RedirectTo)
 		}
@@ -241,7 +241,7 @@ func TestR_AUTH_011_Reauthentication(t *testing.T) {
 			f.user = idpUser{sub: "sub-bob", username: "bob", email: "bob@example.com", groups: []string{}}
 		})
 		defer e.idp.set(func(f *fakeIDP) {
-			f.user = idpUser{sub: "sub-alice", username: "alice", email: "alice@example.com", name: "Alice Example", groups: []string{"trove-team-web", "unrelated"}}
+			f.user = idpUser{sub: "sub-alice", username: "alice", email: "alice@example.com", name: "Alice Example", groups: []string{"quader-team-web", "unrelated"}}
 		})
 		cb := b.authorize(b.startLogin("corp", "?purpose=reauth"))
 		resp, body := b.get(cb)
@@ -339,7 +339,7 @@ func TestR_AUTH_007_008_Provisioning(t *testing.T) {
 
 	t.Run("R-AUTH-008 an omitted group claim reaches the provisioner as clear with reason absent", func(t *testing.T) {
 		e.idp.set(func(f *fakeIDP) { f.user.groups = nil })
-		defer e.idp.set(func(f *fakeIDP) { f.user.groups = []string{"trove-team-web", "unrelated"} })
+		defer e.idp.set(func(f *fakeIDP) { f.user.groups = []string{"quader-team-web", "unrelated"} })
 		e.browser().mustLogin("corp")
 		c := e.prov.last()
 		if c.ClaimState != principal.ClaimAbsent || c.KeepOnMissing || len(c.Groups) != 0 {
@@ -349,7 +349,7 @@ func TestR_AUTH_007_008_Provisioning(t *testing.T) {
 
 	t.Run("R-AUTH-008 an overage marker reaches the provisioner with reason overage", func(t *testing.T) {
 		e.idp.set(func(f *fakeIDP) { f.user.groups = nil; f.user.overage = true })
-		defer e.idp.set(func(f *fakeIDP) { f.user.groups = []string{"trove-team-web", "unrelated"}; f.user.overage = false })
+		defer e.idp.set(func(f *fakeIDP) { f.user.groups = []string{"quader-team-web", "unrelated"}; f.user.overage = false })
 		e.browser().mustLogin("corp")
 		if c := e.prov.last(); c.ClaimState != principal.ClaimOverage {
 			t.Fatalf("%+v", c)

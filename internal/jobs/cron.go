@@ -28,7 +28,7 @@ func (e *ScheduleError) Error() string {
 func (e *ScheduleError) Code() string { return CodeInvalidSchedule }
 
 // Schedule is a parsed five-field cron expression, evaluated in UTC. It is the
-// only cron parser in trove (Q-STOR-4, Q-OPS-7): maintenance tasks, retention
+// only cron parser in quader (Q-STOR-4, Q-OPS-7): maintenance tasks, retention
 // policies and every later schedule use it.
 type Schedule struct {
 	expr                   string

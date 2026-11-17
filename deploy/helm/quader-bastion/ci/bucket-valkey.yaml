@@ -1,0 +1,59 @@
+# The bucket backend with Valkey (Sentinel), a trust bundle, tracing and the monitoring objects: the
+# profile of the e2e run with a SeaweedFS bucket. Also the set the rule tests render
+# (test/chart/bastion_rules_test.go), so the Valkey alert is part of the rule file.
+config:
+  server:
+    base_url: https://packages.example.com
+    trusted_proxies: ["10.244.0.0/16"]
+  bastion:
+    main:
+      url: https://quader.example.com
+    cache:
+      backend: bucket
+      bucket:
+        endpoint: https://object.storage.eu01.onstackit.cloud
+        region: eu01
+        bucket: quader-bastion-partners
+    blocking:
+      exempt_cidrs: ["198.51.100.0/24"]
+  valkey:
+    mode: sentinel
+    sentinel:
+      addresses:
+        - quader-bastion-valkey-sentinel-0:26379
+        - quader-bastion-valkey-sentinel-1:26379
+        - quader-bastion-valkey-sentinel-2:26379
+      primary_name: quader-bastion
+  tracing:
+    enabled: true
+    endpoint: https://otel-collector.observability:4318
+secrets:
+  mainToken:
+    existingSecret: quader-bastion-token
+  signingKey:
+    existingSecret: quader-bastion-signing
+  cacheBucket:
+    existingSecret: quader-bastion-s3
+  valkey:
+    existingSecret: quader-bastion-valkey
+  valkeySentinel:
+    existingSecret: quader-bastion-valkey-sentinel
+  valkeyCA:
+    existingSecret: quader-bastion-valkey-ca
+trustedCA:
+  existingConfigMap: corp-ca-bundle
+tls:
+  existingSecret: quader-bastion-listener
+ingress:
+  tls:
+    - secretName: quader-bastion-public-tls
+      hosts: [packages.example.com]
+metrics:
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack
+  prometheusRule:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack

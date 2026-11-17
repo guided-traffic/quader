@@ -12,24 +12,24 @@ Nothing outside `internal/cluster` reads or writes a Valkey key (Q-ARCH-16: noth
 |---|---|
 | [`doc.go`](../../internal/cluster/doc.go) | Package documentation |
 | [`valkey.go`](../../internal/cluster/valkey.go) | `NewValkey`, lifecycle, `Available`/`Status`/`StartupError`, connect loop, monitor (primary changes, health probe), version check, start-up trust warnings |
-| [`valkey_ops.go`](../../internal/cluster/valkey_ops.go) | The commands trove needs (`get`, `set`, `setNX`, `setIfEq`, `delIfEq`, `incr`, `publish`, `ping`), unexported, behind breaker and command timeout |
+| [`valkey_ops.go`](../../internal/cluster/valkey_ops.go) | The commands Quader needs (`get`, `set`, `setNX`, `setIfEq`, `delIfEq`, `incr`, `publish`, `ping`), unexported, behind breaker and command timeout |
 | [`valkey_keys.go`](../../internal/cluster/valkey_keys.go) | Key and channel family registry (`registerKeyFamily`, `registerChannelFamily`), `Key`/`Channel` types, `formKey`/`formKeyTTL`/`channel`, keyspace |
 | [`valkey_ratelimit.go`](../../internal/cluster/valkey_ratelimit.go), [`limiter.go`](../../internal/cluster/limiter.go) | The rate-limit counters (key family `rl`) and the limiter with its per-replica fallback, see [Rate-limit counters](#rate-limit-counters) |
 | [`valkey_flight.go`](../../internal/cluster/valkey_flight.go) | `FlightKey`, `FlightLock` (`Acquire`, `Wait`), `FlightHold` (extension, `Release`, `Lost`), the shared flight subscriptions, see [FlightLock](#flightlock) |
 | [`valkey_negative.go`](../../internal/cluster/valkey_negative.go) | `NegativeStore` (`Lookup`, `Record`): the entries of the negative cache in Valkey, see [Negative store](#negative-store) |
-| [`valkey_bastion.go`](../../internal/cluster/valkey_bastion.go), [`limiter_estimate.go`](../../internal/cluster/limiter_estimate.go) | The trove Bastion's state: `BastionStore` (marks, answer records, sweep lease), `FlightKeyFromHash`, `Limiter.Estimate`, see [The Bastion's keys](#the-bastions-keys) |
+| [`valkey_bastion.go`](../../internal/cluster/valkey_bastion.go), [`limiter_estimate.go`](../../internal/cluster/limiter_estimate.go) | The Quader Bastion's state: `BastionStore` (marks, answer records, sweep lease), `FlightKeyFromHash`, `Limiter.Estimate`, see [The Bastion's keys](#the-bastions-keys) |
 | [`valkey_pubsub.go`](../../internal/cluster/valkey_pubsub.go) | `subscribe`, the one Pub/Sub connection and its resubscription |
 | [`valkey_reason.go`](../../internal/cluster/valkey_reason.go) | `ReasonCode`, the fixed vocabulary of `ValkeyStatus.ReasonCode` |
 | [`valkey_integration.go`](../../internal/cluster/valkey_integration.go) | Compiled only with the `integration` build tag: `cluster.Raw(v)` and `RegisterTestKeyFamily`/`RegisterTestChannelFamily` for `test/integration/valkey`; no build of the binary has it |
-| [`valkey_sentinel.go`](../../internal/cluster/valkey_sentinel.go) | Sentinel probe (`trove_valkey_sentinels_reachable`) and startup classification (Q-HA-13) |
+| [`valkey_sentinel.go`](../../internal/cluster/valkey_sentinel.go) | Sentinel probe (`quader_valkey_sentinels_reachable`) and startup classification (Q-HA-13) |
 | [`valkey_breaker.go`](../../internal/cluster/valkey_breaker.go) | Circuit breaker |
-| [`valkey_errors.go`](../../internal/cluster/valkey_errors.go) | Error kinds (`trove_valkey_errors_total{kind}`) and what counts for the breaker |
+| [`valkey_errors.go`](../../internal/cluster/valkey_errors.go) | Error kinds (`quader_valkey_errors_total{kind}`) and what counts for the breaker |
 | [`valkey_tls.go`](../../internal/cluster/valkey_tls.go), [`valkey_auth.go`](../../internal/cluster/valkey_auth.go) | TLS modes and the CA bundle and client pair read again for every handshake; credential files read per connection attempt |
-| [`valkey_metrics.go`](../../internal/cluster/valkey_metrics.go), [`valkey_version.go`](../../internal/cluster/valkey_version.go) | `trove_valkey_*` families; the 9.0 floor |
+| [`valkey_metrics.go`](../../internal/cluster/valkey_metrics.go), [`valkey_version.go`](../../internal/cluster/valkey_version.go) | `quader_valkey_*` families; the 9.0 floor |
 
 ## Connections and discovery
 
-Per replica: up to four pipelined connections to the primary (`trove:<instance>:main`), one Pub/Sub connection (`trove:<instance>:pubsub`) and one connection to the current Sentinel (`trove:<instance>:sentinel`). Pipelined connections open lazily, so an idle replica shows one; under load four. Measured on the integration stack: 4 main + 1 pubsub = 5 on the primary after 3,200 writes from 64 goroutines.
+Per replica: up to four pipelined connections to the primary (`quader:<instance>:main`), one Pub/Sub connection (`quader:<instance>:pubsub`) and one connection to the current Sentinel (`quader:<instance>:sentinel`). Pipelined connections open lazily, so an idle replica shows one; under load four. Measured on the integration stack: 4 main + 1 pubsub = 5 on the primary after 3,200 writes from 64 goroutines.
 
 valkey-go resolves the primary through the Sentinels, checks `ROLE`, follows `+switch-master` and reconciles every `valkey.sentinel.refresh_interval` (`TopologyRefreshInterval`). The poll is the bound; the event only speeds it up. Verified: with `SUBSCRIBE` denied to the Sentinel user the client reaches the new primary 1.3 s after the Sentinels announce it (interval 2 s); with events 0.1 s.
 
@@ -48,7 +48,7 @@ The Sentinel probe is separate: every refresh interval, every configured Sentine
 | Unknown `primary_name` on every reachable Sentinel | false | `config_error` | non-nil |
 | `WRONGPASS`/`NOAUTH`/`NOPERM` (data node or Sentinel) | false | `auth_failed` | non-nil |
 | Certificate rejected | false | `config_error` | non-nil |
-| Server below 9.0 (HELLO `version`) | false, reason `valkey 8.1.11 is not supported; trove requires 9.0 or later` | `unsupported` | nil |
+| Server below 9.0 (HELLO `version`) | false, reason `valkey 8.1.11 is not supported; quader requires 9.0 or later` | `unsupported` | nil |
 
 Later states: `circuit_open` (breaker open), `probe_failed` (last health probe failed), `closed` (after `Close`). `Status().DegradedReason` is the free text: it can name addresses and server replies, so it goes to the log (`valkey degraded` carries `reason_code` and `reason`) and the authenticated replica list; `/readyz?verbose=1` on the ops listener shows only the code (`cluster.ReasonCodes()` lists them).
 
@@ -57,7 +57,7 @@ Later states: `circuit_open` (breaker open), `probe_failed` (last health probe f
 marker; the dial function (`dialFn(resolver, prepare)`) turns it into the configuration of each handshake, data nodes
 and Sentinels alike: the CA pool read now, the client certificate read when the server asks for it, the hand-written
 chain check of `verify-ca` against this handshake's pool. A file that does not load at start fails `NewValkey`; one
-that breaks later keeps the last good material and is counted (`trove_tls_reload_errors_total{kind="valkey"}`).
+that breaks later keeps the last good material and is counted (`quader_tls_reload_errors_total{kind="valkey"}`).
 Connections are recycled every `max_conn_lifetime`, so a rotated CA or client certificate is in use within that
 lifetime even without reconnects. `cluster.WithTLSMetrics` passes the families, see [tls.md](tls.md).
 
@@ -67,7 +67,7 @@ The client keeps retrying with `reconnect.*` backoff; `StartupError` clears when
 
 ## Key registry
 
-Every key is `<key_prefix><keyspace>:<mechanism>:v<version>[:<part>...]`; channels the same. The keyspace is the first 12 hex digits of `system_state.keyspace_id` (`WithKeyspaceID` or `SetKeyspaceID`, set once). The trove Bastion has no PostgreSQL and so no keyspace: its client is made with `WithoutKeyspace` and a key is `<key_prefix><mechanism>:v<version>[:<part>...]` with the key prefix `trove-bastion:<valkey.key_prefix>:` (see [The Bastion's keys](#the-bastions-keys)).
+Every key is `<key_prefix><keyspace>:<mechanism>:v<version>[:<part>...]`; channels the same. The keyspace is the first 12 hex digits of `system_state.keyspace_id` (`WithKeyspaceID` or `SetKeyspaceID`, set once). The Quader Bastion has no PostgreSQL and so no keyspace: its client is made with `WithoutKeyspace` and a key is `<key_prefix><mechanism>:v<version>[:<part>...]` with the key prefix `quader-bastion:<valkey.key_prefix>:` (see [The Bastion's keys](#the-bastions-keys)).
 
 - A `Key` can only be created by `v.formKey(family, parts...)` or `v.formKeyTTL(family, ttl, parts...)`. A family exists only with a positive maximum TTL (`registerKeyFamily` panics otherwise), and the key carries its TTL. The write methods take a `Key` and set the expiry themselves, so a write without a TTL cannot be expressed. The zero `Key` and a zero family are rejected. `incr` sets the expiry once (`EXPIRE ... NX` in the same `MULTI`).
 - Parts must match `[A-Za-z0-9_-]{1,128}`: identifiers and hashes, never raw names.
@@ -94,7 +94,7 @@ limiter of R-ARCH-034. It is the one mechanism that other packages use through a
 ```go
 set, err := cluster.NewLimiterSet(cluster.LimiterOptions{
     Valkey: vk,                  // nil: every limiter runs its fallback
-    Registry: reg,               // trove_ratelimit_decisions_total, trove_ratelimit_fallback
+    Registry: reg,               // quader_ratelimit_decisions_total, quader_ratelimit_fallback
     LiveReplicas: live.Get,      // n: live replicas of this replica's role, refreshed with the heartbeat
 })
 l := set.NewLimiter("api_read", cluster.ScopeCluster, 50 /* per second */, 200 /* burst */)
@@ -131,9 +131,9 @@ l.Count(ctx, bucket)             // one failure
   `valkey.command_timeout` (and counts for the breaker). The count-only form falls back to local sliding-window counters with
   the limit `max(1, burst ÷ n)`. Local buckets are bounded (`MaxFallbackBuckets` per limiter, idle buckets dropped first); a
   dropped bucket starts full.
-- **Metrics.** `trove_ratelimit_decisions_total{limiter,mode,outcome}`, `trove_ratelimit_fallback{limiter}` (1 from the first
+- **Metrics.** `quader_ratelimit_decisions_total{limiter,mode,outcome}`, `quader_ratelimit_fallback{limiter}` (1 from the first
   fallback decision until a decision used Valkey again, and while Valkey is unavailable), and
-  `trove_valkey_degraded_total{mechanism="rate_limit"}`.
+  `quader_valkey_degraded_total{mechanism="rate_limit"}`.
 - The verdict carries what the `429` and the `RateLimit` fields need: `RetryAfter` is computed from the same counters
   (whole seconds, at least 1), `Remaining` is `burst` minus the window's estimate, `Reset` the time to the end of the
   window. During the fallback they describe the replica's share.
@@ -153,7 +153,7 @@ lock := cluster.NewFlightLock(vk, cluster.FlightLockOptions{
     TTL: ttl,                // cluster.flight_lock_ttl (30 s)
     PollInterval: poll,      // proxy.lock_poll_interval_ms (1 s)
     InstanceUID: instance,   // empty: the instance name of vk
-    Registerer: reg,         // trove_flight_lock_lost_total
+    Registerer: reg,         // quader_flight_lock_lost_total
 })                           // vk == nil: every call is ErrUnavailable
 
 h, ok, err := lock.Acquire(ctx, f)  // SET lock:fetch:v1:<f> <token> NX PX <ttl>
@@ -164,12 +164,12 @@ h.Lost()                            // an extension found the key gone or foreig
 ```
 
 - **Key and token.** The lock is `<prefix><ks>:lock:fetch:v1:<f>` (family `lock:fetch`, longest expiry `MaxFlightLockTTL` = 10 min; the actual expiry is the configured TTL, capped there); the outcome channel is `<prefix><ks>:fill:v1:<f>`. The token is `<instance uid>.<16 random bytes, base64url>` and is new for every acquisition. `<f>` is the full SHA-256 (Q-ARCH-7); the repository id enters it as decimal digits.
-- **Extension.** `Acquire` starts one goroutine per hold (Q-ARCH-196). Every TTL/3 it runs `SET key token IFEQ token PX ttl`. A call that fails is tried again at the next tick. A call that finds the key gone or owned by another token marks the hold lost, counts `trove_flight_lock_lost_total` once and ends the loop; the fetch carries on, and the hold never deletes the other holder's key. The goroutine is bound to the Valkey client, not to the request: `Close` ends it, a cancelled client request does not.
+- **Extension.** `Acquire` starts one goroutine per hold (Q-ARCH-196). Every TTL/3 it runs `SET key token IFEQ token PX ttl`. A call that fails is tried again at the next tick. A call that finds the key gone or owned by another token marks the hold lost, counts `quader_flight_lock_lost_total` once and ends the loop; the fetch carries on, and the hold never deletes the other holder's key. The goroutine is bound to the Valkey client, not to the request: `Close` ends it, a cancelled client request does not.
 - **Release.** Stops the extension, runs `DELIFEQ` with the token, then publishes the outcome (`stored` or `failed`, with the leader's `traceparent` after a space when it is a short printable token, Q-ARCH-195). It runs on a context that is not cancelled with the caller's, and does nothing when called again. After a loss the token no longer matches, so a late `Release` deletes nothing of the new holder.
 - **Wait.** Registers the waiter on the flight's channel first, then `GET`s the key; no key returns `OutcomeGone` at once. A waiter whose first `GET` falls between the release's `DELIFEQ` and its `PUBLISH` gets `OutcomeGone` too, so a test that needs `stored` or `failed` waits for that `GET` (`memServer.count("GET")`) before it releases. Otherwise the waiter sleeps until the outcome message, the poll interval, a re-subscription of the Pub/Sub connection (`OnSubscribed(reconnect=true)`, after a primary change or a broken connection: every waiter checks its key) or the end of `ctx` (returned as `ctx`'s error). After each wake-up other than a message it checks the key again. The subscription reaches the server a moment after the registration, and a message published in that gap is missed; the poll covers it, as it covers a dropped message (Q-ARCH-15).
 - **Shared subscriptions.** The waiters of one flight on a replica share one `Valkey.subscribe` registration: 50 waiters cost one `SUBSCRIBE`, and the last one leaving removes it. The outcome is handed to the waiters from the Pub/Sub reader goroutine without blocking.
-- **Errors.** Every failed Valkey call, an open breaker and a missing keyspace included, returns an error that wraps `ErrUnavailable` and counts `trove_valkey_degraded_total{mechanism="flight_lock"}`; with the breaker open there is no network I/O. A context that ended returns its own error. A `FlightKey` that is not from `NewFlightKey` is refused with a plain error.
-- **What lives elsewhere.** The in-process single-flight group in front of `Acquire`, the bypass reasons (`trove_flight_lock_bypass_total`), the re-check after `Wait` and the shutdown rule (release with `failed` 5 s before the deadline) belong to the proxy engine (`internal/proxy`, `flight.go`); none of it is in this package.
+- **Errors.** Every failed Valkey call, an open breaker and a missing keyspace included, returns an error that wraps `ErrUnavailable` and counts `quader_valkey_degraded_total{mechanism="flight_lock"}`; with the breaker open there is no network I/O. A context that ended returns its own error. A `FlightKey` that is not from `NewFlightKey` is refused with a plain error.
+- **What lives elsewhere.** The in-process single-flight group in front of `Acquire`, the bypass reasons (`quader_flight_lock_bypass_total`), the re-check after `Wait` and the shutdown rule (release with `failed` 5 s before the deadline) belong to the proxy engine (`internal/proxy`, `flight.go`); none of it is in this package.
 
 ## Negative store
 
@@ -183,14 +183,14 @@ e, found, err := store.Lookup(ctx, repoID, f)  // found == false: none, or a mal
 
 - **Key and value.** `<prefix><ks>:neg:v1:<repo id>:<f>` (family `neg`, longest expiry `MaxNegativeTTL` = 24 h + 5 s), value `{"s":404,"c":<Unix ms>}`. The expiry of a written key is the `ttl` argument, the repository's `notFoundTtlSeconds`; `ttl <= 0` writes nothing, a `ttl` above the maximum is an error, and a status other than 404 or 410 is refused.
 - **Form only.** `Lookup` decodes strictly: `s` is 404 or 410, `c` is above 0, no other field, nothing after the value. A value that fails is removed with `DELIFEQ` of the value that was read (the ACL user has no `DEL`, and a writer that replaced it meanwhile keeps its entry) and returned as not found. The period, the clock window and the invalidations that cover a path are the proxy's (Q-ARCH-197), and so is the per-replica L1 (`proxy.negative_l1_entries`), a registered cache of `internal/proxy`.
-- **Metrics.** `trove_valkey_cache_lookups_total{cache="negative",result}` with `hit` (a well-formed entry was returned), `miss`, `rejected` (malformed) and `unavailable`; `trove_valkey_degraded_total{mechanism="negative_cache"}` for every call that met an unavailable Valkey. An entry that the proxy refuses after the lookup is counted by the proxy as a further `rejected` through `Valkey.CountCacheLookup`.
+- **Metrics.** `quader_valkey_cache_lookups_total{cache="negative",result}` with `hit` (a well-formed entry was returned), `miss`, `rejected` (malformed) and `unavailable`; `quader_valkey_degraded_total{mechanism="negative_cache"}` for every call that met an unavailable Valkey. An entry that the proxy refuses after the lookup is counted by the proxy as a further `rejected` through `Valkey.CountCacheLookup`.
 - **Errors** as for the flight lock: they wrap `ErrUnavailable`, and the caller answers from its L1.
 
 ## The Bastion's keys
 
-The trove Bastion (`trove serve --role bastion`, [bastion.md](bastion.md)) has an optional Valkey of its own (R-BAS-034). Its configuration
+The Quader Bastion (`quader serve --role bastion`, [bastion.md](bastion.md)) has an optional Valkey of its own (R-BAS-034). Its configuration
 section `valkey` is the main installation's, and `BastionValkey.Valkey()` turns it into the client's configuration with the key prefix
-`trove-bastion:<valkey.key_prefix>:` (the host of `server.base_url` when empty). Only `internal/bastion/shared` imports `internal/cluster` for
+`quader-bastion:<valkey.key_prefix>:` (the host of `server.base_url` when empty). Only `internal/bastion/shared` imports `internal/cluster` for
 it, and what it calls are typed methods; nothing outside this package forms a key (Q-ARCH-16).
 
 | Family (version 1) | Key below the prefix | Value | Longest expiry | Mechanism |
@@ -215,7 +215,7 @@ it, and what it calls are typed methods; nothing outside this package forms a ke
   A record, signature included, above `MaxValueSize` (1 KiB) is refused with `ErrValueTooLarge`.
 - **Counters.** `Limiter.Estimate` is the counting form that returns the number (the sliding-window estimate, rounded up) for the failed
   authentications and the refusals that lead to a block. It never falls back; while Valkey is unusable it returns `ErrUnavailable` and sets the
-  limiter's fallback flag (`trove_ratelimit_fallback{limiter}`), and `shared` counts in memory, scaled by `bastion.replicas`.
+  limiter's fallback flag (`quader_ratelimit_fallback{limiter}`), and `shared` counts in memory, scaled by `bastion.replicas`.
 - **Limits do not charge what they refuse** ([limiter_uncharged.go](../../internal/cluster/limiter_uncharged.go), Q-BAS-127). The request limits use
   `TakeUncharged` and the miss limits `EstimateWithin`: the same one round trip as `hit` (`MULTI`, `INCR`, `EXPIRE NX`, `GET` of the previous
   window, and `GET` of the two windows of the refusal counter, `EXEC`), and a refusal then counts itself with `INCR` in the counter
@@ -223,10 +223,10 @@ it, and what it calls are typed methods; nothing outside this package forms a ke
   has no such command. `Take`, which charges refused requests (R-ARCH-034, right for logins), is unchanged and stays the main installation's.
   The fallback of `TakeUncharged` is `Take`'s token bucket, which takes nothing when it refuses; the rate and the burst are divided by the live
   replicas, which the Bastion sets to `bastion.replicas`.
-- **Degraded mode.** Every failed call counts `trove_valkey_degraded_total{mechanism="bastion_state"}`. A Valkey that cannot be reached never
+- **Degraded mode.** Every failed call counts `quader_valkey_degraded_total{mechanism="bastion_state"}`. A Valkey that cannot be reached never
   stops the replica or makes it unready: the state runs from memory.
-- **The ACL user.** The Bastion's user has the commands of the main installation's rule and the patterns `~trove-bastion:*` and
-  `&trove-bastion:*` ([users.acl](../../test/integration/conf/users.acl), the user `bastion`). A stack that was started before that line existed
+- **The ACL user.** The Bastion's user has the commands of the main installation's rule and the patterns `~quader-bastion:*` and
+  `&quader-bastion:*` ([users.acl](../../test/integration/conf/users.acl), the user `bastion`). A stack that was started before that line existed
   gets the user from the tests (`ACL SETUSER` with the same rules on both nodes, idempotent).
 
 Tests: [valkey_bastion_test.go](../../internal/cluster/valkey_bastion_test.go) (the keys against `memServer`, the address mapping, the answer
@@ -245,10 +245,10 @@ After `circuit_breaker.failure_threshold` consecutive failures the breaker refus
 
 ## Metrics
 
-`trove_valkey_available`, `_circuit_open`, `_sentinels_reachable`, `_pubsub_subscribed`, `_primary_changes_total`, `_errors_total{kind}`, `_command_duration_seconds{command}`, `_degraded_total{mechanism}` (`CountDegraded`; `flight_lock`, `negative_cache`, `rate_limit`, `change_message`, `signal`, `probe` and, for the Bastion, `bastion_state`), `_cache_lookups_total{cache,result}` (`CountCacheLookup`). Also `trove_flight_lock_lost_total`, registered on the `Registerer` of `FlightLockOptions` and not in the client's own registry.
+`quader_valkey_available`, `_circuit_open`, `_sentinels_reachable`, `_pubsub_subscribed`, `_primary_changes_total`, `_errors_total{kind}`, `_command_duration_seconds{command}`, `_degraded_total{mechanism}` (`CountDegraded`; `flight_lock`, `negative_cache`, `rate_limit`, `change_message`, `signal`, `probe` and, for the Bastion, `bastion_state`), `_cache_lookups_total{cache,result}` (`CountCacheLookup`). Also `quader_flight_lock_lost_total`, registered on the `Registerer` of `FlightLockOptions` and not in the client's own registry.
 
 ## Tests
 
 - Unit (`go test -race ./internal/cluster/...`): the flight lock and the negative store against `memServer` ([valkey_flight_fake_test.go](../../internal/cluster/valkey_flight_fake_test.go): an in-memory server with `SET` `NX`/`PX`/`IFEQ`, `GET`, `DELIFEQ`, `PUBLISH` and RESP3 `SUBSCRIBE` pushes that can lose a key, drop messages and cut the Pub/Sub connection; [valkey_flight_test.go](../../internal/cluster/valkey_flight_test.go), [valkey_negative_test.go](../../internal/cluster/valkey_negative_test.go)), breaker with a fake clock, error classification (real server errors via a fake RESP server in `valkey_fake_test.go`), key registry, version decision, startup classification, reason codes, start-up warnings, TLS modes with real handshakes, credential rotation, the client against fake servers (8.1 refusal, WRONGPASS, unreachable Sentinels, breaker), and the exported surface (`valkey_surface_test.go`).
-- Integration (`make integration-up`, then `make test-integration`; package [`test/integration/valkey`](../../test/integration/valkey)): connection names and count, wrong name/password/CA with their reason codes, failover with and without `+switch-master` (the stack is returned to its layout), Pub/Sub, key TTL scan, breaker via `CLIENT PAUSE WRITE`, the flight lock ([flight_test.go](../../test/integration/valkey/flight_test.go): acquire, extension past the TTL, release and the outcome message, 50 waiters on two replicas with one subscription each, a dropped message completed by the poll, a killed holder taken over within TTL + poll, the breaker open, a lock deleted on the new primary after a forced failover with at most two holders, and a waiter woken by the re-subscription after a primary change), the negative store ([negative_test.go](../../test/integration/valkey/negative_test.go)) and a throwaway Valkey 8.1 (refusal; image pinned in `tools/versions.env`). The stack runs Valkey 9.1, the only line tested while trove is in development. The tests reach the raw commands through `cluster.Raw(v)` (integration build tag only).
+- Integration (`make integration-up`, then `make test-integration`; package [`test/integration/valkey`](../../test/integration/valkey)): connection names and count, wrong name/password/CA with their reason codes, failover with and without `+switch-master` (the stack is returned to its layout), Pub/Sub, key TTL scan, breaker via `CLIENT PAUSE WRITE`, the flight lock ([flight_test.go](../../test/integration/valkey/flight_test.go): acquire, extension past the TTL, release and the outcome message, 50 waiters on two replicas with one subscription each, a dropped message completed by the poll, a killed holder taken over within TTL + poll, the breaker open, a lock deleted on the new primary after a forced failover with at most two holders, and a waiter woken by the re-subscription after a primary change), the negative store ([negative_test.go](../../test/integration/valkey/negative_test.go)) and a throwaway Valkey 8.1 (refusal; image pinned in `tools/versions.env`). The stack runs Valkey 9.1, the only line tested while Quader is in development. The tests reach the raw commands through `cluster.Raw(v)` (integration build tag only).
 - The tests that create a Sentinel ACL user (`nosub`) delete it at the end.

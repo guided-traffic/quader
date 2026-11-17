@@ -11,12 +11,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/formattest/testformat"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/formattest/testformat"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 func newHost(t *testing.T) *formattest.Host {
@@ -384,13 +384,13 @@ func TestR_ARCH_009_LinksRenditionsEngines(t *testing.T) {
 	}
 	t.Run("R-ARCH-007 links are built once-escaped on the base URL of the host", func(t *testing.T) {
 		ln := h.Links(rq)
-		if ln.Base() != formattest.DefaultBaseURL || ln.Repository() != "https://trove.test/api/testfmt/it/main/" || ln.Registry(qr("r~cache")) != "https://trove.test/api/testfmt/it/r~cache/" {
+		if ln.Base() != formattest.DefaultBaseURL || ln.Repository() != "https://quader.test/api/testfmt/it/main/" || ln.Registry(qr("r~cache")) != "https://quader.test/api/testfmt/it/r~cache/" {
 			t.Fatalf("%s %s", ln.Base(), ln.Repository())
 		}
-		if got := ln.Path("@scope/na me/-/x.tgz"); got != "https://trove.test/api/testfmt/it/main/@scope/na%20me/-/x.tgz" {
+		if got := ln.Path("@scope/na me/-/x.tgz"); got != "https://quader.test/api/testfmt/it/main/@scope/na%20me/-/x.tgz" {
 			t.Fatalf("Path = %s", got)
 		}
-		if got := ln.File(qr("main"), "a b/c"); got != "https://trove.test/files/it/main/a%20b/c" {
+		if got := ln.File(qr("main"), "a b/c"); got != "https://quader.test/files/it/main/a%20b/c" {
 			t.Fatalf("File = %s", got)
 		}
 		custom := formattest.NewHost(testformat.New(), formattest.HostOptions{Data: &testformat.MemStore{}, BaseURL: "https://x.example/"})

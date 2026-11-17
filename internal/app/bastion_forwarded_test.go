@@ -12,14 +12,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
-const forwardedBST = "trv_bst_forwardedforwardedforwardedforwar"
+const forwardedBST = "qdr_bst_forwardedforwardedforwardedforwar"
 
 // oneBastion knows one Bastion token, forwardedBST.
 type oneBastion struct{ seen []bastionmain.AuthRequest }
@@ -39,7 +39,7 @@ func forwardedChain(t *testing.T, serverProxies, bastionProxies []string) (http.
 	t.Helper()
 	var logs bytes.Buffer
 	a := &App{cfg: &config.Config{}, parts: &wiring{}, log: slog.New(slog.NewTextHandler(&logs, nil))}
-	a.cfg.Server.BaseURL = "https://trove.example.com"
+	a.cfg.Server.BaseURL = "https://quader.example.com"
 	a.cfg.Server.AdditionalBaseURLs = []string{"https://packages.example.com"}
 	a.cfg.Server.ForwardedHeader = string(httpserver.HeaderXForwardedFor)
 	a.cfg.Bastions.TrustedProxies = bastionProxies
@@ -106,16 +106,16 @@ func TestR_BAS_017_TheBastionsForwardedHeadersCountOnlyForARecognizedBastionRequ
 	const egress, caller = "198.51.100.20", "203.0.113.7"
 	t.Run("the Bastion connects directly", func(t *testing.T) {
 		h, tokens, _ := forwardedChain(t, nil, []string{egress + "/32"})
-		if c, b := through(t, h, egress, caller, ""); c != egress || b != "https://trove.example.com" {
+		if c, b := through(t, h, egress, caller, ""); c != egress || b != "https://quader.example.com" {
 			t.Errorf("no Bastion token: client %s, base %s", c, b)
 		}
-		if c, b := through(t, h, egress, caller, "trv_bst_notavalidtokennotavalidtokennotav"); c != "" || b != "" {
+		if c, b := through(t, h, egress, caller, "qdr_bst_notavalidtokennotavalidtokennotav"); c != "" || b != "" {
 			t.Errorf("a rejected Bastion token was served: client %s, base %s", c, b)
 		}
 		if c, b := through(t, h, egress, caller, forwardedBST); c != caller || b != "https://packages.example.com" {
 			t.Errorf("a recognized Bastion request: client %s, base %s", c, b)
 		}
-		if c, b := through(t, h, "192.0.2.50", caller, forwardedBST); c != "192.0.2.50" || b != "https://trove.example.com" {
+		if c, b := through(t, h, "192.0.2.50", caller, forwardedBST); c != "192.0.2.50" || b != "https://quader.example.com" {
 			t.Errorf("a valid Bastion token from an address that is no listed egress: client %s, base %s", c, b)
 		}
 		for _, req := range tokens.seen {

@@ -17,8 +17,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/nupkg"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nuspec"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nupkg"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nuspec"
 )
 
 // Kind is the format of a .pdb file.

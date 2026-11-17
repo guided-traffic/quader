@@ -1,4 +1,4 @@
-A virtual repository merges the package indexes of its members into one{{if .Repository}}: `{{.Repository}}` is the address your client adds as a source{{end}}. The members are local and remote Debian repositories of the project; the client sees one archive, and trove signs its indexes with the key of the virtual repository, not with a member's.
+A virtual repository merges the package indexes of its members into one{{if .Repository}}: `{{.Repository}}` is the address your client adds as a source{{end}}. The members are local and remote Debian repositories of the project; the client sees one archive, and Quader signs its indexes with the key of the virtual repository, not with a member's.
 
 ### What a client reads
 
@@ -6,7 +6,7 @@ The index of a suite lists the packages of the members in the order of the membe
 
 ### What a member must be
 
-A remote member needs upstream keys (`deb.upstreamKeys`), because only a release that trove verified is merged. A suite that a member does not have contributes nothing; it is no failure. The virtual repository serves the suites of `deb.suites` and the suites of its local members.
+A remote member needs upstream keys (`deb.upstreamKeys`), because only a release that Quader verified is merged. A suite that a member does not have contributes nothing; it is no failure. The virtual repository serves the suites of `deb.suites` and the suites of its local members.
 
 ### When the index changes
 

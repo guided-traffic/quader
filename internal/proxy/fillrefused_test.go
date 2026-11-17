@@ -22,7 +22,7 @@ func TestR_EP_019_FillRefusedCountsTheEndpoint(t *testing.T) {
 		return m.GetCounter().GetValue()
 	}
 	if got := count("customers"); got != 2 {
-		t.Fatalf("trove_endpoint_cache_fill_refused_total{customers} = %v", got)
+		t.Fatalf("quader_endpoint_cache_fill_refused_total{customers} = %v", got)
 	}
 	if got := count("default"); got != 0 {
 		t.Fatalf("another endpoint counted: %v", got)

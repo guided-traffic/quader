@@ -3,7 +3,7 @@ import { Title } from '@angular/platform-browser';
 import { Router, TitleStrategy, provideRouter } from '@angular/router';
 import { Notifier } from './notifier';
 import { BrowserStorage } from './storage';
-import { TroveTitleStrategy } from './title-strategy';
+import { QuaderTitleStrategy } from './title-strategy';
 import { diffFields } from '../shared/conflict-dialog';
 import { browseMatcher } from '../features/browse/browse.routes';
 import { UrlSegment } from '@angular/router';
@@ -12,10 +12,10 @@ describe('BrowserStorage', () => {
   it('R-UI-006 stores and reads through the wrapper', () => {
     const s = TestBed.inject(BrowserStorage);
     expect(s.available('local')).toBe(true);
-    expect(s.set('local', 'trove.k', 'v')).toBe(true);
-    expect(s.get('local', 'trove.k')).toBe('v');
-    s.remove('local', 'trove.k');
-    expect(s.get('local', 'trove.k')).toBeNull();
+    expect(s.set('local', 'quader.k', 'v')).toBe(true);
+    expect(s.get('local', 'quader.k')).toBe('v');
+    s.remove('local', 'quader.k');
+    expect(s.get('local', 'quader.k')).toBeNull();
   });
 
   it('R-UI-006 blocked storage only makes the features disappear: reads answer null, writes false', () => {
@@ -48,16 +48,16 @@ describe('Notifier', () => {
   });
 });
 
-describe('TroveTitleStrategy', () => {
-  it('R-UI-003 sets "Title – trove" from the route title', async () => {
+describe('QuaderTitleStrategy', () => {
+  it('R-UI-003 sets "Title – Quader" from the route title', async () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'x', title: 'Packages', children: [] }]),
-        { provide: TitleStrategy, useExisting: TroveTitleStrategy },
+        { provide: TitleStrategy, useExisting: QuaderTitleStrategy },
       ],
     });
     await TestBed.inject(Router).navigateByUrl('/x');
-    expect(TestBed.inject(Title).getTitle()).toBe('Packages – trove');
+    expect(TestBed.inject(Title).getTitle()).toBe('Packages – Quader');
   });
 });
 

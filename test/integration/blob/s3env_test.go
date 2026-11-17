@@ -1,24 +1,24 @@
 //go:build integration
 
 // Package blob tests the blob store against the integration stack: the
-// object-store conformance check (it needs only the TROVE_TEST_S3_* variables, so
+// object-store conformance check (it needs only the QUADER_TEST_S3_* variables, so
 // the nightly MinIO and AWS legs run it with `-run Conformance` and no
 // PostgreSQL or Valkey), and the commit protocol and garbage collection against
 // PostgreSQL and the S3 store.
 //
 // Variables read (testenv):
 //
-//	TROVE_TEST_S3_ENDPOINT, _REGION, _ACCESS_KEY, _SECRET_KEY, _BUCKET_BLOBS, _FORCE_PATH_STYLE
+//	QUADER_TEST_S3_ENDPOINT, _REGION, _ACCESS_KEY, _SECRET_KEY, _BUCKET_BLOBS, _FORCE_PATH_STYLE
 //
 // and optionally, for stores with other settings (R-STOR-030):
 //
-//	TROVE_TEST_S3_PAYLOAD_CHECKSUM   sha256 | md5 | none      (default sha256)
-//	TROVE_TEST_S3_REQUEST_CHECKSUM   when_supported | when_required
-//	TROVE_TEST_S3_RESPONSE_CHECKSUM  when_supported | when_required
-//	TROVE_TEST_S3_BATCH_DELETE       true | false             (default true)
+//	QUADER_TEST_S3_PAYLOAD_CHECKSUM   sha256 | md5 | none      (default sha256)
+//	QUADER_TEST_S3_REQUEST_CHECKSUM   when_supported | when_required
+//	QUADER_TEST_S3_RESPONSE_CHECKSUM  when_supported | when_required
+//	QUADER_TEST_S3_BATCH_DELETE       true | false             (default true)
 //
-// The database tests also read TROVE_TEST_PG_*; nothing here reads
-// TROVE_TEST_VALKEY_*: the blob store needs no Valkey (R-STOR-046).
+// The database tests also read QUADER_TEST_PG_*; nothing here reads
+// QUADER_TEST_VALKEY_*: the blob store needs no Valkey (R-STOR-046).
 package blob
 
 import (
@@ -31,12 +31,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // runID separates the keys of this test run from every other run in the shared
@@ -79,20 +79,20 @@ func newS3(tb testing.TB, name string) *s3Env {
 		return p
 	}
 	cfg := blobtest.Storage(tb, dir).S3
-	cfg.Endpoint = testenv.Get(tb, "TROVE_TEST_S3_ENDPOINT")
-	cfg.Region = testenv.Get(tb, "TROVE_TEST_S3_REGION")
-	cfg.Bucket = testenv.Get(tb, "TROVE_TEST_S3_BUCKET_BLOBS")
-	cfg.ForcePathStyle = testenv.Get(tb, "TROVE_TEST_S3_FORCE_PATH_STYLE") == "true"
+	cfg.Endpoint = testenv.Get(tb, "QUADER_TEST_S3_ENDPOINT")
+	cfg.Region = testenv.Get(tb, "QUADER_TEST_S3_REGION")
+	cfg.Bucket = testenv.Get(tb, "QUADER_TEST_S3_BUCKET_BLOBS")
+	cfg.ForcePathStyle = testenv.Get(tb, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true"
 	cfg.AllowInsecureEndpoint = false
 	cfg.CAFile = testenv.CAFile(tb) // the gateway is HTTPS-only, signed by the stack's CA
 	cfg.Prefix = "it-blob/" + runID(tb) + "/" + name
-	cfg.PayloadChecksum = optional("TROVE_TEST_S3_PAYLOAD_CHECKSUM", cfg.PayloadChecksum)
-	cfg.Checksums.RequestCalculation = optional("TROVE_TEST_S3_REQUEST_CHECKSUM", cfg.Checksums.RequestCalculation)
-	cfg.Checksums.ResponseValidation = optional("TROVE_TEST_S3_RESPONSE_CHECKSUM", cfg.Checksums.ResponseValidation)
+	cfg.PayloadChecksum = optional("QUADER_TEST_S3_PAYLOAD_CHECKSUM", cfg.PayloadChecksum)
+	cfg.Checksums.RequestCalculation = optional("QUADER_TEST_S3_REQUEST_CHECKSUM", cfg.Checksums.RequestCalculation)
+	cfg.Checksums.ResponseValidation = optional("QUADER_TEST_S3_RESPONSE_CHECKSUM", cfg.Checksums.ResponseValidation)
 	cfg.Credentials = config.StorageS3Credentials{
 		Source:              "static",
-		AccessKeyIDFile:     writeSecret("access-key", testenv.Get(tb, "TROVE_TEST_S3_ACCESS_KEY")),
-		SecretAccessKeyFile: writeSecret("secret-key", testenv.Get(tb, "TROVE_TEST_S3_SECRET_KEY")),
+		AccessKeyIDFile:     writeSecret("access-key", testenv.Get(tb, "QUADER_TEST_S3_ACCESS_KEY")),
+		SecretAccessKeyFile: writeSecret("secret-key", testenv.Get(tb, "QUADER_TEST_S3_SECRET_KEY")),
 	}
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}})
 	c, err := s3.NewFromFactory(context.Background(), cfg, f)
@@ -130,7 +130,7 @@ func (e *s3Env) storage(tb testing.TB) config.Storage {
 	cfg := blobtest.Storage(tb, tb.TempDir())
 	cfg.S3 = e.cfg
 	cfg.Upload.BlobWaitTimeout = 60 * time.Second
-	cfg.GC.BatchDelete = optional("TROVE_TEST_S3_BATCH_DELETE", "true") == "true"
+	cfg.GC.BatchDelete = optional("QUADER_TEST_S3_BATCH_DELETE", "true") == "true"
 	return cfg
 }
 

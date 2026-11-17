@@ -4,7 +4,7 @@
 // R-NPM-048).
 //
 // The behavior follows node-semver 7.8.5, the library every npm client calls,
-// because a range trove accepts, and a version it selects, must be the ones the
+// because a range quader accepts, and a version it selects, must be the ones the
 // client would accept and select. Where Go cannot reproduce the original
 // exactly the difference is listed in Q-NPM-15 and Q-NPM-16 of the npm
 // specification. Three entry points parse a version, by decreasing strictness:
@@ -24,7 +24,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Error codes of the npm error body (R-NPM-005).

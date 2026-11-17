@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 var itLease = cluster.RegisterLease("it_singleton", 77)
@@ -77,7 +77,7 @@ func (e *env) lockSessions() []int64 {
 
 func TestLeases(t *testing.T) {
 	e := newEnv(t)
-	e.exec(`CREATE TABLE trove.coord_fence (replica text, seq bigint)`)
+	e.exec(`CREATE TABLE quader.coord_fence (replica text, seq bigint)`)
 	log := &holdLog{}
 	workers := map[string]*replica{}
 	for _, name := range []string{"lease-a", "lease-b"} {
@@ -135,14 +135,14 @@ func TestLeases(t *testing.T) {
 		}
 		_ = web.db.Main().Ping(context.Background())
 		// The patterns match what they should: the web replica has main sessions and a worker has lease sessions.
-		if e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'trove:lease-web:main'`) == 0 ||
-			e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'trove:lease-a:lease' OR application_name LIKE 'trove:lease-b:lease'`) == 0 {
+		if e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:lease-web:main'`) == 0 ||
+			e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:lease-a:lease' OR application_name LIKE 'quader:lease-b:lease'`) == 0 {
 			t.Fatal("the application_name pattern of this test does not match the sessions it looks for")
 		}
-		if n := e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'trove:lease-web:lease%'`); n != 0 {
+		if n := e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:lease-web:lease%'`); n != 0 {
 			t.Fatalf("the web replica has %d lease sessions", n)
 		}
-		total := e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'trove:%:lease'`)
+		total := e.scalar(`SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'quader:%:lease'`)
 		if limit := int64(2 * e.cfg.LeasePoolSize); total > limit {
 			t.Fatalf("%d lease sessions, above 2 x lease_pool_size = %d", total, limit)
 		}

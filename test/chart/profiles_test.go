@@ -89,8 +89,8 @@ func TestR_HA_050_SizingProfiles(t *testing.T) {
 				hpa                       bool
 				cpu, memory, limit, spool string
 			}{
-				{"trove-packages", pkgReplicas, pkgMin, pkgMax, pkgHPA, "", "", "", ""},
-				{"trove-worker", workerReplicas, workerMin, workerMax, workerHPA, "", "", "", ""},
+				{"quader-packages", pkgReplicas, pkgMin, pkgMax, pkgHPA, "", "", "", ""},
+				{"quader-worker", workerReplicas, workerMin, workerMax, workerHPA, "", "", "", ""},
 			} {
 				dep := find(docs, "Deployment", c.deployment)
 				if dep == nil {
@@ -117,7 +117,7 @@ func TestR_HA_050_SizingProfiles(t *testing.T) {
 			}
 
 			// The packages Deployment holds the web columns: requests CPU / memory, the memory limit, the spool.
-			pod := at(find(docs, "Deployment", "trove-packages"), "spec", "template", "spec")
+			pod := at(find(docs, "Deployment", "quader-packages"), "spec", "template", "spec")
 			res := at(pod, "containers", "0", "resources")
 			wantReq := strings.Split(row[4], " / ")
 			if len(wantReq) != 2 {
@@ -160,12 +160,12 @@ func TestR_HA_050_SizingProfiles(t *testing.T) {
 			}
 
 			// After the cut into roles every profile adds api: 2 replicas (an HPA of 2 to 4 in medium and large), 500m / 512Mi, 1Gi, 5Gi.
-			api := find(docs, "Deployment", "trove-api")
+			api := find(docs, "Deployment", "quader-api")
 			apiRes := at(api, "spec", "template", "spec", "containers", "0", "resources")
 			if quantity(at(apiRes, "requests", "cpu")) != "500m" || quantity(at(apiRes, "requests", "memory")) != "512Mi" || quantity(at(apiRes, "limits", "memory")) != "1Gi" {
 				t.Errorf("api resources = %v, want 500m / 512Mi and a 1Gi limit", apiRes)
 			}
-			apiHPA := find(docs, "HorizontalPodAutoscaler", "trove-api")
+			apiHPA := find(docs, "HorizontalPodAutoscaler", "quader-api")
 			if (name == "small") != (apiHPA == nil) {
 				t.Errorf("api autoscaler present = %v in the profile %s", apiHPA != nil, name)
 			}
@@ -180,10 +180,10 @@ func TestR_HA_050_SizingProfiles(t *testing.T) {
 
 	t.Run("R-HA-050 a profile layered before the operator's file leaves the operator's values the last word", func(t *testing.T) {
 		_, docs := render(t, []string{filepath.Join(chartDir, "profiles", "medium.yaml"), filepath.Join(chartDir, "ci", "required-only.yaml")}, "packages.replicaCount=5", "packages.autoscaling.enabled=false")
-		if got := at(find(docs, "Deployment", "trove-packages"), "spec", "replicas"); got != 5 {
+		if got := at(find(docs, "Deployment", "quader-packages"), "spec", "replicas"); got != 5 {
 			t.Errorf("packages replicas = %v, want the operator's 5", got)
 		}
-		if find(docs, "HorizontalPodAutoscaler", "trove-packages") != nil {
+		if find(docs, "HorizontalPodAutoscaler", "quader-packages") != nil {
 			t.Error("the autoscaler of the profile survived the operator switching it off")
 		}
 	})

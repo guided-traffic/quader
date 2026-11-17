@@ -1,5 +1,5 @@
--- trove:phase contract
--- trove:requires-app >= 0.1.0
+-- quader:phase contract
+-- quader:requires-app >= 0.1.0
 --
 -- The tail of an upload session is a list of segments (R-STOR-011, Q-STOR-174). A request whose body is shorter than what is missing for
 -- the next part writes it as one more segment object, with its size and SHA-256 recorded in a row of its own, and reads nothing back; the

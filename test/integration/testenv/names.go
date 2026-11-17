@@ -3,7 +3,7 @@ package testenv
 import (
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // DefaultProject is the project the stack's seed creates and [Stack.Repository] puts repositories in:

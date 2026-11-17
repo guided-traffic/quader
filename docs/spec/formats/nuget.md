@@ -2,7 +2,7 @@
 
 Status: specification — in implementation (phase 4): the format skeleton (registration, route table, service index, settings, configuration, error shape) is built; the operations behind the other routes, the data port and the remote and virtual classes are not
 
-This page specifies how trove serves NuGet packages: the NuGet v3 server API for local, remote
+This page specifies how Quader serves NuGet packages: the NuGet v3 server API for local, remote
 and virtual repositories under `/api/nuget/<projectKey>/<repoKey>/`, package ingestion and `.nuspec` parsing,
 version normalization and SemVer 2.0.0 handling, the NuGet additions to the storage schema, push,
 unlist, relist and delete, symbol packages and the symbol server, proxying nuget.org with URL
@@ -40,11 +40,11 @@ normative wherever this page does not say otherwise.
 
 | Placeholder | Meaning |
 |---|---|
-| `<base>` | trove's configured public base URL ([architecture.md](../architecture.md)); `https://trove.example.com` in examples (# example) |
+| `<base>` | Quader's configured public base URL ([architecture.md](../architecture.md)); `https://quader.example.com` in examples (# example) |
 | `<feed>` | `<base>/api/nuget/<projectKey>/<repoKey>/v3`, the v3 root of one repository |
 | `{lower_id}` | package ID lowercased (R-NUGET-003) |
 | `{lower_version}` | normalized version, lowercased, without build metadata (R-NUGET-003) |
-| `$TOKEN` | a trove token (`trv_pat_…`, `trv_sat_…` or `trv_cit_…`, INV-8) |
+| `$TOKEN` | a Quader token (`qdr_pat_…`, `qdr_sat_…` or `qdr_cit_…`, INV-8) |
 
 Project and repository keys used in examples (# example): the project `web` with `nuget-local` (local),
 `nuget-org` (remote of nuget.org) and `nuget-all` (virtual over both, deploy target `nuget-local`). A repository
@@ -55,7 +55,7 @@ named outside its project is written `<projectKey>/<repoKey>` (`web/nuget-local`
 ### R-NUGET-001 · NuGet repositories and endpoint layout
 Priority: **MVP** · Covers: PKG-NUGET-001, PKG-NUGET-002, PKG-NUGET-003, REPO-005
 
-trove MUST offer the format `nuget` for all three repository classes of INV-5. Every NuGet
+Quader MUST offer the format `nuget` for all three repository classes of INV-5. Every NuGet
 repository speaks the NuGet v3 protocol; there is no per-repository protocol switch.
 
 Format registration (R-REPO-003 in [repositories-and-proxy.md](../repositories-and-proxy.md)):
@@ -109,7 +109,7 @@ acceptance suite draws that round trip all the same (R-NUGET-012).
   project or repository segment is refused ([repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-002).
   A key of a repository with another format answers 404 with a message saying that the repository is not a NuGet
   repository.
-- Every URL trove puts into a NuGet document MUST be absolute, built from `<base>`
+- Every URL Quader puts into a NuGet document MUST be absolute, built from `<base>`
   (R-REPO-043), and MUST point at the repository the request addressed. A virtual repository never
   exposes member URLs, a remote repository never exposes upstream URLs for resources clients fetch
   next (R-NUGET-015).
@@ -152,9 +152,9 @@ values it knows, each resource MUST be listed under every alias in the table.
 - Autocomplete, vulnerability information and the README template appear once their P1
   requirements are implemented; the vulnerability entry only when R-NUGET-023 has data to offer.
   From M4b the vulnerability entry is listed on every repository class, local included, while
-  `nuget.vulnerabilityInfo` is `local` and trove's NuGet advisory data is complete
+  `nuget.vulnerabilityInfo` is `local` and Quader's NuGet advisory data is complete
   ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-018).
-- Resources the protocol defines but trove does not implement (catalog, repository signatures,
+- Resources the protocol defines but Quader does not implement (catalog, repository signatures,
   package details, owner details, report abuse) MUST NOT be listed.
 - The service index is rendered by `nuget.ServiceIndex` from the repository's base URL, key and class
   alone. The MVP resources of the table are listed from the skeleton on, although the operations behind
@@ -184,7 +184,7 @@ HTTP conventions for every NuGet endpoint:
   - for the service index: the repository's configuration version and `<base>`; from P1, for a
     remote or virtual repository also the stored digests of the upstream service indexes and the
     member fingerprint that decide whether the vulnerability entry is listed (R-NUGET-023); from
-    M4b also whether trove's NuGet advisory data is complete, which decides whether trove's own
+    M4b also whether Quader's NuGet advisory data is complete, which decides whether Quader's own
     entry is listed (R-VULN-018);
   - for every document: the endpoint of the request and its exposure fingerprint (R-NUGET-034,
     [endpoints.md](../endpoints.md) R-EP-018);
@@ -229,18 +229,18 @@ HTTP conventions for every NuGet endpoint:
 {
   "version": "3.0.0",
   "resources": [
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/flatcontainer/", "@type": "PackageBaseAddress/3.0.0" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/package", "@type": "PackagePublish/2.0.0" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/symbolpackage", "@type": "SymbolPackagePublish/4.9.0" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration/", "@type": "RegistrationsBaseUrl" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration/", "@type": "RegistrationsBaseUrl/3.0.0-beta" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration/", "@type": "RegistrationsBaseUrl/3.0.0-rc" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration-gz/", "@type": "RegistrationsBaseUrl/3.4.0" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration-semver2/", "@type": "RegistrationsBaseUrl/3.6.0" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/search", "@type": "SearchQueryService" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/search", "@type": "SearchQueryService/3.0.0-beta" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/search", "@type": "SearchQueryService/3.0.0-rc" },
-    { "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/search", "@type": "SearchQueryService/3.5.0" }
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/flatcontainer/", "@type": "PackageBaseAddress/3.0.0" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/package", "@type": "PackagePublish/2.0.0" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/symbolpackage", "@type": "SymbolPackagePublish/4.9.0" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration/", "@type": "RegistrationsBaseUrl" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration/", "@type": "RegistrationsBaseUrl/3.0.0-beta" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration/", "@type": "RegistrationsBaseUrl/3.0.0-rc" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration-gz/", "@type": "RegistrationsBaseUrl/3.4.0" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration-semver2/", "@type": "RegistrationsBaseUrl/3.6.0" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/search", "@type": "SearchQueryService" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/search", "@type": "SearchQueryService/3.0.0-beta" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/search", "@type": "SearchQueryService/3.0.0-rc" },
+    { "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/search", "@type": "SearchQueryService/3.5.0" }
   ]
 }
 ```
@@ -281,10 +281,10 @@ Package IDs:
   ([NU5052](https://learn.microsoft.com/en-us/dotnet/core/compatibility/sdk/11/nuget-pack-nu5052-packageid),
   [announcement](https://github.com/NuGet/Announcements/issues/75)). The announcement's regular
   expression admits `_` only as the first character, while the NU5052 page admits it anywhere;
-  trove follows NU5052, because `_` is ASCII and raises no case-mapping question, and refusing it
+  Quader follows NU5052, because `_` is ASCII and raises no case-mapping question, and refusing it
   would reject IDs the SDK packs without a warning.
 - Dependency IDs inside a `.nuspec` follow the upstream rule below, not the local rule, because a
-  local package may depend on a legacy upstream ID. Where trove would have to lowercase a
+  local package may depend on a legacy upstream ID. Where Quader would have to lowercase a
   non-ASCII dependency ID to build a URL, it omits that optional URL instead (R-NUGET-009).
 - **Upstream rule.** An ID of a package cached by a remote repository (R-NUGET-015) MUST match
   NuGet's general rule `^\w+([.-]\w+)*$`, where a word character is one of the Unicode categories
@@ -303,11 +303,11 @@ Package IDs:
   forwarded search result with such an ID is removed, because an upstream would lowercase it into
   another ID's while patterns, claims and pin rules compare the name character by character
   (`id.ClientForm`; security audit of the fix wave). A client whose case table leaves such a
-  character unchanged cannot restore that legacy ID through trove: the failure is closed, the
+  character unchanged cannot restore that legacy ID through Quader: the failure is closed, the
   direction Q-NUGET-3 accepts for a case-table difference. The declared ID MUST equal it once both
   are lowercased character by character with Unicode's simple lowercase mapping, as .NET's
   `ToLowerInvariant` lowercases an ID into its path, and the rows of the cached package take the path's
-  ID (R-NUGET-015, Q-NUGET-84). trove never lowercases a non-ASCII ID to build a name or a URL, so no ID
+  ID (R-NUGET-015, Q-NUGET-84). Quader never lowercases a non-ASCII ID to build a name or a URL, so no ID
   can map to different URLs on client and server. A cached package whose ID violates the local rule
   cannot be copied or moved into a local repository (400). [authorization.md](../authorization.md)
   compares name patterns against `lower_id`.
@@ -317,7 +317,7 @@ Package IDs:
 
 Versions. NuGet versions are `Major[.Minor[.Patch[.Revision]]][-Prerelease][+Metadata]`
 ([package versioning](https://learn.microsoft.com/en-us/nuget/concepts/package-versioning)).
-trove keeps three forms per version:
+Quader keeps three forms per version:
 
 | Form | Rule | Example for input `01.2.0.0-RC.1+sha.9f2c` | Used in |
 |---|---|---|---|
@@ -325,7 +325,7 @@ trove keeps three forms per version:
 | Full normalized | leading zeros removed from numeric parts, at least three numeric parts, fourth part only when non-zero, pre-release label in original case, build metadata kept | `1.2.0-RC.1+sha.9f2c` | registration catalog entries, search `version` and `versions[].version` |
 | URL form | full normalized, lowercased, build metadata removed | `1.2.0-rc.1` | URLs, flat container version list, registration page bounds, duplicate detection, canonical paths |
 
-- Every trove NuGet repository is normalized; there is no non-normalized mode and no creation
+- Every Quader NuGet repository is normalized; there is no non-normalized mode and no creation
   option for one. Consequences: the flat container is always offered; the compatibility rules
   between normalized and non-normalized repositories (copy, move, virtual membership, upstream
   pairing) hold by construction; a normalization migration is not needed (see
@@ -427,7 +427,7 @@ Priority: **MVP** · Covers: PKG-NUGET-014, PKG-NUGET-042
   shows its newest SemVer 1 version to a legacy client.
 - A package all of whose versions are excluded is absent: the SemVer 1 hives answer 404 for its
   registration index, search does not return it.
-- trove offers no switch that turns the filter off. The filter exists for NuGet clients older
+- Quader offers no switch that turns the filter off. The filter exists for NuGet clients older
   than 4.3.0, which cannot parse SemVer 2.0.0 versions; serving them such versions breaks them.
 
 Acceptance criteria (package `Acme.Widgets` with `1.0.0` and `1.1.0-ci.5+sha.abc`):
@@ -469,7 +469,7 @@ cache fills. A raw deploy is not an ingestion path of NuGet (Q-NUGET-13). The Nu
    (Q-NUGET-24). Then locate exactly one entry at the archive root whose name ends in
    `.nuspec`, compared case-insensitively (400 if none or several). Without these rules, two
    spellings of the `.nuspec`, or a duplicated name that one ZIP reader resolves to the first entry
-   and another to the last, would let the identity trove authorizes differ from the identity a
+   and another to the last, would let the identity Quader authorizes differ from the identity a
    client installs.
 3. Parse the `.nuspec` as XML: UTF-8 or UTF-16; a document type declaration is rejected (400);
    no entity expansion; elements matched by local name in any `nuspec` namespace version (the
@@ -499,7 +499,7 @@ cache fills. A raw deploy is not an ingestion path of NuGet (Q-NUGET-13). The Nu
    [architecture.md](../architecture.md) R-ARCH-018. It travels through Valkey, is best-effort, and
    nothing below waits for it.
 
-- The `.nupkg` is stored byte for byte as received; trove never rewrites a package, because
+- The `.nupkg` is stored byte for byte as received; Quader never rewrites a package, because
   package signatures and lock-file hashes would fail on the client
   ([implementation guide](https://learn.microsoft.com/en-us/nuget/api/implementation-guide)). A
   `.signature.p7s` entry is kept and not verified (H-36).
@@ -601,7 +601,7 @@ CREATE INDEX nuget_version_search ON nuget_version USING gin (search_doc);
 ```
 
 The sketch has no trigram index on `lower_id`: it would need `CREATE EXTENSION pg_trgm`, which no
-migration of trove runs (Q-NUGET-12). The created schema adds CHECKs on the empty IDs and digest
+migration of Quader runs (Q-NUGET-12). The created schema adds CHECKs on the empty IDs and digest
 lengths and the indexes of the foreign keys and the symbol job's queue (Q-NUGET-19).
 
 - Versions whose `package_versions.trashed_at` is set are invisible to every NuGet document.
@@ -668,7 +668,7 @@ API ([package publish](https://learn.microsoft.com/en-us/nuget/api/package-publi
     `nuget_version_exists`.
   - A protocol push (`PUT <feed>/package`) of the identical `.nupkg`, compared by SHA-512 with the
     stored lead item (Q-NUGET-36), answers 201 and changes nothing: no row is written, `rev_seq` stays, no
-    `package.published` event is written, and `trove_nuget_push_replayed_total` counts it
+    `package.published` event is written, and `quader_nuget_push_replayed_total` counts it
     (Q-NUGET-6). The NuGet clients repeat a push on their own after a transport failure
     (R-NUGET-032), and this rule makes such a repeat succeed when its first attempt had committed.
     Upload keeps answering 409 for an existing version.
@@ -687,7 +687,7 @@ API ([package publish](https://learn.microsoft.com/en-us/nuget/api/package-publi
   ([storage.md](../storage.md), P1). Unlisting and evicting a remote cache entry write none.
   Tombstones survive the trash can and its purge. Restoring the version from the trash can
   (R-STOR-023) removes its tombstone in the restore transaction, because the original bytes come
-  back. No API, UI or `trove admin` operation removes a tombstone, and a push of identical bytes is
+  back. No API, UI or `quader admin` operation removes a tombstone, and a push of identical bytes is
   refused like any other; only that restore, the identical push against a `reserved` tombstone
   (above) and the deletion of the whole repository remove one, as for npm (R-NPM-008). Every
   backup exports the tombstones (R-NUGET-033).
@@ -739,11 +739,11 @@ CREATE TABLE nuget_tombstone (           -- outlives the trash can and its purge
 
 Acceptance criteria:
 
-- `dotnet nuget push out/Acme.Widgets.1.2.3.nupkg --source trove-local --api-key "$TOKEN"` (dotnet
+- `dotnet nuget push out/Acme.Widgets.1.2.3.nupkg --source quader-local --api-key "$TOKEN"` (dotnet
   10 SDK) succeeds; the same command with the same file again exits 0 and changes nothing (one
   version row, one `package.published` event); a rebuilt `Acme.Widgets.1.2.3.nupkg` with other
   bytes fails with 409, and with `--skip-duplicate` it exits 0.
-- `nuget push Acme.Widgets.1.2.4.nupkg -Source trove-local -ApiKey %TOKEN%` (nuget.exe) succeeds.
+- `nuget push Acme.Widgets.1.2.4.nupkg -Source quader-local -ApiKey %TOKEN%` (nuget.exe) succeeds.
 - Ten parallel `curl -X PUT -F package=@Acme.Widgets.2.0.0.nupkg` requests of one file, spread
   across two replicas, all answer 201 and leave one version row and one `package.published`
   event. Ten parallel pushes of ten different builds of `Acme.Widgets` 2.0.0 yield one 201 and nine
@@ -756,7 +756,7 @@ Acceptance criteria:
 - After moving `Acme.Widgets` 1.2.6 from `nuget-local` to another local repository (P1), pushing a
   rebuilt 1.2.6 to `nuget-local` answers 409 `nuget_version_deleted`.
 - `nuget-all` = [`nuget-local`, `nuget-org`], the stub upstream serves `newtonsoft.json`, and no
-  claim covers it: `dotnet nuget push Newtonsoft.Json.99.0.0.nupkg --source trove-local --api-key
+  claim covers it: `dotnet nuget push Newtonsoft.Json.99.0.0.nupkg --source quader-local --api-key
   "$TOKEN"` with a token holding `deploy` but not `manage` fails with `403 (Forbidden)`; the same
   file sent with `curl -X PUT` answers 403 with a body starting `shadows_remote_package:`; nothing
   is stored and no claim is created. While the circuit of `nuget-org` is open and nothing is stored
@@ -775,7 +775,7 @@ API (both are API-key endpoints, R-NUGET-012):
 - `{id}` and `{version}` are resolved case-insensitively through the URL form (R-NUGET-003).
 - Unlisted versions: absent from search and autocomplete; present in the flat container version
   list and downloadable; `"listed": false` in registration entries. `published` keeps the real
-  publish time; trove always emits `listed` explicitly instead of nuget.org's year-1900 marker.
+  publish time; Quader always emits `listed` explicitly instead of nuget.org's year-1900 marker.
   Unlisting is no withdrawal: a holder of `deploy` and the ownership relists, and the version was
   downloadable throughout ([H-333](../../security/nuget-publish.md#h-333--unlisting-is-not-a-withdrawal-a-holder-of-deploy-relists)).
 - `deleteMode` decides only what the protocol `DELETE` does (Q-NUGET-1): `unlist` (the default)
@@ -815,15 +815,15 @@ nuget:
 
 Acceptance criteria:
 
-- `dotnet nuget delete Acme.Widgets 1.2.3 --source trove-local --api-key "$TOKEN" --non-interactive`
-  exits 0. Afterwards `dotnet package search Acme.Widgets --source trove-local --exact-match`
+- `dotnet nuget delete Acme.Widgets 1.2.3 --source quader-local --api-key "$TOKEN" --non-interactive`
+  exits 0. Afterwards `dotnet package search Acme.Widgets --source quader-local --exact-match`
   shows no `1.2.3`; the flat container list still contains `1.2.3`; a project pinned to `[1.2.3]`
   still restores; the SemVer 2 registration shows `"listed": false`. Running the delete command a
   second time exits 0 as well.
 - `curl -X POST -H "X-NuGet-ApiKey: $TOKEN" <feed>/package/acme.widgets/1.2.3` answers 200 and the
   version is back in search; a second POST answers 200 again. A token with `delete` and
   `annotate` but without `deploy` gets 403 for the POST.
-- With `deleteMode: delete`, `nuget delete Acme.Widgets 1.2.4 -Source trove-local -ApiKey %TOKEN%
+- With `deleteMode: delete`, `nuget delete Acme.Widgets 1.2.4 -Source quader-local -ApiKey %TOKEN%
   -NonInteractive` succeeds and the `.nupkg` URL answers 404 afterwards.
 
 ### R-NUGET-008 · Package content (flat container)
@@ -845,7 +845,7 @@ permission `read` on the ID:
 - The media type of the package is `application/octet-stream` and that of the `.nuspec`
   `application/xml`, whatever the item row recorded (Q-NUGET-44).
 - Package files are served like every item (R-STOR-012: `Range`, conditional requests, streaming).
-  Through a virtual repository the response carries `Trove-Resolved-From` (R-REPO-019).
+  Through a virtual repository the response carries `Quader-Resolved-From` (R-REPO-019).
 - `.nuspec` responses carry the package-content headers of the [Security notes](#security-notes).
 - Download counts are kept by [storage.md](../storage.md) on the lead item (R-STOR-015, P1).
 
@@ -936,25 +936,25 @@ nuget:
   "count": 1,
   "items": [
     {
-      "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.widgets/index.json#page/1.2.3/1.2.3",
+      "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.widgets/index.json#page/1.2.3/1.2.3",
       "count": 1,
       "lower": "1.2.3",
       "upper": "1.2.3",
-      "parent": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.widgets/index.json",
+      "parent": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.widgets/index.json",
       "items": [
         {
-          "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.widgets/1.2.3.json",
-          "packageContent": "https://trove.example.com/api/nuget/web/nuget-local/v3/flatcontainer/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg",
-          "registration": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.widgets/index.json",
+          "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.widgets/1.2.3.json",
+          "packageContent": "https://quader.example.com/api/nuget/web/nuget-local/v3/flatcontainer/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg",
+          "registration": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.widgets/index.json",
           "catalogEntry": {
-            "@id": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.widgets/1.2.3.json",
+            "@id": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.widgets/1.2.3.json",
             "id": "Acme.Widgets",
             "version": "1.2.3",
             "authors": "Acme Platform Team",
             "description": "Widget primitives.",
             "listed": true,
             "published": "2026-10-28T09:14:03Z",
-            "packageContent": "https://trove.example.com/api/nuget/web/nuget-local/v3/flatcontainer/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg",
+            "packageContent": "https://quader.example.com/api/nuget/web/nuget-local/v3/flatcontainer/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg",
             "dependencyGroups": [
               {
                 "targetFramework": "net8.0",
@@ -962,7 +962,7 @@ nuget:
                   {
                     "id": "Acme.Core",
                     "range": "[2.0.0, )",
-                    "registration": "https://trove.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.core/index.json"
+                    "registration": "https://quader.example.com/api/nuget/web/nuget-local/v3/registration-semver2/acme.core/index.json"
                   }
                 ]
               }
@@ -1094,10 +1094,10 @@ nuget:
 
 Acceptance criteria:
 
-- `dotnet package search acme --source trove-local --format json` lists `Acme.Widgets` and
+- `dotnet package search acme --source quader-local --format json` lists `Acme.Widgets` and
   `Acme.Core` with their latest stable versions; with `--prerelease` the latest pre-release
   appears; `--exact-match` lists every version of one ID.
-- `nuget search acme -Source trove-local` (nuget.exe) lists both packages.
+- `nuget search acme -Source quader-local` (nuget.exe) lists both packages.
 - `curl "<feed>/search?q=packageid:acme.widgets"` returns exactly one result;
   `curl "<feed>/search?q=&take=1&skip=1"` returns the second package of the empty-query order and
   the same `totalHits` as `skip=0`.
@@ -1153,13 +1153,13 @@ NuGet contributes:
   `Authorization` header applies. The four routes declare it (`Route.APIKey`), and the
   authentication stage learns the declaration from the dispatcher's match of the request
   ([identity-and-authentication.md](../identity-and-authentication.md) Q-AUTH-186).
-- **Basic and Bearer.** `Authorization: Basic` with any username and a trove token as password,
+- **Basic and Bearer.** `Authorization: Basic` with any username and a Quader token as password,
   and `Authorization: Bearer <token>`, on every NuGet endpoint (INV-8).
 - **Session cookie.** Accepted for GET and HEAD only (R-AUTH-001), so a browser on the UI can
   download a package; never on API-key endpoints, whatever their method (Q-AUTH-187). A cross-site
-  form can send `POST`, which is the relist method; it carries no credential trove accepts.
+  form can send `POST`, which is the relist method; it carries no credential Quader accepts.
 - **Challenge.** A 401 on a NuGet endpoint carries exactly `WWW-Authenticate: Basic
-  realm="trove"`. This page sets the challenge for its endpoints (R-AUTHZ-016 allows format
+  realm="quader"`. This page sets the challenge for its endpoints (R-AUTHZ-016 allows format
   pages to): NuGet clients answer Basic, and offering NTLM or Negotiate besides Basic would make
   clients send Basic only after they restrict their valid authentication types in `nuget.config`.
 - **Anonymous requests are always challenged, never answered 404** (R-AUTHZ-016). A client sends
@@ -1189,9 +1189,9 @@ visibility:
 Acceptance criteria:
 
 - With the artifacts `private` or `internal`: `curl -i <feed>/index.json` answers 401 with exactly
-  `WWW-Authenticate: Basic realm="trove"`; `curl -u anything:$TOKEN` answers 200;
+  `WWW-Authenticate: Basic realm="quader"`; `curl -u anything:$TOKEN` answers 200;
   `curl -H "Authorization: Bearer $TOKEN"` answers 200; a revoked token answers 401.
-- `dotnet nuget add source <feed>/index.json --name trove-local --username ci --password "$TOKEN"
+- `dotnet nuget add source <feed>/index.json --name quader-local --username ci --password "$TOKEN"
   --store-password-in-clear-text`, then `dotnet restore` succeeds.
 - `dotnet nuget push … --api-key az` with credentials in `nuget.config` succeeds (first attempt
   401, retry with Basic); `--api-key "$TOKEN"` without credentials succeeds; `--api-key "ci:$TOKEN"`
@@ -1199,7 +1199,7 @@ Acceptance criteria:
 - With the artifacts of `nuget-local` `public`: `curl <feed>/index.json` answers 200 without
   credentials; after lowering them to `internal` it answers 401, and a restore with
   `nuget.config` credentials succeeds and is audited under the token's principal.
-- `curl -X POST -b "__Host-trv_session=$S" <feed>/package/acme.widgets/1.2.3` answers 401.
+- `curl -X POST -b "__Host-qdr_session=$S" <feed>/package/acme.widgets/1.2.3` answers 401.
 
 ### R-NUGET-013 · Permissions per NuGet operation
 Priority: **MVP** · Covers: PKG-NUGET-019
@@ -1278,9 +1278,9 @@ Remote settings shared by all formats are fields of the `remote` section owned b
   proposed entry `{"pattern": "*.nuget.org", "sendCredentials": false}` in the format catalog
   (R-NUGET-001, R-REPO-003), because nuget.org serves search and symbols from other `nuget.org`
   hosts.
-- A trove repository on another instance is a valid upstream: its service index is a plain v3
+- A Quader repository on another instance is a valid upstream: its service index is a plain v3
   index, so no special mode is needed.
-- The remote's own service index lists trove URLs only (R-NUGET-002); it never lists publish
+- The remote's own service index lists Quader URLs only (R-NUGET-002); it never lists publish
   resources, and publish requests answer 405.
 
 Configuration (per remote repository; `remote` belongs to
@@ -1308,7 +1308,7 @@ Acceptance criteria:
   reports it reachable.
 - A remote whose upstream index lacks `PackageBaseAddress/3.0.0` (stub server) answers its first
   request with 502 `upstream_error` naming it, and stores nothing.
-- A remote whose upstream is `nuget-all` on a second trove instance restores packages through
+- A remote whose upstream is `nuget-all` on a second Quader instance restores packages through
   both instances.
 
 ### R-NUGET-015 · Remote repository: proxying, caching and URL rewriting
@@ -1323,7 +1323,7 @@ time (R-REPO-043) apply. The NuGet plug-in classifies requests into descriptors 
 | service index | rendered | — | none; built from the remote's configuration |
 | (discovery) | metadata | `.nuget/index.json` | upstream service index |
 | `flatcontainer/{lower_id}/index.json` | metadata; the ID's package document (R-REPO-003) | `{lower_id}/index.json` | upstream package content `{lower_id}/index.json` |
-| `.nupkg` | artifact | `{lower_id}/{lower_version}/{lower_id}.{lower_version}.nupkg` | upstream package content URL; where a registration of the ID that trove has read names another `packageContent` for the version, that address (recorded in `remote_url_map`, Q-NUGET-54) |
+| `.nupkg` | artifact | `{lower_id}/{lower_version}/{lower_id}.{lower_version}.nupkg` | upstream package content URL; where a registration of the ID that Quader has read names another `packageContent` for the version, that address (recorded in `remote_url_map`, Q-NUGET-54) |
 | `.nuspec` | artifact | `{lower_id}/{lower_version}/{lower_id}.nuspec` | upstream package content `.nuspec`, cached as an item of its own (Q-NUGET-54) |
 | any registration document | metadata | `{lower_id}/.registration/index.json` and `{lower_id}/.registration/page/{lower}/{upper}.json` (the bounds of the page in URL form, Q-NUGET-51) | upstream registration index of the discovered hive, plus every non-inlined page |
 | search, autocomplete | search | — | R-NUGET-016 |
@@ -1428,7 +1428,7 @@ Acceptance criteria (against a stub v3 upstream in CI and, in the full run of Te
   `<base>/api/nuget/web/nuget-org/v3/` (Q-NUGET-85); the `deprecation` and `vulnerabilities` of a version
   that has them are in the document.
 - For a stub upstream with 200 versions of one ID in non-inlined pages, the remote's index uses
-  trove's paging and contains all 200 leaves.
+  Quader's paging and contains all 200 leaves.
 - With `excludePatterns: ["Acme.*"]`,
   `curl <base>/api/nuget/web/nuget-org/v3/flatcontainer/acme.widgets/index.json` answers 404 and the
   stub upstream records no request. With `includePatterns: ["Newtonsoft.*"]` instead, restoring
@@ -1455,7 +1455,7 @@ Priority: **MVP** · Covers: PKG-NUGET-024, PKG-NUGET-028
 - `forwardSearch: true`: search requests are forwarded to the upstream's search resource with the
   terms of `q` as R-NUGET-010 parses them, written back in the query syntax (so the upstream gets
   exactly the terms the withheld rule below checked, Q-NUGET-80), the same `prerelease`,
-  `semVerLevel` and `packageType`, and with `skip` and `take` clamped to trove's limits
+  `semVerLevel` and `packageType`, and with `skip` and `take` clamped to Quader's limits
   (R-REPO-025 lets the plug-in map these parameters). A query with a `version:` term that is no
   version matches nothing (R-NUGET-010) and is not forwarded. The answer is read within 8 MiB
   inflated, and a result that lists more than 32,768 versions is removed (Q-NUGET-90). Result URLs are rewritten as
@@ -1522,7 +1522,7 @@ Priority: **MVP** · Covers: PKG-NUGET-024, PKG-NUGET-028
     answer either (Q-NUGET-79).
 - When the upstream search fails, the circuit is open (R-REPO-029), the upstream announces no
   search resource or answers with something that is no search document, the remote answers from its
-  cache-only search with 200, and counts it in `trove_nuget_search_forward_failures_total`
+  cache-only search with 200, and counts it in `quader_nuget_search_forward_failures_total`
   (R-NUGET-028).
 - `forwardSearch: false`: the remote answers with the cache-only search, which is R-NUGET-010 over
   its `origin = 'cache'` rows.
@@ -1540,7 +1540,7 @@ proxy:
 
 Acceptance criteria:
 
-- `dotnet package search Newtonsoft --source trove-org` returns `Newtonsoft.Json` with upstream
+- `dotnet package search Newtonsoft --source quader-org` returns `Newtonsoft.Json` with upstream
   download counts; every `registration` URL points at `nuget-org`.
 - With `forwardSearch: false`, the same search returns only packages restored through the remote
   before.
@@ -1607,8 +1607,8 @@ metadata cache (R-REPO-020) and dependency-confusion protection (R-REPO-023) are
   merged entry whose remote input was refreshed expires with that entry when the signal is lost.
   A claim that the first push creates (`local.autoClaim`) reaches the other replicas through the
   change log within the bound of R-ARCH-018. A merge without a transiently failing remote member is served
-  with `Cache-Status: trove; detail=partial` and not cached (R-REPO-020); its rendering is not kept
-  either, and `trove_nuget_virtual_member_skipped_total{repo,reason="unavailable"}` counts it.
+  with `Cache-Status: quader; detail=partial` and not cached (R-REPO-020); its rendering is not kept
+  either, and `quader_nuget_virtual_member_skipped_total{repo,reason="unavailable"}` counts it.
 - The read check is per member and per ID (`Resolver.Plan`). The merged entry is shared by every
   caller with the same members, so a grant narrower than the ID (a version pattern) is not applied
   inside the merge; the download of the version applies it, and the document may list a version the
@@ -1637,7 +1637,7 @@ Acceptance criteria:
 - `Contoso.Util 2.0.0` in `nuget-local`, pushed by a holder of `manage` on it (R-REPO-048), and
   `Contoso.Util` `2.0.0` and `2.1.0` at the stub upstream; `local.autoClaim: false` on
   `nuget-local`, no claims and no rules: the virtual version list is `["2.0.0","2.1.0"]`; the
-  `2.0.0` download carries `Trove-Resolved-From: nuget-local` and its registration entry carries
+  `2.0.0` download carries `Quader-Resolved-From: nuget-local` and its registration entry carries
   the local metadata. With `local.autoClaim: true` on `nuget-local` (the push creates the claim)
   the list is `["2.0.0"]` and the stub records no request for `contoso.util` afterwards.
 - A pin rule `{"packages": ["Partner.*"], "members": ["nuget-org"]}` in `nuget-all` resolves
@@ -1647,7 +1647,7 @@ Acceptance criteria:
 - With the stub upstream down and nothing cached, local packages still restore through
   `nuget-all`, and the version list of a remote-only ID answers 502, not 404 (R-REPO-019).
 - Two local members that both hold `Acme.Widgets 1.5.0` list it once; the registration entry and the
-  `.nupkg` are the first member's (`Trove-Resolved-From`), and the validator of every merged document
+  `.nupkg` are the first member's (`Quader-Resolved-From`), and the validator of every merged document
   is the same on every replica.
 
 ### R-NUGET-018 · Virtual repository: merged search and autocomplete
@@ -1710,7 +1710,7 @@ nuget:
 
 Acceptance criteria:
 
-- `dotnet package search acme --source trove-all` returns local `Acme.*` packages before upstream
+- `dotnet package search acme --source quader-all` returns local `Acme.*` packages before upstream
   results, and `q=packageid:newtonsoft.json` returns `Newtonsoft.Json` first.
 - A package present in `nuget-local` (`local.autoClaim: false`, pushed by a `manage` holder,
   R-REPO-048) and at the stub upstream, neither pinned nor claimed, appears once with the union of
@@ -1737,7 +1737,7 @@ Priority: **MVP** · Covers: PKG-NUGET-027, REPO-038
 
 Acceptance criteria:
 
-- `dotnet nuget push Acme.Widgets.1.4.0.nupkg --source trove-all --api-key "$TOKEN"` stores the
+- `dotnet nuget push Acme.Widgets.1.4.0.nupkg --source quader-all --api-key "$TOKEN"` stores the
   package in `nuget-local`; `/files/web/nuget-local/acme.widgets/1.4.0/acme.widgets.1.4.0.nupkg`
   exists.
 - After removing the deploy target, the same push is refused with 403 and the service index of
@@ -1797,9 +1797,9 @@ CREATE TABLE nuget_symbol_package (
 Acceptance criteria:
 
 - `dotnet pack -c Release -p:Version=1.5.0 -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg`,
-  then `dotnet nuget push out/Acme.Widgets.1.5.0.nupkg --source trove-local --api-key "$TOKEN"`
+  then `dotnet nuget push out/Acme.Widgets.1.5.0.nupkg --source quader-local --api-key "$TOKEN"`
   stores both files.
-- `nuget push Acme.Widgets.1.5.1.snupkg -Source trove-local -ApiKey %TOKEN%` before the `.nupkg`
+- `nuget push Acme.Widgets.1.5.1.snupkg -Source quader-local -ApiKey %TOKEN%` before the `.nupkg`
   answers 404; after pushing the `.nupkg` it answers 201; pushing it again answers 201.
 - A `.snupkg` containing a `.dll` answers 400; a `.symbols.nupkg` answers 400.
 - A `.snupkg` with a `.pdb` that is neither a Portable PDB (`BSJB`) nor a Windows PDB
@@ -1886,7 +1886,7 @@ Acceptance criteria:
 - 200 symbol packages are pushed to `nuget-local` within one minute, and the node of one `worker`
   is drained while their jobs run. Every key answers 200 afterwards, no job counts the interrupted
   attempt, and no `nuget_symbol_file` row exists twice. Before the drain,
-  `trove_jobs_running{kind="nuget-symbol-index"}` is above 0 on both `worker` replicas at the same
+  `quader_jobs_running{kind="nuget-symbol-index"}` is above 0 on both `worker` replicas at the same
   time.
 - A `.snupkg` whose `.pdb` carries a valid Portable PDB signature but a corrupt `#Pdb` stream ends
   with `index_error = 'unparseable'`; a valid symbol package pushed after it is servable within the
@@ -1943,7 +1943,7 @@ restore and audit packages locally.
 
 - `nuget.vulnerabilityInfo` is `local | upstream | off`
   ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-018, Q-VULN-10). `local`, from
-  M4b, serves trove's own advisory data on every class; `upstream` is the pass-through of this
+  M4b, serves Quader's own advisory data on every class; `upstream` is the pass-through of this
   requirement, on remote and virtual repositories; `off` lists no resource. The default is `local`
   while the installation's `vulnerabilities.enabled` is `true` and its OSV source is not `off`,
   otherwise `upstream` on remote and virtual repositories and `off` on local ones. Until this
@@ -1959,8 +1959,8 @@ restore and audit packages locally.
   `<first 8 hex of SHA-256 of the member key>-<upstream name>` truncated to 32 characters, and
   page URLs pointing at the virtual repository. The index MUST NOT exceed 16 entries; members
   beyond that are dropped in resolution order and the drop is logged.
-- Until M4b, local repositories do not list the resource, because trove holds no advisory data of
-  its own then; from M4b they list trove's resource in mode `local` (R-VULN-018). Because
+- Until M4b, local repositories do not list the resource, because Quader holds no advisory data of
+  its own then; from M4b they list Quader's resource in mode `local` (R-VULN-018). Because
   advisories are keyed by package ID, a virtual repository that includes a nuget.org remote also
   audits public packages restored from local members.
 - Deprecation and vulnerability data inside registration entries of remote packages pass through
@@ -2059,30 +2059,30 @@ always use the `index.json` URL, never a v2 address, and show per repository:
 
 ```shell
 # .NET CLI; on Linux and macOS the password must be stored in clear text
-dotnet nuget add source https://trove.example.com/api/nuget/web/nuget-all/v3/index.json \
-  --name trove --username trove --password "$TROVE_TOKEN" --store-password-in-clear-text
+dotnet nuget add source https://quader.example.com/api/nuget/web/nuget-all/v3/index.json \
+  --name quader --username quader --password "$QUADER_TOKEN" --store-password-in-clear-text
 dotnet restore
-dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source https://trove.example.com/api/nuget/web/nuget-local/v3/index.json --api-key "$TROVE_TOKEN"
+dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source https://quader.example.com/api/nuget/web/nuget-local/v3/index.json --api-key "$QUADER_TOKEN"
 
 # nuget.exe
-nuget sources add -Name trove -Source https://trove.example.com/api/nuget/web/nuget-all/v3/index.json -Username trove -Password %TROVE_TOKEN%
-nuget push Acme.Widgets.1.2.3.nupkg -Source https://trove.example.com/api/nuget/web/nuget-local/v3/index.json -ApiKey %TROVE_TOKEN%
+nuget sources add -Name quader -Source https://quader.example.com/api/nuget/web/nuget-all/v3/index.json -Username quader -Password %QUADER_TOKEN%
+nuget push Acme.Widgets.1.2.3.nupkg -Source https://quader.example.com/api/nuget/web/nuget-local/v3/index.json -ApiKey %QUADER_TOKEN%
 ```
 
 Which snippets exist, as built (Q-NUGET-49): per client a configure, an install and, for the two command line clients, a
 publish template; the snippets of the UI and of the guide are these templates rendered for a repository. The credential
 parts (`--username … --password …`, `-Username … -Password …`, the `packageSourceCredentials` block) are written only for a
-repository that is not anonymously readable, in the token spelling of the template's language: `%TROVE_TOKEN%` in a
-`nuget.config` and in cmd, `${TROVE_TOKEN}` in a POSIX shell, `$env:TROVE_TOKEN` in PowerShell. The user name is the fixed
-`trove` (the server accepts any, R-NUGET-012). The `dotnet` snippets exist for a POSIX shell and for PowerShell, the
+repository that is not anonymously readable, in the token spelling of the template's language: `%QUADER_TOKEN%` in a
+`nuget.config` and in cmd, `${QUADER_TOKEN}` in a POSIX shell, `$env:QUADER_TOKEN` in PowerShell. The user name is the fixed
+`quader` (the server accepts any, R-NUGET-012). The `dotnet` snippets exist for a POSIX shell and for PowerShell, the
 `nuget.exe` snippets for cmd and PowerShell, and all three clients get the `nuget.config` below as a file; Visual Studio gets
 the `nuget.config` and the `PackageReference` of a project (`<PackageReference Include="acme.widgets" Version="1.2.3" />`) and
 nothing else, because it has no command line. A publish snippet names the repository the reader chose and carries the token
-as the API key. `dotnet add package <id> --version <version>` and `nuget install <id> -Version <version> -Source trove` are
+as the API key. `dotnet add package <id> --version <version>` and `nuget install <id> -Version <version> -Source quader` are
 the install snippets; `nuget sources add` leaves the clear-text switch out because nuget.exe on Windows encrypts the password
 and the guide says that Mono, Linux and macOS need `-StorePasswordInClearText`.
 
-`nuget.config` for a repository checkout (values # example; `%TROVE_TOKEN%` is expanded from the
+`nuget.config` for a repository checkout (values # example; `%QUADER_TOKEN%` is expanded from the
 environment on every platform):
 
 ```xml
@@ -2090,13 +2090,13 @@ environment on every platform):
 <configuration>
   <packageSources>
     <clear />
-    <add key="trove" value="https://trove.example.com/api/nuget/web/nuget-all/v3/index.json" protocolVersion="3" />
+    <add key="quader" value="https://quader.example.com/api/nuget/web/nuget-all/v3/index.json" protocolVersion="3" />
   </packageSources>
   <packageSourceCredentials>
-    <trove>
-      <add key="Username" value="trove" />
-      <add key="ClearTextPassword" value="%TROVE_TOKEN%" />
-    </trove>
+    <quader>
+      <add key="Username" value="quader" />
+      <add key="ClearTextPassword" value="%QUADER_TOKEN%" />
+    </quader>
   </packageSourceCredentials>
 </configuration>
 ```
@@ -2111,8 +2111,8 @@ after `packageSources`.)
   name and the `index.json` URL. Symbol location (P1): Tools → Options → Debugging → Symbols,
   `<feed>/symbols/`.
 - GitLab CI: the reference pipeline of [gitlab-ci-oidc.md](../gitlab-ci-oidc.md) (R-CI-028)
-  obtains `TROVE_TOKEN` through the OIDC exchange and runs the push and restore lines above.
-- The `nuget.config` elements trove relies on: `protocolVersion="3"` when the URL does not end in
+  obtains `QUADER_TOKEN` through the OIDC exchange and runs the push and restore lines above.
+- The `nuget.config` elements Quader relies on: `protocolVersion="3"` when the URL does not end in
   `.json`, credentials per source, `<clear />`, package source mapping, and from NuGet 7.6 the
   `NUGET_API_KEY` environment variable as an alternative to the API key option
   ([symbol packages](https://learn.microsoft.com/en-us/nuget/create-packages/symbol-packages-snupkg)).
@@ -2138,13 +2138,13 @@ Acceptance criteria:
 - NuGet passes kit check 8 with its guide, and the How to use tab of `nuget-all` shows the configure snippet of the
   setup page for each client.
 - Each snippet of the UI, with placeholders filled, runs unmodified in the acceptance suite.
-- The `nuget.config` above, with `TROVE_TOKEN` set, restores a project on Linux (dotnet 10 SDK)
+- The `nuget.config` above, with `QUADER_TOKEN` set, restores a project on Linux (dotnet 10 SDK)
   and on Windows (nuget.exe and dotnet).
 
 ### R-NUGET-027 · Acceptance test suite
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
-The NuGet acceptance suite runs the client commands of this page against a running trove in the
+The NuGet acceptance suite runs the client commands of this page against a running Quader in the
 production shape: the local profile of [ha-and-helm.md](../ha-and-helm.md) R-HA-051, deployed by
 the Helm chart.
 - two `web` and two `worker` replicas on different nodes;
@@ -2185,7 +2185,7 @@ Acceptance criteria: the suite is green in CI for every change that touches the 
 the shared request path, and the full run of Test and Release on the commit that closes the phase is green.
 
 ### R-NUGET-028 · Audit events and metrics for NuGet
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Event catalog, schema and metric conventions are owned by
 [operations-and-observability.md](../operations-and-observability.md) (INV-16). NuGet emits:
@@ -2193,7 +2193,7 @@ Event catalog, schema and metric conventions are owned by
 | Operation | Audit event |
 |---|---|
 | Push accepted | `package.published`, and `artifact.deployed` for the `.nupkg` and for the generated `.nuspec` (the item store records one event per stored file, Q-NUGET-36) |
-| Push of the identical bytes of a stored version (R-NUGET-006) | none; counted in `trove_nuget_push_replayed_total` |
+| Push of the identical bytes of a stored version (R-NUGET-006) | none; counted in `quader_nuget_push_replayed_total` |
 | Symbol push accepted | `artifact.deployed` for the `.snupkg` |
 | Unlist, relist | `package.metadata_changed` with `change` = `unlist` or `relist` |
 | Hard delete | `package.deleted` and `artifact.deleted` |
@@ -2206,17 +2206,17 @@ Event catalog, schema and metric conventions are owned by
   names its routes by the handler name and, after a dot, the operation: `nuget.flatcontainer.index`,
   `nuget.flatcontainer.nupkg`, `nuget.flatcontainer.nuspec`, `nuget.flatcontainer.embedded`,
   `nuget.registration.index`, `nuget.registration.page`, `nuget.registration.leaf`. The route name
-  is the handler label of the request log and of `trove_http_requests_total` (Q-NUGET-30).
+  is the handler label of the request log and of `quader_http_requests_total` (Q-NUGET-30).
 - Format metrics (# example names; a repository label's value is the qualified name `<projectKey>/<repoKey>`):
-  `trove_nuget_virtual_member_skipped_total{repo,reason}`,
-  `trove_nuget_remote_unparseable_packages_total{repo}` (the label is `repo`, as for the replay counter),
-  `trove_nuget_search_forward_failures_total{repository}`,
-  `trove_nuget_search_withheld_total{repository}` (R-NUGET-016),
-  `trove_nuget_push_replayed_total{repo}` (R-NUGET-006; `repo` is the repository label R-OPS-007 allows) and, from P1,
-  `trove_nuget_symbol_index_lag_seconds` (age of the oldest symbol package without `indexed_at`,
-  R-NUGET-021) and `trove_nuget_symbol_index_failures_total{repository,reason}` (packages that
+  `quader_nuget_virtual_member_skipped_total{repo,reason}`,
+  `quader_nuget_remote_unparseable_packages_total{repo}` (the label is `repo`, as for the replay counter),
+  `quader_nuget_search_forward_failures_total{repository}`,
+  `quader_nuget_search_withheld_total{repository}` (R-NUGET-016),
+  `quader_nuget_push_replayed_total{repo}` (R-NUGET-006; `repo` is the repository label R-OPS-007 allows) and, from P1,
+  `quader_nuget_symbol_index_lag_seconds` (age of the oldest symbol package without `indexed_at`,
+  R-NUGET-021) and `quader_nuget_symbol_index_failures_total{repository,reason}` (packages that
   ended with `index_error`). The forwarded-search cache reports through the core's
-  `trove_cache_requests_total{cache="proxy_query_results"}`.
+  `quader_cache_requests_total{cache="proxy_query_results"}`.
 - `package.published` and `package.deleted` of local NuGet repositories go to the revocation
   journal of [ha-and-helm.md](../ha-and-helm.md) R-HA-054, with the entry of R-NUGET-033. Both
   event types are shared with npm, which journals neither ([formats/npm.md](npm.md) Q-NPM-12), and
@@ -2229,7 +2229,7 @@ Acceptance criteria:
 
 - After a push, an unlist and a refused push, the audit API returns the events of the table with
   the right actors and outcomes.
-- The handler names appear in `trove_http_requests_total` after one restore through `nuget-all`.
+- The handler names appear in `quader_http_requests_total` after one restore through `nuget-all`.
 
 ### R-NUGET-029 · Upstream package digests from catalog leaves
 Priority: **P1** · Covers: RMT-022
@@ -2258,7 +2258,7 @@ Acceptance criteria:
   `remote.integrity.checksumPolicy: require` succeeds.
 
 ### R-NUGET-030 · NuGet on interchangeable replicas (INV-18)
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The Kubernetes Service spreads NuGet requests over the `web` replicas at random and without session
 affinity (INV-12, [architecture.md](../architecture.md) R-ARCH-032). A restore, a push or a
@@ -2290,7 +2290,7 @@ requests on a replica:
   - PostgreSQL rows and stored upstream documents;
   - the base URL and the hive;
   - the content coding;
-  - the trove release.
+  - the Quader release.
 
   Nothing replica-specific enters the body: no replica name, no clock reading other than stored
   timestamps, no map iteration order (objects are written with a fixed key order). Replicas of one
@@ -2316,7 +2316,7 @@ the next replica in turn, upstream keep-alive off):
   `ETag` on all three replicas.
 
 ### R-NUGET-031 · Valkey unavailable or emptied
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 NuGet keeps nothing of its own in Valkey. It reads no document, search result, symbol file or
 authorization result from it ([architecture.md](../architecture.md) R-ARCH-030, Q-ARCH-16). It uses
@@ -2346,15 +2346,15 @@ Acceptance criteria:
   conditional request per replica per 300 s.
 - `valkey-cli FLUSHALL` during the NuGet loads of the drain test of
   [ha-and-helm.md](../ha-and-helm.md) R-HA-059 makes no `dotnet` command fail. Neither does a
-  Sentinel failover forced with `SENTINEL FAILOVER trove` during those loads; afterwards
-  `trove_flight_lock_bypass_total` stops rising within `valkey.sentinel.refresh_interval`, so the
+  Sentinel failover forced with `SENTINEL FAILOVER quader` during those loads; afterwards
+  `quader_flight_lock_bypass_total` stops rising within `valkey.sentinel.refresh_interval`, so the
   replicas collapse across replicas again on the new primary.
 - After `FLUSHALL`, the `.nupkg` of `Acme.Gone` from R-NUGET-015's criterion still answers 404
   through `nuget-org`. The stub records no `.nupkg` request and at most one version-list request per
   replica.
 
 ### R-NUGET-032 · Pushes and deletes across drains, restarts and client retries
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 How the NuGet clients send writes. Read on 2026-10-28 in the NuGet.Client sources on the `dev`
 branch
@@ -2380,7 +2380,7 @@ branch
 Not verified: which released client versions carry exactly this code; the acceptance criteria below
 run against the versions pinned in R-NUGET-027.
 
-trove's side:
+Quader's side:
 - **Post-body work is bounded.** After the body of a push has arrived, the NuGet plug-in reads the
   central directory, every local header name, the `.nuspec` (at most `max_nuspec_bytes`) and, for a
   symbol package, the first bytes of each `.pdb`; from P1 it extracts at most three embedded files
@@ -2408,7 +2408,7 @@ trove's side:
 Acceptance criteria:
 - A fault-injection build drops the connection of a push after its commit and before its status
   line. `dotnet nuget push` with default settings exits 0. The repository holds one version row and
-  one `package.published` event for it, and `trove_nuget_push_replayed_total` has risen by 1.
+  one `package.published` event for it, and `quader_nuget_push_replayed_total` has risen by 1.
 - `dotnet nuget push` of a 300 MiB package over a link limited to 10 MiB/s runs while the `web` pod
   receiving it is deleted. The command exits 0, and the version restores through another replica.
 - With `web.spool.sizeLimit: 3Gi` and `spool.headroom: 1GiB`, three concurrent pushes of 1 GiB
@@ -2420,7 +2420,7 @@ Acceptance criteria:
   command exit 0 as well.
 
 ### R-NUGET-033 · NuGet data in backups and restores
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The backup format, its consistency and the restore procedure belong to
 [backup-and-restore.md](../backup-and-restore.md) (INV-19). NuGet contributes the following.
@@ -2564,7 +2564,7 @@ what the NuGet format contributes through the mirror interface of [architecture.
   one, else unknown; a registration the upstream does not have leaves the plan standing on the version list (Q-NUGET-103). The
   `.nuspec`, icons, READMEs and symbols stay pull-through. The plan reads what an upstream sends within the bounds of a client's
   rendering (Q-NUGET-107 to Q-NUGET-109): a version list of more than 32,768 versions, or a registration of more leaves than that
-  over its index and pages together or of more than 32 MiB inflated, is an upstream document trove does not read, and the plan fails.
+  over its index and pages together or of more than 32 MiB inflated, is an upstream document Quader does not read, and the plan fails.
 - **Bodies.** Every discovery body is requested within 32 MiB and inflated within the same bound, whatever coding it arrives in
   (Q-NUGET-108).
 - **Hosts.** Catalog pages and search requests go to the hosts the service index names, under the host rules of R-NUGET-014
@@ -2592,7 +2592,7 @@ Acceptance criteria (integration, the NuGet stub of R-REPO-059):
 ## Endpoints
 
 ### R-NUGET-034 · NuGet documents on an endpoint with exposure rules
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The NuGet plug-in implements the exposure adapter of [endpoints.md](../endpoints.md) R-EP-018. On an
 endpoint with `exposure: rules`, after the merge of a virtual repository and the rewrite of a remote
@@ -2661,7 +2661,7 @@ pre-releases):
 | PKG-NUGET-004 | P2 | NuGet v2 (OData) and v1 feed at the base address; until then v2 requests answer 404 with a hint (R-NUGET-001). |
 | PKG-NUGET-010 | P2 | System-wide switch for normalizing new repositories; not applicable, every NuGet repository is normalized (R-NUGET-003). |
 | PKG-NUGET-012 | P2 | Custom layouts and pushes into folders. |
-| PKG-NUGET-013 | P2 | Normalization migration; not applicable to trove repositories. Importing non-normalized content from another system belongs to an import tool. |
+| PKG-NUGET-013 | P2 | Normalization migration; not applicable to Quader repositories. Importing non-normalized content from another system belongs to an import tool. |
 | PKG-NUGET-015 | P2 | Maximum unique snapshots on NuGet repositories; retention belongs to the retention policies of [storage.md](../storage.md). |
 | PKG-NUGET-025 | P2 | Dedicated mode for a remote whose upstream is another instance; a plain v3 remote already works (R-NUGET-014), only the upstream state check is deferred. |
 | PKG-NUGET-037 | P2 | PowerShell package management (needs v2 for the classic module). |
@@ -2669,7 +2669,7 @@ pre-releases):
 | PKG-NUGET-039 | P2 | Companion command-line client wrapping nuget and dotnet; not planned. |
 | PKG-NUGET-040 | Later | Steering clients to the newest version that passes curation policies. |
 | PKG-NUGET-052 | P2 | Repository signatures resource and repository signing (H-36). |
-| PKG-NUGET-053 | P2 | Catalog resource for mirrors and indexers: trove reads an upstream's catalog for its own mirrors (section "Mirror discovery") and its leaves for digests (R-NUGET-029), but offers none. |
+| PKG-NUGET-053 | P2 | Catalog resource for mirrors and indexers: Quader reads an upstream's catalog for its own mirrors (section "Mirror discovery") and its leaves for digests (R-NUGET-029), but offers none. |
 | PKG-NUGET-054 | P2 | URI template resources; the README template is pulled into R-NUGET-024 (P1). |
 | PKG-NUGET-056 | Later | Federated NuGet repositories (INV-5). |
 
@@ -2680,7 +2680,7 @@ pre-releases):
   on API-key endpoints (R-NUGET-012), a page in a logged-in user's browser cannot relist, unlist
   or push on the user's behalf.
 - **Package-derived content.** `.nuspec`, README, license and icon responses come from untrusted
-  package authors and are served from trove's origin. They carry `X-Content-Type-Options:
+  package authors and are served from Quader's origin. They carry `X-Content-Type-Options:
   nosniff`, `Content-Security-Policy: sandbox; default-src 'none'` and
   `Cross-Origin-Resource-Policy: same-site`, set by the core so no handler can drop them
   ([architecture.md](../architecture.md) R-ARCH-007); icons are served only as `image/png` or
@@ -2726,14 +2726,14 @@ pre-releases):
 - **Deleted versions stay reserved.** A hard-deleted or moved version leaves a tombstone, so nobody
   holding `deploy`, or even `overwrite`, can bring the version number back with other bytes and
   silently replace what lock files and client caches recorded (R-NUGET-006).
-- **API keys are full tokens.** The value in `X-NuGet-ApiKey` is a trove token; client setup
+- **API keys are full tokens.** The value in `X-NuGet-ApiKey` is a Quader token; client setup
   recommends tokens limited to `deploy` on one repository and short-lived CI tokens
   ([gitlab-ci-oidc.md](../gitlab-ci-oidc.md)). `nuget.config` encrypts stored secrets only on
   Windows; elsewhere the instructions use environment-variable references.
 - **Symbol files can disclose source.** PDBs may contain source paths and embedded source; they
   are protected by the same `read` permission as the package (R-NUGET-013).
 - **Valkey never decides what a NuGet client receives.** No NuGet document, search result, symbol
-  file or permission is read from Valkey (R-NUGET-031). Whoever can write under trove's Valkey
+  file or permission is read from Valkey (R-NUGET-031). Whoever can write under Quader's Valkey
   prefix can do two things ([architecture.md](../architecture.md) H-49):
   - hide a remote's version list, package or symbol file behind a forged negative entry, for that
     entry's checked lifetime;
@@ -2805,15 +2805,15 @@ Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, back
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) 7200 s | Keep the generic default of R-REPO-024 for the service index, version lists, registrations and vulnerability data | Fewest upstream requests; same value as npm | A version released upstream stays unresolvable through trove for up to two hours, so automated dependency-update merge requests opened minutes after a release fail CI |
+| (a) 7200 s | Keep the generic default of R-REPO-024 for the service index, version lists, registrations and vulnerability data | Fewest upstream requests; same value as npm | A version released upstream stays unresolvable through Quader for up to two hours, so automated dependency-update merge requests opened minutes after a release fail CI |
 | (b) 300 s as the NuGet format default | The NuGet plug-in registers 300 s for those documents; the not-found period stays 1800 s | New upstream versions resolve within five minutes. Each refresh is a conditional request collapsed across replicas through Valkey, so an unchanged document costs one 304 per period per remote; while Valkey is unavailable, one per period per `web` replica | About 24 times more revalidations of hot documents than (a); upstream latency is felt more often, bounded by the refresh timeout that serves the stale copy (R-REPO-027) |
 | (c) 0 s | Revalidate on every use | Always current | Every package of every restore waits for an upstream round trip; an upstream slowdown slows every restore up to the refresh timeout |
-| (d) Long period plus catalog-driven invalidation | Keep 7200 s, and let a singleton job follow the upstream's catalog resource with a cursor, dropping cached documents of IDs that changed (the pattern the NuGet implementation guide suggests for feeds that mirror nuget.org) | Freshness within the polling interval at the lowest request count per cached ID | Works only for upstreams that offer a catalog; other v3 feeds, trove instances among them, fall back to 7200 s; a cursor, a scheduler lease and catalog parsing are new scope, and trove consumes catalog leaves only from P1 on (R-NUGET-029) |
+| (d) Long period plus catalog-driven invalidation | Keep 7200 s, and let a singleton job follow the upstream's catalog resource with a cursor, dropping cached documents of IDs that changed (the pattern the NuGet implementation guide suggests for feeds that mirror nuget.org) | Freshness within the polling interval at the lowest request count per cached ID | Works only for upstreams that offer a catalog; other v3 feeds, Quader instances among them, fall back to 7200 s; a cursor, a scheduler lease and catalog parsing are new scope, and Quader consumes catalog leaves only from P1 on (R-NUGET-029) |
 
 **Choice:** (b) — the NuGet format registers a default metadata period of 300 s and keeps 1800 s for the not-found period.
 
 **Rationale:** A restore asks for the version list first. With (a), the time between an upstream
-release and its first successful restore through trove is up to two hours, which is exactly the
+release and its first successful restore through Quader is up to two hours, which is exactly the
 window in which update bots open merge requests. 300 s keeps that window short. The extra load is
 small because refreshes are conditional, collapsed in-process and, through Valkey, across replicas
 (R-REPO-026, R-ARCH-033), and mostly answered with 304. Even with Valkey down and, for example, 20
@@ -2847,27 +2847,27 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) ASCII on push, upstream IDs pass through | IDs entering a local repository follow NuGet's ID rule restricted to ASCII (the set nuget.org now enforces); IDs of cached upstream packages follow NuGet's general Unicode rule, keyed by the client's lowercased request path, identity checked by Unicode simple case folding | The rule nuget.org applies to every push and `dotnet pack` warns about; legacy public packages stay restorable; trove never lowercases a non-ASCII ID itself | Two ID rules in the plug-in; a cached legacy ID cannot be copied into a local repository |
-| (b) NuGet's full Unicode rule everywhere | Unicode IDs on push too, with lowercasing that matches .NET's invariant culture | Accepts everything an older client packs | trove would have to reproduce .NET's case tables across runtimes; it creates exactly the IDs the ecosystem is retiring for security reasons |
-| (c) ASCII everywhere | Cache fills of packages outside the ASCII set fail | One rule, simplest code | About 119 legacy IDs that nuget.org still serves become unrestorable through trove: a client-compatibility regression with no security gain |
+| (a) ASCII on push, upstream IDs pass through | IDs entering a local repository follow NuGet's ID rule restricted to ASCII (the set nuget.org now enforces); IDs of cached upstream packages follow NuGet's general Unicode rule, keyed by the client's lowercased request path, identity checked by Unicode simple case folding | The rule nuget.org applies to every push and `dotnet pack` warns about; legacy public packages stay restorable; Quader never lowercases a non-ASCII ID itself | Two ID rules in the plug-in; a cached legacy ID cannot be copied into a local repository |
+| (b) NuGet's full Unicode rule everywhere | Unicode IDs on push too, with lowercasing that matches .NET's invariant culture | Accepts everything an older client packs | Quader would have to reproduce .NET's case tables across runtimes; it creates exactly the IDs the ecosystem is retiring for security reasons |
+| (c) ASCII everywhere | Cache fills of packages outside the ASCII set fail | One rule, simplest code | About 119 legacy IDs that nuget.org still serves become unrestorable through Quader: a client-compatibility regression with no security gain |
 
 **Choice:** (a) — ASCII-restricted IDs for everything that enters a local repository; upstream IDs pass through under NuGet's general rule, keyed by the client's lowercased request path.
 
 **Rationale:** The question is settled by the ecosystem itself. nuget.org has required the
 restricted ASCII set for new IDs since 2026-06-15 and refuses every non-conforming push since
-2026-07-15, and `dotnet pack` warns from .NET 11 on (NU5052), for trove's reason: lowercasing
+2026-07-15, and `dotnet pack` warns from .NET 11 on (NU5052), for Quader's reason: lowercasing
 differs between .NET Framework, modern .NET, Windows and Linux, so two visibly different IDs can
 map to one URL
 ([NU5052](https://learn.microsoft.com/en-us/dotnet/core/compatibility/sdk/11/nuget-pack-nu5052-packageid),
 [announcement](https://github.com/NuGet/Announcements/issues/75)). (b) would rebuild that hazard
-inside trove. (c) breaks restores of the roughly 119 legacy IDs, which the announcement says remain
-available. Under (a), trove never has to lowercase a non-ASCII ID: a cached package is keyed by
+inside Quader. (c) breaks restores of the roughly 119 legacy IDs, which the announcement says remain
+available. Under (a), Quader never has to lowercase a non-ASCII ID: a cached package is keyed by
 the path the client built, and the declared ID is only compared with it. A mismatch fails closed
 with 502, so a case-table difference can make a legacy package unrestorable but cannot make one
 ID reach another package's row or grant. Two clients that lowercase a legacy ID differently can at
 worst create two cache rows for one upstream package; the bytes are still stored once (INV-4). Where
 the two sources disagree (the announcement's expression admits `_` only as the first character,
-NU5052 anywhere), trove follows NU5052, the rule the SDK applies when packing. The development
+NU5052 anywhere), Quader follows NU5052, the rule the SDK applies when packing. The development
 agent would revisit this if nuget.org retires the legacy IDs (then (c) would suffice), or if a
 legacy ID fails the identity check in practice.
 
@@ -2876,7 +2876,7 @@ legacy ID fails the identity check in practice.
 the `_` reading, defines `lower_id` for both, holds dependency IDs to the upstream rule and forbids
 copying non-conforming cached IDs into local repositories; R-NUGET-005 step 4 selects the rule and
 validates dependency IDs; R-NUGET-009 omits the optional dependency `registration` URL for a
-non-ASCII dependency ID, so trove never lowercases one; R-NUGET-015 compares the declared ID by
+non-ASCII dependency ID, so Quader never lowercases one; R-NUGET-015 compares the declared ID by
 Unicode simple case folding; R-NUGET-003 gains criteria for a refused non-ASCII push and a restored
 legacy ID.
 
@@ -2887,7 +2887,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Forward by default | Remote search forwards every query to the upstream; `forwardSearch: false` per remote turns it off | Visual Studio's browse tab and `dotnet package search` find public packages that nobody restored yet | Every query leaves the network, including queries for internal package names typed into a virtual repository's search |
-| (b) Cache-only by default | Remote search shows only packages someone already restored | No search term leaves the network | Discovery of public packages through trove does not work out of the box; developers bypass trove and add nuget.org as a source, which reopens dependency confusion |
+| (b) Cache-only by default | Remote search shows only packages someone already restored | No search term leaves the network | Discovery of public packages through Quader does not work out of the box; developers bypass Quader and add nuget.org as a source, which reopens dependency confusion |
 | (c) Forward by default, withhold protected queries | As (a), but a query is answered from the cache only when one of its terms names an ID that an exclude pattern, a claim or a pin rule keeps away from that remote | Discovery works; queries for the organization's own namespaces stay inside; reuses the routing decision that already exists | Free-text terms outside protected namespaces still leave; slightly more logic than (a) |
 
 **Choice:** (c) — forward by default, switchable per remote, and never forward a query with a term that an exclude pattern, claim or pin rule protects.
@@ -2904,7 +2904,7 @@ for withheld queries, or if a deployment needs forwarding off by default.
 
 **Applied in the spec:** R-NUGET-014 sets `nuget.forwardSearch: true` as the per-remote default;
 R-NUGET-016 gains the withheld-query rule and two criteria; R-NUGET-018 applies it per virtual
-repository; R-NUGET-028 adds the counter `trove_nuget_search_withheld_total`; the Security notes
+repository; R-NUGET-028 adds the counter `quader_nuget_search_withheld_total`; the Security notes
 describe what still leaves the network.
 
 ### Q-NUGET-5 · ID casing on later pushes
@@ -2986,7 +2986,7 @@ count as `unchanged`, R-STOR-019) and writes the source tombstone on a move; R-N
 delete) refers to it; the Security notes gain "Deleted versions stay reserved". Revisited on
 2026-10-28 (option (d)): R-NUGET-006 answers a protocol push of a stored version's identical bytes
 with 201 and no change, splits the 409 cases, and rewrites the concurrency rule and two criteria;
-the response table lists the new outcome; R-NUGET-028 adds `trove_nuget_push_replayed_total`;
+the response table lists the new outcome; R-NUGET-028 adds `quader_nuget_push_replayed_total`;
 R-NUGET-032 states the client retry behavior this rests on and tests a push whose answer was lost
 after the commit.
 
@@ -3034,7 +3034,7 @@ Status: **Decided by the development agent** — selected from the options below
 R-NUGET-016 caches the upstream's answers to forwarded searches for `remote_result_ttl` (60 s). The
 load is now spread over n `web` replicas at random (INV-12), so a per-replica cache hits about 1/n
 as often for one user's consecutive pages. The upstream may then see up to n requests per distinct
-query and period. Valkey must not hold content that trove serves ([architecture.md](../architecture.md)
+query and period. Valkey must not hold content that Quader serves ([architecture.md](../architecture.md)
 Q-ARCH-16), and its values are limited to 1 KiB (R-ARCH-030).
 
 | Option | What it means | For | Against |
@@ -3059,7 +3059,7 @@ Q-ARCH-16), and its values are limited to 1 KiB (R-ARCH-030).
   as soon as the replica applies it, which (b) and (c) would need as well.
 - (d) gives up the hits that (a) still has for popular queries across many users, for no gain in
   correctness.
-- The development agent would revisit this if `trove_nuget_search_forward_failures_total` shows the
+- The development agent would revisit this if `quader_nuget_search_forward_failures_total` shows the
   upstream answering 429 to forwarded searches, or if an upstream other than nuget.org suffers from
   the per-replica fan-out. (b) with a MAC on each entry, and pages split below the value limit, is
   then the next step.
@@ -3086,7 +3086,7 @@ representations with different bytes, naming gzip explicitly
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Strong ETag from the inputs, as before | `rev_seq` or digest, hive, base URL | No change | Wrong by RFC 9110 for the gzip hives. During every rolling upgrade, N and N-1 may render different bytes under one strong value, and a cache that combines ranges or trusts byte equality is misled. |
-| (b) Strong ETag that also covers content coding and trove release | As (a), plus the coding and the release version | Strictly correct | Every upgrade turns every cached validator stale. During a rollout the value differs between replicas, so roughly every second conditional request answers 200. |
+| (b) Strong ETag that also covers content coding and Quader release | As (a), plus the coding and the release version | Strictly correct | Every upgrade turns every cached validator stale. During a rollout the value differs between replicas, so roughly every second conditional request answers 200. |
 | (c) Weak ETag `W/"…"` over a render version and the inputs | The plug-in's render version, `rev_seq` or digest, hive, base URL; for virtual documents the member fingerprint, every local member's `rev_seq` and every remote input's digest | `If-None-Match` uses the weak comparison, so 304s keep working across replicas, codings and releases. A release that must invalidate documents raises the render version. | Clients cannot use the value for `Range` with `If-Range`, which no NuGet client does on metadata. Someone has to remember to raise the render version when a fix must reach cached documents. |
 | (d) No ETag on rendered documents | — | Simplest | Proxies and scripts lose 304s; every revalidation transfers the whole document |
 
@@ -3151,7 +3151,7 @@ PostgreSQL and replays them after every restore (R-BAK-024).
   runtime object-store credential needed to forge one can already delete blobs.
 - npm answers the removal half differently. [formats/npm.md](npm.md) Q-NPM-12 replays an
   unpublish by withholding the restored version: replay tombstones it and deletes nothing, and
-  `trove admin npm reinstate` reverses it. It reserves no lost numbers (npm's H-51). Both decisions
+  `quader admin npm reinstate` reverses it. It reserves no lost numbers (npm's H-51). Both decisions
   wait for the trash can (P1, R-STOR-022, R-STOR-023), where one rule for both formats is
   preferable. Until then the difference is a cross-page item for the owner's walkthrough.
 - The development agent would revisit this when the trash can (P1) exists. Replay could then move
@@ -3215,7 +3215,7 @@ indexed; the 404 until indexed; the delay bound; criteria for the delay, for `wo
 replicas, for a drain with jobs on both `worker` replicas, and for a broken PDB. R-NUGET-020: the
 push extracts nothing; the `index_error` column; a data migration enqueues the backfill.
 R-NUGET-025: a reindex enqueues jobs instead of indexing symbols. R-NUGET-028:
-`trove_nuget_symbol_index_lag_seconds` and `trove_nuget_symbol_index_failures_total`. Cross-page:
+`quader_nuget_symbol_index_lag_seconds` and `quader_nuget_symbol_index_failures_total`. Cross-page:
 a row for `nuget-symbol-index` in [architecture.md](../architecture.md) R-ARCH-016's kind table;
 the worker spool note in [ha-and-helm.md](../ha-and-helm.md).
 
@@ -3225,7 +3225,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 The first sketch of `nuget_version` had `nuget_version_id_trgm`, a GIN index on `lower_id` with
 `gin_trgm_ops`, to answer a search term that is the middle of an ID. The operator class belongs to
-the `pg_trgm` extension. No migration of trove creates an extension today, and an installation on a
+the `pg_trgm` extension. No migration of Quader creates an extension today, and an installation on a
 managed PostgreSQL may run the application's migrations with a role that is not allowed to.
 
 | Option | What it means | For | Against |
@@ -3396,14 +3396,14 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Refuse floating versions | A range with `*` answers 400 on every ingestion path | A dependency range of a stored package always has an interval that `Satisfies` can test; the golden vectors are generated in the same mode, so there is one definition | A package that declares a floating dependency cannot be pushed or cached |
-| (b) Accept and store the text | Floating ranges parse and print as written | Nothing is refused | trove would implement a second grammar and a floating resolution that nothing in the registry needs; the SemVer 2 classification of a dependency would have no bound to test |
+| (b) Accept and store the text | Floating ranges parse and print as written | Nothing is refused | Quader would implement a second grammar and a floating resolution that nothing in the registry needs; the SemVer 2 classification of a dependency would have no bound to test |
 | (c) Accept and fail at use | Parse succeeds, `Satisfies` fails | One parser | A state in which a stored range cannot be evaluated |
 
 **Choice:** (a) — floating versions are refused.
 
 **Rationale:** The registry reads ranges for two things: the `is_semver2` classification of the
 package (R-NUGET-004) and the display of dependencies. Both need bounds. The resolution of
-floating versions happens in the client, against the feed's version list, which trove serves
+floating versions happens in the client, against the feed's version list, which Quader serves
 without parsing any range. The development agent would revisit this if a restore through a
 remote fails on a cached package that declares a floating dependency: the remedy would then be
 to keep the unparseable range text and treat the dependency as SemVer 1 for the classification,
@@ -3417,13 +3417,13 @@ refusal of floating versions.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 `NuGet.Versioning` has no length bound; the public gallery refuses versions of more than 64
-characters. trove stores the original, normalized and URL forms and a `sort_key` of every
+characters. Quader stores the original, normalized and URL forms and a `sort_key` of every
 version, and rejects nothing else about their size.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) 255 bytes, as given and normalized | `Parse` refuses a longer string, and a string whose normalized form (up to four bytes longer) exceeds 255 | One constant; bounds the stored forms, the key and every error detail; far above any real version | A version above 255 bytes that the library accepts is refused |
-| (b) 64, the gallery's bound | Same, tighter | Matches the public feed | A private feed's own versions or a cached one above 64 would be refused although nothing in trove needs the bound |
+| (b) 64, the gallery's bound | Same, tighter | Matches the public feed | A private feed's own versions or a cached one above 64 would be refused although nothing in Quader needs the bound |
 | (c) No bound | As the library | Exact agreement | Client-chosen strings grow rows, keys and index entries without limit |
 
 **Choice:** (a) — 255 bytes, checked on the string as given and on its normalized form.
@@ -3547,7 +3547,7 @@ framework. The encoding declaration must match the encoding the document is writ
 order mark.
 
 **Rationale:**
-- The id and version are what trove authorizes and indexes (R-AUTHZ-005); they have to be the strings a
+- The id and version are what Quader authorizes and indexes (R-AUTHZ-005); they have to be the strings a
   client installs. Everything else is metadata for display and search.
 - Versions, IDs and ranges are returned as written; their grammar belongs to R-NUGET-003 and R-NUGET-004,
   so the reader never normalizes what another rule has to judge.
@@ -3661,7 +3661,7 @@ Context: for npm a protocol path and a canonical path are one string (`lodash/-/
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-NUGET-028 names eleven handlers for the HTTP metrics. The route name is the handler label of the request log and of `trove_http_requests_total`, and a name is unique in the table of routes. The flat container has four routes (list, package, `.nuspec`, embedded files) and the registrations three (index, page, leaf).
+Context: R-NUGET-028 names eleven handlers for the HTTP metrics. The route name is the handler label of the request log and of `quader_http_requests_total`, and a name is unique in the table of routes. The flat container has four routes (list, package, `.nuspec`, embedded files) and the registrations three (index, page, leaf).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -3719,7 +3719,7 @@ nuget.exe row there needs a runtime for a .NET Framework executable. The SDK ima
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The SDK image plus Mono from its Ubuntu, nuget.exe by version and SHA-256 | `test/e2e/nugetclients/Dockerfile`: `mono-complete` and `ca-certificates-mono` at an exact apt version, `nuget.exe` from dist.nuget.org checked against a digest in `tools/versions.env` | The protocol of nuget.exe (its own HTTP stack, `nuget.config` handling, `-ApiKey`, `search`, `install`) runs against trove on every change, not only on the Windows runner; one base image with the SDK of the vectors; nothing from a third-party apt repository | Mono 6.8 is unmaintained and its TLS stack stops at TLS 1.2 (a listener with `min_version: "1.3"` cannot be reached by it); the apt version is exact, so Ubuntu replacing the package fails the build until the pin is moved |
+| (a) The SDK image plus Mono from its Ubuntu, nuget.exe by version and SHA-256 | `test/e2e/nugetclients/Dockerfile`: `mono-complete` and `ca-certificates-mono` at an exact apt version, `nuget.exe` from dist.nuget.org checked against a digest in `tools/versions.env` | The protocol of nuget.exe (its own HTTP stack, `nuget.config` handling, `-ApiKey`, `search`, `install`) runs against Quader on every change, not only on the Windows runner; one base image with the SDK of the vectors; nothing from a third-party apt repository | Mono 6.8 is unmaintained and its TLS stack stops at TLS 1.2 (a listener with `min_version: "1.3"` cannot be reached by it); the apt version is exact, so Ubuntu replacing the package fails the build until the pin is moved |
 | (b) nuget.exe on the Windows runner only | No Mono; the Linux image has `dotnet` only | No unmaintained runtime in CI | The Windows runner is outside the per-change kind suite, so every nuget.exe-specific behavior (the pre-authentication of R-NUGET-001 for clients older than the SDK's, `-ApiKey` header, the symbol push address) is seen only on the closing run |
 | (c) A current Mono from the Mono project's apt repository | A newer runtime | Maintained; TLS 1.3 may work | An apt source outside the pinned images, whose packages cannot be pinned by digest; a second source of base packages in a test image |
 
@@ -3729,7 +3729,7 @@ the same value and `make versions-check` (`test/e2e/nugetclients/check-pins.mjs`
 
 **Rationale:**
 - Verified in this change, on linux/arm64: `nuget help` prints 7.9.0.83 on Mono 6.8.0.105; `nuget install` fetches a package
-  from the counting test upstream over TLS and verifies the dev CA's chain; `nuget search` against the dev edge gets trove's
+  from the counting test upstream over TLS and verifies the dev CA's chain; `nuget search` against the dev edge gets Quader's
   HTTP status, not a certificate error; the same two commands without the CA fail on the certificate
   (`test/e2e/nugetclients/smoke.sh`, `TestNuGetClients`). Not verified: linux/amd64 (CI's architecture; the Ubuntu package and
   nuget.exe are the same, the image is not built there yet), and any push, delete or symbol push by nuget.exe on Mono.
@@ -3756,7 +3756,7 @@ run) must not run on every change.
 | (b) `^TestNuGet` with `-skip '^TestNuGet(Closing\|HA)'` | The sets `nuget-closing` (`^TestNuGetClosing`) and `nuget-ha` (`^TestNuGetHA`) take the families the name rule reserves; `nuget` takes the rest | A new test is in the per-change set by being named `TestNuGet...`; the exceptions are two prefixes, not a list | A name decides the tier: a nightly test must start with `TestNuGetClosing` or `TestNuGetHA` |
 | (c) One set per test file | A set per `nuget_*_test.go` | Fine control | A file per set, and the same drift as (a) |
 
-**Choice:** (b). `TROVE_E2E_RUN` replaces both the expression and the skip, so a single subtest can be run by hand. The set
+**Choice:** (b). `QUADER_E2E_RUN` replaces both the expression and the skip, so a single subtest can be run by hand. The set
 `nuget-clients` runs `^TestNuGetClients$` alone (the smoke test of the pods).
 
 **Rationale:** the run that finds "matched no test" a failure (`e2e.sh`) cannot find a family that no set names, so the rule must
@@ -3809,7 +3809,7 @@ Context: the identity of a package is inside it, so the permission on the ID, th
 
 **Rationale:** the replay is the case the client's own retry produces (R-NUGET-032), so it must be cheap and must leave nothing behind. The early check is an optimization and a better answer; the safety is the check inside the commit, which is also what a push racing a hard delete meets. A push whose commit loses a race for the path (the item store answers 403 for a path that took other content) is read again and answers what the number now says. The development agent would revisit this if the stored blob stopped carrying its SHA-512.
 
-**Applied in the spec:** R-NUGET-006 (the comparison is by SHA-512); R-NUGET-028 (the label of `trove_nuget_push_replayed_total` is `repo`, the label name R-OPS-007 allows; the generated `.nuspec` records an `artifact.deployed` of its own, because the item store records one per file). Code: [handlers_publish.go](../../../internal/formats/nuget/handlers_publish.go), [hooks.go](../../../internal/formats/nuget/hooks.go). Tests: `TestR_NUGET_006_IdenticalBytesOfAStoredVersionAnswer201AndChangeNothing`, `TestR_NUGET_006_AReplayChangesNothing`, `TestR_NUGET_006_ConcurrentPushesOfOneVersion`.
+**Applied in the spec:** R-NUGET-006 (the comparison is by SHA-512); R-NUGET-028 (the label of `quader_nuget_push_replayed_total` is `repo`, the label name R-OPS-007 allows; the generated `.nuspec` records an `artifact.deployed` of its own, because the item store records one per file). Code: [handlers_publish.go](../../../internal/formats/nuget/handlers_publish.go), [hooks.go](../../../internal/formats/nuget/hooks.go). Tests: `TestR_NUGET_006_IdenticalBytesOfAStoredVersionAnswer201AndChangeNothing`, `TestR_NUGET_006_AReplayChangesNothing`, `TestR_NUGET_006_ConcurrentPushesOfOneVersion`.
 
 ### Q-NUGET-37 · What a GET of a stored file serves
 
@@ -4058,11 +4058,11 @@ Context: R-NUGET-026 and R-UI-018 fix the commands. The core rewrites the token 
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The credential part is conditional on `RequiresAuth`, with a fixed user name `trove` (chosen) | The `--username … --password …` part, its nuget.exe counterpart and the `packageSourceCredentials` block sit inside a conditional on `RequiresAuth`; the API clears `RequiresAuth` for credentials=none | One command per snippet, as the specification shows; an anonymous reader and a repository open to anonymous readers get a complete command and a valid file; no dropped-line case | A repository open to anonymous readers gets a snippet without credential even when the reader asked for the environment reference (a restore needs none; a push carries the API key) |
+| (a) The credential part is conditional on `RequiresAuth`, with a fixed user name `quader` (chosen) | The `--username … --password …` part, its nuget.exe counterpart and the `packageSourceCredentials` block sit inside a conditional on `RequiresAuth`; the API clears `RequiresAuth` for credentials=none | One command per snippet, as the specification shows; an anonymous reader and a repository open to anonymous readers get a complete command and a valid file; no dropped-line case | A repository open to anonymous readers gets a snippet without credential even when the reader asked for the environment reference (a restore needs none; a push carries the API key) |
 | (b) Always the credential, as npm's `.npmrc` | The credential is on a line of its own | The same shape for every reader | For credentials=none the line goes and leaves a dangling continuation or a source with a user name only |
 | (c) Two commands: `add source`, then `update source … --username … --password …` | The credential line is a command of its own | Drops cleanly | Two commands where the specification shows one; `update source` is a different command to explain |
 
-**Choice:** (a). The user name is the fixed `trove` (the specification's earlier `token` is a word check 8 refuses in a template, and `<username>` would need the API to fill a field it does not). The `dotnet` snippets come for a POSIX shell and for PowerShell, the `nuget.exe` snippets for cmd and PowerShell, each in the token spelling of its language (Q-API-187 to Q-API-189); the `nuget.config` is a file template for all three clients. Visual Studio has the `nuget.config` and the `PackageReference` of a project: the install template places the version through `VersionSpec` as `" Version="<version>`, which closes the `Include` attribute and opens the `Version` attribute, so the API's one substitution yields `<PackageReference Include="acme.widgets" Version="1.2.3" />`. The publish snippet names the repository the reader chose (a virtual repository forwards the push) and carries the token as the API key.
+**Choice:** (a). The user name is the fixed `quader` (the specification's earlier `token` is a word check 8 refuses in a template, and `<username>` would need the API to fill a field it does not). The `dotnet` snippets come for a POSIX shell and for PowerShell, the `nuget.exe` snippets for cmd and PowerShell, each in the token spelling of its language (Q-API-187 to Q-API-189); the `nuget.config` is a file template for all three clients. Visual Studio has the `nuget.config` and the `PackageReference` of a project: the install template places the version through `VersionSpec` as `" Version="<version>`, which closes the `Include` attribute and opens the `Version` attribute, so the API's one substitution yields `<PackageReference Include="acme.widgets" Version="1.2.3" />`. The publish snippet names the repository the reader chose (a virtual repository forwards the push) and carries the token as the API key.
 
 **Rationale:** the failure of (b) and (c) is in the one case the snippets exist for: a copy that works. (a) keeps the specification's single command and moves the decision to the data the API already clears. The development agent would revisit this if users of anonymously readable repositories need the credential in the file for pushes: the API key travels with the command, so none has asked. A push with `credentials=none` is one line that holds the reference and is dropped whole; a signed-in reader who asks for that gets an empty publish snippet (the guide's publish section is empty for an anonymous reader anyway).
 
@@ -4084,7 +4084,7 @@ Context: R-UI-049 and R-UI-019 want a guide for every class and every client the
 
 **Rationale:** the guide is the user's documentation of the format; the text for a class must not wait for the code of the class. The development agent would revisit this when the remote and virtual adapters land: the change that lists the class deletes nothing here, and the kit then covers the class's sections as well.
 
-**Applied in the spec:** R-NUGET-026 (the guide bullet). Code: [guide.go](../../../internal/formats/nuget/guide.go), [guide/](../../../internal/formats/nuget/guide). Tests: `TestR_UI_049_NuGetHasAGuideForEveryVariant`, `TestR_UI_049_TheNuGetTroubleshootingCodesAreTroves`, `TestR_UI_049_EveryCodeTheNuGetGuideNamesExists`, `TestR_NUGET_026_TheGuideStatesTheDefaults`, `TestR_UI_049_TheNuGetGuideShowsTheSnippetsOfTheClientSetup`.
+**Applied in the spec:** R-NUGET-026 (the guide bullet). Code: [guide.go](../../../internal/formats/nuget/guide.go), [guide/](../../../internal/formats/nuget/guide). Tests: `TestR_UI_049_NuGetHasAGuideForEveryVariant`, `TestR_UI_049_TheNuGetTroubleshootingCodesAreQuaders`, `TestR_UI_049_EveryCodeTheNuGetGuideNamesExists`, `TestR_NUGET_026_TheGuideStatesTheDefaults`, `TestR_UI_049_TheNuGetGuideShowsTheSnippetsOfTheClientSetup`.
 
 ### Q-NUGET-51 · What a NuGet remote stores of an upstream, and where its registration pages live
 
@@ -4095,8 +4095,8 @@ Context: R-NUGET-015 lists the descriptors of a remote (the service index, the v
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) One variant `doc`, the bytes of the upstream as they came; one upstream hive stored (`RegistrationsBaseUrl/3.6.0`, else `/3.4.0`, else the unversioned type); the three hives are renderings; a page is keyed by its bounds, `page/{lower}/{upper}.json` (chosen) | The registration index is stored once and its non-inlined pages once each, under the paths the engine collapses and refreshes | One upstream request per document and period however many hives clients use; a stored page that is fresh can only ever be served for the range it holds | An upstream that has only the unversioned hive shows no SemVer 2.0.0 versions in any hive |
-| (b) One stored document per trove hive | Three upstream hives are fetched | A hive could be passed through | Three times the requests and the storage; a client of the SemVer 1 hive would fetch a document the SemVer 2 hive already holds |
-| (c) A page keyed by its position, `page/{n}.json` | The sketch of R-NUGET-015 | Short paths | The index can name another range for position `n` while the entry for `n` is still fresh, and trove would serve the old range's leaves for the new bounds until the entry expires |
+| (b) One stored document per Quader hive | Three upstream hives are fetched | A hive could be passed through | Three times the requests and the storage; a client of the SemVer 1 hive would fetch a document the SemVer 2 hive already holds |
+| (c) A page keyed by its position, `page/{n}.json` | The sketch of R-NUGET-015 | Short paths | The index can name another range for position `n` while the entry for `n` is still fresh, and Quader would serve the old range's leaves for the new bounds until the entry expires |
 
 **Choice:** (a). The service index is the discovery document at `.nuget/index.json`; a feed whose index lacks `PackageBaseAddress/3.0.0` or every registration type answers the first request with 502 `upstream_error` naming the resource, and nothing is stored (Q-NUGET-14). The index's `PrepareFill` records the URL-map row of a page whose address is not the one derived from the registration base, and of a leaf whose `packageContent` is not the derived package address; a derived address needs no row.
 
@@ -4108,11 +4108,11 @@ Context: R-NUGET-015 lists the descriptors of a remote (the service index, the v
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Superseded in part by Q-NUGET-85**: `deprecation` and `vulnerabilities` are kept without the upstream's `@id` and `@type`, and `advisoryUrl` joins the web links of people; by Q-NUGET-83 for the bounds of one rendering.
 
-Context: R-NUGET-015 says the stored upstream documents stay unchanged, registration documents are not passed through, trove renders its own index, pages and leaves with the paging of R-NUGET-009, catalog entry properties are copied and unknown properties are kept. Every address in the rendered documents except `projectUrl`, `licenseUrl` and `iconUrl` must be trove's. An upstream may store a hive gzip-coded whatever the request asked for.
+Context: R-NUGET-015 says the stored upstream documents stay unchanged, registration documents are not passed through, Quader renders its own index, pages and leaves with the paging of R-NUGET-009, catalog entry properties are copied and unknown properties are kept. Every address in the rendered documents except `projectUrl`, `licenseUrl` and `iconUrl` must be Quader's. An upstream may store a hive gzip-coded whatever the request asked for.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Parse the stored index and pages into the rows the local renderer reads, keep `deprecation`, `vulnerabilities` and the unknown members that hold no address, and render with `registration.Doc`; inflate a gzip-coded document within the bound (chosen) | One renderer for both classes; the hive filter, the paging and the addresses are the renderer's | Deterministic bytes; the same `ETag` on every replica | A member that holds an address is not kept, and a catalog entry's order of members is trove's |
+| (a) Parse the stored index and pages into the rows the local renderer reads, keep `deprecation`, `vulnerabilities` and the unknown members that hold no address, and render with `registration.Doc`; inflate a gzip-coded document within the bound (chosen) | One renderer for both classes; the hive filter, the paging and the addresses are the renderer's | Deterministic bytes; the same `ETag` on every replica | A member that holds an address is not kept, and a catalog entry's order of members is Quader's |
 | (b) Pass the stored document through and replace the upstream's addresses in the text | A textual rewrite | Every member is kept | It cannot re-page (R-NUGET-009), cannot filter a hive, and misses an address in a member it does not know |
 | (c) Keep every unknown member | (a) without the address rule | Nothing is lost | An unknown member such as `readmeUrl` or an alias list would carry the upstream's address into a document that must not |
 
@@ -4134,7 +4134,7 @@ Context: R-NUGET-015 parses every cached `.nupkg` like an upload, records it wit
 | (b) Record the rows from the registration | No inspection | Rows exist before the package | The rows would be the upstream's word, and a package that was never fetched would be a version (H-337) |
 | (c) Refuse an unreadable package with 502 | Stricter | No uninspected bytes in the cache | R-NUGET-015 serves and caches what it cannot read, and a feed with an unusual package would fail a restore |
 
-**Choice:** (a). The ID of the `.nuspec` is compared with the path's under Unicode simple case folding (`id.SameID`), the version by its URL form; the ID passes the upstream rule only through that equality, because the path's ID was validated by it. A symbol package is not refused. A version that is recorded already (the item was evicted and fetched again) keeps its row and takes the new item as its lead item. Nothing is claimed, no tombstone is written and no event is recorded: no request published anything and a remote has no owners. The removal of a `.nupkg` of a remote's cache (an eviction, the items API) removes the version row with its NuGet row and raises the package's revision, and writes no tombstone, because a remote can fetch the version again. An unreadable package is logged where it is found and counted at the commit, where the replica is known: `trove_nuget_remote_unparseable_packages_total{repo}` (the spec's label `repository` is `repo`, as for `trove_nuget_push_replayed_total`).
+**Choice:** (a). The ID of the `.nuspec` is compared with the path's under Unicode simple case folding (`id.SameID`), the version by its URL form; the ID passes the upstream rule only through that equality, because the path's ID was validated by it. A symbol package is not refused. A version that is recorded already (the item was evicted and fetched again) keeps its row and takes the new item as its lead item. Nothing is claimed, no tombstone is written and no event is recorded: no request published anything and a remote has no owners. The removal of a `.nupkg` of a remote's cache (an eviction, the items API) removes the version row with its NuGet row and raises the package's revision, and writes no tombstone, because a remote can fetch the version again. An unreadable package is logged where it is found and counted at the commit, where the replica is known: `quader_nuget_remote_unparseable_packages_total{repo}` (the spec's label `repository` is `repo`, as for `quader_nuget_push_replayed_total`).
 
 **Rationale:** the identity is the only check an upstream without a digest allows (H-35); doing it in the hook keeps every waiter of the fetch on one verdict. The development agent revisits the limits when the contract gives a fill hook the replica (H-336).
 
@@ -4148,11 +4148,11 @@ Context: R-NUGET-015 extracts the `.nuspec` from the cached `.nupkg` and falls b
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The `.nuspec` is fetched from the upstream as an artifact of its own; the leaf's address is used once a registration of the ID that trove read has recorded it in the URL map (chosen) | Two paths, two cached artifacts; the map row is the address | No engine change; a restore from the flat container, as every client does, is one request per file | The `.nuspec` costs a request of its own and is not checked; the first request of a version whose flat container address differs from the registration's, before any registration was read, is the flat container's 404 |
+| (a) The `.nuspec` is fetched from the upstream as an artifact of its own; the leaf's address is used once a registration of the ID that Quader read has recorded it in the URL map (chosen) | Two paths, two cached artifacts; the map row is the address | No engine change; a restore from the flat container, as every client does, is one request per file | The `.nuspec` costs a request of its own and is not checked; the first request of a version whose flat container address differs from the registration's, before any registration was read, is the flat container's 404 |
 | (b) Read the `.nuspec` out of the cached package and fall back to the upstream | The spec's sketch | One fetch for both files | The hook would have to store a second item of a fill, which the contract does not offer |
 | (c) After a 404, read the registration and ask again | The spec's sketch | Covers the first request | The 404 is a negative entry for the path (R-REPO-028) and the second request would meet it; the engine would have to offer a candidate list |
 
-**Choice:** (a). The registration read of an ID records the leaf addresses that differ from the derived ones, and the next request of that version uses the recorded address (`TestR_NUGET_015_APackageTheFlatContainerDoesNotHaveIsFetchedFromThePackageContentOfItsLeaf`). A client that restores from the flat container alone, against a feed whose flat container lacks a version its registration lists, is served by trove as the feed serves it: 404.
+**Choice:** (a). The registration read of an ID records the leaf addresses that differ from the derived ones, and the next request of that version uses the recorded address (`TestR_NUGET_015_APackageTheFlatContainerDoesNotHaveIsFetchedFromThePackageContentOfItsLeaf`). A client that restores from the flat container alone, against a feed whose flat container lacks a version its registration lists, is served by Quader as the feed serves it: 404.
 
 **Rationale:** the protocol's package content resource is the flat container, which a conforming feed serves for every version it lists (the test upstream does); the fallback protects against a feed that does not, at the cost of a contract change (a candidate list in the engine). That a real feed needs it is not verified. The development agent revisits this when a feed turns up where the first request fails, by adding the candidate to the engine.
 
@@ -4423,7 +4423,7 @@ Context: a virtual repository asks every member for the document it merges, with
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the tests that read what the counting upstream recorded (one request per `.nupkg`, a cache that fills on the first request) need a cache that starts empty, and the test of a stopped upstream needs a circuit that closes again within the test. A remote repository opens its circuit after `failureThreshold` (5) failures for `circuitOpenSeconds` (300, R-REPO-029). The first run of the stopped-upstream test left the repository assumed offline for the five minutes after the upstream was back (`trove.remote_upstream_state.open_until` read 04:04:21 for a failure at 03:59:21), which is the specified behaviour and not a defect.
+Context: the tests that read what the counting upstream recorded (one request per `.nupkg`, a cache that fills on the first request) need a cache that starts empty, and the test of a stopped upstream needs a circuit that closes again within the test. A remote repository opens its circuit after `failureThreshold` (5) failures for `circuitOpenSeconds` (300, R-REPO-029). The first run of the stopped-upstream test left the repository assumed offline for the five minutes after the upstream was back (`quader.remote_upstream_state.open_until` read 04:04:21 for a failure at 03:59:21), which is the specified behaviour and not a defect.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4441,7 +4441,7 @@ Context: the tests that read what the counting upstream recorded (one request pe
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: E3.6 asks for a `dotnet nuget push` whose answer a fault-injecting edge drops, repeated by the client, exit 0. The npm test drops the answer of the first `PUT` below `/-rev/` through the `config-backend` annotation of trove's Ingress (a stick-table counter, `http-response silent-drop`). Two things differ for NuGet. The push is `PUT <feed>/v3/package` with or without a slash (Q-NUGET-66). And it first draws a 401: the client sends the push without credentials and repeats it with the `nuget.config` credentials, so the first `PUT` that matches is not the one worth losing; the first run of this test dropped the 401, the client repeated it, and the push went through without any replay.
+Context: E3.6 asks for a `dotnet nuget push` whose answer a fault-injecting edge drops, repeated by the client, exit 0. The npm test drops the answer of the first `PUT` below `/-rev/` through the `config-backend` annotation of Quader's Ingress (a stick-table counter, `http-response silent-drop`). Two things differ for NuGet. The push is `PUT <feed>/v3/package` with or without a slash (Q-NUGET-66). And it first draws a 401: the client sends the push without credentials and repeats it with the `nuget.config` credentials, so the first `PUT` that matches is not the one worth losing; the first run of this test dropped the 401, the client repeated it, and the push went through without any replay.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4449,7 +4449,7 @@ Context: E3.6 asks for a `dotnet nuget push` whose answer a fault-injecting edge
 | (b) A fault proxy in the clients pod (the forwarder `fwd` gets a drop switch) | The forwarder closes the connection after the answer's headers | Independent of the Ingress controller | A second way to produce the fault; the npm test would not use it; the forwarder is not on the path of a real client |
 | (c) A hook in the server that commits and then closes the connection | A test-only branch | Exactly one drop | Test code in the release binary |
 
-**Choice:** (a). The evidence that the client repeated the push is `trove_nuget_push_replayed_total` (R-NUGET-028), summed over the web pods, which rises by at least one: the repeat of a committed push is the replay of Q-NUGET-6. The test requires "at least one" because of the two stick tables.
+**Choice:** (a). The evidence that the client repeated the push is `quader_nuget_push_replayed_total` (R-NUGET-028), summed over the web pods, which rises by at least one: the repeat of a committed push is the replay of Q-NUGET-6. The test requires "at least one" because of the two stick tables.
 
 **Rationale:** the criterion is about what the client does when it loses an answer, and the edge is where an answer is lost in production. The development agent revisits this if the Ingress controller is replaced or runs a single pod, where the count becomes exact.
 
@@ -4495,12 +4495,12 @@ Context: E3.7 names `Acme.Sdk` in `nuget-customers`, a hidden version that `dotn
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: E3.1 asks for nuget.exe and the .NET 10 SDK on a Windows runner and for the manual Visual Studio 2022 checklist once against the M3 build. Every job of the project runs on the owner's self-hosted Linux runners (ARC); the e2e suite needs trove deployed in kind with its PostgreSQL, Valkey and S3, which a Windows runner cannot host. nuget.exe's protocol already runs on every change on Mono in the clients image (Q-NUGET-33), and the .NET 10 SDK on Linux runs the same NuGet client libraries the Windows SDK runs.
+Context: E3.1 asks for nuget.exe and the .NET 10 SDK on a Windows runner and for the manual Visual Studio 2022 checklist once against the M3 build. Every job of the project runs on the owner's self-hosted Linux runners (ARC); the e2e suite needs Quader deployed in kind with its PostgreSQL, Valkey and S3, which a Windows runner cannot host. nuget.exe's protocol already runs on every change on Mono in the clients image (Q-NUGET-33), and the .NET 10 SDK on Linux runs the same NuGet client libraries the Windows SDK runs.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) The Windows row and the Visual Studio checklist are run by hand against the beta candidate in the owner walkthrough of phase 8; the per-change suite keeps nuget.exe on Mono and the SDK on Linux (chosen) | Phase 8's walkthrough item "npm and .NET clients against local, remote and virtual repositories" takes both | Nothing outside the repository changes; the Windows-only behaviour (Windows credential providers, Visual Studio's browse tab paging) is looked at by a person on the real client | The Windows row is not automated; a regression in it is seen only at the walkthrough |
-| (b) A GitHub-hosted `windows-latest` job against a trove reachable from it | The repository is public, so the minutes cost nothing | Automated | It needs a trove instance reachable from the internet with a public certificate, or trove with PostgreSQL, Valkey and S3 on Windows; both are infrastructure outside the repository, and the owner's standard is self-hosted runners |
+| (b) A GitHub-hosted `windows-latest` job against a Quader reachable from it | The repository is public, so the minutes cost nothing | Automated | It needs a Quader instance reachable from the internet with a public certificate, or Quader with PostgreSQL, Valkey and S3 on Windows; both are infrastructure outside the repository, and the owner's standard is self-hosted runners |
 | (c) A self-hosted Windows runner in the owner's cluster | Like the Linux runners | Automated, inside the owner's network | A machine change outside the repository that only the owner can make |
 
 **Choice:** (a). The roadmap's E3.1 keeps both rows; their evidence is the walkthrough record.
@@ -4619,7 +4619,7 @@ Context: R-NUGET-016 rewrites the addresses of a forwarded result as R-NUGET-015
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Each result becomes the search row of a local package: the versions in URL form with their download counts, the result's metadata as the latest version's metadata, and the members a local package has no column for (`rows.Forwarded`) on the latest version; one renderer; a member that R-NUGET-010's result table and R-NUGET-016 do not name is not passed on; a hidden latest version takes its metadata with it (chosen) | `search_remote.go` converts, `search.Render` renders local, cached and forwarded results alike | One renderer and one merge for every result; the forwarded members move with the latest version in a union, as step 4 of R-NUGET-018 has the package-level fields move; nothing an upstream adds unannounced reaches a client; a caller never sees what a hidden version says | A member an upstream adds later is dropped until it is named; a result whose latest version is hidden shows no description |
-| (b) Pass the upstream's JSON through and edit the addresses and the version list in place | A filter over a JSON tree | Every member the upstream sends reaches the client | A second renderer for the merge; members trove does not know pass unchecked, the opposite of the rule for the registration (Q-NUGET-52); the description of a hidden latest version stays |
+| (b) Pass the upstream's JSON through and edit the addresses and the version list in place | A filter over a JSON tree | Every member the upstream sends reaches the client | A second renderer for the merge; members Quader does not know pass unchecked, the opposite of the rule for the registration (Q-NUGET-52); the description of a hidden latest version stays |
 | (c) Ask the upstream's registration of each result for the metadata of the latest readable version | One more document per result | A full result for a caller with a version rule | One more upstream request per result and page; a search fills the cache with registrations |
 
 **Choice:** (a). A result whose ID is no NuGet ID, or that lists no version that parses, is removed like a result a pattern excludes, so `totalHits` is reduced for it too. The versions are deduplicated by their URL form and sorted ascending; `version` is the highest of them. The metadata (title, summary, description, authors, tags, the three web links, the package types) is the result's only when the upstream's own `version` is that highest version, and otherwise left out, as are `deprecation` and `vulnerabilities`, which describe the upstream's latest version. `owners` is a list (a single string is one owner). `totalDownloads` is the upstream's, or, once a version was removed for the caller, the sum of the versions shown. `deprecation` and `vulnerabilities` pass as received; the address in a vulnerability's `advisoryUrl` is a link for people like `projectUrl`.
@@ -4642,7 +4642,7 @@ Context: R-NUGET-016 said "Forwarding needs `read` on the remote. It stores noth
 | (b) `read` alone, as the old sentence says | A contact that bypasses the populate check | Forwarding for every reader | A second road for what may leave the replica; a read-only endpoint's search would reach the upstream, which R-EP-019 forbids |
 | (c) Cache-only for every caller who may not fill, also when an answer is cached | The format needs the caller's fill right for a remote addressed directly | Consistent with the merge's rule that a caller who may not fill sees only cached versions (R-AUTHZ-008) | The contract gives that right only for the members of a plan (`PlannedMember.MayFill`); a remote addressed directly would need a new member of the frozen contract and an ADR |
 
-**Choice:** (a), and R-NUGET-016's sentence is corrected. An upstream failure, an open circuit, an upstream that announces no search resource and an answer that is no search document fall back to the cache-only search with 200 and are counted in `trove_nuget_search_forward_failures_total`; `ErrOffline` (no contact allowed and no cached answer) falls back without being counted; an internal error is answered as one.
+**Choice:** (a), and R-NUGET-016's sentence is corrected. An upstream failure, an open circuit, an upstream that announces no search resource and an answer that is no search document fall back to the cache-only search with 200 and are counted in `quader_nuget_search_forward_failures_total`; `ErrOffline` (no contact allowed and no cached answer) falls back without being counted; an internal error is answered as one.
 
 **Rationale:** the pass-through is the same act as a fetch minus the store, and Q-ARCH-270 gave it the fetch's rules for a contact; repeating a weaker rule in the format would let a search leave where a fetch may not. The cached answer a caller who may not fill receives is the upstream's public answer, filtered for that caller like every other use; a listed package that is not cached is refused at download as any uncached package is for that caller. The path names no package because a query names none, as R-NUGET-015 already says of search ("repository-level"); `v3/search` can never be a stored path of a package `v3`, so nothing is lost. The development agent revisits this when the owner wants option (c), or when the contract gains the fill right of a request for formats anyway.
 
@@ -4706,7 +4706,7 @@ Context: Q-NUGET-56 wanted a remote member to hand the merge its upstream index 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: nothing bounded how many pages an upstream's registration index may list. Each page it lists by address costs an upstream request, a stored document and possibly a URL-map row, and the rendering held the index and every page in memory, each up to `MaxDocumentBytes` inflated. One client request could make trove fetch and store as many pages as the upstream lists, and a rendering that failed cached nothing, so each retry paid again (the security audit of 2026-11-02).
+Context: nothing bounded how many pages an upstream's registration index may list. Each page it lists by address costs an upstream request, a stored document and possibly a URL-map row, and the rendering held the index and every page in memory, each up to `MaxDocumentBytes` inflated. One client request could make Quader fetch and store as many pages as the upstream lists, and a rendering that failed cached nothing, so each retry paid again (the security audit of 2026-11-02).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4718,7 +4718,7 @@ Context: nothing bounded how many pages an upstream's registration index may lis
 
 **Rationale:** nuget.org pages hold 64 leaves, so 512 pages are 32,768 versions; the caps are far above the IDs the development agent knows of (not checked against nuget.org's largest ID), and they turn "as many as the upstream says" into a constant. The development agent revisits the caps when an upstream ID needs more.
 
-**Applied in the spec:** R-NUGET-015 (the bounds of a registration). Code: [remote/documents.go](../../../internal/formats/nuget/remote/documents.go), [remote/budget.go](../../../internal/formats/nuget/remote/budget.go), [remote/catalog.go](../../../internal/formats/nuget/remote/catalog.go) (`Collector`), [handlers_remote.go](../../../internal/formats/nuget/handlers_remote.go). Tests: `TestR_NUGET_015_AnIndexOfMorePagesThanTroveReadsIsNoDocument`, `TestR_NUGET_015_AFilledPageOrIndexHoldsNoMoreLeavesThanOneRenderingReads`, `TestR_NUGET_015_APageOfMoreLeavesThanTroveReadsIs502AndMapsNothing` (`test/integration/nuget`), `TestR_NUGET_015_ARenderingReadsOneDocumentsWorthOfAnUpstreamRegistration`, `TestR_NUGET_015_CollectorConvertsPageByPageAndKeepsTheFirstLeaf`, and the integration test `TestR_NUGET_015_AnIndexOfMorePagesThanTroveReadsIs502AndFetchesNoPage`.
+**Applied in the spec:** R-NUGET-015 (the bounds of a registration). Code: [remote/documents.go](../../../internal/formats/nuget/remote/documents.go), [remote/budget.go](../../../internal/formats/nuget/remote/budget.go), [remote/catalog.go](../../../internal/formats/nuget/remote/catalog.go) (`Collector`), [handlers_remote.go](../../../internal/formats/nuget/handlers_remote.go). Tests: `TestR_NUGET_015_AnIndexOfMorePagesThanQuaderReadsIsNoDocument`, `TestR_NUGET_015_AFilledPageOrIndexHoldsNoMoreLeavesThanOneRenderingReads`, `TestR_NUGET_015_APageOfMoreLeavesThanQuaderReadsIs502AndMapsNothing` (`test/integration/nuget`), `TestR_NUGET_015_ARenderingReadsOneDocumentsWorthOfAnUpstreamRegistration`, `TestR_NUGET_015_CollectorConvertsPageByPageAndKeepsTheFirstLeaf`, and the integration test `TestR_NUGET_015_AnIndexOfMorePagesThanQuaderReadsIs502AndFetchesNoPage`.
 
 ### Q-NUGET-84 · Which fetched package is served without its identity check, and how its declared ID is compared
 
@@ -4728,9 +4728,9 @@ Context: Q-NUGET-53 served and cached every package the archive reader refused, 
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Only content no reader takes for a package passes as it came: no ZIP end record in the window a reader searches, a ZIP archive without a `.nuspec` at its root, a `.nuspec` that is not well-formed XML; every other refusal, and an ID or version that does not parse, is 502 `upstream_package_mismatch` and stores nothing (chosen) | What passes cannot be taken by a client for another package; everything a client might read is checked or refused | Closes the bypass; the push road's protections hold for cached packages too | A legacy package that a client reads and trove's reader refuses (more than 65,535 entries, a `.nuspec` in another encoding) cannot be restored through trove |
+| (a) Only content no reader takes for a package passes as it came: no ZIP end record in the window a reader searches, a ZIP archive without a `.nuspec` at its root, a `.nuspec` that is not well-formed XML; every other refusal, and an ID or version that does not parse, is 502 `upstream_package_mismatch` and stores nothing (chosen) | What passes cannot be taken by a client for another package; everything a client might read is checked or refused | Closes the bypass; the push road's protections hold for cached packages too | A legacy package that a client reads and Quader's reader refuses (more than 65,535 entries, a `.nuspec` in another encoding) cannot be restored through Quader |
 | (b) Every refusal passes | Q-NUGET-53 | Every legacy package is served | The bypass above |
-| (c) Always run the identity check, under the fixed bounds of R-ARCH-028 only | Read the `.nuspec` whatever the reader refused | Fewer refusals | The refusals of structure (overlap, a directory two readers read differently) are what makes the `.nuspec` trove reads possibly not the one a client reads |
+| (c) Always run the identity check, under the fixed bounds of R-ARCH-028 only | Read the `.nuspec` whatever the reader refused | Fewer refusals | The refusals of structure (overlap, a directory two readers read differently) are what makes the `.nuspec` Quader reads possibly not the one a client reads |
 
 | Option for the ID | What it means | For | Against |
 |---|---|---|---|
@@ -4738,9 +4738,9 @@ Context: Q-NUGET-53 served and cached every package the archive reader refused, 
 | (b) Unicode simple case folding | Q-NUGET-53 | — | Accepts IDs no client asks for at that path |
 | (c) The declared ID with its ASCII letters lower-cased equals the path's ID | The audit's proposal | Strict | A client asks for a legacy ID such as `Ünïcode.Pkg` as `ünïcode.pkg`, which this refuses; R-NUGET-003 promises those IDs stay restorable (Q-NUGET-3) |
 
-**Choice:** (a) and (a). The pass-through cases are recognised by the reader's reason (`nupkg.ErrNotZip` with no end-record signature in the last 64 KiB and 22 bytes, `nupkg.ErrNuspecCount` with no root `.nuspec` as `archive/zip` lists the entries, `nuspec.ErrNotXML`), so a damaged archive that another reader may still open is refused. The detail of the 502 names the reader's reason. The counter `trove_nuget_remote_unparseable_packages_total` counts what passes. This deviates from the fix the task named for the comparison ("ASCII lower-case"), for the reason in (c).
+**Choice:** (a) and (a). The pass-through cases are recognised by the reader's reason (`nupkg.ErrNotZip` with no end-record signature in the last 64 KiB and 22 bytes, `nupkg.ErrNuspecCount` with no root `.nuspec` as `archive/zip` lists the entries, `nuspec.ErrNotXML`), so a damaged archive that another reader may still open is refused. The detail of the 502 names the reader's reason. The counter `quader_nuget_remote_unparseable_packages_total` counts what passes. This deviates from the fix the task named for the comparison ("ASCII lower-case"), for the reason in (c).
 
-**Rationale:** the identity is the only check an upstream without a digest allows (H-35); a package served without it must be one nobody can mistake for a package. The development agent revisits the list when a feed in use serves packages that clients read and trove's reader refuses (then the reader's limits, not the pass-through, should move), and the comparison if a difference between Go's and .NET's lowercase tables shows.
+**Rationale:** the identity is the only check an upstream without a digest allows (H-35); a package served without it must be one nobody can mistake for a package. The development agent revisits the list when a feed in use serves packages that clients read and Quader's reader refuses (then the reader's limits, not the pass-through, should move), and the comparison if a difference between Go's and .NET's lowercase tables shows.
 
 **Applied in the spec:** R-NUGET-003 (the comparison and the rows' ID), R-NUGET-015 (the fill); Q-NUGET-53 superseded in part. Code: [remote_fill.go](../../../internal/formats/nuget/remote_fill.go), [id.go](../../../internal/formats/nuget/id/id.go) `SameID`. Tests: `TestR_NUGET_015_APackageWhoseIdentityCannotBeCheckedIs502AndStoresNothing`, `TestR_NUGET_015_ContentThatIsNoPackageForAnyReaderIsServedAsItCame`, `TestR_NUGET_003_TheRowsOfACachedPackageAreKeyedByThePathsID`, `TestR_NUGET_003_SameID`, `TestR_NUGET_003_InspectFillComparesANonASCIIIDAsAClientLowerCasesIt`.
 
@@ -4748,18 +4748,18 @@ Context: Q-NUGET-53 served and cached every package the archive reader refused, 
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-NUGET-015 said both "catalog entry properties are copied, including `deprecation` and `vulnerabilities`" and "every URL except `projectUrl`, `licenseUrl` and `iconUrl` is trove's". nuget.org writes both members as JSON-LD: the deprecation, each advisory and the alternate package carry an `@id` in its catalog or registration, and an advisory carries `advisoryUrl`, a page on github.com. The remote and the merge copied the members verbatim, so the criterion failed on every package with an advisory (`newtonsoft.json` below 13.0.1 on nuget.org); the stub had none, so CI passed.
+Context: R-NUGET-015 said both "catalog entry properties are copied, including `deprecation` and `vulnerabilities`" and "every URL except `projectUrl`, `licenseUrl` and `iconUrl` is Quader's". nuget.org writes both members as JSON-LD: the deprecation, each advisory and the alternate package carry an `@id` in its catalog or registration, and an advisory carries `advisoryUrl`, a page on github.com. The remote and the merge copied the members verbatim, so the criterion failed on every package with an advisory (`newtonsoft.json` below 13.0.1 on nuget.org); the stub had none, so CI passed.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Drop `@id` and `@type` at every depth; keep `advisoryUrl` when it is an absolute `http` or `https` address without user info, like `projectUrl`; drop any other member that holds an address (chosen) | A client reads `reasons`, `message`, `alternatePackage.id` and `.range`, `severity`, `advisoryUrl`, all kept | The advisory link a person follows stays; no address of the upstream's API remains | A client that read `@id` would lose it (none known) |
-| (b) Rewrite each `@id` to trove's leaf with a fragment, the alternate package's to trove's registration index | The JSON-LD shape stays | Closest to nuget.org's bytes | Addresses that nothing resolves on trove's side (a leaf fragment), for no client that reads them |
-| (c) Pass both members verbatim and amend the criterion | Q-NUGET-52 | Nothing lost | The upstream's catalog addresses in trove's documents |
-| (d) Drop `advisoryUrl` too | Strict | Every URL trove's | The advisory a person needs to judge a vulnerable dependency is gone |
+| (b) Rewrite each `@id` to Quader's leaf with a fragment, the alternate package's to Quader's registration index | The JSON-LD shape stays | Closest to nuget.org's bytes | Addresses that nothing resolves on Quader's side (a leaf fragment), for no client that reads them |
+| (c) Pass both members verbatim and amend the criterion | Q-NUGET-52 | Nothing lost | The upstream's catalog addresses in Quader's documents |
+| (d) Drop `advisoryUrl` too | Strict | Every URL Quader's | The advisory a person needs to judge a vulnerable dependency is gone |
 
 **Choice:** (a). The members are written compact with their keys in order; a member with nothing left is absent; a non-web `advisoryUrl` is dropped and its advisory kept with its severity. The local class has neither member. The stub's corpus deprecates `Newtonsoft.Json` 13.0.1 (with an alternate package) and records an advisory against it, with nuget.org's JSON-LD addresses, so the rule is in every run.
 
-**Rationale:** `advisoryUrl` is a link shown to people, like `projectUrl`, which trove never follows; the JSON-LD addresses are the upstream's API, which trove replaces everywhere else. The development agent revisits this if a client turns out to read a dropped member.
+**Rationale:** `advisoryUrl` is a link shown to people, like `projectUrl`, which Quader never follows; the JSON-LD addresses are the upstream's API, which Quader replaces everywhere else. The development agent revisits this if a client turns out to read a dropped member.
 
 **Applied in the spec:** R-NUGET-015 (the copy rule, the URL table and the criterion on the URLs of a registration), R-NUGET-016 (the forwarded search cleans both members the same way); Q-NUGET-52 superseded in part. Code: [remote/passthrough.go](../../../internal/formats/nuget/remote/passthrough.go) (`Deprecation`, `Vulnerabilities`), [remote/catalog.go](../../../internal/formats/nuget/remote/catalog.go), [search_remote.go](../../../internal/formats/nuget/search_remote.go) `upstreamResult.hit`, [test/nugetstub](../../../test/nugetstub/docs.go). Tests: `TestR_NUGET_015_DeprecationAndVulnerabilitiesComeWithoutTheUpstreamsAddresses`, `TestR_NUGET_016_AForwardedResultComesWithoutTheUpstreamsAddresses`, `TestR_NUGET_015_APassThroughMemberWithNothingLeftIsAbsent`, `TestR_NUGET_015_TheCorpusDeprecatesAVersionAndRecordsAnAdvisory`, and the integration tests `TestR_NUGET_015_RegistrationsAreRenderedOnTheServingRepository`, `TestR_NUGET_017_AVirtualRepositoryMergesARemoteMemberThatGzipsAndPagesItsRegistration`.
 
@@ -4836,7 +4836,7 @@ Context: the bounded scan of R-NUGET-005 step 1 (Q-NUGET-23) takes the end-of-ce
 
 **Applied in the spec:** R-NUGET-005 step 1. Tests: `TestR_NUGET_005_AnEndRecordAfterTheOneTheScanChoseIsRefused`, `TestR_NUGET_005_EveryEntryIsReadFromTheOffsetTheScanChecked`; the seed and the corpus entry `second-end-record` of `FuzzR_ARCH_028_Inspect`.
 
-### Q-NUGET-90 · A forwarded search answer is read within 8 MiB, and a result within the versions trove reads of one ID
+### Q-NUGET-90 · A forwarded search answer is read within 8 MiB, and a result within the versions Quader reads of one ID
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -4916,7 +4916,7 @@ starts with `<base>/api/nuget/<key>/v3/`. nuget.org's documents carry three more
 |---|---|---|---|
 | (a) Every string member that is an absolute `http` or `https` URL, except `projectUrl`, `licenseUrl`, `iconUrl`, `advisoryUrl` and the whole `@context` (chosen) | `foreignAddresses` walks the document | It catches any upstream address a client could follow (a page, a `packageContent`, an `@id` in a vulnerability), including members that no table names | `advisoryUrl` is left out, as Q-NUGET-85 keeps it |
 | (b) Only the members of R-NUGET-015's rewriting table | — | The letter of the table | It misses members nobody listed, such as the `@id` in `vulnerabilities`, which is what Q-NUGET-85 removes |
-| (c) Every URL, without exceptions | — | Simple | The web links and the vocabulary IRIs are not trove's by design, so the check could never pass |
+| (c) Every URL, without exceptions | — | Simple | The web links and the vocabulary IRIs are not Quader's by design, so the check could never pass |
 
 **Choice:** (a). `advisoryUrl` is a page for people, like `projectUrl`, and Q-NUGET-85 keeps it in the registration and the
 forwarded search only as an absolute `http` or `https` address without user info, so the check leaves it out like the other
@@ -5064,7 +5064,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The `commitTimeStamp` of the last commit whose items were all queued (chosen) | The documentation's cursor, never trove's clock | Items of one commit have no order, so a cursor inside a commit could skip some; a later page never changes an earlier one | A page re-read after a drain queues some IDs twice, which the pending table absorbs |
+| (a) The `commitTimeStamp` of the last commit whose items were all queued (chosen) | The documentation's cursor, never Quader's clock | Items of one commit have no order, so a cursor inside a commit could skip some; a later page never changes an earlier one | A page re-read after a drain queues some IDs twice, which the pending table absorbs |
 | (b) The last page's `@id` | A page cursor | Fewer requests | Page URLs "are not intended to be predictable"; a page grows until a newer one exists |
 
 **Choice:** (a).
@@ -5120,7 +5120,7 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a).
 
 **Rationale:** the service index is the upstream's own statement of where its resources are, and the host rules decide which of those hosts
-a trove contacts; the mirror reads nothing that a client's restore could not read. The development agent would revisit it if a
+a Quader contacts; the mirror reads nothing that a client's restore could not read. The development agent would revisit it if a
 real upstream's service index names a catalog on a host that no rule of R-NUGET-014 admits for its own restores.
 
 **Applied in the spec:** the section "Mirror discovery" (Hosts).
@@ -5328,11 +5328,11 @@ more, every acknowledged version installed afterwards). The load is shared with 
 | Question | Options | Choice |
 |---|---|---|
 | The repositories | (a) three of their own, created once and left in place: `nuget-ha-local`, `nuget-ha-remote` over the counting test upstream, `nuget-ha-all` (members both, deployment target the local one); (b) the repositories of one test of the NuGet suite (`upstreamRepos`), which that test deletes at its end | (a). The load runs across three scenarios and the fixture is built once per process; package IDs carry the run (`E2e.NugetHa<run>`), so a rerun on the same cluster meets no stored version |
-| The restore project | (a) one corpus package, the first generated one in corpus order whose dependency closure and the three local packages reach 60 (`Contoso.Text.Hosting`: 58 and 3, 61 packages), referenced at `1.0.0`; one restore through `nuget-all` fills trove's cache before the loops start; (b) the roots of E3.2's reference solution (the stride of `ReferenceRoots`, about 120 packages) | (a). R-HA-059 says 60, and the corpus chains its packages, so a stride over several roots overshoots (the last generated package alone reaches a closure of 174) |
+| The restore project | (a) one corpus package, the first generated one in corpus order whose dependency closure and the three local packages reach 60 (`Contoso.Text.Hosting`: 58 and 3, 61 packages), referenced at `1.0.0`; one restore through `nuget-all` fills Quader's cache before the loops start; (b) the roots of E3.2's reference solution (the stride of `ReferenceRoots`, about 120 packages) | (a). R-HA-059 says 60, and the corpus chains its packages, so a stride over several roots overshoots (the last generated package alone reaches a closure of 174) |
 | The pushed archives | (a) built before the loop by the generator of the test upstream (`nugetstub.Nupkg`: a valid archive with a nuspec and one placeholder file), one per version, handed to the pod as one tar on standard input; (b) `dotnet pack` in the loop; (c) one archive pushed again | (a). `dotnet pack` builds a project, which costs seconds of CPU per push and lengthens the loop's period beyond the 10 s; (c) is a replay (R-NUGET-012), not a publish. The hash of each archive is known to the test, which compares it with the `.nupkg.sha512` the client writes into the packages folder when it installs the version afterwards (`PackageDownload` with the exact version) |
 
 **Rationale:** the fixture is the table's, built from what the NuGet suite already has (the counting upstream's corpus, its package
-generator, the virtual repository's deployment target). The development agent revisits the generator if trove starts to validate more of
+generator, the virtual repository's deployment target). The development agent revisits the generator if Quader starts to validate more of
 an archive than its manifest on push (a placeholder file under `lib/` would then not do).
 
 **Applied in the spec:** none. [../../developer/e2e.md](../../developer/e2e.md#drain-and-failover-under-nuget-load),
@@ -5367,7 +5367,7 @@ and a replayed claim that would take names from another repository disables its 
 | (d) As (c), with a tombstone kind of its own (`disputed`) and its own push code | A third kind beside `removed` and `reserved` | The push answer names the dispute | A CHECK, an error code, and a case in every reader of tombstones (push, delete, replay, serve check) for a state that refuses exactly what `removed` refuses; the administrator who restored reads the warning already |
 | (e) Prefer the entry that matches the restored database | Keep the digest a row of the restored database confirms | The genuine package stays restorable | No such row exists: the version is absent from the restored database (a present version is `already in effect`), and the blob store is writable with the credential that forges the entry |
 | (f) Authenticate journal entries with a key the runtime S3 credential does not give | The reader replays only what it verifies | Closes forged entries for every handler at once | A change of the journal format for every event and handler (R-HA-054, [backup-and-restore.md](../backup-and-restore.md#h-553--a-journal-object-can-be-overwritten-with-the-runtime-credential) H-553), not a NuGet decision; every replica that ships entries holds the key and the credential together, so a compromised replica still forges |
-| (g) As (c), and a command with which an administrator gives a disputed number to the digest they confirm | `trove admin nuget …` removes the tombstone or narrows it to one digest | A disputed number can be recovered | An operation that removes a tombstone, which R-NUGET-006 keeps out of every API, UI and command, with an authorization question of its own; it widens, so a forged confirmation is the risk it would have to answer |
+| (g) As (c), and a command with which an administrator gives a disputed number to the digest they confirm | `quader admin nuget …` removes the tombstone or narrows it to one digest | A disputed number can be recovered | An operation that removes a tombstone, which R-NUGET-006 keeps out of every API, UI and command, with an authorization question of its own; it widens, so a forged confirmation is the risk it would have to answer |
 
 **Choice:** (c). The rows of the replay table for an addition (R-NUGET-033):
 
@@ -5393,7 +5393,7 @@ records can differ by order, and a `removed` tombstone refuses every package wha
 `already in effect` and prints no warning. The 0-rows case of the statement that turns a reservation into a removal (a concurrent writer
 changed the tombstone between the read and the update) is reported `already in effect` without the warning; the `restore_in_progress`
 marker of the restore rules a concurrent writer out during the restore, and the rule of Q-HA-161, which refuses the post-restore Job while
-replicas run, does after it; a manual `trove admin post-restore` while replicas serve is the exception.
+replicas run, does after it; a manual `quader admin post-restore` while replicas serve is the exception.
 
 **Precondition:** the rule holds where the replay sees the genuine journal object. With the chart default (`source: runtime` for the
 restore and post-restore Jobs) the reader takes one body per key and no object versions, and the runtime credential can overwrite the
@@ -5554,7 +5554,7 @@ content hashes still detect the change on their side.
 
 ### H-36 · Package signatures are neither verified nor produced
 
-trove keeps author and repository signatures inside packages untouched but does not verify them
+Quader keeps author and repository signatures inside packages untouched but does not verify them
 on push or on caching, and it offers no repository signing and no repository signatures resource
 (PKG-NUGET-052, P2). A local repository accepts an unsigned or wrongly signed package from anyone
 who passes `deploy` and ownership for the ID; trust decisions about signers rest entirely on client
@@ -5562,7 +5562,7 @@ configuration.
 
 ### H-50 · A restore revives NuGet versions deleted after the backup's snapshot and can free lost version numbers
 
-Stage: `trove backup restore` ([backup-and-restore.md](../backup-and-restore.md) R-BAK-021) and
+Stage: `quader backup restore` ([backup-and-restore.md](../backup-and-restore.md) R-BAK-021) and
 platform restores ([ha-and-helm.md](../ha-and-helm.md) R-HA-025), with the journal replay of
 R-HA-054 as R-NUGET-033 applies it.
 

@@ -26,11 +26,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -104,9 +104,9 @@ func newEnvWith(t *testing.T, valkey bool) *env {
 	}
 
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "querybudget", Valkey: valkey, Env: []string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(npmCA) + "," + strconv.Quote(nugetCA) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(npmCA) + "," + strconv.Quote(nugetCA) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
 	}})
 	e := &env{t: t, st: st, npmStub: npmSrv, nugetStub: nugetSrv, npmURL: npmRun.URL + "/", nugetURL: nuget.URL + "/v3/index.json"}
 	for _, p := range corpus.Default().Packages {

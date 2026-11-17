@@ -4,7 +4,7 @@
   @if (clients().length === 0) {
     <p i18n="@@pkg.install.no-clients">There are no install instructions for this package type yet.</p>
   } @else {
-    <trove-install-command
+    <quader-install-command
       [format]="format()"
       [name]="name()"
       [version]="version().version"
@@ -21,7 +21,7 @@
           </select>
         </label>
       }
-    </trove-install-command>
+    </quader-install-command>
 
     <p class="setup-link">
       <a

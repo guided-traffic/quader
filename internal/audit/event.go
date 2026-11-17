@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Outcome is the result an event reports (R-AUTH-041).
@@ -96,7 +96,7 @@ type Recorder interface {
 	RecordTx(ctx context.Context, tx meta.Tx, ev Event) error
 	// Record queues an event of an Async type in the bounded buffer. It never
 	// blocks and never fails the request: a full buffer writes the log copy only
-	// and counts trove_audit_events_dropped_total.
+	// and counts quader_audit_events_dropped_total.
 	Record(ctx context.Context, ev Event)
 }
 

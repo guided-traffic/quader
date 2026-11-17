@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // payloadHooks records what reaches the storage hook of a commit.
@@ -262,7 +262,7 @@ func TestFillHook(t *testing.T) {
 		if n := e.number("SELECT count(*) FROM items WHERE path = $1 AND trashed_at IS NULL", path); n != 1 {
 			t.Fatalf("%d items", n)
 		}
-		if s := r.artifact(rem, path, func(rq *proxy.Request) { rq.Adapter = ad }); s.status != http.StatusOK || !strings.HasPrefix(s.cacheStatus(), "trove; hit") {
+		if s := r.artifact(rem, path, func(rq *proxy.Request) { rq.Adapter = ad }); s.status != http.StatusOK || !strings.HasPrefix(s.cacheStatus(), "quader; hit") {
 			t.Fatalf("the next request: %d %q", s.status, s.cacheStatus())
 		}
 		if ad.Inspects() != 1 || up.Count("GET", "/"+path) != 1 {
@@ -310,7 +310,7 @@ func TestDiscoveryDocument(t *testing.T) {
 			t.Fatalf("%d discovery entries", n)
 		}
 		// The document is an ordinary entry: a request for it is a hit and needs no discovery of its own.
-		if s := r.metadata(rem, "disc/index", func(rq *proxy.Request) { rq.Adapter = ad }); s.status != 200 || !strings.HasPrefix(s.cacheStatus(), "trove; hit") {
+		if s := r.metadata(rem, "disc/index", func(rq *proxy.Request) { rq.Adapter = ad }); s.status != 200 || !strings.HasPrefix(s.cacheStatus(), "quader; hit") {
 			t.Fatalf("%d %q", s.status, s.cacheStatus())
 		}
 	})

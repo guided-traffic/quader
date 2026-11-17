@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/vuln"
-	_ "github.com/guided-traffic/trove/internal/vuln/triage" // the replay handler of the download blocks
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/vuln"
+	_ "github.com/guided-traffic/quader/internal/vuln/triage" // the replay handler of the download blocks
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // replayBlock applies one block entry as the restore's replay does.
@@ -67,7 +67,7 @@ func TestR_VULN_026_TheFirstSyncAfterTheRestoreReconcilesReplayedBlocks(t *testi
 	if r := e.replayBlock(db, "018f4c1e-0000-7000-8000-0000000000e1", e.blockEntry(repoLocal, osvstub.NPMVuln, osvstub.IDVuln, genuine)); r.Outcome != journal.Applied {
 		t.Fatalf("genuine: %s", r.Line())
 	}
-	if r := e.replayBlock(db, "018f4c1e-0000-7000-8000-0000000000e2", e.blockEntry(repoLocal, "trove-test-clean", "GHSA-forged-0001", forged)); r.Outcome != journal.Applied {
+	if r := e.replayBlock(db, "018f4c1e-0000-7000-8000-0000000000e2", e.blockEntry(repoLocal, "quader-test-clean", "GHSA-forged-0001", forged)); r.Outcome != journal.Applied {
 		t.Fatalf("forged: %s", r.Line())
 	}
 
@@ -77,7 +77,7 @@ func TestR_VULN_026_TheFirstSyncAfterTheRestoreReconcilesReplayedBlocks(t *testi
 		if a := e.download(web, repoLocal, osvstub.NPMVuln, "1.0.0"); a.Status != 403 {
 			t.Errorf("the replayed block of the affected version answers %d, want 403: %s", a.Status, a.Body)
 		}
-		if a := e.download(web, repoLocal, "trove-test-clean", "1.0.0"); a.Status != 403 {
+		if a := e.download(web, repoLocal, "quader-test-clean", "1.0.0"); a.Status != 403 {
 			t.Errorf("the forged block answers %d, want 403: %s", a.Status, a.Body)
 		}
 	})
@@ -105,7 +105,7 @@ func TestR_VULN_026_TheFirstSyncAfterTheRestoreReconcilesReplayedBlocks(t *testi
 		if a := e.download(web, repoLocal, osvstub.NPMVuln, "1.0.0"); a.Status != 403 {
 			t.Errorf("the affected version answers %d, want 403", a.Status)
 		}
-		if a := e.download(web, repoLocal, "trove-test-clean", "1.0.0"); a.Status != 200 {
+		if a := e.download(web, repoLocal, "quader-test-clean", "1.0.0"); a.Status != 200 {
 			t.Errorf("the version of the forged block answers %d, want 200", a.Status)
 		}
 	})
@@ -127,7 +127,7 @@ func TestR_VULN_026_NoEvaluationResolvesAReplayedBlockBeforeTheFirstSyncOfAPlatf
 	}
 	defer db.Close()
 	const forged = "018f4c1e-0000-7000-8000-0000000000a3"
-	if r := e.replayBlock(db, "018f4c1e-0000-7000-8000-0000000000e3", e.blockEntry(repoLocal, "trove-test-clean", "GHSA-forged-0002", forged)); r.Outcome != journal.Applied {
+	if r := e.replayBlock(db, "018f4c1e-0000-7000-8000-0000000000e3", e.blockEntry(repoLocal, "quader-test-clean", "GHSA-forged-0002", forged)); r.Outcome != journal.Applied {
 		t.Fatalf("forged: %s", r.Line())
 	}
 	web := e.web("web-1")
@@ -144,7 +144,7 @@ func TestR_VULN_026_NoEvaluationResolvesAReplayedBlockBeforeTheFirstSyncOfAPlatf
 	if got := e.st.Text(`SELECT status FROM vuln_finding WHERE id = $1::uuid`, forged); got != "blocked" {
 		t.Fatalf("the rescan left the replayed block %q, want blocked: the data is older than the restore", got)
 	}
-	if a := e.download(web, repoLocal, "trove-test-clean", "1.0.0"); a.Status != 403 {
+	if a := e.download(web, repoLocal, "quader-test-clean", "1.0.0"); a.Status != 403 {
 		t.Errorf("the version answers %d before the first sync, want 403", a.Status)
 	}
 
@@ -154,7 +154,7 @@ func TestR_VULN_026_NoEvaluationResolvesAReplayedBlockBeforeTheFirstSyncOfAPlatf
 	testenv.WaitFor(t, "the first sync after the restore to reconcile the forged block", 120*time.Second, func() bool {
 		return e.st.Text(`SELECT status FROM vuln_finding WHERE id = $1::uuid`, forged) == "resolved"
 	})
-	if a := e.download(web, repoLocal, "trove-test-clean", "1.0.0"); a.Status != 200 {
+	if a := e.download(web, repoLocal, "quader-test-clean", "1.0.0"); a.Status != 200 {
 		t.Errorf("the version answers %d after the sync, want 200", a.Status)
 	}
 }

@@ -15,7 +15,7 @@ import { PackageReadmeView } from '../packages/package-readme';
  * a link, scrolls to its heading once the page is shown.
  */
 @Component({
-  selector: 'trove-help-page',
+  selector: 'quader-help-page',
   imports: [RouterLink, RouterLinkActive, ErrorNotice, PackageReadmeView],
   templateUrl: './help-page.html',
   styleUrl: './help.scss',

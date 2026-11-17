@@ -3,7 +3,7 @@
 package e2e
 
 // The harness of the Bastion tests (R-BAS-049, docs/developer/e2e.md#the-bastion-tests): the main installation in the
-// `bastion` profile, the chart trove-bastion installed twice in the namespace trove-bastion (deploy/dev/bastion.sh), the
+// `bastion` profile, the chart quader-bastion installed twice in the namespace quader-bastion (deploy/dev/bastion.sh), the
 // registrations and tokens through the management API, the content the clients fetch, and the counting of what the main
 // installation was asked (its request log, by the address of the Bastion's pods).
 
@@ -38,13 +38,13 @@ const (
 	basPartSA     = "e2e-bas-part"
 	basVolumeReg  = "partners"
 	basBucketReg  = "partners-bucket"
-	basDefaultNS  = "trove-bastion"
-	basKeepEnvVar = "TROVE_E2E_BASTION_KEEP"
+	basDefaultNS  = "quader-bastion"
+	basKeepEnvVar = "QUADER_E2E_BASTION_KEEP"
 )
 
 // basNS is the namespace of the Bastions.
 func basNS() string {
-	if v := os.Getenv("TROVE_E2E_BASTION_NAMESPACE"); v != "" {
+	if v := os.Getenv("QUADER_E2E_BASTION_NAMESPACE"); v != "" {
 		return v
 	}
 	return basDefaultNS
@@ -239,8 +239,8 @@ func buildBastionEnv(t testing.TB) (*basEnv, error) {
 	}
 	waitServingSettled(t)
 	env := &basEnv{
-		vol: &basSite{variant: "volume", reg: basVolumeReg, release: "bastion-volume", host: "bastion-volume.trove.localhost"},
-		bkt: &basSite{variant: "bucket", reg: basBucketReg, release: "bastion-bucket", host: "bastion-bucket.trove.localhost"},
+		vol: &basSite{variant: "volume", reg: basVolumeReg, release: "bastion-volume", host: "bastion-volume.quader.localhost"},
+		bkt: &basSite{variant: "bucket", reg: basBucketReg, release: "bastion-bucket", host: "bastion-bucket.quader.localhost"},
 	}
 	b := make([]byte, 3)
 	_, _ = rand.Read(b)
@@ -338,7 +338,7 @@ func (e *basEnv) issueToken(t testing.TB, reg string, ttl int) (string, string) 
 	t.Helper()
 	var c createdToken
 	e.adm.do(http.MethodPost, "/api/v1/bastions/"+reg+"/tokens", map[string]any{"ttlSeconds": ttl}).want(t, "issue a token of "+reg, 201).JSON(t, &c)
-	if !strings.HasPrefix(c.Token, "trv_bst_") {
+	if !strings.HasPrefix(c.Token, "qdr_bst_") {
 		t.Fatalf("the token of %s is no Bastion token", reg)
 	}
 	return c.Token, c.ID
@@ -716,7 +716,7 @@ func describeReqs(rs []mainReq) string {
 
 func keepBastions() bool { return os.Getenv(basKeepEnvVar) == "1" }
 
-// basTeardown removes the Bastions at the end of the run, unless TROVE_E2E_BASTION_KEEP=1.
+// basTeardown removes the Bastions at the end of the run, unless QUADER_E2E_BASTION_KEEP=1.
 func basTeardown() {
 	if basVal == nil || keepBastions() {
 		return

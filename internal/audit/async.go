@@ -9,7 +9,7 @@ import (
 // request (R-OPS-015): an event of the wrong type or an invalid event is logged
 // as a programming error and skipped, deduplicated events are counted in memory,
 // and a full buffer writes the log copy only and counts
-// trove_audit_events_dropped_total.
+// quader_audit_events_dropped_total.
 func (w *Writer) Record(_ context.Context, ev Event) {
 	t, ok := Lookup(ev.Type)
 	if !ok || t.Mode != Async {

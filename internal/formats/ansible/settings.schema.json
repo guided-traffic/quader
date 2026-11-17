@@ -1,33 +1,33 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/guided-traffic/trove/internal/formats/ansible/settings.schema.json",
+  "$id": "https://github.com/guided-traffic/quader/internal/formats/ansible/settings.schema.json",
   "title": "Ansible Galaxy repository settings",
-  "description": "The ansible member of a repository document. A member lists the classes it applies to in x-trove-classes; a member of another class is refused as not applicable. Local and virtual repositories have no settings of the format.",
+  "description": "The ansible member of a repository document. A member lists the classes it applies to in x-quader-classes; a member of another class is refused as not applicable. Local and virtual repositories have no settings of the format.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "authUrl": {
       "title": "Token endpoint URL",
-      "description": "For a hub behind single sign-on: where trove exchanges the stored offline token for a short-lived access token, with Authentication set to Bearer token. Leave it empty if the upstream accepts the token as it is.",
+      "description": "For a hub behind single sign-on: where Quader exchanges the stored offline token for a short-lived access token, with Authentication set to Bearer token. Leave it empty if the upstream accepts the token as it is.",
       "type": "string",
       "pattern": "^https?://",
       "maxLength": 2048,
-      "x-trove-classes": ["remote"]
+      "x-quader-classes": ["remote"]
     },
     "clientId": {
       "title": "Client ID",
-      "description": "The client ID trove presents when it exchanges the token. Change it only if the hub's sign-on expects another one.",
+      "description": "The client ID Quader presents when it exchanges the token. Change it only if the hub's sign-on expects another one.",
       "type": "string",
       "default": "cloud-services",
       "pattern": "^[A-Za-z0-9._-]{1,128}$",
-      "x-trove-classes": ["remote"]
+      "x-quader-classes": ["remote"]
     },
     "fetchDocumentation": {
       "title": "Fetch documentation",
       "description": "Fetch the documentation of each version from the upstream and keep it, so that the package page shows its documentation and contents. Turn it off to make no such requests.",
       "type": "boolean",
       "default": true,
-      "x-trove-classes": ["remote"]
+      "x-quader-classes": ["remote"]
     }
   }
 }

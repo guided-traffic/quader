@@ -3,9 +3,9 @@ package npm
 import (
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
 )
 
 // The suffixes of the files of a version (R-NPM-006, R-NPM-015).
@@ -74,7 +74,7 @@ func VersionOfFile(n name.Name, file, suffix string) (string, bool) {
 }
 
 // canonicalVersion reports whether s is a version in the canonical form that
-// trove stores and compares: SemVer 2.0.0 as written, without build metadata.
+// quader stores and compares: SemVer 2.0.0 as written, without build metadata.
 func canonicalVersion(s string) (string, bool) {
 	v, err := semver.Parse(s)
 	if err != nil || v.Canonical() != s {

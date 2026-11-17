@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The persistence port of the engine: mirror_state and mirror_pending (R-REPO-053's data model). The PostgreSQL
@@ -20,7 +20,7 @@ var ErrFenceLost = errors.New("mirror: the pass is owned by another job")
 var ErrCursorTooLarge = errors.New("mirror: the cursor is longer than the column holds")
 
 // FailingFailures is the number of failures in a row from which a mirror is failing: the status shows state failing and
-// TroveMirrorFailing fires (R-REPO-056, R-OPS-046). The status of the API reads it from here, so that the engine owns the meaning.
+// QuaderMirrorFailing fires (R-REPO-056, R-OPS-046). The status of the API reads it from here, so that the engine owns the meaning.
 const FailingFailures = 3
 
 // The limits of a package's attempts in one pass (R-REPO-053 step 3).

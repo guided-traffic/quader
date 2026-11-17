@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 // Round 2 of WP8: what the first review and the audit found.
 
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestACutPageSentWithAContentLengthIsStoredAndFollowedByTheUpstreamsPages(t *testing.T) {
 	// The registry cuts its lists at two tags and sends them with a Content-Length, as every small answer has one.
 	e := newEnv(t, options{stub: ocistub.Config{PageSize: 2}})
@@ -50,7 +50,7 @@ func TestACutPageSentWithAContentLengthIsStoredAndFollowedByTheUpstreamsPages(t 
 }
 
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestEveryPageOfALongListHasALinkUntilTheListEnds(t *testing.T) {
 	e := newEnv(t, options{})
 	rep := e.start(1)[0]

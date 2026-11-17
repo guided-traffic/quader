@@ -7,9 +7,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // roleChain is the chain of the default endpoint of a role with the stages of this package at their places: the preflight
@@ -17,7 +17,7 @@ import (
 // so a route of a served family is told apart from the router's 404.
 func roleChain(t *testing.T, role string, token bool) http.Handler {
 	t.Helper()
-	ep, err := httpserver.NewEndpoint(config.ResolvedEndpoint{Name: "default", Default: true, Surface: config.Surfaces(), BaseURL: "http://trove.test"},
+	ep, err := httpserver.NewEndpoint(config.ResolvedEndpoint{Name: "default", Default: true, Surface: config.Surfaces(), BaseURL: "http://quader.test"},
 		nil, httpserver.ForRoleFamilies(config.RoleFamilies(role)))
 	if err != nil {
 		t.Fatal(err)
@@ -27,7 +27,7 @@ func roleChain(t *testing.T, role string, token bool) http.Handler {
 	for _, p := range []string{"/api/v1/system/ping", "/files/{key}/{path...}", "/api/npm/{key}/{rest...}", "/ui/"} {
 		router.HandleFunc(p, ok)
 	}
-	res, err := httpserver.NewResolver(nil, "http://trove.test", nil, httpserver.ForEndpoint(ep))
+	res, err := httpserver.NewResolver(nil, "http://quader.test", nil, httpserver.ForEndpoint(ep))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestQ_ARCH_306_TheEdgeStagesAnswerAnUnservedFamilyLikeAnUnknownPath(t *test
 		},
 	}
 	do := func(h http.Handler, p probe, path string) *httptest.ResponseRecorder {
-		r := httptest.NewRequest(p.method, "http://trove.test"+path, nil)
+		r := httptest.NewRequest(p.method, "http://quader.test"+path, nil)
 		for i := 0; i+1 < len(p.hdr); i += 2 {
 			r.Header.Set(p.hdr[i], p.hdr[i+1])
 		}

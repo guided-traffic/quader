@@ -103,7 +103,7 @@ type FlightLockOptions struct {
 	// InstanceUID prefixes the token of every hold: "<instance uid>.<16 random
 	// bytes, base64url>". Empty means the instance name of the Valkey client.
 	InstanceUID string
-	// Registerer receives trove_flight_lock_lost_total; nil registers nothing.
+	// Registerer receives quader_flight_lock_lost_total; nil registers nothing.
 	Registerer prometheus.Registerer
 }
 
@@ -133,7 +133,7 @@ func NewFlightLock(v *Valkey, o FlightLockOptions) FlightLock {
 		l.uid = v.instance
 	}
 	l.lost = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "trove_flight_lock_lost_total",
+		Name: "quader_flight_lock_lost_total",
 		Help: "Holds whose lock key was gone or taken when they extended it.",
 	})
 	if o.Registerer != nil {

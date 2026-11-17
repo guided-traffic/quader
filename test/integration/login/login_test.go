@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/oidc"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/oidc"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func TestR_AUTH_042_BrowserLoginAcrossReplicas(t *testing.T) {
@@ -176,7 +176,7 @@ func TestR_AUTH_006_ProviderMisbehaviour(t *testing.T) {
 		b.mustLogin("corp")
 	})
 
-	t.Run("R-AUTH-006 R-ARCH-019 no trove connection is idle in transaction while the token endpoint is slow", func(t *testing.T) {
+	t.Run("R-AUTH-006 R-ARCH-019 no quader connection is idle in transaction while the token endpoint is slow", func(t *testing.T) {
 		e.idp.set(func(f *fakeIDP) { f.tokenDelay = 2 * time.Second })
 		defer e.idp.set(func(f *fakeIDP) { f.tokenDelay = 0 })
 		b := e.browser()

@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	_ "github.com/guided-traffic/trove/internal/blob"
-	_ "github.com/guided-traffic/trove/internal/cluster"
-	_ "github.com/guided-traffic/trove/internal/formatdata/nuget"
-	_ "github.com/guided-traffic/trove/internal/jobs"
-	_ "github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	_ "github.com/guided-traffic/quader/internal/blob"
+	_ "github.com/guided-traffic/quader/internal/cluster"
+	_ "github.com/guided-traffic/quader/internal/formatdata/nuget"
+	_ "github.com/guided-traffic/quader/internal/jobs"
+	_ "github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The classes the pages state for their tables are compared with the registrations of the packages that own them

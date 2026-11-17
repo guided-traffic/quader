@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/internal/proxy"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/internal/proxy"
 )
 
 // The wiring of the mirror engine (repositories-and-proxy.md R-REPO-053 to R-REPO-058, docs/developer/mirror.md). Every

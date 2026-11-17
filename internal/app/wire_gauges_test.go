@@ -8,8 +8,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 type funcCollector struct {
@@ -35,26 +35,26 @@ func TestPoolCollectorValues(t *testing.T) {
 		reg := prometheus.NewPedanticRegistry()
 		reg.MustRegister(funcCollector{descs: []*prometheus.Desc{c.conns, c.maxes, c.empty, c.canceled, c.opened}, collect: func(ch chan<- prometheus.Metric) { c.collect(stats, ch) }})
 		checkSeries(t, reg, map[string]float64{
-			"trove_db_pool_empty_acquires_total{db_pool=\"control\"}":               0,
-			"trove_db_pool_empty_acquires_total{db_pool=\"request\"}":               7,
-			"trove_db_pool_canceled_acquires_total{db_pool=\"control\"}":            0,
-			"trove_db_pool_canceled_acquires_total{db_pool=\"request\"}":            2,
-			"trove_db_pool_connections_opened_total{db_pool=\"control\"}":           1,
-			"trove_db_pool_connections_opened_total{db_pool=\"request\"}":           11,
-			"trove_db_pool_connections{db_pool=\"control\",state=\"acquired\"}":     0,
-			"trove_db_pool_connections{db_pool=\"control\",state=\"constructing\"}": 0,
-			"trove_db_pool_connections{db_pool=\"control\",state=\"idle\"}":         1,
-			"trove_db_pool_connections{db_pool=\"request\",state=\"acquired\"}":     5,
-			"trove_db_pool_connections{db_pool=\"request\",state=\"constructing\"}": 1,
-			"trove_db_pool_connections{db_pool=\"request\",state=\"idle\"}":         4,
-			"trove_db_pool_max_connections{db_pool=\"control\"}":                    1,
-			"trove_db_pool_max_connections{db_pool=\"request\"}":                    19,
+			"quader_db_pool_empty_acquires_total{db_pool=\"control\"}":               0,
+			"quader_db_pool_empty_acquires_total{db_pool=\"request\"}":               7,
+			"quader_db_pool_canceled_acquires_total{db_pool=\"control\"}":            0,
+			"quader_db_pool_canceled_acquires_total{db_pool=\"request\"}":            2,
+			"quader_db_pool_connections_opened_total{db_pool=\"control\"}":           1,
+			"quader_db_pool_connections_opened_total{db_pool=\"request\"}":           11,
+			"quader_db_pool_connections{db_pool=\"control\",state=\"acquired\"}":     0,
+			"quader_db_pool_connections{db_pool=\"control\",state=\"constructing\"}": 0,
+			"quader_db_pool_connections{db_pool=\"control\",state=\"idle\"}":         1,
+			"quader_db_pool_connections{db_pool=\"request\",state=\"acquired\"}":     5,
+			"quader_db_pool_connections{db_pool=\"request\",state=\"constructing\"}": 1,
+			"quader_db_pool_connections{db_pool=\"request\",state=\"idle\"}":         4,
+			"quader_db_pool_max_connections{db_pool=\"control\"}":                    1,
+			"quader_db_pool_max_connections{db_pool=\"request\"}":                    19,
 		})
 	})
 }
 
 func TestJobGaugeValues(t *testing.T) {
-	t.Run("R-OPS-007 trove_jobs_queued and trove_jobs_oldest_queued_age_seconds carry the count and the age per kind", func(t *testing.T) {
+	t.Run("R-OPS-007 quader_jobs_queued and quader_jobs_oldest_queued_age_seconds carry the count and the age per kind", func(t *testing.T) {
 		d := newJobDescs()
 		ms := d.metrics([]q.JobQueueGaugesRow{
 			{Kind: "gc", Queued: 3, OldestAgeSeconds: 912.5},
@@ -67,10 +67,10 @@ func TestJobGaugeValues(t *testing.T) {
 			}
 		}})
 		checkSeries(t, reg, map[string]float64{
-			"trove_jobs_queued{kind=\"gc\"}":                        3,
-			"trove_jobs_queued{kind=\"mirror\"}":                    1,
-			"trove_jobs_oldest_queued_age_seconds{kind=\"gc\"}":     912.5,
-			"trove_jobs_oldest_queued_age_seconds{kind=\"mirror\"}": 0,
+			"quader_jobs_queued{kind=\"gc\"}":                        3,
+			"quader_jobs_queued{kind=\"mirror\"}":                    1,
+			"quader_jobs_oldest_queued_age_seconds{kind=\"gc\"}":     912.5,
+			"quader_jobs_oldest_queued_age_seconds{kind=\"mirror\"}": 0,
 		})
 	})
 	t.Run("R-OPS-007 an empty queue has no series", func(t *testing.T) {

@@ -8,16 +8,16 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
-// Requirement is a decoded x-trove-permission declaration: what the shared
+// Requirement is a decoded x-quader-permission declaration: what the shared
 // authorization step checks before an operation's handler runs (R-API-008).
 // Exactly one of the forms holds.
 type Requirement struct {
@@ -26,7 +26,7 @@ type Requirement struct {
 	// Bastion admits a request of a Bastion on the Bastion interface: {bastion: true} (R-BAS-005, R-BAS-008).
 	// It decides on the recognition stage's result alone ([bastionmain.RecognitionFrom]): the Bastion token
 	// was checked there, it has no subject of the decision point, and it grants nothing else. The form is
-	// valid only with x-trove-bastion-interface, which the document checks.
+	// valid only with x-quader-bastion-interface, which the document checks.
 	Bastion bool
 	// Authenticated admits every authenticated caller: {authenticated: true}.
 	// With PublicSwitch ({authenticated: true, publicSwitch: <key>}) the
@@ -273,7 +273,7 @@ func (s *Server) authorize(pattern string, next http.Handler) http.Handler {
 // ciGate is the admission of CI tokens on the management API (R-CI-013, R-CI-017, Q-CI-18): a CI
 // token is refused with 403 ci_token_restricted on every operation except the public ones, the
 // operations of the action form (a repository action on a coordinate: the repository-content
-// operations that need only repository actions) and the operations that declare x-trove-ci:
+// operations that need only repository actions) and the operations that declare x-quader-ci:
 // admitted (GET and DELETE /tokens/current). The default is the refusal, so a new operation is
 // closed to CI tokens until its declaration says otherwise. The package-protocol endpoints and
 // /files are not operations of this table; they admit CI tokens as they admit any token. The gate
@@ -295,7 +295,7 @@ func narrowedToken(p httpserver.Principal) bool {
 	return p.Credential.Scope != nil && !p.Credential.Scope.Inherit
 }
 
-// ownerRightsGate is the rule of x-trove-owner-rights (R-API-021, Q-API-214): an operation on the caller's
+// ownerRightsGate is the rule of x-quader-owner-rights (R-API-021, Q-API-214): an operation on the caller's
 // own account (profile, preferences, sessions, the revocation of all own tokens) is refused with 403
 // forbidden to a token whose scope does not inherit its owner's rights, because a scope names repository
 // and system rights and no right over the owner's profile. A session, the break-glass session and an
@@ -312,7 +312,7 @@ func ownerRightsGate(r *http.Request, op Operation) error {
 const ownerRightsRefusal = "A token limited to part of its owner's rights cannot act on the owner's account; sign in or use a token that inherits the owner's rights."
 
 // ActionAccess is implemented by an [Access] that also decides the action form
-// of x-trove-permission: a repository action on the coordinate a request names.
+// of x-quader-permission: a repository action on the coordinate a request names.
 // [NewAccess] returns one.
 type ActionAccess interface {
 	// RequireAction decides the coordinate for the caller of ctx and returns nil

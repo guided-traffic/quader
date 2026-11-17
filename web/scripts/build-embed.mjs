@@ -7,7 +7,7 @@
 // owners, sources, licences and trademark notices of the format logos in public/formats (Q-UI-227).
 // The file is written after the hashed-name check, because it is not a hashed file and is never published to the store.
 //
-// TROVE_UI_BUNDLE_MARK=1 builds the second bundle of the upgrade test across two bundles (R-HA-020, Q-HA-124): the licence
+// QUADER_UI_BUNDLE_MARK=1 builds the second bundle of the upgrade test across two bundles (R-HA-020, Q-HA-124): the licence
 // comments of the libraries stay in the scripts instead of going to 3rdpartylicenses.txt, which changes the bytes and so
 // the hashed name of nearly every script and leaves what the scripts do as it is. That bundle gets its notices from a
 // second build that only extracts them, so every binary ships the notices of its own scripts.
@@ -29,21 +29,21 @@ import { checkHashed } from './hashed.mjs';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const built = join(root, 'dist', 'web', 'browser');
 const target = join(root, '..', 'internal', 'webui', 'dist');
-const marker = 'TROVE_CSP_NONCE';
+const marker = 'QUADER_CSP_NONCE';
 // The file the handler serves as <locale>/3rdpartylicenses.txt (TestR_UI_001_ThirdPartyNotices in internal/webui).
 const notices = '3rdpartylicenses.txt';
 const rule = '-'.repeat(80);
 
-const mark = process.env['TROVE_UI_BUNDLE_MARK'] ?? '';
+const mark = process.env['QUADER_UI_BUNDLE_MARK'] ?? '';
 if (mark !== '' && mark !== '1') {
-  console.error(`build-embed: TROVE_UI_BUNDLE_MARK is "${mark}"; it is empty or 1`);
+  console.error(`build-embed: QUADER_UI_BUNDLE_MARK is "${mark}"; it is empty or 1`);
   process.exit(1);
 }
 const release = ['--no-install', 'ng', 'build', '--configuration', 'production'];
 const args = mark === '1' ? [...release, '--extract-licenses=false'] : release;
 if (mark === '1') {
   console.log(
-    'build-embed: TROVE_UI_BUNDLE_MARK=1, the second bundle: licence comments stay in the scripts',
+    'build-embed: QUADER_UI_BUNDLE_MARK=1, the second bundle: licence comments stay in the scripts',
   );
 }
 
@@ -123,7 +123,7 @@ const angular = angularNotices().trimEnd();
 const text = `${angular.endsWith(rule) ? angular : `${angular}\n${rule}`}\n${iconFontNotice()}\n${rule}\n${formatLogoNotice()}`;
 // The notices must name Inter with its OFL-1.1 licence, the icon font with its Apache-2.0 licence, DiceBear's core with the
 // licence of the Bottts style (the artist's "free for personal and commercial use", Q-UI-167), and each format logo with
-// its trademark notice and the line that no owner endorses trove (Q-UI-227), or the build fails.
+// its trademark notice and the line that no owner endorses Quader (Q-UI-227), or the build fails.
 const required = [
   '\nPackage: @fontsource-variable/inter\n',
   'License: "OFL-1.1"',
@@ -134,7 +134,7 @@ const required = [
   '\nPackage: @dicebear/styles\n',
   '### Bottts\n',
   'Free for personal and commercial use',
-  'trove is not affiliated with, sponsored or endorsed by any of them.',
+  'Quader is not affiliated with, sponsored or endorsed by any of them.',
   'File: formats/deb/openlogo-nd.svg\n',
   'Debian is a registered trademark owned by Software in the Public Interest, Inc.',
   'Files: formats/nuget/nuget.svg, formats/nuget/nuget_96_mono_w.png',

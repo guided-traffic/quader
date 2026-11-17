@@ -6,7 +6,7 @@ import { Notifier } from '../../core/notifier';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
-import { TroveAvatar } from '../../shared/ui/avatar';
+import { QuaderAvatar } from '../../shared/ui/avatar';
 import { AVATAR_TYPES, IMAGE_SIZER, refuseAvatar } from './avatar-file';
 import { avatarErrorText, avatarRefusalText } from './avatar-messages';
 
@@ -18,8 +18,8 @@ import { avatarErrorText, avatarRefusalText } from './avatar-messages';
  * a replacement and is never used again.
  */
 @Component({
-  selector: 'trove-profile-avatar',
-  imports: [TroveAvatar, ErrorNotice],
+  selector: 'quader-profile-avatar',
+  imports: [QuaderAvatar, ErrorNotice],
   templateUrl: './profile-avatar.html',
   styleUrls: ['../../shared/access/access.scss', './profile-avatar.scss'],
 })

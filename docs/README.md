@@ -1,7 +1,7 @@
-# trove documentation
+# Quader documentation
 
 Status: phases 1 to 3 are built: the platform (M0), the access core (M1) and the npm registry with its remote and virtual
-repositories (M2). NuGet, GitLab CI federation, the trove Bastion, vulnerability scanning and backup and restore are
+repositories (M2). NuGet, GitLab CI federation, the Quader Bastion, vulnerability scanning and backup and restore are
 specified and not built yet.
 
 This page maps the documentation. The project is a Go binary with an embedded Angular UI; these documents describe it and
@@ -12,7 +12,7 @@ from the capability through the design to the decision behind it.
 ```mermaid
 flowchart LR
   F["features/<br/>what a repository manager does<br/>IDs: PREFIX-nnn"]
-  S["spec/<br/>how trove will do it<br/>IDs: R-AREA-nnn"]
+  S["spec/<br/>how Quader will do it<br/>IDs: R-AREA-nnn"]
   C["coverage/<br/>which features the spec covers"]
   D["decisions.md<br/>why, with the alternatives"]
   F -->|"Covers: lines"| S
@@ -25,13 +25,13 @@ flowchart LR
 
 | Part | Question it answers | IDs | Entry point |
 |---|---|---|---|
-| Feature catalog | What does a full-featured binary repository manager do, precisely enough to build it compatibly? What priority does trove give each feature? | `<PREFIX>-nnn`, e.g. `RMT-004`; format pages `PKG-<FORMAT>-nnn` | [features/README.md](features/README.md) |
-| Specification | How will trove do it: invariants, requirements, data model, API, configuration and acceptance criteria | `INV-n`, `R-<AREA>-nnn`, decided questions `Q-<AREA>-n`, security gaps `H-n` | [spec/README.md](spec/README.md) |
+| Feature catalog | What does a full-featured binary repository manager do, precisely enough to build it compatibly? What priority does Quader give each feature? | `<PREFIX>-nnn`, e.g. `RMT-004`; format pages `PKG-<FORMAT>-nnn` | [features/README.md](features/README.md) |
+| Specification | How will Quader do it: invariants, requirements, data model, API, configuration and acceptance criteria | `INV-n`, `R-<AREA>-nnn`, decided questions `Q-<AREA>-n`, security gaps `H-n` | [spec/README.md](spec/README.md) |
 | Coverage | Which catalog entries a requirement covers, and what is left by priority | catalog and requirement IDs | [coverage/README.md](coverage/README.md) |
 | Decisions | Why the design is what it is, with the options that were weighed | one record per decision; every invariant becomes one | [decisions.md](decisions.md) |
 | Developer documentation | How to work on the repository: the layout, the build and test tiers, the subsystem pages, ID rules, adding entries and requirements, the HA-shaped local development profile | — | [developer/README.md](developer/README.md) |
 | Security architecture | The security design, one page per perspective (including the Valkey trust boundary and the backup data flow), and where open gaps are recorded | `H-n` | [security/README.md](security/README.md) |
-| Manual | How to use and how to run trove, for users and administrators; embedded into the binary and shown in the UI's help area | — | [manual/README.md](manual/README.md) |
+| Manual | How to use and how to run Quader, for users and administrators; embedded into the binary and shown in the UI's help area | — | [manual/README.md](manual/README.md) |
 
 Vulnerability reports go through [SECURITY.md](../SECURITY.md). The user-facing overview is the
 root [README.md](../README.md).
@@ -80,7 +80,7 @@ for redesign ([spec/README.md](spec/README.md#owner-constraints)):
   comment a value only where its name does not say it, as the values files do. The catalog says *unspecified* when no
   value is known.
 - Capabilities have descriptive, product-neutral names. Links go to open standards and to the
-  documentation of the ecosystems trove speaks (npm, NuGet, GitLab, Helm, PostgreSQL, Valkey, S3,
+  documentation of the ecosystems Quader speaks (npm, NuGet, GitLab, Helm, PostgreSQL, Valkey, S3,
   OIDC).
 - `### <ID> · <Title>` headings and the `Priority:` line below them are read by tools. Keep each on
   one line.

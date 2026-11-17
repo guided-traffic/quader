@@ -14,7 +14,7 @@ async function open(inputs: Record<string, unknown> = {}) {
 describe('Repository list filter panel (R-UI-020)', () => {
   it('R-UI-020 the panel is closed until the filter button opens it, and it passes the accessibility check open', async () => {
     const { fixture, root } = await open();
-    expect(root.querySelector('trove-filter-panel form')).toBeNull();
+    expect(root.querySelector('quader-filter-panel form')).toBeNull();
     await openFilters(fixture, root);
     const categories = [...root.querySelectorAll('button.category-toggle .category-label')].map((l) => l.textContent);
     expect(categories).toEqual(['Key or description', 'Project', 'Class', 'Format', 'State']);
@@ -27,7 +27,7 @@ describe('Repository list filter panel (R-UI-020)', () => {
         vi.spyOn(get(Router), 'navigate').mockResolvedValue(true);
         new BrowserStorage().set(
           'local',
-          'trove.frequent.00000000-0000-0000-0000-000000000001',
+          'quader.frequent.00000000-0000-0000-0000-000000000001',
           JSON.stringify({ repositories: [{ id: 'web/generic-local', visits: 1, last: Date.now() }], projects: [] }),
         );
       },
@@ -56,7 +56,7 @@ describe('Repository list filter panel (R-UI-020)', () => {
 
   it('R-UI-020 an applied filter opens the panel with its category open, counted on the button', async () => {
     const { root } = await open({ class: 'local', format: 'generic' });
-    expect(root.querySelector('trove-filter-panel form')).toBeTruthy();
+    expect(root.querySelector('quader-filter-panel form')).toBeTruthy();
     expect(root.querySelector('button.filter-toggle .filter-count')?.textContent).toBe('2');
     const expanded = [...root.querySelectorAll('button.category-toggle[aria-expanded="true"] .category-label')].map((l) => l.textContent);
     expect(expanded).toEqual(['Class', 'Format']);
@@ -84,10 +84,10 @@ describe('Repository list filter panel (R-UI-020)', () => {
     expect(addressValues(root)).toEqual([]);
     const write = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText: write }, configurable: true });
-    const copy = root.querySelector<HTMLButtonElement>('td.actions trove-copy-button button')!;
-    expect(copy.getAttribute('aria-label')).toBe('Copy client address https://trove.example.net/files/web/generic-local/');
+    const copy = root.querySelector<HTMLButtonElement>('td.actions quader-copy-button button')!;
+    expect(copy.getAttribute('aria-label')).toBe('Copy client address https://quader.example.net/files/web/generic-local/');
     copy.click();
     await Promise.resolve();
-    expect(write).toHaveBeenCalledWith('https://trove.example.net/files/web/generic-local/');
+    expect(write).toHaveBeenCalledWith('https://quader.example.net/files/web/generic-local/');
   });
 });

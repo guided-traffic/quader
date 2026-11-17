@@ -9,7 +9,7 @@
 //
 // Layout (R-BAK-002):
 //
-//	<prefix>/trove-backup-target.json                  target marker
+//	<prefix>/quader-backup-target.json                  target marker
 //	<prefix>/pool/sha256/<h0h1>/<h2h3>/<h0…h63>        shared blob pool
 //	<prefix>/backups/<backup-id>/db/<table>.copy.zst   one file per exported table
 //	<prefix>/backups/<backup-id>/blobs.idx.zst         blob list

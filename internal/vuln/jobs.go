@@ -3,7 +3,7 @@ package vuln
 import (
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/jobs"
+	"github.com/guided-traffic/quader/internal/jobs"
 )
 
 // The job kinds of the vulnerability scanning (R-VULN-004, R-VULN-011, R-VULN-014), and the queue and dedup mode each

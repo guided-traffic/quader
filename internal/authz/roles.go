@@ -1,6 +1,6 @@
 package authz
 
-// Role is a system role (R-AUTHZ-010). The set is fixed: trove has no custom
+// Role is a system role (R-AUTHZ-010). The set is fixed: quader has no custom
 // roles.
 type Role string
 
@@ -16,7 +16,7 @@ const (
 )
 
 // RolePermission is the permission string that asks Require for a role itself,
-// the form {role: <name>} of x-trove-permission (R-API-008).
+// the form {role: <name>} of x-quader-permission (R-API-008).
 func RolePermission(r Role) string { return rolePrefix + string(r) }
 
 // Roles lists the system roles in a fixed order.

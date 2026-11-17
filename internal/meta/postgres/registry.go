@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
-// VerifyTableRegistry is the migration test of R-BAK-004 run by `trove migrate`
+// VerifyTableRegistry is the migration test of R-BAK-004 run by `quader migrate`
 // against the migrated database: every table of the schema must carry an export
 // class in reg, the registry of the running binary, and the foreign keys among
 // the exported tables must have no cycle without a registered break. A table

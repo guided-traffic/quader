@@ -39,7 +39,7 @@ stays. It describes [internal/webui/shared.go](../../internal/webui/shared.go) a
   asks the store for `(locale, path)`; nothing else under `/ui/` does, `index.html` and the client-side routes included.
 - The answer has the headers of the replica's own files: the content type by extension, `X-Content-Type-Options: nosniff` and
   `Cache-Control: public, max-age=31536000, immutable`. The page that loads the file still has the CSP of the `index.html` it came
-  from (R-UI-001): `script-src 'self'` admits the file because it comes from trove's origin.
+  from (R-UI-001): `script-src 'self'` admits the file because it comes from Quader's origin.
 - A name no release published is `404`; a store that cannot be asked (PostgreSQL or the object store away, 10 s at most) is `503`
   with `Retry-After: 1` and `Cache-Control: no-store`, and the replica logs it
   ([Q-UI-141](../spec/api-and-ui.md#q-ui-141--what-a-replica-answers-for-a-hashed-file-of-another-release)).
@@ -69,11 +69,11 @@ transient: a backup leaves it out and a restore leaves it empty; the replicas pu
 Stage: the lookup of a hashed file in `ui_assets` and the blob it names ([shared.go](../../internal/webui/shared/shared.go),
 `Store.Asset`).
 
-Dormant: live only for a principal who can write trove's PostgreSQL schema. Such a writer can insert a row
+Dormant: live only for a principal who can write Quader's PostgreSQL schema. Such a writer can insert a row
 `(locale, path, blob)` for a hashed name no build has and point it at any live blob, for instance the content of a package file an
-uploader stored; every replica that serves the UI then serves that blob as a script of trove's origin to any browser that asks
-for the name. Subject: the browsers of trove's users, whose sessions run on that origin. A page loads such a script only if
-something names it: an `index.html` of trove never does, so the writer still needs a way to make a browser load it.
+uploader stored; every replica that serves the UI then serves that blob as a script of Quader's origin to any browser that asks
+for the name. Subject: the browsers of Quader's users, whose sessions run on that origin. A page loads such a script only if
+something names it: an `index.html` of Quader never does, so the writer still needs a way to make a browser load it.
 
 What makes it real: write access to the database, which already decides every role binding and token of the installation
 ([roles-and-trust-boundaries.md](roles-and-trust-boundaries.md)): the store adds a path from that access into the browser. The
@@ -91,8 +91,8 @@ name that the replica's build lacks and that it has not looked up in the last 10
 PostgreSQL and the object store, reached by an unauthenticated client that sends many distinct names. The remembered misses bound
 the cost of one repeated name, not of distinct ones.
 
-What makes it real: a client that sends many distinct names. The read is a lookup by primary key; nothing in trove limits the
-rate of requests under `/ui/`, so what bounds it is the edge in front of trove, which the operator configures.
+What makes it real: a client that sends many distinct names. The read is a lookup by primary key; nothing in Quader limits the
+rate of requests under `/ui/`, so what bounds it is the edge in front of Quader, which the operator configures.
 
 ### H-545 · The files of a release stay servable for a week after its last replica stopped
 

@@ -22,12 +22,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-const schemaName = "trove"
+const schemaName = "quader"
 
 // stack describes the endpoints of the integration stack.
 type stack struct {
@@ -39,17 +39,17 @@ type stack struct {
 
 func getStack(t testing.TB) stack {
 	t.Helper()
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
-	bport, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PGBOUNCER_PORT"))
+	bport, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PGBOUNCER_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PGBOUNCER_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PGBOUNCER_PORT: %v", err)
 	}
 	return stack{
-		host: testenv.Get(t, "TROVE_TEST_PG_HOST"), port: port, bouncerPort: bport,
-		user: testenv.Get(t, "TROVE_TEST_PG_USER"), secret: testenv.Get(t, "TROVE_TEST_PG_PASSWORD"),
+		host: testenv.Get(t, "QUADER_TEST_PG_HOST"), port: port, bouncerPort: bport,
+		user: testenv.Get(t, "QUADER_TEST_PG_USER"), secret: testenv.Get(t, "QUADER_TEST_PG_PASSWORD"),
 	}
 }
 
@@ -70,7 +70,7 @@ func (s stack) admin(t testing.TB, database string) *pgx.Conn {
 	return conn
 }
 
-// newDatabase creates an empty database of its own (trove_pg_<random>) and drops
+// newDatabase creates an empty database of its own (quader_pg_<random>) and drops
 // it when the test ends, so parallel tests and agents never collide. The
 // returned connection is an admin connection to that database.
 func (s stack) newDatabase(t testing.TB) (name string, conn *pgx.Conn) {
@@ -79,7 +79,7 @@ func (s stack) newDatabase(t testing.TB) (name string, conn *pgx.Conn) {
 	if _, err := rand.Read(b[:]); err != nil {
 		t.Fatal(err)
 	}
-	name = "trove_pg_" + hex.EncodeToString(b[:])
+	name = "quader_pg_" + hex.EncodeToString(b[:])
 	maint := s.admin(t, "postgres")
 	ctx := context.Background()
 	if _, err := maint.Exec(ctx, "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
@@ -199,7 +199,7 @@ func migrated(t testing.TB, st stack) (cfg config.Database, name string, admin *
 	if _, err := postgres.Migrate(ctxT(t, 60*time.Second), cfg, opts(nil)); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
-	mustExec(t, admin, "INSERT INTO trove.project (id, key, display_name) VALUES (gen_random_uuid(), 'it', 'it')")
+	mustExec(t, admin, "INSERT INTO quader.project (id, key, display_name) VALUES (gen_random_uuid(), 'it', 'it')")
 	return cfg, name, admin
 }
 

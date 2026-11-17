@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/backup/tables"
 )
 
 func fk(table, column, ref string) tables.ForeignKey {

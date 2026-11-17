@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/virtual"
-	vt "github.com/guided-traffic/trove/internal/virtual/virtualtest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/virtual"
+	vt "github.com/guided-traffic/quader/internal/virtual/virtualtest"
 )
 
 // Endpoints in the virtual engine (R-EP-018, R-EP-019): on an endpoint with exposure rules no
@@ -46,7 +46,7 @@ func TestR_EP_018_AFailureNamesOnlyTheAddressedRepository(t *testing.T) {
 		err := w.r.Artifact(context.Background(), c, p, w.arts, rec)
 		check(t, err)
 		if rec.Header().Get(virtual.ResolvedFromHeader) != "" {
-			t.Fatal("Trove-Resolved-From on an endpoint with rules")
+			t.Fatal("Quader-Resolved-From on an endpoint with rules")
 		}
 	})
 	t.Run("R-EP-018 a document whose only member failed", func(t *testing.T) {

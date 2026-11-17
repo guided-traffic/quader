@@ -3,8 +3,8 @@ package engine
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/bastion/answers"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // refreshShape refreshes the shape answer a request used when it is in the last fifth of its period

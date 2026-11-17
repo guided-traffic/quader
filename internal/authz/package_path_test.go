@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/scope"
 )
 
 // TestR_AUTHZ_005_APathPatternDecidesAPackageOnItsPath: the path dimension of a resource set is matched against the

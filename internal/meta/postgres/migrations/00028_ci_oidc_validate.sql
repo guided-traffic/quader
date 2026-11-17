@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- GitLab CI OIDC (R-AUTHZ-018, R-HA-018): the foreign key that 00026 added NOT VALID is validated
 -- here, under a lock that lets reads and writes through.

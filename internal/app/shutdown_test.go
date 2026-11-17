@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/jobs"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/jobs"
 )
 
 // derived returns server.shutdown_timeout the way the loader derives it.
@@ -165,7 +165,7 @@ func TestShutdownBudgetEndToEnd(t *testing.T) {
 	t.Run("R-HA-011 a worker with the derived timeout quiesces its jobs near the end of the timeout and exits inside the grace period, although a component ignores its context", func(t *testing.T) {
 		// grace 7 s, drain 1 s -> derived timeout 1 s; a worker skips the drain.
 		h := start(t, "worker", map[string]string{
-			"TROVE_RUNTIME_TERMINATION_GRACE_PERIOD": "7s", "TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "1s", "TROVE_SERVER_SHUTDOWN_TIMEOUT": "0s",
+			"QUADER_RUNTIME_TERMINATION_GRACE_PERIOD": "7s", "QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "1s", "QUADER_SERVER_SHUTDOWN_TIMEOUT": "0s",
 		})
 		if got := h.app.cfg.Server.ShutdownTimeout; got != time.Second {
 			t.Fatalf("derived timeout %s, want 1s", got)
@@ -195,7 +195,7 @@ func TestShutdownBudgetEndToEnd(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-024 a request that is committing and never finishes is cut inside the commit grace, and the whole shutdown stays inside the plan", func(t *testing.T) {
-		h := start(t, "web", map[string]string{"TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s", "TROVE_SERVER_SHUTDOWN_TIMEOUT": "1s"})
+		h := start(t, "web", map[string]string{"QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s", "QUADER_SERVER_SHUTDOWN_TIMEOUT": "1s"})
 		h.app.budget = scaledBudget()
 		entered := make(chan struct{})
 		h.app.router.HandleFunc("GET /test/commit", func(w http.ResponseWriter, r *http.Request) {
@@ -260,7 +260,7 @@ func TestShutdownReleaseWrites(t *testing.T) {
 		// grace 9 s, drain 1 s -> derived timeout 3 s; a worker skips the drain. The scaled
 		// budget's settle deadline is 2 s: the write needs most of it.
 		h := start(t, "worker", map[string]string{
-			"TROVE_RUNTIME_TERMINATION_GRACE_PERIOD": "9s", "TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "1s", "TROVE_SERVER_SHUTDOWN_TIMEOUT": "0s",
+			"QUADER_RUNTIME_TERMINATION_GRACE_PERIOD": "9s", "QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "1s", "QUADER_SERVER_SHUTDOWN_TIMEOUT": "0s",
 		})
 		if got := h.app.cfg.Server.ShutdownTimeout; got != 3*time.Second {
 			t.Fatalf("derived timeout %s, want 3s", got)
@@ -324,7 +324,7 @@ func TestShutdownDrainStepIsBoundedByThePlan(t *testing.T) {
 		drain string
 	}{{"web", "300ms"}, {"worker", "0s"}} {
 		t.Run(tc.role+" with a drain that never returns the close phase still flushes inside the plan", func(t *testing.T) {
-			h := start(t, tc.role, map[string]string{"TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": tc.drain, "TROVE_SERVER_SHUTDOWN_TIMEOUT": "1s"})
+			h := start(t, tc.role, map[string]string{"QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": tc.drain, "QUADER_SERVER_SHUTDOWN_TIMEOUT": "1s"})
 			h.app.budget = scaledBudget()
 			comp := &stalledDrainer{name: "stalled", release: make(chan struct{})}
 			t.Cleanup(func() { close(comp.release) })

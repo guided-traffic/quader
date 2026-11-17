@@ -102,7 +102,7 @@ test('R-UI-080 R-UI-081 R-UI-082 R-UI-086 R-UI-087 a repository is set up on one
     await expect(page.getByRole('textbox', { name: 'Key' })).toHaveAttribute('readonly', '');
     await expect(page.getByRole('heading', { name: 'Visibility', level: 2 })).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Upstream URL' })).toHaveValue('https://registry.gitlab.com/');
-    const toggles = page.locator('main trove-disclosure .toggle');
+    const toggles = page.locator('main quader-disclosure .toggle');
     await expect(toggles).not.toHaveCount(0);
     for (const toggle of await toggles.all()) await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     for (const scheme of ['light', 'dark'] as const) {

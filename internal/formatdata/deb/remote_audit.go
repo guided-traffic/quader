@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
+	"github.com/guided-traffic/quader/internal/audit"
 )
 
 // signatureEventEvery is the least time between two security events of one repository and release directory (R-DEB-020).

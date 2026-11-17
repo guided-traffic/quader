@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_VULN_010_TheClaimHolderIsTheRulesNotAPatternMatch (A5, Q-VULN-70): a claim of a local repository that sets
@@ -20,7 +20,7 @@ func TestR_VULN_010_TheClaimHolderIsTheRulesNotAPatternMatch(t *testing.T) {
 	for _, n := range []string{"@pub/x", "@acme/y"} {
 		e.st.Exec(`INSERT INTO vuln_claimed_match (ecosystem, advisory_id, name, kind) VALUES ('npm', 'MAL-2026-1300', $1, 'malicious')`, n)
 	}
-	web2 := e.st.Start(t, testenv.ReplicaOptions{Name: "web2", Env: []string{"TROVE_API_RATE_LIMITS_ENABLED=false"}}) // loads the repository and the claims
+	web2 := e.st.Start(t, testenv.ReplicaOptions{Name: "web2", Env: []string{"QUADER_API_RATE_LIMITS_ENABLED=false"}}) // loads the repository and the claims
 	a := e.get(web2, "/api/v1/vulnerabilities/claimed-name-matches", e.tokRita)
 	if a.Status != 200 {
 		t.Fatalf("%d %s", a.Status, a.Body)

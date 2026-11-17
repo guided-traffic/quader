@@ -12,7 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_NUGET_007_APushAndAHardDeleteOfAnotherVersionNeverDeadlock: a push of a new version holds
@@ -32,7 +32,7 @@ func TestR_NUGET_007_APushAndAHardDeleteOfAnotherVersionNeverDeadlock(t *testing
 	e := newWriteEnv(t)
 	// The requests of the test wait behind the test's own lock while it arranges the next one; a
 	// loaded runner must not turn that into the 503 of the stack's lock_timeout of 5 s.
-	const patient = "TROVE_DATABASE_SESSION_LOCK_TIMEOUT=60s"
+	const patient = "QUADER_DATABASE_SESSION_LOCK_TIMEOUT=60s"
 	a, b := e.replica("web-a", patient), e.replica("web-b", patient)
 	pkg := func(v string) []byte { return nupkg(t, pkgSpec{id: "Acme.Order", version: v}) }
 	// 0.9.0 stays throughout, so no push here is the ID's first (which would ask the shadowing
@@ -58,7 +58,7 @@ func TestR_NUGET_007_APushAndAHardDeleteOfAnotherVersionNeverDeadlock(t *testing
 	}
 	defer func() { _ = hold.Rollback(context.Background()) }()
 	// OF i: the row of the repository stays free, every insert into items checks its key.
-	if tag, err := hold.Exec(ctx, `SELECT i.id FROM trove.items i JOIN trove.repositories r ON r.id = i.repo_id
+	if tag, err := hold.Exec(ctx, `SELECT i.id FROM quader.items i JOIN quader.repositories r ON r.id = i.repo_id
 		WHERE r.key = 'nuget-hard' AND i.path = 'acme.order/1.0.0/acme.order.1.0.0.nupkg' FOR UPDATE OF i`); err != nil || tag.RowsAffected() != 1 {
 		t.Fatalf("lock the package file: %v %v", tag, err)
 	}

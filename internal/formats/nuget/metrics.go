@@ -3,7 +3,7 @@ package nuget
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // writeMetrics are the families of R-NUGET-028 that the write side counts. The label
@@ -16,7 +16,7 @@ type writeMetrics struct {
 func newWriteMetrics(m *observability.Metrics) *writeMetrics {
 	w := &writeMetrics{
 		repos: m.Repos(),
-		replays: m.NewCounterVec("trove_nuget_push_replayed_total",
+		replays: m.NewCounterVec("quader_nuget_push_replayed_total",
 			"Pushes of the identical package of a stored version, answered 201 without a change (R-NUGET-006).", "repo"),
 	}
 	w.repos.DeleteOnForget(w.replays) // the series leave with the repository (R-OPS-007)
@@ -28,5 +28,5 @@ func (w *writeMetrics) replayed(repoKey string) {
 	if w == nil {
 		return
 	}
-	w.replays.WithLabelValues(w.repos.Value("trove_nuget_push_replayed_total", repoKey)).Inc()
+	w.replays.WithLabelValues(w.repos.Value("quader_nuget_push_replayed_total", repoKey)).Inc()
 }

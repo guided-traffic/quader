@@ -1,4 +1,4 @@
-module github.com/guided-traffic/trove
+module github.com/guided-traffic/quader
 
 go 1.27.4
 

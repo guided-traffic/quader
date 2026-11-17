@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/ci/claims"
 )
 
 // The CI evaluator (R-AUTHZ-014, R-CI-012, R-CI-013, R-CI-015) on the grant index, without PostgreSQL: the
@@ -47,7 +47,7 @@ func systemTier(name string, groups []string, inline ...claims.InlineGrant) clai
 	return claims.FrozenMapping{Ref: "ci:" + name, ID: "m-" + name, Tier: "system", Groups: groups, Inline: inline}
 }
 
-// projectTier is a contribution of the tier of project key, whose trove ID is id.
+// projectTier is a contribution of the tier of project key, whose quader ID is id.
 func projectTier(name, key, id string, inline ...claims.InlineGrant) claims.FrozenMapping {
 	return claims.FrozenMapping{Ref: "ci:" + name, ID: "m-" + name, Tier: "project:" + key, Project: &claims.FrozenProject{Key: key, ID: id}, Inline: inline}
 }

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/npm/npmtest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/npm/npmtest"
 )
 
 // stored is a document of the engine's cache.
@@ -19,7 +19,7 @@ func stored(body []byte) *formats.RemoteDocument {
 	return &formats.RemoteDocument{
 		Digest: sha256.Sum256(body), Size: int64(len(body)),
 		Bytes:  func(context.Context) ([]byte, error) { return body, nil },
-		Status: formats.CacheStatus{Hit: true, Header: "trove; hit; ttl=3000"},
+		Status: formats.CacheStatus{Hit: true, Header: "quader; hit; ttl=3000"},
 	}
 }
 
@@ -46,7 +46,7 @@ func TestR_NPM_025_ARemoteServesTheStoredDocumentWithTarballsOnTheBaseURL(t *tes
 	h, _, _ := remoteHost(t, eng)
 
 	full := get(t, h, "@acme%2fui")
-	if full.Code != 200 || full.Header().Get("Cache-Status") != "trove; hit; ttl=3000" || full.Header().Get("Content-Type") != "application/json" {
+	if full.Code != 200 || full.Header().Get("Cache-Status") != "quader; hit; ttl=3000" || full.Header().Get("Content-Type") != "application/json" {
 		t.Fatalf("%d %v\n%s", full.Code, full.Header(), full.Body)
 	}
 	var d struct {
@@ -127,19 +127,19 @@ func TestR_NPM_025_ARemoteServesTheStoredDocumentWithTarballsOnTheBaseURL(t *tes
 	})
 	t.Run("a negative entry is a 404 that says why", func(t *testing.T) {
 		eng.metadata = func(string) (*formats.RemoteDocument, error) {
-			return &formats.RemoteDocument{Status: formats.CacheStatus{Hit: true, Negative: true, Header: "trove; hit; detail=negative"}}, nil
+			return &formats.RemoteDocument{Status: formats.CacheStatus{Hit: true, Negative: true, Header: "quader; hit; detail=negative"}}, nil
 		}
 		r := get(t, h, "nope")
-		if r.Code != 404 || r.Header().Get("Cache-Status") != "trove; hit; detail=negative" {
+		if r.Code != 404 || r.Header().Get("Cache-Status") != "quader; hit; detail=negative" {
 			t.Errorf("%d %v", r.Code, r.Header())
 		}
 	})
 	t.Run("an error of the engine is the answer", func(t *testing.T) {
 		eng.metadata = func(string) (*formats.RemoteDocument, error) {
-			return nil, errs.E(errs.UpstreamFailed, errs.CodeNPMInvalidUpstreamDocument, "bad", errs.WithHeader("Cache-Status", "trove; fwd=uri-miss"))
+			return nil, errs.E(errs.UpstreamFailed, errs.CodeNPMInvalidUpstreamDocument, "bad", errs.WithHeader("Cache-Status", "quader; fwd=uri-miss"))
 		}
 		r := get(t, h, "bad")
-		if r.Code != 502 || r.Header().Get("Cache-Status") != "trove; fwd=uri-miss" || !strings.Contains(r.Body.String(), "npm_invalid_upstream_document") {
+		if r.Code != 502 || r.Header().Get("Cache-Status") != "quader; fwd=uri-miss" || !strings.Contains(r.Body.String(), "npm_invalid_upstream_document") {
 			t.Errorf("%d %v %s", r.Code, r.Header(), r.Body)
 		}
 	})
@@ -222,16 +222,16 @@ func (r *resolverFake) Artifact(_ context.Context, _ *formats.Request, p formats
 
 func TestR_NPM_030_AVirtualDocumentIsRewrittenAfterTheMergeForTheVirtualRepository(t *testing.T) {
 	merged := []byte(`{"name":"lodash","dist-tags":{"latest":"1.1.0"},"versions":{` +
-		`"1.0.0":{"name":"lodash","version":"1.0.0","dist":{"tarball":"urn:trove:npm-tarball:lodash-1.0.0.tgz","integrity":"sha512-x"}},` +
+		`"1.0.0":{"name":"lodash","version":"1.0.0","dist":{"tarball":"urn:quader:npm-tarball:lodash-1.0.0.tgz","integrity":"sha512-x"}},` +
 		`"1.1.0":{"name":"lodash","version":"1.1.0","dist":{"tarball":"https://registry.example.org/lodash/-/lodash-1.1.0.tgz"}}}}`)
 	fp := [32]byte{7}
 	res := &resolverFake{merged: func() (*formats.Merged, error) {
-		return &formats.Merged{Bytes: merged, MergeFingerprint: fp, CacheStatus: "trove; fwd=miss"}, nil
+		return &formats.Merged{Bytes: merged, MergeFingerprint: fp, CacheStatus: "quader; fwd=miss"}, nil
 	}}
 	f := New()
 	h := formattest.NewHost(f, formattest.HostOptions{Class: formats.Virtual, RepoKey: "npm-all", Data: npmtest.New(), Resolver: res})
 	r := get(t, h, "lodash")
-	if r.Code != 200 || r.Header().Get("Cache-Status") != "trove; fwd=miss" {
+	if r.Code != 200 || r.Header().Get("Cache-Status") != "quader; fwd=miss" {
 		t.Fatalf("%d %v\n%s", r.Code, r.Header(), r.Body)
 	}
 	for _, v := range []string{"1.0.0", "1.1.0"} {
@@ -239,7 +239,7 @@ func TestR_NPM_030_AVirtualDocumentIsRewrittenAfterTheMergeForTheVirtualReposito
 			t.Errorf("%s is not under the virtual repository's URL: %s", v, r.Body)
 		}
 	}
-	if strings.Contains(r.Body.String(), "registry.example.org") || strings.Contains(r.Body.String(), "urn:trove") {
+	if strings.Contains(r.Body.String(), "registry.example.org") || strings.Contains(r.Body.String(), "urn:quader") {
 		t.Errorf("a member's address leaked: %s", r.Body)
 	}
 	if !strings.Contains(r.Body.String(), `"_rev":"1-07`) {

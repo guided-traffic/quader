@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Q-OCI-220: the insufficient_scope refusal says what the grant lacks and why an administrator's plain token is refused, and it says
@@ -31,10 +31,10 @@ func TestTheRefusalOfATokenWithoutRightsSaysWhyAndNothingAboutTheRepository(t *t
 		}
 		return b.Errors[0].Message
 	}
-	pushWithout := func(troveToken, repo string) answer {
+	pushWithout := func(quaderToken, repo string) answer {
 		t.Helper()
 		// The grant the token service gives for a push the caller does not hold is empty; the registry token is valid all the same.
-		rgt := e.mint("default", "", troveToken, registrytoken.Grant{Entries: []registrytoken.Entry{{Repo: qname.Repo{Project: "web", Key: repo}, Name: "app", Actions: registrytoken.Push}}}, false)
+		rgt := e.mint("default", "", quaderToken, registrytoken.Grant{Entries: []registrytoken.Entry{{Repo: qname.Repo{Project: "web", Key: repo}, Name: "app", Actions: registrytoken.Push}}}, false)
 		a := e.do("default", "", "PUT", "/v2/web/"+repo+"/app/manifests/1", rgt)
 		if a.Code != http.StatusUnauthorized || a.code(t) != "UNAUTHORIZED" {
 			t.Fatalf("%s: %d %s", repo, a.Code, a.Body.String())

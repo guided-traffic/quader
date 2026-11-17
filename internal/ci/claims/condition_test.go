@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
 )
 
 // tokenClaims is the example job of R-CI-006 in GitLab's spelling: IDs and booleans as strings.
@@ -227,7 +227,7 @@ func TestR_CI_010_RegularExpressions(t *testing.T) {
 // of 10,000 characters that does not match, the classic catastrophic input of a backtracking
 // engine. RE2 runs it in linear time. As for the other latency targets of the repository
 // (Q-ARCH-250), the per-change run asserts the median where the race detector is off; the p99 is
-// enforced with TROVE_PERF_GATE=1 and logged otherwise.
+// enforced with QUADER_PERF_GATE=1 and logged otherwise.
 func TestR_CI_010_ARegexDoesNotBacktrack(t *testing.T) {
 	n := parse(t, `{"claim":"ref","regex":"(a+)+$"}`)
 	if err := n.Validate(claims.Limits{}); err != nil {
@@ -255,10 +255,10 @@ func TestR_CI_010_ARegexDoesNotBacktrack(t *testing.T) {
 	}
 	switch {
 	case p99 <= time.Millisecond:
-	case os.Getenv("TROVE_PERF_GATE") == "1":
+	case os.Getenv("QUADER_PERF_GATE") == "1":
 		t.Errorf("R-CI-010: p99 %s is above 1 ms", p99)
 	default:
-		t.Logf("p99 %s is above 1 ms; enforced with TROVE_PERF_GATE=1 (Q-ARCH-250)", p99)
+		t.Logf("p99 %s is above 1 ms; enforced with QUADER_PERF_GATE=1 (Q-ARCH-250)", p99)
 	}
 }
 

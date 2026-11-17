@@ -24,8 +24,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 const (
@@ -42,7 +42,7 @@ const (
 	// the expected pod counts of the others stay what they are (Q-REPO-306).
 	mirrorPoolValues = `worker.pools=[{"name":"vuln","queues":["vuln"],"replicaCount":2},{"name":"mirror","queues":["mirror"],"replicaCount":2}]`
 	// the pool's pods: the label the chart puts on a pool's pods (R-HA-062)
-	selMirrorPool = selWorker + ",trove/pool=" + mirrorPoolName
+	selMirrorPool = selWorker + ",quader/pool=" + mirrorPoolName
 
 	mirrorSA = "e2e-mirror"
 	// the extra npm packages of the load: published to the test upstream, so that the pass has work that npm ci does not do
@@ -50,7 +50,7 @@ const (
 	// the public registry's names, which the npm test upstream answers to in the cluster (ensurePublicNPMNames)
 	publicRegistryHost    = "registry.npmjs.org"
 	publicReplicationHost = "replicate.npmjs.com"
-	corednsMarker         = "# trove-e2e-mirror"
+	corednsMarker         = "# quader-e2e-mirror"
 )
 
 // mirrorShare is B of R-REPO-055.
@@ -115,7 +115,7 @@ func requireMirrorPool(t testing.TB, on bool) {
 	var env []string
 	want := 0
 	if on {
-		env, want = []string{"TROVE_HELM_EXTRA=--set-json " + mirrorPoolValues}, 2
+		env, want = []string{"QUADER_HELM_EXTRA=--set-json " + mirrorPoolValues}, 2
 	}
 	if err := runUp(scatterProfile(), env...); err != nil {
 		t.Fatal(err)
@@ -143,18 +143,18 @@ func buildMirrorEnv(t testing.TB) (*mirrorEnv, error) {
 
 	e.removeStaleMirrors(t)
 	// every set deploys the test upstream of its format and no other
-	npmStubDeployed := os.Getenv("TROVE_E2E_NPMSTUB_HOST") != ""
+	npmStubDeployed := os.Getenv("QUADER_E2E_NPMSTUB_HOST") != ""
 	if npmStubDeployed {
 		stub(t).resetAll(t)
 		ensurePublicNPMNames(t)
 	}
-	if os.Getenv("TROVE_E2E_NUGETSTUB_HOST") != "" {
+	if os.Getenv("QUADER_E2E_NUGETSTUB_HOST") != "" {
 		nugetStub(t).resetAll(t)
 	}
 
 	ensureSA(t, e.adm, mirrorSA)
 	e.token = freshSAToken(t, e.adm, mirrorSA, 6*3600, map[string]any{"inherit": true}).Token
-	e.npm = &npmFixture{adm: e.adm, run: e.run, stubHost: os.Getenv("TROVE_E2E_NPMSTUB_HOST"), token: e.token, rowTokens: map[string]string{}}
+	e.npm = &npmFixture{adm: e.adm, run: e.run, stubHost: os.Getenv("QUADER_E2E_NPMSTUB_HOST"), token: e.token, rowTokens: map[string]string{}}
 	e.nuget = &nugetFixture{adm: e.adm, run: e.run, token: e.token}
 	if npmStubDeployed {
 		e.seedNPM(t)
@@ -439,19 +439,19 @@ func (e *mirrorEnv) awaitPassStarted(t testing.TB, key string, n int64) mirrorSt
 func (e *mirrorEnv) awaitNoPassRunning(t *testing.T) {
 	t.Helper()
 	waitFor(t, "the pass of the deleted mirror to halt", 3*time.Minute, 2*time.Second, func() bool {
-		return sql(t, `SELECT count(*) FROM trove.job WHERE kind = 'mirror-pass' AND state IN ('queued', 'running', 'cancelling')`) == "0"
+		return sql(t, `SELECT count(*) FROM quader.job WHERE kind = 'mirror-pass' AND state IN ('queued', 'running', 'cancelling')`) == "0"
 	})
 }
 
 // ── the pool's processes ─────────────────────────────────────────────────────
 
-// preempted is trove_mirror_preempted_total of the repository, added over the pool's processes.
+// preempted is quader_mirror_preempted_total of the repository, added over the pool's processes.
 func preempted(t testing.TB, key string) float64 {
 	t.Helper()
 	var sum float64
 	for _, p := range readyPodsOf(t, selMirrorPool) {
 		for s, v := range metricsOf(t, p) {
-			if strings.HasPrefix(s, "trove_mirror_preempted_total{") && strings.Contains(s, `repo="`+qn(key)+`"`) {
+			if strings.HasPrefix(s, "quader_mirror_preempted_total{") && strings.Contains(s, `repo="`+qn(key)+`"`) {
 				sum += v
 			}
 		}
@@ -462,20 +462,20 @@ func preempted(t testing.TB, key string) float64 {
 // poolPodOfPass is the pool pod whose process holds the job of the repository's pass, read from the job table.
 func poolPodOfPass(t testing.TB, jobID string) (podName, node string) {
 	t.Helper()
-	podName = sql(t, `SELECT coalesce(r.name, '') FROM trove.job j LEFT JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE j.id = '`+jobID+`' AND j.state = 'running'`)
+	podName = sql(t, `SELECT coalesce(r.name, '') FROM quader.job j LEFT JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE j.id = '`+jobID+`' AND j.state = 'running'`)
 	if podName == "" {
 		return "", ""
 	}
 	return podName, strings.TrimSpace(kn(t, "get", "pod", podName, "-o", "jsonpath={.spec.nodeName}"))
 }
 
-// claimedBy is trove_jobs_claimed_total of the kind in each process of the pool.
+// claimedBy is quader_jobs_claimed_total of the kind in each process of the pool.
 func claimedBy(t testing.TB, kind string) map[string]float64 {
 	t.Helper()
 	out := map[string]float64{}
 	for _, p := range readyPodsOf(t, selMirrorPool) {
 		for s, v := range metricsOf(t, p) {
-			if strings.HasPrefix(s, "trove_jobs_claimed_total{") && strings.Contains(s, `kind="`+kind+`"`) {
+			if strings.HasPrefix(s, "quader_jobs_claimed_total{") && strings.Contains(s, `kind="`+kind+`"`) {
 				out[p] += v
 			}
 		}
@@ -518,12 +518,12 @@ func tarballCounts(t testing.TB, prefix string) map[string]int {
 // stubScale scales a test upstream's Deployment and waits for its pods (or their end).
 func stubScale(t testing.TB, name string, replicas int) {
 	t.Helper()
-	kn(t, "scale", "deployment/trove-"+name, fmt.Sprintf("--replicas=%d", replicas))
+	kn(t, "scale", "deployment/quader-"+name, fmt.Sprintf("--replicas=%d", replicas))
 	if replicas == 0 {
-		kn(t, "wait", "--for=delete", "pod", "-l", "app.kubernetes.io/name=trove-"+name, "--timeout=120s")
+		kn(t, "wait", "--for=delete", "pod", "-l", "app.kubernetes.io/name=quader-"+name, "--timeout=120s")
 		return
 	}
-	kn(t, "rollout", "status", "deployment/trove-"+name, "--timeout=3m")
+	kn(t, "rollout", "status", "deployment/quader-"+name, "--timeout=3m")
 }
 
 var stubsStopped struct {
@@ -574,7 +574,7 @@ func ensurePublicNPMNames(t testing.TB) {
 		setCorefile(t, withRules)
 	}
 	publicNames.on = true
-	// the clients' pods ask the same resolver as trove's: wait until they see the Service's address
+	// the clients' pods ask the same resolver as quader's: wait until they see the Service's address
 	want := strings.TrimSpace(kn(t, "get", "service", "npmstub", "-o", "jsonpath={.spec.clusterIP}"))
 	waitFor(t, publicRegistryHost+" and "+publicReplicationHost+" to resolve to the npm test upstream ("+want+")", 3*time.Minute, 2*time.Second, func() bool {
 		for _, host := range []string{publicRegistryHost, publicReplicationHost} {
@@ -587,7 +587,7 @@ func ensurePublicNPMNames(t testing.TB) {
 	})
 	// the stub's certificate carries both names, and the dev CA signs it
 	for _, host := range []string{publicRegistryHost, publicReplicationHost} {
-		c := newStubControl(t, "svc/npmstub", host, "trove-npmstub", 30*time.Second)
+		c := newStubControl(t, "svc/npmstub", host, "quader-npmstub", 30*time.Second)
 		c.send(t, http.MethodGet, "/-/stub/mode", nil)
 		stopForward(c.fwd)
 	}
@@ -615,7 +615,7 @@ func restorePublicNPMNames() {
 	stubsStopped.Lock()
 	for name, stopped := range stubsStopped.names {
 		if stopped {
-			_, _ = kubectl("-n", cfg.namespace, "scale", "deployment/trove-"+name, "--replicas=1")
+			_, _ = kubectl("-n", cfg.namespace, "scale", "deployment/quader-"+name, "--replicas=1")
 		}
 	}
 	stubsStopped.Unlock()
@@ -674,15 +674,15 @@ func (s *jobSampler) loop() {
 		case <-tick.C:
 		}
 		if primary == "" {
-			p, err := kubectl("-n", cfg.namespace, "get", "cluster", "trove-db", "-o", "jsonpath={.status.currentPrimary}")
+			p, err := kubectl("-n", cfg.namespace, "get", "cluster", "quader-db", "-o", "jsonpath={.status.currentPrimary}")
 			if err != nil || strings.TrimSpace(p) == "" {
 				s.note(func() { s.failed++ })
 				continue
 			}
 			primary = strings.TrimSpace(p)
 		}
-		out, err := kubectl("-n", cfg.namespace, "exec", primary, "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-F", "|", "-c",
-			`SELECT dedup_key, count(*) FROM trove.job WHERE kind = 'mirror-pass' AND state IN ('queued', 'running', 'cancelling') GROUP BY dedup_key`)
+		out, err := kubectl("-n", cfg.namespace, "exec", primary, "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", "|", "-c",
+			`SELECT dedup_key, count(*) FROM quader.job WHERE kind = 'mirror-pass' AND state IN ('queued', 'running', 'cancelling') GROUP BY dedup_key`)
 		if err != nil {
 			primary = ""
 			s.note(func() { s.failed++ })

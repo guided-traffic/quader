@@ -17,7 +17,7 @@ describe('An entry page of the documentation', () => {
   it('R-UI-061 shows the head and the sections in the order ansible-doc prints them, each only with content', async () => {
     const r = await show();
     expect(text(r.root.querySelector('.doc-title')!)).toContain('hans_fischer.common.check_host_reachable');
-    expect(r.root.querySelector('.doc-title trove-copy-button button')?.getAttribute('aria-label')).toBe('Copy the full name');
+    expect(r.root.querySelector('.doc-title quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy the full name');
     expect(text(r.root.querySelector('.doc-short')!)).toBe('Checks whether a host answers');
     expect(text(r.root.querySelector('.doc-facts')!)).toContain('added in 1.1.0');
     expect(headings(r.root)).toEqual([
@@ -32,7 +32,7 @@ describe('An entry page of the documentation', () => {
       'Authors',
     ]);
     // The prose is the server's HTML: the code element and the link are there.
-    expect(r.root.querySelector('#doc-synopsis ~ trove-doc-prose code')?.textContent).toBe('host');
+    expect(r.root.querySelector('#doc-synopsis ~ quader-doc-prose code')?.textContent).toBe('host');
     await expectAccessible(r.root);
   });
 
@@ -43,7 +43,7 @@ describe('An entry page of the documentation', () => {
 
   it('R-UI-061 the parameters are a table with the columns of the page, a text badge for required and the aliases under the name', async () => {
     const r = await show();
-    expect([...r.root.querySelectorAll('#doc-parameters ~ trove-data-table thead th')].map((t) => text(t))).toEqual([
+    expect([...r.root.querySelectorAll('#doc-parameters ~ quader-data-table thead th')].map((t) => text(t))).toEqual([
       'Name',
       'Type',
       'Required',
@@ -109,7 +109,7 @@ describe('An entry page of the documentation', () => {
       ...CHECK_HOST_REACHABLE,
       description: ['<p>ok <code>x</code></p><script>window.__doc = 1</script><img src="https://x/y.png" onerror="window.__doc = 2">'],
     });
-    const prose = r.root.querySelector('#doc-synopsis ~ trove-doc-prose')!;
+    const prose = r.root.querySelector('#doc-synopsis ~ quader-doc-prose')!;
     expect(prose.querySelector('script')).toBeNull();
     expect(prose.querySelector('[onerror]')).toBeNull();
     expect(prose.querySelector('code')?.textContent).toBe('x');
@@ -121,8 +121,8 @@ describe('An entry page of the documentation', () => {
     const code = r.root.querySelector('#doc-examples ~ .code-wrap pre.code-block')!;
     expect(code.textContent).toContain('hans_fischer.common.check_host_reachable:');
     expect(code.getAttribute('tabindex')).toBe('0');
-    expect(r.root.querySelector('#doc-examples ~ .code-wrap trove-copy-button button')?.getAttribute('aria-label')).toBe('Copy the examples');
-    const returns = [...r.root.querySelectorAll<HTMLTableRowElement>('#doc-returns ~ trove-data-table tbody tr')];
+    expect(r.root.querySelector('#doc-examples ~ .code-wrap quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy the examples');
+    const returns = [...r.root.querySelectorAll<HTMLTableRowElement>('#doc-returns ~ quader-data-table tbody tr')];
     expect(returns.map((tr) => tr.querySelector('code')?.textContent)).toEqual(['reachable', 'details', 'rtt_ms']);
     // `true` stays inline, an object is a block with the copy button.
     expect((returns[0]!.cells[3]!.querySelector('code') as HTMLElement).textContent).toBe('true');
@@ -174,7 +174,7 @@ describe('An entry page of the documentation', () => {
       source: 'generated',
       readmeHtml: '<h1>web</h1><p>Installs the web server.</p>',
     });
-    expect(r.root.querySelector('trove-package-readme .readme h1')?.textContent).toBe('web');
+    expect(r.root.querySelector('quader-package-readme .readme h1')?.textContent).toBe('web');
     expect(headings(r.root)).toEqual([]);
     expect(r.root.querySelector('#doc-parameters')).toBeNull();
   });
@@ -188,7 +188,7 @@ describe('An entry page of the documentation', () => {
       source: 'upstream',
       readmeHtml: '<h1>web</h1><p>Installs the web server.</p>',
     });
-    expect(r.root.querySelector('trove-package-readme .readme h1')?.textContent).toBe('web');
+    expect(r.root.querySelector('quader-package-readme .readme h1')?.textContent).toBe('web');
     expect(r.root.querySelector('[data-testid="doc-no-docs"]')).toBeNull();
   });
 

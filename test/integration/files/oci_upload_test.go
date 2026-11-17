@@ -16,21 +16,21 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/formathost"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/packages"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/uploads"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/packages"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/uploads"
 
-	ocidata "github.com/guided-traffic/trove/internal/formatdata/oci"
+	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
 )
 
 // The blob upload protocol and the cross-repository mount of the OCI format on the production host (R-OCI-011, R-OCI-012): three
@@ -451,7 +451,7 @@ func TestR_OCI_012_AMountFromAReadableRepositoryLinksTheBlobAndUploadsNothing(t 
 // shape is what a client sees of a mount that opened a session: everything but the session's own id.
 func shape(res response) string {
 	h := res.header.Clone()
-	for _, k := range []string{"Location", "Docker-Upload-UUID", "Date", "X-Request-Id", "Trove-Request-Id", "X-Trove-Replica"} {
+	for _, k := range []string{"Location", "Docker-Upload-UUID", "Date", "X-Request-Id", "Quader-Request-Id", "X-Quader-Replica"} {
 		h.Del(k)
 	}
 	return fmt.Sprintf("%d %v %s", res.status, h, res.body)

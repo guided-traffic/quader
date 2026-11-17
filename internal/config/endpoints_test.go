@@ -7,7 +7,7 @@ import (
 )
 
 const customersYAML = `server:
-  base_url: https://trove.example.com
+  base_url: https://quader.example.com
   endpoints:
     customers:
       listen: ":8443"
@@ -63,7 +63,7 @@ func TestEndpoints(t *testing.T) {
 	})
 
 	t.Run("R-EP-001 the list arrives through the environment as JSON", func(t *testing.T) {
-		l, err := loadEndpoints(t, "", `TROVE_SERVER_ENDPOINTS={"customers":{"listen":":8443","base_url":"https://packages.example.com"}}`)
+		l, err := loadEndpoints(t, "", `QUADER_SERVER_ENDPOINTS={"customers":{"listen":":8443","base_url":"https://packages.example.com"}}`)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -85,7 +85,7 @@ func TestEndpoints(t *testing.T) {
 				t.Errorf("missing %q in %v", want, err)
 			}
 		}
-		l, err := loadEndpoints(t, "server:\n  endpoints:\n    default:\n      hosts: [trove.example.com]\n      replica_header: always\n")
+		l, err := loadEndpoints(t, "server:\n  endpoints:\n    default:\n      hosts: [quader.example.com]\n      replica_header: always\n")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -173,7 +173,7 @@ func TestEndpoints(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), `is also the wildcard host of endpoint a`) {
 			t.Fatalf("err = %v", err)
 		}
-		_, err = loadEndpoints(t, "server:\n  base_url: https://trove.example.com\n  content_base_url: https://content.example.com\n  endpoints:\n    c:\n      listen: \":8443\"\n      base_url: https://content.example.com\n")
+		_, err = loadEndpoints(t, "server:\n  base_url: https://quader.example.com\n  content_base_url: https://content.example.com\n  endpoints:\n    c:\n      listen: \":8443\"\n      base_url: https://content.example.com\n")
 		if err == nil || !strings.Contains(err.Error(), "server.content_base_url") {
 			t.Fatalf("err = %v", err)
 		}
@@ -220,12 +220,12 @@ func TestEndpoints(t *testing.T) {
 	})
 
 	t.Run("R-EP-003 the default endpoint host set holds the additional base URLs", func(t *testing.T) {
-		l, err := loadEndpoints(t, "server:\n  base_url: https://trove.example.com\n  additional_base_urls: [https://trove.internal:8443]\n  endpoints:\n    default:\n      hosts: [alias.example.com]\n")
+		l, err := loadEndpoints(t, "server:\n  base_url: https://quader.example.com\n  additional_base_urls: [https://quader.internal:8443]\n  endpoints:\n    default:\n      hosts: [alias.example.com]\n")
 		if err != nil {
 			t.Fatal(err)
 		}
 		d := l.Config.Server.ResolveEndpoints()[0]
-		if !reflect.DeepEqual(d.Hosts, []string{"trove.example.com", "alias.example.com", "trove.internal"}) {
+		if !reflect.DeepEqual(d.Hosts, []string{"quader.example.com", "alias.example.com", "quader.internal"}) {
 			t.Errorf("hosts = %v", d.Hosts)
 		}
 	})

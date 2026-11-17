@@ -1,4 +1,4 @@
-// Package verify checks that every stored blob still has its object in the store: the logic of `trove admin storage verify`
+// Package verify checks that every stored blob still has its object in the store: the logic of `quader admin storage verify`
 // (R-HA-024, R-HA-025, R-STOR-027). It reads the blob table in pages of a fixed size, so its memory does not grow with the
 // table, asks the store for each object with one existence check, and reports each blob whose object is missing or of
 // another size together with the items that reference it. It changes nothing: the status marks of the scrub (R-STOR-027)
@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // Defaults of [Options].

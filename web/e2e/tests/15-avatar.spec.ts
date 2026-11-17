@@ -30,7 +30,7 @@ test('R-UI-051 R-API-055 a user uploads an avatar, sees it in the top bar, and r
     page.on('request', (r) => {
       if (r.method() === 'PUT' && r.url().includes('/users/me/avatar')) puts++;
     });
-    await page.locator('trove-profile-avatar input[type="file"]').setInputFiles({
+    await page.locator('quader-profile-avatar input[type="file"]').setInputFiles({
       name: 'a.gif',
       mimeType: 'image/gif',
       buffer: Buffer.from('GIF89a'),
@@ -40,11 +40,11 @@ test('R-UI-051 R-API-055 a user uploads an avatar, sees it in the top bar, and r
   });
 
   await test.step('a PNG is stored, shown here and in the top bar without a reload', async () => {
-    await page.locator('trove-profile-avatar input[type="file"]').setInputFiles({ name: 'me.png', mimeType: 'image/png', buffer: png });
+    await page.locator('quader-profile-avatar input[type="file"]').setInputFiles({ name: 'me.png', mimeType: 'image/png', buffer: png });
     await expect(topBar).toHaveAttribute('src', /^\/api\/v1\/avatars\/[a-f0-9]{64}$/);
-    await expect(page.locator('trove-profile-avatar img')).toHaveAttribute('src', /^\/api\/v1\/avatars\/[a-f0-9]{64}$/);
+    await expect(page.locator('quader-profile-avatar img')).toHaveAttribute('src', /^\/api\/v1\/avatars\/[a-f0-9]{64}$/);
     await expect(page.getByRole('button', { name: 'Remove avatar' })).toBeVisible();
-    // The browser loaded the image from trove: it has a width.
+    // The browser loaded the image from quader: it has a width.
     await expect.poll(() => topBar.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(256);
     await expectAccessible(page, 'profile with the uploaded avatar');
   });

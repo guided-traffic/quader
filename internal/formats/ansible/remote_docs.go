@@ -8,18 +8,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 // The upstream documents a remote stores as they came, and their rendering for a client (R-ANS-017, R-ANS-020).
 
 func invalidDocument(what, why string) error {
-	return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent "+what+" that trove cannot use: "+why+".")
+	return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent "+what+" that Quader cannot use: "+why+".")
 }
 
-// upstreamCollection is the part of a collection document of the public Galaxy that trove reads.
+// upstreamCollection is the part of a collection document of the public Galaxy that quader reads.
 type upstreamCollection struct {
 	Namespace      string `json:"namespace"`
 	Name           string `json:"name"`
@@ -66,7 +66,7 @@ type upstreamPage struct {
 func parsePage(doc []byte) (upstreamPage, error) {
 	entries, count, _, err := galaxydoc.ParseUpstreamList(doc)
 	if err != nil {
-		return upstreamPage{}, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a version list that trove cannot use: "+err.Error()+".", errs.WithCause(err))
+		return upstreamPage{}, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream sent a version list that Quader cannot use: "+err.Error()+".", errs.WithCause(err))
 	}
 	if count > MaxListVersions {
 		return upstreamPage{}, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed,
@@ -109,7 +109,7 @@ func collectionHostAllowed(patterns []string, upstream, u *url.URL) bool {
 	return hostListed(patterns, host)
 }
 
-// roleVersionsPage is a parsed page of a role's version list: the generic object (every member of the upstream's page that trove
+// roleVersionsPage is a parsed page of a role's version list: the generic object (every member of the upstream's page that quader
 // passes) and the entries that survive the host rule.
 type roleVersionsPage struct {
 	doc map[string]json.RawMessage

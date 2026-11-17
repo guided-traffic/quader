@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/secrets"
-	"github.com/guided-traffic/trove/internal/sysstate"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/secrets"
+	"github.com/guided-traffic/quader/internal/sysstate"
 )
 
 // wireKeys loads the key ring and builds the outbound factory (R-ARCH-024 step

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/ci/claims"
 )
 
 // TestR_VULN_019_ReadScopeSharedStateDecidesLikeTheDecisionPoint: a listing of findings decides tens of thousands of rows with

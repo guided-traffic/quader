@@ -1,10 +1,10 @@
 # Connecting a package client
 
-How to point npm, pnpm, Yarn, the .NET CLI, nuget.exe, Visual Studio, the Docker CLI, Podman, APT, ansible-galaxy and curl at a trove repository, sign them in with a token from an environment variable, and install, publish and maintain packages and files through it. The page explains the concepts and the places in the UI that give you the exact configuration of your installation: the Client setup page, the Guides area and the How to use tab of a repository.
+How to point npm, pnpm, Yarn, the .NET CLI, nuget.exe, Visual Studio, the Docker CLI, Podman, APT, ansible-galaxy and curl at a Quader repository, sign them in with a token from an environment variable, and install, publish and maintain packages and files through it. The page explains the concepts and the places in the UI that give you the exact configuration of your installation: the Client setup page, the Guides area and the How to use tab of a repository.
 
 ## Where the instructions are
 
-trove gives you the configuration for your installation in four places. All of them use the configured addresses of the endpoint you are using, so you can copy what they show.
+Quader gives you the configuration for your installation in four places. All of them use the configured addresses of the endpoint you are using, so you can copy what they show.
 
 | Place | How to open it | What it gives you |
 |---|---|---|
@@ -31,12 +31,12 @@ Every repository belongs to a project, and has one client address, built from th
 
 | Package type | Address | Example |
 |---|---|---|
-| npm | `<base URL>/api/npm/<project key>/<repository key>/` | `https://trove.example.com/api/npm/web/npm-all/` |
-| NuGet | `<base URL>/api/nuget/<project key>/<repository key>/v3/index.json` (the service index) | `https://trove.example.com/api/nuget/web/nuget-all/v3/index.json` |
-| Generic | `<base URL>/files/<project key>/<repository key>/` | `https://trove.example.com/files/web/generic-local/` |
-| OCI (Docker) | `<host>/<project key>/<repository key>` as the start of every image reference, without a scheme | `trove.example.com/web/docker/team/app:1.0` |
-| Debian (APT) | `<base URL>/api/deb/<project key>/<repository key>/`, the URI of the source, with the suite named beside it | `https://trove.example.com/api/deb/web/deb-local/` |
-| Ansible Galaxy | `<base URL>/api/ansible/<project key>/<repository key>/`, the `url` of the server in `ansible.cfg` | `https://trove.example.com/api/ansible/web/ansible-local/` |
+| npm | `<base URL>/api/npm/<project key>/<repository key>/` | `https://quader.example.com/api/npm/web/npm-all/` |
+| NuGet | `<base URL>/api/nuget/<project key>/<repository key>/v3/index.json` (the service index) | `https://quader.example.com/api/nuget/web/nuget-all/v3/index.json` |
+| Generic | `<base URL>/files/<project key>/<repository key>/` | `https://quader.example.com/files/web/generic-local/` |
+| OCI (Docker) | `<host>/<project key>/<repository key>` as the start of every image reference, without a scheme | `quader.example.com/web/docker/team/app:1.0` |
+| Debian (APT) | `<base URL>/api/deb/<project key>/<repository key>/`, the URI of the source, with the suite named beside it | `https://quader.example.com/api/deb/web/deb-local/` |
+| Ansible Galaxy | `<base URL>/api/ansible/<project key>/<repository key>/`, the `url` of the server in `ansible.cfg` | `https://quader.example.com/api/ansible/web/ansible-local/` |
 
 The trailing slash belongs to the address of npm, Debian, Ansible Galaxy and generic repositories; a NuGet address ends in `index.json`; a container image reference names the host and no scheme ([Container images with Docker and Podman](container-images.md)). Two projects can each have a repository of the same key, so the project key is always part of the address; a repository that an administrator moves to another project gets a new address, and the old one answers `404`. Which class of repository to use:
 
@@ -53,7 +53,7 @@ Opened from a repository (its **Set up client**, or a repository you opened rece
 1. Under **Package type**, choose the format.
 2. Under **Client**, choose your client: **npm**, **pnpm**, **Yarn Berry (2 and later)** or **Yarn Classic (1.x)** for npm, **.NET CLI (dotnet)**, **NuGet CLI (nuget.exe)** or **Visual Studio** for NuGet, **Docker CLI (with Buildx)** or **Podman** for OCI (Docker), **APT (apt, apt-get)** for Debian (APT), **curl** for generic repositories.
 3. Under **Repository**, choose one of the repositories you can read. Virtual repositories come first and are marked **recommended**; each entry says **Read only**, **Publishing goes to its default deployment target**, **You can publish** or **You cannot publish**.
-4. Below the choices one line says how the snippets sign in: by default they read your token from the variable `TROVE_TOKEN`, and **Create a token to put into the variable** opens your personal tokens. **More options** holds the other ways (next section) and, where a Bastion can be chosen, **Install from**. Without a session the line says that the snippets contain no authentication.
+4. Below the choices one line says how the snippets sign in: by default they read your token from the variable `QUADER_TOKEN`, and **Create a token to put into the variable** opens your personal tokens. **More options** holds the other ways (next section) and, where a Bastion can be chosen, **Install from**. Without a session the line says that the snippets contain no authentication.
 5. Copy the snippets from the tabs **Configure**, **Install** and, if you may publish, **Publish** with **Copy snippet**, or save a configuration file with **Download**.
 
 The **Publish** tab shows how to publish through the repository you chose, once for your client: `npm publish --registry <address>`, `pnpm publish --registry <address>`, `yarn publish --registry <address>` for Yarn Classic, `npmPublishRegistry: "<address>"` in `.yarnrc.yml` for Yarn Berry, `dotnet nuget push` and `nuget push` with the service index of the repository as the source and the token as the API key for NuGet (Visual Studio has no push), `docker push`, `docker buildx build --push` and `podman push` of an image tagged with the repository's address for OCI, or the `curl --upload-file` of a `.deb` to `upload/<file>?distribution=<suite>` for Debian. The address is the one of the repository you chose; for a virtual repository the publish reaches its default deployment target. There is no **Publish** tab when you cannot publish: for a remote repository, for a Bastion, and when you do not hold the deploy permission on the target. For a virtual repository without a default deployment target, people who may change the repository see the tab with the reason and a link to its members. The hint of step 3 tells you which case it is; the guide's section **Publish a package** has the rest of the commands.
@@ -64,7 +64,7 @@ The options are under **More options**, closed until you open it.
 
 | Option | What the snippets contain | Notes |
 |---|---|---|
-| **Reference an environment variable** (default) | `${TROVE_TOKEN}`, which the client expands when it runs (`%TROVE_TOKEN%` in a `nuget.config` and in cmd, `$env:TROVE_TOKEN` in PowerShell) | No secret on the page; the file can be committed. The link **Create a token to put into the variable** opens your personal tokens |
+| **Reference an environment variable** (default) | `${QUADER_TOKEN}`, which the client expands when it runs (`%QUADER_TOKEN%` in a `nuget.config` and in cmd, `$env:QUADER_TOKEN` in PowerShell) | No secret on the page; the file can be committed. The link **Create a token to put into the variable** opens your personal tokens |
 | **Create a token for this setup** | A new personal token, written into the snippets | See below |
 | **Use a token I already have** | The token you paste | The value stays in the browser and is never sent to the server |
 
@@ -78,79 +78,79 @@ A pasted token is checked in the browser for its prefix, its length of 57 charac
 
 | Client | File | Credential setting |
 |---|---|---|
-| npm | `.npmrc` in the project, or `~/.npmrc` for every project | `//<host>/api/npm/<project>/<key>/:_authToken=${TROVE_TOKEN}` |
+| npm | `.npmrc` in the project, or `~/.npmrc` for every project | `//<host>/api/npm/<project>/<key>/:_authToken=${QUADER_TOKEN}` |
 | pnpm | `~/.npmrc` (pnpm 11 and 12 ignore a credential that names a variable in a project file) | as npm |
-| Yarn Berry | `.yarnrc.yml` in the project (Yarn Berry does not read `.npmrc`) | `npmAuthToken: "${TROVE_TOKEN}"` |
+| Yarn Berry | `.yarnrc.yml` in the project (Yarn Berry does not read `.npmrc`) | `npmAuthToken: "${QUADER_TOKEN}"` |
 | Yarn Classic | `.npmrc` in the project | as npm |
 
 The npm credential line names the registry address without its scheme, so the client sends the token to this repository and to no other URL. When the repository is not public, Yarn Berry needs `npmAlwaysAuth: true` and Yarn Classic `always-auth=true`, or they send the token for scoped packages only; the snippets add the switch when it is needed. An `.npmrc` for npm looks like this:
 
 ```ini
 # example: the virtual repository npm-all of the project web
-registry=https://trove.example.com/api/npm/web/npm-all/
-//trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}
+registry=https://quader.example.com/api/npm/web/npm-all/
+//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}
 ```
 
 and a `.yarnrc.yml` for Yarn Berry:
 
 ```yaml
-npmRegistryServer: "https://trove.example.com/api/npm/web/npm-all/"   # example
+npmRegistryServer: "https://quader.example.com/api/npm/web/npm-all/"   # example
 npmAlwaysAuth: true            # only when the repository is not public
-npmAuthToken: "${TROVE_TOKEN}"
+npmAuthToken: "${QUADER_TOKEN}"
 ```
 
-To take only one scope from trove and everything else from the client's default registry, replace `registry=` by `@your-scope:registry=<address>` and keep the credential line (Yarn Berry: an `npmScopes` entry); the guide shows this variant for every client.
+To take only one scope from Quader and everything else from the client's default registry, replace `registry=` by `@your-scope:registry=<address>` and keep the credential line (Yarn Berry: an `npmScopes` entry); the guide shows this variant for every client.
 
 ### Sign the client in
 
 Put a [personal access token](access-tokens.md) into the environment variable before the client runs, without typing it on a command line your shell keeps in its history:
 
 ```shell
-read -rs TROVE_TOKEN && export TROVE_TOKEN
+read -rs QUADER_TOKEN && export QUADER_TOKEN
 npm whoami
 ```
 
-`npm whoami`, `pnpm whoami` and `yarn npm whoami` print your trove user name (`sa:<name>` for a service-account token, `sa:<project>/<name>` for one of a project); Yarn Classic has no such command. In CI, store a service-account token with only the permissions the job needs as a masked, protected variable named `TROVE_TOKEN`; for GitLab CI without a stored token, see [GitLab CI pipelines](gitlab-ci-pipelines.md). The variable has this name unless an administrator configured another; the snippets always show the name in use. `npm login` and its pnpm and Yarn equivalents do not work with trove: put the token into the configuration instead.
+`npm whoami`, `pnpm whoami` and `yarn npm whoami` print your Quader user name (`sa:<name>` for a service-account token, `sa:<project>/<name>` for one of a project); Yarn Classic has no such command. In CI, store a service-account token with only the permissions the job needs as a masked, protected variable named `QUADER_TOKEN`; for GitLab CI without a stored token, see [GitLab CI pipelines](gitlab-ci-pipelines.md). The variable has this name unless an administrator configured another; the snippets always show the name in use. `npm login` and its pnpm and Yarn equivalents do not work with Quader: put the token into the configuration instead.
 
 ## Configure a NuGet client
 
-NuGet clients take the address of the **service index**, the `v3/index.json` address of the repository, as a package source. trove serves NuGet v3 only; a v2 address is answered with `404` and the message names the service index to use.
+NuGet clients take the address of the **service index**, the `v3/index.json` address of the repository, as a package source. Quader serves NuGet v3 only; a v2 address is answered with `404` and the message names the service index to use.
 
 | Client | How to configure it | Credential |
 |---|---|---|
-| .NET CLI (`dotnet`) | `dotnet nuget add source <service index> --name trove …` writes the user-level `NuGet.Config`; a `nuget.config` next to the solution applies to that solution | `--username trove --password "${TROVE_TOKEN}" --store-password-in-clear-text`, or `%TROVE_TOKEN%` in the file |
-| nuget.exe | `nuget sources add -Name trove -Source <service index> …`, or the `nuget.config` | `-Username trove -Password %TROVE_TOKEN%` (PowerShell: `$env:TROVE_TOKEN`); on Mono, Linux and macOS add `-StorePasswordInClearText` |
-| Visual Studio | The `nuget.config` next to the solution file, or Tools › NuGet Package Manager › Package Manager Settings › Package Sources | `%TROVE_TOKEN%` in the file, read from the environment Visual Studio started in; or the credential prompt (any user name, the token as the password) |
+| .NET CLI (`dotnet`) | `dotnet nuget add source <service index> --name quader …` writes the user-level `NuGet.Config`; a `nuget.config` next to the solution applies to that solution | `--username quader --password "${QUADER_TOKEN}" --store-password-in-clear-text`, or `%QUADER_TOKEN%` in the file |
+| nuget.exe | `nuget sources add -Name quader -Source <service index> …`, or the `nuget.config` | `-Username quader -Password %QUADER_TOKEN%` (PowerShell: `$env:QUADER_TOKEN`); on Mono, Linux and macOS add `-StorePasswordInClearText` |
+| Visual Studio | The `nuget.config` next to the solution file, or Tools › NuGet Package Manager › Package Manager Settings › Package Sources | `%QUADER_TOKEN%` in the file, read from the environment Visual Studio started in; or the credential prompt (any user name, the token as the password) |
 
-The credential parts appear when the repository is not public. The user name is not checked; the snippets use `trove`. On Linux and macOS NuGet cannot encrypt a stored password, so the command-line form needs `--store-password-in-clear-text`, and the token your shell expands is then written into the user-level file; the `nuget.config` form keeps the reference `%TROVE_TOKEN%`, which NuGet expands from the environment on every operating system, and can be committed. A `nuget.config` for a virtual repository looks like this:
+The credential parts appear when the repository is not public. The user name is not checked; the snippets use `quader`. On Linux and macOS NuGet cannot encrypt a stored password, so the command-line form needs `--store-password-in-clear-text`, and the token your shell expands is then written into the user-level file; the `nuget.config` form keeps the reference `%QUADER_TOKEN%`, which NuGet expands from the environment on every operating system, and can be committed. A `nuget.config` for a virtual repository looks like this:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
     <clear />
-    <add key="trove" value="https://trove.example.com/api/nuget/web/nuget-all/v3/index.json" protocolVersion="3" />
+    <add key="quader" value="https://quader.example.com/api/nuget/web/nuget-all/v3/index.json" protocolVersion="3" />
   </packageSources>
   <packageSourceCredentials>   <!-- only when the repository is not public -->
-    <trove>
-      <add key="Username" value="trove" />
-      <add key="ClearTextPassword" value="%TROVE_TOKEN%" />
-    </trove>
+    <quader>
+      <add key="Username" value="quader" />
+      <add key="ClearTextPassword" value="%QUADER_TOKEN%" />
+    </quader>
   </packageSourceCredentials>
 </configuration>
 ```
 
-`<clear />` removes every other source, nuget.org among them, so every package resolves through trove and a package of the same ID on a public source cannot slip in; put a remote repository for nuget.org into the virtual repository to keep public packages. Where several sources are unavoidable, say with package source mapping which source may serve which ID prefix; the guide shows the element. Sign the client in as for npm: put a [personal access token](access-tokens.md) into `TROVE_TOKEN` before the client runs.
+`<clear />` removes every other source, nuget.org among them, so every package resolves through Quader and a package of the same ID on a public source cannot slip in; put a remote repository for nuget.org into the virtual repository to keep public packages. Where several sources are unavoidable, say with package source mapping which source may serve which ID prefix; the guide shows the element. Sign the client in as for npm: put a [personal access token](access-tokens.md) into `QUADER_TOKEN` before the client runs.
 
 ## Restore, push and maintain NuGet packages
 
 | Task | .NET CLI | nuget.exe |
 |---|---|---|
-| Add a package | `dotnet add package <id> --version <version>` | `nuget install <id> -Version <version> -Source trove` |
+| Add a package | `dotnet add package <id> --version <version>` | `nuget install <id> -Version <version> -Source quader` |
 | Restore | `dotnet restore` (`--no-http-cache` after a push) | `nuget restore` |
 | Restore from the lock file | `dotnet restore --locked-mode` | `nuget restore -LockedMode` |
-| Push | `dotnet nuget push <file>.nupkg --source <service index> --api-key "${TROVE_TOKEN}"` | `nuget push <file>.nupkg -Source <service index> -ApiKey %TROVE_TOKEN%` |
-| Unlist or delete | `dotnet nuget delete <id> <version> --source <service index> --api-key "${TROVE_TOKEN}" --non-interactive` | `nuget delete <id> <version> -Source <service index> -ApiKey %TROVE_TOKEN%` |
+| Push | `dotnet nuget push <file>.nupkg --source <service index> --api-key "${QUADER_TOKEN}"` | `nuget push <file>.nupkg -Source <service index> -ApiKey %QUADER_TOKEN%` |
+| Unlist or delete | `dotnet nuget delete <id> <version> --source <service index> --api-key "${QUADER_TOKEN}" --non-interactive` | `nuget delete <id> <version> -Source <service index> -ApiKey %QUADER_TOKEN%` |
 
 Visual Studio adds packages through Manage NuGet Packages, with the source chosen at the top right, or through a `PackageReference` in the project file; it does not push. What each needs and how the classes behave:
 
@@ -175,7 +175,7 @@ On the package page a NuGet package shows its ID in the casing of its first publ
 | Publish | `npm publish` | `pnpm publish` | `yarn npm publish` | `yarn publish --new-version <version>` |
 | Set a dist-tag | `npm dist-tag add <name>@<version> <tag>` | `pnpm dist-tag add <name>@<version> <tag>` | `yarn npm tag add <name>@<version> <tag>` | `yarn tag add <name>@<version> <tag>` |
 | Unpublish a version | `npm unpublish <name>@<version>` | `pnpm unpublish <name>@<version> --force` | none | none |
-| Security audit | `npm audit` | `pnpm audit` (pnpm 11 and later) | `yarn npm audit` | not through trove |
+| Security audit | `npm audit` | `pnpm audit` (pnpm 11 and later) | `yarn npm audit` | not through Quader |
 
 What each needs and how the classes behave:
 
@@ -200,31 +200,31 @@ The integrity and hash values stay valid because a version's bytes never change 
 
 ## Sign in container clients
 
-For an OCI (Docker) repository the **Configure** tab holds the login of the Docker CLI or Podman, which reads the token from `TROVE_TOKEN` on standard input, and, for the Docker CLI client, a `kubectl` command that creates a Kubernetes image pull secret from the same variable. **Install** pulls an image by its tag, **Publish** tags and pushes one, and for the Docker CLI builds and pushes a multi-platform image with Buildx. [Container images with Docker and Podman](container-images.md) explains the login, the permissions, multi-platform images, virtual repositories and Kubernetes.
+For an OCI (Docker) repository the **Configure** tab holds the login of the Docker CLI or Podman, which reads the token from `QUADER_TOKEN` on standard input, and, for the Docker CLI client, a `kubectl` command that creates a Kubernetes image pull secret from the same variable. **Install** pulls an image by its tag, **Publish** tags and pushes one, and for the Docker CLI builds and pushes a multi-platform image with Buildx. [Container images with Docker and Podman](container-images.md) explains the login, the permissions, multi-platform images, virtual repositories and Kubernetes.
 
 ## Configure APT
 
-For a Debian (APT) repository the **Configure** tab installs the repository's public key from `signing-key.asc` as `/etc/apt/keyrings/trove-<project>-<repository>.asc`, writes the source as `/etc/apt/sources.list.d/trove-<project>-<repository>.sources` with that key in `Signed-By`, and writes the token into `/etc/apt/auth.conf.d/trove-<project>-<repository>.conf`, a file only root can read, never into the source line. A one-line `.list` form is shown as well, and for a remote repository without upstream keys a source that names the archive's own keyring instead of a key of trove's. **Install** runs `apt-get update` and `apt-get install`, **Publish** uploads a package with `curl`. [Debian packages with APT](apt-packages.md) explains the suites, the upload, the index wait, key rotation and the client's error messages.
+For a Debian (APT) repository the **Configure** tab installs the repository's public key from `signing-key.asc` as `/etc/apt/keyrings/quader-<project>-<repository>.asc`, writes the source as `/etc/apt/sources.list.d/quader-<project>-<repository>.sources` with that key in `Signed-By`, and writes the token into `/etc/apt/auth.conf.d/quader-<project>-<repository>.conf`, a file only root can read, never into the source line. A one-line `.list` form is shown as well, and for a remote repository without upstream keys a source that names the archive's own keyring instead of a key of Quader's. **Install** runs `apt-get update` and `apt-get install`, **Publish** uploads a package with `curl`. [Debian packages with APT](apt-packages.md) explains the suites, the upload, the index wait, key rotation and the client's error messages.
 
 ## Download and upload files with curl
 
-The configure snippet for a generic repository defines a shell function, `trove_curl`, that hands curl the token on standard input, so the token appears neither on curl's command line nor in a shell trace:
+The configure snippet for a generic repository defines a shell function, `quader_curl`, that hands curl the token on standard input, so the token appears neither on curl's command line nor in a shell trace:
 
 ```shell
-trove_curl() {
+quader_curl() {
   curl --silent --show-error --config - "$@" <<EOF
-header = "Authorization: Bearer ${TROVE_TOKEN}"
+header = "Authorization: Bearer ${QUADER_TOKEN}"
 EOF
 }
-trove_curl --fail --remote-name "https://trove.example.com/files/web/generic-local/tools/app-1.2.0.tar.gz"
-trove_curl --fail --upload-file app-1.2.0.tar.gz "https://trove.example.com/files/web/generic-local/tools/app-1.2.0.tar.gz"
+quader_curl --fail --remote-name "https://quader.example.com/files/web/generic-local/tools/app-1.2.0.tar.gz"
+quader_curl --fail --upload-file app-1.2.0.tar.gz "https://quader.example.com/files/web/generic-local/tools/app-1.2.0.tar.gz"
 ```
 
 Downloading needs read, uploading to a free path deploy, replacing a file with other bytes overwrite as well, deleting delete. Add `--header "If-None-Match: *"` to an upload that must never replace a file: it then answers `412` when the path exists. [Browsing and transferring files](files.md) describes paths, digests and folders; the curl guide shows resuming, conditional downloads and uploads with a digest.
 
 ## Install through a Bastion
 
-An administrator may run a Bastion for you: a read-only cache of this installation at its own address, for clients outside the network ([The trove Bastion](../admin/bastion.md) explains what it is). You sign in to it with the same personal, service-account or CI token, and you install the same packages from the same repositories, named by the same project and repository keys; only the address differs.
+An administrator may run a Bastion for you: a read-only cache of this installation at its own address, for clients outside the network ([The Quader Bastion](../admin/bastion.md) explains what it is). You sign in to it with the same personal, service-account or CI token, and you install the same packages from the same repositories, named by the same project and repository keys; only the address differs.
 
 When an administrator has registered a Bastion and it has reported its address, the Client setup page (under **More options**) and the Guides area offer it under **Install from**, next to **This installation**. Choose it and the snippets use the Bastion's address, for example `https://packages.example.com/api/npm/web/npm-all/`. Without that permission the choice is not shown; an administrator can send you a link to the Client setup page that already names the Bastion.
 
@@ -248,4 +248,4 @@ When something goes wrong, start with [Errors and troubleshooting](troubleshooti
 
 ## Configure ansible-galaxy
 
-For an Ansible Galaxy repository the **Configure** tab renders an `ansible.cfg` with the repository as the server `trove`, the token as the environment variable `ANSIBLE_GALAXY_SERVER_TROVE_TOKEN` (also for PowerShell and cmd), and a `~/.netrc` line that roles need. The **Install** tab renders `ansible-galaxy collection install` and a `requirements.yml`, and **Publish** renders `ansible-galaxy collection publish`. See [Ansible collections and roles with ansible-galaxy](ansible-collections.md).
+For an Ansible Galaxy repository the **Configure** tab renders an `ansible.cfg` with the repository as the server `quader`, the token as the environment variable `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN` (also for PowerShell and cmd), and a `~/.netrc` line that roles need. The **Install** tab renders `ansible-galaxy collection install` and a `requirements.yml`, and **Publish** renders `ansible-galaxy collection publish`. See [Ansible collections and roles with ansible-galaxy](ansible-collections.md).

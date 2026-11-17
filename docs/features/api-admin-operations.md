@@ -8,7 +8,7 @@ Each entry names the operations, their inputs and outputs, status codes and the 
 privilege, described generically and without wire-level paths; the capability behind an
 operation is described on the feature page the entry links to. Content operations (artifacts,
 repositories, search, builds, webhooks) are in [api-content-operations.md](api-content-operations.md).
-The priority is trove's, per the rubric in [README.md](README.md).
+The priority is Quader's, per the rubric in [README.md](README.md).
 A "UI:" line names the screen where an operation has one; entries without it have no UI screen
 specified.
 
@@ -104,7 +104,7 @@ Creates an internal user (the realm is always the internal one).
 Output (201): the user record of ADMAPI-005. Errors: 400 invalid input; 401; 403; 409 user
 exists. Privilege: administrator.
 
-Interactions: IAM-009. For trove, INV-7 limits internal users to the break-glass administrator
+Interactions: IAM-009. For Quader, INV-7 limits internal users to the break-glass administrator
 and service accounts; OIDC users are created just in time (AUTHN-005).
 
 UI: administration area, user management, users list and user dialog (IAM-001).
@@ -255,7 +255,7 @@ request address follow the "+"-for-space rule of ADMAPI-025. An optional server 
 usernames with upper-case letters when users are added to a group (default off). The deprecated
 token and permission-policy operations of the same generation are TOK-046 and ADMAPI-026.
 
-For trove: no client that trove targets (npm, NuGet, the CI token exchange) needs these
+For Quader: no client that Quader targets (npm, NuGet, the CI token exchange) needs these
 operations; they only matter for migrating automation written against the older generation.
 
 ## Groups
@@ -1136,7 +1136,7 @@ A deprecated per-user static key (TOK-044, AUTHN-043). Each user has at most one
 | Revoke another user's key | Username | 200 with a confirmation message; 404 unknown user | administrator |
 
 The key is returned in clear on every read, unlike tokens (TOK-006). The priority reflects that
-trove's own tokens (INV-8) cover the use case.
+Quader's own tokens (INV-8) cover the use case.
 
 ## Security settings
 
@@ -1216,7 +1216,7 @@ Interactions: AUTHN-003.
 Priority: **P1**
 
 Read and set whether HTTP Basic authentication is accepted at all. Read output: enabled flag.
-Write input: enabled flag (required); output 200; 400. Privilege: administrator. Note for trove:
+Write input: enabled flag (required); output 200; 400. Privilege: administrator. Note for Quader:
 INV-8 accepts tokens inside Basic credentials for clients that speak only Basic (NuGet), so
 disabling Basic must not cut those clients off. Interactions: IAM-036, AUTHN-003, TOK-034.
 
@@ -1505,7 +1505,7 @@ Priority: **MVP**
 
 The readiness probe follows Kubernetes probe semantics and is suggested as a latency metric. Each
 auxiliary service (hook service ADMAPI-095, tunnel client ADMAPI-105, entitlement
-connector ADMAPI-106, central console ADMAPI-102) has its own probes. For trove the
+connector ADMAPI-106, central console ADMAPI-102) has its own probes. For Quader the
 probes live on the operations listener (INV-6). Interactions:
 [operations-and-monitoring.md](operations-and-monitoring.md).
 
@@ -1527,7 +1527,7 @@ Priority: **MVP**
 Sets the custom base URL, the externally visible address of the system. Input: the URL as a
 plain-text body. Output: 200 with plain text; 400 invalid URL. Privilege: administrator.
 Self-hosted only. Whether a dedicated read operation exists is unspecified. Interactions:
-AUTHN-002 (single sign-on requires it); in trove the base URL also drives the metadata URL
+AUTHN-002 (single sign-on requires it); in Quader the base URL also drives the metadata URL
 rewriting of INV-11.
 
 ### ADMAPI-072 · Read and replace the whole configuration document
@@ -1606,7 +1606,7 @@ query limit (default 100), wait interval for the cluster in milliseconds (defaul
 milliseconds (default 5000), and a node ID to force the task onto. Stop input: the sleep interval
 (default 5000), which should match the start value. Outputs: 200 with plain text; start answers
 400 where the environment does not support the task. The same migration can alternatively be
-driven by server properties. Privilege: administrator. Self-hosted only. trove computes SHA-256 on every upload (INV-4), so it has no
+driven by server properties. Privilege: administrator. Self-hosted only. Quader computes SHA-256 on every upload (INV-4), so it has no
 such legacy data; the entry is kept for completeness.
 
 ### ADMAPI-077 · Re-index paths in the package metadata service
@@ -1643,7 +1643,7 @@ older table-based mechanism that still synchronizes background jobs never appear
 native advisory locking the operations answer 503. The node operation mainly serves the fan-out
 but may be called directly. Self-hosted only.
 
-This maps directly onto trove's coordination model (INV-12: PostgreSQL advisory-lock leases for
+This maps directly onto Quader's coordination model (INV-12: PostgreSQL advisory-lock leases for
 singleton schedulers and pull-through collapse). Interactions: [ha-and-deployment.md](ha-and-deployment.md).
 
 ### ADMAPI-079 · Upstream curation availability setting
@@ -1677,7 +1677,7 @@ Behavior and edge cases:
   timer) and set again.
 - Self-hosted only.
 
-For trove (INV-16, `log/slog`) the logger names map to component names. Interactions:
+For Quader (INV-16, `log/slog`) the logger names map to component names. Interactions:
 [operations-and-monitoring.md](operations-and-monitoring.md).
 
 ### ADMAPI-081 · Support bundles
@@ -1711,7 +1711,7 @@ A support bundle is an archive of diagnostic data collected on demand.
 
 Self-hosted only. The bundle is stored inside the system itself, in a dedicated internal location
 reachable by URL. The network tunnel client has its own bundle operation that collects from all
-services and allows only one bundle at a time (409 otherwise) (ADMAPI-105). For trove the
+services and allows only one bundle at a time (409 otherwise) (ADMAPI-105). For Quader the
 thread-dump parameters correspond to Go goroutine dumps. Interactions:
 [operations-and-monitoring.md](operations-and-monitoring.md).
 
@@ -1747,7 +1747,7 @@ fail on error on, fail if empty on, Maven 2 off, incremental off, exclude conten
 import maintains security entities (users, groups, permissions, tokens); whether existing entities
 are kept or overwritten is unspecified. The
 single-repository export does not use the directory structure the repository import expects.
-trove backups rely on PostgreSQL and S3 (INV-3, INV-4); a file-system export is a migration
+Quader backups rely on PostgreSQL and S3 (INV-3, INV-4); a file-system export is a migration
 aid. Interactions: [operations-and-monitoring.md](operations-and-monitoring.md).
 
 ### ADMAPI-084 · Identity configuration export and import
@@ -2140,7 +2140,7 @@ self-hosted only.
 ## Licensing and hosted-service plumbing
 
 Operations that exist only for license management or for an operator-run hosted service. One
-entry each, so the inventory is complete; none is planned for trove.
+entry each, so the inventory is complete; none is planned for Quader.
 
 ### ADMAPI-103 · License installation and inspection
 Priority: **Out of scope**
@@ -2203,7 +2203,7 @@ Priority: **Out of scope**
 
 A hosted-only switch that starts collecting audit and request logs into a dedicated internal
 repository (created on the first call; collection cycles of up to 24 hours; storage and transfer
-billed). Input: enabled flag. Privilege: administrator. Self-hosted trove ships logs through its
+billed). Input: enabled flag. Privilege: administrator. Self-hosted Quader ships logs through its
 own pipeline (INV-16).
 
 ## Governance and lifecycle operation groups

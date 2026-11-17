@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ansiblestub/ansiblegen"
+	"github.com/guided-traffic/quader/test/ansiblestub/ansiblegen"
 )
 
 func TestR_ANS_032_RootListsV3AndV1(t *testing.T) {

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // headerSessionID is the request header a NuGet client numbers the requests of one command
@@ -43,7 +43,7 @@ func cleanField(v string) string {
 // challenge is the WWW-Authenticate value of every 401 on a NuGet endpoint, exactly
 // (R-NUGET-012): NuGet clients answer Basic, and offering NTLM or Negotiate besides it would
 // make a client send Basic only after it restricted its valid authentication types.
-const challenge = `Basic realm="trove"`
+const challenge = `Basic realm="quader"`
 
 // maxRetryAfter bounds the Retry-After of a NuGet protocol endpoint whatever value the owning
 // page computes (R-NUGET-002): a client counts the wait against the one timeout of its
@@ -145,5 +145,5 @@ func retryAfterSeconds(d time.Duration) string {
 // notImplemented is the answer of a v3 operation this build does not serve yet: 501, so a
 // client reads a failure of the server and not a missing package.
 func notImplemented(what string) error {
-	return errs.E(errs.NotImplemented, errs.CodeNuGetNotImplemented, "The NuGet operation "+what+" is not served by this build of trove yet.")
+	return errs.E(errs.NotImplemented, errs.CodeNuGetNotImplemented, "The NuGet operation "+what+" is not served by this build of Quader yet.")
 }

@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // callTimeout bounds every call to a provider: discovery, JWKS, token endpoint,
@@ -34,7 +34,7 @@ const maxBackoff = 5 * time.Minute
 // userinfo response.
 const maxDocument = 1 << 20
 
-// discovery is the part of an OpenID Provider Metadata document trove uses
+// discovery is the part of an OpenID Provider Metadata document quader uses
 // (OpenID Connect Discovery 1.0 §3, RFC 9207, RP-Initiated Logout §2.1).
 type discovery struct {
 	Issuer                string   `json:"issuer"`
@@ -211,7 +211,7 @@ func (p *Provider) fetchDiscovery(ctx context.Context) (*discovery, error) {
 		return nil, &configError{fmt.Sprintf("the discovery document names issuer %q, the configuration %q (OpenID Connect Discovery 1.0 §4.3)", d.Issuer, p.cfg.Issuer)}
 	}
 	if len(d.CodeChallengeMethods) > 0 && !slices.Contains(d.CodeChallengeMethods, "S256") {
-		return nil, &configError{"the provider advertises code_challenge_methods_supported without S256; trove always uses PKCE with S256 (R-AUTH-005)"}
+		return nil, &configError{"the provider advertises code_challenge_methods_supported without S256; Quader always uses PKCE with S256 (R-AUTH-005)"}
 	}
 	for name, v := range map[string]string{"authorization_endpoint": d.AuthorizationEndpoint, "token_endpoint": d.TokenEndpoint, "jwks_uri": d.JWKSURI} {
 		if !acceptableURL(v) {

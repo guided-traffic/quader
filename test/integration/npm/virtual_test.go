@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 func TestR_NPM_030_AVirtualRepositoryListsTheUpstreamVersionsAndInstallsThemThroughItself(t *testing.T) {
@@ -29,15 +29,15 @@ func TestR_NPM_030_AVirtualRepositoryListsTheUpstreamVersionsAndInstallsThemThro
 	}
 	v := p.Versions[0]
 	addr := tarballsOf(t, a)[v.Version]
-	if want := "http://trove.test/api/npm/it/npm-all/" + p.Name + "/-/" + corpus.TarballFile(p.Name, v.Version); addr != want {
+	if want := "http://quader.test/api/npm/it/npm-all/" + p.Name + "/-/" + corpus.TarballFile(p.Name, v.Version); addr != want {
 		t.Fatalf("tarball %q, want %q", addr, want)
 	}
 	got := r.install(rep, addr, r.tokA)
 	if got.Status != 200 || integrityOf(got.Body) != v.Dist.Integrity {
 		t.Fatalf("install through the virtual repository: %d, integrity %s", got.Status, integrityOf(got.Body))
 	}
-	if got.Header.Get("Trove-Resolved-From") != rRemote {
-		t.Errorf("Trove-Resolved-From = %q", got.Header.Get("Trove-Resolved-From"))
+	if got.Header.Get("Quader-Resolved-From") != rRemote {
+		t.Errorf("Quader-Resolved-From = %q", got.Header.Get("Quader-Resolved-From"))
 	}
 	// The abbreviated form and the single-version document come from the same merge.
 	ab := r.view(rep, rAll, p.Name, r.tokA, "Accept", abbreviatedAccept)
@@ -176,8 +176,8 @@ func TestR_NPM_030_AVersionBothMembersHoldInstallsFromTheLocalOneAndIsCounted(t 
 	if got.Status != 200 || integrityOf(got.Body) != integrityOf(tarballOf(t, local)) {
 		t.Fatalf("the install did not get the local bytes: %d", got.Status)
 	}
-	if n := sumSeries(rep.Metrics(t), "trove_npm_virtual_version_conflicts_total{"); n < 1 {
-		t.Errorf("trove_npm_virtual_version_conflicts_total = %v", n)
+	if n := sumSeries(rep.Metrics(t), "quader_npm_virtual_version_conflicts_total{"); n < 1 {
+		t.Errorf("quader_npm_virtual_version_conflicts_total = %v", n)
 	}
 	// An upstream-only version still installs through the virtual repository, verified.
 	other := up.Versions[1]
@@ -331,7 +331,7 @@ func TestR_NPM_029_WritesThroughAVirtualRepositoryActOnItsDeploymentTarget(t *te
 		t.Fatalf("%d %v", w.Status, w.Header)
 	}
 	for v, addr := range tarballsOf(t, w) {
-		if want := "http://trove.test/api/npm/it/npm-all/@acme/ui/-/ui-" + v + ".tgz"; addr != want {
+		if want := "http://quader.test/api/npm/it/npm-all/@acme/ui/-/ui-" + v + ".tgz"; addr != want {
 			t.Errorf("%s: %q, want %q", v, addr, want)
 		}
 	}

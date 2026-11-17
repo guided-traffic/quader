@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 type fakeOutbox struct {
@@ -62,14 +62,14 @@ func rows(n int) []journal.OutboxRow {
 
 func TestR_HA_054_ShipWritesInIdOrderAndDeletesAfterTheObject(t *testing.T) {
 	ob, st := &fakeOutbox{rows: rows(3)}, &fakeStore{}
-	n, err := New(Options{Outbox: ob, Store: st, BlobPrefix: "trove"}).Ship(t.Context())
+	n, err := New(Options{Outbox: ob, Store: st, BlobPrefix: "quader"}).Ship(t.Context())
 	if err != nil || n != 3 {
 		t.Fatalf("Ship = %d, %v; want 3", n, err)
 	}
 	want := []string{
-		"trove/_journal/revocations/2026/10/28/0192f0c4-0000-7000-8000-000000000001.json",
-		"trove/_journal/revocations/2026/10/28/0192f0c4-0000-7000-8000-000000000002.json",
-		"trove/_journal/revocations/2026/10/28/0192f0c4-0000-7000-8000-000000000003.json",
+		"quader/_journal/revocations/2026/10/28/0192f0c4-0000-7000-8000-000000000001.json",
+		"quader/_journal/revocations/2026/10/28/0192f0c4-0000-7000-8000-000000000002.json",
+		"quader/_journal/revocations/2026/10/28/0192f0c4-0000-7000-8000-000000000003.json",
 	}
 	if !slices.Equal(st.puts, want) {
 		t.Errorf("keys = %v, want %v", st.puts, want)
@@ -81,7 +81,7 @@ func TestR_HA_054_ShipWritesInIdOrderAndDeletesAfterTheObject(t *testing.T) {
 
 func TestR_HA_054_ShipStopsAtTheFirstFailureAndKeepsTheRest(t *testing.T) {
 	ob, st := &fakeOutbox{rows: rows(3)}, &fakeStore{failAt: 2}
-	n, err := New(Options{Outbox: ob, Store: st, BlobPrefix: "trove"}).Ship(t.Context())
+	n, err := New(Options{Outbox: ob, Store: st, BlobPrefix: "quader"}).Ship(t.Context())
 	if err == nil || n != 1 {
 		t.Fatalf("Ship = %d, %v; want one shipped and an error", n, err)
 	}
@@ -89,7 +89,7 @@ func TestR_HA_054_ShipStopsAtTheFirstFailureAndKeepsTheRest(t *testing.T) {
 		t.Errorf("the rows from the failed one on must stay: %v", ob.rows)
 	}
 	st.failAt = 0
-	if n, err := New(Options{Outbox: ob, Store: st, BlobPrefix: "trove"}).Ship(t.Context()); err != nil || n != 2 {
+	if n, err := New(Options{Outbox: ob, Store: st, BlobPrefix: "quader"}).Ship(t.Context()); err != nil || n != 2 {
 		t.Fatalf("Ship after the store returned = %d, %v; want 2", n, err)
 	}
 }

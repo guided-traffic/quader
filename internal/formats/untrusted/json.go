@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // CheckJSON scans a JSON document for its nesting depth and its number of values

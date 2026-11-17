@@ -19,9 +19,9 @@ export interface SettingSchema {
   readonly properties?: Readonly<Record<string, SettingSchema>>;
   readonly required?: readonly string[];
   /** The repository classes a member applies to; absent means every class. */
-  readonly 'x-trove-classes'?: readonly string[];
+  readonly 'x-quader-classes'?: readonly string[];
   /** The label of each value of `enum`, keyed by the value as text (R-UI-088); a value without one is shown as it is written. */
-  readonly 'x-trove-enum-titles'?: Readonly<Record<string, string>>;
+  readonly 'x-quader-enum-titles'?: Readonly<Record<string, string>>;
 }
 
 interface NodeBase {
@@ -135,7 +135,7 @@ function typeOf(s: SettingSchema): string | null {
 }
 
 function appliesTo(s: SettingSchema, cls: string): boolean {
-  const classes = s['x-trove-classes'];
+  const classes = s['x-quader-classes'];
   return !Array.isArray(classes) || classes.includes(cls);
 }
 
@@ -144,9 +144,9 @@ export function shownValue(value: unknown): string {
   return typeof value === 'string' ? value : JSON.stringify(value);
 }
 
-/** The label of each of `options` (`x-trove-enum-titles`, keyed by the value as text), else the value as written. */
+/** The label of each of `options` (`x-quader-enum-titles`, keyed by the value as text), else the value as written. */
 function labelsOf(s: SettingSchema, options: readonly unknown[]): readonly string[] {
-  const titles = isObject(s['x-trove-enum-titles']) ? s['x-trove-enum-titles'] : {};
+  const titles = isObject(s['x-quader-enum-titles']) ? s['x-quader-enum-titles'] : {};
   return options.map((o) => {
     const title = titles[shownValue(o)];
     return typeof title === 'string' && title !== '' ? title : shownValue(o);

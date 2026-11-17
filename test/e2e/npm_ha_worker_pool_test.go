@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // canonical is a JSON document with its members in a fixed order, so two answers can be compared as bytes.
@@ -134,7 +134,7 @@ func TestNPMHA_R_REPO_058_TwoMirrorClaimantsOneJobPerRepository(t *testing.T) {
 			t.Errorf("the pass of %s ended %+v", key, *sum)
 		}
 	}
-	ticks := sql(t, fmt.Sprintf(`SELECT count(*) FROM trove.job WHERE kind = 'mirror-dispatch' AND created_at > now() - interval '%d seconds'`, int(time.Since(startedAt).Seconds())+5))
+	ticks := sql(t, fmt.Sprintf(`SELECT count(*) FROM quader.job WHERE kind = 'mirror-dispatch' AND created_at > now() - interval '%d seconds'`, int(time.Since(startedAt).Seconds())+5))
 	claimed1 := claimedBy(t, "mirror-dispatch")
 	t.Logf("run requests answered %v over %s; the task mirror-dispatch was enqueued %s times in that time; claimed by the pool's processes: before %v, after %v",
 		statuses, time.Since(startedAt).Round(time.Second), ticks, claimed0, claimed1)

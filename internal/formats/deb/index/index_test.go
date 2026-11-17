@@ -12,8 +12,8 @@ import (
 
 	"github.com/ulikunitz/xz"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 func entry(suite, comp, arch, pkg, ver string) rows.IndexEntry {
@@ -42,7 +42,7 @@ func paragraphs(t *testing.T, b []byte) []control.Paragraph {
 }
 
 // R-DEB-011: a paragraph is the uploaded control data followed by Filename, Size, MD5sum and SHA256, ordered by name, dpkg version and
-// architecture, and a field of the upload that trove computes is replaced.
+// architecture, and a field of the upload that quader computes is replaced.
 func TestR_DEB_011_PackagesOrderAndFields(t *testing.T) {
 	a := entry("stable", "main", "amd64", "hello", "2.10-3")
 	a.Control += "Size: 1\nFilename: elsewhere\n"
@@ -104,7 +104,7 @@ func TestR_DEB_011_BuildLayoutAndRelease(t *testing.T) {
 		entry("stable", "main", "amd64", "hello", "1.0"), entry("stable", "main", "all", "docs", "1.0"), entry("stable", "contrib", "arm64", "extra", "1.0"),
 	}
 	date := time.Date(2026, 11, 8, 10, 0, 0, 0, time.UTC)
-	set := Settings{Origin: "trove", Label: "deb-local", Description: "web/deb-local stable", Architectures: []string{"amd64"}, XZ: true}
+	set := Settings{Origin: "quader", Label: "deb-local", Description: "web/deb-local stable", Architectures: []string{"amd64"}, XZ: true}
 	st, err := Build("stable", entries, nil, set, date)
 	if err != nil {
 		t.Fatal(err)
@@ -149,7 +149,7 @@ func TestR_DEB_011_BuildLayoutAndRelease(t *testing.T) {
 	}
 	r := rel[0]
 	for k, want := range map[string]string{
-		"Origin": "trove", "Label": "deb-local", "Suite": "stable", "Codename": "stable", "Date": "Sun, 08 Nov 2026 10:00:00 UTC",
+		"Origin": "quader", "Label": "deb-local", "Suite": "stable", "Codename": "stable", "Date": "Sun, 08 Nov 2026 10:00:00 UTC",
 		"Architectures": "amd64 arm64", "Components": "contrib main", "Acquire-By-Hash": "yes", "Description": "web/deb-local stable",
 	} {
 		if r.Value(k) != want {

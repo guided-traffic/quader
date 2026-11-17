@@ -12,12 +12,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func standaloneCfg(addr string) config.Valkey {
 	return config.Valkey{
-		Mode: "standalone", Address: addr, KeyPrefix: "trove:", AllowInsecure: true,
+		Mode: "standalone", Address: addr, KeyPrefix: "quader:", AllowInsecure: true,
 		TLS:            config.ValkeyTLS{Mode: "disable"},
 		ConnectTimeout: time.Second, CommandTimeout: 300 * time.Millisecond, SentinelQueryTimeout: 200 * time.Millisecond,
 		MaxConnLifetime: 30 * time.Minute, HealthCheckInterval: 200 * time.Millisecond,
@@ -31,7 +31,7 @@ func sentinelCfg(addrs ...string) config.Valkey {
 	c := standaloneCfg("")
 	c.Mode = "sentinel"
 	c.Sentinel.Addresses = addrs
-	c.Sentinel.PrimaryName = "trove"
+	c.Sentinel.PrimaryName = "quader"
 	c.Sentinel.TLS = false
 	return c
 }
@@ -112,7 +112,7 @@ func TestValkeyClient(t *testing.T) {
 		v, _ := newTestValkey(t, standaloneCfg(srv.addr()))
 		eventually(t, "version check", 5*time.Second, func() bool { return v.Status().Version != "" })
 		st := v.Status()
-		if st.Available || st.DegradedReason != "valkey 8.1.5 is not supported; trove requires 9.0 or later" {
+		if st.Available || st.DegradedReason != "valkey 8.1.5 is not supported; Quader requires 9.0 or later" {
 			t.Fatalf("status = %+v", st)
 		}
 		if v.StartupError() != nil {
@@ -165,13 +165,13 @@ func TestValkeyClient(t *testing.T) {
 			t.Error("empty instance accepted")
 		}
 	})
-	t.Run("R-HA-057 metrics are registered under the trove_valkey_ names", func(t *testing.T) {
+	t.Run("R-HA-057 metrics are registered under the quader_valkey_ names", func(t *testing.T) {
 		v, reg := newTestValkey(t, sentinelCfg("127.0.0.1:1"))
 		v.CountDegraded(MechanismFlightLock)
 		v.CountDegraded("not-a-mechanism")
 		v.CountCacheLookup("negative", "hit")
-		if got := gaugeValue(t, reg, "trove_valkey_available", ""); got != 0 {
-			t.Fatalf("trove_valkey_available = %v while degraded", got)
+		if got := gaugeValue(t, reg, "quader_valkey_available", ""); got != 0 {
+			t.Fatalf("quader_valkey_available = %v while degraded", got)
 		}
 		mfs, err := reg.Gather()
 		if err != nil {
@@ -182,14 +182,14 @@ func TestValkeyClient(t *testing.T) {
 			have[mf.GetName()] = true
 		}
 		for _, name := range []string{
-			"trove_valkey_available", "trove_valkey_circuit_open", "trove_valkey_sentinels_reachable",
-			"trove_valkey_pubsub_subscribed", "trove_valkey_errors_total", "trove_valkey_degraded_total", "trove_valkey_cache_lookups_total",
+			"quader_valkey_available", "quader_valkey_circuit_open", "quader_valkey_sentinels_reachable",
+			"quader_valkey_pubsub_subscribed", "quader_valkey_errors_total", "quader_valkey_degraded_total", "quader_valkey_cache_lookups_total",
 		} {
 			if !have[name] {
 				t.Errorf("%s is not exported", name)
 			}
 		}
-		if got := gaugeValue(t, reg, "trove_valkey_degraded_total", MechanismFlightLock); got != 1 {
+		if got := gaugeValue(t, reg, "quader_valkey_degraded_total", MechanismFlightLock); got != 1 {
 			t.Errorf("degraded_total{flight_lock} = %v, want 1", got)
 		}
 		if _, err := NewValkey(t.Context(), sentinelCfg("127.0.0.1:1"), "pod", "web", nil, reg); err == nil {
@@ -210,7 +210,7 @@ func TestValkeyClient(t *testing.T) {
 	t.Run("R-ARCH-031 a subscription made while Valkey is down is accepted and ends with its context", func(t *testing.T) {
 		v, _ := newTestValkey(t, sentinelCfg("127.0.0.1:1"))
 		ctx, cancel := context.WithCancel(t.Context())
-		if _, err := v.subscribe(ctx, Channel{name: "trove:x:sig:v1:jobs"}, func(Message) {}); err != nil {
+		if _, err := v.subscribe(ctx, Channel{name: "quader:x:sig:v1:jobs"}, func(Message) {}); err != nil {
 			t.Fatal(err)
 		}
 		if n := len(v.ps.wanted()); n != 1 {
@@ -264,8 +264,8 @@ func TestValkeyBreakerIntegration(t *testing.T) {
 		if v.Available() || !v.Status().CircuitOpen || v.Status().DegradedReason != "circuit open" {
 			t.Fatalf("status after %d errors = %+v", cfg.CircuitBreaker.FailureThreshold, v.Status())
 		}
-		if got := gaugeValue(t, reg, "trove_valkey_circuit_open", ""); got != 1 {
-			t.Fatalf("trove_valkey_circuit_open = %v", got)
+		if got := gaugeValue(t, reg, "quader_valkey_circuit_open", ""); got != 1 {
+			t.Fatalf("quader_valkey_circuit_open = %v", got)
 		}
 		before := gets.Load()
 		if _, _, err := v.get(t.Context(), k); !errors.Is(err, ErrUnavailable) {
@@ -274,7 +274,7 @@ func TestValkeyBreakerIntegration(t *testing.T) {
 		if gets.Load() != before {
 			t.Fatal("a call reached the server while the circuit was open")
 		}
-		if got := gaugeValue(t, reg, "trove_valkey_errors_total", string(KindOOM)); got < float64(cfg.CircuitBreaker.FailureThreshold) {
+		if got := gaugeValue(t, reg, "quader_valkey_errors_total", string(KindOOM)); got < float64(cfg.CircuitBreaker.FailureThreshold) {
 			t.Fatalf("errors_total{oom} = %v", got)
 		}
 
@@ -284,8 +284,8 @@ func TestValkeyBreakerIntegration(t *testing.T) {
 			t.Fatalf("probe after open_duration: %v", err)
 		}
 		eventually(t, "recovery", time.Second, v.Available)
-		if got := gaugeValue(t, reg, "trove_valkey_circuit_open", ""); got != 0 {
-			t.Fatalf("trove_valkey_circuit_open = %v after recovery", got)
+		if got := gaugeValue(t, reg, "quader_valkey_circuit_open", ""); got != 0 {
+			t.Fatalf("quader_valkey_circuit_open = %v after recovery", got)
 		}
 	})
 }
@@ -300,14 +300,14 @@ func TestCredentials(t *testing.T) {
 		return p
 	}
 	cfg := config.Valkey{
-		UsernameFile: write("u", "trove\n"), PasswordFile: write("p", "secret-1\n"),
+		UsernameFile: write("u", "quader\n"), PasswordFile: write("p", "secret-1\n"),
 		Sentinel: config.ValkeySentinel{PasswordFile: write("sp", "sentinel-1")},
 	}
 	c := newCredentials(cfg)
 
 	t.Run("R-ARCH-031 data nodes and Sentinels get their own credential", func(t *testing.T) {
 		u, p, err := c.read(peerData)
-		if err != nil || u != "trove" || p != "secret-1" {
+		if err != nil || u != "quader" || p != "secret-1" {
 			t.Fatalf("data = %q %q %v", u, p, err)
 		}
 		u, p, err = c.read(peerSentinel)
@@ -335,7 +335,7 @@ func TestCredentials(t *testing.T) {
 			t.Fatalf("sentinel = %+v, %v", got, err)
 		}
 		got, err = c.fn(authCtx(peerAddr{kind: peerData}))
-		if err != nil || got.Password != "secret-2" || got.Username != "trove" {
+		if err != nil || got.Password != "secret-2" || got.Username != "quader" {
 			t.Fatalf("data = %+v, %v", got, err)
 		}
 	})

@@ -18,9 +18,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/npm/remote"
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/npm/remote"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
 )
 
 // The strategies of npm.latestStrategy and npm.distTagStrategy (R-NPM-031).
@@ -217,7 +217,7 @@ func Do(parts []Part, o Options) (*Result, error) {
 
 // ReadmeMemberKey is the private member of a merged document that names the member the README comes from. It is part of the
 // merged bytes the virtual engine caches and is removed from every response.
-const ReadmeMemberKey = "_troveReadmeMember"
+const ReadmeMemberKey = "_quaderReadmeMember"
 
 // topLevel are the members that come from the member the version latest points to
 // (R-NPM-030 item 4); readmeFilename belongs to the readme.

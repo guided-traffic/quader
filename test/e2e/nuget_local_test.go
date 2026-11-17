@@ -3,7 +3,7 @@
 package e2e
 
 // The NuGet acceptance tests of the local repositories (R-NUGET-027, exit criteria E3.1 Linux part, E3.5, E3.6): the real
-// clients of nuget_clients_test.go (the .NET 10 SDK and nuget.exe on Mono) against trove in the scatter profile, so that
+// clients of nuget_clients_test.go (the .NET 10 SDK and nuget.exe on Mono) against quader in the scatter profile, so that
 // consecutive requests of one client reach different packages replicas. Every scenario has a pod, a directory and a
 // package ID of its own (nuget_env_test.go).
 

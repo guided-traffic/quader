@@ -5,9 +5,9 @@ package app
 import (
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/api/registry"
-	"github.com/guided-traffic/trove/internal/formathost"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/registry"
+	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The accessors the integration tests send requests through (the same values the listeners serve); they are built only with the

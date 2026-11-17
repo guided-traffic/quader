@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The grammar of the paths below a registry URL (R-NPM-001). The matchers work on
@@ -195,7 +195,7 @@ func tailDistTag(rest []string) (formats.Params, bool) {
 }
 
 // deferredFamilies returns the first segments after "-" of the endpoints npm defines and
-// trove does not implement (R-NPM-043, "Deferred" and the endpoint map of
+// quader does not implement (R-NPM-043, "Deferred" and the endpoint map of
 // R-NPM-001): login, the user and token endpoints, search, the security, key,
 // attestation and OIDC endpoints below npm/v1, organizations and teams, the
 // external-dependency path, staged publishing and the listing of all packages.
@@ -203,7 +203,7 @@ func deferredFamilies() []string {
 	return []string{"user", "v1", "npm", "org", "team", "all", "external", "stage"}
 }
 
-// deferredPackageOps returns the tails of "-/package/{name}/…" npm defines and trove
+// deferredPackageOps returns the tails of "-/package/{name}/…" npm defines and quader
 // does not implement: access, visibility and collaborators.
 func deferredPackageOps() []string { return []string{"access", "visibility", "collaborators"} }
 

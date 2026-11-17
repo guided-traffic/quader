@@ -35,6 +35,6 @@ type Result struct {
 	// FixAvailable is true when the range that affects the version ends in a fixed event (R-VULN-012).
 	FixAvailable bool
 	// Unevaluable counts the ranges of the entry one of whose event versions does not parse: they match nothing and are
-	// counted in trove_vuln_unevaluable_ranges_total (R-VULN-009).
+	// counted in quader_vuln_unevaluable_ranges_total (R-VULN-009).
 	Unevaluable int
 }

@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // TestR_BAS_015_FindingEventsThatSetABlock: the two finding events yield a content entry for their repository when they set a

@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 const (
@@ -124,7 +124,7 @@ func (e *mirrorEnv) startHeldPass(t *testing.T, label string, digit int, mode np
 	}
 	hp.jobID, hp.doneAtStart = st.Pass.Job.ID, st.Pass.PackagesDone
 	hp.pod, hp.node = poolPodOfPass(t, hp.jobID)
-	if !strings.HasPrefix(hp.pod, "trove-worker-"+mirrorPoolName+"-") {
+	if !strings.HasPrefix(hp.pod, "quader-worker-"+mirrorPoolName+"-") {
 		t.Fatalf("the pass runs in %q, want a process of the pool %s", hp.pod, mirrorPoolName)
 	}
 	for _, p := range livePods(t, selMirrorPool) {
@@ -202,7 +202,7 @@ func waitPoolWhole(t *testing.T) {
 	t.Helper()
 	waitFor(t, "two ready pods of the pool mirror", 8*time.Minute, 3*time.Second, func() bool { return len(readyPodsOf(t, selMirrorPool)) == 2 })
 	waitFor(t, "both PostgreSQL instances ready", 8*time.Minute, 3*time.Second, func() bool {
-		return strings.TrimSpace(kn(t, "get", "cluster", "trove-db", "-o", "jsonpath={.status.readyInstances}")) == "2"
+		return strings.TrimSpace(kn(t, "get", "cluster", "quader-db", "-o", "jsonpath={.status.readyInstances}")) == "2"
 	})
 	waitServingSettled(t)
 }
@@ -378,7 +378,7 @@ func (e *mirrorEnv) runLostWorker(t *testing.T, l lossOf) {
 		t.Errorf("the pass continued in %q, want another process than %q", newHolder, hp.pod)
 	}
 	t.Logf("the lost job %s is %q; the pass continued in %s; %d installs of a stored version through the remote during the loss, %d failed",
-		hp.jobID, sql(t, `SELECT state FROM trove.job WHERE id = '`+hp.jobID+`'`), newHolder, installs, len(installFailures))
+		hp.jobID, sql(t, `SELECT state FROM quader.job WHERE id = '`+hp.jobID+`'`), newHolder, installs, len(installFailures))
 	if installs == 0 {
 		t.Errorf("no install ran during the loss: the clients' path was never whole")
 	}

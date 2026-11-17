@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // maxJournalObject bounds what a read accepts. An entry is a few hundred bytes, an update entry a few kilobytes
@@ -151,7 +151,7 @@ func (s *JournalStore) Get(ctx context.Context, key string) ([]byte, error) {
 }
 
 // GetAll returns every distinct content the key held in a version that is not a delete marker, oldest first, when the store
-// was listed with versions; otherwise the one content. trove rewrites a key only with the same bytes, so a second content is
+// was listed with versions; otherwise the one content. quader rewrites a key only with the same bytes, so a second content is
 // a write of somebody else, and the reader replays each (R-HA-054, audit finding H2).
 func (s *JournalStore) GetAll(ctx context.Context, key string) ([][]byte, error) {
 	s.mu.Lock()

@@ -26,15 +26,15 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-const schemaName = "trove"
+const schemaName = "quader"
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 
@@ -61,13 +61,13 @@ type stack struct {
 
 func getStack(t testing.TB) stack {
 	t.Helper()
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
 	return stack{
-		host: testenv.Get(t, "TROVE_TEST_PG_HOST"), port: port,
-		user: testenv.Get(t, "TROVE_TEST_PG_USER"), secret: testenv.Get(t, "TROVE_TEST_PG_PASSWORD"),
+		host: testenv.Get(t, "QUADER_TEST_PG_HOST"), port: port,
+		user: testenv.Get(t, "QUADER_TEST_PG_USER"), secret: testenv.Get(t, "QUADER_TEST_PG_PASSWORD"),
 	}
 }
 
@@ -98,12 +98,12 @@ type env struct {
 	vcfg  config.Valkey
 }
 
-// newEnv creates a database trove_coord_<random>, migrates it and drops it when
+// newEnv creates a database quader_coord_<random>, migrates it and drops it when
 // the test ends.
 func newEnv(t *testing.T) *env {
 	t.Helper()
 	st := getStack(t)
-	name := "trove_coord_" + randHex(5)
+	name := "quader_coord_" + randHex(5)
 	maint := st.admin(t, "postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatalf("create database: %v", err)
@@ -160,8 +160,8 @@ func writeFile(t *testing.T, name, content string) string {
 }
 
 // keyPrefix separates this run's Valkey keys; it starts with the ACL pattern of
-// the stack (trove:*).
-var keyPrefix = "trove:itc" + randHex(3) + ":"
+// the stack (quader:*).
+var keyPrefix = "quader:itc" + randHex(3) + ":"
 
 // valkeyConfig is the configuration of a replica that talks to the stack's
 // Valkey the way the chart configures it.

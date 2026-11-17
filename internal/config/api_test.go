@@ -28,7 +28,7 @@ func TestAPISection(t *testing.T) {
 		}
 	})
 	t.Run("R-API-018 allowed_origins must be exact origins", func(t *testing.T) {
-		_, err := load(`TROVE_API_CORS_ALLOWED_ORIGINS=["https://ok.example","*","https://x.example/path","ftp://x"]`)
+		_, err := load(`QUADER_API_CORS_ALLOWED_ORIGINS=["https://ok.example","*","https://x.example/path","ftp://x"]`)
 		msgs := issuesOf(t, err)
 		if len(msgs) != 3 {
 			t.Fatalf("%d issues: %v", len(msgs), msgs)
@@ -36,7 +36,7 @@ func TestAPISection(t *testing.T) {
 		containsAll(t, msgs, "api.cors.allowed_origins")
 	})
 	t.Run("R-API-010 page_size_default must not exceed page_size_max", func(t *testing.T) {
-		_, err := load("TROVE_API_PAGE_SIZE_DEFAULT=600")
+		_, err := load("QUADER_API_PAGE_SIZE_DEFAULT=600")
 		containsAll(t, issuesOf(t, err), "api.page_size_default")
 	})
 }

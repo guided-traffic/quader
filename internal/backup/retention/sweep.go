@@ -7,9 +7,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/listing"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/listing"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // deleteBatch is the most keys one delete request carries (DeleteObjects).

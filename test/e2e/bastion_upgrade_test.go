@@ -5,7 +5,7 @@ package e2e
 // The interface mismatch (R-BAS-028, R-BAS-049): the main installation is upgraded to a build with InterfaceVersion + 1.
 // There is no build seam for the version: it is a constant. The build here is the release binary compiled with go build
 // -overlay, which replaces internal/bastion/iface/version.go by a copy that says InterfaceVersion + 1 (nothing in the tree changes), put into
-// the release image as the tag guidedtraffic/trove:iface (Q-BAS-111).
+// the release image as the tag guidedtraffic/quader:iface (Q-BAS-111).
 
 import (
 	"encoding/json"
@@ -18,12 +18,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 const basIfaceTag = "iface"
 
-// buildIfaceImage builds guidedtraffic/trove:iface from the release image with the binary of the overlay and loads it into the
+// buildIfaceImage builds guidedtraffic/quader:iface from the release image with the binary of the overlay and loads it into the
 // kind cluster.
 func buildIfaceImage(t testing.TB) {
 	t.Helper()
@@ -47,7 +47,7 @@ func buildIfaceImage(t testing.TB) {
 		t.Fatal(err)
 	}
 	docPath := filepath.Join(tmp, "openapi.yaml")
-	if err := os.WriteFile(docPath, []byte(strings.ReplaceAll(string(doc), fmt.Sprintf("x-trove-bastion-interface: %d", iface.InterfaceVersion), fmt.Sprintf("x-trove-bastion-interface: %d", iface.InterfaceVersion+1))), 0o644); err != nil {
+	if err := os.WriteFile(docPath, []byte(strings.ReplaceAll(string(doc), fmt.Sprintf("x-quader-bastion-interface: %d", iface.InterfaceVersion), fmt.Sprintf("x-quader-bastion-interface: %d", iface.InterfaceVersion+1))), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	overlay, _ := json.Marshal(map[string]any{"Replace": map[string]string{
@@ -71,19 +71,19 @@ func buildIfaceImage(t testing.TB) {
 		}
 	}
 	run([]string{"CGO_ENABLED=0", "GOOS=linux", "GOARCH=" + runtime.GOARCH}, "go", "build", "-overlay", filepath.Join(tmp, "overlay.json"),
-		"-trimpath", "-buildvcs=false", "-o", filepath.Join(ctx, "trove"), "./cmd/trove")
-	if err := os.WriteFile(filepath.Join(ctx, "Dockerfile"), []byte("FROM guidedtraffic/trove:dev\nCOPY trove /usr/local/bin/trove\n"), 0o644); err != nil {
+		"-trimpath", "-buildvcs=false", "-o", filepath.Join(ctx, "quader"), "./cmd/quader")
+	if err := os.WriteFile(filepath.Join(ctx, "Dockerfile"), []byte("FROM guidedtraffic/quader:dev\nCOPY quader /usr/local/bin/quader\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	run(nil, "docker", "build", "-t", "guidedtraffic/trove:"+basIfaceTag, ctx)
-	run(nil, "kind", "load", "docker-image", "guidedtraffic/trove:"+basIfaceTag, "--name", strings.TrimPrefix(cfg.kubeContext, "kind-"))
+	run(nil, "docker", "build", "-t", "guidedtraffic/quader:"+basIfaceTag, ctx)
+	run(nil, "kind", "load", "docker-image", "guidedtraffic/quader:"+basIfaceTag, "--name", strings.TrimPrefix(cfg.kubeContext, "kind-"))
 }
 
 // upMainTry runs up.sh in the bastion profile with extra helm arguments for the main release; it returns when the rollout is done.
 func upMainTry(extra string) error {
-	cmd := exec.Command(filepath.Join(os.Getenv("TROVE_E2E_DEV_DIR"), "up.sh"))
+	cmd := exec.Command(filepath.Join(os.Getenv("QUADER_E2E_DEV_DIR"), "up.sh"))
 	cmd.Dir = cfg.repo
-	cmd.Env = append(os.Environ(), "TROVE_PROFILE=bastion", "TROVE_HELM_EXTRA="+extra)
+	cmd.Env = append(os.Environ(), "QUADER_PROFILE=bastion", "QUADER_HELM_EXTRA="+extra)
 	out, err := cmd.CombinedOutput()
 	_ = os.WriteFile(filepath.Join(cfg.out, "profile-bastion-upgrade.log"), out, 0o644)
 	if err != nil {
@@ -106,14 +106,14 @@ func basMismatch(t testing.TB, s *basSite) (mismatch []float64, mainVersion []fl
 	t.Helper()
 	for _, p := range basReadyPods(t, s) {
 		m := basMetrics(t, p.Name)
-		mismatch = append(mismatch, m["trove_bastion_interface_mismatch"])
-		mainVersion = append(mainVersion, m[`trove_bastion_interface_version{side="main"}`])
+		mismatch = append(mismatch, m["quader_bastion_interface_mismatch"])
+		mainVersion = append(mainVersion, m[`quader_bastion_interface_version{side="main"}`])
 	}
 	return
 }
 
 // TestBastion_R_BAS_049_InterfaceMismatch: the main installation at InterfaceVersion + 1 makes both replicas report the
-// mismatch (the gauge TroveBastionInterfaceMismatch reads stays 1 for its `for: 1m`), the Bastion serves warm content for the
+// mismatch (the gauge QuaderBastionInterfaceMismatch reads stays 1 for its `for: 1m`), the Bastion serves warm content for the
 // grace period, and when the Bastion is upgraded as well the mismatch clears and cold requests succeed.
 func TestBastion_R_BAS_049_InterfaceMismatch(t *testing.T) {
 	env := basFx(t)
@@ -203,14 +203,14 @@ func TestBastion_R_BAS_049_InterfaceMismatch(t *testing.T) {
 		return allEqual(m, 1) && allEqual(v, float64(iface.InterfaceVersion+1))
 	})
 	seen = time.Now()
-	t.Run("the gauge of TroveBastionInterfaceMismatch stays 1 for its `for` of one minute", func(t *testing.T) {
+	t.Run("the gauge of QuaderBastionInterfaceMismatch stays 1 for its `for` of one minute", func(t *testing.T) {
 		for time.Since(seen) < 65*time.Second {
 			m, v := basMismatch(t, site)
 			if !allEqual(m, 1) || !allEqual(v, float64(iface.InterfaceVersion+1)) {
-				t.Fatalf("trove_bastion_interface_mismatch %v, main version %v after %s", m, v, time.Since(seen).Round(time.Second))
+				t.Fatalf("quader_bastion_interface_mismatch %v, main version %v after %s", m, v, time.Since(seen).Round(time.Second))
 			}
 			for _, p := range basReadyPods(t, site) {
-				if basMetrics(t, p.Name)[`trove_bastion_interface_version{side="bastion"}`] != float64(iface.InterfaceVersion) {
+				if basMetrics(t, p.Name)[`quader_bastion_interface_version{side="bastion"}`] != float64(iface.InterfaceVersion) {
 					t.Fatalf("%s: the Bastion's own version is not 1", p.Name)
 				}
 			}
@@ -224,7 +224,7 @@ func TestBastion_R_BAS_049_InterfaceMismatch(t *testing.T) {
 	})
 
 	// the Bastion is upgraded as well
-	out, err := basScriptTryEnv([]string{"TROVE_BASTION_HELM_EXTRA=--set image.tag=" + basIfaceTag}, "install", site.variant)
+	out, err := basScriptTryEnv([]string{"QUADER_BASTION_HELM_EXTRA=--set image.tag=" + basIfaceTag}, "install", site.variant)
 	if err != nil {
 		t.Fatalf("upgrading the Bastion: %v\n%s", err, tail(out, 1500))
 	}

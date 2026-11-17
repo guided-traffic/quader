@@ -1,7 +1,7 @@
 # Import tooling
 
-Status: built ([internal/importer](../../internal/importer/), [cmd/trove/admin_import.go](../../cmd/trove/admin_import.go)). This page says
-what the command `trove admin import` is trusted with, what a source registry can make it do, what it can do to a trove repository,
+Status: built ([internal/importer](../../internal/importer/), [cmd/quader/admin_import.go](../../cmd/quader/admin_import.go)). This page says
+what the command `quader admin import` is trusted with, what a source registry can make it do, what it can do to a Quader repository,
 and where its credentials live. The specification is [import.md](../spec/import.md) (R-IMP-001 to R-IMP-009), the operator's page is
 [the manual](../manual/admin/import.md), and the build is described in [developer/import.md](../developer/import.md).
 
@@ -12,10 +12,10 @@ and where its credentials live. The specification is [import.md](../spec/import.
 | The operator who runs the command | Choosing the source, the target and the packages; holding both credentials for the length of the process | Nothing beyond what the target token allows: the command is no administrator |
 | The target token | The permissions of its principal: `read` and `deploy` on the repository, on the names and paths the grants name | It is not widened by the command; every write is decided by the target's decision point as for any publisher |
 | The source registry | Naming packages, versions, digests and file addresses | Anything it says is checked: the names, the host of every file, the size, the digest of the bytes |
-| The target (trove) | Deciding every write | |
+| The target (Quader) | Deciding every write | |
 
 ```
-      operator                      the import process                          trove (target)
+      operator                      the import process                          Quader (target)
    ┌────────────┐   tokens     ┌─────────────────────────┐   publish protocol  ┌──────────────────┐
    │ files/env  │────────────▶ │ reads documents, files  │────────────────────▶│ decision point,  │
    └────────────┘              │ verifies the digest,    │   Bearer <token>    │ digests, audit,  │
@@ -32,14 +32,14 @@ and where its credentials live. The specification is [import.md](../spec/import.
 
 | Secret | Where it comes from | Where it goes | Where it is not |
 |---|---|---|---|
-| The trove token | `--token-file`, or `TROVE_IMPORT_TOKEN` | the `Authorization` header (and `X-NuGet-ApiKey` for NuGet) of requests to the target's origin | not an argument, not the state file, not the report, not a log line, not an error message |
-| The source's password or token | `--source-password-file`, or `TROVE_IMPORT_SOURCE_PASSWORD` | the `Authorization` header of requests to the source's origin | as above; not to an extra host, not to a redirect target |
+| The Quader token | `--token-file`, or `QUADER_IMPORT_TOKEN` | the `Authorization` header (and `X-NuGet-ApiKey` for NuGet) of requests to the target's origin | not an argument, not the state file, not the report, not a log line, not an error message |
+| The source's password or token | `--source-password-file`, or `QUADER_IMPORT_SOURCE_PASSWORD` | the `Authorization` header of requests to the source's origin | as above; not to an extra host, not to a redirect target |
 
 The command has no flag that takes a secret, so neither shows in `ps` or in the shell history. A file's trailing line break is
 removed and a file over 8 KiB is refused, as the stored-secret files of a remote repository ([R-REPO-033](../spec/repositories-and-proxy.md)).
 Both credentials are attached by the hop policy of a remote repository (`outbound.CredentialPolicy`,
 [hop.go](../../internal/outbound/hop.go)): the credential goes to the origin on every hop that reaches the origin, to no other host, and
-over `https` only unless the origin itself is `http`. The importer does not read trove's stored secrets, its key ring or its database.
+over `https` only unless the origin itself is `http`. The importer does not read Quader's stored secrets, its key ring or its database.
 
 ## What a source can make the importer do
 
@@ -111,7 +111,7 @@ trusted it. An operator limits it by naming the packages instead of using `--sea
 
 Component: the credential handling of R-IMP-002. Subject: the host that runs the command. Live today.
 
-A token read from `TROVE_IMPORT_TOKEN` or `TROVE_IMPORT_SOURCE_PASSWORD` is in the environment of the process, which another process of the same user (and root) can read from `/proc/<pid>/environ` while the run lasts. A file is read once into the process's memory and not zeroed. The importer does not check the mode of the file. What makes it real: a shared host where another account runs as the same user; in a Kubernetes Job the Secret mounted as a file is the better form. The command writes neither credential to disk, so what is left after the run is the operator's file.
+A token read from `QUADER_IMPORT_TOKEN` or `QUADER_IMPORT_SOURCE_PASSWORD` is in the environment of the process, which another process of the same user (and root) can read from `/proc/<pid>/environ` while the run lasts. A file is read once into the process's memory and not zeroed. The importer does not check the mode of the file. What makes it real: a shared host where another account runs as the same user; in a Kubernetes Job the Secret mounted as a file is the better form. The command writes neither credential to disk, so what is left after the run is the operator's file.
 
 ### H-833 · The state file is not protected against a change
 

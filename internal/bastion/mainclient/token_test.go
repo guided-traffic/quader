@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/auth/token"
 )
 
 // TestR_BAS_006_TheSyntaxCheckAgreesWithTheMainInstallationsFormat: the Bastion's check and internal/auth/token
@@ -35,7 +35,7 @@ func TestR_BAS_006_TheSyntaxCheckAgreesWithTheMainInstallationsFormat(t *testing
 		}
 	}
 	pat, _ := token.Generate(token.TypePAT)
-	for _, bad := range []string{"", "trv_bst_", pat, strings.Repeat("a", 57), "trv_bst_" + strings.Repeat("!", 49)} {
+	for _, bad := range []string{"", "qdr_bst_", pat, strings.Repeat("a", 57), "qdr_bst_" + strings.Repeat("!", 49)} {
 		if _, err := ParseToken(bad); !errors.Is(err, ErrTokenMalformed) {
 			t.Errorf("ParseToken(%q) = %v", bad, err)
 		}

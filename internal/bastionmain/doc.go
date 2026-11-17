@@ -1,4 +1,4 @@
-// Package bastionmain holds the seams of the main installation's side of the trove Bastion (R-BAS-004 to
+// Package bastionmain holds the seams of the main installation's side of the quader Bastion (R-BAS-004 to
 // R-BAS-017, docs/developer/bastion.md): the types and interfaces that the work packages 1 to 3 build against
 // in parallel and that the composition root wires. It is a domain package. The wire contract with the Bastion
 // is internal/bastion/iface, which this package imports; the Bastion's own code (internal/bastion/...) imports

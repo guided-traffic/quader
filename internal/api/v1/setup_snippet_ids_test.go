@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible"
-	"github.com/guided-traffic/trove/internal/formats/deb"
-	"github.com/guided-traffic/trove/internal/formats/generic"
-	"github.com/guided-traffic/trove/internal/formats/npm"
-	"github.com/guided-traffic/trove/internal/formats/nuget"
-	"github.com/guided-traffic/trove/internal/formats/oci"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible"
+	"github.com/guided-traffic/quader/internal/formats/deb"
+	"github.com/guided-traffic/quader/internal/formats/generic"
+	"github.com/guided-traffic/quader/internal/formats/npm"
+	"github.com/guided-traffic/quader/internal/formats/nuget"
+	"github.com/guided-traffic/quader/internal/formats/oci"
 )
 
 var updateSnippetIDs = flag.Bool("update-snippet-ids", false, "rewrite web/src/app/features/setup/snippet-ids.fixture.ts")
@@ -37,9 +37,9 @@ func renderedSnippetIDs(t *testing.T, scope string, f interface {
 		var ids []string
 		for _, cred := range []string{credPlaceholder, credNone} {
 			ss, err := renderSnippets(setupInput{
-				Templates: tpls, Client: tpl.Client, Credentials: cred, TokenEnvVar: "TROVE_TOKEN", MayPublish: true, Scope: scope,
+				Templates: tpls, Client: tpl.Client, Credentials: cred, TokenEnvVar: "QUADER_TOKEN", MayPublish: true, Scope: scope,
 				Data: formats.SetupData{
-					RegistryURL: "https://trove.example.net/x/", ImagePrefix: "trove.example.net/web/x", Repository: "x", Endpoint: "default",
+					RegistryURL: "https://quader.example.net/x/", ImagePrefix: "quader.example.net/web/x", Repository: "x", Endpoint: "default",
 					RequiresAuth: true, Username: "alice",
 				},
 			})

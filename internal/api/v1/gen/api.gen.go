@@ -4930,7 +4930,8 @@ type BackupRun struct {
 	Pod string `json:"pod"`
 
 	// Progress What the heartbeat of the run last wrote (R-BAK-009); members that do not apply to the phase are absent.
-	Progress BackupProgress `json:"progress"`
+	Progress      BackupProgress `json:"progress"`
+	QuaderVersion string         `json:"quaderVersion"`
 
 	// Result The manifest summary, the retention outcome and the warnings (R-BAK-009, R-BAK-016).
 	Result     *map[string]interface{} `json:"result"`
@@ -4944,8 +4945,7 @@ type BackupRun struct {
 	Target string `json:"target"`
 
 	// Trigger `schedule` or `manual`.
-	Trigger      string `json:"trigger"`
-	TroveVersion string `json:"troveVersion"`
+	Trigger string `json:"trigger"`
 }
 
 // BackupRunList defines model for BackupRunList.
@@ -4963,7 +4963,7 @@ type BackupRunList struct {
 type BackupSummary struct {
 	Active *BackupActiveRun `json:"active"`
 
-	// ExpectedIntervalSeconds `backup.expected_interval`, the value behind `trove_backup_expected_interval_seconds` and `TroveBackupStale`.
+	// ExpectedIntervalSeconds `backup.expected_interval`, the value behind `quader_backup_expected_interval_seconds` and `QuaderBackupStale`.
 	ExpectedIntervalSeconds int64              `json:"expectedIntervalSeconds"`
 	LastFailure             *BackupLastFailure `json:"lastFailure"`
 	LastSuccessAt           *time.Time         `json:"lastSuccessAt"`
@@ -5158,7 +5158,7 @@ type BastionTokenCreated struct {
 	Hint        string             `json:"hint"`
 	Id          openapi_types.UUID `json:"id"`
 
-	// Token The secret, 57 characters with the prefix `trv_bst_`. Shown once.
+	// Token The secret, 57 characters with the prefix `qdr_bst_`. Shown once.
 	Token string `json:"token"`
 }
 
@@ -5305,7 +5305,7 @@ type CiEvaluateResult struct {
 	Warnings   *[]CiWarning   `json:"warnings,omitempty"`
 }
 
-// CiExchangeError The OAuth error response of RFC 6749 section 5.2 with trove's `reason` and `requestId` (R-CI-008).
+// CiExchangeError The OAuth error response of RFC 6749 section 5.2 with Quader's `reason` and `requestId` (R-CI-008).
 type CiExchangeError struct {
 	Error CiExchangeErrorError `json:"error"`
 
@@ -5323,7 +5323,7 @@ type CiExchangeError struct {
 type CiExchangeErrorError string
 
 // CiExchangeRequest The exchange parameters with the OAuth names of RFC 8693 (R-CI-007); they are not management-API fields and keep
-// their snake_case spelling. `ci_issuer` and `ttl` are trove's extensions.
+// their snake_case spelling. `ci_issuer` and `ttl` are Quader's extensions.
 type CiExchangeRequest struct {
 	// ActorToken Not supported; answers `actor_token_not_supported`.
 	ActorToken     *string `json:"actor_token,omitempty"`
@@ -5362,7 +5362,7 @@ type CiExchangeRequestSubjectTokenType string
 
 // CiExchangeResponse The token response (R-CI-007). The token value appears only here.
 type CiExchangeResponse struct {
-	// AccessToken A `trv_cit_` token.
+	// AccessToken A `qdr_cit_` token.
 	AccessToken     string                            `json:"access_token"`
 	CiIssuer        string                            `json:"ci_issuer"`
 	ExpiresIn       int64                             `json:"expires_in"`
@@ -6423,8 +6423,8 @@ type FormatDescriptor struct {
 
 	// SettingsSchema The JSON Schema 2020-12 of the format's settings member of a repository document (the member named
 	// after the format, R-REPO-004), which the create form renders and the service validates a document
-	// against (R-ARCH-008). Its properties may carry `x-trove-classes`, the classes the setting applies to;
-	// a setting of another class answers `not_applicable`. A property with an `enum` carries `x-trove-enum-titles`,
+	// against (R-ARCH-008). Its properties may carry `x-quader-classes`, the classes the setting applies to;
+	// a setting of another class answers `not_applicable`. A property with an `enum` carries `x-quader-enum-titles`,
 	// the label the form shows for each value (R-UI-088). A `title` and a `description` are the texts the form shows,
 	// in plain words; the member schemas of this document (`NpmSettings`, …) describe each setting for the API
 	// reader. `null` for a format without settings.
@@ -6439,7 +6439,7 @@ type FormatDescriptor struct {
 	// VulnerabilityScanning Whether stored versions of the format are matched against advisories (the format has the vulnerability adapter, R-VULN-009); a format without it has no vulnerability counts anywhere (R-UI-052).
 	VulnerabilityScanning bool `json:"vulnerabilityScanning"`
 
-	// Wiki Whether the format has wiki content, the documentation trove serves or shows apart from the files (R-AUTHZ-034):
+	// Wiki Whether the format has wiki content, the documentation Quader serves or shows apart from the files (R-AUTHZ-034):
 	// a repository of such a format has a wiki level of its own that is worth setting. `false` for a format whose
 	// repository serves no documentation; its wiki level then changes nothing.
 	Wiki bool `json:"wiki"`
@@ -7200,16 +7200,16 @@ type NewUser struct {
 // fails on any difference between the two. A setting that does not apply to the class of the repository
 // answers 422 `not_applicable`. An omitted setting takes its default.
 type NpmSettings struct {
-	// Audit Every class (R-NPM-038, R-VULN-017). The security audit endpoint: answer from trove's own advisory data, or
+	// Audit Every class (R-NPM-038, R-VULN-017). The security audit endpoint: answer from Quader's own advisory data, or
 	// forward the names this remote has fetched, and that nothing marks internal, to an advisory provider.
 	Audit *struct {
 		// MaxBodySize The largest audit body as sent, `1KiB` to `10MiB`; ten times that decompressed. Larger bodies answer 413.
 		MaxBodySize *string `json:"maxBodySize,omitempty"`
 
-		// Mode `local` answers from trove's own advisory data and sends nothing out (every class; `503 vulnerability_data_unavailable`
+		// Mode `local` answers from Quader's own advisory data and sends nothing out (every class; `503 vulnerability_data_unavailable`
 		// until the npm data is complete; answers like `disabled` while `vulnerabilities.enabled` is false). `forward` answers
 		// through the first remote that forwards (remote and virtual repositories; a local repository answers like `disabled`);
-		// `disabled` answers 501 `npm_audit_unavailable`. Left out, the audit answers from trove's data while
+		// `disabled` answers 501 `npm_audit_unavailable`. Left out, the audit answers from Quader's data while
 		// `vulnerabilities.enabled` is true and the OSV source is not `off`; else the mode is `forward` on remote and virtual
 		// repositories and `disabled` on local ones (Q-ARCH-341).
 		Mode *NpmSettingsAuditMode `json:"mode,omitempty"`
@@ -7236,10 +7236,10 @@ type NpmSettings struct {
 	ServeRemovedVersions *bool `json:"serveRemovedVersions,omitempty"`
 }
 
-// NpmSettingsAuditMode `local` answers from trove's own advisory data and sends nothing out (every class; `503 vulnerability_data_unavailable`
+// NpmSettingsAuditMode `local` answers from Quader's own advisory data and sends nothing out (every class; `503 vulnerability_data_unavailable`
 // until the npm data is complete; answers like `disabled` while `vulnerabilities.enabled` is false). `forward` answers
 // through the first remote that forwards (remote and virtual repositories; a local repository answers like `disabled`);
-// `disabled` answers 501 `npm_audit_unavailable`. Left out, the audit answers from trove's data while
+// `disabled` answers 501 `npm_audit_unavailable`. Left out, the audit answers from Quader's data while
 // `vulnerabilities.enabled` is true and the OSV source is not `off`; else the mode is `forward` on remote and virtual
 // repositories and `disabled` on local ones (Q-ARCH-341).
 type NpmSettingsAuditMode string
@@ -7264,7 +7264,7 @@ type NugetSettings struct {
 	// search resource; `false` answers from the packages the remote has cached.
 	ForwardSearch *bool `json:"forwardSearch,omitempty"`
 
-	// VulnerabilityInfo The vulnerability information of the service index (R-VULN-018): `local` lists VulnerabilityInfo/6.7.0 and serves trove's
+	// VulnerabilityInfo The vulnerability information of the service index (R-VULN-018): `local` lists VulnerabilityInfo/6.7.0 and serves Quader's
 	// own NuGet advisory data while that data is complete (every class; answers like `off` while `vulnerabilities.enabled` is
 	// false); `off` lists nothing. Left out, the mode is `local` while `vulnerabilities.enabled` is true and the OSV source is not
 	// off, else `off`. The pass-through of the upstream's information, `upstream`, is refused until R-NUGET-023 is built.
@@ -7276,7 +7276,7 @@ type NugetSettings struct {
 // the management API, the UI or `/files/` is always a hard delete.
 type NugetSettingsDeleteMode string
 
-// NugetSettingsVulnerabilityInfo The vulnerability information of the service index (R-VULN-018): `local` lists VulnerabilityInfo/6.7.0 and serves trove's
+// NugetSettingsVulnerabilityInfo The vulnerability information of the service index (R-VULN-018): `local` lists VulnerabilityInfo/6.7.0 and serves Quader's
 // own NuGet advisory data while that data is complete (every class; answers like `off` while `vulnerabilities.enabled` is
 // false); `off` lists nothing. Left out, the mode is `local` while `vulnerabilities.enabled` is true and the OSV source is not
 // off, else `off`. The pass-through of the upstream's information, `upstream`, is refused until R-NUGET-023 is built.
@@ -7362,7 +7362,7 @@ type PackageDocEntry struct {
 	Deprecated  *PackageDocDeprecated  `json:"deprecated,omitempty"`
 	Description *[]string              `json:"description,omitempty"`
 
-	// Examples Text, shown in a code block; trove does not highlight or run it.
+	// Examples Text, shown in a code block; Quader does not highlight or run it.
 	Examples *string `json:"examples,omitempty"`
 
 	// ExtendsFragments The documentation fragments that were not merged into the entry.
@@ -7797,11 +7797,11 @@ type PendingMigrationStep struct {
 	// Name Examples: 00043_example
 	Name string `json:"name"`
 
-	// RequiresApp A contract step's `-- trove:requires-app`: the oldest release allowed to serve once the step is applied. The
+	// RequiresApp A contract step's `-- quader:requires-app`: the oldest release allowed to serve once the step is applied. The
 	// contract guard refuses the step while a live replica runs an older release. `null` for an expand step.
 	RequiresApp *string `json:"requiresApp"`
 
-	// RequiresBackground A contract step's `-- trove:requires-background`: the background data migrations that must have `succeeded`
+	// RequiresBackground A contract step's `-- quader:requires-background`: the background data migrations that must have `succeeded`
 	// before the contract guard lets the step run (R-HA-021 step 4). Empty for every other step.
 	RequiresBackground []string `json:"requiresBackground"`
 	Version            int      `json:"version"`
@@ -8146,7 +8146,7 @@ type ProjectVisibilityRequest struct {
 type ProjectVisibilityResult struct {
 	Lowered []struct {
 		// Before The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
-		// download, and `wiki`, the documentation of its packages that trove serves or shows apart from the files. The artifacts
+		// download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
 		// level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
 		// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
 		Before RepositoryVisibility `json:"before"`
@@ -8321,10 +8321,10 @@ type Replica struct {
 	// Name The pod name, else the host name.
 	Name string `json:"name"`
 
-	// Node The Kubernetes node name (`TROVE_NODE_NAME`); `null` outside Kubernetes.
+	// Node The Kubernetes node name (`QUADER_NODE_NAME`); `null` outside Kubernetes.
 	Node *string `json:"node"`
 
-	// Pool The endpoint pool or worker pool the replica belongs to (`TROVE_POOL_NAME`); `null` for the main Deployment of its role.
+	// Pool The endpoint pool or worker pool the replica belongs to (`QUADER_POOL_NAME`); `null` for the main Deployment of its role.
 	Pool     *string `json:"pool,omitempty"`
 	Revision string  `json:"revision"`
 
@@ -8481,7 +8481,7 @@ type Repository struct {
 	Virtual *VirtualSettings `json:"virtual,omitempty"`
 
 	// Visibility The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
-	// download, and `wiki`, the documentation of its packages that trove serves or shows apart from the files. The artifacts
+	// download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
 	// level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
 	// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
 	Visibility *RepositoryVisibility `json:"visibility,omitempty"`
@@ -8556,7 +8556,7 @@ type RepositoryConsumerView struct {
 	Layout      string                      `json:"layout"`
 
 	// Visibility The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
-	// download, and `wiki`, the documentation of its packages that trove serves or shows apart from the files. The artifacts
+	// download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
 	// level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
 	// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
 	Visibility RepositoryVisibility `json:"visibility"`
@@ -8682,7 +8682,7 @@ type RepositorySummary struct {
 	Project string `json:"project"`
 
 	// Visibility The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
-	// download, and `wiki`, the documentation of its packages that trove serves or shows apart from the files. The artifacts
+	// download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
 	// level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
 	// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
 	Visibility RepositoryVisibility `json:"visibility"`
@@ -8695,7 +8695,7 @@ type RepositorySummaryClass string
 type RepositorySummaryLifecycle string
 
 // RepositoryVisibility The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
-// download, and `wiki`, the documentation of its packages that trove serves or shows apart from the files. The artifacts
+// download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
 // level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
 // `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
 type RepositoryVisibility struct {
@@ -8719,7 +8719,7 @@ type RepositoryWarning struct {
 
 // RevokeByValueRequest defines model for RevokeByValueRequest.
 type RevokeByValueRequest struct {
-	// Token The token value, `trv_…`.
+	// Token The token value, `qdr_…`.
 	Token string `json:"token"`
 }
 
@@ -8749,11 +8749,11 @@ type RoleBinding struct {
 	Principal string   `json:"principal"`
 	Role      RoleName `json:"role"`
 
-	// Source Who keeps the binding (R-AUTHZ-010, Q-AUTHZ-170): `api` for one made through this API or an administration command, `configuration` for one that `authz.role_bindings` of the system configuration declares and `trove migrate` applies. A `configuration` binding cannot be removed here (`409 role_binding_managed_by_configuration`).
+	// Source Who keeps the binding (R-AUTHZ-010, Q-AUTHZ-170): `api` for one made through this API or an administration command, `configuration` for one that `authz.role_bindings` of the system configuration declares and `quader migrate` applies. A `configuration` binding cannot be removed here (`409 role_binding_managed_by_configuration`).
 	Source RoleBindingSource `json:"source"`
 }
 
-// RoleBindingSource Who keeps the binding (R-AUTHZ-010, Q-AUTHZ-170): `api` for one made through this API or an administration command, `configuration` for one that `authz.role_bindings` of the system configuration declares and `trove migrate` applies. A `configuration` binding cannot be removed here (`409 role_binding_managed_by_configuration`).
+// RoleBindingSource Who keeps the binding (R-AUTHZ-010, Q-AUTHZ-170): `api` for one made through this API or an administration command, `configuration` for one that `authz.role_bindings` of the system configuration declares and `quader migrate` applies. A `configuration` binding cannot be removed here (`409 role_binding_managed_by_configuration`).
 type RoleBindingSource string
 
 // RoleBindingList defines model for RoleBindingList.
@@ -8815,7 +8815,7 @@ type SearchSuggestions struct {
 // be sent back without blanking or leaking the secret. A read shows `{"set": true}` for a sealed
 // value and the reference itself for a reference. The value is never returned. `value` and
 // `secretRef` together, an empty value, a reference outside the rules of R-OPS-029 (a file directly
-// under `config_as_code.secrets_dir`; a variable named `TROVE_CAC_<NAME>`) and `set: false` are
+// under `config_as_code.secrets_dir`; a variable named `QUADER_CAC_<NAME>`) and `set: false` are
 // `422 invalid_secret`.
 type SecretField struct {
 	// SecretRef Exactly one of `file` and `env`.
@@ -8909,9 +8909,9 @@ type StoredBackup struct {
 	BlobCount     int64     `json:"blobCount"`
 	Damaged       bool      `json:"damaged"`
 	DatabaseBytes int64     `json:"databaseBytes"`
+	QuaderVersion string    `json:"quaderVersion"`
 	SchemaStep    int       `json:"schemaStep"`
 	SnapshotAt    time.Time `json:"snapshotAt"`
-	TroveVersion  string    `json:"troveVersion"`
 }
 
 // StoredBackups The complete backups the newest create or delete run found after its own deletions (Q-API-11).
@@ -8926,7 +8926,7 @@ type SystemInfo struct {
 	AnsweredBy struct {
 		Replica string `json:"replica"`
 
-		// Role The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `trove_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role).
+		// Role The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `quader_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role).
 		Role SystemInfoAnsweredByRole `json:"role"`
 	} `json:"answeredBy"`
 
@@ -8975,7 +8975,7 @@ type SystemInfo struct {
 	VulnerabilityData *VulnerabilityDataFacts `json:"vulnerabilityData,omitempty"`
 }
 
-// SystemInfoAnsweredByRole The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `trove_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role).
+// SystemInfoAnsweredByRole The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `quader_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role).
 type SystemInfoAnsweredByRole string
 
 // SystemInfoBaseUrlSource `request` means `server.base_url` is unset and the origin was derived from the request (development only).
@@ -9416,7 +9416,7 @@ type Version struct {
 	// Revision The source revision, or `unknown`.
 	Revision string `json:"revision"`
 
-	// Version The trove version, or `dev` for a build without a release version.
+	// Version The quader version, or `dev` for a build without a release version.
 	Version string `json:"version"`
 }
 
@@ -9538,7 +9538,7 @@ type VulnerabilityAffectedRangesType string
 // VulnerabilityBlockReason Why the version's download is refused (R-VULN-015).
 type VulnerabilityBlockReason string
 
-// VulnerabilityCvss The vector the severity was scored from (R-VULN-007); trove never mixes versions in one value.
+// VulnerabilityCvss The vector the severity was scored from (R-VULN-007); Quader never mixes versions in one value.
 type VulnerabilityCvss struct {
 	Score   float32                  `json:"score"`
 	Vector  string                   `json:"vector"`
@@ -9622,7 +9622,7 @@ type VulnerabilityFinding struct {
 	// Severity The level of an advisory (R-VULN-007); `unknown` is a level of its own and sorts last.
 	Severity VulnerabilitySeverity `json:"severity"`
 
-	// Status The status of a finding (R-VULN-012). `needs_triage`, `confirmed` and `blocked` are open; `resolved` is set by trove
+	// Status The status of a finding (R-VULN-012). `needs_triage`, `confirmed` and `blocked` are open; `resolved` is set by Quader
 	// only.
 	Status  VulnerabilityStatus `json:"status"`
 	Summary string              `json:"summary"`
@@ -9657,7 +9657,7 @@ type VulnerabilityFindingDetail struct {
 
 // VulnerabilityFindingEvent One row of a finding's history (R-VULN-012).
 type VulnerabilityFindingEvent struct {
-	// Actor The principal behind the change; `null` for trove.
+	// Actor The principal behind the change; `null` for Quader.
 	Actor *struct {
 		Id   string  `json:"id"`
 		Name *string `json:"name"`
@@ -9789,7 +9789,7 @@ type VulnerabilitySetStatusRequest struct {
 	DismissalReason *VulnerabilityDismissalReason `json:"dismissalReason,omitempty"`
 	Ids             []openapi_types.UUID          `json:"ids"`
 
-	// Status The status of a finding (R-VULN-012). `needs_triage`, `confirmed` and `blocked` are open; `resolved` is set by trove
+	// Status The status of a finding (R-VULN-012). `needs_triage`, `confirmed` and `blocked` are open; `resolved` is set by Quader
 	// only.
 	Status VulnerabilityStatus `json:"status"`
 }
@@ -9901,7 +9901,7 @@ type VulnerabilitySourceStateSource string
 // VulnerabilitySourceStateState defines model for VulnerabilitySourceState.State.
 type VulnerabilitySourceStateState string
 
-// VulnerabilityStatus The status of a finding (R-VULN-012). `needs_triage`, `confirmed` and `blocked` are open; `resolved` is set by trove
+// VulnerabilityStatus The status of a finding (R-VULN-012). `needs_triage`, `confirmed` and `blocked` are open; `resolved` is set by Quader
 // only.
 type VulnerabilityStatus string
 
@@ -10189,18 +10189,18 @@ type GetAvatarParams struct {
 
 // BastionCheckParams defines parameters for BastionCheck.
 type BastionCheckParams struct {
-	// TroveBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+	// QuaderBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
 	// another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
 	// here so that the answer is the interface's, not the binder's.
-	TroveBastionInterface *BastionInterface `json:"Trove-Bastion-Interface,omitempty"`
+	QuaderBastionInterface *BastionInterface `json:"Quader-Bastion-Interface,omitempty"`
 }
 
 // BastionDownloadsParams defines parameters for BastionDownloads.
 type BastionDownloadsParams struct {
-	// TroveBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+	// QuaderBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
 	// another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
 	// here so that the answer is the interface's, not the binder's.
-	TroveBastionInterface *BastionInterface `json:"Trove-Bastion-Interface,omitempty"`
+	QuaderBastionInterface *BastionInterface `json:"Quader-Bastion-Interface,omitempty"`
 }
 
 // BastionFeedParams defines parameters for BastionFeed.
@@ -10211,18 +10211,18 @@ type BastionFeedParams struct {
 	// Limit Entries at most; capped at `bastions.feed.max_page`.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// TroveBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+	// QuaderBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
 	// another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
 	// here so that the answer is the interface's, not the binder's.
-	TroveBastionInterface *BastionInterface `json:"Trove-Bastion-Interface,omitempty"`
+	QuaderBastionInterface *BastionInterface `json:"Quader-Bastion-Interface,omitempty"`
 }
 
 // BastionHandshakeParams defines parameters for BastionHandshake.
 type BastionHandshakeParams struct {
-	// TroveBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
+	// QuaderBastionInterface The Bastion's interface version (R-BAS-009). Required on every request of a Bastion: a request without it, or with
 	// another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
 	// here so that the answer is the interface's, not the binder's.
-	TroveBastionInterface *BastionInterface `json:"Trove-Bastion-Interface,omitempty"`
+	QuaderBastionInterface *BastionInterface `json:"Quader-Bastion-Interface,omitempty"`
 }
 
 // GetBastionParams defines parameters for GetBastion.
@@ -13199,22 +13199,22 @@ func (siw *ServerInterfaceWrapper) BastionCheck(w http.ResponseWriter, r *http.R
 
 	headers := r.Header
 
-	// ------------- Optional header parameter "Trove-Bastion-Interface" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Trove-Bastion-Interface")]; found {
-		var TroveBastionInterface BastionInterface
+	// ------------- Optional header parameter "Quader-Bastion-Interface" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Quader-Bastion-Interface")]; found {
+		var QuaderBastionInterface BastionInterface
 		n := len(valueList)
 		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Trove-Bastion-Interface", Count: n})
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Quader-Bastion-Interface", Count: n})
 			return
 		}
 
-		err = runtime.BindStyledParameterWithOptions("simple", "Trove-Bastion-Interface", valueList[0], &TroveBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
+		err = runtime.BindStyledParameterWithOptions("simple", "Quader-Bastion-Interface", valueList[0], &QuaderBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
 		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Trove-Bastion-Interface", Err: err})
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Quader-Bastion-Interface", Err: err})
 			return
 		}
 
-		params.TroveBastionInterface = &TroveBastionInterface
+		params.QuaderBastionInterface = &QuaderBastionInterface
 
 	}
 
@@ -13240,22 +13240,22 @@ func (siw *ServerInterfaceWrapper) BastionDownloads(w http.ResponseWriter, r *ht
 
 	headers := r.Header
 
-	// ------------- Optional header parameter "Trove-Bastion-Interface" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Trove-Bastion-Interface")]; found {
-		var TroveBastionInterface BastionInterface
+	// ------------- Optional header parameter "Quader-Bastion-Interface" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Quader-Bastion-Interface")]; found {
+		var QuaderBastionInterface BastionInterface
 		n := len(valueList)
 		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Trove-Bastion-Interface", Count: n})
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Quader-Bastion-Interface", Count: n})
 			return
 		}
 
-		err = runtime.BindStyledParameterWithOptions("simple", "Trove-Bastion-Interface", valueList[0], &TroveBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
+		err = runtime.BindStyledParameterWithOptions("simple", "Quader-Bastion-Interface", valueList[0], &QuaderBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
 		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Trove-Bastion-Interface", Err: err})
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Quader-Bastion-Interface", Err: err})
 			return
 		}
 
-		params.TroveBastionInterface = &TroveBastionInterface
+		params.QuaderBastionInterface = &QuaderBastionInterface
 
 	}
 
@@ -13307,22 +13307,22 @@ func (siw *ServerInterfaceWrapper) BastionFeed(w http.ResponseWriter, r *http.Re
 
 	headers := r.Header
 
-	// ------------- Optional header parameter "Trove-Bastion-Interface" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Trove-Bastion-Interface")]; found {
-		var TroveBastionInterface BastionInterface
+	// ------------- Optional header parameter "Quader-Bastion-Interface" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Quader-Bastion-Interface")]; found {
+		var QuaderBastionInterface BastionInterface
 		n := len(valueList)
 		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Trove-Bastion-Interface", Count: n})
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Quader-Bastion-Interface", Count: n})
 			return
 		}
 
-		err = runtime.BindStyledParameterWithOptions("simple", "Trove-Bastion-Interface", valueList[0], &TroveBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
+		err = runtime.BindStyledParameterWithOptions("simple", "Quader-Bastion-Interface", valueList[0], &QuaderBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
 		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Trove-Bastion-Interface", Err: err})
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Quader-Bastion-Interface", Err: err})
 			return
 		}
 
-		params.TroveBastionInterface = &TroveBastionInterface
+		params.QuaderBastionInterface = &QuaderBastionInterface
 
 	}
 
@@ -13348,22 +13348,22 @@ func (siw *ServerInterfaceWrapper) BastionHandshake(w http.ResponseWriter, r *ht
 
 	headers := r.Header
 
-	// ------------- Optional header parameter "Trove-Bastion-Interface" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Trove-Bastion-Interface")]; found {
-		var TroveBastionInterface BastionInterface
+	// ------------- Optional header parameter "Quader-Bastion-Interface" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Quader-Bastion-Interface")]; found {
+		var QuaderBastionInterface BastionInterface
 		n := len(valueList)
 		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Trove-Bastion-Interface", Count: n})
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Quader-Bastion-Interface", Count: n})
 			return
 		}
 
-		err = runtime.BindStyledParameterWithOptions("simple", "Trove-Bastion-Interface", valueList[0], &TroveBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
+		err = runtime.BindStyledParameterWithOptions("simple", "Quader-Bastion-Interface", valueList[0], &QuaderBastionInterface, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""})
 		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Trove-Bastion-Interface", Err: err})
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Quader-Bastion-Interface", Err: err})
 			return
 		}
 
-		params.TroveBastionInterface = &TroveBastionInterface
+		params.QuaderBastionInterface = &QuaderBastionInterface
 
 	}
 

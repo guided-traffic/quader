@@ -13,7 +13,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Tree, TreeItem, TreeItemGroup } from '@angular/aria/tree';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { CdkMenu, CdkMenuItemRadio, CdkMenuTrigger } from '@angular/cdk/menu';
 import { TabGroup, TabPage } from '../../shared/ui/tabs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -86,7 +86,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
  * on the tree move focus to the actions.
  */
 @Component({
-  selector: 'trove-browse',
+  selector: 'quader-browse',
   imports: [
     PageHeader,
     DatePipe,
@@ -115,7 +115,7 @@ export class Browse {
   private readonly session = inject(SessionStore);
   private readonly notifier = inject(Notifier);
   private readonly confirm = inject(Confirm);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly dom = inject(DOCUMENT);
   private readonly locale = inject(LOCALE_ID);
   private readonly destroyRef = inject(DestroyRef);
@@ -318,11 +318,11 @@ export class Browse {
   );
   protected readonly curl = computed(() => {
     const item = this.item();
-    return item ? `curl -H "Authorization: Bearer $TROVE_TOKEN" ${shellQuote(item.itemUrl)}` : '';
+    return item ? `curl -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(item.itemUrl)}` : '';
   });
   protected readonly downloadCurl = computed(() => {
     const url = this.item()?.downloadUrl;
-    return url ? `curl -L -O -H "Authorization: Bearer $TROVE_TOKEN" ${shellQuote(url)}` : '';
+    return url ? `curl -L -O -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(url)}` : '';
   });
 
   /** The path of the selection as breadcrumb links: the repository, then each folder, then the item. */

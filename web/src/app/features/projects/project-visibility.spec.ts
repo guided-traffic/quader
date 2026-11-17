@@ -9,7 +9,7 @@ import { button, buttonByText, expectAccessible, renderScreen, settle, text } fr
 import { ProjectDialog } from './project-dialog';
 import { ProjectSettings } from './project-settings';
 import { ProjectsHome } from './projects-home';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { TestBed } from '@angular/core/testing';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
@@ -33,7 +33,7 @@ async function openSettings(level: Level, capabilities?: readonly string[], repo
       }
     },
   });
-  const radios = () => [...r.root.querySelectorAll<HTMLInputElement>('trove-visibility-level input[type="radio"]')];
+  const radios = () => [...r.root.querySelectorAll<HTMLInputElement>('quader-visibility-level input[type="radio"]')];
   return { ...r, radios, api: r.get(ProjectsApi) as FakeProjectsApi };
 }
 
@@ -52,7 +52,7 @@ describe('The visibility of a project (R-UI-054)', () => {
     await settle(r.fixture);
     button(r.root, /Save changes\s+\(visibility\)/).click();
     await settle(r.fixture);
-    expect(overlay()?.querySelector('trove-confirm-dialog') ?? null).toBeNull();
+    expect(overlay()?.querySelector('quader-confirm-dialog') ?? null).toBeNull();
     expect(r.api.calls).toContain('setVisibility web internal');
     expect(r.api.ifMatch).toEqual(['"1"']);
     expect(text(r.root)).toContain('This project is internal.');
@@ -69,7 +69,7 @@ describe('The visibility of a project (R-UI-054)', () => {
     await settle(r.fixture);
     button(r.root, /Save changes\s+\(visibility\)/).click();
     await settle(r.fixture);
-    const dialog = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     expect(dialog).toBeTruthy();
     expect(text(dialog)).toContain('Anyone who reads them only through their visibility loses access.');
     expect([...dialog.querySelectorAll('li')].map((li) => text(li))).toEqual(['npm-public: Public / Internal → Internal']);
@@ -85,7 +85,7 @@ describe('The visibility of a project (R-UI-054)', () => {
     await settle(r.fixture);
     button(r.root, /Save changes\s+\(visibility\)/).click();
     await settle(r.fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'Cancel').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Cancel').click();
     await settle(r.fixture);
     expect(r.api.calls.some((c) => c.startsWith('setVisibility'))).toBe(false);
   });
@@ -93,16 +93,16 @@ describe('The visibility of a project (R-UI-054)', () => {
   it('R-UI-054 an Owner who is no administrator sees the level read-only with the reason', async () => {
     const r = await openSettings('internal', []);
     expect(r.radios().every((x) => x.closest('fieldset')!.disabled)).toBe(true);
-    expect(text(r.root)).toContain('Only an administrator of trove sets the visibility of a project.');
+    expect(text(r.root)).toContain('Only an administrator of Quader sets the visibility of a project.');
   });
 
   it('R-UI-054 the create dialog has the group, preset to the installation default, and creates the project at the chosen level', async () => {
     const r = await renderScreen(ProjectsHome, {
       setup: (get) => ((get(VisibilityApi) as FakeVisibilityApi).stored.settings.defaultLevel = 'internal'),
     });
-    TestBed.inject(TroveDialog).open(ProjectDialog, { data: {}, maxWidth: '40rem' });
+    TestBed.inject(QuaderDialog).open(ProjectDialog, { data: {}, maxWidth: '40rem' });
     await settle(r.fixture);
-    const dialog = overlay().querySelector('trove-project-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
     const radios = () => [...dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
     expect(radios().map((x) => x.checked)).toEqual([false, true, false]);
     radios()[2]!.click();
@@ -147,7 +147,7 @@ describe('The start page lists the projects of the caller first (R-UI-054)', () 
         ];
       },
     });
-    const box = [...r.root.querySelectorAll<HTMLInputElement>('trove-checkbox input')].find((i) => i.labels?.[0]?.textContent?.includes('Your projects'))!;
+    const box = [...r.root.querySelectorAll<HTMLInputElement>('quader-checkbox input')].find((i) => i.labels?.[0]?.textContent?.includes('Your projects'))!;
     box.click();
     await settle(r.fixture);
     expect([...r.root.querySelectorAll('tbody tr th a')].map((a) => text(a))).toEqual(['Beta']);

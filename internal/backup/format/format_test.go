@@ -51,24 +51,24 @@ func TestBackupID(t *testing.T) {
 }
 
 func TestLayout(t *testing.T) {
-	l := Layout{Prefix: "trove"}
+	l := Layout{Prefix: "quader"}
 	d := dg(0xab)
 	id := ID("20261028T020000Z-7f3a")
 	t.Run("R-BAK-002 the keys are the documented layout", func(t *testing.T) {
 		h := d.Hex()
 		want := map[string]string{
-			l.Marker():                  "trove/trove-backup-target.json",
-			l.Pool(d):                   "trove/pool/sha256/ab/ab/" + h,
-			l.Manifest(id):              "trove/backups/20261028T020000Z-7f3a/manifest.json",
-			l.BlobList(id):              "trove/backups/20261028T020000Z-7f3a/blobs.idx.zst",
-			l.Table(id, "items"):        "trove/backups/20261028T020000Z-7f3a/db/items.copy.zst",
-			(Layout{}).Marker():         "trove-backup-target.json",
+			l.Marker():                  "quader/quader-backup-target.json",
+			l.Pool(d):                   "quader/pool/sha256/ab/ab/" + h,
+			l.Manifest(id):              "quader/backups/20261028T020000Z-7f3a/manifest.json",
+			l.BlobList(id):              "quader/backups/20261028T020000Z-7f3a/blobs.idx.zst",
+			l.Table(id, "items"):        "quader/backups/20261028T020000Z-7f3a/db/items.copy.zst",
+			(Layout{}).Marker():         "quader-backup-target.json",
 			(Layout{}).Manifest(id):     "backups/20261028T020000Z-7f3a/manifest.json",
 			(Layout{}).Pool(dg(0x01)):   "pool/sha256/01/01/" + dg(0x01).Hex(),
-			l.PoolPrefix() + "x":        "trove/pool/sha256/x",
-			l.BackupsPrefix() + "y":     "trove/backups/y",
+			l.PoolPrefix() + "x":        "quader/pool/sha256/x",
+			l.BackupsPrefix() + "y":     "quader/backups/y",
 			l.Dir(id) + ManifestName:    l.Manifest(id),
-			l.Dir(id) + TablesDir + "/": "trove/backups/20261028T020000Z-7f3a/db/",
+			l.Dir(id) + TablesDir + "/": "quader/backups/20261028T020000Z-7f3a/db/",
 		}
 		for got, w := range want {
 			if got != w {
@@ -81,9 +81,9 @@ func TestLayout(t *testing.T) {
 			t.Fatalf("ParsePool = %v, %v", got, ok)
 		}
 		for _, k := range []string{
-			"trove/pool/sha256/junk", "trove/pool/sha256/ab/ab/" + strings.ToUpper(d.Hex()),
-			"trove/pool/sha256/cd/ab/" + d.Hex(), "trove/pool/sha256/ab/cd/" + d.Hex(), "other/pool/sha256/ab/ab/" + d.Hex(),
-			"trove/pool/sha256/ab/ab/" + d.Hex() + "/x",
+			"quader/pool/sha256/junk", "quader/pool/sha256/ab/ab/" + strings.ToUpper(d.Hex()),
+			"quader/pool/sha256/cd/ab/" + d.Hex(), "quader/pool/sha256/ab/cd/" + d.Hex(), "other/pool/sha256/ab/ab/" + d.Hex(),
+			"quader/pool/sha256/ab/ab/" + d.Hex() + "/x",
 		} {
 			if _, ok := l.ParsePool(k); ok {
 				t.Errorf("ParsePool(%q) accepted", k)
@@ -95,7 +95,7 @@ func TestLayout(t *testing.T) {
 		if !ok || got != id || inner != "db/items.copy.zst" {
 			t.Fatalf("ParseBackupKey = %v, %q, %v", got, inner, ok)
 		}
-		if _, _, ok := l.ParseBackupKey("trove/backups/notanid/manifest.json"); ok {
+		if _, _, ok := l.ParseBackupKey("quader/backups/notanid/manifest.json"); ok {
 			t.Fatal("accepted a bad ID")
 		}
 	})
@@ -140,11 +140,11 @@ func sampleManifest() *Manifest {
 	at := time.Date(2026, 10, 28, 2, 0, 1, 87_000_000, time.UTC)
 	return &Manifest{
 		Format: 1, BackupID: "20261028T020000Z-7f3a", InstallationID: "0191c2d4", Incarnation: "0192f0a1",
-		Trove:     TroveInfo{Version: "1.0.0", Revision: "3f2c1a"},
+		Quader:    QuaderInfo{Version: "1.0.0", Revision: "3f2c1a"},
 		Schema:    SchemaInfo{Step: 57, Steps: []SchemaStep{{Step: 1, Name: "00001_core", SHA256: strings.Repeat("a", 64)}}},
 		Postgres:  PostgresRef{ServerVersion: "17.6", Isolation: "repeatable read"},
 		StartedAt: at, SnapshotAt: at.Add(time.Second), CompletedAt: at.Add(time.Hour), PreviousBackupID: &prev,
-		Source: Source{Storage: StorageRef{Bucket: "trove-blobs", Prefix: "trove"}, RevocationJournal: true},
+		Source: Source{Storage: StorageRef{Bucket: "quader-blobs", Prefix: "quader"}, RevocationJournal: true},
 		Tables: []TableFile{{
 			Name: "items", Class: "data", File: "db/items.copy.zst",
 			Columns: [][2]string{{"id", "bigint"}, {"path", "text"}}, Rows: 3, Bytes: 100, CompressedBytes: 40, SHA256: strings.Repeat("b", 64),

@@ -8,7 +8,7 @@ Changing a tag needs the deploy permission and, where the package has owners, ow
 
 {{if eq .Client "npm"}}`npm unpublish <name>@<version>` removes one version; `npm unpublish <name> --force` removes the whole package.{{else if eq .Client "pnpm"}}`pnpm unpublish <name>@<version> --force` removes one version.{{else}}Yarn has no unpublish command; use npm or pnpm with the same repository.{{end}} Unpublishing needs the delete permission (deploy alone answers `E403`) and, where the package has owners, ownership. The version is deleted for good and its number never takes other bytes again (`409` `npm_version_unpublished`); no time window applies.{{if and (eq .Class "virtual") (eq .Client "pnpm")}}
 
-pnpm 11 and 12 cannot unpublish through a virtual repository: they send back the revision of the merged document, which trove refuses with `409` `npm_stale_rev`, and retry for about 70 seconds. Unpublish at the deployment target{{if .PublishTarget}}, `{{.PublishTarget}}`,{{end}} instead; pnpm 10 unpublishes through the virtual repository, as npm does.{{end}}
+pnpm 11 and 12 cannot unpublish through a virtual repository: they send back the revision of the merged document, which Quader refuses with `409` `npm_stale_rev`, and retry for about 70 seconds. Unpublish at the deployment target{{if .PublishTarget}}, `{{.PublishTarget}}`,{{end}} instead; pnpm 10 unpublishes through the virtual repository, as npm does.{{end}}
 
 `npm deprecate` is not available yet: it fails with `E404` and changes nothing.
 {{end}}

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // Event types the writer treats specially (R-OPS-015). The owning areas register

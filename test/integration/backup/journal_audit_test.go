@@ -11,14 +11,14 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 func (e *jenv) declaredServices() (*authz.Service, *principal.Manager) {
@@ -41,7 +41,7 @@ func (e *jenv) declaredServices() (*authz.Service, *principal.Manager) {
 
 // TestR_AUTHZ_010_MarksCoverABindingAddedAndRemovedAfterTheRestorePoint: a declared binding that was bound and unbound after
 // the restore point is absent from the snapshot, so the replay's delete finds nothing; the mark is written all the same, and
-// trove migrate does not bind it (audit finding M4).
+// quader migrate does not bind it (audit finding M4).
 func TestR_AUTHZ_010_MarksCoverABindingAddedAndRemovedAfterTheRestorePoint(t *testing.T) {
 	e := newJEnv(t)
 	e.stack.User("m", "newcomers")
@@ -54,12 +54,12 @@ func TestR_AUTHZ_010_MarksCoverABindingAddedAndRemovedAfterTheRestorePoint(t *te
 		t.Fatalf("ApplyDeclared = %+v, %v; want the binding suppressed", res, err)
 	}
 	if n := e.count("SELECT count(*)::text FROM authz_role_binding WHERE principal_id = $1::uuid", gid); n != "0" {
-		t.Error("trove migrate bound a principal whose unbinding the journal recorded")
+		t.Error("quader migrate bound a principal whose unbinding the journal recorded")
 	}
 }
 
 // TestR_AUTHZ_010_MarksSurviveTheDeletionOfADeclaredGroup: the replay of group.deleted deletes the group and its binding;
-// trove migrate creates the declared group again under a new ID and must not bind the role to it (audit finding M4).
+// quader migrate creates the declared group again under a new ID and must not bind the role to it (audit finding M4).
 func TestR_AUTHZ_010_MarksSurviveTheDeletionOfADeclaredGroup(t *testing.T) {
 	e := newJEnv(t)
 	e.stack.User("m", "platform-admins")

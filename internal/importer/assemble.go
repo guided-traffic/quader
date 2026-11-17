@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Authentication modes of the source, the values of a remote repository's authMode (R-REPO-033).
@@ -31,7 +31,7 @@ type Params struct {
 	SourceAuth, SourceUsername, SourcePassword string
 	// ExtraHosts are host patterns, besides the source's origin, that may serve files; they are asked without a credential.
 	ExtraHosts []string
-	// Token is the trove token the target is written with.
+	// Token is the quader token the target is written with.
 	Token string
 	// Rate is the requests per second towards the source, 0 for no limit.
 	Rate float64
@@ -73,26 +73,26 @@ func Build(f *outbound.Factory, p Params) (Format, *SourceClient, *TargetClient,
 		return nil, nil, nil, fmt.Errorf("an address must not carry a query")
 	}
 	if p.Token == "" {
-		return nil, nil, nil, fmt.Errorf("no token for the target: give --token-file or set TROVE_IMPORT_TOKEN")
+		return nil, nil, nil, fmt.Errorf("no token for the target: give --token-file or set QUADER_IMPORT_TOKEN")
 	}
 	var srcHeaders func() http.Header
 	switch p.SourceAuth {
 	case "", AuthNone:
 	case AuthBasic:
 		if p.SourcePassword == "" {
-			return nil, nil, nil, fmt.Errorf("--source-auth basic needs a password: --source-password-file or TROVE_IMPORT_SOURCE_PASSWORD")
+			return nil, nil, nil, fmt.Errorf("--source-auth basic needs a password: --source-password-file or QUADER_IMPORT_SOURCE_PASSWORD")
 		}
 		value := "Basic " + base64.StdEncoding.EncodeToString([]byte(p.SourceUsername+":"+p.SourcePassword))
 		srcHeaders = func() http.Header { return http.Header{"Authorization": {value}} }
 	case AuthBearer:
 		if p.SourcePassword == "" {
-			return nil, nil, nil, fmt.Errorf("--source-auth bearer needs a token: --source-password-file or TROVE_IMPORT_SOURCE_PASSWORD")
+			return nil, nil, nil, fmt.Errorf("--source-auth bearer needs a token: --source-password-file or QUADER_IMPORT_SOURCE_PASSWORD")
 		}
 		value := "Bearer " + p.SourcePassword
 		srcHeaders = func() http.Header { return http.Header{"Authorization": {value}} }
 	case AuthToken:
 		if p.SourcePassword == "" {
-			return nil, nil, nil, fmt.Errorf("--source-auth token needs a token: --source-password-file or TROVE_IMPORT_SOURCE_PASSWORD")
+			return nil, nil, nil, fmt.Errorf("--source-auth token needs a token: --source-password-file or QUADER_IMPORT_SOURCE_PASSWORD")
 		}
 		value := "Token " + p.SourcePassword
 		srcHeaders = func() http.Header { return http.Header{"Authorization": {value}} }

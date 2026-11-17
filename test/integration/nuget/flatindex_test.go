@@ -6,11 +6,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	nugetdata "github.com/guided-traffic/trove/internal/formatdata/nuget"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	nugetdata "github.com/guided-traffic/quader/internal/formatdata/nuget"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_NUGET_030_TheVersionListReadsItsRevisionWithItsRows: the data port reads the version list of

@@ -21,7 +21,7 @@ func npmClientRun(t testing.TB, registryHost, token string, args ...string) (str
 	t.Helper()
 	pod := npmClientPod(t, 0)
 	base := "/api/npm/" + e2eProject + "/" + bakNPM + "/"
-	full := append([]string{"--context", cfg.kubeContext, "-n", cfg.namespace, "exec", pod, "--", "env", "HOME=/tmp/bakhome", "NODE_EXTRA_CA_CERTS=/etc/trove-ca/ca.crt", "npm11"}, args...)
+	full := append([]string{"--context", cfg.kubeContext, "-n", cfg.namespace, "exec", pod, "--", "env", "HOME=/tmp/bakhome", "NODE_EXTRA_CA_CERTS=/etc/quader-ca/ca.crt", "npm11"}, args...)
 	full = append(full, "--registry", "https://"+registryHost+base, "--//"+registryHost+base+":_authToken="+token)
 	out, err := exec.Command("kubectl", full...).CombinedOutput()
 	return string(out), err
@@ -40,7 +40,7 @@ func TestBackupJournal(t *testing.T) {
 		t.Fatalf("the token must work before the snapshot: %s", r)
 	}
 	alice := newBrowser(t)
-	alice.oidcLogin("alice", secretValue(t, "trove-keycloak", "alice-password"))
+	alice.oidcLogin("alice", secretValue(t, "quader-keycloak", "alice-password"))
 	unp := "bak-unp-" + run
 	for _, v := range []string{"1.0.0", "1.1.0"} {
 		if r, err := retrying(func() (reply, error) { return bakPublishNPM(adm, unp, v) }); err != nil || r.Status != 201 {
@@ -111,16 +111,16 @@ func TestBackupJournal(t *testing.T) {
 	// ── the restore ──────────────────────────────────────────────────────────
 	restoreNSScript(t, "infra")
 	restoreNSScript(t, "install", backupID)
-	re := bakWaitJob(t, restoreNS, "trove-restore", 20*time.Minute)
-	logs := bakJobLogs(restoreNS, "trove-restore")
+	re := bakWaitJob(t, restoreNS, "quader-restore", 20*time.Minute)
+	logs := bakJobLogs(restoreNS, "quader-restore")
 	if re.Condition != "Complete" {
 		t.Fatalf("the restore Job ended %s:\n%s", re.Condition, tail(logs, 3000))
 	}
 	t.Logf("the restore's replay:\n%s", tail(logs, 1800))
 	// what the restore left, before any replica or worker runs on it
 	usage := func() string {
-		return krSQL(t, `SELECT (SELECT blobs FROM trove.storage_usage_totals) || ' totals, ' || (SELECT count(*) FROM trove.storage_usage_deltas) || ' deltas, ' ||
-			(SELECT count(*) FROM trove.blobs WHERE state = 'live') || ' live, ' || (SELECT count(*) FROM trove.blobs) || ' rows'`)
+		return krSQL(t, `SELECT (SELECT blobs FROM quader.storage_usage_totals) || ' totals, ' || (SELECT count(*) FROM quader.storage_usage_deltas) || ' deltas, ' ||
+			(SELECT count(*) FROM quader.blobs WHERE state = 'live') || ' live, ' || (SELECT count(*) FROM quader.blobs) || ' rows'`)
 	}
 	usageBefore := usage()
 	usageFields := strings.Fields(usageBefore)
@@ -151,16 +151,16 @@ func TestBackupJournal(t *testing.T) {
 		}
 	})
 
-	t.Run("R-NPM-047 an npm version unpublished after the snapshot is withheld until trove admin npm reinstate", func(t *testing.T) {
+	t.Run("R-NPM-047 an npm version unpublished after the snapshot is withheld until quader admin npm reinstate", func(t *testing.T) {
 		got := restoredNPMVersions(t, token, unp)
 		if strings.Join(got, ",") != "1.0.0" {
 			t.Fatalf("npm view lists %v, want only 1.0.0: 1.1.0 was unpublished after the snapshot", got)
 		}
-		out, err := kubectl("-n", restoreNS, "exec", "deploy/trove-worker", "--", "trove", "admin", "npm", "reinstate", e2eProject+"/"+bakNPM, unp+"@1.1.0")
+		out, err := kubectl("-n", restoreNS, "exec", "deploy/quader-worker", "--", "quader", "admin", "npm", "reinstate", e2eProject+"/"+bakNPM, unp+"@1.1.0")
 		if err != nil {
 			t.Fatalf("reinstate: %v", err)
 		}
-		t.Logf("trove admin npm reinstate: %s", strings.TrimSpace(out))
+		t.Logf("quader admin npm reinstate: %s", strings.TrimSpace(out))
 		waitFor(t, "npm view to list the reinstated version", 2*time.Minute, 3*time.Second, func() bool {
 			return strings.Join(restoredNPMVersions(t, token, unp), ",") == "1.0.0,1.1.0"
 		})
@@ -187,7 +187,7 @@ func TestBackupJournal(t *testing.T) {
 
 	t.Run("R-EP-020 an exposure rule narrowed or deleted after the snapshot stays narrowed or deleted, a narrowing the comparator cannot prove disables the rule", func(t *testing.T) {
 		row := func(name string) string {
-			return krSQL(t, `SELECT (paths->'include')::text || ' enabled=' || enabled FROM trove.endpoint_exposure_rule WHERE endpoint = 'customers' AND name = '`+name+`'`)
+			return krSQL(t, `SELECT (paths->'include')::text || ' enabled=' || enabled FROM quader.endpoint_exposure_rule WHERE endpoint = 'customers' AND name = '`+name+`'`)
 		}
 		if got := row(narrow); got != `["releases/**"] enabled=true` {
 			t.Errorf("the provably narrowed rule is %s on the restored installation, want [\"releases/**\"] enabled=true", got)
@@ -195,7 +195,7 @@ func TestBackupJournal(t *testing.T) {
 		if got := row(glob); !strings.HasSuffix(got, "enabled=false") {
 			t.Errorf("the rule narrowed by a glob the comparator cannot compare is %s, want it disabled", got)
 		}
-		if got := krSQL(t, `SELECT count(*) FROM trove.endpoint_exposure_rule WHERE endpoint = 'customers' AND name = '`+gone+`'`); got != "0" {
+		if got := krSQL(t, `SELECT count(*) FROM quader.endpoint_exposure_rule WHERE endpoint = 'customers' AND name = '`+gone+`'`); got != "0" {
 			t.Errorf("the deleted rule exists %s times on the restored installation", got)
 		}
 	})
@@ -215,7 +215,7 @@ func TestBackupJournal(t *testing.T) {
 		}
 		var got, want string
 		waitFor(t, "the overview to equal the blobs table", 3*time.Minute, 3*time.Second, func() bool {
-			want = krSQL(t, `SELECT count(*) || '|' || coalesce(sum(size), 0) FROM trove.blobs WHERE state = 'live'`)
+			want = krSQL(t, `SELECT count(*) || '|' || coalesce(sum(size), 0) FROM quader.blobs WHERE state = 'live'`)
 			r := rst.api.get("/api/v1/system/overview")
 			if r.Status != 200 || json.Unmarshal(r.Body, &o) != nil {
 				return false

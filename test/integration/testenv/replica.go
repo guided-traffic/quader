@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/app"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // SyncBuffer is a log sink that is safe to read while a replica writes.
@@ -38,14 +38,14 @@ func (s *SyncBuffer) String() string { s.mu.Lock(); defer s.mu.Unlock(); return 
 
 // ReplicaOptions describe one replica.
 type ReplicaOptions struct {
-	// Name is the replica's instance name (TROVE_POD_NAME); it must be unique in
+	// Name is the replica's instance name (QUADER_POD_NAME); it must be unique in
 	// the stack.
 	Name string
 	// Role is web (default), worker or all.
 	Role string
 	// Env is appended to the stack's environment for this replica only.
 	Env []string
-	// Endpoints is the JSON of server.endpoints (TROVE_SERVER_ENDPOINTS); empty
+	// Endpoints is the JSON of server.endpoints (QUADER_SERVER_ENDPOINTS); empty
 	// keeps the default endpoint only.
 	Endpoints string
 	// Extra registers more routes on every endpoint's router before the route
@@ -94,9 +94,9 @@ func (s *Stack) Start(tb testing.TB, o ReplicaOptions) *Replica {
 	}
 	// The ops listener's address must differ from server.listen as written, so it
 	// gets a free port of its own.
-	environ := append(append([]string{}, s.base...), "TROVE_POD_NAME="+o.Name, "TROVE_SERVER_OPS_LISTEN="+FreeAddr(tb))
+	environ := append(append([]string{}, s.base...), "QUADER_POD_NAME="+o.Name, "QUADER_SERVER_OPS_LISTEN="+FreeAddr(tb))
 	if o.Endpoints != "" {
-		environ = append(environ, "TROVE_SERVER_ENDPOINTS="+o.Endpoints)
+		environ = append(environ, "QUADER_SERVER_ENDPOINTS="+o.Endpoints)
 	}
 	environ = append(environ, o.Env...)
 	loaded, err := config.Load(config.Options{Environ: environ, Flags: map[string]string{"process.role": o.Role}, Command: config.CommandServe})
@@ -243,7 +243,7 @@ func (a Answer) Problem(tb testing.TB) string {
 }
 
 // DefaultHost is the Host of the default endpoint's base URL.
-const DefaultHost = "trove.test"
+const DefaultHost = "quader.test"
 
 // Do sends one request to the default endpoint of a replica, with the Host of
 // its base URL and an optional bearer token. A JSON-marshalable body is sent as

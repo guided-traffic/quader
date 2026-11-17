@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 func handshake(t *testing.T, s *site, bst string, extra ...string) (iface.Handshake, reply) {
@@ -150,7 +150,7 @@ func TestR_BAS_010_TheLastContactIsRecordedAtMostOncePerMinuteAndAnEventFollowsA
 	host := []string{"X-Forwarded-Proto", "https", "X-Forwarded-Host", "packages.example.com", "X-Forwarded-Port", "443"}
 
 	handshake(t, s, bst, host...)
-	got := contacts(t, e, bid)["trove-bastion-7d9c-x2k4q"]
+	got := contacts(t, e, bid)["quader-bastion-7d9c-x2k4q"]
 	if got.release != "0.14.0" || got.version != iface.InterfaceVersion || got.baseURL != "https://packages.example.com" || got.addr != "127.0.0.1" {
 		t.Fatalf("contact = %+v", got)
 	}
@@ -163,14 +163,14 @@ func TestR_BAS_010_TheLastContactIsRecordedAtMostOncePerMinuteAndAnEventFollowsA
 		t.Errorf("event = %+v", ev)
 	}
 	waitFor(t, "the event reaches the table", 10*time.Second, func() bool {
-		return e.number("SELECT count(*) FROM audit_event WHERE action = 'bastion.contact' AND details->>'release' = '0.14.0' AND details->>'replica' = 'trove-bastion-7d9c-x2k4q'") == 1
+		return e.number("SELECT count(*) FROM audit_event WHERE action = 'bastion.contact' AND details->>'release' = '0.14.0' AND details->>'replica' = 'quader-bastion-7d9c-x2k4q'") == 1
 	})
 
 	// The same values again: no write, no event.
 	for range 3 {
 		handshake(t, s, bst, host...)
 	}
-	if again := contacts(t, e, bid)["trove-bastion-7d9c-x2k4q"]; !again.at.Equal(got.at) {
+	if again := contacts(t, e, bid)["quader-bastion-7d9c-x2k4q"]; !again.at.Equal(got.at) {
 		t.Errorf("a repeat within a minute rewrote the row: %v -> %v", got.at, again.at)
 	}
 	if n := contactEvents(s); n != 1 {
@@ -178,14 +178,14 @@ func TestR_BAS_010_TheLastContactIsRecordedAtMostOncePerMinuteAndAnEventFollowsA
 	}
 
 	// A changed value is written at once and recorded: the release.
-	handshake(t, s, bst, append([]string{"User-Agent", "trove-bastion/0.15.0"}, host...)...)
-	if c := contacts(t, e, bid)["trove-bastion-7d9c-x2k4q"]; c.release != "0.15.0" {
+	handshake(t, s, bst, append([]string{"User-Agent", "quader-bastion/0.15.0"}, host...)...)
+	if c := contacts(t, e, bid)["quader-bastion-7d9c-x2k4q"]; c.release != "0.15.0" {
 		t.Errorf("release = %q", c.release)
 	}
 	waitFor(t, "bastion.contact for the new release", 10*time.Second, func() bool { return contactEvents(s) == 2 })
 
 	// Another replica is another row.
-	handshake(t, s, bst, append([]string{iface.HeaderReplica, "trove-bastion-7d9c-zzzzz"}, host...)...)
+	handshake(t, s, bst, append([]string{iface.HeaderReplica, "quader-bastion-7d9c-zzzzz"}, host...)...)
 	if rows := contacts(t, e, bid); len(rows) != 2 {
 		t.Errorf("rows = %v", rows)
 	}
@@ -200,7 +200,7 @@ func TestR_BAS_010_AnotherReplicaOfTheMainInstallationWritesOnlyAfterAMinute(t *
 	s := e.newSite(siteOpts{})
 	bid := e.registration("partners")
 	rec := bastionmain.Recognition{Bastion: "partners", BastionID: bid, TokenID: "0192f1c4-0000-7000-8000-000000000001", Interface: iface.InterfaceVersion, Replica: "bastion-0"}
-	rep := bastionmain.Report{ClientAddress: "198.51.100.20", UserAgent: "trove-bastion/0.14.0", ResponseBaseURL: "https://packages.example.com"}
+	rep := bastionmain.Report{ClientAddress: "198.51.100.20", UserAgent: "quader-bastion/0.14.0", ResponseBaseURL: "https://packages.example.com"}
 	// Two recorders stand for two replicas of the main installation: they share the table and nothing else.
 	one := bastionmain.NewContacts(bastionmain.ContactOptions{DB: s.db, Audit: s.rec})
 	two := bastionmain.NewContacts(bastionmain.ContactOptions{DB: s.db, Audit: s.rec})
@@ -235,7 +235,7 @@ func TestR_BAS_010_TheHandshakeNeedsTheBastionToken(t *testing.T) {
 	s := e.newSite(siteOpts{})
 	for name, c := range map[string]call{
 		"no credential":           {method: http.MethodGet, path: iface.PathHandshake, header: http.Header{iface.HeaderInterface: {strconv.Itoa(iface.InterfaceVersion)}}},
-		"a revoked Bastion token": {method: http.MethodGet, path: iface.PathHandshake, header: http.Header{"Authorization": {"Bearer trv_bst_revokedrevokedrevokedrevokedrevokedrevok"}, iface.HeaderInterface: {"1"}}},
+		"a revoked Bastion token": {method: http.MethodGet, path: iface.PathHandshake, header: http.Header{"Authorization": {"Bearer qdr_bst_revokedrevokedrevokedrevokedrevokedrevok"}, iface.HeaderInterface: {"1"}}},
 	} {
 		rp := s.do(c)
 		wantCode := errs.CodeBastionTokenInvalid

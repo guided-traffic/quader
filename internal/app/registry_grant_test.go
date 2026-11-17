@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // R-OCI-005: named in the test name by WP3 once /v2/ is mounted and the grant check runs.
@@ -16,7 +16,7 @@ func TestTheRegistryGrantCrossesTheSeam(t *testing.T) {
 	exp := time.Date(2026, 11, 8, 10, 5, 0, 0, time.UTC)
 	grant := &registrytoken.Grant{Entries: []registrytoken.Entry{{Repo: repo, Name: "app", Actions: registrytoken.Pull | registrytoken.Delete}}, Catalog: true}
 
-	t.Run("a registry token of a principal keeps its trove token's facts and gains the grant", func(t *testing.T) {
+	t.Run("a registry token of a principal keeps its quader token's facts and gains the grant", func(t *testing.T) {
 		p := principalFromResult(auth.Result{
 			Principal:  principal.Principal{ID: "u1", Kind: principal.KindUser, Name: "alice"},
 			Credential: auth.Credential{Method: auth.MethodBearer, TokenID: "t1", TokenType: "pat", ExpiresAt: &exp, Registry: grant},

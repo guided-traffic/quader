@@ -1,5 +1,5 @@
--- trove:phase expand
--- trove:no-transaction
+-- quader:phase expand
+-- quader:no-transaction
 --
 -- GitLab CI OIDC (R-CI-020, R-HA-018, Q-CI-26, Q-CI-53): the index behind a project's issuance list, which finds the
 -- records whose frozen bundle has a contribution of the project with a jsonb containment test on

@@ -65,9 +65,9 @@ RecordTx(ctx, tx, ev)                       Record(ctx, ev)
   toRow; INSERT audit_event (now())           toRow (producer time), UUIDv7
   [INSERT revocation_outbox, same tx]         dedup: first / repeat / summary
   tx.After: log copy, counter                 non-blocking send into the buffer (async_buffer)
-  any error fails the caller's transaction      full: log copy + trove_audit_events_dropped_total
+  any error fails the caller's transaction      full: log copy + quader_audit_events_dropped_total
                                               loop: batch of 500 or every second, one INSERT
-                                              written: log copy + trove_audit_events_total
+                                              written: log copy + quader_audit_events_total
 ```
 
 - `RecordTx` is for `Transactional` types and returns an error for anything else; a `None` type is a no-op. The caller returns the
@@ -180,8 +180,8 @@ of an anonymous refusal keys on that address, and the filter `traceId` finds an 
 
 | Where | What | Code |
 |---|---|---|
-| `trove migrate up` | writes `audit.retention_days` into `audit_policy` when it differs, then calls `audit_maintain_partitions()` | `postgres.syncAuditPolicy`, `MigrateOptions.AuditRetentionDays` |
-| start-up step 4 (`bootstrap`) | `Store.Prepare`: reconcile the retention (warn, naming `trove migrate`, when the runtime role may not write it), call the function, require the current and next month's partitions; retries with backoff while it fails, so the replica stays unready | `App.startAudit` |
+| `quader migrate up` | writes `audit.retention_days` into `audit_policy` when it differs, then calls `audit_maintain_partitions()` | `postgres.syncAuditPolicy`, `MigrateOptions.AuditRetentionDays` |
+| start-up step 4 (`bootstrap`) | `Store.Prepare`: reconcile the retention (warn, naming `quader migrate`, when the runtime role may not write it), call the function, require the current and next month's partitions; retries with backoff while it fails, so the replica stays unready | `App.startAudit` |
 | the `audit-retention` task | calls `Store.Maintain` daily (`a.m1.auditStore`) | registered by the jobs area (R-OPS-019) |
 | a restore | `audit_create_partitions(from, to)` as the schema owner | the restore Job (M5) |
 

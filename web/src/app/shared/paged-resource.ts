@@ -2,7 +2,7 @@ import { ResourceRef, signal } from '@angular/core';
 import { ApiError } from '../api/problem';
 import { PagedList, PageFetcher } from '../api/pagination';
 
-/** Wraps any failure of a list call in an `ApiError`, so that `<trove-error-notice>` can show it. */
+/** Wraps any failure of a list call in an `ApiError`, so that `<quader-error-notice>` can show it. */
 export function asApiError(e: unknown): ApiError {
   return e instanceof ApiError ? e : new ApiError(0, null, null);
 }

@@ -1,4 +1,4 @@
-// Package config is the one configuration schema of trove (R-ARCH-020): a
+// Package config is the one configuration schema of quader (R-ARCH-020): a
 // single struct tree whose tags give every key its YAML name, default,
 // validation and secret flag. The loader, the environment variable names, the
 // JSON Schema and the redacted effective-configuration view are all derived
@@ -61,11 +61,11 @@ type Config struct {
 	// (BastionConfig in bastion_role.go); the section named bastion there has nothing to do with this one.
 	Bastions Bastions `yaml:"bastions"`
 
-	// The backup lane (backup.go): trove backup, the restore and the revocation journal (R-BAK-011, R-HA-054).
+	// The backup lane (backup.go): quader backup, the restore and the revocation journal (R-BAK-011, R-HA-054).
 	Backup Backup `yaml:"backup"`
 
 	// ConfigAsCode holds secrets_dir, which the secret references of M2 use.
 	ConfigAsCode AsCode `yaml:"config_as_code"`
 }
 
-//go:generate go run ./schemagen -out schema.json -bastion-out bastion.schema.json -bastion-chart ../../deploy/helm/trove-bastion
+//go:generate go run ./schemagen -out schema.json -bastion-out bastion.schema.json -bastion-chart ../../deploy/helm/quader-bastion

@@ -54,7 +54,7 @@ func TestURLUserinfo(t *testing.T) {
 		if s := redactDisplay("not a url, mail ops@example.org").(string); s != "not a url, mail ops@example.org" {
 			t.Fatalf("plain text changed: %q", s)
 		}
-		l, err := loadEdge(t, "", `TROVE_LOG_REQUEST_REDACT_QUERY_PARAMS=["https://u:leak-me@x.example"]`)
+		l, err := loadEdge(t, "", `QUADER_LOG_REQUEST_REDACT_QUERY_PARAMS=["https://u:leak-me@x.example"]`)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -79,11 +79,11 @@ func TestEdgeSectionRules(t *testing.T) {
 			t.Fatalf("defaults = %+v", tr)
 		}
 		for _, bad := range []string{`["0.0.0.0/0"]`, `["::/0"]`, `["edge.example"]`} {
-			if _, err := loadEdge(t, "", "TROVE_TRACING_TRUSTED_PEERS="+bad); err == nil || !strings.Contains(err.Error(), "tracing.trusted_peers") {
+			if _, err := loadEdge(t, "", "QUADER_TRACING_TRUSTED_PEERS="+bad); err == nil || !strings.Contains(err.Error(), "tracing.trusted_peers") {
 				t.Errorf("%s: err = %v", bad, err)
 			}
 		}
-		if _, err := loadEdge(t, "", `TROVE_TRACING_TRUSTED_PEERS=["10.0.5.7","fd00:1::/64"]`); err != nil {
+		if _, err := loadEdge(t, "", `QUADER_TRACING_TRUSTED_PEERS=["10.0.5.7","fd00:1::/64"]`); err != nil {
 			t.Errorf("valid peers refused: %v", err)
 		}
 		if _, err := loadEdge(t, "tracing:\n  incoming_context: trusted_proxies\n"); err == nil {
@@ -113,7 +113,7 @@ func TestEdgeSectionRules(t *testing.T) {
 	})
 
 	t.Run("R-OPS-005 a base_url with user information is refused and the message hides the password", func(t *testing.T) {
-		_, err := loadEdge(t, "server:\n  base_url: https://u:s3cr3t-pw@trove.example\n")
+		_, err := loadEdge(t, "server:\n  base_url: https://u:s3cr3t-pw@quader.example\n")
 		if err == nil || !strings.Contains(err.Error(), "server.base_url") || strings.Contains(err.Error(), "s3cr3t-pw") {
 			t.Fatalf("err = %v", err)
 		}
@@ -123,7 +123,7 @@ func TestEdgeSectionRules(t *testing.T) {
 		if _, err := loadEdge(t, "valkey:\n  tls:\n    mode: verify-ca\n"); err == nil || !strings.Contains(err.Error(), "valkey.tls.ca_file") {
 			t.Fatalf("err = %v", err)
 		}
-		if _, err := loadEdge(t, "valkey:\n  tls:\n    mode: verify-ca\n    ca_file: /etc/trove/valkey-ca.pem\n"); err != nil {
+		if _, err := loadEdge(t, "valkey:\n  tls:\n    mode: verify-ca\n    ca_file: /etc/quader/valkey-ca.pem\n"); err != nil {
 			t.Fatalf("verify-ca with a CA file: %v", err)
 		}
 	})

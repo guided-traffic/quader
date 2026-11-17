@@ -8,16 +8,16 @@ import { ProfileNav } from './profile-nav';
  * right end (Q-UI-307, UI-A-20); the manager opens its form below.
  */
 @Component({
-  selector: 'trove-profile-tokens',
+  selector: 'quader-profile-tokens',
   imports: [PageHeader, ProfileNav, TokenManager],
   template: `
-    <trove-page-header [heading]="heading" [description]="intro">
+    <quader-page-header [heading]="heading" [description]="intro">
       @if (!manager.isFormOpen()) {
         <button actions class="btn btn-confirm" type="button" (click)="manager.openForm()" i18n="@@tokens.create">Create token</button>
       }
-    </trove-page-header>
-    <trove-profile-nav />
-    <trove-token-manager #manager [scope]="scope" [createInToolbar]="false" />
+    </quader-page-header>
+    <quader-profile-nav />
+    <quader-token-manager #manager [scope]="scope" [createInToolbar]="false" />
   `,
   styleUrl: '../../shared/access/access.scss',
 })

@@ -277,15 +277,15 @@ func TestLimiterFallback(t *testing.T) {
 				}
 				found := false
 				for _, mf := range mfs {
-					if mf.GetName() == "trove_ratelimit_fallback" {
+					if mf.GetName() == "quader_ratelimit_fallback" {
 						found = true
 						if got := mf.GetMetric()[0].GetGauge().GetValue(); got != 1 {
-							t.Errorf("replica %d: trove_ratelimit_fallback = %v, want 1", i, got)
+							t.Errorf("replica %d: quader_ratelimit_fallback = %v, want 1", i, got)
 						}
 					}
 				}
 				if !found {
-					t.Errorf("replica %d: trove_ratelimit_fallback missing", i)
+					t.Errorf("replica %d: quader_ratelimit_fallback missing", i)
 				}
 			}
 			if mode == "circuit open" && st.calls != 0 {

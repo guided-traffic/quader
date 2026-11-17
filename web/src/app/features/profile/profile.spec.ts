@@ -56,7 +56,7 @@ describe('Profile (R-UI-029)', () => {
   it('Q-UI-333 the profile is one column: identity as read-only fields, then quiet sections, Preferences open and Groups open only with a claim notice', async () => {
     const { root } = await renderScreen(Profile);
     expect(root.querySelector('section.card, dl.facts')).toBeNull();
-    const sections = [...root.querySelectorAll('trove-disclosure')].map((d) => ({
+    const sections = [...root.querySelectorAll('quader-disclosure')].map((d) => ({
       heading: d.querySelector('.heading')?.textContent?.replace('chevron_right', '').trim(),
       open: d.querySelector('.toggle')?.getAttribute('aria-expanded'),
     }));
@@ -70,7 +70,7 @@ describe('Profile (R-UI-029)', () => {
 
   it('Q-UI-334 the Language and Theme selects of Preferences take one field width, whatever their options say', async () => {
     const { root } = await renderScreen(Profile);
-    const widths = [...root.querySelectorAll('trove-select-field select')].map((s) => [...s.classList].filter((c) => c.startsWith('field-w-')));
+    const widths = [...root.querySelectorAll('quader-select-field select')].map((s) => [...s.classList].filter((c) => c.startsWith('field-w-')));
     expect(widths).toEqual([['field-w-name'], ['field-w-name']]);
   });
 
@@ -114,7 +114,7 @@ describe('Profile (R-UI-029)', () => {
     await settle(fixture);
     buttonByText(root, 'Save preferences').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-conflict-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-conflict-dialog') as HTMLElement;
     expect(dialog).toBeTruthy();
     expect(text(dialog)).toContain('Changed by someone else');
     buttonByText(dialog, 'Overwrite').click();
@@ -147,14 +147,14 @@ describe('Personal tokens (R-UI-029)', () => {
     const { fixture, root, get } = await renderScreen(ProfileTokens);
     // Not in the toolbar above the list: a destructive bulk action comes last (ui-style-guide.md).
     expect([...root.querySelectorAll('.toolbar button')].map((b) => b.textContent?.trim())).not.toContain('Revoke all tokens');
-    const advanced = [...root.querySelectorAll('trove-disclosure')].at(-1)!;
+    const advanced = [...root.querySelectorAll('quader-disclosure')].at(-1)!;
     expect(text(advanced)).toContain('Advanced');
     const revoke = [...advanced.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Revoke all tokens')!;
     expect(revoke.classList.contains('btn-danger')).toBe(true);
     expect(text(advanced)).toContain('This cannot be undone.');
     revoke.click();
     await settle(fixture);
-    const confirm = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const confirm = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     expect(confirm.textContent).toContain('Revoke all tokens?');
     buttonByText(confirm, 'Revoke all').click();
     await sleep(fixture, 300);
@@ -167,8 +167,8 @@ describe('Personal tokens (R-UI-029)', () => {
     const { fixture, root, get } = await renderScreen(ProfileTokens);
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    const form = root.querySelector('trove-token-form') as HTMLElement;
-    const names = Array.from(form.querySelectorAll('.endpoints trove-checkbox')).map((e) => e.textContent?.trim());
+    const form = root.querySelector('quader-token-form') as HTMLElement;
+    const names = Array.from(form.querySelectorAll('.endpoints quader-checkbox')).map((e) => e.textContent?.trim());
     expect(names).toEqual(['default']);
     typeInto(form, 'Description', 'bound pat');
     form.querySelector<HTMLInputElement>('.endpoints input[type="checkbox"]')!.click();
@@ -183,15 +183,15 @@ describe('Personal tokens (R-UI-029)', () => {
     buttonByText(root, 'Create token').click();
     await settle(fixture);
     expect(await seriousViolations(root)).toEqual([]);
-    typeInto(root.querySelector('trove-token-form')!, 'Description', 'laptop npm');
-    buttonByText(root.querySelector('trove-token-form')!, 'Create token').click();
+    typeInto(root.querySelector('quader-token-form')!, 'Description', 'laptop npm');
+    buttonByText(root.querySelector('quader-token-form')!, 'Create token').click();
     await settle(fixture);
     const tokens = get(TokensApi) as FakeTokensApi;
     expect(tokens.calls).toContain('create laptop npm');
     expect(tokens.lastRequest?.scope).toEqual({ inherit: true });
     expect(tokens.keys[0]).toMatch(/^[0-9a-f-]{36}$/);
 
-    const secret = root.querySelector('trove-token-secret') as HTMLElement;
+    const secret = root.querySelector('quader-token-secret') as HTMLElement;
     const input = secret.querySelector('input') as HTMLInputElement;
     expect(input.type).toBe('password');
     expect(input.getAttribute('autocomplete')).toBe('off');
@@ -206,7 +206,7 @@ describe('Personal tokens (R-UI-029)', () => {
     await settle(fixture);
     expect(writeText).toHaveBeenCalledWith(SECRET_VALUE);
 
-    expect(storedText()).not.toContain('trv_');
+    expect(storedText()).not.toContain('qdr_');
     buttonByText(secret, 'I have copied it').click();
     await settle(fixture);
     expect(root.innerHTML).not.toContain(SECRET_VALUE);
@@ -216,7 +216,7 @@ describe('Personal tokens (R-UI-029)', () => {
     const { fixture, root, get } = await renderScreen(ProfileTokens);
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    const form = root.querySelector('trove-token-form') as HTMLElement;
+    const form = root.querySelector('quader-token-form') as HTMLElement;
     expect(scopeLabels(form)).toEqual([
       'Administrator: everything on this installation',
       'All repository permissions of the owner, without administration',
@@ -236,7 +236,7 @@ describe('Personal tokens (R-UI-029)', () => {
     const { fixture, root } = await renderScreen(ProfileTokens, { setup: noAdministrator });
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    expect(scopeLabels(root.querySelector('trove-token-form') as HTMLElement)).toEqual([
+    expect(scopeLabels(root.querySelector('quader-token-form') as HTMLElement)).toEqual([
       'All repository permissions of the owner, without administration',
       'Only the repositories and actions below',
     ]);
@@ -268,13 +268,13 @@ describe('Personal tokens (R-UI-029)', () => {
     const { fixture, root, get } = await renderScreen(ProfileTokens);
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    const form = root.querySelector('trove-token-form') as HTMLElement;
+    const form = root.querySelector('quader-token-form') as HTMLElement;
     typeInto(form, 'Description', 'ci');
     chooseScope(form, 'Only the repositories');
     await settle(fixture);
     typeInto(form, 'Repositories', 'npm-internal\nnpm-team-*');
     await settle(fixture);
-    (form.querySelectorAll('trove-checkbox input')[2] as HTMLInputElement).click();
+    (form.querySelectorAll('quader-checkbox input')[2] as HTMLInputElement).click();
     await settle(fixture);
     buttonByText(form, 'Create token').click();
     await settle(fixture);
@@ -287,7 +287,7 @@ describe('Personal tokens (R-UI-029)', () => {
     const { fixture, root, get } = await renderScreen(ProfileTokens);
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    buttonByText(root.querySelector('trove-token-form')!, 'Create token').click();
+    buttonByText(root.querySelector('quader-token-form')!, 'Create token').click();
     await settle(fixture);
     expect(text(root)).toContain('Enter a description');
     expect((get(TokensApi) as FakeTokensApi).calls).toHaveLength(0);
@@ -298,13 +298,13 @@ describe('Personal tokens (R-UI-029)', () => {
     (get(TokensApi) as FakeTokensApi).failure = problem(401, 'reauthentication_required');
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    typeInto(root.querySelector('trove-token-form')!, 'Description', 'laptop npm');
-    buttonByText(root.querySelector('trove-token-form')!, 'Create token').click();
+    typeInto(root.querySelector('quader-token-form')!, 'Description', 'laptop npm');
+    buttonByText(root.querySelector('quader-token-form')!, 'Create token').click();
     await settle(fixture);
-    const stored = browserStorage.entries('session').filter(([k]) => k.startsWith('trove.draft:'));
+    const stored = browserStorage.entries('session').filter(([k]) => k.startsWith('quader.draft:'));
     expect(stored).toHaveLength(1);
     expect(stored[0]![1]).toContain('laptop npm');
-    expect(storedText()).not.toContain('trv_');
+    expect(storedText()).not.toContain('qdr_');
   });
 
   it('R-UI-042 a retried create that answers token_already_issued revokes the lost token and creates again', async () => {
@@ -313,17 +313,17 @@ describe('Personal tokens (R-UI-029)', () => {
     tokens.failure = problem(409, 'token_already_issued', { tokenId: 'lost-id' });
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    typeInto(root.querySelector('trove-token-form')!, 'Description', 'laptop npm');
-    buttonByText(root.querySelector('trove-token-form')!, 'Create token').click();
+    typeInto(root.querySelector('quader-token-form')!, 'Description', 'laptop npm');
+    buttonByText(root.querySelector('quader-token-form')!, 'Create token').click();
     await settle(fixture);
     expect(tokens.calls).toContain('revoke lost-id');
     expect(tokens.keys).toHaveLength(1);
-    expect(root.querySelector('trove-token-secret')).toBeTruthy();
+    expect(root.querySelector('quader-token-secret')).toBeTruthy();
   });
 
   it('R-UI-029 Q-UI-332 an owner\'s token list shows token, scope, expiry, last use, created and created via (narrow), and the row\'s actions', async () => {
     const { root } = await renderScreen(ProfileTokens);
-    const table = root.querySelector('trove-token-table trove-data-table')!;
+    const table = root.querySelector('quader-token-table quader-data-table')!;
     const heads = [...table.querySelectorAll<HTMLElement>('thead th')];
     expect(heads.map((th) => text(th).replace(/help_outline/g, ''))).toEqual([
       'Token', 'Scope', 'Expires', 'Last used', 'Created', 'Created via', 'Actions',
@@ -339,23 +339,23 @@ describe('Personal tokens (R-UI-029)', () => {
 
   it('R-UI-029 revokes a token after confirmation', async () => {
     const { fixture, root, get } = await renderScreen(ProfileTokens);
-    buttonByText(root.querySelector('trove-token-table')!, 'Revoke').click();
+    buttonByText(root.querySelector('quader-token-table')!, 'Revoke').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'Revoke').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Revoke').click();
     await sleep(fixture, 300);
     expect((get(TokensApi) as FakeTokensApi).calls[0]).toMatch(/^revoke /);
   });
 
   it('R-UI-029 rotates a token, asks for the overlap and shows the new value once', async () => {
     const { fixture, root, get } = await renderScreen(ProfileTokens);
-    buttonByText(root.querySelector('trove-token-table')!, 'Rotate').click();
+    buttonByText(root.querySelector('quader-token-table')!, 'Rotate').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-rotate-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-rotate-dialog') as HTMLElement;
     expect(await seriousViolations(dialog)).toEqual([]);
     buttonByText(dialog, 'Rotate').click();
     await sleep(fixture, 300);
     expect((get(TokensApi) as FakeTokensApi).calls.some((c) => c.startsWith('rotate') && c.endsWith('overlap=0'))).toBe(true);
-    expect(root.querySelector('trove-token-secret')).toBeTruthy();
+    expect(root.querySelector('quader-token-secret')).toBeTruthy();
   });
 });
 
@@ -377,7 +377,7 @@ describe('Sessions (R-UI-029)', () => {
     const { fixture, root, get } = await renderScreen(ProfileSessions);
     buttonByText(root, 'End all other sessions').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'End other sessions').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'End other sessions').click();
     await sleep(fixture, 300);
     expect((get(SessionsApi) as FakeSessionsApi).calls).toContain('endOwnAll keepCurrent=true');
     expect(root.textContent).not.toContain('End all other sessions');

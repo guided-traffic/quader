@@ -25,12 +25,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/app"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/packages/view"
-	"github.com/guided-traffic/trove/internal/vuln/imagescan"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/packages/view"
+	"github.com/guided-traffic/quader/internal/vuln/imagescan"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -172,12 +172,12 @@ func newFlowWith(t *testing.T, o options) *flow {
 	dir := t.TempDir()
 	trivy := o.trivy
 	if len(trivy) == 0 {
-		trivy = []string{"TROVE_VULNERABILITIES_SOURCES_TRIVY_MODE=off"}
+		trivy = []string{"QUADER_VULNERABILITIES_SOURCES_TRIVY_MODE=off"}
 	}
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnimage", Env: append([]string{
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off", "TROVE_VULNERABILITIES_SOURCES_KEV_MODE=off",
-		"TROVE_VULNERABILITIES_IMAGES_SCAN_DIR=" + dir, "TROVE_VULNERABILITIES_IMAGES_SCAN_DELAY=0s",
-		"TROVE_MAINTENANCE_TASKS=" + taskOff, "TROVE_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "TROVE_JOBS_POLL_INTERVAL=200ms",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off", "QUADER_VULNERABILITIES_SOURCES_KEV_MODE=off",
+		"QUADER_VULNERABILITIES_IMAGES_SCAN_DIR=" + dir, "QUADER_VULNERABILITIES_IMAGES_SCAN_DELAY=0s",
+		"QUADER_MAINTENANCE_TASKS=" + taskOff, "QUADER_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "QUADER_JOBS_POLL_INTERVAL=200ms",
 	}, trivy...)})
 	f := &flow{t: t, st: st, an: &fakeAnalyser{}, db: &fakeDatabase{}}
 	rita := st.User("rita")
@@ -527,8 +527,8 @@ func TestR_VULN_035_TheDatabaseIsCopiedToTheObjectStoreAndReadFromThereByAWorker
 	}
 
 	f := newFlowWith(t, options{realDatabase: true, trivy: []string{
-		"TROVE_VULNERABILITIES_SOURCES_TRIVY_MODE=online", "TROVE_VULNERABILITIES_SOURCES_TRIVY_URL=" + srv.URL + "/v2/aquasec/trivy-db/",
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]", `TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
+		"QUADER_VULNERABILITIES_SOURCES_TRIVY_MODE=online", "QUADER_VULNERABILITIES_SOURCES_TRIVY_URL=" + srv.URL + "/v2/aquasec/trivy-db/",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(ca) + "]", `QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
 	}})
 	// Before an import there is no database: an image stays pending and the state says why.
 	f.push("app", "1.0", newImage(t))
@@ -584,8 +584,8 @@ func TestR_VULN_035_TheDatabaseIsCopiedToTheObjectStoreAndReadFromThereByAWorker
 // archive to a generic local repository, the task imports it without any network request, and the same bytes are not imported twice.
 func TestR_VULN_035_AnAirGappedInstallationReadsTheDatabaseFromARepository(t *testing.T) {
 	f := newFlowWith(t, options{realDatabase: true, mirror: true, trivy: []string{
-		"TROVE_VULNERABILITIES_SOURCES_TRIVY_MODE=repository",
-		"TROVE_VULNERABILITIES_SOURCES_TRIVY_REPOSITORY=" + testenv.DefaultProject + "/" + mirrorKey,
+		"QUADER_VULNERABILITIES_SOURCES_TRIVY_MODE=repository",
+		"QUADER_VULNERABILITIES_SOURCES_TRIVY_REPOSITORY=" + testenv.DefaultProject + "/" + mirrorKey,
 	}})
 	archive := dbArchive(t)
 	if a := f.do("PUT", "/files/"+testenv.DefaultProject+"/"+mirrorKey+"/"+"trivy/db.tar.gz", archive, "Content-Type", "application/gzip"); a.Status != http.StatusCreated {
@@ -625,7 +625,7 @@ func etagOf(t *testing.T, f *flow, id string) string {
 
 // spoolEnv sets the byte budget of the spool of a worker, which accepts no uploads and so needs no room for one.
 func spoolEnv(bytes int64) []string {
-	return []string{"TROVE_STORAGE_SPOOL_MAX_BYTES=" + strconv.FormatInt(bytes, 10)}
+	return []string{"QUADER_STORAGE_SPOOL_MAX_BYTES=" + strconv.FormatInt(bytes, 10)}
 }
 
 // Q-VULN-145: the working space of a scan is admitted through the spool's budget. A budget that cannot hold the scan's margin next to

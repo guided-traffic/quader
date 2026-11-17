@@ -24,8 +24,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/webui"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/webui"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -45,12 +45,12 @@ func newBuild(tag string, extra map[string]string) build {
 	tree := fstest.MapFS{}
 	for _, l := range []string{"en", "de"} {
 		tree[l+"/index.html"] = &fstest.MapFile{Data: []byte(`<!doctype html><html lang="` + l + `"><head><base href="/ui/` + l + `/">` +
-			`<link rel="icon" href="favicon.ico"><link rel="stylesheet" href="styles-` + h + `.css" nonce="TROVE_CSP_NONCE"></head>` +
-			`<body><trove-root ngcspnonce="TROVE_CSP_NONCE"></trove-root>` +
-			`<link rel="modulepreload" href="chunk-` + mixed + `.js" nonce="TROVE_CSP_NONCE">` +
-			`<link rel="modulepreload" href="chunk-SHARED00.js" nonce="TROVE_CSP_NONCE">` +
-			`<script src="polyfills-` + h + `.js" type="module" nonce="TROVE_CSP_NONCE"></script>` +
-			`<script src="main-` + h + `.js" type="module" nonce="TROVE_CSP_NONCE"></script></body></html>`)}
+			`<link rel="icon" href="favicon.ico"><link rel="stylesheet" href="styles-` + h + `.css" nonce="QUADER_CSP_NONCE"></head>` +
+			`<body><quader-root ngcspnonce="QUADER_CSP_NONCE"></quader-root>` +
+			`<link rel="modulepreload" href="chunk-` + mixed + `.js" nonce="QUADER_CSP_NONCE">` +
+			`<link rel="modulepreload" href="chunk-SHARED00.js" nonce="QUADER_CSP_NONCE">` +
+			`<script src="polyfills-` + h + `.js" type="module" nonce="QUADER_CSP_NONCE"></script>` +
+			`<script src="main-` + h + `.js" type="module" nonce="QUADER_CSP_NONCE"></script></body></html>`)}
 		for name, body := range map[string]string{
 			"styles-" + h + ".css":        "body{--release:" + tag + "}",
 			"chunk-" + mixed + ".js":      "export const release='" + tag + "'",
@@ -336,7 +336,7 @@ func TestR_HA_020_SharedUIAssetsWithoutTheObjectStore(t *testing.T) {
 	proxy := newTCPProxy(t, u.Host)
 	rc := st.Start(t, testenv.ReplicaOptions{
 		Name: "ui-c", Role: "web", UI: c.tree,
-		Env: []string{"TROVE_STORAGE_S3_ENDPOINT=https://" + proxy.addr(), "TROVE_STORAGE_S3_CIRCUIT_BREAKER_OPEN_DURATION=1s"},
+		Env: []string{"QUADER_STORAGE_S3_ENDPOINT=https://" + proxy.addr(), "QUADER_STORAGE_S3_CIRCUIT_BREAKER_OPEN_DURATION=1s"},
 	})
 	wantFile(t, st, rc, "en", "main-AAAAAAAA.js", a.file(t, "en", "main-AAAAAAAA.js"))
 

@@ -10,10 +10,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/manifest"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
 
 // What a client sees of a virtual repository when it reads (R-OCI-027). A request addressed to a virtual repository is decided on the
@@ -25,7 +25,7 @@ import (
 
 // resolvedFromHeader names the member that answered (R-REPO-019); it is never sent on an endpoint with exposure rules, where members are
 // not exposed (R-EP-018).
-const resolvedFromHeader = "Trove-Resolved-From"
+const resolvedFromHeader = "Quader-Resolved-From"
 
 // maxLinkDepth bounds the nesting of image indexes the link step of a push follows (an index, its manifests, their blobs).
 const maxLinkDepth = 4
@@ -71,7 +71,7 @@ func (f *Format) members(ctx context.Context, rq *formats.Request, path string) 
 	return locals, remotes, nil
 }
 
-// resolvedWriter puts Trove-Resolved-From on the answer of the member that serves it, when the status line goes out, so that a member
+// resolvedWriter puts Quader-Resolved-From on the answer of the member that serves it, when the status line goes out, so that a member
 // that answers with an error leaves no header behind. wrote says the answer has started: a failure after that ends the request.
 type resolvedWriter struct {
 	http.ResponseWriter
@@ -595,7 +595,7 @@ func (f *Format) virtualReferrers(ctx context.Context, rq *formats.Request, w ht
 		h.Set("OCI-Filters-Applied", "artifactType")
 	}
 	if cut {
-		h.Set("Trove-Annotations-Cut", "true")
+		h.Set("Quader-Annotations-Cut", "true")
 	}
 	if more || cutOff {
 		h.Set("Link", referrersLink(rq, artifactType, cursor))

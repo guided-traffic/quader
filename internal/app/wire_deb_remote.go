@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	debdata "github.com/guided-traffic/trove/internal/formatdata/deb"
-	"github.com/guided-traffic/trove/internal/formathost"
-	"github.com/guided-traffic/trove/internal/formats"
-	debformat "github.com/guided-traffic/trove/internal/formats/deb"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
+	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/formats"
+	debformat "github.com/guided-traffic/quader/internal/formats/deb"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // debBackground gives the jobs of the Debian remote class the upstream of a repository for one run (Host.BackgroundUpstream,

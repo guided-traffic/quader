@@ -2,7 +2,7 @@
 
 Status: specification — local repositories partly implemented (routes, classification, error shape, publish, the data port; the work packages of documents, dist-tags, unpublish and identity, and the remote and virtual classes, are not built)
 
-This page specifies how trove speaks the npm registry protocol for local, remote and virtual
+This page specifies how Quader speaks the npm registry protocol for local, remote and virtual
 npm repositories: the endpoints below `/api/npm/<projectKey>/<repoKey>/`, how the npm format plug-in classifies
 requests, how package documents are generated, cached and merged, how publish, dist-tags,
 deprecation and unpublish change state, how a remote repository fetches and validates npm
@@ -38,10 +38,10 @@ Covers: every MVP and P1 entry of the npm format catalog
 
 Conventions on this page:
 
-- `https://trove.example.com` is the public base URL *(example)*; `web` is an example project key, and
+- `https://quader.example.com` is the public base URL *(example)*; `web` is an example project key, and
   `npm-local`, `npm-remote` and `npm-all` (virtual, members `npm-local` then `npm-remote`, deployment target
   `npm-local`) are example repository keys of that project; `@acme` is an example internal scope;
-  `${TROVE_TOKEN}` is a trove token (INV-8). A repository named outside its project is written
+  `${QUADER_TOKEN}` is a Quader token (INV-8). A repository named outside its project is written
   `<projectKey>/<repoKey>` (`web/npm-local`).
 - The *registry URL* of a repository is `<public base URL>/api/npm/<projectKey>/<repoKey>/`, always with a
   trailing slash. Paths in tables are relative to it unless marked **host root**.
@@ -88,14 +88,14 @@ before any lookup ([repositories-and-proxy.md](../repositories-and-proxy.md) R-R
   the host root of the registry URL, not its path, so it cannot live below `/api/npm/<projectKey>/<repoKey>/`;
   it needs no project or repository key, because the exchange is bound to a package by its path. The same
   exchange is also served below every registry URL (`-/npm/v1/oidc/token/exchange/package/{name}`),
-  where Yarn 4 and current pnpm releases post it. trove owns the host root of `server.base_url`,
+  where Yarn 4 and current pnpm releases post it. Quader owns the host root of `server.base_url`,
   which is an origin without a path ([operations-and-observability.md](../operations-and-observability.md)
   R-OPS-005). Any other host-root path, npm's attestation path `/-/npm/v1/attestations/…` included,
   answers the generic 404 of [architecture.md](../architecture.md) R-ARCH-005; attestations will be
   served below the registry URL (R-NPM-027).
 - An operation the repository class cannot perform answers 405 with a reason (for example a
   publish to a remote repository).
-- Endpoints npm defines but trove does not implement answer **404** for `GET`, `PUT` and
+- Endpoints npm defines but Quader does not implement answer **404** for `GET`, `PUT` and
   `DELETE`, and **501** for `POST`. npm's fetch layer retries `GET` and `PUT` on any 5xx and never
   retries `POST` ([make-fetch-happen](https://github.com/npm/make-fetch-happen/blob/main/lib/remote.js)),
   so a 5xx on a `GET` would cost the user retries, while 501 on a `POST` costs nothing and says
@@ -138,15 +138,15 @@ The web-login poll URL lives outside the registry URL (R-NPM-020).
 
 Acceptance criteria:
 
-- `curl -s https://trove.example.com/api/npm/web/npm-all/` answers 200 `{}`;
-  `curl -s -o /dev/null -w '%{http_code}' https://trove.example.com/api/npm/web/does-not-exist/lodash`,
+- `curl -s https://quader.example.com/api/npm/web/npm-all/` answers 200 `{}`;
+  `curl -s -o /dev/null -w '%{http_code}' https://quader.example.com/api/npm/web/does-not-exist/lodash`,
   the same request for a project that does not exist (`…/api/npm/nope/npm-all/lodash`) and
   `…/api/npm/web` each print `404`.
 - `npm view lodash version` with `--registry` set to `…/npm-local/` (holding lodash, published
   there by a `manage` holder because the test upstream serves it,
   [repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-048), `…/npm-remote/` and
   `…/npm-all/` succeeds in each case.
-- `npm publish --registry https://trove.example.com/api/npm/web/npm-remote/` fails with `E405` and
+- `npm publish --registry https://quader.example.com/api/npm/web/npm-remote/` fails with `E405` and
   a message naming the repository as remote.
 - A `HEAD` on a package document returns the same `ETag` as the `GET`.
 
@@ -239,7 +239,7 @@ Priority: **MVP** · Covers: PKG-NPM-005, PKG-NPM-006, PKG-NPM-007, TOK-033, TOK
 Authentication is [identity-and-authentication.md](../identity-and-authentication.md) R-AUTH-001,
 R-AUTH-002, R-AUTH-033 and R-AUTH-037: a token as `Bearer` (npm `_authToken`, Yarn
 `npmAuthToken`) or as Basic password with any username (npm keyed `_auth` or `username` plus
-`_password`, Yarn `npmAuthIdent`); 401 with `WWW-Authenticate: Basic realm="trove"`, never with
+`_password`, Yarn `npmAuthIdent`); 401 with `WWW-Authenticate: Basic realm="quader"`, never with
 the element `otp` or `ipaddress` (npm and pnpm switch to a one-time-password prompt or an
 IP-restriction message on those). Authorization is [authorization.md](../authorization.md):
 R-AUTHZ-007 is the normative action map for npm operations (`read`; `deploy` for a new version;
@@ -251,7 +251,7 @@ R-AUTHZ-016 the 401/403/404 choice. This requirement adds what npm clients need 
 - Clients attach credentials only to URLs under the registry URL they were configured with
   (npm and pnpm: longest `//host/path/:` key that prefixes the request URL; Yarn 1: same prefix
   plus `always-auth` or a scoped package; Yarn 2+: `npmAlwaysAuth`, or a scoped package). Every
-  URL trove places into an npm response (tarball URLs, rewritten external dependencies) MUST
+  URL Quader places into an npm response (tarball URLs, rewritten external dependencies) MUST
   therefore lie under the registry URL of the repository that served the response, built from the
   configured public base URL ([architecture.md](../architecture.md)), never from a `Host` header
   that did not come through a trusted reverse proxy.
@@ -263,13 +263,13 @@ R-AUTHZ-016 the 401/403/404 choice. This requirement adds what npm clients need 
 
 Acceptance criteria:
 
-- With `registry=https://trove.example.com/api/npm/web/npm-all/` and
-  `//trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}` in `.npmrc`, `npm install
+- With `registry=https://quader.example.com/api/npm/web/npm-all/` and
+  `//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}` in `.npmrc`, `npm install
   lodash` succeeds against a repository without anonymous read; without the second line it fails
   with `E401` and never prompts for a one-time password.
-- `curl -u anything:${TROVE_TOKEN} …/npm-all/lodash` returns 200.
+- `curl -u anything:${QUADER_TOKEN} …/npm-all/lodash` returns 200.
 - A request with `Host: evil.example` gets a document whose `dist.tarball` URLs all start with
-  `https://trove.example.com/api/npm/web/npm-all/`.
+  `https://quader.example.com/api/npm/web/npm-all/`.
 - The acceptance criteria of R-AUTHZ-007 to R-AUTHZ-009 pass with every gate row of R-NPM-045.
 
 ### R-NPM-005 · Error bodies and protocol headers
@@ -294,7 +294,7 @@ Priority: **MVP** · Covers: PKG-NPM-060
 | 413 | `npm_too_large` | R-NPM-007 limits |
 | 501 | `npm_audit_unavailable`, `npm_not_implemented` | R-NPM-038, unimplemented `POST` endpoints |
 | 502 | `npm_invalid_upstream_document` | R-NPM-024 |
-| 503 | `vulnerability_data_unavailable` (generic, from M4b) | An audit in mode `local` before trove's npm advisory data is complete ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-017) |
+| 503 | `vulnerability_data_unavailable` (generic, from M4b) | An audit in mode `local` before Quader's npm advisory data is complete ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-017) |
 | 507 | `quota_exceeded` (generic, [storage.md](../storage.md) R-STOR-029, P1) | A publish or raw deploy would exceed the system capacity limit or the target repository's quota (storage.md Q-STOR-7). The `error` text names the limit: the repository (`<projectKey>/<repoKey>`) or the system limit. npm retries the publish `PUT` on a `5xx` twice by default (after 10 s and 60 s), so `npm publish` reports it after about 70 s |
 
 - `npm-notice` (a response header npm prints on any response,
@@ -307,7 +307,7 @@ Priority: **MVP** · Covers: PKG-NPM-060
 
 Acceptance criteria:
 
-- `npm publish` of an existing version prints the trove error text, not a bare `409 Conflict`.
+- `npm publish` of an existing version prints the Quader error text, not a bare `409 Conflict`.
 - A contract test over all npm routes finds no `otp` element in any `WWW-Authenticate` header and
   no error response without the three body fields.
 
@@ -387,7 +387,7 @@ CREATE TABLE npm_tombstones (                     -- outlives trash and permanen
 Acceptance criteria:
 
 - After `npm publish` of `@acme/ui@1.2.0` to `npm-local`,
-  `curl -sI https://trove.example.com/files/web/npm-local/@acme/ui/-/ui-1.2.0.tgz` returns 200 and
+  `curl -sI https://quader.example.com/files/web/npm-local/@acme/ui/-/ui-1.2.0.tgz` returns 200 and
   the item API shows properties `npm.name=@acme/ui`, `npm.version=1.2.0`, `npm.scope=@acme`.
 
 ### R-NPM-007 · Publish
@@ -505,7 +505,7 @@ Processing:
      publishes (it packs and runs `npm publish <tarball>`); Yarn 1 applies its own normalization
      ([npm publish](https://github.com/npm/cli/blob/latest/lib/commands/publish.js),
      [normalize.js](https://github.com/npm/package-json/blob/main/lib/normalize.js), verified in
-     npm 11.17.0 with `@npmcli/package-json` 7.0.5, pnpm 10.34.9 and Yarn 1.22.22). trove therefore
+     npm 11.17.0 with `@npmcli/package-json` 7.0.5, pnpm 10.34.9 and Yarn 1.22.22). Quader therefore
      applies the union of these steps, each idempotent, to **both** sides and compares the results;
      the stored manifest stays the request's (below). The steps that touch the compared fields:
      - `name` trimmed and `version` cleaned as semver's loose `clean()` does (`v1.2.3` becomes
@@ -557,7 +557,7 @@ Processing:
      the same SHA-256;
    - the request's dist-tag equals the `publish_tag` the original request carried.
 
-   trove changes nothing (no row, no tag, no `rev_seq`, no object) and answers 201 as in step 6,
+   Quader changes nothing (no row, no tag, no `rev_seq`, no object) and answers 201 as in step 6,
    with `npm-notice: <name>@<version> was already published by you at <time>; nothing changed`.
    Every fact the rule reads is in PostgreSQL, so the replica that receives the retry decides it
    exactly as the one that committed the original would (INV-18).
@@ -569,7 +569,7 @@ Processing:
    `published_at` and `modified_at` from PostgreSQL's clock after the lock is held (R-NPM-012),
    update the search vector, write the audit event (R-NPM-044). No correctness depends on a
    message to other replicas after the commit: every replica reads the new revision on its next
-   document request (R-NPM-010), and merged entries check it (R-NPM-030). Since 2026-10-28 trove
+   document request (R-NPM-010), and merged entries check it (R-NPM-030). Since 2026-10-28 Quader
    issues no `NOTIFY` ([architecture.md](../architecture.md) R-ARCH-018, Q-ARCH-15).
    A provenance bundle is a companion file of the same commit (Q-NPM-58): its hook runs after the tarball's, in the
    same transaction, and links the bundle to the version the tarball's hook inserted; a failure of either leaves neither.
@@ -582,7 +582,7 @@ Stored manifest = the request's version manifest with server-controlled fields r
 - removed: `_npmUser`, `_npmOperationalInternal`, `_rev`, `_revisions`, `_attachments`, every
   other `_`-prefixed key except `_id`, `_nodeVersion` and `_npmVersion`, and `dist.tarball`,
   `dist.signatures`, `dist.attestations`;
-- set by trove: `_id` (`name@version`), `_npmUser` (`{"name": "<principal name>"}`, no e-mail),
+- set by Quader: `_id` (`name@version`), `_npmUser` (`{"name": "<principal name>"}`, no e-mail),
   `dist.integrity`, `dist.shasum`, `dist.fileCount`, `dist.unpackedSize`, `hasInstallScript`
   (`preinstall`, `install` or `postinstall` present, or a top-level `binding.gyp`) and
   `_hasShrinkwrap` (top-level `npm-shrinkwrap.json`). `dist.tarball` is added when rendering;
@@ -602,7 +602,7 @@ Notes on the implementation (Q-NPM-20, Q-NPM-22, Q-NPM-24): the body is read by 
 may hold 768 KiB, a provenance bundle 256 KiB. The bundle is committed with the tarball in one transaction (Q-NPM-58), so a publish with a bundle raises `rev_seq` once. An upload to an npm
 repository through `/files/` is refused until R-NPM-036 exists. The answer of an acknowledged retry carries the current `rev`.
 
-Configuration (`trove.yaml`):
+Configuration (`quader.yaml`):
 
 ```yaml
 npm:
@@ -635,7 +635,7 @@ Acceptance criteria:
   both succeed. Two concurrent first publishes of `acme-ui` and `acme_ui`, sent to two different
   replicas, end in one 201 and one 400 `npm_invalid_name`, never in a 5xx.
 - A fault-injecting edge resets the client connection of a committed `npm publish` of
-  `@acme/ui@1.0.3` after trove has sent its status line. npm retries the `PUT`, the retry reaches
+  `@acme/ui@1.0.3` after Quader has sent its status line. npm retries the `PUT`, the retry reaches
   another replica, and `npm publish` exits 0 with the `npm-notice`. `@acme/ui` has version `1.0.3`
   once, its `rev_seq` grew by one, and the audit log holds one `npm.publish` event with outcome
   `success` and one with outcome `retry_acknowledged`. The same request sent by another principal,
@@ -667,10 +667,10 @@ Priority: **MVP** · Covers: PKG-NPM-016
   rebuilt version under the same number there would diverge exactly as after an unpublish; moving
   the version back is refused like a republish. A copy writes none, because the version stays.
   The row survives the trash can and permanent removal (R-STOR-022, R-STOR-023). No API, UI or
-  `trove admin` operation removes a tombstone of a version whose bytes are gone, and a republish of
+  `quader admin` operation removes a tombstone of a version whose bytes are gone, and a republish of
   identical bytes is refused like any other (Q-NPM-8). Only three operations remove a tombstone,
   each of them by bringing back the version's own stored bytes, never new ones: the trash-can
-  restore below, `trove admin npm reinstate` for a version a restore's replay withheld (R-NPM-047),
+  restore below, `quader admin npm reinstate` for a version a restore's replay withheld (R-NPM-047),
   and the deletion of the whole repository.
 - From P1, restoring a version from the trash can (R-STOR-023) brings back its original bytes;
   that is not a reuse. The restore removes the tombstone and the version reappears in documents.
@@ -708,7 +708,7 @@ Priority: **MVP** · Covers: PKG-NPM-057
   cannot lose each other's changes.
 - **A stale revision whose request changes nothing succeeds.** When `{rev}` (or a body's `_rev`,
   R-NPM-018) is stale but applying the request to the current rows would change nothing (every
-  version it removes is already removed, every deprecation it sets is already set), trove answers
+  version it removes is already removed, every deprecation it sets is already set), Quader answers
   as for a successful write, with the current `_rev`, and writes nothing. npm retries a `PUT` or
   `DELETE` whose answer was lost (Q-NPM-11), and the retry reaches any replica with the revision of
   the attempt that already committed; without this rule it would fail with 409 although its
@@ -759,7 +759,7 @@ Priority: **MVP** · Covers: PKG-NPM-025, PKG-NPM-029, FMT-011
       "hasInstallScript": false,
       "_npmUser": { "name": "alice" },
       "dist": {
-        "tarball": "https://trove.example.com/api/npm/web/npm-local/@acme/ui/-/ui-1.2.0.tgz",
+        "tarball": "https://quader.example.com/api/npm/web/npm-local/@acme/ui/-/ui-1.2.0.tgz",
         "integrity": "sha512-…", "shasum": "…", "fileCount": 42, "unpackedSize": 123456
       }
     }
@@ -808,7 +808,7 @@ Acceptance criteria:
 - The full document of a package with 1,000 versions renders in under 200 ms on a miss and is
   served from cache in under 10 ms *(targets, proposed)*. Test note: `TestR_NPM_010_ThousandVersions`
   enforces these two targets, and 50 ms for a `304` of the same document, only with
-  `TROVE_PERF_GATE=1` (`make test-performance`, the nightly performance run on the reference
+  `QUADER_PERF_GATE=1` (`make test-performance`, the nightly performance run on the reference
   environment, [Q-ARCH-293](../architecture.md#q-arch-293--where-a-wall-clock-target-of-a-functional-test-is-enforced));
   per change it asserts that the cache serves (the median hit is not slower than the median miss) and that a miss stays
   within `200 ms` plus 100 times a `304` of the same document under the same load (medians of 5).
@@ -818,7 +818,7 @@ Priority: **MVP** · Covers: PKG-NPM-026
 
 - When `Accept` gives `application/vnd.npm.install-v1+json` a higher quality value than
   `application/json` (npm, pnpm and Yarn 1 send
-  `application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*`), trove MUST serve
+  `application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*`), Quader MUST serve
   the abbreviated document with `Content-Type: application/vnd.npm.install-v1+json`; otherwise the
   full document with `Content-Type: application/json`. pnpm decides from `Content-Type` which form
   it received, so label and body must agree.
@@ -833,7 +833,7 @@ Priority: **MVP** · Covers: PKG-NPM-026
 - Remote repositories derive the abbreviated form from the stored full document (R-NPM-024);
   virtual repositories from the merged one.
 
-Configuration (`trove.yaml`):
+Configuration (`quader.yaml`):
 
 ```yaml
 npm:
@@ -853,12 +853,12 @@ Priority: **MVP** · Covers: PKG-NPM-027
 
 npm (`before`, `min-release-age`), pnpm (`minimumReleaseAge`, `trustPolicy`) and Yarn 2+
 (`npmMinimalAgeGate`) decide on the client, from `time[<version>]`, whether a version is old
-enough to install. trove cannot override them; it MUST make them work:
+enough to install. Quader cannot override them; it MUST make them work:
 
 - Full documents of every class MUST contain `time.created`, `time.modified` and an ISO 8601 UTC
   timestamp with milliseconds for every listed version: the commit time of the publish for local
   versions, the upstream's value for remote versions, the winning member's value for virtual
-  versions (R-NPM-030). A remote version without an upstream time is listed without one; trove
+  versions (R-NPM-030). A remote version without an upstream time is listed without one; Quader
   never invents upstream times.
 - Local times (`published_at`, `modified_at`, hence `time` and `Last-Modified`) come from
   PostgreSQL's clock, never from the clock of the replica that received the publish. They are
@@ -871,7 +871,7 @@ enough to install. trove cannot override them; it MUST make them work:
   `greatest(modified_at + 1 ms, clock_timestamp())`, so `time.modified` never moves backwards.
   Versions published through different replicas are therefore ordered by one clock, which
   release-age policies and the `newest-published` strategies of R-NPM-031 compare, and a
-  downstream proxy's stale-copy check (R-NPM-024 run against trove) never mistakes a newer
+  downstream proxy's stale-copy check (R-NPM-024 run against Quader) never mistakes a newer
   document for an older one.
 - With `npm.abbreviated_time`, abbreviated documents carry the same map, so pnpm with
   `registrySupportsTimeField` (pnpm versions that know the setting;
@@ -891,7 +891,7 @@ Acceptance criteria:
 - pnpm with `minimumReleaseAge: 1440` and `registrySupportsTimeField: true` resolves a 200-package
   tree through `npm-all` with abbreviated requests only and refuses a version published 5 minutes
   earlier.
-- For a remote package, `npm view lodash time --json` through trove equals the upstream's map.
+- For a remote package, `npm view lodash time --json` through Quader equals the upstream's map.
 
 ### R-NPM-013 · Conditional requests and cache headers
 Priority: **MVP** · Covers: PKG-NPM-032
@@ -926,7 +926,7 @@ Priority: **MVP** · Covers: PKG-NPM-032
   only when it would serve those bytes ([RFC 9110 §8.8.3](https://www.rfc-editor.org/rfc/rfc9110#section-8.8.3));
   during a rolling upgrade ([ha-and-helm.md](../ha-and-helm.md) R-HA-020), replicas of two
   releases that render differently never share an ETag. In detail:
-  - "rendering settings" are the `npm` keys of `trove.yaml` that change rendered bytes
+  - "rendering settings" are the `npm` keys of `quader.yaml` that change rendered bytes
     (`npm.abbreviated_time`) and the `config_version` of the serving repository, which covers its
     repository settings;
   - the *merge fingerprint* of a virtual document is: the member fingerprint of R-REPO-020 (which
@@ -950,7 +950,7 @@ Priority: **MVP** · Covers: PKG-NPM-032
   tarballs follow R-STOR-012.
 - Responses MAY be compressed per `Accept-Encoding`.
 
-Configuration (`trove.yaml`):
+Configuration (`quader.yaml`):
 
 ```yaml
 npm:
@@ -1079,14 +1079,14 @@ maps to three operations. Each needs `delete` and ownership (R-AUTHZ-007) and th
 
 | Method | Path | Body | Effect | Response |
 |---|---|---|---|---|
-| PUT | `{name}/-rev/{rev}` | full document without the versions to remove | Each live version absent from `versions` that the caller may read is deleted through [storage.md](../storage.md) R-STOR-018 (to the trash can from P1, permanently in the MVP) and tombstoned; a version the caller's grants hide stays (Q-NPM-82) | 200 `{"ok": true, "rev": "<new rev>"}`; 400 if `versions` is missing or names a version trove does not hold, or one the caller may not read (Q-NPM-84); 403 when the caller may not delete the tarball or the provenance bundle path of a removed version (Q-NPM-83); 409 stale rev, unless the request changes nothing (R-NPM-009) |
+| PUT | `{name}/-rev/{rev}` | full document without the versions to remove | Each live version absent from `versions` that the caller may read is deleted through [storage.md](../storage.md) R-STOR-018 (to the trash can from P1, permanently in the MVP) and tombstoned; a version the caller's grants hide stays (Q-NPM-82) | 200 `{"ok": true, "rev": "<new rev>"}`; 400 if `versions` is missing or names a version Quader does not hold, or one the caller may not read (Q-NPM-84); 403 when the caller may not delete the tarball or the provenance bundle path of a removed version (Q-NPM-83); 409 stale rev, unless the request changes nothing (R-NPM-009) |
 | DELETE | `{name}/-/{file}.tgz/-rev/{rev}` | — | No-op for a version already removed by the `PUT` (npm sends it next); the revision is not compared (Q-NPM-30) | 200; 400 `npm_bad_publish` if the version is still live and the caller may read it; a version the caller's grants hide answers 200 like a removed one (Q-NPM-84) |
 | DELETE | `{name}/-rev/{rev}` | — | Every live version the caller may read deleted and tombstoned, a version the caller's grants hide stays (Q-NPM-82); the dist-tags follow R-NPM-016, so none is left when no version stays | 200; 403 as for the `PUT`; 409 stale rev, unless every version is already removed (R-NPM-009) |
 
-- On the `PUT` path trove applies removals only: dist-tags are recomputed by R-NPM-016, not taken
+- On the `PUT` path Quader applies removals only: dist-tags are recomputed by R-NPM-016, not taken
   from the body, and every other difference is ignored. A body without `versions` (npm's partial
   maintainer update, PKG-NPM-022) answers 400 `npm_bad_publish` with "maintainer lists are not
-  supported; ownership is managed in trove".
+  supported; ownership is managed in Quader".
 - A raw `DELETE /files/<projectKey>/<npm local>/<tarball path>` (R-STOR-018) unpublishes that version the same
   way (`OnItemsRemoved`). So does the `PUT` and the `DELETE` above: they remove the files of the
   versions through the package writer in the transaction that checked ownership and the revision,
@@ -1121,7 +1121,7 @@ Priority: **P1** · Covers: PKG-NPM-020
 as `PUT {name}` without a `.tgz` attachment, with `versions[v].deprecated` set
 ([npm deprecate](https://docs.npmjs.com/cli/commands/npm-deprecate)).
 
-- Such a `PUT` is a metadata update. trove applies exactly one kind of change from it:
+- Such a `PUT` is a metadata update. Quader applies exactly one kind of change from it:
   `versions[v].deprecated` of live versions (a non-empty string sets the message; an empty string,
   or a missing key on a deprecated version, clears it). Versions absent from the body and all other
   fields are left unchanged.
@@ -1187,7 +1187,7 @@ The flow, its data model and its settings are
 
 Acceptance criteria:
 
-- `npm login --registry=https://trove.example.com/api/npm/web/npm-all/ --auth-type=web`, `pnpm login
+- `npm login --registry=https://quader.example.com/api/npm/web/npm-all/ --auth-type=web`, `pnpm login
   --auth-type=web` and `yarn npm login --web-login` (Yarn 4) each complete after approval in the
   browser and write a working token into `~/.npmrc` or `~/.yarnrc.yml`; also in the `scatter`
   profile of [architecture.md](../architecture.md) R-ARCH-032, where the access logs show the
@@ -1234,7 +1234,7 @@ the published packages:
 | pnpm 11 and 12 | `pnpm publish`; `pnpm dist-tag` from 12.12.1 | below the registry URL from 11.28.7 and 12.15.0 (`new URL('-/npm/v1/oidc/token/exchange/package/<escaped name>', registry)`), the host root before | `aud` must equal or contain `npm:<registry host name>`, from 11.28.6 and 12.12.1 |
 | Yarn 4 (4.18.1 checked) | `yarn npm publish`, only when neither `npmAuthToken` nor `npmAuthIdent` is configured | below the registry URL: `<registry>/-/npm/v1/oidc/token/exchange/package/<escaped name>`, scope separator as `%2f` | none |
 
-- trove MUST serve `POST /-/npm/v1/oidc/token/exchange/package/{name}` at the host root of the
+- Quader MUST serve `POST /-/npm/v1/oidc/token/exchange/package/{name}` at the host root of the
   public base URL and `POST -/npm/v1/oidc/token/exchange/package/{name}` below the registry URL of
   every npm repository of every class (R-NPM-001; INV-6 lists the host-root prefix, Q-NPM-1). Both
   routes run the same handler and issue the same token; the registry-relative route uses neither
@@ -1248,9 +1248,9 @@ the published packages:
   [ha-and-helm.md](../ha-and-helm.md) R-HA-037). The host-root route reaches `api` through the edge's catch-all; the route
   below a registry URL lies inside the `/api` prefix of `packages`, so the chart renders a rule of its own for it with this
   requirement ([ha-and-helm.md](../ha-and-helm.md) Q-HA-72), and the acceptance criteria below run through the chart's edge.
-- trove owns the host root of `server.base_url`, which is an origin without a path
+- Quader owns the host root of `server.base_url`, which is an origin without a path
   ([operations-and-observability.md](../operations-and-observability.md) R-OPS-005, INV-6). The
-  exchange URL npm derives from a registry URL on that host therefore always reaches trove. npm
+  exchange URL npm derives from a registry URL on that host therefore always reaches Quader. npm
   posts the ID token whenever `NPM_ID_TOKEN` is set in GitLab CI, so this is what keeps it from
   reaching another service on a shared host.
 - Validation and identity mappings are exactly those of the generic exchange
@@ -1262,23 +1262,23 @@ the published packages:
   (`npm:${new URL(registry).hostname}`); like the base URL, it names this installation and no
   other recipient. The setup instructions use it, so one GitLab job works with npm, pnpm and Yarn
   (R-NPM-041).
-- The issued `trv_cit_` token is **package-bound**: its scope (R-AUTHZ-013) carries one grant
+- The issued `qdr_cit_` token is **package-bound**: its scope (R-AUTHZ-013) carries one grant
   with the package include pattern equal to `{name}` and the actions `read` and `deploy`, so the
   token can publish and tag that one package and nothing else. `{name}` MUST satisfy the rules for
   new names of R-NPM-002 (400 otherwise) and is inserted as a literal pattern, escaped as
   [gitlab-ci-oidc.md](../gitlab-ci-oidc.md) R-CI-014 escapes claim values, so a path such as
   `@acme%2F*` cannot widen the token to a whole scope. If the mapping's grants do not allow
   `deploy` on `{name}` in any npm local repository, the answer is 403 and no token is issued.
-- Response 201 `{"token": "trv_cit_…"}`; errors 400 malformed, 401 invalid ID token, 403 no
+- Response 201 `{"token": "qdr_cit_…"}`; errors 400 malformed, 401 invalid ID token, 403 no
   matching grant. Lifetime: `npm.trusted_publishing.token_ttl`, bounded by every term of R-CI-016
   (mapping, CI issuer, global ceiling, remaining ID-token lifetime).
-- trove MUST NOT set `_npmUser.trustedPublisher` on such publishes while it serves no provenance
+- Quader MUST NOT set `_npmUser.trustedPublisher` on such publishes while it serves no provenance
   attestations (PKG-NPM-024, deferred): pnpm's trust policy treats that field together with
   provenance as the strongest trust level.
 - Clients without a native exchange (npm 10, pnpm 10 on top of npm 10, Yarn 1) publish from GitLab
   CI through the generic exchange as a pipeline step (R-NPM-041).
 
-Configuration (`trove.yaml`):
+Configuration (`quader.yaml`):
 
 ```yaml
 npm:
@@ -1289,8 +1289,8 @@ npm:
 
 Acceptance criteria:
 
-- A GitLab job with `id_tokens: { NPM_ID_TOKEN: { aud: "npm:trove.example.com" } }`, the
-  registry set to `https://trove.example.com/api/npm/web/npm-all/`, no configured token, and a
+- A GitLab job with `id_tokens: { NPM_ID_TOKEN: { aud: "npm:quader.example.com" } }`, the
+  registry set to `https://quader.example.com/api/npm/web/npm-all/`, no configured token, and a
   mapping that grants `deploy` on `@acme/*` publishes `@acme/ui` with `npm publish` (npm 11 and 12
   gate rows, host-root route), `pnpm publish` (pnpm 11 and 12 rows, registry-relative route) and
   `yarn npm publish` (Yarn 4 row, registry-relative route); the audit log shows the exchange and
@@ -1353,9 +1353,9 @@ exceptions. This requirement fixes what an npm remote fetches and how it is chec
 - A received document whose `time.modified` is older than that of the stored document is a stale
   copy (a lagging CDN edge or mirror). It does not replace the stored document, marks no version
   removed (R-NPM-026), renews the stored entry's freshness as a 304 would, and increments
-  `trove_npm_stale_upstream_documents_total`. Without this rule, one stale answer would hide every
+  `quader_npm_stale_upstream_documents_total`. Without this rule, one stale answer would hide every
   version published after it until the next refresh. The stored value used for the comparison
-  (`npm_remote_packages.doc_modified`) is capped at the time trove stored that document, taken from
+  (`npm_remote_packages.doc_modified`) is capped at the time Quader stored that document, taken from
   PostgreSQL's clock in the storing transaction, so neither a document dated in the future (a
   skewed upstream clock) nor a replica with a fast clock can block every later refresh. When either
   document lacks a parseable `time.modified`, the rule does not apply and the received document
@@ -1438,7 +1438,7 @@ Priority: **MVP** · Covers: PKG-NPM-038, PKG-NPM-062, RMT-022
 - In every document a remote serves, each `dist.tarball` is rewritten at serving time to the
   conventional URL under the **serving** repository's registry URL,
   `<registry URL><name>/-/<basename>-<v>.tgz`; through a virtual repository the virtual's URL is
-  used (R-REPO-043). Clients then fetch every tarball through trove with credentials, and Yarn 2+
+  used (R-REPO-043). Clients then fetch every tarball through Quader with credentials, and Yarn 2+
   keeps lockfiles registry-agnostic (R-NPM-042). `dist.attestations.url` and every other URL pass
   through unchanged (R-NPM-027).
 - A tarball request for a version not yet cached finds the upstream URL and expected digests from
@@ -1463,7 +1463,7 @@ Priority: **MVP** · Covers: PKG-NPM-038, PKG-NPM-062, RMT-022
   `integrity` refuses nothing. An `integrity` whose strongest entry is `sha384`, with no `sha512` or `sha256`, cannot be compared, because the blob pass computes
   no `sha384`; the tarball is refused with 502 `upstream_digest_missing`, since storing it unchecked is what this rule forbids
   (Q-NPM-79). A mismatch refuses the tarball with 502 `upstream_integrity_mismatch` and stores nothing, whatever
-  `remote.integrity.checksumPolicy` says, because clients would otherwise fail with `EINTEGRITY` on bytes trove had cached
+  `remote.integrity.checksumPolicy` says, because clients would otherwise fail with `EINTEGRITY` on bytes Quader had cached
   for good; for that reason the policies `ignore` and `pass-through` are refused on an npm remote with 422 `not_applicable`
   at `/remote/integrity/checksumPolicy` (`Facts.ChecksumAlwaysVerified`). A document that announces no digest at all is stored
   and served under every policy but `require`, which refuses it with 502 `upstream_digest_missing`; `require` also refuses a
@@ -1475,7 +1475,7 @@ Priority: **MVP** · Covers: PKG-NPM-038, PKG-NPM-062, RMT-022
 Acceptance criteria:
 
 - `npm view lodash@4.17.21 dist.tarball` through `npm-remote` prints
-  `https://trove.example.com/api/npm/web/npm-remote/lodash/-/lodash-4.17.21.tgz`; through `npm-all`
+  `https://quader.example.com/api/npm/web/npm-remote/lodash/-/lodash-4.17.21.tgz`; through `npm-all`
   the `npm-all` URL.
 - A test upstream serving a tarball that does not match its integrity makes `npm install` fail
   with 502 and leaves no item; once fixed, a retry succeeds.
@@ -1486,7 +1486,7 @@ Acceptance criteria:
   unlisted. Repeated within the period, the upstream records no request.
 
 ### R-NPM-026 · Versions removed upstream
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Public registries remove malicious versions and packages. A cache that keeps serving them after
 the upstream removed them preserves exactly what the upstream took down.
@@ -1536,13 +1536,13 @@ npm:
 Acceptance criteria:
 
 - The test upstream drops `evil@1.0.1` from its document; after the period, `npm view evil
-  versions` through trove no longer lists it and its cached tarball answers 404, through
+  versions` through Quader no longer lists it and its cached tarball answers 404, through
   `/files/web/npm-remote/evil/-/evil-1.0.1.tgz` as well and on every replica; the audit log has the
   event. After `valkey-cli FLUSHALL`, the tarball still answers 404. With
   `serveRemovedVersions: true` the tarball is still served.
 - The test upstream then answers one refresh with an older copy of the document (lower
-  `time.modified`) that lacks the newest version: trove keeps listing that version, and
-  `trove_npm_stale_upstream_documents_total` increments.
+  `time.modified`) that lacks the newest version: Quader keeps listing that version, and
+  `quader_npm_stale_upstream_documents_total` increments.
 
 ### R-NPM-027 · Signatures, attestations and publisher fields
 Priority: **MVP** · Covers: PKG-NPM-038
@@ -1561,7 +1561,7 @@ Priority: **MVP** · Covers: PKG-NPM-038
 - Serving signing keys and attestations is deferred (PKG-NPM-024, PKG-NPM-037); see H-32. Until
   then `dist.attestations.url` passes through unchanged, so `npm audit signatures`, which keeps
   only the URL's path and resolves it against the registry URL (pacote 21.5.1 `lib/registry.js`,
-  verified), asks trove's host root and gets 404. When PKG-NPM-024 ships, trove rewrites the URL
+  verified), asks Quader's host root and gets 404. When PKG-NPM-024 ships, Quader rewrites the URL
   to `<serving registry URL>-/npm/v1/attestations/<name>@<version>`; its path then lies below the
   registry URL, so the request reaches the serving repository with its permissions, and no
   host-root route is needed (Q-NPM-1).
@@ -1588,7 +1588,7 @@ what the npm format contributes through the mirror interface of [architecture.md
   the root answers `update_seq`; `registry/_changes` answers the changed document ids after `since`, with `limit` at most
   10,000 (default 1,000) and without `include_docs`; `registry/_all_docs` answers the ids sorted, from `startkey` to `endkey`
   with `limit`, without `include_docs` and without `skip`; package documents are not served there but by the registry. Other
-  npm registries (a private registry, another trove) offer no feed and no complete listing.
+  npm registries (a private registry, another Quader) offer no feed and no complete listing.
 - **Methods** (Q-NPM-69):
   - `feed`, offered when `remote.url` is the public registry (`https://registry.npmjs.org/`, without query, fragment or user information: `discover.SameUpstream`, Q-NPM-75): a full pass first reads the
     root's `update_seq` and keeps it as the cursor of the next incremental pass, then lists names with `_all_docs`, one key
@@ -1692,7 +1692,7 @@ namespace claims of local members (R-REPO-023, decided without regard to the cal
 5. `_id` and `name` are the requested name; `_rev` is synthetic; `_attachments` and `users` are
    omitted.
 6. A version present in two members with different `integrity` increments
-   `trove_npm_virtual_version_conflicts_total` and is logged with both members, a signal of
+   `quader_npm_virtual_version_conflicts_total` and is logged with both members, a signal of
    shadowing or of a confusion attempt.
 7. npm has no separate latest-version request kind: every document request is a merge over all
    selected members including upstreams (REPO-036), and `GET {name}/latest` reads the merged
@@ -1810,7 +1810,7 @@ Acceptance criteria:
 Priority: **P1** · Covers: PKG-NPM-046, REPO-040
 
 Dependencies that are not registry packages make clients fetch from the internet directly. A
-virtual npm repository can rewrite some of them so the client fetches through trove.
+virtual npm repository can rewrite some of them so the client fetches through Quader.
 
 - The setting names generic remote repositories of the virtual repository's project, by bare key (one upstream
   each, INV-5), that may serve external dependencies; the allow list is exactly their upstream URLs. A dependency is rewritten only if
@@ -1820,7 +1820,7 @@ virtual npm repository can rewrite some of them so the client fetches through tr
   `<virtual registry URL>-/external/<remoteKey>/<rest of the URL after the remote's upstream URL>`,
   which lies under the registry URL, so credentials are sent and npm's same-host exception for URL
   dependencies applies.
-- Git dependencies stay unchanged in P1 (Q-NPM-7): trove cannot reproduce a git install without
+- Git dependencies stay unchanged in P1 (Q-NPM-7): Quader cannot reproduce a git install without
   running the dependency's `prepare` script, and branch references are mutable.
 - `GET -/external/{remoteKey}/{path}` serves the file through that generic remote with its normal
   caching, permissions and egress rules; a remote not named in the setting answers 404.
@@ -1839,7 +1839,7 @@ Acceptance criteria:
 
 - A package depending on `"widget": "https://downloads.example.org/widget-1.0.0.tgz"`, with
   generic remote `ext-tarballs` → `https://downloads.example.org/`, installs through `npm-all`;
-  the lockfile records the trove URL; the second install is served from cache.
+  the lockfile records the Quader URL; the second install is served from cache.
 - A dependency on another host stays unchanged.
 
 ## Search, audit and maintenance
@@ -1892,8 +1892,8 @@ Priority: **P1** · Covers: PKG-NPM-017, PKG-NPM-018, ART-006
 
 Acceptance criteria:
 
-- `curl -T ui-1.3.0.tgz -H "Authorization: Bearer ${TROVE_TOKEN}"
-  https://trove.example.com/files/web/npm-local/@acme/ui/-/ui-1.3.0.tgz` answers 201 and `npm
+- `curl -T ui-1.3.0.tgz -H "Authorization: Bearer ${QUADER_TOKEN}"
+  https://quader.example.com/files/web/npm-local/@acme/ui/-/ui-1.3.0.tgz` answers 201 and `npm
   install @acme/ui@1.3.0` installs it; uploading the same file to `…/npm-local/misc/ui.tgz` answers
   400 naming `@acme/ui/-/ui-1.3.0.tgz`.
 
@@ -1909,7 +1909,7 @@ Priority: **P1** · Covers: PKG-NPM-048, SRCH-050
       "package": {
         "name": "@acme/ui", "scope": "acme", "version": "1.2.0", "description": "Acme UI kit",
         "keywords": ["ui"], "date": "2026-10-28T09:12:44.512Z",
-        "links": { "npm": "https://trove.example.com/ui/packages/npm-all/@acme/ui" },
+        "links": { "npm": "https://quader.example.com/ui/packages/npm-all/@acme/ui" },
         "publisher": { "username": "alice" }, "maintainers": [ { "username": "alice" } ]
       },
       "score": { "final": 1.0, "detail": { "quality": 1.0, "popularity": 1.0, "maintenance": 1.0 } },
@@ -1935,7 +1935,7 @@ Priority: **P1** · Covers: PKG-NPM-048, SRCH-050
 
 Acceptance criteria:
 
-- `npm search acme --registry https://trove.example.com/api/npm/web/npm-all/` lists `@acme/ui`
+- `npm search acme --registry https://quader.example.com/api/npm/web/npm-all/` lists `@acme/ui`
   immediately after its publish; `npm search scope:acme` lists only `@acme` packages; a caller
   without `read` on `npm-local` gets no hit from it; the test upstream receives no search request.
 
@@ -1946,7 +1946,7 @@ Raised from P1 to MVP and built in M2 (Q-NPM-61). `POST -/npm/v1/security/adviso
 with a gzip body, pnpm 11 and later uncompressed, `yarn npm audit`); the body is an object of package
 names, each with a list of versions:
 
-- Mode `forward` (remote repositories, the default, Q-NPM-3): trove decompresses the body
+- Mode `forward` (remote repositories, the default, Q-NPM-3): Quader decompresses the body
   (`npm.audit.maxBodySize` as sent, ten times that decompressed, at most 100,000 names, 413
   `npm_too_large` beyond; a content coding other than gzip is 415, a body that is no such object
   400, Q-NPM-64) and forwards to the provider (default: the remote's upstream URL), with the
@@ -1965,14 +1965,14 @@ names, each with a list of versions:
   upstream did not already know; a name it never fetched (a git or file dependency, a package
   installed from elsewhere, an internal name nobody claimed) is withheld. A `providerURL` other than
   the upstream learns the same set of names.
-- When names were withheld, the response carries `npm-notice: trove audited <n> of <m>
+- When names were withheld, the response carries `npm-notice: Quader audited <n> of <m>
   packages; <k> internal or not yet proxied names were not sent to the advisory provider`, and
-  `trove_npm_audit_names_withheld_total{reason}` counts them by reason (`local`, `claimed`,
+  `quader_npm_audit_names_withheld_total{reason}` counts them by reason (`local`, `claimed`,
   `pinned`, `not_proxied`: each name once, by the first reason in this order, labelled with the
   forwarding remote, Q-NPM-63). Withheld names are absent from the answer, which clients read as "no
   advisories"; the notice is what tells the user the audit was partial, and only npm prints it on
   a successful answer ([H-302](../../security/data-and-secret-flow.md#h-302--pnpm-and-yarn-do-not-show-that-an-audit-was-partial)).
-  When every name is withheld, trove answers `{}` without contacting the provider.
+  When every name is withheld, Quader answers `{}` without contacting the provider.
 - The provider's 200 body is returned unchanged, with its `Content-Type` and `Content-Encoding`,
   `Cache-Control: no-store` and at most 128 MiB (`MaxDocumentBytes`); pnpm accepts only an object
   keyed by package name whose advisories carry a numeric `id` and a string `vulnerable_versions`,
@@ -2003,7 +2003,7 @@ names, each with a list of versions:
   names the bulk endpoint (npm 7 to 10 ask the quick endpoint after a failed bulk request and print
   its answer). pnpm 10 asks only these two endpoints, so `pnpm audit` of pnpm 10 is not served; it
   retries each 501 after 10 seconds and a minute and fails after about 140 seconds (measured,
-  Q-NPM-65). trove does not translate npm 6's audit protocol, and the audit scenario of pnpm 10's
+  Q-NPM-65). Quader does not translate npm 6's audit protocol, and the audit scenario of pnpm 10's
   row of R-NPM-045 is not applicable (owner, Q-NPM-65).
 - Permission: `read` on the repository and, for a virtual, on the forwarding member; a caller
   without `read` on the forwarding member gets the refusal of R-AUTHZ-016 and no provider is asked.
@@ -2017,10 +2017,10 @@ names, each with a list of versions:
   ([architecture.md](../architecture.md) R-ARCH-024, R-NPM-046).
 - **Mode `local`, from M4b** ([vulnerability-scanning.md](../vulnerability-scanning.md)
   R-VULN-017, Q-VULN-9, Q-ARCH-341). `npm.audit.mode` is the enum `local | forward | disabled`;
-  `local` answers from trove's data. `npm.audit` becomes a
+  `local` answers from Quader's data. `npm.audit` becomes a
   member of every class: `local` and `disabled` on every class, `forward` on remote and virtual
   repositories (a virtual repository in `forward` forwards through its first forwarding member, as
-  above). With `npm.audit.mode: local` ("mode `local`" in the text of this page) trove answers the bulk endpoint from its own advisory data on local,
+  above). With `npm.audit.mode: local` ("mode `local`" in the text of this page) Quader answers the bulk endpoint from its own advisory data on local,
   remote and virtual repositories and sends nothing out; a virtual repository answers itself and
   consults no member. The body bounds and the request handling above apply in every mode;
   `providerURL` and `timeout` apply to `forward` only. A document that sets no `mode` is `local` while the
@@ -2028,7 +2028,7 @@ names, each with a list of versions:
   otherwise it is the default above: `forward` on remote and virtual repositories, `disabled` on
   local ones. The 501 cases above then hold for modes `forward` and `disabled`; in mode `local`
   only the cache view and an endpoint with exposure rules (R-NPM-048, Q-VULN-19) answer 501, a local
-  repository and an offline remote answer, and while trove's npm advisory data is not complete the
+  repository and an offline remote answer, and while Quader's npm advisory data is not complete the
   answer is 503 `vulnerability_data_unavailable` (R-NPM-005). With the installation's
   `vulnerabilities.enabled: false`, `mode: local` answers like `disabled`. npm 6's endpoints keep
   their 501 in every mode, with the text that names the bulk endpoint where it is served.
@@ -2070,7 +2070,7 @@ set to `forward`; the criteria of mode `local` are those of
 ### R-NPM-039 · Build-tool integration surface
 Priority: **P1** · Covers: PKG-NPM-055
 
-trove ships no wrapper around npm, pnpm or Yarn. Build tooling uses the native clients plus one
+Quader ships no wrapper around npm, pnpm or Yarn. Build tooling uses the native clients plus one
 read-only lookup for per-dependency checksums:
 
 | Method | Path | Response | Permission |
@@ -2129,8 +2129,8 @@ below are not templates.
 npm (`.npmrc` in the project, `~/.npmrc`, or `%USERPROFILE%\.npmrc` on Windows):
 
 ```ini
-registry=https://trove.example.com/api/npm/web/npm-all/
-//trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}
+registry=https://quader.example.com/api/npm/web/npm-all/
+//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}
 ; only when pin rules or manual namespace claims apply (R-NPM-012):
 min-release-age-exclude[]=@acme/*
 ```
@@ -2138,8 +2138,8 @@ min-release-age-exclude[]=@acme/*
 npm interactive and scoped variant:
 
 ```shell
-npm login --registry=https://trove.example.com/api/npm/web/npm-all/ --auth-type=web
-npm login --registry=https://trove.example.com/api/npm/web/npm-acme/ --auth-type=web --scope=@acme
+npm login --registry=https://quader.example.com/api/npm/web/npm-all/ --auth-type=web
+npm login --registry=https://quader.example.com/api/npm/web/npm-acme/ --auth-type=web --scope=@acme
 npm install lodash
 npm publish
 ```
@@ -2156,9 +2156,9 @@ minimumReleaseAgeExclude:
 Yarn 2 and later (`.yarnrc.yml`):
 
 ```yaml
-npmRegistryServer: "https://trove.example.com/api/npm/web/npm-all/"
+npmRegistryServer: "https://quader.example.com/api/npm/web/npm-all/"
 npmAlwaysAuth: true          # only when the repository is not anonymously readable
-npmAuthToken: "${TROVE_TOKEN}"
+npmAuthToken: "${QUADER_TOKEN}"
 ```
 
 Yarn 2 and later, a scope bound to another repository:
@@ -2166,8 +2166,8 @@ Yarn 2 and later, a scope bound to another repository:
 ```yaml
 npmScopes:
   acme:
-    npmRegistryServer: "https://trove.example.com/api/npm/web/npm-acme/"
-    npmAuthToken: "${TROVE_TOKEN}"
+    npmRegistryServer: "https://quader.example.com/api/npm/web/npm-acme/"
+    npmAuthToken: "${QUADER_TOKEN}"
 ```
 
 Yarn 1: the npm `.npmrc` lines plus `always-auth=true` when the repository is not anonymously
@@ -2176,7 +2176,7 @@ readable.
 Publishing target in `package.json`:
 
 ```json
-{ "publishConfig": { "registry": "https://trove.example.com/api/npm/web/npm-all/" } }
+{ "publishConfig": { "registry": "https://quader.example.com/api/npm/web/npm-all/" } }
 ```
 
 GitLab CI with trusted publishing (R-NPM-022, P1), for npm 11.5.1 and later (the `node:lts` image
@@ -2188,37 +2188,37 @@ publish:
   image: node:lts
   id_tokens:
     NPM_ID_TOKEN:
-      aud: "npm:trove.example.com"
+      aud: "npm:quader.example.com"
   script:
-    - npm config set registry https://trove.example.com/api/npm/web/npm-all/
+    - npm config set registry https://quader.example.com/api/npm/web/npm-all/
     - npm publish            # or: pnpm publish; Yarn 4: yarn npm publish with npmRegistryServer set
 ```
 
 GitLab CI for clients without a native exchange (npm 10, pnpm 10 on top of npm 10, Yarn 1): the
 generic exchange of [gitlab-ci-oidc.md](../gitlab-ci-oidc.md) R-CI-007 as a pipeline step, with the
-ID token in `TROVE_ID_TOKEN`, so a newer npm in the same job does not also exchange it:
+ID token in `QUADER_ID_TOKEN`, so a newer npm in the same job does not also exchange it:
 
 ```yaml
 publish:
   image: node:22
   id_tokens:
-    TROVE_ID_TOKEN:
-      aud: "https://trove.example.com"
+    QUADER_ID_TOKEN:
+      aud: "https://quader.example.com"
   script:
     - |
-      export TROVE_TOKEN="$(printf '%s' "$TROVE_ID_TOKEN" | curl -sSf \
+      export QUADER_TOKEN="$(printf '%s' "$QUADER_ID_TOKEN" | curl -sSf \
         --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
         --data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:id_token' \
         --data-urlencode 'subject_token@-' \
-        https://trove.example.com/api/v1/auth/oidc/token \
+        https://quader.example.com/api/v1/auth/oidc/token \
         | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).access_token)')"
-      unset TROVE_ID_TOKEN
-    - npm config set registry https://trove.example.com/api/npm/web/npm-all/
-    # npm expands ${TROVE_TOKEN} at run time; the token itself is never written to disk.
-    - npm config set //trove.example.com/api/npm/web/npm-all/:_authToken '${TROVE_TOKEN}'
+      unset QUADER_ID_TOKEN
+    - npm config set registry https://quader.example.com/api/npm/web/npm-all/
+    # npm expands ${QUADER_TOKEN} at run time; the token itself is never written to disk.
+    - npm config set //quader.example.com/api/npm/web/npm-all/:_authToken '${QUADER_TOKEN}'
     - npm publish
     - |
-      printf 'Authorization: Bearer %s\n' "$TROVE_TOKEN" | curl -sS -X DELETE -H @- https://trove.example.com/api/v1/tokens/current
+      printf 'Authorization: Bearer %s\n' "$QUADER_TOKEN" | curl -sS -X DELETE -H @- https://quader.example.com/api/v1/tokens/current
 ```
 
 </details>
@@ -2265,12 +2265,12 @@ described.
 | `npm.local.what` | local | Immutability (`npm_version_exists`, the acknowledged retry), tombstones (`npm_version_unpublished`, no time window), the latest guard and its notice, package ownership, the rules for new names and look-alikes, the manifest and integrity checks of a publish, deprecate not available |
 | `npm.remote.what` | remote | Pull-through of the upstream, rewritten tarball addresses, read-only (`npm_class_not_writable`), the metadata and negative periods (defaults 2 h and 30 min), tarballs cached for good and checked against the upstream's integrity, invalid upstream documents, stale serving while the upstream is down and the `502`/`503`/`504` of what was never cached, an offline repository, versions removed upstream on every route and for lockfile installs, `serveRemovedVersions`, cache invalidation by a holder of `manage`, global claims and remote refusal |
 | `npm.virtual.what` | virtual | Members in order; the per-version source rule of R-NPM-030; the dist-tag merge (`latestStrategy`, `distTagStrategy`); read on the members; freshness through the virtual repository; writes through the deployment target (named when the reader may deploy there) and the refusal without one; namespace claims, pin rules and the shadowing check (`shadows_remote_package`, `shadow_check_unavailable`) |
-| `npm.configure` (configure snippets) | all | Per client: where the snippet goes (`.npmrc`, `~/.npmrc` for pnpm 11 and 12, `.yarnrc.yml`), the keyed credential line, `${TROVE_TOKEN}` expanded by the client, `npmAlwaysAuth` and `always-auth` and why, how to print the address in use, Yarn's `npmMinimalAgeGate`; the scoped registry (`@your-scope:registry=`, `npmScopes`) |
-| `npm.authenticate` | all | Personal and service-account tokens and their scope; Bearer or Basic with any user name; `TROVE_TOKEN` and never committing a token; CI with a masked variable, the GitLab CI exchange as coming; `whoami` and `ping`; no one-time password; the client's login command not supported yet. For an anonymous reader only that no credential is needed and that writes need one |
+| `npm.configure` (configure snippets) | all | Per client: where the snippet goes (`.npmrc`, `~/.npmrc` for pnpm 11 and 12, `.yarnrc.yml`), the keyed credential line, `${QUADER_TOKEN}` expanded by the client, `npmAlwaysAuth` and `always-auth` and why, how to print the address in use, Yarn's `npmMinimalAgeGate`; the scoped registry (`@your-scope:registry=`, `npmScopes`) |
+| `npm.authenticate` | all | Personal and service-account tokens and their scope; Bearer or Basic with any user name; `QUADER_TOKEN` and never committing a token; CI with a masked variable, the GitLab CI exchange as coming; `whoami` and `ping`; no one-time password; the client's login command not supported yet. For an anonymous reader only that no credential is needed and that writes need one |
 | `npm.install` (install snippets) | all | The install and lockfile commands per client, what the class serves, `EINTEGRITY` |
 | `npm.publish` | local, virtual | Per client: the publish command (`--no-git-checks`, pnpm 10 handing the upload to npm, `yarn install` first, `--new-version`), `publishConfig`, scoped packages, the deployment target, the limits (defaults 256 MiB, 2 GiB, 100,000 files, 1 MiB) and `npm_too_large`, the acknowledged retry and its notice, `--provenance` and `--stage`; or why the reader cannot publish. Left out for an anonymous reader |
 | `npm.maintain` | local, virtual | Dist-tag commands per client, the permissions, `latest` (movable, not removable, moved on unpublish), tag names that are ranges; unpublish per client (none in Yarn), `delete` and ownership, no time window; pnpm 11 and 12 through a virtual repository (Q-NPM-49, Q-NPM-68); deprecate not available. Left out for an anonymous reader |
-| `npm.audit` | all | A local repository's `501`; the forward of a remote or the first forwarding member of a virtual repository; the forwarded and the withheld names and npm's notice, which pnpm and Yarn Berry do not show; `501` and `502`; pnpm 10 not served; `yarn audit` never reaches trove |
+| `npm.audit` | all | A local repository's `501`; the forward of a remote or the first forwarding member of a virtual repository; the forwarded and the withheld names and npm's notice, which pnpm and Yarn Berry do not show; `501` and `502`; pnpm 10 not served; `yarn audit` never reaches Quader |
 | `npm.lockfiles` | all | What each client's lockfile records; moving a `package-lock.json` by replacing the address; Yarn Berry's address-free lockfile (R-NPM-042); valid integrity values; withdrawn versions fail lockfile installs |
 | `npm.endpoint` | all | Only on an endpoint with exposure rules: hidden versions are `E404`, `latest` moves, hidden tags are dropped, writes are `403 endpoint_read_only`, the audit is `501`, no fill on an endpoint without fills, the endpoint's own addresses |
 | `npm.troubleshooting` | all | A table of status, code, meaning and remedy for `400`, `401`, `403`, `404` (a version hidden by an exposure rule included), `405`, `409`, `413`, `422` (the management API's), `429`, `501`, `502`, `503`, `504` |
@@ -2278,7 +2278,7 @@ described.
 </details>
 
 The tests pin the facts the guide names ([guide_test.go](../../../internal/formats/npm/guide_test.go)): every code of
-the troubleshooting table exists in `internal/errs` and is listed under the status trove answers it with; every
+the troubleshooting table exists in `internal/errs` and is listed under the status Quader answers it with; every
 snake_case code the guide names exists; the notices and the refusal text it quotes are the format strings the handlers
 send; the periods, limits and settings it names are the defaults of the descriptor, the configuration and the settings
 schema; an anonymous reader gets no credential steps; the endpoint section appears only with exposure rules. The
@@ -2288,17 +2288,17 @@ Acceptance criteria (the guide):
 
 - npm passes kit check 8 with its guide: every class and client has the required topics, the configure and install
   topics attach the setup snippets, and no code block of the guide spells a credential.
-- `TestR_UI_049_TheTroubleshootingCodesAreTroves` and `TestR_NPM_041_TheGuideQuotesWhatTroveSends` pass.
+- `TestR_UI_049_TheTroubleshootingCodesAreQuaders` and `TestR_NPM_041_TheGuideQuotesWhatQuaderSends` pass.
 
 ### R-NPM-042 · Yarn Berry tarball URLs and lockfiles
 Priority: **MVP** · Covers: PKG-NPM-053
 
 - Yarn 2+ reads `.yarnrc.yml`, requests **full** documents and revalidates them with
   `If-None-Match` and `If-Modified-Since`, so full-document rendering and 304 handling are on its
-  hot path; trove answers the `If-None-Match` and ignores the date (R-NPM-013).
+  hot path; Quader answers the `If-None-Match` and ignores the date (R-NPM-013).
 - Yarn 2+ treats `dist.tarball` as conventional only if it equals
   `<registry>/<name>/-/<basename>-<version>.tgz` (scope separator encoded or not), and then writes
-  a registry-agnostic lockfile; any other URL is pinned verbatim. trove's tarball URLs are
+  a registry-agnostic lockfile; any other URL is pinned verbatim. Quader's tarball URLs are
   conventional whenever `npmRegistryServer` uses the public base URL, which the setup instructions
   guarantee.
 - Yarn 2+ requests scoped tarballs with `%2f` and retries with `/`; both work (R-NPM-002).
@@ -2308,7 +2308,7 @@ Priority: **MVP** · Covers: PKG-NPM-053
 
 Acceptance criteria (Yarn 4):
 
-- `yarn install` through `npm-all` produces a `yarn.lock` that contains no trove URL; switching
+- `yarn install` through `npm-all` produces a `yarn.lock` that contains no Quader URL; switching
   `npmRegistryServer` to `npm-remote` and running `yarn install --immutable` succeeds.
 - `yarn npm publish`, `yarn npm tag add`, `yarn npm login`, `yarn npm whoami` and `yarn npm audit`
   behave as specified.
@@ -2333,7 +2333,7 @@ Acceptance criteria:
   and succeeds, Q-NPM-49.)
 
 ### R-NPM-044 · npm audit events and metrics
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Audit events ([operations-and-observability.md](../operations-and-observability.md), INV-16), with
 actor, project, repository (the qualified name `<projectKey>/<repoKey>`), package, version or tag, outcome and
@@ -2343,7 +2343,7 @@ source address:
 |---|---|
 | `npm.publish` | R-NPM-007, R-NPM-036; with integrity, the dist-tag and whether the latest guard applied; outcome `success` with the reason `retry_acknowledged` for an acknowledged retry (R-NPM-007 step 4, Q-NPM-25) |
 | `npm.unpublish` | R-NPM-017, per version, with its integrity. The registry entry declares `journal: revocation` (R-OPS-014), so a restore re-applies it (R-NPM-047, Q-NPM-12) |
-| `npm.reinstate` | R-NPM-047: `trove admin npm reinstate` put a withheld version back, with its integrity and the journal entry that withheld it |
+| `npm.reinstate` | R-NPM-047: `quader admin npm reinstate` put a withheld version back, with its integrity and the journal entry that withheld it |
 | `npm.dist_tag.set`, `npm.dist_tag.delete` | R-NPM-016 |
 | `npm.deprecate` | R-NPM-018, per version and message change |
 | `npm.publish.manifest_mismatch` | R-NPM-007, in both modes |
@@ -2354,16 +2354,16 @@ Login, logout and token events are R-AUTH-041's; integrity and egress events of 
 the egress and TLS events of an audit forward (R-NPM-038), are repositories-and-proxy.md's. An audit
 forward writes no audit event of its own.
 
-Metrics (prefix `trove_`, INV-16; the label written `repository` below is `repo` in the label list of R-OPS-007, Q-NPM-25,
-and its value is the qualified name `<projectKey>/<repoKey>`): `trove_npm_requests_total{class,operation,status}`,
-`trove_npm_request_duration_seconds{class,operation}`,
-`trove_npm_document_render_seconds{class,variant}`,
-`trove_npm_virtual_version_conflicts_total{repository}`,
-`trove_npm_removed_upstream_versions_total{repository}`,
-`trove_npm_stale_upstream_documents_total{repository}`,
-`trove_npm_audit_names_withheld_total{repository,reason}` (R-NPM-038; the repository is the forwarding remote, Q-NPM-63),
-`trove_npm_publish_retries_acknowledged_total{repository}` (R-NPM-007),
-`trove_npm_tarball_document_revalidations_total{repository,outcome}` (R-NPM-025). Each replica exports its
+Metrics (prefix `quader_`, INV-16; the label written `repository` below is `repo` in the label list of R-OPS-007, Q-NPM-25,
+and its value is the qualified name `<projectKey>/<repoKey>`): `quader_npm_requests_total{class,operation,status}`,
+`quader_npm_request_duration_seconds{class,operation}`,
+`quader_npm_document_render_seconds{class,variant}`,
+`quader_npm_virtual_version_conflicts_total{repository}`,
+`quader_npm_removed_upstream_versions_total{repository}`,
+`quader_npm_stale_upstream_documents_total{repository}`,
+`quader_npm_audit_names_withheld_total{repository,reason}` (R-NPM-038; the repository is the forwarding remote, Q-NPM-63),
+`quader_npm_publish_retries_acknowledged_total{repository}` (R-NPM-007),
+`quader_npm_tarball_document_revalidations_total{repository,outcome}` (R-NPM-025). Each replica exports its
 own counts; dashboards sum them over the replicas of a role. Access logs record `npm-command` and
 `npm-session`.
 
@@ -2434,8 +2434,8 @@ maintenance until 2027-04-30, 24 in maintenance, 26 active LTS from 2026-10-28):
   (npm, pnpm); lockfile reinstall with an empty client cache.
 - pnpm 10 and Yarn 1 stay gate rows, and their audit scenario is not applicable, with its reason
   (owner, Q-NPM-65): pnpm 10 speaks only npm 6's audit endpoints, which answer 501 (R-NPM-038), and
-  trove does not translate npm 6's audit protocol; Yarn 1's `yarn audit` always asks
-  registry.yarnpkg.com, whatever `.npmrc` says, so it never reaches trove.
+  Quader does not translate npm 6's audit protocol; Yarn 1's `yarn audit` always asks
+  registry.yarnpkg.com, whatever `.npmrc` says, so it never reaches Quader.
 - From M4b the audit scenario runs in mode `local` through `npm-local`, `npm-remote` and `npm-all`
   ([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-017, R-VULN-029), and the
   forwarding scenario of M2 keeps running with `npm-remote` and `npm-all` set to `forward`.
@@ -2456,7 +2456,7 @@ Acceptance criteria:
 ## Replicas, Valkey and backups
 
 ### R-NPM-046 · npm across replicas: no state between requests, Valkey degradation, drain
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The Kubernetes Service sends each request to any `web` replica, without session affinity
 (INV-12, INV-18, [architecture.md](../architecture.md) R-ARCH-032). Every npm flow that spans
@@ -2526,7 +2526,7 @@ Rules:
     (R-ARCH-024), and a retry of a publish whose answer was lost elsewhere is acknowledged
     (R-NPM-007 step 4, Q-NPM-11). A revisioned unpublish or deprecation whose answer was lost
     succeeds on its retry when its effect is in force (R-NPM-009). Dist-tag writes, legacy login
-    and logout are idempotent. Two cases remain in which an answer lost outside trove makes the
+    and logout are idempotent. Two cases remain in which an answer lost outside Quader makes the
     client report a failure, and running the command again succeeds: a dist-tag removal, whose
     retry answers 404 because the tag is gone (`npm dist-tag ls` shows the result), and a `POST`
     that npm never retries (the web-login start and the trusted-publishing exchange, both P1);
@@ -2534,7 +2534,7 @@ Rules:
     `POST`;
   - a web-login poll (P1) is a short read of `cli_login` and a `GET`, which npm's fetch layer
     retries after a connection error. A poll that minted the token cannot be answered again,
-    because the secret is never stored (R-AUTH-034): when its answer is lost outside trove, the
+    because the secret is never stored (R-AUTH-034): when its answer is lost outside Quader, the
     retry gets 404, npm falls back to the legacy prompt, where a PAT can be entered (R-NPM-021),
     and the minted token stays unused until it expires or is revoked;
   - the reindex job (P1) is released with its checkpoint and continues on another `worker`
@@ -2570,7 +2570,7 @@ Acceptance criteria:
   another replica and `npm unpublish` exits 0.
 
 ### R-NPM-047 · npm data in backups and restores
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A backup holds a transactionally consistent snapshot of PostgreSQL and every blob it references
 (INV-19, [backup-and-restore.md](../backup-and-restore.md)). For npm this means:
@@ -2607,7 +2607,7 @@ A backup holds a transactionally consistent snapshot of PostgreSQL and every blo
     R-STOR-022, R-STOR-023);
   - the replay output lists every withheld version. An administrator confirms a withdrawal by
     deleting the version's items through the management item API (R-STOR-018; permanently in the
-    MVP, to the trash can from P1; the tombstone stays), or reverses it with `trove admin npm reinstate <projectKey>/<repoKey> <name>@<version>`. The
+    MVP, to the trash can from P1; the tombstone stays), or reverses it with `quader admin npm reinstate <projectKey>/<repoKey> <name>@<version>`. The
     reinstate removes a `journal` tombstone only while the version is stored with the tombstone's
     integrity, so it brings back the same bytes and never admits new ones (Q-NPM-8); it increments
     `rev_seq` and writes `npm.reinstate` (R-NPM-044). A withheld version counts toward the
@@ -2633,7 +2633,7 @@ Acceptance criteria:
   journal replay, `npm view @acme/ui versions` does not list `1.4.0`, its tarball answers 404 on
   the npm route, through `npm-all` and on `/files/web/npm-local/@acme/ui/-/ui-1.4.0.tgz`, publishing
   `1.4.0` again answers 409 `npm_version_unpublished`, and the replay output lists the entry as
-  `applied`. `trove admin npm reinstate web/npm-local @acme/ui@1.4.0` brings the version back with its
+  `applied`. `quader admin npm reinstate web/npm-local @acme/ui@1.4.0` brings the version back with its
   original integrity.
 - A hand-written `npm.unpublish` journal object for a live version with its correct integrity is
   replayed: the version is withheld, nothing is deleted, and a reinstate restores it.
@@ -2649,7 +2649,7 @@ Acceptance criteria:
 ## Endpoints
 
 ### R-NPM-048 · npm documents on an endpoint with exposure rules
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The npm plug-in implements the exposure adapter of [endpoints.md](../endpoints.md) R-EP-018. On an
 endpoint with `exposure: rules`, after the merge of a virtual repository and the rewrite of a remote
@@ -2722,12 +2722,12 @@ Acceptance criteria (fixture of [endpoints.md](../endpoints.md) R-EP-012, with `
 
 | Catalog ID | Priority | Note |
 |---|---|---|
-| PKG-NPM-012 | P2 | One-time-password challenge on writes. Users sign in through OIDC, where the identity provider enforces a second factor; trove never emits `otp` (R-NPM-004). |
-| PKG-NPM-014 | P2 | `npm token` and `npm profile` endpoints; 404 until then (R-NPM-043); tokens are managed through trove's API and UI. |
+| PKG-NPM-012 | P2 | One-time-password challenge on writes. Users sign in through OIDC, where the identity provider enforces a second factor; Quader never emits `otp` (R-NPM-004). |
+| PKG-NPM-014 | P2 | `npm token` and `npm profile` endpoints; 404 until then (R-NPM-043); tokens are managed through Quader's API and UI. |
 | PKG-NPM-022 | P2 | `npm owner` maintainer changes; the partial `PUT` is rejected (R-NPM-017); ownership is R-AUTHZ-018/019. |
 | PKG-NPM-023 | Later | Staged publishing (`npm publish --stage`); the `POST` answers 501. |
 | PKG-NPM-024 | P2 | Provenance bundles: stored on publish (R-NPM-006), served later below the registry URL at `-/npm/v1/attestations/<name>@<version>`, with `dist.attestations.url` rewritten to it (R-NPM-027, Q-NPM-1, H-32); 404 until then. |
-| PKG-NPM-035 | P2 | Strict layout setting; trove stores only canonical paths, so it is permanently on (R-NPM-006). |
+| PKG-NPM-035 | P2 | Strict layout setting; Quader stores only canonical paths, so it is permanently on (R-NPM-006). |
 | PKG-NPM-036 | P2 | Strict-layout conversion; nothing to convert. Relevant only to an import from another system. |
 | PKG-NPM-037 | P2 | Registry signatures and the keys endpoint for `npm audit signatures`, with signing keys on local (REPO-029) and virtual (REPO-042) repositories. |
 | PKG-NPM-041 | P2 | FHIR package registry as upstream, with its rule against mixing it with ordinary npm members. |
@@ -2739,7 +2739,7 @@ Acceptance criteria (fixture of [endpoints.md](../endpoints.md) R-EP-012, with `
   inside the tarball. Rejecting publishes whose manifest disagrees with the tarball on dependency,
   binary and install-script fields (R-NPM-007) keeps document and tarball in step.
 - **Forged trust evidence.** `_npmUser`, `dist.signatures` and `dist.attestations` are set only by
-  trove or an upstream, never taken from a publishing client (R-NPM-007, R-NPM-027); pnpm's trust
+  Quader or an upstream, never taken from a publishing client (R-NPM-007, R-NPM-027); pnpm's trust
   policy relies on them.
 - **Per-caller documents.** Merged documents depend on the caller's readable members; documents
   are always `Cache-Control: private` (R-NPM-013) so no shared HTTP cache hands one caller's view
@@ -2756,9 +2756,9 @@ Acceptance criteria (fixture of [endpoints.md](../endpoints.md) R-EP-012, with `
   `sendCredentials` hosts; `providerURL` refuses user info, so no credential sits in the repository
   document (H-303). What remains open is [H-300](../../security/data-and-secret-flow.md#h-300--the-advisory-providers-answer-is-trusted-as-it-is)
   to [H-302](../../security/data-and-secret-flow.md#h-302--pnpm-and-yarn-do-not-show-that-an-audit-was-partial).
-- **ID tokens stay on trove's host.** trove owns the host root of its base URL (R-OPS-005 refuses a
+- **ID tokens stay on Quader's host.** Quader owns the host root of its base URL (R-OPS-005 refuses a
   base URL with a path), so the host-root exchange URL npm derives from the registry URL always
-  reaches trove and never another service on a shared host (R-NPM-022).
+  reaches Quader and never another service on a shared host (R-NPM-022).
 - **Bounded parsing.** Publish bodies, tarball scans and audit bodies (as sent, decompressed, and
   by their number of names) are bounded before they are parsed (R-NPM-007, R-NPM-038, Q-NPM-64), and upstream documents by R-REPO-040, so one request cannot
   exhaust a replica's memory or spool.
@@ -2804,16 +2804,16 @@ and 12.12.1 and later use `NPM_ID_TOKEN` only when its `aud` is `npm:<registry h
 attestations, pacote keeps only the path of `dist.attestations.url` and resolves it against the
 registry URL (pacote 21.5.1 `lib/registry.js`). A URL whose path lies below the registry URL
 therefore reaches the repository, and only the upstream's unchanged URL points at the host root.
-INV-6 and other pages already assume that trove owns its host root: the session cookie is
-`__Host-trv_session` with `Path=/` (Q-AUTH-2), `GET /{$}` redirects to `/ui/` (R-ARCH-005), the
+INV-6 and other pages already assume that Quader owns its host root: the session cookie is
+`__Host-qdr_session` with `Path=/` (Q-AUTH-2), `GET /{$}` redirects to `/ui/` (R-ARCH-005), the
 chart routes the whole host (R-HA-037), and `/v2/` is reserved for OCI (Q-HA-4).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Two host-root prefixes | `/-/npm/v1/oidc/token/exchange/package/` and `/-/npm/v1/attestations/` at the host root, nothing below the registry URL | npm's native GitLab flow works; neither route needs a repository key | Yarn 4 and current pnpm post the exchange below the registry URL and fail silently; a host-root attestation route would have to guess the repository and its permissions from `name@version` |
 | (b) No host-root routes | GitLab jobs call `POST /api/v1/auth/oidc/token` (R-CI-007) and write the token into `.npmrc` | INV-6 unchanged; works with every client version | A native client feature of npm, pnpm and Yarn becomes pipeline boilerplate in every project |
-| (c) Host-root prefixes plus a path-prefix fallback | (a); when `server.base_url` has a path, the setup instructions emit (b) with the ID token in `TROVE_ID_TOKEN` | Covers an installation below a path prefix of a shared host | That deployment mode exists nowhere else in the spec, and is unsafe with the decided session cookie: `__Host-trv_session` with `Path=/` would go to every service on the shared host. A second snippet, a startup warning and a test for an unsupported mode; Yarn and pnpm still fail |
-| (d) Every entry point the clients use | The exchange at the host root (npm) and below every registry URL (Yarn, pnpm), one handler. trove owns its host root: `server.base_url` is an origin without a path (R-OPS-005). Attestations are served later below the registry URL, through a rewritten `dist.attestations.url`. The generic exchange stays as the snippet for clients without a native exchange | npm, pnpm and Yarn work natively; one host-root prefix instead of two; attestations keep their repository context; the ID-token leak to a co-hosted service cannot arise from a valid configuration | Two routes for one handler; a base URL with a path is refused at startup instead of tolerated |
+| (c) Host-root prefixes plus a path-prefix fallback | (a); when `server.base_url` has a path, the setup instructions emit (b) with the ID token in `QUADER_ID_TOKEN` | Covers an installation below a path prefix of a shared host | That deployment mode exists nowhere else in the spec, and is unsafe with the decided session cookie: `__Host-qdr_session` with `Path=/` would go to every service on the shared host. A second snippet, a startup warning and a test for an unsupported mode; Yarn and pnpm still fail |
+| (d) Every entry point the clients use | The exchange at the host root (npm) and below every registry URL (Yarn, pnpm), one handler. Quader owns its host root: `server.base_url` is an origin without a path (R-OPS-005). Attestations are served later below the registry URL, through a rewritten `dist.attestations.url`. The generic exchange stays as the snippet for clients without a native exchange | npm, pnpm and Yarn work natively; one host-root prefix instead of two; attestations keep their repository context; the ID-token leak to a co-hosted service cannot arise from a valid configuration | Two routes for one handler; a base URL with a path is refused at startup instead of tolerated |
 
 **Choice:** (d) — serve the exchange at npm's host-root path and below every registry URL, make
 host-root ownership explicit through `server.base_url`, and serve attestations later below the
@@ -2844,7 +2844,7 @@ exemption, host-root ownership instead of the path-prefix fallback, the `npm:<ho
 acceptance criteria for npm, pnpm and Yarn and for a foreign audience. The startup warning and the
 path-prefix criterion are removed. R-NPM-027 and the Deferred row PKG-NPM-024: attestations below
 the registry URL through a rewritten URL. R-NPM-041: the native snippet uses `aud:
-"npm:trove.example.com"`, and the generic-exchange snippet now serves clients without a native
+"npm:quader.example.com"`, and the generic-exchange snippet now serves clients without a native
 exchange. R-NPM-045: the not-applicable rule names those rows. The Security notes, H-31 and H-32
 follow. Cross-page: INV-6 on [README.md](../README.md), R-OPS-005, R-AUTH-001, the CI issuer
 audience default, R-ARCH-005, R-HA-037 and Q-HA-4.
@@ -2868,12 +2868,12 @@ takedown is the lockfile: `npm ci` asks for tarballs by URL (R-NPM-025), so (c) 
 flowing to every project that already pinned it, and (b) to everyone. The cost of (a) is a loud 404
 with two documented fixes. To keep (a) from producing false removals, a stale upstream copy (older
 `time.modified`, as a lagging CDN edge serves) never marks a version removed. The development agent
-would revisit this if `trove_npm_removed_upstream_versions_total` shows removals that the upstream
+would revisit this if `quader_npm_removed_upstream_versions_total` shows removals that the upstream
 reverses within one period (a sign of false positives the stale-copy rule misses), or once a
 curation capability can quarantine versions with an allow list.
 
 **Applied in the spec:** R-NPM-024 adds the stale-copy rule and the metric
-`trove_npm_stale_upstream_documents_total`. The stored `time.modified` is capped at its receive
+`quader_npm_stale_upstream_documents_total`. The stored `time.modified` is capped at its receive
 time, so one future-dated document cannot freeze the cache and with it every later takedown; the
 rule is skipped when a document has no `time.modified`. R-NPM-026 states the default, covers
 lockfile requests explicitly, re-lists a version the upstream lists again, names the fixes for a
@@ -2891,31 +2891,31 @@ Status: **Decided by the development agent** — selected from the options below
 |---|---|---|---|
 | (a) Forward, minus recognised internal names | Default `forward`; names present in local repositories, claims or pin rules are removed, everything else is sent | Complete audits for every lockfile | An internal name that nothing marks as internal (a git dependency's package name, a package from another registry) is disclosed to the provider |
 | (b) Disabled by default | `disabled`; operators opt in per remote | Nothing leaves the installation | `npm audit` fails and `npm install` reports an audit error on every run; developers lose a security signal by default |
-| (c) Forward only names already proxied | Default `forward`; send only names the forwarding remote has fetched from its upstream, minus names local repositories, claims or pin rules mark internal; an `npm-notice` header reports withheld names | No name leaves that the upstream has not already seen from this installation; audits stay on | A lockfile resolved elsewhere is audited partially until its packages have passed through trove; one extra query per audit |
+| (c) Forward only names already proxied | Default `forward`; send only names the forwarding remote has fetched from its upstream, minus names local repositories, claims or pin rules mark internal; an `npm-notice` header reports withheld names | No name leaves that the upstream has not already seen from this installation; audits stay on | A lockfile resolved elsewhere is audited partially until its packages have passed through Quader; one extra query per audit |
 
 **Choice:** (c) — forward by default, but only names the forwarding remote already holds a document for, and say so when names were withheld.
 
 **Rationale:** (b) trades a security signal for a disclosure that (c) shows is avoidable. (a) depends
-on recognising every internal name, and the only names it can recognise are those trove has been
+on recognising every internal name, and the only names it can recognise are those Quader has been
 told about; (c) inverts the test so the property (a) argues for, "no new names leave", holds by
 construction: a name the remote has fetched is already known to the upstream. The
-partial-audit cost is small in practice (any install through trove caches every public package of
+partial-audit cost is small in practice (any install through Quader caches every public package of
 the tree), and it is visible: npm prints `npm-notice` on every response (verified in
 [check-response.js](https://github.com/npm/npm-registry-fetch/blob/main/lib/check-response.js)).
 Withdrawn packages stay forwardable, because malware advisories are exactly what an audit should
-find. The development agent would revisit this if `trove_npm_audit_names_withheld_total{reason="not_proxied"}`
+find. The development agent would revisit this if `quader_npm_audit_names_withheld_total{reason="not_proxied"}`
 stays high for real users, which would call for an opt-in per remote to forward unproxied names.
 
 Revisited 2026-10-31: from M4b the default is `npm.audit.mode: local` (Q-VULN-74, superseded by Q-ARCH-341) while scanning is on
 ([vulnerability-scanning.md](../vulnerability-scanning.md) Q-VULN-9): the audit is answered from
-trove's own advisory data and nothing is sent out, so forwarding becomes opt-in per remote and
+Quader's own advisory data and nothing is sent out, so forwarding becomes opt-in per remote and
 virtual repository. Choice (c) stays the rule of mode `forward`, and its default where scanning is
 off or the OSV source is `off`.
 
 **Applied in the spec:** R-NPM-038 rewritten: the proxied-names rule, withholding of names covered
 by any claim scope, the `npm-notice` text, the `{}` answer when every name is withheld, and two new
 acceptance criteria. R-NPM-005 lists R-NPM-038 as a user of `npm-notice`. R-NPM-033 and R-NPM-044
-(metric `trove_npm_audit_names_withheld_total`) follow. The Security notes and H-34 describe the
+(metric `quader_npm_audit_names_withheld_total`) follow. The Security notes and H-34 describe the
 remaining disclosure.
 
 ### Q-NPM-4 · Current client majors in the acceptance gate
@@ -2984,7 +2984,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Verify and reject | Compare the install-relevant fields of the request manifest with the tarball's `package.json` after applying the clients' publish-time normalization steps to both sides; 400 on mismatch, `warn` mode as escape hatch | Closes manifest confusion; a normalization gap shows up as a visible 400 naming the field | Needs trove to port the normalization steps that touch the compared fields, for npm and Yarn 1 |
+| (a) Verify and reject | Compare the install-relevant fields of the request manifest with the tarball's `package.json` after applying the clients' publish-time normalization steps to both sides; 400 on mismatch, `warn` mode as escape hatch | Closes manifest confusion; a normalization gap shows up as a visible 400 naming the field | Needs Quader to port the normalization steps that touch the compared fields, for npm and Yarn 1 |
 | (b) Derive from the tarball | Ignore the request manifest; build the stored manifest from `package.json` | No comparison logic | Needs every client's full normalization reproduced exactly, and silently changes what the publisher sent when it is not |
 | (c) Overlay without rejecting | Take the compared fields from the tarball, everything else from the request | No false rejections | The same normalization dependency as (b) for those fields, failing silently: for example dropping npm's implicit `install: node-gyp rebuild` changes what installs |
 
@@ -3018,15 +3018,15 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) HTTP(S) tarball URLs only | P1 rewrites only `http`/`https` tarball dependencies (R-NPM-034); git dependencies stay unchanged | What trove serves is byte-for-byte what the client would have fetched | Git dependencies still reach the internet directly |
-| (b) Also commit-pinned hosted-git dependencies | Rewrite git dependencies pinned to a full commit SHA to the host's archive download | More external traffic goes through trove | npm installs a git dependency by cloning, running its `prepare` script and applying its `files` rules; an archive skips all three, so packages that build on install silently get different content |
+| (a) HTTP(S) tarball URLs only | P1 rewrites only `http`/`https` tarball dependencies (R-NPM-034); git dependencies stay unchanged | What Quader serves is byte-for-byte what the client would have fetched | Git dependencies still reach the internet directly |
+| (b) Also commit-pinned hosted-git dependencies | Rewrite git dependencies pinned to a full commit SHA to the host's archive download | More external traffic goes through Quader | npm installs a git dependency by cloning, running its `prepare` script and applying its `files` rules; an archive skips all three, so packages that build on install silently get different content |
 
 **Choice:** (a) — rewrite only HTTP(S) tarball URLs in P1.
 
 **Rationale:** (b) changes what gets installed for exactly the packages that build on install, and
 branch references cannot be cached safely at all. Correctness of what a client installs outranks
 covering more traffic. The development agent would revisit this in P2 for commit-pinned
-dependencies whose archive's `package.json` has no `prepare` script, which trove can check before
+dependencies whose archive's `package.json` has no `prepare` script, which Quader can check before
 rewriting.
 
 **Applied in the spec:** No change; the requirement text already follows this option.
@@ -3052,11 +3052,11 @@ holds the version, and after that the next patch version costs nothing. (b) make
 depend on a role. The development agent would revisit this if an import from another system needs
 to bring tombstoned versions back.
 
-**Applied in the spec:** R-NPM-008 states that no API, UI or `trove admin` operation removes a
+**Applied in the spec:** R-NPM-008 states that no API, UI or `quader admin` operation removes a
 tombstone and that a republish of identical bytes is refused. Since 2026-10-28, R-NPM-008 also
 states how a backup restore treats tombstones and points to R-NPM-047. The acknowledged retry of
 Q-NPM-11 is not a republish: it applies only to a live version, never to a tombstone, and changes
-nothing. `trove admin npm reinstate` (R-NPM-047) is not a purge either: it removes only a tombstone
+nothing. `quader admin npm reinstate` (R-NPM-047) is not a purge either: it removes only a tombstone
 that a restore's replay wrote for a version that is still stored with that integrity, and so
 brings back the same bytes, as a trash-can restore does. R-NPM-008 marks the trash-can restore as
 P1, because the trash can is (R-STOR-022).
@@ -3090,7 +3090,7 @@ R-AUTHZ-007.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Requests reach `web` replicas at random, and the load needs several of them (INV-12, INV-18). npm
-documents are the most expensive responses trove renders: the full document of a large upstream
+documents are the most expensive responses Quader renders: the full document of a large upstream
 package is tens of megabytes (`next`: 31.5 MB unpacked, measured for Q-NPM-5), and Yarn 2+
 revalidates full documents on every install (R-NPM-042). INV-3 lists shared caches among Valkey's
 uses; [architecture.md](../architecture.md) Q-ARCH-16 decided for every format that rendered and
@@ -3100,7 +3100,7 @@ merged documents stay in process. This block records the npm check of that line.
 |---|---|---|---|
 | (a) Per replica, self-validating keys | Rendered local documents, abbreviated forms of remote documents and merged documents live in each replica's rendition and merged-metadata caches, keyed by `rev_seq`, stored document digest and merge fingerprint; ETags are computed from the same inputs | Exact on every replica without any message; a revalidation (`304`) costs one indexed query on any replica and no rendering; Valkey's content cannot change what a client installs | Each replica renders each package revision once, so n renders per revision; caches are cold after a rollout |
 | (b) Shared second level in Valkey | Rendered and merged documents stored in Valkey and read by every replica | One render per revision per cluster | Whoever can write to Valkey could serve a changed `dist.tarball` or `integrity` (ruled out by Q-ARCH-16); values of megabytes against R-ARCH-030's 1 KiB limit and Valkey's network; losing Valkey turns into a render burst on every replica at once |
-| (c) Renderings in object storage | Each rendering stored once in S3 under repository, package, revision, variant and settings, read by every replica | Shared, in trove's own store, survives restarts | One object write per publish and refresh, plus garbage collection of superseded renderings; an S3 GET costs tens of milliseconds, about what rendering a typical document costs; a second copy of what the rows already say |
+| (c) Renderings in object storage | Each rendering stored once in S3 under repository, package, revision, variant and settings, read by every replica | Shared, in Quader's own store, survives restarts | One object write per publish and refresh, plus garbage collection of superseded renderings; an S3 GET costs tens of milliseconds, about what rendering a typical document costs; a second copy of what the rows already say |
 
 **Choice:** (a) — npm documents are cached per replica in process, under keys that every replica
 reads from PostgreSQL, and the ETag is computed from the same inputs.
@@ -3138,15 +3138,15 @@ Status: **Decided by the development agent** — selected from the options below
 npm's fetch layer retries every request other than a `POST` after a connection error and on 408,
 420, 429 and any 5xx ([make-fetch-happen `lib/remote.js`](https://github.com/npm/make-fetch-happen/blob/main/lib/remote.js),
 read on 2026-10-28). A publish `PUT` whose answer is lost is therefore sent again, and the Service
-delivers the retry to any replica. [architecture.md](../architecture.md) R-ARCH-024 keeps trove's
+delivers the retry to any replica. [architecture.md](../architecture.md) R-ARCH-024 keeps Quader's
 own shutdown from cutting a publish between its commit and its status line. An answer can still be
-lost after trove has sent it: at an edge proxy instance on a drained node, through a reset between
+lost after Quader has sent it: at an edge proxy instance on a drained node, through a reset between
 edge and client, or by npm's `fetch-timeout` on a large publish whose commit completed. R-NPM-008
 then answered the retry with 409, although the publish had succeeded.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Always 409 | Rely on R-ARCH-024 for the cuts trove makes itself | Simplest; every 409 means "this version existed before you asked" | A publish that succeeded fails its CI job when the answer is lost outside trove; the rerun fails with 409 again and needs a version bump |
+| (a) Always 409 | Rely on R-ARCH-024 for the cuts Quader makes itself | Simplest; every 409 means "this version existed before you asked" | A publish that succeeded fails its CI job when the answer is lost outside Quader; the rerun fails with 409 again and needs a version bump |
 | (b) Acknowledge an identical retry | Same principal, identical tarball and provenance bundle, same dist-tag, within `npm.publish.retry_window` (10 min) on PostgreSQL's clock: 201 with an `npm-notice`, nothing changed | A lost answer costs nothing; the decision reads PostgreSQL only, so any replica takes it alike (INV-18); no state changes, so R-NPM-008's guarantee stands | A rerun of the same pipeline within the window, with a reproducible build, succeeds instead of failing with 409; one more column (`publish_tag`) |
 | (c) Acknowledge any identical republish | No principal or time condition | Reruns become idempotent too | Removes the loud signal that a version already exists; another principal would "publish" what someone else released |
 | (d) Idempotency key from a request header | Match retries by `npm-session` | Exact for npm | Not verified that pnpm 11 and 12 or Yarn 4 send it; R-NPM-005 keeps `npm-*` headers out of decisions; a header is only the client's claim |
@@ -3156,7 +3156,7 @@ then answered the retry with 409, although the publish had succeeded.
 
 **Rationale:**
 - The owner requires drains without outage, and a publish reported as failed although it
-  succeeded is an outage for the pipeline that ran it. R-ARCH-024 closes the case trove causes; (b)
+  succeeded is an outage for the pipeline that ran it. R-ARCH-024 closes the case Quader causes; (b)
   closes the rest without touching integrity.
 - Every fact (b) reads (publisher, `published_at`, integrity, the stored provenance digest,
   `publish_tag`) was committed with the original, and the window is measured on PostgreSQL's clock,
@@ -3176,7 +3176,7 @@ then answered the retry with 409, although the publish had succeeded.
 - The window covers npm's retry schedule (two retries, after 10 s and 60 s, each attempt bounded by
   the five-minute `fetch-timeout`) with margin, and keeps a rerun hours later loud. (c) gives that
   up. (d) depends on a header the other clients may not send.
-- The development agent would revisit this if `trove_npm_publish_retries_acknowledged_total` shows
+- The development agent would revisit this if `quader_npm_publish_retries_acknowledged_total` shows
   acknowledgements long after the original (reruns rather than retries), which would argue for a
   shorter window, or if a client is found that retries a publish with a changed body.
 
@@ -3206,7 +3206,7 @@ reversible: a deleted user is disabled on replay, not deleted. The trash can is 
 |---|---|---|---|
 | (a) Document, repeat by hand | A gap item; operators repeat the unpublishes from the audit log stream | No new mechanism | A manual step after a disaster, easy to miss; until it runs, the withdrawn version installs again |
 | (b) Journal `npm.unpublish`, replay deletes | The event carries `journal: revocation`; replay deletes the version and tombstones it when the restored repository holds it live with the journaled integrity | Automatic on both restore paths; the restored installation holds exactly what the old one held; one row in R-HA-054 | Without the trash can (MVP) the deletion is permanent, so a forged or mistaken entry destroys a version that the backup had restored, with no way back short of another restore. Against R-HA-054's reversibility rule |
-| (c) Journal `npm.unpublish`, replay withholds | As (b), but replay only tombstones the version: its items stay stored and no route serves them; `trove admin npm reinstate` reverses it, deleting the items confirms it | Automatic on both restore paths; replay deletes nothing, so a forged or mistaken entry is reversible in the MVP as well, as R-HA-054 requires; a withdrawn version stops installing at once | A withheld version occupies storage until an administrator deletes it; one admin subcommand; `/files` must apply npm's tombstone (R-NPM-003); the flag's definition widens from access removals to content withdrawals; dist-tag moves and deprecations stay reverted (H-51) |
+| (c) Journal `npm.unpublish`, replay withholds | As (b), but replay only tombstones the version: its items stay stored and no route serves them; `quader admin npm reinstate` reverses it, deleting the items confirms it | Automatic on both restore paths; replay deletes nothing, so a forged or mistaken entry is reversible in the MVP as well, as R-HA-054 requires; a withdrawn version stops installing at once | A withheld version occupies storage until an administrator deletes it; one admin subcommand; `/files` must apply npm's tombstone (R-NPM-003); the flag's definition widens from access removals to content withdrawals; dist-tag moves and deprecations stay reverted (H-51) |
 | (d) Journal every npm change | Publishes, dist-tag moves and deprecations too, replayed after the restore | Brings back the whole npm state of the lost interval | Replaying a publish adds content, which a replay must never do; blobs published after the snapshot are not in the backup; the journal would become a second system of record |
 
 **Choice:** (c) — `npm.unpublish` is journaled, and replay withholds a restored version that is
@@ -3249,7 +3249,7 @@ confirms or reverses each withdrawal.
   reverses; NuGet's Q-NUGET-10 waits for the same point. It would revisit both points above if the
   walkthrough settles one rule for both formats.
 
-**Applied in the spec:** R-NPM-047 (entry content, the withholding replay, `trove admin npm
+**Applied in the spec:** R-NPM-047 (entry content, the withholding replay, `quader admin npm
 reinstate`, acceptance criteria); R-NPM-006 (`npm_tombstones.source`); R-NPM-003 and R-NPM-015
 (no route serves a tombstoned version, `/files` included); R-NPM-044 (the flag on `npm.unpublish`,
 the event `npm.reinstate`); R-NPM-008 (the replay deletes nothing); the revisit of Q-NPM-8; H-51;
@@ -3291,7 +3291,7 @@ revalidates the document first.
 - While the upstream is unreachable, refusing every cached tarball would turn an upstream outage
   into an install outage. (c) keeps stale serving and names the residual in H-51.
 - The development agent would revisit this if
-  `trove_npm_tarball_document_revalidations_total` shows the revalidations as a noticeable share of
+  `quader_npm_tarball_document_revalidations_total` shows the revalidations as a noticeable share of
   upstream traffic, or if an upstream outage right after a restore turns out to be a common case;
   (b) would then be added for the restore case only.
 
@@ -3314,11 +3314,11 @@ running it on 110 names: it tests a leading `.` and `_` on the whole string (so 
 pass) and a leading `.` on the part after the scope, it refuses a leading `-`, and it counts capitals,
 `~'!()*`, more than 214 characters and core-module names as reasons a name is not valid for new
 packages. Not verified: whether the public registry accepts `@a/_b`; the validator is the client-side
-rule, and trove cannot ask the registry.
+rule, and Quader cannot ask the registry.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Mirror the validator exactly | New names pass exactly when the validator says so; a lookup refuses only the R-NPM-002 list | No name a client's own check accepts is ever refused by trove | `@a/_b`, `@_a/b` and `@-a/b` pass although the unscoped `_b` does not: an accident of where the validator tests the start of the string, not a rule anyone chose. A lookup name can hold control characters and any length |
+| (a) Mirror the validator exactly | New names pass exactly when the validator says so; a lookup refuses only the R-NPM-002 list | No name a client's own check accepts is ever refused by Quader | `@a/_b`, `@_a/b` and `@-a/b` pass although the unscoped `_b` does not: an accident of where the validator tests the start of the string, not a rule anyone chose. A lookup name can hold control characters and any length |
 | (b) The validator, with the leading rule on every part, plus lookup hygiene | A new name's scope and name each start with a letter or digit; a lookup also refuses control characters, bytes that are not UTF-8, a name of more than 512 bytes and the single character `-` | One rule for scoped and unscoped names; a name that cannot be a path segment, a log line or a metric label never reaches a lookup; the bound keeps client-chosen names from growing cache and store keys | Refuses `@a/_b`-style names the client-side validator lets through (none known to exist; not verified) |
 | (c) As (b), and lookups also refuse capitals | Legacy mixed-case names are not served | Names become uniformly lower case | Breaks `npm view JSONStream` through a remote, which R-NPM-002 requires |
 
@@ -3359,7 +3359,7 @@ as stated below).
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) node-semver's strict grammar everywhere | One parser; `v1.2.3` and ` 1.2.3 ` are versions | Exactly what clients accept | A published version `v1.2.3` would have two texts for one version; the "equal to its canonical form" check of R-NPM-007 could not be stated |
-| (b) Three entry points | `Parse`: SemVer 2.0.0 as written, for what trove decides (a published version after `Clean`, a tag's value). `ParseNode(s, loose)`: node-semver's own parse, for versions that arrive in upstream documents and file names. `Clean`: npm's `clean()`. Loose only on request, no caller yet | Each place uses the grammar its requirement states; loose mode exists for a later caller and is verified now | Three names to choose from; the developer page says which to use |
+| (b) Three entry points | `Parse`: SemVer 2.0.0 as written, for what Quader decides (a published version after `Clean`, a tag's value). `ParseNode(s, loose)`: node-semver's own parse, for versions that arrive in upstream documents and file names. `Clean`: npm's `clean()`. Loose only on request, no caller yet | Each place uses the grammar its requirement states; loose mode exists for a later caller and is verified now | Three names to choose from; the developer page says which to use |
 | (c) SemVer 2.0.0 only | An upstream version with a `v` is not a version | Simplest | A remote repository would drop upstream versions that every client installs |
 
 Exact comparison: the pre-release rule of SemVer 2.0.0 compares numeric identifiers as numbers of any
@@ -3474,7 +3474,7 @@ decompressors and ignored by others.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The rules of R-NPM-007 only | Everything else is accepted if Go's reader accepts it | No false rejection | The manifest trove checks need not be the one a client installs |
+| (a) The rules of R-NPM-007 only | Everything else is accepted if Go's reader accepts it | No false rejection | The manifest Quader checks need not be the one a client installs |
 | (b) Refuse every archive feature a reader could resolve differently, allow in-tree links | One gzip member and no trailing bytes; zero padding only after the tar end; no PAX global header, sparse file, device or FIFO; UTF-8 names without control characters; a link that stays inside the package; nothing below a link or a file; no case variant of `package.json` | The check and the install see one archive; each rule closes a named variant | A rare archive from an unusual packer is refused with a message that names the entry |
 | (c) Refuse every link | No link of any kind | Simplest to explain | `npm pack` and Yarn write none, but other packers do, and pacote ignores links anyway; the refusal would break a package npm installs |
 
@@ -3489,7 +3489,7 @@ refusal would change nothing for npm, while a link that leaves the package or a 
 a link is the shape of an extraction attack on the extractors that do follow links. The case
 rule covers `package.json` only: a general case-fold collision check would refuse packages that
 carry `Makefile` and `makefile`, which install differently on each platform but do not decide
-what trove checks. Unicode normalization collisions are not checked (standard library only);
+what Quader checks. Unicode normalization collisions are not checked (standard library only);
 this is the residual of the rule. The development agent would revisit (b) if a gate-row client
 publishes an archive it refuses.
 
@@ -3518,7 +3518,7 @@ It runs on every `go test`, so a step that drifts from npm fails there. Beyond n
 installs identically: an empty or absent compared field is the same, the bundled list is
 compared as a set, and a hosted-git range is written in the canonical form of
 hosted-git-info for the four hosts the spec names (verified against its 9.0.3 on 80 ranges,
-one of which, `github:u`, npm writes as `github:null/u` and trove leaves alone). A `name` or
+one of which, `github:u`, npm writes as `github:null/u` and Quader leaves alone). A `name` or
 `version` mismatch between request and tarball is `npm_manifest_mismatch` in both modes,
 because it is not an install-relevant field that `warn` may accept but the identity of the
 version. `hasInstallScript` is stored only when true, as the registry does, and
@@ -3888,7 +3888,7 @@ R-NPM-025 and R-REPO-043 put every `dist.tarball` on the serving repository's re
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Merge with the serving URL | A cache entry per base URL | No rewrite after the merge | The key multiplies by endpoints; a host can leak between callers |
-| (b) Merge with a neutral address, rewrite after the cache | Local members render with `urn:trove:npm-tarball:`, the merge keeps each member's entry, the handler rewrites every address from the request's base URL | One cached merge for every endpoint; no host in cached bytes | A rewrite per rendering, itself cached by the rendition cache |
+| (b) Merge with a neutral address, rewrite after the cache | Local members render with `urn:quader:npm-tarball:`, the merge keeps each member's entry, the handler rewrites every address from the request's base URL | One cached merge for every endpoint; no host in cached bytes | A rewrite per rendering, itself cached by the rendition cache |
 
 **Choice:** (b). The rendition key and the ETag carry the merge fingerprint, the base URL, the endpoint and the exposure fingerprint; the synthetic `_rev` is `1-` and 32 hex characters of the fingerprint.
 
@@ -4008,7 +4008,7 @@ local documents.
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: `filterDocument` runs on merged and rewritten documents whose bytes come from an upstream. JSON allows a member twice, and npm
-clients parse with `JSON.parse`, which takes the last value; upstream documents carry members trove does not render (`users`,
+clients parse with `JSON.parse`, which takes the last value; upstream documents carry members Quader does not render (`users`,
 `contributors`), `time` entries of unpublished versions and an `unpublished` record, and may lack `latest` or carry a tag that is not a
 string.
 
@@ -4072,8 +4072,8 @@ offer or drop a version at run time, and the owner requires every listener to be
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Plain HTTP in tests, TLS in the container | The library listens on plain HTTP for in-process tests | Least setup in tests | Two code paths; the in-process tests would not exercise trove's upstream TLS verification, and the owner's rule is not met by the test tooling |
-| (b) TLS always; the control API on the same listener below `/-/stub/`, behind a bearer token | One listener; the library has no plain-HTTP start function; without a token the API does not exist | One code path; trove's outbound TLS verification is exercised in every tier; the in-process tests call Go methods and need no token | Control requests share the port with the registry (no package name can start with `/-/stub/`, and they are not counted) |
+| (a) Plain HTTP in tests, TLS in the container | The library listens on plain HTTP for in-process tests | Least setup in tests | Two code paths; the in-process tests would not exercise Quader's upstream TLS verification, and the owner's rule is not met by the test tooling |
+| (b) TLS always; the control API on the same listener below `/-/stub/`, behind a bearer token | One listener; the library has no plain-HTTP start function; without a token the API does not exist | One code path; Quader's outbound TLS verification is exercised in every tier; the in-process tests call Go methods and need no token | Control requests share the port with the registry (no package name can start with `/-/stub/`, and they are not counted) |
 | (c) A second listener for control | Registry port and control port | The registry port is exactly a registry | A second certificate, port and Service; more to configure in kind |
 
 **Choice:** (b). `Server.Start` refuses a configuration without a certificate and raises the minimum
@@ -4295,7 +4295,7 @@ page did not match what the clients do:
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Fix 1, document 2 to 6 | The deprecating `PUT` answers 404 `not_found`; the scenarios assert the answer each client can produce (404, 501, or the 401 of the gate), and for `pnpm audit` only the 501 it reports; the criterion names `npm owner add`; the unpublish of pnpm 11 and 12 is run against the deployment target (`npm-local`), the others through `npm-all` | The registry follows its own rule where it can; the suite states what clients do | `pnpm audit` keeps its 70 seconds until audit is built (P1) |
-| (b) Assert the spec text as written | Every P1 command must fail within seconds without a retry | One rule | Fails on facts about the clients that trove does not control |
+| (b) Assert the spec text as written | Every P1 command must fail within seconds without a retry | One rule | Fails on facts about the clients that Quader does not control |
 | (c) Skip the P1 scenarios | Not run | Fast | The criteria R-NPM-043 and E2.1 name them |
 
 **Choice:** (a).
@@ -4304,7 +4304,7 @@ page did not match what the clients do:
 cost a user 70 seconds. The client behaviors are facts to record, not to hide. The development agent would
 revisit 2 when audit is built (R-NPM-038): the 501 then no longer occurs.
 
-Revisited 2026-10-31, when audit was built: point 2 holds where trove answers 501, and only there.
+Revisited 2026-10-31, when audit was built: point 2 holds where Quader answers 501, and only there.
 Through a forwarding repository pnpm 11 and 12 get the provider's answer and retry nothing. A
 repository without a forwarder (a local repository, mode `disabled`, a virtual repository without a
 forwarding remote member) still answers 501, which pnpm retries for 70 seconds per request. pnpm 10
@@ -4328,13 +4328,13 @@ Status: **Decided by the development agent** — selected from the options below
 Context: the client setup of [api-and-ui.md](../api-and-ui.md) R-API-030 puts `package` and `version` into the install snippets
 of npm, pnpm and Yarn (R-NPM-041). The shell quoting let a value that starts with `-` through bare, and the package was not
 validated as a name: `package=--registry=https://evil.example` gave `npm install --registry=https://evil.example`, a command
-a user pastes from trove's own UI, which a link to the package page can prefill. Quoting does not help by itself: the shell
+a user pastes from Quader's own UI, which a link to the package page can prefill. Quoting does not help by itself: the shell
 removes the quotes, and the client still reads `-…` as an option. `name.Parse`, the rule that looks names up, accepts a legacy
 name that starts with `-` (only a new name may not, R-NPM-002).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Refuse a `package` or `version` that starts with `-`; validate `package` with the format's name rule; quote a value that starts with `-` | `400 malformed_request` before any snippet is built; the package is normalized by the format's one name rule (R-AUTHZ-005); `shellQuote` never leaves a leading `-` bare | No snippet of trove ever hands a client an option it did not offer; a value that is no name of the format never reaches a template | A legacy package whose name starts with `-` gets no install snippet |
+| (a) Refuse a `package` or `version` that starts with `-`; validate `package` with the format's name rule; quote a value that starts with `-` | `400 malformed_request` before any snippet is built; the package is normalized by the format's one name rule (R-AUTHZ-005); `shellQuote` never leaves a leading `-` bare | No snippet of Quader ever hands a client an option it did not offer; a value that is no name of the format never reaches a template | A legacy package whose name starts with `-` gets no install snippet |
 | (b) Insert `--` before the package in the templates | `npm install -- <package>` | Every legacy name works | npm, pnpm and Yarn treat `--` differently; the templates of R-NPM-041 change for a case that has no known package |
 | (c) Quote only | The review's minimum | Small | The client still reads the option |
 
@@ -4467,7 +4467,7 @@ Context: the repository document had no format member (Q-NPM-23, Q-NPM-35), so `
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The settings the code reads, now | `latestGuard` (local), `serveRemovedVersions` (remote), `latestStrategy` and `distTagStrategy` (virtual), each with its class in `x-trove-classes` and its default | The schema says what is in effect; nothing is accepted that is ignored (R-REPO-008) | The rest of the spec's `npm` sections (`externalDependencies`, `audit`, trusted publishing) are not settable yet |
+| (a) The settings the code reads, now | `latestGuard` (local), `serveRemovedVersions` (remote), `latestStrategy` and `distTagStrategy` (virtual), each with its class in `x-quader-classes` and its default | The schema says what is in effect; nothing is accepted that is ignored (R-REPO-008) | The rest of the spec's `npm` sections (`externalDependencies`, `audit`, trusted publishing) are not settable yet |
 | (b) Every setting the spec names | Schema members for features that are not built | One schema | A setting that is accepted and does nothing |
 | (c) Leave the member to SQL | — | Nothing to build | The review's finding |
 
@@ -4532,7 +4532,7 @@ only cached reads and fetches, and the format contract had no call that sends a 
 | (c) The forward through the engine's fetch path (slots and circuit) | One path for all upstream traffic | The provider may be another host than the upstream: its failures would open the upstream's circuit, and a fetch slot would be held while the provider thinks |
 
 **Choice:** (a). The routes `npm.audit.bulk` and `npm.audit.legacy` are of kind `Volatile` with action `read` and every
-class: a write kind would send a virtual repository's audit to its deployment target, and a content kind is for bytes trove
+class: a write kind would send a virtual repository's audit to its deployment target, and a content kind is for bytes Quader
 renders or stores. `Classify` says `volatile` for the two paths, so the descriptor of R-NPM-003 is `search`, not `other`:
 the kind that is passed through and never cached. On an endpoint with exposure rules the split into forwarded and withheld
 names tells which names a remote has fetched, which R-EP-018 hides by removing `Cache-Status` (Q-EP-60), so the audit is
@@ -4613,7 +4613,7 @@ Yarn 4 use `-/npm/v1/security/advisories/bulk` and print the advisories. pnpm 10
 audit tree to `-/npm/v1/security/audits/quick` and then to `-/npm/v1/security/audits`, and retries each 501 after 10 seconds
 and a minute; it fails after 2 minutes 20 seconds. npm 7 to 10 ask the quick endpoint after a failed bulk request and
 print its answer. Yarn 1's `yarn audit` sends its request to registry.yarnpkg.com whatever `.npmrc` says (R-NPM-045), so it
-never reaches trove, and its audit scenario was not applicable from the start. The development agent chose (a), with pnpm 10's
+never reaches Quader, and its audit scenario was not applicable from the start. The development agent chose (a), with pnpm 10's
 audit scenario asserting the 501 it reports, because pnpm 10 leaves the gate when its newest release is six months old and
 pnpm 11 and 12 speak the bulk protocol; it would have revisited (b) if users of the beta stayed on pnpm 10 past its gate row,
 or if another supported client spoke npm 6's protocol. The owner decided on 2026-10-31 that pnpm 10 and Yarn 1 stay gate rows
@@ -4625,7 +4625,7 @@ translated.
 | (a) npm 6's endpoints answer 501 `npm_audit_unavailable` | R-NPM-038 as written: the text of the bulk endpoint where no repository forwards, else a text that names the bulk endpoint | One protocol to keep right; npm 10's audit at `npm-local` prints the criterion's 501 and text | `pnpm audit` of pnpm 10 is not served and costs 140 seconds |
 | (b) Serve npm 6's protocol by translation | Bulk names from the audit tree to the provider, an npm 6 report with findings and paths back | pnpm 10 audits | A second protocol with a second answer format, the paths of every finding computed from the tree, for one client major that leaves the gate rule within months |
 | (c) 404 for npm 6's endpoints | pnpm 10 fails at once with its own hint | Fast | Breaks the rule of R-NPM-001 for `POST`; npm 10 at `npm-local` would print a 404 instead of the 501 the criterion asks for |
-| (d) The endpoints as in (a); pnpm 10 and Yarn 1 stay gate rows, their audit scenario not applicable with its reason (chosen) | R-NPM-045 | Both clients stay gated for everything else they do; the matrix states what trove serves instead of spending 140 seconds per run on a refusal; one protocol to keep right | `pnpm audit` of pnpm 10 is not served, and the matrix no longer checks the 501 it gets; the endpoints' answer stays covered by R-NPM-038's tests and by npm 10's audit at `npm-local`, which asks the quick endpoint after the bulk one |
+| (d) The endpoints as in (a); pnpm 10 and Yarn 1 stay gate rows, their audit scenario not applicable with its reason (chosen) | R-NPM-045 | Both clients stay gated for everything else they do; the matrix states what Quader serves instead of spending 140 seconds per run on a refusal; one protocol to keep right | `pnpm audit` of pnpm 10 is not served, and the matrix no longer checks the 501 it gets; the endpoints' answer stays covered by R-NPM-038's tests and by npm 10's audit at `npm-local`, which asks the quick endpoint after the bulk one |
 
 **Choice:** (d). The matrix reports the audit scenario as not applicable with these reasons: pnpm 10 speaks only npm 6's
 audit endpoints, which answer 501; Yarn 1's `yarn audit` always asks registry.yarnpkg.com.
@@ -4644,7 +4644,7 @@ scenario's not-applicable rule names Yarn 1 only.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: R-UI-049 asks for a guide that is accurate for trove as built, for three classes and four clients. Much of this page is specified and not built (deprecate, logins, trusted publishing, search, the local audit mode), and the clients behave differently in ways the end-to-end suite found (Q-NPM-47, Q-NPM-49).
+Context: R-UI-049 asks for a guide that is accurate for Quader as built, for three classes and four clients. Much of this page is specified and not built (deprecate, logins, trusted publishing, search, the local audit mode), and the clients behave differently in ways the end-to-end suite found (Q-NPM-47, Q-NPM-49).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4851,7 +4851,7 @@ requests it has open, including those it holds (`/-/stub/inflight`).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The existing switch and counters (chosen) | `delay_ms: {"audit": 20000}`; the request has arrived when the stub reports one open request; the forwarding pod is the `packages` pod whose `trove_http_requests_in_flight{listener="client"}` is above 0 | No new switch; the arrival is the provider's, not the client's | The pod is found a few hundred milliseconds after the arrival, inside the second the criterion allows |
+| (a) The existing switch and counters (chosen) | `delay_ms: {"audit": 20000}`; the request has arrived when the stub reports one open request; the forwarding pod is the `packages` pod whose `quader_http_requests_in_flight{listener="client"}` is above 0 | No new switch; the arrival is the provider's, not the client's | The pod is found a few hundred milliseconds after the arrival, inside the second the criterion allows |
 | (b) A new stub switch that answers an audit after a delay and logs the arrival | A second way to delay | The arrival is logged by the stub | The stub already holds the delayed request open and counts it |
 | (c) Find the pod from the logs afterwards | Delete the pod after the answer | No race | The criterion is a deletion *during* the forward |
 
@@ -4915,9 +4915,9 @@ Context: R-REPO-041 says npm verifies the announced digest whatever `remote.inte
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) npm always verifies and refuses `ignore` and `pass-through` with 422 `not_applicable` (chosen) | `Descriptor.VerifyAnnouncedDigests` and `Facts.ChecksumAlwaysVerified` for npm; the validation answers as it does for NuGet `require` (Q-ARCH-269) | The spec and the code agree; no setting promises what it does not do; the clients' `EINTEGRITY` case cannot be produced by trove | Two flags that must agree (`Validate` holds them equal) |
+| (a) npm always verifies and refuses `ignore` and `pass-through` with 422 `not_applicable` (chosen) | `Descriptor.VerifyAnnouncedDigests` and `Facts.ChecksumAlwaysVerified` for npm; the validation answers as it does for NuGet `require` (Q-ARCH-269) | The spec and the code agree; no setting promises what it does not do; the clients' `EINTEGRITY` case cannot be produced by Quader | Two flags that must agree (`Validate` holds them equal) |
 | (b) npm always verifies and the two policies stay accepted | They would be accepted and change nothing | One flag | A setting that looks like a choice and is none |
-| (c) The policy decides, the spec yields | `ignore` stores unchecked tarballs | Operators can store what a broken upstream serves | Clients fail on bytes trove cached for good (R-REPO-041) |
+| (c) The policy decides, the spec yields | `ignore` stores unchecked tarballs | Operators can store what a broken upstream serves | Clients fail on bytes Quader cached for good (R-REPO-041) |
 
 **Choice:** (a). The digest handed to the check is the strongest the blob pass computes: `sha512`, then `sha256`, then `sha1` of `dist.integrity`, then `dist.shasum`. An `integrity` with `sha384` as its only usable entry is refused with `upstream_digest_missing`: the blob pass computes no `sha384`, a fifth hash on every blob of every format would cost more than a form no registry publishes, and ignoring it would store the tarball unchecked.
 
@@ -4970,7 +4970,7 @@ names a grant hides.
 **Choice:** (a). The decision is the unaudited read of a listing row (R-AUTHZ-016: no client requested a refused
 resource), on the path of the package document (Q-AUTHZ-250).
 
-**Rationale:** the audit is a read; a name the caller may not read is no name trove talks about to it. The development agent
+**Rationale:** the audit is a read; a name the caller may not read is no name Quader talks about to it. The development agent
 would revisit this if an audit body's size makes the per-name decisions measurable (H-299 is the same cost for the
 package list).
 
@@ -5153,7 +5153,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a), for the top level and for the version manifests alike: a caller without the wiki gets a full document and a version document
 without `readme` and `readmeFilename` in any manifest, and the validator and the rendition key of the version document carry the answer as
-those of the full document do. The private member is `_troveReadmeMember` of `merge.ReadmeMemberKey`; it is removed from every response and from the
+those of the full document do. The private member is `_quaderReadmeMember` of `merge.ReadmeMemberKey`; it is removed from every response and from the
 tag, version and abbreviated documents it never reaches. A local or remote repository asks for itself.
 
 **Rationale:** Q-NPM-87 says the answer is the supplying member's; the supplier is known only to the merge.
@@ -5168,26 +5168,26 @@ tag, version and abbreviated documents it never reaches. A local or remote repos
 The npm exchange routes (R-NPM-022) let every GitLab job whose identity mapping grants `deploy` on
 a package publish it without a stored token. The token is package-bound and short-lived, but the
 decision rests entirely on the identity mappings of [gitlab-ci-oidc.md](../gitlab-ci-oidc.md); a
-mapping that matches too many projects or unprotected refs lets those jobs publish. trove does
+mapping that matches too many projects or unprotected refs lets those jobs publish. Quader does
 not add a second check (such as protected-ref-only publishing) on top of the mapping. Dormant:
 R-NPM-022 is P1 and not built, so its paths issue no token
 ([security/npm.md](../../security/npm.md#trusted-publishing)); it becomes live with the exchange.
 
-### H-32 · Registry signatures and provenance cannot be verified through trove
+### H-32 · Registry signatures and provenance cannot be verified through Quader
 
-Until PKG-NPM-024 and PKG-NPM-037 are implemented, trove serves no signing keys and no
-attestations. `npm audit signatures` against trove cannot verify the upstream signatures and
+Until PKG-NPM-024 and PKG-NPM-037 are implemented, Quader serves no signing keys and no
+attestations. `npm audit signatures` against Quader cannot verify the upstream signatures and
 provenance it passes through (R-NPM-027), and locally published packages carry neither. pnpm's
-trust policy still works on the passed-through fields, but trove does not check them
+trust policy still works on the passed-through fields, but Quader does not check them
 cryptographically on the way through.
 
 ### H-33 · Takedown delay and earlier downloads
 
-When an upstream removes a malicious version, trove stops serving it (R-NPM-026) only after the
+When an upstream removes a malicious version, Quader stops serving it (R-NPM-026) only after the
 remote's metadata period and the document refresh, which the next document or tarball request
 after the period triggers (R-NPM-025). Until then, and for every client that installed it
 earlier, the version stays reachable; while the upstream is unreachable, the stored marks keep
-deciding. trove does not scan package content; curation and scanning are separate capabilities.
+deciding. Quader does not scan package content; curation and scanning are separate capabilities.
 
 ### H-34 · Audit forwarding discloses the dependency set
 
@@ -5195,7 +5195,7 @@ Component: audit forwarding (R-NPM-038). Subject: the dependency set of every pr
 `npm audit`, `pnpm audit` or `yarn npm audit` against a repository whose remote forwards (the
 default until M4b). Live since R-NPM-038 was built (M2), and from M4b only for repositories in mode
 `forward`, which is then opt-in while scanning is on: the default mode `local` sends nothing out
-([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-017, Q-VULN-9). trove forwards only names its remote has already fetched
+([vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-017, Q-VULN-9). Quader forwards only names its remote has already fetched
 from the upstream and that no local repository, claim or pin rule marks internal, so no internal
 name the upstream has not seen leaves the installation. What still leaves it: the combination of
 public names and versions per project, which tells the provider (by default the upstream registry)

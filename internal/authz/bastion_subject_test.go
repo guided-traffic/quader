@@ -3,7 +3,7 @@ package authz
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/principal"
 )
 
 // TestR_BAS_004_ABastionRegistrationIsNeverInternal: a subject of the kind bastion - the principal an interface request

@@ -10,10 +10,10 @@ import (
 )
 
 // TestImageReference pins the default image of the chart (the release pipeline publishes
-// guidedtraffic/trove on Docker Hub; docs/developer/releasing.md) and the one line of values.yaml that the release pipeline
+// guidedtraffic/quader on Docker Hub; docs/developer/releasing.md) and the one line of values.yaml that the release pipeline
 // rewrites (build.yml, job release-helm-gh, sed on the image tag).
 func TestImageReference(t *testing.T) {
-	t.Run("the default image is docker.io/guidedtraffic/trove at the chart's appVersion", func(t *testing.T) {
+	t.Run("the default image is docker.io/guidedtraffic/quader at the chart's appVersion", func(t *testing.T) {
 		raw, err := os.ReadFile(filepath.Join(chartDir, "Chart.yaml"))
 		if err != nil {
 			t.Fatal(err)
@@ -27,7 +27,7 @@ func TestImageReference(t *testing.T) {
 		if appVersion == "" {
 			t.Fatal("Chart.yaml names no appVersion")
 		}
-		want := "docker.io/guidedtraffic/trove:" + appVersion
+		want := "docker.io/guidedtraffic/quader:" + appVersion
 		_, docs := render(t, required())
 		pods := podSpecs(docs)
 		if len(pods) == 0 {

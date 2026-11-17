@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/proxy"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/proxy"
 )
 
 // Tokens is a token service's state: the tokens it issued and which of them its registry still accepts. It knows no registry

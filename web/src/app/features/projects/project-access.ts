@@ -20,11 +20,11 @@ export function createState(session: SessionStore, project: string, capability: 
  * the control's `aria-describedby`.
  */
 @Component({
-  selector: 'trove-project-needs',
+  selector: 'quader-project-needs',
   imports: [Needs],
   template: `
     @if (state() === 'denied') {
-      <trove-needs [capability]="capability()" [project]="context.key()" />
+      <quader-needs [capability]="capability()" [project]="context.key()" />
     }
   `,
 })

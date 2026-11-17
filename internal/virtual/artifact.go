@@ -7,14 +7,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // ResolvedFromHeader names the member that served an artifact (R-REPO-019) by its key: a member lives in the project
 // of its virtual repository (Q-REPO-217), so the key names it. It is a member the
 // caller can read, so it discloses nothing new; it is never sent on an endpoint with exposure
 // rules, because members are not exposed there (R-EP-018).
-const ResolvedFromHeader = "Trove-Resolved-From"
+const ResolvedFromHeader = "Quader-Resolved-From"
 
 // Artifact walks the three tiers of R-REPO-019 step 6 and serves the first hit: the local members
 // in order, the caches of the remote members without contacting an upstream, then the upstreams of

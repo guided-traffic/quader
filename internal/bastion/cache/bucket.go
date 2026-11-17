@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/blob/s3"
 )
 
 // listPage is the page size of a listing of the bucket.
@@ -32,7 +32,7 @@ func newBucketStore(c *s3.Client, prefix, tmpRoot string, now time.Time) (*bucke
 	if tmpRoot == "" {
 		tmpRoot = os.TempDir()
 	}
-	tmp := filepath.Join(tmpRoot, "trove-bastion-cache")
+	tmp := filepath.Join(tmpRoot, "quader-bastion-cache")
 	if err := os.MkdirAll(tmp, 0o750); err != nil {
 		return nil, fmt.Errorf("cache: prepare the spool directory %s: %w", tmp, err)
 	}

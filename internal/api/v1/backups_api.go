@@ -8,11 +8,11 @@ import (
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/gauges"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/gauges"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The read-only API of the backup job (R-API-050, R-BAK-014): the runs from backup_run, the summary, one run. The replicas
@@ -230,7 +230,7 @@ func listedTarget(ctx context.Context, reader backup.RunReader) (*gen.BackupRete
 	items := make([]gen.StoredBackup, 0, len(result.Retained))
 	for _, b := range result.Retained {
 		items = append(items, gen.StoredBackup{
-			BackupId: b.BackupID, SnapshotAt: b.SnapshotAt, TroveVersion: b.TroveVersion, SchemaStep: b.SchemaStep,
+			BackupId: b.BackupID, SnapshotAt: b.SnapshotAt, QuaderVersion: b.QuaderVersion, SchemaStep: b.SchemaStep,
 			DatabaseBytes: b.DatabaseBytes, BlobCount: b.BlobCount, BlobBytes: b.BlobBytes, Damaged: b.Damaged,
 		})
 	}
@@ -301,7 +301,7 @@ func decodeRunCursor(key []string) (backup.RunCursor, bool) {
 func backupRunBody(run backup.Run, now time.Time) gen.BackupRun {
 	out := gen.BackupRun{
 		Id: parseUUID(run.ID), Operation: string(run.Operation), BackupId: nonEmpty(run.BackupID), State: string(run.State),
-		Trigger: string(run.Trigger), Pod: run.Pod, TroveVersion: run.TroveVersion, Target: run.Target,
+		Trigger: string(run.Trigger), Pod: run.Pod, QuaderVersion: run.QuaderVersion, Target: run.Target,
 		StartedAt: run.StartedAt, HeartbeatAt: run.HeartbeatAt, LeaseExpired: run.LeaseExpired(now),
 		FinishedAt: run.FinishedAt, SnapshotAt: run.SnapshotAt, Progress: backupProgressBody(run.Progress),
 		Result: jsonObject(run.Result), Error: jsonObject(run.Error),

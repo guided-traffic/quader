@@ -9,13 +9,13 @@ set -euo pipefail
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 require_cluster
 
-log "scaling the object store (trove-s3) to 1"
-kn scale deployment/trove-s3 --replicas=1 >/dev/null
-kn rollout status deployment/trove-s3 --timeout=5m >/dev/null || die "the object store did not become ready"
+log "scaling the object store (quader-s3) to 1"
+kn scale deployment/quader-s3 --replicas=1 >/dev/null
+kn rollout status deployment/quader-s3 --timeout=5m >/dev/null || die "the object store did not become ready"
 deadline=$(( $(date +%s) + 120 ))
 # the quoted command runs in the store's container: its $( ) is the container shell's
 # shellcheck disable=SC2016
-until kn exec deployment/trove-s3 -c seaweedfs -- sh -c \
+until kn exec deployment/quader-s3 -c seaweedfs -- sh -c \
   'curl -sf -X PUT --data-binary ready http://127.0.0.1:8888/probe/s3-start >/dev/null && [ "$(curl -sf http://127.0.0.1:8888/probe/s3-start)" = ready ] && curl -sf -X DELETE http://127.0.0.1:8888/probe/s3-start >/dev/null' \
   >/dev/null 2>&1; do
   [ "$(date +%s)" -lt "$deadline" ] || die "the object store is ready but stores nothing 120 s later"

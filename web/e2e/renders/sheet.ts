@@ -62,7 +62,7 @@ export default function sheet(): void {
   });
 
   const html = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>trove UI renders</title>
+<html lang="en"><head><meta charset="utf-8"><title>Quader UI renders</title>
 <style>
 body { font: 14px/1.5 system-ui, sans-serif; margin: 1.5rem; color: #222; }
 nav { columns: 4 14rem; margin-block-end: 1.5rem; }
@@ -75,7 +75,7 @@ h3 { font-size: .9rem; margin: .25rem 0; }
 figure { margin: 0; } figure img { width: 220px; border: 1px solid #ccc; display: block; } figcaption { font-size: 12px; color: #555; }
 .findings li { margin-block-end: .25rem; }
 </style></head><body>
-<h1>trove UI renders</h1>
+<h1>Quader UI renders</h1>
 <p>${entries.reduce((n, e) => n + e.shots.length, 0)} pictures of ${groups.size} screens, generated ${new Date().toISOString()} by <code>make ui-renders</code>. Each row: light, then dark, at 1440, 1024 and 390 px. Judge them against the <a href="../../docs/developer/ui-style-guide.md#checklist">checklist</a>.</p>
 <h2>Failures (${failed.length})</h2>
 <ul class="findings">${failed.map((e) => `<li><a href="#${esc(e.screen)}">${esc(e.screen)}</a> as ${esc(e.kind)}: ${e.failures.map(esc).join('; ')}</li>`).join('') || '<li>None.</li>'}</ul>

@@ -5,13 +5,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// ReinstateInput names the file `trove admin deb reinstate` puts back (R-DEB-032).
+// ReinstateInput names the file `quader admin deb reinstate` puts back (R-DEB-032).
 type ReinstateInput struct {
 	// Project and Repository are the keys of the repository, Path the canonical pool path of the file.
 	Project, Repository, Path string

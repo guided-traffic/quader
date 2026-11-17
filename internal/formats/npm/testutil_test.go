@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // fakeHost is a Host that implements what the handlers under test reach and panics
@@ -37,7 +37,7 @@ func request(t *testing.T, f *Format, host formats.Host, method, escaped string,
 	if err != nil {
 		t.Fatalf("Match(%s %q): %v", method, escaped, err)
 	}
-	r := httptest.NewRequest(method, "http://trove.test/api/npm/npm-local/"+escaped, strings.NewReader(body))
+	r := httptest.NewRequest(method, "http://quader.test/api/npm/npm-local/"+escaped, strings.NewReader(body))
 	for i := 0; i+1 < len(hdr); i += 2 {
 		r.Header.Set(hdr[i], hdr[i+1])
 	}

@@ -8,16 +8,16 @@ import (
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The Bastion registrations and their tokens (R-BAS-004, Q-BAS-24). The declarations are in the document:
-// endpoints:read for the reads, endpoints:write for the writes, x-trove-if-match on the update, and for the
+// endpoints:read for the reads, endpoints:write for the writes, x-quader-if-match on the update, and for the
 // revocation of one token the coarse authenticated form, because the handler admits endpoints:write or
 // tokens:revoke. The rules are those of bastionmain.Registrations; the handlers decode, call it and encode.
 

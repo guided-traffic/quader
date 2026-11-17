@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 type subjectKind int
@@ -92,7 +92,7 @@ func (e *Engine) Decide(ctx context.Context, sub Subject, c Coordinate) Decision
 }
 
 // Begin returns the index a request decides on, waiting for a confirmation or
-// for the epoch of Trove-Authz-Min-Epoch as R-AUTHZ-028 and R-AUTHZ-032 say. The
+// for the epoch of Quader-Authz-Min-Epoch as R-AUTHZ-028 and R-AUTHZ-032 say. The
 // error is the refusal: 503 authz_stale or 412 authz_epoch_unknown. The keys are
 // the repositories the request is about: a key the index does not hold yet is
 // looked up and the index brought up to it before the index is taken

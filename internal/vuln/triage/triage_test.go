@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 func codeOf(t *testing.T, err error) string {
@@ -29,7 +29,7 @@ func TestR_VULN_013_Validate(t *testing.T) {
 	}{
 		{"a settable status", Request{Status: vuln.StatusConfirmed}, ""},
 		{"blocked is a status a person sets", Request{Status: vuln.StatusBlocked}, ""},
-		{"resolved is trove's", Request{Status: vuln.StatusResolved}, errs.CodeStatusNotSettable},
+		{"resolved is quader's", Request{Status: vuln.StatusResolved}, errs.CodeStatusNotSettable},
 		{"no such status", Request{Status: "fixed"}, errs.CodeValidation},
 		{"a comment of 4000 characters", Request{HasComment: true, Comment: strings.Repeat("ä", 4000)}, ""},
 		{"a comment of 4001 characters", Request{HasComment: true, Comment: strings.Repeat("ä", 4001)}, errs.CodeValidation},

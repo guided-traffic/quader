@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 )
 
 // TestR_BAS_014_R_BAS_025_AProbeTakesTheSlotClassOfTheCaller: with anonymous_share 0 a caller that presented a

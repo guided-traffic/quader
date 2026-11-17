@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The handlers of the operations the skeleton routes and does not serve yet (WP3.1c): each

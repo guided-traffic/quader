@@ -29,7 +29,7 @@ export interface Screen {
 async function* filtersOpen(page: Page): AsyncGenerator<string> {
   yield '';
   await page.locator('main .filter-toggle').first().click();
-  await expect(page.locator('main trove-filter-panel form')).toBeVisible();
+  await expect(page.locator('main quader-filter-panel form')).toBeVisible();
   yield 'filters';
 }
 
@@ -129,8 +129,8 @@ async function* frequentPlaces(page: Page): AsyncGenerator<string> {
 /** The closed Advanced section at the end of a page, opened: where a page keeps its destructive action (the style guide). */
 async function* advancedOpen(page: Page): AsyncGenerator<string> {
   yield '';
-  await page.locator('main trove-disclosure').last().getByRole('button', { name: 'Advanced' }).click();
-  await expect(page.locator('main trove-disclosure').last().getByRole('button', { name: /^(Delete|Revoke all)/ }).first()).toBeVisible();
+  await page.locator('main quader-disclosure').last().getByRole('button', { name: 'Advanced' }).click();
+  await expect(page.locator('main quader-disclosure').last().getByRole('button', { name: /^(Delete|Revoke all)/ }).first()).toBeVisible();
   yield 'advanced';
 }
 
@@ -140,18 +140,18 @@ async function* advancedOpen(page: Page): AsyncGenerator<string> {
  */
 async function* allSections(page: Page): AsyncGenerator<string> {
   yield '';
-  const closed = page.locator('main trove-disclosure .toggle[aria-expanded="false"]');
+  const closed = page.locator('main quader-disclosure .toggle[aria-expanded="false"]');
   if ((await closed.count()) === 0) return;
   while ((await closed.count()) > 0) await closed.first().click();
-  await expect(page.locator('main trove-disclosure .collapse-region:not(.open)')).toHaveCount(0);
+  await expect(page.locator('main quader-disclosure .collapse-region:not(.open)')).toHaveCount(0);
   yield 'sections';
 }
 
 /** The closed Visibility section of a settings page, opened: where the level of the installation or of a project is chosen (R-UI-053, R-UI-054). */
 async function* visibilityOpen(page: Page): AsyncGenerator<string> {
   yield '';
-  await page.locator('main trove-disclosure').filter({ hasText: 'Visibility' }).first().getByRole('button').first().click();
-  await expect(page.locator('main trove-visibility-level').first()).toBeVisible();
+  await page.locator('main quader-disclosure').filter({ hasText: 'Visibility' }).first().getByRole('button').first().click();
+  await expect(page.locator('main quader-visibility-level').first()).toBeVisible();
   yield 'visibility';
 }
 
@@ -346,7 +346,7 @@ function upstreamWalk(preset: string | null, full: boolean): Screen['walk'] {
   return async function* (page) {
     await chooseProject(page);
     await page.getByRole('radio', { name: /^Remote/ }).check();
-    const upstream = page.locator('trove-upstream-settings');
+    const upstream = page.locator('quader-upstream-settings');
     await expect(upstream).toBeVisible();
     yield 'presets';
     if (full && preset) {
@@ -368,7 +368,7 @@ function upstreamWalk(preset: string | null, full: boolean): Screen['walk'] {
             tokenService: { host: 'gitlab.example-company.com', allowed: false, receivesCredential: false },
             error: {
               code: 'foreign_host_denied',
-              message: "The registry's token service is on gitlab.example-company.com, which is neither the upstream nor one of the repository's further hosts; trove did not ask it.",
+              message: "The registry's token service is on gitlab.example-company.com, which is neither the upstream nor one of the repository's further hosts; Quader did not ask it.",
             },
           }),
         ],

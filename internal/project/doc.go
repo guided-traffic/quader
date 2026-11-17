@@ -16,7 +16,7 @@
 // The service does not decide whether the caller may call it: the management API's
 // shared authorization step does (the declarations of api/openapi.yaml). It checks
 // the rules of the data: a unique key, members that are users or groups and no
-// auto-join group, a project that keeps an Owner unless an administrator of trove
+// auto-join group, a project that keeps an Owner unless an administrator of quader
 // acts, a move that nothing of the source project names, a delete of an empty
 // project only. docs/developer/projects.md lists the contract.
 package project

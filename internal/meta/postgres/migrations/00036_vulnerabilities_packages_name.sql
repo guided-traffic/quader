@@ -1,5 +1,5 @@
--- trove:phase expand
--- trove:no-transaction
+-- quader:phase expand
+-- quader:no-transaction
 --
 -- Vulnerability scanning (R-VULN-011, R-HA-018, Q-VULN-24): the index behind the advisory-driven evaluation, which looks
 -- stored versions up by package name across repositories. The unique key (repo_id, name) of packages does not serve it.

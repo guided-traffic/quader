@@ -46,7 +46,7 @@ type Authz struct {
 	Audit         AuthzAudit `yaml:"audit"`
 	// RoleBindings are the system role bindings this file declares (R-AUTHZ-010,
 	// Q-AUTHZ-170); the type and its validation are in authz.go.
-	RoleBindings []AuthzRoleBinding `yaml:"role_bindings" default:"[]" doc:"System role bindings declared here (R-AUTHZ-010, Q-AUTHZ-170): trove migrate applies them with source configuration and removes the configuration bindings no longer listed; the API and the UI show them read-only. Each entry names role and exactly one of group, user and service_account. Whoever controls the membership of a declared IdP group holds the role."`
+	RoleBindings []AuthzRoleBinding `yaml:"role_bindings" default:"[]" doc:"System role bindings declared here (R-AUTHZ-010, Q-AUTHZ-170): quader migrate applies them with source configuration and removes the configuration bindings no longer listed; the API and the UI show them read-only. Each entry names role and exactly one of group, user and service_account. Whoever controls the membership of a declared IdP group holds the role."`
 
 	// <<< M1 authz
 }

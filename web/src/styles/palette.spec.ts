@@ -25,11 +25,11 @@ function splitTop(s: string): string[] {
   return out;
 }
 
-/** Every `light-dark()` pair of the trove tokens. */
+/** Every `light-dark()` pair of the Quader tokens. */
 function readPalette(): Map<string, readonly [string, string]> {
   const vals = new Map<string, readonly [string, string]>();
   const root = tokensScss.split(':root {')[1]?.split('\n}')[0] ?? '';
-  for (const m of root.matchAll(/^\s*(--trove-[a-z0-9-]+):\s*(.+);\s*$/gm)) {
+  for (const m of root.matchAll(/^\s*(--quader-[a-z0-9-]+):\s*(.+);\s*$/gm)) {
     const v = (m[2] ?? '').trim();
     const pair = /^light-dark\((.+)\)$/.exec(v);
     const [light = '', dark = ''] = pair ? splitTop(pair[1] ?? '') : [v, v];
@@ -91,60 +91,60 @@ function hueOf(c: Rgba): { hue: number; saturation: number } {
 
 // The surfaces an accent sits on; a pair of names is a translucent fill over a surface.
 const surfaces: Record<string, string | readonly [string, string]> = {
-  page: '--trove-surface',
-  raised: '--trove-surface-raised',
-  'table head': '--trove-table-head-bg',
-  'row hover': '--trove-row-hover',
-  menu: '--trove-surface-container',
-  dialog: '--trove-dialog-bg',
-  'filled field': '--trove-surface-variant',
-  'selected row': '--trove-accent-container',
-  'primary-container': '--trove-accent-container',
-  'inverse surface': '--trove-inverse-surface',
-  primary: '--trove-accent',
-  'side bar': '--trove-nav-bg',
-  'open group': '--trove-nav-bg-nested',
-  'top bar': '--trove-nav-bg-deep',
-  'active entry': ['--trove-nav-active', '--trove-nav-bg'],
-  'active entry in an open group': ['--trove-nav-active', '--trove-nav-bg-nested'],
-  // trove's own controls (Q-UI-126, _controls.scss).
-  'accent fill': '--trove-accent-fill',
-  'accent fill hover': '--trove-accent-fill-hover',
-  'default button': ['--trove-btn-default-bg', '--trove-surface'],
-  'default button hover': ['--trove-btn-default-bg-hover', '--trove-surface'],
-  'tertiary button hover': ['--trove-btn-tertiary-bg-hover', '--trove-surface'],
-  'danger fill': '--trove-danger-fill',
-  control: ['--trove-control-bg', '--trove-surface'],
+  page: '--quader-surface',
+  raised: '--quader-surface-raised',
+  'table head': '--quader-table-head-bg',
+  'row hover': '--quader-row-hover',
+  menu: '--quader-surface-container',
+  dialog: '--quader-dialog-bg',
+  'filled field': '--quader-surface-variant',
+  'selected row': '--quader-accent-container',
+  'primary-container': '--quader-accent-container',
+  'inverse surface': '--quader-inverse-surface',
+  primary: '--quader-accent',
+  'side bar': '--quader-nav-bg',
+  'open group': '--quader-nav-bg-nested',
+  'top bar': '--quader-nav-bg-deep',
+  'active entry': ['--quader-nav-active', '--quader-nav-bg'],
+  'active entry in an open group': ['--quader-nav-active', '--quader-nav-bg-nested'],
+  // Quader's own controls (Q-UI-126, _controls.scss).
+  'accent fill': '--quader-accent-fill',
+  'accent fill hover': '--quader-accent-fill-hover',
+  'default button': ['--quader-btn-default-bg', '--quader-surface'],
+  'default button hover': ['--quader-btn-default-bg-hover', '--quader-surface'],
+  'tertiary button hover': ['--quader-btn-tertiary-bg-hover', '--quader-surface'],
+  'danger fill': '--quader-danger-fill',
+  control: ['--quader-control-bg', '--quader-surface'],
   // The reference's translucent fills, measured over what they sit on (Q-UI-128): the default button on the page and on
   // the frame (the Admin button), a menu item under the pointer, the search field on the frame, a card's strong fill.
-  'default button on the frame': ['--trove-btn-default-bg', '--trove-nav-bg'],
-  'default button hover on the frame': ['--trove-btn-default-bg-hover', '--trove-nav-bg'],
-  'top bar hover': ['--trove-nav-hover', '--trove-nav-bg'],
-  'menu item hover': ['--trove-menu-hover', '--trove-menu-bg'],
+  'default button on the frame': ['--quader-btn-default-bg', '--quader-nav-bg'],
+  'default button hover on the frame': ['--quader-btn-default-bg-hover', '--quader-nav-bg'],
+  'top bar hover': ['--quader-nav-hover', '--quader-nav-bg'],
+  'menu item hover': ['--quader-menu-hover', '--quader-menu-bg'],
   // The panel of the project switcher (Q-UI-129): the menu's fill.
-  'switcher panel': '--trove-menu-bg',
+  'switcher panel': '--quader-menu-bg',
   // The badges (Q-UI-128): each status's pill.
-  'neutral badge': '--trove-badge-neutral-bg',
-  'positive badge': '--trove-badge-ok-bg',
-  'warning badge': '--trove-badge-warn-bg',
-  'error badge': '--trove-badge-bad-bg',
-  'info badge': '--trove-badge-info-bg',
-  search: ['--trove-search-bg', '--trove-nav-bg'],
-  card: '--trove-card-bg',
+  'neutral badge': '--quader-badge-neutral-bg',
+  'positive badge': '--quader-badge-ok-bg',
+  'warning badge': '--quader-badge-warn-bg',
+  'error badge': '--quader-badge-bad-bg',
+  'info badge': '--quader-badge-info-bg',
+  search: ['--quader-search-bg', '--quader-nav-bg'],
+  card: '--quader-card-bg',
   // The grade shields and the severity bar (R-UI-090, R-UI-092, Q-UI-370): each fill a letter or a count sits on.
-  'grade S': '--trove-grade-s',
-  'grade A': '--trove-grade-a',
-  'grade B': '--trove-grade-b',
-  'grade C': '--trove-grade-c',
-  'grade D': '--trove-grade-d',
-  'grade E': '--trove-grade-e',
-  'grade N/A': '--trove-grade-na',
-  'critical segment': '--trove-sev-critical',
-  'high segment': '--trove-sev-high',
-  'medium segment': '--trove-sev-medium',
-  'low segment': '--trove-sev-low',
-  'unknown stripe': '--trove-sev-unknown',
-  'unknown light stripe': '--trove-sev-unknown-light',
+  'grade S': '--quader-grade-s',
+  'grade A': '--quader-grade-a',
+  'grade B': '--quader-grade-b',
+  'grade C': '--quader-grade-c',
+  'grade D': '--quader-grade-d',
+  'grade E': '--quader-grade-e',
+  'grade N/A': '--quader-grade-na',
+  'critical segment': '--quader-sev-critical',
+  'high segment': '--quader-sev-high',
+  'medium segment': '--quader-sev-medium',
+  'low segment': '--quader-sev-low',
+  'unknown stripe': '--quader-sev-unknown',
+  'unknown light stripe': '--quader-sev-unknown-light',
 };
 
 function surface(name: string, scheme: Scheme): Rgba {
@@ -162,115 +162,120 @@ function measure(fg: string, on: string, scheme: Scheme): number {
 
 // Text: WCAG 1.4.3, 4.5:1. The same pairs as the table of design-language.md.
 const textPairs: readonly (readonly [string, string])[] = [
-  ['--trove-accent', 'page'],
-  ['--trove-accent', 'raised'],
-  ['--trove-accent', 'table head'],
-  ['--trove-accent', 'row hover'],
-  ['--trove-accent', 'menu'],
-  ['--trove-accent', 'dialog'],
-  ['--trove-accent', 'filled field'],
-  ['--trove-on-accent', 'primary'],
-  ['--trove-link', 'page'],
-  ['--trove-link', 'raised'],
-  ['--trove-link', 'table head'],
-  ['--trove-link', 'row hover'],
-  ['--trove-link', 'dialog'],
-  ['--trove-link', 'selected row'],
-  ['--trove-on-accent-container', 'selected row'],
-  ['--trove-on-surface', 'selected row'],
-  ['--trove-text-muted', 'selected row'],
-  ['--trove-on-accent-container', 'primary-container'],
-  ['--trove-inverse-accent', 'inverse surface'],
-  ['--trove-on-surface', 'page'],
-  ['--trove-on-surface', 'raised'],
-  ['--trove-text-muted', 'page'],
-  ['--trove-text-muted', 'filled field'],
-  ['--trove-text-muted', 'dialog'],
-  ['--trove-status-bad', 'page'],
-  ['--trove-status-bad', 'filled field'],
-  ['--trove-status-warn', 'page'],
-  ['--trove-status-warn', 'filled field'],
-  ['--trove-status-ok', 'page'],
-  ['--trove-status-ok', 'raised'],
-  ['--trove-status-ok', 'dialog'],
-  ['--trove-status-ok', 'selected row'],
-  ['--trove-nav-active-fg', 'active entry'],
-  ['--trove-nav-active-fg', 'active entry in an open group'],
-  // trove's own controls (Q-UI-126): the label of each button on its fill, at rest and under the pointer, and the
+  ['--quader-accent', 'page'],
+  ['--quader-accent', 'raised'],
+  ['--quader-accent', 'table head'],
+  ['--quader-accent', 'row hover'],
+  ['--quader-accent', 'menu'],
+  ['--quader-accent', 'dialog'],
+  ['--quader-accent', 'filled field'],
+  ['--quader-on-accent', 'primary'],
+  ['--quader-link', 'page'],
+  ['--quader-link', 'raised'],
+  ['--quader-link', 'table head'],
+  ['--quader-link', 'row hover'],
+  ['--quader-link', 'dialog'],
+  ['--quader-link', 'selected row'],
+  ['--quader-on-accent-container', 'selected row'],
+  ['--quader-on-surface', 'selected row'],
+  ['--quader-text-muted', 'selected row'],
+  ['--quader-on-accent-container', 'primary-container'],
+  ['--quader-inverse-accent', 'inverse surface'],
+  ['--quader-on-surface', 'page'],
+  ['--quader-on-surface', 'raised'],
+  ['--quader-text-muted', 'page'],
+  ['--quader-text-muted', 'filled field'],
+  ['--quader-text-muted', 'dialog'],
+  ['--quader-status-bad', 'page'],
+  ['--quader-status-bad', 'filled field'],
+  ['--quader-status-warn', 'page'],
+  ['--quader-status-warn', 'filled field'],
+  ['--quader-status-ok', 'page'],
+  ['--quader-status-ok', 'raised'],
+  ['--quader-status-ok', 'dialog'],
+  ['--quader-status-ok', 'selected row'],
+  ['--quader-nav-active-fg', 'active entry'],
+  ['--quader-nav-active-fg', 'active entry in an open group'],
+  // Quader's own controls (Q-UI-126): the label of each button on its fill, at rest and under the pointer, and the
   // text and placeholder of a field.
-  ['--trove-on-accent', 'accent fill'],
-  ['--trove-on-accent', 'accent fill hover'],
-  ['--trove-control-fg', 'default button'],
-  ['--trove-control-fg', 'default button hover'],
-  ['--trove-control-fg', 'tertiary button hover'],
-  ['--trove-control-fg', 'page'],
-  ['--trove-on-danger', 'danger fill'],
-  ['--trove-control-fg', 'control'],
-  ['--trove-control-placeholder', 'control'],
+  ['--quader-on-accent', 'accent fill'],
+  ['--quader-on-accent', 'accent fill hover'],
+  ['--quader-control-fg', 'default button'],
+  ['--quader-control-fg', 'default button hover'],
+  ['--quader-control-fg', 'tertiary button hover'],
+  ['--quader-control-fg', 'page'],
+  ['--quader-on-danger', 'danger fill'],
+  ['--quader-control-fg', 'control'],
+  ['--quader-control-placeholder', 'control'],
   // The frame and its controls (Q-UI-128): the Admin button, the hover of the top bar and the sidebar, menus, the
   // search field, the sidebar's text and a card's title and muted text.
-  ['--trove-control-fg', 'default button on the frame'],
-  ['--trove-control-fg', 'default button hover on the frame'],
-  ['--trove-nav-fg', 'side bar'],
-  ['--trove-nav-fg', 'top bar hover'],
-  ['--trove-control-fg', 'menu item hover'],
+  ['--quader-control-fg', 'default button on the frame'],
+  ['--quader-control-fg', 'default button hover on the frame'],
+  ['--quader-nav-fg', 'side bar'],
+  ['--quader-nav-fg', 'top bar hover'],
+  ['--quader-control-fg', 'menu item hover'],
   // The project switcher (Q-UI-129): the projects on the menu fill, and the headings and keys in the muted tone of the frame.
-  ['--trove-control-fg', 'switcher panel'],
-  ['--trove-nav-fg-muted', 'switcher panel'],
-  ['--trove-search-fg', 'search'],
-  ['--trove-search-muted', 'search'],
-  ['--trove-heading', 'card'],
-  ['--trove-text-muted', 'card'],
+  ['--quader-control-fg', 'switcher panel'],
+  ['--quader-nav-fg-muted', 'switcher panel'],
+  ['--quader-search-fg', 'search'],
+  ['--quader-search-muted', 'search'],
+  ['--quader-heading', 'card'],
+  ['--quader-text-muted', 'card'],
   // A badge's text on its pill (Q-UI-128).
-  ['--trove-badge-neutral-fg', 'neutral badge'],
-  ['--trove-badge-ok-fg', 'positive badge'],
-  ['--trove-badge-warn-fg', 'warning badge'],
-  ['--trove-badge-bad-fg', 'error badge'],
-  ['--trove-badge-info-fg', 'info badge'],
+  ['--quader-badge-neutral-fg', 'neutral badge'],
+  ['--quader-badge-ok-fg', 'positive badge'],
+  ['--quader-badge-warn-fg', 'warning badge'],
+  ['--quader-badge-bad-fg', 'error badge'],
+  ['--quader-badge-info-fg', 'info badge'],
   // A grade's letter on its crest and a count on its segment (R-UI-090, R-UI-092).
-  ['--trove-grade-s-ink', 'grade S'],
-  ['--trove-grade-ink', 'grade A'],
-  ['--trove-grade-ink', 'grade B'],
-  ['--trove-grade-ink', 'grade C'],
-  ['--trove-grade-ink', 'grade D'],
-  ['--trove-grade-ink-light', 'grade E'],
-  ['--trove-grade-na-ink', 'grade N/A'],
-  ['--trove-sev-ink-light', 'critical segment'],
-  ['--trove-sev-ink-light', 'high segment'],
-  ['--trove-sev-ink', 'medium segment'],
-  ['--trove-sev-ink', 'low segment'],
-  ['--trove-on-surface', 'unknown stripe'],
-  ['--trove-on-surface', 'unknown light stripe'],
+  ['--quader-grade-s-ink', 'grade S'],
+  ['--quader-grade-ink', 'grade A'],
+  ['--quader-grade-ink', 'grade B'],
+  ['--quader-grade-ink', 'grade C'],
+  ['--quader-grade-ink', 'grade D'],
+  ['--quader-grade-ink-light', 'grade E'],
+  ['--quader-grade-na-ink', 'grade N/A'],
+  ['--quader-sev-ink-light', 'critical segment'],
+  ['--quader-sev-ink-light', 'high segment'],
+  ['--quader-sev-ink', 'medium segment'],
+  ['--quader-sev-ink', 'low segment'],
+  ['--quader-on-surface', 'unknown stripe'],
+  ['--quader-on-surface', 'unknown light stripe'],
 ];
 
 // Marks: WCAG 1.4.11, 3:1 (focus ring, tab underline, checkbox, the navigation's bar and icon).
 const markPairs: readonly (readonly [string, string])[] = [
-  ['--trove-accent', 'page'],
-  ['--trove-accent', 'raised'],
-  ['--trove-accent', 'dialog'],
-  ['--trove-accent', 'filled field'],
-  ['--trove-nav-accent', 'side bar'],
-  ['--trove-nav-accent', 'open group'],
-  ['--trove-nav-accent', 'top bar'],
-  ['--trove-nav-accent', 'active entry'],
-  ['--trove-nav-accent', 'active entry in an open group'],
+  ['--quader-accent', 'page'],
+  ['--quader-accent', 'raised'],
+  ['--quader-accent', 'dialog'],
+  ['--quader-accent', 'filled field'],
+  ['--quader-nav-accent', 'side bar'],
+  ['--quader-nav-accent', 'open group'],
+  ['--quader-nav-accent', 'top bar'],
+  ['--quader-nav-accent', 'active entry'],
+  ['--quader-nav-accent', 'active entry in an open group'],
   // The search field's outline against the frame it sits on (Q-UI-127).
-  ['--trove-search-border', 'top bar'],
+  ['--quader-search-border', 'top bar'],
   // The outline of a field against the page and its own fill, and the primary button against the page (Q-UI-126).
-  ['--trove-control-border', 'page'],
-  ['--trove-control-border', 'control'],
-  ['--trove-accent-fill', 'page'],
+  ['--quader-control-border', 'page'],
+  ['--quader-control-border', 'control'],
+  ['--quader-accent-fill', 'page'],
   // The current tab's line on the page, a badge's icon on its pill (Q-UI-128).
-  ['--trove-tab-indicator', 'page'],
-  ['--trove-badge-neutral-icon', 'neutral badge'],
-  ['--trove-badge-ok-icon', 'positive badge'],
-  ['--trove-badge-warn-icon', 'warning badge'],
-  ['--trove-badge-bad-icon', 'error badge'],
-  ['--trove-badge-info-icon', 'info badge'],
+  ['--quader-tab-indicator', 'page'],
+  ['--quader-badge-neutral-icon', 'neutral badge'],
+  ['--quader-badge-ok-icon', 'positive badge'],
+  ['--quader-badge-warn-icon', 'warning badge'],
+  ['--quader-badge-bad-icon', 'error badge'],
+  ['--quader-badge-info-icon', 'info badge'],
+  // Quader's mark, its stones and its coloured stone, on the top bar and on the page of the sign-in and signed-out screens.
+  ['--quader-mark-stone', 'top bar'],
+  ['--quader-mark-accent', 'top bar'],
+  ['--quader-mark-stone', 'page'],
+  ['--quader-mark-accent', 'page'],
   // The marks of the vulnerability trend (R-VULN-022), on the page and on the raised surface the chart sits on.
   ...['critical', 'high', 'medium', 'low', 'none', 'unknown'].flatMap((s): [string, string][] => [
-    [`--trove-chart-${s}`, 'page'],
-    [`--trove-chart-${s}`, 'raised'],
+    [`--quader-chart-${s}`, 'page'],
+    [`--quader-chart-${s}`, 'raised'],
   ]),
 ];
 
@@ -286,7 +291,7 @@ function failures(pairs: readonly (readonly [string, string])[], min: number): s
 }
 
 /** The grades that are green on purpose: the good end of the scale (Q-UI-370). */
-const goodGrades = ['--trove-grade-s', '--trove-grade-a', '--trove-grade-b', '--trove-grade-s-ink'];
+const goodGrades = ['--quader-grade-s', '--quader-grade-a', '--quader-grade-b', '--quader-grade-s-ink'];
 
 describe('palette', () => {
   it('R-UI-044 the accent, the link and their neighbours read as text at 4.5:1 on every surface they sit on, in both schemes', () => {
@@ -298,8 +303,8 @@ describe('palette', () => {
   });
 
   it('R-UI-044 the focus ring is the accent', () => {
-    const ring = '2px solid var(--trove-accent)';
-    expect(palette.get('--trove-focus-ring')).toEqual([ring, ring]);
+    const ring = '2px solid var(--quader-accent)';
+    expect(palette.get('--quader-focus-ring')).toEqual([ring, ring]);
   });
 
   it('R-UI-002 the accent is blue, and green marks a positive status only (Q-UI-96)', () => {
@@ -308,16 +313,16 @@ describe('palette', () => {
       return saturation > 0.15 && hue >= 75 && hue <= 165;
     };
     for (const scheme of ['light', 'dark'] as const) {
-      for (const name of ['--trove-accent', '--trove-link', '--trove-nav-accent']) {
+      for (const name of ['--quader-accent', '--quader-link', '--quader-nav-accent']) {
         const { hue } = hueOf(colour(name, scheme));
         expect(hue, `${name} (${scheme})`).toBeGreaterThanOrEqual(200);
         expect(hue, `${name} (${scheme})`).toBeLessThanOrEqual(220);
       }
-      expect(isGreen(colour('--trove-status-ok', scheme)), `--trove-status-ok (${scheme})`).toBe(true);
+      expect(isGreen(colour('--quader-status-ok', scheme)), `--quader-status-ok (${scheme})`).toBe(true);
       const green: string[] = [];
       for (const name of palette.keys()) {
         // The positive status, as text or as its badge (Q-UI-128), and the good grades S, A and B with S's letter (Q-UI-370).
-        if (name === '--trove-status-ok' || name.startsWith('--trove-badge-ok-') || goodGrades.includes(name)) continue;
+        if (name === '--quader-status-ok' || name.startsWith('--quader-badge-ok-') || goodGrades.includes(name)) continue;
         let c: Rgba;
         try {
           c = colour(name, scheme);
@@ -333,13 +338,13 @@ describe('palette', () => {
   it('R-UI-092 a severity without findings is faint, and its 0 keeps 4.5:1 on its faint fill in both schemes', () => {
     const faint: string[] = [];
     for (const scheme of ['light', 'dark'] as const) {
-      const page = colour('--trove-surface', scheme);
-      const ink = colour('--trove-on-surface', scheme);
-      for (const name of ['--trove-sev-critical', '--trove-sev-high', '--trove-sev-medium', '--trove-sev-low', '--trove-sev-unknown', '--trove-sev-unknown-light']) {
+      const page = colour('--quader-surface', scheme);
+      const ink = colour('--quader-on-surface', scheme);
+      for (const name of ['--quader-sev-critical', '--quader-sev-high', '--quader-sev-medium', '--quader-sev-low', '--quader-sev-unknown', '--quader-sev-unknown-light']) {
         const c = colour(name, scheme);
         const fill = over([c[0], c[1], c[2], 0.28], page);
         const r = ratio(ink, fill);
-        if (r < 4.5) faint.push(`--trove-on-surface on ${name} at 28 % (${scheme}): ${r.toFixed(2)}:1`);
+        if (r < 4.5) faint.push(`--quader-on-surface on ${name} at 28 % (${scheme}): ${r.toFixed(2)}:1`);
       }
     }
     expect(faint).toEqual([]);
@@ -351,16 +356,16 @@ describe('palette', () => {
       return saturation > 0.15 && hue >= 75 && hue <= 165;
     };
     for (const scheme of ['light', 'dark'] as const) {
-      for (const name of ['--trove-grade-c', '--trove-grade-d', '--trove-grade-e', '--trove-grade-na']) expect(isGreen(colour(name, scheme)), name).toBe(false);
+      for (const name of ['--quader-grade-c', '--quader-grade-d', '--quader-grade-e', '--quader-grade-na']) expect(isGreen(colour(name, scheme)), name).toBe(false);
     }
   });
 
   it('R-UI-044 Q-UI-226 the logo plate lifts a dark mark off the dark scheme: the mark reaches 3:1 on it, and the plate stands out from every surface', () => {
     // Debian's swirl (#a80030, its open use logo) has no variant for a dark ground; on the dark surfaces it is 1.9:1 to 2.3:1.
     const swirl: Rgba = [0xa8, 0x00, 0x30, 1];
-    const plate = colour('--trove-logo-plate', 'dark');
+    const plate = colour('--quader-logo-plate', 'dark');
     expect(ratio(swirl, plate)).toBeGreaterThanOrEqual(3);
-    for (const name of ['--trove-surface', '--trove-surface-raised', '--trove-table-head-bg', '--trove-row-hover', '--trove-accent-container']) {
+    for (const name of ['--quader-surface', '--quader-surface-raised', '--quader-table-head-bg', '--quader-row-hover', '--quader-accent-container']) {
       expect(ratio(plate, colour(name, 'dark')), name).toBeGreaterThanOrEqual(3);
     }
   });

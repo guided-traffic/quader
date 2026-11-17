@@ -26,7 +26,7 @@ import { EmptyState } from '../../shared/ui/empty-state';
  * row's ETag), a copy button for the client address of the rule's repository on this endpoint, and a menu with edit and delete.
  */
 @Component({
-  selector: 'trove-endpoint-detail',
+  selector: 'quader-endpoint-detail',
   imports: [
     CdkMenu,
     CdkMenuItem,

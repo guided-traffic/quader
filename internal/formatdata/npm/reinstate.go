@@ -3,15 +3,15 @@ package npm
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// ReinstateInput names the version `trove admin npm reinstate` puts back (R-NPM-047).
+// ReinstateInput names the version `quader admin npm reinstate` puts back (R-NPM-047).
 type ReinstateInput struct {
 	// Project and Repository are the keys of the repository, Name the package name as the administrator typed it
 	// (it is normalized by the caller), Version the version.

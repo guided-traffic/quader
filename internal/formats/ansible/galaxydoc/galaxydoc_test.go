@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/galaxydoc"
+	"github.com/guided-traffic/quader/internal/formats/ansible/galaxydoc"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden files of testdata")
 
-var addr = galaxydoc.Addr{Repo: "https://trove.example.com/api/ansible/web/ansible-local/", Namespace: "acme", Name: "tools"}
+var addr = galaxydoc.Addr{Repo: "https://quader.example.com/api/ansible/web/ansible-local/", Namespace: "acme", Name: "tools"}
 
 var (
 	t0 = time.Date(2026, 11, 10, 12, 30, 45, 123456000, time.UTC)

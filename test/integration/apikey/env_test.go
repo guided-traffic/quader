@@ -21,12 +21,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -116,7 +116,7 @@ const (
 	push      = feed + "/package"
 	version   = feed + "/package/acme.widgets/1.2.3"
 	apiKey    = "X-NuGet-ApiKey"
-	origin    = "http://trove.test"
+	origin    = "http://quader.test"
 	breakPass = "correct horse battery staple 1"
 	// guard bounds a wait for something that happens on its own (a revocation reaching
 	// the replica, an asynchronous audit event); it is generous by the rule of
@@ -156,7 +156,7 @@ func newEnv(t *testing.T) *env {
 func (e *env) start(name string, env ...string) *testenv.Replica {
 	e.t.Helper()
 	return e.stack.Start(e.t, testenv.ReplicaOptions{Name: name, Env: append([]string{
-		"TROVE_AUTH_BREAK_GLASS_ENABLED=true", "TROVE_AUTH_BREAK_GLASS_PASSWORD_FILE=" + e.pwFile,
+		"QUADER_AUTH_BREAK_GLASS_ENABLED=true", "QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE=" + e.pwFile,
 	}, env...)})
 }
 

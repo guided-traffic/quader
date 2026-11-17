@@ -12,7 +12,7 @@ file, and the shared skeleton is written once by **WP0** (part of the first buil
 
 Two facts about the base:
 
-- The importer (`internal/importer`, `docs/spec/import.md`, `trove admin import`) is on `main` (commit 9c00846b) and **not** in the commit
+- The importer (`internal/importer`, `docs/spec/import.md`, `quader admin import`) is on `main` (commit 9c00846b) and **not** in the commit
   this plan was written on (b0b4538d). The builders start from the `main` of the day they start; the spec page names the importer in plain
   text for that reason and gets its links when it is merged.
 - Nothing of the Galaxy format exists in the tree. The existing formats that serve as pattern are named per package below; a contract in
@@ -38,8 +38,8 @@ Full table: ansible.md, section "Catalog coverage". Summary:
 - 🟢 Local: publish (multipart, import tasks), install, immutability and tombstones, reindex
 - 🟢 Remote: the public Galaxy (`pullThrough` and `mirror`), pages, digests, roles from GitHub archives; 🟡 the Automation Hub's token exchange (stub realm only)
 - 🟢 Virtual: merge, first match, publish through the deploy target
-- 🟢 Authentication with trove tokens (`Authorization: Token`, Basic, netrc for roles)
-- 🟢 Import of the existing Galaxy's collections (`trove admin import ansible`)
+- 🟢 Authentication with Quader tokens (`Authorization: Token`, Basic, netrc for roles)
+- 🟢 Import of the existing Galaxy's collections (`quader admin import ansible`)
 - 🟢 Integration tests (stub, kit) and E2E tests (set `ansible`: ansible-core 2.17.14 and 2.21.6 through local, remote, mirror and virtual repositories on three replicas)
 - 🟢 Client setup instructions in the UI
 - ⚪ Stays: signing, vulnerability evaluation, exposure rules and the Bastion, Git and URL roles through a proxy, the Galaxy API's delete and namespace routes
@@ -71,7 +71,7 @@ start at once; section 4). It writes **one ADR**, ADR-191, as decisions.md alrea
 // internal/formats/route.go
 type Route struct {
 	// ...existing fields...
-	// TokenScheme marks a route that accepts "Authorization: Token <trove token>" (the Galaxy clients' scheme), examined by the
+	// TokenScheme marks a route that accepts "Authorization: Token <quader token>" (the Galaxy clients' scheme), examined by the
 	// authentication stage only there, from the dispatcher's own match, like APIKey (Q-ANS-4, R-ANS-006).
 	TokenScheme bool
 }
@@ -82,11 +82,11 @@ type EndpointRules struct {
 	// TokenSchemeRoute reports whether the request matches a route that declares TokenScheme; nil: none does.
 	TokenSchemeRoute func(*http.Request) bool
 }
-const MethodGalaxyToken Method = "galaxy_token" // the label of the request log and of trove_auth_attempts_total (metricMethod)
+const MethodGalaxyToken Method = "galaxy_token" // the label of the request log and of quader_auth_attempts_total (metricMethod)
 ```
 
 `credentialHeader` (`internal/auth/stage.go`) returns the secret of a `Token` header with `MethodGalaxyToken` only when
-`TokenSchemeRoute` says so; everywhere else the header stays "not a trove token". The composition root hands the dispatcher's match,
+`TokenSchemeRoute` says so; everywhere else the header stays "not a Quader token". The composition root hands the dispatcher's match,
 exactly as it does for `APIKeyRoute`. **Tests** (B1): the stage with and without the declaration, the session cookie ignored on such a
 route when a header is present, the metric label, a token of the wrong type, a Basic user name ignored.
 
@@ -173,7 +173,7 @@ the ports and has no query file.
   new route, as for Debian): `max_archive_bytes` (1 GiB, 1 MiB to 16 GiB), `role_archive_max_bytes` (256 MiB, 1 MiB to 4 GiB),
   `import_task_keep` (720h, 24h to 8760h). `make generate` writes the schema and `docs/developer/configuration.md` is updated by B1.
 - **Format settings schema** `internal/formats/ansible/settings.schema.json`: the member `ansible` of the repository document with
-  `authUrl` (string, `https` URL, `x-trove-classes: ["remote"]`) and `clientId` (string, default `cloud-services`, remote); no setting for
+  `authUrl` (string, `https` URL, `x-quader-classes: ["remote"]`) and `clientId` (string, default `cloud-services`, remote); no setting for
   local and virtual. Unknown fields are refused (`additionalProperties: false`).
 - **OpenAPI** (`api/openapi.yaml`, all written by B1 in WP0; the per-class enums follow the registry, `TestR_ARCH_010_PerClassFormatEnums`;
   `make generate` for the Go and TypeScript clients):
@@ -315,8 +315,8 @@ Every item names the requirement; tests are named `TestR_ANS_nnn_…` and prove 
    detail's dependency and `requires_ansible` block, i18n, Vitest specs, the web lint; one browser journey step.
 3. **Client images** `test/e2e/ansibleclients`: two images pinning ansible-core **2.17.14** and **2.21.6** (their Python versions as each
    requires), a pin check like `aptclients/check-pins.mjs`, an entrypoint that runs a command in a clean home with the given `ansible.cfg`
-   and environment; client pods in a namespace `trove-e2e-ansible`; Makefile `ansible-clients-image`.
-4. **The e2e set `ansible`** (`deploy/dev/e2e.sh` set `ansible` with `TROVE_E2E_ANSIBLESTUB=1`; CI job `e2e-ansible` with the display name
+   and environment; client pods in a namespace `quader-e2e-ansible`; Makefile `ansible-clients-image`.
+4. **The e2e set `ansible`** (`deploy/dev/e2e.sh` set `ansible` with `QUADER_E2E_ANSIBLESTUB=1`; CI job `e2e-ansible` with the display name
    `e2e (ansible)` on the large class): `TestAnsibleLocal` (build a collection in the pod with `ansible-galaxy collection init`/`build`,
    publish on replica 1, install through replicas 2 and 3, both client images), `TestAnsibleRemote` (install and a `requirements.yml`
    with a collection and a role; the stub's counts), `TestAnsibleMirror` (a pass, then installs with the stub's counts unchanged),
@@ -325,7 +325,7 @@ Every item names the requirement; tests are named `TestR_ANS_nnn_…` and prove 
    `TestAnsibleDigest` (the stub changes a digest; the client fails), `TestAnsibleSnippets` (the rendered snippets are executed in the
    pod), and `TestAnsibleClosing` (Valkey stopped; dispatch input `closing`). The set runs in the `scatter` profile.
 5. **User documentation**: `docs/manual/` pages for the repository classes, the client setup and the import; README naming tables
-   (routes, settings, properties, config keys, job kinds, events, metrics, the `ANSIBLE_GALAXY_SERVER_TROVE_TOKEN` and `~/.netrc` lines),
+   (routes, settings, properties, config keys, job kinds, events, metrics, the `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN` and `~/.netrc` lines),
    TL;DR row; developer index rows.
 
 ## 4 · Order and waves
@@ -344,7 +344,7 @@ area. **Merge order:** WP0, then B1, B2, B3 and B4 as they finish (disjoint file
 ## 5 · Checks per builder (before each commit)
 
 `go test` of every touched package (Makefile flags), `go test ./internal/archtest/... ./internal/tools/coverage/`, the integration
-areas the builder touched, the lint (`/Users/hfi/repos/trove/.bin/golangci-lint-v2.15.0-go1.27.3 run --allow-parallel-runners ./...`),
+areas the builder touched, the lint (`/Users/hfi/repos/quader/.bin/golangci-lint-v2.15.0-go1.27.3 run --allow-parallel-runners ./...`),
 `make cyclo`, `make generate-check`, `go run ./internal/tools/coverage -links`, the white-label scan of the common brief, and for B4 the
 web unit tests and the web lint. A requirement ID appears in each test name that proves a criterion, in the doc comment of the code, and in
 the commit message's last line. No builder checks another's work (rule 10 of the run: no review agents in ALPHA); a finding that is not the
@@ -358,7 +358,7 @@ builder's own goes into its report as one line.
 | Local: publish and install | `TestR_ANS_008_*`, `TestR_ANS_009_*` in `ansiblelocal`; `TestAnsibleLocal` on both client images |
 | Remote: proxy of the public Galaxy | `ansibleremote` counts; `TestAnsibleRemote`, `TestAnsibleMirror`; a read-only check against `https://galaxy.ansible.com/api/` in the closing run (install of one small collection and one role, as the Debian closing run does for its archive) |
 | Virtual: one endpoint | `ansiblevirtual`; `TestAnsibleVirtual` |
-| Authentication with trove tokens | `TestR_ANS_006_*`; `TestAnsibleAuth` (`ansible.cfg`, `--token`, environment, netrc) |
+| Authentication with Quader tokens | `TestR_ANS_006_*`; `TestAnsibleAuth` (`ansible.cfg`, `--token`, environment, netrc) |
 | Migration of the existing Galaxy's content | `importer/ansible_test.go`; the owner's `--dry-run` result recorded under H-847 (not provable by the plan) |
 | Integration tests | the three areas green on the stack; the kit green for all three classes |
 | E2E tests | the CI leg `e2e (ansible)` green on a push; red legs are findings, not release blockers (CLAUDE.md) |

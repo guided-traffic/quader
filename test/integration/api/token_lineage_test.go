@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The line of a narrowed token (R-AUTH-028 to R-AUTH-030, Q-AUTH-199) on the running composition root: a token whose scope
@@ -179,7 +179,7 @@ func TestR_AUTH_028_ANarrowedTokenSeesItselfAndItsDerivedTokensOnly(t *testing.T
 			t.Fatalf("the narrowed token reads the successor: %d %s", got.Status, got.Body)
 		}
 		// No presenting token: the successor keeps the predecessor's lineage.
-		if n := e.scalar("SELECT count(*) FROM trove.api_token WHERE id = $1::uuid AND derived_from = $2::uuid AND rotated_from = $3::uuid", succ, narrow.id, c.id); n != 1 {
+		if n := e.scalar("SELECT count(*) FROM quader.api_token WHERE id = $1::uuid AND derived_from = $2::uuid AND rotated_from = $3::uuid", succ, narrow.id, c.id); n != 1 {
 			t.Fatalf("the successor %s is not derived from %s", succ, narrow.id)
 		}
 	})
@@ -187,7 +187,7 @@ func TestR_AUTH_028_ANarrowedTokenSeesItselfAndItsDerivedTokensOnly(t *testing.T
 	t.Run("R-AUTH-028 a line the retention task cut ends there: the token beyond it is a 404", func(t *testing.T) {
 		mid := e.derive(r, narrow.value, 3600)
 		leaf := e.derive(r, mid.value, 1800)
-		e.exec("DELETE FROM trove.api_token WHERE id = $1::uuid", mid.id)
+		e.exec("DELETE FROM quader.api_token WHERE id = $1::uuid", mid.id)
 		hidden(t, "the token below the deleted one", e.stack.Do(r, "GET", "/api/v1/tokens/"+leaf.id, narrow.value, nil))
 		if got := e.listed(r, "&state=all", narrow.value); got[leaf.id] {
 			t.Errorf("the list holds the token below the deleted one: %v", got)
@@ -296,7 +296,7 @@ func TestR_AUTH_030_ANarrowedTokenRotatesItselfAndItsDerivedTokensOnly(t *testin
 		if !e.works(r, sibling.value) {
 			t.Fatal("the sibling no longer authenticates")
 		}
-		if n := e.scalar("SELECT count(*) FROM trove.api_token WHERE rotated_from = $1::uuid", sibling.id); n != 0 {
+		if n := e.scalar("SELECT count(*) FROM quader.api_token WHERE rotated_from = $1::uuid", sibling.id); n != 0 {
 			t.Fatalf("the sibling has %d successors", n)
 		}
 	})
@@ -308,7 +308,7 @@ func TestR_AUTH_030_ANarrowedTokenRotatesItselfAndItsDerivedTokensOnly(t *testin
 			t.Fatalf("%d %s", got.Status, got.Body)
 		}
 		succ, _ := got.JSON(t)["id"].(string)
-		if n := e.scalar("SELECT count(*) FROM trove.api_token WHERE id = $1::uuid AND derived_from = $2::uuid AND rotated_from = $3::uuid", succ, narrow.id, child.id); n != 1 {
+		if n := e.scalar("SELECT count(*) FROM quader.api_token WHERE id = $1::uuid AND derived_from = $2::uuid AND rotated_from = $3::uuid", succ, narrow.id, child.id); n != 1 {
 			t.Fatalf("the successor %s is not derived from the presenting token and rotated from the child", succ)
 		}
 	})
@@ -359,7 +359,7 @@ func TestR_AUTH_030_ANarrowedTokenRotatesItselfAndItsDerivedTokensOnly(t *testin
 			t.Fatalf("%d %s", got.Status, got.Body)
 		}
 		// The administrator's rotation has no parent: the successor keeps the predecessor's lineage, here none.
-		if n := e.scalar("SELECT count(*) FROM trove.api_token WHERE id = $1::uuid AND rotated_from = $2::uuid AND derived_from IS NULL", succ, other.id); n != 1 {
+		if n := e.scalar("SELECT count(*) FROM quader.api_token WHERE id = $1::uuid AND rotated_from = $2::uuid AND derived_from IS NULL", succ, other.id); n != 1 {
 			t.Fatalf("the successor %s is not an administrator's rotation of %s", succ, other.id)
 		}
 	})

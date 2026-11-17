@@ -146,7 +146,7 @@ test('R-DEB-029 the client setup page offers APT and renders the source with the
 }) => {
   await signInLocal(page);
   const port = new URL(baseURL ?? '').port;
-  const name = `trove-${e2eProject}-${localKey}`;
+  const name = `quader-${e2eProject}-${localKey}`;
 
   await page.goto(`/ui/en/setup?repository=${qualified(localKey)}`);
   await expect(page.getByRole('heading', { name: 'Client setup', level: 1 })).toBeVisible();

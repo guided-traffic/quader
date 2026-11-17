@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 func render(method string, r *http.Request, err error) *httptest.ResponseRecorder {
 	if r == nil {
-		r = httptest.NewRequest(method, "https://trove.example.com/api/nuget/it/nuget-local/v3/index.json", nil)
+		r = httptest.NewRequest(method, "https://quader.example.com/api/nuget/it/nuget-local/v3/index.json", nil)
 	}
 	w := httptest.NewRecorder()
 	New().WriteError(w, r, err)
@@ -43,15 +43,15 @@ func TestR_NUGET_002_AnErrorIsOneLineOfCodeAndMessage(t *testing.T) {
 	}
 }
 
-// TestR_NUGET_012_A401ChallengesWithBasicAlone: the challenge is exactly Basic realm="trove",
+// TestR_NUGET_012_A401ChallengesWithBasicAlone: the challenge is exactly Basic realm="quader",
 // whatever the authentication stage put into the error, because NTLM or Negotiate beside
 // Basic would make a client send Basic only after it restricted its authentication types.
 func TestR_NUGET_012_A401ChallengesWithBasicAlone(t *testing.T) {
-	for _, challenge := range []string{"", `Bearer realm="x"`, `Negotiate, Basic realm="trove"`} {
+	for _, challenge := range []string{"", `Bearer realm="x"`, `Negotiate, Basic realm="quader"`} {
 		err := errs.E(errs.Unauthenticated, errs.CodeUnauthenticated, "Credentials are required.")
 		err.Challenge = challenge
 		w := render(http.MethodGet, nil, err)
-		if w.Code != http.StatusUnauthorized || w.Header().Get("WWW-Authenticate") != `Basic realm="trove"` {
+		if w.Code != http.StatusUnauthorized || w.Header().Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Errorf("challenge %q: status %d, WWW-Authenticate %q", challenge, w.Code, w.Header().Get("WWW-Authenticate"))
 		}
 		if !strings.HasPrefix(w.Body.String(), errs.CodeUnauthenticated+": ") {
@@ -85,14 +85,14 @@ func TestR_NUGET_002_RetryAfterIsAtMost30Seconds(t *testing.T) {
 // addressed and never a guess.
 func TestR_NUGET_001_AV2PathAnswersWithTheServiceIndexOfTheAddressedRepository(t *testing.T) {
 	v2 := errs.E(errs.NotFound, errs.CodeNuGetV2Unsupported, "No NuGet v3 resource has this path.")
-	r := httptest.NewRequest(http.MethodGet, "https://trove.example.com/api/nuget/it/nuget-local/FindPackagesById()?id='Acme.Widgets'", nil)
-	r = formats.WithRefusal(r, formats.Refusal{Format: ID, Name: qr("nuget-local"), BaseURL: "https://trove.example.com"})
+	r := httptest.NewRequest(http.MethodGet, "https://quader.example.com/api/nuget/it/nuget-local/FindPackagesById()?id='Acme.Widgets'", nil)
+	r = formats.WithRefusal(r, formats.Refusal{Format: ID, Name: qr("nuget-local"), BaseURL: "https://quader.example.com"})
 	w := render(http.MethodGet, r, v2)
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("status = %d", w.Code)
 	}
 	body := w.Body.String()
-	if !strings.HasPrefix(body, "nuget_v2_unsupported: ") || !strings.Contains(body, "https://trove.example.com/api/nuget/it/nuget-local/v3/index.json") {
+	if !strings.HasPrefix(body, "nuget_v2_unsupported: ") || !strings.Contains(body, "https://quader.example.com/api/nuget/it/nuget-local/v3/index.json") {
 		t.Errorf("body = %q", body)
 	}
 	if strings.ContainsAny(body, "\r\n") {
@@ -100,7 +100,7 @@ func TestR_NUGET_001_AV2PathAnswersWithTheServiceIndexOfTheAddressedRepository(t
 	}
 
 	t.Run("the cache view of a remote repository", func(t *testing.T) {
-		r := formats.WithRefusal(httptest.NewRequest(http.MethodGet, "/x", nil), formats.Refusal{Format: ID, Name: qr("nuget-org~cache"), BaseURL: "https://trove.example.com"})
+		r := formats.WithRefusal(httptest.NewRequest(http.MethodGet, "/x", nil), formats.Refusal{Format: ID, Name: qr("nuget-org~cache"), BaseURL: "https://quader.example.com"})
 		if body := render(http.MethodGet, r, v2).Body.String(); !strings.Contains(body, "/api/nuget/it/nuget-org~cache/v3/index.json") {
 			t.Errorf("body = %q", body)
 		}

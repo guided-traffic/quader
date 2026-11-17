@@ -16,12 +16,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // lockMigration is the advisory-lock category `migration` (classid 3, objid 0) of
-// the registry in R-ARCH-017. `trove migrate` and `trove backup restore` hold it
+// the registry in R-ARCH-017. `quader migrate` and `quader backup restore` hold it
 // exclusively, a backup's database phase holds it shared.
 const lockMigration int32 = 3
 
@@ -31,7 +31,7 @@ const ExitRefused = 3
 
 // MigrateOptions are what the runner needs besides the database section.
 type MigrateOptions struct {
-	// Instance is the Job's pod name, used in application_name (trove:<instance>:migrate).
+	// Instance is the Job's pod name, used in application_name (quader:<instance>:migrate).
 	Instance string
 	// Migrate are the lock wait and DDL retry settings.
 	Migrate config.Migrate
@@ -99,7 +99,7 @@ type StepResult struct {
 	Attempts   int    `json:"attempts"`
 }
 
-// Result is the summary `trove migrate up` prints (R-HA-019).
+// Result is the summary `quader migrate up` prints (R-HA-019).
 type Result struct {
 	Applied        []StepResult `json:"applied"`
 	SchemaApplied  int          `json:"schemaApplied"`
@@ -135,7 +135,7 @@ func (r *Refusal) Error() string { return r.Reason }
 // ExitCode is 3.
 func (r *Refusal) ExitCode() int { return ExitRefused }
 
-// StatusReport is what `trove migrate status` prints and what GET
+// StatusReport is what `quader migrate status` prints and what GET
 // /api/v1/system/migrations answers (R-HA-018, R-HA-020, R-HA-021); it takes no
 // lock. [Report] builds it for both.
 type StatusReport struct {
@@ -391,7 +391,7 @@ func lockHolders(ctx context.Context, conn *pgx.Conn) string {
 }
 
 // restoreAnchor is the prefix of the schema comment a restore sets (R-ARCH-026).
-const restoreAnchor = "trove-restore "
+const restoreAnchor = "quader-restore "
 
 // refuseHalfRestored implements step 2 of R-ARCH-026.
 func refuseHalfRestored(ctx context.Context, conn *pgx.Conn, schema string) error {
@@ -418,7 +418,7 @@ func refuseHalfRestored(ctx context.Context, conn *pgx.Conn, schema string) erro
 }
 
 func halfRestored(id string) *Refusal {
-	return &Refusal{BackupID: id, Reason: fmt.Sprintf("the database is half restored from backup %s: resume the restore (trove backup restore) instead of migrating; nothing was applied", id)}
+	return &Refusal{BackupID: id, Reason: fmt.Sprintf("the database is half restored from backup %s: resume the restore (quader backup restore) instead of migrating; nothing was applied", id)}
 }
 
 // backupIDOf extracts the backup ID from the value of restore_in_progress: a
@@ -554,7 +554,7 @@ func contractGuard(ctx context.Context, db q.DBTX, pending []Step, stale time.Du
 			names = append(names, fmt.Sprintf("%s (%s)", r.Name, r.Version))
 		}
 		return &Refusal{Step: s.Name, Replicas: old, Reason: fmt.Sprintf(
-			"contract step %s.sql requires trove >= %s, but live replicas run older releases: %s; nothing was applied. "+
+			"contract step %s.sql requires Quader >= %s, but live replicas run older releases: %s; nothing was applied. "+
 				"Upgrade one minor release at a time, or stop all replicas and upgrade with downtime (R-HA-021)",
 			s.Name, s.RequiresApp, strings.Join(names, ", "))}
 	}
@@ -710,7 +710,7 @@ func schemaOf(conn *pgx.Conn) string { return conn.Config().RuntimeParams["searc
 
 // Status lists applied and pending steps, the background data migrations and
 // the gate's verdict for this binary, without taking the lock (R-ARCH-026): the
-// report of [Report] on the session connection of `trove migrate status`.
+// report of [Report] on the session connection of `quader migrate status`.
 func Status(ctx context.Context, cfg config.Database, opts MigrateOptions) (StatusReport, error) {
 	opts.fill()
 	conn, err := sessionConn(ctx, cfg, opts, classMigrate)
@@ -726,7 +726,7 @@ func Status(ctx context.Context, cfg config.Database, opts MigrateOptions) (Stat
 // applied with what the contract guard checks for them, the background data
 // migrations of opts.Background with their states, and the gate's verdict
 // (R-HA-018, R-HA-020, R-HA-021, R-HA-022). It reads only and takes no lock.
-// `trove migrate status` runs it on its session connection and GET
+// `quader migrate status` runs it on its session connection and GET
 // /api/v1/system/migrations on the replica's pool, so both answer from the same
 // code; a database without the bookkeeping tables reports every step pending.
 func Report(ctx context.Context, db q.DBTX, opts MigrateOptions) (StatusReport, error) {

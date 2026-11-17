@@ -14,7 +14,7 @@ import (
 
 // TestR_VULN_020_Export: the CSV with its header, the protection of a cell that starts like a formula, and the limit.
 func TestR_VULN_020_Export(t *testing.T) {
-	e := newEnv(t, "TROVE_VULNERABILITIES_EXPORT_MAX_ROWS=4")
+	e := newEnv(t, "QUADER_VULNERABILITIES_EXPORT_MAX_ROWS=4")
 	e.addAdvisory("npm", "GHSA-aaaa-bbbb-cccc", "=cmd|' /C calc'!A0", "high", "CVE-2021-23337")
 	e.addFinding(finding{Repo: "npm-local", Package: `=HYPERLINK("http://x")`, Advisory: "GHSA-aaaa-bbbb-cccc", CVSS: 7.5, Fix: true})
 	e.addFinding(finding{Repo: "npm-local", Package: "plain", Severity: "critical", Kind: "malicious", Advisory: "MAL-2026-1234"})
@@ -278,13 +278,13 @@ func TestR_VULN_020_R_VULN_039_PackageViews(t *testing.T) {
 	e := newEnv(t)
 	e.st.Exec(`INSERT INTO vuln_source_state (source, ecosystem, state, synced_at) VALUES ('osv', 'npm', 'complete', now())`)
 	for _, repo := range []string{"npm-local", "npm-mirror", "npm-off"} {
-		e.addVersion(repo, "trove-test-mal", "1.0.0")
-		e.addVersion(repo, "trove-test-mal", "2.0.0")
+		e.addVersion(repo, "quader-test-mal", "1.0.0")
+		e.addVersion(repo, "quader-test-mal", "2.0.0")
 	}
-	e.addFinding(finding{Repo: "npm-local", Package: "trove-test-mal", Version: "1.0.0", Kind: "malicious", Severity: "critical", Advisory: "MAL-2026-1234"})
-	e.addFinding(finding{Repo: "npm-local", Package: "trove-test-mal", Version: "2.0.0", Severity: "low", Advisory: "GHSA-aaaa-aaaa-0005"})
-	e.addFinding(finding{Repo: "npm-local", Package: "trove-test-mal", Version: "2.0.0", Severity: "low", Advisory: "GHSA-aaaa-aaaa-0006", Status: "dismissed", DismissalReason: "mitigated"})
-	id := packageID("npm", "trove-test-mal")
+	e.addFinding(finding{Repo: "npm-local", Package: "quader-test-mal", Version: "1.0.0", Kind: "malicious", Severity: "critical", Advisory: "MAL-2026-1234"})
+	e.addFinding(finding{Repo: "npm-local", Package: "quader-test-mal", Version: "2.0.0", Severity: "low", Advisory: "GHSA-aaaa-aaaa-0005"})
+	e.addFinding(finding{Repo: "npm-local", Package: "quader-test-mal", Version: "2.0.0", Severity: "low", Advisory: "GHSA-aaaa-aaaa-0006", Status: "dismissed", DismissalReason: "mitigated"})
+	id := packageID("npm", "quader-test-mal")
 
 	a := e.get(e.r, "/api/v1/packages/"+id+"/versions/1.0.0/vulnerabilities", e.tokAlice)
 	if a.Status != 200 {

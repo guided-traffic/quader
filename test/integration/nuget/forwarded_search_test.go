@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 // The forwarded search of a remote repository (R-NUGET-016) and a remote member's part of the
@@ -250,7 +250,7 @@ func TestR_NUGET_016_ARemoteForwardsItsSearchAndFallsBackToItsCache(t *testing.T
 // its packages on the next use on both replicas, with no new search at the upstream (R-NUGET-016,
 // R-NUGET-018 steps 1, 2 and 6).
 func TestR_NUGET_018_AVirtualRepositoryForwardsThroughItsRemoteMember(t *testing.T) {
-	e := newForwardEnv(t, "TROVE_NUGET_SEARCH_REMOTE_RESULT_TTL=1h")
+	e := newForwardEnv(t, "QUADER_NUGET_SEARCH_REMOTE_RESULT_TTL=1h")
 	reps := e.start(2)
 	a := reps[0]
 	for _, p := range []pkgSpec{{id: "Acme.Widgets", version: "1.0.0"}, {id: "Json.Tools", version: "1.0.0"}} {

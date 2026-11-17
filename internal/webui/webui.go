@@ -36,7 +36,7 @@ import (
 
 // NoncePlaceholder is the literal in index.html that is replaced with the per-response nonce. The
 // Angular build copies it into the nonce attribute of every script and style tag it writes.
-const NoncePlaceholder = "TROVE_CSP_NONCE"
+const NoncePlaceholder = "QUADER_CSP_NONCE"
 
 // MountPath is the path prefix the handler serves. Register it as "/ui/".
 const MountPath = "/ui/"

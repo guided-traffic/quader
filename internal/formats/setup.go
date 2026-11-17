@@ -53,16 +53,16 @@ type SetupTemplate struct {
 // reference of the configured variable (credentials=env), by the placeholder the
 // browser fills in (credentials=placeholder), or drops the line that holds it
 // (credentials=none).
-const SetupTokenRef = "${TROVE_TOKEN}" //nolint:gosec // a reference to an environment variable, not a credential
+const SetupTokenRef = "${QUADER_TOKEN}" //nolint:gosec // a reference to an environment variable, not a credential
 
 // SetupTokenRefWin is the reference to the token where the syntax is that of Windows:
 // a NuGet.Config value, which NuGet expands itself, and a cmd command. The API
 // rewrites it like [SetupTokenRef], to "%<variable>%" for credentials=env.
-const SetupTokenRefWin = "%TROVE_TOKEN%" //nolint:gosec // a reference to an environment variable, not a credential
+const SetupTokenRefWin = "%QUADER_TOKEN%" //nolint:gosec // a reference to an environment variable, not a credential
 
 // SetupTokenRefPS is the reference to the token in a PowerShell command. The API
 // rewrites it like [SetupTokenRef], to "$env:<variable>" for credentials=env.
-const SetupTokenRefPS = "$env:TROVE_TOKEN" //nolint:gosec // a reference to an environment variable, not a credential
+const SetupTokenRefPS = "$env:QUADER_TOKEN" //nolint:gosec // a reference to an environment variable, not a credential
 
 // SetupTokenRefs are all the spellings of the token reference, in the order the API
 // looks for them. A template spells exactly one per credential line.
@@ -103,7 +103,7 @@ type SetupData struct {
 	// snippet then makes the client send its credential without waiting for a
 	// challenge (always-auth, npmAlwaysAuth).
 	RequiresAuth bool
-	// Bastion is true when the snippets are for a trove Bastion (R-BAS-007): a read-only
+	// Bastion is true when the snippets are for a quader Bastion (R-BAS-007): a read-only
 	// cache in front of the installation, which a lockfile written against another host
 	// must resolve through. A configure template may add what the client needs for that.
 	Bastion bool

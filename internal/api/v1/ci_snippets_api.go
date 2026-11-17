@@ -3,9 +3,9 @@ package v1
 import (
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The CI snippet operation (R-API-035, R-UI-035; R-CI-027 is the broader P1 requirement), work package W3. The

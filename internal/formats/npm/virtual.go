@@ -4,12 +4,12 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/document"
-	"github.com/guided-traffic/trove/internal/formats/npm/merge"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/document"
+	"github.com/guided-traffic/quader/internal/formats/npm/merge"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // The virtual class (R-NPM-028 to R-NPM-032). The virtual engine plans a request
@@ -21,7 +21,7 @@ import (
 // no repository and no request. Every response rewrites the addresses for the
 // repository it serves, after the merged-metadata cache, so the cached bytes hold no
 // address a request chose (R-REPO-043, Q-NPM-34).
-const neutralPrefix = "urn:trove:npm-tarball:"
+const neutralPrefix = "urn:quader:npm-tarball:"
 
 // Virtual returns the format's virtual adapter.
 func (f *Format) Virtual() formats.VirtualAdapter { return virtualAdapter{f: f} }

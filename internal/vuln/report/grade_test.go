@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // The grade of a version at every boundary of R-VULN-038: 0, 10 and 11 Low, None counted with Low, 1, 5 and 6 Critical, the end

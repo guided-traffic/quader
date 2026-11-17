@@ -1,12 +1,12 @@
-<trove-page-header [heading]="name()" [name]="true">
+<quader-page-header [heading]="name()" [name]="true">
   <span meta class="type-badge">
-    <trove-format-icon [format]="format()" />
+    <quader-format-icon [format]="format()" />
     <span translate="no">{{ format() }}</span>
   </span>
-</trove-page-header>
+</quader-page-header>
 
 @if (loadFailure(); as f) {
-  <trove-error-notice [error]="f" (retry)="summary.reload()" />
+  <quader-error-notice [error]="f" (retry)="summary.reload()" />
 } @else if (!detail()) {
   <p role="status" i18n="@@pkg.loading">Loading.</p>
 } @else if (detail(); as d) {
@@ -33,7 +33,7 @@
       </span>
       @if (versionGrade(); as g) {
         <a class="version-grade" [routerLink]="[]" [queryParams]="{ tab: 'vulnerabilities' }" queryParamsHandling="merge">
-          <trove-grade [grade]="g" />
+          <quader-grade [grade]="g" />
         </a>
       }
     </div>
@@ -68,18 +68,18 @@
 
   <div class="pkg-layout" [class.stacked]="activeTab() === 'documentation' || activeTab() === 'contents'">
     <div class="pkg-install">
-      <trove-install-panel [format]="format()" [name]="name()" [version]="d" />
+      <quader-install-panel [format]="format()" [name]="name()" [version]="d" />
     </div>
 
     <div class="pkg-tabs">
-      <trove-tab-group [selectedIndex]="activeIndex()" (selectedIndexChange)="selectTab($event)">
+      <quader-tab-group [selectedIndex]="activeIndex()" (selectedIndexChange)="selectTab($event)">
         @for (t of tabs(); track t.id) {
-          <trove-tab [label]="t.label" [count]="t.count ?? null">
+          <quader-tab [label]="t.label" [count]="t.count ?? null">
             <div class="tab">
               @switch (t.id) {
                 @case ('documentation') {
                   @if (activeTab() === 'documentation') {
-                    <trove-ansible-docs
+                    <quader-ansible-docs
                       [packageId]="d.packageId"
                       [version]="d.version"
                       [tree]="docsTree()"
@@ -95,7 +95,7 @@
                 }
                 @case ('contents') {
                   @if (activeTab() === 'contents') {
-                    <trove-ansible-contents
+                    <quader-ansible-contents
                       [tree]="docsTree()"
                       [loading]="docs.isLoading()"
                       [failure]="docsFailure()"
@@ -105,16 +105,16 @@
                 }
                 @case ('import-log') {
                   @if (activeTab() === 'import-log' && localRepository(); as repository) {
-                    <trove-ansible-import-log [repository]="repository" [collection]="d.name" [version]="d.version" />
+                    <quader-ansible-import-log [repository]="repository" [collection]="d.name" [version]="d.version" />
                   }
                 }
                 @case ('readme') {
                   @if (readmeFailure(); as f) {
-                    <trove-error-notice [error]="f" (retry)="readme.reload()" />
+                    <quader-error-notice [error]="f" (retry)="readme.reload()" />
                   } @else if (readme.isLoading()) {
                     <p role="status" i18n="@@pkg.loading">Loading.</p>
                   } @else {
-                    <trove-package-readme [readme]="readme.hasValue() ? (readme.value() ?? null) : null" />
+                    <quader-package-readme [readme]="readme.hasValue() ? (readme.value() ?? null) : null" />
                   }
                 }
                 @case ('metadata') {
@@ -127,7 +127,7 @@
                       <dt i18n="@@pkg.image.digest">Digest</dt>
                       <dd>
                         <code translate="no">{{ img.digest }}</code>
-                        <trove-copy-button [value]="img.digest" [label]="copyImageDigest" />
+                        <quader-copy-button [value]="img.digest" [label]="copyImageDigest" />
                       </dd>
                       @if (img.mediaType !== '') {
                         <dt i18n="@@pkg.image.media-type">Media type</dt>
@@ -144,7 +144,7 @@
                     </dl>
                     @if (img.platforms.length > 0) {
                       <h2 i18n="@@pkg.image.platforms">Platforms</h2>
-                      <trove-data-table [caption]="tableCaptionPlatforms" [columns]="platformColumns" [empty]="false">
+                      <quader-data-table [caption]="tableCaptionPlatforms" [columns]="platformColumns" [empty]="false">
                         @for (p of img.platforms; track $index) {
                           <tr>
                             <th scope="row">
@@ -155,7 +155,7 @@
                             </th>
                             <td>
                               <code class="ellipsis" translate="no" [attr.title]="p.digest">{{ p.digest }}</code>
-                              <trove-copy-button [value]="p.digest" [label]="p.copyLabel" />
+                              <quader-copy-button [value]="p.digest" [label]="p.copyLabel" />
                             </td>
                             <td translate="no">{{ p.mediaType }}</td>
                             @if (p.size !== null) {
@@ -165,7 +165,7 @@
                             }
                           </tr>
                         }
-                      </trove-data-table>
+                      </quader-data-table>
                     }
                   }
                   @if (links().length > 0) {
@@ -279,24 +279,24 @@
                   }
                 }
                 @case ('files') {
-                  <trove-data-table [caption]="tableCaptionFiles" [columns]="fileColumns" [empty]="d.files.length === 0">
+                  <quader-data-table [caption]="tableCaptionFiles" [columns]="fileColumns" [empty]="d.files.length === 0">
                     @for (f of d.files; track f.path) {
                       <tr>
                         <th scope="row" translate="no">{{ f.path }}</th>
                         <td class="num" [attr.title]="f.sizeBytes + ' B'">{{ size(f.sizeBytes) }}</td>
                         <td>
                           <code class="ellipsis" translate="no" [attr.title]="f.sha256">{{ f.sha256 }}</code>
-                          <trove-copy-button [value]="f.sha256" [label]="copySha" />
+                          <quader-copy-button [value]="f.sha256" [label]="copySha" />
                         </td>
                         <td>
                           <a class="btn btn-tertiary" [href]="fileHref(f)" download i18n="@@pkg.file.download-link">Download</a>
                         </td>
                       </tr>
                     }
-                  </trove-data-table>
+                  </quader-data-table>
                 }
                 @case ('repositories') {
-                  <trove-data-table [caption]="tableCaptionRepositories" [columns]="repositoryColumns" [empty]="d.repositories.length === 0">
+                  <quader-data-table [caption]="tableCaptionRepositories" [columns]="repositoryColumns" [empty]="d.repositories.length === 0">
                     @for (r of d.repositories; track r.key) {
                       <tr>
                         <th scope="row" translate="no">{{ r.key }}</th>
@@ -309,17 +309,17 @@
                         </td>
                       </tr>
                     }
-                  </trove-data-table>
+                  </quader-data-table>
                 }
                 @case ('vulnerabilities') {
                   @if (vulnerabilities.isLoading()) {
                     <p role="status" i18n="@@pkg.loading">Loading.</p>
                   } @else {
-                    <trove-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [severity]="severityFilter()" />
+                    <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [severity]="severityFilter()" />
                   }
                 }
                 @case ('versions') {
-                  <trove-data-table [caption]="tableCaptionVersions" [columns]="versionColumns" [empty]="all().length === 0">
+                  <quader-data-table [caption]="tableCaptionVersions" [columns]="versionColumns" [empty]="all().length === 0">
                     @for (v of all(); track v.version) {
                       <tr>
                         <th scope="row">
@@ -342,24 +342,24 @@
                         <td class="num">{{ v.downloadCount | number }}</td>
                         <td>
                           @if (gradeByVersion().get(v.version); as g) {
-                            <trove-grade [grade]="g" />
+                            <quader-grade [grade]="g" />
                           } @else {
                             <span class="secondary-inline">–</span>
                           }
                         </td>
                       </tr>
                     }
-                  </trove-data-table>
+                  </quader-data-table>
                 }
               }
             </div>
-          </trove-tab>
+          </quader-tab>
         }
-      </trove-tab-group>
+      </quader-tab-group>
     </div>
   </div>
 
-  <trove-disclosure class="pkg-details" [heading]="detailsHeading" [hint]="detailsText">
+  <quader-disclosure class="pkg-details" [heading]="detailsHeading" [hint]="detailsText">
     <dl class="facts">
       <dt i18n="@@pkg.fact.published">Published</dt>
       <dd>
@@ -378,6 +378,6 @@
         </ul>
       </dd>
     </dl>
-  </trove-disclosure>
+  </quader-disclosure>
 
 }

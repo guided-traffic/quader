@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // perfGate switches the p99 bound on, as for P-13 and P-14 (Q-ARCH-220): the per-change tier asserts that every upload is published and
-// the p50, and the nightly performance run, which sets TROVE_PERF_GATE=1, also the p99 under the reference load.
-func perfGate() bool { return os.Getenv("TROVE_PERF_GATE") == "1" }
+// the p50, and the nightly performance run, which sets QUADER_PERF_GATE=1, also the p99 under the reference load.
+func perfGate() bool { return os.Getenv("QUADER_PERF_GATE") == "1" }
 
 func percentile(d []time.Duration, q float64) time.Duration {
 	if len(d) == 0 {
@@ -65,7 +65,7 @@ func quoted(ss []string) string {
 	return out
 }
 
-var metricLine = regexp.MustCompile(`(?m)^(trove_deb_index_[a-z_]+)\{([^}]*)\} ([0-9.e+-]+)$`)
+var metricLine = regexp.MustCompile(`(?m)^(quader_deb_index_[a-z_]+)\{([^}]*)\} ([0-9.e+-]+)$`)
 
 // metric sums a series of the metrics of all replicas whose labels contain the given text.
 func (e *env) metric(name, labels string) float64 {
@@ -85,7 +85,7 @@ func (e *env) metric(name, labels string) float64 {
 // R-DEB-010: from the answer of an upload to the commit of a generation that lists it, p99 at most deb.index_delay + 5 s while Valkey is
 // available and deb.index_delay + jobs.poll_interval + 5 s while it is not, for a local repository of 10,000 package files in three
 // suites under ten uploads per second spread over three replicas. The per-change tier runs a smaller load and asserts that every upload
-// is published and the p50; the nightly performance run (TROVE_PERF_GATE=1) runs the reference load and asserts the p99. The delay
+// is published and the p50; the nightly performance run (QUADER_PERF_GATE=1) runs the reference load and asserts the p99. The delay
 // metric of R-DEB-033 is read afterwards.
 func TestR_DEB_010_DelayBound(t *testing.T) {
 	const indexDelay, poll = time.Second, 2 * time.Second
@@ -102,7 +102,7 @@ func TestR_DEB_010_DelayBound(t *testing.T) {
 			if perfGate() {
 				files, perSecond, duration = 10_000, 10, 90*time.Second
 			}
-			e := newEnvOpts(t, envOpts{valkey: mode.valkey, replicas: 3, env: []string{"TROVE_JOBS_POLL_INTERVAL=" + poll.String()}})
+			e := newEnvOpts(t, envOpts{valkey: mode.valkey, replicas: 3, env: []string{"QUADER_JOBS_POLL_INTERVAL=" + poll.String()}})
 			suites := []string{"stable", "testing", "unstable"}
 			e.seed(files, suites...)
 			// The first build lists the whole repository; the load starts after it.
@@ -151,23 +151,23 @@ func TestR_DEB_010_DelayBound(t *testing.T) {
 			switch {
 			case p99 <= mode.bound:
 			case !perfGate():
-				t.Logf("p99 %s is above %s; enforced with TROVE_PERF_GATE=1 (Q-ARCH-220)", p99, mode.bound)
+				t.Logf("p99 %s is above %s; enforced with QUADER_PERF_GATE=1 (Q-ARCH-220)", p99, mode.bound)
 			default:
 				t.Errorf("p99 %s is above the bound %s", p99, mode.bound)
 			}
 
-			if n := e.metric("trove_deb_index_build_seconds_count", ""); n > 0 {
-				t.Logf("%v builds, mean %.2f s each, %v of them published; mean delay measured %.2f s", n, e.metric("trove_deb_index_build_seconds_sum", "")/n,
-					e.metric("trove_deb_index_builds_total", `outcome="published"`), e.metric("trove_deb_index_delay_seconds_sum", "")/max(1, e.metric("trove_deb_index_delay_seconds_count", "")))
+			if n := e.metric("quader_deb_index_build_seconds_count", ""); n > 0 {
+				t.Logf("%v builds, mean %.2f s each, %v of them published; mean delay measured %.2f s", n, e.metric("quader_deb_index_build_seconds_sum", "")/n,
+					e.metric("quader_deb_index_builds_total", `outcome="published"`), e.metric("quader_deb_index_delay_seconds_sum", "")/max(1, e.metric("quader_deb_index_delay_seconds_count", "")))
 			}
 			// R-DEB-033: the builds were counted and their delay measured.
-			if n := e.metric("trove_deb_index_builds_total", `outcome="published"`); n < 1 {
-				t.Errorf("trove_deb_index_builds_total{outcome=\"published\"} = %v", n)
+			if n := e.metric("quader_deb_index_builds_total", `outcome="published"`); n < 1 {
+				t.Errorf("quader_deb_index_builds_total{outcome=\"published\"} = %v", n)
 			}
-			if n := e.metric("trove_deb_index_delay_seconds_count", `class="local"`); n < 1 {
-				t.Errorf("trove_deb_index_delay_seconds_count = %v", n)
+			if n := e.metric("quader_deb_index_delay_seconds_count", `class="local"`); n < 1 {
+				t.Errorf("quader_deb_index_delay_seconds_count = %v", n)
 			}
-			if sum, n := e.metric("trove_deb_index_delay_seconds_sum", ""), e.metric("trove_deb_index_delay_seconds_count", ""); n > 0 && sum/n > mode.bound.Seconds() {
+			if sum, n := e.metric("quader_deb_index_delay_seconds_sum", ""), e.metric("quader_deb_index_delay_seconds_count", ""); n > 0 && sum/n > mode.bound.Seconds() {
 				t.Errorf("the mean delay %.1f s is above the bound", sum/n)
 			}
 		})

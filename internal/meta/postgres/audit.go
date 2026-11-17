@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // Audit helpers (R-OPS-015, R-OPS-017): the error classes the audit writer
@@ -64,7 +64,7 @@ func IsPrivilegeError(err error) bool {
 // is the schema owner, so it is the one writer of the row in two-role mode: a
 // compromised replica cannot shorten retention. A lowered value drops the
 // partitions that are now expired in the same call, which is the documented
-// effect of a changed value after the next trove migrate.
+// effect of a changed value after the next quader migrate.
 func syncAuditPolicy(ctx context.Context, db q.DBTX, days int, log *slog.Logger) error {
 	qs := q.New(db)
 	n, err := qs.SetAuditRetention(ctx, int32(days)) //nolint:gosec // validated by the config: min=1, a day count

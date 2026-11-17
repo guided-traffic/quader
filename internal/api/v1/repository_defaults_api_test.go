@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_REPO_063_TheDefaultsRefuseAnUnknownFormatAndAMissingClassLikeACreate: the defaults of a format the catalog does not know

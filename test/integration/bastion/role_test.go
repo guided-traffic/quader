@@ -4,8 +4,8 @@
 // started from a configuration file, against the in-process main installation of internal/bastion/maintest, with
 // the bucket backend on the integration stack's S3 (SeaweedFS over TLS).
 //
-// Variables read (testenv): TROVE_TEST_S3_ENDPOINT, _REGION, _ACCESS_KEY, _SECRET_KEY, _BUCKET_BACKUPS,
-// _FORCE_PATH_STYLE and TROVE_TEST_CA_FILE. The run works below a prefix of its own in the unversioned backups
+// Variables read (testenv): QUADER_TEST_S3_ENDPOINT, _REGION, _ACCESS_KEY, _SECRET_KEY, _BUCKET_BACKUPS,
+// _FORCE_PATH_STYLE and QUADER_TEST_CA_FILE. The run works below a prefix of its own in the unversioned backups
 // bucket and removes it when it ends.
 package bastion
 
@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/roletest"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/bastion/roletest"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_BAS_048_TheWholeRoleServesAColdMissAWarmHitARevocationAndTheOutage_Bucket: the same scenario as the

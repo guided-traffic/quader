@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // The periods of deploy/dev/bastion-chart-common.yaml.
@@ -50,8 +50,8 @@ func TestBastion_R_BAS_049_Setup(t *testing.T) {
 		}
 		for _, p := range basReadyPods(t, s) {
 			m := basMetrics(t, p.Name)
-			if m["trove_bastion_main_reachable"] != 1 || m["trove_bastion_interface_mismatch"] != 0 {
-				t.Errorf("%s reachable %v mismatch %v", p.Name, m["trove_bastion_main_reachable"], m["trove_bastion_interface_mismatch"])
+			if m["quader_bastion_main_reachable"] != 1 || m["quader_bastion_interface_mismatch"] != 0 {
+				t.Errorf("%s reachable %v mismatch %v", p.Name, m["quader_bastion_main_reachable"], m["quader_bastion_interface_mismatch"])
 			}
 		}
 	}
@@ -122,7 +122,7 @@ func TestBastion_R_BAS_049_ColdAndWarmCache(t *testing.T) {
 
 			var hitsBefore float64
 			hitCount := func() float64 {
-				return basSum(t, site, "trove_bastion_requests_total", `class="artifact"`, `result="hit"`)
+				return basSum(t, site, "quader_bastion_requests_total", `class="artifact"`, `result="hit"`)
 			}
 			warmDocs := map[string]int{}
 			for _, r := range runs {
@@ -151,7 +151,7 @@ func TestBastion_R_BAS_049_ColdAndWarmCache(t *testing.T) {
 					// the Bastion served every artifact from its cache (a warm run that never asked would pass the check above by itself)
 					got := hitCount() - hitsBefore
 					if r.name == "npm" && got != float64(r.artsCnt) {
-						t.Errorf("trove_bastion_requests_total{class=artifact,result=hit} rose by %v on a warm npm ci of %d tarballs, want %d (R-BAS-040)", got, r.artsCnt, r.artsCnt)
+						t.Errorf("quader_bastion_requests_total{class=artifact,result=hit} rose by %v on a warm npm ci of %d tarballs, want %d (R-BAS-040)", got, r.artsCnt, r.artsCnt)
 					}
 					if got < float64(r.artsCnt) {
 						t.Errorf("%s: the Bastion served %v artifacts from its cache on the warm run, want %d: the client did not ask for them", r.name, got, r.artsCnt)
@@ -208,7 +208,7 @@ func TestBastion_R_BAS_049_RoutingByPath(t *testing.T) {
 		}
 		out := npmClientExec(t, 0, append([]string{
 			"env", "TOK=" + env.full.Token, "sh", "-c",
-			`for u in "$@"; do curl -s -o /dev/null -w '%{http_code}\n' --cacert /etc/trove-ca/ca.crt -H "Authorization: Bearer $TOK" "$u"; done`,
+			`for u in "$@"; do curl -s -o /dev/null -w '%{http_code}\n' --cacert /etc/quader-ca/ca.crt -H "Authorization: Bearer $TOK" "$u"; done`,
 			"sh",
 		}, urls...)...)
 		for _, code := range strings.Fields(out) {
@@ -224,12 +224,12 @@ func TestBastion_R_BAS_049_RoutingByPath(t *testing.T) {
 	// a revalidation caused by something that happened during the measurement, and the failure says what the Bastion applied.
 	fetch(1)
 	contentOf := func(m map[string]float64) float64 {
-		return msum(m, "trove_bastion_feed_entries_applied_total", `kind="content"`)
+		return msum(m, "quader_bastion_feed_entries_applied_total", `kind="content"`)
 	}
 	before, contentBefore := map[string]float64{}, map[string]float64{}
 	for _, p := range pods {
 		m := basMetrics(t, p.Name)
-		before[p.Name] = msum(m, "trove_bastion_requests_total", `class="artifact"`, `result="hit"`)
+		before[p.Name] = msum(m, "quader_bastion_requests_total", `class="artifact"`, `result="hit"`)
 		contentBefore[p.Name] = contentOf(m)
 	}
 	w := openMainWindow(t)
@@ -242,7 +242,7 @@ func TestBastion_R_BAS_049_RoutingByPath(t *testing.T) {
 	var total float64
 	var served int
 	for _, p := range pods {
-		d := msum(basMetrics(t, p.Name), "trove_bastion_requests_total", `class="artifact"`, `result="hit"`) - before[p.Name]
+		d := msum(basMetrics(t, p.Name), "quader_bastion_requests_total", `class="artifact"`, `result="hit"`) - before[p.Name]
 		total += d
 		if d > 0 {
 			served++
@@ -260,7 +260,7 @@ func TestBastion_R_BAS_049_RoutingByPath(t *testing.T) {
 		for _, p := range pods {
 			m := basMetrics(t, p.Name)
 			t.Logf("%s: content feed entries applied since the warm-up: %v (total %v), feed lag %vs, feed resets %v", p.Name,
-				contentOf(m)-contentBefore[p.Name], contentOf(m), msum(m, "trove_bastion_feed_lag_seconds"), msum(m, "trove_bastion_feed_resets_total"))
+				contentOf(m)-contentBefore[p.Name], contentOf(m), msum(m, "quader_bastion_feed_lag_seconds"), msum(m, "quader_bastion_feed_resets_total"))
 		}
 	}
 }
@@ -286,7 +286,7 @@ func TestBastion_R_BAS_049_ReadOnly(t *testing.T) {
 			env.configureNPM(t, c, dir, site.reg)
 			var before float64
 			for _, p := range basReadyPods(t, site) {
-				before += msum(basMetrics(t, p.Name), "trove_http_received_bytes_total")
+				before += msum(basMetrics(t, p.Name), "quader_http_received_bytes_total")
 			}
 			r := c.run(dir, "publish")
 			if r.Code == 0 || !e403.MatchString(r.Out) {
@@ -297,7 +297,7 @@ func TestBastion_R_BAS_049_ReadOnly(t *testing.T) {
 			}
 			var after float64
 			for _, p := range basReadyPods(t, site) {
-				after += msum(basMetrics(t, p.Name), "trove_http_received_bytes_total")
+				after += msum(basMetrics(t, p.Name), "quader_http_received_bytes_total")
 			}
 			if after-before >= 64*1024 {
 				t.Errorf("the Bastion read %v bytes of an upload of 1.5 MB, want less than 64 KiB", after-before)
@@ -361,7 +361,7 @@ func TestBastion_R_BAS_049_HiddenContent(t *testing.T) {
 				if got.Status != 404 || got.Status != want.Status {
 					t.Errorf("$PART at the Bastion for %s: %s; at the main installation: %s; want the same 404", p, got, want)
 				}
-				if strings.Contains(string(got.Body), "Trove-Bastion") {
+				if strings.Contains(string(got.Body), "Quader-Bastion") {
 					t.Errorf("the refusal carries the marking: %s", got)
 				}
 			}
@@ -400,7 +400,7 @@ func TestBastion_R_BAS_049_TokenRevoked(t *testing.T) {
 	pods := basReadyPods(t, site)
 	refusedBefore := map[string]float64{}
 	for _, p := range pods {
-		refusedBefore[p.Name] = msum(basMetrics(t, p.Name), "trove_bastion_requests_total", `class="refused"`) + msum(basMetrics(t, p.Name), "trove_bastion_refused_total")
+		refusedBefore[p.Name] = msum(basMetrics(t, p.Name), "quader_bastion_requests_total", `class="refused"`) + msum(basMetrics(t, p.Name), "quader_bastion_refused_total")
 	}
 	type result struct {
 		at     time.Time
@@ -455,7 +455,7 @@ func TestBastion_R_BAS_049_TokenRevoked(t *testing.T) {
 	// both replicas took part: each served requests of the loop, each refused some afterwards
 	for _, p := range pods {
 		m := basMetrics(t, p.Name)
-		now := msum(m, "trove_bastion_requests_total", `class="refused"`) + msum(m, "trove_bastion_refused_total")
+		now := msum(m, "quader_bastion_requests_total", `class="refused"`) + msum(m, "quader_bastion_refused_total")
 		if now <= refusedBefore[p.Name] {
 			t.Errorf("replica %s refused nothing after the revocation: the loop did not reach it", p.Name)
 		}
@@ -472,7 +472,7 @@ func TestBastion_R_BAS_049_FailedAuthenticationTimeout(t *testing.T) {
 	doc := npmDocPath(env.open)
 	// from a client pod: its address is not the one of the token loop of the scenario before, whose failures count too
 	pod := func(tok string) (int, string, string) {
-		out := npmClientExec(t, 1, "curl", "-sS", "-i", "--cacert", "/etc/trove-ca/ca.crt", "-H", "Authorization: Bearer "+tok, site.baseURL(t)+doc)
+		out := npmClientExec(t, 1, "curl", "-sS", "-i", "--cacert", "/etc/quader-ca/ca.crt", "-H", "Authorization: Bearer "+tok, site.baseURL(t)+doc)
 		status, _ := strconv.Atoi(strings.Fields(strings.SplitN(out, "\n", 2)[0] + " 0")[1])
 		var code string
 		if k := strings.Index(out, `"code":"`); k >= 0 {
@@ -529,9 +529,9 @@ func TestBastion_R_BAS_049_FailedAuthenticationTimeout(t *testing.T) {
 // refused at the ops port, so each refusal is the policy's; and the Bastion serves through its Ingress meanwhile.
 func TestBastion_R_BAS_049_NetworkPolicy(t *testing.T) {
 	env := basFx(t)
-	image := os.Getenv("TROVE_E2E_OPENSSL_IMAGE")
+	image := os.Getenv("QUADER_E2E_OPENSSL_IMAGE")
 	if image == "" {
-		t.Fatal("TROVE_E2E_OPENSSL_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
+		t.Fatal("QUADER_E2E_OPENSSL_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
 	}
 	site := env.bkt
 	type rule struct {

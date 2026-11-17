@@ -5,7 +5,7 @@ import (
 
 	"github.com/ulikunitz/xz"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // NewXZReader returns a reader of the xz stream r whose decompressed bytes are capped at lim.UncompressedBytes: a stream that

@@ -10,15 +10,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// Metrics counts what the writer does (R-OPS-008): trove_audit_events_total by
+// Metrics counts what the writer does (R-OPS-008): quader_audit_events_total by
 // category and outcome for every event that was stored, and
-// trove_audit_events_dropped_total for access events that never reached the
+// quader_audit_events_dropped_total for access events that never reached the
 // table. Nil in [Options] counts nothing.
 type Metrics interface {
 	Recorded(category string, outcome Outcome)

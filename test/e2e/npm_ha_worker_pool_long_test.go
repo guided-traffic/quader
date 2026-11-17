@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // TestNPMHA_R_REPO_058_DrainOfTheNodeOfAMirrorPass: the mirror is a remote of the public registry's name (the feed) whose include
@@ -43,7 +43,7 @@ func TestNPMHA_R_REPO_058_DrainOfTheNodeOfAMirrorPass(t *testing.T) {
 	}
 	jobID := st.Pass.Job.ID
 	podName, node := poolPodOfPass(t, jobID)
-	if !strings.HasPrefix(podName, "trove-worker-"+mirrorPoolName+"-") {
+	if !strings.HasPrefix(podName, "quader-worker-"+mirrorPoolName+"-") {
 		t.Fatalf("the pass runs in %q, want a process of the pool %s", podName, mirrorPoolName)
 	}
 	var others []string
@@ -75,12 +75,12 @@ func TestNPMHA_R_REPO_058_DrainOfTheNodeOfAMirrorPass(t *testing.T) {
 	// The job is read throughout: the process that holds it, its attempt, its state.
 	type sample struct{ state, attempt, replica string }
 	read := func() (sample, bool) {
-		primary, err := kubectl("-n", cfg.namespace, "get", "cluster", "trove-db", "-o", "jsonpath={.status.currentPrimary}")
+		primary, err := kubectl("-n", cfg.namespace, "get", "cluster", "quader-db", "-o", "jsonpath={.status.currentPrimary}")
 		if err != nil || strings.TrimSpace(primary) == "" {
 			return sample{}, false
 		}
-		out, err := kubectl("-n", cfg.namespace, "exec", strings.TrimSpace(primary), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-F", "|", "-c",
-			`SELECT j.state, j.attempt, coalesce(r.name, '') FROM trove.job j LEFT JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE j.id = '`+jobID+`'`)
+		out, err := kubectl("-n", cfg.namespace, "exec", strings.TrimSpace(primary), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", "|", "-c",
+			`SELECT j.state, j.attempt, coalesce(r.name, '') FROM quader.job j LEFT JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE j.id = '`+jobID+`'`)
 		f := strings.Split(strings.TrimSpace(out), "|")
 		if err != nil || len(f) != 3 {
 			return sample{}, false
@@ -125,7 +125,7 @@ func TestNPMHA_R_REPO_058_DrainOfTheNodeOfAMirrorPass(t *testing.T) {
 	}
 	t.Logf("the job ran in %v, was seen queued again: %v, attempt %s before the drain and %s at the end, state %s", holders, queuedAgain, first.attempt, last.attempt, last.state)
 	if last.state != "succeeded" {
-		t.Fatalf("the job of the drained pass ended %q: %s", last.state, sql(t, `SELECT coalesce(error::text, '') FROM trove.job WHERE id = '`+jobID+`'`))
+		t.Fatalf("the job of the drained pass ended %q: %s", last.state, sql(t, `SELECT coalesce(error::text, '') FROM quader.job WHERE id = '`+jobID+`'`))
 	}
 	if len(holders) < 2 {
 		t.Errorf("only %v held the job: the pass did not end in another process of the pool", holders)

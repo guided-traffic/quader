@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // registerShape makes a format's WriteError the error shape of its prefix

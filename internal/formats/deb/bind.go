@@ -6,9 +6,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // replica is what the format keeps per replica: the metric families the remote class exports (R-DEB-033). The format is one value for
@@ -29,11 +29,11 @@ type metrics struct {
 func newMetrics(m *observability.Metrics) *metrics {
 	met := &metrics{
 		repos: m.Repos(),
-		rollbacks: m.NewCounterVec("trove_deb_release_rollbacks_total",
+		rollbacks: m.NewCounterVec("quader_deb_release_rollbacks_total",
 			"Fetched release documents older than the newest release verified for the directory, which were not stored (R-DEB-019).", "repo"),
-		sigFailures: m.NewCounterVec("trove_deb_upstream_signature_failures_total",
+		sigFailures: m.NewCounterVec("quader_deb_upstream_signature_failures_total",
 			"Release documents of a remote that failed the verification against deb.upstreamKeys, by reason (R-DEB-020).", "repo", "reason"),
-		unverified: m.NewCounterVec("trove_deb_unverified_fills_total",
+		unverified: m.NewCounterVec("quader_deb_unverified_fills_total",
 			"Package files stored without a digest to verify them against because no parsed index lists the path (R-DEB-022).", "repo"),
 	}
 	met.repos.DeleteOnForget(met.rollbacks, met.sigFailures, met.unverified)

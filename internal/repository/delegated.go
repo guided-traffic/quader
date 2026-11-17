@@ -4,14 +4,14 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The upstream rules of an Owner's write (R-AUTHZ-026, Q-REPO-127,
 // Q-REPO-128). An Owner configures the upstream of its project's
 // remote repositories, but three things are not its to send to a host it picks: the
 // secrets of the installation (the files of config_as_code.secrets_dir and the
-// TROVE_CAC_ variables a secretRef names), a credential an administrator of trove
+// QUADER_CAC_ variables a secretRef names), a credential an administrator of quader
 // stored for the repository, and the outbound path an administrator chose:
 //
 //   - a secret it gives is a value; a secretRef is refused, except the reference the
@@ -75,11 +75,11 @@ func checkDelegatedRemote(v *validation, stored, next *RemoteSettings, pending [
 	pathMoves := stored == nil || pathHostsWiden(*stored, *next)
 	if m := next.OutboundProxy.Mode; m != ProxyDefault && (pathMoves || stored.OutboundProxy.Mode != m) {
 		v.add("/remote/outboundProxy/mode", errs.CodeOutboundPathRestricted,
-			"a repository of a project takes the installation's outbound proxy (mode default); a mode an administrator of trove set stays only while url and extraHosts stay")
+			"a repository of a project takes the installation's outbound proxy (mode default); a mode an administrator of Quader set stays only while url and extraHosts stay")
 	}
 	if sn := next.SourceNetwork; sn != nil && (pathMoves || stored.SourceNetwork == nil || *stored.SourceNetwork != *sn) {
 		v.add("/remote/sourceNetwork", errs.CodeOutboundPathRestricted,
-			"a repository of a project takes no source network of its own (null); one an administrator of trove set stays only while url and extraHosts stay")
+			"a repository of a project takes no source network of its own (null); one an administrator of Quader set stays only while url and extraHosts stay")
 	}
 }
 

@@ -3,7 +3,7 @@ package nuget
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // R-OPS-007: the series of a repository that leaves the snapshot (deleted, or moved under another name) are deleted with

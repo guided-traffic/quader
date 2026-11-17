@@ -1,4 +1,4 @@
-<trove-page-header [heading]="heading" [description]="description">
+<quader-page-header [heading]="heading" [description]="description">
   <a
     actions
     class="btn btn-default"
@@ -7,10 +7,10 @@
     i18n="@@setup.guide"
     >Read the guide</a
   >
-</trove-page-header>
+</quader-page-header>
 
 @if (loadFailure(); as f) {
-  <trove-error-notice [error]="f" (retry)="answer.reload()" />
+  <quader-error-notice [error]="f" (retry)="answer.reload()" />
 }
 
 <!-- The choice of the client, numbered among the steps of a full setup and alone in a setup for one repository. -->
@@ -80,7 +80,7 @@
                 (change)="pick({ repository: refOf(r) })"
               />
               <span class="choice-text">
-                <span translate="no"><trove-visibility-icon [level]="r.visibility.artifacts" /><strong>{{ refOf(r) }}</strong></span>
+                <span translate="no"><quader-visibility-icon [level]="r.visibility.artifacts" /><strong>{{ refOf(r) }}</strong></span>
                 <span class="secondary">
                   {{ labelOfClass(r.class) }}
                   @if (r.class === 'virtual') {
@@ -108,7 +108,7 @@
   <p class="credential-line">
     @switch (mode()) {
       @case ('env') {
-        <span i18n="@@setup.cred.line-env">The snippets read your token from the variable TROVE_TOKEN.</span>&ngsp;
+        <span i18n="@@setup.cred.line-env">The snippets read your token from the variable QUADER_TOKEN.</span>&ngsp;
         <a routerLink="/profile/tokens" i18n="@@setup.cred.env-link">Create a token to put into the variable</a>
       }
       @case ('create') {
@@ -122,7 +122,7 @@
 }
 
 @if (!anonymous() || showTarget()) {
-  <trove-disclosure class="more-options" [heading]="moreHeading" [hint]="moreHint()" [(expanded)]="moreOpen">
+  <quader-disclosure class="more-options" [heading]="moreHeading" [hint]="moreHint()" [(expanded)]="moreOpen">
     @if (!anonymous()) {
       <fieldset>
         <legend i18n="@@setup.step.credentials">Credentials</legend>
@@ -132,7 +132,7 @@
             <span class="choice-text">
               <span i18n="@@setup.cred.env">Reference an environment variable</span>
               <span class="secondary" i18n="@@setup.cred.env-hint">
-                The snippets read the token from the variable TROVE_TOKEN. No secret appears on this page.
+                The snippets read the token from the variable QUADER_TOKEN. No secret appears on this page.
               </span>
             </span>
           </label>
@@ -164,7 +164,7 @@
             </label>
           }
           @if (createFailure(); as f) {
-            <trove-error-notice [error]="f" />
+            <quader-error-notice [error]="f" />
           }
           @if (createdToken(); as value) {
             <div class="once" role="status">
@@ -176,7 +176,7 @@
               </p>
               <p class="token-line">
                 <code translate="no" class="token-value">{{ value }}</code>
-                <trove-copy-button [value]="value" [label]="copyTokenLabel" />
+                <quader-copy-button [value]="value" [label]="copyTokenLabel" />
               </p>
             </div>
           } @else {
@@ -220,16 +220,16 @@
             <div id="setup-token-state" aria-live="polite">
               @switch (pasteShape()) {
                 @case ('ok') {
-                  <p class="hint" i18n="@@setup.paste.ok">The value looks like a trove token. It is written into the snippets.</p>
+                  <p class="hint" i18n="@@setup.paste.ok">The value looks like a Quader token. It is written into the snippets.</p>
                 }
                 @case ('prefix') {
-                  <p class="field-error" i18n="@@setup.paste.prefix">A trove token starts with trv_pat_, trv_sat_ or trv_cit_.</p>
+                  <p class="field-error" i18n="@@setup.paste.prefix">A Quader token starts with qdr_pat_, qdr_sat_ or qdr_cit_.</p>
                 }
                 @case ('length') {
-                  <p class="field-error" i18n="@@setup.paste.length">A trove token has 57 characters. The value is shorter or longer, maybe cut off.</p>
+                  <p class="field-error" i18n="@@setup.paste.length">A Quader token has 57 characters. The value is shorter or longer, maybe cut off.</p>
                 }
                 @case ('alphabet') {
-                  <p class="field-error" i18n="@@setup.paste.alphabet">A trove token holds only letters and digits after its prefix.</p>
+                  <p class="field-error" i18n="@@setup.paste.alphabet">A Quader token holds only letters and digits after its prefix.</p>
                 }
                 @case ('checksum') {
                   <p class="field-error" i18n="@@setup.paste.checksum">The checksum does not match. A character is probably wrong or missing.</p>
@@ -276,7 +276,7 @@
         </div>
       </fieldset>
     }
-  </trove-disclosure>
+  </quader-disclosure>
 }
 
 @if (setup(); as s) {
@@ -292,7 +292,7 @@
         </span>
       </p>
       <p>
-        <trove-address-field [value]="s.registryUrl" />
+        <quader-address-field [value]="s.registryUrl" />
       </p>
     }
     @if (needsToken()) {
@@ -303,23 +303,23 @@
         </span>
       </p>
     }
-    <trove-tab-group>
-      <trove-tab label="Configure" i18n-label="@@setup.tab.configure">
+    <quader-tab-group>
+      <quader-tab label="Configure" i18n-label="@@setup.tab.configure">
         <div class="tab">
           @for (sn of byTab().configure; track sn.id) {
             <ng-container *ngTemplateOutlet="snippet; context: { $implicit: sn }" />
           }
         </div>
-      </trove-tab>
-      <trove-tab label="Install" i18n-label="@@setup.tab.install">
+      </quader-tab>
+      <quader-tab label="Install" i18n-label="@@setup.tab.install">
         <div class="tab">
           @for (sn of byTab().install; track sn.id) {
             <ng-container *ngTemplateOutlet="snippet; context: { $implicit: sn }" />
           }
         </div>
-      </trove-tab>
+      </quader-tab>
       @if (offerPublish()) {
-        <trove-tab label="Publish" i18n-label="@@setup.tab.publish">
+        <quader-tab label="Publish" i18n-label="@@setup.tab.publish">
           <div class="tab">
             @if (byTab().publish.length === 0) {
               <p i18n="@@setup.publish.no-target">
@@ -334,9 +334,9 @@
               <ng-container *ngTemplateOutlet="snippet; context: { $implicit: sn }" />
             }
           </div>
-        </trove-tab>
+        </quader-tab>
       }
-    </trove-tab-group>
+    </quader-tab-group>
   </section>
 }
 
@@ -356,7 +356,7 @@
     <div class="command">
       <pre class="code-block" translate="no" tabindex="0">{{ sn.content }}</pre>
       <div class="snippet-actions">
-        <trove-copy-button [value]="sn.content" [label]="copyLabel" />
+        <quader-copy-button [value]="sn.content" [label]="copyLabel" />
         @if (sn.fileName) {
           <button class="btn btn-tertiary" type="button" (click)="download(sn)" i18n="@@setup.download">Download</button>
         }

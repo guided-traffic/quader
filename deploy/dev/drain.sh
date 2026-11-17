@@ -4,24 +4,24 @@
 #   drain.sh               the whole test: the k6 load of E0.13, the driver's change and job traffic and
 #                          probe jobs that persist a cursor every second run while a node with an api, a packages
 #                          and a worker pod is drained; it fails on a failed request, a job that did not resume
-#                          from its cursor with its attempt unchanged, a SIGKILL of a trove container or
-#                          a trove pod Pending for more than 60 s. It is `e2e.sh drain`.
+#                          from its cursor with its attempt unchanged, a SIGKILL of a quader container or
+#                          a quader pod Pending for more than 60 s. It is `e2e.sh drain`.
 #   drain.sh <node>        the drain alone (this is what the test calls): `kubectl drain
-#                          --ignore-daemonsets --delete-emptydir-data` of trove's pods, wait for the rollouts, uncordon.
+#                          --ignore-daemonsets --delete-emptydir-data` of quader's pods, wait for the rollouts, uncordon.
 #   drain.sh --pick        print the node the test would drain.
 #   drain.sh --also valkey|postgres|pooler [--also ...] <node>
 #                          the drain of variants B, C and D of R-HA-059 (Q-HA-170): the release's pods and, in a run of its own started
 #                          together with it, the pods of each named dependency on the node: valkey the Valkey data pods and the
-#                          Sentinels, postgres the CloudNativePG instances of trove-db, pooler the pods of both poolers. Nothing else on
+#                          Sentinels, postgres the CloudNativePG instances of quader-db, pooler the pods of both poolers. Nothing else on
 #                          the node is evicted. After the uncordon the script waits until the evicted dependency is whole again: two
 #                          Valkey data pods and three Sentinels ready, two ready instances, both pooler Deployments rolled out.
 #
 # The test picks a worker node that hosts an api, a packages and a worker pod and not the CloudNativePG primary:
 # CloudNativePG switches the primary over as soon as its node is cordoned (Test and Release run 42406831768). When only
 # the primary's node hosts all three, `failover.sh` moves the primary first (variant B). The drain evicts only the pods
-# of the trove release (--pod-selector): PostgreSQL, Valkey and the object store on the node keep running, as the
+# of the quader release (--pod-selector): PostgreSQL, Valkey and the object store on the node keep running, as the
 # acceptance test of R-HA-059 has them on other nodes. The three workers cannot always offer such a node, and evicting
-# a PostgreSQL instance is not trove's drain: the synchronous standby of the profile (dataDurability preferred) that
+# a PostgreSQL instance is not quader's drain: the synchronous standby of the profile (dataDurability preferred) that
 # stays on the node after a switchover holds every commit until CloudNativePG drops it, about 6 s in run 42402849059,
 # long enough for uploads queued on one row lock to meet the lock timeout.
 set -euo pipefail
@@ -29,22 +29,22 @@ set -euo pipefail
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 require_cluster
 
-sel='app.kubernetes.io/instance=trove,trove/serve=true'
+sel='app.kubernetes.io/instance=quader,quader/serve=true'
 
 nodes_of() { kn get pods -l "$sel,app.kubernetes.io/component=$1" -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' | sort -u; }
 
 pick_node() {
   local dbprimary
-  dbprimary="$(kn get pod "$(kn get cluster trove-db -o jsonpath='{.status.currentPrimary}')" -o jsonpath='{.spec.nodeName}')"
+  dbprimary="$(kn get pod "$(kn get cluster quader-db -o jsonpath='{.status.currentPrimary}')" -o jsonpath='{.spec.nodeName}')"
   comm -12 <(comm -12 <(nodes_of api) <(nodes_of packages)) <(nodes_of worker) | grep -vx "$dbprimary" | head -1 || true
 }
 
 # the selectors of the dependencies of --also (the labels the operators put on their pods; kubectl drain --pod-selector matches
-# pods of every namespace, so the restore installation of trove-restore must not exist while a variant drains)
+# pods of every namespace, so the restore installation of quader-restore must not exist while a variant drains)
 also_selector() {
   case "$1" in
-    valkey) echo 'app.kubernetes.io/instance=trove-valkey' ;;
-    postgres) echo 'cnpg.io/cluster=trove-db,cnpg.io/podRole=instance' ;;
+    valkey) echo 'app.kubernetes.io/instance=quader-valkey' ;;
+    postgres) echo 'cnpg.io/cluster=quader-db,cnpg.io/podRole=instance' ;;
     pooler) echo 'cnpg.io/poolerName' ;;
   esac
 }
@@ -91,7 +91,7 @@ drain_one() {
   fi
 }
 pids=(); names=()
-drain_one trove 'app.kubernetes.io/name=trove,app.kubernetes.io/instance=trove' & pids+=("$!"); names+=(trove)
+drain_one quader 'app.kubernetes.io/name=quader,app.kubernetes.io/instance=quader' & pids+=("$!"); names+=(quader)
 for dep in ${also[@]+"${also[@]}"}; do
   drain_one "$dep" "$(also_selector "$dep")" & pids+=("$!"); names+=("$dep")
 done
@@ -101,7 +101,7 @@ for i in "${!pids[@]}"; do
 done
 [ "$failed" = 0 ] || die "a drain of $node failed"
 # every Deployment of the roles, the worker pools of the profile in use included (vuln in the default profile, mirror in the `mirror` one)
-for d in $(kn get deployments -l "app.kubernetes.io/instance=trove,app.kubernetes.io/component in (api,packages,worker)" -o name); do kn rollout status "$d" --timeout=5m; done
+for d in $(kn get deployments -l "app.kubernetes.io/instance=quader,app.kubernetes.io/component in (api,packages,worker)" -o name); do kn rollout status "$d" --timeout=5m; done
 log "pods after the drain"
 kn get pods -l "$sel" -o wide
 k uncordon "$node"
@@ -109,17 +109,17 @@ k uncordon "$node"
 for dep in ${also[@]+"${also[@]}"}; do
   case "$dep" in
     valkey)
-      sts_wait_ready trove-valkey 2 300
-      sts_wait_ready trove-valkey-sentinel 3 300 ;;
+      sts_wait_ready quader-valkey 2 300
+      sts_wait_ready quader-valkey-sentinel 3 300 ;;
     postgres)
       deadline=$(( $(date +%s) + 600 ))
-      until [ "$(kn get cluster trove-db -o jsonpath='{.status.readyInstances}')" = 2 ]; do
-        [ "$(date +%s)" -lt "$deadline" ] || die "trove-db has no two ready instances 10 minutes after the uncordon"
+      until [ "$(kn get cluster quader-db -o jsonpath='{.status.readyInstances}')" = 2 ]; do
+        [ "$(date +%s)" -lt "$deadline" ] || die "quader-db has no two ready instances 10 minutes after the uncordon"
         sleep 2
       done
-      kn wait --for=condition=Ready cluster/trove-db --timeout=10m ;;
+      kn wait --for=condition=Ready cluster/quader-db --timeout=10m ;;
     pooler)
-      for d in trove-db-pooler-rw trove-db-pooler-control; do kn rollout status "deployment/$d" --timeout=5m; done ;;
+      for d in quader-db-pooler-rw quader-db-pooler-control; do kn rollout status "deployment/$d" --timeout=5m; done ;;
   esac
   log "$dep is whole again"
 done

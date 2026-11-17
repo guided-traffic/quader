@@ -8,17 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The token operations of R-AUTH-027 to R-AUTH-030. The value of a token is in
@@ -160,7 +160,7 @@ func tokenAuthenticated(p httpserver.Principal) bool {
 // credential or widens permissions through a UI session needs an interactive
 // authentication within auth.sessions.recent_auth_window (401
 // reauthentication_required). The shared authorization step calls it for every
-// operation that declares x-trove-recent-auth (R-API-007); no handler does. A
+// operation that declares x-quader-recent-auth (R-API-007); no handler does. A
 // caller that presents a token is not asked: the token has its own rules.
 func (s *Server) requireRecentAuth(r *http.Request) error {
 	p := httpserver.PrincipalFrom(r.Context())
@@ -735,7 +735,7 @@ func (s *Server) RevokeTokenByValue(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	res, err := s.o.Auth.Tokens.RevokeByValue(ctx, s.caller(r), in.Token)
 	if errors.Is(err, token.ErrMalformed) {
-		httpserver.Problem(w, r, malformed("/token", "syntax", "the value is not a trove token", nil))
+		httpserver.Problem(w, r, malformed("/token", "syntax", "the value is not a Quader token", nil))
 		return
 	}
 	if err != nil {

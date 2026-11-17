@@ -15,14 +15,14 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/tlsfiles"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/tlsfiles"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestObjectStoreTLS(t *testing.T) {
@@ -103,7 +103,7 @@ func TestObjectStoreTLS(t *testing.T) {
 			t.Fatalf("the restored CA was not used: %v", err)
 		}
 		if n := seriesValue(t, reg, tlsfiles.FamilyReloads, caFile); n < 2 {
-			t.Errorf("trove_tls_reloads_total{kind=objectstore} = %v, want at least 2", n)
+			t.Errorf("quader_tls_reloads_total{kind=objectstore} = %v, want at least 2", n)
 		}
 	})
 

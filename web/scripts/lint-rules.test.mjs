@@ -46,19 +46,19 @@ test('R-UI-046 a component that follows the rules passes them', async () => {
 
 test('Q-UI-335 a number field without a number width fails the check, one with its width passes', () => {
   const bad = [
-    '<trove-text-field label="Priority" name="priority" type="number" [(value)]="p" />',
-    '<trove-text-field width="full" label="Days" type="number" />',
+    '<quader-text-field label="Priority" name="priority" type="number" [(value)]="p" />',
+    '<quader-text-field width="full" label="Days" type="number" />',
     '<input class="text-input" type="number" [value]="n()" />',
     '<input\n  class="text-input field-w-name"\n  inputmode="numeric"\n/>',
     '<input class="text-input" pattern="[0-9]*" />',
   ];
   for (const t of bad) assert.equal(numberFieldsWithoutWidth(t).length, 1, t);
   const good = [
-    '<trove-text-field width="number" label="Priority" type="number" />',
-    '<trove-text-field\n  width="duration"\n  label="Lifetime (seconds)"\n  type="number"\n/>',
+    '<quader-text-field width="number" label="Priority" type="number" />',
+    '<quader-text-field\n  width="duration"\n  label="Lifetime (seconds)"\n  type="number"\n/>',
     '<input class="text-input field-w-bytes" inputmode="numeric" />',
     `<input class="text-input" [class]="'field-w-' + n.width" inputmode="numeric" />`,
-    '<trove-text-field width="name" label="Name" />',
+    '<quader-text-field width="name" label="Name" />',
     '<input class="text-input field-w-name" />',
   ];
   for (const t of good) assert.deepEqual(numberFieldsWithoutWidth(t), [], t);

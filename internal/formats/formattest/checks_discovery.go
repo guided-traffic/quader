@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest/crafted"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest/crafted"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // discovery is the part of check 6 for a remote adapter that follows a discovery document

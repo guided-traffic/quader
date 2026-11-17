@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
 )
 
 // releaseTimeFormat is the format of the Date and Valid-Until fields.
@@ -115,7 +115,7 @@ func synthParagraph(i int) string {
 	name := fmt.Sprintf("bulk-%05d", i)
 	m := md5.Sum([]byte(name)) //nolint:gosec // see the import
 	s := sha256.Sum256([]byte(name))
-	return fmt.Sprintf("Package: %s\nVersion: 1.0-1\nInstalled-Size: 1\nMaintainer: trove test archive <debstub@trove.invalid>\nArchitecture: amd64\n"+
+	return fmt.Sprintf("Package: %s\nVersion: 1.0-1\nInstalled-Size: 1\nMaintainer: quader test archive <debstub@quader.invalid>\nArchitecture: amd64\n"+
 		"Description: synthetic package %d of the bounds index\nSection: misc\nPriority: optional\nFilename: pool/main/b/bulk/%s_1.0-1_amd64.deb\nSize: 1024\nMD5sum: %s\nSHA256: %s\n",
 		name, i, name, hex.EncodeToString(m[:]), hex.EncodeToString(s[:]))
 }
@@ -234,7 +234,7 @@ func (a *archive) releaseText(m Mode, now time.Time) []byte {
 		date = now.Add(20 * time.Minute)
 	}
 	var b strings.Builder
-	b.WriteString("Origin: trove-debstub\nLabel: trove-debstub\n")
+	b.WriteString("Origin: quader-debstub\nLabel: quader-debstub\n")
 	fmt.Fprintf(&b, "Suite: %s\nCodename: %s\n", a.suite, a.codename)
 	fmt.Fprintf(&b, "Date: %s\n", date.UTC().Format(releaseTimeFormat))
 	switch m.ValidUntil {
@@ -249,7 +249,7 @@ func (a *archive) releaseText(m Mode, now time.Time) []byte {
 	if !a.flat {
 		fmt.Fprintf(&b, "Architectures: %s\nComponents: %s\n", strings.Join(a.arches, " "), strings.Join(a.components, " "))
 	}
-	b.WriteString("Description: trove counting test archive, generation " + fmt.Sprint(g.n) + "\n")
+	b.WriteString("Description: quader counting test archive, generation " + fmt.Sprint(g.n) + "\n")
 	for _, algo := range []struct {
 		field string
 		sum   func(*object) string

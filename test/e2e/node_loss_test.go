@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// What the loss of a node takes away from trove's own dependencies for longer than a node-loss scenario's bound, and the
+// What the loss of a node takes away from quader's own dependencies for longer than a node-loss scenario's bound, and the
 // steps that put it elsewhere first (Q-HA-104, Q-HA-106, Q-HA-126): the pods of the two operators, which the dev profile runs once and
 // which Kubernetes replaces only after its default toleration of 300 s, and the two primaries. The PostgreSQL standby is the
 // primary's synchronous partner: while it is gone the commits wait until the CloudNativePG operator drops it from the set, which
@@ -67,8 +67,8 @@ func dependentsOn(t testing.TB) map[string]nodeDependents {
 			out[n] = d
 		}
 	}
-	mark(nodesOf(cfg.namespace, "cnpg.io/cluster=trove-db"), func(d *nodeDependents) { d.Instance = true })
-	mark(nodesOf(cfg.namespace, "cnpg.io/cluster=trove-db,cnpg.io/instanceRole=replica"), func(d *nodeDependents) { d.Standby = true })
+	mark(nodesOf(cfg.namespace, "cnpg.io/cluster=quader-db"), func(d *nodeDependents) { d.Instance = true })
+	mark(nodesOf(cfg.namespace, "cnpg.io/cluster=quader-db,cnpg.io/instanceRole=replica"), func(d *nodeDependents) { d.Standby = true })
 	mark(nodesOf("cnpg-system", "app.kubernetes.io/name=cloudnative-pg"), func(d *nodeDependents) { d.CNPG = true })
 	mark(nodesOf("valkey-operator-system", "app.kubernetes.io/component=operator"), func(d *nodeDependents) { d.ValkeyOp = true })
 	mark([]string{strings.TrimSpace(kn(t, "get", "pod", pgPrimary(t), "-o", "jsonpath={.spec.nodeName}"))}, func(d *nodeDependents) { d.PG = true })
@@ -236,7 +236,7 @@ func ensureMainWorkerOn(t *testing.T, node string) {
 	}()
 	t.Logf("node %s hosts no worker pod: replacing %s there", node, pods[0].Name)
 	kn(t, "delete", "pod", pods[0].Name, "--wait=true")
-	kn(t, "rollout", "status", "deployment/trove-worker", "--timeout=3m")
+	kn(t, "rollout", "status", "deployment/quader-worker", "--timeout=3m")
 	if nodesHosting(t, selMainWorker)[node] {
 		return
 	}

@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The protocol tests of this package run against real listeners: several replicas of one installation (one PostgreSQL, one
@@ -53,15 +53,15 @@ var people = []struct {
 	{"nobody", nil},
 }
 
-// proto is one installation with the repositories of the package, a trove token per person and a number of replicas.
+// proto is one installation with the repositories of the package, a quader token per person and a number of replicas.
 type proto struct {
 	t     *testing.T
 	st    *testenv.Stack
 	reps  []*testenv.Replica
 	admin string
-	// troveToken maps a person's name to the PAT that person logs in with.
-	troveToken map[string]string
-	n          int
+	// quaderToken maps a person's name to the PAT that person logs in with.
+	quaderToken map[string]string
+	n           int
 }
 
 type protoOptions struct {
@@ -85,9 +85,9 @@ func newProto(t *testing.T, o protoOptions) *proto {
 		o.replicas = 3
 	}
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "ocip", Valkey: !o.valkeyDown, Env: append([]string{
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off", "TROVE_API_RATE_LIMITS_ENABLED=false",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off", "QUADER_API_RATE_LIMITS_ENABLED=false",
 	}, o.env...)})
-	p := &proto{t: t, st: st, troveToken: map[string]string{}}
+	p := &proto{t: t, st: st, quaderToken: map[string]string{}}
 	rita := st.User("rita")
 	st.Bind("admin", rita)
 	p.admin = st.Token(rita, scope.Scope{Inherit: true, Admin: true})
@@ -100,7 +100,7 @@ func newProto(t *testing.T, o protoOptions) *proto {
 	st.Exec(`INSERT INTO virtual_deploy_targets (virtual_id, target_id) SELECT v.id, m.id FROM repositories v, repositories m WHERE v.key = $1 AND m.key = $2`, repoVirt, repoLocal)
 	for _, who := range people {
 		u := st.User(who.name)
-		p.troveToken[who.name] = st.Token(u, scope.Default())
+		p.quaderToken[who.name] = st.Token(u, scope.Default())
 		if len(who.actions) > 0 {
 			st.Policy("p-"+who.name, who.actions, []string{repoLocal, repoOther, repoVirt, repoOwned}, u)
 		}
@@ -111,14 +111,14 @@ func newProto(t *testing.T, o protoOptions) *proto {
 	for i := 0; i < o.replicas; i++ {
 		ro := testenv.ReplicaOptions{Name: fmt.Sprintf("ocip-%d", i)}
 		if i == 0 && o.baseURL != "" {
-			ro.Env = []string{"TROVE_SERVER_BASE_URL=" + o.baseURL, "TROVE_SERVER_LISTEN=" + o.listen}
+			ro.Env = []string{"QUADER_SERVER_BASE_URL=" + o.baseURL, "QUADER_SERVER_LISTEN=" + o.listen}
 		}
 		p.reps = append(p.reps, st.Start(t, ro))
 	}
 	return p
 }
 
-// cred is what a client presents: a registry token (bearer) or a trove token as the password of a Basic header, the direct
+// cred is what a client presents: a registry token (bearer) or a quader token as the password of a Basic header, the direct
 // credential of R-OCI-004; the zero value presents nothing.
 type cred struct{ bearer, secret string }
 
@@ -129,7 +129,7 @@ func (p *proto) as(who string) cred {
 	if who == "admin" {
 		return cred{secret: p.admin}
 	}
-	return cred{secret: p.troveToken[who]}
+	return cred{secret: p.quaderToken[who]}
 }
 
 // call is one request of a registry client; rep is the replica that receives it.
@@ -209,7 +209,7 @@ func want(t *testing.T, a testenv.Answer, status int, code string) {
 	}
 }
 
-// registryToken asks the token service of replica rep, with the person's trove token, for a registry token with the scopes
+// registryToken asks the token service of replica rep, with the person's quader token, for a registry token with the scopes
 // ("repository:it/oci-local/app:pull,push"), the way a client does after a 401.
 func (p *proto) registryToken(rep int, who string, scopes ...string) string {
 	p.t.Helper()
@@ -232,7 +232,7 @@ func (p *proto) tokenAnswer(rep int, who string, scopes ...string) testenv.Answe
 	for _, s := range scopes {
 		q.Add("scope", s)
 	}
-	secret := p.troveToken[who]
+	secret := p.quaderToken[who]
 	if who == "admin" {
 		secret = p.admin
 	}
@@ -242,7 +242,7 @@ func (p *proto) tokenAnswer(rep int, who string, scopes ...string) testenv.Answe
 // grantOf reads the grant a registry token carries: the token's payload is readable (R-OCI-005), the MAC protects it.
 func grantOf(t *testing.T, token string) map[string]int {
 	t.Helper()
-	raw := strings.TrimPrefix(token, "trv_rgt_")
+	raw := strings.TrimPrefix(token, "qdr_rgt_")
 	payload, _, _ := strings.Cut(raw, ".")
 	b, err := base64.RawURLEncoding.DecodeString(payload)
 	if err != nil {
@@ -346,7 +346,7 @@ func (p *proto) scopedToken(name string, include []string, exclude ...string) st
 	tok := p.st.Token(u, scope.Scope{Repositories: []scope.Grant{{
 		Repositories: []string{project + "/" + repoLocal}, Packages: scope.Patterns{Include: include, Exclude: exclude}, Actions: []string{"read", "deploy", "overwrite"},
 	}}})
-	p.troveToken[name] = tok
+	p.quaderToken[name] = tok
 	return tok
 }
 
@@ -361,5 +361,5 @@ func (p *proto) pathUser(name string, actions []string, include, exclude []strin
 			p.st.Exec(`INSERT INTO authz_policy_pattern (policy_id, dimension, mode, pattern) SELECT id, 'path', $2, $3 FROM authz_policy WHERE name = $1`, "p-"+name, mode, pat)
 		}
 	}
-	p.troveToken[name] = p.st.Token(u, scope.Default())
+	p.quaderToken[name] = p.st.Token(u, scope.Default())
 }

@@ -11,7 +11,7 @@ package e2e
 // oci_long_test.go (the sets oci-closing and oci-long). docs/developer/e2e.md describes the whole.
 //
 // Every client command runs in a directory of its own below /work, with a Docker configuration directory and a registry authentication
-// file of its own, so no scenario meets the login of another. The credential reaches a command through the variable TROVE_TOKEN, as the
+// file of its own, so no scenario meets the login of another. The credential reaches a command through the variable QUADER_TOKEN, as the
 // setup snippets of R-OCI-030 read it.
 
 import (
@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 const (
@@ -189,7 +189,7 @@ type ociClient struct {
 	pod   int
 	tool  string // ociDocker or ociPodman
 	tag   string
-	token string // what $TROVE_TOKEN expands to in the scenario's commands
+	token string // what $QUADER_TOKEN expands to in the scenario's commands
 	n     int    // build contexts made so far
 }
 
@@ -208,7 +208,7 @@ func (c *ociClient) argv(cmd ...string) []string {
 		"env",
 		"DOCKER_CONFIG=" + c.dir() + "/docker-config",
 		"REGISTRY_AUTH_FILE=" + c.dir() + "/auth.json",
-		"TROVE_TOKEN=" + c.token,
+		"QUADER_TOKEN=" + c.token,
 		"sh", "-c", `mkdir -p "$1" && cd "$1" && shift && exec "$@"`, "sh", c.dir(),
 	}, cmd...)
 }
@@ -256,7 +256,7 @@ func (c *ociClient) write(rel string, content []byte) {
 // login signs the client in to the registry with the token, as the snippet of R-OCI-030 does for the host.
 func (c *ociClient) login(host string) string {
 	c.t.Helper()
-	out, err := c.shell(`printf '%s' "$TROVE_TOKEN" | ` + strings.Join(c.cli("login", host, "--username", "trove", "--password-stdin"), " "))
+	out, err := c.shell(`printf '%s' "$QUADER_TOKEN" | ` + strings.Join(c.cli("login", host, "--username", "quader", "--password-stdin"), " "))
 	if err != nil || !strings.Contains(out, "Login Succeeded") {
 		c.t.Fatalf("%s login %s: %v\n%s", c.tool, host, err, tailLines(out, 20))
 	}
@@ -331,9 +331,9 @@ var (
 // blob CDN.
 func ociStubHosts(t testing.TB) (registry, realm, cdn string) {
 	t.Helper()
-	registry, realm, cdn = os.Getenv("TROVE_E2E_OCISTUB_HOST"), os.Getenv("TROVE_E2E_OCISTUB_REALM_HOST"), os.Getenv("TROVE_E2E_OCISTUB_CDN_HOST")
+	registry, realm, cdn = os.Getenv("QUADER_E2E_OCISTUB_HOST"), os.Getenv("QUADER_E2E_OCISTUB_REALM_HOST"), os.Getenv("QUADER_E2E_OCISTUB_CDN_HOST")
 	if registry == "" || realm == "" || cdn == "" {
-		t.Fatal("TROVE_E2E_OCISTUB_HOST, TROVE_E2E_OCISTUB_REALM_HOST and TROVE_E2E_OCISTUB_CDN_HOST are not set; run `deploy/dev/e2e.sh oci`")
+		t.Fatal("QUADER_E2E_OCISTUB_HOST, QUADER_E2E_OCISTUB_REALM_HOST and QUADER_E2E_OCISTUB_CDN_HOST are not set; run `deploy/dev/e2e.sh oci`")
 	}
 	return registry, realm, cdn
 }
@@ -343,7 +343,7 @@ func ociStubHosts(t testing.TB) (registry, realm, cdn string) {
 func ociStub(t testing.TB) *stubControl {
 	t.Helper()
 	host, _, _ := ociStubHosts(t)
-	ociStubOnce.Do(func() { ociStubVal = newStubControl(t, "svc/ocistub", host, "trove-ocistub", 30*time.Second) })
+	ociStubOnce.Do(func() { ociStubVal = newStubControl(t, "svc/ocistub", host, "quader-ocistub", 30*time.Second) })
 	return ociStubVal
 }
 

@@ -8,16 +8,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/ci/subject"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // The issuer and signing-key service of work package W1 (R-CI-001, R-CI-002, R-CI-003, R-CI-005, Q-CI-12,
@@ -28,7 +28,7 @@ import (
 //	issuers_store.go     the rows, the audit record
 //	issuers_read.go      List, Get, Choices, Resolve, LockShareTx, Reload
 //	issuers_write.go     Create, Replace, Delete and their events
-//	issuers_declared.go  ApplyDeclared, the step of `trove migrate`
+//	issuers_declared.go  ApplyDeclared, the step of `quader migrate`
 //	keys_jwks.go         the key rules and the stored form of a key set (pure)
 //	keys_fetch.go        discovery and key fetch through the outbound factory
 //	keys_store.go        the write rule, the failure record, the events and metrics
@@ -56,10 +56,10 @@ type Options struct {
 	// Recorder records the events of the service; nil discards them.
 	Recorder audit.Recorder
 	// Caches is the registry the in-process copies register with; nil gives the service a registry of its
-	// own, which no change log feeds (`trove migrate`).
+	// own, which no change log feeds (`quader migrate`).
 	Caches *cache.Registry
 	// Outbound is the outbound client factory (R-ARCH-022); nil makes every fetch fail with the class
-	// trust_store_unavailable (`trove migrate` fetches nothing).
+	// trust_store_unavailable (`quader migrate` fetches nothing).
 	Outbound *outbound.Factory
 	// Config is the ci section; OutboundConfig is proxy.outbound, whose trust the issuer's own bundle adds to.
 	Config         config.CI

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // R-ARCH-027, R-REPO-025: the cache entry is the record of a cached artifact. An entry whose item is gone is the 404 the request

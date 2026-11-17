@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The second installation of the restore drill (R-BAK-021, R-HA-060, docs/developer/e2e.md#the-backup-tests): a release of the chart
-# in the namespace trove-restore, next to the main installation of the dev cluster, with a database, a Valkey and a blob bucket
-# of its own. The backup it restores is the one the main installation wrote into the bucket trove-backups.
+# in the namespace quader-restore, next to the main installation of the dev cluster, with a database, a Valkey and a blob bucket
+# of its own. The backup it restores is the one the main installation wrote into the bucket quader-backups.
 #
 #   restore-ns.sh infra                  the namespace, the dev CA, the key ring and the S3 login copied into it, the certificate,
 #                                        a fresh CloudNativePG cluster (with the schema R-BAK-020 check 4 requires), the Valkey
@@ -14,9 +14,9 @@
 #   restore-ns.sh status                 the release and the pods
 #   restore-ns.sh down                   uninstall the release and delete the namespace
 #
-# Environment: TROVE_E2E_RESTORE_NAMESPACE (default trove-restore), TROVE_IMAGE (default guidedtraffic/trove:dev),
-# TROVE_RESTORE_HELM_EXTRA (extra helm arguments for install and serve; a word-split string),
-# TROVE_RESTORE_PROFILE (unset or empty: the base values of values-restore.yaml; `vuln`: also values-restore-vuln.yaml, the scanning
+# Environment: QUADER_E2E_RESTORE_NAMESPACE (default quader-restore), QUADER_IMAGE (default guidedtraffic/quader:dev),
+# QUADER_RESTORE_HELM_EXTRA (extra helm arguments for install and serve; a word-split string),
+# QUADER_RESTORE_PROFILE (unset or empty: the base values of values-restore.yaml; `vuln`: also values-restore-vuln.yaml, the scanning
 # reading the test advisory source and two packages replicas, Q-VULN-127 and docs/developer/e2e.md#the-vulnerability-tests).
 # Install and serve set server.base_url to the edge port of the source (the cluster's published port 30443, as release-values.sh reads it),
 # so that a restored token and the restored CI issuers keep the source's address (R-BAK-021, Q-BAK-60).
@@ -24,9 +24,9 @@ set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
-RNS="${TROVE_E2E_RESTORE_NAMESPACE:-trove-restore}"
-IMAGE="${TROVE_IMAGE:-guidedtraffic/trove:dev}"
-case "${TROVE_RESTORE_PROFILE:-}" in "" | vuln) ;; *) die "TROVE_RESTORE_PROFILE must be empty or vuln, not '${TROVE_RESTORE_PROFILE}'" ;; esac
+RNS="${QUADER_E2E_RESTORE_NAMESPACE:-quader-restore}"
+IMAGE="${QUADER_IMAGE:-guidedtraffic/quader:dev}"
+case "${QUADER_RESTORE_PROFILE:-}" in "" | vuln) ;; *) die "QUADER_RESTORE_PROFILE must be empty or vuln, not '${QUADER_RESTORE_PROFILE}'" ;; esac
 rn() { kubectl --context "$CTX" -n "$RNS" "$@"; }
 
 # render_r <manifest> substitutes the namespaces and the pinned images.
@@ -76,20 +76,20 @@ edge_port() {
 helm_args() {
   local image_id; image_id="$(docker image inspect -f '{{.Id}}' "$IMAGE")"
   printf '%s\n' -f "$(values_file)"
-  case "${TROVE_RESTORE_PROFILE:-}" in
+  case "${QUADER_RESTORE_PROFILE:-}" in
     "") ;;
     vuln) printf '%s\n' -f "$(vuln_values_file)" ;;
   esac
   printf '%s\n' --set-string "config.server.base_url=https://localhost:$(edge_port)" --set-json "networkPolicy.ingress.probeCIDRs=$(probe_cidrs)" \
-    --set-string "api.podAnnotations.trove-dev/image-id=$image_id" --set-string "packages.podAnnotations.trove-dev/image-id=$image_id" \
-    --set-string "worker.podAnnotations.trove-dev/image-id=$image_id" \
-    --set-string "backup.podAnnotations.trove-dev/image-id=$image_id" --set-string "restore.podAnnotations.trove-dev/image-id=$image_id"
+    --set-string "api.podAnnotations.quader-dev/image-id=$image_id" --set-string "packages.podAnnotations.quader-dev/image-id=$image_id" \
+    --set-string "worker.podAnnotations.quader-dev/image-id=$image_id" \
+    --set-string "backup.podAnnotations.quader-dev/image-id=$image_id" --set-string "restore.podAnnotations.quader-dev/image-id=$image_id"
 }
 
 down() {
-  helm --kube-context "$CTX" -n "$RNS" uninstall trove >/dev/null 2>&1 || true
+  helm --kube-context "$CTX" -n "$RNS" uninstall quader >/dev/null 2>&1 || true
   kubectl --context "$CTX" delete namespace "$RNS" --ignore-not-found --wait=true >/dev/null
-  kn delete job trove-s3-restore-bucket --ignore-not-found >/dev/null
+  kn delete job quader-s3-restore-bucket --ignore-not-found >/dev/null
 }
 
 infra() {
@@ -106,13 +106,13 @@ metadata:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
-    app.kubernetes.io/part-of: trove-dev
+    app.kubernetes.io/part-of: quader-dev
 NSYAML
-  copy_secret trove-dev-ca trove-dev-ca kubernetes.io/tls tls.crt:tls.crt tls.key:tls.key ca.crt:ca.crt
+  copy_secret quader-dev-ca quader-dev-ca kubernetes.io/tls tls.crt:tls.crt tls.key:tls.key ca.crt:ca.crt
   # The key ring of the source: a restore refuses a key ring that does not open the backup's canary rows (R-BAK-020 check 3).
-  copy_secret trove-encryption-keys trove-encryption-keys Opaque dev.key:dev.key
-  copy_secret trove-s3 trove-s3 Opaque access-key-id:access-key-id secret-access-key:secret-access-key
-  copy_secret trove-s3-tls trove-s3-tls Opaque ca.crt:ca.crt
+  copy_secret quader-encryption-keys quader-encryption-keys Opaque dev.key:dev.key
+  copy_secret quader-s3 quader-s3 Opaque access-key-id:access-key-id secret-access-key:secret-access-key
+  copy_secret quader-s3-tls quader-s3-tls Opaque ca.crt:ca.crt
 
   log "applying restore-ns.yaml (certificate, PostgreSQL, Valkey, empty bucket)"
   render_r "$DEV_DIR/restore-ns.yaml" | kubectl --context "$CTX" apply -f - >/dev/null
@@ -122,33 +122,33 @@ NSYAML
     [ $(( $(date +%s) - start )) -lt 120 ] || die "Secret restore-valkey-auth has no field password after 120s: is the internal-secrets-operator running?"
     sleep 1
   done
-  rn wait --for=condition=Ready certificate/trove-tls --timeout=3m >/dev/null
+  rn wait --for=condition=Ready certificate/quader-tls --timeout=3m >/dev/null
   until rn get statefulset restore-valkey restore-valkey-sentinel >/dev/null 2>&1; do sleep 1; done
   (NS="$RNS"; sts_wait_ready restore-valkey 2 300; sts_wait_ready restore-valkey-sentinel 3 300)
-  until rn get cluster trove-db >/dev/null 2>&1; do sleep 1; done
-  rn wait --for=condition=Ready cluster/trove-db --timeout=10m >/dev/null
-  kn wait --for=condition=Complete job/trove-s3-restore-bucket --timeout=5m >/dev/null
+  until rn get cluster quader-db >/dev/null 2>&1; do sleep 1; done
+  rn wait --for=condition=Ready cluster/quader-db --timeout=10m >/dev/null
+  kn wait --for=condition=Complete job/quader-s3-restore-bucket --timeout=5m >/dev/null
   log "infra ready in $(elapsed "$start")"
 }
 
 install() {
   local id="${1:?usage: restore-ns.sh install <backup-id> [helm args...]}"; shift
   local args; mapfile -t args < <(helm_args)
-  log "helm install trove ($RNS), restore of $id, both roles at zero"
+  log "helm install quader ($RNS), restore of $id, both roles at zero"
   # shellcheck disable=SC2086
-  helm --kube-context "$CTX" install trove "$REPO_ROOT/deploy/helm/trove" -n "$RNS" "${args[@]}" \
+  helm --kube-context "$CTX" install quader "$REPO_ROOT/deploy/helm/quader" -n "$RNS" "${args[@]}" \
     --set api.replicaCount=0 --set api.autoscaling.enabled=false \
     --set packages.replicaCount=0 --set packages.autoscaling.enabled=false \
     --set worker.replicaCount=0 --set worker.autoscaling.enabled=false \
-    --set restore.enabled=true --set-string "restore.backupId=$id" ${TROVE_RESTORE_HELM_EXTRA:-} "$@"
+    --set restore.enabled=true --set-string "restore.backupId=$id" ${QUADER_RESTORE_HELM_EXTRA:-} "$@"
 }
 
 serve() {
   local args; mapfile -t args < <(helm_args)
-  log "helm upgrade trove ($RNS), restore.enabled off"
+  log "helm upgrade quader ($RNS), restore.enabled off"
   # shellcheck disable=SC2086
-  helm --kube-context "$CTX" upgrade trove "$REPO_ROOT/deploy/helm/trove" -n "$RNS" "${args[@]}" \
-    --wait --timeout 10m ${TROVE_RESTORE_HELM_EXTRA:-} "$@"
+  helm --kube-context "$CTX" upgrade quader "$REPO_ROOT/deploy/helm/quader" -n "$RNS" "${args[@]}" \
+    --wait --timeout 10m ${QUADER_RESTORE_HELM_EXTRA:-} "$@"
   rn get pods -o wide
 }
 

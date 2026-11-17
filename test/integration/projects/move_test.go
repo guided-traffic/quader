@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
+	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // TestR_REPO_060_MoveARepository: the move of a repository to another project over HTTP (R-REPO-060, Q-REPO-217):
@@ -87,7 +87,7 @@ func TestR_REPO_060_MoveARepository(t *testing.T) {
 		version, authzEpoch, repoEpoch := f.configVersion(id), f.epoch(), f.repoEpoch()
 		r := f.cl.Do(f.alice.Name, "POST", base+"/web/repositories/npm-libs/move", map[string]any{"project": "mobile"}, authz.HeaderMinEpoch, epoch)
 		wantStatus(t, r, 200, "")
-		if loc := r.Header.Get("Location"); loc != "http://trove.test"+base+"/mobile/repositories/npm-libs" {
+		if loc := r.Header.Get("Location"); loc != "http://quader.test"+base+"/mobile/repositories/npm-libs" {
 			t.Errorf("Location %q", loc)
 		}
 		if body := r.JSON(t); body["key"] != "npm-libs" || r.Header.Get("ETag") == "" || r.Epoch() != f.epoch() {

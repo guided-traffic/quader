@@ -1,4 +1,4 @@
-// Package create is `trove backup create` (R-BAK-009): the pipeline that takes the consistent snapshot of the database,
+// Package create is `quader backup create` (R-BAK-009): the pipeline that takes the consistent snapshot of the database,
 // exports its tables, copies the blobs the snapshot references into the target's pool incrementally, keeps garbage collection
 // away from them while it does, and ends with the manifest, the commit point of a backup.
 //
@@ -25,12 +25,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // PinReader pages through the to-copy set of a run in digest order. backup.PGFacts implements it.
@@ -56,7 +56,7 @@ type Deps struct {
 	SourceRef format.StorageRef
 	// Instance is the pod name, Version and Revision the build.
 	Instance, Version, Revision string
-	// JobName is the Kubernetes Job of the pod (TROVE_JOB_NAME); empty outside a Job (R-BAK-010).
+	// JobName is the Kubernetes Job of the pod (QUADER_JOB_NAME); empty outside a Job (R-BAK-010).
 	JobName string
 	// BackupRole is database.backup_role; empty means the run uses the runtime credential and warns.
 	BackupRole string
@@ -174,7 +174,7 @@ func (p *Pipeline) Create(ctx context.Context, opts backup.CreateOptions) (*back
 	}
 	run, err := backup.AcquireSlot(ctx, d.Store, backup.NewRun{
 		ID: runID, Operation: backup.OpCreate, BackupID: string(id), Trigger: opts.Trigger, Target: targetName(d.Cfg.Target),
-		Pod: d.Instance, TroveVersion: d.Version, JobName: d.JobName, Lease: d.Cfg.LeaseDuration,
+		Pod: d.Instance, QuaderVersion: d.Version, JobName: d.JobName, Lease: d.Cfg.LeaseDuration,
 	}, p.timing(), d.Sleep)
 	if err != nil {
 		return nil, classify(err)

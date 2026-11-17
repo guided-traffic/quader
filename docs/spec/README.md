@@ -1,10 +1,10 @@
-# trove specification
+# Quader specification
 
 Status: specification. Milestone M0 (Foundation) implements the foundation of this design: the binary and its roles,
 configuration, PostgreSQL and Valkey connections, replica coordination, the S3 blob layer, the system API, the ops
 endpoints and the chart skeleton. Every other requirement is specified and not yet implemented.
 
-This directory is trove's target design: what trove will do and how, requirement by
+This directory is Quader's target design: what Quader will do and how, requirement by
 requirement. Each requirement names the catalog features it covers (`Covers:` line, IDs from
 [docs/features/](../features/README.md)), so coverage can be measured in
 [docs/coverage/](../coverage/README.md). Design decisions and their alternatives are logged in
@@ -18,11 +18,11 @@ Given by the project owner; not up for redesign in these pages:
 - PostgreSQL as database; S3 as binary storage.
 - High availability; deployment through a Helm chart.
 - OIDC user login, token issuance, detailed permission management.
-- GitLab CI jobs obtain trove permissions through an OIDC procedure, with detailed,
+- GitLab CI jobs obtain Quader permissions through an OIDC procedure, with detailed,
   configurable permissions (read other packages, write the packages the job produces).
 - Pull-through proxy: external package sources can be connected.
 - Package formats: every format in the feature catalog, more welcome; npm and NuGet first.
-- High availability is a core requirement that cannot be deselected: trove runs on HA PostgreSQL,
+- High availability is a core requirement that cannot be deselected: Quader runs on HA PostgreSQL,
   HA Valkey (with Sentinel) and S3.
 - Horizontal scale: n replicas answer requests that a Kubernetes Service distributes at random.
   The expected load exceeds what one replica can carry, so the service is cut for load sharing
@@ -37,10 +37,10 @@ Given by the project owner; not up for redesign in these pages:
   beta release is the release cut from the commits that close phase 8 of the
   [project plan](../projektplan/BETA.md) (2026-10-31). No major release until the owner explicitly
   decides otherwise ([ADR-124](../decisions.md#adr-124--releases-stay-on-major-version-0)).
-- **Transport encryption on every connection, trove's listeners included (2026-10-29).** Every connection that a
+- **Transport encryption on every connection, Quader's listeners included (2026-10-29).** Every connection that a
   component of this repository makes or accepts can run fully encrypted with TLS: PostgreSQL, Valkey and Sentinel,
-  the object store, outbound HTTP, trove's own client and ops listeners (so a reverse proxy can connect to trove over
-  TLS), and the chart's probes, Service and monitoring. Certificates may be rotated while the service runs: trove
+  the object store, outbound HTTP, Quader's own client and ops listeners (so a reverse proxy can connect to Quader over
+  TLS), and the chart's probes, Service and monitoring. Certificates may be rotated while the service runs: Quader
   picks up its own rotated certificates and the rotated client material it uses without a restart
   ([architecture.md](architecture.md) R-ARCH-035, [ha-and-helm.md](ha-and-helm.md) R-HA-063, INV-20). Plain HTTP
   remains a chart choice (`tls.enabled: false`), recorded as an open gap ([ha-and-helm.md](ha-and-helm.md) H-38).
@@ -54,25 +54,25 @@ Given by the project owner; not up for redesign in these pages:
   written and the gap is recorded on the page of its mechanism: the Valkey gaps in [ha-and-helm.md](ha-and-helm.md) Q-HA-15,
   the edge in Q-HA-24, and the security consequences in [../security/](../security/README.md). The record is
   [ADR-129](../decisions.md#adr-129--the-owners-kubernetes-operators-are-the-standard-stack).
-- **The organisation's CI and release standard (2026-10-29).** Together with the toolstack of ADR-129, trove follows the
+- **The organisation's CI and release standard (2026-10-29).** Together with the toolstack of ADR-129, Quader follows the
   CI and release standard of the organisation: Test and Release on every push and pull request, Semantic Release from
   conventional commits, Release Docker & Helm on a published release (the image on Docker Hub, the chart on GitHub Pages),
   and Renovate. No ghcr.io, no keyless signatures, no nightly workflow, and no AWS S3 leg until an AWS account exists. The
   record is [ADR-130](../decisions.md#adr-130--the-organisations-ci-and-release-standard).
-- **Own vulnerability scanning in the beta (2026-10-31).** trove scans the packages it stores itself and shows a
+- **Own vulnerability scanning in the beta (2026-10-31).** Quader scans the packages it stores itself and shows a
   vulnerability dashboard, and this is part of the beta. How it scans (advisory data, matching, blocking) is the development
   agent's design on [vulnerability-scanning.md](vulnerability-scanning.md); the record is
   [ADR-131](../decisions.md#adr-131--own-vulnerability-scanning-with-a-dashboard-in-the-beta).
-- **trove Bastion in the beta (2026-10-31, moved into the beta on 2026-11-02).** A second, smaller deployment of trove,
-  installed with the Helm chart `trove-bastion` and reached through an Ingress of its own, that gives external parties read
+- **Quader Bastion in the beta (2026-10-31, moved into the beta on 2026-11-02).** A second, smaller deployment of Quader,
+  installed with the Helm chart `quader-bastion` and reached through an Ingress of its own, that gives external parties read
   access to a main installation's content with the main installation's tokens, is exposed to the internet, keeps a cache of
   what it served and takes as much load as possible off the main installation. It is phase 5b of the
-  [project plan](../projektplan/BETA.md#phase-5b--trove-bastion-m13) (milestone M13), specified on [bastion.md](bastion.md).
+  [project plan](../projektplan/BETA.md#phase-5b--quader-bastion-m13) (milestone M13), specified on [bastion.md](bastion.md).
   It is read-only for package content: publishes and every other write go to the main installation (owner, 2026-10-31).
   It asks the main installation whether a credential is valid and what it may read, and keeps the answers for a
   short, bounded time; it holds no copy of users, tokens or policies (owner, 2026-10-31). It has no web interface, is
   configured only through its chart, and talks to the main installation only when both speak the same interface version
-  (owner, 2026-11-02; [ADR-142](../decisions.md#adr-142--the-trove-bastion-an-internet-facing-read-only-cache-instance-in-the-beta)).
+  (owner, 2026-11-02; [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta)).
 
 ## Design invariants
 
@@ -90,10 +90,10 @@ download list both showed go1.27.3 as current stable; raised to the patch releas
 `latest` = 22.2.3 on 2026-10-28). The Angular build is embedded into the Go binary (`embed`), so
 one container image serves UI, management API and package protocols.
 
-**INV-2 · Process model and roles.** One binary and one container image, `trove`, with roles. A
+**INV-2 · Process model and roles.** One binary and one container image, `quader`, with roles. A
 role is a set of enabled subsystems and wiring areas chosen by configuration, not a separate build,
 and every role the chart deploys runs as a Deployment of its own (the task areas of
-[ADR-153](../decisions.md#adr-153--trove-is-cut-into-task-areas-roles-of-one-binary-network-seams-only-at-trust-or-load-boundaries)
+[ADR-153](../decisions.md#adr-153--quader-is-cut-into-task-areas-roles-of-one-binary-network-seams-only-at-trust-or-load-boundaries)
 and [ADR-155](../decisions.md#adr-155--three-roles-api-packages-and-worker-variants-are-pools), owner, 2026-11-04;
 built in phase 6a). Roles:
 - `api`: the route families `ui`, `api` and `ci_exchange` ([endpoints.md](endpoints.md) R-EP-005): the UI, the
@@ -104,11 +104,11 @@ built in phase 6a). Roles:
 - `worker`: the job queue, the leases, the scheduler, the mirror's passes and the advisory sync, split into pools by
   queue where an installation wants it;
 - `backup` (the backup and restore commands, run as Kubernetes Job or CronJob) and `bastion` (the internet-facing
-  read-only cache instance of [bastion.md](bastion.md), deployed only by the chart `trove-bastion`, without
+  read-only cache instance of [bastion.md](bastion.md), deployed only by the chart `quader-bastion`, without
   PostgreSQL; Q-BAS-22), both unchanged by the cut.
 
 A variant of a role by path prefix or by queue is a pool of that role, rendered from chart values without code
-([ha-and-helm.md](ha-and-helm.md) R-HA-062). The configuration key `process.role` selects the role of `trove serve`:
+([ha-and-helm.md](ha-and-helm.md) R-HA-062). The configuration key `process.role` selects the role of `quader serve`:
 `api`, `packages`, `worker`, `bastion`, `web` or `all`, with no default ([architecture.md](architecture.md)
 R-ARCH-001). `web` is `api` and `packages` in one process: the role of the releases before the cut, kept as the
 bridge of the upgrade across it ([ha-and-helm.md](ha-and-helm.md) R-HA-064) and never a shape of a fresh
@@ -119,7 +119,7 @@ disruption budget and ingress policy; the local development profile runs the cha
 ([ha-and-helm.md](ha-and-helm.md) R-HA-001, R-HA-002, R-HA-051). Where a page says `web` without naming a family,
 the statement applies to the role that serves the family in question, and to both `api` and `packages` where it
 concerns every request (R-ARCH-001). Every replica of a role is identical and interchangeable; there is no primary
-node. Subcommands: `trove serve`, `trove migrate`, `trove backup …`, `trove admin …` (bootstrap and recovery).
+node. Subcommands: `quader serve`, `quader migrate`, `quader backup …`, `quader admin …` (bootstrap and recovery).
 Owner constraint since 2026-10-28; the roles of the cut since 2026-11-04.
 
 **INV-3 · State.** PostgreSQL is the system of record: repository configuration, package and file
@@ -129,7 +129,7 @@ run records. The backup target, not the database, is the record of backups: run 
 part of a backup ([backup-and-restore.md](backup-and-restore.md) R-BAK-004). Valkey holds shared
 ephemeral state: request collapsing across replicas, the negative cache of remote repositories,
 rate-limit counters with cluster scope, the fast path of change messages and signals, and
-short-lived coordination ([architecture.md](architecture.md) R-ARCH-030). Nothing that trove
+short-lived coordination ([architecture.md](architecture.md) R-ARCH-030). Nothing that Quader
 serves to a client and no positive authentication or authorization result is read from Valkey,
 so Valkey holds no shared cache of either (Q-ARCH-16). Nothing in Valkey is the only copy of
 durable data: losing Valkey or its contents (an outage, a Sentinel failover with asynchronous
@@ -141,7 +141,7 @@ collapsing and negative caching then work per replica, rate limits are approxima
 and changes reach the other replicas at the speed of the change-log poll (INV-12). A backup does
 not include Valkey. Mutual exclusion whose failure would corrupt data (schema migrations,
 singleton jobs that must not run twice) stays in PostgreSQL. No shared filesystem, no embedded
-database. Schema migrations are embedded in the binary and applied by `trove migrate` (Helm
+database. Schema migrations are embedded in the binary and applied by `quader migrate` (Helm
 pre-install/pre-upgrade Job) under a PostgreSQL advisory lock. From the first stable release on,
 migrations follow expand/contract, so version N and N-1 replicas can run side by side during a
 rolling upgrade; before it there is no backward compatibility, and an upgrade may need a new
@@ -176,7 +176,7 @@ listen on a port of their own, with their own hosts, base URL and certificates
 connection arrived on, never one derived from `Host` or forwarded headers; host data only selects
 among that endpoint's own hosts, and a foreign host answers `421` (R-EP-002, R-EP-003, Q-EP-1). The
 path layout below is the same on every endpoint; an endpoint's surface decides which rows it serves
-(R-EP-005). trove owns the host root of every endpoint's base URL and hosts, each an origin without a
+(R-EP-005). Quader owns the host root of every endpoint's base URL and hosts, each an origin without a
 path ([operations-and-observability.md](operations-and-observability.md) R-OPS-005). A host may bind
 its root to one repository, for clients that cannot use a path (R-EP-006, Q-EP-6).
 
@@ -194,27 +194,27 @@ its root to one repository, for clients that cannot use a path (R-EP-006, Q-EP-6
 | `:8081/healthz`, `:8081/readyz`, `:8081/metrics` | Liveness, readiness, Prometheus metrics |
 
 **INV-7 · Human identity.** Humans authenticate only through an external OpenID Connect provider
-(authorization code flow with PKCE; e.g. Keycloak, Microsoft Entra ID, GitLab, Dex). trove is a
+(authorization code flow with PKCE; e.g. Keycloak, Microsoft Entra ID, GitLab, Dex). Quader is a
 relying party and stores no user passwords. Users are created just in time from ID-token claims;
-group membership comes from a configurable claim and maps to trove groups. One local
+group membership comes from a configurable claim and maps to Quader groups. One local
 break-glass administrator exists for bootstrap and recovery; its credential comes from a
 Kubernetes Secret and it can be disabled.
 
-**INV-8 · Tokens.** trove issues its own credentials and never accepts an identity provider's
-access token on package endpoints. Every trove token is an opaque random string with a type
+**INV-8 · Tokens.** Quader issues its own credentials and never accepts an identity provider's
+access token on package endpoints. Every Quader token is an opaque random string with a type
 prefix, stored only as a SHA-256 hash, revocable immediately, with an expiry and a scope.
 
 | Prefix | Token |
 |---|---|
-| `trv_pat_` | Personal access token of a user |
-| `trv_sat_` | Service-account token |
-| `trv_cit_` | CI token from an OIDC exchange (short-lived) |
-| `trv_bst_` | Bastion token of a Bastion registration; accepted only by the Bastion interface ([bastion.md](bastion.md) R-BAS-004, Q-BAS-23) |
+| `qdr_pat_` | Personal access token of a user |
+| `qdr_sat_` | Service-account token |
+| `qdr_cit_` | CI token from an OIDC exchange (short-lived) |
+| `qdr_bst_` | Bastion token of a Bastion registration; accepted only by the Bastion interface ([bastion.md](bastion.md) R-BAS-004, Q-BAS-23) |
 
 Format: `<prefix><32 random bytes, base62><6-character base62 CRC32 of the preceding part>`, so
 secret scanners can recognise and pre-validate a leaked token offline. UI sessions are separate:
-a server-side session row referenced by the `__Host-trv_session` cookie (CSRF cookie
-`__Host-trv_csrf`, login-binding cookie `__Host-trv_oidc_binding`;
+a server-side session row referenced by the `__Host-qdr_session` cookie (CSRF cookie
+`__Host-qdr_csrf`, login-binding cookie `__Host-qdr_oidc_binding`;
 [identity-and-authentication.md](identity-and-authentication.md) Q-AUTH-2). Clients present a
 token as `Authorization: Bearer <token>`, as HTTP Basic password (any username; for NuGet and
 other clients that only speak Basic) or as `X-NuGet-ApiKey` for NuGet pushes.
@@ -231,8 +231,8 @@ endpoint's default) adds none. System administration is a separate role, not a r
 Every authorization decision can be audited.
 
 **INV-10 · CI identity (GitLab).** A GitLab job authenticates with a GitLab-issued OIDC ID token
-(`id_tokens:` keyword, audience = trove's base URL) and exchanges it at
-`POST /api/v1/auth/oidc/token` for a short-lived `trv_cit_` token. trove validates the
+(`id_tokens:` keyword, audience = Quader's base URL) and exchanges it at
+`POST /api/v1/auth/oidc/token` for a short-lived `qdr_cit_` token. Quader validates the
 signature against the JWKS of the configured GitLab issuer, and `iss`, `aud`, `exp`, `nbf`,
 `iat`. Identity mappings then match claims (`project_path`, `namespace_path`, `ref`, `ref_type`,
 `ref_protected`, `environment`, `pipeline_source`, `user_login`, …) and grant permissions; a grant
@@ -245,11 +245,11 @@ stores the binary in the blob store, caches metadata for a configurable period, 
 (negative cache), and serves stale metadata when the upstream is unreachable. Concurrent misses
 for the same object are collapsed: in-process single-flight plus a Valkey lock across replicas. A
 lock lost in a Valkey failover only causes a duplicate upstream fetch, which content addressing
-makes harmless. URLs in upstream metadata are rewritten to point at trove.
+makes harmless. URLs in upstream metadata are rewritten to point at Quader.
 
 **INV-12 · High availability and horizontal scale.** Owner constraint; it cannot be deselected.
 The production topology is HA PostgreSQL (e.g. CloudNativePG, Patroni, a managed service), HA
-Valkey with Sentinel (one primary, at least one replica, at least three Sentinels; trove finds the
+Valkey with Sentinel (one primary, at least one replica, at least three Sentinels; Quader finds the
 primary through Sentinel and follows failovers) and S3-compatible object storage. Single-instance
 PostgreSQL or Valkey serve development only; the local development profile itself runs PostgreSQL
 with a standby and Valkey with a replica and three Sentinels ([ha-and-helm.md](ha-and-helm.md)
@@ -268,9 +268,9 @@ replica that is shut down stops being ready, waits for endpoint removal, lets in
 finish within the termination grace period, and releases its jobs to other replicas. PostgreSQL
 connections do not grow without bound with the replica count: the main pool may run through a
 transaction-mode pooler; only `worker` replicas hold session connections, for their leases,
-besides the one-off `trove migrate` and `trove backup` processes
+besides the one-off `quader migrate` and `quader backup` processes
 ([architecture.md](architecture.md) R-ARCH-019, Q-ARCH-14; the budget in
-[ha-and-helm.md](ha-and-helm.md) R-HA-016). Valkey being unavailable degrades trove and is
+[ha-and-helm.md](ha-and-helm.md) R-HA-016). Valkey being unavailable degrades Quader and is
 alerted on, but does not make replicas unready ([ha-and-helm.md](ha-and-helm.md) R-HA-057):
 request collapsing and negative caching of remote repositories work per replica only, so an
 object may be fetched from its upstream once per replica; rate limits are approximated per
@@ -295,9 +295,9 @@ PostgreSQL and Valkey high availability and S3 durability come from the platform
 (e.g. CloudNativePG, Patroni, Amazon RDS; Valkey with Sentinel; AWS S3); the chart consumes them
 and does not bundle production instances.
 
-**INV-13 · Deployment.** The Helm chart `trove` in `deploy/helm/trove` is the supported
-deployment; the chart `trove-bastion` in `deploy/helm/trove-bastion` deploys the role `bastion` and
-nothing else ([bastion.md](bastion.md) R-BAS-045). The chart `trove` renders one Deployment per role (`web`, `worker`), the backup CronJob, a migration
+**INV-13 · Deployment.** The Helm chart `quader` in `deploy/helm/quader` is the supported
+deployment; the chart `quader-bastion` in `deploy/helm/quader-bastion` deploys the role `bastion` and
+nothing else ([bastion.md](bastion.md) R-BAS-045). The chart `quader` renders one Deployment per role (`web`, `worker`), the backup CronJob, a migration
 Job hook, Services, an Ingress or Gateway route, PodDisruptionBudgets, HorizontalPodAutoscalers,
 a ServiceMonitor and NetworkPolicies. No ReadWriteMany volume is used anywhere: scratch space is
 `emptyDir` or a generic ephemeral volume (ReadWriteOnce, deleted with its pod). A role that ever
@@ -310,8 +310,8 @@ or static keys.
 CLI, nuget.exe, Visual Studio), each with local, remote and virtual repositories. NuGet v2
 (OData) is P2.
 
-**INV-15 · Configuration.** One YAML file (`/etc/trove/trove.yaml`), every key overridable by
-an environment variable `TROVE_<SECTION>_<KEY>`; secrets are referenced from files or
+**INV-15 · Configuration.** One YAML file (`/etc/quader/quader.yaml`), every key overridable by
+an environment variable `QUADER_<SECTION>_<KEY>`; secrets are referenced from files or
 environment variables, never written inline into a ConfigMap. Repositories, permissions and CI
 identity mappings (INV-10) live in PostgreSQL and are managed through the API and UI. Login
 providers, including their claim mapping and group rules, are file configuration only
@@ -323,7 +323,7 @@ endpoint live in PostgreSQL and are managed through the API and UI, audited. A d
 bootstrap file (configuration as code) is P1.
 
 **INV-16 · Observability and audit.** Structured JSON logs through `log/slog`; Prometheus
-metrics prefixed `trove_`; optional OpenTelemetry traces over OTLP. Audit events (actor,
+metrics prefixed `quader_`; optional OpenTelemetry traces over OTLP. Audit events (actor,
 action, repository, path, outcome, source) are stored in PostgreSQL and emitted to the log
 stream.
 
@@ -338,19 +338,19 @@ Valkey and its data in S3 (multipart uploads), so consecutive requests may land 
 replicas. Local disk is scratch space for one request or one job only. Owner constraint since
 2026-10-28 (random distribution by the Kubernetes Service).
 
-**INV-19 · Backup.** `trove backup create` produces a consistent backup of the service: a
-transactionally consistent snapshot of trove's PostgreSQL data together with every blob that
+**INV-19 · Backup.** `quader backup create` produces a consistent backup of the service: a
+transactionally consistent snapshot of Quader's PostgreSQL data together with every blob that
 snapshot references, written to a configurable S3 target (endpoint, bucket, prefix, credentials,
-retention). The chart schedules it as a CronJob; `trove backup restore` restores a backup into an
+retention). The chart schedules it as a CronJob; `quader backup restore` restores a backup into an
 empty installation, and an interrupted restore of the same backup resumes where it stopped
 ([backup-and-restore.md](backup-and-restore.md) Q-BAK-10). Valkey is not part of a backup
 (INV-3). Owner constraint since 2026-10-28; format and procedure in
 [backup-and-restore.md](backup-and-restore.md).
 
-**INV-20 · Transport encryption on every connection.** Every connection that trove or a component of this
-repository makes or accepts can run with TLS, trove's own listeners included. TLS material that trove presents or
+**INV-20 · Transport encryption on every connection.** Every connection that Quader or a component of this
+repository makes or accepts can run with TLS, Quader's own listeners included. TLS material that Quader presents or
 trusts is reloaded without a restart. The product does not depend on a connection being plaintext inside a cluster.
-This is the owner constraint of 2026-10-29, recorded as [ADR-127](../decisions.md#adr-127--transport-encryption-on-every-connection-troves-listeners-included).
+This is the owner constraint of 2026-10-29, recorded as [ADR-127](../decisions.md#adr-127--transport-encryption-on-every-connection-quaders-listeners-included).
 An installation may set `tls.enabled: false` (H-38); the invariant forbids a design that needs plaintext, not that
 choice. The plaintext switches are explicit and named: `tls.enabled: false` (chart), `server.tls` left empty,
 `tracing.allow_insecure: true` (an `http://` collector endpoint or `OTEL_EXPORTER_OTLP_INSECURE=true`, refused without it,
@@ -367,7 +367,7 @@ acceptance criteria.
 ```
 
 - The heading and the `Priority:` line are machine-read; `Covers:` lists catalog IDs or says
-  `trove-only`.
+  `quader-only`.
 - Configuration values are marked `# default (proposed)` or `# example`. The copies of the charts' values files
   (R-HA-031, R-BAS-046) follow the values files instead: every value there is its default, and a comment says only what
   the name does not (owner, 2026-11-04).
@@ -425,7 +425,7 @@ acceptance criteria.
 | [operations-and-observability.md](operations-and-observability.md) | `R-OPS` | Health, metrics, logs, audit, Valkey and coordination observability, operational signals and alerts, maintenance operations, webhooks, configuration as code |
 | [api-and-ui.md](api-and-ui.md) | `R-API`, `R-UI` | Management API conventions and surface, Angular UI information architecture |
 | [endpoints.md](endpoints.md) | `R-EP` | Endpoints: a client listener per endpoint with its hosts (exact and one wildcard), base URL, certificates by SNI and optional pool; identification by listener and `421` for foreign hosts; surface and accepted credentials per endpoint, endpoint-bound tokens; host-root bindings and where host roots are needed; exposure rules as a ceiling in the decision point, their API and screen; filtered metadata, URLs, cache keys and cache fill per endpoint; chart rendering and observability |
-| [vulnerability-scanning.md](vulnerability-scanning.md) | `R-VULN` | Vulnerability scanning by package identity: the advisory mirror from the OSV dumps of the served ecosystems (GitHub Advisory Database, OpenSSF malicious packages) and the CISA known-exploited list, online and offline synchronization on `worker`, matching with each format's version order and the rule for claimed names, findings with severities, triage statuses and history, download blocking of malicious versions, `npm audit` and NuGet audit answered from trove's data, the vulnerability report in API and UI, operations, backups and replicas |
-| [bastion.md](bastion.md) | `R-BAS` | The trove Bastion: the role `bastion` and its chart `trove-bastion`; the Bastion token and registrations on the main installation; the Bastion interface (handshake, credential and read check, read shapes, marking of responses, write refusal by probe, revocation feed, download intake) and its own version; serving without format knowledge: the mirrored URL space, fetching with the caller's token, answers and their validity, shared and per-caller documents, the negative cache, the concurrency budget; the main installation unreachable; the cache on an own bucket or a local volume; optional Valkey; blocking in two stages; audit, metrics, alerts, the chart's values and the test suites |
-| [import.md](import.md) | `R-IMP` | Import tooling: `trove admin import` for npm and NuGet copies the packages of an existing registry into a local repository through the target's own publish protocol with the operator's token (so permissions, digests, immutability, audit, vulnerability evaluation and quota apply); the source's address, credential and egress rules, naming the packages, the strongest-digest verification, what is kept and not kept, outcomes and conflicts, resume after an interruption, politeness towards the source, and the seam for another format |
+| [vulnerability-scanning.md](vulnerability-scanning.md) | `R-VULN` | Vulnerability scanning by package identity: the advisory mirror from the OSV dumps of the served ecosystems (GitHub Advisory Database, OpenSSF malicious packages) and the CISA known-exploited list, online and offline synchronization on `worker`, matching with each format's version order and the rule for claimed names, findings with severities, triage statuses and history, download blocking of malicious versions, `npm audit` and NuGet audit answered from Quader's data, the vulnerability report in API and UI, operations, backups and replicas |
+| [bastion.md](bastion.md) | `R-BAS` | The Quader Bastion: the role `bastion` and its chart `quader-bastion`; the Bastion token and registrations on the main installation; the Bastion interface (handshake, credential and read check, read shapes, marking of responses, write refusal by probe, revocation feed, download intake) and its own version; serving without format knowledge: the mirrored URL space, fetching with the caller's token, answers and their validity, shared and per-caller documents, the negative cache, the concurrency budget; the main installation unreachable; the cache on an own bucket or a local volume; optional Valkey; blocking in two stages; audit, metrics, alerts, the chart's values and the test suites |
+| [import.md](import.md) | `R-IMP` | Import tooling: `quader admin import` for npm and NuGet copies the packages of an existing registry into a local repository through the target's own publish protocol with the operator's token (so permissions, digests, immutability, audit, vulnerability evaluation and quota apply); the source's address, credential and egress rules, naming the packages, the strongest-digest verification, what is kept and not kept, outcomes and conflicts, resume after an interruption, politeness towards the source, and the seam for another format |
 | `builds.md` (not yet written) | `R-BLD` | Build records, their API, retention, promotion and storage: the record schema and its PostgreSQL tables, the API and permissions ([authorization.md](authorization.md) R-AUTHZ-027), mapping of CI job names to build names, promotion, run retention and the retention hooks of [storage.md](storage.md) R-STOR-043. P1; written before P1 build work starts (milestone M9), and the page that creates it turns `builds.md` in this cell into a link to itself. One owner, decided the same way three times: option (a) of [Q-AUTHZ-8](authorization.md#q-authz-8--spec-page-for-build-metadata), [Q-STOR-3](storage.md#q-stor-3--owner-of-build-records) and [Q-API-5](api-and-ui.md#q-api-5--owning-page-for-build-information); build records are not deferred to P2. It must provide R-STOR-043's contract: a run has a name, a number, a start time and its files as repository, path and SHA-256, and records live in PostgreSQL tables, not as repository items. |

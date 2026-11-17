@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
 
 // TestR_ANS_037_EverySurfaceAsksTheWikiGate: every surface of the registry is a route of the table, that route is declared Wiki, and

@@ -18,7 +18,7 @@ type KeyStatus struct {
 	SealedValues *int64 `json:"sealedValues,omitempty"`
 }
 
-// Status is the key-ring status that `trove admin secrets status` and
+// Status is the key-ring status that `quader admin secrets status` and
 // GET /api/v1/system/encryption share (R-ARCH-021). It carries key IDs and
 // counts only, never key material, fingerprints, ciphertext or plaintext.
 type Status struct {

@@ -940,7 +940,7 @@ func TestStartRequiresACertificate(t *testing.T) {
 	if _, err := s.Start("127.0.0.1:0", &tls.Config{MinVersion: tls.VersionTLS12}, ""); err == nil {
 		t.Fatal("started with an empty TLS configuration")
 	}
-	// The CA PEM is what a test hands to trove as ca_bundle_ref.
+	// The CA PEM is what a test hands to quader as ca_bundle_ref.
 	ss, err := NewSelfSigned("localhost")
 	if err != nil || !bytes.HasPrefix(ss.CAPEM, []byte("-----BEGIN CERTIFICATE-----")) {
 		t.Fatal("CA PEM")

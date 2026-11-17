@@ -1,0 +1,12 @@
+apiVersion: v2
+name: quader
+description: quader, an artifact repository manager for package formats, as a web and a worker Deployment.
+type: application
+# version and appVersion are rewritten to the release version by the release pipeline (build.yml,
+# job release-helm-gh): R-HA-028, version = appVersion = quader's version.
+version: 0.0.0-dev
+appVersion: 0.0.0-dev
+kubeVersion: ">=1.30.0-0"
+home: https://github.com/guided-traffic/quader
+sources:
+  - https://github.com/guided-traffic/quader

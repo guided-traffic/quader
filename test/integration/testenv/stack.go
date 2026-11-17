@@ -19,10 +19,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The in-process harness: one Stack is an installation (a migrated database of
@@ -40,10 +40,10 @@ type StackOptions struct {
 	// the state "Valkey stopped" (degraded mode, R-HA-001). True uses the stack's
 	// Sentinels.
 	Valkey bool
-	// Name is part of the database name, trove_<Name>_<random>; "it" if empty.
+	// Name is part of the database name, quader_<Name>_<random>; "it" if empty.
 	Name string
 	// Env is appended to the environment of every replica after the harness's own
-	// settings, so it wins: the TROVE_* settings a whole suite changes.
+	// settings, so it wins: the QUADER_* settings a whole suite changes.
 	Env []string
 }
 
@@ -85,7 +85,7 @@ func WriteFile(tb testing.TB, dir, name, content string) string {
 	return p
 }
 
-// NewStack creates the database trove_<Name>_<random>, migrates it and drops it
+// NewStack creates the database quader_<Name>_<random>, migrates it and drops it
 // when the test ends. No replica runs yet: seed the rows the first replica must
 // see (Stack.Repository, Stack.User, Stack.Token) and then Start it.
 func NewStack(tb testing.TB, o StackOptions) *Stack {
@@ -93,14 +93,14 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 	if o.Name == "" {
 		o.Name = "it"
 	}
-	host, port := Get(tb, "TROVE_TEST_PG_HOST"), Get(tb, "TROVE_TEST_PG_PORT")
-	user, pass := Get(tb, "TROVE_TEST_PG_USER"), Get(tb, "TROVE_TEST_PG_PASSWORD")
+	host, port := Get(tb, "QUADER_TEST_PG_HOST"), Get(tb, "QUADER_TEST_PG_PORT")
+	user, pass := Get(tb, "QUADER_TEST_PG_USER"), Get(tb, "QUADER_TEST_PG_PASSWORD")
 	ctx := context.Background()
 	maint, err := pgx.Connect(ctx, PgDSN(tb, "postgres"))
 	if err != nil {
 		tb.Fatalf("connect to PostgreSQL: %v", err)
 	}
-	name := "trove_" + o.Name + "_" + RandHex(5)
+	name := "quader_" + o.Name + "_" + RandHex(5)
 	if _, err := maint.Exec(ctx, "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		tb.Fatalf("create database: %v", err)
 	}
@@ -112,10 +112,10 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 	userFile, passFile := WriteFile(tb, dir, "db-user", user+"\n"), WriteFile(tb, dir, "db-pass", pass+"\n")
 	pgPort, err := strconv.Atoi(port)
 	if err != nil {
-		tb.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		tb.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
 	cfg := config.Database{
-		Host: host, Port: pgPort, Name: name, Schema: "trove", UsernameFile: userFile, PasswordFile: passFile,
+		Host: host, Port: pgPort, Name: name, Schema: "quader", UsernameFile: userFile, PasswordFile: passFile,
 		SSLMode: "verify-full", SSLRootCertFile: CAFile(tb), ConnectTimeout: 5 * time.Second, TargetSessionAttrs: "read-write",
 		Pooler:        config.DatabasePooler{Mode: "none"},
 		Pool:          config.DatabasePool{MaxConns: 8, MinConns: 1, MaxConnLifetime: 30 * time.Minute, MaxConnLifetimeJitter: time.Minute, MaxConnIdleTime: 5 * time.Minute, HealthCheckPeriod: 30 * time.Second},
@@ -139,7 +139,7 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 		tb.Fatal(err)
 	}
 	tb.Cleanup(func() { _ = conn.Close(context.Background()) })
-	if _, err := conn.Exec(ctx, "SET search_path TO trove"); err != nil {
+	if _, err := conn.Exec(ctx, "SET search_path TO quader"); err != nil {
 		tb.Fatal(err)
 	}
 
@@ -153,9 +153,9 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 		cfg = ThroughPgBouncer(tb, cfg, user, maint)
 		s.pg = cfg
 		pooler = []string{
-			"TROVE_DATABASE_PORT=" + strconv.Itoa(cfg.Port), "TROVE_DATABASE_SESSION_HOST=" + cfg.SessionHost,
-			"TROVE_DATABASE_SESSION_PORT=" + strconv.Itoa(cfg.SessionPort),
-			"TROVE_DATABASE_POOLER_MODE=transaction", "TROVE_DATABASE_POOLER_SERVER_CONNECTIONS=20",
+			"QUADER_DATABASE_PORT=" + strconv.Itoa(cfg.Port), "QUADER_DATABASE_SESSION_HOST=" + cfg.SessionHost,
+			"QUADER_DATABASE_SESSION_PORT=" + strconv.Itoa(cfg.SessionPort),
+			"QUADER_DATABASE_POOLER_MODE=transaction", "QUADER_DATABASE_POOLER_SERVER_CONNECTIONS=20",
 		}
 	}
 	s.sealed = WriteFile(tb, dir, "2026-10.key", base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{42}, 32)))
@@ -180,37 +180,37 @@ func (s *Stack) environ(host, port, name, userFile, passFile string) []string {
 		sentinels = []string{strconv.Quote("127.0.0.1:1")}
 	}
 	return []string{
-		"TROVE_DATABASE_HOST=" + host, "TROVE_DATABASE_PORT=" + port, "TROVE_DATABASE_NAME=" + name,
-		"TROVE_DATABASE_USERNAME_FILE=" + userFile, "TROVE_DATABASE_PASSWORD_FILE=" + passFile,
-		"TROVE_DATABASE_SSL_MODE=verify-full", "TROVE_DATABASE_SSL_ROOT_CERT_FILE=" + CAFile(tb), "TROVE_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true",
-		"TROVE_DATABASE_POOL_MAX_CONNS=6", "TROVE_DATABASE_POOL_MIN_CONNS=1", "TROVE_DATABASE_LEASE_POOL_SIZE=1",
-		"TROVE_DATABASE_RETRY_MAX_ELAPSED=3s", "TROVE_HEALTH_DATABASE_OUTAGE_GRACE=2s",
-		"TROVE_VALKEY_SENTINEL_ADDRESSES=[" + strings.Join(sentinels, ",") + "]", "TROVE_VALKEY_SENTINEL_PRIMARY_NAME=" + vk.PrimaryName,
-		"TROVE_VALKEY_SENTINEL_PASSWORD_FILE=" + WriteFile(tb, dir, "vk-sentinel-pass", vk.SentinelPassword),
-		"TROVE_VALKEY_USERNAME_FILE=" + WriteFile(tb, dir, "vk-user", vk.Username), "TROVE_VALKEY_PASSWORD_FILE=" + WriteFile(tb, dir, "vk-pass", vk.Password),
-		"TROVE_VALKEY_TLS_CA_FILE=" + vk.CAFile, "TROVE_VALKEY_KEY_PREFIX=" + vk.KeyPrefix,
-		"TROVE_STORAGE_S3_BUCKET=" + s3.BlobsBucket, "TROVE_STORAGE_S3_ENDPOINT=" + s3.Endpoint, "TROVE_STORAGE_S3_REGION=" + s3.Region,
-		"TROVE_STORAGE_S3_FORCE_PATH_STYLE=true", "TROVE_STORAGE_S3_CA_FILE=" + CAFile(tb),
-		"TROVE_STORAGE_S3_CREDENTIALS_SOURCE=static",
-		"TROVE_STORAGE_S3_CREDENTIALS_ACCESS_KEY_ID_FILE=" + WriteFile(tb, dir, "s3-id", s3.AccessKey),
-		"TROVE_STORAGE_S3_CREDENTIALS_SECRET_ACCESS_KEY_FILE=" + WriteFile(tb, dir, "s3-secret", s3.SecretKey),
+		"QUADER_DATABASE_HOST=" + host, "QUADER_DATABASE_PORT=" + port, "QUADER_DATABASE_NAME=" + name,
+		"QUADER_DATABASE_USERNAME_FILE=" + userFile, "QUADER_DATABASE_PASSWORD_FILE=" + passFile,
+		"QUADER_DATABASE_SSL_MODE=verify-full", "QUADER_DATABASE_SSL_ROOT_CERT_FILE=" + CAFile(tb), "QUADER_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true",
+		"QUADER_DATABASE_POOL_MAX_CONNS=6", "QUADER_DATABASE_POOL_MIN_CONNS=1", "QUADER_DATABASE_LEASE_POOL_SIZE=1",
+		"QUADER_DATABASE_RETRY_MAX_ELAPSED=3s", "QUADER_HEALTH_DATABASE_OUTAGE_GRACE=2s",
+		"QUADER_VALKEY_SENTINEL_ADDRESSES=[" + strings.Join(sentinels, ",") + "]", "QUADER_VALKEY_SENTINEL_PRIMARY_NAME=" + vk.PrimaryName,
+		"QUADER_VALKEY_SENTINEL_PASSWORD_FILE=" + WriteFile(tb, dir, "vk-sentinel-pass", vk.SentinelPassword),
+		"QUADER_VALKEY_USERNAME_FILE=" + WriteFile(tb, dir, "vk-user", vk.Username), "QUADER_VALKEY_PASSWORD_FILE=" + WriteFile(tb, dir, "vk-pass", vk.Password),
+		"QUADER_VALKEY_TLS_CA_FILE=" + vk.CAFile, "QUADER_VALKEY_KEY_PREFIX=" + vk.KeyPrefix,
+		"QUADER_STORAGE_S3_BUCKET=" + s3.BlobsBucket, "QUADER_STORAGE_S3_ENDPOINT=" + s3.Endpoint, "QUADER_STORAGE_S3_REGION=" + s3.Region,
+		"QUADER_STORAGE_S3_FORCE_PATH_STYLE=true", "QUADER_STORAGE_S3_CA_FILE=" + CAFile(tb),
+		"QUADER_STORAGE_S3_CREDENTIALS_SOURCE=static",
+		"QUADER_STORAGE_S3_CREDENTIALS_ACCESS_KEY_ID_FILE=" + WriteFile(tb, dir, "s3-id", s3.AccessKey),
+		"QUADER_STORAGE_S3_CREDENTIALS_SECRET_ACCESS_KEY_FILE=" + WriteFile(tb, dir, "s3-secret", s3.SecretKey),
 		// An S3 prefix of the installation keeps parallel suites apart in one bucket.
-		"TROVE_STORAGE_S3_PREFIX=" + s.ObjectPrefix(),
-		"TROVE_SECRETS_ENCRYPTION_KEY_FILES=[" + strconv.Quote(s.sealed) + "]", "TROVE_SECRETS_ACTIVE_KEY_ID=2026-10",
-		"TROVE_SERVER_BASE_URL=http://trove.test", "TROVE_SERVER_LISTEN=127.0.0.1:0",
+		"QUADER_STORAGE_S3_PREFIX=" + s.ObjectPrefix(),
+		"QUADER_SECRETS_ENCRYPTION_KEY_FILES=[" + strconv.Quote(s.sealed) + "]", "QUADER_SECRETS_ACTIVE_KEY_ID=2026-10",
+		"QUADER_SERVER_BASE_URL=http://quader.test", "QUADER_SERVER_LISTEN=127.0.0.1:0",
 		// The management API's own classes are tested where they are the subject;
 		// elsewhere they would only slow the suite (a suite that tests them sets
-		// TROVE_API_RATE_LIMITS_ENABLED=true).
-		"TROVE_API_RATE_LIMITS_ENABLED=false",
+		// QUADER_API_RATE_LIMITS_ENABLED=true).
+		"QUADER_API_RATE_LIMITS_ENABLED=false",
 		// The advisory sources of the vulnerability scanning default to the public internet. A test never reaches it: the
 		// default hosts are .invalid (RFC 6761), so a scheduled sync of a worker fails at once instead of holding the one
 		// maintenance worker while it downloads the public archives; a test of the scanning sets the test advisory source.
-		"TROVE_VULNERABILITIES_SOURCES_OSV_BASE_URL=https://osv.invalid/",
-		"TROVE_VULNERABILITIES_SOURCES_KEV_URL=https://kev.invalid/known_exploited_vulnerabilities.json",
-		"TROVE_HEALTH_CHECK_INTERVAL=300ms", "TROVE_HEALTH_CHECK_TIMEOUT=200ms", "TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY=200ms",
-		"TROVE_SERVER_SHUTDOWN_TIMEOUT=5s", "TROVE_STORAGE_SPOOL_DIR=" + filepath.Join(dir, "spool"),
-		"TROVE_SYSTEM_HEARTBEAT_INTERVAL=1s", "TROVE_SYSTEM_HEARTBEAT_STALE_AFTER=3s",
-		"TROVE_CONFIG_FILE=" + WriteFile(tb, dir, "trove.yaml", ""),
+		"QUADER_VULNERABILITIES_SOURCES_OSV_BASE_URL=https://osv.invalid/",
+		"QUADER_VULNERABILITIES_SOURCES_KEV_URL=https://kev.invalid/known_exploited_vulnerabilities.json",
+		"QUADER_HEALTH_CHECK_INTERVAL=300ms", "QUADER_HEALTH_CHECK_TIMEOUT=200ms", "QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY=200ms",
+		"QUADER_SERVER_SHUTDOWN_TIMEOUT=5s", "QUADER_STORAGE_SPOOL_DIR=" + filepath.Join(dir, "spool"),
+		"QUADER_SYSTEM_HEARTBEAT_INTERVAL=1s", "QUADER_SYSTEM_HEARTBEAT_STALE_AFTER=3s",
+		"QUADER_CONFIG_FILE=" + WriteFile(tb, dir, "quader.yaml", ""),
 	}
 }
 
@@ -222,7 +222,7 @@ func (s *Stack) Database() string { return s.name }
 
 // DatabaseConfig is the configuration a component opens the installation's
 // database with, the way a replica does (through PgBouncer when
-// TROVE_TEST_PG_POOLED is set). It is for the few assertions that need the
+// QUADER_TEST_PG_POOLED is set). It is for the few assertions that need the
 // component itself next to the replicas, such as counting the transactions of a
 // repository reader.
 func (s *Stack) DatabaseConfig() config.Database { return s.pg }
@@ -231,12 +231,12 @@ func (s *Stack) DatabaseConfig() config.Database { return s.pg }
 func (s *Stack) Dir() string { return s.dir }
 
 // Environ is a copy of the environment every replica of the stack shares, for a
-// suite that runs the trove binary instead of the in-process replica.
+// suite that runs the quader binary instead of the in-process replica.
 func (s *Stack) Environ() []string { return append([]string(nil), s.base...) }
 
 // KeyFile writes a base64 key file into the scratch directory and returns its
 // path: a replica whose key ring differs from the others sets
-// TROVE_SECRETS_ENCRYPTION_KEY_FILES to it.
+// QUADER_SECRETS_ENCRYPTION_KEY_FILES to it.
 func (s *Stack) KeyFile(name string, key []byte) string {
 	s.tb.Helper()
 	return WriteFile(s.tb, s.dir, name, base64.StdEncoding.EncodeToString(key))

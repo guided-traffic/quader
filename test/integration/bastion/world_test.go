@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/tlsfiles/tlstest"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -129,18 +129,18 @@ func newWorld(t *testing.T, o worldOptions) *world {
 	}
 
 	env := []string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(nca) + "," + strconv.Quote(gca) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(nca) + "," + strconv.Quote(gca) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
 		// The Bastion's egress address and its host (R-BAS-017).
-		`TROVE_SERVER_TRUSTED_PROXIES=["127.0.0.1/32"]`,
-		`TROVE_SERVER_ADDITIONAL_BASE_URLS=["` + baseURL + `"]`,
+		`QUADER_SERVER_TRUSTED_PROXIES=["127.0.0.1/32"]`,
+		`QUADER_SERVER_ADDITIONAL_BASE_URLS=["` + baseURL + `"]`,
 		// The audit of a read route with a body is the forward mode of R-NPM-038 here; with the OSV source on the default is the
-		// local mode, answered from trove's own data (R-VULN-017, Q-VULN-44), which test/integration/vulnaudit tests.
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		// local mode, answered from quader's own data (R-VULN-017, Q-VULN-44), which test/integration/vulnaudit tests.
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
 	}
 	if !o.NoRecordDownloads {
-		env = append(env, "TROVE_AUDIT_RECORD_DOWNLOADS=true")
+		env = append(env, "QUADER_AUDIT_RECORD_DOWNLOADS=true")
 	}
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "bast", Valkey: true, Env: append(env, o.Env...)})
 	w.st = st

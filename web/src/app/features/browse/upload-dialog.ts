@@ -30,10 +30,10 @@ interface Entry {
  * the path exists counts as done when the stored SHA-256 equals the one computed here.
  */
 @Component({
-  selector: 'trove-upload-dialog',
+  selector: 'quader-upload-dialog',
   imports: [DialogTitle],
   template: `
-    <h2 troveDialogTitle i18n="@@upload.title">Upload files</h2>
+    <h2 quaderDialogTitle i18n="@@upload.title">Upload files</h2>
     <div class="dialog-body">
       <div class="field">
         <label class="field-label" for="upload-folder" i18n="@@upload.folder">Target folder</label>
@@ -162,25 +162,25 @@ interface Entry {
     .field {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-1);
-      margin-block-end: var(--trove-space-3);
+      gap: var(--quader-space-1);
+      margin-block-end: var(--quader-space-3);
     }
     .drop {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-3);
-      padding: var(--trove-space-4);
-      border: 2px dashed var(--trove-border-strong);
-      border-radius: var(--trove-radius-l);
-      margin-block-end: var(--trove-space-3);
+      gap: var(--quader-space-3);
+      padding: var(--quader-space-4);
+      border: 2px dashed var(--quader-border-strong);
+      border-radius: var(--quader-radius-l);
+      margin-block-end: var(--quader-space-3);
     }
     .drop.over {
-      border-color: var(--trove-accent);
+      border-color: var(--quader-accent);
     }
     .check-row {
       display: flex;
-      gap: var(--trove-space-2);
-      margin-block-end: var(--trove-space-3);
+      gap: var(--quader-space-2);
+      margin-block-end: var(--quader-space-3);
     }
   `,
 })

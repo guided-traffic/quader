@@ -1,16 +1,16 @@
 @if (isNew()) {
-  <trove-page-header heading="New permission policy" i18n-heading="@@policy.heading-new" />
+  <quader-page-header heading="New permission policy" i18n-heading="@@policy.heading-new" />
 } @else {
-  <trove-page-header [heading]="name() ?? ''" [name]="true">
+  <quader-page-header [heading]="name() ?? ''" [name]="true">
     <span meta class="badge" i18n="@@policy.heading">Permission policy</span>
-  </trove-page-header>
+  </quader-page-header>
 }
 @if (policyProject(); as key) {
   <p class="subject">
     <ng-container i18n="@@policy.project">Project policy of</ng-container>&ngsp;
     <span translate="no">{{ key }}</span>
   </p>
-  <trove-project-needs [state]="projectState()" capability="policies:write" />
+  <quader-project-needs [state]="projectState()" capability="policies:write" />
 } @else {
   @if (isNew() || loaded()) {
     <p class="subject" role="note">
@@ -18,14 +18,14 @@
       <ng-container i18n="@@policy.global">Global policy — applies to every repository</ng-container>
     </p>
   }
-  <trove-needs capability="policies:write" />
+  <quader-needs capability="policies:write" />
 }
 
 @if (loadError(); as e) {
-  <trove-error-notice [error]="e" (retry)="reload()" />
+  <quader-error-notice [error]="e" (retry)="reload()" />
 }
 @if (saveError(); as e) {
-  <trove-error-notice [error]="e" />
+  <quader-error-notice [error]="e" />
 }
 
 @if (isNew() || loaded()) {
@@ -43,7 +43,7 @@
       <section id="sec-general" tabindex="-1" aria-labelledby="h-general">
         <h2 id="h-general" class="visually-hidden" i18n="@@policy.general">General</h2>
         @if (isNew()) {
-          <trove-text-field
+          <quader-text-field
             width="name"
             i18n-label="@@policy.name"
             label="Name"
@@ -54,7 +54,7 @@
             [hint]="nameHint()"
           />
         }
-        <trove-text-field
+        <quader-text-field
           width="full"
           i18n-label="@@policy.description"
           label="Description"
@@ -66,7 +66,7 @@
       </section>
 
       <div id="sec-principals" tabindex="-1">
-      <trove-disclosure
+      <quader-disclosure
         i18n-heading="@@policy.principals"
         heading="Principals and actions"
         i18n-hint="@@policy.principals-help"
@@ -86,7 +86,7 @@
         @for (e of entries(); track e.id; let i = $index) {
           <fieldset class="entry">
             <legend i18n="@@policy.entry">Entry {{ i + 1 }}</legend>
-            <trove-text-field
+            <quader-text-field
               width="name"
               i18n-label="@@policy.entry-principal"
               label="Principal"
@@ -100,11 +100,11 @@
             />
             <div class="actions-row">
               @for (a of actions; track a) {
-                <trove-checkbox
+                <quader-checkbox
                   [checked]="e.actions.includes(a)"
                   [disabled]="!canWrite()"
                   (checkedChange)="toggleAction(e.id, a, $event)"
-                  ><span translate="no">{{ a }}</span></trove-checkbox
+                  ><span translate="no">{{ a }}</span></quader-checkbox
                 >
               }
             </div>
@@ -128,7 +128,7 @@
         @if (canWrite()) {
           <button class="btn btn-default" type="button" (click)="addEntry()" i18n="@@policy.add-entry">Add principal</button>
           @if (policyProject()) {
-            <trove-principal-picker
+            <quader-principal-picker
               i18n-label="@@policy.find-principal"
               label="Find a user or group"
               name="find-principal"
@@ -140,18 +140,18 @@
             />
           }
         }
-      </trove-disclosure>
+      </quader-disclosure>
       </div>
 
       <div id="sec-resources" tabindex="-1">
-      <trove-disclosure
+      <quader-disclosure
         i18n-heading="@@policy.resources"
         heading="Repositories and patterns"
         i18n-hint="@@policy.resources-help"
         hint="Which repositories, package names and paths the entries apply to."
         [(expanded)]="resourcesOpen"
       >
-        <trove-text-field
+        <quader-text-field
           width="full"
           i18n-label="@@policy.repositories"
           label="Repository selectors"
@@ -187,9 +187,9 @@
           </p>
         }
 
-      </trove-disclosure>
+      </quader-disclosure>
       <!-- Package names and paths are an expert's limit of a policy: closed until one of them holds a value (details on demand). -->
-      <trove-disclosure
+      <quader-disclosure
         class="limits"
         i18n-heading="@@policy.limits"
         heading="Limit to package names or paths"
@@ -202,19 +202,19 @@
           One pattern per line. * is any run of characters except /, ** includes /, ? is one character, \ makes the next character literal. An empty include list is unrestricted; exclude always wins within this policy.
         </p>
         <div class="two">
-          <trove-text-field width="full" i18n-label="@@policy.packages-include" label="Include" name="packagesInclude" type="textarea" [(value)]="packagesInclude" [readonly]="!canWrite()" [error]="problems('/resources/packages/include')[0] ?? null" />
-          <trove-text-field width="full" i18n-label="@@policy.packages-exclude" label="Exclude" name="packagesExclude" type="textarea" [(value)]="packagesExclude" [readonly]="!canWrite()" [error]="problems('/resources/packages/exclude')[0] ?? null" />
+          <quader-text-field width="full" i18n-label="@@policy.packages-include" label="Include" name="packagesInclude" type="textarea" [(value)]="packagesInclude" [readonly]="!canWrite()" [error]="problems('/resources/packages/include')[0] ?? null" />
+          <quader-text-field width="full" i18n-label="@@policy.packages-exclude" label="Exclude" name="packagesExclude" type="textarea" [(value)]="packagesExclude" [readonly]="!canWrite()" [error]="problems('/resources/packages/exclude')[0] ?? null" />
         </div>
         <h3 i18n="@@policy.paths">Paths</h3>
         <div class="two">
-          <trove-text-field width="full" i18n-label="@@policy.paths-include" label="Include" name="pathsInclude" type="textarea" [(value)]="pathsInclude" [readonly]="!canWrite()" [error]="problems('/resources/paths/include')[0] ?? null" />
-          <trove-text-field width="full" i18n-label="@@policy.paths-exclude" label="Exclude" name="pathsExclude" type="textarea" [(value)]="pathsExclude" [readonly]="!canWrite()" [error]="problems('/resources/paths/exclude')[0] ?? null" />
+          <quader-text-field width="full" i18n-label="@@policy.paths-include" label="Include" name="pathsInclude" type="textarea" [(value)]="pathsInclude" [readonly]="!canWrite()" [error]="problems('/resources/paths/include')[0] ?? null" />
+          <quader-text-field width="full" i18n-label="@@policy.paths-exclude" label="Exclude" name="pathsExclude" type="textarea" [(value)]="pathsExclude" [readonly]="!canWrite()" [error]="problems('/resources/paths/exclude')[0] ?? null" />
         </div>
 
         <h3 i18n="@@policy.tester">Pattern tester</h3>
         <div class="tester">
-          <trove-select-field i18n-label="@@policy.tester-kind" label="Test against" name="testDimension" [options]="dimensionOptions" [(value)]="testDimension" />
-          <trove-text-field width="name" i18n-label="@@policy.tester-value" label="Does this match?" name="testValue" [(value)]="testValue" />
+          <quader-select-field i18n-label="@@policy.tester-kind" label="Test against" name="testDimension" [options]="dimensionOptions" [(value)]="testDimension" />
+          <quader-text-field width="name" i18n-label="@@policy.tester-value" label="Does this match?" name="testValue" [(value)]="testValue" />
         </div>
         @if (testVerdict(); as v) {
           <p role="status" [class]="verdictOk(v) ? 'ok' : 'bad'">
@@ -222,11 +222,11 @@
             {{ verdictText(v) }}
           </p>
         }
-      </trove-disclosure>
+      </quader-disclosure>
       </div>
 
       @if (!isNew() && canWrite()) {
-        <trove-disclosure
+        <quader-disclosure
           i18n-heading="@@policy.advanced"
           heading="Advanced"
           i18n-hint="@@policy.advanced-hint"
@@ -234,7 +234,7 @@
         >
           <p class="muted" i18n="@@policy.delete-note">Deleting the policy removes every grant it gives, at once on every replica.</p>
           <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="remove()" i18n="@@policy.delete">Delete policy</button>
-        </trove-disclosure>
+        </quader-disclosure>
       }
     </div>
 
@@ -287,16 +287,16 @@
         <h3 i18n="@@policy.try">Try it</h3>
         <p class="muted" i18n="@@policy.try-help">Ask why a principal can or cannot do something. Only this draft is evaluated.</p>
         <div class="try">
-          <trove-text-field width="name" i18n-label="@@policy.try-principal" label="Principal" name="askPrincipal" [(value)]="askPrincipal" i18n-hint="@@policy.try-principal-hint" hint="for example user:alice" />
-          <trove-text-field width="name" i18n-label="@@policy.try-repository" label="Repository" name="askRepository" [(value)]="askRepository" />
-          <trove-select-field i18n-label="@@policy.try-action" label="Action" name="askAction" [options]="actionOptions" [(value)]="askAction" />
+          <quader-text-field width="name" i18n-label="@@policy.try-principal" label="Principal" name="askPrincipal" [(value)]="askPrincipal" i18n-hint="@@policy.try-principal-hint" hint="for example user:alice" />
+          <quader-text-field width="name" i18n-label="@@policy.try-repository" label="Repository" name="askRepository" [(value)]="askRepository" />
+          <quader-select-field i18n-label="@@policy.try-action" label="Action" name="askAction" [options]="actionOptions" [(value)]="askAction" />
           <button class="btn btn-default explain" type="button" (click)="explain($event)" i18n="@@policy.try-ask">Explain</button>
         </div>
         @if (askMissing()) {
           <p class="field-error" role="alert" i18n="@@policy.try-missing">Name a principal and a repository first.</p>
         }
         @if (explainError(); as e) {
-          <trove-error-notice [error]="e" />
+          <quader-error-notice [error]="e" />
         }
         @if (explanation(); as x) {
           <div role="status">

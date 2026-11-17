@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
 
-	_ "github.com/guided-traffic/trove/internal/formats/all" // the formats' name rules and ranges, as in the trove binary
+	_ "github.com/guided-traffic/quader/internal/formats/all" // the formats' name rules and ranges, as in the quader binary
 )
 
 // R-EP-020: the exposure entries of the revocation journal replayed into the database a restore brings back.

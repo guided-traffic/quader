@@ -14,9 +14,9 @@ Each repository row has an icon for its class (a box for local, a cloud for remo
 
 Expand a repository or a folder to load its entries, 200 at a time; **Load more** at the end of a folder loads the next 200, and **Load more repositories** below the tree loads further repositories. Repositories you may not read are not listed, and neither are files and folders you may not read. If there is no repository you may read, the tree says so; an administrator is offered **Create repository**, everyone else should ask an administrator for read access.
 
-What a repository holds depends on its class: a local repository shows what was uploaded or published to it, a remote repository the files it has cached so far, and npm repositories show their package files as trove stores them. See [Repositories](repositories.md#repository-classes).
+What a repository holds depends on its class: a local repository shows what was uploaded or published to it, a remote repository the files it has cached so far, and npm repositories show their package files as Quader stores them. See [Repositories](repositories.md#repository-classes).
 
-The selection is part of the page address, for example `https://trove.example.com/ui/en/projects/web/browse/generic-local/releases/app-1.2.0.tar.gz`, so you can bookmark a file or send the link; opening it expands the tree down to the file. The browser's back and forward buttons walk through your selections.
+The selection is part of the page address, for example `https://quader.example.com/ui/en/projects/web/browse/generic-local/releases/app-1.2.0.tar.gz`, so you can bookmark a file or send the link; opening it expands the tree down to the file. The browser's back and forward buttons walk through your selections.
 
 The tree works with the keyboard: the arrow keys move and expand, Home and End jump to the first and last entry, and typing a name jumps to it. Shift+F10 or the context-menu key moves the focus to the actions of the selection.
 
@@ -30,7 +30,7 @@ The top of the details shows the path of the selection as links (select a folder
 | A folder | Tab **Contents**: a table of its entries with **Name**, **Size** and **Last changed**; select a name to go into a folder or to a file. Tab **General** with **Path**, **Kind**, **Created** and **Last changed**, each with the user who did it where known; tab **API** |
 | A file | Tab **General** as for a folder plus **Size**, **Media type** and the checksums **SHA-256**, **SHA-512**, **SHA-1** and **MD5**, each with **Copy checksum**; tab **Statistics** with **Downloads**, **Last download** and **Last downloader**; tab **API** |
 
-Download counts reach the statistics within a minute of a download. If a file's stored content is missing or damaged, **General** says so under **Content**; tell an administrator. The **API** tab shows the selection as the management API describes it and the matching curl requests. They send the token from the environment variable `TROVE_TOKEN`: the header is in double quotes so that your shell fills in the value, and the address is in single quotes. Set the variable first, without typing the token into a shell that records its history.
+Download counts reach the statistics within a minute of a download. If a file's stored content is missing or damaged, **General** says so under **Content**; tell an administrator. The **API** tab shows the selection as the management API describes it and the matching curl requests. They send the token from the environment variable `QUADER_TOKEN`: the header is in double quotes so that your shell fills in the value, and the address is in single quotes. Set the variable first, without typing the token into a shell that records its history.
 
 ## Download a file
 
@@ -55,7 +55,7 @@ You need the deploy permission on the target path, and the target must be a gene
 The files are sent one after another. **Status** shows **waiting**, **computing checksum**, a progress bar, **uploaded**, **cancelled**, or the reason a file failed. **Cancel upload** stops the file that is being sent; **Close** closes the dialog, and the folder in the tree shows the new files.
 
 - The browser uploads files of up to 100 MiB (the administrator's limit `ui.deploy.max_upload_bytes`: the dialog refuses a larger file before it starts, and the server answers it with **413** before it reads the body). For a larger file the dialog says to use a native client or curl, which take files up to the installation's limit (10 GiB by default).
-- The browser computes the SHA-256 of each file before sending it, and trove checks it on arrival, so a damaged transfer is not stored.
+- The browser computes the SHA-256 of each file before sending it, and Quader checks it on arrival, so a damaged transfer is not stored.
 - Without the replace option, a file that exists already is kept, and the dialog says **A file already exists at this path.** Uploading the same bytes again with the replace option changes nothing.
 - The repository's include and exclude patterns can refuse a path; ask whoever manages the repository.
 
@@ -77,14 +77,14 @@ You need the delete permission on the file, or on every file in a folder; if one
 3. Read the confirmation: it says how many items a folder holds. For a folder of more than 100 items, type the folder name into **Type the name to confirm**.
 4. Select **Delete**.
 
-Deleting is final: trove has no trash can yet. A very large folder (by default more than 10,000 items) is deleted by a background job; the details show **Deleting** with its progress, and the files disappear as the job runs.
+Deleting is final: Quader has no trash can yet. A very large folder (by default more than 10,000 items) is deleted by a background job; the details show **Deleting** with its progress, and the files disappear as the job runs.
 
 ## Transfer files with curl
 
 Every file of a repository has an address below the files path, with the key of the repository's project and the repository's own key:
 
 ```text
-https://trove.example.com/files/<project-key>/<repository-key>/<path>
+https://quader.example.com/files/<project-key>/<repository-key>/<path>
 ```
 
 | Method | On a file | On a folder (address ends with `/`) |
@@ -96,55 +96,55 @@ https://trove.example.com/files/<project-key>/<repository-key>/<path>
 
 ### Authenticate
 
-curl signs in with a trove token, never with your password: a personal access token for yourself, or a service-account token for a CI job. Create one under **Profile and tokens**, limited to the repositories and actions it needs; see [Personal access tokens](access-tokens.md). trove reads the token from the `Authorization: Bearer` header. It also takes the token as the password of HTTP Basic authentication with any user name, unless an administrator switched that off.
+curl signs in with a Quader token, never with your password: a personal access token for yourself, or a service-account token for a CI job. Create one under **Profile and tokens**, limited to the repositories and actions it needs; see [Personal access tokens](access-tokens.md). Quader reads the token from the `Authorization: Bearer` header. It also takes the token as the password of HTTP Basic authentication with any user name, unless an administrator switched that off.
 
-Keep the token out of command lines and scripts, where the process list and the shell history would show it. The client setup snippet for curl defines a shell function that reads the token from the environment variable `TROVE_TOKEN` each time it runs and hands it to curl on standard input:
+Keep the token out of command lines and scripts, where the process list and the shell history would show it. The client setup snippet for curl defines a shell function that reads the token from the environment variable `QUADER_TOKEN` each time it runs and hands it to curl on standard input:
 
 ```shell
-trove_curl() {
+quader_curl() {
   curl --silent --show-error --config - "$@" <<EOF
-header = "Authorization: Bearer ${TROVE_TOKEN}"
+header = "Authorization: Bearer ${QUADER_TOKEN}"
 EOF
 }
 ```
 
-Set `TROVE_TOKEN` in the environment curl runs in, for example from a masked CI variable, then paste the function into the shell or the CI script. Because standard input carries the header, `trove_curl` cannot upload from standard input; upload a file instead. The variable name can differ on your installation; [Connecting a package client](client-setup.md) shows the snippet as your installation writes it. For a repository open to anonymous readers, plain `curl` without a token downloads as well.
+Set `QUADER_TOKEN` in the environment curl runs in, for example from a masked CI variable, then paste the function into the shell or the CI script. Because standard input carries the header, `quader_curl` cannot upload from standard input; upload a file instead. The variable name can differ on your installation; [Connecting a package client](client-setup.md) shows the snippet as your installation writes it. For a repository open to anonymous readers, plain `curl` without a token downloads as well.
 
 ### Download and check
 
 The examples keep the address of one file in a shell variable:
 
 ```shell
-FILE="https://trove.example.com/files/web/generic-local/releases/app-1.2.0.tar.gz"
-trove_curl --fail --remote-name "$FILE"
-trove_curl --fail --head "$FILE"
-trove_curl --fail --continue-at - --output app-1.2.0.tar.gz "$FILE"
+FILE="https://quader.example.com/files/web/generic-local/releases/app-1.2.0.tar.gz"
+quader_curl --fail --remote-name "$FILE"
+quader_curl --fail --head "$FILE"
+quader_curl --fail --continue-at - --output app-1.2.0.tar.gz "$FILE"
 ```
 
 The second line downloads the file into the current directory under its name. The third shows its size, its `ETag` (the SHA-256 in hexadecimal) and its `Repr-Digest` without downloading it. The last one resumes a broken download where the local copy ends.
 
-`--fail` makes curl exit with an error instead of saving an error answer as the file. trove checks a file against its checksum while it serves it whole; a resumed copy joins two transfers, so compare it with the `ETag` (`sha256sum` prints the same hexadecimal value). Add `?stats=false` to the address when a download should not count in the statistics.
+`--fail` makes curl exit with an error instead of saving an error answer as the file. Quader checks a file against its checksum while it serves it whole; a resumed copy joins two transfers, so compare it with the `ETag` (`sha256sum` prints the same hexadecimal value). Add `?stats=false` to the address when a download should not count in the statistics.
 
 ### Upload
 
 ```shell
-trove_curl --fail --upload-file app-1.2.0.tar.gz "$FILE"
-trove_curl --fail --upload-file app-1.2.0.tar.gz --header "If-None-Match: *" "$FILE"
-trove_curl --fail --upload-file app-1.2.0.tar.gz \
+quader_curl --fail --upload-file app-1.2.0.tar.gz "$FILE"
+quader_curl --fail --upload-file app-1.2.0.tar.gz --header "If-None-Match: *" "$FILE"
+quader_curl --fail --upload-file app-1.2.0.tar.gz \
   --header "Repr-Digest: sha-256=:$(openssl dgst -sha256 -binary app-1.2.0.tar.gz | base64):" \
   --header "Content-Type: application/gzip" \
   "$FILE"
 ```
 
-The first command uploads the file; the folders on the way are created. The second uploads only if the path is free and never replaces a file. The third has trove check the SHA-256 you computed, refusing the upload with `409` if the bytes differ, and stores a media type.
+The first command uploads the file; the folders on the way are created. The second uploads only if the path is free and never replaces a file. The third has Quader check the SHA-256 you computed, refusing the upload with `409` if the bytes differ, and stores a media type.
 
-trove answers `201` for a new or replaced file and `200` when the path already holds these bytes. Replacing a file with other bytes needs the overwrite permission besides deploy. Without `Content-Type`, the file is served as `application/octet-stream`.
+Quader answers `201` for a new or replaced file and `200` when the path already holds these bytes. Replacing a file with other bytes needs the overwrite permission besides deploy. Without `Content-Type`, the file is served as `application/octet-stream`.
 
 ### List and delete
 
 ```shell
-trove_curl --fail "https://trove.example.com/files/web/generic-local/releases/?limit=100"
-trove_curl --fail --request DELETE "$FILE"
+quader_curl --fail "https://quader.example.com/files/web/generic-local/releases/?limit=100"
+quader_curl --fail --request DELETE "$FILE"
 ```
 
 The first command lists a folder as JSON: `items` holds the entries you may read, and `nextCursor` leads to the next page; pass it as `cursor`. A page holds 1,000 entries unless `limit` asks for another number (at most 10,000). Without the trailing `/`, a folder address redirects to the one with it. The second command deletes a file and answers `204`; a folder of more than 10,000 items answers `202` and is deleted by a background job.

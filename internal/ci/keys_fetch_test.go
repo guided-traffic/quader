@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 // The fetch of R-CI-003 against the issuer double, in process: through the outbound factory with the
@@ -301,7 +301,7 @@ func TestR_CI_003_TheFailureLineHoldsClassStatusAndHostOnly(t *testing.T) {
 
 func TestBundleRefSyntax(t *testing.T) {
 	for ref, ok := range map[string]bool{
-		"file:/etc/ssl/ca.crt": true, "file:relative.crt": false, "env:CA": false, "/etc/ca.crt": false, "file:": false, "file:/a\nb": false, "env:TROVE_CIC_GITLAB": true, "env:TROVE_CIC_": false, "env:TROVE_SECRETS_X": false, "env:": false,
+		"file:/etc/ssl/ca.crt": true, "file:relative.crt": false, "env:CA": false, "/etc/ca.crt": false, "file:": false, "file:/a\nb": false, "env:QUADER_CIC_GITLAB": true, "env:QUADER_CIC_": false, "env:QUADER_SECRETS_X": false, "env:": false,
 	} {
 		if err := validBundleRef(ref); (err == nil) != ok {
 			t.Errorf("%q: %v", ref, err)
@@ -311,14 +311,14 @@ func TestBundleRefSyntax(t *testing.T) {
 
 func TestQ_CI_31_ABundleInAnEnvironmentVariableAddsToTheTrust(t *testing.T) {
 	d := startDouble(t)
-	t.Setenv("TROVE_CIC_STUB", string(d.ca.CAPEM))
+	t.Setenv("QUADER_CIC_STUB", string(d.ca.CAPEM))
 	is := d.issuer(t, false)
-	ref := "env:TROVE_CIC_STUB"
+	ref := "env:QUADER_CIC_STUB"
 	is.CABundleRef = &ref
 	if _, err := testFetcher(t, nil).fetch(context.Background(), is); err != nil {
 		t.Fatalf("fetch with an env bundle: %v", err)
 	}
-	ref = "env:TROVE_CIC_UNSET"
+	ref = "env:QUADER_CIC_UNSET"
 	_, err := testFetcher(t, nil).fetch(context.Background(), is)
 	if fe := fetchErr(t, err); fe.Class != classTrustStore {
 		t.Errorf("an unset variable: %v", fe)

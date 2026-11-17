@@ -10,15 +10,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/servefacts"
-	"github.com/guided-traffic/trove/internal/vuln/enforce"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/servefacts"
+	"github.com/guided-traffic/quader/internal/vuln/enforce"
 )
 
 // errDigestChanged is returned by the fill transaction of an artifact whose entry
@@ -415,7 +415,7 @@ func (f *fetcher) artifact(ctx context.Context, resp *http.Response, idle *atomi
 		return f.bodyFailure(ctx, err, idle)
 	}
 	defer func() { _ = sp.Close() }()
-	f.exchanged() // the body is read: the upstream's share ends, the commit below is trove's own work (Q-REPO-235)
+	f.exchanged() // the body is read: the upstream's share ends, the commit below is quader's own work (Q-REPO-235)
 	f.success(ctx)
 
 	if verify(rq, sp.Digests) != verdictOK {

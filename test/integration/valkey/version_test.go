@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // pinned reads an image reference from tools/versions.env, the one pin file.
@@ -52,7 +52,7 @@ func docker(t *testing.T, args ...string) string {
 func throwaway(t *testing.T, image string, delifeq bool) string {
 	t.Helper()
 	v := testenv.ValkeyConfig(t)
-	name := "trove-it-throwaway-" + randHex(3)
+	name := "quader-it-throwaway-" + randHex(3)
 	docker(t, "run", "-d", "--rm", "--name", name, "-p", "127.0.0.1::6379", "-v", testenv.CertDir(t)+":/certs:ro", image, "valkey-server",
 		"--port", "0", "--tls-port", "6379", "--tls-cert-file", "/certs/server.crt", "--tls-key-file", "/certs/server.key",
 		"--tls-ca-cert-file", "/certs/ca.crt", "--tls-auth-clients", "no", "--save", "", "--appendonly", "no")
@@ -71,7 +71,7 @@ func throwaway(t *testing.T, image string, delifeq bool) string {
 	if !delifeq {
 		delifeqRule = "" // the command does not exist before 9.0, and ACL SETUSER refuses an unknown one
 	}
-	rule := fmt.Sprintf("user %s on >%s resetkeys ~trove:* resetchannels &trove:* -@all +get +set %s+incr +expire +multi +exec +publish +subscribe +unsubscribe +ping +hello +role +client|setname +client|setinfo", v.Username, v.Password, delifeqRule)
+	rule := fmt.Sprintf("user %s on >%s resetkeys ~quader:* resetchannels &quader:* -@all +get +set %s+incr +expire +multi +exec +publish +subscribe +unsubscribe +ping +hello +role +client|setname +client|setinfo", v.Username, v.Password, delifeqRule)
 	args := append([]string{"exec", name, "valkey-cli", "--tls", "--cacert", "/certs/ca.crt", "ACL", "SETUSER"}, strings.Fields(strings.TrimPrefix(rule, "user "))...)
 	if out := docker(t, args...); out != "OK" {
 		t.Fatalf("ACL SETUSER: %s", out)
@@ -96,10 +96,10 @@ func TestUnsupportedVersion(t *testing.T) {
 		if !strings.HasPrefix(st.Version, "8.1.") || st.Available {
 			t.Fatalf("status = %+v", st)
 		}
-		if want := "valkey " + st.Version + " is not supported; trove requires 9.0 or later"; st.DegradedReason != want {
+		if want := "valkey " + st.Version + " is not supported; Quader requires 9.0 or later"; st.DegradedReason != want {
 			t.Fatalf("reason = %q, want %q", st.DegradedReason, want)
 		}
-		if !strings.Contains(c.Log.String(), "is not supported; trove requires 9.0 or later") {
+		if !strings.Contains(c.Log.String(), "is not supported; Quader requires 9.0 or later") {
 			t.Fatalf("the refusal is not logged:\n%s", c.Log.String())
 		}
 		if err := c.StartupError(); err != nil {

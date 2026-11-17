@@ -45,7 +45,7 @@ const (
 type loginError struct {
 	reason string
 	idp    bool
-	// unavailable is a dependency of trove that did not answer: 503.
+	// unavailable is a dependency of quader that did not answer: 503.
 	unavailable bool
 	cause       error
 	// detail is shown to the user (the IdP's error_description, escaped and

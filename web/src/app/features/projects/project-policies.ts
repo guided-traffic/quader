@@ -13,12 +13,12 @@ import { ProjectNeeds, createState } from './project-access';
  * `policies:write` or the role Owner in the project.
  */
 @Component({
-  selector: 'trove-project-policies',
+  selector: 'quader-project-policies',
   imports: [RouterLink, DataTable, ProjectNeeds],
   template: `
-    <trove-project-needs id="needs-project-policies" [state]="state()" capability="policies:write" />
+    <quader-project-needs id="needs-project-policies" [state]="state()" capability="policies:write" />
 
-    <trove-data-table
+    <quader-data-table
       [caption]="caption"
       [columns]="columns"
       [loaded]="list.loaded()"
@@ -49,7 +49,7 @@ import { ProjectNeeds, createState } from './project-access';
           <td translate="no">{{ actionSummary(p) }}</td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
   styleUrl: '../../shared/access/access.scss',
 })

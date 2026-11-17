@@ -81,7 +81,7 @@ describe('The project policy editor (R-UI-041, R-AUTHZ-026)', () => {
     });
     expect(text(root)).toContain('Read only: changing this needs the permission policies:write');
     expect(root.querySelector('button[type="submit"]')).toBeNull();
-    expect(root.querySelector('trove-principal-picker')).toBeNull();
+    expect(root.querySelector('quader-principal-picker')).toBeNull();
   });
 
   it('R-UI-041 a stored project policy keeps its project through a save', async () => {
@@ -97,7 +97,7 @@ describe('The project policy editor (R-UI-041, R-AUTHZ-026)', () => {
     await settle(fixture);
     buttonByText(root, 'Review and save').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-policy-diff-dialog') as HTMLElement, 'Save policy').click();
+    buttonByText(overlay().querySelector('quader-policy-diff-dialog') as HTMLElement, 'Save policy').click();
     await sleep(fixture, 300);
     const api = get(PolicyApi) as FakePolicyApi;
     expect(api.calls).toEqual(['replace web-publish "3"']);
@@ -108,7 +108,7 @@ describe('The project policy editor (R-UI-041, R-AUTHZ-026)', () => {
   it('R-UI-027 a global policy is unchanged: no project line, the capability decides', async () => {
     const { root, get } = await renderScreen(PolicyEditor);
     expect(text(root)).not.toContain('Project policy of');
-    expect(root.querySelector('trove-principal-picker')).toBeNull();
+    expect(root.querySelector('quader-principal-picker')).toBeNull();
     expect((get(PolicyApi) as FakePolicyApi).validated.every((v) => v.project === undefined)).toBe(true);
   });
 
@@ -146,17 +146,17 @@ describe('A project service account (R-UI-041, Q-AUTHZ-175, Q-AUTHZ-177)', () =>
     });
     expect(text(root)).toContain('Service account of project web');
     // No role section for a project account, and nothing global is read.
-    expect(root.querySelector('trove-principal-roles')).toBeNull();
+    expect(root.querySelector('quader-principal-roles')).toBeNull();
     buttonByText(root, 'Create token').click();
     await settle(fixture);
-    const form = root.querySelector('trove-token-form') as HTMLElement;
+    const form = root.querySelector('quader-token-form') as HTMLElement;
     expect(text(form)).not.toContain('Never expires');
     expect(text(form)).toContain('caps the lifetime of service-account tokens');
     typeInto(form, 'Description', 'nightly');
     buttonByText(form, 'Create token').click();
     await settle(fixture);
     expect((get(TokensApi) as FakeTokensApi).calls).toContain('createForServiceAccount ci nightly');
-    expect(root.querySelector('trove-token-secret')).toBeTruthy();
+    expect(root.querySelector('quader-token-secret')).toBeTruthy();
     expect(await seriousViolations(root)).toEqual([]);
   });
 
@@ -171,7 +171,7 @@ describe('A project service account (R-UI-041, Q-AUTHZ-175, Q-AUTHZ-177)', () =>
     });
     buttonByText(root, 'Disable').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'Disable').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Disable').click();
     await sleep(fixture, 300);
     expect((get(IdentityApi) as FakeIdentityApi).calls).toContain('disableServiceAccount ci revokeTokens=false');
     expect((buttonByText(root, 'Enable') as HTMLButtonElement).disabled).toBe(false);

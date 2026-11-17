@@ -6,8 +6,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 func snippetFor(format string, g claims.Spec, protected bool) string {
@@ -54,15 +54,15 @@ func TestTheSnippetIsYAML(t *testing.T) {
 			if err := yaml.Unmarshal([]byte(text), &doc); err != nil {
 				t.Fatalf("not YAML: %v\n%s", err, text)
 			}
-			trove, ok := doc[".trove"].(map[string]any)
+			quader, ok := doc[".quader"].(map[string]any)
 			if !ok {
-				t.Fatalf("no hidden job .trove:\n%s", text)
+				t.Fatalf("no hidden job .quader:\n%s", text)
 			}
-			tokens := trove["id_tokens"].(map[string]any)["TROVE_ID_TOKEN"].(map[string]any)
+			tokens := quader["id_tokens"].(map[string]any)["QUADER_ID_TOKEN"].(map[string]any)
 			if tokens["aud"] != "https://packages.example.com" {
 				t.Errorf("aud = %v", tokens["aud"])
 			}
-			for _, secret := range []string{"trv_", "eyJ"} {
+			for _, secret := range []string{"qdr_", "eyJ"} {
 				if strings.Contains(text, secret) {
 					t.Errorf("the snippet holds %q", secret)
 				}
@@ -103,7 +103,7 @@ func TestTheSnippetAddressesTheRepositoriesWithTheirProject(t *testing.T) {
 	for name, text := range map[string]string{"system": system, "project": project} {
 		for _, want := range []string{
 			"registry=https://packages.example.com/api/npm/web/npm-internal/",
-			"//packages.example.com/api/npm/web/npm-internal/:_authToken=${TROVE_TOKEN}",
+			"//packages.example.com/api/npm/web/npm-internal/:_authToken=${QUADER_TOKEN}",
 			"npm publish --registry https://packages.example.com/api/npm/web/npm-internal/",
 		} {
 			if !strings.Contains(text, want) {
@@ -113,7 +113,7 @@ func TestTheSnippetAddressesTheRepositoriesWithTheirProject(t *testing.T) {
 	}
 	nuget := snippetOf("web", FormatNuGet, claims.Spec{Inline: []claims.InlineGrant{grantOn("nuget-internal", claims.Read, claims.Deploy)}}, false)
 	if !strings.Contains(nuget, `value="https://packages.example.com/api/nuget/web/nuget-internal/v3/index.json"`) ||
-		!strings.Contains(nuget, `--source "$TROVE_URL/api/nuget/web/nuget-internal/v3/index.json"`) {
+		!strings.Contains(nuget, `--source "$QUADER_URL/api/nuget/web/nuget-internal/v3/index.json"`) {
 		t.Errorf("the NuGet source lacks the project:\n%s", nuget)
 	}
 	none := snippetFor(FormatNPM, claims.Spec{Policies: []string{"ci-read"}}, false)

@@ -1,8 +1,8 @@
-// Package iface is the Bastion interface: the wire contract between a trove
+// Package iface is the Bastion interface: the wire contract between a quader
 // Bastion and the main installation it serves (R-BAS-008 to R-BAS-017). Both
 // sides import it, so it holds only types, constants and pure functions over the
 // standard library, and no server dependency (R-BAS-001): the routes and headers
-// of the interface, the marking of a forwarded response, the Trove-Bastion-Subject
+// of the interface, the marking of a forwarded response, the Quader-Bastion-Subject
 // format, the feed cursor, the JSON bodies of the handshake, the check, the feed
 // and the download intake, and the problem codes the two sides exchange.
 //

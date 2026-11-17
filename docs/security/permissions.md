@@ -1,12 +1,12 @@
 # Permissions
 
 Status: implemented in M1 for the decision engine, the compiled grant index and its propagation, the token scope as a
-ceiling, system roles, the epochs of `Trove-Authz-Min-Epoch` and the decision audit. M2 adds the populate check and package
+ceiling, system roles, the epochs of `Quader-Authz-Min-Epoch` and the decision audit. M2 adds the populate check and package
 ownership in the decision point, and their callers: npm's writers ask the ownership question for a publish, a provenance
 bundle, a dist-tag write and an unpublish, the generic layer asks it for every delete of npm content through `/files/` and the
 items API (Q-AUTHZ-161), the remote engine asks the populate check before a fill, the virtual engine asks `MemberUsableOn` per
 member and the shadowing check before a first version, and the host decides a format's write again when it commits
-(Q-ARCH-225). The role bindings of the system configuration (`authz.role_bindings`, applied by `trove migrate`) and the
+(Q-ARCH-225). The role bindings of the system configuration (`authz.role_bindings`, applied by `quader migrate`) and the
 auditor's metadata read (`content:metadata-read`) are built. Projects, their members and roles are on [delegated-administration.md](delegated-administration.md);
 [what the engine does with them](#projects-and-project-policies) is below.
 
@@ -230,7 +230,7 @@ read under a row lock (`FOR UPDATE`), so two blind writes journal one after the 
 | Replica whose change-log poll works | the next poll (`cluster.epoch_poll_interval`) plus one build; with Valkey typically about 100 ms plus one build |
 | Valkey stopped, messages lost or forged | the same bound; a message never advances the applied epoch and never confirms an index |
 | Replica cut off from PostgreSQL, or whose build fails | never longer than `authz.cache.max_staleness` (10 s) plus one build: after that the replica stops deciding, waits like a request waits for the database, and answers 503 `authz_stale` |
-| Client that sent `Trove-Authz-Min-Epoch` with the epoch of its change | the change is in force on the replica that answers, or the request waits or fails (503, 412) |
+| Client that sent `Quader-Authz-Min-Epoch` with the epoch of its change | the change is in force on the replica that answers, or the request waits or fails (503, 412) |
 
 A holder of a valid credential can keep using a removed right for that long and no longer. Revoking the credential ends it
 on the timeline of the identity area, independently of the index. The same holds for the job that finishes a large delete: it
@@ -238,7 +238,7 @@ decides every batch on the index installed then and on the groups and the creden
 grant, a group left or a revoked credential stops it at the next batch ([file-transfer.md](file-transfer.md#a-delete-and-its-job),
 Q-STOR-190).
 
-`Trove-Authz-Min-Epoch` can only make a replica wait or refuse; it cannot widen a permission. A malformed value is 400, an
+`Quader-Authz-Min-Epoch` can only make a replica wait or refuse; it cannot widen a permission. A malformed value is 400, an
 anonymous request ignores the header, so the epoch cannot be probed without a credential, and the replica reads the
 database epoch at most every 50 ms however many requests carry an unknown epoch.
 
@@ -268,7 +268,7 @@ member refused).
 ## What Valkey can do to authorization
 
 Nothing is written to Valkey or read from it by `internal/authz`. The change log delivers Valkey messages to the engine's
-listener as hints; the engine reads the epochs from PostgreSQL before it builds. Whoever can write under trove's Valkey prefix
+listener as hints; the engine reads the epochs from PostgreSQL before it builds. Whoever can write under Quader's Valkey prefix
 can make a replica run extra epoch reads (at most 20 per second per replica) and can delay a change by dropping messages
 until the poll applies it. They cannot add a grant, suppress an audit event or make a replica decide on older grants than the
 bound above.
@@ -303,8 +303,8 @@ answered from the cache is not a refusal and records nothing.
 ## The policy and role operations
 
 Reading policies and bindings needs `policies:read` and `roles:read`, writing them `policies:write` and `roles:write` (the
-auditor holds the reads, the administrator all four). Every write answers `Trove-Authz-Epoch`, and an authenticated caller may name
-that epoch in `Trove-Authz-Min-Epoch` on its next request to see the change on whichever replica answers (R-AUTHZ-032;
+auditor holds the reads, the administrator all four). Every write answers `Quader-Authz-Epoch`, and an authenticated caller may name
+that epoch in `Quader-Authz-Min-Epoch` on its next request to see the change on whichever replica answers (R-AUTHZ-032;
 `TestR_AUTHZ_032_MinEpochOverHTTP` shows it with Valkey stopped and a 30 s poll). `POST /api/v1/authz/check` and `GET
 /api/v1/authz/me` tell a caller about its own credential only; a repository the caller cannot see answers `allowed: false`, the
 same as one that does not exist. A role is bound to users, groups and service accounts only, and a group that takes members
@@ -332,21 +332,21 @@ The guard steps aside while the break-glass administrator is enabled.
 ## Role bindings from the configuration
 
 `authz.role_bindings` (R-AUTHZ-010, Q-AUTHZ-170, Q-AUTHZ-171) lets the system configuration decide who holds a system role.
-Only `trove migrate` writes these bindings: the chart's migration Job, with the migration credential (the schema owner in
+Only `quader migrate` writes these bindings: the chart's migration Job, with the migration credential (the schema owner in
 two-role mode), under the migration lock and in one transaction that also writes the authz change and the audit events with
 the actor `system:configuration` ([declared.go](../../internal/authz/declared.go), `Service.ApplyDeclared`;
 [migrate_declared.go](../../internal/app/migrate_declared.go)). Every running replica applies the result from the change log
 within the bound of R-AUTHZ-028, Valkey or not. No `web` or `worker` replica writes a binding with the source
 `configuration`; the API answers `DELETE` of one with 409 `role_binding_managed_by_configuration` and `PUT` of one with 200,
 leaving it to the configuration. The API's delete removes only rows with the source `api`, in the statement itself, so a
-concurrent take-over by `trove migrate` cannot be lost (`AuthzDeleteAPIBinding`).
+concurrent take-over by `quader migrate` cannot be lost (`AuthzDeleteAPIBinding`).
 
 Who decides, and what makes it real:
 
 - Whoever can change the chart values and run the upgrade (the GitOps repository and whoever merges to it) decides the role
   holders, as they decide the rest of the configuration and its Secrets.
-- For a declared group, whoever controls the group's membership at the identity provider administers trove: with a GitHub
-  team behind Dex, the team's maintainers and the organization's owners. trove sees the membership only at each member's
+- For a declared group, whoever controls the group's membership at the identity provider administers Quader: with a GitHub
+  team behind Dex, the team's maintainers and the organization's owners. Quader sees the membership only at each member's
   sign-in (R-AUTH-008, H-212) and cannot tell who changed it at the provider.
 - The group-sync rule that maps a claim value to the declared group's name is part of the same trust. A rule that a claim
   value anyone can obtain matches makes anyone a role holder; R-AUTH-007 refuses a `match_regex` without a namespace for a
@@ -495,15 +495,15 @@ The `last_admin` guard runs in the management operations only. The group sync of
 that the identity provider no longer reports, also the last membership in the group that carries `admin`, and the sync is
 not refused (Q-AUTHZ-70, option c). Live whenever an administrator group is synchronised from the identity provider and the
 break-glass administrator is disabled; what makes it real is a change of the group at the identity provider, by mistake or by
-someone who administers the provider but not trove. R-HA-054 reports an installation without an administrator; recovery is
-the break-glass administrator or `trove admin`.
+someone who administers the provider but not Quader. R-HA-054 reports an installation without an administrator; recovery is
+the break-glass administrator or `quader admin`.
 
-### H-381 · Deleting a declared principal removes its configuration binding until the next `trove migrate`
+### H-381 · Deleting a declared principal removes its configuration binding until the next `quader migrate`
 
 Component: role bindings from the configuration (R-AUTHZ-010, Q-AUTHZ-171). Subject: a holder of `identities:write` and
 `roles:write` (an administrator). Live today. Deleting a principal deletes its role bindings through the foreign key
 (R-AUTHZ-002), the configuration's included, although the API refuses to remove such a binding directly. Until the next run of
-`trove migrate` the binding is gone; that run creates a declared group again as a new, empty group (its synchronized members
+`quader migrate` the binding is gone; that run creates a declared group again as a new, empty group (its synchronized members
 return at their next sign-in) and stops for a declared user or service account. What makes it real: an administrator who
 deletes the declared group or user, by mistake or to take the role away outside the GitOps review. The deletion is audited
 (`group.deleted`, `authz.role.unbound` is not written for the cascade), and the last_admin guard still applies to it.
@@ -590,7 +590,7 @@ its owner reads them (Q-AUTHZ-163, Q-AUTHZ-164). Live today for every such token
 - An administrator holding `repositories:write-config` adds a member to the virtual repository after the token was issued: the token then reads that member's content through the virtual repository, within the owner's rights and no further. Nothing records the members a token was created with and the token list does not show the reach.
 - Tokens that already named a virtual repository by key when this rule was introduced gained the members' reach once, at deploy, without a re-issue and without an audit event.
 - The lift also lets the populate check fill the cache from the upstream on the token's behalf, for remote members with `cacheFillAction` `read`: such a token causes upstream requests and cache entries that it could not cause before.
-- The key of the member that served a request reaches the token through the `Trove-Resolved-From` header and the resolution explanation ([artifact.go](../../internal/virtual/artifact.go), [engine.go](../../internal/virtual/engine.go), [explain.go](../../internal/virtual/explain.go)), although the token's creator may not hold `repositories:read-config`.
+- The key of the member that served a request reaches the token through the `Quader-Resolved-From` header and the resolution explanation ([artifact.go](../../internal/virtual/artifact.go), [engine.go](../../internal/virtual/engine.go), [explain.go](../../internal/virtual/explain.go)), although the token's creator may not hold `repositories:read-config`.
 
 All of this stays inside the owner's own rights; the bound is the owner, the lifetime of the token (30 days by default on the setup page), and the administrators who edit the members. A scope by class or glob never lifts.
 

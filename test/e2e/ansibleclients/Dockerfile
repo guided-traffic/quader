@@ -24,6 +24,6 @@ RUN set -eu; \
     apt-get install --yes --no-install-recommends curl; \
     rm -rf /var/lib/apt/lists/*
 COPY --from=fwd fwd-linux-${TARGETARCH} /usr/local/bin/fwd
-COPY clean.sh /usr/local/bin/trove-clean
-COPY entrypoint.sh /usr/local/bin/trove-entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/trove-entrypoint.sh"]
+COPY clean.sh /usr/local/bin/quader-clean
+COPY entrypoint.sh /usr/local/bin/quader-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/quader-entrypoint.sh"]

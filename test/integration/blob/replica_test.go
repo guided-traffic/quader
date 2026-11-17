@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // countingStore counts and can fail the requests of one replica.
@@ -72,7 +72,7 @@ func (c *countingStore) DeleteMany(ctx context.Context, keys []string) ([]blob.D
 	return c.ObjectStore.DeleteMany(ctx, keys)
 }
 
-// replica is one trove replica's storage: its own spool and object-store client
+// replica is one quader replica's storage: its own spool and object-store client
 // on the shared bucket and database.
 type replica struct {
 	store *blob.Store

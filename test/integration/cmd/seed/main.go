@@ -1,5 +1,5 @@
-// Command seed creates the buckets of the integration stack: trove-blobs with
-// versioning on and trove-backups. It waits for the S3 gateway, which accepts
+// Command seed creates the buckets of the integration stack: quader-blobs with
+// versioning on and quader-backups. It waits for the S3 gateway, which accepts
 // connections a few seconds before it can create buckets, and is idempotent.
 package main
 
@@ -36,7 +36,7 @@ func env(name string) (string, error) {
 
 func run() error {
 	var vals [6]string
-	for i, n := range []string{"TROVE_TEST_S3_ENDPOINT", "TROVE_TEST_S3_REGION", "TROVE_TEST_S3_ACCESS_KEY", "TROVE_TEST_S3_SECRET_KEY", "TROVE_TEST_S3_BUCKET_BLOBS", "TROVE_TEST_S3_BUCKET_BACKUPS"} {
+	for i, n := range []string{"QUADER_TEST_S3_ENDPOINT", "QUADER_TEST_S3_REGION", "QUADER_TEST_S3_ACCESS_KEY", "QUADER_TEST_S3_SECRET_KEY", "QUADER_TEST_S3_BUCKET_BLOBS", "QUADER_TEST_S3_BUCKET_BACKUPS"} {
 		v, err := env(n)
 		if err != nil {
 			return err
@@ -46,7 +46,7 @@ func run() error {
 	endpoint, region, access, secret, blobs, backups := vals[0], vals[1], vals[2], vals[3], vals[4], vals[5]
 
 	// The gateway is TLS-only; trust exactly the stack's CA.
-	caFile, err := env("TROVE_TEST_CA_FILE")
+	caFile, err := env("QUADER_TEST_CA_FILE")
 	if err != nil {
 		return err
 	}

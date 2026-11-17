@@ -15,7 +15,7 @@
 // <<< M4b vulnerabilities
 
 // The structural styles of the CDK's overlay (dialogs, menus and tooltips open in it).
-// Colours, type and measures are trove's own tokens (_tokens.scss); `color-scheme: light dark` makes light-dark() follow
+// Colours, type and measures are Quader's own tokens (_tokens.scss); `color-scheme: light dark` makes light-dark() follow
 // prefers-color-scheme, and a user preference sets color-scheme on <html> (see tokens).
 @include cdk.overlay();
 
@@ -28,17 +28,17 @@ body {
 // The reference's type (Q-UI-128): Inter with its lower-case l, 14 px on 21 px; page titles in its heading-1 size,
 // 600 and a hair tighter.
 body {
-  background: var(--trove-surface);
-  color: var(--trove-on-surface);
-  font: 400 var(--trove-text-size) / var(--trove-text-line) var(--trove-font-sans);
-  font-feature-settings: var(--trove-font-features);
+  background: var(--quader-surface);
+  color: var(--quader-on-surface);
+  font: 400 var(--quader-text-size) / var(--quader-text-line) var(--quader-font-sans);
+  font-feature-settings: var(--quader-font-features);
 }
 
 h1 {
-  margin-block: 0 var(--trove-space-4);
-  color: var(--trove-heading);
-  font-size: var(--trove-heading-1);
-  font-weight: var(--trove-heading-weight);
+  margin-block: 0 var(--quader-space-4);
+  color: var(--quader-heading);
+  font-size: var(--quader-heading-1);
+  font-weight: var(--quader-heading-weight);
   line-height: 1.25;
-  letter-spacing: var(--trove-heading-tracking);
+  letter-spacing: var(--quader-heading-tracking);
 }

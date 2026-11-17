@@ -18,20 +18,20 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/config"
-	_ "github.com/guided-traffic/trove/internal/formatdata/oci"
-	ocidata "github.com/guided-traffic/trove/internal/formatdata/oci"
-	_ "github.com/guided-traffic/trove/internal/formats/all"
-	"github.com/guided-traffic/trove/internal/formats/oci"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/config"
+	_ "github.com/guided-traffic/quader/internal/formatdata/oci"
+	ocidata "github.com/guided-traffic/quader/internal/formatdata/oci"
+	_ "github.com/guided-traffic/quader/internal/formats/all"
+	"github.com/guided-traffic/quader/internal/formats/oci"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -67,7 +67,7 @@ func (c *captured) Record(context.Context, audit.Event) {}
 
 func newEnv(t *testing.T, extra ...string) *env {
 	t.Helper()
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "ocilocal", Env: append([]string{"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off"}, extra...)})
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "ocilocal", Env: append([]string{"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"}, extra...)})
 	e := &env{t: t, st: st, events: &captured{}}
 	admin := st.User("ops")
 	st.Bind("admin", admin)

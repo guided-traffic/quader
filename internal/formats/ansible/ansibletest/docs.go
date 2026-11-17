@@ -7,8 +7,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 // The twin of the documentation group of the data port (R-ANS-033 to R-ANS-036). It keeps the sets as they were put and answers the

@@ -10,13 +10,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // SealedCounter counts the sealed values of a registered column per key ID. It
 // implements secrets.ValueCounter for the key-ring status of R-API-049 and for
-// `trove admin secrets status`.
+// `quader admin secrets status`.
 type SealedCounter struct {
 	DB q.DBTX
 }

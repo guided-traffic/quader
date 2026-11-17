@@ -6,8 +6,8 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection/collectiontest"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection/collectiontest"
 )
 
 // TestR_ANS_006_TheCredentialsTheGalaxyClientsSend: Authorization Token (token= in ansible.cfg, --token, the environment variable),
@@ -43,7 +43,7 @@ func TestR_ANS_006_TheCredentialsTheGalaxyClientsSend(t *testing.T) {
 	if s := read("Token " + e.tokC); s != 200 {
 		t.Errorf("GET with Token: %d", s)
 	}
-	if s := read("Token not-a-trove-token"); s != 401 {
+	if s := read("Token not-a-quader-token"); s != 401 {
 		t.Errorf("GET with a Token that is none: %d", s)
 	}
 	// The scheme is a credential on the routes of the format only.
@@ -53,7 +53,7 @@ func TestR_ANS_006_TheCredentialsTheGalaxyClientsSend(t *testing.T) {
 
 	// Without a credential: 401 in the Galaxy shape with the challenge of a client that waits for one.
 	a := e.get("", "v3/collections/acme/tools/")
-	if a.Status != 401 || code(t, a) != "not_authenticated" || a.Header.Get("WWW-Authenticate") != `Basic realm="trove"` {
+	if a.Status != 401 || code(t, a) != "not_authenticated" || a.Header.Get("WWW-Authenticate") != `Basic realm="quader"` {
 		t.Errorf("anonymous: %d %s %q", a.Status, a.Body, a.Header.Get("WWW-Authenticate"))
 	}
 	if a := e.get("", ""); a.Status != 401 {

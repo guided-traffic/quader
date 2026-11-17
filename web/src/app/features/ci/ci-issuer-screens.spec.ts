@@ -27,8 +27,8 @@ describe('The CI issuer list (R-UI-035)', () => {
     expect(gitlab).toContain('gitlab-com');
     expect(gitlab).toContain('gitlab');
     expect(gitlab).toContain('https://gitlab.example.com');
-    expect(gitlab).toContain('https://trove.example.comnpm:trove.example.com');
-    expect([...root.querySelectorAll('tbody tr')[1]!.querySelectorAll('td')[2]!.querySelectorAll('div')].map((d) => text(d))).toEqual(['https://trove.example.com', 'npm:trove.example.com']);
+    expect(gitlab).toContain('https://quader.example.comnpm:quader.example.com');
+    expect([...root.querySelectorAll('tbody tr')[1]!.querySelectorAll('td')[2]!.querySelectorAll('div')].map((d) => text(d))).toEqual(['https://quader.example.com', 'npm:quader.example.com']);
     expect(text(root.querySelectorAll('tbody tr')[1]!.querySelectorAll('td')[3]!)).toBe('1');
     expect(gitlab).toContain('2 usable');
     expect(gitlab).toContain('api');
@@ -117,17 +117,17 @@ describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002, Q-CI-16)', () => {
     const { root, fixture, get } = await renderScreen(IssuerDetail, { inputs: { issuer: 'gitlab-com', tab: 'settings' } });
     await settle(fixture);
     ci(get).issuers = ci(get).issuers.map((i) =>
-      i.name === 'gitlab-com' ? { ...i, version: 2, allowedAudiences: ['https://trove.example.com'], singleUseSubjectTokens: true } : i,
+      i.name === 'gitlab-com' ? { ...i, version: 2, allowedAudiences: ['https://quader.example.com'], singleUseSubjectTokens: true } : i,
     );
     typeInto(root, 'Description', 'mine');
     buttonByText(root, 'Save changes').click();
     await sleep(fixture, 150);
-    expect(document.querySelector('trove-conflict-dialog')).toBeTruthy();
+    expect(document.querySelector('quader-conflict-dialog')).toBeTruthy();
     (buttonByText(document.body, 'Overwrite') as HTMLButtonElement).click();
     await sleep(fixture, 150);
     const stored = ci(get).issuers.find((i) => i.name === 'gitlab-com')!;
     expect(stored.description).toBe('mine');
-    expect(stored.allowedAudiences).toEqual(['https://trove.example.com']);
+    expect(stored.allowedAudiences).toEqual(['https://quader.example.com']);
     expect(stored.singleUseSubjectTokens).toBe(true);
     expect(ci(get).ifMatch).toEqual(['"1"', '"2"']);
   });
@@ -178,7 +178,7 @@ describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002, Q-CI-16)', () => {
     await settle(fixture);
     buttonByText(root, 'Delete issuer').click();
     await settle(fixture);
-    const ask = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const ask = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     expect(text(ask)).toContain('Its 1 mappings and their principals are deleted with it.');
     type(ask.querySelector('input') as HTMLInputElement, 'gitlab-com');
     await settle(fixture);
@@ -266,7 +266,7 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
     expect([...root.querySelectorAll('tbody tr')]).toHaveLength(2);
     await openFilters(fixture, root);
     typeInto(root, 'Job ID', '555');
-    (root.querySelector('trove-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+    (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
     await sleep(fixture, 80);
     const rows = [...root.querySelectorAll('tbody tr')];
     expect(rows).toHaveLength(1);
@@ -287,7 +287,7 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
     const { root, fixture } = await renderScreen(IssuancesPage);
     buttonByText(root, 'Details').click();
     await sleep(fixture, 100);
-    const dialog = overlay().querySelector('trove-ci-issuance-detail') as HTMLElement;
+    const dialog = overlay().querySelector('quader-ci-issuance-detail') as HTMLElement;
     expect(text(dialog)).toContain('team-a/app');
     expect(text(dialog)).toContain('read deploy:npm-internal');
     expect(text(dialog)).toContain('"project_path": "team-a/app"');
@@ -306,13 +306,13 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
     await openFilters(fixture, root);
     typeInto(root, 'Issuer', 'gitlab-com');
     typeInto(root, 'Job ID', '98765');
-    (root.querySelector('trove-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+    (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
     await sleep(fixture, 80);
     const revoke = buttonByText(root, 'Revoke matching tokens') as HTMLButtonElement;
     expect(revoke.disabled).toBe(false);
     revoke.click();
     await sleep(fixture, 100);
-    const ask = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const ask = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     // Three records match, two of them are active: the number is the one the request revokes.
     expect(text(ask)).toContain('Revoke 2 tokens?');
     expect(text(ask)).toContain('The 2 active tokens that match');
@@ -329,7 +329,7 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
       typeInto(root, 'Issuer', 'gitlab-com');
       typeInto(root, 'Job ID', '98765');
       typeInto(root, label, value);
-      (root.querySelector('trove-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+      (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
       await sleep(fixture, 80);
       expect((buttonByText(root, 'Revoke matching tokens') as HTMLButtonElement).disabled, label).toBe(true);
       expect(text(root.querySelector('#ci-revoke-note')!), label).toContain(label);
@@ -337,7 +337,7 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
     }
     typeInto(root, 'Issuer', 'gitlab-com');
     typeInto(root, 'Job ID', '98765');
-    (root.querySelector('trove-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+    (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
     await sleep(fixture, 80);
     expect((buttonByText(root, 'Revoke matching tokens') as HTMLButtonElement).disabled).toBe(false);
   });
@@ -347,7 +347,7 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
     await openFilters(fixture, root);
     typeInto(root, 'Issued from', '2026-11-02');
     typeInto(root, 'Issued until', '2026-11-03');
-    (root.querySelector('trove-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+    (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
     await sleep(fixture, 80);
     const last = ci(get).listFilters.at(-1)!;
     expect(last.from).toBe(new Date(2026, 10, 2).toISOString());
@@ -359,11 +359,11 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
     await openFilters(fixture, root);
     typeInto(root, 'Issuer', 'gitlab-com');
     typeInto(root, 'Job ID', '98765');
-    (root.querySelector('trove-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+    (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
     await sleep(fixture, 80);
     buttonByText(root, 'Revoke matching tokens').click();
     await sleep(fixture, 100);
-    expect(overlay()?.querySelector('trove-confirm-dialog') ?? null).toBeNull();
+    expect(overlay()?.querySelector('quader-confirm-dialog') ?? null).toBeNull();
     expect(ci(get).calls.filter((c) => c.startsWith('revoke'))).toEqual([]);
   });
 

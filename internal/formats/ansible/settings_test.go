@@ -14,8 +14,8 @@ func TestR_ANS_001_SettingsOfADocumentHaveTheirDefaults(t *testing.T) {
 		"not a document":  {`not json`, Settings{ClientID: "cloud-services", FetchDocumentation: true}},
 		"an empty member": {`{"ansible":{}}`, Settings{ClientID: "cloud-services", FetchDocumentation: true}},
 		"both": {
-			`{"ansible":{"authUrl":"https://sso.example/token","clientId":"trove"}}`,
-			Settings{AuthURL: "https://sso.example/token", ClientID: "trove", FetchDocumentation: true},
+			`{"ansible":{"authUrl":"https://sso.example/token","clientId":"quader"}}`,
+			Settings{AuthURL: "https://sso.example/token", ClientID: "quader", FetchDocumentation: true},
 		},
 		"the url alone": {
 			`{"ansible":{"authUrl":"https://sso.example/token"}}`,
@@ -36,7 +36,7 @@ func TestR_ANS_001_TheSettingsSchemaIsClosedAndHasNoSettingForLocalAndVirtual(t 
 	var s struct {
 		AdditionalProperties bool `json:"additionalProperties"`
 		Properties           map[string]struct {
-			Classes []string `json:"x-trove-classes"`
+			Classes []string `json:"x-quader-classes"`
 			Default any      `json:"default"`
 		} `json:"properties"`
 	}

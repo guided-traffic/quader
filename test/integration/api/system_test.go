@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // waitJob polls the job through the cluster until it is in one of the states.
@@ -50,7 +50,7 @@ func TestGarbageCollectionTrigger(t *testing.T) {
 	}
 	job := a.JSON(t)["job"].(map[string]any)
 	id := job["id"].(string)
-	if a.Header.Get("Location") != "http://trove.test/api/v1/system/jobs/"+id || job["state"] != "queued" || job["kind"] != "gc" || job["href"] != "/api/v1/system/jobs/"+id {
+	if a.Header.Get("Location") != "http://quader.test/api/v1/system/jobs/"+id || job["state"] != "queued" || job["kind"] != "gc" || job["href"] != "/api/v1/system/jobs/"+id {
 		t.Fatalf("Location %q job %v", a.Header.Get("Location"), job)
 	}
 	time.Sleep(1500 * time.Millisecond)
@@ -83,7 +83,7 @@ func TestGarbageCollectionTrigger(t *testing.T) {
 		t.Fatalf("result = %v", result)
 	}
 	for _, w := range webs {
-		if n := e.scalar("SELECT count(*) FROM trove.job j JOIN trove.replica r ON r.instance_uid = j.ran_by WHERE r.name = $1", w.Name); n != 0 {
+		if n := e.scalar("SELECT count(*) FROM quader.job j JOIN quader.replica r ON r.instance_uid = j.ran_by WHERE r.name = $1", w.Name); n != 0 {
 			t.Fatalf("%s ran %d jobs; web replicas only enqueue", w.Name, n)
 		}
 	}
@@ -104,7 +104,7 @@ func TestGarbageCollectionTrigger(t *testing.T) {
 		t.Fatalf("%d %s", list.Status, list.Body)
 	}
 	waitFor(t, "no gc run to be queued or running", 20*time.Second, func() bool {
-		return e.scalar("SELECT count(*) FROM trove.job WHERE dedup_key = 'gc' AND state IN ('queued', 'running', 'cancelling')") == 0
+		return e.scalar("SELECT count(*) FROM quader.job WHERE dedup_key = 'gc' AND state IN ('queued', 'running', 'cancelling')") == 0
 	})
 	next := send(t, c, "POST", "/api/v1/system/tasks/gc-full/run", map[string]any{}, admin...)
 	if next.Status != 202 {
@@ -113,7 +113,7 @@ func TestGarbageCollectionTrigger(t *testing.T) {
 
 	// 5. Arguments are checked against the task's type.
 	waitFor(t, "the full run to end", 20*time.Second, func() bool {
-		return e.scalar("SELECT count(*) FROM trove.job WHERE kind = 'gc-full' AND state = 'succeeded' AND created_by IS NOT NULL") == 1
+		return e.scalar("SELECT count(*) FROM quader.job WHERE kind = 'gc-full' AND state = 'succeeded' AND created_by IS NOT NULL") == 1
 	})
 	for _, c2 := range []struct {
 		body any
@@ -146,7 +146,7 @@ func TestR_OPS_019_AFailedJobAnswersItsErrorAsAJobError(t *testing.T) {
 
 	insert := func(state, errJSON string) string {
 		id := uuidV4()
-		e.exec("INSERT INTO trove.job (id, kind, queue, state, attempt, max_attempts, error, finished_at) VALUES ($1, 'probe', 'maintenance', $2, 2, 3, $3::jsonb, now())", id, state, errJSON)
+		e.exec("INSERT INTO quader.job (id, kind, queue, state, attempt, max_attempts, error, finished_at) VALUES ($1, 'probe', 'maintenance', $2, 2, 3, $3::jsonb, now())", id, state, errJSON)
 		return id
 	}
 	failed := insert("failed", `{"code":"job_failed","detail":"archive entry \"MAL-2026-1.json\" is larger than the limit","attempt":2}`)
@@ -178,7 +178,7 @@ func TestJobAccessAndPaging(t *testing.T) {
 	// Jobs started by three principals; kinds without a registered handler never run here.
 	insert := func(createdBy string, kind string) string {
 		id := uuidV4()
-		e.exec("INSERT INTO trove.job (id, kind, queue, created_by) VALUES ($1, $2, 'maintenance', $3)", id, kind, nullable(createdBy))
+		e.exec("INSERT INTO quader.job (id, kind, queue, created_by) VALUES ($1, $2, 'maintenance', $3)", id, kind, nullable(createdBy))
 		time.Sleep(3 * time.Millisecond) // distinct creation times, though the order does not depend on them
 		return id
 	}
@@ -249,7 +249,7 @@ func TestJobAccessAndPaging(t *testing.T) {
 				if a.Status != 200 {
 					t.Fatalf("%d %s", a.Status, a.Body)
 				}
-				replicas[a.Header.Get("X-Trove-Replica")] = true
+				replicas[a.Header.Get("X-Quader-Replica")] = true
 				m := a.JSON(t)
 				for _, it := range m["items"].([]any) {
 					id := it.(map[string]any)["id"].(string)
@@ -291,7 +291,7 @@ func TestJobAccessAndPaging(t *testing.T) {
 			t.Fatalf("a reader who did not start the job: %d", seeOnly.Status)
 		}
 		own := send(t, c, "POST", "/api/v1/system/jobs/"+aliceJobs[0]+"/cancel", nil, asAlice...)
-		if own.Status != 202 || own.JSON(t)["state"] != "cancelled" || own.Header.Get("Location") != "http://trove.test/api/v1/system/jobs/"+aliceJobs[0] {
+		if own.Status != 202 || own.JSON(t)["state"] != "cancelled" || own.Header.Get("Location") != "http://quader.test/api/v1/system/jobs/"+aliceJobs[0] {
 			t.Fatalf("%d %s", own.Status, own.Body)
 		}
 		if again := send(t, c, "POST", "/api/v1/system/jobs/"+aliceJobs[0]+"/cancel", nil, asAlice...); again.Status != 409 || again.Code(t) != "conflict" {
@@ -302,7 +302,7 @@ func TestJobAccessAndPaging(t *testing.T) {
 		}
 		// A running job turns cancelling.
 		running := uuidV4()
-		e.exec("INSERT INTO trove.job (id, kind, queue, state, created_by, locked_by, locked_until, attempt) VALUES ($1, 'probe', 'maintenance', 'running', $2, $3, now() + interval '1 hour', 1)", running, alice, uuidV4())
+		e.exec("INSERT INTO quader.job (id, kind, queue, state, created_by, locked_by, locked_until, attempt) VALUES ($1, 'probe', 'maintenance', 'running', $2, $3, now() + interval '1 hour', 1)", running, alice, uuidV4())
 		if r := send(t, c, "POST", "/api/v1/system/jobs/"+running+"/cancel", nil, asAlice...); r.Status != 202 || r.JSON(t)["state"] != "cancelling" {
 			t.Fatalf("%d %s", r.Status, r.Body)
 		}
@@ -466,7 +466,7 @@ func TestKeyRingStatus(t *testing.T) {
 	if run.Status != 409 || run.Code(t) != "key_ring_incompatible" {
 		t.Fatalf("%d %s", run.Status, run.Body)
 	}
-	if n := e.scalar("SELECT count(*) FROM trove.job WHERE kind = 'secrets-reencrypt'"); n != 0 {
+	if n := e.scalar("SELECT count(*) FROM quader.job WHERE kind = 'secrets-reencrypt'"); n != 0 {
 		t.Fatalf("%d jobs enqueued", n)
 	}
 
@@ -474,7 +474,7 @@ func TestKeyRingStatus(t *testing.T) {
 	if err := a.Stop(); err != nil {
 		t.Fatalf("stop web-a: %v", err)
 	}
-	e.exec("DELETE FROM trove.replica WHERE name = 'web-a'")
+	e.exec("DELETE FROM quader.replica WHERE name = 'web-a'")
 	a2 := e.newNode("web-a2", nodeOpts{env: ringEnv("2026-04", oldKey, newKey)})
 	c = e.cluster(a2, b)
 	waitFor(t, "compatible rings", 15*time.Second, func() bool {
@@ -508,16 +508,16 @@ func TestKeyRingCountsAndCanaries(t *testing.T) {
 	// narrower ring starts first and the value under 2026-04 comes after it.
 	for i, ring := range []*secrets.KeyRing{both, both, only10} {
 		sealed, _ := ring.Seal(col, secrets.Row(randHex(3)), []byte("pw"))
-		e.exec("INSERT INTO trove.vault_items VALUES ($1, $2)", randHex(4)+itoa(i), sealed)
+		e.exec("INSERT INTO quader.vault_items VALUES ($1, $2)", randHex(4)+itoa(i), sealed)
 	}
 	n2 := e.newNode("web-2", nodeOpts{env: ringEnv("2026-10", f2)})
 	oldRing, _ := secrets.Load(secretsConfig("2026-04", f1))
 	old, _ := oldRing.Seal(col, secrets.Row("old"), []byte("pw"))
-	e.exec("INSERT INTO trove.vault_items VALUES ('old', $1)", old)
+	e.exec("INSERT INTO quader.vault_items VALUES ('old', $1)", old)
 	n := e.newNode("web-1", nodeOpts{env: ringEnv("2026-10", f1, f2)})
 	// The start of web-1 seeded the canary of 2026-04; the state under test is the
 	// canary of 2026-10 only.
-	e.exec("DELETE FROM trove.secret_key_canary WHERE key_id = '2026-04'")
+	e.exec("DELETE FROM quader.secret_key_canary WHERE key_id = '2026-04'")
 	c10, _ := both.SealCanary("2026-10")
 
 	c := e.cluster(n)
@@ -533,7 +533,7 @@ func TestKeyRingCountsAndCanaries(t *testing.T) {
 		t.Fatalf("canary = %v", keys)
 	}
 	// A canary row that this replica's ring cannot open is failed.
-	e.exec("INSERT INTO trove.secret_key_canary (key_id, ciphertext) VALUES ('2026-04', $1)", c10)
+	e.exec("INSERT INTO quader.secret_key_canary (key_id, ciphertext) VALUES ('2026-04', $1)", c10)
 	m = send(t, c, "GET", "/api/v1/system/encryption", nil, e.admin.header()...).JSON(t)
 	for _, k := range m["keys"].([]any) {
 		if k.(map[string]any)["id"] == "2026-04" && k.(map[string]any)["canary"] != "failed" {

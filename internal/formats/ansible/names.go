@@ -3,7 +3,7 @@ package ansible
 import (
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
 )
 
 // patternChars are the characters of a name pattern (R-AUTHZ-005); a string that holds one is a pattern and is not checked against the

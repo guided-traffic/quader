@@ -9,13 +9,13 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The validation and the defaults of an issuer (R-CI-001, R-CI-002). The functions here are pure: the
-// service calls them before it opens a transaction or contacts the issuer, and `trove migrate` calls the
+// service calls them before it opens a transaction or contacts the issuer, and `quader migrate` calls the
 // same ones for a declared issuer, so the API and the configuration agree on what an issuer is.
 
 var issuerNamePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{1,63}$`)

@@ -42,16 +42,16 @@ type Part = 'external' | 'tokens';
  * the conflict dialog; recent authentication applies (the draft survives the sign-in).
  */
 @Component({
-  selector: 'trove-auth-settings',
+  selector: 'quader-auth-settings',
   imports: [PageHeader, Checkbox, ErrorNotice, Needs, Disclosure, TextField],
   templateUrl: './auth-settings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .settings {
-      max-inline-size: var(--trove-settings-measure);
+      max-inline-size: var(--quader-settings-measure);
     }
     form {
-      padding-block-end: var(--trove-space-5);
+      padding-block-end: var(--quader-space-5);
     }
   `,
 })

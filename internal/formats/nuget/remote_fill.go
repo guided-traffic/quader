@@ -12,14 +12,14 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/id"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nupkg"
-	"github.com/guided-traffic/trove/internal/formats/nuget/nuspec"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/id"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nupkg"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nuspec"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // The packages a remote repository caches (R-NUGET-015). NuGet v3 announces no content digest
@@ -100,7 +100,7 @@ func (remoteAdapter) InspectFill(ctx context.Context, _ formats.RemoteContext, p
 // for any reader, so that serving it as it came serves nothing a client would take for a package
 // (Q-NUGET-84): no end record of a ZIP archive anywhere a reader looks for one, an archive without
 // a .nuspec at its root, or a .nuspec that is not well-formed XML. Every other refusal is a
-// package trove's reader and a client's may read differently.
+// package quader's reader and a client's may read differently.
 func notAPackage(err error, sp formats.Spooled) bool {
 	switch {
 	case errors.Is(err, nuspec.ErrNotXML):
@@ -241,7 +241,7 @@ type remoteMetrics struct {
 func newRemoteMetrics(m *observability.Metrics) *remoteMetrics {
 	r := &remoteMetrics{
 		repos: m.Repos(),
-		unreadable: m.NewCounterVec("trove_nuget_remote_unparseable_packages_total",
+		unreadable: m.NewCounterVec("quader_nuget_remote_unparseable_packages_total",
 			"Packages cached by a remote repository that could not be read as a NuGet package and were served without NuGet rows (R-NUGET-015).", "repo"),
 	}
 	r.repos.DeleteOnForget(r.unreadable) // the series leave with the repository (R-OPS-007)
@@ -249,7 +249,7 @@ func newRemoteMetrics(m *observability.Metrics) *remoteMetrics {
 }
 
 func (m *remoteMetrics) unparseable(repoKey string) {
-	m.unreadable.WithLabelValues(m.repos.Value("trove_nuget_remote_unparseable_packages_total", repoKey)).Inc()
+	m.unreadable.WithLabelValues(m.repos.Value("quader_nuget_remote_unparseable_packages_total", repoKey)).Inc()
 }
 
 // fillPayload returns the package the inspection of a fill accepted.

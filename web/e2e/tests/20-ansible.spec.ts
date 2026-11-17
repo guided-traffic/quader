@@ -35,10 +35,10 @@ test('R-ANS-025 R-UI-049 the guide of a local repository shows its sections, and
     await expect(clientStep.getByRole('radio', { name: 'Ansible Galaxy (ansible-galaxy)', exact: true })).toBeChecked();
     const configure = page.getByRole('tabpanel', { name: 'Configure' });
     const cfg = configure.locator('.snippet pre').first();
-    await expect(cfg).toContainText('server_list = trove');
+    await expect(cfg).toContainText('server_list = quader');
     await expect(cfg).toContainText(`url=${address}`);
     await expect(cfg).not.toContainText('token');
-    await expect(configure).toContainText('ANSIBLE_GALAXY_SERVER_TROVE_TOKEN');
+    await expect(configure).toContainText('ANSIBLE_GALAXY_SERVER_QUADER_TOKEN');
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
       await expectAccessible(page, `client setup, ansible-galaxy (${scheme})`);

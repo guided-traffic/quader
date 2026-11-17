@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // pgProxy forwards TCP to the stack's PostgreSQL and can be taken away: while
@@ -105,13 +105,13 @@ func TestDatabaseOutageGrace(t *testing.T) {
 	if code, out, errOut := in.run(t, "migrate", "up"); code != 0 {
 		t.Fatalf("migrate %d %s %s", code, out, errOut)
 	}
-	px := newPGProxy(t, net.JoinHostPort(testenv.Get(t, "TROVE_TEST_PG_HOST"), testenv.Get(t, "TROVE_TEST_PG_PORT")))
+	px := newPGProxy(t, net.JoinHostPort(testenv.Get(t, "QUADER_TEST_PG_HOST"), testenv.Get(t, "QUADER_TEST_PG_PORT")))
 	host, port, _ := net.SplitHostPort(px.addr())
 	// The grace must stay below retry.max_elapsed.
-	web := in.start(t, "web", "trove-web-grace",
-		"TROVE_DATABASE_HOST="+host, "TROVE_DATABASE_PORT="+port,
-		"TROVE_DATABASE_RETRY_MAX_ELAPSED="+(outageGrace+time.Second).String(),
-		"TROVE_HEALTH_DATABASE_OUTAGE_GRACE="+outageGrace.String())
+	web := in.start(t, "web", "quader-web-grace",
+		"QUADER_DATABASE_HOST="+host, "QUADER_DATABASE_PORT="+port,
+		"QUADER_DATABASE_RETRY_MAX_ELAPSED="+(outageGrace+time.Second).String(),
+		"QUADER_HEALTH_DATABASE_OUTAGE_GRACE="+outageGrace.String())
 
 	t.Run("R-OPS-001 an outage shorter than health.database_outage_grace keeps /readyz at 200 and lists the database as degraded", func(t *testing.T) {
 		// A failed subtest must not leave PostgreSQL away for the next one.

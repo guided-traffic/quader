@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The OCI format's tables (R-OCI-007, R-OCI-033, Q-OCI-7): a row per manifest of an image name with the facts a referrers answer and a
 -- package screen need, a row per reference from a manifest to a manifest or a blob of the same name, and the mark of a manifest the

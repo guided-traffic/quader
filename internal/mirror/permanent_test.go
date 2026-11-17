@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // R-REPO-041, R-REPO-053 step 3: a fill that came back wrong and would come back wrong again fails its package at once, once, and

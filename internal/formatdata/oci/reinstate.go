@@ -5,13 +5,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// ReinstateInput names the manifest `trove admin oci reinstate` puts back (R-OCI-033).
+// ReinstateInput names the manifest `quader admin oci reinstate` puts back (R-OCI-033).
 type ReinstateInput struct {
 	// Project and Repository are the keys of the repository, Name the image name as the administrator typed it, Digest the
 	// manifest's digest.

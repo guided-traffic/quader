@@ -13,22 +13,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/config"
-	imp "github.com/guided-traffic/trove/internal/importer"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/config"
+	imp "github.com/guided-traffic/quader/internal/importer"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 // The import tooling (R-IMP-001 to R-IMP-010) against the integration stack: the sources are the counting test upstreams of
 // test/npmstub and test/nugetstub behind TLS, the targets are local repositories of a replica that runs in the test
-// process. The importer reaches the replica by the name its base URL carries (trove.test), connected to the replica's
+// process. The importer reaches the replica by the name its base URL carries (quader.test), connected to the replica's
 // listener.
 
 const (
-	targetHost = "trove.test"
+	targetHost = "quader.test"
 	rNPM       = "npm-imp"
 	rNPM2      = "npm-imp-b"
 	rNuGet     = "nuget-imp"
@@ -82,7 +82,7 @@ func newEnv(t *testing.T) *env {
 	}
 	e.nugetURL = e.serveNuGet(e.nuget)
 
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "import", Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "import", Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
 	e.st = st
 	writer, reader, rita := st.User("writer"), st.User("reader"), st.User("rita")
 	st.Bind("admin", rita)

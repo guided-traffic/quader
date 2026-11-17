@@ -697,7 +697,7 @@ Limits and edge cases:
 Priority: **P1**
 
 What native clients observe when the newest version is blocked and fallback is on. The npm and
-NuGet rows matter for trove's first formats; the rest is reference.
+NuGet rows matter for Quader's first formats; the rest is reference.
 
 <details>
 <summary>npm (npm and Yarn clients)</summary>
@@ -1496,7 +1496,7 @@ Scanner findings can be surfaced in security tools that teams already watch:
   pull-request bot (SEC-085) uploads its results the same way. Without the hosting service's
   security product the findings stay visible in the system only.
 
-For trove the analogue is GitLab's security dashboard, which ingests findings as report
+For Quader the analogue is GitLab's security dashboard, which ingests findings as report
 artifacts of CI jobs; both mechanisms above reduce to "violation event → adapter → external
 format", which webhooks (SEC-059, EVT-015) already provide.
 
@@ -2085,7 +2085,7 @@ job, to trusted bot accounts such as Dependabot or Renovate. It runs in the pull
 commit and pull-request scans (SEC-085) and when a container image that contains such workflow
 files is scanned. Capability level only.
 
-The GitLab counterpart, if trove ever builds one, concerns merge-request pipelines from forks
+The GitLab counterpart, if Quader ever builds one, concerns merge-request pipelines from forks
 running with the parent project's protected variables (CIOIDC-036 in
 [oidc-ci-integration.md](oidc-ci-integration.md)).
 

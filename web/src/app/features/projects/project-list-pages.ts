@@ -8,20 +8,20 @@ import { PageHeader } from '../../shared/ui/page-header';
 
 /** The permission policies of the project (R-UI-041, R-AUTHZ-026, Q-UI-129): `/projects/:project/policies`. */
 @Component({
-  selector: 'trove-project-policies-page',
+  selector: 'quader-project-policies-page',
   imports: [PageHeader, ProjectPolicies, RouterLink],
   template: `
-    <trove-page-header heading="Permission policies" i18n-heading="@@route.permissions.title">
+    <quader-page-header heading="Permission policies" i18n-heading="@@route.permissions.title">
       @if (state() === 'enabled') {
         <a actions class="btn btn-confirm" [routerLink]="['/projects', project(), 'policies', 'new']" i18n="@@project-policies.create"
           >Create policy</a
         >
       }
-    </trove-page-header>
+    </quader-page-header>
     <p class="muted" i18n="@@project.policies-hint">
       The policies of the project grant its principals the actions they name on the project's repositories, and only on those.
     </p>
-    <trove-project-policies [project]="project()" />
+    <quader-project-policies [project]="project()" />
   `,
   styleUrl: '../../shared/access/access.scss',
 })
@@ -35,18 +35,18 @@ export class ProjectPoliciesPage {
 
 /** The service accounts of the project (R-UI-041, Q-UI-129): `/projects/:project/service-accounts`. */
 @Component({
-  selector: 'trove-project-service-accounts-page',
+  selector: 'quader-project-service-accounts-page',
   imports: [PageHeader, ProjectServiceAccounts],
   template: `
-    <trove-page-header heading="Service accounts" i18n-heading="@@route.service-accounts.title">
+    <quader-page-header heading="Service accounts" i18n-heading="@@route.service-accounts.title">
       @if (state() === 'enabled') {
         <button actions class="btn btn-confirm" type="button" (click)="accounts.add()" i18n="@@project-sas.create">Create service account</button>
       }
-    </trove-page-header>
+    </quader-page-header>
     <p class="muted" i18n="@@project.service-accounts-hint">
       A service account of the project acts for a pipeline or a partner. Only the project's own policies grant to it; open one to issue its tokens.
     </p>
-    <trove-project-service-accounts #accounts [project]="project()" />
+    <quader-project-service-accounts #accounts [project]="project()" />
   `,
   styleUrl: '../../shared/access/access.scss',
 })

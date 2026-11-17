@@ -28,7 +28,7 @@ import { Repository, refOf } from '../repositories-api';
  * text: placeholders, the environment reference, quoting and the scheme-less key.
  */
 
-const BASE = 'https://trove.example.net';
+const BASE = 'https://quader.example.net';
 
 function notFound(): ApiError {
   return new ApiError(404, { code: 'not_found', detail: 'not found' }, 'rid-404');
@@ -687,7 +687,7 @@ export class FakeClientSetupApi extends ClientSetupApi {
         : repo.class === 'virtual'
           ? 'web/npm-local'
           : repository;
-    const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${TROVE_TOKEN}' : null;
+    const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${QUADER_TOKEN}' : null;
     const auth = (line: string): string => (token === null ? '' : line.replace('TOKEN', token));
     const snippets: ClientSnippet[] = [];
     const yarnBerry = query.client === 'yarn';
@@ -770,9 +770,9 @@ export class FakeClientSetupApi extends ClientSetupApi {
 /**
  * The NuGet snippets as the server renders them (internal/formats/nuget/setup.go, Q-NUGET-49): the
  * registry URL ends in a slash and the source is its `v3/index.json`; the ids are
- * `<client>.<section>[.<name>]`; the token is one spelling per shell (`${TROVE_TOKEN}`,
- * `%TROVE_TOKEN%`, `$env:TROVE_TOKEN`), replaced by the placeholder or by the variable of the
- * credential mode; with `none` the lines that hold a token go. The user name is the fixed `trove`.
+ * `<client>.<section>[.<name>]`; the token is one spelling per shell (`${QUADER_TOKEN}`,
+ * `%QUADER_TOKEN%`, `$env:QUADER_TOKEN`), replaced by the placeholder or by the variable of the
+ * credential mode; with `none` the lines that hold a token go. The user name is the fixed `quader`.
  * A virtual repository publishes through itself, so the push names the repository the caller chose.
  */
 function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean, ttl: number): ClientSetup {
@@ -785,9 +785,9 @@ function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boole
   const source = `${registryUrl}v3/index.json`;
   const target = mayPublish ? (repo.class === 'virtual' ? 'web/nuget-local' : refOf(repo)) : null;
   const refs = {
-    sh: credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${TROVE_TOKEN}' : null,
-    cmd: credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '%TROVE_TOKEN%' : null,
-    ps: credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '$env:TROVE_TOKEN' : null,
+    sh: credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${QUADER_TOKEN}' : null,
+    cmd: credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '%QUADER_TOKEN%' : null,
+    ps: credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '$env:QUADER_TOKEN' : null,
   };
   const auth = credentials !== 'none';
   const pkg = query.package ?? '<package>';
@@ -799,10 +799,10 @@ function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boole
 
   const config =
     '<?xml version="1.0" encoding="utf-8"?>\n<configuration>\n  <packageSources>\n    <clear />\n' +
-    `    <add key="trove" value="${source}" protocolVersion="3" />\n  </packageSources>\n` +
+    `    <add key="quader" value="${source}" protocolVersion="3" />\n  </packageSources>\n` +
     (auth
-      ? '  <packageSourceCredentials>\n    <trove>\n      <add key="Username" value="trove" />\n' +
-        `      <add key="ClearTextPassword" value="${refs.cmd}" />\n    </trove>\n  </packageSourceCredentials>\n`
+      ? '  <packageSourceCredentials>\n    <quader>\n      <add key="Username" value="quader" />\n' +
+        `      <add key="ClearTextPassword" value="${refs.cmd}" />\n    </quader>\n  </packageSourceCredentials>\n`
       : '') +
     '</configuration>\n';
 
@@ -811,22 +811,22 @@ function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boole
       'dotnet.configure.shell',
       'configure',
       'shell',
-      `dotnet nuget add source ${source} --name trove` + (auth ? ` \\\n  --username trove --password "${refs.sh}" --store-password-in-clear-text` : '') + '\n',
+      `dotnet nuget add source ${source} --name quader` + (auth ? ` \\\n  --username quader --password "${refs.sh}" --store-password-in-clear-text` : '') + '\n',
     );
     add(
       'dotnet.configure.powershell',
       'configure',
       'shell',
-      `dotnet nuget add source ${source} --name trove` + (auth ? ` \`\n  --username trove --password "${refs.ps}" --store-password-in-clear-text` : '') + '\n',
+      `dotnet nuget add source ${source} --name quader` + (auth ? ` \`\n  --username quader --password "${refs.ps}" --store-password-in-clear-text` : '') + '\n',
     );
   }
   if (query.client === 'nuget') {
-    add('nuget.configure.cmd', 'configure', 'shell', `nuget sources add -Name trove -Source ${source}` + (auth ? ` ^\n  -Username trove -Password ${refs.cmd}` : '') + '\n');
+    add('nuget.configure.cmd', 'configure', 'shell', `nuget sources add -Name quader -Source ${source}` + (auth ? ` ^\n  -Username quader -Password ${refs.cmd}` : '') + '\n');
     add(
       'nuget.configure.powershell',
       'configure',
       'shell',
-      `nuget sources add -Name trove -Source ${source}` + (auth ? ` \`\n  -Username trove -Password "${refs.ps}"` : '') + '\n',
+      `nuget sources add -Name quader -Source ${source}` + (auth ? ` \`\n  -Username quader -Password "${refs.ps}"` : '') + '\n',
     );
   }
   add(`${query.client}.configure.nugetconfig`, 'configure', 'xml', config, 'nuget.config');
@@ -834,7 +834,7 @@ function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boole
   if (query.client === 'dotnet') {
     add('dotnet.install', 'install', 'shell', `dotnet add package ${pkg}${withVersion ? ` --version ${withVersion}` : ''}\n`);
   } else if (query.client === 'nuget') {
-    add('nuget.install', 'install', 'shell', `nuget install ${pkg} -Source trove -OutputDirectory packages${withVersion ? ` -Version ${withVersion}` : ''}\n`);
+    add('nuget.install', 'install', 'shell', `nuget install ${pkg} -Source quader -OutputDirectory packages${withVersion ? ` -Version ${withVersion}` : ''}\n`);
   } else {
     add('visual-studio.install.packagereference', 'install', 'xml', `<PackageReference Include="${pkg}"${withVersion ? ` Version="${withVersion}"` : ''} />\n`);
   }
@@ -868,8 +868,8 @@ function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boole
 
 /**
  * The Ansible snippets as the server renders them (internal/formats/ansible/setup.go, R-ANS-025; the ids are
- * `<client>.<section>[.<name>]` and `snippet-ids.fixture.ts` pins them against the Go side). The server is named `trove` in an
- * `ansible.cfg` that holds no token, the token is the environment variable `ANSIBLE_GALAXY_SERVER_TROVE_TOKEN` in the spelling of each
+ * `<client>.<section>[.<name>]` and `snippet-ids.fixture.ts` pins them against the Go side). The server is named `quader` in an
+ * `ansible.cfg` that holds no token, the token is the environment variable `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN` in the spelling of each
  * shell, and a `~/.netrc` line is a command that names the host alone. The credential reference is rewritten by the mode of the request
  * the way the API does (`applyCredentials` of internal/api/v1/setup_snippets.go): the placeholder, the variable, or the line dropped.
  * `PowerShell` and `cmd` are reported as `shell`, the one language the document knows for them (Q-API-191).
@@ -883,10 +883,10 @@ function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boo
   const host = new URL(BASE).hostname;
   const target = mayPublish ? refOf(repo) : null;
   const auth = credentials !== 'none';
-  const sh = '${TROVE_TOKEN}';
-  const cmd = '%TROVE_TOKEN%';
-  const ps = '$env:TROVE_TOKEN';
-  const variable = 'ANSIBLE_GALAXY_SERVER_TROVE_TOKEN';
+  const sh = '${QUADER_TOKEN}';
+  const cmd = '%QUADER_TOKEN%';
+  const ps = '$env:QUADER_TOKEN';
+  const variable = 'ANSIBLE_GALAXY_SERVER_QUADER_TOKEN';
   const anonymous = 'This repository is open to anonymous readers: no credential is needed to install from it.';
   const credential = (content: string): string => {
     if (credentials === 'env') return content;
@@ -903,7 +903,7 @@ function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boo
   const add = (id: string, tab: ClientSnippet['tab'], language: ClientSnippet['language'], content: string, fileName: string | null = null): void => {
     snippets.push({ id, tab, fileName, language, content: credential(content) });
   };
-  add('ansible-galaxy.configure.ansible-cfg', 'configure', 'ini', `[galaxy]\nserver_list = trove\n\n[galaxy_server.trove]\nurl=${registryUrl}\n`, 'ansible.cfg');
+  add('ansible-galaxy.configure.ansible-cfg', 'configure', 'ini', `[galaxy]\nserver_list = quader\n\n[galaxy_server.quader]\nurl=${registryUrl}\n`, 'ansible.cfg');
   add(
     'ansible-galaxy.configure.token-env',
     'configure',
@@ -922,7 +922,7 @@ function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boo
     'configure',
     'shell',
     auth
-      ? `touch ~/.netrc && chmod 600 ~/.netrc\nprintf 'machine %s login trove password %s\\n' ${host} "${sh}" >>~/.netrc\n`
+      ? `touch ~/.netrc && chmod 600 ~/.netrc\nprintf 'machine %s login quader password %s\\n' ${host} "${sh}" >>~/.netrc\n`
       : '# This repository is open to anonymous readers: no ~/.netrc entry is needed.\n',
   );
   const version = query.package && query.version ? query.version : null;
@@ -933,7 +933,7 @@ function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boo
     'yaml',
     '---\ncollections:\n' +
       `  - name: ${query.package ?? '<package>'}${version ? `\n    version: "${version}"` : ''}\n` +
-      '    source: trove\n' +
+      '    source: quader\n' +
       '# Roles are served by remote and virtual repositories of a Galaxy only. Install them with\n' +
       '#   ansible-galaxy role install -r requirements.yml\n' +
       '# roles:\n' +
@@ -970,7 +970,7 @@ function ociSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean
   const credentials = query.credentials ?? 'placeholder';
   const registryUrl = `${BASE}/v2/${refOf(repo)}/`;
   const prefix = `${BASE.replace(/^https?:\/\//, '')}/${refOf(repo)}`;
-  const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${TROVE_TOKEN}' : null;
+  const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${QUADER_TOKEN}' : null;
   const target = mayPublish ? refOf(repo) : null;
   const tool = query.client;
   const pkg = query.package ? shellQuote(query.package) : '<package>';
@@ -983,8 +983,8 @@ function ociSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean
     `${tool}.configure.shell`,
     'configure',
     token === null
-      ? `${tool} login ${prefix} --username trove\n`
-      : `printf '%s' "${token}" | ${tool} login ${prefix} --username trove --password-stdin\n`,
+      ? `${tool} login ${prefix} --username quader\n`
+      : `printf '%s' "${token}" | ${tool} login ${prefix} --username quader --password-stdin\n`,
   );
   if (tool === 'docker') {
     add(
@@ -992,8 +992,8 @@ function ociSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean
       'configure',
       token === null
         ? '# An image pull secret holds a credential: ask for the snippet with one.\n'
-        : `printf '{"auths":{"%s":{"username":"trove","password":"%s"}}}' ${prefix} "${token}" | \\\n` +
-            '  kubectl create secret generic trove-registry --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin\n',
+        : `printf '{"auths":{"%s":{"username":"quader","password":"%s"}}}' ${prefix} "${token}" | \\\n` +
+            '  kubectl create secret generic quader-registry --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin\n',
     );
   }
   add(`${tool}.install`, 'install', `${tool} pull ${prefix}/${spec}\n`);
@@ -1024,7 +1024,7 @@ function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: bool
   }
   const credentials = query.credentials ?? 'placeholder';
   const registryUrl = `${BASE}/files/${repository}/`;
-  const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${TROVE_TOKEN}' : null;
+  const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${QUADER_TOKEN}' : null;
   const header = token === null ? '' : `header = "Authorization: Bearer ${token}"\n`;
   const snippets: ClientSnippet[] = [
     {
@@ -1032,14 +1032,14 @@ function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: bool
       tab: 'configure',
       fileName: null,
       language: 'shell',
-      content: `trove_curl() {\n  curl --silent --show-error --config - "$@" <<EOF\n${header}EOF\n}\n`,
+      content: `quader_curl() {\n  curl --silent --show-error --config - "$@" <<EOF\n${header}EOF\n}\n`,
     },
     {
       id: 'curl.install',
       tab: 'install',
       fileName: null,
       language: 'shell',
-      content: `trove_curl --fail --remote-name "${registryUrl}<path>"\n`,
+      content: `quader_curl --fail --remote-name "${registryUrl}<path>"\n`,
     },
   ];
   if (mayPublish) {
@@ -1048,7 +1048,7 @@ function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: bool
       tab: 'publish',
       fileName: null,
       language: 'shell',
-      content: `trove_curl --fail --upload-file <file> "${registryUrl}<path>"\n`,
+      content: `quader_curl --fail --upload-file <file> "${registryUrl}<path>"\n`,
     });
   }
   return {

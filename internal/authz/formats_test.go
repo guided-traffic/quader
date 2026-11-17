@@ -3,7 +3,7 @@ package authz
 import (
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // lowerNames is the name rule of a format whose package names compare

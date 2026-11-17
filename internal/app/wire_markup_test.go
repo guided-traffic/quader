@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/packages/readme"
+	"github.com/guided-traffic/quader/internal/packages/readme"
 )
 
 // TestR_ANS_039_TheHostMarkupRunsThePolicyOfTheREADMERenderer: the Markup the composition root gives the format host renders Markdown and

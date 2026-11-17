@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Vulnerability scanning (R-VULN-020, Q-VULN-68): the indexes behind the keyset of the findings list and the export. The
 -- list reads one page in the order of its sort key (docs/developer/vulnerabilities.md, section E); the statement orders by

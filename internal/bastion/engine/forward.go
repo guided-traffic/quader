@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/answers"
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
 // maxDocumentBytes is the largest document the Bastion keeps (R-BAS-021).
@@ -107,7 +107,7 @@ func stripRequest(h http.Header) {
 		ck := http.CanonicalHeaderKey(k)
 		switch {
 		case ck == "Cookie", ck == "Forwarded", ck == "Range", ck == "X-Nuget-Apikey", ck == "Expect",
-			strings.HasPrefix(ck, "X-Forwarded-"), strings.HasPrefix(ck, "Trove-"), strings.HasPrefix(ck, "If-"),
+			strings.HasPrefix(ck, "X-Forwarded-"), strings.HasPrefix(ck, "Quader-"), strings.HasPrefix(ck, "If-"),
 			hopByHop(ck), drop[ck]:
 			delete(h, k)
 		}

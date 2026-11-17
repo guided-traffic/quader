@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // Area names one unit of wiring: the step in steps.go that builds a typed part

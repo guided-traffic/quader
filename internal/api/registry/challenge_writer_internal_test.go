@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/registry/route"
+	"github.com/guided-traffic/quader/internal/api/registry/route"
 )
 
 type noMatch struct{}
@@ -18,7 +18,7 @@ func (noMatch) RegistryTarget(*http.Request) (route.Target, bool) { return route
 func TestTheChallengeWriterRewritesAfterAnInformationalStatus(t *testing.T) {
 	e, err := NewEnforcer(EnforcerOptions{
 		Matcher: noMatch{}, WriteError: func(http.ResponseWriter, *http.Request, error) {},
-		Realm: func(*http.Request) (string, string) { return "https://trove.test/v2/_token", "trove.test" },
+		Realm: func(*http.Request) (string, string) { return "https://quader.test/v2/_token", "quader.test" },
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -29,7 +29,7 @@ func TestTheChallengeWriterRewritesAfterAnInformationalStatus(t *testing.T) {
 	w.WriteHeader(http.StatusEarlyHints)
 	w.Header().Set("WWW-Authenticate", "Bearer")
 	w.WriteHeader(http.StatusUnauthorized)
-	if got, want := rec.Header().Get("WWW-Authenticate"), `Bearer realm="https://trove.test/v2/_token",service="trove.test"`; got != want { // the recorder keeps the first status it saw, so only the header is asserted
+	if got, want := rec.Header().Get("WWW-Authenticate"), `Bearer realm="https://quader.test/v2/_token",service="quader.test"`; got != want { // the recorder keeps the first status it saw, so only the header is asserted
 		t.Fatalf("%q, want %q", got, want)
 	}
 }

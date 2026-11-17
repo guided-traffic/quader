@@ -1,6 +1,6 @@
-# trove Bastion
+# Quader Bastion
 
-Status: specified for phase 5b of the [project plan](../projektplan/BETA.md#phase-5b--trove-bastion-m13) and built. The Bastion's own side is
+Status: specified for phase 5b of the [project plan](../projektplan/BETA.md#phase-5b--quader-bastion-m13) and built. The Bastion's own side is
 wired into one role ([developer page](../developer/bastion.md#how-the-role-is-wired-package-4c)): the request flow
 ([internal/bastion/engine](../../internal/bastion/engine)), the guard, the cache backends, the Valkey state and the link to the main
 installation. On the main installation's side the registrations and the Bastion token
@@ -27,7 +27,7 @@ and its permissions in [permissions.md](permissions.md); the rules are in the sp
 
 | The Bastion holds | It does not hold |
 |---|---|
-| The Bastion token (`trv_bst_`), read from a mounted Secret and re-read on change (R-BAS-006) | Any user, group, policy, token hash or session of the main installation (R-BAS-020) |
+| The Bastion token (`qdr_bst_`), read from a mounted Secret and re-read on change (R-BAS-006) | Any user, group, policy, token hash or session of the main installation (R-BAS-020) |
 | The main installation's answers about callers, keyed by the SHA-256 of the presented token, for at most `bastion.answers.period` (plus the grace period while the main installation is unreachable) | A caller's token beyond the request: never on disk, never in Valkey (R-BAS-019) |
 | Cached artifacts under their SHA-256, shared documents, negative entries, and per-caller documents in memory only (R-BAS-022 to R-BAS-024) | Any credential for the main installation's object store, PostgreSQL or upstream registries (R-BAS-030); the chart does not limit where its pods connect ([H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods)) |
 | The signing key for its records in Valkey and the bucket (R-BAS-032) | A right to write Kubernetes Secrets or to issue tokens (R-BAS-006, R-BAS-045) |
@@ -106,10 +106,10 @@ What the main installation does with a request that claims to come from a Bastio
 
 | Mechanism | What it guarantees | Code |
 |---|---|---|
-| Recognition | A request is a Bastion's only with a valid, enabled `bst` token in `Trove-Bastion-Authorization` (a forward) or `Authorization` (an interface call, which carries no `Trove-Bastion-Authorization`); every other `Trove-Bastion-*` header is ignored. The stages behind it get a copy of the request without the Bastion token, so neither the dispatcher nor a remote repository's outbound client can pass it on. | [recognize.go](../../internal/bastionmain/recognize.go) |
-| Route-family backstop | A forward reaches only `/api/<format>/` and `/files/`, judged on the path as the router decodes it segment by segment (`/api/%76%31/tokens` is `/api/v1/tokens`); anything else answers `404 not_found` before authentication, so a forward runs no route of the management API, the login tree or the UI with the caller's credential, and is never answered `bastion_token_invalid` for the caller's credential ([Q-BAS-115](../spec/bastion.md#q-bas-115--a-request-with-trove-bastion-authorization-is-a-forward-and-a-forward-reaches-only-the-package-families)) | [recognize.go](../../internal/bastionmain/recognize.go) |
+| Recognition | A request is a Bastion's only with a valid, enabled `bst` token in `Quader-Bastion-Authorization` (a forward) or `Authorization` (an interface call, which carries no `Quader-Bastion-Authorization`); every other `Quader-Bastion-*` header is ignored. The stages behind it get a copy of the request without the Bastion token, so neither the dispatcher nor a remote repository's outbound client can pass it on. | [recognize.go](../../internal/bastionmain/recognize.go) |
+| Route-family backstop | A forward reaches only `/api/<format>/` and `/files/`, judged on the path as the router decodes it segment by segment (`/api/%76%31/tokens` is `/api/v1/tokens`); anything else answers `404 not_found` before authentication, so a forward runs no route of the management API, the login tree or the UI with the caller's credential, and is never answered `bastion_token_invalid` for the caller's credential ([Q-BAS-115](../spec/bastion.md#q-bas-115--a-request-with-quader-bastion-authorization-is-a-forward-and-a-forward-reaches-only-the-package-families)) | [recognize.go](../../internal/bastionmain/recognize.go) |
 | Forwarded headers | The Bastion's egress is listed in `bastions.trusted_proxies`, not in `server.trusted_proxies`. Its forwarded client address and host count only for a request whose Bastion token was recognized and that came from a listed address; any other request from that address - a workload sharing the egress - cannot choose its client address (rate limits, throttle, audit) or its response base URL ([Q-BAS-116](../spec/bastion.md#q-bas-116--the-bastions-forwarded-headers-count-only-for-a-recognized-request-from-an-address-of-bastionstrusted_proxies), [H-467](../spec/bastion.md#h-467--behind-the-main-installations-own-ingress-the-forwarded-host-is-what-the-ingress-reports)) | [recognize.go](../../internal/bastionmain/recognize.go), [wire_bastion.go](../../internal/app/wire_bastion.go) |
-| Throttle of rejected Bastion tokens | The stage runs before the authentication stage, so it counts rejected `trv_bst_` tokens against the address that sent them (a budget of its own, the size of R-AUTH-038's); the token service asks the throttle after its cache, so a throttled address is refused a token the replica does not hold without a lookup, and a known one passes ([Q-BAS-65](../spec/bastion.md#q-bas-65--the-recognition-admits-an-interface-route-on-its-own-proof-throttles-tokens-it-cannot-place-and-counts-the-bastion-in-the-read-class), H-440). `token.rejected` names the request's source; the token's last use records the Bastion's own address | [recognize.go](../../internal/bastionmain/recognize.go), [authenticator.go](../../internal/bastionmain/authenticator.go), [bastion.go](../../internal/auth/token/bastion.go) |
+| Throttle of rejected Bastion tokens | The stage runs before the authentication stage, so it counts rejected `qdr_bst_` tokens against the address that sent them (a budget of its own, the size of R-AUTH-038's); the token service asks the throttle after its cache, so a throttled address is refused a token the replica does not hold without a lookup, and a known one passes ([Q-BAS-65](../spec/bastion.md#q-bas-65--the-recognition-admits-an-interface-route-on-its-own-proof-throttles-tokens-it-cannot-place-and-counts-the-bastion-in-the-read-class), H-440). `token.rejected` names the request's source; the token's last use records the Bastion's own address | [recognize.go](../../internal/bastionmain/recognize.go), [authenticator.go](../../internal/bastionmain/authenticator.go), [bastion.go](../../internal/auth/token/bastion.go) |
 | Interface routes | Admitted on the recognition alone, as the registration, which holds no grant and is never internal in the decision point; the registration's requests are charged to the read class under its token ([H-438](../spec/bastion.md#h-438--the-interface-calls-of-a-bastion-share-the-read-budget-of-its-token)) | [bastion_services.go](../../internal/api/v1/bastion_services.go), [index.go](../../internal/authz/index.go) |
 | Write probe | Admitted as the anonymous caller for routing only, whatever the levels say; answered at the route match (`403 bastion_read_only` or `204`) before any decision, handler or body read ([Q-BAS-118](../spec/bastion.md#q-bas-118--a-write-probe-is-admitted-as-the-anonymous-caller-for-routing-only), [H-469](../spec/bastion.md#h-469--a-probe-admitted-for-routing-runs-any-handler-below-the-package-families-that-does-not-tell-the-marking-its-route)) | [bastion_services.go](../../internal/api/v1/bastion_services.go) |
 | Check | The caller's credential is validated by the authentication stage of the default endpoint as a direct request from the caller's address: the endpoint's token types, the failed-credential throttle and `token.rejected` apply to that address, never to the Bastion's. A subject that is not usable gets no shapes. No `authz.denied` is written, and the request log line stays the registration's ([Q-BAS-119](../spec/bastion.md#q-bas-119--the-check-runs-the-credential-through-a-stage-that-records-nothing-in-the-request-log)). | [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go) |
@@ -117,15 +117,15 @@ What the main installation does with a request that claims to come from a Bastio
 | Download intake | Events are recorded as `artifact.downloaded` marked `origin: bastion` with the registration's name, a time in the future at the time of receipt; a lost, expired or malformed event is counted in `bastion.downloads.dropped`. A batch is charged to its registration by its events (`bastions.downloads.events_per_second`, in units of 100); beyond it the answer is `429` and nothing is recorded ([Q-BAS-117](../spec/bastion.md#q-bas-117--download-events-are-charged-to-their-registration-by-their-count), [H-468](../spec/bastion.md#h-468--the-download-budget-is-per-registration-so-many-registrations-at-their-budget-still-fill-the-audit-buffer)). The time the Bastion reports is trusted ([H-439](../spec/bastion.md#h-439--download-events-enter-the-audit-trail-with-the-time-the-bastion-reports)). | [downloads.go](../../internal/bastionmain/downloads.go) |
 | Last contact | Written at most once a minute per replica, at most 256 rows per registration; a change of a reported value is `bastion.contact`. The values are what the Bastion says about itself, except the address, which is the one the main installation saw. | [contact.go](../../internal/bastionmain/contact.go) |
 
-`Trove-Bastion-Authorization` is redacted like `Authorization` in every log, span and support bundle: the key rule of R-OPS-013 matches
+`Quader-Bastion-Authorization` is redacted like `Authorization` in every log, span and support bundle: the key rule of R-OPS-013 matches
 the word `authorization` in a header name (tested in [redact_bastion_test.go](../../internal/observability/redact_bastion_test.go)). No
-`Trove-Bastion-*` request header is echoed; the one header on an answer to a Bastion request is the interface version.
+`Quader-Bastion-*` request header is echoed; the one header on an answer to a Bastion request is the interface version.
 
 ## Where abuse is stopped
 
 | Stage | What it knows | What it does | Requirement |
 |---|---|---|---|
-| Network provider | bandwidth | absorbs volumetric attacks, or does not (H-382) | outside trove |
+| Network provider | bandwidth | absorbs volumetric attacks, or does not (H-382) | outside Quader |
 | HAProxy Ingress (stage 1, switchable) | the client address | a per-address request and connection limit, set wider than the Bastion's | R-BAS-038 |
 | Bastion block list (stage 2) | refusals per address, shared through Valkey | blocks an address that collects too many refusals, with durations doubling to 24 h; IPv6 per `/64` | R-BAS-037 |
 | Bastion limits | credential or not, misses, failures | per-address request rates (anonymous stricter), per-address miss budgets, the failed-authentication timeout | R-BAS-035, R-BAS-036 |
@@ -156,12 +156,12 @@ Without Valkey every counter and block holds per replica at the configured value
   constant time; a flood of addresses from an IPv6 /47 neither scans a map under a lock every request takes nor holds a lock across Valkey round
   trips (Q-BAS-128).
 - The guard never refuses on its own fault. If the shared state fails, the request is admitted; with Valkey unavailable the
-  counters and blocks work from memory at the configured value divided by `bastion.replicas`, and `trove_ratelimit_fallback` and
-  `trove_valkey_available` say so (Q-BAS-94).
+  counters and blocks work from memory at the configured value divided by `bastion.replicas`, and `quader_ratelimit_fallback` and
+  `quader_valkey_available` say so (Q-BAS-94).
 - With Valkey the block list, the timeouts and the counters are shared: a block set by one replica holds on every replica at its next
   request. What Valkey holds is chosen by whoever can write to it; the answers are signed (below), the blocks and counters are not.
   Write access to the Bastion's Valkey therefore lets its holder block an address or reset a counter, which is a denial or a missing limit
-  and no grant of access; the ACL rule of the Bastion's user confines it to `trove-bastion:*`.
+  and no grant of access; the ACL rule of the Bastion's user confines it to `quader-bastion:*`.
 ## What the main installation tells the Bastion about a response
 
 The main installation marks the response of a recognized Bastion request (R-BAS-013) and refuses writes (R-BAS-014). The code is
@@ -183,7 +183,7 @@ The main installation marks the response of a recognized Bastion request (R-BAS-
   service account and the anonymous caller, each with its own request context and its own credential, client, session and forwarded
   headers except those the answer names in `Vary`; npm's `-/whoami` and `-/ping`, which differed, are `Volatile`.
 - **A refused read says nothing about the caller's shape.** The marking learns the decision only once a read was allowed, on `/files/` as
-  on the format routes, so a refusal carries no `Trove-Bastion-Read`.
+  on the format routes, so a refusal carries no `Quader-Bastion-Read`.
 - **The Bastion token cannot write.** A write route (kind `Upload`, `Delete`, `Admin`, or an action other than `read`) is refused before any
   handler runs and before a body is read, as a probe and as a forwarded request; the refusal names the main installation's URL of the
   repository and no secret. `GET` and `HEAD` on those routes are decided as the caller's own request. The probe gets there with anonymous
@@ -224,7 +224,7 @@ What each layer of the cache holds, and what protects it:
 | Held | Where | Protected by | What write access without the key does |
 |---|---|---|---|
 | Entries (content address, size, headers, repository, `validatedAt`) | `entries/` | HMAC-SHA-256 over every field and the cache key (`cache.Signer`); a record that fails is ignored, deleted and counted as `stale`. **Without a key** (the volume backend with no Valkey, Q-BAS-98) the entry is plain JSON and nothing protects it (H-460) | Deletes; cannot point an entry at other bytes, move it to another key, or extend its validity. Without a key it can do all three |
-| Artifact and document bytes | `sha256/`, `documents/` | the content address, checked while served by a verifying reader that withholds the last 64 KiB until the SHA-256 and the length match | Replaces: the next whole read aborts, deletes the object and the entry, and counts `trove_bastion_cache_corrupt_total`; the next request refetches. A range is answered through the verifying read of the whole object (Q-BAS-82, H-449), so it is verified too; the replacement stays until read (H-453) |
+| Artifact and document bytes | `sha256/`, `documents/` | the content address, checked while served by a verifying reader that withholds the last 64 KiB until the SHA-256 and the length match | Replaces: the next whole read aborts, deletes the object and the entry, and counts `quader_bastion_cache_corrupt_total`; the next request refetches. A range is answered through the verifying read of the whole object (Q-BAS-82, H-449), so it is verified too; the replacement stays until read (H-453) |
 | Access markers, modification times | `access/` | nothing | Steers the order of eviction (H-453) |
 | The audit spool | `audit-spool/` | nothing; the files are events the main installation receives as reports of the Bastion's own token | Deletes events or adds events marked with the Bastion's registration (H-386's capability, from the bucket) |
 
@@ -245,9 +245,9 @@ this is what they do about the security of the connection and of what flows over
 | Concern | Mechanism | Code |
 |---|---|---|
 | Where the token and the callers' credentials go | `https` only; the trust is the system roots plus `bastion.main.ca_file`, read again without a restart; a redirect is returned, never followed, because the Bastion token travels in a header that no redirect policy strips; the address policy of upstream clients is not applied to the main installation (H-446) | [client.go](../../internal/bastion/mainclient/client.go) |
-| What a forward sends | the caller's `Authorization` as it came; the Bastion token in `Trove-Bastion-Authorization`; `Cookie`, `Range`, `If-*`, `Forwarded`, `X-Forwarded-*`, `Trove-*` and trace headers of the caller removed; exactly one client address in both families, replacing the caller's; a write probe carries no credential of the caller and no body | [client.go](../../internal/bastion/mainclient/client.go) |
-| What is logged | no header is logged; errors of the client name no URL query and no header; the token file's content is in no error; a token appears as its ID (`token_id`) and as a hint that the log scrubber already reduces to `trv_bst_[REDACTED]` (R-OPS-013) | [reload.go](../../internal/bastion/mainclient/reload.go), [link.go](../../internal/bastion/link/link.go) |
-| Rotation of the Bastion token | the file is re-read every `token_reload_interval` and when its identity changes; a malformed or vanished file keeps the token in use, is logged as an error and counted as refused; a revoked token in use makes the replica unreachable and sets `trove_bastion_main_token_refused`, when the answer to a call of the interface's own says so; the same answer to a forward moves nothing (Q-BAS-121) | [reload.go](../../internal/bastion/mainclient/reload.go) |
+| What a forward sends | the caller's `Authorization` as it came; the Bastion token in `Quader-Bastion-Authorization`; `Cookie`, `Range`, `If-*`, `Forwarded`, `X-Forwarded-*`, `Quader-*` and trace headers of the caller removed; exactly one client address in both families, replacing the caller's; a write probe carries no credential of the caller and no body | [client.go](../../internal/bastion/mainclient/client.go) |
+| What is logged | no header is logged; errors of the client name no URL query and no header; the token file's content is in no error; a token appears as its ID (`token_id`) and as a hint that the log scrubber already reduces to `qdr_bst_[REDACTED]` (R-OPS-013) | [reload.go](../../internal/bastion/mainclient/reload.go), [link.go](../../internal/bastion/link/link.go) |
+| Rotation of the Bastion token | the file is re-read every `token_reload_interval` and when its identity changes; a malformed or vanished file keeps the token in use, is logged as an error and counted as refused; a revoked token in use makes the replica unreachable and sets `quader_bastion_main_token_refused`, when the answer to a call of the interface's own says so; the same answer to a forward moves nothing (Q-BAS-121) | [reload.go](../../internal/bastion/mainclient/reload.go) |
 | Revocations | every replica polls the feed and records each entry with its receipt time; an answer is refused if a matching entry was received after it was asked for, whatever the order in which the answer and the entry reached the replica (R-BAS-020 rule 3); a reset or a start without history refuses every older answer | [link.go](../../internal/bastion/link/link.go), [answers](../../internal/bastion/answers/answers.go) |
 | The main installation cannot be reached | the replica is unreachable after a failed handshake, a refused token, a version mismatch, a base URL the main installation does not honour, or `unreachable_after` without a successful poll; only then do held answers live on for the grace period (H-383), a token the replica has not seen gets a `503`, and nothing is served after `period + grace_period` | [link.go](../../internal/bastion/link/link.go) |
 | A main installation that does not know the Bastion's host | the handshake's response base URL must equal `server.base_url`, so no client receives a document with the main installation's URLs | [link.go](../../internal/bastion/link/link.go) |
@@ -373,7 +373,7 @@ validation, the revocation journal); their pages and gaps are linked above.
 ### H-522 · The chart restricts no egress of the Bastion pods
 
 Stage: the pod network of the Bastion pods. The chart's NetworkPolicy holds ingress rules only
-([networkpolicy.yaml](../../deploy/helm/trove-bastion/templates/networkpolicy.yaml),
+([networkpolicy.yaml](../../deploy/helm/quader-bastion/templates/networkpolicy.yaml),
 [R-BAS-047](../spec/bastion.md#r-bas-047--network-policy)), by the owner's decision of 2026-11-05 that
 [ADR-154](../decisions.md#adr-154--network-policies-are-ingress-rules-between-the-charts-pods-each-with-its-port) governs this
 chart as well. Until then the chart rendered an egress policy, on by default, that let the pods reach DNS, the main installation,
@@ -382,17 +382,17 @@ Valkey, the cache bucket and the span collector and nothing else.
 Live wherever a Bastion shares a cluster or a routed network with the main installation and the cluster operator sets no egress
 policy of their own; dormant where the Bastion's network reaches nothing but the main installation's public address. Subject:
 every address the pod network reaches from a Bastion pod, reached by a process that took over a Bastion pod, the component of
-trove built to face the internet. Per case, in the kind profile, where the Bastions run in the namespace `trove-bastion` next to the
-main installation in `trove`:
+Quader built to face the internet. Per case, in the kind profile, where the Bastions run in the namespace `quader-bastion` next to the
+main installation in `quader`:
 
-- the main installation's PostgreSQL Service `trove-db-rw:5432` and `registry.npmjs.org:443`. Until 2026-11-05
+- the main installation's PostgreSQL Service `quader-db-rw:5432` and `registry.npmjs.org:443`. Until 2026-11-05
   `TestBastion_R_BAS_049_NetworkPolicy` ([bastion_scenarios_test.go](../../test/e2e/bastion_scenarios_test.go)) asserted that the
-  chart's former egress policy refused a Bastion pod's connections to both, and that a client pod of `trove`, which no egress
+  chart's former egress policy refused a Bastion pod's connections to both, and that a client pod of `quader`, which no egress
   policy restricts, reached both. No NetworkPolicy of the profile selects the PostgreSQL pods, so without the chart's policy a
   Bastion pod reaches them as well;
-- the profile's Keycloak (`trove-keycloak:8443`), to which the same test found a Bastion pod's connection refused while that
+- the profile's Keycloak (`quader-keycloak:8443`), to which the same test found a Bastion pod's connection refused while that
   policy was in force; no NetworkPolicy of the profile selects Keycloak either;
-- not the main installation's Valkey: its own ingress policy `trove-valkey-clients` admits only trove's serving pods of `trove`
+- not the main installation's Valkey: its own ingress policy `quader-valkey-clients` admits only Quader's serving pods of `quader`
   ([deploy/dev/valkey.yaml](../../deploy/dev/valkey.yaml)). A target that fences itself with an ingress policy stays fenced.
 
 What does not change: the Bastion holds no credential for PostgreSQL, the main installation's object store or upstream registries

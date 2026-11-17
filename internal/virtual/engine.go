@@ -11,11 +11,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // DefaultSafetyTTL bounds the age of a merged entry whatever its own period says
@@ -51,7 +51,7 @@ type Options struct {
 	Metrics prometheus.Registerer
 	// >>> WP2.9 exposure
 	// FillRefused counts an upstream contact the endpoint's cache-fill policy
-	// prevented (trove_endpoint_cache_fill_refused_total, R-EP-019): the remote
+	// prevented (quader_endpoint_cache_fill_refused_total, R-EP-019): the remote
 	// engine owns the family and counts the contacts it refuses itself; the virtual
 	// engine counts the remote members it does not ask for an artifact. Nil counts
 	// nothing.

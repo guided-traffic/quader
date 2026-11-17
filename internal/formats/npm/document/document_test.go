@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 var epoch = time.Date(2026, 10, 28, 9, 12, 44, 512_000_000, time.UTC)
@@ -40,7 +40,7 @@ func samplePackage() *rows.LocalPackage {
 
 func options() Options {
 	return Options{
-		Name: "@acme/ui", Basename: "ui", TarballPrefix: "https://trove.example.com/api/npm/npm-local/@acme/ui/-/",
+		Name: "@acme/ui", Basename: "ui", TarballPrefix: "https://quader.example.com/api/npm/npm-local/@acme/ui/-/",
 		Rev: "7-0123456789abcdef0123456789abcdef", AbbreviatedTime: true,
 	}
 }
@@ -89,7 +89,7 @@ func TestR_NPM_010_FullDocument(t *testing.T) {
 	t.Run("dist.tarball is on the prefix with the unencoded scope separator", func(t *testing.T) {
 		v := doc["versions"].(map[string]any)["1.2.0"].(map[string]any)
 		dist := v["dist"].(map[string]any)
-		if dist["tarball"] != "https://trove.example.com/api/npm/npm-local/@acme/ui/-/ui-1.2.0.tgz" || dist["integrity"] != "sha512-AAAA" {
+		if dist["tarball"] != "https://quader.example.com/api/npm/npm-local/@acme/ui/-/ui-1.2.0.tgz" || dist["integrity"] != "sha512-AAAA" {
 			t.Fatalf("dist %v", dist)
 		}
 	})

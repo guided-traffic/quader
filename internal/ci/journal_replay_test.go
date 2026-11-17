@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // The comparators of R-CI-020, the reading of journaled records and the fall-through of Q-CI-11. The handlers' writes
@@ -20,7 +20,7 @@ func i64p(v int64) *int64 { return &v }
 func replayIssuerFixture() Issuer {
 	return Issuer{
 		ID: "0192f0c4-0000-7000-8000-000000000001", Name: "gitlab-com", Kind: KindGitLab, Issuer: "https://gitlab.example.com", Enabled: true,
-		AllowedAudiences: []string{"https://trove.example.com", "npm:trove.example.com"}, ExclusiveAudience: true,
+		AllowedAudiences: []string{"https://quader.example.com", "npm:quader.example.com"}, ExclusiveAudience: true,
 		AllowedAlgorithms: []string{"RS256", "ES256"}, AllowedTyp: []string{"JWT"}, ClockSkewSeconds: 60,
 		RequiredClaims: []string{"project_id"}, PinClaims: []string{"project_id", "namespace_id"}, MaxTTLSeconds: i64p(3600),
 		Source: SourceAPI, Version: 4,
@@ -75,14 +75,16 @@ func TestR_CI_020_TheIssuerComparator(t *testing.T) {
 	}
 	t.Run("R-CI-020 each field may move in the direction of its row", func(t *testing.T) {
 		for name, after := range map[string]issuerJournalState{
-			"audiences a non-empty subset":   with(func(is *Issuer) { is.AllowedAudiences = []string{"https://trove.example.com"} }),
-			"algorithms a non-empty subset":  with(func(is *Issuer) { is.AllowedAlgorithms = []string{"RS256"} }),
-			"required claims a superset":     with(func(is *Issuer) { is.RequiredClaims = []string{"project_id", "ref_protected"} }),
-			"single use on":                  with(func(is *Issuer) { is.SingleUseSubjectTokens = true }),
-			"a smaller clock skew":           with(func(is *Issuer) { is.ClockSkewSeconds = 30 }),
-			"a smaller max_ttl":              with(func(is *Issuer) { is.MaxTTLSeconds = i64p(600) }),
-			"the description and version":    with(func(is *Issuer) { is.Description, is.Version = "changed", 9 }),
-			"the same sets in another order": with(func(is *Issuer) { is.AllowedAudiences = []string{"npm:trove.example.com", "https://trove.example.com"} }),
+			"audiences a non-empty subset":  with(func(is *Issuer) { is.AllowedAudiences = []string{"https://quader.example.com"} }),
+			"algorithms a non-empty subset": with(func(is *Issuer) { is.AllowedAlgorithms = []string{"RS256"} }),
+			"required claims a superset":    with(func(is *Issuer) { is.RequiredClaims = []string{"project_id", "ref_protected"} }),
+			"single use on":                 with(func(is *Issuer) { is.SingleUseSubjectTokens = true }),
+			"a smaller clock skew":          with(func(is *Issuer) { is.ClockSkewSeconds = 30 }),
+			"a smaller max_ttl":             with(func(is *Issuer) { is.MaxTTLSeconds = i64p(600) }),
+			"the description and version":   with(func(is *Issuer) { is.Description, is.Version = "changed", 9 }),
+			"the same sets in another order": with(func(is *Issuer) {
+				is.AllowedAudiences = []string{"npm:quader.example.com", "https://quader.example.com"}
+			}),
 		} {
 			if !cmp.Narrows(journaledIssuer(base), after) {
 				t.Errorf("%s must narrow", name)
@@ -221,7 +223,7 @@ func TestR_CI_020_JournaledRecordsAreReadStrictly(t *testing.T) {
 	t.Run("R-CI-020 the producers' entries carry records the handlers read", func(t *testing.T) {
 		is := replayIssuerFixture()
 		narrowed := is
-		narrowed.AllowedAudiences = []string{"https://trove.example.com"}
+		narrowed.AllowedAudiences = []string{"https://quader.example.com"}
 		ev := issuerEvent(audit.EventCIIssuerUpdated, audit.Actor{Kind: "user"}, &is, &narrowed, false, 0)
 		var ie issuerJournalEntry
 		if err := json.Unmarshal(ev.Journal, &ie); err != nil || ie.IssuerID != is.ID {

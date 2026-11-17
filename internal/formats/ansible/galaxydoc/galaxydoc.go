@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 // MaxDocumentBytes bounds an upstream document the parsers accept (R-ANS-031, the stored-document bound).
@@ -192,7 +192,7 @@ func RenderRoot(v1 bool) []byte {
 	if v1 {
 		avail.put("v1", "v1/")
 	}
-	return newObj().raw("available_versions", avail.bytes()).put("current_version", "v3").put("description", "trove Ansible Galaxy API").bytes()
+	return newObj().raw("available_versions", avail.bytes()).put("current_version", "v3").put("description", "Quader Ansible Galaxy API").bytes()
 }
 
 // RenderCollection renders the collection document (R-ANS-004).
@@ -268,7 +268,7 @@ func metadataKeys() []struct{ key, zero string } {
 	}
 }
 
-// dropped reports whether a member of the upstream's metadata is one trove does not serve (Q-ANS-10).
+// dropped reports whether a member of the upstream's metadata is one quader does not serve (Q-ANS-10).
 func dropped(key string) bool {
 	switch key {
 	case "contents", "docs_blob", "manifest", "files":
@@ -353,7 +353,7 @@ func RenderTask(t Task) []byte {
 	return o.raw("messages", m.Bytes()).bytes()
 }
 
-// upstreamVersion is the part of a version document of the public Galaxy that trove reads.
+// upstreamVersion is the part of a version document of the public Galaxy that quader reads.
 type upstreamVersion struct {
 	Version         string          `json:"version"`
 	Name            string          `json:"name"`
@@ -438,7 +438,7 @@ func ParseUpstreamVersion(doc []byte) (Version, string, error) {
 	return v, u.DownloadURL, nil
 }
 
-// upstreamList is the part of a version list page of the public Galaxy that trove reads.
+// upstreamList is the part of a version list page of the public Galaxy that quader reads.
 type upstreamList struct {
 	Meta struct {
 		Count int `json:"count"`

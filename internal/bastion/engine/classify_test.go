@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow sends every row of INV-6's path table: only
@@ -72,7 +72,7 @@ func TestR_BAS_003_ACookieIsIgnoredAndNeverForwarded(t *testing.T) {
 	s := newSiteHarness(t, options{})
 	s.site.artifacts["/api/npm/web/npm-all/lodash"] = []byte("doc")
 	// anonymous access is on, so a cookie-only request is an anonymous request
-	w := s.get("/api/npm/web/npm-all/lodash", "Cookie", "__Host-trv_session=abc")
+	w := s.get("/api/npm/web/npm-all/lodash", "Cookie", "__Host-qdr_session=abc")
 	if w.Code != http.StatusOK {
 		t.Fatalf("status %d %s", w.Code, w.Body)
 	}
@@ -86,7 +86,7 @@ func TestR_BAS_003_ACookieIsIgnoredAndNeverForwarded(t *testing.T) {
 	}
 	// with anonymous access off the cookie authenticates nobody
 	s.setAnonymous(false)
-	w = s.get("/api/npm/web/npm-all/other", "Cookie", "__Host-trv_session=abc")
+	w = s.get("/api/npm/web/npm-all/other", "Cookie", "__Host-qdr_session=abc")
 	if w.Code != http.StatusUnauthorized || problemCode(w) != "credentials_required" {
 		t.Fatalf("cookie only with anonymous off: %d %s", w.Code, w.Body)
 	}
@@ -96,7 +96,7 @@ func TestR_BAS_003_ACookieIsIgnoredAndNeverForwarded(t *testing.T) {
 
 func TestR_BAS_018_TheHostIsTheHostOfTheBaseURL(t *testing.T) {
 	s := newSiteHarness(t, options{})
-	cases := []struct{ host string }{{"trove.example.com"}, {"203.0.113.9"}, {"[2001:db8::1]"}, {"[2001:db8::1]:8443"}, {""}, {"packages.example.com.evil.net"}}
+	cases := []struct{ host string }{{"quader.example.com"}, {"203.0.113.9"}, {"[2001:db8::1]"}, {"[2001:db8::1]:8443"}, {""}, {"packages.example.com.evil.net"}}
 	for _, c := range cases {
 		r := httptest.NewRequest(http.MethodGet, "/api/npm/web/npm-all/lodash", nil)
 		r.RemoteAddr = "203.0.113.7:1"
@@ -250,14 +250,14 @@ func TestR_BAS_019_AMalformedTokenAnswers401WithoutARequest(t *testing.T) {
 	for name, auth := range map[string]string{
 		"a flipped character": bearer(string(flipped)),
 		"a Bastion token":     bearer(newToken(t, token.TypeBST)),
-		"an unknown prefix":   bearer("trv_xyz_" + strings.Repeat("a", 49)),
+		"an unknown prefix":   bearer("qdr_xyz_" + strings.Repeat("a", 49)),
 		"not a token":         bearer("hello"),
 		"an unknown scheme":   "Digest abc",
 		"a broken Basic":      "Basic !!!",
 		"Basic without colon": "Basic " + base64.StdEncoding.EncodeToString([]byte("justaname")),
 	} {
 		w := s.get("/api/npm/web/npm-all/lodash", "Authorization", auth)
-		if w.Code != http.StatusUnauthorized || problemCode(w) != "invalid_token" || w.Header().Get("WWW-Authenticate") != `Basic realm="trove"` {
+		if w.Code != http.StatusUnauthorized || problemCode(w) != "invalid_token" || w.Header().Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Errorf("%s: %d %s %v", name, w.Code, w.Body, w.Header())
 		}
 		if w.Header().Get("Cache-Control") != "no-store" || !strings.HasPrefix(w.Header().Get("Content-Type"), "application/problem+json") {
@@ -278,7 +278,7 @@ func TestR_BAS_019_AMalformedTokenAnswers401WithoutARequest(t *testing.T) {
 func TestR_BAS_019_ABrowserGetsTheBearerChallenge(t *testing.T) {
 	s := newSiteHarness(t, options{})
 	w := s.get("/api/npm/web/npm-all/lodash", "Authorization", "Bearer x", "Sec-Fetch-Mode", "navigate")
-	if w.Header().Get("WWW-Authenticate") != `Bearer realm="trove"` {
+	if w.Header().Get("WWW-Authenticate") != `Bearer realm="quader"` {
 		t.Fatalf("%v", w.Header())
 	}
 }
@@ -361,7 +361,7 @@ func TestR_BAS_019_AnonymousExactlyWhenTheMainInstallationAdmitsIt(t *testing.T)
 	s.site.artifacts["/api/npm/web/npm-all/x"] = []byte("x")
 	s.setAnonymous(false)
 	for i := 0; i < 1000; i++ {
-		if w := s.get("/api/npm/web/npm-all/x"); w.Code != http.StatusUnauthorized || problemCode(w) != "credentials_required" || w.Header().Get("WWW-Authenticate") != `Basic realm="trove"` {
+		if w := s.get("/api/npm/web/npm-all/x"); w.Code != http.StatusUnauthorized || problemCode(w) != "credentials_required" || w.Header().Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Fatalf("%d %s", w.Code, w.Body)
 		}
 	}

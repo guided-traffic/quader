@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // TestConformance is the object-store conformance check of R-STOR-035 against the
-// store of the stack. It needs only the TROVE_TEST_S3_* variables, so the
+// store of the stack. It needs only the QUADER_TEST_S3_* variables, so the
 // S3 conformance leg of Test and Release (the MinIO job) runs it alone:
 //
 //	go test -tags integration -run Conformance ./test/integration/blob/...

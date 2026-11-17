@@ -31,7 +31,7 @@ func ciConfig(runID, image string) string {
 		"{{DEFAULT_AUD}}", defaultAudience, "{{SIG_AUD}}", signatureAudience, "{{SIG_FILE}}", signatureArtifact).Replace(ciTemplate)
 }
 
-const ciTemplate = `# Written by trove's test/oidcstub/cmd/record-gitlab, run {{RUN}}. Every job prints the decoded
+const ciTemplate = `# Written by quader's test/oidcstub/cmd/record-gitlab, run {{RUN}}. Every job prints the decoded
 # header and payload of its ID tokens; no job prints a raw token or a signature.
 workflow:
   rules:
@@ -76,19 +76,19 @@ variables:
     - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 .tokens: &tokens
-  TROVE_ID_TOKEN:
+  QUADER_ID_TOKEN:
     aud: {{AUD}}
 
 claims:
   extends: .always
   id_tokens:
-    TROVE_ID_TOKEN:
+    QUADER_ID_TOKEN:
       aud: {{AUD}}
     ARRAY_ID_TOKEN:
       aud: [{{AUD}}, {{AUD2}}]
   script:
     - *record
-    - show TROVE_ID_TOKEN
+    - show QUADER_ID_TOKEN
     - show ARRAY_ID_TOKEN
     - show DEFAULT_ID_TOKEN
     - jobtoken
@@ -98,7 +98,7 @@ claims-default:
   script:
     - *record
     - show DEFAULT_ID_TOKEN
-    - show TROVE_ID_TOKEN
+    - show QUADER_ID_TOKEN
 
 claims-timeout:
   extends: .main
@@ -106,7 +106,7 @@ claims-timeout:
   id_tokens: *tokens
   script:
     - *record
-    - show TROVE_ID_TOKEN
+    - show QUADER_ID_TOKEN
 
 environment-start:
   rules:
@@ -118,7 +118,7 @@ environment-start:
   id_tokens: *tokens
   script:
     - *record
-    - show TROVE_ID_TOKEN
+    - show QUADER_ID_TOKEN
 
 environment-prepare:
   extends: .main
@@ -128,7 +128,7 @@ environment-prepare:
   id_tokens: *tokens
   script:
     - *record
-    - show TROVE_ID_TOKEN
+    - show QUADER_ID_TOKEN
 
 environment-unprotected:
   extends: .main
@@ -138,7 +138,7 @@ environment-unprotected:
   id_tokens: *tokens
   script:
     - *record
-    - show TROVE_ID_TOKEN
+    - show QUADER_ID_TOKEN
 
 signature-check:
   extends: .main

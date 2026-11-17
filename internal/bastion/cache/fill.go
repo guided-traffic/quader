@@ -10,7 +10,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
 )
 
 // Fill is a fill in progress (R-BAS-021): the bytes of a response are written to it while they are streamed to

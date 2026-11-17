@@ -1,7 +1,7 @@
 # Authorization
 
 Status: implemented in M1 (WP1.3): the decision engine, the compiled grant index with its invalidation, the policy and
-role-binding store, the token-scope ceiling, the epochs of `Trove-Authz-Min-Epoch` and the decision audit, and the
+role-binding store, the token-scope ceiling, the epochs of `Quader-Authz-Min-Epoch` and the decision audit, and the
 management operations over them (policies, role bindings, the checks of the caller; [below](#management-operations)). M2
 adds the populate check and `MemberUsable` ([below](#the-populate-check-and-memberusable)) and package ownership: the check
 and the claim in a writer's commit transaction, the owner operations of R-AUTHZ-019 with their HTTP operations, the
@@ -50,7 +50,7 @@ security view is [permissions.md](../security/permissions.md).
 | [authz.go](../../internal/authz/authz.go) | The contract: `Decider`, `Authorizer`, `Prober`, `Subject` (with `Endpoint`, the endpoint's `CacheFill` and the `*scope.Scope` ceiling), `Coordinate`, `Decision`, `Outcome`, `Action`, `Capability`; `RequestKind` is the catalog's |
 | [decide.go](../../internal/authz/decide.go) | `Decide`, `Begin`/`Know`/`DecideOn`, `Require`/`RequireOn`, `Holds`/`HoldsOn`, `Readable`/`ReadableOn`, `Check`/`CheckOn`, `Effective`; the evaluation of R-AUTHZ-015; token scope as a ceiling; the pattern cache for scopes |
 | [engine.go](../../internal/authz/engine.go) | `Engine`, `Options`: the index lifecycle, the build loop, the watcher, the `cluster.Listener`, the coalesced epoch read |
-| [wait.go](../../internal/authz/wait.go) | `forRequest`: confirmation, the stale wait, `Trove-Authz-Min-Epoch` |
+| [wait.go](../../internal/authz/wait.go) | `forRequest`: confirmation, the stale wait, `Quader-Authz-Min-Epoch` |
 | [index.go](../../internal/authz/index.go) | `Index`, `Label`, `Snapshot`, `BuildIndex` (a pure function), the principal set of a request |
 | [source.go](../../internal/authz/source.go) | `Source` and its PostgreSQL implementation: the `REPEATABLE READ READ ONLY` build and the epoch read |
 | [roles.go](../../internal/authz/roles.go) | The five system roles and the capability table of R-AUTHZ-010, `content:metadata-read` of the auditor (Q-AUTHZ-172) included, and `vulnerabilities:triage` of `admin`, `auditor` and `security-admin` (R-VULN-013, Q-VULN-27) |
@@ -64,7 +64,7 @@ security view is [permissions.md](../security/permissions.md).
 | [errors.go](../../internal/authz/errors.go) | `Decision.Err` (the table of R-AUTHZ-016), `NotFound`, `ParseMinEpoch`, the reason codes |
 | [ceiling.go](../../internal/authz/ceiling.go), [exposure.go](../../internal/authz/exposure.go), [exposure_service.go](../../internal/authz/exposure_service.go) | `Ceiling` (evaluated on the request's index, for the endpoint of the subject); the endpoint exposure of R-EP-013 compiled into the index (`ExposureCeiling`) and its rule service; see [endpoints.md](endpoints.md#exposure-r-ep-012-to-r-ep-014) |
 | [validate.go](../../internal/authz/validate.go), [store.go](../../internal/authz/store.go), [bindings.go](../../internal/authz/bindings.go), [policy.go](../../internal/authz/policy.go) | `Service`: validate, create (`CreateIn` on the caller's transaction), update, delete and read policies; bind and unbind roles |
-| [declared.go](../../internal/authz/declared.go) | `Service.ApplyDeclared`: the role bindings of `authz.role_bindings`, which `trove migrate` applies ([below](#role-bindings-from-the-configuration)); `SourceAPI`, `SourceConfiguration`, `ConfigurationActor`, `ErrDeclared` |
+| [declared.go](../../internal/authz/declared.go) | `Service.ApplyDeclared`: the role bindings of `authz.role_bindings`, which `quader migrate` applies ([below](#role-bindings-from-the-configuration)); `SourceAPI`, `SourceConfiguration`, `ConfigurationActor`, `ErrDeclared` |
 | [policy_list.go](../../internal/authz/policy_list.go) | The filters of the policy list (`principal`, `expandGroups`, `repository`, `project`) and the warnings of a page |
 | [project.go](../../internal/authz/project.go), [project_role.go](../../internal/authz/project_role.go) | `ProjectRole` and its actions, `Membership`; the role of a subject in one project (`roleOf`, `Index.isMember`), the list of its roles for `MembershipsOn` (`projectRoles`, `subjectRoles`), `MembershipsOn`, `RoleOn`, `OwnsOn`, `Index.ProjectOf` ([Projects](#projects)) |
 | [settings.go](../../internal/authz/settings.go) | `SettingsHook`, the `repository.Hooks` that records `authz.settings.changed` in the transaction of a repository update (R-AUTHZ-031) |
@@ -73,11 +73,11 @@ security view is [permissions.md](../security/permissions.md).
 | [ownership.go](../../internal/authz/ownership.go) | Package ownership: `Ownership` with `CheckTx`, `ClaimTx`, `EnforceTx` for writers, `PrecheckWrite` (the same rule read-only, in a transaction of its own, for a writer that decides before it reads a body; Q-ARCH-226), the owner operations `Owners`, `AddOwner`, `RemoveOwner`, `OwnedBy` (`changeAllowed`: an owner, `manage` or `content:bypass`; an owner's token whose scope does not inherit passes the owner path only where `scopeReachesName` finds `manage` on the name in the scope, Q-AUTHZ-240), and `OwnershipHook` for the repository deletion |
 | [ownership.sql](../../internal/meta/postgres/queries/ownership.sql) | The statements of ownership: the locked read of a claim, the claim (`INSERT … ON CONFLICT DO NOTHING`), owners, release, the deletion of a domain, the list by owner |
 | [audit.go](../../internal/authz/audit.go), [events_authz.go](../../internal/audit/events_authz.go) | The decision audit, the event registry entries |
-| [metrics.go](../../internal/authz/metrics.go) | The `trove_authz_*` families |
+| [metrics.go](../../internal/authz/metrics.go) | The `quader_authz_*` families |
 | [authz.sql](../../internal/meta/postgres/queries/authz.sql) | Every statement (sqlc); identifiers travel as text, instants as microseconds |
 | [wire_authz.go](../../internal/app/wire_authz.go), [access.go](../../internal/app/access.go) | The composition root: the engine at step 8, the header wrapper, the dev-profile bridge |
 | [wire_ownership.go](../../internal/app/wire_ownership.go) | The ownership service for the API (through `authzServices`) and the ownership hook in the repository hook list |
-| [authorize.go](../../internal/api/v1/authorize.go), [access.go](../../internal/api/v1/access.go), [subject.go](../../internal/api/v1/subject.go) | The declaration forms of `x-trove-permission` and the step that begins the request's index for them; `NewAccess` over the `Decider` and `requestHolder` for a handler that decides; the conversion `Principal` to `Subject` |
+| [authorize.go](../../internal/api/v1/authorize.go), [access.go](../../internal/api/v1/access.go), [subject.go](../../internal/api/v1/subject.go) | The declaration forms of `x-quader-permission` and the step that begins the request's index for them; `NewAccess` over the `Decider` and `requestHolder` for a handler that decides; the conversion `Principal` to `Subject` |
 | [authz_api.go](../../internal/api/v1/authz_api.go) | The handlers of the permission operations, thin over `Service` and `Engine` |
 | [ownership_api.go](../../internal/api/v1/ownership_api.go) | The handlers of the ownership operations, thin over `Ownership` on the request's holder |
 
@@ -155,7 +155,7 @@ is issued before the first query, the statement timeout is `authz.cache.max_stal
 are equal only if the instants are equal too, which is how a reused epoch after a failover that lost commits is told apart.
 
 `Engine.install` swaps the index in atomically if its epochs are not lower than the installed index's, or if a flush is
-pending (then whatever its epochs). A discarded build is counted (`trove_authz_index_builds_discarded_total`).
+pending (then whatever its epochs). A discarded build is counted (`quader_authz_index_builds_discarded_total`).
 
 ### What triggers a build
 
@@ -181,7 +181,7 @@ most the request's own deadline or `database.retry.max_elapsed`, then answers `D
 Staleness grows when the poll cannot reach PostgreSQL or a needed build fails; it never grows because Valkey is unavailable.
 The staleness waits do not themselves trigger a build, by design: a blocked poll must show up as `authz_stale`.
 
-### `Trove-Authz-Min-Epoch`
+### `Quader-Authz-Min-Epoch`
 
 The composition root reads the header after authentication (`app.withMinEpoch`) into `Principal.MinEpoch`; `edge.SubjectFrom`
 copies it to `Subject.MinEpoch`. `forRequest` ignores it for an anonymous subject. If the installed index has that epoch,
@@ -192,7 +192,7 @@ index has the epoch (`waited`) or the budget ends (`timeout`, 503).
 
 The writes return their epoch: `afterEpoch` registers a `meta.Tx.Before` hook after the `Changes.Notify` call, so it runs
 after the change log bumped the area's row in the same transaction (the row is locked until commit, so the value is the
-transaction's own) and reads it for `Trove-Authz-Epoch`; the audit event of the write is recorded in the same hook, so it
+transaction's own) and reads it for `Quader-Authz-Epoch`; the audit event of the write is recorded in the same hook, so it
 carries the epoch.
 
 ### Pinning an index to a request
@@ -252,10 +252,10 @@ journal entry with the policy ID and name and the state before and after, identi
 
 ### Role bindings from the configuration
 
-`authz.role_bindings` (R-AUTHZ-010, Q-AUTHZ-170, Q-AUTHZ-171) is applied by `trove migrate` only:
+`authz.role_bindings` (R-AUTHZ-010, Q-AUTHZ-170, Q-AUTHZ-171) is applied by `quader migrate` only:
 
 ```text
-cmd/trove migrate ──► postgres.Migrate ──► steps ──► audit policy ──► MigrateOptions.Declared(ctx, *MigrationSession)
+cmd/quader migrate ──► postgres.Migrate ──► steps ──► audit policy ──► MigrateOptions.Declared(ctx, *MigrationSession)
                        (session connection,                            app.DeclaredState: change log, audit writer,
                         migration lock held)                           principal.Manager, authz.Service on that one connection
                                                                        └► Service.ApplyDeclared, one transaction
@@ -279,7 +279,7 @@ cmd/trove migrate ──► postgres.Migrate ──► steps ──► audit pol
 
 ## Declaring the permission of an operation
 
-Every operation in `api/openapi.yaml` carries `x-trove-permission`. `parseRequirement` accepts exactly these forms, and
+Every operation in `api/openapi.yaml` carries `x-quader-permission`. `parseRequirement` accepts exactly these forms, and
 `LoadDocument` stops the start for anything else:
 
 | Declaration | Enforced as |
@@ -361,7 +361,7 @@ without an endpoint (a job, a command) has no cache-fill ceiling. A policy that 
 
 ## Read shapes
 
-`Engine.ReachOn(ctx, idx, sub, keys)` ([reach.go](../../internal/authz/reach.go)) answers R-BAS-012 for the trove Bastion: whether the
+`Engine.ReachOn(ctx, idx, sub, keys)` ([reach.go](../../internal/authz/reach.go)) answers R-BAS-012 for the Quader Bastion: whether the
 subject may read the whole of a repository (`ReachFull`), something of it (`ReachPartial`) or nothing (`ReachNone`, with the outcome a
 read of the repository is refused with). `bastionmain.NewShapeResolver` maps it to the wire; the Mark stage asks it once per forwarded
 request on the index the decision used, and the check operation of the Bastion interface asks it for a validated credential.
@@ -488,10 +488,10 @@ summary arrives inside the writer's window and is counted as one repeat.
 
 ## Metrics
 
-`trove_authz_epoch`, `trove_authz_index_rebuild_seconds`, `trove_authz_index_rebuilds_total{trigger}`,
-`trove_authz_index_staleness_seconds`, `trove_authz_stale_waits_total{outcome}`, `trove_authz_evaluation_seconds`,
-`trove_authz_decisions_total{outcome,reason,action}`, `trove_authz_min_epoch_total{outcome}` and
-`trove_authz_index_builds_discarded_total` (R-AUTHZ-028, R-AUTHZ-032).
+`quader_authz_epoch`, `quader_authz_index_rebuild_seconds`, `quader_authz_index_rebuilds_total{trigger}`,
+`quader_authz_index_staleness_seconds`, `quader_authz_stale_waits_total{outcome}`, `quader_authz_evaluation_seconds`,
+`quader_authz_decisions_total{outcome,reason,action}`, `quader_authz_min_epoch_total{outcome}` and
+`quader_authz_index_builds_discarded_total` (R-AUTHZ-028, R-AUTHZ-032).
 
 ## Wiring
 
@@ -527,8 +527,8 @@ creates a service account with `--admin` builds its own manager and passes the s
 
 ## Management operations
 
-The document declares every operation with its `x-trove-permission`; the table is generated from it. All are under `/api/v1`.
-Writes answer `Trove-Authz-Epoch` (R-AUTHZ-032); an existing role binding answers the current epoch, and a replay of an
+The document declares every operation with its `x-quader-permission`; the table is generated from it. All are under `/api/v1`.
+Writes answer `Quader-Authz-Epoch` (R-AUTHZ-032); an existing role binding answers the current epoch, and a replay of an
 idempotent policy create answers the epoch of the first answer (`Outcome.Finish`, see [http-api.md](http-api.md)).
 
 | operationId | Method and path | Permission | Notes |
@@ -583,9 +583,9 @@ recursively, are `public` (`Index.publicThroughout`, rule 6). `readShape` follow
 
 **Add a capability.** Add the constant and the entry of `allCapabilities` in [roles.go](../../internal/authz/roles.go) and
 [authz.go](../../internal/authz/authz.go), put it in the columns of the roles in `roleCaps`, add the table row to
-R-AUTHZ-010, then use it in `x-trove-permission`. `parseRequirement` refuses a name that is not in the list.
+R-AUTHZ-010, then use it in `x-quader-permission`. `parseRequirement` refuses a name that is not in the list.
 
-**Protect a new management operation.** Declare `x-trove-permission` in the document; run `make generate`; implement the
+**Protect a new management operation.** Declare `x-quader-permission` in the document; run `make generate`; implement the
 handler. The shared step runs the check before the handler.
 
 **Protect a content operation of a format or `/files/`.** Build the `Coordinate` (the canonical path, the normalized package
@@ -625,7 +625,7 @@ the anonymous gate and before the repository lookup, on the index the request de
 | Unit | [populate_test.go](../../internal/authz/populate_test.go), [ownership_test.go](../../internal/authz/ownership_test.go) | `TestR_AUTHZ_008_PopulateCheck` (session cookie, frozen mirror, endpoint cache fill, anonymous), `TestR_AUTHZ_015_MemberUsable` (the table), `TestR_AUTHZ_018_OwnershipRules` (rules 1, 2, 3, 6 on the read state), `TestR_AUTHZ_018_WhenOwnershipIsChecked`, `TestR_AUTHZ_018_ClaimOwners` |
 | Integration | [ownership_test.go](../../test/integration/authz/ownership_test.go) | `TestR_AUTHZ_018_TwoReplicasClaimOneNewName` (a held claim on replica a, replica b's insert waiting on it, exactly one wins; a rolled-back claim; 20 pairs started at once), group owner, unclaimed with versions needs `manage`, the owner operations of R-AUTHZ-019 (pre-assignment, 409 `last_owner`, release, concurrent removals, `ci_token_restricted`, 403 for refused writes), the deletion hook through the real deletion job, the populate check and the `anonymous_populates_remote` warning on PostgreSQL |
 | Integration, HTTP | [ownership_api_test.go](../../test/integration/authz/ownership_api_test.go) | `TestR_AUTHZ_019_OwnershipOperationsOverHTTP`: the four operations on two replicas through `idapi.Handler` with the replicas' engines, every answer validated against the document (the encoded name, `Location`, 409 and an `Idempotency-Key` replay, 403 whatever exists, `ci_token_restricted`, 422, `last_owner` and release, the list with its cursor) |
-| Integration, HTTP | [api_test.go](../../test/integration/authz/api_test.go) on the stack of [test/integration/stack](../../test/integration/stack) (its handler is `idapi.Handler` of [test/integration/idapi](../../test/integration/idapi) with the header stand-in for authentication and the replica's own engine, so the identity, login, authorization and audit tests drive one chain) | the policy lifecycle with `ETag` and `If-Match`, merge patch, idempotent create with the epoch replayed, the 422 codes, `validate-policy`, the filters of the list, `apitest.RunContract` on `/permission-policies` over three replicas, roles and bindings with `last_admin` and a limit=1 walk, `authz/check` and `authz/me` including the `authenticated` cases of E1.3, E1.12 through HTTP (twenty parallel requests with `Trove-Authz-Min-Epoch` on two replicas, a grant and its removal, Valkey stopped), and a validator that checks every answer of every operation against the document |
+| Integration, HTTP | [api_test.go](../../test/integration/authz/api_test.go) on the stack of [test/integration/stack](../../test/integration/stack) (its handler is `idapi.Handler` of [test/integration/idapi](../../test/integration/idapi) with the header stand-in for authentication and the replica's own engine, so the identity, login, authorization and audit tests drive one chain) | the policy lifecycle with `ETag` and `If-Match`, merge patch, idempotent create with the epoch replayed, the 422 codes, `validate-policy`, the filters of the list, `apitest.RunContract` on `/permission-policies` over three replicas, roles and bindings with `last_admin` and a limit=1 walk, `authz/check` and `authz/me` including the `authenticated` cases of E1.3, E1.12 through HTTP (twenty parallel requests with `Quader-Authz-Min-Epoch` on two replicas, a grant and its removal, Valkey stopped), and a validator that checks every answer of every operation against the document |
 
 Run the integration area with the shared stack:
 `set -a; . .dev/integration/env; set +a; go test -count=1 -tags integration ./test/integration/authz/...`.

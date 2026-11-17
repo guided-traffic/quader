@@ -18,9 +18,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/match"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/match"
 )
 
 // The bounds of R-VULN-006.
@@ -56,7 +56,7 @@ var (
 // ValidID reports whether id satisfies the identifier rule of R-VULN-006.
 func ValidID(id string) bool { return idPattern.MatchString(id) }
 
-// Record is one decoded record: the advisory as trove stores it and what the sync needs besides.
+// Record is one decoded record: the advisory as quader stores it and what the sync needs besides.
 type Record struct {
 	// Advisory has CanonicalID equal to ID and the severity of the record's own decision ([DecideOwn]); the sync assigns the
 	// canonical identifier of the alias group and applies rule 3 of R-VULN-007 after the group is known.

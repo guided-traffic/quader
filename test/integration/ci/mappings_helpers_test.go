@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The helpers of the mapping tests (work package W3): issuers without a network, the bodies of mappings,
@@ -30,7 +30,7 @@ func mappingsOf(issuer string) string { return issuersPath + "/" + issuer + "/ma
 
 // addOwner makes the user an Owner of the project (the row of project_member, Q-AUTHZ-208) and announces the change the
 // way the commit of the members route does. It returns the authz epoch every replica must have reached before the
-// owner's request (the header Trove-Authz-Min-Epoch). The membership itself is the members route's to test
+// owner's request (the header Quader-Authz-Min-Epoch). The membership itself is the members route's to test
 // (test/integration/projects); here it is the starting point of what an Owner does with CI mappings.
 func (e *env) addOwner(project, userID string) string { return e.addMember(project, userID, "owner") }
 

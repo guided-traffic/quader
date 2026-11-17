@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Exposure rules (endpoints.md R-EP-012, R-EP-013). A rule admits content of one
@@ -117,7 +117,7 @@ type compiledRule struct {
 // of the repository they belong to, each list ordered by rule name.
 type endpointExposure struct {
 	byRepo map[int64][]*compiledRule
-	// enabled counts the enabled rules, for trove_exposure_rules.
+	// enabled counts the enabled rules, for quader_exposure_rules.
 	enabled int
 }
 
@@ -533,7 +533,7 @@ func (v *ExposureView) Tag(name, tag, version string) bool {
 }
 
 // exposedRules counts the enabled rules of an endpoint in the index, for the
-// gauge trove_exposure_rules.
+// gauge quader_exposure_rules.
 func (x *Index) exposedRules(endpoint string) int {
 	if ee := x.exposure[endpoint]; ee != nil {
 		return ee.enabled

@@ -7,8 +7,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	_ "github.com/guided-traffic/trove/internal/formats/all" // registers the formats whose schemas are compared
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	_ "github.com/guided-traffic/quader/internal/formats/all" // registers the formats whose schemas are compared
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // TestR_ARCH_008_NpmSettingsSchemaEqualsTheOpenAPIMember: the npm member of the repository

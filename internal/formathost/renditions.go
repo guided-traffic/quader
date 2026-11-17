@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // RenditionCacheName is the registered name of the rendition cache (R-ARCH-032).

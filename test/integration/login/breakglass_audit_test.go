@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
+	"github.com/guided-traffic/quader/internal/audit"
 )
 
 // TestR_AUTH_014_TheBreakGlassEventDoesNotKeepThePresentedUsername: a failed

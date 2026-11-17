@@ -992,7 +992,7 @@ Priority: **Out of scope**
 
 A maintenance action that returns unused allocated space of an embedded database's tables and
 indexes to the operating system; best run when activity is low, since it may not complete when
-storage is busy. It has meaning only for an embedded database; trove has none (PostgreSQL only).
+storage is busy. It has meaning only for an embedded database; Quader has none (PostgreSQL only).
 
 ## Notes for implementers
 
@@ -1000,7 +1000,7 @@ storage is busy. It has meaning only for an embedded database; trove has none (P
   references it (the scan holds file locks, STOR-036) and leave recently written binaries
   alone (the pruning job skips binaries younger than one day by default); otherwise a concurrent
   upload that re-references the checksum loses its content.
-- The default addressing of STOR-001 is SHA-1 with a two-character directory prefix; trove
+- The default addressing of STOR-001 is SHA-1 with a two-character directory prefix; Quader
   addresses by SHA-256. SHA-1 and MD5 must still be computed and searchable, because clients
   deploy by SHA-1, verify downloads with SHA-1 or MD5 and search by them (ART-004, ART-008,
   SRCH-008).

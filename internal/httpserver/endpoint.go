@@ -8,8 +8,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Endpoint is the immutable snapshot of one client endpoint (R-EP-002): its
@@ -159,7 +159,7 @@ func (e *Endpoint) AnonymousAllowed() bool { return e.anonymous }
 // ExposureMode is "all" or "rules" (R-EP-012).
 func (e *Endpoint) ExposureMode() string { return e.exposure }
 
-// CacheFill reports whether the endpoint may make trove contact an upstream (R-EP-019).
+// CacheFill reports whether the endpoint may make quader contact an upstream (R-EP-019).
 func (e *Endpoint) CacheFill() bool { return e.cacheFill }
 
 // RateLimitClass names the endpoint's rate-limit class, "" for none (R-EP-015).

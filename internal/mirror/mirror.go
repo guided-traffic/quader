@@ -19,7 +19,7 @@ package mirror
 import (
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The job kinds and the queue of the mirror (architecture.md R-ARCH-016, Q-REPO-131, Q-ARCH-285).

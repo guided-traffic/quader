@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // vulnRunSuffix names the reports of a repeated run (the matrix report of the npm clients keys its cells by run).
@@ -29,12 +29,12 @@ type vulnSample struct {
 
 // sampleJob reads the job once; ok is false when the query failed (a failover of the database moves the primary).
 func sampleJob(id string) (s vulnSample, ok bool) {
-	primary, err := kubectl("-n", cfg.namespace, "get", "cluster", "trove-db", "-o", "jsonpath={.status.currentPrimary}")
+	primary, err := kubectl("-n", cfg.namespace, "get", "cluster", "quader-db", "-o", "jsonpath={.status.currentPrimary}")
 	if err != nil || strings.TrimSpace(primary) == "" {
 		return s, false
 	}
-	out, err := kubectl("-n", cfg.namespace, "exec", strings.TrimSpace(primary), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-F", "|", "-c",
-		`SELECT j.state, j.attempt, coalesce(r.name, ''), coalesce(j.checkpoint->>'batches', '') FROM trove.job j LEFT JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE j.id = '`+id+`'`)
+	out, err := kubectl("-n", cfg.namespace, "exec", strings.TrimSpace(primary), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", "|", "-c",
+		`SELECT j.state, j.attempt, coalesce(r.name, ''), coalesce(j.checkpoint->>'batches', '') FROM quader.job j LEFT JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE j.id = '`+id+`'`)
 	f := strings.Split(strings.TrimSpace(out), "|")
 	if err != nil || len(f) != 4 {
 		return s, false
@@ -60,12 +60,12 @@ func avoidPrimary(t *testing.T, node string) {
 // (idempotent), which the test calls before the runs that must be fast.
 func throttleImport(t *testing.T, perBatch time.Duration) (remove func()) {
 	t.Helper()
-	sql(t, `CREATE OR REPLACE FUNCTION trove.e2e_import_throttle() RETURNS trigger LANGUAGE plpgsql AS $$
+	sql(t, `CREATE OR REPLACE FUNCTION quader.e2e_import_throttle() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN PERFORM pg_sleep(`+strconv.FormatFloat(perBatch.Seconds(), 'f', 3, 64)+`); RETURN NULL; END $$;
-DROP TRIGGER IF EXISTS e2e_import_throttle ON trove.vuln_advisory;
-CREATE TRIGGER e2e_import_throttle BEFORE INSERT ON trove.vuln_advisory FOR EACH STATEMENT EXECUTE FUNCTION trove.e2e_import_throttle()`)
+DROP TRIGGER IF EXISTS e2e_import_throttle ON quader.vuln_advisory;
+CREATE TRIGGER e2e_import_throttle BEFORE INSERT ON quader.vuln_advisory FOR EACH STATEMENT EXECUTE FUNCTION quader.e2e_import_throttle()`)
 	remove = func() {
-		sql(t, `DROP TRIGGER IF EXISTS e2e_import_throttle ON trove.vuln_advisory; DROP FUNCTION IF EXISTS trove.e2e_import_throttle()`)
+		sql(t, `DROP TRIGGER IF EXISTS e2e_import_throttle ON quader.vuln_advisory; DROP FUNCTION IF EXISTS quader.e2e_import_throttle()`)
 	}
 	t.Cleanup(remove)
 	return remove
@@ -166,7 +166,7 @@ func TestVulnLong_R_VULN_004_FullSyncDrainedMidRun(t *testing.T) {
 		if s.state == "succeeded" || s.state == "failed" || s.state == "cancelled" {
 			t.Logf("the job ended %s", s.state)
 			if s.state != "succeeded" {
-				t.Fatalf("the drained synchronization ended %s: %s", s.state, sql(t, `SELECT coalesce(error::text, '') FROM trove.job WHERE id = '`+id+`'`))
+				t.Fatalf("the drained synchronization ended %s: %s", s.state, sql(t, `SELECT coalesce(error::text, '') FROM quader.job WHERE id = '`+id+`'`))
 			}
 			break
 		}
@@ -176,7 +176,7 @@ func TestVulnLong_R_VULN_004_FullSyncDrainedMidRun(t *testing.T) {
 			t.Fatalf("drain.sh: %v\n%s", err, drainOut)
 		}
 	}
-	final := sql(t, `SELECT state || '|' || attempt FROM trove.job WHERE id = '`+id+`'`)
+	final := sql(t, `SELECT state || '|' || attempt FROM quader.job WHERE id = '`+id+`'`)
 	t.Logf("the job ran on %v, was queued again: %v, attempt before the drain %s, at the end %s", replicas, queuedAgain, first.attempt, final)
 	if final != "succeeded|"+first.attempt {
 		t.Errorf("the job ended %q, want succeeded with the attempt of before the drain (%s): a release at shutdown does not count an attempt", final, first.attempt)
@@ -194,7 +194,7 @@ func TestVulnLong_R_VULN_004_FullSyncDrainedMidRun(t *testing.T) {
 	if len(replicas) < 2 {
 		t.Errorf("only %v ran the job: it was not released and another worker did not complete it", replicas)
 	}
-	if got := sql(t, `SELECT records FROM trove.vuln_source_state WHERE source = 'osv' AND ecosystem = 'npm'`); got != strconv.Itoa(want) {
+	if got := sql(t, `SELECT records FROM quader.vuln_source_state WHERE source = 'osv' AND ecosystem = 'npm'`); got != strconv.Itoa(want) {
 		t.Errorf("the npm ecosystem holds %s records after the run, want %d", got, want)
 	}
 	e.awaitEvaluated(t)

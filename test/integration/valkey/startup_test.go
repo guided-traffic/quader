@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func cfgTLSDisabled() config.ValkeyTLS { return config.ValkeyTLS{Mode: "disable"} }
@@ -147,8 +147,8 @@ func TestStartupErrors(t *testing.T) {
 		if code := c.Status().ReasonCode; code != cluster.ReasonNoSentinel {
 			t.Fatalf("R-OPS-001 reason code = %q, want no_sentinel", code)
 		}
-		if got := metric(t, c.Reg, "trove_valkey_available", ""); got != 0 {
-			t.Fatalf("trove_valkey_available = %v", got)
+		if got := metric(t, c.Reg, "quader_valkey_available", ""); got != 0 {
+			t.Fatalf("quader_valkey_available = %v", got)
 		}
 	})
 	t.Run("R-HA-057 a client that started degraded recovers when a Sentinel answers", func(t *testing.T) {

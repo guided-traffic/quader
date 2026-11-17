@@ -3,7 +3,7 @@ package proxy
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/items"
+	"github.com/guided-traffic/quader/internal/items"
 )
 
 // View is the read-only side of the remote engine: what the stored state of a remote repository says, read without

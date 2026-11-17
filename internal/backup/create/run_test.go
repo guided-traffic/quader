@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
 )
 
 func (e *env) putMarker(inst, inc string) {
 	b, _ := format.NewMarker(inst, inc, time.Now()).Encode()
-	e.mem.Set("trove/trove-backup-target.json", b)
+	e.mem.Set("quader/quader-backup-target.json", b)
 }
 
 func TestR_BAK_013_StallEndsTheRunAndReleasesTheHold(t *testing.T) {
@@ -65,7 +65,7 @@ func TestR_BAK_002_AdoptTarget(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		b, _ := e.mem.Data("trove/trove-backup-target.json")
+		b, _ := e.mem.Data("quader/quader-backup-target.json")
 		m, _ := format.DecodeMarker(b)
 		if m.Incarnation != "inc-1" || m.AdoptedAt == nil {
 			t.Fatalf("marker = %+v", m)
@@ -104,8 +104,8 @@ func TestR_BAK_006_CheckExistingSkipsObjectsAPredecessorCopied(t *testing.T) {
 	d := e.addBlob("alpha")
 	e.putMarker("inst-1", "inc-1")
 	// An incomplete directory of a killed run, and the pool object it had copied.
-	e.mem.Set("trove/backups/20200101T000000Z-aaaa/db/items.copy.zst", []byte("partial"))
-	e.mem.Set("trove/pool/sha256/"+d.Hex()[:2]+"/"+d.Hex()[2:4]+"/"+d.Hex(), []byte("alpha"))
+	e.mem.Set("quader/backups/20200101T000000Z-aaaa/db/items.copy.zst", []byte("partial"))
+	e.mem.Set("quader/pool/sha256/"+d.Hex()[:2]+"/"+d.Hex()[2:4]+"/"+d.Hex(), []byte("alpha"))
 	e.mem.Calls = map[string]int{}
 	res, err := e.create(backup.CreateOptions{})
 	if err != nil {

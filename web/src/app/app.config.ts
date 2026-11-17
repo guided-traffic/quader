@@ -14,7 +14,7 @@ import {
   problemInterceptor,
   resilienceInterceptor,
 } from './core/http/interceptors';
-import { TroveTitleStrategy } from './core/title-strategy';
+import { QuaderTitleStrategy } from './core/title-strategy';
 
 // >>> M1 ui-a
 // The constants live in api/csrf.ts so that the upload client of api/files-api.ts can read them.
@@ -32,7 +32,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     ...provideApiServices(),
     provideRouter(routes, withComponentInputBinding()),
-    { provide: TitleStrategy, useExisting: TroveTitleStrategy },
+    { provide: TitleStrategy, useExisting: QuaderTitleStrategy },
     provideHttpClient(
       withFetch(),
       withXsrfConfiguration({ cookieName: CSRF_COOKIE, headerName: CSRF_HEADER }),

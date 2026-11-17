@@ -1,6 +1,6 @@
 package errs
 
-import "github.com/guided-traffic/trove/internal/bastion/iface"
+import "github.com/guided-traffic/quader/internal/bastion/iface"
 
 // Codes are stable snake_case identifiers and part of the API contract: a code
 // is never reused or renamed within an API major version (R-ARCH-025). This file
@@ -321,7 +321,7 @@ const (
 //
 // >>> M13 bastion
 
-// Codes of the trove Bastion (R-BAS-004, R-BAS-008, R-BAS-009, R-BAS-014, R-BAS-029). The ones the two sides
+// Codes of the quader Bastion (R-BAS-004, R-BAS-008, R-BAS-009, R-BAS-014, R-BAS-029). The ones the two sides
 // exchange are defined once in internal/bastion/iface, which both import; the rest are the main installation's.
 const (
 	// CodeBastionTokenInvalid: the Bastion token of a request is invalid (401).
@@ -668,7 +668,7 @@ var registry = []CodeInfo{
 	{CodeInvalid, Invalid, "Malformed request", "The request cannot be parsed: unparsable JSON, wrong types, an unknown or duplicate field, or an unknown query parameter."},
 	{CodeValidation, Invalid, "Validation failed", "The request parsed but one or more fields are invalid; see errors."},
 	{CodeUnauthenticated, Unauthenticated, "Authentication required", "The request carries no valid credential."},
-	{CodeNotImplemented, NotImplemented, "Not implemented", "The operation is defined but not implemented by this build of trove yet."},
+	{CodeNotImplemented, NotImplemented, "Not implemented", "The operation is defined but not implemented by this build of Quader yet."},
 	{CodeForbidden, Forbidden, "Forbidden", "The credential is valid but the operation is not permitted."},
 	{CodeNotFound, NotFound, "Not found", "The resource does not exist or is not visible to the caller."},
 	{CodeMethodNotAllowed, MethodNotAllowed, "Method not allowed", "The resource does not support the method; see the Allow header."},
@@ -697,7 +697,7 @@ var registry = []CodeInfo{
 	//
 	// >>> M1 api
 	{CodeInvalidCursor, Invalid, "Invalid cursor", "The cursor was not issued by this server, is of an unsupported version, or was issued for other filters or another sort order. Restart the traversal without a cursor."},
-	{CodeInvalidHeader, Invalid, "Invalid header", "A trove request header has an invalid value; the detail names the header."},
+	{CodeInvalidHeader, Invalid, "Invalid header", "A Quader request header has an invalid value; the detail names the header."},
 	{CodeAlreadyExists, Conflict, "Already exists", "A resource with this key or name exists already."},
 	{CodeIdempotencyInFlight, Conflict, "Idempotent request in progress", "The first request with this Idempotency-Key has not finished. Retry after the Retry-After period; the retry replays its outcome."},
 	{CodeIdempotencyKeyReused, Unprocessable, "Idempotency key reused", "The Idempotency-Key was used before with another method, route or body. Use a new key for a different request."},
@@ -713,7 +713,7 @@ var registry = []CodeInfo{
 	{CodePrincipalDisabled, Unauthenticated, "Principal disabled", "The credential is valid but its owner is disabled."},
 	{CodeInvalidScope, Invalid, "Invalid scope", "The token scope has an unknown field or action, an unknown endpoint, or exceeds the size limits."},
 	{CodeInvalidTTL, Invalid, "Invalid lifetime", "Give ttlSeconds (at least 60, or 0 for a non-expiring service-account token) or expiresAt, not both, and at least 60 seconds ahead."},
-	{CodeTTLExceedsMaximum, Invalid, "Lifetime exceeds the maximum", "The requested lifetime is above the maximum for the token type; trove does not clamp it."},
+	{CodeTTLExceedsMaximum, Invalid, "Lifetime exceeds the maximum", "The requested lifetime is above the maximum for the token type; Quader does not clamp it."},
 	{CodeDefaultAboveMaximum, Invalid, "Default above maximum", "A default lifetime must not exceed its maximum."},
 	{CodeExceedsCeiling, Invalid, "Exceeds the configured ceiling", "A runtime value must not exceed the ceiling set in the configuration."},
 	{CodeNonExpiringNotAllowed, Invalid, "Non-expiring token not allowed", "Only a service-account token can be non-expiring, and only while the configuration allows it."},
@@ -750,7 +750,7 @@ var registry = []CodeInfo{
 	//
 	// >>> M1 authz
 	{CodeAuthzStale, Unavailable, "Authorization state not confirmed", "The replica could not confirm that its grant index is current within the wait of R-AUTHZ-028; retry after the Retry-After period, the request can succeed on another replica."},
-	{CodeAuthzEpochUnknown, PreconditionFailed, "Authorization epoch unknown", "Trove-Authz-Min-Epoch names an epoch the database has not reached. Stop sending that epoch and read the changed object again."},
+	{CodeAuthzEpochUnknown, PreconditionFailed, "Authorization epoch unknown", "Quader-Authz-Min-Epoch names an epoch the database has not reached. Stop sending that epoch and read the changed object again."},
 	{CodeRoleNotAllowed, Invalid, "Role not allowed", "System roles are bound to users, groups and service accounts only; never to anonymous, authenticated or CI identity mappings."},
 	{CodeUnknownRole, Invalid, "Unknown role", "The role is not one of admin, security-admin, auditor, repository-admin, webhook-admin."},
 	{CodeVisibilityAboveProject, Invalid, "Level above the project", "The artifacts level of a repository is never above its project's level."},
@@ -762,7 +762,7 @@ var registry = []CodeInfo{
 	{CodeUnknownRepository, Invalid, "Unknown repository", "A key selector names a repository that does not exist."},
 	{CodeDuplicatePrincipal, Invalid, "Duplicate principal", "A policy holds at most one entry per principal."},
 	{CodeVirtualActionNotApplicable, Invalid, "Action not applicable to a virtual repository", "A key selector that names a virtual repository accepts only read and manage."},
-	{CodeRoleBindingManagedByConfiguration, Conflict, "Role binding managed by the configuration", "The binding is declared in authz.role_bindings of the system configuration and is applied by trove migrate; remove it there."},
+	{CodeRoleBindingManagedByConfiguration, Conflict, "Role binding managed by the configuration", "The binding is declared in authz.role_bindings of the system configuration and is applied by quader migrate; remove it there."},
 	// <<< M1 authz
 	//
 	// >>> M5a projects
@@ -782,7 +782,7 @@ var registry = []CodeInfo{
 	{CodePinClaimNotImmutable, Invalid, "Pin claim not immutable", "pin_claims may name only the immutable ID claims of the issuer kind; a path or name claim changes on rename and transfer."},
 	{CodePublicIssuerRequired, Invalid, "Public issuer required", "An issuer whose URL is public by construction (gitlab.com) is a public issuer."},
 	{CodeKindNotAvailable, Invalid, "Issuer kind not available", "The kinds github and generic are not available in this release."},
-	{CodeIssuerManagedByConfiguration, Conflict, "Issuer managed by the configuration", "The issuer is declared in ci.issuers of the system configuration and applied by trove migrate; change or remove it there. Its mappings stay writable."},
+	{CodeIssuerManagedByConfiguration, Conflict, "Issuer managed by the configuration", "The issuer is declared in ci.issuers of the system configuration and applied by quader migrate; change or remove it there. Its mappings stay writable."},
 	{CodeDiscoveryUnreachable, Invalid, "Discovery unreachable", "The discovery document or the key set of the issuer could not be fetched; the detail names the failure class, never a response body."},
 	{CodeIssuerMismatch, Invalid, "Issuer mismatch", "The issuer value of the discovery document is not exactly the configured issuer, or the ci_issuer of an exchange names another issuer than the token's iss."},
 	{CodeNoUsableKeys, Invalid, "No usable keys", "The key set of the issuer holds no key that meets the key rules (use, key_ops, key type, 2048-bit RSA)."},
@@ -805,13 +805,13 @@ var registry = []CodeInfo{
 	// <<< M4 ci
 	//
 	// >>> M4b vulnerabilities
-	{CodeVulnerabilityBlocked, Forbidden, "Download blocked by a finding", "trove refuses the version: a malicious-package finding is open, or a triager blocked a finding of it in this repository. The problem names the advisory and the finding; a dismissal lifts it. The response is never cached."},
+	{CodeVulnerabilityBlocked, Forbidden, "Download blocked by a finding", "Quader refuses the version: a malicious-package finding is open, or a triager blocked a finding of it in this repository. The problem names the advisory and the finding; a dismissal lifts it. The response is never cached."},
 	{CodeVulnerabilityDataMissing, Forbidden, "Advisory data missing", "The repository sets onMissingData block and the advisory data of the version's ecosystem was never imported completely, so the version cannot be evaluated. The response is never cached."},
 	{CodeVulnerabilityWeakeningRefused, Forbidden, "Vulnerability settings cannot be weakened", "The write would switch the scanning of the repository off, stop it matching public advisories, stop blocking malicious versions or stop blocking on missing data. That needs the capability repositories:write-config or vulnerabilities:triage; a project Owner's manageRepositories does not carry it."},
-	{CodeVulnerabilityDataUnavailable, Unavailable, "Advisory data not imported", "trove's advisory data for the ecosystem is not imported yet, so the audit has nothing to answer from; retry after the Retry-After period."},
+	{CodeVulnerabilityDataUnavailable, Unavailable, "Advisory data not imported", "Quader's advisory data for the ecosystem is not imported yet, so the audit has nothing to answer from; retry after the Retry-After period."},
 	{CodeFindingNotConfirmed, Conflict, "Finding not confirmed", "blocked is set on a confirmed finding only; confirm the finding first."},
-	{CodeFindingResolved, Conflict, "Finding resolved", "The finding is resolved by trove: no stored version is affected any longer. A person cannot change it; it returns to its earlier status when the match returns."},
-	{CodeStatusNotSettable, Unprocessable, "Status not settable", "The status resolved is set by trove only."},
+	{CodeFindingResolved, Conflict, "Finding resolved", "The finding is resolved by Quader: no stored version is affected any longer. A person cannot change it; it returns to its earlier status when the match returns."},
+	{CodeStatusNotSettable, Unprocessable, "Status not settable", "The status resolved is set by Quader only."},
 	{CodeExportTooLarge, Unprocessable, "Export too large", "The export would exceed vulnerabilities.export.max_rows; narrow the filter."},
 	{CodeArchiveTooLarge, UpstreamFailed, "Advisory archive too large", "The advisory archive is larger than vulnerabilities.sources.osv.max_archive_size; the previous data stays in force."},
 	{CodeArchiveDigestMismatch, UpstreamFailed, "Advisory archive digest mismatch", "The MD5 of the downloaded archive differs from the digest the source announced; the previous data stays in force."},
@@ -885,33 +885,33 @@ var registry = []CodeInfo{
 	// >>> M2 upstream
 	{CodeUpstreamSecretUnavailable, UpstreamFailed, "Upstream secret unavailable", "A secret of the remote repository's upstream configuration cannot be unsealed or resolved on this replica, for example a reference to a file that is missing or a sealed value that was copied from another row. Other repositories are unaffected; the repository's administrator re-enters the secret or fixes the reference."},
 	{CodeSourceNetworkUnavailable, UpstreamFailed, "Source network unavailable", "This replica has no interface address inside the remote repository's sourceNetwork, so it does not connect to the upstream. The failure does not count toward the circuit; another replica may have such an address."},
-	{CodeForeignHostDenied, UpstreamFailed, "Foreign host denied", "The upstream document points to a host that is neither the upstream origin nor an entry of the remote repository's extraHosts; trove did not send a request."},
+	{CodeForeignHostDenied, UpstreamFailed, "Foreign host denied", "The upstream document points to a host that is neither the upstream origin nor an entry of the remote repository's extraHosts; Quader did not send a request."},
 	// <<< M2 upstream
 	//
 	// >>> M2 proxy
-	{CodeNotCachedOffline, NotFound, "Not cached while offline", "The remote repository is offline (its own mode or the global switch) and the path is not in its cache; trove sends no request. A 404, not a 5xx, because the operator decided the item is not available here."},
+	{CodeNotCachedOffline, NotFound, "Not cached while offline", "The remote repository is offline (its own mode or the global switch) and the path is not in its cache; Quader sends no request. A 404, not a 5xx, because the operator decided the item is not available here."},
 	{CodeUpstreamAssumedOffline, Unavailable, "Upstream assumed offline", "Consecutive failures opened the circuit of the remote repository's upstream and the path is not cached. Retry-After says when the next probe may close it."},
-	{CodeUpstreamRateLimited, Unavailable, "Upstream rate limiting trove", "The upstream answered 429. Retry-After says how long it asked trove to wait; a stored copy, if any, is served instead of this error."},
+	{CodeUpstreamRateLimited, Unavailable, "Upstream rate limiting Quader", "The upstream answered 429. Retry-After says how long it asked Quader to wait; a stored copy, if any, is served instead of this error."},
 	{CodeUpstreamAuthFailed, UpstreamFailed, "Upstream authentication failed", "The upstream answered 401 or 403 to the remote repository's credentials. The status is never forwarded; the repository's administrator checks the credential."},
 	{CodeUpstreamError, UpstreamFailed, "Upstream error", "The upstream answered 500, 502, 503 or 504. A stored copy, if any, is served instead of this error."},
 	{CodeUpstreamUnreachable, UpstreamFailed, "Upstream unreachable", "The connection to the upstream failed (connection, DNS or TLS handshake failure). A stored copy, if any, is served instead of this error."},
-	{CodeUpstreamUnexpectedStatus, UpstreamFailed, "Unexpected upstream status", "The upstream answered with a status trove does not act on (another 4xx, or a 3xx without a followable target). Nothing is cached and the circuit is not counted."},
+	{CodeUpstreamUnexpectedStatus, UpstreamFailed, "Unexpected upstream status", "The upstream answered with a status Quader does not act on (another 4xx, or a 3xx without a followable target). Nothing is cached and the circuit is not counted."},
 	{CodeUpstreamItemTooLarge, UpstreamFailed, "Upstream item too large", "The upstream item is larger than the effective maxArtifactBytes or maxMetadataBytes. Nothing is stored and nothing is negatively cached, so raising the limit takes effect at once."},
 	{CodeUpstreamIntegrityMismatch, UpstreamFailed, "Upstream integrity mismatch", "The fetched artifact does not match the digest the upstream announced. Nothing is stored; a security event is written."},
 	{CodeUpstreamDigestMissing, UpstreamFailed, "Upstream digest missing", "The repository requires an announced SHA-256 or stronger digest (integrity.checksumPolicy: require) and the upstream's metadata announces none."},
 	{CodeUpstreamContentTypeBlocked, UpstreamFailed, "Upstream content type blocked", "The upstream answered with a media type that integrity.blockUnexpectedContentTypes refuses, usually an HTML error page or a captive portal in place of a package."},
 	{CodeTLSUntrusted, UpstreamFailed, "Upstream certificate not trusted", "The upstream's certificate is not signed by a CA in proxy.outbound.tls or does not match the host name. A security event is written; the circuit is not counted."},
 	{CodeTooManyRedirects, UpstreamFailed, "Too many redirects", "The upstream redirected more often than proxy.max_redirects allows."},
-	{CodeInsecureRedirect, UpstreamFailed, "Insecure redirect", "The upstream sent a request from https to http, by a redirect or by a URL in its metadata, which trove refuses."},
+	{CodeInsecureRedirect, UpstreamFailed, "Insecure redirect", "The upstream sent a request from https to http, by a redirect or by a URL in its metadata, which Quader refuses."},
 	{CodeFetchQueueTimeout, Unavailable, "Fetch queue timeout", "All upstream fetch slots (proxy.max_concurrent_fetches, limits.maxConcurrentFetches) stayed busy for proxy.queue_timeout_seconds. Retry-After is 5 s."},
 	{CodeNotCachedOnlyIfCached, UpstreamTimeout, "Not cached", "The request carried Cache-Control: only-if-cached and the path is not in the cache (RFC 9111 section 5.2.1.7)."},
 	// <<< M2 proxy
 	// >>> M2 untrusted
-	{CodeContentRefused, Unprocessable, "Content refused", "The package content has a structure trove does not read: duplicate names, link entries, a document type declaration, names two readers would resolve differently, or a document that is not well-formed."},
+	{CodeContentRefused, Unprocessable, "Content refused", "The package content has a structure Quader does not read: duplicate names, link entries, a document type declaration, names two readers would resolve differently, or a document that is not well-formed."},
 	// <<< M2 untrusted
 	// >>> M2 ownership
 	{CodePackageOwnedByOtherOwner, Forbidden, "Package owned by another owner", "The action is granted, but the package name is owned and the caller is none of its owners and holds no manage on it; an owner or a holder of manage adds the caller as an owner."},
-	{CodeLastOwner, Conflict, "Last owner", "Removing the only owner of a package would leave it without one; add the new owner first, or release the name with release=true (needs manage). The last Owner of a project cannot be removed or demoted either; make another member an Owner first (an administrator of trove may)."},
+	{CodeLastOwner, Conflict, "Last owner", "Removing the only owner of a package would leave it without one; add the new owner first, or release the name with release=true (needs manage). The last Owner of a project cannot be removed or demoted either; make another member an Owner first (an administrator of Quader may)."},
 	{CodePopulateNotPermitted, Forbidden, "Populate not permitted", "The caller may read the remote repository but not bring new content into its cache: the repository's cacheFillAction is not granted, the request came with the session cookie, or the endpoint does not fill caches. What the cache holds is still served."},
 	// <<< M2 ownership
 	// >>> M2 virtual
@@ -930,7 +930,7 @@ var registry = []CodeInfo{
 	{CodeNPMVersionExists, Conflict, "npm version exists", "The version was published before. A name and version are never accepted again with other bytes."},
 	{CodeNPMVersionUnpublished, Conflict, "npm version unpublished", "The version was unpublished and is never accepted again; publish a new version."},
 	{CodeNPMStaleRev, Conflict, "npm revision is stale", "Another write changed the package after the document was read; read it again with ?write=true."},
-	{CodeNPMNotImplemented, NotImplemented, "npm operation not implemented", "The operation is part of the npm protocol and is not implemented by trove."},
+	{CodeNPMNotImplemented, NotImplemented, "npm operation not implemented", "The operation is part of the npm protocol and is not implemented by Quader."},
 	{CodeNPMAuditUnavailable, NotImplemented, "npm audit not available", "The audit endpoint is not available for this repository: no remote of it forwards, it may not contact its upstream, or the endpoint does not allow it; npm 6's audit endpoints always answer it."},
 	{CodeNPMInvalidUpstreamDocument, UpstreamFailed, "Invalid npm upstream document", "The upstream package document failed validation and was not stored."},
 	// <<< M2 npm
@@ -942,14 +942,14 @@ var registry = []CodeInfo{
 	{CodeOCIBlobUnknown, NotFound, "OCI blob unknown", "No blob with this digest is stored under this image name of the repository."},
 	{CodeOCIBlobUploadUnknown, NotFound, "OCI blob upload unknown", "The upload session does not exist, has expired, is finished, or belongs to another principal, repository or image name."},
 	{CodeOCIBlobUploadInvalid, RangeNotSatisfiable, "OCI blob upload out of order", "The chunk does not start at the number of bytes the session has received, or another request holds the session; the Range header names the bytes received."},
-	{CodeOCIManifestInvalid, Invalid, "OCI manifest invalid", "The manifest is not one trove accepts: it is not valid JSON of a supported media type, it is larger than 4 MiB, it uses a digest algorithm other than sha256, or its references break the rules of the repository."},
+	{CodeOCIManifestInvalid, Invalid, "OCI manifest invalid", "The manifest is not one Quader accepts: it is not valid JSON of a supported media type, it is larger than 4 MiB, it uses a digest algorithm other than sha256, or its references break the rules of the repository."},
 	{CodeOCIManifestBlobUnknown, Invalid, "OCI manifest references an unknown blob", "The manifest names a config, a layer or a manifest that the repository does not hold under this image name."},
 	{CodeOCISizeInvalid, TooLarge, "OCI content too large", "The manifest, the blob or the repository's quota exceeds a size limit."},
-	{CodeOCIUnsupported, Invalid, "OCI operation not offered", "The repository does not offer the operation: a write to a remote repository or to a virtual repository without a deployment target, or a parameter trove does not support."},
+	{CodeOCIUnsupported, Invalid, "OCI operation not offered", "The repository does not offer the operation: a write to a remote repository or to a virtual repository without a deployment target, or a parameter Quader does not support."},
 	{CodeOCIInsufficientScope, Unauthenticated, "OCI registry token lacks the scope", "The registry token does not grant what the request needs on this image name; the challenge names the scope to ask the token service for."},
 	{CodeDebDistributionRequired, Invalid, "Debian distribution required", "An upload to a Debian repository names at least one distribution (suite) with the distribution parameter."},
 	{CodeDebInvalidCoordinate, Invalid, "Invalid Debian coordinate", "A distribution or component is outside the grammar ^[a-z0-9][a-z0-9._+-]{0,63}$, or a request names more than 16 of them."},
-	{CodeDebInvalidFileName, Invalid, "Invalid Debian file name", "The file name of an upload must end in .deb; trove names the stored file itself."},
+	{CodeDebInvalidFileName, Invalid, "Invalid Debian file name", "The file name of an upload must end in .deb; Quader names the stored file itself."},
 	{CodeDebMembersUnreadable, Forbidden, "Debian members unreadable", "The index of a virtual Debian repository is one for every caller, so reading it needs read without package restriction on every member."},
 	{CodeDebNotInRelease, NotFound, "Not in the stored Release", "The path is not listed by the stored release document of the remote repository's suite."},
 	{CodeDebNoUpstreamKeys, NotFound, "No upstream keys", "The remote Debian repository has no deb.upstreamKeys, so it has no public keys to serve."},
@@ -960,31 +960,31 @@ var registry = []CodeInfo{
 	{CodeDebKeyInUse, Conflict, "Signing key known", "The fingerprint is known to a repository in some state; a key is never imported twice."},
 	{CodeDebKeyState, Conflict, "Signing key state", "The operation does not apply to a key in this state."},
 	{CodeDebInvalidArchive, Unprocessable, "Invalid Debian package archive", "The upload is not an ar archive in the layout of deb(5), or a bound of the archive is crossed."},
-	{CodeDebInvalidControl, Unprocessable, "Invalid Debian control file", "The control file breaks the strict syntax trove copies into its indexes, or a required field is missing or outside its grammar. The detail names the field."},
+	{CodeDebInvalidControl, Unprocessable, "Invalid Debian control file", "The control file breaks the strict syntax Quader copies into its indexes, or a required field is missing or outside its grammar. The detail names the field."},
 	{CodeDebUnsupportedCompression, Unprocessable, "Unsupported control archive compression", "The control archive is compressed with a method other than none, gzip, xz or zstd."},
 	{CodeDebKeyUnsupported, Unprocessable, "Unsupported signing key", "The key is not an unprotected or passphrase-protected EdDSALegacy (Ed25519) or RSA key of at least 3072 bits that can sign, has no expiry, was not created in the future and has no signing subkeys."},
 	{CodeDebUpstreamKeysRequired, Unprocessable, "Upstream keys required", "A mirror, and a remote that is a member of a virtual repository, needs deb.upstreamKeys."},
 	{CodeDebMemberUnverified, Unprocessable, "Debian member unverified", "A remote Debian repository without deb.upstreamKeys cannot be a member of a virtual repository."},
 	{CodeDebMirrorSuitesRequired, Unprocessable, "Mirror suites required", "A remote Debian repository in mode mirror names the suites to mirror in deb.mirror.suites."},
-	{CodeDebNotImplemented, NotImplemented, "Debian operation not implemented", "The operation is part of the Debian repository protocol and is not served by this build of trove yet."},
+	{CodeDebNotImplemented, NotImplemented, "Debian operation not implemented", "The operation is part of the Debian repository protocol and is not served by this build of Quader yet."},
 	{CodeDebUpstreamSignatureInvalid, UpstreamFailed, "Upstream signature invalid", "The upstream's release document is not signed by a key of deb.upstreamKeys that was valid then and now."},
 	{CodeDebReleaseInvalid, UpstreamFailed, "Invalid upstream release", "The upstream's release document is malformed, too old, dated too far ahead or beyond a bound."},
 	{CodeDebIndexMismatch, UpstreamFailed, "Index does not match the release", "The index file the upstream served does not have the hash and size the stored release names."},
-	{CodeGeneratedItem, Conflict, "Generated item", "The item is generated by trove from the repository's rows; it is never written, deleted, copied or moved by a client."},
+	{CodeGeneratedItem, Conflict, "Generated item", "The item is generated by Quader from the repository's rows; it is never written, deleted, copied or moved by a client."},
 	{CodeReindexRunning, Conflict, "Reindex running", "A rebuild of the repository's derived metadata is queued or running; the detail names the job."},
 	{CodeAnsibleInvalidRequest, Invalid, "Invalid Ansible Galaxy request", "The publish request is malformed: a part is missing or repeated, or the body is not multipart/form-data."},
 	{CodeAnsibleSHA256Mismatch, Invalid, "Collection digest mismatch", "The sha256 part of the publish is not the SHA-256 of the archive that was sent. Nothing was stored."},
 	{CodeAnsibleInvalidName, Unprocessable, "Invalid collection name", "A namespace or a collection name is 1 to 64 characters of a-z, 0-9 and _, does not start with _ and contains a letter. Upper case is refused, never folded."},
 	{CodeAnsibleInvalidVersion, Unprocessable, "Invalid collection version", "A collection version is a semantic version 2.0.0 of at most 128 characters."},
-	{CodeAnsibleInvalidArchive, Unprocessable, "Invalid collection archive", "The upload is not a collection archive trove accepts: not a gzip-compressed tar archive, a link, a path that leaves the archive, a MANIFEST.json or FILES.json that is missing or inconsistent with the archive, or a bound crossed. The detail names the rule."},
+	{CodeAnsibleInvalidArchive, Unprocessable, "Invalid collection archive", "The upload is not a collection archive Quader accepts: not a gzip-compressed tar archive, a link, a path that leaves the archive, a MANIFEST.json or FILES.json that is missing or inconsistent with the archive, or a bound crossed. The detail names the rule."},
 	{CodeAnsiblePathMismatch, Unprocessable, "Path does not match the archive", "The file name of the upload names another collection or version than the archive's MANIFEST.json."},
 	{CodeAnsibleVersionExists, Conflict, "Collection version exists", "The version is stored in the repository with other bytes. A version is immutable: publish the changed collection under a new version."},
 	{CodeAnsibleVersionTombstoned, Conflict, "Collection version deleted", "The version was deleted and its number is not accepted again until an administrator clears its tombstone."},
-	{CodeAnsibleNotImplemented, NotImplemented, "Ansible Galaxy operation not implemented", "The operation is part of the Galaxy API and is not served by this build of trove yet."},
+	{CodeAnsibleNotImplemented, NotImplemented, "Ansible Galaxy operation not implemented", "The operation is part of the Galaxy API and is not served by this build of Quader yet."},
 	{CodeInvalidQuery, Unprocessable, "Invalid search text", "The search text is shorter than two characters or longer than 512 characters."},
 	// >>> M3 nuget
-	{CodeNuGetInvalidPackage, Invalid, "Invalid NuGet package", "The .nupkg is not a package trove accepts: not a ZIP archive, a name or entry the archive rules refuse, a missing or repeated .nuspec at the root, a limit of nuget.archive exceeded, or a .nuspec that is not well-formed or declares a DOCTYPE. The detail names the rule."},
-	{CodeNuGetInvalidVersion, Invalid, "Invalid NuGet version", "The version is not a NuGet version trove accepts: one to four numeric parts, an optional pre-release and build metadata, at most 255 bytes as given and normalized."},
+	{CodeNuGetInvalidPackage, Invalid, "Invalid NuGet package", "The .nupkg is not a package Quader accepts: not a ZIP archive, a name or entry the archive rules refuse, a missing or repeated .nuspec at the root, a limit of nuget.archive exceeded, or a .nuspec that is not well-formed or declares a DOCTYPE. The detail names the rule."},
+	{CodeNuGetInvalidVersion, Invalid, "Invalid NuGet version", "The version is not a NuGet version Quader accepts: one to four numeric parts, an optional pre-release and build metadata, at most 255 bytes as given and normalized."},
 	{CodeNuGetInvalidVersionRange, Invalid, "Invalid NuGet version range", "The version range is not accepted: interval or minimum-version notation of NuGet.Versioning, without a floating version."},
 	{CodeNuGetInvalidID, Invalid, "Invalid NuGet package ID", "The package ID breaks the rules of R-NUGET-003: its length, its characters or its shape."},
 	{CodeNuGetV2Unsupported, NotFound, "NuGet path not served", "The path is no NuGet v3 resource of the repository. NuGet v2 (OData) is not served; the message names the repository's v3 service index, which a client uses as its source URL."},
@@ -992,9 +992,9 @@ var registry = []CodeInfo{
 	{CodeNuGetVersionDeleted, Conflict, "NuGet version deleted", "The version was removed from the repository and its number is never accepted again, whatever the bytes. Push the package under a new version."},
 	{CodeNuGetVersionReserved, Conflict, "NuGet version reserved", "A restore of a backup reserved the number of this version for the package that was published after the backup's snapshot. Only that package, byte for byte, is accepted; any other build needs a new version."},
 	{CodeNuGetSymbolsExist, Conflict, "NuGet symbol package exists", "The version holds a symbol package with other bytes. Symbols must match the binaries of the immutable package, so a symbol package is never replaced: push the package and its symbols under a new version."},
-	{CodeNuGetNotImplemented, NotImplemented, "NuGet operation not implemented", "The operation is part of the NuGet v3 protocol and is not served by this build of trove yet."},
+	{CodeNuGetNotImplemented, NotImplemented, "NuGet operation not implemented", "The operation is part of the NuGet v3 protocol and is not served by this build of Quader yet."},
 	{CodeNuGetInvalidUpstreamDocument, UpstreamFailed, "Invalid NuGet upstream document", "The upstream answered a NuGet metadata request (version list, registration index or page) with a document that is not what the request promises. The previous copy, if any, is kept and served."},
-	{CodeUpstreamPackageMismatch, UpstreamFailed, "Upstream served another package", "The upstream answered a package request with a .nupkg whose declared ID or version is not the one asked for, or whose archive trove's reader refuses so that the ID and version cannot be checked. Nothing is stored."},
+	{CodeUpstreamPackageMismatch, UpstreamFailed, "Upstream served another package", "The upstream answered a package request with a .nupkg whose declared ID or version is not the one asked for, or whose archive Quader's reader refuses so that the ID and version cannot be checked. Nothing is stored."},
 	// <<< M3 nuget
 }
 

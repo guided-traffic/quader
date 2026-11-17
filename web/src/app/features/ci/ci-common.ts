@@ -3,7 +3,7 @@ import { CiWarning } from '../../api/ci-api';
 
 /** The warnings a save returned (R-CI-010, R-CI-011): each with an icon, its detail and the member it concerns. */
 @Component({
-  selector: 'trove-ci-warnings',
+  selector: 'quader-ci-warnings',
   template: `
     @if (warnings().length > 0) {
       <section class="warnings" role="status" aria-labelledby="ci-warnings-title">
@@ -27,14 +27,14 @@ import { CiWarning } from '../../api/ci-api';
   `,
   styles: `
     .warnings {
-      margin-block: var(--trove-space-3);
-      padding: var(--trove-space-3) var(--trove-space-4);
-      border: 1px solid var(--trove-status-warn);
-      border-radius: var(--trove-radius-m);
+      margin-block: var(--quader-space-3);
+      padding: var(--quader-space-3) var(--quader-space-4);
+      border: 1px solid var(--quader-status-warn);
+      border-radius: var(--quader-radius-m);
     }
     h2 {
-      margin: 0 0 var(--trove-space-2);
-      font: var(--trove-type-title-small);
+      margin: 0 0 var(--quader-space-2);
+      font: var(--quader-type-title-small);
     }
     ul {
       margin: 0;
@@ -43,15 +43,15 @@ import { CiWarning } from '../../api/ci-api';
     }
     li {
       display: flex;
-      gap: var(--trove-space-2);
-      color: var(--trove-on-surface);
+      gap: var(--quader-space-2);
+      color: var(--quader-on-surface);
     }
     .material-icons {
-      color: var(--trove-status-warn);
+      color: var(--quader-status-warn);
       font-size: 1.125rem;
     }
     .muted {
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
   `,
 })

@@ -143,7 +143,7 @@ describe('Format settings rendered from the schema', () => {
               compression: {
                 type: 'array',
                 title: 'Compression',
-                items: { type: 'string', enum: ['xz', 'zst'], 'x-trove-enum-titles': { xz: 'xz, smaller to download' } },
+                items: { type: 'string', enum: ['xz', 'zst'], 'x-quader-enum-titles': { xz: 'xz, smaller to download' } },
               },
             },
           } as SettingSchema,
@@ -246,7 +246,7 @@ describe('Format settings rendered from the schema', () => {
       expect(xz.type).toBe('checkbox');
       expect(xz.checked).toBe(false);
       expect(r.root.querySelector('#f-deb-compression-v')).toBeNull();
-      expect(el<HTMLInputElement>(r.root, '#f-deb-origin').value).toBe('trove');
+      expect(el<HTMLInputElement>(r.root, '#f-deb-origin').value).toBe('quader');
       expect(r.root.querySelector('#f-deb-suites')).toBeNull();
       expect(r.root.querySelector('#f-deb-upstreamKeys')).toBeNull();
 

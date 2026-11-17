@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/vuln"
-	_ "github.com/guided-traffic/trove/internal/vuln/triage" // the replay handler of the download blocks
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/vuln"
+	_ "github.com/guided-traffic/quader/internal/vuln/triage" // the replay handler of the download blocks
 )
 
 // R-VULN-013, R-VULN-026, R-HA-054: the download blocks of the revocation journal replayed into a restored database. The entries

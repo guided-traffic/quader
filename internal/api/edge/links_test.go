@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/items"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/items"
 )
 
 func TestDescribeItem(t *testing.T) {
-	links := Links{Base: "https://trove.example.com/"}
+	links := Links{Base: "https://quader.example.com/"}
 	var d blob.Digest
 	d[0] = 0x5b
 	file := items.Item{
@@ -37,10 +37,10 @@ func TestDescribeItem(t *testing.T) {
 		if p, present := m["upstreamUrl"]; !present || p != nil {
 			t.Errorf("upstreamUrl = %v", p)
 		}
-		if m["downloadUrl"] != "https://trove.example.com/files/it/generic-local/tools/wid%20get/widget%202.3.bin" {
+		if m["downloadUrl"] != "https://quader.example.com/files/it/generic-local/tools/wid%20get/widget%202.3.bin" {
 			t.Errorf("downloadUrl = %v", m["downloadUrl"])
 		}
-		if m["itemUrl"] != "https://trove.example.com/api/v1/projects/it/repositories/generic-local/items?path=tools%2Fwid+get%2Fwidget+2.3.bin" {
+		if m["itemUrl"] != "https://quader.example.com/api/v1/projects/it/repositories/generic-local/items?path=tools%2Fwid+get%2Fwidget+2.3.bin" {
 			t.Errorf("itemUrl = %v", m["itemUrl"])
 		}
 		if c := m["created"].(map[string]any); c["at"] != "2026-10-28T09:14:03.117Z" || c["by"] != "user:alice" {
@@ -91,7 +91,7 @@ func TestDescribeItem(t *testing.T) {
 		raw, _ := json.Marshal(DescribeItem(folder, links))
 		var m map[string]any
 		_ = json.Unmarshal(raw, &m)
-		if m["kind"] != "folder" || m["explicit"] != true || m["listingUrl"] != "https://trove.example.com/api/v1/projects/it/repositories/generic-local/children?path=tools" {
+		if m["kind"] != "folder" || m["explicit"] != true || m["listingUrl"] != "https://quader.example.com/api/v1/projects/it/repositories/generic-local/children?path=tools" {
 			t.Errorf("%s", raw)
 		}
 		for _, k := range []string{"size", "digests", "downloadUrl"} {
@@ -103,7 +103,7 @@ func TestDescribeItem(t *testing.T) {
 
 	t.Run("R-ARCH-007 a content link is built from one place, every segment encoded", func(t *testing.T) {
 		got := links.File(qr("r"), "a b/c%d/é", false)
-		if got != "https://trove.example.com/files/it/r/a%20b/c%25d/%C3%A9" || strings.Contains(got, "//files") {
+		if got != "https://quader.example.com/files/it/r/a%20b/c%25d/%C3%A9" || strings.Contains(got, "//files") {
 			t.Errorf("File = %s", got)
 		}
 		if got := links.File(qr("r"), "dir", true); !strings.HasSuffix(got, "/dir/") {

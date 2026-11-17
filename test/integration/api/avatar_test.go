@@ -18,9 +18,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The user avatar of R-API-055 on the running composition root: the role api, the real blob store, the real chain and the real
@@ -152,7 +152,7 @@ func TestR_API_055_AvatarLifecycle(t *testing.T) {
 		if got := again.Header.Get("Cache-Control"); got != "private, max-age=31536000, immutable" {
 			t.Errorf("the 304 has Cache-Control %q, want the immutable policy of the image", got)
 		}
-		if n := count("SELECT count(*) FROM trove.audit_event WHERE action = 'user.avatar.set' AND resource_id = $1", e.alice.ID); n != 1 {
+		if n := count("SELECT count(*) FROM quader.audit_event WHERE action = 'user.avatar.set' AND resource_id = $1", e.alice.ID); n != 1 {
 			t.Errorf("%d user.avatar.set events, want 1", n)
 		}
 	})
@@ -181,7 +181,7 @@ func TestR_API_055_AvatarLifecycle(t *testing.T) {
 		if put.Status != http.StatusOK || avatarURLOf(t, put) != first {
 			t.Fatalf("%d %s", put.Status, put.Body)
 		}
-		if n := count("SELECT count(*) FROM trove.audit_event WHERE action = 'user.avatar.set' AND resource_id = $1", e.alice.ID); n != 1 {
+		if n := count("SELECT count(*) FROM quader.audit_event WHERE action = 'user.avatar.set' AND resource_id = $1", e.alice.ID); n != 1 {
 			t.Errorf("%d user.avatar.set events after the repeat, want 1", n)
 		}
 	})
@@ -204,7 +204,7 @@ func TestR_API_055_AvatarLifecycle(t *testing.T) {
 		if old.Status != http.StatusNotFound {
 			t.Errorf("the replaced image: %d, want 404", old.Status)
 		}
-		if n := count("SELECT count(*) FROM trove.blob_gc_queue WHERE sha256 = decode($1, 'hex')", strings.TrimPrefix(first, "/api/v1/avatars/")); n != 1 {
+		if n := count("SELECT count(*) FROM quader.blob_gc_queue WHERE sha256 = decode($1, 'hex')", strings.TrimPrefix(first, "/api/v1/avatars/")); n != 1 {
 			t.Errorf("the replaced blob is queued for collection %d times, want 1", n)
 		}
 		if tagAfter := e.stack.Do(r, "GET", "/api/v1/users/alice", e.admin.token, nil).Header.Get("ETag"); tagAfter == tagBefore {
@@ -233,7 +233,7 @@ func TestR_API_055_AvatarLifecycle(t *testing.T) {
 		if v := e.stack.Do(r, "GET", "/api/v1/users/me", e.alice.token, nil).JSON(t)["avatarUrl"]; v != nil {
 			t.Errorf("avatarUrl after the removal: %v", v)
 		}
-		if n := count("SELECT count(*) FROM trove.audit_event WHERE action = 'user.avatar.removed' AND resource_id = $1 AND details->>'source' = 'admin'", e.alice.ID); n != 1 {
+		if n := count("SELECT count(*) FROM quader.audit_event WHERE action = 'user.avatar.removed' AND resource_id = $1 AND details->>'source' = 'admin'", e.alice.ID); n != 1 {
 			t.Errorf("%d user.avatar.removed events by the administrator, want 1", n)
 		}
 	})
@@ -248,7 +248,7 @@ func TestR_API_055_AvatarLifecycle(t *testing.T) {
 		if got := e.stack.Do(r, "DELETE", "/api/v1/users/me/avatar", e.carol.token, nil); got.Status != http.StatusNoContent {
 			t.Fatalf("own removal: %d", got.Status)
 		}
-		if n := count("SELECT count(*) FROM trove.audit_event WHERE action = 'user.avatar.removed' AND resource_id = $1 AND details->>'source' = 'self'", e.carol.ID); n != 1 {
+		if n := count("SELECT count(*) FROM quader.audit_event WHERE action = 'user.avatar.removed' AND resource_id = $1 AND details->>'source' = 'self'", e.carol.ID); n != 1 {
 			t.Errorf("%d self-removal events, want 1", n)
 		}
 	})
@@ -272,16 +272,16 @@ func TestR_API_055_AvatarLifecycle(t *testing.T) {
 			t.Fatalf("%d %s", put.Status, put.Body)
 		}
 		digest := strings.TrimPrefix(avatarURLOf(t, put), "/api/v1/avatars/")
-		if n := count("SELECT count(*) FROM trove.user_avatars WHERE user_id = $1::uuid", dave.ID); n != 1 {
+		if n := count("SELECT count(*) FROM quader.user_avatars WHERE user_id = $1::uuid", dave.ID); n != 1 {
 			t.Fatalf("%d avatar rows, want 1", n)
 		}
 		if del := e.stack.Do(r, "DELETE", "/api/v1/users/dave", e.admin.token, nil); del.Status != http.StatusNoContent {
 			t.Fatalf("delete user: %d %s", del.Status, del.Body)
 		}
-		if n := count("SELECT count(*) FROM trove.user_avatars WHERE user_id = $1::uuid", dave.ID); n != 0 {
+		if n := count("SELECT count(*) FROM quader.user_avatars WHERE user_id = $1::uuid", dave.ID); n != 0 {
 			t.Errorf("%d avatar rows after the user was deleted, want 0", n)
 		}
-		if n := count("SELECT count(*) FROM trove.blob_gc_queue WHERE sha256 = decode($1, 'hex')", digest); n != 1 {
+		if n := count("SELECT count(*) FROM quader.blob_gc_queue WHERE sha256 = decode($1, 'hex')", digest); n != 1 {
 			t.Errorf("the blob is queued for collection %d times, want 1", n)
 		}
 		if got := e.stack.Do(r, "GET", "/api/v1/avatars/"+digest, e.bob.token, nil); got.Status != http.StatusNotFound {
@@ -356,7 +356,7 @@ func TestR_API_055_AvatarRefusals(t *testing.T) {
 		}
 	})
 	t.Run("R-API-055 nothing was stored by the refused uploads", func(t *testing.T) {
-		if n := e.stack.Number("SELECT count(*) FROM trove.user_avatars"); n != 0 {
+		if n := e.stack.Number("SELECT count(*) FROM quader.user_avatars"); n != 0 {
 			t.Fatalf("%d avatar rows", n)
 		}
 	})
@@ -367,9 +367,9 @@ func TestR_API_055_AvatarWritesNeedTheCSRFHeaderOfASession(t *testing.T) {
 	e := newEnv(t, true)
 	file := testenv.WriteFile(t, t.TempDir(), "break-glass", password)
 	r := e.stack.Start(t, testenv.ReplicaOptions{Name: "avatar-csrf", Role: "api", Env: []string{
-		"TROVE_AUTH_BREAK_GLASS_ENABLED=true", "TROVE_AUTH_BREAK_GLASS_PASSWORD_FILE=" + file,
+		"QUADER_AUTH_BREAK_GLASS_ENABLED=true", "QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE=" + file,
 	}})
-	const origin = "http://trove.test"
+	const origin = "http://quader.test"
 	login := e.stack.Do(r, "POST", "/auth/local/login", "", map[string]string{"username": "admin", "password": password}, "Origin", origin)
 	if login.Status != http.StatusNoContent {
 		t.Fatalf("local login: %d %s", login.Status, login.Body)

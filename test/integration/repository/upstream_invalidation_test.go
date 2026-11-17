@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/proxy/invalidation"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/proxy/invalidation"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestUpstreamChangeInvalidatesTheCache binds the hook the way the composition

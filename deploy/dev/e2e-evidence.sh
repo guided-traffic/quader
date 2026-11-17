@@ -9,7 +9,7 @@
 # Recorders, all cheap on purpose (the probe of E0.15 once used more CPU than the installation, Q-HA-292): the samplers are shell loops
 # that read /proc and /sys with builtins and fork only `date` and `sleep` once per sample; they run inside the node containers
 # (`docker exec -d`) and write into the node, so no host process sits on a pipe and nothing outlives a run that is killed (the loops
-# end at a stop file, or after TROVE_E2E_EVIDENCE_MAX_SECONDS). Nothing here needs more than Docker, kubectl, kind and jq.
+# end at a stop file, or after QUADER_E2E_EVIDENCE_MAX_SECONDS). Nothing here needs more than Docker, kubectl, kind and jq.
 #
 #   samples.csv       one row per source and sample, sorted by time (columns below)
 #   secrets.tsv       the Secrets of every namespace at the start and at the end: namespace, name, resourceVersion, creation time, uid,
@@ -21,9 +21,9 @@
 #                     of cert-manager, gzip, one file per container instance: <namespace>_<pod>_<uid>__<container>__<restarts>.log.gz
 #   README.txt        this list
 #
-# Environment: TROVE_E2E_EVIDENCE=0 (e2e.sh: record nothing), TROVE_E2E_EVIDENCE_INTERVAL (seconds between two samples of a node,
-# default 1), TROVE_E2E_EVIDENCE_EDGE_INTERVAL (the edge, default 2), TROVE_E2E_EVIDENCE_LOG_CAP_MIB (copy at most this much of a
-# container's log, default 32), TROVE_E2E_EVIDENCE_MAX_SECONDS (a recorder's own end, default 21600).
+# Environment: QUADER_E2E_EVIDENCE=0 (e2e.sh: record nothing), QUADER_E2E_EVIDENCE_INTERVAL (seconds between two samples of a node,
+# default 1), QUADER_E2E_EVIDENCE_EDGE_INTERVAL (the edge, default 2), QUADER_E2E_EVIDENCE_LOG_CAP_MIB (copy at most this much of a
+# container's log, default 32), QUADER_E2E_EVIDENCE_MAX_SECONDS (a recorder's own end, default 21600).
 #
 # A recorder that cannot run (no cgroup pressure files, no edge pod) leaves its columns empty and says so on stderr; the set is never
 # failed by its evidence.
@@ -36,19 +36,19 @@ cmd="${1:-}"
 dir="${2:-}"
 [ -n "$cmd" ] && [ -n "$dir" ] || die "usage: e2e-evidence.sh start|stop <dir>"
 
-SAMPLE_INTERVAL="${TROVE_E2E_EVIDENCE_INTERVAL:-1}"
-EDGE_INTERVAL="${TROVE_E2E_EVIDENCE_EDGE_INTERVAL:-2}"
-LOG_CAP_MIB="${TROVE_E2E_EVIDENCE_LOG_CAP_MIB:-32}"
-MAX_SECONDS="${TROVE_E2E_EVIDENCE_MAX_SECONDS:-21600}"
+SAMPLE_INTERVAL="${QUADER_E2E_EVIDENCE_INTERVAL:-1}"
+EDGE_INTERVAL="${QUADER_E2E_EVIDENCE_EDGE_INTERVAL:-2}"
+LOG_CAP_MIB="${QUADER_E2E_EVIDENCE_LOG_CAP_MIB:-32}"
+MAX_SECONDS="${QUADER_E2E_EVIDENCE_MAX_SECONDS:-21600}"
 EDGE_NS="ingress-controller"
 # the namespaces whose pods' logs are kept whole: the secrets operator that writes the generated Secrets, and cert-manager that issues the dev CA
 KEEP_NS="internal-secrets-operator-system cert-manager"
-NODE_STOP=/tmp/trove-e2e-evidence.stop
-NODE_SAMPLES=/tmp/trove-e2e-evidence-samples.csv
-NODE_HOST_SAMPLES=/tmp/trove-e2e-evidence-host.csv
-NODE_LOGS=/tmp/trove-e2e-evidence-logs
-NODE_LOGS_DONE=/tmp/trove-e2e-evidence-logs.done
-EDGE_STOP=/tmp/trove-e2e-evidence.stop
+NODE_STOP=/tmp/quader-e2e-evidence.stop
+NODE_SAMPLES=/tmp/quader-e2e-evidence-samples.csv
+NODE_HOST_SAMPLES=/tmp/quader-e2e-evidence-host.csv
+NODE_LOGS=/tmp/quader-e2e-evidence-logs
+NODE_LOGS_DONE=/tmp/quader-e2e-evidence-logs.done
+EDGE_STOP=/tmp/quader-e2e-evidence.stop
 
 nodes() { kind get nodes --name "$CLUSTER" 2>/dev/null; }
 

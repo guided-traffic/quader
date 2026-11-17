@@ -17,14 +17,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // marked counts the statements a replica sends with a context that carries markKey: the statements of the one request
@@ -84,7 +84,7 @@ func registryStage(t *testing.T, r *replica, ring *secrets.KeyRing) *auth.Stage 
 		Limiter: auth.NewLocalLimiter(300, time.Minute, nil, nil), Log: quiet, Registry: signer,
 		ClientAddr: func(*http.Request) netip.Addr { return netip.MustParseAddr("203.0.113.7") },
 		RegistryRealm: func(*http.Request) (string, string) {
-			return registrytoken.Realm("https://trove.test")
+			return registrytoken.Realm("https://quader.test")
 		},
 	})
 }
@@ -152,7 +152,7 @@ func TestRegistryTokensAgainstTheRealStores(t *testing.T) {
 			pat := a.pat(alice)
 			rgt := issueFor(t, sa, ring, basicPresented(pat.Secret), registryRules)
 
-			t.Run("a registry token issued on one replica authenticates on every replica as its trove token's principal", func(t *testing.T) {
+			t.Run("a registry token issued on one replica authenticates on every replica as its quader token's principal", func(t *testing.T) {
 				for _, s := range []*auth.Stage{sa, sb} {
 					res, err := pull(context.Background(), s, rgt, registryRules)
 					if err != nil || res.Principal.ID != alice.ID || res.Credential.TokenID != pat.Record.ID || res.Credential.Registry == nil {
@@ -227,7 +227,7 @@ func TestAnonymousRegistryTokenAgainstTheRealStores(t *testing.T) {
 		closed := registryRules
 		closed.Anonymous = false
 		_, err := sa.AuthenticateTokenRequest(httptest.NewRequest(http.MethodGet, "/v2/_token", nil), closed, auth.PresentedFrom(httptest.NewRequest(http.MethodGet, "/", nil)))
-		if ee, ok := errs.As(err); !ok || ee.Status() != 401 || ee.Challenge != `Basic realm="trove"` {
+		if ee, ok := errs.As(err); !ok || ee.Status() != 401 || ee.Challenge != `Basic realm="quader"` {
 			t.Fatalf("endpoint without anonymous: %v", err)
 		}
 		rgt := issueFor(t, sa, ring, auth.PresentedFrom(httptest.NewRequest(http.MethodGet, "/", nil)), registryRules)

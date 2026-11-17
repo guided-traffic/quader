@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// TestR_ANS_037_ThePartMarkerIsValidated: x-trove-part accepts the one value wiki and refuses every other.
+// TestR_ANS_037_ThePartMarkerIsValidated: x-quader-part accepts the one value wiki and refuses every other.
 func TestR_ANS_037_ThePartMarkerIsValidated(t *testing.T) {
 	for name, tc := range map[string]struct {
 		op   map[string]any
@@ -13,9 +13,9 @@ func TestR_ANS_037_ThePartMarkerIsValidated(t *testing.T) {
 		ok   bool
 	}{
 		"absent":     {map[string]any{}, "", true},
-		"wiki":       {map[string]any{"x-trove-part": "wiki"}, PartWiki, true},
-		"other word": {map[string]any{"x-trove-part": "artifacts"}, "", false},
-		"boolean":    {map[string]any{"x-trove-part": true}, "", false},
+		"wiki":       {map[string]any{"x-quader-part": "wiki"}, PartWiki, true},
+		"other word": {map[string]any{"x-quader-part": "artifacts"}, "", false},
+		"boolean":    {map[string]any{"x-quader-part": true}, "", false},
 	} {
 		got, err := parsePart(tc.op, "get", Requirement{Public: true})
 		if (err == nil) != tc.ok || got != tc.want {

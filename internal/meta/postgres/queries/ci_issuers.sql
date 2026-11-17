@@ -185,5 +185,5 @@ SELECT i.id::text AS id, i.name
  ORDER BY k.next_refresh_at NULLS FIRST, i.name;
 
 -- name: CiIssuerConfigured :many
--- The issuers of the configuration, for the removal step of trove migrate (Q-CI-16).
+-- The issuers of the configuration, for the removal step of quader migrate (Q-CI-16).
 SELECT id::text AS id, name, enabled, removed_from_configuration FROM ci_issuers WHERE source = 'configuration' ORDER BY name;

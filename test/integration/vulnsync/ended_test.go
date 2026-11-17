@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // The tests of a run that ends before its sync does, other than by a drain (R-VULN-004 "Failure", Q-VULN-80): a lost lease,
@@ -21,7 +21,7 @@ import (
 func endedEnv(t *testing.T) *env {
 	t.Helper()
 	return newEnv(t, options{Env: []string{
-		"TROVE_JOBS_HEARTBEAT_INTERVAL=1s", "TROVE_JOBS_LEASE_DURATION=3s", "TROVE_METRICS_DB_GAUGE_INTERVAL=1s",
+		"QUADER_JOBS_HEARTBEAT_INTERVAL=1s", "QUADER_JOBS_LEASE_DURATION=3s", "QUADER_METRICS_DB_GAUGE_INTERVAL=1s",
 	}})
 }
 
@@ -67,14 +67,14 @@ func (e *env) workerCount(series string) float64 {
 // failuresGauge waits until the gauge of NuGet's consecutive failures on the web replica shows want.
 func (e *env) failuresGauge(want float64) {
 	e.t.Helper()
-	const series = `trove_vuln_source_consecutive_failures{ecosystem="NuGet",source="osv"}`
+	const series = `quader_vuln_source_consecutive_failures{ecosystem="NuGet",source="osv"}`
 	within(e.t, "the consecutive failures of NuGet in the gauge", 20*time.Second, func() bool {
 		return testenv.MetricValue(e.web.Metrics(e.t), series) == want
 	})
 }
 
 // R-VULN-004 "Failure": a run whose worker loses the lease records sync_lease_lost on the ecosystem it was syncing and counts
-// one more consecutive failure, which the gauge of TroveVulnerabilitySyncFailing shows. The ecosystem it had not reached keeps
+// one more consecutive failure, which the gauge of QuaderVulnerabilitySyncFailing shows. The ecosystem it had not reached keeps
 // its row as it was, and the job keeps the reaper's verdict.
 func TestR_VULN_004_ARunThatLosesItsLeaseRecordsAFailure(t *testing.T) {
 	e := endedEnv(t)
@@ -82,7 +82,7 @@ func TestR_VULN_004_ARunThatLosesItsLeaseRecordsAFailure(t *testing.T) {
 	id := e.startHeld(taskOSVFull, "")
 	e.reap(id)
 	within(t, "the worker ending the run it lost", 20*time.Second, func() bool {
-		return e.workerCount(`trove_jobs_completed_total{kind="vuln-sync-osv-full",outcome="lost"}`) == 1
+		return e.workerCount(`quader_jobs_completed_total{kind="vuln-sync-osv-full",outcome="lost"}`) == 1
 	})
 	if got := e.lastErrorCode("osv", "NuGet"); got != "sync_lease_lost" {
 		t.Fatalf("last_error code %q, want sync_lease_lost\nlog of the worker:\n%s", got, testenv.Tail(e.worker.Logs.String(), 20))
@@ -102,7 +102,7 @@ func TestR_VULN_004_ARunThatLosesItsLeaseRecordsAFailure(t *testing.T) {
 	if got := e.latest(taskOSVFull); got.State != "failed" || !strings.Contains(got.Error, "attempts_exhausted") {
 		t.Errorf("the job is %s %s, want the reaper's failed attempts_exhausted", got.State, got.Error)
 	}
-	if v := e.workerCount(`trove_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="failed",source="osv"}`); v != 1 {
+	if v := e.workerCount(`quader_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="failed",source="osv"}`); v != 1 {
 		t.Errorf("failed runs counted: %v", v)
 	}
 	e.failuresGauge(1)
@@ -138,7 +138,7 @@ func TestR_VULN_004_ARunWhoseHandlerPanicsRecordsAFailure(t *testing.T) {
 	if !strings.Contains(e.worker.Logs.String(), "fault the test injects") {
 		t.Error("the log of the worker does not hold the panic")
 	}
-	if v := e.workerCount(`trove_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="failed",source="osv"}`); v != 1 {
+	if v := e.workerCount(`quader_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="failed",source="osv"}`); v != 1 {
 		t.Errorf("failed runs counted: %v", v)
 	}
 	e.failuresGauge(1)
@@ -174,10 +174,10 @@ func TestR_VULN_004_ACancelledRunRecordsItsEndWithoutAFailure(t *testing.T) {
 	if got := e.text("SELECT COALESCE((SELECT last_error->>'eventAt' FROM vuln_source_state WHERE source = 'osv' AND ecosystem = 'NuGet'), '')"); got != eventAt || got == "" {
 		t.Errorf("eventAt %q after the cancel, want the failure's %q carried forward", got, eventAt)
 	}
-	if v := e.workerCount(`trove_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="cancelled",source="osv"}`); v != 1 {
+	if v := e.workerCount(`quader_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="cancelled",source="osv"}`); v != 1 {
 		t.Errorf("cancelled runs counted: %v", v)
 	}
-	if v := e.workerCount(`trove_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="failed",source="osv"}`); v != 1 {
+	if v := e.workerCount(`quader_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="failed",source="osv"}`); v != 1 {
 		t.Errorf("failed runs counted: %v, want the 1 of the failure before the cancel", v)
 	}
 	// Three refreshes of the gauge after the cancel: it still shows the failure before it.
@@ -203,7 +203,7 @@ func TestR_VULN_004_ARunThatLostItsLeaseLeavesANewerRunsStateAsItIs(t *testing.T
 	newer := e.stateOf("attempted_at", "osv", "NuGet")
 	e.reap(id)
 	within(t, "the worker ending the run it lost", 20*time.Second, func() bool {
-		return e.workerCount(`trove_jobs_completed_total{kind="vuln-sync-osv-full",outcome="lost"}`) == 1
+		return e.workerCount(`quader_jobs_completed_total{kind="vuln-sync-osv-full",outcome="lost"}`) == 1
 	})
 	if got := e.stateOf("failures", "osv", "NuGet"); got != "0" {
 		t.Errorf("failures %s, want the newer run's 0", got)
@@ -214,7 +214,7 @@ func TestR_VULN_004_ARunThatLostItsLeaseLeavesANewerRunsStateAsItIs(t *testing.T
 	if got := e.stateOf("attempted_at", "osv", "NuGet"); got != newer {
 		t.Errorf("attempted_at %s, want the newer run's %s", got, newer)
 	}
-	if v := e.workerCount(`trove_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="failed",source="osv"}`); v != 1 {
+	if v := e.workerCount(`quader_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="failed",source="osv"}`); v != 1 {
 		t.Errorf("failed runs counted: %v", v)
 	}
 	if !strings.Contains(e.worker.Logs.String(), "a newer run has attempted the ecosystem") {

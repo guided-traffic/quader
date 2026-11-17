@@ -7,7 +7,7 @@ import (
 	"testing"
 	"unicode/utf16"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 const ns2013 = "http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd"
@@ -249,7 +249,7 @@ func TestR_NUGET_005_NuspecRefusals(t *testing.T) {
 	}
 }
 
-// The identity trove authorizes is the identity a NuGet client reads: the text of
+// The identity quader authorizes is the identity a NuGet client reads: the text of
 // an element is its text in document order, CDATA and character references
 // included.
 func TestR_NUGET_005_NuspecIdentityReadsLikeAClient(t *testing.T) {

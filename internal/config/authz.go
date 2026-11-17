@@ -43,12 +43,12 @@ func (c *Config) ValidateAuthz(r *Report) {
 
 // AuthzRoleBinding is one entry of authz.role_bindings (R-AUTHZ-010, Q-AUTHZ-170):
 // a system role and exactly one principal, named as in the API without its kind
-// prefix. trove migrate applies the list; no replica writes it.
+// prefix. quader migrate applies the list; no replica writes it.
 type AuthzRoleBinding struct {
 	Role           string `yaml:"role" json:"role" validate:"required" doc:"A system role: admin, security-admin, auditor, repository-admin or webhook-admin."`
 	Group          string `yaml:"group" json:"group,omitempty" doc:"A group; one that does not exist is created as a local group, which the login provider's group sync then fills (R-AUTH-008)."`
-	User           string `yaml:"user" json:"user,omitempty" doc:"A user; one that does not exist stops trove migrate."`
-	ServiceAccount string `yaml:"service_account" json:"service_account,omitempty" doc:"A service account; one that does not exist stops trove migrate."`
+	User           string `yaml:"user" json:"user,omitempty" doc:"A user; one that does not exist stops quader migrate."`
+	ServiceAccount string `yaml:"service_account" json:"service_account,omitempty" doc:"A service account; one that does not exist stops quader migrate."`
 }
 
 // The principal kinds of a declared binding, as the principal table names them.
@@ -103,7 +103,7 @@ func builtinPrincipals() []string { return []string{"anonymous", "authenticated"
 // exactly one principal of a valid name, never a built-in principal, and no
 // entry twice. These are the rules the API applies to a binding (422
 // unknown_role, role_not_allowed); whether a user or service account exists is a
-// question for the database, which trove migrate asks.
+// question for the database, which quader migrate asks.
 func (a *Authz) Validate(r *Report) {
 	seen := map[string]int{}
 	for i, b := range a.RoleBindings {

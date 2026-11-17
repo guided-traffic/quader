@@ -14,7 +14,7 @@ R-NPM-010; R-NUGET-012, -024; R-ARCH-010 (kit check 15).
 
 The seam with T-19 (the documentation of Ansible Galaxy collections, planned in parallel): R-AUTHZ-034 is the wiki requirement.
 T-19's routes and members are wiki content and use the forms of section 2.1 (`Route.Wiki`, `Host.WikiReadable`,
-`x-trove-part: wiki`, `ReadScope.MayReadWiki`, `ViewData.WikiMetadata`); T-19 defines no check of its own. Whichever of the two
+`x-quader-part: wiki`, `ReadScope.MayReadWiki`, `ViewData.WikiMetadata`); T-19 defines no check of its own. Whichever of the two
 lands second adds the Ansible surfaces to the R-AUTHZ-034 table's Ansible row and to kit check 15's fixture.
 
 ## 0 · What T-18 changes, in one paragraph
@@ -166,7 +166,7 @@ func BastionForward(ctx context.Context) bool
 |---|---|
 | `00073_visibility.sql` | `visibility_rank(text)`; `project.visibility`; `repositories.visibility_artifacts`, `repositories.visibility_wiki` with the check `repositories_wiki_within_artifacts`; the deferred constraint trigger on `repositories` and `project` raising `AI008`; `visibility_settings` with its row; `UPDATE repositories SET config = config - 'requireAuthentication'` (R-AUTHZ-033 data model) |
 | `00074_external_users.sql` | `app_user.external boolean NOT NULL DEFAULT false`; `auth_settings.new_users_external boolean NOT NULL DEFAULT false`; `auth_settings` drops `anonymous_access` (R-AUTH-016, R-AUTH-040) |
-| `00075_principal_builtins.sql` (`-- trove:phase contract`) | Deletes the policy, project-policy, role-binding, membership and owner rows naming `00000000-0000-0000-0000-000000000001` or `…0002`; deletes the row `…0002`; the kind check, `principal_builtin_one` and the built-in guards without `authenticated`; guard triggers raising `AI009` on `authz_policy_entry`, `authz_project_policy_entry`, `authz_role_binding`, `project_member` and the owner table for the anonymous principal (R-AUTH-016, Q-AUTHZ-279) |
+| `00075_principal_builtins.sql` (`-- quader:phase contract`) | Deletes the policy, project-policy, role-binding, membership and owner rows naming `00000000-0000-0000-0000-000000000001` or `…0002`; deletes the row `…0002`; the kind check, `principal_builtin_one` and the built-in guards without `authenticated`; guard triggers raising `AI009` on `authz_policy_entry`, `authz_project_policy_entry`, `authz_role_binding`, `project_member` and the owner table for the anonymous principal (R-AUTH-016, Q-AUTHZ-279) |
 
 Queries: `authz.sql` (`AuthzBuildProjects` and `AuthzBuildRepositories` return the levels), `project.sql` (the level write and the
 cascade `UPDATE … RETURNING`), `repository.sql` (the columns in read and write), `identity.sql` (`external`,
@@ -176,11 +176,11 @@ cascade `UPDATE … RETURNING`), `repository.sql` (the columns in read and write
 
 | Operation | Path | Change |
 |---|---|---|
-| `getVisibilitySettings`, `updateVisibilitySettings` | `GET`, `PATCH /api/v1/settings/visibility` | new (R-API-056); `x-trove-permission`: `settings:read`, `security-settings:write`; `x-trove-recent-auth: true` on `PATCH` |
+| `getVisibilitySettings`, `updateVisibilitySettings` | `GET`, `PATCH /api/v1/settings/visibility` | new (R-API-056); `x-quader-permission`: `settings:read`, `security-settings:write`; `x-quader-recent-auth: true` on `PATCH` |
 | `setProjectVisibility` | `PUT /api/v1/projects/{projectKey}/visibility` | new (R-API-057); `projects:write`, recent authentication, `If-Match` |
 | `createProject`, `getProject`, `listProjects` | `/api/v1/projects…` | `visibility` member; `membership` filter; the list open to every caller and to the anonymous subject while `publicContent` |
 | `getRepository`, `replaceRepository`, `updateRepository`, `createProjectRepository`, `listRepositories`, `listProjectRepositories` | `/api/v1/…repositories…` | `visibility` member (`RepositoryVisibility`); `requireAuthentication` removed; `visibility` filter; warning `public_populates_remote` |
-| `getPackageVersionReadme` | `GET /api/v1/packages/{packageId}/versions/{version}/readme` | `x-trove-part: wiki` (R-API-058) |
+| `getPackageVersionReadme` | `GET /api/v1/packages/{packageId}/versions/{version}/readme` | `x-quader-part: wiki` (R-API-058) |
 | `getPackageVersion` | `GET /api/v1/packages/{packageId}/versions/{version}` | `hasReadme` described per caller |
 | `getAuthSettings`, `updateAuthSettings` | `/api/v1/settings/auth` | `anonymousAccess` and `ceilings.anonymousAllowed` removed; `newUsersExternal` added |
 | `getLoginOptions` | `GET /api/v1/auth/login-options` | `anonymousAccess` becomes `publicContent` |
@@ -193,13 +193,13 @@ Schemas: `VisibilityLevel`, `VisibilitySettings`, `VisibilitySettingsPatch`, `Pu
 `ProjectVisibilityRequest`, `ProjectVisibilityResult`. Problem codes (`internal/errs/codes.go`): `public_not_allowed`,
 `visibility_above_project`, `visibility_wiki_above_artifacts` (field codes); removed: `anonymous_not_allowed`,
 `anonymous_write_action`, `anonymous_dynamic_selector`, `authenticated_write_action`, warning `anonymous_populates_remote`.
-The document validator learns `x-trove-part` (value `wiki`, `GET` only), read into `Operation.Part`.
+The document validator learns `x-quader-part` (value `wiki`, `GET` only), read into `Operation.Part`.
 
 ### 2.4 Configuration and chart values
 
-- Removed: `auth.anonymous.allowed` (`TROVE_AUTH_ANONYMOUS_ALLOWED`). The operator's ceiling is the existing
+- Removed: `auth.anonymous.allowed` (`QUADER_AUTH_ANONYMOUS_ALLOWED`). The operator's ceiling is the existing
   `endpoints.default.auth.anonymous` (R-EP-010).
-- Chart values: none change. Verified: `deploy/helm/trove/values.yaml` sets neither `auth.anonymous.allowed` nor
+- Chart values: none change. Verified: `deploy/helm/quader/values.yaml` sets neither `auth.anonymous.allowed` nor
   `anonymousAccess`; the endpoints' `auth.anonymous` rendering of `_endpoints.tpl` stays. `deploy/dev/values-restore.yaml`
   keeps `bootstrap_anonymous_read` (a separate dev bridge, Q-AUTHZ-16).
 
@@ -233,9 +233,9 @@ replay, audit), `internal/auth` (stage, principal, token settings and journal re
 |---|---|---|
 | WP0 | Section 2 | — |
 | WP1a · Levels in the decision | Index inputs, `leveled` in `Allowed`, `Internal()`, rule 6 on public members, `ReadScope` shapes and `MayReadWiki`, `WikiReadableOn`, reasons and sources, explanation, `PublicContent`; the populate check by level | R-AUTHZ-001, -003, -009, -015, -016, -028, -029, -030, -035 |
-| WP1b · Writes | `setProjectVisibility` with the cascade under the project's row lock; the repository member with validation, warning and `authz.settings.changed`; the move's lowering; `/settings/visibility`; recent authentication; journal entries and replay handlers; `Trove-Authz-Epoch`; the refusal of `anonymous`/`authenticated` in every write path | R-AUTHZ-033, -036, -031, -021, -019, -025, -026, R-API-056, -057, R-REPO-004, -012, -060 |
+| WP1b · Writes | `setProjectVisibility` with the cascade under the project's row lock; the repository member with validation, warning and `authz.settings.changed`; the move's lowering; `/settings/visibility`; recent authentication; journal entries and replay handlers; `Quader-Authz-Epoch`; the refusal of `anonymous`/`authenticated` in every write path | R-AUTHZ-033, -036, -031, -021, -019, -025, -026, R-API-056, -057, R-REPO-004, -012, -060 |
 | WP1c · Users | `external` in the user store, the stage, the principal cache, `PATCH /users`, `newUsersExternal` at every creation path (OIDC, SCIM, API), `user.external_changed` with replay | R-AUTH-016, -040, -041, -044 |
-| WP1d · Wiki | `Route.Wiki` in the dispatcher's coarse check; `Host.WikiReadable`; npm's `readme`/`readmeFilename` and their rendition key and `ETag` (R-NPM-013); NuGet's `readme` route; the package API (`hasReadme`, README 404, `WikiMetadata`); `x-trove-part` in the validator and the shared step; kit check 15 | R-AUTHZ-034, R-API-029, -058, R-NPM-010, R-NUGET-024, R-ARCH-010 |
+| WP1d · Wiki | `Route.Wiki` in the dispatcher's coarse check; `Host.WikiReadable`; npm's `readme`/`readmeFilename` and their rendition key and `ETag` (R-NPM-013); NuGet's `readme` route; the package API (`hasReadme`, README 404, `WikiMetadata`); `x-quader-part` in the validator and the shared step; kit check 15 | R-AUTHZ-034, R-API-029, -058, R-NPM-010, R-NUGET-024, R-ARCH-010 |
 | WP1e · Bastion and endpoints | `ViaBastion` through recognition and the check; `anonymousReads`; feed entries; shape `full` with the wiki; interface version 2 | R-BAS-004, -008, -010, -011, -012, -015, -019, R-EP-010 |
 
 **Tests by tier.**

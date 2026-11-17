@@ -8,8 +8,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_BAK_029_DerivedState is scenario 7 of R-BAK-029, the criteria of R-BAK-022 through the create pipeline and served by

@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestProtocol runs the acceptance criteria of docs/spec/formats/oci.md that name the protocol against three replicas of one
@@ -87,7 +87,7 @@ func versionCheck(t *testing.T, p *proto) {
 	for rep := range p.reps {
 		a := p.do(call{rep: rep, method: "GET", path: "/v2/"})
 		want(t, a, 401, "UNAUTHORIZED")
-		if c := hdr(a, "Www-Authenticate"); !strings.HasPrefix(c, `Bearer realm="http://trove.test/v2/_token",service="trove.test"`) {
+		if c := hdr(a, "Www-Authenticate"); !strings.HasPrefix(c, `Bearer realm="http://quader.test/v2/_token",service="quader.test"`) {
 			t.Fatalf("challenge %q", c)
 		}
 		if hdr(a, "Docker-Distribution-Api-Version") != "registry/2.0" {
@@ -112,15 +112,15 @@ func tokenService(t *testing.T, p *proto) {
 	if g := grantOf(t, p.registryToken(1, "reader", sc)); g[project+"/"+repoLocal+"/app"] != pull {
 		t.Fatalf("a caller with read only: grant %v", g)
 	}
-	// A revoked trove token is refused by the token service.
+	// A revoked quader token is refused by the token service.
 	revoked := p.st.Token(p.st.User("revoked"), scope.Default())
 	p.st.Exec(`UPDATE api_token SET revoked_at = now() WHERE secret_sha256 = decode(encode(sha256($1::bytea), 'hex'), 'hex')`, revoked)
-	p.troveToken["revoked"] = revoked
+	p.quaderToken["revoked"] = revoked
 	if a := p.tokenAnswer(2, "revoked", sc); a.Status != 401 {
 		t.Fatalf("a revoked token: %d %s", a.Status, a.Body)
 	}
 	// The POST form of the token service.
-	form := "grant_type=password&username=x&password=" + p.troveToken["pusher"] + "&service=trove.test&scope=" + scopeOf(repoLocal, "app", "pull")
+	form := "grant_type=password&username=x&password=" + p.quaderToken["pusher"] + "&service=quader.test&scope=" + scopeOf(repoLocal, "app", "pull")
 	a := p.do(call{rep: 1, method: "POST", path: "/v2/_token", body: []byte(form), hdr: []string{"Content-Type", "application/x-www-form-urlencoded"}})
 	var body struct {
 		AccessToken string `json:"access_token"`

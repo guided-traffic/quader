@@ -1,4 +1,4 @@
-// Self-tests of the counting stub of R-OCI-035; they check the test tool, not trove, and carry no requirement ID (Q-ROAD-5).
+// Self-tests of the counting stub of R-OCI-035; they check the test tool, not quader, and carry no requirement ID (Q-ROAD-5).
 
 package ocistub
 

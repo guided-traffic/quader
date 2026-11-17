@@ -16,16 +16,16 @@ import { asApiError } from '../../shared/paged-resource';
  * The name rule is shown while typing; the server decides.
  */
 @Component({
-  selector: 'trove-bastion-create-dialog',
+  selector: 'quader-bastion-create-dialog',
   imports: [DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
-    <h2 troveDialogTitle i18n="@@bastion-create.title">New Bastion</h2>
+    <h2 quaderDialogTitle i18n="@@bastion-create.title">New Bastion</h2>
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
         @if (error(); as e) {
-          <trove-error-notice [error]="e" />
+          <quader-error-notice [error]="e" />
         }
-        <trove-text-field
+        <quader-text-field
           width="name"
           i18n-label="@@bastion-create.name"
           label="Name"
@@ -35,7 +35,7 @@ import { asApiError } from '../../shared/paged-resource';
           [error]="nameError()"
           [hint]="nameHint"
         />
-        <trove-text-field
+        <quader-text-field
           width="full"
           i18n-label="@@bastion-create.description"
           label="Description"
@@ -45,7 +45,7 @@ import { asApiError } from '../../shared/paged-resource';
         />
       </div>
       <div class="dialog-actions">
-        <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@bastion-create.cancel">Cancel</button>
+        <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@bastion-create.cancel">Cancel</button>
         <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@bastion-create.submit">Create Bastion</button>
       </div>
     </form>
@@ -119,10 +119,10 @@ export interface BastionTokenDialogData {
  * opens the dialog with them again after the sign-in, as the token screens do.
  */
 @Component({
-  selector: 'trove-bastion-token-dialog',
+  selector: 'quader-bastion-token-dialog',
   imports: [DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
-    <h2 troveDialogTitle i18n="@@bastion-token.title">Issue a token for the Bastion</h2>
+    <h2 quaderDialogTitle i18n="@@bastion-token.title">Issue a token for the Bastion</h2>
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
         <p class="subject" translate="no">{{ data.name }}</p>
@@ -130,9 +130,9 @@ export interface BastionTokenDialogData {
           The token goes into the Secret of the Bastion's chart. It is shown once, when you create it.
         </p>
         @if (error(); as e) {
-          <trove-error-notice [error]="e" />
+          <quader-error-notice [error]="e" />
         }
-        <trove-text-field
+        <quader-text-field
           width="full"
           i18n-label="@@bastion-token.description"
           label="Description"
@@ -141,7 +141,7 @@ export interface BastionTokenDialogData {
           [error]="fieldError('/description')"
           [hint]="descriptionHint"
         />
-        <trove-text-field
+        <quader-text-field
           width="duration"
           i18n-label="@@bastion-token.days"
           label="Lifetime in days"
@@ -153,7 +153,7 @@ export interface BastionTokenDialogData {
         />
       </div>
       <div class="dialog-actions">
-        <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@bastion-token.cancel">Cancel</button>
+        <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@bastion-token.cancel">Cancel</button>
         <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@bastion-token.submit">Issue token</button>
       </div>
     </form>

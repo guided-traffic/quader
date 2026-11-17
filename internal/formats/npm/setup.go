@@ -1,6 +1,6 @@
 package npm
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // SetupTemplates are the client setup snippets of R-NPM-041: how to point a client at
 // the repository (configure), how to install a package through it (install) and how to
@@ -11,7 +11,7 @@ import "github.com/guided-traffic/trove/internal/formats"
 // (Q-API-180). The
 // dialog that shows them and the token it mints are the API's (R-API-033); a template
 // sees [formats.SetupData] and never a token, so the credential is always the
-// environment variable ${TROVE_TOKEN} that the client expands itself.
+// environment variable ${QUADER_TOKEN} that the client expands itself.
 //
 // The credential line is keyed: it starts with the registry URL without its scheme,
 // the form npm and pnpm bind a credential to, so the client sends it to this
@@ -21,7 +21,7 @@ import "github.com/guided-traffic/trove/internal/formats"
 // readable.
 func (f *Format) SetupTemplates() []formats.SetupTemplate {
 	const npmrc = `{{if .Variant}}@{{.Variant}}:registry={{else}}registry={{end}}{{.RegistryURL}}
-{{schemeless .RegistryURL}}:_authToken=${TROVE_TOKEN}
+{{schemeless .RegistryURL}}:_authToken=${QUADER_TOKEN}
 `
 	// npm replaces the host of a lockfile's resolved URL only with replace-registry-host=always
 	// (R-BAS-007): a lockfile written against the installation itself then resolves through a Bastion.
@@ -32,10 +32,10 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
 	const yarn = `{{if .Variant}}npmScopes:
   {{.Variant}}:
     npmRegistryServer: "{{.RegistryURL}}"
-    npmAuthToken: "${TROVE_TOKEN}"
+    npmAuthToken: "${QUADER_TOKEN}"
 {{else}}npmRegistryServer: "{{.RegistryURL}}"
 {{if .RequiresAuth}}npmAlwaysAuth: true
-{{end}}npmAuthToken: "${TROVE_TOKEN}"
+{{end}}npmAuthToken: "${QUADER_TOKEN}"
 {{end}}`
 	return []formats.SetupTemplate{
 		{ID: "npm.npmrc.configure", Client: "npm", Section: "configure", Lang: "ini", File: ".npmrc", Template: npm},

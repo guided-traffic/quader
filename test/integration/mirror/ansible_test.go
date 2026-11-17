@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/ansiblestub"
 )
 
 // Discovery against the counting Ansible Galaxy stub (R-ANS-021; docs/spec/formats/ansible.md "Mirror discovery", R-REPO-051). The

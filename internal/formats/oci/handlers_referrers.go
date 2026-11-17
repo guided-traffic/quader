@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/oci/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 )
 
 // The answer of the referrers API is an OCI image index (R-OCI-016).
@@ -102,7 +102,7 @@ func (f *Format) handleReferrers(ctx context.Context, rq *formats.Request, w htt
 		h.Set("OCI-Filters-Applied", "artifactType")
 	}
 	if pg.cut {
-		h.Set("Trove-Annotations-Cut", "true")
+		h.Set("Quader-Annotations-Cut", "true")
 	}
 	if pg.more {
 		h.Set("Link", referrersLink(rq, artifactType, digestText(pg.cursor)))

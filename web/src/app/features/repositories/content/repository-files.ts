@@ -22,7 +22,7 @@ const FILES_PAGE = 100;
  * on children.
  */
 @Component({
-  selector: 'trove-repository-files',
+  selector: 'quader-repository-files',
   imports: [DatePipe, RouterLink, CopyButton, DataTable],
   template: `
     @if (crumbs().length > 0) {
@@ -49,7 +49,7 @@ const FILES_PAGE = 100;
         <span class="material-icons" aria-hidden="true">search</span>
       </div>
     </div>
-    <trove-data-table
+    <quader-data-table
       [caption]="caption"
       [columns]="columns"
       [loaded]="list.loaded()"
@@ -96,12 +96,12 @@ const FILES_PAGE = 100;
           </td>
           <td class="actions">
             @if (c.kind === 'file' && fileUrl(c); as url) {
-              <trove-copy-button [value]="url" [label]="copyUrlLabel" />
+              <quader-copy-button [value]="url" [label]="copyUrlLabel" />
             }
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
   styleUrl: './repository-content.scss',
 })

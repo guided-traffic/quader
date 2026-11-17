@@ -51,10 +51,10 @@ func (r Response) Code() string {
 	return c
 }
 
-// Epoch is the Trove-Authz-Epoch header, 0 when absent.
+// Epoch is the Quader-Authz-Epoch header, 0 when absent.
 func (r Response) Epoch() int64 {
 	var n int64
-	for _, c := range r.Header.Get("Trove-Authz-Epoch") {
+	for _, c := range r.Header.Get("Quader-Authz-Epoch") {
 		n = n*10 + int64(c-'0')
 	}
 	return n

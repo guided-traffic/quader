@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The digest reader of a tag gives its verdict when the body ends, so it holds under the real spool, on each of its three paths: a body
@@ -70,7 +70,7 @@ func TestTheSpoolReadsATagToItsEndSoTheDigestVerdictIsGiven(t *testing.T) {
 // A cut tags list with a length is stored by the same spool: the wrapper drops the announced length, so the spool reads it to its end.
 //
 // Mechanism of R-OCI-024, not a proof of its criteria: it checks a window, a bound or a spool detail of the tags list; the
-// criteria are the first five tags with a Link to trove and the referrers pass-through.
+// criteria are the first five tags with a Link to quader and the referrers pass-through.
 func TestTheSpoolStoresACutTagsListThatTheWrapperExtended(t *testing.T) {
 	doc := `{"name":"app","tags":["a","b"]}`
 	sp, err := blob.NewSpool(config.StorageSpool{Dir: t.TempDir(), MaxBytes: 64 << 20, MemoryThreshold: 1 << 20})

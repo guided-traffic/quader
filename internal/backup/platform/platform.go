@@ -1,10 +1,10 @@
 // Package platform verifies the platform protection that R-HA-023 declares: the point-in-time recovery of PostgreSQL and the
 // versioning of the blob bucket. It reports, and changes nothing. The task backup-check runs it daily and stores the result;
-// every replica exports it as the gauge trove_backup_check_ok{check}, which the alert TroveBackupCheckFailed reads. `trove
+// every replica exports it as the gauge quader_backup_check_ok{check}, which the alert QuaderBackupCheckFailed reads. `quader
 // admin backup check` runs the same checks on demand.
 //
 // A check exists only for what the operator declared: with backup.recovery_window and backup.object_versioning at their
-// defaults nothing is checked and the gauge has no series, so an installation that relies on trove's own backup alone is not
+// defaults nothing is checked and the gauge has no series, so an installation that relies on quader's own backup alone is not
 // alerted for the absence of a protection it never claimed. A setting the credential may not read is unknown and has no
 // series either ("otherwise unknown", R-HA-023); it is neither a pass nor an alarm.
 package platform
@@ -19,9 +19,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // The checks, the values of the label check.
@@ -181,7 +181,7 @@ func Load(ctx context.Context, db q.DBTX) (rep Report, ok bool, err error) {
 	return rep, true, nil
 }
 
-// Export sets trove_backup_check_ok from a report: 1 for ok, 0 for failed, and no series for unknown or undeclared. It first
+// Export sets quader_backup_check_ok from a report: 1 for ok, 0 for failed, and no series for unknown or undeclared. It first
 // removes every series, so a check that is no longer declared leaves the gauge.
 func Export(g *prometheus.GaugeVec, rep Report) {
 	g.Reset()

@@ -92,7 +92,7 @@ func Entries(s Spec) []Entry {
 	}
 	files, _ := json.Marshal(map[string]any{"files": listed, "format": 1})
 	info := map[string]any{
-		"namespace": s.Namespace, "name": s.Name, "version": s.Version, "authors": []string{"trove tests"},
+		"namespace": s.Namespace, "name": s.Name, "version": s.Version, "authors": []string{"quader tests"},
 		"readme": "README.md", "tags": []string{}, "description": "A test collection.", "license": []string{"MIT"},
 		"license_file": nil, "repository": "", "documentation": "", "homepage": "", "issues": "",
 		"dependencies": map[string]string{},

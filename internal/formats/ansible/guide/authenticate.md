@@ -1,8 +1,8 @@
-`ansible-galaxy` sends the credential in one of three forms, and trove accepts all of them with a trove token:
+`ansible-galaxy` sends the credential in one of three forms, and Quader accepts all of them with a Quader token:
 
 | How you configure it | What the client sends |
 |---|---|
-| the variable `ANSIBLE_GALAXY_SERVER_TROVE_TOKEN`, a `token=` line in `ansible.cfg`, or `--token` | `Authorization: Token <token>` |
+| the variable `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN`, a `token=` line in `ansible.cfg`, or `--token` | `Authorization: Token <token>` |
 | `username=` and `password=` in `ansible.cfg` | HTTP Basic with the token as the password; the user name is ignored, and Basic authentication has to be enabled on this installation |
 | a `~/.netrc` line for the host | HTTP Basic for that host, with the same rule |
 

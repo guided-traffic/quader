@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // R-DEB-025, R-DEB-026: the virtual repository's index lists the paragraphs of its local member and of its remote member, in member order,
@@ -32,9 +32,9 @@ func TestR_DEB_025_TheIndexMergesTheMembersAndIsSignedWithItsOwnKey(t *testing.T
 	if got := lp.Value("Filename"); got != "members/deb-local/pool/l/local-tool/local-tool_1.0-1_amd64.deb" {
 		t.Errorf("the local member's Filename = %q", got)
 	}
-	hello, ok := find(list, "trove-hello", "")
+	hello, ok := find(list, "quader-hello", "")
 	if !ok {
-		t.Fatalf("the stub's trove-hello is not listed; %d paragraphs", len(list))
+		t.Fatalf("the stub's quader-hello is not listed; %d paragraphs", len(list))
 	}
 	if !strings.HasPrefix(hello.Value("Filename"), "members/debian/pool/") || hello.Value("SHA256") == "" {
 		t.Errorf("the remote member's paragraph = %v", hello.Fields)
@@ -76,30 +76,30 @@ func TestR_DEB_025_ThePackagesOfArchitectureAllOfARemoteMemberAreInEveryArchitec
 		if !ok || s.Generation == 0 {
 			return false
 		}
-		_, found := find(e.packages(rApt, "stable", e.admin), "trove-hello", "")
+		_, found := find(e.packages(rApt, "stable", e.admin), "quader-hello", "")
 		return found
 	})
 	for _, arch := range []string{"all", "amd64"} {
 		list := e.packagesOf(rApt, "stable", arch, e.admin)
-		cfg, ok := find(list, "trove-config", "1.0-1")
+		cfg, ok := find(list, "quader-config", "1.0-1")
 		if !ok {
-			t.Errorf("binary-%s of the virtual repository does not list trove-config (architecture all, in the stub's binary-all only); %d paragraphs", arch, len(list))
+			t.Errorf("binary-%s of the virtual repository does not list quader-config (architecture all, in the stub's binary-all only); %d paragraphs", arch, len(list))
 			continue
 		}
 		if cfg.Value("Architecture") != "all" || !strings.HasPrefix(cfg.Value("Filename"), "members/debian/pool/") {
-			t.Errorf("binary-%s: the paragraph of trove-config = %v", arch, cfg.Fields)
+			t.Errorf("binary-%s: the paragraph of quader-config = %v", arch, cfg.Fields)
 		}
 		n := 0
 		for _, p := range list {
-			if p.Value("Package") == "trove-config" {
+			if p.Value("Package") == "quader-config" {
 				n++
 			}
 		}
 		if n != 1 {
-			t.Errorf("binary-%s lists trove-config %d times, want once", arch, n)
+			t.Errorf("binary-%s lists quader-config %d times, want once", arch, n)
 		}
 	}
-	if _, ok := find(e.packagesOf(rApt, "stable", "amd64", e.admin), "libtrove1", ""); !ok {
+	if _, ok := find(e.packagesOf(rApt, "stable", "amd64", e.admin), "libquader1", ""); !ok {
 		t.Error("binary-amd64 lost the architecture packages of the member")
 	}
 }

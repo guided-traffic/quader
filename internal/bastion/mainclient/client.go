@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // Purpose is the purpose label of the Bastion's outbound client in the shared outbound metrics.
@@ -532,7 +532,7 @@ func stripped(name string) bool {
 		"Transfer-Encoding", "Upgrade", "User-Agent":
 		return true
 	}
-	return strings.HasPrefix(name, "X-Forwarded-") || strings.HasPrefix(name, "If-") || strings.HasPrefix(name, "Trove-")
+	return strings.HasPrefix(name, "X-Forwarded-") || strings.HasPrefix(name, "If-") || strings.HasPrefix(name, "Quader-")
 }
 
 func (c *HTTPClient) forwardRequest(ctx context.Context, f Forward) (*http.Request, error) {

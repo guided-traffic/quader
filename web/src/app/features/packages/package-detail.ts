@@ -174,7 +174,7 @@ function frameworkGroups(value: unknown): FrameworkGroup[] {
  * wide one (Q-UI-3).
  */
 @Component({
-  selector: 'trove-package-detail',
+  selector: 'quader-package-detail',
   imports: [
     DatePipe,
     DecimalPipe,

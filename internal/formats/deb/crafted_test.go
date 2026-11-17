@@ -8,8 +8,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/formattest/crafted"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/formattest/crafted"
 )
 
 // The crafted packages of R-DEB-034: each stays inside a few megabytes in memory and crosses exactly one bound of the package reader,

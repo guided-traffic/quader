@@ -393,7 +393,7 @@ type CiIssuerConfiguredRow struct {
 	RemovedFromConfiguration bool
 }
 
-// The issuers of the configuration, for the removal step of trove migrate (Q-CI-16).
+// The issuers of the configuration, for the removal step of quader migrate (Q-CI-16).
 func (q *Queries) CiIssuerConfigured(ctx context.Context) ([]CiIssuerConfiguredRow, error) {
 	rows, err := q.db.Query(ctx, ciIssuerConfigured)
 	if err != nil {

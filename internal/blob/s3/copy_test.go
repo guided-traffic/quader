@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // copyRecorder answers the requests of a server-side copy the way S3 does and records what it was asked.

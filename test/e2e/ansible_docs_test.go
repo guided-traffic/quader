@@ -4,7 +4,7 @@ package e2e
 
 // The documentation of Ansible collections with the real clients (R-ANS-046, R-ANS-033 to R-ANS-036, R-ANS-038, R-ANS-041, R-UI-060 to
 // R-UI-064): a collection with a module, a Markdown file and a README is built in the pod, published with ansible-galaxy and installed;
-// what trove then holds for the documentation is read back through the Galaxy route `docs-blob/` with the client's token and through
+// what quader then holds for the documentation is read back through the Galaxy route `docs-blob/` with the client's token and through
 // the operations of the screens. The remote class does the same over the counting Galaxy test upstream, whose document carries script;
 // the virtual class reads the winner's documentation. The browser journey (web/e2e/ansible-docs) runs from TestAnsibleDocsJourney. The
 // wiki row of R-ANS-046 belongs to the task that adds the wiki part (R-ANS-037).
@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/ansiblestub"
 )
 
 // docsModule is the module the collection of the tests documents in full: an option with a suboption, a return value and examples.
@@ -30,7 +30,7 @@ description:
   - Sends C(count) probes to I(host) and reports the round trip.
 version_added: "1.0.0"
 author:
-  - trove test
+  - quader test
 options:
   host:
     description: The host to ping.
@@ -437,7 +437,7 @@ func TestAnsibleDocsRemoteScreens(t *testing.T) {
 	})
 
 	t.Run("R-UI-060 R-UI-061 R-UI-064 R-ANS-046 the browser reads the same documentation", func(t *testing.T) {
-		runDocsJourney(t, "02-remote.spec.ts", "TROVE_E2E_ANSIBLE_DOCS_REMOTE_PACKAGE=acme.tools", "TROVE_E2E_ANSIBLE_DOCS_REMOTE_VERSION=2.0.0")
+		runDocsJourney(t, "02-remote.spec.ts", "QUADER_E2E_ANSIBLE_DOCS_REMOTE_PACKAGE=acme.tools", "QUADER_E2E_ANSIBLE_DOCS_REMOTE_VERSION=2.0.0")
 	})
 }
 
@@ -497,17 +497,17 @@ func runDocsJourney(t *testing.T, file string, extraEnv ...string) {
 	}
 	fxAdm := adminAPI(t)
 	fxAdm.do(http.MethodPost, "/api/v1/users/admin/unlock", nil).want(t, "unlock break-glass", 204)
-	args := append([]string{"playwright", "test", "--config", "playwright.ansible-docs.config.ts", file}, strings.Fields(os.Getenv("TROVE_E2E_PLAYWRIGHT_ARGS"))...)
+	args := append([]string{"playwright", "test", "--config", "playwright.ansible-docs.config.ts", file}, strings.Fields(os.Getenv("QUADER_E2E_PLAYWRIGHT_ARGS"))...)
 	cmd := exec.Command("npx", args...)
 	cmd.Dir = dir
 	cmd.Env = append(append(os.Environ(), extraEnv...),
-		"TROVE_E2E_EDGE_URL="+cfg.edgeURL,
-		"TROVE_E2E_KEYCLOAK_ADDR="+keycloakAddr(t),
+		"QUADER_E2E_EDGE_URL="+cfg.edgeURL,
+		"QUADER_E2E_KEYCLOAK_ADDR="+keycloakAddr(t),
 		"NODE_EXTRA_CA_CERTS="+cfg.caFile,
-		"TROVE_E2E_ALICE_PASSWORD="+secretValue(t, "trove-keycloak", "alice-password"),
-		"TROVE_E2E_BOB_PASSWORD="+secretValue(t, "trove-keycloak", "bob-password"),
-		"TROVE_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "trove-break-glass", "password"),
-		"TROVE_E2E_ADMIN_TOKEN="+adminToken(t),
+		"QUADER_E2E_ALICE_PASSWORD="+secretValue(t, "quader-keycloak", "alice-password"),
+		"QUADER_E2E_BOB_PASSWORD="+secretValue(t, "quader-keycloak", "bob-password"),
+		"QUADER_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "quader-break-glass", "password"),
+		"QUADER_E2E_ADMIN_TOKEN="+adminToken(t),
 	)
 	reportFile := filepath.Join(cfg.repo, ".out", "playwright", "ansible-docs-"+strings.TrimSuffix(file, ".spec.ts")+".json")
 	_ = os.Remove(reportFile)
@@ -539,7 +539,7 @@ func TestAnsibleDocsJourney(t *testing.T) {
 	c := docsCollection(fx, "journey")
 	fx.client(t, ansibleCore221).must(withCfg(ansibleCfg(ansibleRepoURL(t, local)), c.publishScript()), tokenEnvVar+"="+fx.token)
 	runDocsJourney(t, "01-ansible-docs.spec.ts",
-		"TROVE_E2E_ANSIBLE_DOCS_LOCAL_PACKAGE="+c.full(),
-		"TROVE_E2E_ANSIBLE_DOCS_LOCAL_VERSION="+c.version,
+		"QUADER_E2E_ANSIBLE_DOCS_LOCAL_PACKAGE="+c.full(),
+		"QUADER_E2E_ANSIBLE_DOCS_LOCAL_VERSION="+c.version,
 	)
 }

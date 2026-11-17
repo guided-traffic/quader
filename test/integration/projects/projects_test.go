@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/test/integration/stack"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/test/integration/stack"
 )
 
 // TestR_AUTHZ_026_ProjectLifecycleOverHTTP follows a project through create, read, list and replace, each request
@@ -19,7 +19,7 @@ func TestR_AUTHZ_026_ProjectLifecycleOverHTTP(t *testing.T) {
 
 	created := f.do(f.admin, "POST", base, map[string]any{"key": "web", "displayName": "Web platform", "description": "The web team"})
 	wantStatus(t, created, 201, "")
-	if loc := created.Header.Get("Location"); loc != "http://trove.test"+base+"/web" {
+	if loc := created.Header.Get("Location"); loc != "http://quader.test"+base+"/web" {
 		t.Errorf("Location = %q", loc)
 	}
 	body := created.JSON(t)
@@ -232,7 +232,7 @@ func TestR_AUTHZ_026_IdempotentCreate(t *testing.T) {
 }
 
 // TestR_AUTHZ_032_EveryProjectWriteRaisesTheEpochAndAnswersIt walks every write of the project operations; each
-// answers Trove-Authz-Epoch equal to the epoch the database holds after it, and each epoch is higher than the one
+// answers Quader-Authz-Epoch equal to the epoch the database holds after it, and each epoch is higher than the one
 // before. The events are recorded once each, and those that narrow are journaled (R-AUTHZ-029, R-AUTHZ-031).
 func TestR_AUTHZ_032_EveryProjectWriteRaisesTheEpochAndAnswersIt(t *testing.T) {
 	f := newFixture(t)

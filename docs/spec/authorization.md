@@ -2,7 +2,7 @@
 
 Status: specification — not implemented
 
-This page specifies how trove decides whether a request may go ahead once the caller is known.
+This page specifies how Quader decides whether a request may go ahead once the caller is known.
 It covers the principals, the resources a grant can name, the package-name and path patterns that
 narrow a grant, what each of the six repository actions permits, the fixed set of system roles,
 projects, which hold repositories and give their members roles, the visibility levels `private`, `internal` and `public` of
@@ -39,7 +39,7 @@ claims). It also covers the permission entries of
 | Principal | Something a grant can name: a user, a group, a service account or a CI identity mapping (R-AUTHZ-002). Principals live in the `principal` table of [identity-and-authentication.md](identity-and-authentication.md) (R-AUTH-016). A request without a credential runs as the subject `anonymous` (R-AUTHZ-003), which no grant names. |
 | Visibility level | `private`, `internal` or `public`: who reads besides the members of the project and the principals a grant names. A default of the installation, a level of each project, and two levels of each repository, one for its artifacts and one for its wiki; the only way to open content to every internal user or to everyone (R-AUTHZ-033, R-AUTHZ-035). |
 | Internal user | A user acting through a UI session or a personal access token who is not flagged external and whose request did not come through a Bastion (R-AUTHZ-030). Service accounts, CI tokens, Bastion registrations and the anonymous subject are never internal. |
-| Artifacts, wiki | The two parts of a repository: what package clients resolve, install and download, and the documentation of its packages that trove serves or shows apart from their files (R-AUTHZ-034). A coordinate names its part (`Part`). |
+| Artifacts, wiki | The two parts of a repository: what package clients resolve, install and download, and the documentation of its packages that Quader serves or shows apart from their files (R-AUTHZ-034). A coordinate names its part (`Part`). |
 | Subject | What authentication hands to authorization for one request: the principal set, the system roles the credential may exercise, whether the credential carries project roles (a UI session or a personal access token, Q-AUTHZ-215), the token scope and, for CI tokens, the frozen inline grants and the job's project identity. |
 | Permission policy | A named, stored object: one resource set, and entries that give actions on that resource set to principals (R-AUTHZ-021). |
 | Grant | One policy entry seen from the evaluator: principal × resource set × actions. CI inline grants ([gitlab-ci-oidc.md](gitlab-ci-oidc.md), R-CI-013) have the same shape. |
@@ -75,21 +75,21 @@ Decisions this page takes:
 | How do "all signed-in people" or everyone get read access? | Through a visibility level, never a policy entry: `internal` reads for every internal user, `public` for every request. The anonymous switch, the principal `authenticated` and `requireAuthentication` are gone (Q-AUTHZ-263, [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated)). | R-AUTHZ-033, R-AUTHZ-035 |
 | How do the installation, a project and a repository combine? | The installation's default is copied when a project or repository is created; a repository is never more open than its project and its wiki never more open than its artifacts; lowering a project lowers its repositories (Q-AUTHZ-264 to Q-AUTHZ-266). | R-AUTHZ-033 |
 | Who is internal? | A user through a session or a personal token who is not flagged external by an administrator and does not come through a Bastion; never a service account, a CI token or a Bastion registration (Q-AUTHZ-268). | R-AUTHZ-030 |
-| What is the wiki, and what does a caller get who reads the artifacts but not the wiki? | The documentation trove serves or shows apart from the files; a route that serves only wiki content refuses the read, a document that embeds it leaves the members out (Q-AUTHZ-270, Q-AUTHZ-271). | R-AUTHZ-034 |
+| What is the wiki, and what does a caller get who reads the artifacts but not the wiki? | The documentation Quader serves or shows apart from the files; a route that serves only wiki content refuses the read, a document that embeds it leaves the members out (Q-AUTHZ-270, Q-AUTHZ-271). | R-AUTHZ-034 |
 | Who may publish the next version of a package? | Its owners, or a holder of `manage` on it. The grants that allowed the first publish decide the owners. Ownership is enforced by default in new npm and NuGet local repositories (Q-AUTHZ-2). | R-AUTHZ-018 |
 | Whom does a writing CI inline grant make the owner? | The job's GitLab project (`bind_project`), unless the grant says `"ownership": "none"` (Q-AUTHZ-6). | R-AUTHZ-014 |
 | Which reads are audited by default? | Refused reads only; allowed reads with `authz.audit.reads: all` (Q-AUTHZ-5). | R-AUTHZ-029 |
 | Projects for delegated administration | MVP (beta phase 5a): every repository belongs to exactly one project and is addressed inside it; users and groups are members with the roles Reader, Developer, Maintainer and Owner; a project's policies, service accounts and CI mappings are named within it (Q-AUTHZ-206 to Q-AUTHZ-209, Q-REPO-212). Environments and sharing stay P2; CI delegations per issuer stay P1 (Q-AUTHZ-7). | R-AUTHZ-026 |
 | How do n replicas learn of a permission change? | Through the `authz` change area of [architecture.md](architecture.md) R-ARCH-018: the change log in PostgreSQL carries correctness, a Valkey message only starts the rebuild sooner. Valkey never holds a grant or a decision (Q-AUTHZ-11). | R-AUTHZ-028 |
 | How long can a removed grant still work? | Typically 100 ms plus one index build; at most `cluster.epoch_poll_interval` plus 1 s on a replica whose change-log poll works, with or without Valkey; never longer than `authz.cache.max_staleness` (10 s) plus one build on any replica. A replica that cannot confirm its index waits like a request waits for the database, then answers 503 (Q-AUTHZ-13). | R-AUTHZ-028 |
-| Can a client see its own permission change on whichever replica answers next? | Yes, by sending `Trove-Authz-Min-Epoch` with the epoch its write returned (Q-AUTHZ-12). | R-AUTHZ-032 |
+| Can a client see its own permission change on whichever replica answers next? | Yes, by sending `Quader-Authz-Min-Epoch` with the epoch its write returned (Q-AUTHZ-12). | R-AUTHZ-032 |
 
 ## Requirements
 
 ### R-AUTHZ-001 · Deny by default, allow-only grants
 Priority: **MVP** · Covers: IAM-019
 
-trove MUST refuse every operation that no grant, no system role (R-AUTHZ-010), no project
+Quader MUST refuse every operation that no grant, no system role (R-AUTHZ-010), no project
 role (R-AUTHZ-026) and no visibility level (R-AUTHZ-033) allows. A new installation has no permission policies and the
 default level `private`; only the break-glass administrator (INV-7, R-AUTH-014) can act until an administrator creates
 projects, members or policies.
@@ -126,7 +126,7 @@ R-AUTHZ-006.
 Acceptance criteria:
 
 - On a fresh installation, a user who has just logged in through OIDC and holds no grant runs
-  `npm view lodash --registry https://trove.example.com/api/npm/web/npm-all/` and gets `E404`.
+  `npm view lodash --registry https://quader.example.com/api/npm/web/npm-all/` and gets `E404`.
 - `POST /api/v1/permission-policies` with an entry `"actions": ["write"]` answers 201, and the
   stored entry reads `"actions": ["annotate", "deploy", "read"]`.
 - A principal holding only `deploy` on `web/npm-internal` can `npm publish` a new package there. Its
@@ -164,9 +164,9 @@ Principal kinds and their reference syntax in this page's API:
 | Credential | Principal set |
 |---|---|
 | UI session of user `u` | `user:u` plus every group of `u`; carries the project roles of `u`; internal unless `u` is flagged external (R-AUTHZ-030) |
-| Personal access token (`trv_pat_`) of `u` | the same, resolved when the token is used; carries the project roles of `u` within its scope |
-| Service-account token (`trv_sat_`) of `s` | `sa:s` plus every group of `s` (a project's account has none). Never internal (R-AUTHZ-030), never a project role. |
-| CI token (`trv_cit_`) | `ci:<issuer>/<m>` for every mapping `m` recorded as the token's mapping at exchange, plus the groups those mappings list (R-CI-013); the token additionally carries its frozen inline grants and, from P1, the service accounts of R-CI-024. For a cross-project subject token, a matched mapping without the `read_only` opt-in contributes nothing and is not recorded ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-012), so policies naming it never reach that token. Never internal. |
+| Personal access token (`qdr_pat_`) of `u` | the same, resolved when the token is used; carries the project roles of `u` within its scope |
+| Service-account token (`qdr_sat_`) of `s` | `sa:s` plus every group of `s` (a project's account has none). Never internal (R-AUTHZ-030), never a project role. |
+| CI token (`qdr_cit_`) | `ci:<issuer>/<m>` for every mapping `m` recorded as the token's mapping at exchange, plus the groups those mappings list (R-CI-013); the token additionally carries its frozen inline grants and, from P1, the service accounts of R-CI-024. For a cross-project subject token, a matched mapping without the `read_only` opt-in contributes nothing and is not recorded ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-012), so policies naming it never reach that token. Never internal. |
 | No credential | none: the subject `anonymous`, which reads only what a `public` level admits, on an endpoint that admits requests without a credential (R-AUTHZ-003) |
 
 - "Every group of `u`" means the local groups `u` belongs to plus the groups synchronized from
@@ -191,7 +191,7 @@ Principal kinds and their reference syntax in this page's API:
 
 Acceptance criteria:
 
-- Alice is in IdP group `team-web`, synchronized to trove group `team-web`, which holds `read`
+- Alice is in IdP group `team-web`, synchronized to Quader group `team-web`, which holds `read`
   on `web/npm-internal`. After the IdP removes her from `team-web` and she logs in again, her existing
   personal access token no longer reads `npm-internal`, within the latency bound of R-AUTH-023.
 - Group `everyone` is auto-join and holds `read` on `web/npm-all`, and the artifacts of `web/npm-all` are `internal`
@@ -228,7 +228,7 @@ field `requireAuthentication` are gone ([Q-AUTHZ-263](#q-authz-263--visibility-l
 Acceptance criteria:
 
 - Project `web` and its local repository `npm-public` are `public`: `npm view left-pad --registry
-  https://trove.example.com/api/npm/web/npm-public/` without any `.npmrc` credential succeeds; the same command against
+  https://quader.example.com/api/npm/web/npm-public/` without any `.npmrc` credential succeeds; the same command against
   `npm-internal`, whose artifacts are `internal`, gets `E401`.
 - `npm publish` without a credential to `npm-public` gets `E401`.
 - `POST /api/v1/permission-policies` with an entry for `anonymous` answers 422 `principal_not_allowed`.
@@ -236,9 +236,9 @@ Acceptance criteria:
   `PUT /api/v1/projects/web/visibility` with `{"level": "public"}` answers 409 `public_not_allowed`.
 
 ### R-AUTHZ-030 · Internal and external users
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
-The level `internal` admits every *internal* subject, the people of the organization that runs trove, as GitLab's internal
+The level `internal` admits every *internal* subject, the people of the organization that runs Quader, as GitLab's internal
 level admits every signed-in user who is not external (owner, 2026-11-11). A subject is internal exactly when all of the
 following hold ([Q-AUTHZ-268](#q-authz-268--a-subject-is-internal-when-it-is-a-user-through-a-session-or-a-personal-token-not-flagged-external-and-not-through-a-bastion)):
 
@@ -262,7 +262,7 @@ following hold ([Q-AUTHZ-268](#q-authz-268--a-subject-is-internal-when-it-is-a-u
 Acceptance criteria:
 
 - The artifacts of `web/npm-internal` are `internal`. A user who has just logged in through OIDC, belongs to no group and
-  holds no grant runs `npm view @web/button --registry https://trove.example.com/api/npm/web/npm-internal/` with a personal
+  holds no grant runs `npm view @web/button --registry https://quader.example.com/api/npm/web/npm-internal/` with a personal
   access token and succeeds. The same command with a token of `sa:web/partner`, which has no grant, gets `E404`, and so does a
   CI token whose mappings grant nothing on `npm-internal`.
 - An administrator flags that user external (`PATCH /api/v1/users/alice` with `{"external": true}`). Within
@@ -366,12 +366,12 @@ Acceptance criteria:
   above its project's level fails at commit with SQLSTATE `AI008`.
 
 ### R-AUTHZ-034 · The wiki of a repository
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Every repository has two parts with a level each (R-AUTHZ-033): its **artifacts**, what package clients resolve, install and
 download (packages, versions, their files, and the documents and searches that describe them), and its **wiki**, the
-documentation of its packages that trove serves or shows apart from their files
-([Q-AUTHZ-270](#q-authz-270--the-wiki-is-the-documentation-trove-serves-or-shows-apart-from-the-files-never-a-file-inside-an-artifact)).
+documentation of its packages that Quader serves or shows apart from their files
+([Q-AUTHZ-270](#q-authz-270--the-wiki-is-the-documentation-quader-serves-or-shows-apart-from-the-files-never-a-file-inside-an-artifact)).
 This requirement is the one place that says what is wiki; a format page marks its own surfaces with a reference to it.
 
 | Format | Wiki content | Surfaces |
@@ -395,7 +395,7 @@ This requirement is the one place that says what is wiki; a format page marks it
   |---|---|---|
   | `formats.Route.Wiki: true` on a protocol route that serves only wiki content | the dispatcher's coarse check, before the handler | the refusal of a read (R-AUTHZ-016) |
   | `Host.WikiReadable(ctx, rq, formats.Target{Package, Version})` | a handler that puts a wiki member into a document whose artifacts it serves | `false`: the handler leaves the member out; nothing is audited |
-  | `x-trove-part: wiki` on a management operation ([api-and-ui.md](api-and-ui.md) R-API-058), and `authz.ReadScope.MayReadWiki` for a wiki member of a management answer | the shared authorization step and the handler | the 404 of a missing resource; the member is absent |
+  | `x-quader-part: wiki` on a management operation ([api-and-ui.md](api-and-ui.md) R-API-058), and `authz.ReadScope.MayReadWiki` for a wiki member of a management answer | the shared authorization step and the handler | the 404 of a missing resource; the member is absent |
 
 - **What a caller gets who reads the artifacts but not the wiki** ([Q-AUTHZ-271](#q-authz-271--a-caller-who-reads-the-artifacts-but-not-the-wiki-gets-the-refusal-of-a-read-on-a-wiki-route-and-documents-without-the-wiki-members)):
 
@@ -493,7 +493,7 @@ Acceptance criteria: each row is an automated test of `internal/authz` on the R-
 the npm client in the e2e set `npm` ([developer/e2e.md](../developer/e2e.md)).
 
 ### R-AUTHZ-036 · Visibility changes: operations, audit, journal and propagation
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 | Change | Operation | Audit event | Journal |
 |---|---|---|---|
@@ -520,11 +520,11 @@ Priority: **MVP** · Covers: trove-only
   frozen into a token; and the Bastion's kept answers, which its feed reaches ([bastion.md](bastion.md) R-BAS-015).
 - The completeness test of R-AUTHZ-028 runs the operations of this table and fails when one changes an input of the index in a
   transaction that advanced neither the `authz` nor the `repo_config` epoch. Every operation of the table answers with
-  `Trove-Authz-Epoch` (R-AUTHZ-032).
+  `Quader-Authz-Epoch` (R-AUTHZ-032).
 
 Acceptance criteria:
 
-- A trove backup is taken while `web` is `public`. Then `web` is lowered to `internal` and `alice` is flagged external. `trove
+- A Quader backup is taken while `web` is `public`. Then `web` is lowered to `internal` and `alice` is flagged external. `quader
   backup restore` reports both journal entries `applied`; after the replicas start, an anonymous `npm view` through
   `npm-public` gets `E401` and alice's token gets `E404` on `npm-internal`.
 - A journaled `authz.project.visibility_changed` from `internal` to `public` is reported `skipped`.
@@ -592,7 +592,7 @@ Acceptance criteria:
 - A global policy grants `group:developers` `read` on `["web/npm-team-*"]`. An administrator creates local
   repository `npm-team-x` in project `web`; within `cluster.epoch_poll_interval` plus 1 s, also with Valkey
   stopped, a member of `developers` can `npm view` a package published there
-  (`--registry https://trove.example.com/api/npm/web/npm-team-x/`) through any replica, without any change to the
+  (`--registry https://quader.example.com/api/npm/web/npm-team-x/`) through any replica, without any change to the
   policy. A repository `npm-team-y` of project `mobile` is not covered.
 - A global policy with the selector `*/npm-remote` covers `web/npm-remote` and `mobile/npm-remote`; one with the
   selector `npm-internal` answers 422 `invalid_pattern`, and so does a policy of project `web` with the selector
@@ -721,7 +721,7 @@ Acceptance criteria:
   @acme/ui` and `npm install @acme/ui` succeed; `npm view @other/ui` gets `E404`.
 - A policy grants `read` on `web/nuget-internal` with `packages.include: ["Acme.*"]`.
   `dotnet add package acme.core --source
-  https://trove.example.com/api/nuget/web/nuget-internal/v3/index.json` succeeds.
+  https://quader.example.com/api/nuget/web/nuget-internal/v3/index.json` succeeds.
 - A policy grants `read` and `deploy` on `web/npm-internal` with `paths.exclude: ["@secret/**"]`. `npm view @secret/x`
   and the download of its tarball get `E404` through the protocol as through `/files/`, and `npm publish` of
   `@secret/x` gets `E403`; `npm install @acme/ui` succeeds. With `paths.include: ["@acme/**"]`
@@ -751,7 +751,7 @@ Acceptance criteria:
   `team/app` from the version list of the package API, as the tags list of `/v2/` leaves it out, and lists `v1`; a caller
   without the pattern sees both (Q-AUTHZ-258, `TestR_AUTHZ_005_APathPatternOnATagHidesItFromThePackageAPI`).
 - `curl -X PUT --data-binary @evil-1.0.0.tgz
-  https://trove.example.com/files/web/npm-internal/@acme/ui/-/ui-9.9.9.tgz` with a tarball whose
+  https://quader.example.com/files/web/npm-internal/@acme/ui/-/ui-9.9.9.tgz` with a tarball whose
   `package.json` names `@other/evil` answers 400 and stores nothing.
 - `GET /files/web/npm-internal/%2e%2e/secret` answers 400.
 
@@ -788,7 +788,7 @@ Compound operations:
 Acceptance criteria:
 
 - With `read` and `deploy` but not `overwrite` on generic repository `files-internal`,
-  `curl -T app.zip https://trove.example.com/files/web/files-internal/releases/app.zip` succeeds the
+  `curl -T app.zip https://quader.example.com/files/web/files-internal/releases/app.zip` succeeds the
   first time, succeeds again with the same bytes, and answers 403 with different bytes.
 - With `delete` but not `deploy` on `npm-internal`, `npm unpublish @acme/ui@1.0.0` succeeds and
   `npm publish` answers 403.
@@ -915,8 +915,8 @@ Acceptance criteria:
   stable` gets `E403`. With `read` and `deploy`, the same command and `npm publish --tag next` of
   1.3.0 both succeed.
 - With `deploy` but not `delete` on `nuget-internal`, `dotnet nuget delete Acme.Core 1.0.0
-  --source https://trove.example.com/api/nuget/web/nuget-internal/v3/index.json --api-key
-  "$TROVE_TOKEN" --non-interactive` answers 403.
+  --source https://quader.example.com/api/nuget/web/nuget-internal/v3/index.json --api-key
+  "$QUADER_TOKEN" --non-interactive` answers 403.
 - A user with `read` only on `Acme.*` in `nuget-internal` gets search results without any ID
   outside `acme.*`, and the total hit count counts only those.
 
@@ -961,7 +961,7 @@ the remote request path (R-REPO-025, step 9) is this setting.
 - **Public populating is flagged.** A read by a visibility level passes the populate check like a read by a grant
   (R-AUTHZ-035). When a write sets the artifacts of a remote repository whose `cacheFillAction` is `read` to `public`, or
   sets `cacheFillAction: read` on a remote repository whose artifacts are `public`, the repository API saves it and
-  returns the warning `public_populates_remote`: every caller on the network can then make trove download arbitrary
+  returns the warning `public_populates_remote`: every caller on the network can then make Quader download arbitrary
   upstream packages, and the warning makes that visible when the repository is opened
   ([Q-AUTHZ-278](#q-authz-278--a-public-remote-repository-is-filled-by-anonymous-callers-and-the-write-that-opens-it-warns)).
 - **One check, asked two ways.** The check is `MayPopulate` of R-AUTHZ-015: the session cookie and
@@ -992,7 +992,7 @@ chosen per repository.
 Acceptance criteria:
 
 - Remote `npmjs` with `cacheFillAction: read`, Bob holds `read` on it: `npm view left-pad
-  --registry https://trove.example.com/api/npm/web/npmjs/` succeeds with an empty cache.
+  --registry https://quader.example.com/api/npm/web/npmjs/` succeeds with an empty cache.
 - The same remote switched to `deploy`, Bob holds `read` only: `npm view is-odd` for a package
   not yet cached gets `E403` directly on `npmjs`, and `E404` through `npm-all`, and the outbound
   request log shows no upstream request. After a principal with `deploy` has fetched it, Bob's
@@ -1050,7 +1050,7 @@ Priority: **MVP** · Covers: IAM-024, PKG-NPM-042, PKG-NPM-045, PKG-NUGET-027
 This deliberately differs from the catalog, where a virtual repository has no permissions of its
 own (IAM-024). Policies MAY name virtual repositories by key, by pattern and by class
 (R-AUTHZ-004), and a project role covers them like every repository of its project (R-AUTHZ-026), restricted to `read` (the gate) and `manage` (metadata cache invalidation); the
-catalog leaves open whether a policy may hold a virtual repository key, and trove allows it. The
+catalog leaves open whether a policy may hold a virtual repository key, and Quader allows it. The
 gate lets administrators decide which aggregated endpoints a group uses, at the cost of one extra
 selector (`@any-virtual:npm` covers all npm virtual repositories). A virtual repository's members are repositories of
 its own project ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-017), so a gate and its members are
@@ -1062,7 +1062,7 @@ someone who could not read it directly. Q-AUTHZ-1 records the decision;
 Acceptance criteria:
 
 - Virtual `npm-all` has members `npm-internal` and `npmjs`. Alice holds `read` on `npm-all` and
-  `npm-internal` only: `npm view left-pad --registry https://trove.example.com/api/npm/web/npm-all/`
+  `npm-internal` only: `npm view left-pad --registry https://quader.example.com/api/npm/web/npm-all/`
   gets `E404`; after `read` on `npmjs` is added, it succeeds.
 - `@acme/ui` 1.0.0 is in `npm-internal-a` (Alice may read it) and 2.0.0 in `npm-internal-b` (she
   may not); both are members of `npm-all`. `npm view @acme/ui versions` through `npm-all` shows
@@ -1070,13 +1070,13 @@ Acceptance criteria:
 - The artifacts of `npm-all` and `npmjs` are `public`, those of `npm-internal` are `internal`: an anonymous `npm view
   left-pad` through `npm-all` gets 401.
 - Alice holds `read` on `npm-all` and `deploy` on `npm-internal` (the deploy target):
-  `npm publish --registry https://trove.example.com/api/npm/web/npm-all/` succeeds. Without `read` on
+  `npm publish --registry https://quader.example.com/api/npm/web/npm-all/` succeeds. Without `read` on
   `npm-all`, the same command gets 403.
 
 ### R-AUTHZ-010 · System roles and capabilities
 Priority: **MVP** · Covers: IAM-002, IAM-016, ADMAPI-001
 
-System roles are a fixed set; trove has no custom roles. A role is a bundle of capabilities,
+System roles are a fixed set; Quader has no custom roles. A role is a bundle of capabilities,
 and every management operation names the capability it requires. `admin` is MVP; the other roles
 are P1 (R-AUTHZ-011, R-AUTHZ-012). The capability names are fixed now so that the API names them
 from the start. Capabilities that [identity-and-authentication.md](identity-and-authentication.md)
@@ -1111,7 +1111,7 @@ lists as system scope items (R-AUTH-025) use the same names; the others extend t
   recovery never depends on the state it recovers.
 - **Bindings from the configuration (owner, [Q-AUTHZ-170](#q-authz-170--system-role-bindings-declared-in-the-configuration)).**
   `authz.role_bindings` in the system configuration file (rendered by the chart from its `config` values) declares role
-  bindings, so that a GitOps repository decides which IdP group administers trove:
+  bindings, so that a GitOps repository decides which IdP group administers Quader:
 
   ```yaml
   authz:
@@ -1120,14 +1120,14 @@ lists as system scope items (R-AUTH-025) use the same names; the others extend t
         group: gh-wds18-k8s-main-admins      # example; or user: <name> or service_account: <name>, exactly one
   ```
 
-  - `trove migrate` (the chart's pre-install and pre-upgrade Job) applies them in one transaction: each declared binding
+  - `quader migrate` (the chart's pre-install and pre-upgrade Job) applies them in one transaction: each declared binding
     exists afterwards with `source = 'configuration'`, and a configuration binding that is no longer declared is removed;
     both are audited (`authz.role.bound`, `authz.role.unbound`) with the actor `system:configuration`. No `web` or `worker` replica
     writes them.
   - A declared group that does not exist yet is created as a local group, so the binding holds before the first login
     of a member; the login provider's group sync (R-AUTH-008) then writes its memberships into that group. A declared
-    user or service account that does not exist stops `trove migrate` with an error that names it.
-  - A role that is not built yet, or `anonymous` / `authenticated` as principal, stops `trove migrate`
+    user or service account that does not exist stops `quader migrate` with an error that names it.
+  - A role that is not built yet, or `anonymous` / `authenticated` as principal, stops `quader migrate`
     (`role_not_allowed`), as the API refuses them.
   - The API lists configuration bindings with `source: "configuration"`; `DELETE` on one answers 409
     `role_binding_managed_by_configuration`, and the UI shows it without the remove control. Bindings made through the
@@ -1135,11 +1135,11 @@ lists as system scope items (R-AUTH-025) use the same names; the others extend t
   - The rules of the API bind a declaration as they bind a request ([Q-AUTHZ-171](#q-authz-171--a-configuration-binding-follows-the-rules-of-the-api)):
     `PUT` of a binding the configuration keeps answers 200 and leaves it to the configuration; a declared binding the API
     made before is taken over (its `source` turns to `configuration`, audited with `previousSource: "api"`); a declared
-    auto-join group stops `trove migrate` (`auto_join_admin_conflict`); and a removal that would leave no active user or
+    auto-join group stops `quader migrate` (`auto_join_admin_conflict`); and a removal that would leave no active user or
     service account holding `admin` while the break-glass administrator is disabled stops it (`last_admin`), naming the
     binding. A principal deleted through the API takes its configuration bindings with it like any other (R-AUTHZ-002);
-    the next `trove migrate` creates a declared group again and stops for a declared user or service account.
-  - Whoever can change membership of the declared IdP group administers trove: with a GitHub team behind Dex, the team's
+    the next `quader migrate` creates a declared group again and stops for a declared user or service account.
+  - Whoever can change membership of the declared IdP group administers Quader: with a GitHub team behind Dex, the team's
     maintainers decide who is an administrator.
 - A UI session exercises every role of its user. A token exercises roles only as its scope allows
   (R-AUTHZ-013).
@@ -1156,14 +1156,14 @@ lists as system scope items (R-AUTH-025) use the same names; the others extend t
 
 Acceptance criteria:
 
-- IdP group `platform-admins` is synchronized to trove group `platform-admins`, which is bound to
+- IdP group `platform-admins` is synchronized to Quader group `platform-admins`, which is bound to
   `admin`. A member logs in through the UI and can create a repository. After the IdP removes the
   user from the group and the user logs in again, the same call answers 403.
 - `PUT /api/v1/role-bindings/auditor/ci:gitlab-internal%2Facme-publish` answers 422
   `role_not_allowed`.
-- `authz.role_bindings: [{role: admin, group: gh-ops}]` and no group `gh-ops`: after `trove migrate` the group exists and
+- `authz.role_bindings: [{role: admin, group: gh-ops}]` and no group `gh-ops`: after `quader migrate` the group exists and
   is bound to `admin`; a user whose IdP groups map to `gh-ops` logs in and can create a repository. `DELETE
-  /api/v1/role-bindings/admin/group:gh-ops` answers 409. With the entry removed, the next `trove migrate` unbinds it and
+  /api/v1/role-bindings/admin/group:gh-ops` answers 409. With the entry removed, the next `quader migrate` unbinds it and
   the same user's next request needs no new login to be refused (R-AUTHZ-032).
 
 ### R-AUTHZ-011 · Security administrator and auditor roles
@@ -1320,8 +1320,8 @@ Differences from the catalog, kept on purpose:
 - A resource scope never grants rights the subject does not have. TOK-012 lets administrators
   mint grants that no policy records; here every right traces back to a policy, a role or a CI
   mapping, which keeps audit and explanation complete. The catalog leaves open whether a resource
-  scope is intersected with the subject's rights; in trove it always is.
-- trove has no group-scoped token and therefore no group-list syntax (TOK-010). A token's rights
+  scope is intersected with the subject's rights; in Quader it always is.
+- Quader has no group-scoped token and therefore no group-list syntax (TOK-010). A token's rights
   always come from its owner. Automation that should carry the rights of some groups uses a
   service account that is a member of those groups (R-AUTH-020) and a token of that service
   account. The catalog's open points about quoting a group list and about a singular keyword alias
@@ -1413,7 +1413,7 @@ Ownership rows are read inside the write transaction (R-AUTHZ-018).
 
 ```go
 // Begin takes the index a request decides on, once (Q-AUTHZ-159): it waits while the index is
-// staler than authz.cache.max_staleness or below Trove-Authz-Min-Epoch (R-AUTHZ-028,
+// staler than authz.cache.max_staleness or below Quader-Authz-Min-Epoch (R-AUTHZ-028,
 // R-AUTHZ-032), after making the names (project and key) of the repositories the request names
 // known to it (R-ARCH-011 step 2). An epoch the database never reached is answered 412; a stale
 // index 503 authz_stale.
@@ -1583,7 +1583,7 @@ func MayPopulate(sub Subject, idx *Index, m Repo, mc Coordinate) bool {
   refuses with reason `deny.shadowing`.
 - Performance target: with 10,000 policies, 200 groups in a principal set, 1,000 repositories and 100 projects,
   one `Decide` call SHOULD take at most 1 ms at the 99th percentile on one CPU core, measured by
-  `trove_authz_evaluation_seconds`.
+  `quader_authz_evaluation_seconds`.
 
 Worked trace (repositories and policies of the team example in
 [Worked examples](#worked-examples), all in project `web`; Alice is in `developers` and `team-web`, Bob in
@@ -1605,8 +1605,8 @@ Worked trace (repositories and policies of the team example in
 Acceptance criteria: each row of the trace is an automated end-to-end test in the e2e profile
 `scatter` of [architecture.md](architecture.md) R-ARCH-032 (three `web` replicas, every request
 balanced round robin, no session affinity). The policies are written first. The test waits until
-every replica reports their epoch in `trove_authz_epoch`, or it sends the epoch in
-`Trove-Authz-Min-Epoch` where the client can (R-AUTHZ-032). Each row is then issued once on each
+every replica reports their epoch in `quader_authz_epoch`, or it sends the epoch in
+`Quader-Authz-Min-Epoch` where the client can (R-AUTHZ-032). Each row is then issued once on each
 replica, with the same result.
 
 ### R-AUTHZ-016 · Denial responses and hidden existence
@@ -1618,7 +1618,7 @@ A refused request is answered as follows (first matching row wins):
 |---|---|
 | Grant index not confirmed current within the wait of R-AUTHZ-028 | 503 `authz_stale` with `Retry-After` |
 | No credential, and no `public` level admits what the request needs (reads and writes alike) | 401 with the challenge of R-AUTH-002 |
-| `Trove-Authz-Min-Epoch` names an epoch the database has not reached (R-AUTHZ-032) | 412 `authz_epoch_unknown` |
+| `Quader-Authz-Min-Epoch` names an epoch the database has not reached (R-AUTHZ-032) | 412 `authz_epoch_unknown` |
 | Read-type request (request kinds `artifact`, `metadata`, `search`, R-REPO-003) without `read` on the coordinate; for a virtual repository, without `read` on it | 404 |
 | Read-type request that the endpoint's exposure does not admit ([endpoints.md](endpoints.md) R-EP-013) | 404, byte-identical to a missing resource; R-AUTHZ-017 does not change it |
 | Write-type request on an endpoint with exposure rules ([endpoints.md](endpoints.md) R-EP-013) | 403 `endpoint_read_only` |
@@ -1705,7 +1705,7 @@ Acceptance criteria:
   in `npm-internal`. Carol, without `read` on `npm-all`, gets 403 there.
 
 ### R-AUTHZ-018 · Package ownership
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Package ownership makes "a CI job may write the packages it produces" hold even when several
 principals hold `deploy` on overlapping name patterns: the first publish claims the name for the
@@ -1886,7 +1886,7 @@ Acceptance criteria:
   `npm-internal` (R-REPO-023), the publish succeeds.
 
 ### R-AUTHZ-019 · Package ownership API
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The package name is one path segment, percent-encoded (`@acme%2Ffrontend`); the server MUST accept
 an encoded `/` in that segment.
@@ -1956,13 +1956,13 @@ an encoded `/` in that segment.
 Acceptance criteria:
 
 ```sh
-curl -sS -H "Authorization: Bearer $TROVE_TOKEN" \
-  https://trove.example.com/api/v1/projects/web/repositories/npm-internal/packages/@acme%2Ffrontend/owners
+curl -sS -H "Authorization: Bearer $QUADER_TOKEN" \
+  https://quader.example.com/api/v1/projects/web/repositories/npm-internal/packages/@acme%2Ffrontend/owners
 # 200, owners as above
 
 curl -sS -X POST -H "Authorization: Bearer $LEAD_TOKEN" -H 'Content-Type: application/json' \
   -d '{"owner":"group:team-web"}' \
-  https://trove.example.com/api/v1/projects/web/repositories/npm-internal/packages/@acme%2Fnot-yet/owners
+  https://quader.example.com/api/v1/projects/web/repositories/npm-internal/packages/@acme%2Fnot-yet/owners
 # 201: lead-web (manage on npm-internal) pre-assigns a name nobody has published yet
 ```
 
@@ -1978,7 +1978,7 @@ curl -sS -X POST -H "Authorization: Bearer $LEAD_TOKEN" -H 'Content-Type: applic
   `@acme/not-yet` gets 403 `package_owned_by_other_owner` on `npm publish`.
 
 ### R-AUTHZ-020 · Shared ownership domains
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 - A local repository MAY set `ownershipDomain: <name>`. All local repositories of the same project and format
   with the same domain name share one set of ownership records (`domain = 'domain:<projectKey>/<name>'`); no domain
@@ -2052,8 +2052,8 @@ Representation:
   even `If-Match: *` never merges over a concurrent change (it answers 412 and the client retries).
 - Every successful write notifies the `authz` change area in its transaction, which increments the
   authorization epoch (R-AUTHZ-028). It also emits an audit event with before and after
-  (R-AUTHZ-029). The response carries the new epoch in the header `Trove-Authz-Epoch`. A later
-  request names that epoch in `Trove-Authz-Min-Epoch` to see the change on whichever replica
+  (R-AUTHZ-029). The response carries the new epoch in the header `Quader-Authz-Epoch`. A later
+  request names that epoch in `Quader-Authz-Min-Epoch` to see the change on whichever replica
   answers it (R-AUTHZ-032).
 - Malformed JSON answers 400. Semantic validation answers 422 with one of: `unknown_principal`,
   `unknown_repository`, `unknown_format`, `invalid_pattern`, `invalid_action`,
@@ -2087,7 +2087,7 @@ Acceptance criteria:
   (412), replace with the current one (200) and delete (204), all through `curl`; each change
   appears as one audit event.
 - A `PUT` returns epoch `n`. The next request through the Service with
-  `Trove-Authz-Min-Epoch: n` observes the change on whichever replica answers it. Without the
+  `Quader-Authz-Min-Epoch: n` observes the change on whichever replica answers it. Without the
   header, every replica observes it within 1 s (p99 over 100 trials) while Valkey is available, and
   within `cluster.epoch_poll_interval` plus 1 s while Valkey is stopped.
 - `GET /api/v1/permission-policies?principal=user:alice` returns `team-web-publish` (through
@@ -2281,14 +2281,14 @@ accounts and CI mappings are named within the project
 A project is the unit in which a team holds and administers its repositories, their policies and the technical accounts
 of its partners without a system administrator. Delegation per policy (`manage`, R-AUTHZ-025) and per CI issuer
 (R-CI-023) stay P1. The catalog's custom project roles, global roles, environments, repository sharing and project quotas
-(IAM-053 to IAM-064, IAM-068) remain P2: trove's project roles are the four fixed ones below, and no repository is shared.
+(IAM-053 to IAM-064, IAM-068) remain P2: Quader's project roles are the four fixed ones below, and no repository is shared.
 
 **The project.**
 
 - A project has a key matching `^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` with 2 to 32 characters, a path component of every image reference
   ([Q-OCI-3](formats/oci.md#q-oci-3--repository-and-project-keys-follow-the-oci-component-grammar-for-every-format)) (unique and immutable), a display name (1 to 128 characters) and a
   description (at most 1024). It has no switches: what its Owner may do is fixed by the role (Q-AUTHZ-208).
-- An administrator of trove (`projects:write`) creates and deletes projects; the Owner changes the display name and the
+- An administrator of Quader (`projects:write`) creates and deletes projects; the Owner changes the display name and the
   description.
 - Every repository belongs to exactly one project. The project is named in the address of the create request and of
   every later operation (`/api/v1/projects/<projectKey>/repositories/<repoKey>`, `/api/<format>/<projectKey>/<repoKey>/…`,
@@ -2334,7 +2334,7 @@ of its partners without a system administrator. Delegation per policy (`manage`,
   ([Q-AUTHZ-215](#q-authz-215--a-members-role-acts-through-its-session-and-personal-tokens-within-their-scope-and-service-accounts-are-not-members)).
 - A project keeps at least one Owner: removing or demoting the last one answers 409 `last_owner` unless the caller holds
   `projects:write`, whose holder may leave a project without an Owner and administers it alone
-  ([Q-AUTHZ-217](#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-trove)).
+  ([Q-AUTHZ-217](#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-quader)).
   Two Owners who remove each other at once: exactly one removal commits and the other Owner remains. The other request is
   refused as what its caller is when it is decided: with 409 `last_owner` while the index it is decided on still holds the
   caller's role, and with the `404` of a non-member (R-AUTHZ-016) once the first removal, which took the caller's own
@@ -2390,7 +2390,7 @@ outside projects stays with R-CI-023 (P1).
   member (422 `project_account_not_groupable`) and as a project member (422 `principal_not_allowed`), so no grant of a
   global group, no role and no system role ever reaches it
   ([Q-AUTHZ-175](#q-authz-175--a-project-service-account-is-granted-by-its-projects-policies-only)).
-- Owners issue its tokens (`trv_sat_`, endpoint-bound ones included) and revoke them. A token an Owner issues is never
+- Owners issue its tokens (`qdr_sat_`, endpoint-bound ones included) and revoke them. A token an Owner issues is never
   non-expiring, lives at most as long as the installation's maximum for service-account tokens, has `admin: false` and
   names no `system` item (R-AUTH-020, R-AUTH-027, Q-AUTHZ-177).
 - It can be disabled (all its tokens fail with `principal_disabled`) and deleted (its tokens go) by an Owner of the
@@ -2497,7 +2497,7 @@ Operations of other pages below a project, each declared with `project: path.pro
   `currentEtag`. Adding, changing and removing a member bind one pair and are exempt; they do not move the project's
   version (Q-AUTHZ-185). A write that changes nothing (the principal already had the role) records no event and answers the
   current epoch ([Q-AUTHZ-193](#q-authz-193--what-an-administrator-write-that-changes-nothing-does)).
-- Every write above answers `Trove-Authz-Epoch` (R-AUTHZ-032). The writes of a project and its members, and the creation
+- Every write above answers `Quader-Authz-Epoch` (R-AUTHZ-032). The writes of a project and its members, and the creation
   and deletion of project service accounts, are audited in the transaction of the change (R-AUTHZ-029):
   `authz.project.created`, `.updated`, `.deleted`, `.member_added`, `.member_changed` and `.member_removed`; a move is
   `repository.moved` in the source project and `repository.moved_in` in the target project (R-REPO-060). Every event of a project's object carries the member `project`. A removed member, a
@@ -2509,8 +2509,8 @@ Acceptance criteria:
 
 - Project `web` has group `web-leads` as `owner` and group `web-devs` as `developer`; repositories `npm` and `npm-all`
   belong to `web`, `npm-internal` to `mobile`, and no policy names `web-devs`. A member of `web-devs` publishes through
-  `https://trove.example.com/api/npm/web/npm/` with a personal access token, gets `E403` for `npm unpublish` (`delete`),
-  and `E404` through `https://trove.example.com/api/npm/mobile/npm-internal/`.
+  `https://quader.example.com/api/npm/web/npm/` with a personal access token, gets `E403` for `npm unpublish` (`delete`),
+  and `E404` through `https://quader.example.com/api/npm/mobile/npm-internal/`.
 - A member of `web-leads` creates policy `npm-read` with `POST /api/v1/projects/web/policies` on the selector `npm` (201);
   the selector `npm-internal`, which names no repository of `web`, answers 422 `unknown_repository`, and the selector
   `mobile/npm-internal` 422 `invalid_pattern`. Policy `npm-read` of project `mobile` and a global policy `npm-read` exist
@@ -2520,7 +2520,7 @@ Acceptance criteria:
   repository gets 403, a user that is no member of `web` gets 404 on `GET /api/v1/projects/web`.
 - The Owner adds `user:dave` as `maintainer` (201) and changes him to `reader` (200); adding `sa:web/partner` or
   `authenticated` as a member answers 422 `principal_not_allowed`. Removing `group:web-leads`, the only Owner, answers 409
-  `last_owner` to its member and 204 to an administrator of trove.
+  `last_owner` to its member and 204 to an administrator of Quader.
 - The Owner's personal access token without `admin: true` reads `web/npm` and gets 403 on
   `PUT /api/v1/projects/web/members/user:erin`; a token with `{"inherit": true, "admin": true}` gets 201.
 - The Owner creates service account `partner` in `web` (201, `sa:web/partner`), and an administrator creates the service
@@ -2558,7 +2558,7 @@ build names `acme/**` lets that mapping's tokens upload a build record named `ac
 and refuses `other/app` with 403.
 
 ### R-AUTHZ-028 · Compiled grant index and invalidation across replicas
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Every `web` and `worker` replica evaluates against an in-memory grant index. It keeps the index
 consistent with PostgreSQL through the change areas of [architecture.md](architecture.md)
@@ -2591,7 +2591,7 @@ table and `LISTEN/NOTIFY` on a dedicated connection per replica; both are gone (
   step 8 of [architecture.md](architecture.md) R-ARCH-024, before it opens the client listener or
   starts job workers, so the `startup` check never passes without one. A job that decides for a
   subject (a P1 bulk copy, for example) decides on the `worker` replica that runs it. The `backup`
-  role and `trove admin` write changes but evaluate nothing and build no index.
+  role and `quader admin` write changes but evaluate nothing and build no index.
 - **Consistent build.** A build reads every input in one `REPEATABLE READ READ ONLY` transaction on
   the main pool. Its first statement reads `epoch` and `changed_at` of the areas `authz` and
   `repo_config` from `cluster_epoch`. Every query of the transaction sees the snapshot taken at its
@@ -2617,7 +2617,7 @@ table and `LISTEN/NOTIFY` on a dedicated connection per replica; both are gone (
   - every write to a project or its members, and every move of a repository to another project
     (R-AUTHZ-026, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-060), which as a repository change
     also notifies `repo_config`;
-  - every write that `trove admin post-restore` or a restore's journal replay makes to these
+  - every write that `quader admin post-restore` or a restore's journal replay makes to these
     objects (R-AUTHZ-031).
 
   Repository changes notify `repo_config` ([repositories-and-proxy.md](repositories-and-proxy.md)),
@@ -2634,12 +2634,12 @@ table and `LISTEN/NOTIFY` on a dedicated connection per replica; both are gone (
     replica's first successful poll after the failover, the epoch never looks lower, yet it now
     stands for different changes: the index may hold a lost grant and miss a later removal. Every
     comparison of this page with the database epochs (the poll's reading of `cluster_epoch`, a
-    message check, a `Trove-Authz-Min-Epoch` read) therefore compares `changed_at` as well. An area
+    message check, a `Quader-Authz-Min-Epoch` read) therefore compares `changed_at` as well. An area
     whose database epoch equals the index's but whose
     `changed_at` differs counts as flushed, and the next build is installed whatever its epochs.
     `changed_at` is written by the same statement that raises the epoch (R-ARCH-018), and two
     transactions separated by a failover never share it.
-  - A Valkey message on `trove:<ks>:inv:v1` names one of the two areas with an epoch higher than
+  - A Valkey message on `quader:<ks>:inv:v1` names one of the two areas with an epoch higher than
     the index's. Such a message only starts work early. It never advances the applied epoch and
     never confirms an index. The replica first reads the two epochs from `cluster_epoch` (one
     indexed query) and builds only if they differ from the index's label. These reads share the
@@ -2660,7 +2660,7 @@ table and `LISTEN/NOTIFY` on a dedicated connection per replica; both are gone (
 - **Confirmation and staleness.** The index is *confirmed* at the start time of the most recent
   successful change-log poll, or of its own build, that found `epoch` and `changed_at` of `authz`
   and `repo_config` equal to the index's label. Its staleness is the time since then
-  (`trove_authz_index_staleness_seconds`). Staleness grows when the poll cannot reach PostgreSQL
+  (`quader_authz_index_staleness_seconds`). Staleness grows when the poll cannot reach PostgreSQL
   (`cluster.ChangesFresh()`, R-ARCH-018) or when a needed build fails or waits for a connection.
   It never grows because Valkey is unavailable.
 - **Bound.** A committed change is in force on a replica whose poll works within
@@ -2704,20 +2704,20 @@ table and `LISTEN/NOTIFY` on a dedicated connection per replica; both are gone (
   R-HA-062), and decisions depend on them (INV-18). A rollout that changes one of them runs old
   and new values side by side until it ends; the operator controls that window.
 - **Metrics:**
-  - `trove_authz_epoch` (gauge): the `authz` epoch of the installed index;
-  - `trove_authz_index_rebuild_seconds` (histogram);
-  - `trove_authz_index_rebuilds_total{trigger}` (counter): `startup`, `poll`, `message`, `flush`,
+  - `quader_authz_epoch` (gauge): the `authz` epoch of the installed index;
+  - `quader_authz_index_rebuild_seconds` (histogram);
+  - `quader_authz_index_rebuilds_total{trigger}` (counter): `startup`, `poll`, `message`, `flush`,
     `safety`, `min_epoch`;
-  - `trove_authz_index_staleness_seconds` (gauge);
-  - `trove_authz_stale_waits_total{outcome}` (counter): `decided`, `refused`;
-  - `trove_authz_evaluation_seconds` (histogram);
-  - `trove_authz_decisions_total{outcome, reason, action}` (counter).
+  - `quader_authz_index_staleness_seconds` (gauge);
+  - `quader_authz_stale_waits_total{outcome}` (counter): `decided`, `refused`;
+  - `quader_authz_evaluation_seconds` (histogram);
+  - `quader_authz_decisions_total{outcome, reason, action}` (counter).
 - **Rebuild cost.** Building the index from 10,000 policies and 1,000 repositories SHOULD take at
   most 500 ms. Each change of `authz` or `repo_config` makes every replica build once, so with
   n replicas a change costs n builds. At administrative change rates that is small, and Q-AUTHZ-11
   names the point at which incremental updates replace full builds.
 - **Completeness test.** A test runs every write operation of the policy, role-binding, project and
-  repository APIs, of the journal replay and of the `trove admin` commands that write these tables
+  repository APIs, of the journal replay and of the `quader admin` commands that write these tables
   (`service-account create --admin` binds a role,
   [identity-and-authentication.md](identity-and-authentication.md)) against a test database. It
   fails if an input table of the index changed in a transaction that advanced neither the `authz`
@@ -2824,7 +2824,7 @@ reaches replicas A and B directly where a criterion names them):
 - A fault-injection build drops every Valkey message of the `authz` area and injects forged ones
   with random epochs. Over 1,000 policy changes, no replica decides on a removed grant later than
   `cluster.epoch_poll_interval` plus 1 s after its commit. The forged messages do not raise
-  `trove_authz_index_rebuilds_total{trigger="message"}`.
+  `quader_authz_index_rebuilds_total{trigger="message"}`.
 - A test hook blocks B's change-log poll while its request pool keeps working.
   - From `authz.cache.max_staleness` on, requests through B wait.
   - When the hook is lifted within `database.retry.max_elapsed`, the waiting requests succeed.
@@ -2839,7 +2839,7 @@ reaches replicas A and B directly where a criterion names them):
     honours a policy change made through A during the outage.
 - A test build pauses a build on B after its first statement. A policy change commits through A,
   B's poll starts a second build, and that build is installed. The paused build then finishes and
-  is discarded. `trove_authz_epoch` on B never decreases, and the change stays in force.
+  is discarded. `quader_authz_epoch` on B never decreases, and the change stays in force.
 - A loop commits policy updates that replace entries and selectors together while B rebuilds
   continuously. Every index B installs grants exactly what a database snapshot at its epochs
   grants.
@@ -2848,7 +2848,7 @@ reaches replicas A and B directly where a criterion names them):
   would, the test deletes the grant and that `cluster_change` row and resets the `authz` row of
   `cluster_epoch` to `e − 1` with its earlier `changed_at`. A removal of one of Alice's grants then
   commits through A as epoch `e` again. When the hook is lifted, B installs a new index
-  within `cluster.epoch_poll_interval` plus 1 s (`trove_authz_index_rebuilds_total{trigger="flush"}`
+  within `cluster.epoch_poll_interval` plus 1 s (`quader_authz_index_rebuilds_total{trigger="flush"}`
   rises): Carol's request is refused and Alice's removed grant no longer works.
 - During the request-pool saturation test of [ha-and-helm.md](ha-and-helm.md) R-HA-008, a policy
   change commits through a replica outside the test. `/readyz` stays `200` on every replica, no
@@ -2865,7 +2865,7 @@ reaches replicas A and B directly where a criterion names them):
   non-zero and names `authz.cache.max_staleness`.
 
 ### R-AUTHZ-032 · Seeing one's own permission change on any replica
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The Kubernetes Service distributes requests at random and without session affinity (INV-12), so
 the request that follows a permission change may reach a replica that has not applied it yet
@@ -2874,7 +2874,7 @@ a replica's epoch. Under random distribution a client cannot choose the replica 
 so it now names the epoch in its request instead (Q-AUTHZ-12).
 
 - **Epoch out.** The writes that notify the `authz` area (R-AUTHZ-028) answer with
-  `Trove-Authz-Epoch: <n>`, the epoch their transaction produced:
+  `Quader-Authz-Epoch: <n>`, the epoch their transaction produced:
   - policy writes (R-AUTHZ-021);
   - role bindings (R-AUTHZ-022);
   - project writes, including members and their roles, and the move of a repository (R-AUTHZ-026, R-REPO-060).
@@ -2883,7 +2883,7 @@ so it now names the epoch in its request instead (Q-AUTHZ-12).
   as well. `POST /api/v1/authz/check` (R-AUTHZ-023) and `POST /api/v1/authz/explain`
   (R-AUTHZ-024) report the epoch of the index that answered.
 - **Epoch in.** A request on the client listener that authenticated (a valid session or token) may
-  send `Trove-Authz-Min-Epoch: <n>`. Authentication runs first, so an invalid credential gets its
+  send `Quader-Authz-Min-Epoch: <n>`. Authentication runs first, so an invalid credential gets its
   `401` before the header is read. The replica then decides every coordinate of that request,
   member checks of virtual resolution included, on an index whose `authz` epoch is at least `n`.
   1. If the installed index already has epoch `n` or higher, nothing happens.
@@ -2922,7 +2922,7 @@ so it now names the epoch in its request instead (Q-AUTHZ-12).
   an existing policy. Using it through another replica relies on the `repo_config` propagation of
   [architecture.md](architecture.md) R-ARCH-018, which [repositories-and-proxy.md](repositories-and-proxy.md)
   owns.
-- Metric `trove_authz_min_epoch_total{outcome}`: `current`, `waited`, `unknown`, `timeout`.
+- Metric `quader_authz_min_epoch_total{outcome}`: `current`, `waited`, `unknown`, `timeout`.
 
 Acceptance criteria (three `web` replicas behind the Service and Valkey stopped. For the test,
 `cluster.epoch_poll_interval` is raised to 30 s, `cluster.epoch_max_staleness` to 90 s so that the
@@ -2930,11 +2930,11 @@ Acceptance criteria (three `web` replicas behind the Service and Valkey stopped.
 can explain a prompt result):
 
 - An administrator gives `group:team-mobile` `deploy` on `web/files-internal`; the `PUT` answers
-  `Trove-Authz-Epoch: n`. A member of `team-mobile` then runs 20 uploads
-  `curl -T app-<i>.zip -H "Trove-Authz-Min-Epoch: n" https://trove.example.com/files/web/files-internal/app-<i>.zip`
+  `Quader-Authz-Epoch: n`. A member of `team-mobile` then runs 20 uploads
+  `curl -T app-<i>.zip -H "Quader-Authz-Min-Epoch: n" https://quader.example.com/files/web/files-internal/app-<i>.zip`
   at once. All 20 succeed, and the access logs show all three replicas. The administrator then
-  removes the grant (epoch `m`). Twenty uploads with `Trove-Authz-Min-Epoch: m` all answer `403`.
-- `Trove-Authz-Min-Epoch` set to the current epoch plus 1,000 answers `412` `authz_epoch_unknown`
+  removes the grant (epoch `m`). Twenty uploads with `Quader-Authz-Min-Epoch: m` all answer `403`.
+- `Quader-Authz-Min-Epoch` set to the current epoch plus 1,000 answers `412` `authz_epoch_unknown`
   within 100 ms. The value `abc` answers `400` `invalid_header`. A request without a credential
   that sends the header gets the same answer as without it, and one with a revoked token gets
   `401`, not `412`.
@@ -2942,7 +2942,7 @@ can explain a prompt result):
   20 epoch reads per second per replica (`pg_stat_statements`).
 
 ### R-AUTHZ-029 · Audit of authorization decisions
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Every authorization decision can be audited (INV-9). Storage, retention and export of audit
 events belong to [operations-and-observability.md](operations-and-observability.md) (INV-16).
@@ -3015,10 +3015,10 @@ Fields of `authz.decision`:
     `audit.denial_dedup_window` become one summary event with their exact count.
   - With n `web` replicas, one address yields at most n first events and n summaries per window,
     whatever its request rate and however many paths it probes. The sum of the counts is exact.
-    `trove_authz_decisions_total` counts every answer as well.
+    `quader_authz_decisions_total` counts every answer as well.
   - The deduplication state stays in the replica's memory. An audit record never depends on
     Valkey (R-OPS-015, INV-3), and nobody who can write to Valkey can suppress one: a value read
-    from Valkey may only make trove refuse ([architecture.md](architecture.md) R-ARCH-030 rule 2).
+    from Valkey may only make Quader refuse ([architecture.md](architecture.md) R-ARCH-030 rule 2).
 - Asynchronous events go through the buffer of R-OPS-015. A replica that drains writes its buffer
   and its open denial summaries before it exits (R-ARCH-024, shutdown step 6), so a drain or a
   rollout loses no event while PostgreSQL is reachable. A replica killed without `SIGTERM` loses
@@ -3033,7 +3033,7 @@ Fields of `authz.decision`:
 - `authz.role.unbound`, `authz.policy.deleted`, `authz.policy.updated`,
   `authz.ownership.removed`, `authz.ownership.released` and `authz.settings.changed` are flagged
   `journal: revocation` in the event registry. A restore can then not undo them: neither a
-  point-in-time restore nor the restore of a trove backup
+  point-in-time restore nor the restore of a Quader backup
   (R-AUTHZ-031, [ha-and-helm.md](ha-and-helm.md) R-HA-054,
   [backup-and-restore.md](backup-and-restore.md) R-BAK-024). The flag is MVP since 2026-10-28,
   because the backup job of INV-19 makes restores an MVP path (Q-HA-9).
@@ -3057,16 +3057,16 @@ Acceptance criteria:
   `npm publish` fails and no version is stored.
 
 ### R-AUTHZ-031 · Revocation journal entries and the narrowing comparator
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 A database restore to time *t* undoes every authorization change made after *t*. There are two
 ways to restore, and both are MVP:
 - a point-in-time restore ([ha-and-helm.md](ha-and-helm.md) R-HA-025);
-- the restore of a trove backup, where *t* is the backup's `snapshotAt` and can lie up to one
+- the restore of a Quader backup, where *t* is the backup's `snapshotAt` and can lie up to one
   backup interval in the past (INV-19, [backup-and-restore.md](backup-and-restore.md) R-BAK-024).
 
 [ha-and-helm.md](ha-and-helm.md) R-HA-054 writes access-bearing changes a second time to object
-storage. `trove admin post-restore` and `trove backup restore` replay the removals among them;
+storage. `quader admin post-restore` and `quader backup restore` replay the removals among them;
 replay never grants (Q-HA-9). R-HA-054 leaves three things to the owning page: which events are
 journaled, what an entry carries, and the comparator `narrows(current, after)` of its update rule.
 This requirement moved from P1 to MVP on 2026-10-28 with R-HA-054, because the backup job makes a
@@ -3177,13 +3177,13 @@ everything, write the own scope"; `team-web-publish` gives `group:team-web` `["a
 - `npmjs` is restored with `cacheFillAction: read`. A journaled `authz.settings.changed` whose
   after-state sets `deploy` is reported `applied`; one on `npm-internal` whose before-state is
   `packageOwnership: enforce` and after-state `off` is reported `skipped`.
-- A trove backup is taken. Then `admin` is unbound from group `platform-admins` and `deploy` is
-  removed from the `group:team-web` entry of `team-web-publish`. `trove backup restore` of that
+- A Quader backup is taken. Then `admin` is unbound from group `platform-admins` and `deploy` is
+  removed from the `group:team-web` entry of `team-web-publish`. `quader backup restore` of that
   backup into an empty installation reports both entries `applied`. After the replicas start, a
   member of `platform-admins` gets 403 on `POST /api/v1/projects/web/repositories`, and a member of
   `team-web` gets `E403` on `npm publish`, on every replica.
 - A journaled `authz.project.member_removed` of `group:web-devs` from `web` is reported `applied`, and a member of
-  `web-devs` whom no policy grants gets `E404` through `https://trove.example.com/api/npm/web/npm-all/` afterwards. A
+  `web-devs` whom no policy grants gets `E404` through `https://quader.example.com/api/npm/web/npm-all/` afterwards. A
   journaled `authz.project.member_changed` whose after-state raises `user:dave` from `reader` to `developer` is
   reported `skipped`.
 
@@ -3193,7 +3193,7 @@ everything, write the own scope"; `team-web-publish` gives `group:team-web` `["a
 
 Repositories of project `web`: `npm-internal` (local, npm, `packageOwnership: enforce`), `npmjs` (remote of the
 public npm registry, `cacheFillAction: read`), `npm-all` (virtual over both, deploy target
-`npm-internal`). IdP groups `developers` and `team-web` are synchronized to trove groups of the
+`npm-internal`). IdP groups `developers` and `team-web` are synchronized to Quader groups of the
 same names.
 
 ```json
@@ -3222,8 +3222,8 @@ same names.
 Developer setup (token with the default scope, from the client setup instructions):
 
 ```sh
-npm config set registry https://trove.example.com/api/npm/web/npm-all/
-npm config set //trove.example.com/api/npm/web/npm-all/:_authToken "$TROVE_TOKEN"
+npm config set registry https://quader.example.com/api/npm/web/npm-all/
+npm config set //quader.example.com/api/npm/web/npm-all/:_authToken "$QUADER_TOKEN"
 ```
 
 Outcome: every developer installs everything through `npm-all`. Members of `team-web` publish
@@ -3310,23 +3310,23 @@ until an owner adds it as a co-owner (R-AUTHZ-019). If project 4711 is renamed a
 takes over its old path, the new project renders the same names but has a different `project_id`,
 so it cannot publish versions of packages 4711 owns.
 
-Job (the hidden job `.trove` that exchanges the ID token is the one in the examples of
+Job (the hidden job `.quader` that exchanges the ID token is the one in the examples of
 [gitlab-ci-oidc.md](gitlab-ci-oidc.md)):
 
 ```yaml
 publish-npm:
-  extends: .trove
+  extends: .quader
   image: node:24-bookworm                                # example
   rules:
     - if: $CI_COMMIT_REF_PROTECTED == "true"
   script:
     - |
       cat > .npmrc <<'EOF'
-      registry=https://trove.example.com/api/npm/web/npm-all/
-      //trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}
+      registry=https://quader.example.com/api/npm/web/npm-all/
+      //quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}
       EOF
     - npm ci
-    - npm publish --registry https://trove.example.com/api/npm/web/npm-all/
+    - npm publish --registry https://quader.example.com/api/npm/web/npm-all/
 ```
 
 Expected results:
@@ -3349,7 +3349,7 @@ Expected results:
 | IAM-008 | Later | Scan-related roles; no scanning engine is planned. |
 | IAM-026 | Later | Release-set resources; release sets are not planned soon. |
 | IAM-027 | Later | Distribution-target resources; distribution to edge instances is not planned soon. |
-| IAM-028 | Out of scope | CI pipeline-source resources; trove bundles no CI engine. |
+| IAM-028 | Out of scope | CI pipeline-source resources; Quader bundles no CI engine. |
 | IAM-033 | P2 | Older policy interfaces with whole-policy replacement; the single policy API of R-AUTHZ-021 replaces them. |
 | IAM-034 | P2 | Fine control over anonymous grants by non-administrators; no policy names `anonymous` (Q-AUTHZ-279), and the Owner of a project opens its repositories only up to the level an administrator gave the project (R-AUTHZ-033). |
 | IAM-053 | P2 | Project members through the assignment of custom roles; the projects of R-AUTHZ-026 have members with four fixed roles and project policies. |
@@ -3414,7 +3414,7 @@ Expected results:
   role, but it writes policies and can therefore grant itself any content right. Every such change
   is audited in the transaction that makes it (R-AUTHZ-029); H-22 records the missing two-person
   rule.
-- **Public populating.** A remote repository with `public` artifacts and `cacheFillAction: read` lets anyone make trove
+- **Public populating.** A remote repository with `public` artifacts and `cacheFillAction: read` lets anyone make Quader
   download arbitrary upstream packages: storage growth, upstream rate limits, possibly upstream cost. The repository API
   flags the write that opens it with the warning `public_populates_remote`. The per-repository fetch budget
   `limits.maxConcurrentFetches` of [repositories-and-proxy.md](repositories-and-proxy.md)
@@ -3439,7 +3439,7 @@ Expected results:
   - Writes are re-checked at commit on the committing replica's index (R-AUTHZ-015), so the window
     applies to them as well.
 - **Valkey grants nothing.** No grant, index or decision is kept in Valkey (R-AUTHZ-028,
-  [architecture.md](architecture.md) Q-ARCH-16). Whoever can write under trove's Valkey prefix can
+  [architecture.md](architecture.md) Q-ARCH-16). Whoever can write under Quader's Valkey prefix can
   make replicas run extra epoch queries, at most 20 per second per replica however many messages
   they forge. They cannot widen a permission, and they cannot suppress an audit event, because no
   audit decision reads Valkey (R-AUTHZ-029). By dropping messages they can delay a change by at
@@ -3498,7 +3498,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) No built-in principal | Administrators use an IdP group that contains everyone, or an auto-join group (P1, R-AUTH-019) | Nothing new to build | In the MVP there are no auto-join groups, so the first developer cannot install anything until the IdP emits an all-employees group claim; the most common first policy depends on IdP configuration outside trove |
+| (a) No built-in principal | Administrators use an IdP group that contains everyone, or an auto-join group (P1, R-AUTH-019) | Nothing new to build | In the MVP there are no auto-join groups, so the first developer cannot install anything until the IdP emits an all-employees group claim; the most common first policy depends on IdP configuration outside Quader |
 | (b) `authenticated`, any action | Built-in principal for users and service accounts that can hold any action | Also covers "everyone may publish to a sandbox" | Under ownership enforcement a write through it would make `authenticated` the owner (R-AUTHZ-018 rule 2), so everyone co-owns the name; one careless entry opens writes to the whole organization |
 | (c) `authenticated`, `read` only, users and service accounts | As (d), but service-account tokens count as authenticated too | Automation outside GitLab reads without a grant of its own | Every service account gains the organization-wide read grants without anyone granting them, also one created for SCIM provisioning or monitoring, whose tokens default to `inherit: true` (R-AUTH-024) and may be non-expiring (R-AUTH-026); breaks the rule of R-AUTH-019 that keeps service accounts out of auto-join groups |
 | (d) `authenticated`, `read` only, users only | Built-in principal for every user (UI session, personal access token), never for service accounts or CI tokens; entries may hold only `read`; no roles, no ownership, not grantable by delegated managers or project administrators (R-AUTHZ-030) | Covers the motivating case on day one; cannot widen writes or ownership; the rights of every non-human credential trace back to a grant that names it, its groups or its CI mapping | Writes for everyone, and reads for every service account, still need a group (deliberately) |
@@ -3518,7 +3518,7 @@ Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, back
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `read` | Every caller who may read a remote repository may also make it fetch uncached content and refresh expired metadata (R-AUTHZ-008) | Behaves like the pull-through proxy users expect; no per-user inconsistency; no `deploy` grants on repositories that never accept uploads | With anonymous read on a remote repository, anyone can make trove download arbitrary upstream packages |
+| (a) `read` | Every caller who may read a remote repository may also make it fetch uncached content and refresh expired metadata (R-AUTHZ-008) | Behaves like the pull-through proxy users expect; no per-user inconsistency; no `deploy` grants on repositories that never accept uploads | With anonymous read on a remote repository, anyone can make Quader download arbitrary upstream packages |
 | (b) `deploy`, as in the catalog (IAM-023) | Only `deploy` holders populate; everyone else gets what is cached | Frozen-mirror semantics everywhere; new third-party packages enter only through chosen principals | `npm install` of an uncached package answers `E404` through the virtual repository for one developer and works for a colleague who holds `deploy`, the most common support case of such proxies; `deploy` must be handed out on repositories nobody deploys to |
 | (c) Split by caller | `read` populates for authenticated callers, while anonymous callers never populate unless the repository opts in | Removes the anonymous download risk by default | Brings back the inconsistent 404s for exactly the anonymous mirror case that anonymous read is usually granted for; a hidden third rule beside `read` and `deploy` |
 
@@ -3536,7 +3536,7 @@ Revisited on 2026-10-28 after the owner added the Valkey, horizontal-scale, back
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `none` | No read events; refused reads appear only in `trove_authz_decisions_total` | Least audit volume | Probing (many refused reads of guessed names) leaves no attributable trace |
+| (a) `none` | No read events; refused reads appear only in `quader_authz_decisions_total` | Least audit volume | Probing (many refused reads of guessed names) leaves no attributable trace |
 | (b) `denied` | Refused reads are audited, allowed reads are not | Refusals are rare and signal probing or misconfiguration; volume follows refusals, not traffic | An authorized reader's downloads are not attributable (H-23) |
 | (c) `all` | Every read is audited | Every download attributable | One `npm ci` of a typical project issues hundreds of requests; audit rows in PostgreSQL (INV-16) then grow with the download rate and make the audit table the largest write load of an HA installation |
 | (d) `denied` plus first-read sampling | Refused reads, plus one event per principal, package version and day, deduplicated with a `SET … NX` key in Valkey that expires after the day | Attribution of who fetched what, at bounded volume; a lost Valkey key only writes a duplicate event, never drops one | One Valkey round trip on every allowed read, the hottest path of the system. Whoever can write to Valkey can set a key in advance and so suppress the event, which makes the audit record depend on Valkey, against [operations-and-observability.md](operations-and-observability.md) R-OPS-015. While Valkey is unavailable, deduplication must fall back to per-replica memory, which multiplies events by the replica count, or to a PostgreSQL upsert per download, which brings back one write per read. Attribution of downloads is not an owner requirement |
@@ -3620,13 +3620,13 @@ Status: **Decided by the development agent** — selected from the options below
 |---|---|---|---|
 | (a) Repository content and system items only | A scope has `repositories` and `system`; nothing else | Smallest structure | Build actions (P1) cannot be narrowed: a token either admits them all through `inherit` or none |
 | (b) A closed set of typed parts that mirrors the grant model | `repositories` (MVP), `system` (P1), `builds` (P1); projects only once project roles exist (P2); repository configuration stays a system capability | Every resource type that can be granted can also be narrowed; validated by a fixed JSON schema; matches `resourceType` of policies | One more part per future resource type |
-| (c) Open typed grammar as in the catalog | `<type>:<target>[/<sub-resource>]:<actions>` with types such as artifact, project and per-repository configuration | Could express "configure `npm-*` only" | A scope is a ceiling (R-AUTHZ-013), and no grant model stands behind per-repository configuration types (system roles are instance-wide, R-AUTHZ-010), so such items would either yield nothing or have to grant on their own, which trove forbids; a second grammar beside JSON |
+| (c) Open typed grammar as in the catalog | `<type>:<target>[/<sub-resource>]:<actions>` with types such as artifact, project and per-repository configuration | Could express "configure `npm-*` only" | A scope is a ceiling (R-AUTHZ-013), and no grant model stands behind per-repository configuration types (system roles are instance-wide, R-AUTHZ-010), so such items would either yield nothing or have to grant on their own, which Quader forbids; a second grammar beside JSON |
 
 **Choice:** (b) — a scope names exactly the resource types the grant model has, and it is always intersected with the subject's rights.
 
-**Rationale:** The catalog leaves open which resource types a scope can name (repository content only, or also projects and per-repository configuration types) and whether a resource scope is intersected with the subject's own rights (TOK-012). Because a scope only narrows, a scope type is useful only where a grant type exists behind it. (b) follows that rule exactly and leaves no item that silently yields nothing. Per-team configuration rights come from projects (R-AUTHZ-026), not from tokens. Intersection with the subject's rights is not optional in trove: every right must trace back to a policy, a role or a CI mapping. The development agent would revisit this when project roles arrive in P2 and add a `projects` part for TOK-011 and TOK-013.
+**Rationale:** The catalog leaves open which resource types a scope can name (repository content only, or also projects and per-repository configuration types) and whether a resource scope is intersected with the subject's own rights (TOK-012). Because a scope only narrows, a scope type is useful only where a grant type exists behind it. (b) follows that rule exactly and leaves no item that silently yields nothing. Per-team configuration rights come from projects (R-AUTHZ-026), not from tokens. Intersection with the subject's rights is not optional in Quader: every right must trace back to a policy, a role or a CI mapping. The development agent would revisit this when project roles arrive in P2 and add a `projects` part for TOK-011 and TOK-013.
 
-**Applied in the spec:** R-AUTHZ-013: new "Resource types" table (`repositories` MVP, `system` P1, `builds` P1), `inherit: true` covers build rights from P1, and a restricted scope without `builds` admits no build action. The "Differences from the catalog" list states that a scope is always intersected with the subject's rights, and that trove has no group-scoped token and so no group-list syntax (settling the open quoting and alias points of TOK-010). R-AUTHZ-027 refers to the `builds` part. R-AUTH-024 on [identity-and-authentication.md](identity-and-authentication.md) needs the P1 `builds` field.
+**Applied in the spec:** R-AUTHZ-013: new "Resource types" table (`repositories` MVP, `system` P1, `builds` P1), `inherit: true` covers build rights from P1, and a restricted scope without `builds` admits no build action. The "Differences from the catalog" list states that a scope is always intersected with the subject's rights, and that Quader has no group-scoped token and so no group-list syntax (settling the open quoting and alias points of TOK-010). R-AUTHZ-027 refers to the `builds` part. R-AUTH-024 on [identity-and-authentication.md](identity-and-authentication.md) needs the P1 `builds` field.
 
 ### Q-AUTHZ-11 · Invalidation path of the grant index across n replicas
 
@@ -3646,7 +3646,7 @@ change the frame:
 |---|---|---|---|
 | (a) Keep the own epoch with `LISTEN/NOTIFY` | As specified before | Delivery on commit | One session connection per `web` replica, which a transaction-mode pooler cannot carry and which grows with the replica count; contradicts Q-ARCH-15 |
 | (b) Own epoch row and own poll, Valkey as fast path | `authz_epoch` stays; a second poll loop reads it | Correct from PostgreSQL alone | A second poll, a second ordering rule and a second readiness signal next to R-ARCH-018, for the same guarantee; writers serialize on the row for their whole transaction unless it copies R-ARCH-018's last-statement rule |
-| (c) The `authz` change area of R-ARCH-018 | The authorization epoch is the `authz` area's epoch. The index depends on `authz` and `repo_config` and is built from one `REPEATABLE READ` snapshot that carries its epochs. A Valkey message starts a build only after an epoch query confirms it | One poll and one readiness signal for every cache. The area's row lock orders the epochs. No session connection. A lost message costs latency; a forged one costs one indexed query. Repository code needs no knowledge of authorization | Every change makes every replica build the whole index. `Trove-Authz-Epoch` does not cover repository changes, because they live in the second area |
+| (c) The `authz` change area of R-ARCH-018 | The authorization epoch is the `authz` area's epoch. The index depends on `authz` and `repo_config` and is built from one `REPEATABLE READ` snapshot that carries its epochs. A Valkey message starts a build only after an epoch query confirms it | One poll and one readiness signal for every cache. The area's row lock orders the epochs. No session connection. A lost message costs latency; a forged one costs one indexed query. Repository code needs no knowledge of authorization | Every change makes every replica build the whole index. `Quader-Authz-Epoch` does not cover repository changes, because they live in the second area |
 | (d) Share the compiled index or decisions in Valkey | One build per change instead of n | Fewer builds and database reads | Whoever can write to Valkey could grant access (Q-ARCH-16). A loss of Valkey's data would cost correctness or force every replica to refuse, against INV-3 and INV-12 |
 | (e) No index: query PostgreSQL per decision | Policies are read for every coordinate | Exact, no propagation window | Queries per request and per virtual member, at a load beyond one replica, on the system of record. The 1 ms target of R-AUTHZ-015 fails, and a short database hiccup fails every decision |
 
@@ -3678,7 +3678,7 @@ change the frame:
   about 50 CPU seconds across the cluster and 100 snapshot reads, which is small at administrative
   change rates. (d) and (e) would remove it at the price of trust or of database load on every
   request.
-- The development agent would revisit this if the summed `trove_authz_index_rebuild_seconds` of
+- The development agent would revisit this if the summed `quader_authz_index_rebuild_seconds` of
   all replicas exceeds about 1 % of the `web` role's CPU, or if automation changes `repo_config`
   per pipeline run. The index would then apply incremental updates from the change payloads, and
   the full build would remain the fallback after a flush.
@@ -3707,22 +3707,22 @@ change the frame:
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-R-AUTHZ-021 returned the new epoch in `Trove-Authz-Epoch` "so a client can wait for propagation".
+R-AUTHZ-021 returned the new epoch in `Quader-Authz-Epoch` "so a client can wait for propagation".
 The client was meant to watch a replica's epoch. Under INV-12 the Service sends each request to a
 random replica without session affinity, so the replica that reports an epoch is not the one that
 answers the next request (INV-18). A script that grants a right and uses it at once, the UI after a
-permission change and trove's own e2e tests in the `scatter` profile
+permission change and Quader's own e2e tests in the `scatter` profile
 ([architecture.md](architecture.md) R-ARCH-032) would see refusals for up to the propagation bound.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The bound only | Clients wait for the bound of R-AUTHZ-028 or retry | Nothing to build | Clients must sleep for the worst case (2 s without Valkey) or retry blindly. The promise of `Trove-Authz-Epoch` becomes empty |
-| (b) Request header `Trove-Authz-Min-Epoch` | A request names the epoch it needs; any replica waits for an index at least that new, or answers `412` when the database never reached it | Opt-in and deterministic. Covers added and removed grants and the member checks of virtual resolution. Costs nothing for requests without it, and its database reads are coalesced | Only clients that send it benefit. It covers the `authz` area, not repository creation |
+| (a) The bound only | Clients wait for the bound of R-AUTHZ-028 or retry | Nothing to build | Clients must sleep for the worst case (2 s without Valkey) or retry blindly. The promise of `Quader-Authz-Epoch` becomes empty |
+| (b) Request header `Quader-Authz-Min-Epoch` | A request names the epoch it needs; any replica waits for an index at least that new, or answers `412` when the database never reached it | Opt-in and deterministic. Covers added and removed grants and the member checks of virtual resolution. Costs nothing for requests without it, and its database reads are coalesced | Only clients that send it benefit. It covers the `authz` area, not repository creation |
 | (c) Re-check every refusal against the database epoch | A replica confirms a refusal by reading the current epoch, and rebuilds when it is behind | Transparent, package clients included | Covers only added grants that would end in a refusal; not removals, and not the member checks of virtual resolution, which are not refusals. Every refusal gets a database read, and scanners produce refusals at will. Strict read-your-writes needs each refusal to wait for a read that starts after it arrived |
 | (d) Decide writes and management operations on PostgreSQL | The index serves reads only | Writes exact | Two evaluators that must agree; several queries per write; reads remain unsynchronized |
 | (e) Session affinity for management clients | Route a client to the replica it wrote through | — | Forbidden by INV-12 and R-ARCH-032. A token used over several connections gains nothing |
 
-**Choice:** (b) — a request may carry `Trove-Authz-Min-Epoch`, and every replica honours it.
+**Choice:** (b) — a request may carry `Quader-Authz-Min-Epoch`, and every replica honours it.
 
 **Rationale:**
 - Under random distribution, the epoch has to travel with the request. (b) is the smallest
@@ -3752,7 +3752,7 @@ permission change and trove's own e2e tests in the `scatter` profile
   `authz_epoch_unknown` and `authz_stale`, the UI sending the header after its own permission
   changes and dropping an epoch that answered `412`);
   [operations-and-observability.md](operations-and-observability.md) (the metric
-  `trove_authz_min_epoch_total`).
+  `quader_authz_min_epoch_total`).
 
 ### Q-AUTHZ-13 · A replica whose grant index cannot be confirmed current
 
@@ -3790,7 +3790,7 @@ request that needed authorization and reported not ready. The revised frame sets
   `invalidation` already cover, and at 10 s it would undercut R-HA-008's window. Valkey affects
   neither the bound nor readiness.
 - Readiness does not see one case: a build that fails on one replica while its poll works. It shows
-  in `trove_authz_index_staleness_seconds` and in `authz_stale` answers. A build that fails
+  in `quader_authz_index_staleness_seconds` and in `authz_stale` answers. A build that fails
   deterministically stalls every rollout, because start-up requires a successful build
   (R-AUTHZ-028).
 - The development agent would revisit this if such replica-local build failures occur in practice.
@@ -3864,7 +3864,7 @@ M0 ships `system.bootstrap_anonymous_read` (default `false`, refused with an `ht
 
 **Applied in the spec:** none. The gap stays [H-63](../security/roles-and-trust-boundaries.md#h-63--anonymous-read-of-installation-facts-and-the-replica-list-while-the-bootstrap-switch-is-on). Narrowed by Q-AUTHZ-71: the bridge opens the system information and the replica list, not every operation of `settings:read`.
 
-### Q-AUTHZ-17 · How `Trove-Authz-Min-Epoch` reaches the engine
+### Q-AUTHZ-17 · How `Quader-Authz-Min-Epoch` reaches the engine
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -4063,7 +4063,7 @@ Status: **Decided by the development agent** — selected from the options below
 | How the lists are paged | Policies by name and bindings by role and principal, in memory over a read of PostgreSQL per call; the cursor holds the sort key of the last item. A page assembles the warnings of its policies only. The cost grows with the number of policies (a few hundred are expected); a keyset query joins the list if an installation outgrows it |
 | `GET /authz/me` | `roles`, `capabilities`, `principals`, `scope` (`null` for a credential without a ceiling, else `inherit`, `admin`, `system`, `grants`), `projects` (the projects the caller administers, `[]` otherwise; Q-AUTHZ-181) and `epoch`; the members the shell reads (`capabilities`, `principals`) keep their names |
 | `POST /authz/check` | At most 100 checks (`422 validation_failed` beyond), an unknown action `422 invalid_action`, no credential `401`; the answer carries the epoch of the index that decided all of them |
-| Which operations carry `Trove-Authz-Epoch` | Policy create, replace, patch and delete, role bind and unbind (an existing binding answers the current epoch). A replay of an idempotent create answers the epoch of the first answer |
+| Which operations carry `Quader-Authz-Epoch` | Policy create, replace, patch and delete, role bind and unbind (an existing binding answers the current epoch). A replay of an idempotent create answers the epoch of the first answer |
 
 **Rationale:** each is the reading that keeps the answer identical on every replica and the representation the one the requirement shows. The development agent would revisit the paging of the policy list when a policy count above a thousand is seen.
 
@@ -4216,7 +4216,7 @@ request's context and is read once per request, an error is 503 `authz_stale`.
 **Rationale:** each follows from R-AUTHZ-028, R-AUTHZ-029 and R-AUTH-037 as written. The development agent would revisit (2) if a
 probe must be counted.
 
-**Applied in the spec:** the `message` trigger of `trove_authz_index_rebuilds_total` is used as R-OPS-008 lists it.
+**Applied in the spec:** the `message` trigger of `quader_authz_index_rebuilds_total` is used as R-OPS-008 lists it.
 
 ### Q-AUTHZ-159 · A request takes its index once and carries it in a holder
 
@@ -4638,13 +4638,13 @@ Q-AUTHZ-185); R-AUTH-020.
 
 Status: **Decided by the owner on 2026-11-02**.
 
-Context: the owner's IdP group `gh-wds18-k8s-main-admins` (a GitHub team behind Dex) is synchronized into trove, and it
+Context: the owner's IdP group `gh-wds18-k8s-main-admins` (a GitHub team behind Dex) is synchronized into Quader, and it
 should make its members administrators. Role bindings existed only as objects of the API, and the installation is
 provisioned from a GitOps repository; configuration documents (R-OPS-029, P1) are not built.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `authz.role_bindings` in the system configuration, applied by `trove migrate`, read-only in the API and the UI (chosen) | The pattern of Q-CI-16 for CI issuers | GitOps for who administers trove; a binding holds before the first login | A second source of bindings beside the API |
+| (a) `authz.role_bindings` in the system configuration, applied by `quader migrate`, read-only in the API and the UI (chosen) | The pattern of Q-CI-16 for CI issuers | GitOps for who administers Quader; a binding holds before the first login | A second source of bindings beside the API |
 | (b) Bind once through the API as the break-glass administrator | No code | Works today | Not in Git; lost with a restore into an empty installation |
 
 **Choice:** (a), the owner's request ("a configuration option in Helm to make an OIDC group the administrator").
@@ -4657,15 +4657,15 @@ provisioned from a GitOps repository; configuration documents (R-OPS-029, P1) ar
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: Q-AUTHZ-170 says that `trove migrate` applies `authz.role_bindings`, that the API refuses `DELETE` of a
+Context: Q-AUTHZ-170 says that `quader migrate` applies `authz.role_bindings`, that the API refuses `DELETE` of a
 configuration binding and lists it with its source. It leaves open what `PUT` answers for such a binding, what happens to a
 binding the API made that is declared later, and whether the guards of R-AUTHZ-022 (`auto_join_admin_conflict`,
-`last_admin`) bind `trove migrate` as they bind a request.
+`last_admin`) bind `quader migrate` as they bind a request.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The rules of the API bind both ways (chosen) | `PUT` of a configuration binding answers 200 and leaves its source; a declared binding the API made is taken over; a declared auto-join group and the removal of the last active administrator stop `trove migrate` with an error that names the entry | `PUT` stays idempotent for scripts that ensure a binding; no Git commit can lock every administrator out or put a role on everyone; the Job fails before the release starts, where the change was made | A GitOps change that drops the old administrator group together with an empty new one fails until a member of the new group has signed in or break-glass is on |
-| (b) The configuration wins | `trove migrate` removes the last administrator, or turns auto-join off on a declared group | The declaration always applies | One commit locks administration out, or silently changes a group's membership rule |
+| (a) The rules of the API bind both ways (chosen) | `PUT` of a configuration binding answers 200 and leaves its source; a declared binding the API made is taken over; a declared auto-join group and the removal of the last active administrator stop `quader migrate` with an error that names the entry | `PUT` stays idempotent for scripts that ensure a binding; no Git commit can lock every administrator out or put a role on everyone; the Job fails before the release starts, where the change was made | A GitOps change that drops the old administrator group together with an empty new one fails until a member of the new group has signed in or break-glass is on |
+| (b) The configuration wins | `quader migrate` removes the last administrator, or turns auto-join off on a declared group | The declaration always applies | One commit locks administration out, or silently changes a group's membership rule |
 | (c) `PUT` answers 409 like `DELETE` | Every write of a configuration binding is refused | One rule for both methods | A client that ensures a binding fails although the binding exists as asked |
 
 **Choice:** (a).
@@ -4767,8 +4767,8 @@ project administrator never granted, and a project administrator could not see t
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) Refuse every path outside the project's policies (chosen) | A project service account is no group member (422 `project_account_not_groupable`, trigger `AI002`), no role holder (`role_not_allowed`, as for any non-bindable principal), no entry of a global policy or of another project's policy and no package owner outside its project (422 `principal_outside_project`); the database refuses the role binding, the global entry and a foreign project's entry with `AI005` ([Q-AUTHZ-203](#q-authz-203--the-migration-of-projects-is-expand-class-in-seven-steps-and-the-database-refuses-a-project-account-as-a-global-principal)) | What the project administrator sees in its policies is everything the account can do; no global group changes it | One more rule in five places |
-| (b) Allow groups, let the administrator of trove take care | Only policies and roles are limited | Fewer rules | A group the project administrator cannot see widens the account; the account's grants are no longer the project's |
-| (c) Allow global policies naming the account | An administrator of trove may grant | Flexible | An account created by a delegate then has rights the delegate cannot review |
+| (b) Allow groups, let the administrator of Quader take care | Only policies and roles are limited | Fewer rules | A group the project administrator cannot see widens the account; the account's grants are no longer the project's |
+| (c) Allow global policies naming the account | An administrator of Quader may grant | Flexible | An account created by a delegate then has rights the delegate cannot review |
 
 **Choice:** (a). A project policy may name a global service account (a shared robot): it narrows nothing of the global
 account's own rights, and widens only the project's repositories, which the project administrator controls.
@@ -4788,7 +4788,7 @@ Status: **Decided by the development agent** — selected from the options below
 Context: R-AUTHZ-026 requires the keys of repositories a project administrator creates to start with `<projectKey>-`.
 The names of project policies and project service accounts are chosen by the same delegate, in global namespaces, and
 projects `web` and `web-app` would let the administrator of `web` create `web-app-…` names that read as the other
-project's. An administrator of trove may also create a global service account `web-bot` next to project `web`.
+project's. An administrator of Quader may also create a global service account `web-bot` next to project `web`.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -4845,7 +4845,7 @@ the project does not own, or write into one?
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Members and deploy target of a project administrator's write must be project repositories, the members already stored excepted (chosen) | A write by a project administrator without `repositories:write-config` adds only project repositories to the member list and sets a deploy target in the project: 422 `repository_outside_project`, for an unknown key the same. Members that an administrator of trove placed stay when the list keeps them | A project can never reference what it cannot see; the answer is no oracle on other repositories; the shared public proxy stays an administrator's decision to add | A team that wants its virtual to include the shared `npmjs` proxy asks an administrator once, or creates its own remote (Q-AUTHZ-173) |
+| (a) Members and deploy target of a project administrator's write must be project repositories, the members already stored excepted (chosen) | A write by a project administrator without `repositories:write-config` adds only project repositories to the member list and sets a deploy target in the project: 422 `repository_outside_project`, for an unknown key the same. Members that an administrator of Quader placed stay when the list keeps them | A project can never reference what it cannot see; the answer is no oracle on other repositories; the shared public proxy stays an administrator's decision to add | A team that wants its virtual to include the shared `npmjs` proxy asks an administrator once, or creates its own remote (Q-AUTHZ-173) |
 | (b) Any repository | Only the content decision limits | Teams compose freely | Existence of every repository key can be tested by a delegate; a member the delegate cannot see changes what the project's clients receive, and its shadowing check names it |
 | (c) Any repository the project administrator may read | Reads are decided per member | Reasonable | A project administrator holds no read through its role; the member list would depend on grants that change |
 
@@ -4884,7 +4884,7 @@ grant after a move back proves surprising; the remedy is then (b) with a journal
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. **Superseded in part by [Q-AUTHZ-208](#q-authz-208--four-project-roles-reader-developer-maintainer-owner) and [Q-REPO-212](repositories-and-proxy.md#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared)**: the declaration names the project from the path and the least role (`project: path.projectKey`, `projectRole`), and the shared step narrows to that project itself.
 
-Context: the shared authorization step decides every operation from its `x-trove-permission` declaration (R-API-008). A
+Context: the shared authorization step decides every operation from its `x-quader-permission` declaration (R-API-008). A
 project administrator holds no capability, and which project an operation addresses is often known only to the handler
 (a service account's name, a repository key in a body). Open: how the document says "capability X, or administrator of
 the addressed project".
@@ -5006,7 +5006,7 @@ area; project events take access away.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The version covers the fields of the PUT; the delete removes the policies first through the policy store; project writes carry the epoch; removals are journaled (chosen) | `version` moves with display name, description and the two switches, not with administrators or assignments. `DELETE` counts repositories and accounts under the project's row lock, deletes each policy through `authz.Service` (audit and journal as for any policy deletion), then the project; the foreign keys are the safety net. Every write answers `Trove-Authz-Epoch`. `authz.project.updated` (a switch turned off), `.deleted`, `.admin_removed` and `.repository_unassigned` are flagged `journal: revocation`; a move is an unassignment and an assignment in one transaction | A stale `PUT` fails only for the fields it overwrites; every revocation is journaled; the policy deletions are in the audit log | A delete of a project with many policies is many events |
+| (a) The version covers the fields of the PUT; the delete removes the policies first through the policy store; project writes carry the epoch; removals are journaled (chosen) | `version` moves with display name, description and the two switches, not with administrators or assignments. `DELETE` counts repositories and accounts under the project's row lock, deletes each policy through `authz.Service` (audit and journal as for any policy deletion), then the project; the foreign keys are the safety net. Every write answers `Quader-Authz-Epoch`. `authz.project.updated` (a switch turned off), `.deleted`, `.admin_removed` and `.repository_unassigned` are flagged `journal: revocation`; a move is an unassignment and an assignment in one transaction | A stale `PUT` fails only for the fields it overwrites; every revocation is journaled; the policy deletions are in the audit log | A delete of a project with many policies is many events |
 | (b) The version moves with every write | Any change moves the tag | Simplest | Adding an administrator makes the next `PUT` of the switches fail with 412 for no reason of its own |
 | (c) Rely on the cascade | `ON DELETE CASCADE` only | Less code | The deletions are neither audited nor journaled, so a restore brings the policies back |
 
@@ -5142,7 +5142,7 @@ already belongs to answers success.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A no-op is not a write (chosen) | It records no audit event, notifies no area and moves no epoch; it answers the current `Trove-Authz-Epoch`, so that a client that waits for the epoch of its request does not wait for a change that never comes | The audit log holds changes only; an idempotent client is not punished | The header of a no-op is the epoch of the last change, not of the request |
+| (a) A no-op is not a write (chosen) | It records no audit event, notifies no area and moves no epoch; it answers the current `Quader-Authz-Epoch`, so that a client that waits for the epoch of its request does not wait for a change that never comes | The audit log holds changes only; an idempotent client is not punished | The header of a no-op is the epoch of the last change, not of the request |
 | (b) A no-op records an event and raises the epoch | Every call is an event | Every call visible | Noise; a retry loop floods the log and invalidates the indexes of every replica |
 
 **Choice:** (a). A user or group named in the reference is read in the transaction of the write, not from the principal
@@ -5419,7 +5419,7 @@ the same expectation, or when a client cannot be changed and needs the check mad
 Status: **Decided by the owner on 2026-11-06.** Built.
 
 Context: in the review of 2026-11-06 the owner expected repositories always to belong to a project; R-AUTHZ-026 made the
-project optional ("at most one"), a frame for delegated administration beside repositories that belong to none. trove is
+project optional ("at most one"), a frame for delegated administration beside repositories that belong to none. Quader is
 pre-alpha: no installation runs and nobody uses it, and until the first stable release no change keeps an older version,
 client or stored state working (owner, the same day; [CLAUDE.md](../../CLAUDE.md)).
 
@@ -5437,7 +5437,7 @@ repository is addressed inside its project is
 **Consequences:** the schema makes `project_id` required (changed in place, no migration path: no installation exists);
 creating a repository names its project in the API and the UI; unassignment goes; a move to another project stays and
 changes the repository's address, which contains its project (Q-REPO-212); deleting a project stays possible only when it
-is empty; an administrator of trove creates a repository in any project, a project administrator in its own.
+is empty; an administrator of Quader creates a repository in any project, a project administrator in its own.
 
 **Applied in the spec:** R-AUTHZ-026 (the project, its repositories, deleting a project), R-AUTHZ-004 (selectors of a
 project), R-AUTHZ-009; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-001, R-REPO-002, R-REPO-004,
@@ -5448,7 +5448,7 @@ R-REPO-009, R-REPO-013, R-REPO-017, R-REPO-021, R-REPO-060 (the move, [Q-REPO-21
 
 Status: **Decided by the owner on 2026-11-06.** Built.
 
-Context: the owner expects a user to be in few projects and to choose among them. trove has no notion of a user being in a
+Context: the owner expects a user to be in few projects and to choose among them. Quader has no notion of a user being in a
 project: a project names only its administrators (R-AUTHZ-026), every other caller reaches a project's repositories through
 permission policies, and the project filter of the top bar is offered to holders of `projects:read` and project
 administrators only, so an ordinary user sees no project at all.
@@ -5491,11 +5491,11 @@ R-AUTHZ-001); the administration of a project is its members, repositories, poli
 | Owner | every action | members and their roles, repositories, permission policies, service accounts, settings; today's project administrator |
 
 The Owner administers the project on its own (owner, the same day): it adds and removes members and changes their roles,
-and nothing an administrator of trove sets narrows that, so the two switches of today's project (`managePolicies`,
-`manageRepositories`, R-AUTHZ-026) go. Creating and deleting a project stays with an administrator of trove.
+and nothing an administrator of Quader sets narrows that, so the two switches of today's project (`managePolicies`,
+`manageRepositories`, R-AUTHZ-026) go. Creating and deleting a project stays with an administrator of Quader.
 
-Outside the roles (owner, the same day): an administrator of trove (`admin`) and an auditor (`auditor`) see every project, as
-both hold `projects:read` today; an administrator of trove creates projects and adds members with their roles, the first
+Outside the roles (owner, the same day): an administrator of Quader (`admin`) and an auditor (`auditor`) see every project, as
+both hold `projects:read` today; an administrator of Quader creates projects and adds members with their roles, the first
 Owner among them. The auditor
 gets an instance-wide view of vulnerabilities to search and triage
 ([Q-UI-130](api-and-ui.md#q-ui-130--the-auditor-has-an-instance-wide-vulnerability-dashboard-in-the-admin-area)).
@@ -5504,7 +5504,7 @@ gets an instance-wide view of vulnerabilities to search and triage
 R-AUTHZ-031 (member changes in the journal); [api-and-ui.md](api-and-ui.md) R-API-008 (`projectRole`), R-API-047,
 R-UI-041; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-009 to R-REPO-013, R-REPO-056;
 [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-019; the last Owner is
-[Q-AUTHZ-217](#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-trove);
+[Q-AUTHZ-217](#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-quader);
 [ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project).
 
 ### Q-AUTHZ-209 · A project's policies and service accounts are named within the project; administrators keep instance-wide ones
@@ -5519,7 +5519,7 @@ its project and its key is unique within it
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Unique within the project, no prefix; instance-wide ones beside them (chosen) | A project's policy or service account is named within its project and addressed under it (`/api/v1/projects/<key>/service-accounts/<name>`, `…/policies/<name>`); an administrator of trove still creates service accounts and policies of no project, with their tokens, addressed as today | One naming rule for everything a project holds; the prefix and its overlap checks go; instance-wide automation keeps its accounts | Every place that names such an account or policy says which project, or that it has none |
+| (a) Unique within the project, no prefix; instance-wide ones beside them (chosen) | A project's policy or service account is named within its project and addressed under it (`/api/v1/projects/<key>/service-accounts/<name>`, `…/policies/<name>`); an administrator of Quader still creates service accounts and policies of no project, with their tokens, addressed as today | One naming rule for everything a project holds; the prefix and its overlap checks go; instance-wide automation keeps its accounts | Every place that names such an account or policy says which project, or that it has none |
 | (b) Keep the prefix | Names stay unique in the installation with `<key>-` | Less change | Two naming rules side by side: repositories per project, policies and accounts global |
 
 **Choice:** (a), with the owner's addition: administrators keep issuing instance-wide service accounts and their tokens. A name
@@ -5640,19 +5640,19 @@ R-CI-007, R-CI-013, R-CI-014; [identity-and-authentication.md](identity-and-auth
 [endpoints.md](endpoints.md) R-EP-006, R-EP-012; [operations-and-observability.md](operations-and-observability.md)
 R-OPS-007; [storage.md](storage.md) R-STOR-037, R-STOR-038.
 
-### Q-AUTHZ-217 · The last Owner of a project is removed or demoted only by an administrator of trove
+### Q-AUTHZ-217 · The last Owner of a project is removed or demoted only by an administrator of Quader
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the Owner administers its project on its own, members included, and an administrator of trove creates projects
+Context: the Owner administers its project on its own, members included, and an administrator of Quader creates projects
 and names the first Owner ([Q-AUTHZ-208](#q-authz-208--four-project-roles-reader-developer-maintainer-owner)). Open is
 what happens when a write would leave a project without an Owner: an Owner who removes or demotes itself or the other
 Owners. The installation guards its own administration the same way (`last_admin`, R-AUTHZ-022, Q-AUTHZ-70).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) 409 `last_owner`, unless the caller holds `projects:write` (chosen) | The removal or demotion of the last membership with the role `owner` is refused for an Owner; an administrator of trove may do it and administers the project alone | A project does not lose its administration by a slip; the administrator, who named the first Owner, can still take a departed person's role away | An Owner who wants to leave names another Owner first |
-| (b) Allowed; the administrators of trove remain | No special case | Simple | The team loses its administration until a system administrator acts, the opposite of the delegation the project exists for |
+| (a) 409 `last_owner`, unless the caller holds `projects:write` (chosen) | The removal or demotion of the last membership with the role `owner` is refused for an Owner; an administrator of Quader may do it and administers the project alone | A project does not lose its administration by a slip; the administrator, who named the first Owner, can still take a departed person's role away | An Owner who wants to leave names another Owner first |
+| (b) Allowed; the administrators of Quader remain | No special case | Simple | The team loses its administration until a system administrator acts, the opposite of the delegation the project exists for |
 | (c) Refused for everyone | An invariant of the data | No project without an Owner | An administrator cannot remove a departed person's last Ownership without inventing another Owner first |
 
 **Choice:** (a). The count is of membership rows with the role `owner`, a group among them, whatever the group's members:
@@ -5666,11 +5666,11 @@ caller's role again under the lock.
 **Rationale:** the rule protects the delegation, not the data: the project is administered by its team, and only the
 administrator who can name a new Owner may leave it without one. Counting rows keeps the check a property of what the
 project itself states. An Owner group that its identity provider empties leaves the project without an acting Owner, as
-an identity-provider group bound to a system role can (H-394); the administrators of trove remain. The development agent
+an identity-provider group bound to a system role can (H-394); the administrators of Quader remain. The development agent
 would revisit this if projects end up unadministered that way in practice; then the count would follow `last_admin`
 (active members only, Q-AUTHZ-70). The loser of the race is refused either way and the invariant holds under the lock;
 reading the caller's role again there would make the answer the `404` in every case, but only for member writes, while
-every other write of an Owner or an administrator of trove is decided on the index of its request. The development agent would revisit that if
+every other write of an Owner or an administrator of Quader is decided on the index of its request. The development agent would revisit that if
 writes decided on a stale role turn out to matter beyond this race; then every administering write reads the caller's role
 under the lock of what it changes.
 
@@ -5681,23 +5681,23 @@ R-UI-041.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: an administrator of trove creates a project and names the first Owner
+Context: an administrator of Quader creates a project and names the first Owner
 ([Q-AUTHZ-208](#q-authz-208--four-project-roles-reader-developer-maintainer-owner)); the member operation adds members to a project
 that exists. Between a create and the first member write a project exists that no team administers, and a client that fails between
-the two leaves it so; the administrator of trove is no member of the teams it creates projects for.
+the two leaves it so; the administrator of Quader is no member of the teams it creates projects for.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `owners` on the create (chosen) | The create body names users and groups; they become Owners in the transaction of the create, each recorded as `authz.project.member_added` | One request, one transaction: the project is administered from its first epoch; the same checks as the member write | The create has one more member |
 | (b) Only the member operation | Create, then `PUT …/members/{ref}` | No new member | A project without an Owner between two requests; two epochs, two audit transactions for one intent |
-| (c) The creator becomes Owner | The administrator of trove is the first Owner | No input | The administrator is no member of the team; removing itself later meets the last-Owner rule it does not need |
+| (c) The creator becomes Owner | The administrator of Quader is the first Owner | No input | The administrator is no member of the team; removing itself later meets the last-Owner rule it does not need |
 
 **Choice:** (a). A reference that is no user or group, an auto-join group or a principal that does not exist refuses the whole create,
 with the answers of the member write (422 `principal_not_allowed`, 404). An empty or absent `owners` creates a project without
 members, as before.
 
 **Rationale:** the delegation exists so that a team administers its project; a create that hands it over atomically leaves no window in
-which only the administrators of trove can act. The development agent would revisit this if creates came from automation that names
+which only the administrators of Quader can act. The development agent would revisit this if creates came from automation that names
 owners by an identity-provider attribute, then the owners might be resolved at the first sign-in instead.
 
 **Applied in the spec:** R-AUTHZ-026 (the API table). Code: `project.Input.Owners`, `firstOwners` in
@@ -5723,7 +5723,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-A replay handler of a format (npm withholds a version, NuGet reserves a number) changes durable state on the strength of a journal object that anyone with the runtime S3 credential can write (R-HA-054). `trove admin npm reinstate` reverses a withdrawal and writes `npm.reinstate`, which R-NPM-044 says names the journal entry that withheld the version. The question is what the replay leaves behind that ties the two together, and whose name the written rows carry.
+A replay handler of a format (npm withholds a version, NuGet reserves a number) changes durable state on the strength of a journal object that anyone with the runtime S3 credential can write (R-HA-054). `quader admin npm reinstate` reverses a withdrawal and writes `npm.reinstate`, which R-NPM-044 says names the journal entry that withheld the version. The question is what the replay leaves behind that ties the two together, and whose name the written rows carry.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -5750,17 +5750,17 @@ Status: Decided by the development agent — selected from the options below; th
 **Rationale:** R-AUTHZ-031 says suspension "writes its audit event as any policy change does"; that event carries a required journal entry, which would ship an object for every replayed change. The replay lines and the single summary event are the record. Revisit when audit events may be written without an entry.
 **Applied:** R-AUTHZ-031 comparators in `internal/authz/journal_replay.go`, `internal/project/journal_replay.go`, `internal/auth/token/journal_replay.go`; the identity entries of `group.members.changed` and `user.groups.synced` carry IDs now (`internal/auth/principal`).
 
-### Q-AUTHZ-235 · A binding that a replay removed is not re-created by trove migrate
+### Q-AUTHZ-235 · A binding that a replay removed is not re-created by `quader migrate`
 
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | Behaviour | Cost |
 |---|---|---|
 | (a) The replay marks the removed binding in `system_state`; `ApplyDeclared` skips a marked binding that does not exist, logs it and reports it, and an API bind clears the mark | Fail-closed, no new table, no new command; a restore with an older configuration cannot bring the access back | A binding the configuration declares again on purpose stays unapplied until it is bound through the API |
-| (b) `trove migrate` fails when the configuration declares what the journal removed | Loud | Blocks the final `helm upgrade` of a restore |
+| (b) `quader migrate` fails when the configuration declares what the journal removed | Loud | Blocks the final `helm upgrade` of a restore |
 | (c) Record it as a gap only | No code | The owner's rule: a restore never brings back removed access |
 
-**Choice:** (a). Only the declared role bindings and the CI issuers are written by `trove migrate`; the issuers stay with H-565.
+**Choice:** (a). Only the declared role bindings and the CI issuers are written by `quader migrate`; the issuers stay with H-565.
 **Rationale:** the mark is written in the transaction of the replayed removal and read in the transaction of `ApplyDeclared`, both as the owner. Revisit when the CI issuers get the same mark.
 **Applied:** `internal/authz/declared.go`, `bindings.go`, `journal_replay.go`, `internal/app/migrate_declared.go`, `queries/journal.sql`.
 
@@ -6403,7 +6403,7 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). A write that raises a level needs recent authentication (R-API-007).
 
 **Rationale:** GitLab lets an administrator restrict the levels non-administrators may choose; (a) is that restriction made the
-default, and it matches what trove decided for `authenticated` before (Q-AUTHZ-3: only `policies:write` opened content to
+default, and it matches what Quader decided for `authenticated` before (Q-AUTHZ-3: only `policies:write` opened content to
 everyone). The Owner keeps every narrowing and every opening up to the administrator's ceiling. The development agent would
 revisit this if projects are created mostly by their teams, which would call for a setting of restricted levels as in GitLab.
 
@@ -6454,13 +6454,13 @@ must be kept from public content for a reason other than access, which would be 
 
 **Applied in the spec:** R-AUTHZ-035, R-AUTHZ-015 (`Allowed`), R-AUTHZ-001.
 
-### Q-AUTHZ-270 · The wiki is the documentation trove serves or shows apart from the files, never a file inside an artifact
+### Q-AUTHZ-270 · The wiki is the documentation Quader serves or shows apart from the files, never a file inside an artifact
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) What trove serves or shows apart from the files (chosen) | npm's `readme` members, NuGet's README route, the README operation, T-19's documentation | Every surface is one trove controls; a file the client downloads stays an artifact | A README inside a tarball reaches whoever downloads it (H-880) |
+| (a) What Quader serves or shows apart from the files (chosen) | npm's `readme` members, NuGet's README route, the README operation, T-19's documentation | Every surface is one Quader controls; a file the client downloads stays an artifact | A README inside a tarball reaches whoever downloads it (H-880) |
 | (b) Also the README file inside an artifact | Redact or refuse the file | The wiki would be really hidden | Changes the bytes of an artifact: every digest, signature and lockfile integrity check breaks |
 | (c) Every metadata member that is prose (description, release notes) | Hide them with the README | Wider | Descriptions are what a client shows in its list and search; hiding them breaks `npm search`, the NuGet gallery views and the repository list |
 
@@ -6470,7 +6470,7 @@ documentation surfaces of T-19; OCI, Debian and generic none.
 
 **Rationale:** an artifact's bytes are fixed by its digest, so (b) is impossible without breaking every client that verifies.
 (c) hides what clients need to choose a package. The gap that remains is recorded honestly as H-880. The development agent would
-revisit this when a format adds documentation trove generates (T-19 does), which joins the table.
+revisit this when a format adds documentation Quader generates (T-19 does), which joins the table.
 
 **Applied in the spec:** R-AUTHZ-034; [formats/npm.md](formats/npm.md) R-NPM-010, [formats/nuget.md](formats/nuget.md)
 R-NUGET-024, [formats/oci.md](formats/oci.md), [formats/debian.md](formats/debian.md).
@@ -6502,7 +6502,7 @@ these forms; it defines no check of its own.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `Coordinate.Part` in the decision point; `Route.Wiki`, `Host.WikiReadable`, `x-trove-part: wiki` and `ReadScope.MayReadWiki` as the only ways to ask (chosen) | One evaluation, three entry points by situation | The route flag decides before the handler and audits like every read; the question needs no audit for a member left out; the document extension names the management operations that serve wiki content, for their handlers and a test; the kit can check each | Five names to learn |
+| (a) `Coordinate.Part` in the decision point; `Route.Wiki`, `Host.WikiReadable`, `x-quader-part: wiki` and `ReadScope.MayReadWiki` as the only ways to ask (chosen) | One evaluation, three entry points by situation | The route flag decides before the handler and audits like every read; the question needs no audit for a member left out; the document extension names the management operations that serve wiki content, for their handlers and a test; the kit can check each | Five names to learn |
 | (b) A new action `wiki` | Grants name it | Fine-grained grants | Every policy, role and preset changes; the owner asked for levels, not for an action |
 | (c) Each format decides in its handlers | No contract change | Easy start | Nothing makes a new handler ask; the T-19 draft's own gate is one function per format |
 
@@ -6582,7 +6582,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). The repository document shows them as `visibility` (R-REPO-004); the trigger raises `AI008`.
 
-**Rationale:** the guard of Q-AUTH-16 and the project guards of migration 00019 show that trove puts cross-row rules into the
+**Rationale:** the guard of Q-AUTH-16 and the project guards of migration 00019 show that Quader puts cross-row rules into the
 database when several writers exist. The development agent records no revisit condition.
 
 **Applied in the spec:** R-AUTHZ-033 (data model).
@@ -6611,7 +6611,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The populate check as for a grant; warning `public_populates_remote` on the repository write (chosen) | R-AUTHZ-008 | The pull-through proxy behaves the same for every reader (Q-AUTHZ-4); the decision is made visible where it is made | Anyone can make trove fetch upstream content |
+| (a) The populate check as for a grant; warning `public_populates_remote` on the repository write (chosen) | R-AUTHZ-008 | The pull-through proxy behaves the same for every reader (Q-AUTHZ-4); the decision is made visible where it is made | Anyone can make Quader fetch upstream content |
 | (b) Never populate for the anonymous subject | Cache only | No upstream traffic caused from outside | Inconsistent 404s for a public proxy, the reason Q-AUTHZ-4 rejected (c) |
 
 **Choice:** (a); the warning `anonymous_populates_remote` of the policy API goes with the policy entries for `anonymous`.
@@ -6633,7 +6633,7 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). Migration `00075_principal_builtins.sql` deletes the entries that name either, deletes the row and the kind
 `authenticated`, and adds the guard.
 
-**Rationale:** the refusal must hold on every path (API, configuration as code, journal replay, `trove migrate` role bindings),
+**Rationale:** the refusal must hold on every path (API, configuration as code, journal replay, `quader migrate` role bindings),
 which the database guard makes certain, as for the project rules of Q-AUTHZ-203. The development agent records no revisit
 condition.
 
@@ -6737,8 +6737,8 @@ by a delegate. An installation that does not want this narrows the allow list or
 
 ### H-394 · Whoever controls a project administrator group administers the project
 
-A group that is a member of a project is filled by the identity provider (R-AUTH-008) or by an administrator of trove. A person who can add
-a member to that group at the provider holds the group's role in the project, the role Owner included, with no event in trove's audit
+A group that is a member of a project is filled by the identity provider (R-AUTH-008) or by an administrator of Quader. A person who can add
+a member to that group at the provider holds the group's role in the project, the role Owner included, with no event in Quader's audit
 log beyond the membership change that the next login writes (`group.members.changed`). This is the same position as for a
 group bound to a system role (R-AUTHZ-010); the role bounds what it can do.
 

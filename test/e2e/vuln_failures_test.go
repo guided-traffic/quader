@@ -28,12 +28,12 @@ const vulnNPMBulk = "npm-vuln-bulk"
 
 // trySQL runs a statement on the current primary once; ok is false when it failed (a switchover moves the primary).
 func trySQL(query string) (out, primary string, ok bool) {
-	p, err := kubectl("-n", cfg.namespace, "get", "cluster", "trove-db", "-o", "jsonpath={.status.currentPrimary}")
+	p, err := kubectl("-n", cfg.namespace, "get", "cluster", "quader-db", "-o", "jsonpath={.status.currentPrimary}")
 	primary = strings.TrimSpace(p)
 	if err != nil || primary == "" {
 		return "", primary, false
 	}
-	out, err = kubectl("-n", cfg.namespace, "exec", primary, "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-F", "|", "-c", query)
+	out, err = kubectl("-n", cfg.namespace, "exec", primary, "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", "|", "-c", query)
 	if err != nil {
 		return "", primary, false
 	}
@@ -62,7 +62,7 @@ var (
 	bulkAffected = []string{"0.9.0", "1.0.0"}
 	// lpad cuts a longer text to its length: the number has at least four digits and as many more as it needs, as the source's %04d
 	bulkNumber    = `lpad(i::text, greatest(4, length(i::text)), '0')`
-	bulkNameQuery = `'trove-test-filler-' || ` + bulkNumber
+	bulkNameQuery = `'quader-test-filler-' || ` + bulkNumber
 	bulkAdvQuery  = `'GHSA-fill-' || ` + bulkNumber + ` || '-0000'`
 )
 
@@ -81,10 +81,10 @@ func TestVulnLong_R_VULN_011_SwitchoverDuringEvaluation(t *testing.T) {
 	const names = 20000
 	e.ensureRepo(t, vulnNPMBulk, map[string]any{"key": vulnNPMBulk, "class": "local", "format": "npm"},
 		map[string]any{"vulnerabilities": map[string]any{"matchPublicAdvisories": "always"}})
-	repo := sql(t, `SELECT id FROM trove.repositories WHERE key = '`+vulnNPMBulk+`'`)
+	repo := sql(t, `SELECT id FROM quader.repositories WHERE key = '`+vulnNPMBulk+`'`)
 	wipe := func() {
-		sql(t, `DELETE FROM trove.vuln_finding WHERE repo_id = `+repo)
-		sql(t, `DELETE FROM trove.packages WHERE repo_id = `+repo)
+		sql(t, `DELETE FROM quader.vuln_finding WHERE repo_id = `+repo)
+		sql(t, `DELETE FROM quader.packages WHERE repo_id = `+repo)
 	}
 	restoreSourceAfter(t, e, osv)
 	t.Cleanup(wipe) // runs before the restore above: the findings of the filler records go with the packages
@@ -92,9 +92,9 @@ func TestVulnLong_R_VULN_011_SwitchoverDuringEvaluation(t *testing.T) {
 
 	seeded := time.Now()
 	sql(t, fmt.Sprintf(`WITH p AS (
-		INSERT INTO trove.packages (repo_id, name, display_name)
+		INSERT INTO quader.packages (repo_id, name, display_name)
 		SELECT %s, %[2]s, %[2]s FROM generate_series(0, %[3]d) i RETURNING id)
-		INSERT INTO trove.package_versions (package_id, version, display_version) SELECT p.id, v, v FROM p, unnest(%[4]s) v`,
+		INSERT INTO quader.package_versions (package_id, version, display_version) SELECT p.id, v, v FROM p, unnest(%[4]s) v`,
 		repo, bulkNameQuery, names-1, bulkSQL(bulkVersions)))
 	t.Logf("seeded %d packages with %d versions in %s", names, len(bulkVersions), time.Since(seeded).Round(time.Millisecond))
 
@@ -106,22 +106,22 @@ func TestVulnLong_R_VULN_011_SwitchoverDuringEvaluation(t *testing.T) {
 	}
 	syncStart := time.Now()
 	if st := e.waitJob(t, syncID, 15*time.Minute); st != "succeeded" {
-		t.Fatalf("the synchronization ended %s: %s", st, sql(t, "SELECT coalesce(error::text, '') FROM trove.job WHERE id = '"+syncID+"'"))
+		t.Fatalf("the synchronization ended %s: %s", st, sql(t, "SELECT coalesce(error::text, '') FROM quader.job WHERE id = '"+syncID+"'"))
 	}
 	t.Logf("the synchronization took %s", time.Since(syncStart).Round(time.Second))
-	pending := sql(t, `SELECT count(*) FROM trove.vuln_pending_evaluation`)
+	pending := sql(t, `SELECT count(*) FROM quader.vuln_pending_evaluation`)
 	t.Logf("%s advisories wait for their evaluation", pending)
 
 	var evalID string
 	waitFor(t, "the evaluation to commit its first batches", 10*time.Minute, 500*time.Millisecond, func() bool {
-		out, _, ok := trySQL(`SELECT id FROM trove.job WHERE kind = 'vuln-evaluate' AND state = 'running' AND progress_done > 0
-			AND created_at >= (SELECT created_at FROM trove.job WHERE id = '` + syncID + `') ORDER BY created_at DESC LIMIT 1`)
+		out, _, ok := trySQL(`SELECT id FROM quader.job WHERE kind = 'vuln-evaluate' AND state = 'running' AND progress_done > 0
+			AND created_at >= (SELECT created_at FROM quader.job WHERE id = '` + syncID + `') ORDER BY created_at DESC LIMIT 1`)
 		evalID = out
 		return ok && out != ""
 	})
 	sample := func() (s [5]string, primary string, ok bool) {
-		out, primary, ok := trySQL(`SELECT j.state, j.attempt, j.progress_done, j.progress_total, coalesce(r.name, '') FROM trove.job j
-			LEFT JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE j.id = '` + evalID + `'`)
+		out, primary, ok := trySQL(`SELECT j.state, j.attempt, j.progress_done, j.progress_total, coalesce(r.name, '') FROM quader.job j
+			LEFT JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE j.id = '` + evalID + `'`)
 		f := strings.Split(out, "|")
 		if !ok || len(f) != 5 {
 			return s, primary, false
@@ -192,7 +192,7 @@ func TestVulnLong_R_VULN_011_SwitchoverDuringEvaluation(t *testing.T) {
 			t.Fatalf("failover.sh: %v\n%s", err, failOut)
 		}
 	}
-	jobEnd := sql(t, `SELECT state || '|' || attempt || '|' || max_attempts || '|' || coalesce(error::text, '') FROM trove.job WHERE id = '`+evalID+`'`)
+	jobEnd := sql(t, `SELECT state || '|' || attempt || '|' || max_attempts || '|' || coalesce(error::text, '') FROM quader.job WHERE id = '`+evalID+`'`)
 	t.Logf("the evaluation ended %q on %v, highest attempt seen %d, %d advisories done when the switchover took effect", jobEnd, replicas, maxAttempt, doneAtSwitch)
 	if !inFlightAfterSwitch && maxAttempt == firstAttempt {
 		t.Errorf("the evaluation ended before the switchover took effect (last sample %v): the dataset is too small for the cluster's speed", last)
@@ -208,27 +208,27 @@ func TestVulnLong_R_VULN_011_SwitchoverDuringEvaluation(t *testing.T) {
 	t.Run("R-VULN-011 no finding twice, none lost", func(t *testing.T) {
 		expected := fmt.Sprintf(`SELECT %[1]s AS name, v AS version, %[4]s AS adv FROM generate_series(0, %[2]d) i, unnest(%[3]s) v`,
 			bulkNameQuery, names-1, bulkSQL(bulkAffected), bulkAdvQuery)
-		got := `SELECT package_name AS name, version, advisory_id AS adv FROM trove.vuln_finding WHERE repo_id = ` + repo + ` AND status <> 'resolved'`
+		got := `SELECT package_name AS name, version, advisory_id AS adv FROM quader.vuln_finding WHERE repo_id = ` + repo + ` AND status <> 'resolved'`
 		counts := sql(t, fmt.Sprintf(`SELECT (SELECT count(*) FROM (%[1]s EXCEPT %[2]s) a) || '|' || (SELECT count(*) FROM (%[2]s EXCEPT %[1]s) b) || '|' || (SELECT count(*) FROM (%[2]s) c)`, expected, got))
 		want := fmt.Sprintf("0|0|%d", names*len(bulkAffected))
 		if counts != want {
 			t.Errorf("findings missing | findings unexpected | findings: %s, want %s", counts, want)
 		}
-		if all := sql(t, `SELECT count(*) FROM trove.vuln_finding WHERE repo_id = `+repo); all != strconv.Itoa(names*len(bulkAffected)) {
+		if all := sql(t, `SELECT count(*) FROM quader.vuln_finding WHERE repo_id = `+repo); all != strconv.Itoa(names*len(bulkAffected)) {
 			t.Errorf("the repository has %s findings in all states, want %d", all, names*len(bulkAffected))
 		}
-		if dup := sql(t, `SELECT count(*) FROM (SELECT 1 FROM trove.vuln_finding WHERE repo_id = `+repo+` GROUP BY repo_id, ecosystem, package_name, version, advisory_id HAVING count(*) > 1) d`); dup != "0" {
+		if dup := sql(t, `SELECT count(*) FROM (SELECT 1 FROM quader.vuln_finding WHERE repo_id = `+repo+` GROUP BY repo_id, ecosystem, package_name, version, advisory_id HAVING count(*) > 1) d`); dup != "0" {
 			t.Errorf("%s finding identities exist more than once", dup)
 		}
 		// a finding detected twice would carry two `detected` events, or none when its history was lost with a batch
-		if odd := sql(t, `SELECT count(*) FROM trove.vuln_finding f WHERE f.repo_id = `+repo+`
-			AND (SELECT count(*) FROM trove.vuln_finding_event v WHERE v.finding_id = f.id AND v.change = 'detected') <> 1`); odd != "0" {
+		if odd := sql(t, `SELECT count(*) FROM quader.vuln_finding f WHERE f.repo_id = `+repo+`
+			AND (SELECT count(*) FROM quader.vuln_finding_event v WHERE v.finding_id = f.id AND v.change = 'detected') <> 1`); odd != "0" {
 			t.Errorf("%s findings have other than exactly one `detected` event", odd)
 		}
-		if left := sql(t, `SELECT count(*) FROM trove.vuln_pending_evaluation`); left != "0" {
+		if left := sql(t, `SELECT count(*) FROM quader.vuln_pending_evaluation`); left != "0" {
 			t.Errorf("%s advisories still wait for their evaluation", left)
 		}
-		if bad := sql(t, `SELECT count(*) FROM trove.vuln_finding WHERE repo_id = `+repo+` AND (version_id IS NULL OR package_id IS NULL)`); bad != "0" {
+		if bad := sql(t, `SELECT count(*) FROM quader.vuln_finding WHERE repo_id = `+repo+` AND (version_id IS NULL OR package_id IS NULL)`); bad != "0" {
 			t.Errorf("%s findings reference no stored version", bad)
 		}
 	})
@@ -400,11 +400,11 @@ func TestVulnLong_R_VULN_015_BlockHoldsDuringFailures(t *testing.T) {
 	probes := e.blockedPathsLabeled(t, "fault")
 
 	t.Run("R-HA-059 R-VULN-015 R-VULN-027 E5.13 drain variant A: every replica refuses, the replacement from its first request", func(t *testing.T) {
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		node := drainNodeVariantA(t)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		var onNode []pod
-		for _, p := range livePods(t, selTrove) {
+		for _, p := range livePods(t, selQuader) {
 			if p.Node == node {
 				onNode = append(onNode, p)
 			}
@@ -415,15 +415,15 @@ func TestVulnLong_R_VULN_015_BlockHoldsDuringFailures(t *testing.T) {
 		t.Logf("the probes ran %s, the drain included", time.Since(start).Round(time.Second))
 		// the three packages replicas and the replacement of the one on the node
 		tally.report(t, 4)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 	})
 	t.Run("R-HA-052 R-HA-057 R-VULN-015 R-VULN-027 E5.13 Valkey planned failover (R-HA-052)", func(t *testing.T) {
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		tally := probeDuring(t, probes, 10*time.Second, 30*time.Second, func() { script(t, "valkey-failover.sh") })
 		tally.report(t, 3)
 	})
 	t.Run("R-HA-052 R-VULN-015 R-VULN-027 E5.13 PostgreSQL switchover (R-HA-052)", func(t *testing.T) {
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		tally := probeDuring(t, probes, 10*time.Second, 30*time.Second, func() { script(t, "failover.sh") })
 		tally.report(t, 3)
 	})
@@ -441,7 +441,7 @@ func TestVulnLong_R_VULN_004_FullSyncWorkerKilledMidRun(t *testing.T) {
 	const filler = 60000
 	restoreSourceAfter(t, e, osv)
 	osv.send(t, http.MethodPut, "/-/stub/filler/npm", map[string]any{"count": filler})
-	before := sql(t, `SELECT state || '|' || records FROM trove.vuln_source_state WHERE source = 'osv' AND ecosystem = 'npm'`)
+	before := sql(t, `SELECT state || '|' || records FROM quader.vuln_source_state WHERE source = 'osv' AND ecosystem = 'npm'`)
 
 	id, running := e.task(t, "vuln-sync-osv-full", nil)
 	if running {
@@ -465,29 +465,29 @@ func TestVulnLong_R_VULN_004_FullSyncWorkerKilledMidRun(t *testing.T) {
 
 	st := e.waitJob(t, id, 6*time.Minute)
 	t.Logf("the job ended %s %s after the kill", st, time.Since(killed).Round(time.Second))
-	errText := sql(t, `SELECT coalesce(error::text, '') || '|' || attempt || '|' || max_attempts FROM trove.job WHERE id = '`+id+`'`)
+	errText := sql(t, `SELECT coalesce(error::text, '') || '|' || attempt || '|' || max_attempts FROM quader.job WHERE id = '`+id+`'`)
 	if st != "failed" || !strings.Contains(errText, "attempts_exhausted") {
 		t.Errorf("the job of the killed worker ended %s with %q, want failed with attempts_exhausted (MaxAttempts 1, H-523)", st, errText)
 	}
 	if took := time.Since(killed); took > 4*time.Minute {
 		t.Errorf("the reaper ended the job %s after the kill, want within the lease (60 s) plus its poll", took.Round(time.Second))
 	}
-	t.Logf("the npm state after the killed run is %q (job: %s)", sql(t, `SELECT state || '|' || records FROM trove.vuln_source_state WHERE source = 'osv' AND ecosystem = 'npm'`), errText)
+	t.Logf("the npm state after the killed run is %q (job: %s)", sql(t, `SELECT state || '|' || records FROM quader.vuln_source_state WHERE source = 'osv' AND ecosystem = 'npm'`), errText)
 
 	// the next run imports the whole source: nothing the killed run left behind is lost or doubled
 	e.syncOnce(t, "vuln-sync-osv-full", nil)
-	got := sql(t, `SELECT records FROM trove.vuln_source_state WHERE source = 'osv' AND ecosystem = 'npm'`)
+	got := sql(t, `SELECT records FROM quader.vuln_source_state WHERE source = 'osv' AND ecosystem = 'npm'`)
 	if n, _ := strconv.Atoi(got); n < filler {
 		t.Errorf("the npm ecosystem holds %s records after the next run, want at least the %d filler records", got, filler)
 	}
-	if rows := sql(t, `SELECT count(*) FROM trove.vuln_advisory WHERE ecosystem = 'npm'`); rows != got {
+	if rows := sql(t, `SELECT count(*) FROM quader.vuln_advisory WHERE ecosystem = 'npm'`); rows != got {
 		t.Errorf("the advisory table holds %s npm rows, the state says %s", rows, got)
 	}
-	if touched := sql(t, `SELECT count(*) FROM trove.vuln_sync_touched WHERE ecosystem = 'npm'`); touched != "0" {
+	if touched := sql(t, `SELECT count(*) FROM quader.vuln_sync_touched WHERE ecosystem = 'npm'`); touched != "0" {
 		t.Errorf("%s touched names remain after the completed run", touched)
 	}
 	e.awaitEvaluated(t)
-	if st := sql(t, `SELECT state FROM trove.vuln_source_state WHERE source = 'osv' AND ecosystem = 'npm'`); st != "complete" {
+	if st := sql(t, `SELECT state FROM quader.vuln_source_state WHERE source = 'osv' AND ecosystem = 'npm'`); st != "complete" {
 		t.Errorf("the npm ecosystem is %q after the next run, want complete", st)
 	}
 }

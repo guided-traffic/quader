@@ -16,10 +16,10 @@ import (
 	"net/url"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/document"
-	"github.com/guided-traffic/trove/internal/formats/nuget/id"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/formats/nuget/document"
+	"github.com/guided-traffic/quader/internal/formats/nuget/id"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // Hive is a registration hive: the resource a registration document is served under
@@ -106,12 +106,12 @@ func (f Feed) Nupkg(lowerID, lowerVersion string) string {
 	return string(f) + "flatcontainer/" + i + "/" + v + "/" + i + "." + v + ".nupkg"
 }
 
-// Passthrough are the members of a catalog entry that trove does not compute: a remote
+// Passthrough are the members of a catalog entry that quader does not compute: a remote
 // repository passes the upstream's deprecation and vulnerabilities through (R-NUGET-015).
 // A local package has none and the members are absent (R-NUGET-009).
 type Passthrough struct {
 	Deprecation, Vulnerabilities json.RawMessage
-	// Other are further members of the upstream's catalog entry that trove keeps
+	// Other are further members of the upstream's catalog entry that quader keeps
 	// (R-NUGET-015), written after the vulnerabilities in the order given.
 	Other []Member
 }

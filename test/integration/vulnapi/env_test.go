@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/packages/view"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/packages/view"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // env is one installation with six callers and four repositories:
@@ -80,7 +80,7 @@ func newEnvWith(t *testing.T, seed func(*testenv.Stack), replicaEnv ...string) *
 	if seed != nil {
 		seed(st)
 	}
-	replicaEnv = append([]string{"TROVE_API_RATE_LIMITS_ENABLED=false"}, replicaEnv...)
+	replicaEnv = append([]string{"QUADER_API_RATE_LIMITS_ENABLED=false"}, replicaEnv...)
 	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web1", Env: replicaEnv})
 	return e
 }

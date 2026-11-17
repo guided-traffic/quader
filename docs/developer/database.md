@@ -8,15 +8,15 @@ driver-free leaf the rest of the code sees: `meta.Tx`, `meta.Runner`, `meta.TxSt
 ## Connection classes
 
 `postgres.Open(ctx, cfg config.Database, instance, role, log)` opens the pools of one replica. Every
-connection is named `trove:<instance>:<class>` (`application_name`, cut to 63 bytes keeping the class).
+connection is named `quader:<instance>:<class>` (`application_name`, cut to 63 bytes keeping the class).
 
 | Class | Accessor | Role | Endpoint | Notes |
 |---|---|---|---|---|
 | `main` request pool | `Main()` | web, worker, all | `database.host` (direct or pooler) | `pool.max_conns - 1` connections; transaction-scoped, no session state |
 | `main` control connection | `Control(ctx)`, `ControlPool()` | web, worker, all | control endpoint (`control_host/port/name`, else host) | pool of size 1; change-log poll, readiness, heartbeats only |
 | `lease` | `LeasePool()` | worker, all (nil on web) | session host (`session_host/port`, else host) | `lease_pool_size` connections held with their session locks; no lifetime |
-| `migrate` | `Migrate`, `Status` | `trove migrate` | session host | one connection, `statement_timeout` 0 |
-| `backup` | not yet | `trove backup` | session host | M5 |
+| `migrate` | `Migrate`, `Status` | `quader migrate` | session host | one connection, `statement_timeout` 0 |
+| `backup` | not yet | `quader backup` | session host | M5 |
 
 Behind `database.pooler.mode: transaction` the main and control pools send only `application_name` and
 `TimeZone` as startup parameters and use pgx `QueryExecModeExec` (unnamed extended-protocol statements, no
@@ -117,16 +117,16 @@ CI check that no migration on `main` changes (the job `compat`). A file may star
 while the rules are off:
 
 ```sql
--- trove:phase contract          (or expand; at most one; a file without it is an expand step)
--- trove:no-transaction          (one statement, e.g. CREATE INDEX CONCURRENTLY; must be idempotent)
--- trove:requires-app >= 0.4.0   (contract only, required there)
--- trove:requires-background <name>   (contract only, optional, once per background migration it depends on)
+-- quader:phase contract          (or expand; at most one; a file without it is an expand step)
+-- quader:no-transaction          (one statement, e.g. CREATE INDEX CONCURRENTLY; must be idempotent)
+-- quader:requires-app >= 0.4.0   (contract only, required there)
+-- quader:requires-background <name>   (contract only, optional, once per background migration it depends on)
 ```
 
 `ParseSteps` (unit-tested in [steps_test.go](../../internal/meta/postgres/steps_test.go)) applies the switch. In both modes it
 rejects an unknown or a second phase, a contract step without `requires-app`, `requires-app` or `requires-background` on a
-step that is not `-- trove:phase contract`, a `requires-background` that names no single migration or names one twice,
-an unknown `trove:` header, a `no-transaction` file with more than one statement and a file without a statement. With the rules
+step that is not `-- quader:phase contract`, a `requires-background` that names no single migration or names one twice,
+an unknown `quader:` header, a `no-transaction` file with more than one statement and a file without a statement. With the rules
 on it also rejects a file without a phase header and `DROP`, `RENAME` or `SET NOT NULL` in an expand file, and
 `RequiredSchema()` is the newest expand step; with them off, a file without a phase header is an expand step, the statements
 are not looked at by phase, and `RequiredSchema()` is the highest embedded number, so a replica serves only once every
@@ -146,15 +146,15 @@ live replica runs a release below its `requires-app` (the contract guard), and o
 4. Backfills are background data migrations (R-HA-022), not migration steps; the first is `data_migration_nuget_semver2`
    ([nuget.md](nuget.md#the-recomputation-of-is_semver2-q-nuget-93)).
 5. A step may drop, rename or tighten what it needs; nothing has to stay for the previous release. Mark it
-   `-- trove:phase contract` with `requires-app` only when the runner shall refuse it while older replicas are live.
+   `-- quader:phase contract` with `requires-app` only when the runner shall refuse it while older replicas are live.
    A contract step that removes what a background data migration converts names it with `requires-background <name>`; the
    guard refuses the step until the migration has succeeded ([Background data migrations](#background-data-migrations), Q-HA-115).
 6. Static queries for the new tables go to `queries/*.sql`, then `make generate`.
    A test that injects a migration of its own names it with `nextStep(n, name)`
    ([env_test.go](../../test/integration/postgres/env_test.go)), which numbers the file after the embedded ones, so
    it needs no edit when a milestone adds migrations.
-7. `trove migrate up` checks the migrated schema against the table registry of its own binary
-   (`postgres.VerifyTableRegistry`, exit 3 naming the table); [cmd/trove/registry.go](../../cmd/trove/registry.go)
+7. `quader migrate up` checks the migrated schema against the table registry of its own binary
+   (`postgres.VerifyTableRegistry`, exit 3 naming the table); [cmd/quader/registry.go](../../cmd/quader/registry.go)
    links every package that owns tables. A new owning package is added there.
 
 ### How to fix a migration that is on `main`
@@ -183,7 +183,7 @@ before Q-ARCH-340 switched it off.
 then maps it to a Go string instead of generating enum helpers that import `database/sql/driver` (forbidden,
 R-ARCH-026).
 
-### Runner (`postgres.Migrate`, `trove migrate up`)
+### Runner (`postgres.Migrate`, `quader migrate up`)
 
 Preflight, schema creation if missing, `pg_try_advisory_lock(3, 0)` polled for up to `migrate.advisory_lock_wait`
 (the timeout names the holder from `pg_stat_activity`), refusal of a half-restored database (exit 3), checksum
@@ -192,14 +192,14 @@ live means a `replica.heartbeat_at` within `system.heartbeat_stale_after`; also 
 names in `requires-background` has not succeeded), then per step one transaction:
 `SET LOCAL lock_timeout`, the file as one argument-less `Exec`, the `schema_migration` row, `schema_state`.
 Lock timeouts (55P03) retry `migrate.ddl_lock_retries` times. Exit codes: 0, 1 error, 2 usage, 3 refusal.
-`trove migrate status` takes no lock. Output: JSON log on stderr, JSON summary on stdout.
+`quader migrate status` takes no lock. Output: JSON log on stderr, JSON summary on stdout.
 
-### The migration report (`postgres.Report`, `trove migrate status`, `GET /api/v1/system/migrations`)
+### The migration report (`postgres.Report`, `quader migrate status`, `GET /api/v1/system/migrations`)
 
 `postgres.Report(ctx, db, opts)` ([migrate.go](../../internal/meta/postgres/migrate.go)) reads `schema_state`, the applied
 steps, the steps the binary embeds that are not applied (each with `requiresApp` and `requiresBackground`, what the guard
 checks), the background migrations of `MigrateOptions.Background` with their states, and the gate's verdict. It reads only and
-takes no lock, through any `q.DBTX`: `trove migrate status` (`postgres.Status`) runs it on its session connection as the schema
+takes no lock, through any `q.DBTX`: `quader migrate status` (`postgres.Status`) runs it on its session connection as the schema
 owner, and the `api` role runs it on its pool as the runtime role for `GET /api/v1/system/migrations` (`migrationReport` in
 [migration_report.go](../../internal/app/migration_report.go); the runtime role reads `schema_migration` and `schema_state`,
 R-HA-018). One code answers both, so the endpoint and the command cannot disagree (R-HA-018, R-HA-020, R-HA-021 step 4).
@@ -224,7 +224,7 @@ from its completion record (`BackgroundMigration.Processed`), which outlives the
 any run of the kind (`BackgroundMigrationJob` in [migration.sql](../../internal/meta/postgres/queries/migration.sql)).
 
 `app.BackgroundMigrations()` ([migration_report.go](../../internal/app/migration_report.go)) lists the declarations of the binary;
-`trove migrate` passes them to the guard and the report, the `api` role to the report. Today it holds one, `nuget_semver2`
+`quader migrate` passes them to the guard and the report, the `api` role to the report. Today it holds one, `nuget_semver2`
 (`nugetdata.Semver2Background`, [nuget.md](nuget.md#the-recomputation-of-is_semver2-q-nuget-93)). How to add one:
 
 1. Run it as a job kind `data_migration_<name>` that records its completion in a `system_state` key (as
@@ -233,16 +233,16 @@ any run of the kind (`BackgroundMigrationJob` in [migration.sql](../../internal/
 2. Declare it next to the job (`Name`, `Release`, `DoneKey`, optionally `Processed`) and add it to `app.BackgroundMigrations()`.
    `TestBackgroundMigrations` ([migration_report_test.go](../../internal/app/migration_report_test.go)) checks that the
    declarations are valid and that every `requires-background` of the embedded steps names one of them.
-3. The contract step that removes the old form, one minor later, carries `-- trove:requires-background <name>`.
+3. The contract step that removes the old form, one minor later, carries `-- quader:requires-background <name>`.
 
 The runner also writes `audit.retention_days` into `audit_policy` (when it differs) and calls `audit_maintain_partitions()` after the
 steps, also when none was pending (`MigrateOptions.AuditRetentionDays`, [audit.go](../../internal/meta/postgres/audit.go); Q-OPS-39,
-[audit.md](audit.md)). `trove migrate` passes the configured value; a caller that leaves the option nil (a test with steps of its own) leaves
+[audit.md](audit.md)). `quader migrate` passes the configured value; a caller that leaves the option nil (a test with steps of its own) leaves
 the row alone.
 
 Last, still under the migration lock and on the same connection, the runner calls `MigrateOptions.Declared` with a
 `MigrationSession` ([migrate_session.go](../../internal/meta/postgres/migrate_session.go)), also when no step was pending:
-`trove migrate` passes `app.DeclaredState`, which applies the role bindings of `authz.role_bindings` in one transaction
+`quader migrate` passes `app.DeclaredState`, which applies the role bindings of `authz.role_bindings` in one transaction
 (R-AUTHZ-010, [authorization.md](authorization.md#role-bindings-from-the-configuration)). Its error fails the run with exit
 status 1; nil skips it.
 
@@ -253,7 +253,7 @@ switched off until the first stable release with the job `compat` ([Compatibilit
 
 ### Privileges of the runtime role
 
-Migration 00001 grants `trove_app` (when that role exists) SELECT, INSERT, UPDATE, DELETE on every later table.
+Migration 00001 grants `quader_app` (when that role exists) SELECT, INSERT, UPDATE, DELETE on every later table.
 Migration 00005 revokes INSERT, UPDATE, DELETE, TRUNCATE on `schema_migration` and `schema_state` again, so a SQL
 injection cannot raise `applied` or lower `compat_floor`. Migration 00006 does the same for the audit trail: the
 runtime role keeps INSERT and SELECT on `audit_event`, SELECT on `audit_policy` and EXECUTE on
@@ -261,7 +261,7 @@ runtime role keeps INSERT and SELECT on `audit_event`, SELECT on `audit_policy` 
 `deletions_paused_at` and later keys of its own (restore markers are written by restore and migrate). The runtime
 preflight (`checkBookkeeping`) refuses a login that can write the bookkeeping once step 5 is applied (a later GRANT
 or a restored dump re-opened it), unless it owns the tables or is a superuser. The integration test creates the
-cluster-wide role `trove_app` and never drops it.
+cluster-wide role `quader_app` and never drops it.
 
 TLS: `database.ssl_mode: require` without `ssl_root_cert_file` needs `allow_insecure` (it encrypts but accepts any
 certificate); `verify-ca` without a CA file is refused (`config.Database.TLSProblem`, used by the load and by
@@ -274,14 +274,14 @@ The TLS files are read again for every new connection (R-HA-015, R-ARCH-035), by
 list. `verify-full` is crypto/tls's verification (chain and host name) against the CA pool read for this connection;
 `verify-ca` and `require` with a CA file verify the chain against that pool in `VerifyConnection`; the client pair is
 presented through `GetClientCertificate`. A file that does not load at `Open` is a configuration error; a file that
-breaks later keeps the last good material, is logged and counted (`trove_tls_reload_errors_total{kind="database"}`).
+breaks later keeps the last good material, is logged and counted (`quader_tls_reload_errors_total{kind="database"}`).
 Every pool of a `DB` shares one `dbTLS`; `postgres.WithTLSMetrics` passes the families, see [tls.md](tls.md).
 
 ### Compatibility gate
 
 `postgres.Gate(SchemaState, RequiredSchema(), version)`: serves iff `applied >= requiredSchema` and
 `compat_floor <= version`; `ErrSchemaBehind` means wait not ready, `*FloorError` means exit with
-`schema requires trove >= <floor>`. The version `dev` passes every floor.
+`schema requires Quader >= <floor>`. The version `dev` passes every floor.
 
 ## Access-core tables (M1)
 
@@ -429,7 +429,7 @@ break-glass account has no row (R-AUTH-014).
 
 Migrations 00014 to 00016 create every table of milestone M2 at once, before any query that uses them, so that
 the generated `q/models.go` changes in one place and the later work packages add `queries/<area>.sql` only
-(Q-ARCH-190). All three are `-- trove:phase expand` files without a backfill, a `no-transaction` header or a
+(Q-ARCH-190). All three are `-- quader:phase expand` files without a backfill, a `no-transaction` header or a
 `requires-app`: a v0.3.x replica never reads the new tables and keeps serving against them, and the M2 binary's
 `RequiredSchema()` is 16. Every table is registered as data in
 [tables_m2.go](../../internal/meta/postgres/tables_m2.go); the package that owns a table takes the line over in the same
@@ -489,7 +489,7 @@ edits a migration of another work package. Query files by owner: `proxy.sql`, `i
 exported tables without a `CycleBreak`. Tables of this package: `tables.go`. Tables created for other packages
 by the first migrations: `tables_m0.go`, by the M1 migrations: `tables_m1.go` and by the M2 migrations: `tables_m2.go`; the owning package deletes its line there when it registers the table
 itself (a duplicate panics at start-up). The tables of the M3 migration are registered by their owner, the NuGet data port
-([tables.go](../../internal/formatdata/nuget/tables.go)); `cmd/trove/registry.go` links that package so that `trove migrate` checks the
+([tables.go](../../internal/formatdata/nuget/tables.go)); `cmd/quader/registry.go` links that package so that `quader migrate` checks the
 migrated schema against a registry that holds them, and the integration tests that compare the schema with the registry import it
 (`test/integration/postgres/owners_test.go`).
 
@@ -595,9 +595,9 @@ integration run.
 
 `test/integration/postgres/`, tag `integration`, run with the stack up:
 `set -a; . .dev/integration/env; set +a; go test -tags integration -race ./test/integration/postgres/...`.
-Every test creates its own database `trove_pg_<random>`. `stepsWith` injects extra or edited migration files.
+Every test creates its own database `quader_pg_<random>`. `stepsWith` injects extra or edited migration files.
 The M1 schema is checked by [m1_test.go](../../test/integration/postgres/m1_test.go) (export classes, seeded rows,
-the integrity triggers, the audit partitions and privileges, a schema that is not called `trove`), the M2 schema by
+the integrity triggers, the audit partitions and privileges, a schema that is not called `quader`), the M2 schema by
 [m2_test.go](../../test/integration/postgres/m2_test.go) (export classes, the expand-only steps, the seeded and registered
 areas, the revision registration, and the constraints named in the section above, each under its requirement ID). The PgBouncer tests set role defaults with `ALTER ROLE` in a database of their own, because the pooler keeps
 server connections per database. The stack serves TLS only (verify-full from the host);
@@ -667,7 +667,7 @@ first stable release; they keep the shape of expand steps that R-HA-018 asks of 
 | Step | Content |
 |---|---|
 | [00019_projects](../../internal/meta/postgres/migrations/00019_projects.sql) | the new tables `project` and `project_member`; `project_id` added to `repositories` (`NOT NULL`), `service_account` and `authz_policy` with their foreign keys `NOT VALID`; the triggers `project_member_kind` (`AI001`), `AI002`, `AI003` (the key of a project and the stored names of its service accounts and policies), `AI004` |
-| [00020](../../internal/meta/postgres/migrations/00020_projects_repositories_index.sql) to [00022](../../internal/meta/postgres/migrations/00022_projects_policy_index.sql) | one `CREATE INDEX CONCURRENTLY IF NOT EXISTS` per file (`-- trove:no-transaction`, one statement): `repositories_project_key` (unique, `(project_id, key)`), `service_account_project`, `authz_policy_project` |
+| [00020](../../internal/meta/postgres/migrations/00020_projects_repositories_index.sql) to [00022](../../internal/meta/postgres/migrations/00022_projects_policy_index.sql) | one `CREATE INDEX CONCURRENTLY IF NOT EXISTS` per file (`-- quader:no-transaction`, one statement): `repositories_project_key` (unique, `(project_id, key)`), `service_account_project`, `authz_policy_project` |
 | [00023](../../internal/meta/postgres/migrations/00023_projects_policy_unique.sql) | `CREATE UNIQUE INDEX CONCURRENTLY` on `authz_policy (id, project_id)` |
 | [00024](../../internal/meta/postgres/migrations/00024_projects_policy_entries.sql) | `ADD CONSTRAINT … UNIQUE USING INDEX` for `authz_policy_id_project` and `repositories_project_key` (no scan), the entry table with its composite foreign key, the triggers `AI005`, `AI006` and `AI007` (`repositories_move_guard`: a repository its project holds by ID, a project policy's key selector or a virtual repository's member list, pin rule or deployment target, does not change `project_id`; `authz_policy_selector_project`: a project policy's key selector names a repository of its project) |
 | [00025](../../internal/meta/postgres/migrations/00025_projects_validate.sql) | `VALIDATE CONSTRAINT` of the three foreign keys of 00019 |

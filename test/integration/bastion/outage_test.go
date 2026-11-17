@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func gauge(t *testing.T, r *replica, name string) float64 {
@@ -41,7 +41,7 @@ func TestR_BAS_027_TheMainInstallationUnreachable(t *testing.T) {
 	unseen := w.newReader(npmAll, npmLocal, npmRemote)
 
 	w.front.SetDown(true)
-	waitGauge(t, r, "trove_bastion_main_reachable", 0)
+	waitGauge(t, r, "quader_bastion_main_reachable", 0)
 	mark := w.front.Mark()
 
 	b.clk.Advance(45 * time.Second) // past the period, inside the grace period
@@ -67,7 +67,7 @@ func TestR_BAS_027_TheMainInstallationUnreachable(t *testing.T) {
 
 	// The main installation is back: the replica reconnects and serves again.
 	w.front.SetDown(false)
-	waitGauge(t, r, "trove_bastion_main_reachable", 1)
+	waitGauge(t, r, "quader_bastion_main_reachable", 1)
 	testenv.WaitFor(t, "service after the outage", 30*time.Second, func() bool {
 		return r.do(t, "GET", tgz, known).Status == http.StatusOK
 	})
@@ -93,7 +93,7 @@ func TestR_BAS_009_R_BAS_028_InterfaceMismatch(t *testing.T) {
 			if got := r.do(t, "GET", tgz, known); got.Status != http.StatusOK {
 				t.Fatalf("warm: %d", got.Status)
 			}
-			if gauge(t, r, "trove_bastion_interface_mismatch") != 0 {
+			if gauge(t, r, "quader_bastion_interface_mismatch") != 0 {
 				t.Fatal("a mismatch is shown before there is one")
 			}
 			other := int64(iface.InterfaceVersion + 1)
@@ -104,9 +104,9 @@ func TestR_BAS_009_R_BAS_028_InterfaceMismatch(t *testing.T) {
 			} else {
 				w.front.reqVersion.Store(other)
 			}
-			waitGauge(t, r, "trove_bastion_interface_mismatch", 1)
-			waitGauge(t, r, "trove_bastion_main_reachable", 0)
-			if got := gauge(t, r, `trove_bastion_interface_version{side="main"}`); got != wantMain {
+			waitGauge(t, r, "quader_bastion_interface_mismatch", 1)
+			waitGauge(t, r, "quader_bastion_main_reachable", 0)
+			if got := gauge(t, r, `quader_bastion_interface_version{side="main"}`); got != wantMain {
 				t.Fatalf("the main interface version metric = %v, want %v", got, wantMain)
 			}
 			// Inside the grace period the known caller is served from the cache, a cold package gets 503.
@@ -124,8 +124,8 @@ func TestR_BAS_009_R_BAS_028_InterfaceMismatch(t *testing.T) {
 			// The upgrade of the other side clears it.
 			w.front.reqVersion.Store(0)
 			w.front.resVersion.Store(0)
-			waitGauge(t, r, "trove_bastion_interface_mismatch", 0)
-			waitGauge(t, r, "trove_bastion_main_reachable", 1)
+			waitGauge(t, r, "quader_bastion_interface_mismatch", 0)
+			waitGauge(t, r, "quader_bastion_main_reachable", 1)
 		})
 	}
 }
@@ -139,7 +139,7 @@ func TestR_BAS_010_R_BAS_017_BaseURLMismatch(t *testing.T) {
 	const other = "https://other.example.com"
 	b := w.newBastion(t, bastionOptions{BaseURL: other})
 	r := b.reps[0]
-	waitGauge(t, r, "trove_bastion_base_url_mismatch", 1)
+	waitGauge(t, r, "quader_bastion_base_url_mismatch", 1)
 	got := r.do(t, "GET", "/api/npm/"+npmAll+"/"+escapeNPM("@acme/sdk"), callOpts{token: w.full.token, addr: "198.51.100.71", host: "other.example.com"})
 	if got.Status != http.StatusServiceUnavailable || got.Code() != "main_unreachable" {
 		t.Fatalf("a cold document: %d %s", got.Status, got.Body)
@@ -169,8 +169,8 @@ func TestR_BAS_005_R_BAS_006_ARevokedBastionToken(t *testing.T) {
 	}
 
 	w.mustAPI("DELETE", "/api/v1/bastions/partners/tokens/"+second.id, 204, nil)
-	waitGauge(t, r, "trove_bastion_main_token_refused", 1)
-	waitGauge(t, r, "trove_bastion_main_reachable", 0)
+	waitGauge(t, r, "quader_bastion_main_token_refused", 1)
+	waitGauge(t, r, "quader_bastion_main_reachable", 0)
 	got := r.do(t, "GET", tarballPath(npmAll, "@acme/sdk", "2.0.0"), known)
 	if got.Status != http.StatusServiceUnavailable || got.Code() != "main_unreachable" {
 		t.Fatalf("a cold package with the Bastion's token revoked: %d %s (the caller must never see the Bastion's 401)", got.Status, got.Body)
@@ -184,8 +184,8 @@ func TestR_BAS_005_R_BAS_006_ARevokedBastionToken(t *testing.T) {
 	if err := os.WriteFile(b.tokenFil, []byte(fresh.token+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	waitGauge(t, r, "trove_bastion_main_token_refused", 0)
-	waitGauge(t, r, "trove_bastion_main_reachable", 1)
+	waitGauge(t, r, "quader_bastion_main_token_refused", 0)
+	waitGauge(t, r, "quader_bastion_main_reachable", 1)
 	if got := r.do(t, "GET", tarballPath(npmAll, "@acme/sdk", "2.0.0"), known); got.Status != http.StatusOK {
 		t.Fatalf("after the new token: %d %s", got.Status, got.Body)
 	}

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // TestR_BAS_026_AnAppliedIDIsKeptForAtLeastTheFeedLookback: with a short period and grace period the entries are

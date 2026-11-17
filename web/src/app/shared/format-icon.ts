@@ -42,14 +42,14 @@ export function formatIcon(name: string): FormatIcon {
 }
 
 /**
- * `<trove-format-icon [format]>`: the icon `formatIcon` decides, one em square, so the place sets its size with
+ * `<quader-format-icon [format]>`: the icon `formatIcon` decides, one em square, so the place sets its size with
  * `font-size`. It is decoration: every place shows the format's name as text beside it (R-UI-006: icon plus text, never
  * icon alone), so the logo has an empty `alt` and the glyph is hidden from assistive technology, and a screen reader says
- * the name once. Which variant of a logo shows follows trove's theme, not only the system's: the classes `logo-on-light`
+ * the name once. Which variant of a logo shows follows Quader's theme, not only the system's: the classes `logo-on-light`
  * and `logo-on-dark` are switched by `_icons.scss` on `data-theme` (an `<img>` cannot read it).
  */
 @Component({
-  selector: 'trove-format-icon',
+  selector: 'quader-format-icon',
   template: `
     @let i = icon();
     @if (i.kind === 'logo') {
@@ -84,7 +84,7 @@ export function formatIcon(name: string): FormatIcon {
       object-fit: contain;
     }
     .plate {
-      background: var(--trove-logo-plate);
+      background: var(--quader-logo-plate);
     }
   `,
 })

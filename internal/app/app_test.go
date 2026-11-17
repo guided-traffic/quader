@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // syncBuffer is a log sink the test reads while the app writes.
@@ -61,7 +61,7 @@ func keyFile(t *testing.T) string {
 }
 
 func emptyConfig(t *testing.T) string {
-	p := filepath.Join(t.TempDir(), "trove.yaml")
+	p := filepath.Join(t.TempDir(), "quader.yaml")
 	if err := os.WriteFile(p, nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -80,18 +80,18 @@ type harness struct {
 // env is the minimal valid serve configuration plus overrides.
 func baseEnv(t *testing.T, extra map[string]string) []string {
 	env := map[string]string{
-		"TROVE_SERVER_LISTEN": anyPort, "TROVE_SERVER_OPS_LISTEN": anyPort,
-		"TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "300ms", "TROVE_SERVER_SHUTDOWN_TIMEOUT": "5s",
-		"TROVE_HEALTH_CHECK_INTERVAL": "1s", "TROVE_HEALTH_CHECK_TIMEOUT": "1s",
-		"TROVE_DATABASE_HOST": "db.example", "TROVE_DATABASE_NAME": "trove",
-		"TROVE_VALKEY_SENTINEL_ADDRESSES": `["s1:26379"]`, "TROVE_VALKEY_SENTINEL_PRIMARY_NAME": "trove",
-		"TROVE_STORAGE_S3_BUCKET": "blobs", "TROVE_SECRETS_ENCRYPTION_KEY_FILES": fmt.Sprintf(`[%q]`, keyFile(t)),
-		"TROVE_SECRETS_ACTIVE_KEY_ID": "2026-10", "TROVE_SERVER_BASE_URL": "https://trove.example.com",
+		"QUADER_SERVER_LISTEN": anyPort, "QUADER_SERVER_OPS_LISTEN": anyPort,
+		"QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "300ms", "QUADER_SERVER_SHUTDOWN_TIMEOUT": "5s",
+		"QUADER_HEALTH_CHECK_INTERVAL": "1s", "QUADER_HEALTH_CHECK_TIMEOUT": "1s",
+		"QUADER_DATABASE_HOST": "db.example", "QUADER_DATABASE_NAME": "quader",
+		"QUADER_VALKEY_SENTINEL_ADDRESSES": `["s1:26379"]`, "QUADER_VALKEY_SENTINEL_PRIMARY_NAME": "quader",
+		"QUADER_STORAGE_S3_BUCKET": "blobs", "QUADER_SECRETS_ENCRYPTION_KEY_FILES": fmt.Sprintf(`[%q]`, keyFile(t)),
+		"QUADER_SECRETS_ACTIVE_KEY_ID": "2026-10", "QUADER_SERVER_BASE_URL": "https://quader.example.com",
 	}
 	for k, v := range extra {
 		env[k] = v
 	}
-	env["TROVE_CONFIG_FILE"] = emptyConfig(t)
+	env["QUADER_CONFIG_FILE"] = emptyConfig(t)
 	var out []string
 	for k, v := range env {
 		out = append(out, k+"="+v)
@@ -197,7 +197,7 @@ func TestRoles(t *testing.T) {
 	})
 
 	t.Run("R-ARCH-001 a worker replica opens no client socket", func(t *testing.T) {
-		h := start(t, "worker", map[string]string{"TROVE_SERVER_LISTEN": heldPort(t)}) // a bind attempt would fail start-up
+		h := start(t, "worker", map[string]string{"QUADER_SERVER_LISTEN": heldPort(t)}) // a bind attempt would fail start-up
 		if h.app.ClientAddr() != nil {
 			t.Fatal("worker has a client listener")
 		}
@@ -320,7 +320,7 @@ func TestListeners(t *testing.T) {
 func TestEndToEndHeaders(t *testing.T) {
 	// The trace context of a caller counts only from tracing.trusted_peers, never from the
 	// trusted proxies (S6); the test client is a trusted peer here.
-	h := start(t, "web", map[string]string{"TROVE_SERVER_TRUSTED_PROXIES": `["127.0.0.0/8"]`, "TROVE_TRACING_TRUSTED_PEERS": `["127.0.0.0/8"]`})
+	h := start(t, "web", map[string]string{"QUADER_SERVER_TRUSTED_PROXIES": `["127.0.0.0/8"]`, "QUADER_TRACING_TRUSTED_PEERS": `["127.0.0.0/8"]`})
 	t.Run("E0.10 a request with traceparent keeps its trace ID in X-Request-Id and the request log", func(t *testing.T) {
 		const tid = "4bf92f3577b34da6a3ce929d0e0e4736"
 		code, hdr, _ := get(t, h.client+"/api/v1/system/ping", "traceparent", "00-"+tid+"-00f067aa0ba902b7-01", "X-Forwarded-For", "198.51.100.4")
@@ -344,15 +344,15 @@ func TestEndToEndHeaders(t *testing.T) {
 		t.Fatalf("no request record with the trace ID in\n%s", h.logs.String())
 	})
 	t.Run("R-OPS-002 a presented but invalid credential on ping answers 401", func(t *testing.T) {
-		code, hdr, _ := get(t, h.client+"/api/v1/system/ping", "Authorization", "Bearer trv_pat_revoked")
+		code, hdr, _ := get(t, h.client+"/api/v1/system/ping", "Authorization", "Bearer qdr_pat_revoked")
 		if code != 401 || hdr.Get("Content-Type") != "application/problem+json" {
 			t.Fatalf("%d %s", code, hdr.Get("Content-Type"))
 		}
 	})
 	t.Run("R-OPS-002 version needs credentials, info and replicas need system.read", func(t *testing.T) {
 		for _, p := range []string{"/api/v1/system/version", "/api/v1/system/info", "/api/v1/system/replicas"} {
-			if code, hdr, _ := get(t, h.client+p); code != 401 || hdr.Get("X-Trove-Replica") != "" {
-				t.Errorf("%s: %d replica header %q", p, code, hdr.Get("X-Trove-Replica"))
+			if code, hdr, _ := get(t, h.client+p); code != 401 || hdr.Get("X-Quader-Replica") != "" {
+				t.Errorf("%s: %d replica header %q", p, code, hdr.Get("X-Quader-Replica"))
 			}
 		}
 	})
@@ -362,14 +362,14 @@ func TestEndToEndHeaders(t *testing.T) {
 		if code != 200 || json.Unmarshal([]byte(body), &doc) != nil || !strings.HasPrefix(doc["openapi"].(string), "3.1.") {
 			t.Fatalf("%d %.100s", code, body)
 		}
-		if doc["servers"].([]any)[0].(map[string]any)["url"] != "https://trove.example.com" {
+		if doc["servers"].([]any)[0].(map[string]any)["url"] != "https://quader.example.com" {
 			t.Fatalf("servers = %v", doc["servers"])
 		}
 	})
-	t.Run("E0.10 ops /metrics exposes trove_ metrics", func(t *testing.T) {
+	t.Run("E0.10 ops /metrics exposes quader_ metrics", func(t *testing.T) {
 		get(t, h.client+"/api/v1/system/ping")
 		code, _, body := get(t, h.ops+"/metrics")
-		if code != 200 || !strings.Contains(body, "trove_http_requests_total") || !strings.Contains(body, "trove_build_info") {
+		if code != 200 || !strings.Contains(body, "quader_http_requests_total") || !strings.Contains(body, "quader_build_info") {
 			t.Fatalf("%d %.200s", code, body)
 		}
 	})
@@ -378,7 +378,7 @@ func TestEndToEndHeaders(t *testing.T) {
 func TestBootstrapAccess(t *testing.T) {
 	// Anonymous read is refused behind an https base URL (S10); the bootstrap tests run on a local one.
 	local := "http://localhost:8080"
-	h := start(t, "web", map[string]string{"TROVE_SYSTEM_BOOTSTRAP_ANONYMOUS_READ": "true", "TROVE_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s", "TROVE_SERVER_BASE_URL": local})
+	h := start(t, "web", map[string]string{"QUADER_SYSTEM_BOOTSTRAP_ANONYMOUS_READ": "true", "QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s", "QUADER_SERVER_BASE_URL": local})
 	t.Run("R-API-038 replicas lists this replica with its role and state", func(t *testing.T) {
 		code, _, body := get(t, h.client+"/api/v1/system/replicas")
 		if code != 200 {
@@ -393,7 +393,7 @@ func TestBootstrapAccess(t *testing.T) {
 		}
 	})
 	t.Run("R-API-038 a replica started with role all lists roles [all]", func(t *testing.T) {
-		all := start(t, "all", map[string]string{"TROVE_SYSTEM_BOOTSTRAP_ANONYMOUS_READ": "true", "TROVE_SERVER_BASE_URL": local})
+		all := start(t, "all", map[string]string{"QUADER_SYSTEM_BOOTSTRAP_ANONYMOUS_READ": "true", "QUADER_SERVER_BASE_URL": local})
 		_, _, body := get(t, all.client+"/api/v1/system/replicas")
 		if !strings.Contains(body, `"roles":["all"]`) {
 			t.Fatalf("%s", body)
@@ -408,8 +408,8 @@ func TestBootstrapAccess(t *testing.T) {
 }
 
 func TestIdentity(t *testing.T) {
-	t.Run("R-OPS-003 the instance is the pod name from TROVE_POD_NAME, then POD_NAME", func(t *testing.T) {
-		if id := NewIdentity([]string{"TROVE_POD_NAME=trove-web-1", "POD_NAME=other", "HOSTNAME=h"}, "web"); id.Instance != "trove-web-1" {
+	t.Run("R-OPS-003 the instance is the pod name from QUADER_POD_NAME, then POD_NAME", func(t *testing.T) {
+		if id := NewIdentity([]string{"QUADER_POD_NAME=quader-web-1", "POD_NAME=other", "HOSTNAME=h"}, "web"); id.Instance != "quader-web-1" {
 			t.Fatalf("%+v", id)
 		}
 		if id := NewIdentity([]string{"POD_NAME=pod-2", "HOSTNAME=h"}, "web"); id.Instance != "pod-2" {
@@ -417,7 +417,7 @@ func TestIdentity(t *testing.T) {
 		}
 	})
 	t.Run("R-OPS-003 HOSTNAME is the pod name inside Kubernetes", func(t *testing.T) {
-		if id := NewIdentity([]string{"KUBERNETES_SERVICE_HOST=10.0.0.1", "HOSTNAME=trove-worker-9"}, "worker"); id.Instance != "trove-worker-9" {
+		if id := NewIdentity([]string{"KUBERNETES_SERVICE_HOST=10.0.0.1", "HOSTNAME=quader-worker-9"}, "worker"); id.Instance != "quader-worker-9" {
 			t.Fatalf("%+v", id)
 		}
 	})
@@ -427,8 +427,8 @@ func TestIdentity(t *testing.T) {
 			t.Fatalf("%+v", id)
 		}
 	})
-	t.Run("R-OPS-003 the node name comes from TROVE_NODE_NAME", func(t *testing.T) {
-		if id := NewIdentity([]string{"TROVE_NODE_NAME=n1"}, "web"); id.Node != "n1" {
+	t.Run("R-OPS-003 the node name comes from QUADER_NODE_NAME", func(t *testing.T) {
+		if id := NewIdentity([]string{"QUADER_NODE_NAME=n1"}, "web"); id.Node != "n1" {
 			t.Fatalf("%+v", id)
 		}
 	})
@@ -436,7 +436,7 @@ func TestIdentity(t *testing.T) {
 
 func TestStartupFailures(t *testing.T) {
 	t.Run("R-ARCH-021 a missing key ring stops the replica", func(t *testing.T) {
-		env := baseEnv(t, map[string]string{"TROVE_SECRETS_ENCRYPTION_KEY_FILES": `["/nonexistent/2026-10.key"]`})
+		env := baseEnv(t, map[string]string{"QUADER_SECRETS_ENCRYPTION_KEY_FILES": `["/nonexistent/2026-10.key"]`})
 		err := RunWith(t.Context(), Options{Loaded: loadCfg(t, "web", env), Role: "web", Environ: env, LogWriter: io.Discard, SkipInfrastructure: true})
 		if err == nil || !strings.Contains(err.Error(), "key file") {
 			t.Fatalf("err = %v", err)
@@ -448,7 +448,7 @@ func TestStartupFailures(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer busy.Close()
-		env := baseEnv(t, map[string]string{"TROVE_SERVER_OPS_LISTEN": busy.Addr().String()})
+		env := baseEnv(t, map[string]string{"QUADER_SERVER_OPS_LISTEN": busy.Addr().String()})
 		err = RunWith(t.Context(), Options{Loaded: loadCfg(t, "web", env), Role: "web", Environ: env, LogWriter: io.Discard, SkipInfrastructure: true})
 		if err == nil || !strings.Contains(err.Error(), busy.Addr().String()) {
 			t.Fatalf("err = %v, want one that names the address", err)
@@ -477,7 +477,7 @@ func (w *lateWriter) lates() int { w.mu.Lock(); defer w.mu.Unlock(); return w.la
 
 func TestNothingOutlivesRun(t *testing.T) {
 	t.Run("R-ARCH-024 no goroutine of the app writes to the log after RunWith returned", func(t *testing.T) {
-		env := baseEnv(t, map[string]string{"TROVE_SECRETS_ENCRYPTION_KEY_FILES": `["/nonexistent/2026-10.key"]`})
+		env := baseEnv(t, map[string]string{"QUADER_SECRETS_ENCRYPTION_KEY_FILES": `["/nonexistent/2026-10.key"]`})
 		w := &lateWriter{}
 		_ = RunWith(t.Context(), Options{Loaded: loadCfg(t, "web", env), Role: "web", Environ: env, LogWriter: w, SkipInfrastructure: true})
 		w.seal()

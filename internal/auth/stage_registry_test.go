@@ -16,13 +16,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // hashTokens is fakeTokens with the lookup by the SHA-256 of a secret that a registry token uses (R-OCI-005).
@@ -98,7 +98,7 @@ func newRegistryFixture(t *testing.T) *registryFixture {
 		Tokens: hashTokens{f.ft}, Uses: f.ft, Principals: fakeStore{}, BasicEnabled: true,
 		Registry: f.signer, Now: func() time.Time { return f.now },
 		RegistryRealm: func(*http.Request) (string, string) {
-			return registrytoken.Realm("https://trove.example.com")
+			return registrytoken.Realm("https://quader.example.com")
 		},
 		RegistryScope: func(r *http.Request) string {
 			if strings.HasSuffix(r.URL.Path, "/blobs/uploads/") {
@@ -139,7 +139,7 @@ func TestRegistryTokenInTheStage(t *testing.T) {
 	rgt := f.issue(t, false)
 	manifest := "/v2/web/docker-local/app/manifests/1"
 
-	t.Run("a registry token below /v2/ is a request of the trove token's principal, with the grant as a further ceiling", func(t *testing.T) {
+	t.Run("a registry token below /v2/ is a request of the quader token's principal, with the grant as a further ceiling", func(t *testing.T) {
 		res, err := f.stage.Authenticate(req("GET", manifest, "Authorization", "Bearer "+rgt), defaultRules())
 		if err != nil {
 			t.Fatal(err)
@@ -150,7 +150,7 @@ func TestRegistryTokenInTheStage(t *testing.T) {
 			t.Fatalf("result %+v", res)
 		}
 		if c.ExpiresAt == nil || !c.ExpiresAt.Equal(regNow.Add(5*time.Minute)) {
-			t.Fatalf("expiry %v: the registry token's, not the trove token's", c.ExpiresAt)
+			t.Fatalf("expiry %v: the registry token's, not the quader token's", c.ExpiresAt)
 		}
 	})
 	t.Run("a registry token is accepted below /v2/ only, and as Bearer only", func(t *testing.T) {
@@ -176,7 +176,7 @@ func TestRegistryTokenInTheStage(t *testing.T) {
 		for name, raw := range map[string]string{"flipped": flipped, "foreign": foreign} {
 			_, err := f.stage.Authenticate(req("GET", manifest, "Authorization", "Bearer "+raw), defaultRules())
 			e := wantErr(t, err, 401, errs.CodeInvalidToken)
-			if !strings.Contains(e.Challenge, `error="invalid_token"`) || !strings.HasPrefix(e.Challenge, `Bearer realm="https://trove.example.com/v2/_token"`) {
+			if !strings.Contains(e.Challenge, `error="invalid_token"`) || !strings.HasPrefix(e.Challenge, `Bearer realm="https://quader.example.com/v2/_token"`) {
 				t.Fatalf("%s: challenge %q", name, e.Challenge)
 			}
 		}
@@ -193,7 +193,7 @@ func TestRegistryTokenInTheStage(t *testing.T) {
 			t.Fatalf("%d token lookups for refused registry tokens", f.ft.calls.Load()-calls)
 		}
 	})
-	t.Run("R-AUTH-023 a revoked trove token stops its registry token", func(t *testing.T) {
+	t.Run("R-AUTH-023 a revoked quader token stops its registry token", func(t *testing.T) {
 		f.ft.mu.Lock()
 		info := f.ft.known[f.pat]
 		delete(f.ft.known, f.pat)
@@ -207,7 +207,7 @@ func TestRegistryTokenInTheStage(t *testing.T) {
 		_, err := f.stage.Authenticate(req("GET", manifest, "Authorization", "Bearer "+rgt), defaultRules())
 		wantErr(t, err, 401, errs.CodeInvalidToken)
 	})
-	t.Run("claims whose trove token is another one than they name are refused", func(t *testing.T) {
+	t.Run("claims whose quader token is another one than they name are refused", func(t *testing.T) {
 		mismatch := f.issue(t, false, func(c *registrytoken.Claims) { c.Binding.TokenID = "t2" })
 		_, err := f.stage.Authenticate(req("GET", manifest, "Authorization", "Bearer "+mismatch), defaultRules())
 		wantErr(t, err, 401, errs.CodeInvalidToken)
@@ -231,7 +231,7 @@ func TestRegistryTokenInTheStage(t *testing.T) {
 		_, err := f.stage.Authenticate(req("GET", manifest, "Authorization", "Bearer "+rgt), defaultRules())
 		wantErr(t, err, 401, errs.CodeInvalidToken)
 	})
-	t.Run("R-EP-010 the endpoint's token types apply to the trove token, without a lookup", func(t *testing.T) {
+	t.Run("R-EP-010 the endpoint's token types apply to the quader token, without a lookup", func(t *testing.T) {
 		calls := f.ft.calls.Load()
 		seen := &refusals{}
 		rules := defaultRules()
@@ -290,7 +290,7 @@ func TestRegistryRoutesInTheStage(t *testing.T) {
 			Tokens: hashTokens{f.ft}, Principals: fakeStore{}, BasicEnabled: true,
 			Sessions: fakeSessions{info: session.Info{ID: "s1", Principal: alice}},
 			RegistryRealm: func(*http.Request) (string, string) {
-				return registrytoken.Realm("https://trove.example.com")
+				return registrytoken.Realm("https://quader.example.com")
 			},
 		})
 		for _, m := range []string{"GET", "HEAD", "PUT", "DELETE"} {
@@ -298,7 +298,7 @@ func TestRegistryRoutesInTheStage(t *testing.T) {
 			r.AddCookie(&http.Cookie{Name: SessionCookie, Value: "sess"})
 			_, err := s.Authenticate(r, closedRules())
 			e := wantErr(t, err, 401, errs.CodeCredentialsRequired)
-			if e.Challenge != `Bearer realm="https://trove.example.com/v2/_token",service="trove.example.com"` {
+			if e.Challenge != `Bearer realm="https://quader.example.com/v2/_token",service="quader.example.com"` {
 				t.Fatalf("%s: challenge %q", m, e.Challenge)
 			}
 		}
@@ -306,13 +306,13 @@ func TestRegistryRoutesInTheStage(t *testing.T) {
 	t.Run("the challenge below /v2/ names the realm, the service and the scope of the route", func(t *testing.T) {
 		_, err := f.stage.Authenticate(req("POST", "/v2/web/docker-local/app/blobs/uploads/"), closedRules())
 		e := wantErr(t, err, 401, errs.CodeCredentialsRequired)
-		want := `Bearer realm="https://trove.example.com/v2/_token",service="trove.example.com",scope="repository:web/docker-local/app:push"`
+		want := `Bearer realm="https://quader.example.com/v2/_token",service="quader.example.com",scope="repository:web/docker-local/app:push"`
 		if e.Challenge != want {
 			t.Fatalf("challenge %q", e.Challenge)
 		}
 		_, err = f.stage.Authenticate(req("GET", "/v2/"), closedRules())
 		e = wantErr(t, err, 401, errs.CodeCredentialsRequired)
-		if e.Challenge != `Bearer realm="https://trove.example.com/v2/_token",service="trove.example.com"` {
+		if e.Challenge != `Bearer realm="https://quader.example.com/v2/_token",service="quader.example.com"` {
 			t.Fatalf("version check challenge %q", e.Challenge)
 		}
 	})
@@ -334,11 +334,11 @@ func TestRegistryRoutesInTheStage(t *testing.T) {
 func TestAuthenticateTokenRequest(t *testing.T) {
 	f := newRegistryFixture(t)
 	tokenReq := func(m string, hdr ...string) *http.Request {
-		return req(m, "/v2/_token?service=trove.example.com", hdr...)
+		return req(m, "/v2/_token?service=quader.example.com", hdr...)
 	}
 	basic := func(secret string) string { return "Basic " + base64.StdEncoding.EncodeToString([]byte("ci:"+secret)) }
 
-	t.Run("a trove token as Basic, as Bearer or as the form's password yields its principal", func(t *testing.T) {
+	t.Run("a quader token as Basic, as Bearer or as the form's password yields its principal", func(t *testing.T) {
 		for name, c := range map[string]Presented{
 			"basic":  PresentedFrom(tokenReq("GET", "Authorization", basic(f.pat))),
 			"bearer": PresentedFrom(tokenReq("GET", "Authorization", "Bearer "+f.pat)),
@@ -353,7 +353,7 @@ func TestAuthenticateTokenRequest(t *testing.T) {
 			}
 		}
 	})
-	t.Run("an invalid credential is 401 with Basic realm=\"trove\"; a registry token cannot renew itself", func(t *testing.T) {
+	t.Run("an invalid credential is 401 with Basic realm=\"quader\"; a registry token cannot renew itself", func(t *testing.T) {
 		rgt := f.issue(t, false)
 		for name, c := range map[string]Presented{
 			"unknown":    PresentedForm("ci", newToken(t, token.TypePAT)),
@@ -362,7 +362,7 @@ func TestAuthenticateTokenRequest(t *testing.T) {
 		} {
 			_, err := f.stage.AuthenticateTokenRequest(tokenReq("GET"), defaultRules(), c)
 			e := wantErr(t, err, 401, errs.CodeInvalidToken)
-			if e.Challenge != `Basic realm="trove"` {
+			if e.Challenge != `Basic realm="quader"` {
 				t.Fatalf("%s: challenge %q", name, e.Challenge)
 			}
 		}
@@ -377,7 +377,7 @@ func TestAuthenticateTokenRequest(t *testing.T) {
 		}
 		_, err := f.stage.AuthenticateTokenRequest(tokenReq("GET"), closedRules(), none)
 		e := wantErr(t, err, 401, errs.CodeCredentialsRequired)
-		if e.Challenge != `Basic realm="trove"` {
+		if e.Challenge != `Basic realm="quader"` {
 			t.Fatalf("challenge %q", e.Challenge)
 		}
 		res, err := f.stage.AuthenticateTokenRequest(tokenReq("GET"), defaultRules(), none)
@@ -388,7 +388,7 @@ func TestAuthenticateTokenRequest(t *testing.T) {
 	t.Run("a browser gets the Bearer challenge on the token service too", func(t *testing.T) {
 		_, err := f.stage.AuthenticateTokenRequest(tokenReq("GET", "Sec-Fetch-Mode", "navigate"), closedRules(), Presented{})
 		e := wantErr(t, err, 401, errs.CodeCredentialsRequired)
-		if e.Challenge != `Bearer realm="trove"` {
+		if e.Challenge != `Bearer realm="quader"` {
 			t.Fatalf("challenge %q", e.Challenge)
 		}
 	})
@@ -435,7 +435,7 @@ func TestR_AUTH_038_AForgedRegistryTokenCountsAsAFailedCredential(t *testing.T) 
 	}
 }
 
-func TestR_EP_011_TheTroveTokensRulesReachItsRegistryToken(t *testing.T) {
+func TestR_EP_011_TheQuaderTokensRulesReachItsRegistryToken(t *testing.T) {
 	manifest := "/v2/web/docker-local/app/manifests/1"
 	set := func(f *registryFixture, mutate func(*token.Info)) {
 		f.ft.mu.Lock()
@@ -444,7 +444,7 @@ func TestR_EP_011_TheTroveTokensRulesReachItsRegistryToken(t *testing.T) {
 		f.ft.known[f.pat] = info
 		f.ft.mu.Unlock()
 	}
-	t.Run("a trove token bound to another endpoint: bound_elsewhere", func(t *testing.T) {
+	t.Run("a quader token bound to another endpoint: bound_elsewhere", func(t *testing.T) {
 		f := newRegistryFixture(t)
 		set(f, func(i *token.Info) { i.Scope.Endpoints = []string{"customers"} })
 		seen := &refusals{}
@@ -456,7 +456,7 @@ func TestR_EP_011_TheTroveTokensRulesReachItsRegistryToken(t *testing.T) {
 			t.Fatalf("refusal %+v", seen.last())
 		}
 	})
-	t.Run("an unbound trove token on an endpoint that takes bound tokens only: unbound", func(t *testing.T) {
+	t.Run("an unbound quader token on an endpoint that takes bound tokens only: unbound", func(t *testing.T) {
 		f := newRegistryFixture(t)
 		seen := &refusals{}
 		rules := defaultRules()
@@ -467,7 +467,7 @@ func TestR_EP_011_TheTroveTokensRulesReachItsRegistryToken(t *testing.T) {
 			t.Fatalf("refusal %+v", seen.last())
 		}
 	})
-	t.Run("R-AUTH-002 the trove token's owner is disabled: principal_disabled", func(t *testing.T) {
+	t.Run("R-AUTH-002 the quader token's owner is disabled: principal_disabled", func(t *testing.T) {
 		f := newRegistryFixture(t)
 		f.ft.mu.Lock()
 		delete(f.ft.known, f.pat)
@@ -495,7 +495,7 @@ func TestR_AUTH_001_APresentedCredentialNeverPrintsItsSecret(t *testing.T) {
 		fmt.Sprint(holder.Credential), fmt.Sprintf("%v", holder), fmt.Sprintf("%+v", holder), fmt.Sprintf("%#v", holder),
 		fmt.Sprintf("%#v", holder.hidden), holder.hidden.String(), logged.String(),
 	} {
-		if strings.Contains(out, "trv_") || strings.Contains(out, pat[8:20]) {
+		if strings.Contains(out, "qdr_") || strings.Contains(out, pat[8:20]) {
 			t.Fatalf("printed: %s", out)
 		}
 	}

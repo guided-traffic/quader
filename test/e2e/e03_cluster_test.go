@@ -11,7 +11,7 @@ import (
 )
 
 // checkReleaseServes is the part of E0.3 that also holds in the scatter profile (E0.11): every
-// trove pod answers 200 on :8081/readyz, the registry lists the replicas of every role under
+// quader pod answers 200 on :8081/readyz, the registry lists the replicas of every role under
 // its own role (roles) and the Ingress answers ping with OK. wantWorker counts the pods of
 // the main worker and of the worker pool vuln.
 func checkReleaseServes(t *testing.T, wantAPI, wantPackages, wantWorker int) {
@@ -68,10 +68,10 @@ func TestE03DevProfile(t *testing.T) {
 		checkReleaseServes(t, 2, 3, 4)
 	})
 	t.Run("R-HA-051 E0.3 the dependencies are up: two PostgreSQL instances, two Valkey pods, three Sentinels", func(t *testing.T) {
-		if got := strings.TrimSpace(kn(t, "get", "cluster", "trove-db", "-o", "jsonpath={.status.readyInstances}")); got != "2" {
-			t.Errorf("trove-db has %s ready instances, want 2", got)
+		if got := strings.TrimSpace(kn(t, "get", "cluster", "quader-db", "-o", "jsonpath={.status.readyInstances}")); got != "2" {
+			t.Errorf("quader-db has %s ready instances, want 2", got)
 		}
-		for sts, want := range map[string]string{"trove-valkey": "2", "trove-valkey-sentinel": "3"} {
+		for sts, want := range map[string]string{"quader-valkey": "2", "quader-valkey-sentinel": "3"} {
 			if got := strings.TrimSpace(kn(t, "get", "statefulset", sts, "-o", "jsonpath={.status.readyReplicas}")); got != want {
 				t.Errorf("%s has %s ready pods, want %s", sts, got, want)
 			}
@@ -80,12 +80,12 @@ func TestE03DevProfile(t *testing.T) {
 }
 
 func TestE07PodSecurity(t *testing.T) {
-	t.Run("R-HA-033 E0.7 the namespace enforces the restricted Pod Security Standard and the trove pods run in it", func(t *testing.T) {
+	t.Run("R-HA-033 E0.7 the namespace enforces the restricted Pod Security Standard and the quader pods run in it", func(t *testing.T) {
 		got := strings.TrimSpace(kn(t, "get", "namespace", cfg.namespace, "-o", "jsonpath={.metadata.labels.pod-security\\.kubernetes\\.io/enforce}"))
 		if got != "restricted" {
 			t.Fatalf("pod-security.kubernetes.io/enforce = %q, want restricted", got)
 		}
-		for _, p := range livePods(t, selTrove) {
+		for _, p := range livePods(t, selQuader) {
 			if p.Phase != "Running" {
 				t.Errorf("pod %s is %s", p.Name, p.Phase)
 			}
@@ -105,9 +105,9 @@ func TestE07PodSecurity(t *testing.T) {
 // for the probes and the proxy works the way the chart says.)
 func TestE07NetworkPolicy(t *testing.T) {
 	t.Run("R-HA-042 E0.7 the NetworkPolicy is enforced: a pod of another namespace reaches :8080 of an api pod and not :8081", func(t *testing.T) {
-		image := os.Getenv("TROVE_E2E_OPENSSL_IMAGE")
+		image := os.Getenv("QUADER_E2E_OPENSSL_IMAGE")
 		if image == "" {
-			t.Fatal("TROVE_E2E_OPENSSL_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
+			t.Fatal("QUADER_E2E_OPENSSL_IMAGE is not set; run the suite through deploy/dev/e2e.sh")
 		}
 		pk := livePods(t, selAPI)[0]
 		ip := strings.TrimSpace(kn(t, "get", "pod", pk.Name, "-o", "jsonpath={.status.podIP}"))
@@ -115,7 +115,7 @@ func TestE07NetworkPolicy(t *testing.T) {
 		_, _ = kubectl("-n", "default", "delete", "pod", name, "--ignore-not-found", "--wait=true")
 		t.Cleanup(func() { _, _ = kubectl("-n", "default", "delete", "pod", name, "--ignore-not-found", "--wait=false") })
 		// Both ports speak TLS (tls.enabled): the probe completes a handshake and reads the status line, so a
-		// REACHED means a TLS answer from trove and a BLOCKED a connection the policy dropped. The Host is the default
+		// REACHED means a TLS answer from quader and a BLOCKED a connection the policy dropped. The Host is the default
 		// endpoint's (the chart gives it a host check as soon as a further endpoint exists).
 		script := fmt.Sprintf(`get() { printf 'GET %%s HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' "$2" | timeout 6 openssl s_client -quiet -connect %[1]s:"$1" 2>/dev/null | head -1; }; `+
 			`case "$(get 8081 /readyz)" in HTTP/*" 200"*) echo OPS_REACHED ;; *) echo OPS_BLOCKED ;; esac; `+

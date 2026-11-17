@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/manifest"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/publish"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/manifest"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/publish"
 )
 
 // metadataUpdate is the PUT of a package document without an attachment: npm
@@ -18,7 +18,7 @@ import (
 // any 5xx, so a 501 here cost `npm deprecate` 70 seconds of retries (found by the client matrix, E2.1).
 func (f *Format) metadataUpdate(_ context.Context, _ *formats.Request, _ http.ResponseWriter, _ name.Name, env *publish.Envelope) error {
 	if len(env.Versions) == 0 {
-		return manifest.BadPublish("maintainer lists are not supported; ownership is managed in trove")
+		return manifest.BadPublish("maintainer lists are not supported; ownership is managed in Quader")
 	}
 	return errs.E(errs.NotFound, errs.CodeNotFound, "Deprecating a version is not available yet.")
 }

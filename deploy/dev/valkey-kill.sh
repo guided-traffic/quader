@@ -42,9 +42,9 @@ else
 fi
 
 # Both pods ready and the replica linked to the primary.
-kn wait --for=condition=Ready pod/trove-valkey-0 pod/trove-valkey-1 --timeout=3m >/dev/null
+kn wait --for=condition=Ready pod/quader-valkey-0 pod/quader-valkey-1 --timeout=3m >/dev/null
 primary_pod="${after%%.*}"
-replica_pod="trove-valkey-0"; [ "$primary_pod" = "trove-valkey-0" ] && replica_pod="trove-valkey-1"
+replica_pod="quader-valkey-0"; [ "$primary_pod" = "quader-valkey-0" ] && replica_pod="quader-valkey-1"
 deadline=$(( $(date +%s) + 120 ))
 until [ "$(valkey_cli "$replica_pod" role | sed -n '1p;4p' | tr '\n' ' ')" = "slave connected " ]; do
   [ "$(date +%s)" -lt "$deadline" ] || die "$replica_pod is not a connected replica: $(valkey_cli "$replica_pod" role | tr '\n' ' ')"

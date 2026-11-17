@@ -2,7 +2,7 @@
 // the list under it on the menu surface, grouped with quiet headings, the admin groups apart behind a line and marked, and below
 // 36 rem a sheet over the top bar's width (Q-UI-403). Global and scoped to the element, as the shell's styles are.
 
-trove-search-field {
+quader-search-field {
   display: block;
   position: relative;
   min-inline-size: 0;
@@ -18,18 +18,18 @@ trove-search-field {
   .search-box {
     display: flex;
     align-items: center;
-    gap: var(--trove-space-1);
+    gap: var(--quader-space-1);
     box-sizing: border-box;
     inline-size: 100%;
-    block-size: var(--trove-control-height);
-    padding-inline: var(--trove-space-2) var(--trove-space-1);
-    border: 1px solid var(--trove-search-border);
-    border-radius: var(--trove-search-radius);
-    background: var(--trove-search-bg);
-    color: var(--trove-search-fg);
+    block-size: var(--quader-control-height);
+    padding-inline: var(--quader-space-2) var(--quader-space-1);
+    border: 1px solid var(--quader-search-border);
+    border-radius: var(--quader-search-radius);
+    background: var(--quader-search-bg);
+    color: var(--quader-search-fg);
 
     &:focus-within {
-      outline: 2px solid var(--trove-nav-accent);
+      outline: 2px solid var(--quader-nav-accent);
       outline-offset: 2px;
     }
   }
@@ -37,7 +37,7 @@ trove-search-field {
   .search-icon {
     flex: none;
     font-size: 1rem;
-    color: var(--trove-search-muted);
+    color: var(--quader-search-muted);
   }
 
   input {
@@ -57,7 +57,7 @@ trove-search-field {
     }
 
     &::placeholder {
-      color: var(--trove-search-muted);
+      color: var(--quader-search-muted);
       opacity: 1;
     }
   }
@@ -67,11 +67,11 @@ trove-search-field {
     flex: none;
     display: inline-flex;
     align-items: center;
-    gap: var(--trove-space-1);
-    padding-inline: var(--trove-space-2) 0;
-    border-radius: var(--trove-radius-full);
-    background: var(--trove-control-disabled-bg);
-    color: var(--trove-control-fg);
+    gap: var(--quader-space-1);
+    padding-inline: var(--quader-space-2) 0;
+    border-radius: var(--quader-radius-full);
+    background: var(--quader-control-disabled-bg);
+    color: var(--quader-control-fg);
     font-size: 0.75rem;
     line-height: 1.5rem;
     white-space: nowrap;
@@ -84,7 +84,7 @@ trove-search-field {
     justify-content: center;
     padding: 0;
     border: 0;
-    border-radius: var(--trove-radius-s);
+    border-radius: var(--quader-radius-s);
     background: none;
     color: inherit;
     cursor: pointer;
@@ -103,10 +103,10 @@ trove-search-field {
     flex: none;
     inline-size: 1.75rem;
     block-size: 1.75rem;
-    color: var(--trove-search-muted);
+    color: var(--quader-search-muted);
 
     &:hover {
-      background: var(--trove-nav-hover);
+      background: var(--quader-nav-hover);
     }
 
     .material-icons {
@@ -117,47 +117,47 @@ trove-search-field {
   // The list: on the menu surface, as wide as the field and at least 24 rem, below it.
   .search-popup {
     position: absolute;
-    inset-block-start: calc(100% + var(--trove-space-1));
+    inset-block-start: calc(100% + var(--quader-space-1));
     inset-inline: 0;
     z-index: 900;
     box-sizing: border-box;
-    min-inline-size: min(24rem, 100vw - 2 * var(--trove-space-2));
+    min-inline-size: min(24rem, 100vw - 2 * var(--quader-space-2));
     max-block-size: min(70vh, 36rem);
     overflow-y: auto;
-    padding: var(--trove-space-1);
-    border: 1px solid var(--trove-menu-border);
-    border-radius: var(--trove-radius-m);
-    background: var(--trove-menu-bg);
-    color: var(--trove-control-fg);
-    box-shadow: var(--trove-elevation-2);
+    padding: var(--quader-space-1);
+    border: 1px solid var(--quader-menu-border);
+    border-radius: var(--quader-radius-m);
+    background: var(--quader-menu-bg);
+    color: var(--quader-control-fg);
+    box-shadow: var(--quader-elevation-2);
     font-size: 0.875rem;
   }
 
   .search-status {
     margin: 0;
-    padding: var(--trove-space-2) var(--trove-space-3);
-    color: var(--trove-text-muted);
+    padding: var(--quader-space-2) var(--quader-space-3);
+    color: var(--quader-text-muted);
   }
 
   .search-group + .search-group,
   .search-group + .search-option,
   .search-option + .search-group {
-    margin-block-start: var(--trove-space-1);
+    margin-block-start: var(--quader-space-1);
   }
 
   // The admin area's groups come last, apart behind a line (R-UI-099).
   .search-group.admin-start {
-    margin-block-start: var(--trove-space-2);
-    padding-block-start: var(--trove-space-2);
-    border-block-start: 1px solid var(--trove-menu-border);
+    margin-block-start: var(--quader-space-2);
+    padding-block-start: var(--quader-space-2);
+    border-block-start: 1px solid var(--quader-menu-border);
   }
 
   .search-group-heading {
     display: flex;
     align-items: center;
-    gap: var(--trove-space-2);
-    padding: var(--trove-space-2) var(--trove-space-3) var(--trove-space-1);
-    color: var(--trove-text-muted);
+    gap: var(--quader-space-2);
+    padding: var(--quader-space-2) var(--quader-space-3) var(--quader-space-1);
+    color: var(--quader-text-muted);
     font-size: 0.75rem;
     font-weight: 600;
   }
@@ -165,20 +165,20 @@ trove-search-field {
   .search-option {
     display: flex;
     align-items: center;
-    gap: var(--trove-space-3);
+    gap: var(--quader-space-3);
     min-block-size: 2rem;
-    padding: var(--trove-space-1) var(--trove-space-3);
-    border-radius: var(--trove-radius-s);
+    padding: var(--quader-space-1) var(--quader-space-3);
+    border-radius: var(--quader-radius-s);
     cursor: pointer;
 
     &:hover {
-      background: var(--trove-menu-hover);
+      background: var(--quader-menu-hover);
     }
 
     // The active entry: the menu's hover fill and the focus ring, since the focus itself stays in the field.
     &.active {
-      background: var(--trove-menu-hover);
-      outline: var(--trove-focus-ring);
+      background: var(--quader-menu-hover);
+      outline: var(--quader-focus-ring);
       outline-offset: -2px;
     }
 
@@ -194,7 +194,7 @@ trove-search-field {
     justify-content: center;
     inline-size: 1.25rem;
     font-size: 1.125rem;
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
 
     .material-icons {
       font-size: 1.125rem;
@@ -208,9 +208,9 @@ trove-search-field {
     justify-content: center;
     inline-size: 1.25rem;
     block-size: 1.25rem;
-    border-radius: var(--trove-radius-s);
-    background: var(--trove-accent-fill);
-    color: var(--trove-on-accent);
+    border-radius: var(--quader-radius-s);
+    background: var(--quader-accent-fill);
+    color: var(--quader-on-accent);
     font-size: 0.6875rem;
     font-weight: 600;
 
@@ -236,15 +236,15 @@ trove-search-field {
   }
 
   .search-option-secondary {
-    color: var(--trove-text-muted);
+    color: var(--quader-text-muted);
   }
 
   .search-admin-mark {
     flex: none;
     display: inline-flex;
     align-items: center;
-    gap: var(--trove-space-1);
-    color: var(--trove-text-muted);
+    gap: var(--quader-space-1);
+    color: var(--quader-text-muted);
     font-size: 0.75rem;
     font-weight: 400;
 
@@ -259,23 +259,23 @@ trove-search-field {
     inset: 0;
     z-index: 950;
     box-sizing: border-box;
-    padding: var(--trove-space-2);
-    background: var(--trove-nav-bg);
-    color: var(--trove-nav-fg);
-    box-shadow: var(--trove-elevation-2);
+    padding: var(--quader-space-2);
+    background: var(--quader-nav-bg);
+    color: var(--quader-nav-fg);
+    box-shadow: var(--quader-elevation-2);
   }
 
   .search-sheet-head {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
     position: relative;
 
     .search-sheet-close {
       grid-row: 1;
       grid-column: 2;
-      color: var(--trove-nav-fg);
+      color: var(--quader-nav-fg);
     }
 
     .search-popup {
@@ -283,7 +283,7 @@ trove-search-field {
       grid-row: 2;
       grid-column: 1 / -1;
       min-inline-size: 0;
-      max-block-size: calc(100dvh - var(--trove-topbar-height) - 2 * var(--trove-space-2));
+      max-block-size: calc(100dvh - var(--quader-topbar-height) - 2 * var(--quader-space-2));
     }
   }
 }
@@ -291,9 +291,9 @@ trove-search-field {
 .search-filter-menu .search-admin-mark {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
   margin-inline-start: auto;
-  color: var(--trove-text-muted);
+  color: var(--quader-text-muted);
   font-size: 0.75rem;
 
   .material-icons {
@@ -302,7 +302,7 @@ trove-search-field {
 }
 
 // The top bar's focus ring belongs to the field's box (`:focus-within`), not to the bare input inside it.
-trove-root .topbar trove-search-field input:focus-visible {
+quader-root .topbar quader-search-field input:focus-visible {
   outline: none;
 }
 

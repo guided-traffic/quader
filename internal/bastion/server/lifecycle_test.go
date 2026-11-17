@@ -14,15 +14,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/downloads"
-	"github.com/guided-traffic/trove/internal/bastion/engine"
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
-	bmetrics "github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/downloads"
+	"github.com/guided-traffic/quader/internal/bastion/engine"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
+	bmetrics "github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // linkedConfig is a configuration whose main installation is the fake: its certificate as ca_file, short
@@ -70,7 +70,7 @@ func newLinked(t *testing.T, cfgYAML string, deps func(*engine.Deps)) (*Server, 
 		t.Fatalf("config: %v", err)
 	}
 	logs := &syncBuffer{}
-	srv, err := New(Options{Loaded: loaded, Environ: []string{"TROVE_POD_NAME=replica-a"}, LogWriter: logs, DrainDelay: 10 * time.Millisecond, Deps: deps})
+	srv, err := New(Options{Loaded: loaded, Environ: []string{"QUADER_POD_NAME=replica-a"}, LogWriter: logs, DrainDelay: 10 * time.Millisecond, Deps: deps})
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -123,8 +123,8 @@ func TestR_BAS_043_AReplicaThatCannotReachTheMainInstallationBecomesReadyAndConn
 		t.Fatalf("/readyz = %d", code)
 	}
 	time.Sleep(300 * time.Millisecond)
-	if body := metricsBody(t, srv); !strings.Contains(body, "trove_bastion_main_reachable 0") || strings.Contains(body, "trove_bastion_main_unreachable_since_timestamp_seconds 0\n") {
-		t.Errorf("an unreachable replica reports:\n%s", grepLines(body, "trove_bastion_main_"))
+	if body := metricsBody(t, srv); !strings.Contains(body, "quader_bastion_main_reachable 0") || strings.Contains(body, "quader_bastion_main_unreachable_since_timestamp_seconds 0\n") {
+		t.Errorf("an unreachable replica reports:\n%s", grepLines(body, "quader_bastion_main_"))
 	}
 	if st := srv.link.State(); st.Reachable || st.Handshaken {
 		t.Errorf("link state while the main installation is down: %+v", st)
@@ -138,7 +138,7 @@ func TestR_BAS_043_AReplicaThatCannotReachTheMainInstallationBecomesReadyAndConn
 	main.SetDown(false)
 	eventually(t, 20*time.Second, "reachable without a restart", func() bool { return srv.link.State().Reachable })
 	body := metricsBody(t, srv)
-	for _, want := range []string{"trove_bastion_main_reachable 1", "trove_bastion_main_unreachable_since_timestamp_seconds 0", fmt.Sprintf(`trove_bastion_interface_version{side="main"} %d`, iface.InterfaceVersion), "trove_bastion_main_token_refused 0"} {
+	for _, want := range []string{"quader_bastion_main_reachable 1", "quader_bastion_main_unreachable_since_timestamp_seconds 0", fmt.Sprintf(`quader_bastion_interface_version{side="main"} %d`, iface.InterfaceVersion), "quader_bastion_main_token_refused 0"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("metrics lack %q", want)
 		}
@@ -354,10 +354,10 @@ func TestR_BAS_006_ARotatedTokenFileIsUsedByARunningReplica(t *testing.T) {
 	})
 	main.Revoke(first)
 	// The malformed file keeps the second token and is counted.
-	malformed := "trv_bst_" + strings.Repeat("Q", 49)
+	malformed := "qdr_bst_" + strings.Repeat("Q", 49)
 	tokenFileFor(t, dir, malformed)
 	eventually(t, 10*time.Second, "the refusal counted", func() bool {
-		return strings.Contains(metricsBody(t, srv), `trove_bastion_token_reloads_total{outcome="refused"} 1`)
+		return strings.Contains(metricsBody(t, srv), `quader_bastion_token_reloads_total{outcome="refused"} 1`)
 	})
 	if srv.holder.Token().Value != second {
 		t.Error("a malformed file replaced the token")
@@ -367,7 +367,7 @@ func TestR_BAS_006_ARotatedTokenFileIsUsedByARunningReplica(t *testing.T) {
 		t.Error("the replica lost the main installation with the old token revoked and the new one in use")
 	}
 	body := metricsBody(t, srv)
-	for _, want := range []string{`trove_bastion_token_reloads_total{outcome="loaded"} 2`, "trove_bastion_token_remaining_seconds", "trove_bastion_main_token_refused 0"} {
+	for _, want := range []string{`quader_bastion_token_reloads_total{outcome="loaded"} 2`, "quader_bastion_token_remaining_seconds", "quader_bastion_main_token_refused 0"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("metrics lack %q", want)
 		}
@@ -469,8 +469,8 @@ func TestR_BAS_037_ARequestFromABlockedAddressIsCountedButNotLoggedOneByOne(t *t
 	if strings.Contains(logs.String(), "quiet-request") {
 		t.Errorf("a quiet request is in the request log:\n%s", logs.String())
 	}
-	if body := metricsBody(t, srv); !strings.Contains(body, `trove_bastion_refused_total{reason="blocked"} 3`) {
-		t.Errorf("the refusals are not counted:\n%s", grepLines(body, "trove_bastion_refused_total"))
+	if body := metricsBody(t, srv); !strings.Contains(body, `quader_bastion_refused_total{reason="blocked"} 3`) {
+		t.Errorf("the refusals are not counted:\n%s", grepLines(body, "quader_bastion_refused_total"))
 	}
 }
 
@@ -492,6 +492,6 @@ func TestR_BAS_031_TheServerRunsTheCacheSweeper(t *testing.T) {
 	}
 	run(t, srv, logs)
 	eventually(t, 5*time.Second, "the sweeper's first measurement", func() bool {
-		return strings.Contains(metricsBody(t, srv), `trove_bastion_cache_bytes{area="artifacts"} 1234`)
+		return strings.Contains(metricsBody(t, srv), `quader_bastion_cache_bytes{area="artifacts"} 1234`)
 	})
 }

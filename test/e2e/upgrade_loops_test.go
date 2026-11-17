@@ -70,8 +70,8 @@ func buildUpgradeFixture(t *testing.T) *upgradeFx {
 	t.Helper()
 	markScatterProfile()
 	bootstrapAdmin(t)
-	if stubHost := os.Getenv("TROVE_E2E_NPMSTUB_HOST"); stubHost == "" || os.Getenv("TROVE_E2E_NUGETSTUB_HOST") == "" {
-		t.Fatal("TROVE_E2E_NPMSTUB_HOST and TROVE_E2E_NUGETSTUB_HOST are not set: run the upgrade tests through `deploy/dev/e2e.sh upgrade`, which deploys the test upstreams")
+	if stubHost := os.Getenv("QUADER_E2E_NPMSTUB_HOST"); stubHost == "" || os.Getenv("QUADER_E2E_NUGETSTUB_HOST") == "" {
+		t.Fatal("QUADER_E2E_NPMSTUB_HOST and QUADER_E2E_NUGETSTUB_HOST are not set: run the upgrade tests through `deploy/dev/e2e.sh upgrade`, which deploys the test upstreams")
 	}
 	fx := &upgradeFx{}
 	npmFx, err := buildNPMFixture(t)
@@ -156,9 +156,9 @@ var nugetRecord = regexp.MustCompile(`^R restore (\d+) (\d+) (\d+) (\d+)$`)
 
 func startNuGetLoops(t *testing.T, fx *upgradeFx, n int) []*upNuGetLoop {
 	t.Helper()
-	pods, err := strconv.Atoi(os.Getenv("TROVE_E2E_NUGET_CLIENTS_PODS"))
+	pods, err := strconv.Atoi(os.Getenv("QUADER_E2E_NUGET_CLIENTS_PODS"))
 	if err != nil || pods < 1 {
-		t.Fatal("TROVE_E2E_NUGET_CLIENTS_PODS is not set; run the upgrade tests through `deploy/dev/e2e.sh upgrade`")
+		t.Fatal("QUADER_E2E_NUGET_CLIENTS_PODS is not set; run the upgrade tests through `deploy/dev/e2e.sh upgrade`")
 	}
 	low := strings.ToLower
 	dirs := fmt.Sprintf("%s/1.0.0 %s/1.0.0", low(fx.nugetID), low(upgradeNuGetRemote))
@@ -256,12 +256,12 @@ func startBrowserLoop(t *testing.T, name string) *upBrowserLoop {
 	// the other journeys sign in with the break-glass password and as alice and bob; this one needs the first only, and
 	// support.ts reads all three at import
 	env := append(os.Environ(),
-		"TROVE_E2E_EDGE_URL="+cfg.edgeURL,
+		"QUADER_E2E_EDGE_URL="+cfg.edgeURL,
 		"NODE_EXTRA_CA_CERTS="+cfg.caFile,
-		"TROVE_E2E_ALICE_PASSWORD="+secretValue(t, "trove-keycloak", "alice-password"),
-		"TROVE_E2E_BOB_PASSWORD="+secretValue(t, "trove-keycloak", "bob-password"),
-		"TROVE_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "trove-break-glass", "password"),
-		"TROVE_E2E_ADMIN_TOKEN="+adminToken(t),
+		"QUADER_E2E_ALICE_PASSWORD="+secretValue(t, "quader-keycloak", "alice-password"),
+		"QUADER_E2E_BOB_PASSWORD="+secretValue(t, "quader-keycloak", "bob-password"),
+		"QUADER_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "quader-break-glass", "password"),
+		"QUADER_E2E_ADMIN_TOKEN="+adminToken(t),
 	)
 	artifacts := filepath.Join(cfg.repo, ".out", "playwright", "upgrade", name)
 	_ = os.RemoveAll(artifacts)
@@ -455,7 +455,7 @@ func (r upResult) requireClean(t *testing.T, skewFrom string, windows ...upWindo
 const edgeNamespace = "ingress-controller"
 
 // edgeGapLine matches an access line of the edge for a request it answered 503 because the backend of its route had no
-// server: `<backend>/<NOSRV> Tq/Tw/Tc/Tr/Ta 503 …`. A 503 of trove itself names its server; a request the client gave up
+// server: `<backend>/<NOSRV> Tq/Tw/Tc/Tr/Ta 503 …`. A 503 of quader itself names its server; a request the client gave up
 // on before a server was chosen has the status -1.
 var edgeGapLine = regexp.MustCompile(`\S+/<NOSRV> \S+ 503 `)
 

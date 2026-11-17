@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // R-VULN-015, R-ARCH-027: a cached tarball whose package document is expired is served only after the document was revalidated,

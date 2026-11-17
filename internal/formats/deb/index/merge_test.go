@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
 )
 
 func para(pkg, ver, arch, filename string) string {

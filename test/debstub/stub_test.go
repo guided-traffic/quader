@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/openpgp"
-	"github.com/guided-traffic/trove/test/debstub/debgen"
+	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
 )
 
-func TestR_DEB_035_KeysAreFixedAndTroveReadsThem(t *testing.T) {
+func TestR_DEB_035_KeysAreFixedAndQuaderReadsThem(t *testing.T) {
 	a, err := New(Config{})
 	if err != nil {
 		t.Fatal(err)
@@ -33,8 +33,8 @@ func TestR_DEB_035_KeysAreFixedAndTroveReadsThem(t *testing.T) {
 	}
 	// The fingerprints are pinned: documents and tests name them (docs/developer/deb.md).
 	for name, want := range map[string]string{
-		"a": "744FA9DC6DDF29FCBBDCFC3F0F1B0C0EE2D15353", "b": "1740FB0FDF7BEDEAE568BFDFA14B934907B0A66E",
-		"c": "112CAA63A6EDBB4E9727D9D67BF765B76B7E6242", "d": "AA0B4230C41119252C6CFF1C942F62DCF3C4BBE2",
+		"a": "92AC69F760CADB5275DE210678E6472D94F2F76D", "b": "E4AA038747A4192E6471205752EC00DCFEEB4CE1",
+		"c": "02DDA0FC75F660D56563276AE130C8988DCC65DF", "d": "197086A595BB8316BB4BD87F2783E31DCA018F44",
 	} {
 		if k, _ := a.Key(name); k.Fingerprint != want {
 			t.Errorf("key %s = %s, want %s", name, k.Fingerprint, want)
@@ -42,14 +42,14 @@ func TestR_DEB_035_KeysAreFixedAndTroveReadsThem(t *testing.T) {
 	}
 	certs, err := openpgp.ParseCertificates(mustRing(t, a, "a", "b", "c"), time.Now(), openpgp.Limits{})
 	if err != nil || len(certs) != 3 {
-		t.Fatalf("trove reads keys a to c: %v", err)
+		t.Fatalf("quader reads keys a to c: %v", err)
 	}
 	for _, c := range certs {
 		if c.Algorithm != openpgp.AlgorithmEdDSALegacy || !c.Created.Equal(KeyCreated) || !c.BoundSince.Equal(KeyCreated) {
 			t.Errorf("certificate %s: algorithm %d, created %s, bound %s", c.Fingerprint, c.Algorithm, c.Created, c.BoundSince)
 		}
 	}
-	// The key d expired in 2024 and trove refuses it as a configured key, as the spec says.
+	// The key d expired in 2024 and quader refuses it as a configured key, as the spec says.
 	if _, err := openpgp.ParseCertificates(mustRing(t, a, "d"), time.Now(), openpgp.Limits{}); !errors.Is(err, openpgp.ErrInvalid) || !strings.Contains(err.Error(), "expired") {
 		t.Errorf("key d: %v", err)
 	}
@@ -67,8 +67,8 @@ func mustRing(t *testing.T, s *Server, names ...string) []byte {
 	return r
 }
 
-// A release is signed so that trove's own verifier, an independent implementation of the same specification, accepts it.
-func TestR_DEB_035_ReleasesVerifyWithTrovesVerifier(t *testing.T) {
+// A release is signed so that quader's own verifier, an independent implementation of the same specification, accepts it.
+func TestR_DEB_035_ReleasesVerifyWithQuadersVerifier(t *testing.T) {
 	f := newFixture(t, Config{})
 	certs := f.certs("a")
 	now := time.Now()
@@ -159,24 +159,24 @@ func TestR_DEB_035_IndexesNamePackagesThatInstall(t *testing.T) {
 	if gz := f.must200("/debian/dists/stable/main/binary-amd64/Packages.gz"); !bytes.Equal(gunzipBytes(t, gz), plain) {
 		t.Error("Packages.gz is not Packages compressed")
 	}
-	for _, want := range []string{"Package: trove-hello\n", "Version: 1.0-1\n", "Architecture: amd64\n", "Filename: pool/main/t/trove-hello/trove-hello_1.0-1_amd64.deb\n", "Package: libtrove1\n", "Source: libtrove\n", "SHA256: "} {
+	for _, want := range []string{"Package: quader-hello\n", "Version: 1.0-1\n", "Architecture: amd64\n", "Filename: pool/main/q/quader-hello/quader-hello_1.0-1_amd64.deb\n", "Package: libquader1\n", "Source: libquader\n", "SHA256: "} {
 		if !strings.Contains(string(plain), want) {
 			t.Errorf("Packages lacks %q", want)
 		}
 	}
 	// Architecture all lives in binary-all, contrib in its own component, testing has newer versions.
 	all := string(f.must200("/debian/dists/stable/main/binary-all/Packages"))
-	if !strings.Contains(all, "Package: trove-hello-doc\n") || strings.Contains(all, "Package: trove-hello\n") {
+	if !strings.Contains(all, "Package: quader-hello-doc\n") || strings.Contains(all, "Package: quader-hello\n") {
 		t.Errorf("binary-all:\n%s", all)
 	}
-	if c := string(f.must200("/debian/dists/stable/contrib/binary-amd64/Packages")); !strings.Contains(c, "Package: trove-extra\n") || strings.Contains(c, "trove-tools") {
+	if c := string(f.must200("/debian/dists/stable/contrib/binary-amd64/Packages")); !strings.Contains(c, "Package: quader-extra\n") || strings.Contains(c, "quader-tools") {
 		t.Errorf("contrib:\n%s", c)
 	}
 	if tt := string(f.must200("/debian/dists/testing/main/binary-amd64/Packages")); !strings.Contains(tt, "Version: 1.1-1\n") || strings.Contains(tt, "Version: 1.0-1\nInstalled") {
 		t.Errorf("testing:\n%s", tt)
 	}
-	if !strings.Contains(string(f.must200("/debian/dists/testing/main/binary-all/Packages")), "Package: trove-newpkg\n") {
-		t.Error("testing lacks trove-newpkg")
+	if !strings.Contains(string(f.must200("/debian/dists/testing/main/binary-all/Packages")), "Package: quader-newpkg\n") {
+		t.Error("testing lacks quader-newpkg")
 	}
 	// Every Filename is served and matches the paragraph's Size and SHA256.
 	for _, dir := range []string{"stable", "testing"} {
@@ -198,7 +198,7 @@ func TestR_DEB_035_IndexesNamePackagesThatInstall(t *testing.T) {
 	}
 	src := string(f.must200("/debian/dists/stable/main/source/Sources"))
 	fields := paragraph(strings.TrimSpace(src))
-	if fields["Package"] != "trove-hello" || fields["Directory"] != "pool/main/t/trove-hello" || !strings.Contains(fields["Files"], ".dsc") {
+	if fields["Package"] != "quader-hello" || fields["Directory"] != "pool/main/q/quader-hello" || !strings.Contains(fields["Files"], ".dsc") {
 		t.Errorf("Sources: %v", fields)
 	}
 	for _, line := range strings.Split(fields["Checksums-Sha256"], "\n") {
@@ -229,14 +229,14 @@ func paragraph(p string) map[string]string {
 func TestR_DEB_035_FlatRepositories(t *testing.T) {
 	f := newFixture(t, Config{})
 	dir := string(f.must200("/flat/binary/Packages"))
-	if !strings.Contains(dir, "Filename: binary/trove-flat_1.0-1_all.deb\n") {
+	if !strings.Contains(dir, "Filename: binary/quader-flat_1.0-1_all.deb\n") {
 		t.Errorf("flat directory:\n%s", dir)
 	}
-	if deb := f.must200("/flat/binary/trove-flat_1.0-1_all.deb"); len(deb) == 0 {
+	if deb := f.must200("/flat/binary/quader-flat_1.0-1_all.deb"); len(deb) == 0 {
 		t.Error("flat package")
 	}
 	root := string(f.must200("/flatroot/Packages"))
-	if !strings.Contains(root, "Filename: trove-flat_1.0-1_all.deb\n") {
+	if !strings.Contains(root, "Filename: quader-flat_1.0-1_all.deb\n") {
 		t.Errorf("flat root:\n%s", root)
 	}
 	// APT asks for /./InRelease; the stub serves it and counts the path as written.
@@ -250,7 +250,7 @@ func TestR_DEB_035_FlatRepositories(t *testing.T) {
 	if fields, _ := parseRelease(t, f.must200("/flatroot/Release")); fields["Components"] != "" {
 		t.Errorf("a flat Release names components: %v", fields)
 	}
-	if f.must200("/flatroot/trove-flat_1.0-1_all.deb") == nil {
+	if f.must200("/flatroot/quader-flat_1.0-1_all.deb") == nil {
 		t.Error("flat root package")
 	}
 }
@@ -325,7 +325,7 @@ func TestR_DEB_035_ConditionalRequestsAndValidators(t *testing.T) {
 
 func TestR_DEB_035_RangeRequests(t *testing.T) {
 	f := newFixture(t, Config{})
-	path := "/debian/pool/main/t/trove-hello/trove-hello_1.0-1_amd64.deb"
+	path := "/debian/pool/main/q/quader-hello/quader-hello_1.0-1_amd64.deb"
 	full := f.must200(path)
 	r := f.do("GET", path, map[string]string{"Range": "bytes=10-19"})
 	if r.status != 206 || !bytes.Equal(r.body, full[10:20]) {
@@ -387,7 +387,7 @@ func TestR_DEB_035_NewGenerationKeepsHistoryAndMakesPdiffs(t *testing.T) {
 		t.Error("the Date did not change")
 	}
 	newPlain := f.must200(dir + idxPath)
-	if !bytes.HasPrefix(newPlain, oldPlain) || !strings.Contains(string(newPlain[len(oldPlain):]), "Package: trove-zz-g001\n") {
+	if !bytes.HasPrefix(newPlain, oldPlain) || !strings.Contains(string(newPlain[len(oldPlain):]), "Package: quader-zz-g001\n") {
 		t.Fatal("the new Packages is not the old plus the new package")
 	}
 	// Only the index that changed has a new digest; the others keep theirs.
@@ -410,7 +410,7 @@ func TestR_DEB_035_NewGenerationKeepsHistoryAndMakesPdiffs(t *testing.T) {
 	if got := f.must200(dir + "main/binary-amd64/by-hash/SHA256/" + sha(oldPlain)); !bytes.Equal(got, oldPlain) {
 		t.Error("the old Packages is gone from by-hash")
 	}
-	if got := f.must200("/debian/pool/main/t/trove-zz-g001/trove-zz-g001_1.0-1_amd64.deb"); len(got) == 0 {
+	if got := f.must200("/debian/pool/main/q/quader-zz-g001/quader-zz-g001_1.0-1_amd64.deb"); len(got) == 0 {
 		t.Error("the new package is not served")
 	}
 
@@ -480,11 +480,11 @@ func TestR_DEB_035_FlatNewGeneration(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if !strings.Contains(string(f.must200("/flat/binary/Packages")), "Filename: binary/trove-zz-g001_1.0-1_all.deb\n") {
+	if !strings.Contains(string(f.must200("/flat/binary/Packages")), "Filename: binary/quader-zz-g001_1.0-1_all.deb\n") {
 		t.Error("flat generation")
 	}
-	f.must200("/flat/binary/trove-zz-g001_1.0-1_all.deb")
-	f.must200("/flatroot/trove-zz-g001_1.0-1_all.deb")
+	f.must200("/flat/binary/quader-zz-g001_1.0-1_all.deb")
+	f.must200("/flatroot/quader-zz-g001_1.0-1_all.deb")
 	f.must200("/flatroot/Packages.diff/Index")
 }
 
@@ -492,7 +492,7 @@ func TestR_DEB_035_SigningSwitches(t *testing.T) {
 	f := newFixture(t, Config{})
 	now := time.Now()
 	a, b := f.certs("a")[0], f.certs("b")[0]
-	// The stub's key d is expired, so trove cannot even configure it; the verifier is handed its certificate directly.
+	// The stub's key d is expired, so quader cannot even configure it; the verifier is handed its certificate directly.
 	dRing := mustRing(t, f.stub, "d")
 	dCerts := certsAt(t, dRing, time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC))
 	dir := "/debian/dists/stable/"
@@ -617,7 +617,7 @@ func TestR_DEB_035_DateAndValidUntilSwitches(t *testing.T) {
 func TestR_DEB_035_ContentSwitches(t *testing.T) {
 	f := newFixture(t, Config{})
 	dir := "/debian/dists/stable/"
-	deb := "/debian/pool/main/t/trove-hello/trove-hello_1.0-1_amd64.deb"
+	deb := "/debian/pool/main/q/quader-hello/quader-hello_1.0-1_amd64.deb"
 
 	_ = f.stub.SetMode(Mode{NotFound: []string{"stable"}})
 	for _, p := range []string{dir + "InRelease", dir + "Release", dir + "main/binary-amd64/Packages", "/debian/dists/ratel/Release"} {
@@ -630,12 +630,12 @@ func TestR_DEB_035_ContentSwitches(t *testing.T) {
 
 	_ = f.stub.SetMode(Mode{})
 	right := f.must200(deb)
-	_ = f.stub.SetMode(Mode{WrongPackage: []string{"trove-hello_1.0-1_amd64.deb"}})
+	_ = f.stub.SetMode(Mode{WrongPackage: []string{"quader-hello_1.0-1_amd64.deb"}})
 	wrong := f.must200(deb)
 	if len(wrong) != len(right) || bytes.Equal(wrong, right) {
 		t.Error("the package does not differ from its index entry")
 	}
-	if !bytes.Equal(f.must200("/debian/pool/main/t/trove-hello/trove-hello_1.0-1_arm64.deb"), f.stub.corpus.static["/debian/pool/main/t/trove-hello/trove-hello_1.0-1_arm64.deb"]) {
+	if !bytes.Equal(f.must200("/debian/pool/main/q/quader-hello/quader-hello_1.0-1_arm64.deb"), f.stub.corpus.static["/debian/pool/main/q/quader-hello/quader-hello_1.0-1_arm64.deb"]) {
 		t.Error("another package changed")
 	}
 
@@ -667,7 +667,7 @@ func TestR_DEB_035_DownDelayFailAndThrottle(t *testing.T) {
 		t.Error("a reset connection answered")
 	}
 	_ = f.stub.SetMode(Mode{FailStatus: map[string]int{ClassPool: 502}})
-	if r := f.get("/debian/pool/main/t/trove-hello/trove-hello_1.0-1_amd64.deb"); r.status != 502 {
+	if r := f.get("/debian/pool/main/q/quader-hello/quader-hello_1.0-1_amd64.deb"); r.status != 502 {
 		t.Errorf("fail_status = %d", r.status)
 	}
 	f.must200(path)
@@ -698,7 +698,7 @@ func TestR_DEB_035_DownDelayFailAndThrottle(t *testing.T) {
 		t.Errorf("state %+v", st)
 	}
 	_ = f.stub.SetThrottle(Throttle{Mode: ThrottleQuota403, RetryAfterSeconds: 30, Class: ClassPool})
-	if r := f.get("/debian/pool/main/t/trove-hello/trove-hello_1.0-1_amd64.deb"); r.status != 403 || r.header.Get("X-RateLimit-Reset") == "" {
+	if r := f.get("/debian/pool/main/q/quader-hello/quader-hello_1.0-1_amd64.deb"); r.status != 403 || r.header.Get("X-RateLimit-Reset") == "" {
 		t.Errorf("quota = %d %v", r.status, r.header)
 	}
 	f.must200(path) // another class, not throttled
@@ -711,7 +711,7 @@ func TestR_DEB_035_CountsAndInflight(t *testing.T) {
 	f := newFixture(t, Config{})
 	f.must200("/debian/dists/stable/InRelease")
 	f.must200("/debian/dists/stable/main/binary-amd64/Packages.gz")
-	f.must200("/debian/pool/main/t/trove-hello/trove-hello_1.0-1_amd64.deb")
+	f.must200("/debian/pool/main/q/quader-hello/quader-hello_1.0-1_amd64.deb")
 	f.get("/debian/dists/stable/nope")
 	_, sums := parseRelease(t, f.must200("/debian/dists/stable/Release"))
 	f.must200("/debian/dists/stable/main/binary-amd64/by-hash/SHA256/" + sumOf(sums, "main/binary-amd64/Packages"))
@@ -781,7 +781,7 @@ func TestR_DEB_035_ControlAPI(t *testing.T) {
 	if r := f.control("GET", "/-/stub/keyring?names=zz", ""); r.status != 400 {
 		t.Errorf("keyring of an unknown key = %d", r.status)
 	}
-	if r := f.control("GET", "/-/stub/files", ""); r.status != 200 || !strings.Contains(string(r.body), "trove-hello_1.0-1_amd64.deb") {
+	if r := f.control("GET", "/-/stub/files", ""); r.status != 200 || !strings.Contains(string(r.body), "quader-hello_1.0-1_amd64.deb") {
 		t.Errorf("files = %d", r.status)
 	}
 	if r := f.control("GET", "/-/stub/inflight", ""); r.status != 200 {
@@ -808,9 +808,9 @@ func TestR_DEB_035_ControlAPI(t *testing.T) {
 
 func TestR_DEB_035_ArchiveBytesAreDeterministic(t *testing.T) {
 	a, b := newFixture(t, Config{}), newFixture(t, Config{})
-	for _, p := range []string{"/debian/dists/stable/main/binary-amd64/Packages.gz", "/debian/dists/testing/main/source/Sources.gz", "/flat/binary/Packages", "/debian/pool/main/t/trove-hello/trove-hello_1.0-1_all.deb"} {
-		if p == "/debian/pool/main/t/trove-hello/trove-hello_1.0-1_all.deb" {
-			p = "/debian/pool/main/t/trove-hello/trove-hello-doc_1.0-1_all.deb"
+	for _, p := range []string{"/debian/dists/stable/main/binary-amd64/Packages.gz", "/debian/dists/testing/main/source/Sources.gz", "/flat/binary/Packages", "/debian/pool/main/q/quader-hello/quader-hello_1.0-1_all.deb"} {
+		if p == "/debian/pool/main/q/quader-hello/quader-hello_1.0-1_all.deb" {
+			p = "/debian/pool/main/q/quader-hello/quader-hello-doc_1.0-1_all.deb"
 		}
 		if !bytes.Equal(a.must200(p), b.must200(p)) {
 			t.Errorf("%s differs between two stubs", p)
@@ -820,11 +820,11 @@ func TestR_DEB_035_ArchiveBytesAreDeterministic(t *testing.T) {
 
 func TestR_DEB_035_GeneratedPackagesMatchDebgen(t *testing.T) {
 	f := newFixture(t, Config{})
-	want, err := debgen.Build(debgen.Spec{Package: "trove-config", Version: "1.0-1", Architecture: "all", Provides: "trove-config-default", Description: "default configuration"})
+	want, err := debgen.Build(debgen.Spec{Package: "quader-config", Version: "1.0-1", Architecture: "all", Provides: "quader-config-default", Description: "default configuration"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := f.must200("/debian/pool/main/t/trove-config/trove-config_1.0-1_all.deb"); !bytes.Equal(got, want.Bytes) {
+	if got := f.must200("/debian/pool/main/q/quader-config/quader-config_1.0-1_all.deb"); !bytes.Equal(got, want.Bytes) {
 		t.Error("the served package is not what debgen builds for its spec")
 	}
 }

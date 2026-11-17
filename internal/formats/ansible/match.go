@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The names of the parameters of a match.

@@ -282,7 +282,7 @@ SELECT count(DISTINCT valkey ->> 'primary')::bigint AS views
  WHERE heartbeat_at > now() - make_interval(secs => $1::float8)
 `
 
-// trove_valkey_primary_views (R-OPS-007, R-HA-045): the distinct primaries the live replicas name in their registry rows.
+// quader_valkey_primary_views (R-OPS-007, R-HA-045): the distinct primaries the live replicas name in their registry rows.
 // A replica without a primary (no Valkey, or not yet connected) names none and counts for nothing.
 func (q *Queries) ValkeyPrimaryViews(ctx context.Context, staleSecs float64) (int64, error) {
 	row := q.db.QueryRow(ctx, valkeyPrimaryViews, staleSecs)

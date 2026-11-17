@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // DB is what the outbox needs of the database; *postgres.DB implements it.
@@ -85,7 +85,7 @@ func (o *Outbox) Quarantine(ctx context.Context, r journal.OutboxRow, reason str
 	})
 }
 
-// Pending implements [journal.Outbox]: the number of rows and the age of the oldest (trove_revocation_journal_pending).
+// Pending implements [journal.Outbox]: the number of rows and the age of the oldest (quader_revocation_journal_pending).
 func (o *Outbox) Pending(ctx context.Context) (int64, time.Duration, error) {
 	var (
 		n      int64

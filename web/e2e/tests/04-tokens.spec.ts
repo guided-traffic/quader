@@ -15,13 +15,13 @@ test('R-UI-029 a personal token is shown once, works, and stops working when it 
   await expect(page.getByRole('heading', { name: 'New token', level: 2 })).toBeVisible();
   await page.getByLabel('Description').fill('browser journey');
   await expectAccessible(page, 'new token form');
-  await page.locator('trove-token-form button[type=submit]').click();
+  await page.locator('quader-token-form button[type=submit]').click();
 
   // The value is shown in this answer only.
   const secret = page.getByRole('region', { name: 'Your new token' });
   await expect(secret).toBeVisible();
   const value = await secret.locator('#secret-value').inputValue();
-  expect(value).toMatch(/^trv_/);
+  expect(value).toMatch(/^qdr_/);
   await expectAccessible(page, 'the new token value');
 
   const probe = async (token: string) => {

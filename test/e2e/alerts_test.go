@@ -7,11 +7,11 @@ package e2e
 // of R-HA-052 and R-OPS-046 that name an alert, and the metric bullets of R-OPS-045's failover, outage and slow-Valkey criteria.
 //
 // The order is the order of the file, and it matters: "Maintenance stays quiet" runs first, because the alert of three Valkey failovers within an
-// hour (TroveValkeyFailoverFlapping) stays firing for an hour after its own scenario. Each scenario that fires an alert leaves the cluster whole
+// hour (QuaderValkeyFailoverFlapping) stays firing for an hour after its own scenario. Each scenario that fires an alert leaves the cluster whole
 // again and waits for the alert to resolve.
 //
 // Reading the Prometheus: its web interface is plain HTTP inside the cluster, so the tests reach it through the API server's Service proxy, as
-// they reach the pods' ops listeners. What the Prometheus scrapes is trove's ops listener over TLS, verified against the dev CA by the
+// they reach the pods' ops listeners. What the Prometheus scrapes is quader's ops listener over TLS, verified against the dev CA by the
 // ServiceMonitor's tlsConfig.
 
 import (
@@ -103,7 +103,7 @@ func alertStates() (map[string]string, error) {
 	out := map[string]string{}
 	for _, a := range r.Data.Alerts {
 		n := a.Labels["alertname"]
-		if !strings.HasPrefix(n, "Trove") {
+		if !strings.HasPrefix(n, "Quader") {
 			continue
 		}
 		if out[n] != "firing" {
@@ -171,21 +171,21 @@ func alertsFx(t testing.TB) {
 
 func buildAlertsFixture(t testing.TB) error {
 	switchProfile(t, "alerts")
-	for _, d := range []string{"trove-api", "trove-packages", "trove-worker"} {
+	for _, d := range []string{"quader-api", "quader-packages", "quader-worker"} {
 		kn(t, "rollout", "status", "deployment/"+d, "--timeout=5m")
 	}
 	waitServingSettled(t)
 	waitFor(t, "the rules of the chart to be loaded by the Prometheus", 4*time.Minute, 3*time.Second, func() bool {
 		raw, err := promGet("/api/v1/rules", url.Values{"type": {"alert"}})
-		return err == nil && strings.Contains(string(raw), "TroveValkeyUnavailable") && strings.Contains(string(raw), "TroveBackupStale")
+		return err == nil && strings.Contains(string(raw), "QuaderValkeyUnavailable") && strings.Contains(string(raw), "QuaderBackupStale")
 	})
-	want := len(livePods(t, selTrove))
+	want := len(livePods(t, selQuader))
 	waitFor(t, "the Prometheus to scrape every replica", 5*time.Minute, 5*time.Second, func() bool {
-		v, err := promVector(`count(trove_valkey_available{namespace="` + cfg.namespace + `"})`)
+		v, err := promVector(`count(quader_valkey_available{namespace="` + cfg.namespace + `"})`)
 		return err == nil && len(v) == 1 && int(v[0].Value) == want
 	})
 	waitFor(t, "kube-state-metrics series of the Deployments", 4*time.Minute, 5*time.Second, func() bool {
-		v, err := promVector(`count(kube_deployment_status_replicas_available{namespace="` + cfg.namespace + `",deployment=~"trove-.*"})`)
+		v, err := promVector(`count(kube_deployment_status_replicas_available{namespace="` + cfg.namespace + `",deployment=~"quader-.*"})`)
 		return err == nil && len(v) == 1 && v[0].Value >= 3
 	})
 	// two minutes for what the start itself set off (a rollout, a scrape that began late) to settle
@@ -206,16 +206,16 @@ func buildAlertsFixture(t testing.TB) error {
 	}
 }
 
-// runUpWith runs deploy/dev/up.sh for the profile with more environment (TROVE_HELM_EXTRA, for example).
+// runUpWith runs deploy/dev/up.sh for the profile with more environment (QUADER_HELM_EXTRA, for example).
 func runUpWith(t testing.TB, profile string, env ...string) {
 	t.Helper()
-	cmd := exec.Command(filepath.Join(os.Getenv("TROVE_E2E_DEV_DIR"), "up.sh"))
+	cmd := exec.Command(filepath.Join(os.Getenv("QUADER_E2E_DEV_DIR"), "up.sh"))
 	cmd.Dir = cfg.repo
-	cmd.Env = append(append(os.Environ(), "TROVE_PROFILE="+profile), env...)
+	cmd.Env = append(append(os.Environ(), "QUADER_PROFILE="+profile), env...)
 	out, err := cmd.CombinedOutput()
 	_ = os.WriteFile(filepath.Join(cfg.out, "profile-"+profile+"-alerts.log"), out, 0o644)
 	if err != nil {
-		t.Fatalf("up.sh with TROVE_PROFILE=%s %v: %v\n%s", profile, env, err, tail(string(out), 2000))
+		t.Fatalf("up.sh with QUADER_PROFILE=%s %v: %v\n%s", profile, env, err, tail(string(out), 2000))
 	}
 	recordProfile(profile, env)
 }
@@ -241,7 +241,7 @@ func background(t testing.TB, name string, args ...string) func() error {
 func valkeyFailovers(t *testing.T, base map[string]float64) float64 {
 	t.Helper()
 	most := 0.0
-	for pod, v := range replicaMetric(t, "trove_valkey_primary_changes_total") {
+	for pod, v := range replicaMetric(t, "quader_valkey_primary_changes_total") {
 		if d := v - base[pod]; d > most {
 			most = d
 		}
@@ -253,12 +253,12 @@ func valkeyFailovers(t *testing.T, base map[string]float64) float64 {
 // alert of the chart: the drain variants A, B, C and E of R-HA-059, the planned failover of R-HA-057 and the rolling restart of every role, with the
 // Prometheus scraping through the ServiceMonitor. The window is read back from the Prometheus: no alert of the chart was firing at any evaluation
 // since the first step began. The exception is the one alert whose definition is more than two Valkey failovers in an hour
-// (TroveValkeyFailoverFlapping): when the steps and the moves that prepare them changed the Valkey primary more than twice within the hour, it fires by its own
+// (QuaderValkeyFailoverFlapping): when the steps and the moves that prepare them changed the Valkey primary more than twice within the hour, it fires by its own
 // rule, and the test says so instead of reading that against maintenance. Two changes do not fire it (Q-OPS-198: the expression counts, it does not extrapolate).
 func TestAlerts_R_OPS_046_MaintenanceStaysQuiet(t *testing.T) {
 	alertsFx(t)
 	start := time.Now()
-	failBase := replicaMetric(t, "trove_valkey_primary_changes_total")
+	failBase := replicaMetric(t, "quader_valkey_primary_changes_total")
 
 	variant := func(v drainVariant) {
 		t.Run("R-HA-059 drain variant "+string(v)+" fires no alert", func(t *testing.T) {
@@ -284,7 +284,7 @@ func TestAlerts_R_OPS_046_MaintenanceStaysQuiet(t *testing.T) {
 		waitServingSettled(t)
 	})
 	t.Run("R-HA-052 a rolling restart of every role fires no alert", func(t *testing.T) {
-		for _, d := range []string{"trove-api", "trove-packages", "trove-worker"} {
+		for _, d := range []string{"quader-api", "quader-packages", "quader-worker"} {
 			kn(t, "rollout", "restart", "deployment/"+d)
 			kn(t, "rollout", "status", "deployment/"+d, "--timeout=10m")
 		}
@@ -294,11 +294,11 @@ func TestAlerts_R_OPS_046_MaintenanceStaysQuiet(t *testing.T) {
 	// two evaluations and two scrapes after the last step: an alert that needs a `for` has had its time
 	time.Sleep(90 * time.Second)
 	window := int(time.Since(start).Seconds()) + 60
-	fired, err := promVector(fmt.Sprintf(`max by (alertname) (max_over_time(ALERTS{alertstate="firing",alertname=~"Trove.*"}[%ds]))`, window))
+	fired, err := promVector(fmt.Sprintf(`max by (alertname) (max_over_time(ALERTS{alertstate="firing",alertname=~"Quader.*"}[%ds]))`, window))
 	if err != nil {
 		t.Fatal(err)
 	}
-	pending, _ := promVector(fmt.Sprintf(`max by (alertname) (max_over_time(ALERTS{alertstate="pending",alertname=~"Trove.*"}[%ds]))`, window))
+	pending, _ := promVector(fmt.Sprintf(`max by (alertname) (max_over_time(ALERTS{alertstate="pending",alertname=~"Quader.*"}[%ds]))`, window))
 	for _, p := range pending {
 		t.Logf("pending at some point of the window (not firing, so allowed): %s", p.Labels["alertname"])
 	}
@@ -312,7 +312,7 @@ func TestAlerts_R_OPS_046_MaintenanceStaysQuiet(t *testing.T) {
 		if slices.Contains(alertsInherited, name) {
 			continue
 		}
-		if name == "TroveValkeyFailoverFlapping" && flips > 2 {
+		if name == "QuaderValkeyFailoverFlapping" && flips > 2 {
 			t.Logf("%s fired by its own definition: %.0f primary changes within the hour", name, flips)
 			continue
 		}
@@ -321,32 +321,32 @@ func TestAlerts_R_OPS_046_MaintenanceStaysQuiet(t *testing.T) {
 }
 
 // TestAlerts_R_OPS_046_ValkeyOutage (R-OPS-046, R-OPS-045, R-HA-052 "Valkey outage"): Valkey and the Sentinels scaled to 0 for 5 minutes fire
-// TroveValkeyUnavailable, every replica reports trove_valkey_available 0 and the degraded counters grow; after the return the alert resolves.
+// QuaderValkeyUnavailable, every replica reports quader_valkey_available 0 and the degraded counters grow; after the return the alert resolves.
 func TestAlerts_R_OPS_046_ValkeyOutage(t *testing.T) {
 	alertsFx(t)
-	before := replicaSum(t, "trove_valkey_degraded_total")
+	before := replicaSum(t, "quader_valkey_degraded_total")
 	wait := background(t, "valkey-outage.sh", "5m")
-	took := waitFiring(t, "TroveValkeyUnavailable", 5*time.Minute)
-	t.Logf("TroveValkeyUnavailable fired %s into the outage", took.Round(time.Second))
-	t.Run("R-OPS-045 trove_valkey_available is 0 on every replica and the degraded counters grow", func(t *testing.T) {
-		for pod, v := range replicaMetric(t, "trove_valkey_available") {
+	took := waitFiring(t, "QuaderValkeyUnavailable", 5*time.Minute)
+	t.Logf("QuaderValkeyUnavailable fired %s into the outage", took.Round(time.Second))
+	t.Run("R-OPS-045 quader_valkey_available is 0 on every replica and the degraded counters grow", func(t *testing.T) {
+		for pod, v := range replicaMetric(t, "quader_valkey_available") {
 			if v != 0 {
-				t.Errorf("%s reports trove_valkey_available %v during the outage", pod, v)
+				t.Errorf("%s reports quader_valkey_available %v during the outage", pod, v)
 			}
 		}
-		if now := replicaSum(t, "trove_valkey_degraded_total"); now <= before {
-			t.Errorf("trove_valkey_degraded_total did not grow during the outage: %v then, %v now", before, now)
+		if now := replicaSum(t, "quader_valkey_degraded_total"); now <= before {
+			t.Errorf("quader_valkey_degraded_total did not grow during the outage: %v then, %v now", before, now)
 		}
 	})
 	if err := wait(); err != nil {
 		t.Fatalf("valkey-outage.sh: %v", err)
 	}
 	waitServingSettled(t)
-	waitResolved(t, "TroveValkeyUnavailable", 6*time.Minute)
-	waitResolved(t, "TroveValkeySentinelsDegraded", 8*time.Minute)
+	waitResolved(t, "QuaderValkeyUnavailable", 6*time.Minute)
+	waitResolved(t, "QuaderValkeySentinelsDegraded", 8*time.Minute)
 	t.Run("R-OPS-045 every replica uses Valkey again", func(t *testing.T) {
-		waitFor(t, "trove_valkey_available 1 on every replica", 3*time.Minute, 3*time.Second, func() bool {
-			for _, v := range replicaMetric(t, "trove_valkey_available") {
+		waitFor(t, "quader_valkey_available 1 on every replica", 3*time.Minute, 3*time.Second, func() bool {
+			for _, v := range replicaMetric(t, "quader_valkey_available") {
 				if v != 1 {
 					return false
 				}
@@ -357,7 +357,7 @@ func TestAlerts_R_OPS_046_ValkeyOutage(t *testing.T) {
 }
 
 // TestAlerts_R_OPS_046_PostgreSQLOutage (R-OPS-046, R-HA-052 "PostgreSQL outage"): PostgreSQL fenced for 3 minutes while a client reads the
-// management API fires TroveDatabaseUnreachable (connection retries and 503s together, for 2 minutes), and the alert resolves after the return.
+// management API fires QuaderDatabaseUnreachable (connection retries and 503s together, for 2 minutes), and the alert resolves after the return.
 func TestAlerts_R_OPS_046_PostgreSQLOutage(t *testing.T) {
 	alertsFx(t)
 	adm := adminAPI(t)
@@ -377,22 +377,22 @@ func TestAlerts_R_OPS_046_PostgreSQLOutage(t *testing.T) {
 		}
 	}()
 	wait := background(t, "pg-stop.sh", "3m")
-	took := waitFiring(t, "TroveDatabaseUnreachable", 6*time.Minute)
-	t.Logf("TroveDatabaseUnreachable fired %s into the outage", took.Round(time.Second))
+	took := waitFiring(t, "QuaderDatabaseUnreachable", 6*time.Minute)
+	t.Logf("QuaderDatabaseUnreachable fired %s into the outage", took.Round(time.Second))
 	if err := wait(); err != nil {
 		t.Errorf("pg-stop.sh: %v", err)
 	}
 	close(stop)
 	wg.Wait()
 	waitServingSettled(t)
-	waitResolved(t, "TroveDatabaseUnreachable", 8*time.Minute)
+	waitResolved(t, "QuaderDatabaseUnreachable", 8*time.Minute)
 }
 
 // replicaSum is the sum of one series over the replicas, by prefix (the labels of the series are summed).
 func replicaSum(t *testing.T, prefix string) float64 {
 	t.Helper()
 	sum := 0.0
-	for _, p := range livePods(t, selTrove) {
+	for _, p := range livePods(t, selQuader) {
 		for name, v := range metricsOf(t, p.Name) {
 			if strings.HasPrefix(name, prefix) {
 				sum += v
@@ -404,7 +404,7 @@ func replicaSum(t *testing.T, prefix string) float64 {
 
 // TestAlerts_R_OPS_046_OneReplicaCutOffFromValkey (R-OPS-046, R-HA-052 "Replica bound to a stale primary" is another scenario; this is the row "HA
 // Valkey, unavailable for one replica"): a NetworkPolicy that denies the egress of one packages pod to the Valkey pods fires
-// TroveValkeyUnavailableSingleReplica and not TroveValkeyUnavailable; lifting it resolves the alert.
+// QuaderValkeyUnavailableSingleReplica and not QuaderValkeyUnavailable; lifting it resolves the alert.
 func TestAlerts_R_OPS_046_OneReplicaCutOffFromValkey(t *testing.T) {
 	alertsFx(t)
 	pods := readyPackagesPods(t)
@@ -416,7 +416,7 @@ func TestAlerts_R_OPS_046_OneReplicaCutOffFromValkey(t *testing.T) {
 	policy := `{"apiVersion":"networking.k8s.io/v1","kind":"NetworkPolicy","metadata":{"name":"e2e-cut-valkey","namespace":"` + cfg.namespace + `"},
 "spec":{"podSelector":{"matchLabels":{"e2e-cut":"valkey"}},"policyTypes":["Egress"],"egress":[
  {"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"kube-system"}}}],"ports":[{"protocol":"UDP","port":53},{"protocol":"TCP","port":53}]},
- {"to":[{"podSelector":{"matchExpressions":[{"key":"app.kubernetes.io/instance","operator":"NotIn","values":["trove-valkey"]}]}}]}]}}`
+ {"to":[{"podSelector":{"matchExpressions":[{"key":"app.kubernetes.io/instance","operator":"NotIn","values":["quader-valkey"]}]}}]}]}}`
 	lift := func() {
 		_, _ = kubectl("-n", cfg.namespace, "delete", "networkpolicy", "e2e-cut-valkey", "--ignore-not-found")
 		_, _ = kubectl("-n", cfg.namespace, "label", "pod", victim, "e2e-cut-")
@@ -444,46 +444,46 @@ func TestAlerts_R_OPS_046_OneReplicaCutOffFromValkey(t *testing.T) {
 			}
 		}
 	}
-	waitFor(t, victim+" to lose Valkey", 3*time.Minute, 3*time.Second, func() bool { return metricsOf(t, victim)["trove_valkey_available"] == 0 })
+	waitFor(t, victim+" to lose Valkey", 3*time.Minute, 3*time.Second, func() bool { return metricsOf(t, victim)["quader_valkey_available"] == 0 })
 	for _, p := range pods[1:] {
-		if v := metricsOf(t, p)["trove_valkey_available"]; v != 1 {
+		if v := metricsOf(t, p)["quader_valkey_available"]; v != 1 {
 			t.Fatalf("%s lost Valkey too (%v): the cut reaches more than one pod", p, v)
 		}
 	}
-	waitFiring(t, "TroveValkeyUnavailableSingleReplica", 8*time.Minute)
-	if st, _ := alertStates(); st["TroveValkeyUnavailable"] != "" {
-		t.Errorf("TroveValkeyUnavailable is %q although the other replicas use Valkey", st["TroveValkeyUnavailable"])
+	waitFiring(t, "QuaderValkeyUnavailableSingleReplica", 8*time.Minute)
+	if st, _ := alertStates(); st["QuaderValkeyUnavailable"] != "" {
+		t.Errorf("QuaderValkeyUnavailable is %q although the other replicas use Valkey", st["QuaderValkeyUnavailable"])
 	}
 	lift()
-	waitFor(t, victim+" to use Valkey again", 3*time.Minute, 3*time.Second, func() bool { return metricsOf(t, victim)["trove_valkey_available"] == 1 })
-	waitResolved(t, "TroveValkeyUnavailableSingleReplica", 4*time.Minute)
+	waitFor(t, victim+" to use Valkey again", 3*time.Minute, 3*time.Second, func() bool { return metricsOf(t, victim)["quader_valkey_available"] == 1 })
+	waitResolved(t, "QuaderValkeyUnavailableSingleReplica", 4*time.Minute)
 }
 
 // TestAlerts_R_OPS_046_ValkeyFailoverFlapping (R-OPS-046, R-OPS-045, R-HA-052 "Valkey failover flapping"): three SENTINEL FAILOVER within an
-// hour fire TroveValkeyFailoverFlapping. Each failover raises trove_valkey_primary_changes_total by one on every replica and the subscription of
+// hour fire QuaderValkeyFailoverFlapping. Each failover raises quader_valkey_primary_changes_total by one on every replica and the subscription of
 // the fast path and the agreement on the primary are back within the bounds of R-OPS-045. The alert stays firing until the hour is over.
 func TestAlerts_R_OPS_046_ValkeyFailoverFlapping(t *testing.T) {
 	alertsFx(t)
 	for i := 1; i <= 3; i++ {
-		before := replicaMetric(t, "trove_valkey_primary_changes_total")
+		before := replicaMetric(t, "quader_valkey_primary_changes_total")
 		script(t, "valkey-failover.sh")
-		t.Run(fmt.Sprintf("R-OPS-045 failover %d raises trove_valkey_primary_changes_total by one on every replica", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("R-OPS-045 failover %d raises quader_valkey_primary_changes_total by one on every replica", i), func(t *testing.T) {
 			waitFor(t, "the primary change on every replica", 2*time.Minute, 2*time.Second, func() bool {
-				for pod, v := range replicaMetric(t, "trove_valkey_primary_changes_total") {
+				for pod, v := range replicaMetric(t, "quader_valkey_primary_changes_total") {
 					if v < before[pod]+1 {
 						return false
 					}
 				}
 				return true
 			})
-			for pod, v := range replicaMetric(t, "trove_valkey_primary_changes_total") {
+			for pod, v := range replicaMetric(t, "quader_valkey_primary_changes_total") {
 				if v != before[pod]+1 {
 					t.Errorf("%s counted %v primary changes for one failover", pod, v-before[pod])
 				}
 			}
 			// valkey.sentinel.refresh_interval (5s) plus 1 s, with the scrape of the test's own read in it
-			waitFor(t, "trove_valkey_pubsub_subscribed 1 on every replica", 15*time.Second, time.Second, func() bool {
-				for _, v := range replicaMetric(t, "trove_valkey_pubsub_subscribed") {
+			waitFor(t, "quader_valkey_pubsub_subscribed 1 on every replica", 15*time.Second, time.Second, func() bool {
+				for _, v := range replicaMetric(t, "quader_valkey_pubsub_subscribed") {
 					if v != 1 {
 						return false
 					}
@@ -491,8 +491,8 @@ func TestAlerts_R_OPS_046_ValkeyFailoverFlapping(t *testing.T) {
 				return true
 			})
 			// system.heartbeat_interval (10s) plus metrics.db_gauge_interval (30s)
-			waitFor(t, "trove_valkey_primary_views back to 1", 60*time.Second, 2*time.Second, func() bool {
-				for _, v := range replicaMetric(t, "trove_valkey_primary_views") {
+			waitFor(t, "quader_valkey_primary_views back to 1", 60*time.Second, 2*time.Second, func() bool {
+				for _, v := range replicaMetric(t, "quader_valkey_primary_views") {
 					if v > 1 {
 						return false
 					}
@@ -502,20 +502,20 @@ func TestAlerts_R_OPS_046_ValkeyFailoverFlapping(t *testing.T) {
 		})
 		time.Sleep(15 * time.Second)
 	}
-	took := waitFiring(t, "TroveValkeyFailoverFlapping", 5*time.Minute)
-	t.Logf("TroveValkeyFailoverFlapping fired %s after the third failover", took.Round(time.Second))
+	took := waitFiring(t, "QuaderValkeyFailoverFlapping", 5*time.Minute)
+	t.Logf("QuaderValkeyFailoverFlapping fired %s after the third failover", took.Round(time.Second))
 }
 
 // TestAlerts_R_OPS_045_SlowValkey (R-OPS-045, R-HA-052 "Slow Valkey"): every Valkey command held for 4 seconds (CLIENT PAUSE, the injection of
-// E1.8; the profile has no fault proxy) makes the calls time out: trove_valkey_errors_total{kind="timeout"} grows and the circuit opens on a
+// E1.8; the profile has no fault proxy) makes the calls time out: quader_valkey_errors_total{kind="timeout"} grows and the circuit opens on a
 // replica.
 func TestAlerts_R_OPS_045_SlowValkey(t *testing.T) {
 	alertsFx(t)
 	timeouts := func() float64 {
 		sum := 0.0
-		for _, p := range livePods(t, selTrove) {
+		for _, p := range livePods(t, selQuader) {
 			for name, v := range metricsOf(t, p.Name) {
-				if strings.HasPrefix(name, "trove_valkey_errors_total") && strings.Contains(name, `kind="timeout"`) {
+				if strings.HasPrefix(name, "quader_valkey_errors_total") && strings.Contains(name, `kind="timeout"`) {
 					sum += v
 				}
 			}
@@ -557,7 +557,7 @@ func TestAlerts_R_OPS_045_SlowValkey(t *testing.T) {
 					return
 				default:
 				}
-				if _, body := ops(p.Name, "/metrics"); strings.Contains(body, "\ntrove_valkey_circuit_open 1\n") {
+				if _, body := ops(p.Name, "/metrics"); strings.Contains(body, "\nquader_valkey_circuit_open 1\n") {
 					opened.Store(true)
 				}
 				time.Sleep(200 * time.Millisecond)
@@ -569,7 +569,7 @@ func TestAlerts_R_OPS_045_SlowValkey(t *testing.T) {
 	wg.Wait()
 	<-paused
 	if after := timeouts(); after <= before {
-		t.Errorf("trove_valkey_errors_total{kind=\"timeout\"} did not grow during the pause: %v then, %v now", before, after)
+		t.Errorf("quader_valkey_errors_total{kind=\"timeout\"} did not grow during the pause: %v then, %v now", before, after)
 	}
 	if !opened.Load() {
 		t.Error("no replica's Valkey circuit opened during the pause")
@@ -578,31 +578,31 @@ func TestAlerts_R_OPS_045_SlowValkey(t *testing.T) {
 }
 
 // TestAlerts_R_OPS_046_RoleBelowTwoReplicas (R-OPS-046 "Drain without outage, a role below two ready replicas", R-HA-045): the Deployment of the
-// worker scaled to one replica fires TroveReplicasNotReady for it, and only for it; scaled back, the alert resolves. The PodDisruptionBudgets keep
+// worker scaled to one replica fires QuaderReplicasNotReady for it, and only for it; scaled back, the alert resolves. The PodDisruptionBudgets keep
 // a drain from doing this; the scale is what an operator's mistake or a lost node pair would do.
 func TestAlerts_R_OPS_046_RoleBelowTwoReplicas(t *testing.T) {
 	alertsFx(t)
-	kn(t, "scale", "deployment/trove-worker", "--replicas=1")
-	t.Cleanup(func() { _, _ = kubectl("-n", cfg.namespace, "scale", "deployment/trove-worker", "--replicas=2") })
-	waitFiring(t, "TroveReplicasNotReady", 9*time.Minute)
-	v, err := promVector(`ALERTS{alertname="TroveReplicasNotReady",alertstate="firing"}`)
+	kn(t, "scale", "deployment/quader-worker", "--replicas=1")
+	t.Cleanup(func() { _, _ = kubectl("-n", cfg.namespace, "scale", "deployment/quader-worker", "--replicas=2") })
+	waitFiring(t, "QuaderReplicasNotReady", 9*time.Minute)
+	v, err := promVector(`ALERTS{alertname="QuaderReplicasNotReady",alertstate="firing"}`)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, s := range v {
-		if d := s.Labels["deployment"]; d != "trove-worker" {
-			t.Errorf("TroveReplicasNotReady fires for %s, which still has its replicas", d)
+		if d := s.Labels["deployment"]; d != "quader-worker" {
+			t.Errorf("QuaderReplicasNotReady fires for %s, which still has its replicas", d)
 		}
 	}
-	kn(t, "scale", "deployment/trove-worker", "--replicas=2")
-	kn(t, "rollout", "status", "deployment/trove-worker", "--timeout=5m")
-	waitResolved(t, "TroveReplicasNotReady", 4*time.Minute)
+	kn(t, "scale", "deployment/quader-worker", "--replicas=2")
+	kn(t, "rollout", "status", "deployment/quader-worker", "--timeout=5m")
+	waitResolved(t, "QuaderReplicasNotReady", 4*time.Minute)
 }
 
 // TestAlerts_R_OPS_046_BackupFailedAndStale (R-OPS-046, R-BAK-014, R-HA-045): a backup run whose process is killed with kill -9 from the node during the copy is
-// left with an expired lease, which the gauge counts as a failure (the Job ends Failed with backoffLimit 0): TroveBackupFailed fires and a later
+// left with an expired lease, which the gauge counts as a failure (the Job ends Failed with backoffLimit 0): QuaderBackupFailed fires and a later
 // successful run resolves it. With the expected interval lowered to its minimum of a minute and the CronJob suspended, the age of the last success
-// passes one and a half intervals and TroveBackupStale fires; the profile with its own interval puts it right. The scenario names a run that exits
+// passes one and a half intervals and QuaderBackupStale fires; the profile with its own interval puts it right. The scenario names a run that exits
 // 1; the abandoned run is the failure this suite can make without a defect of the product (Q-OPS-196).
 func TestAlerts_R_OPS_046_BackupFailedAndStale(t *testing.T) {
 	alertsFx(t)
@@ -620,8 +620,8 @@ func TestAlerts_R_OPS_046_BackupFailedAndStale(t *testing.T) {
 	zero := 0
 	job := "alerts-bak-kill-" + run
 	bakCreateJob(t, bakJob{name: job, backoff: &zero, env: map[string]string{
-		"TROVE_BACKUP_TARGET_PREFIX": bakFreshPrefix(run, "alerts"), "TROVE_BACKUP_COPY_BYTES_PER_SECOND": "256KiB", "TROVE_BACKUP_COPY_CONCURRENCY": "1",
-		"TROVE_BACKUP_LEASE_DURATION": "20s", "TROVE_BACKUP_HEARTBEAT_INTERVAL": "2s", "TROVE_BACKUP_FINALIZE_TIMEOUT": "5s",
+		"QUADER_BACKUP_TARGET_PREFIX": bakFreshPrefix(run, "alerts"), "QUADER_BACKUP_COPY_BYTES_PER_SECOND": "256KiB", "QUADER_BACKUP_COPY_CONCURRENCY": "1",
+		"QUADER_BACKUP_LEASE_DURATION": "20s", "QUADER_BACKUP_HEARTBEAT_INTERVAL": "2s", "QUADER_BACKUP_FINALIZE_TIMEOUT": "5s",
 	}})
 	bakWaitLog(t, cfg.namespace, job, "backup run started", 3*time.Minute)
 	time.Sleep(5 * time.Second)
@@ -636,9 +636,9 @@ func TestAlerts_R_OPS_046_BackupFailedAndStale(t *testing.T) {
 	if end := bakWaitJob(t, cfg.namespace, job, 5*time.Minute); end.Condition != "Failed" {
 		t.Fatalf("the killed run's Job ended %s, want Failed", end.Condition)
 	}
-	t.Run("R-BAK-014 TroveBackupFailed fires for a run that was killed", func(t *testing.T) {
-		took := waitFiring(t, "TroveBackupFailed", 5*time.Minute)
-		t.Logf("TroveBackupFailed fired %s after the Job failed", took.Round(time.Second))
+	t.Run("R-BAK-014 QuaderBackupFailed fires for a run that was killed", func(t *testing.T) {
+		took := waitFiring(t, "QuaderBackupFailed", 5*time.Minute)
+		t.Logf("QuaderBackupFailed fired %s after the Job failed", took.Round(time.Second))
 	})
 
 	ok := "alerts-bak-ok-" + run
@@ -646,24 +646,24 @@ func TestAlerts_R_OPS_046_BackupFailedAndStale(t *testing.T) {
 	if end := bakWaitJob(t, cfg.namespace, ok, 20*time.Minute); end.Condition != "Complete" {
 		t.Fatalf("the successful run ended %s:\n%s", end.Condition, tail(bakJobLogs(cfg.namespace, ok), 2000))
 	}
-	t.Run("R-BAK-014 a successful run resolves TroveBackupFailed", func(t *testing.T) { waitResolved(t, "TroveBackupFailed", 5*time.Minute) })
+	t.Run("R-BAK-014 a successful run resolves QuaderBackupFailed", func(t *testing.T) { waitResolved(t, "QuaderBackupFailed", 5*time.Minute) })
 
-	t.Run("R-BAK-014 R-OPS-046 TroveBackupStale fires with the interval at a minute and the CronJob suspended", func(t *testing.T) {
-		runUpWith(t, "alerts", "TROVE_HELM_EXTRA=--set config.backup.expected_interval=1m --set backup.suspend=true")
+	t.Run("R-BAK-014 R-OPS-046 QuaderBackupStale fires with the interval at a minute and the CronJob suspended", func(t *testing.T) {
+		runUpWith(t, "alerts", "QUADER_HELM_EXTRA=--set config.backup.expected_interval=1m --set backup.suspend=true")
 		t.Cleanup(func() { runUpWith(t, "alerts") })
-		for _, d := range []string{"trove-api", "trove-packages", "trove-worker"} {
+		for _, d := range []string{"quader-api", "quader-packages", "quader-worker"} {
 			kn(t, "rollout", "status", "deployment/"+d, "--timeout=10m")
 		}
 		waitServingSettled(t)
-		if got := strings.TrimSpace(kn(t, "get", "cronjob", "trove-backup", "-o", "jsonpath={.spec.suspend}")); got != "true" {
+		if got := strings.TrimSpace(kn(t, "get", "cronjob", "quader-backup", "-o", "jsonpath={.spec.suspend}")); got != "true" {
 			t.Fatalf("the CronJob is not suspended: %q", got)
 		}
-		waitFiring(t, "TroveBackupStale", 8*time.Minute)
+		waitFiring(t, "QuaderBackupStale", 8*time.Minute)
 		runUpWith(t, "alerts")
-		for _, d := range []string{"trove-api", "trove-packages", "trove-worker"} {
+		for _, d := range []string{"quader-api", "quader-packages", "quader-worker"} {
 			kn(t, "rollout", "status", "deployment/"+d, "--timeout=10m")
 		}
 		waitServingSettled(t)
-		waitResolved(t, "TroveBackupStale", 8*time.Minute)
+		waitResolved(t, "QuaderBackupStale", 8*time.Minute)
 	})
 }

@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/ansible/collection"
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
-	"github.com/guided-traffic/trove/internal/formats/ansible/version"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible/collection"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/ansible/version"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // The archives a remote repository caches (R-ANS-018, R-ANS-020). The announced digest (remote_gate.go) ties the bytes to the version
@@ -50,7 +50,7 @@ func (a remoteAdapter) InspectFill(ctx context.Context, _ formats.RemoteContext,
 		var ce *collection.Error
 		if errors.As(err, &ce) {
 			return nil, errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed,
-				"The upstream served an archive for "+t.ns+"."+t.name+" "+t.version+" that trove refuses (invalid_archive): "+ce.Detail, errs.WithCause(err))
+				"The upstream served an archive for "+t.ns+"."+t.name+" "+t.version+" that Quader refuses (invalid_archive): "+ce.Detail, errs.WithCause(err))
 		}
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func checkRoleArchive(ctx context.Context, body io.Reader, lim untrusted.Limits)
 		}
 		if err != nil {
 			if untrusted.IsRefused(err) || untrusted.IsTooLarge(err) {
-				return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream served a role archive that trove refuses (invalid_archive): "+err.Error(), errs.WithCause(err))
+				return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream served a role archive that Quader refuses (invalid_archive): "+err.Error(), errs.WithCause(err))
 			}
 			return err
 		}
@@ -165,7 +165,7 @@ func checkRoleArchive(ctx context.Context, body io.Reader, lim untrusted.Limits)
 		}
 		if _, err := tr.Stream(io.Discard); err != nil {
 			if untrusted.IsRefused(err) || untrusted.IsTooLarge(err) {
-				return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream served a role archive that trove refuses (invalid_archive): "+err.Error(), errs.WithCause(err))
+				return errs.E(errs.UpstreamFailed, errs.CodeUpstreamFailed, "The upstream served a role archive that Quader refuses (invalid_archive): "+err.Error(), errs.WithCause(err))
 			}
 			return err
 		}

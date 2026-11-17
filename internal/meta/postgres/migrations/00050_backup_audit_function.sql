@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The backup writes its own audit events (R-BAK-014) through a function, not through INSERT on audit_event (R-BAK-015, Q-BAK-50).
 -- A login that could insert into the audit trail could write any event under any actor; this function writes the four events of
@@ -24,7 +24,7 @@ BEGIN
     EXECUTE format('ALTER FUNCTION %I.backup_record_event(text, text, text, text, jsonb) SET search_path = %I, pg_temp',
                    current_schema(), current_schema());
     EXECUTE format('REVOKE ALL ON FUNCTION %I.backup_record_event(text, text, text, text, jsonb) FROM PUBLIC', current_schema());
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trove_app') THEN
-        EXECUTE format('GRANT EXECUTE ON FUNCTION %I.backup_record_event(text, text, text, text, jsonb) TO trove_app', current_schema());
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'quader_app') THEN
+        EXECUTE format('GRANT EXECUTE ON FUNCTION %I.backup_record_event(text, text, text, text, jsonb) TO quader_app', current_schema());
     END IF;
 END $$;

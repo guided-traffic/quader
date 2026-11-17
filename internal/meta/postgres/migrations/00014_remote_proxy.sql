@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Remote repositories (M2, WP2.S): the cache entries of the pull-through proxy
 -- and its URL map (R-REPO-025, R-REPO-043), the circuit state (R-REPO-029), the

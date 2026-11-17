@@ -3,15 +3,15 @@
 # (test/e2e/clients/fwd, the one of the npm clients) for linux/<arch>, then the Dockerfile for each pinned ansible-core release on its
 # pinned Python image. `make ansible-clients-image` and deploy/dev/e2e.sh both call it.
 #
-#   build.sh [tag-prefix]    default trove-e2e-ansibleclients-: the images are <prefix>core217:dev and <prefix>core221:dev
+#   build.sh [tag-prefix]    default quader-e2e-ansibleclients-: the images are <prefix>core217:dev and <prefix>core221:dev
 #
-# Environment: TROVE_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
+# Environment: QUADER_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../deploy/dev" && pwd)/lib.sh"
 
-prefix="${1:-trove-e2e-ansibleclients-}"
-arch="${TROVE_E2E_CLIENTS_ARCH:-$(arch)}"
+prefix="${1:-quader-e2e-ansibleclients-}"
+arch="${QUADER_E2E_CLIENTS_ARCH:-$(arch)}"
 for v in E2E_ANSIBLECLIENTS_CORE217_IMAGE E2E_ANSIBLECLIENTS_CORE217_VERSION E2E_ANSIBLECLIENTS_CORE221_IMAGE E2E_ANSIBLECLIENTS_CORE221_VERSION; do
   [ -n "${!v:-}" ] || die "$v is not set in tools/versions.env"
 done

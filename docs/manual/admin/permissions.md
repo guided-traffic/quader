@@ -1,6 +1,6 @@
 # Permissions
 
-This page explains who may do what in trove. Repository content is governed by the roles of a project's members and by permission policies that give principals actions on repositories, package names and paths; administration is governed by fixed system roles that bundle capabilities and by the Owner role of a project. The page describes how a request is decided, how fast a change reaches every replica, the screens that edit policies and roles, and three typical setups.
+This page explains who may do what in Quader. Repository content is governed by the roles of a project's members and by permission policies that give principals actions on repositories, package names and paths; administration is governed by fixed system roles that bundle capabilities and by the Owner role of a project. The page describes how a request is decided, how fast a change reaches every replica, the screens that edit policies and roles, and three typical setups.
 
 ## The model in brief
 
@@ -58,7 +58,7 @@ For Debian repositories the package name is the binary package name (`acme-*` co
 
 ## How a request is decided
 
-For every request trove checks, in this order:
+For every request Quader checks, in this order:
 
 1. **Endpoint ceiling.** The endpoint the request arrived on admits it: a request without a credential needs an endpoint whose `auth.anonymous` is `true`, and the exposure rules admit the repository, package or path, for every caller including administrators. See [Endpoints and exposure rules](endpoints.md).
 2. **Visibility level.** A read is allowed when the level of the repository's artifacts, or of its wiki for the README and the documentation, admits the caller: **Public** admits every request, **Internal** every internal user ([Visibility levels](#visibility-levels)). A level never grants a write.
@@ -149,7 +149,7 @@ The answer evaluates only the draft. Other policies, visibility levels, token sc
 
 ## Visibility levels
 
-A project has one level; a repository has one for its **artifacts**, what package clients install, download and list, and one for its **wiki**, the README and the documentation of its packages that trove serves apart from the files. A level adds readers to the members of the project and the principals a policy names:
+A project has one level; a repository has one for its **artifacts**, what package clients install, download and list, and one for its **wiki**, the README and the documentation of its packages that Quader serves apart from the files. A level adds readers to the members of the project and the principals a policy names:
 
 | Level | Who reads besides them |
 |---|---|

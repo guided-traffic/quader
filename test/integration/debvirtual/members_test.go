@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	debdata "github.com/guided-traffic/trove/internal/formatdata/deb"
-	"github.com/guided-traffic/trove/test/debstub"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
+	"github.com/guided-traffic/quader/test/debstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // ready uploads a local package and waits until the virtual repository lists it next to the stub's paragraphs.
@@ -62,16 +62,16 @@ func TestR_DEB_027_TheGateAndTheMemberPaths(t *testing.T) {
 
 	list := e.packages(rApt, "stable", e.admin)
 	local, _ := find(list, "local-tool", "")
-	hello, _ := find(list, "trove-hello", "")
+	hello, _ := find(list, "quader-hello", "")
 
 	a := e.get(rApt, local.Value("Filename"), e.alice)
-	if a.Status != 200 || a.Header.Get("Trove-Resolved-From") != rLocal {
-		t.Errorf("the local member's file: %d from %q", a.Status, a.Header.Get("Trove-Resolved-From"))
+	if a.Status != 200 || a.Header.Get("Quader-Resolved-From") != rLocal {
+		t.Errorf("the local member's file: %d from %q", a.Status, a.Header.Get("Quader-Resolved-From"))
 	}
 	e.stub.Reset()
 	a = e.get(rApt, hello.Value("Filename"), e.alice)
-	if a.Status != 200 || a.Header.Get("Trove-Resolved-From") != rRemote {
-		t.Fatalf("the remote member's file: %d from %q %s", a.Status, a.Header.Get("Trove-Resolved-From"), a.Body)
+	if a.Status != 200 || a.Header.Get("Quader-Resolved-From") != rRemote {
+		t.Fatalf("the remote member's file: %d from %q %s", a.Status, a.Header.Get("Quader-Resolved-From"), a.Body)
 	}
 	if n := e.stub.Counts().Total(); n == 0 {
 		t.Error("the first read of the remote member's file did not reach the upstream")
@@ -99,8 +99,8 @@ func TestR_DEB_027_TheGateAndTheMemberPaths(t *testing.T) {
 	}
 	// pool/ by its own path resolves through the tiers: the local member first.
 	a = e.get(rApt, "pool/l/local-tool/local-tool_1.0-1_amd64.deb", e.alice)
-	if a.Status != 200 || a.Header.Get("Trove-Resolved-From") != rLocal {
-		t.Errorf("pool/ of a local file: %d from %q", a.Status, a.Header.Get("Trove-Resolved-From"))
+	if a.Status != 200 || a.Header.Get("Quader-Resolved-From") != rLocal {
+		t.Errorf("pool/ of a local file: %d from %q", a.Status, a.Header.Get("Quader-Resolved-From"))
 	}
 	// The generated files are not writable through the virtual repository.
 	if a = e.st.Do(e.r, http.MethodPut, e.url(rApt, idx), e.admin, []byte("x")); a.Status/100 == 2 {
@@ -138,23 +138,23 @@ func TestR_DEB_028_UploadsGoToTheDeploymentTarget(t *testing.T) {
 func TestR_DEB_025_AClaimKeepsTheNameOfTheOtherMembersOut(t *testing.T) {
 	e := newEnv(t, options{mergeTTL: 1})
 	e.ready("local-tool")
-	if _, ok := find(e.packages(rApt, "stable", e.admin), "trove-hello", ""); !ok {
-		t.Fatal("the stub's trove-hello is not listed before the claim")
+	if _, ok := find(e.packages(rApt, "stable", e.admin), "quader-hello", ""); !ok {
+		t.Fatal("the stub's quader-hello is not listed before the claim")
 	}
 	gen := mustSuite(t, e, rApt).Generation
 	claims := "/api/v1/projects/" + project + "/repositories/" + rLocal + "/claims"
 	a := e.st.Do(e.r, http.MethodPut, claims, e.admin,
-		map[string]any{"claims": []map[string]string{{"pattern": "trove-hello", "scope": "members"}}}, "If-Match", "*")
+		map[string]any{"claims": []map[string]string{{"pattern": "quader-hello", "scope": "members"}}}, "If-Match", "*")
 	if a.Status/100 != 2 {
 		t.Fatalf("claim = %d %s", a.Status, a.Body)
 	}
 	e.rebuild()
 	e.published(rApt, "stable", 90*time.Second, func(s suiteState) bool { return s.Generation > gen })
 	list := e.packages(rApt, "stable", e.admin)
-	if _, ok := find(list, "trove-hello", ""); ok {
-		t.Error("trove-hello is still listed although deb-local claims it")
+	if _, ok := find(list, "quader-hello", ""); ok {
+		t.Error("quader-hello is still listed although deb-local claims it")
 	}
-	if _, ok := find(list, "trove-tools", ""); !ok {
+	if _, ok := find(list, "quader-tools", ""); !ok {
 		t.Error("a name nobody claims left the index")
 	}
 }
@@ -179,7 +179,7 @@ func TestR_DEB_029_ALocalMemberCannotShadowTheNamesOfItsRemoteMember(t *testing.
 	}
 	var last testenv.Answer
 	testenv.WaitFor(t, "the shadowing check to answer", 90*time.Second, func() bool {
-		last = e.upload(rLocal, e.alice, "trove-hello", "9.9-1", "stable")
+		last = e.upload(rLocal, e.alice, "quader-hello", "9.9-1", "stable")
 		return codeOf(last) != "shadow_check_unavailable"
 	})
 	if last.Status != 403 || codeOf(last) != "shadows_remote_package" {

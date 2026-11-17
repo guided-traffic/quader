@@ -1,27 +1,27 @@
 # GitLab CI federation
 
-How GitLab CI jobs get short-lived trove tokens without a stored secret, and how administrators set it up: registering a GitLab instance, letting the pipelines of a GitLab project publish to the repositories of a project, giving a whole GitLab instance or group read access, testing mappings with the dry run, reading the issuance records, revoking tokens and troubleshooting refused exchanges.
+How GitLab CI jobs get short-lived Quader tokens without a stored secret, and how administrators set it up: registering a GitLab instance, letting the pipelines of a GitLab project publish to the repositories of a project, giving a whole GitLab instance or group read access, testing mappings with the dry run, reading the issuance records, revoking tokens and troubleshooting refused exchanges.
 
 ## What the federation does
 
-1. A GitLab job declares an `id_tokens:` entry, and GitLab gives it an ID token: a JWT that the instance signs and addresses to trove (its `aud` is trove's base URL).
+1. A GitLab job declares an `id_tokens:` entry, and GitLab gives it an ID token: a JWT that the instance signs and addresses to Quader (its `aud` is Quader's base URL).
 2. The job posts the ID token to `POST /api/v1/auth/oidc/token`. The ID token is the only credential; nothing secret is stored in GitLab.
-3. trove checks the signature against the keys the instance publishes, the audience and the times, and then evaluates the instance's identity mappings: ordered rules that turn verified claims such as `project_id` and `ref_protected` into grants.
-4. It answers with a `trv_cit_` token that lives 15 minutes by default, at most one hour, and never longer than the ID token, which GitLab lets expire with the job's timeout.
+3. Quader checks the signature against the keys the instance publishes, the audience and the times, and then evaluates the instance's identity mappings: ordered rules that turn verified claims such as `project_id` and `ref_protected` into grants.
+4. It answers with a `qdr_cit_` token that lives 15 minutes by default, at most one hour, and never longer than the ID token, which GitLab lets expire with the job's timeout.
 5. Every exchange writes an issuance record naming the GitLab project, pipeline, job and ref, and the first publish of a package name binds the name to the GitLab project that published it.
 
 ```text
-GitLab instance ── ID token, aud = trove's base URL ──▶ GitLab job
+GitLab instance ── ID token, aud = Quader's base URL ──▶ GitLab job
                                                             │  POST /api/v1/auth/oidc/token
                                                             ▼
-                                trove: issuer → signing keys → mappings → trv_cit_ token
+                                Quader: issuer → signing keys → mappings → qdr_cit_ token
                                                             │
-                         npm, dotnet in the job ◀───────────┘  TROVE_TOKEN, valid for minutes
+                         npm, dotnet in the job ◀───────────┘  QUADER_TOKEN, valid for minutes
 ```
 
 The words this page uses:
 
-- **CI issuer**: a GitLab instance that trove trusts, with its validation settings. It only serves the token exchange; it is not an identity provider that people sign in with.
+- **CI issuer**: a GitLab instance that Quader trusts, with its validation settings. It only serves the token exchange; it is not an identity provider that people sign in with.
 - **Mapping**: an ordered rule of one issuer, made of a condition on the ID token's claims and the grants a matching job receives. Each mapping is a principal of its own: `ci:<issuer>/<mapping>` for a mapping of the whole installation, `ci:<issuer>/<projectKey>/<mapping>` for a mapping of a project. A CI token acts as its mappings: it is never a user and never internal (it reads what its mappings grant and what is **Public**, and not a repository that is only **Internal**), never joins a group automatically, is never a member of a project, holds no system role and no project role, and never `manage`.
 - **Issuance record**: the stored link between a CI token and the verified job it was issued to.
 
@@ -43,11 +43,11 @@ The project operations admit a holder of the capability, or an Owner of the proj
 
 ### Calling the operations
 
-The examples call the API with the shell function `trove_curl` from [Personal access tokens](../user/access-tokens.md#with-curl-and-the-management-api), which hands curl the token in `TROVE_TOKEN` on standard input. The token has to exercise your administration, a system role or the Owner role of a project, so it needs the administrator scope ([Scopes](tokens.md#scopes)), which the token form of the UI does not set; through a token without it, an Owner acts as a Maintainer and is refused. A browser session works as well; creating, changing and deleting issuers and mappings through it needs a recent sign-in.
+The examples call the API with the shell function `quader_curl` from [Personal access tokens](../user/access-tokens.md#with-curl-and-the-management-api), which hands curl the token in `QUADER_TOKEN` on standard input. The token has to exercise your administration, a system role or the Owner role of a project, so it needs the administrator scope ([Scopes](tokens.md#scopes)), which the token form of the UI does not set; through a token without it, an Owner acts as a Maintainer and is refused. A browser session works as well; creating, changing and deleting issuers and mappings through it needs a recent sign-in.
 
 - Field names on the wire are lowerCamelCase (`allowedAudiences`, `crossProjectSource`, `maxTtlSeconds`). Claim names inside conditions and templates keep GitLab's spelling (`project_id`).
 - `GET` of an issuer or mapping returns an `ETag`. `PUT` replaces the whole record and requires that tag in `If-Match` (`428` `precondition_required` without it, `412` `precondition_failed` with a stale one), so a change is read, modify, write. A member left out of a `PUT` takes its default.
-- A refused write is a problem with a `code` (`pin_required`, `unprotected_write`, …) and the pointer of the member, as described in [Errors and troubleshooting](../user/troubleshooting.md#how-trove-reports-an-error).
+- A refused write is a problem with a `code` (`pin_required`, `unprotected_write`, …) and the pointer of the member, as described in [Errors and troubleshooting](../user/troubleshooting.md#how-quader-reports-an-error).
 
 ## Register a GitLab instance
 
@@ -68,7 +68,7 @@ config:
         description: Self-managed GitLab        # example
 ```
 
-- The migration Job (`trove migrate`, run before every install and upgrade) applies the list in one transaction: each entry is created or replaced by `name` and shows `source: configuration`. No `web` or `worker` replica writes these issuers.
+- The migration Job (`quader migrate`, run before every install and upgrade) applies the list in one transaction: each entry is created or replaced by `name` and shows `source: configuration`. No `web` or `worker` replica writes these issuers.
 - They are read-only in the API: `PUT`, `DELETE`, enabling and disabling answer `409` `issuer_managed_by_configuration`. Change them in your values. Their mappings are managed through the API like any other.
 - An entry you remove is disabled at the next upgrade, not deleted: it shows `removedFromConfiguration: true`, refuses every exchange with `issuer_disabled`, and keeps its mappings and issuance records. Only then may an administrator delete it through the API.
 - The migration stops with an error that names both when an entry has the name of an issuer created through the API, or the issuer URL of another issuer; nothing is applied.
@@ -121,10 +121,10 @@ An instance that is not in the values is created by a holder of `ci:write` with 
 ```
 
 ```shell
-trove_curl -X POST -H 'Content-Type: application/json' --data @issuer.json https://trove.example.com/api/v1/ci/issuers
+quader_curl -X POST -H 'Content-Type: application/json' --data @issuer.json https://quader.example.com/api/v1/ci/issuers
 ```
 
-The answer is `201` with the full record, every default filled in. With `validate` left at `true`, trove first fetches the discovery document and the key set and refuses an issuer that would not work with `422`: `discovery_unreachable`, `issuer_mismatch` (the document's `issuer` is not exactly yours), `no_usable_keys` or `algorithms_not_offered`. A name or issuer URL that exists answers `409`.
+The answer is `201` with the full record, every default filled in. With `validate` left at `true`, Quader first fetches the discovery document and the key set and refuses an issuer that would not work with `422`: `discovery_unreachable`, `issuer_mismatch` (the document's `issuer` is not exactly yours), `no_usable_keys` or `algorithms_not_offered`. A name or issuer URL that exists answers `409`.
 
 | Call | Does |
 |---|---|
@@ -134,17 +134,17 @@ The answer is `201` with the full record, every default filled in. With `validat
 | `PUT /api/v1/ci/issuers/{name}` | Replaces the issuer; `name`, `issuer` and `kind` are immutable. Switching `publicIssuer` on, or removing a claim from `pinClaims`, answers `409` `mappings_unpinned` with the names in `mappings` while a mapping would no longer be pinned as its save requires; pin or delete those mappings first. A changed `jwksUri` or `discoveryUrl` drops the stored keys at once and fetches from the new location: until that fetch succeeds, exchanges answer `signing_keys_unavailable` |
 | `DELETE /api/v1/ci/issuers/{name}` | Deletes it; refused with `409` while it has mappings unless `?cascade=true`, which deletes them and their principals in the same transaction |
 
-Disabling or deleting an issuer revokes every unexpired token issued through it. trove refreshes the keys of every enabled issuer on its own: the task `ci-keys-refresh` runs on the `worker` replicas every five minutes and fetches each issuer whose refresh is due, which follows the instance's `Cache-Control: max-age` within 5 minutes and 24 hours, and is one hour without it. A token that names a key trove does not know triggers a fetch at once, at most once a minute per issuer and replica. A key that the instance removes from its key set stops being accepted after the next fetch.
+Disabling or deleting an issuer revokes every unexpired token issued through it. Quader refreshes the keys of every enabled issuer on its own: the task `ci-keys-refresh` runs on the `worker` replicas every five minutes and fetches each issuer whose refresh is due, which follows the instance's `Cache-Control: max-age` within 5 minutes and 24 hours, and is one hour without it. A token that names a key Quader does not know triggers a fetch at once, at most once a minute per issuer and replica. A key that the instance removes from its key set stops being accepted after the next fetch.
 
 ### Public instances and gitlab.com
 
-Anyone with an account on gitlab.com, or on any instance with open sign-up, can run a pipeline and ask GitLab for an ID token with trove's audience. A valid signature and the right audience therefore prove only that some job on that instance asked for the token, not whose job it is. For an issuer with `public_issuer: true` (the default) every mapping must be **pinned**: the top-level `all` of its condition, or the condition itself if it is a single leaf, holds an `equals` or `in` leaf on one of the issuer's pin claims. Otherwise the save answers `422` `pin_required`.
+Anyone with an account on gitlab.com, or on any instance with open sign-up, can run a pipeline and ask GitLab for an ID token with Quader's audience. A valid signature and the right audience therefore prove only that some job on that instance asked for the token, not whose job it is. For an issuer with `public_issuer: true` (the default) every mapping must be **pinned**: the top-level `all` of its condition, or the condition itself if it is a single leaf, holds an `equals` or `in` leaf on one of the issuer's pin claims. Otherwise the save answers `422` `pin_required`.
 
 Pin claims are IDs because paths are not stable: a GitLab project or group path changes on rename and transfer, and a released path can be registered by someone else. `https://gitlab.com` is public by construction, so `public_issuer: false` is refused for it (`422` `public_issuer_required`). Set `public_issuer: false` only for an instance where nobody outside your organization can create an account.
 
 ### An instance behind a private CA
 
-trove connects to the instance over TLS with the system roots plus the issuer's `ca_bundle_ref`. The issuer stores only the reference; the bundle is a file in the `api` and `worker` pods. Mount it with the chart's extension points and name its path:
+Quader connects to the instance over TLS with the system roots plus the issuer's `ca_bundle_ref`. The issuer stores only the reference; the bundle is a file in the `api` and `worker` pods. Mount it with the chart's extension points and name its path:
 
 ```yaml
 extraVolumes:
@@ -169,7 +169,7 @@ The fetches follow at most three redirects, only to `https`, and pass the instal
 
 ### Audiences
 
-The job's `aud` must be one of the issuer's `allowedAudiences`, compared exactly. With the default list, that is trove's base URL as configured in `server.base_url`, for example `https://trove.example.com`. If clients reach trove under further origins (`server.additional_base_urls`) and a pipeline uses one of them as its audience, add it to the list. With `exclusive_audience` on, an ID token whose `aud` also names another service is refused (`audience_not_exclusive`): that service could replay it at trove. Pipelines request one ID token per service instead.
+The job's `aud` must be one of the issuer's `allowedAudiences`, compared exactly. With the default list, that is Quader's base URL as configured in `server.base_url`, for example `https://quader.example.com`. If clients reach Quader under further origins (`server.additional_base_urls`) and a pipeline uses one of them as its audience, add it to the list. With `exclusive_audience` on, an ID token whose `aud` also names another service is refused (`audience_not_exclusive`): that service could replay it at Quader. Pipelines request one ID token per service instead.
 
 ## How mappings are evaluated
 
@@ -227,10 +227,10 @@ A condition is a tree of combinators and leaves. Combinators: `all` (every child
 | `equals` | The claim equals the literal |
 | `in` | It equals one of the literals |
 | `glob` | It matches the glob pattern |
-| `regex` | It fully matches the regular expression (RE2, anchored by trove) |
+| `regex` | It fully matches the regular expression (RE2, anchored by Quader) |
 | `present` | `true`: the claim exists and is not null; `false`: it is absent or null |
 
-`ignoreCase: true` compares case-insensitively for `equals`, `in`, `glob` and `regex`. GitLab sends IDs and booleans as strings; trove compares `true` and `"true"`, `4242` and `"4242"` as equal. An array claim holds when any element matches. Every leaf except `present: false` is false on a missing claim, so `not` around a leaf on a missing claim is true: a condition that needs a claim says `present: true`.
+`ignoreCase: true` compares case-insensitively for `equals`, `in`, `glob` and `regex`. GitLab sends IDs and booleans as strings; Quader compares `true` and `"true"`, `4242` and `"4242"` as equal. An array claim holds when any element matches. Every leaf except `present: false` is false on a missing claim, so `not` around a leaf on a missing claim is true: a condition that needs a claim says `present: true`.
 
 Globs use `/` as the separator. `*` matches within one segment, `?` one character other than `/`, `**` whole segments only: `acme/**` matches `acme/app` and `acme/billing/app` but not `acme`; `acme/**/app` matches `acme/app`. `\` makes the next character literal. There are no character classes and no `{a,b}`; use `in` or `any`. Beware the prefix trap: `acme*/**` also matches `acme-evil/app`.
 
@@ -249,9 +249,9 @@ A substituted value can never widen a pattern: in `packages` and `paths` its glo
 
 ## Let a GitLab project's pipelines publish
 
-The goal: the pipelines of the GitLab project `acme/invoice-api` publish the npm packages `@acme/*` to the local repository `npm-internal` and the NuGet package `Acme.InvoiceApi` to `nuget-internal`, both repositories of the trove project `web`, and read every repository of the project to install their dependencies. You are an Owner of `web`. All names, IDs and addresses below are examples.
+The goal: the pipelines of the GitLab project `acme/invoice-api` publish the npm packages `@acme/*` to the local repository `npm-internal` and the NuGet package `Acme.InvoiceApi` to `nuget-internal`, both repositories of the Quader project `web`, and read every repository of the project to install their dependencies. You are an Owner of `web`. All names, IDs and addresses below are examples.
 
-1. **Find the issuer.** `trove_curl https://trove.example.com/api/v1/projects/web/ci/issuers` lists the instances you can choose from. Here it is `gitlab-main`, with `publicIssuer: false`.
+1. **Find the issuer.** `quader_curl https://quader.example.com/api/v1/projects/web/ci/issuers` lists the instances you can choose from. Here it is `gitlab-main`, with `publicIssuer: false`.
 2. **Find the GitLab project ID.** GitLab shows the numeric ID on the project's page, and a job sees it as `CI_PROJECT_ID`. Here it is `4242`. Use the ID, never the path.
 3. **Protect the refs that release.** In GitLab, protect the tags or branches whose pipelines publish, for example tags `v*`. Only their pipelines carry `ref_protected: "true"`.
 4. **Create the mapping** with `POST /api/v1/projects/web/ci/mappings`:
@@ -279,16 +279,16 @@ The goal: the pipelines of the GitLab project `acme/invoice-api` publish the npm
    ```
 
    ```shell
-   trove_curl -X POST -H 'Content-Type: application/json' --data @mapping.json https://trove.example.com/api/v1/projects/web/ci/mappings
+   quader_curl -X POST -H 'Content-Type: application/json' --data @mapping.json https://quader.example.com/api/v1/projects/web/ci/mappings
    ```
 
    The answer is `201` with the stored mapping, its resolved defaults and any `warnings`. The mapping is the principal `ci:gitlab-main/web/invoice-api-publish`, and an exchange it matches names it `web/invoice-api-publish`.
 5. **Test it** with the dry run ([below](#test-a-mapping-with-the-dry-run)): a claim set of a protected tag pipeline selects the mapping, the same claims with `"ref_protected": "false"` show the failing leaf.
-6. **Hand over the pipeline.** Give the developers the issuer's audience (trove's base URL), the repository addresses and [GitLab CI pipelines](../user/gitlab-ci-pipelines.md), whose reference pipeline matches this mapping.
+6. **Hand over the pipeline.** Give the developers the issuer's audience (Quader's base URL), the repository addresses and [GitLab CI pipelines](../user/gitlab-ci-pipelines.md), whose reference pipeline matches this mapping.
 
 `maxTtlSeconds` (from `ci.token.min_ttl` to `ci.token.max_ttl`) bounds what this mapping gives: when no system mapping matches the job, the token's lifetime; when one does, only this mapping's grants, which end after 30 minutes while the token keeps the system mapping's.
 
-The third inline grant reads every repository of the project, the virtual repositories and their members included; an empty include list leaves package names unrestricted. It is part of this mapping because the first match decides: a protected pipeline of `acme/invoice-api` that matches this mapping does not also get a read mapping further down the tier. If the job installs from repositories of another project, a mapping of `web` cannot name them: ask an Owner of that project for a mapping in its own tier, whose grants add to these, or an administrator of trove for a system mapping.
+The third inline grant reads every repository of the project, the virtual repositories and their members included; an empty include list leaves package names unrestricted. It is part of this mapping because the first match decides: a protected pipeline of `acme/invoice-api` that matches this mapping does not also get a read mapping further down the tier. If the job installs from repositories of another project, a mapping of `web` cannot name them: ask an Owner of that project for a mapping in its own tier, whose grants add to these, or an administrator of Quader for a system mapping.
 
 ### Why each condition is there
 
@@ -346,11 +346,11 @@ A path condition follows paths, not projects: a project created later under a pa
 
 ### On gitlab.com and other public instances
 
-A read for the whole instance is refused: `{"claim": "project_id", "present": true}` holds no pin, so the save answers `422` `pin_required`. On a public instance anyone can create an account and a project and ask GitLab for an ID token with trove's audience; without a pin, every one of them would read your packages. Pin the group by ID or the projects by ID, as in the last two rows above. A path condition may be added next to the pin to narrow it further, never instead of it.
+A read for the whole instance is refused: `{"claim": "project_id", "present": true}` holds no pin, so the save answers `422` `pin_required`. On a public instance anyone can create an account and a project and ask GitLab for an ID token with Quader's audience; without a pin, every one of them would read your packages. Pin the group by ID or the projects by ID, as in the last two rows above. A path condition may be added next to the pin to narrow it further, never instead of it.
 
 ### Groups with subgroups
 
-A GitLab ID token's `namespace_id` is the ID of the project's immediate namespace, and trove knows no claim that carries the ID of the top-level group or of the groups in between. A project in `acme/billing` therefore carries the ID of `acme/billing`, not that of `acme`. To pin a group with subgroups by ID, list the group's ID and the ID of every subgroup that holds projects in an `in` leaf (at most 256 values), or list the project IDs. A subgroup created later is not covered until its ID is added; keeping the list current is a manual task.
+A GitLab ID token's `namespace_id` is the ID of the project's immediate namespace, and Quader knows no claim that carries the ID of the top-level group or of the groups in between. A project in `acme/billing` therefore carries the ID of `acme/billing`, not that of `acme`. To pin a group with subgroups by ID, list the group's ID and the ID of every subgroup that holds projects in an `in` leaf (at most 256 values), or list the project IDs. A subgroup created later is not covered until its ID is added; keeping the list current is a manual task.
 
 > **Open point, being checked in this phase:** whether a GitLab ID token carries an immutable ID of the top-level group. The specification assumes it does not, and GitLab's claims are being checked against a real GitLab instance. This section is updated with the result; until then, list the IDs as described.
 
@@ -366,7 +366,7 @@ A client that installs through a virtual repository needs `read` on the virtual 
 
 ### Fork pipelines
 
-A merge request pipeline from a fork that a member runs in your project uses the fork's CI configuration with your runners. trove recognises it when `project_id` and `job_project_id` (GitLab 18.4 and later) or `source_project_id` (GitLab 19.5 and later) differ, and by default a matched mapping then contributes nothing (`cross_project_source_denied`). `options.crossProjectSource: read_only` lets such a pipeline have the mapping's grants capped to read; the save warns `cross_project_read_only`. The fork's code controls its CI configuration and can send anything the token reads elsewhere, so leave the default unless the readable content is not confidential. On older GitLab versions trove cannot recognise these pipelines. They carry the fork's `project_id` and `ref_protected: "false"`, so mappings pinned to your project's IDs do not match them, and no write mapping does unless it sets `allowUnprotectedRefs`.
+A merge request pipeline from a fork that a member runs in your project uses the fork's CI configuration with your runners. Quader recognises it when `project_id` and `job_project_id` (GitLab 18.4 and later) or `source_project_id` (GitLab 19.5 and later) differ, and by default a matched mapping then contributes nothing (`cross_project_source_denied`). `options.crossProjectSource: read_only` lets such a pipeline have the mapping's grants capped to read; the save warns `cross_project_read_only`. The fork's code controls its CI configuration and can send anything the token reads elsewhere, so leave the default unless the readable content is not confidential. On older GitLab versions Quader cannot recognise these pipelines. They carry the fork's `project_id` and `ref_protected: "false"`, so mappings pinned to your project's IDs do not match them, and no write mapping does unless it sets `allowUnprotectedRefs`.
 
 ## Test a mapping with the dry run
 
@@ -391,7 +391,7 @@ The dry run evaluates mappings against a claim set and shows the decision. It ta
 ```
 
 ```shell
-trove_curl -X POST -H 'Content-Type: application/json' --data @claims.json https://trove.example.com/api/v1/projects/web/ci/issuers/gitlab-main/evaluate
+quader_curl -X POST -H 'Content-Type: application/json' --data @claims.json https://quader.example.com/api/v1/projects/web/ci/issuers/gitlab-main/evaluate
 ```
 
 Write the claims as GitLab sends them, IDs and booleans as strings. `scope` is optional and narrows as the exchange's parameter does; its selectors name the project (`web/npm-internal`) also in the dry run of a project's tier, and a bare key shows the `failure` `scope_malformed`. `now` (Unix seconds) is optional too: without it no time claim is checked, with it and with `exp` and `iat` in the claims they and `nbf` are checked against that moment, with the issuer's clock skew. The dry run reads the mappings from the database, so a mapping you just saved is in it. The answer:
@@ -430,7 +430,7 @@ Every successful exchange writes an issuance record in the same transaction that
 | `GET /api/v1/projects/{projectKey}/ci/issuances` | The records of tokens one of the project's mappings contributed to, naming the project's mappings only and leaving out the scopes, the person who started the pipeline and the client; filters `issuer`, `jobId`, `active` | An Owner of the project, or `tokens:read` |
 
 ```shell
-trove_curl "https://trove.example.com/api/v1/ci/issuances?issuer=gitlab-main&jobId=981"
+quader_curl "https://quader.example.com/api/v1/ci/issuances?issuer=gitlab-main&jobId=981"
 ```
 
 A record names `tokenId`, `issuer`, `mappingNames` (a mapping of a project as `<projectKey>/<name>`, the form the `mapping` filter and the bulk revocation take as well), `projectId`, `projectPath`, `namespaceId`, `pipelineId`, `jobId`, `ref`, `refType`, `refProtected`, `pipelineSource`, `environment`, `sha`, `userId` and `userLogin` of the job, the allowlisted `claims`, the frozen `grants`, `requestedScope` and `grantedScope`, `crossProject`, `issuedAt`, `expiresAt`, `revokedAt`, `active`, `state`, `clientIp` and `userAgent`. The audit events of package operations carry the same `tokenId`, so a publish leads back to the job that made it. Records are kept for `ci.issuances.retention` (one year by default) after the token expired.
@@ -458,7 +458,7 @@ The exchange and its consequences are also audit events under **Admin area › S
 | `ci.keys.refreshed`, `ci.keys.refresh_failed` | `auth` | A key fetch succeeded or failed |
 | `ci.package_ownership.claimed`, `ci.package_ownership.conflict` | `authz` | A CI publish claimed a package name, or was refused because another owner holds it |
 
-The metrics `trove_ci_exchanges_total{issuer,outcome,reason}`, `trove_ci_exchange_duration_seconds`, `trove_ci_tokens_active` (0 for an issuer without a live token), `trove_ci_signing_keys_age_seconds`, `trove_ci_signing_keys_refresh_total` and `trove_ci_mapping_set_stale_total` describe the federation; their labels carry no project or user names. See [Monitoring and operations](operations.md).
+The metrics `quader_ci_exchanges_total{issuer,outcome,reason}`, `quader_ci_exchange_duration_seconds`, `quader_ci_tokens_active` (0 for an issuer without a live token), `quader_ci_signing_keys_age_seconds`, `quader_ci_signing_keys_refresh_total` and `quader_ci_mapping_set_stale_total` describe the federation; their labels carry no project or user names. See [Monitoring and operations](operations.md).
 
 ## Revoke CI tokens
 
@@ -471,12 +471,12 @@ The metrics `trove_ci_exchanges_total{issuer,outcome,reason}`, `trove_ci_exchang
 | Every token of an instance | Disable or delete the issuer; for an issuer of the Helm values, remove it from `config.ci.issuers` | `ci:write`; the Helm values |
 
 ```shell
-trove_curl -X POST -H 'Content-Type: application/json' \
+quader_curl -X POST -H 'Content-Type: application/json' \
   --data '{"issuer": "gitlab-main", "pipelineId": "377"}' \
-  https://trove.example.com/api/v1/ci/issuances/revoke
+  https://quader.example.com/api/v1/ci/issuances/revoke
 ```
 
-To disable a mapping of a project, read it with `trove_curl -i https://trove.example.com/api/v1/projects/web/ci/mappings/gitlab-main/acme-read`, set `"enabled": false` in the body, and send it back with `PUT` and `-H 'If-Match: "<the ETag>"'`. Disabling revokes the unexpired tokens the mapping owns and disables its principal in the same transaction, so a token that escaped the sweep is refused as well. Deleting a mapping revokes those tokens and deletes its principal: a mapping created later under the same name is a new principal and inherits no policy entry or ownership.
+To disable a mapping of a project, read it with `quader_curl -i https://quader.example.com/api/v1/projects/web/ci/mappings/gitlab-main/acme-read`, set `"enabled": false` in the body, and send it back with `PUT` and `-H 'If-Match: "<the ETag>"'`. Disabling revokes the unexpired tokens the mapping owns and disables its principal in the same transaction, so a token that escaped the sweep is refused as well. Deleting a mapping revokes those tokens and deletes its principal: a mapping created later under the same name is a new principal and inherits no policy entry or ownership.
 
 Which tokens a mapping owns depends on its tier:
 
@@ -486,7 +486,7 @@ Which tokens a mapping owns depends on its tier:
 - **First match.** Disabling or deleting a mapping lets its jobs fall through to the next mapping of the tier, which may grant more. Disabling a read-only mapping for merge request pipelines placed in front of a publish mapping lets those pipelines publish. Check the tier with the dry run before you disable.
 - **Editing does not revoke.** The inline grants of issued tokens stay as they were until the tokens expire; grants through policies follow a change at once. To cut a widened mapping off at once, edit it and revoke its tokens by `mapping`.
 - **Propagation.** A revocation reaches every replica within `auth.revocation_bound`, 2 seconds by default, also while Valkey is unavailable ([Managing tokens](tokens.md#revocation-and-its-propagation)).
-- **Jobs that fail.** A job that fails, is cancelled or times out before its last step keeps its token until the token expires: 15 minutes by default, never more than `ci.token.max_ttl` or the rest of the ID token's lifetime. trove learns nothing about the end of a job.
+- **Jobs that fail.** A job that fails, is cancelled or times out before its last step keeps its token until the token expires: 15 minutes by default, never more than `ci.token.max_ttl` or the rest of the ID token's lifetime. Quader learns nothing about the end of a job.
 
 ## Troubleshoot refused exchanges
 
@@ -524,13 +524,13 @@ To work through a refusal: find the event by request ID, time or project; for a 
 | `token_type_not_allowed` | 400 `invalid_request` | The `typ` header is not allowed | Check `allowedTyp` and `allowMissingTyp` |
 | `unknown_signing_key` | 400 `invalid_request` | The key ID is unknown, also after the on-demand fetch; the instance rotated its key or the fetch fails | `GET …/keys` for the last error; `POST …/keys/refresh` |
 | `signature_invalid` | 400 `invalid_request` | The signature does not verify with the instance's keys | A forged or altered token; if genuine jobs get it, refresh the keys and check `jwksUri` |
-| `audience_invalid` | 400 `invalid_request` | No element of `aud` is an allowed audience | Set `aud` in `id_tokens:` to trove's base URL exactly, or add the audience to the issuer |
+| `audience_invalid` | 400 `invalid_request` | No element of `aud` is an allowed audience | Set `aud` in `id_tokens:` to Quader's base URL exactly, or add the audience to the issuer |
 | `audience_not_exclusive` | 400 `invalid_request` | `aud` also names another service | One `id_tokens:` entry per service |
 | `token_expired` | 400 `invalid_request` | `exp` passed, beyond the clock skew. GitLab sets it to the job's timeout, or to five minutes when the job has none | Exchange early in the job; give the job a timeout |
-| `token_not_yet_valid`, `issued_in_future` | 400 `invalid_request` | `nbf` or `iat` lies in the future beyond the clock skew | Synchronise the clocks of GitLab and trove |
+| `token_not_yet_valid`, `issued_in_future` | 400 `invalid_request` | `nbf` or `iat` lies in the future beyond the clock skew | Synchronise the clocks of GitLab and Quader |
 | `required_claim_missing` | 400 `invalid_request` | A claim of `requiredClaims` is missing or null; `error_description` names it. With single use, a token without `jti` | Check the GitLab version and the issuer's `requiredClaims` |
 | `subject_token_replayed` | 400 `invalid_request` | Single use is on for the issuer (off by default for GitLab) and the ID token was exchanged before | Switch `singleUseSubjectTokens` off, or exchange once per job |
-| `subject_token_predates_restore` | 400 `invalid_request` | Single use is on and the ID token was issued before a restore of trove finished | Run the job again |
+| `subject_token_predates_restore` | 400 `invalid_request` | Single use is on and the ID token was issued before a restore of Quader finished | Run the job again |
 | `cross_project_source_denied` | 400 `invalid_request` | A fork pipeline run in the parent project, and no matched mapping opts in | Intended; see [Fork pipelines](#fork-pipelines) |
 | `no_matching_mapping` | 400 `invalid_request` | No mapping of any tier holds for the claims | Dry-run the claim snapshot of the denial event |
 | `grant_render_failed` | 400 `invalid_request` | A template of the matched system mapping, or of the only tiers that matched, refers to a missing claim, or a value fails its context or a `require` filter. A project tier whose template fails beside another tier's match drops only its own grants; the dry run shows it | Fix the template, or guard the claim with `present: true` |
@@ -540,11 +540,11 @@ To work through a refusal: find the event by request ID, time or project; for a 
 | `grant_type_unsupported` | 400 `unsupported_grant_type` | `grant_type` is not the token-exchange type | `urn:ietf:params:oauth:grant-type:token-exchange` |
 | `scope_malformed` | 400 `invalid_scope` | An unknown action, `manage` or an invalid selector; a bare key without its project (`deploy:npm-internal`) is an invalid selector | Correct `scope`; name the project (`deploy:web/npm-internal`) |
 | `scope_not_granted` | 400 `invalid_scope` | A `scope` item asks for an action the matched grants do not hold, or names a repository key that does not exist (answered alike, so the answer tells nothing of which repositories exist); no partial token is issued | Check the key's spelling with the dry run, narrow `scope`, or extend the mapping |
-| `audience_not_this_server` | 400 `invalid_target` | The `audience` or `resource` parameter is not trove's base URL | Leave them out, or send the base URL |
+| `audience_not_this_server` | 400 `invalid_target` | The `audience` or `resource` parameter is not Quader's base URL | Leave them out, or send the base URL |
 | `rate_limited` | 429 `slow_down` | A rate limit is spent; `Retry-After` says when to retry | See [Rate limits and runner networks](#rate-limits-and-runner-networks) |
 | `signing_keys_unavailable` | 503 `temporarily_unavailable` | The stored key set is older than `ci.signing_keys.max_stale` (24 h): the instance has been unreachable, or no `worker` replica ran the refresh | Check the key status and the `worker` replicas |
 | `database_unavailable` | 503 `temporarily_unavailable` | PostgreSQL is unavailable | Retry; check the database |
-| `configuration_changed` | 503 `temporarily_unavailable` | The issuer or its mappings changed twice while the exchange ran, which only a change made outside trove's API can cause | Retry |
+| `configuration_changed` | 503 `temporarily_unavailable` | The issuer or its mappings changed twice while the exchange ran, which only a change made outside Quader's API can cause | Retry |
 | `gitlab_unreachable` | 503 `temporarily_unavailable` | Only with the job-token fallback | — |
 | `internal` | 500 `server_error` | A defect | Report it with the request ID |
 
@@ -565,7 +565,7 @@ With `ci.exchange.enabled: false` the exchange answers `404` as a path that does
 
 ### Problems with an issuer
 
-- **The key status.** `GET /api/v1/ci/issuers/{name}/keys` shows the last fetch, the next refresh and `lastError`, with the failure class, the HTTP status and the host, never a byte of a response. `trove_ci_signing_keys_age_seconds` climbing towards `ci.signing_keys.max_stale` means fetches fail: exchanges keep working on the stored keys until then and answer `503` `signing_keys_unavailable` afterwards.
+- **The key status.** `GET /api/v1/ci/issuers/{name}/keys` shows the last fetch, the next refresh and `lastError`, with the failure class, the HTTP status and the host, never a byte of a response. `quader_ci_signing_keys_age_seconds` climbing towards `ci.signing_keys.max_stale` means fetches fail: exchanges keep working on the stored keys until then and answer `503` `signing_keys_unavailable` afterwards.
 - **A create refused with `422`.** `discovery_unreachable` (DNS, TLS, the CA bundle, the address rules), `issuer_mismatch` (the instance announces another issuer URL than yours, often a different host or a trailing slash), `no_usable_keys` (no key meets the rules: signing use, a matching key type, RSA keys of at least 2048 bits), `algorithms_not_offered`.
 - **The migration stops.** An entry of `config.ci.issuers` collides with an issuer created through the API, by name or URL. Delete the API issuer, or rename the entry.
 
@@ -586,7 +586,7 @@ config:
 ```
 
 - The **per-address** limit is checked first, before the request body is read. The address is the client address after the trusted-proxy handling, so `server.trusted_proxies` must name your ingress; otherwise every exchange counts against the ingress's address.
-- Runners that reach trove through a few NAT addresses carry the jobs of the whole fleet on one address. List their networks in `exempt_cidrs`: those addresses skip the per-address limit and stay bounded by `server.max_in_flight` and the per-project limit.
+- Runners that reach Quader through a few NAT addresses carry the jobs of the whole fleet on one address. List their networks in `exempt_cidrs`: those addresses skip the per-address limit and stay bounded by `server.max_in_flight` and the per-project limit.
 - The **per-project** limit counts after the token's signature has been verified, per issuer and the token's `project_id`. Forged tokens never reach it, and on a public instance an outsider's project spends only its own budget.
 - Exceeding either answers `429` `slow_down` with `Retry-After`. Neither records the ID token as used, so the retry of the pipeline guide is accepted.
 - While Valkey is unavailable, each replica enforces its share of each budget; no exchange fails because Valkey failed.
@@ -642,4 +642,4 @@ The Owners of a project manage the mappings of their project. These stay with ho
 - Mappings are managed through the API only; there are no configuration documents for them. Mapping management is delegated only to the Owners of a project, for their project's tier; it cannot be delegated to a group or per issuer.
 - A group with subgroups is pinned by listing IDs ([Groups with subgroups](#groups-with-subgroups)).
 - The ID token and the CI token are bearer credentials: whoever reads them while they are valid can use them, for example on a runner shared between jobs. A GitLab ID token can be exchanged again until it expires; the exchange count in the audit trail shows it.
-- trove trusts every token the instance signs. A GitLab administrator, or anyone who holds the instance's signing key or takes over its domain, can mint ID tokens for any project and ref; mappings cannot detect this. Ownership binding, the short lifetime and the issuance records bound and record the damage.
+- Quader trusts every token the instance signs. A GitLab administrator, or anyone who holds the instance's signing key or takes over its domain, can mint ID tokens for any project and ref; mappings cannot detect this. Ownership binding, the short lifetime and the issuance records bound and record the damage.

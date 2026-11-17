@@ -11,7 +11,7 @@ import { FakeClientSetupApi, GENERIC_REPOSITORY, NPM_REPOSITORIES } from './fake
  * (R-API-053).
  */
 
-const BASE = 'https://trove.example.net';
+const BASE = 'https://quader.example.net';
 
 const CLIENTS = ['npm', 'pnpm', 'yarn', 'yarn-classic'];
 
@@ -71,7 +71,7 @@ export class FakeGuidesApi extends GuidesApi {
         'npm.authenticate',
         'authenticate',
         'Sign the client in',
-        this.anonymous ? '<p>No credential is needed.</p>' : '<p>Keep the token in <code>TROVE_TOKEN</code>.</p>',
+        this.anonymous ? '<p>No credential is needed.</p>' : '<p>Keep the token in <code>QUADER_TOKEN</code>.</p>',
       ),
       { ...section('npm.install', 'install', 'Install packages', '<p>Install a package.</p>'), snippets: of('install') },
     ];
@@ -110,7 +110,7 @@ export class FakeGuidesApi extends GuidesApi {
     const sections: GuideSection[] = [
       section('generic.local.what', 'what', 'What a generic local repository is', '<p>Files at paths you choose.</p>'),
       { ...section('generic.configure', 'configure', 'Point curl at the repository', '<p>Paste the function.</p>'), snippets: of('configure') },
-      section('generic.authenticate', 'authenticate', 'Sign curl in', this.anonymous ? '<p>No credential is needed.</p>' : '<p>Keep the token in <code>TROVE_TOKEN</code>.</p>'),
+      section('generic.authenticate', 'authenticate', 'Sign curl in', this.anonymous ? '<p>No credential is needed.</p>' : '<p>Keep the token in <code>QUADER_TOKEN</code>.</p>'),
       { ...section('generic.install', 'install', 'Download files', '<p>Download a file.</p>'), snippets: of('install') },
     ];
     if (!this.anonymous) {

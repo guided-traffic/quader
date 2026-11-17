@@ -90,7 +90,7 @@ export interface paths {
          * The maintenance mode
          * @description The read-only maintenance mode (R-OPS-024): `normal`, or `read_only` with the operator's message, the time it was
          *     switched on and who did it. Any authenticated caller reads it, because a client that is refused a write wants to
-         *     know why. Read from PostgreSQL (R-API-052). This is not the deletion pause of `trove admin maintenance
+         *     know why. Read from PostgreSQL (R-API-052). This is not the deletion pause of `quader admin maintenance
          *     pause-deletions` (R-HA-025), which stops garbage collection only.
          */
         get: operations["getSystemMaintenance"];
@@ -98,7 +98,7 @@ export interface paths {
          * Switch the maintenance mode
          * @description Sets the mode (R-OPS-024). In `read_only` mode every write of content and configuration answers `503 unavailable`
          *     with `Retry-After` (`retryAfterSeconds`, default 300) and the message: publishes, pushes, deletes and
-         *     every mutating operation of this API that does not declare `x-trove-maintenance: allowed`. Downloads, metadata reads,
+         *     every mutating operation of this API that does not declare `x-quader-maintenance: allowed`. Downloads, metadata reads,
          *     sign-in, credential creation and revocation, and this operation continue. With `cacheFill: false` remote repositories
          *     serve only what they already cache. The scheduler enqueues no mutating task while the mode is on. Setting the mode that is
          *     stored changes nothing and writes no event; otherwise it writes `system.maintenance_mode_changed`. All replicas enforce
@@ -168,9 +168,9 @@ export interface paths {
          * @description The upgrade verification of R-HA-020 and step 4 of the upgrade preparation of R-HA-021: the schema state, the
          *     answering replica's binary, the steps that binary embeds and the database has not applied (`pending`, with what the
          *     contract guard checks before a contract step), every applied step, and the background data migrations the binary
-         *     declares with their states (R-HA-022). `trove migrate status` prints the same report from the same code. During a
+         *     declares with their states (R-HA-022). `quader migrate status` prints the same report from the same code. During a
          *     rolling upgrade, replicas of both releases answer, each for its own binary (`binary.version`; the replica is named in
-         *     `X-Trove-Replica`).
+         *     `X-Quader-Replica`).
          */
         get: operations["getMigrationStatus"];
         put?: never;
@@ -536,14 +536,14 @@ export interface paths {
          *     pixels alone, so metadata and anything appended are gone (R-API-055). The answer is the user record, whose
          *     `avatarUrl` names the new image. A request with a session cookie needs the CSRF header (R-API-006). Service accounts
          *     and CI tokens have no avatar and answer `403`, and so does a token whose scope does not inherit its owner's rights
-         *     (`x-trove-owner-rights`, R-API-021).
+         *     (`x-quader-owner-rights`, R-API-021).
          */
         put: operations["setAvatar"];
         post?: never;
         /**
          * Remove the caller's avatar
          * @description The user shows the generated fallback image again. A user without an avatar answers `204` as well (R-API-055).
-         *     A token whose scope does not inherit its owner's rights answers `403` (`x-trove-owner-rights`, R-API-021).
+         *     A token whose scope does not inherit its owner's rights answers `403` (`x-quader-owner-rights`, R-API-021).
          */
         delete: operations["removeAvatar"];
         options?: never;
@@ -1193,7 +1193,7 @@ export interface paths {
         /**
          * Revoke all own tokens
          * @description Revokes every active token of the caller with reason `owner` (R-AUTH-029). A session or a token that inherits the
-         *     owner's rights may; a token whose scope does not answers `403` (`x-trove-owner-rights`, R-API-021).
+         *     owner's rights may; a token whose scope does not answers `403` (`x-quader-owner-rights`, R-API-021).
          */
         delete: operations["revokeOwnTokens"];
         options?: never;
@@ -1265,7 +1265,7 @@ export interface paths {
          * Create a token of a project service account
          * @description Creates a SAT of a service account of the project (R-AUTH-027, Q-AUTHZ-177). The caller is an Owner of the
          *     project acting with a session (with recent authentication) or a token with `admin: true`, or an administrator
-         *     of trove. A non-expiring token (`ttlSeconds: 0`) needs an administrator of trove and
+         *     of Quader. A non-expiring token (`ttlSeconds: 0`) needs an administrator of Quader and
          *     `auth.tokens.sat.allow_non_expiring`. A token an Owner creates is never non-expiring, lives at most
          *     `auth.tokens.sat` maximum lifetime, names no `system` item and has `admin: false` (`422 invalid_scope`); an
          *     `endpoints` binding is allowed. The value is in this answer only and the answer is never cached.
@@ -1398,7 +1398,7 @@ export interface paths {
          * List the caller's active sessions
          * @description The live UI sessions of the caller, newest first, `current` marking the one that made this request
          *     (R-AUTH-010). At most `auth.sessions.max_per_user` exist, so the list is one page. A service account or CI
-         *     token answers `403`, and so does a token whose scope does not inherit its owner's rights (`x-trove-owner-rights`,
+         *     token answers `403`, and so does a token whose scope does not inherit its owner's rights (`x-quader-owner-rights`,
          *     R-API-021).
          */
         get: operations["listOwnSessions"];
@@ -1409,7 +1409,7 @@ export interface paths {
          * @description Ends every session of the caller, or with `keepCurrent=true` every one but the session of this request (R-AUTH-010). Sessions
          *     that had ended already, the ones the current session replaced by a sign-in or a re-authentication included, are withdrawn, so
          *     that no delete job queued with one of them goes on (Q-AUTHZ-262).
-         *     A token whose scope does not inherit its owner's rights answers `403` (`x-trove-owner-rights`, R-API-021).
+         *     A token whose scope does not inherit its owner's rights answers `403` (`x-quader-owner-rights`, R-API-021).
          */
         delete: operations["endOwnSessions"];
         options?: never;
@@ -1432,7 +1432,7 @@ export interface paths {
          * @description Ends a session of the caller. A session of the caller that had ended already by its deadlines, the session limit or a
          *     re-authentication is withdrawn and answers `204` too, so that a delete job it queued stops (Q-AUTHZ-262); a repeated request
          *     for it then answers `404`, as do another user's session, a session already withdrawn and an unknown ID (R-AUTH-010).
-         *     A token whose scope does not inherit its owner's rights answers `403` (`x-trove-owner-rights`, R-API-021).
+         *     A token whose scope does not inherit its owner's rights answers `403` (`x-quader-owner-rights`, R-API-021).
          */
         delete: operations["endOwnSession"];
         options?: never;
@@ -1485,7 +1485,7 @@ export interface paths {
         /**
          * Change the caller's UI preferences
          * @description JSON merge patch with `If-Match` (R-API-012, R-API-013); `null` resets a member to its default. A token whose scope
-         *     does not inherit its owner's rights answers `403`, before `If-Match` is looked at (`x-trove-owner-rights`,
+         *     does not inherit its owner's rights answers `403`, before `If-Match` is looked at (`x-quader-owner-rights`,
          *     R-API-021).
          */
         patch: operations["updatePreferences"];
@@ -1516,7 +1516,7 @@ export interface paths {
          * @description Validates the policy (R-AUTHZ-021), stores it as an instance-wide policy and notifies the `authz` change area in one
          *     transaction with the audit event `authz.policy.created`. Its selectors are qualified: `<projectGlob>/<keyGlob>`,
          *     `@any…` (a bare key is `422 invalid_pattern`). The name is unique among the instance-wide policies: `409
-         *     already_exists`. The answer carries the epoch the write produced in `Trove-Authz-Epoch` and the policy's `ETag`.
+         *     already_exists`. The answer carries the epoch the write produced in `Quader-Authz-Epoch` and the policy's `ETag`.
          *     Warnings do not block saving; a rule that fails answers `422` with the code of the first problem and every problem in
          *     `errors` (`unknown_principal`, `unknown_repository`, `unknown_format`, `invalid_pattern`, `invalid_action`,
          *     `duplicate_principal`, `virtual_action_not_applicable`, `action_not_allowed`, `principal_outside_project`). An entry
@@ -1558,7 +1558,7 @@ export interface paths {
          *     The selectors name repositories of the project by bare key (`422 repository_outside_project` for another
          *     project's); the entries grant to users, groups, global service accounts, CI mappings and the project's own
          *     service accounts (`422 principal_outside_project` for another's). The answer carries the epoch the write
-         *     produced in `Trove-Authz-Epoch` and the policy's `ETag`. Warnings do not block saving; a rule that fails
+         *     produced in `Quader-Authz-Epoch` and the policy's `ETag`. Warnings do not block saving; a rule that fails
          *     answers `422` with the code of the first problem and every problem in `errors`. An Owner of the project,
          *     or a holder of `policies:write`, creates it.
          */
@@ -1590,7 +1590,7 @@ export interface paths {
          * @description Replaces the whole policy (R-AUTHZ-021); the name is immutable. `If-Match` is required: a
          *     missing header answers `428`, a version that is not current `412` with `currentEtag`, and
          *     `If-Match: *` is the deliberate blind write. The read-only members of a body obtained by GET
-         *     are ignored. The answer carries the new `ETag` and `Trove-Authz-Epoch`. The audit event
+         *     are ignored. The answer carries the new `ETag` and `Quader-Authz-Epoch`. The audit event
          *     `authz.policy.updated` records the access-bearing state before and after and is journaled
          *     (R-AUTHZ-031).
          */
@@ -1599,7 +1599,7 @@ export interface paths {
         /**
          * Delete a permission policy
          * @description Removes the policy with its selectors, patterns and entries. `If-Match` is optional here; when
-         *     sent, a version that is not current answers `412`. The answer carries `Trove-Authz-Epoch`. The
+         *     sent, a version that is not current answers `412`. The answer carries `Quader-Authz-Epoch`. The
          *     audit event `authz.policy.deleted` is journaled (R-AUTHZ-031).
          */
         delete: operations["deletePermissionPolicy"];
@@ -1637,7 +1637,7 @@ export interface paths {
          * Replace a permission policy of a project
          * @description Replaces the whole policy (R-AUTHZ-021); the name is immutable. `If-Match` is required: a missing header answers
          *     `428`, a version that is not current `412` with `currentEtag`, and `If-Match: *` is the deliberate blind
-         *     write. The answer carries the new `ETag` and `Trove-Authz-Epoch`. The audit event `authz.policy.updated` is
+         *     write. The answer carries the new `ETag` and `Quader-Authz-Epoch`. The audit event `authz.policy.updated` is
          *     journaled (R-AUTHZ-031).
          */
         put: operations["replaceProjectPermissionPolicy"];
@@ -1692,7 +1692,7 @@ export interface paths {
         };
         /**
          * List the system roles
-         * @description The fixed set of system roles and the capabilities each bundles (R-AUTHZ-010). Trove has no
+         * @description The fixed set of system roles and the capabilities each bundles (R-AUTHZ-010). Quader has no
          *     custom roles, so the list is not paginated and `nextCursor` is always `null`.
          */
         get: operations["listRoles"];
@@ -1745,7 +1745,7 @@ export interface paths {
          *     its `source`, so a binding the configuration declares answers `200` and stays `configuration`
          *     (Q-AUTHZ-171). Roles bind to users, groups and service accounts only (`422 role_not_allowed`); a role
          *     on an auto-join group is `409 auto_join_admin_conflict`. A new binding writes `authz.role.bound` and
-         *     carries `Trove-Authz-Epoch`; for an existing one the header is the current epoch.
+         *     carries `Quader-Authz-Epoch`; for an existing one the header is the current epoch.
          */
         put: operations["bindRole"];
         post?: never;
@@ -1961,7 +1961,7 @@ export interface paths {
          *     (Q-AUTHZ-207, Q-AUTHZ-208). Idempotent: `201` when the member was added, `200` when it already was one (also with
          *     the same role); the pair needs no `If-Match`. A user or group that does not exist answers `404`. An Owner of the
          *     project, or a holder of `projects:write`, may call it. The last Owner of a project cannot be demoted:
-         *     `409 last_owner`, unless the caller holds `projects:write` (an administrator of trove may). Granting or removing
+         *     `409 last_owner`, unless the caller holds `projects:write` (an administrator of Quader may). Granting or removing
          *     a role is effective on every replica at once. Records `authz.project.member_added` when the member was added and `authz.project.member_changed` when its role
          *     changed (journaled, R-AUTHZ-031; a change to a lower role narrows), the latter with the previous and the new role.
          */
@@ -1997,7 +1997,7 @@ export interface paths {
          *     names them with their levels before. Raising it raises nothing. A holder of `projects:write` calls it; a project's
          *     Owner does not (`403`). `If-Match` carries the project's `ETag`. `409 public_not_allowed` while the default endpoint
          *     admits no request without a credential. Records `authz.project.visibility_changed` and, for each lowered repository,
-         *     `authz.settings.changed`; the answer carries `Trove-Authz-Epoch`.
+         *     `authz.settings.changed`; the answer carries `Quader-Authz-Epoch`.
          */
         put: operations["setProjectVisibility"];
         post?: never;
@@ -2235,7 +2235,7 @@ export interface paths {
          *     global policy its name); remove them, then move. A caller without `repositories:write-config`, an Owner of
          *     both projects, is refused as well while a key selector of a global policy names the repository (kind
          *     `global_policy`, Q-REPO-232): that grant is held by the repository's ID and would follow it into the target
-         *     project, whose other Owners cannot remove it; an administrator of trove moves it or removes the selector. It is refused with `409 already_exists` when the target project has a repository with the key,
+         *     project, whose other Owners cannot remove it; an administrator of Quader moves it or removes the selector. It is refused with `409 already_exists` when the target project has a repository with the key,
          *     also one being deleted. A target equal to the source changes nothing and answers `200` with the repository as it is. The move needs no
          *     `If-Match`: the path names the source. It records `repository.moved` in the source project and `repository.moved_in` in the target project (Q-REPO-233), notifies `authz`
          *     and `repo_config`, and moves the repository's `ETag`. The caller holds `repositories:write-config`, or is an
@@ -2562,13 +2562,13 @@ export interface paths {
         put?: never;
         /**
          * Exchange a CI ID token for a short-lived CI token
-         * @description OAuth 2.0 Token Exchange (RFC 8693, R-CI-007): the subject token, the ID token a GitLab job requested for trove's
-         *     audience, is the credential. The endpoint requires no trove credential and ignores a session and a CSRF token.
+         * @description OAuth 2.0 Token Exchange (RFC 8693, R-CI-007): the subject token, the ID token a GitLab job requested for Quader's
+         *     audience, is the credential. The endpoint requires no Quader credential and ignores a session and a CSRF token.
          *     The body is `application/x-www-form-urlencoded` (normative) or `application/json` with the same parameter names
          *     (string values; `ttl` may be a number); a parameter sent twice answers `400 malformed_request`, a parameter the
          *     exchange does not know is ignored, a parameter without a value counts as omitted (RFC 6749 section 3.1). Answers
          *     carry `Cache-Control: no-store` and `Pragma: no-cache`. Errors are the OAuth error response of RFC 6749 section
-         *     5.2 with trove's members `reason` and `requestId`, not problem details (R-CI-008); a rejected subject token
+         *     5.2 with Quader's members `reason` and `requestId`, not problem details (R-CI-008); a rejected subject token
          *     answers `400 invalid_request` (Q-CI-8). The parameters keep the OAuth names of the RFC. The general API rate
          *     limit does not apply: the limiters `ci_exchange_address` and `ci_exchange_subject` of R-CI-021 do.
          *
@@ -3032,8 +3032,8 @@ export interface paths {
         /**
          * Create an exposure rule
          * @description Stores a rule on a configured endpoint (R-EP-012). The rule takes effect on every replica
-         *     within the bound of R-AUTHZ-028; a request that sends the returned `Trove-Authz-Epoch` in
-         *     `Trove-Authz-Min-Epoch` sees it at once. Validation answers `422` with the code of the first
+         *     within the bound of R-AUTHZ-028; a request that sends the returned `Quader-Authz-Epoch` in
+         *     `Quader-Authz-Min-Epoch` sees it at once. Validation answers `422` with the code of the first
          *     problem (`unknown_repository`, `invalid_pattern`, `invalid_version_range`,
          *     `dimension_not_supported`, `format_not_exposable`) and every problem as a field error. A rule
          *     on an endpoint in mode `all` is saved with the warning `endpoint_not_in_rules_mode`. At most
@@ -3407,7 +3407,7 @@ export interface paths {
          *     (`endpointPath`, npm's per-registry credential key) and the caller's name. It never fills a
          *     token: with `credentials=placeholder` a snippet holds the literal `{{token}}`, which the
          *     browser replaces; with `credentials=env` it holds the environment-variable reference of the
-         *     client's syntax (`${TROVE_TOKEN}` for npm and Yarn, `%TROVE_TOKEN%` for `nuget.config`;
+         *     client's syntax (`${QUADER_TOKEN}` for npm and Yarn, `%QUADER_TOKEN%` for `nuget.config`;
          *     the name is `ui.client_setup.token_env_var`); with `credentials=none` it holds no
          *     authentication line. With `package` and `version` the install snippets name that version.
          *     Values placed in shell commands are single-quoted unless they match
@@ -3415,7 +3415,7 @@ export interface paths {
          *     (`404` otherwise, like a missing repository); the publish snippets are present only when the
          *     caller holds `deploy` on the repository that receives the publish (`publishTarget`). A virtual
          *     repository without a default deployment target has no publish snippets and `publishTarget:
-         *     null`. The answer never matches `trv_(pat|sat|cit)_`.
+         *     null`. The answer never matches `qdr_(pat|sat|cit)_`.
          */
         get: operations["getClientSetup"];
         put?: never;
@@ -3448,7 +3448,7 @@ export interface paths {
          *     the endpoint note on an endpoint without exposure rules. The guide names the deployment target only
          *     when the caller may deploy there, and never the members of a virtual repository. The text is English.
          *     Needs `read` on the repository (`404` otherwise, like a missing repository); `503` while no base URL
-         *     is configured for the endpoint. The answer never matches `trv_(pat|sat|cit)_`.
+         *     is configured for the endpoint. The answer never matches `qdr_(pat|sat|cit)_`.
          */
         get: operations["getRepositoryGuide"];
         put?: never;
@@ -3493,7 +3493,7 @@ export interface paths {
         };
         /**
          * The contents of the manual
-         * @description The sections of the trove manual (R-API-054) in reading order, the user guide first, each with the
+         * @description The sections of the Quader manual (R-API-054) in reading order, the user guide first, each with the
          *     title and summary of its pages. The manual is the one the binary embeds, so it describes the running
          *     version; it is English and the same for every caller. Any caller; an anonymous caller only while some
          *     repository's artifacts are `public` (`publicContent`, R-AUTH-037), else `401`. The strong ETag changes with any page, and a matching
@@ -3855,7 +3855,7 @@ export interface paths {
         };
         /**
          * List the Bastion registrations
-         * @description The registrations of trove Bastions ordered by name, each with its unrevoked tokens (ID, hint, expiry, creation,
+         * @description The registrations of Quader Bastions ordered by name, each with its unrevoked tokens (ID, hint, expiry, creation,
          *     last use) and the last contact of each replica: time, client address, release, interface version and the base URL it
          *     reported (R-BAS-004, R-BAS-010). At most `bastions.max_registrations` exist, so the list is one page.
          */
@@ -3922,7 +3922,7 @@ export interface paths {
         put?: never;
         /**
          * Issue a Bastion token
-         * @description Issues a token of the type `bst` (`trv_bst_`, R-AUTH-022) for the registration. It has no scope, always expires
+         * @description Issues a token of the type `bst` (`qdr_bst_`, R-AUTH-022) for the registration. It has no scope, always expires
          *     (`ttlSeconds` at most `auth.tokens.bst.max_ttl`, default `auth.tokens.bst.default_ttl`; `400 invalid_ttl` beyond) and at
          *     most `auth.tokens.max_active_per_principal.bst` unrevoked tokens exist per registration (`409 token_limit_reached`), so
          *     a renewal by hand fits its overlap (R-BAS-006). The value is in this answer only, which is never cached. Records
@@ -3968,7 +3968,7 @@ export interface paths {
         };
         /**
          * Bastion handshake
-         * @description The Bastion interface (R-BAS-008, interface version in `x-trove-bastion-interface`). Called by a Bastion with its
+         * @description The Bastion interface (R-BAS-008, interface version in `x-quader-bastion-interface`). Called by a Bastion with its
          *     token as `Authorization: Bearer` at start, every `bastion.main.handshake_interval`, after a reconnect and after a feed
          *     entry of the kind `settings` (R-BAS-010). The answer carries the main installation's interface version, the registration
          *     and the token in use, the response base URL this request resolved to, whether anonymous requests read anything (`anonymousReads`), the download
@@ -4430,7 +4430,7 @@ export interface paths {
          * List backup runs
          * @description The runs of the backup job (R-API-050, R-BAK-014), newest first: creates, deletes and verifies, from `backup_run`.
          *     The answer shows what the runs recorded in PostgreSQL; the replicas hold no target credential and never read the
-         *     target, so the live contents of the target are `trove backup list`. `leaseExpired` is true for a run in an active
+         *     target, so the live contents of the target are `quader backup list`. `leaseExpired` is true for a run in an active
          *     state whose lease has passed; the next run will mark it `abandoned`. Cursor pagination (R-API-010) over
          *     `(startedAt, id)`; `includeTotal=true` adds `total`. No endpoint starts, deletes, verifies or restores a backup
          *     (Q-API-10): a manual run is `kubectl create job --from=cronjob/<name>`.
@@ -4455,7 +4455,7 @@ export interface paths {
          * Status of the backup job
          * @description The last success, the overdue mark, the last failure, the active run, the stored backups and the retention that
          *     produced them, the target, the restore origin and the manual-run command (R-API-050, R-BAK-014). `overdue` is true
-         *     when the last success is older than 1.5 times `expectedIntervalSeconds`, the condition on which `TroveBackupStale`
+         *     when the last success is older than 1.5 times `expectedIntervalSeconds`, the condition on which `QuaderBackupStale`
          *     fires, so API, UI and alert agree; `null` when no run has succeeded. `storedBackups` and `retention` come from the
          *     newest create or delete run that listed the target (Q-API-11) and are `null` until such a run exists.
          */
@@ -4510,7 +4510,7 @@ export interface paths {
         put?: never;
         /**
          * Create the next signing key of a Debian repository
-         * @description Creates the next key (R-DEB-017): `{"generate": true}` makes trove generate an EdDSALegacy key, `{"privateKey": "<armored>",
+         * @description Creates the next key (R-DEB-017): `{"generate": true}` makes Quader generate an EdDSALegacy key, `{"privateKey": "<armored>",
          *     "passphrase": "…"}` imports one whose clients already trust it (R-DEB-015). From the next build every suite is signed by the
          *     primary and the next key. `409` while a next key exists, `409 deb_key_in_use` for a fingerprint known in any state, `422
          *     deb_key_unsupported` for a key the import rules refuse. Needs `manage` on the repository.
@@ -4858,7 +4858,7 @@ export interface components {
             description: string;
         };
         Version: {
-            /** @description The trove version, or `dev` for a build without a release version. */
+            /** @description The quader version, or `dev` for a build without a release version. */
             version: string;
             /** @description The source revision, or `unknown`. */
             revision: string;
@@ -4876,7 +4876,7 @@ export interface components {
             answeredBy: {
                 replica: string;
                 /**
-                 * @description The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `trove_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role).
+                 * @description The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `quader_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role).
                  * @example api
                  * @enum {string}
                  */
@@ -5107,12 +5107,12 @@ export interface components {
             /** @enum {string} */
             class: "expand" | "contract";
             /**
-             * @description A contract step's `-- trove:requires-app`: the oldest release allowed to serve once the step is applied. The
+             * @description A contract step's `-- quader:requires-app`: the oldest release allowed to serve once the step is applied. The
              *     contract guard refuses the step while a live replica runs an older release. `null` for an expand step.
              */
             requiresApp: string | null;
             /**
-             * @description A contract step's `-- trove:requires-background`: the background data migrations that must have `succeeded`
+             * @description A contract step's `-- quader:requires-background`: the background data migrations that must have `succeeded`
              *     before the contract guard lets the step run (R-HA-021 step 4). Empty for every other step.
              */
             requiresBackground: string[];
@@ -5179,7 +5179,7 @@ export interface components {
              *     ]
              */
             roles: ("api" | "packages" | "worker" | "web" | "all")[];
-            /** @description The endpoint pool or worker pool the replica belongs to (`TROVE_POOL_NAME`); `null` for the main Deployment of its role. */
+            /** @description The endpoint pool or worker pool the replica belongs to (`QUADER_POOL_NAME`); `null` for the main Deployment of its role. */
             pool?: string | null;
             /** @enum {string} */
             state: "starting" | "ready" | "unready" | "draining";
@@ -5194,7 +5194,7 @@ export interface components {
                 /** Format: date-time */
                 since: string;
             }[];
-            /** @description The Kubernetes node name (`TROVE_NODE_NAME`); `null` outside Kubernetes. */
+            /** @description The Kubernetes node name (`QUADER_NODE_NAME`); `null` outside Kubernetes. */
             node: string | null;
             /** @description The last result of every readiness check, gating and reported. */
             checks: {
@@ -6320,7 +6320,7 @@ export interface components {
         };
         /**
          * @description The exchange parameters with the OAuth names of RFC 8693 (R-CI-007); they are not management-API fields and keep
-         *     their snake_case spelling. `ci_issuer` and `ttl` are trove's extensions.
+         *     their snake_case spelling. `ci_issuer` and `ttl` are Quader's extensions.
          */
         CiExchangeRequest: {
             /** @enum {string} */
@@ -6350,7 +6350,7 @@ export interface components {
         };
         /** @description The token response (R-CI-007). The token value appears only here. */
         CiExchangeResponse: {
-            /** @description A `trv_cit_` token. */
+            /** @description A `qdr_cit_` token. */
             access_token: string;
             /** @enum {string} */
             issued_token_type: "urn:ietf:params:oauth:token-type:access_token";
@@ -6362,7 +6362,7 @@ export interface components {
             ci_issuer: string;
             mappings: string[];
         };
-        /** @description The OAuth error response of RFC 6749 section 5.2 with trove's `reason` and `requestId` (R-CI-008). */
+        /** @description The OAuth error response of RFC 6749 section 5.2 with Quader's `reason` and `requestId` (R-CI-008). */
         CiExchangeError: {
             /** @enum {string} */
             error: "invalid_request" | "unsupported_grant_type" | "invalid_scope" | "invalid_target" | "slow_down" | "temporarily_unavailable" | "server_error";
@@ -6547,8 +6547,8 @@ export interface components {
          * @example {
          *       "id": "0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e11",
          *       "type": "pat",
-         *       "token": "trv_pat_3kQ9xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-         *       "hint": "trv_pat_3kQ9",
+         *       "token": "qdr_pat_3kQ9xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+         *       "hint": "qdr_pat_3kQ9",
          *       "owner": {
          *         "kind": "user",
          *         "name": "alice"
@@ -6601,7 +6601,7 @@ export interface components {
             overlapSeconds: number;
         };
         RevokeByValueRequest: {
-            /** @description The token value, `trv_…`. */
+            /** @description The token value, `qdr_…`. */
             token: string;
         };
         /** @description What an administrator receives from a revocation by value. */
@@ -6977,7 +6977,7 @@ export interface components {
             /** @description A principal reference; empty for a binding made by a command, by the configuration or whose granter was deleted. */
             grantedBy: string;
             /**
-             * @description Who keeps the binding (R-AUTHZ-010, Q-AUTHZ-170): `api` for one made through this API or an administration command, `configuration` for one that `authz.role_bindings` of the system configuration declares and `trove migrate` applies. A `configuration` binding cannot be removed here (`409 role_binding_managed_by_configuration`).
+             * @description Who keeps the binding (R-AUTHZ-010, Q-AUTHZ-170): `api` for one made through this API or an administration command, `configuration` for one that `authz.role_bindings` of the system configuration declares and `quader migrate` applies. A `configuration` binding cannot be removed here (`409 role_binding_managed_by_configuration`).
              * @enum {string}
              */
             source: "api" | "configuration";
@@ -7072,7 +7072,7 @@ export interface components {
              */
             mirror: boolean;
             /**
-             * @description Whether the format has wiki content, the documentation trove serves or shows apart from the files (R-AUTHZ-034):
+             * @description Whether the format has wiki content, the documentation Quader serves or shows apart from the files (R-AUTHZ-034):
              *     a repository of such a format has a wiki level of its own that is worth setting. `false` for a format whose
              *     repository serves no documentation; its wiki level then changes nothing.
              */
@@ -7080,8 +7080,8 @@ export interface components {
             /**
              * @description The JSON Schema 2020-12 of the format's settings member of a repository document (the member named
              *     after the format, R-REPO-004), which the create form renders and the service validates a document
-             *     against (R-ARCH-008). Its properties may carry `x-trove-classes`, the classes the setting applies to;
-             *     a setting of another class answers `not_applicable`. A property with an `enum` carries `x-trove-enum-titles`,
+             *     against (R-ARCH-008). Its properties may carry `x-quader-classes`, the classes the setting applies to;
+             *     a setting of another class answers `not_applicable`. A property with an `enum` carries `x-quader-enum-titles`,
              *     the label the form shows for each value (R-UI-088). A `title` and a `description` are the texts the form shows,
              *     in plain words; the member schemas of this document (`NpmSettings`, …) describe each setting for the API
              *     reader. `null` for a format without settings.
@@ -7177,7 +7177,7 @@ export interface components {
         VisibilityLevel: "private" | "internal" | "public";
         /**
          * @description The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
-         *     download, and `wiki`, the documentation of its packages that trove serves or shows apart from the files. The artifacts
+         *     download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
          *     level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
          *     `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
          * @example {
@@ -7339,15 +7339,15 @@ export interface components {
              */
             distTagStrategy: "member-order" | "highest-semver" | "newest-published";
             /**
-             * @description Every class (R-NPM-038, R-VULN-017). The security audit endpoint: answer from trove's own advisory data, or
+             * @description Every class (R-NPM-038, R-VULN-017). The security audit endpoint: answer from Quader's own advisory data, or
              *     forward the names this remote has fetched, and that nothing marks internal, to an advisory provider.
              */
             audit?: {
                 /**
-                 * @description `local` answers from trove's own advisory data and sends nothing out (every class; `503 vulnerability_data_unavailable`
+                 * @description `local` answers from Quader's own advisory data and sends nothing out (every class; `503 vulnerability_data_unavailable`
                  *     until the npm data is complete; answers like `disabled` while `vulnerabilities.enabled` is false). `forward` answers
                  *     through the first remote that forwards (remote and virtual repositories; a local repository answers like `disabled`);
-                 *     `disabled` answers 501 `npm_audit_unavailable`. Left out, the audit answers from trove's data while
+                 *     `disabled` answers 501 `npm_audit_unavailable`. Left out, the audit answers from Quader's data while
                  *     `vulnerabilities.enabled` is true and the OSV source is not `off`; else the mode is `forward` on remote and virtual
                  *     repositories and `disabled` on local ones (Q-ARCH-341).
                  * @enum {string}
@@ -7395,7 +7395,7 @@ export interface components {
              */
             forwardSearch: boolean;
             /**
-             * @description The vulnerability information of the service index (R-VULN-018): `local` lists VulnerabilityInfo/6.7.0 and serves trove's
+             * @description The vulnerability information of the service index (R-VULN-018): `local` lists VulnerabilityInfo/6.7.0 and serves Quader's
              *     own NuGet advisory data while that data is complete (every class; answers like `off` while `vulnerabilities.enabled` is
              *     false); `off` lists nothing. Left out, the mode is `local` while `vulnerabilities.enabled` is true and the OSV source is not
              *     off, else `off`. The pass-through of the upstream's information, `upstream`, is refused until R-NUGET-023 is built.
@@ -7977,7 +7977,7 @@ export interface components {
             author?: string[];
             options?: components["schemas"]["PackageDocOption"][];
             returnValues?: components["schemas"]["PackageDocReturnValue"][];
-            /** @description Text, shown in a code block; trove does not highlight or run it. */
+            /** @description Text, shown in a code block; Quader does not highlight or run it. */
             examples?: string;
             seealso?: components["schemas"]["PackageDocSeeAlso"][];
             attributes?: components["schemas"]["PackageDocAttribute"][];
@@ -8344,7 +8344,7 @@ export interface components {
          *     be sent back without blanking or leaking the secret. A read shows `{"set": true}` for a sealed
          *     value and the reference itself for a reference. The value is never returned. `value` and
          *     `secretRef` together, an empty value, a reference outside the rules of R-OPS-029 (a file directly
-         *     under `config_as_code.secrets_dir`; a variable named `TROVE_CAC_<NAME>`) and `set: false` are
+         *     under `config_as_code.secrets_dir`; a variable named `QUADER_CAC_<NAME>`) and `set: false` are
          *     `422 invalid_secret`.
          */
         SecretField: {
@@ -8538,7 +8538,7 @@ export interface components {
          *       "tokens": [
          *         {
          *           "id": "0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41",
-         *           "hint": "trv_bst_3kQ9",
+         *           "hint": "qdr_bst_3kQ9",
          *           "description": "partners 2026",
          *           "createdAt": "2026-11-02T10:05:00Z",
          *           "expiresAt": "2027-11-02T10:05:00Z",
@@ -8547,11 +8547,11 @@ export interface components {
          *       ],
          *       "contacts": [
          *         {
-         *           "replica": "trove-bastion-7d9c-x2k4q",
+         *           "replica": "quader-bastion-7d9c-x2k4q",
          *           "contactAt": "2026-11-02T10:06:12Z",
          *           "clientAddress": "198.51.100.20",
          *           "release": "0.15.0",
-         *           "interfaceVersion": 1,
+         *           "interfaceVersion": 3,
          *           "baseUrl": "https://packages.example.com"
          *         }
          *       ]
@@ -8625,7 +8625,7 @@ export interface components {
         BastionTokenCreated: {
             /** Format: uuid */
             id: string;
-            /** @description The secret, 57 characters with the prefix `trv_bst_`. Shown once. */
+            /** @description The secret, 57 characters with the prefix `qdr_bst_`. Shown once. */
             token: string;
             hint: string;
             description: string;
@@ -8740,7 +8740,7 @@ export interface components {
          */
         VulnerabilityKind: "vulnerability" | "malicious";
         /**
-         * @description The status of a finding (R-VULN-012). `needs_triage`, `confirmed` and `blocked` are open; `resolved` is set by trove
+         * @description The status of a finding (R-VULN-012). `needs_triage`, `confirmed` and `blocked` are open; `resolved` is set by Quader
          *     only.
          * @enum {string}
          */
@@ -8801,7 +8801,7 @@ export interface components {
              */
             onMissingData: "allow" | "block";
         };
-        /** @description The vector the severity was scored from (R-VULN-007); trove never mixes versions in one value. */
+        /** @description The vector the severity was scored from (R-VULN-007); Quader never mixes versions in one value. */
         VulnerabilityCvss: {
             /** @enum {string} */
             version: "4.0" | "3.1" | "3.0" | "2.0";
@@ -8970,7 +8970,7 @@ export interface components {
         VulnerabilityFindingEvent: {
             /** Format: date-time */
             at: string;
-            /** @description The principal behind the change; `null` for trove. */
+            /** @description The principal behind the change; `null` for Quader. */
             actor: {
                 id: string;
                 name: string | null;
@@ -9450,7 +9450,7 @@ export interface components {
             trigger: string;
             /** @description The pod of the run; a Job created by hand carries the name its creator chose. */
             pod: string;
-            troveVersion: string;
+            quaderVersion: string;
             /** @description `s3://<bucket>/<prefix>` as recorded; never a credential. */
             target: string;
             /** Format: date-time */
@@ -9524,7 +9524,7 @@ export interface components {
             backupId: string;
             /** Format: date-time */
             snapshotAt: string;
-            troveVersion: string;
+            quaderVersion: string;
             schemaStep: number;
             /** Format: int64 */
             databaseBytes: number;
@@ -9558,7 +9558,7 @@ export interface components {
         BackupSummary: {
             /**
              * Format: int64
-             * @description `backup.expected_interval`, the value behind `trove_backup_expected_interval_seconds` and `TroveBackupStale`.
+             * @description `backup.expected_interval`, the value behind `quader_backup_expected_interval_seconds` and `QuaderBackupStale`.
              */
             expectedIntervalSeconds: number;
             /** Format: date-time */
@@ -9677,7 +9677,7 @@ export interface components {
             compression: "xz"[];
             /**
              * @description Local and virtual. The `Origin` field of every `Release`; printable ASCII without `:`, 1 to 64 characters.
-             * @default trove
+             * @default quader
              */
             origin: string;
             /** @description Local and virtual. The `Label` field of every `Release`; the repository key while it is not set. */
@@ -9920,7 +9920,7 @@ export interface components {
         /** @description The request names another interface version than this installation speaks, or none (`bastion_interface_mismatch`); the problem carries `interfaceVersion` (R-BAS-009). */
         BastionInterfaceMismatch: {
             headers: {
-                "Trove-Bastion-Interface": components["headers"]["BastionInterface"];
+                "Quader-Bastion-Interface": components["headers"]["BastionInterface"];
                 [name: string]: unknown;
             };
             content: {
@@ -10132,7 +10132,7 @@ export interface components {
         RequestId: string;
         /** @description Strong entity tag of the representation, the quoted revision (R-API-012). */
         ETag: string;
-        /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+        /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
         AuthzEpoch: number;
         /** @description The URL of the created resource, or of the job to poll (R-API-004, R-API-015). */
         Location: string;
@@ -10583,7 +10583,7 @@ export interface operations {
                      *             "userAgent": "curl/8.7.1"
                      *           },
                      *           "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-                     *           "replica": "trove-web-6f9c7d8b5-x2v4q",
+                     *           "replica": "quader-web-6f9c7d8b5-x2v4q",
                      *           "endpoint": "default",
                      *           "resource": {
                      *             "type": "permission_policy",
@@ -10732,7 +10732,7 @@ export interface operations {
                      *           "id": "01933b2a-7c41-7d1e-9a52-3f0e4b8c2d11",
                      *           "kind": "gc",
                      *           "state": "succeeded",
-                     *           "replica": "trove-worker-7d4b9c6f8-q8n2m",
+                     *           "replica": "quader-worker-7d4b9c6f8-q8n2m",
                      *           "enqueuedAt": "2026-10-28T12:40:00.000Z",
                      *           "startedAt": "2026-10-28T12:40:01.200Z",
                      *           "finishedAt": "2026-10-28T12:40:02.118Z",
@@ -13188,8 +13188,8 @@ export interface operations {
                     Location: components["headers"]["Location"];
                     ETag: components["headers"]["ETag"];
                     "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13360,8 +13360,8 @@ export interface operations {
                     Location: components["headers"]["Location"];
                     ETag: components["headers"]["ETag"];
                     "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13444,8 +13444,8 @@ export interface operations {
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13484,8 +13484,8 @@ export interface operations {
             /** @description The policy was deleted. */
             204: {
                 headers: {
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13528,8 +13528,8 @@ export interface operations {
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13616,8 +13616,8 @@ export interface operations {
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13658,8 +13658,8 @@ export interface operations {
             /** @description The policy was deleted. */
             204: {
                 headers: {
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -13704,8 +13704,8 @@ export interface operations {
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13884,8 +13884,8 @@ export interface operations {
             /** @description The binding existed. */
             200: {
                 headers: {
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13895,8 +13895,8 @@ export interface operations {
             /** @description The binding was created. */
             201: {
                 headers: {
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -13930,8 +13930,8 @@ export interface operations {
             /** @description The binding was removed. */
             204: {
                 headers: {
-                    /** @description The authorization epoch this write produced. Send it as `Trove-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
-                    "Trove-Authz-Epoch"?: number;
+                    /** @description The authorization epoch this write produced. Send it as `Quader-Authz-Min-Epoch` on the next request to see the change on whichever replica answers (R-AUTHZ-032). */
+                    "Quader-Authz-Epoch"?: number;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -14099,7 +14099,7 @@ export interface operations {
                      *           "settingsSchema": null
                      *         }
                      *       ],
-                     *       "baseUrl": "https://trove.example.com"
+                     *       "baseUrl": "https://quader.example.com"
                      *     }
                      */
                     "application/json": components["schemas"]["FormatList"];
@@ -14206,7 +14206,7 @@ export interface operations {
                     Location: components["headers"]["Location"];
                     ETag: components["headers"]["ETag"];
                     "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
-                    "Trove-Authz-Epoch": components["headers"]["AuthzEpoch"];
+                    "Quader-Authz-Epoch": components["headers"]["AuthzEpoch"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14280,7 +14280,7 @@ export interface operations {
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
-                    "Trove-Authz-Epoch": components["headers"]["AuthzEpoch"];
+                    "Quader-Authz-Epoch": components["headers"]["AuthzEpoch"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14319,7 +14319,7 @@ export interface operations {
             /** @description The project was deleted. */
             204: {
                 headers: {
-                    "Trove-Authz-Epoch": components["headers"]["AuthzEpoch"];
+                    "Quader-Authz-Epoch": components["headers"]["AuthzEpoch"];
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -14411,7 +14411,7 @@ export interface operations {
             /** @description The principal already was a member; its role is the one of the body now. */
             200: {
                 headers: {
-                    "Trove-Authz-Epoch": components["headers"]["AuthzEpoch"];
+                    "Quader-Authz-Epoch": components["headers"]["AuthzEpoch"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14421,7 +14421,7 @@ export interface operations {
             /** @description The member was added. */
             201: {
                 headers: {
-                    "Trove-Authz-Epoch": components["headers"]["AuthzEpoch"];
+                    "Quader-Authz-Epoch": components["headers"]["AuthzEpoch"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14458,7 +14458,7 @@ export interface operations {
             /** @description The member was removed. */
             204: {
                 headers: {
-                    "Trove-Authz-Epoch": components["headers"]["AuthzEpoch"];
+                    "Quader-Authz-Epoch": components["headers"]["AuthzEpoch"];
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -14496,7 +14496,7 @@ export interface operations {
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
-                    "Trove-Authz-Epoch": components["headers"]["AuthzEpoch"];
+                    "Quader-Authz-Epoch": components["headers"]["AuthzEpoch"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -14622,7 +14622,7 @@ export interface operations {
                      *           "format": "generic",
                      *           "description": "Installers and build outputs",
                      *           "addresses": [
-                     *             "https://trove.example.net/files/web/generic-local/"
+                     *             "https://quader.example.net/files/web/generic-local/"
                      *           ],
                      *           "disabled": false,
                      *           "visibility": {
@@ -14763,7 +14763,7 @@ export interface operations {
                      *           "format": "generic",
                      *           "description": "Installers and build outputs",
                      *           "addresses": [
-                     *             "https://trove.example.net/files/web/generic-local/"
+                     *             "https://quader.example.net/files/web/generic-local/"
                      *           ],
                      *           "disabled": false,
                      *           "visibility": {
@@ -15082,7 +15082,7 @@ export interface operations {
                 headers: {
                     ETag: components["headers"]["ETag"];
                     Location: components["headers"]["Location"];
-                    "Trove-Authz-Epoch": components["headers"]["AuthzEpoch"];
+                    "Quader-Authz-Epoch": components["headers"]["AuthzEpoch"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -16171,9 +16171,9 @@ export interface operations {
                      *       "contentStatus": "ok",
                      *       "package": null,
                      *       "upstreamUrl": null,
-                     *       "downloadUrl": "https://trove.example.com/files/web/generic-local/tools/widget/2.3/widget-2.3.bin",
+                     *       "downloadUrl": "https://quader.example.com/files/web/generic-local/tools/widget/2.3/widget-2.3.bin",
                      *       "contentUrl": "/api/v1/repositories/generic-local/content/tools/widget/2.3/widget-2.3.bin",
-                     *       "itemUrl": "https://trove.example.com/api/v1/repositories/generic-local/items?path=tools%2Fwidget%2F2.3%2Fwidget-2.3.bin"
+                     *       "itemUrl": "https://quader.example.com/api/v1/repositories/generic-local/items?path=tools%2Fwidget%2F2.3%2Fwidget-2.3.bin"
                      *     }
                      */
                     "application/json": components["schemas"]["Item"];
@@ -16817,9 +16817,9 @@ export interface operations {
                      *           "configuration": {
                      *             "default": true,
                      *             "port": 8080,
-                     *             "baseUrl": "https://trove.example.com",
+                     *             "baseUrl": "https://quader.example.com",
                      *             "hosts": [
-                     *               "trove.example.com"
+                     *               "quader.example.com"
                      *             ],
                      *             "wildcardHost": null,
                      *             "hostRoots": {},
@@ -17021,8 +17021,8 @@ export interface operations {
                 headers: {
                     Location: components["headers"]["Location"];
                     ETag: components["headers"]["ETag"];
-                    /** @description The authorization epoch of the write (R-AUTHZ-032); send it as `Trove-Authz-Min-Epoch` to read the change at once on any replica. */
-                    "Trove-Authz-Epoch"?: string;
+                    /** @description The authorization epoch of the write (R-AUTHZ-032); send it as `Quader-Authz-Min-Epoch` to read the change at once on any replica. */
+                    "Quader-Authz-Epoch"?: string;
                     "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
                     [name: string]: unknown;
                 };
@@ -17104,8 +17104,8 @@ export interface operations {
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
-                    /** @description The authorization epoch of the write (R-AUTHZ-032); send it as `Trove-Authz-Min-Epoch` to read the change at once on any replica. */
-                    "Trove-Authz-Epoch"?: string;
+                    /** @description The authorization epoch of the write (R-AUTHZ-032); send it as `Quader-Authz-Min-Epoch` to read the change at once on any replica. */
+                    "Quader-Authz-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -17147,8 +17147,8 @@ export interface operations {
             /** @description The rule is deleted. */
             204: {
                 headers: {
-                    /** @description The authorization epoch of the write (R-AUTHZ-032); send it as `Trove-Authz-Min-Epoch` to read the change at once on any replica. */
-                    "Trove-Authz-Epoch"?: string;
+                    /** @description The authorization epoch of the write (R-AUTHZ-032); send it as `Quader-Authz-Min-Epoch` to read the change at once on any replica. */
+                    "Quader-Authz-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -17193,8 +17193,8 @@ export interface operations {
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
-                    /** @description The authorization epoch of the write (R-AUTHZ-032); send it as `Trove-Authz-Min-Epoch` to read the change at once on any replica. */
-                    "Trove-Authz-Epoch"?: string;
+                    /** @description The authorization epoch of the write (R-AUTHZ-032); send it as `Quader-Authz-Min-Epoch` to read the change at once on any replica. */
+                    "Quader-Authz-Epoch"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -17558,7 +17558,7 @@ export interface operations {
                      *           "path": "@team-a/ui/-/ui-1.4.0.tgz",
                      *           "sizeBytes": 48213,
                      *           "sha256": "5be0c1d2e8f3a4b5c6d7e8f90123456789abcdef0123456789abcdef01234567",
-                     *           "downloadUrl": "https://trove.example.com/api/npm/web/npm-local/@team-a/ui/-/ui-1.4.0.tgz",
+                     *           "downloadUrl": "https://quader.example.com/api/npm/web/npm-local/@team-a/ui/-/ui-1.4.0.tgz",
                      *           "contentUrl": "/api/v1/repositories/npm-local/content/@team-a/ui/-/ui-1.4.0.tgz"
                      *         }
                      *       ]
@@ -17809,8 +17809,8 @@ export interface operations {
                      *       "format": "npm",
                      *       "client": "npm",
                      *       "credentials": "placeholder",
-                     *       "registryUrl": "https://trove.example.com/api/npm/web/npm-all/",
-                     *       "endpointPath": "//trove.example.com/api/npm/web/npm-all/",
+                     *       "registryUrl": "https://quader.example.com/api/npm/web/npm-all/",
+                     *       "endpointPath": "//quader.example.com/api/npm/web/npm-all/",
                      *       "username": "alice",
                      *       "publishTarget": "web/npm-local",
                      *       "tokenTtlSeconds": 2592000,
@@ -17820,7 +17820,7 @@ export interface operations {
                      *           "tab": "configure",
                      *           "fileName": ".npmrc",
                      *           "language": "ini",
-                     *           "content": "registry=https://trove.example.com/api/npm/web/npm-all/\n//trove.example.com/api/npm/web/npm-all/:_authToken={{token}}\n"
+                     *           "content": "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken={{token}}\n"
                      *         },
                      *         {
                      *           "id": "npm.install",
@@ -17874,7 +17874,7 @@ export interface operations {
                      *       "class": "virtual",
                      *       "client": "npm",
                      *       "repository": "web/npm-all",
-                     *       "registryUrl": "https://trove.example.com/api/npm/web/npm-all/",
+                     *       "registryUrl": "https://quader.example.com/api/npm/web/npm-all/",
                      *       "publishTarget": "web/npm-local",
                      *       "credentials": "env",
                      *       "exposureRules": false,
@@ -17890,7 +17890,7 @@ export interface operations {
                      *               "tab": "configure",
                      *               "fileName": ".npmrc",
                      *               "language": "ini",
-                     *               "content": "registry=https://trove.example.com/api/npm/web/npm-all/\n//trove.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}\n"
+                     *               "content": "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}\n"
                      *             }
                      *           ]
                      *         }
@@ -18902,7 +18902,7 @@ export interface operations {
                  *     another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
                  *     here so that the answer is the interface's, not the binder's.
                  */
-                "Trove-Bastion-Interface"?: components["parameters"]["BastionInterface"];
+                "Quader-Bastion-Interface"?: components["parameters"]["BastionInterface"];
             };
             path?: never;
             cookie?: never;
@@ -18912,7 +18912,7 @@ export interface operations {
             /** @description The handshake. */
             200: {
                 headers: {
-                    "Trove-Bastion-Interface": components["headers"]["BastionInterface"];
+                    "Quader-Bastion-Interface": components["headers"]["BastionInterface"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -18936,7 +18936,7 @@ export interface operations {
                  *     another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
                  *     here so that the answer is the interface's, not the binder's.
                  */
-                "Trove-Bastion-Interface"?: components["parameters"]["BastionInterface"];
+                "Quader-Bastion-Interface"?: components["parameters"]["BastionInterface"];
             };
             path?: never;
             cookie?: never;
@@ -18950,7 +18950,7 @@ export interface operations {
             /** @description The subject and the shapes. */
             200: {
                 headers: {
-                    "Trove-Bastion-Interface": components["headers"]["BastionInterface"];
+                    "Quader-Bastion-Interface": components["headers"]["BastionInterface"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -18982,7 +18982,7 @@ export interface operations {
                  *     another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
                  *     here so that the answer is the interface's, not the binder's.
                  */
-                "Trove-Bastion-Interface"?: components["parameters"]["BastionInterface"];
+                "Quader-Bastion-Interface"?: components["parameters"]["BastionInterface"];
             };
             path?: never;
             cookie?: never;
@@ -18992,7 +18992,7 @@ export interface operations {
             /** @description The entries after the cursor. */
             200: {
                 headers: {
-                    "Trove-Bastion-Interface": components["headers"]["BastionInterface"];
+                    "Quader-Bastion-Interface": components["headers"]["BastionInterface"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -19016,7 +19016,7 @@ export interface operations {
                  *     another version, is answered `400 bastion_interface_mismatch` before the operation runs. It is declared optional
                  *     here so that the answer is the interface's, not the binder's.
                  */
-                "Trove-Bastion-Interface"?: components["parameters"]["BastionInterface"];
+                "Quader-Bastion-Interface"?: components["parameters"]["BastionInterface"];
             };
             path?: never;
             cookie?: never;
@@ -19030,7 +19030,7 @@ export interface operations {
             /** @description The events are accepted. */
             204: {
                 headers: {
-                    "Trove-Bastion-Interface": components["headers"]["BastionInterface"];
+                    "Quader-Bastion-Interface": components["headers"]["BastionInterface"];
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -19750,9 +19750,9 @@ export interface operations {
                      *           "backupId": "20261028T020000Z-7f3a",
                      *           "state": "copying",
                      *           "trigger": "schedule",
-                     *           "pod": "trove-backup-29885880-x7k2q",
-                     *           "troveVersion": "0.4.0",
-                     *           "target": "s3://trove-backups/trove",
+                     *           "pod": "quader-backup-29885880-x7k2q",
+                     *           "quaderVersion": "0.4.0",
+                     *           "target": "s3://quader-backups/quader",
                      *           "startedAt": "2026-10-28T02:00:04.112Z",
                      *           "heartbeatAt": "2026-10-28T02:41:19.870Z",
                      *           "leaseExpired": false,
@@ -19812,7 +19812,7 @@ export interface operations {
                      *         "startedAt": "2026-10-28T02:00:04.112Z",
                      *         "leaseExpired": false
                      *       },
-                     *       "target": "s3://trove-backups/trove",
+                     *       "target": "s3://quader-backups/quader",
                      *       "retention": {
                      *         "keepLast": 7,
                      *         "keepWithinSeconds": 0
@@ -19824,7 +19824,7 @@ export interface operations {
                      *           {
                      *             "backupId": "20261027T020000Z-1c9e",
                      *             "snapshotAt": "2026-10-27T02:00:08.913Z",
-                     *             "troveVersion": "0.4.0",
+                     *             "quaderVersion": "0.4.0",
                      *             "schemaStep": 42,
                      *             "databaseBytes": 183500800,
                      *             "blobCount": 51234,
@@ -19835,8 +19835,8 @@ export interface operations {
                      *       },
                      *       "restoredFrom": null,
                      *       "manualRun": {
-                     *         "namespace": "trove",
-                     *         "cronJob": "trove-backup"
+                     *         "namespace": "quader",
+                     *         "cronJob": "quader-backup"
                      *       }
                      *     }
                      */

@@ -3,7 +3,7 @@ package authz
 import (
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // UpperCasePath reports the first path pattern with an upper-case letter (HasUpperCase) among patterns when the

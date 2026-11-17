@@ -8,7 +8,7 @@ set -euo pipefail
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 require_cluster
 
-log "scaling the object store (trove-s3) to 0"
-kn scale deployment/trove-s3 --replicas=0 >/dev/null
-kn wait --for=delete pod -l app.kubernetes.io/name=trove-s3 --timeout=120s >/dev/null 2>&1 || true
+log "scaling the object store (quader-s3) to 0"
+kn scale deployment/quader-s3 --replicas=0 >/dev/null
+kn wait --for=delete pod -l app.kubernetes.io/name=quader-s3 --timeout=120s >/dev/null 2>&1 || true
 log "the object store is stopped"

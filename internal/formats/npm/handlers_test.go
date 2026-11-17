@@ -17,10 +17,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/npm/npmtest"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/npm/npmtest"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // The handlers of documents, tarballs, dist-tags, unpublish and the identity
@@ -56,7 +56,7 @@ func alice() authz.Subject {
 func newRepo(t *testing.T, mods ...func(*formattest.HostOptions)) *repoFixture {
 	t.Helper()
 	st := &countingStore{Store: npmtest.New()}
-	opts := formattest.HostOptions{Data: st, Resolver: noShadow{}, Subject: alice(), BaseURL: "https://trove.example.com"}
+	opts := formattest.HostOptions{Data: st, Resolver: noShadow{}, Subject: alice(), BaseURL: "https://quader.example.com"}
 	for _, m := range mods {
 		m(&opts)
 	}
@@ -202,7 +202,7 @@ func TestR_NPM_010_FullDocumentIsRenderedFromTheRows(t *testing.T) {
 		}
 		v, _ := vs["1.2.0"].(map[string]any)
 		dist, _ := v["dist"].(map[string]any)
-		if dist["tarball"] != "https://trove.example.com/api/npm/it/main/@acme/ui/-/ui-1.2.0.tgz" {
+		if dist["tarball"] != "https://quader.example.com/api/npm/it/main/@acme/ui/-/ui-1.2.0.tgz" {
 			t.Fatalf("tarball %v", dist["tarball"])
 		}
 		if dist["integrity"] == nil || dist["shasum"] == nil || v["_id"] != nil && v["_id"] != "@acme/ui@1.2.0" {
@@ -288,7 +288,7 @@ func TestR_NPM_011_AbbreviatedDocument(t *testing.T) {
 	if v["scripts"] != nil || v["main"] != nil || v["description"] != nil {
 		t.Fatalf("fields an installer does not read: %v", v)
 	}
-	if dist["tarball"] != "https://trove.example.com/api/npm/it/main/lodash/-/lodash-4.17.21.tgz" || dist["integrity"] == nil || dist["shasum"] == nil || dist["fileCount"] == nil {
+	if dist["tarball"] != "https://quader.example.com/api/npm/it/main/lodash/-/lodash-4.17.21.tgz" || dist["integrity"] == nil || dist["shasum"] == nil || dist["fileCount"] == nil {
 		t.Fatalf("dist %v", dist)
 	}
 	t.Run("the other forms of the request get the full document", func(t *testing.T) {

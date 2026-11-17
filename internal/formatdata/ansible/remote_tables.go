@@ -1,6 +1,6 @@
 package ansible
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // ansible_upstream_versions (migration 00070_ansible_upstream_versions, R-ANS-018) is data like every table of the format: a backup
 // carries the digests a remote recorded with its cached archives, so a restore keeps verifying them against the first digest. A

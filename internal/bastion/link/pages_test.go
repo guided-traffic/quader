@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/link"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/link"
 )
 
 // TestR_BAS_026_TheHistoryStartsOnlyWhenTheStartReadReachedItsEnd: a starting replica reads the feed in pages; the

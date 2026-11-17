@@ -13,11 +13,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/npmtest"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/npmtest"
 )
 
 // publishDoc is the body of a publish of name@version with a generated tarball.
@@ -146,7 +146,7 @@ func conformance(t *testing.T) formattest.Fixture {
 			{Name: "the dist-tags", Path: "-/package/lodash/dist-tags", Status: 200, Seed: publish("lodash", "4.17.21")},
 			{Name: "ping", Path: "-/ping", Status: 200},
 			{Name: "whoami", Path: "-/whoami", Status: 200},
-			{Name: "an endpoint npm defines and trove does not implement", Path: "-/v1/search", Status: 404},
+			{Name: "an endpoint npm defines and quader does not implement", Path: "-/v1/search", Status: 404},
 			{Name: "the audit of a local repository", Method: http.MethodPost, Path: "-/npm/v1/security/advisories/bulk", Body: []byte(`{"lodash":["4.17.21"]}`), Status: 501},
 			{Name: "npm 6's quick audit", Method: http.MethodPost, Path: "-/npm/v1/security/audits/quick", Body: []byte(`{}`), Status: 501},
 		},
@@ -215,13 +215,13 @@ func conformance(t *testing.T) formattest.Fixture {
 		NoContent: map[string]string{
 			"npm.audit.bulk":   "the kit's repository is local, which answers 501 (R-NPM-038); the forwarded answer of a remote or virtual repository is tested in handlers_audit_test.go",
 			"npm.audit.legacy": "npm 6's audit endpoints answer 501 by design, so npm 6 reports that the registry has no audit (R-NPM-038)",
-			"npm.deferred.get": "an endpoint npm defines and trove does not implement answers 404 by design (R-NPM-043)",
+			"npm.deferred.get": "an endpoint npm defines and quader does not implement answers 404 by design (R-NPM-043)",
 		},
 		NoRevision: map[string]string{
 			"npm.unpublish.tarball": "the PUT of the unpublish removed the version with its files; this request changes nothing and answers 200 for a version that is gone",
-			"npm.deferred.put":      "an endpoint npm defines and trove does not implement: it answers 404 and changes nothing",
-			"npm.deferred.delete":   "an endpoint npm defines and trove does not implement: it answers 404 and changes nothing",
-			"npm.deferred.post":     "an endpoint npm defines and trove does not implement: it answers 501 and changes nothing",
+			"npm.deferred.put":      "an endpoint npm defines and quader does not implement: it answers 404 and changes nothing",
+			"npm.deferred.delete":   "an endpoint npm defines and quader does not implement: it answers 404 and changes nothing",
+			"npm.deferred.post":     "an endpoint npm defines and quader does not implement: it answers 501 and changes nothing",
 		},
 		Names: []formattest.NameCase{
 			{Spellings: []string{"lodash"}}, {Spellings: []string{"@acme/ui"}}, {Spellings: []string{"JSONStream"}},
@@ -232,7 +232,7 @@ func conformance(t *testing.T) formattest.Fixture {
 			Package:  "view-sample",
 			Seed:     publishAll("view-sample", "1.0.0", "1.10.0", "1.2.0", "2.0.0-beta.1", "2.0.0"),
 		},
-		OptionNames: []string{"_authToken", "npmAuthToken", "TROVE_TOKEN"},
+		OptionNames: []string{"_authToken", "npmAuthToken", "QUADER_TOKEN"},
 		Remote: &formattest.RemoteFixture{
 			Upstream: "https://registry.example.org",
 			Docs: []formattest.RemoteDoc{

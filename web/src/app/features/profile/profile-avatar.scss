@@ -1,17 +1,17 @@
 // The avatar opens the profile: no card, a heading at a field label's size (Q-UI-333).
 .avatar-section {
-  max-inline-size: var(--trove-settings-measure);
-  margin-block-end: var(--trove-space-5);
+  max-inline-size: var(--quader-settings-measure);
+  margin-block-end: var(--quader-space-5);
 
   h2 {
-    margin-block: 0 var(--trove-space-2);
+    margin-block: 0 var(--quader-space-2);
   }
 }
 
 .avatar-row {
   display: flex;
   align-items: flex-start;
-  gap: var(--trove-space-6);
+  gap: var(--quader-space-6);
 }
 
 // The preview is the avatar of the top bar at 96 px; the same round shape and the same fill behind the robot.
@@ -20,13 +20,13 @@
   inline-size: 6rem;
   block-size: 6rem;
   border-radius: 50%;
-  background: var(--trove-surface-variant);
+  background: var(--quader-surface-variant);
 }
 
 .avatar-controls {
   min-inline-size: 0;
 
   p {
-    margin-block: 0 var(--trove-space-3);
+    margin-block: 0 var(--quader-space-3);
   }
 }

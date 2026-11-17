@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // A cross-repository mount whose source is a Docker Hub remote's cache is decided on both spellings of the source's name, like a read

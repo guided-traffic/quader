@@ -11,17 +11,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/jws"
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/auth/jws"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The token exchange, POST /api/v1/auth/oidc/token (R-CI-007, R-CI-008, R-CI-021), work package W4. What the
 // handler does, so that the endpoint stays what the specification says:
 //
-//   - It requires and parses no trove credential, session or CSRF token. The authentication stage answers the
+//   - It requires and parses no quader credential, session or CSRF token. The authentication stage answers the
 //     anonymous principal for this route whatever the request carries (internal/auth.isExchangeRoute), the
 //     declaration is {public: true}, and the route belongs to the surface family ci_exchange
 //     (httpserver.FamilyOf), so an endpoint serves it only when its surfaces name ci_exchange. The general API
@@ -33,7 +33,7 @@ import (
 //   - Every failure is the OAuth error response of RFC 6749 §5.2, not problem details: the status and `error` from
 //     [ci.Reason.OAuth], `reason` unless ci.exchange.expose_reason is false, `requestId` equal to X-Request-Id,
 //     `Retry-After` on 429 and 503, Cache-Control no-store and Pragma no-cache. The body and the log hold no
-//     subject token and no trv_cit_ value; a description names parameters, never their values.
+//     subject token and no qdr_cit_ value; a description names parameters, never their values.
 
 // The parameters of the exchange (R-CI-007); any other parameter is ignored (RFC 6749 §3.2).
 const (
@@ -61,7 +61,7 @@ type exchangeAnswer struct {
 	Mappings        []string `json:"mappings"`
 }
 
-// exchangeErrorBody is the OAuth error body with trove's members (R-CI-008).
+// exchangeErrorBody is the OAuth error body with quader's members (R-CI-008).
 type exchangeErrorBody struct {
 	Error            string `json:"error"`
 	ErrorDescription string `json:"error_description,omitempty"`

@@ -7,15 +7,15 @@ import { PageHeader } from './page-header';
 @Component({
   imports: [PageHeader, EmptyState],
   template: `
-    <trove-page-header heading="npm-internal" [name]="true" description="Packages built by the web team." [addresses]="addresses">
+    <quader-page-header heading="npm-internal" [name]="true" description="Packages built by the web team." [addresses]="addresses">
       <span meta class="badge">npm</span>
       <a actions class="btn btn-confirm" href="#setup">Set up client</a>
-    </trove-page-header>
-    <trove-empty-state text="This repository holds no packages yet."><a class="btn btn-confirm" href="#setup">Set up client</a></trove-empty-state>
+    </quader-page-header>
+    <quader-empty-state text="This repository holds no packages yet."><a class="btn btn-confirm" href="#setup">Set up client</a></quader-empty-state>
   `,
 })
 class Host {
-  readonly addresses = ['https://trove.example.net/api/npm/web/npm-internal/'];
+  readonly addresses = ['https://quader.example.net/api/npm/web/npm-internal/'];
 }
 
 describe('Page header and empty state', () => {
@@ -30,12 +30,12 @@ describe('Page header and empty state', () => {
     expect(h1.getAttribute('tabindex')).toBe('-1');
     expect(root.querySelector('.page-header-description')?.textContent).toBe('Packages built by the web team.');
     expect(root.querySelector('.page-header-main .badge')?.textContent).toBe('npm');
-    expect(root.querySelector<HTMLInputElement>('.page-header-main trove-address-field input')?.value).toBe(
-      'https://trove.example.net/api/npm/web/npm-internal/',
+    expect(root.querySelector<HTMLInputElement>('.page-header-main quader-address-field input')?.value).toBe(
+      'https://quader.example.net/api/npm/web/npm-internal/',
     );
     expect(root.querySelector('.page-header-actions a')?.textContent).toBe('Set up client');
-    expect(root.querySelector('trove-empty-state .empty-state-text')?.textContent).toBe('This repository holds no packages yet.');
-    expect(root.querySelector('trove-empty-state a.btn')).toBeTruthy();
+    expect(root.querySelector('quader-empty-state .empty-state-text')?.textContent).toBe('This repository holds no packages yet.');
+    expect(root.querySelector('quader-empty-state a.btn')).toBeTruthy();
     await expectAccessible(root);
   });
 });

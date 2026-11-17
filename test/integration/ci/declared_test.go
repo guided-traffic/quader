@@ -8,14 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/app"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
-// declare runs `trove migrate up` in the test process with ci.issuers set to the entries, exactly as the
+// declare runs `quader migrate up` in the test process with ci.issuers set to the entries, exactly as the
 // command composes it (app.DeclaredState); a replica that runs picks the change up from the change log.
 // The error is the one the command would exit with.
 func (e *env) declare(entries ...config.CIIssuer) error {
@@ -25,7 +25,7 @@ func (e *env) declare(entries ...config.CIIssuer) error {
 	cfg.CI.Issuers = entries
 	cfg.CI.Token.MaxTTL = time.Hour
 	cfg.CI.Mappings.CacheSafetyTTL, cfg.CI.SigningKeys.CacheSafetyTTL = 10*time.Minute, 10*time.Minute
-	cfg.Server.BaseURL = "http://trove.test"
+	cfg.Server.BaseURL = "http://quader.test"
 	cfg.Cluster = config.Cluster{EpochPollInterval: time.Second, EpochMaxStaleness: 20 * time.Second, ChangeRetention: time.Hour}
 	cfg.Health.WatchdogTimeout = 30 * time.Second
 	cfg.Audit = config.Audit{AsyncBuffer: 100, RetentionDays: 365}
@@ -54,7 +54,7 @@ func TestR_CI_001_DeclaredIssuersAreReadOnlyAndFollowTheConfiguration(t *testing
 		t.Fatal(err)
 	}
 
-	t.Run("R-CI-001 after trove migrate the issuer is read with source configuration", func(t *testing.T) {
+	t.Run("R-CI-001 after quader migrate the issuer is read with source configuration", func(t *testing.T) {
 		within(t, "the replica seeing the issuer", 3*time.Second, func() bool {
 			_, ok, _ := a.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer())
 			return ok
@@ -163,7 +163,7 @@ func TestR_CI_001_ADeclaredIssuerThatClashesWithAnAPIIssuerStopsTheMigration(t *
 }
 
 // R-CI-001, Q-CI-48: a declared issuer keeps its issuer URL and its kind under its name, as the API keeps them
-// (immutable): a changed URL for an existing name stops `trove migrate` with an error that names both URLs and tells
+// (immutable): a changed URL for an existing name stops `quader migrate` with an error that names both URLs and tells
 // the operator to declare the new instance under a new name; nothing is applied, so the pins, the package owners
 // ci:<issuer>:project:<id> and the mappings stay with the instance they were made for.
 func TestR_CI_001_ADeclaredIssuerKeepsItsIssuerURL(t *testing.T) {

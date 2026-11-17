@@ -11,13 +11,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/api/registry/route"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/registry/route"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The enforcement point of a registry token's grant below /v2/ (R-OCI-005 "Use", Q-OCI-56). The grant is a ceiling that the
@@ -27,7 +27,7 @@ import (
 // refuses every /v2/ pattern that was not mounted through it. Which route a request reaches is the dispatcher's own match
 // (route.Matcher). A registry-token request on a route the enforcer does not know, whose address the match cannot read, or whose
 // action has no token action is refused with 401 error="insufficient_scope", so a route that is not registered fails closed
-// instead of handing the registry token the full power of its trove token. registrytest.Walk proves the wiring end to end.
+// instead of handing the registry token the full power of its quader token. registrytest.Walk proves the wiring end to end.
 
 // RouteKind says what a route below /v2/ needs of a registry token's grant.
 type RouteKind int
@@ -375,13 +375,13 @@ func (e *Enforcer) withoutUnreadableMount(r *http.Request) *http.Request {
 	// Clone copies a form already parsed from the old query: the handler reads the stripped values, and a form marked as parsed
 	// is never parsed again, so a later FormValue does not read the request body.
 	r2.Form, r2.PostForm = q, url.Values{}
-	// A stripped mount leaves a trace besides the access log: which trove token asked for which source.
+	// A stripped mount leaves a trace besides the access log: which quader token asked for which source.
 	e.log().Debug("registry token mount stripped: no pull on the source", "token_id", httpserver.PrincipalFrom(r.Context()).Credential.TokenID,
 		"source", q0.Get("from"), "target", t.Repo.String()+"/"+t.Image)
 	return r2
 }
 
-// Check decides a request: nil for a request that carries no registry token (a trove token presented directly, the
+// Check decides a request: nil for a request that carries no registry token (a quader token presented directly, the
 // anonymous request, R-OCI-004 "Direct credentials": the decision point alone decides those), and for a registry token
 // whose grant holds what the matched route needs; otherwise the 401 with error="insufficient_scope".
 func (e *Enforcer) Check(r *http.Request) error {

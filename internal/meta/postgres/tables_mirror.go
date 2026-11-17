@@ -1,6 +1,6 @@
 package postgres
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // Registrations of the tables of 00040_mirror (R-REPO-058, R-BAK-004, Q-REPO-147):
 //

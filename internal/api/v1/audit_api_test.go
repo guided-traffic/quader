@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 func TestR_OPS_017_AuditFilter(t *testing.T) {
@@ -130,14 +130,14 @@ func TestQ_OPS_49_RequestSourceIsAddedToEvents(t *testing.T) {
 		_ = rec.RecordTx(r.Context(), nil, audit.Event{Type: "authz.policy.created", Source: audit.Source{UserAgent: "curl"}})
 		rec.Record(r.Context(), audit.Event{Type: "kept", Source: audit.Source{ClientAddr: "192.0.2.9", TraceID: "t"}})
 	})
-	res, err := httpserver.NewResolver(nil, "http://trove.test", nil)
+	res, err := httpserver.NewResolver(nil, "http://quader.test", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	h := httpserver.Chain{Router: router, Resolver: res}.Handler()
 	req := httptest.NewRequest("GET", "/x", nil)
 	req.RemoteAddr = "10.1.2.3:5555"
-	req.Header.Set("User-Agent", "trove-cli/1")
+	req.Header.Set("User-Agent", "quader-cli/1")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 
@@ -146,7 +146,7 @@ func TestQ_OPS_49_RequestSourceIsAddedToEvents(t *testing.T) {
 		if trace == "" || len(inner.events) != 3 {
 			t.Fatalf("trace %q, %d events", trace, len(inner.events))
 		}
-		if got := inner.events[0].Source; got.ClientAddr != "10.1.2.3" || got.TraceID != trace || got.UserAgent != "trove-cli/1" {
+		if got := inner.events[0].Source; got.ClientAddr != "10.1.2.3" || got.TraceID != trace || got.UserAgent != "quader-cli/1" {
 			t.Errorf("%+v", got)
 		}
 		if got := inner.events[1].Source; got.ClientAddr != "10.1.2.3" || got.UserAgent != "curl" {

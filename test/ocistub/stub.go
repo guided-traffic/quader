@@ -1,4 +1,4 @@
-// Package ocistub is the counting test upstream for trove's OCI remote repositories and mirror: a stub OCI distribution registry
+// Package ocistub is the counting test upstream for quader's OCI remote repositories and mirror: a stub OCI distribution registry
 // that serves a deterministic, generated image set, counts every request, and fails on command. Everything is generated in
 // code (layers, configurations, manifests, indexes, attestation manifests, referrers), so nothing is recorded or downloaded
 // and two starts produce the same digests. It answers over TLS only; there is no plain-HTTP listener.
@@ -144,7 +144,7 @@ type bases struct{ registry, realm, cdn string }
 
 // The names of the three hosts when the stub runs on a loopback address and the Config fixes none. They fit the host grammar of a
 // remote repository's extraHosts, and nothing resolves them: no resolver is asked for a name under "localhost" unless the system
-// answers it, which Go does not do by itself. A client reaches the listener through Running.DialOverride (trove's
+// answers it, which Go does not do by itself. A client reaches the listener through Running.DialOverride (quader's
 // outbound.WithDialOverride) or Running.DialContext (a Go test's transport), which map the three host:port pairs to the listener.
 const (
 	LoopbackRegistryHost = "registry.localhost"

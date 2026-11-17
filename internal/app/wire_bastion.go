@@ -8,16 +8,16 @@ import (
 	"slices"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/bastionmark"
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/bastionmark"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
-// The wiring of the main installation's side of the trove Bastion (docs/developer/bastion.md, R-BAS-004 to
+// The wiring of the main installation's side of the quader Bastion (docs/developer/bastion.md, R-BAS-004 to
 // R-BAS-017). The contract work wires nothing but the seams' places: the chain stage of the default endpoint,
 // which is empty until the work packages fill it.
 //

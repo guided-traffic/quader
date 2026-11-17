@@ -7,7 +7,7 @@ package e2e
 // upstream, so that every package is a miss that a replica fetches and stores, and one replica is force-deleted while they
 // run. The clients go through the edge, which hands each request to another replica (the scatter profile), so the dead
 // replica is a victim of every client. The installs must exit 0 with the clients' own retries, and
-// `trove admin storage verify` (run in a pod of the installation, as an operator would) must report no item without its
+// `quader admin storage verify` (run in a pod of the installation, as an operator would) must report no item without its
 // object. The kill happens once the upstream has served a share of the packages and before it has served them all: a precondition
 // the test proves, not hopes for; an upstream that answers with a delay keeps the install long enough for it.
 
@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
 const (
@@ -31,21 +31,21 @@ const (
 	coldCrashNuGetKillAfter = 20
 )
 
-// requireStorageVerified runs `trove admin storage verify` in a pod of the installation and requires that it finds every
+// requireStorageVerified runs `quader admin storage verify` in a pod of the installation and requires that it finds every
 // object (R-HA-024): it exits 0, and its last line says that no blob is without its object.
 func requireStorageVerified(t testing.TB) {
 	t.Helper()
-	out, err := troveAdmin(t, "", "storage", "verify")
-	t.Logf("trove admin storage verify:\n%s", out)
+	out, err := quaderAdmin(t, "", "storage", "verify")
+	t.Logf("quader admin storage verify:\n%s", out)
 	if err != nil {
-		t.Fatalf("R-HA-024: trove admin storage verify did not exit 0: %v", err)
+		t.Fatalf("R-HA-024: quader admin storage verify did not exit 0: %v", err)
 	}
 	last := out
 	if i := strings.LastIndex(strings.TrimSpace(out), "\n"); i >= 0 {
 		last = strings.TrimSpace(out)[i+1:]
 	}
 	if !strings.Contains(last, " 0 without object, 0 of another size, 0 not checked, 0 items affected") {
-		t.Fatalf("R-HA-024: the last line of trove admin storage verify is %q, want no blob without its object", last)
+		t.Fatalf("R-HA-024: the last line of quader admin storage verify is %q, want no blob without its object", last)
 	}
 }
 
@@ -92,7 +92,7 @@ func TestColdCrash(t *testing.T) {
 	t.Run("R-HA-052 R-HA-024 R-NPM-045 R-REPO-026 E5.2 npm ci of the reference lockfile through npm-all, cold, on three clients while a packages replica is force-deleted: every npm ci exits 0, storage verify finds every object", func(t *testing.T) {
 		fx := npmFx(t)
 		requireScatter(t, fx)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		repos := fx.upstreamRepos(t, "e52", nil)
 		s := stub(t)
 		s.resetAll(t)
@@ -161,13 +161,13 @@ func TestColdCrash(t *testing.T) {
 			}
 		}
 		t.Logf("test upstream: %s", s.counts(t).Summary())
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		requireStorageVerified(t)
 	})
 
 	t.Run("R-HA-052 R-HA-024 R-NUGET-015 R-NUGET-030 E5.2 dotnet restore --no-cache of the reference solution through nuget-all, cold, on three clients while a packages replica is force-deleted: every restore exits 0, storage verify finds every object", func(t *testing.T) {
 		fx := nugetFx(t)
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		s := nugetStub(t)
 		repos := fx.upstreamRepos(t, "e52", nil)
 		s.resetAll(t)
@@ -243,7 +243,7 @@ func TestColdCrash(t *testing.T) {
 			}
 		}
 		t.Logf("test upstream: %s", s.nugetCounts(t).Summary())
-		troveSettled(t, 3, 3, 4)
+		quaderSettled(t, 3, 3, 4)
 		requireStorageVerified(t)
 	})
 }

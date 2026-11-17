@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the S3 conformance tests (R-STOR-035) against the store that the TROVE_TEST_S3_*
+# Runs the S3 conformance tests (R-STOR-035) against the store that the QUADER_TEST_S3_*
 # variables describe, and fails unless at least one Conformance test passed.
 #
 # Usage: s3-conformance.sh <label>
@@ -23,7 +23,7 @@ if [ -z "$(go list -tags integration ./test/integration/blob/... 2>/dev/null)" ]
 fi
 
 status=0
-TROVE_TEST_SCOPE=s3 go test -count=1 -tags integration -run Conformance -json ./test/integration/blob/... > "$report" || status=$?
+QUADER_TEST_SCOPE=s3 go test -count=1 -tags integration -run Conformance -json ./test/integration/blob/... > "$report" || status=$?
 
 passed="$(jq -Rn '[inputs | fromjson? | select(.Action == "pass" and ((.Test // "") | test("Conformance")))] | length' "$report")"
 failed="$(jq -Rn '[inputs | fromjson? | select(.Action == "fail")] | length' "$report")"

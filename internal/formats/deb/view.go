@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/formats/deb/version"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats/deb/version"
 )
 
 // viewAdapter is the format's part of the package screens (R-DEB-030): the versions in dpkg order and, from the rows of the stored

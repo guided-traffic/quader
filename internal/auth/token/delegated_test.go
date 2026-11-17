@@ -3,8 +3,8 @@ package token
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_AUTH_027_DelegatedTokenRules is the rule set of a token a project Owner

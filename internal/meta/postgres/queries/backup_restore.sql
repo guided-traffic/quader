@@ -1,4 +1,4 @@
--- Queries of `trove backup restore` (R-BAK-020 to R-BAK-023): the schema inspection of check 4, the column and sequence
+-- Queries of `quader backup restore` (R-BAK-020 to R-BAK-023): the schema inspection of check 4, the column and sequence
 -- lists the load compares with the manifest, the marker, and the fix-ups of R-BAK-022. They run on the restore's session
 -- connection as the schema owner. The statements that name a table by a value taken from the catalog or the registry
 -- (TRUNCATE, COPY, the revision columns) are assembled in backup_load.go and backup_restore_state.go, the two files the

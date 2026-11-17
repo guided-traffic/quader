@@ -16,7 +16,7 @@ export function safeHttpUrl(value: unknown): string | null {
   }
 }
 
-/** The rel of every link that leaves trove for an address a package author chose. */
+/** The rel of every link that leaves Quader for an address a package author chose. */
 export const EXTERNAL_REL = 'nofollow noopener noreferrer';
 
 /** The router commands of a package page in its project: the name keeps its slash as a separator (`@team-a/ui`). */

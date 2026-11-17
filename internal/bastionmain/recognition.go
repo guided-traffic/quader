@@ -6,8 +6,8 @@ import (
 )
 
 // Recognition is the result of recognizing a request of a Bastion (R-BAS-008, Q-BAS-25): the request carried a
-// valid `bst` token of an enabled registration, in Trove-Bastion-Authorization on a forwarded request or in
-// Authorization on an interface route. A request with Trove-Bastion-* headers and no valid token is served as
+// valid `bst` token of an enabled registration, in Quader-Bastion-Authorization on a forwarded request or in
+// Authorization on an interface route. A request with Quader-Bastion-* headers and no valid token is served as
 // an ordinary request and carries no Recognition; one with an invalid token is answered 401
 // bastion_token_invalid before it gets this far.
 //
@@ -25,9 +25,9 @@ type Recognition struct {
 	// Interface is the interface version the request announced; recognition requires it to equal
 	// iface.InterfaceVersion, so after recognition the two are the same number.
 	Interface int
-	// Replica is the Trove-Bastion-Replica header, empty when absent.
+	// Replica is the Quader-Bastion-Replica header, empty when absent.
 	Replica string
-	// Probe is true on a bodiless probe of a request that is not a GET or HEAD (Trove-Bastion-Probe: 1,
+	// Probe is true on a bodiless probe of a request that is not a GET or HEAD (Quader-Bastion-Probe: 1,
 	// R-BAS-014).
 	Probe bool
 	// Route is true on a route of the interface (below iface.PathPrefix): the token was taken from

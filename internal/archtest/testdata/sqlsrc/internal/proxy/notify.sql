@@ -1,2 +1,2 @@
 -- name: Ping :exec
-NOTIFY trove_changes, 'x';
+NOTIFY quader_changes, 'x';

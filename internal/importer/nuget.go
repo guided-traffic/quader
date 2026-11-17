@@ -111,7 +111,7 @@ func (n *NuGet) targetIndex(ctx context.Context, dst *TargetClient) (*serviceInd
 	case http.StatusUnauthorized:
 		return nil, &Refusal{Status: resp.Status, Code: "unauthorized", Msg: "the token is not accepted"}
 	default:
-		return nil, fmt.Errorf("the service index of the target answered %d: is the address a NuGet repository of trove that the token can read?", resp.Status)
+		return nil, fmt.Errorf("the service index of the target answered %d: is the address a NuGet repository of Quader that the token can read?", resp.Status)
 	}
 	idx, err := parseIndex(resp.Body)
 	if err != nil {
@@ -322,7 +322,7 @@ func (n *NuGet) Plan(ctx context.Context, src *SourceClient, name string) (*Plan
 	sortVersions(p.Versions)
 	if len(deprecated) > 0 {
 		sort.Strings(deprecated)
-		p.NotKept = append(p.NotKept, "deprecation of "+strings.Join(deprecated, ", ")+" (trove stores no deprecation of a local NuGet package)")
+		p.NotKept = append(p.NotKept, "deprecation of "+strings.Join(deprecated, ", ")+" (Quader stores no deprecation of a local NuGet package)")
 	}
 	return p, nil
 }
@@ -400,7 +400,7 @@ func (n *NuGet) Publish(ctx context.Context, dst *TargetClient, _ *Plan, _ Versi
 	if _, err := rand.Read(rnd[:]); err != nil {
 		return err
 	}
-	boundary := "trove-import-" + hex.EncodeToString(rnd[:])
+	boundary := "quader-import-" + hex.EncodeToString(rnd[:])
 	var head bytes.Buffer
 	mw := multipart.NewWriter(&head)
 	if err := mw.SetBoundary(boundary); err != nil {

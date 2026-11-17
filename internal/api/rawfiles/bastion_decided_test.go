@@ -7,11 +7,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/files"
-	"github.com/guided-traffic/trove/internal/items"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/files"
+	"github.com/guided-traffic/quader/internal/items"
 )
 
 // refusingDecider answers every question with its outcome and records, in one sequence with the observer, when
@@ -60,7 +60,7 @@ type decidedObserver struct {
 func (o *decidedObserver) Decided(*http.Request, bastionmain.RouteDecision) { o.seq.add("decided") }
 
 // TestR_BAS_013_AFilesReadTellsTheObserverOnlyAnAllowedDecision: the observer learns the decision of a /files/
-// read after the service allowed it, so a refused read carries no Trove-Bastion-Read (Q-BAS-71): the marking
+// read after the service allowed it, so a refused read carries no Quader-Bastion-Read (Q-BAS-71): the marking
 // asks the shape only in Decided. An allowed read tells it once, after the decision, and before the 404 of a
 // missing item, which a full reader's marking may need for `absent`.
 func TestR_BAS_013_AFilesReadTellsTheObserverOnlyAnAllowedDecision(t *testing.T) {

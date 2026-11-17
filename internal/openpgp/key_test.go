@@ -14,7 +14,7 @@ import (
 
 func TestR_DEB_015_GeneratedKeyShape(t *testing.T) {
 	created := base.Add(-time.Hour)
-	secret, public, fp, err := Generate("trove proj/repo", created)
+	secret, public, fp, err := Generate("quader proj/repo", created)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,10 +42,10 @@ func TestR_DEB_015_GeneratedKeyShape(t *testing.T) {
 		if len(e.Subkeys) != 0 {
 			t.Errorf("%d subkeys, want none", len(e.Subkeys))
 		}
-		if len(e.Identities) != 1 || e.Identities["trove proj/repo"] == nil {
+		if len(e.Identities) != 1 || e.Identities["quader proj/repo"] == nil {
 			t.Fatalf("identities = %v, want the one user ID", e.Identities)
 		}
-		self := e.Identities["trove proj/repo"].SelfSignature
+		self := e.Identities["quader proj/repo"].SelfSignature
 		if !self.CreationTime.Equal(created) {
 			t.Errorf("binding self-signature time = %s, want the key's creation %s", self.CreationTime, created)
 		}
@@ -74,15 +74,15 @@ func TestR_DEB_015_GeneratedKeyShape(t *testing.T) {
 }
 
 func TestR_DEB_015_GenerateTwiceGivesTwoKeys(t *testing.T) {
-	_, _, a, _ := Generate("trove p/r", base)
-	_, _, b, _ := Generate("trove p/r", base)
+	_, _, a, _ := Generate("quader p/r", base)
+	_, _, b, _ := Generate("quader p/r", base)
 	if a == b {
 		t.Fatal("two generated keys share a fingerprint")
 	}
 }
 
 func TestR_DEB_015_SecretRoundTrip(t *testing.T) {
-	k, _ := mustGenerate(t, "trove p/r", base.Add(-time.Hour))
+	k, _ := mustGenerate(t, "quader p/r", base.Add(-time.Hour))
 	again, err := k.SecretArmored()
 	if err != nil {
 		t.Fatal(err)
@@ -94,7 +94,7 @@ func TestR_DEB_015_SecretRoundTrip(t *testing.T) {
 }
 
 func TestR_DEB_015_KeyNeverPrints(t *testing.T) {
-	k, _ := mustGenerate(t, "trove p/r", base.Add(-time.Hour))
+	k, _ := mustGenerate(t, "quader p/r", base.Add(-time.Hour))
 	secret, _ := k.SecretArmored()
 	for _, s := range []string{k.String(), k.GoString(), sprintAll(k), sprintAll(*k)} {
 		if strings.Contains(s, "PRIVATE") || !strings.Contains(s, k.Fingerprint) {
@@ -256,7 +256,7 @@ func TestR_DEB_016_BoundSinceOfAFreshSelfSignature(t *testing.T) {
 
 func TestR_DEB_016_SigningWaitsForTheKeyToExist(t *testing.T) {
 	created := base.Add(-time.Hour)
-	k, _ := mustGenerate(t, "trove p/r", created)
+	k, _ := mustGenerate(t, "quader p/r", created)
 	if _, err := ClearSign([]byte("x\n"), []*Key{k}, created); !errors.Is(err, ErrTooEarly) {
 		t.Errorf("signing at the creation time: %v, want ErrTooEarly", err)
 	}
@@ -271,7 +271,7 @@ func TestR_DEB_016_SigningWaitsForTheKeyToExist(t *testing.T) {
 func TestR_DEB_034_CertificateBounds(t *testing.T) {
 	var certs []Certificate
 	for i := 0; i < 33; i++ {
-		_, c := mustGenerate(t, "trove p/r", base.Add(-time.Hour))
+		_, c := mustGenerate(t, "quader p/r", base.Add(-time.Hour))
 		certs = append(certs, c)
 	}
 	if _, err := ParseCertificates(ArmorCertificates(certs[:32]...), base, Limits{}); err != nil {
@@ -350,8 +350,8 @@ func TestR_DEB_020_CertificateRules(t *testing.T) {
 }
 
 func TestR_DEB_015_ArmorCertificatesRoundTrip(t *testing.T) {
-	_, a := mustGenerate(t, "trove a/a", base.Add(-time.Hour))
-	_, b := mustGenerate(t, "trove b/b", base.Add(-time.Hour))
+	_, a := mustGenerate(t, "quader a/a", base.Add(-time.Hour))
+	_, b := mustGenerate(t, "quader b/b", base.Add(-time.Hour))
 	armored := ArmorCertificates(a, b, Certificate{})
 	if !bytes.HasPrefix(armored, []byte("-----BEGIN PGP PUBLIC KEY BLOCK-----")) || bytes.Contains(armored, []byte("PRIVATE")) {
 		t.Fatalf("armor = %q", armored[:60])

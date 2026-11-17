@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // R-OCI-001, part of its criteria: an image pushed under a repository's name is pulled back by tag and by digest, its blobs and tags
@@ -74,7 +74,7 @@ func TestR_OCI_003_TheVersionCheckAcceptsBasicWithAnyUserName(t *testing.T) {
 	if a.Code != http.StatusOK || a.Body.String() != "{}" || a.Header().Get(registryAPIVersionHeader) != "registry/2.0" {
 		t.Fatalf("%d %v %q", a.Code, a.Header(), a.Body.String())
 	}
-	if a := e.send("default", req{method: "GET", path: "/v2/", auth: basic("x", "trv_pat_wrong")}); a.Code != http.StatusUnauthorized {
+	if a := e.send("default", req{method: "GET", path: "/v2/", auth: basic("x", "qdr_pat_wrong")}); a.Code != http.StatusUnauthorized {
 		t.Fatalf("a wrong secret: %d", a.Code)
 	}
 }
@@ -84,7 +84,7 @@ const registryAPIVersionHeader = "Docker-Distribution-API-Version"
 // R-OCI-004: the login sequences of the two real clients, request by request as they send them.
 func TestR_OCI_004_TheLoginSequencesOfDockerAndContainerd(t *testing.T) {
 	e := newEnv(t, nil)
-	const challenge = `Bearer realm="http://trove.test/v2/_token",service="trove.test"`
+	const challenge = `Bearer realm="http://quader.test/v2/_token",service="quader.test"`
 	tokenOf := func(a answer) string {
 		t.Helper()
 		var b struct {
@@ -106,7 +106,7 @@ func TestR_OCI_004_TheLoginSequencesOfDockerAndContainerd(t *testing.T) {
 		// The query is the one Docker's token handler writes for `docker login`.
 		tok := e.send("default", req{
 			method: "GET",
-			path:   "/v2/_token?account=rita&client_id=docker&offline_token=true&service=trove.test", auth: basic("rita", e.admin),
+			path:   "/v2/_token?account=rita&client_id=docker&offline_token=true&service=quader.test", auth: basic("rita", e.admin),
 			header: map[string]string{"User-Agent": "docker/27.3.1 go/go1.22.7 os/linux arch/amd64"},
 		})
 		if tok.Code != http.StatusOK || tok.Header().Get("Content-Type") != "application/json" {
@@ -118,7 +118,7 @@ func TestR_OCI_004_TheLoginSequencesOfDockerAndContainerd(t *testing.T) {
 	})
 	t.Run("docker pull: the token request names the scope the 401 named", func(t *testing.T) {
 		// A registry token for no scope meets the manifest route: the challenge names what to ask for, and asking for it works.
-		empty := tokenOf(e.send("default", req{method: "GET", path: "/v2/_token?service=trove.test", auth: basic("rita", e.admin)}))
+		empty := tokenOf(e.send("default", req{method: "GET", path: "/v2/_token?service=quader.test", auth: basic("rita", e.admin)}))
 		a := e.send("default", req{method: "GET", path: "/v2/web/docker-local/app/manifests/1", auth: bearer(empty)})
 		scopeLine := `scope="repository:web/docker-local/app:pull"`
 		if a.Code != http.StatusUnauthorized || !strings.Contains(a.Header().Get("WWW-Authenticate"), scopeLine) {
@@ -126,7 +126,7 @@ func TestR_OCI_004_TheLoginSequencesOfDockerAndContainerd(t *testing.T) {
 		}
 		withScope := tokenOf(e.send("default", req{
 			method: "GET",
-			path:   "/v2/_token?scope=" + url.QueryEscape("repository:web/docker-local/app:pull") + "&service=trove.test", auth: basic("rita", e.admin),
+			path:   "/v2/_token?scope=" + url.QueryEscape("repository:web/docker-local/app:pull") + "&service=quader.test", auth: basic("rita", e.admin),
 		}))
 		if a := e.send("default", req{method: "GET", path: "/v2/web/docker-local/app/manifests/1", auth: bearer(withScope)}); a.Code != http.StatusNotFound || a.code(t) != "MANIFEST_UNKNOWN" {
 			t.Fatalf("the granted pull reaches the manifest route: %d %s", a.Code, a.Body.String())
@@ -134,7 +134,7 @@ func TestR_OCI_004_TheLoginSequencesOfDockerAndContainerd(t *testing.T) {
 	})
 	t.Run("containerd: the POST form with the charset, the password grant", func(t *testing.T) {
 		form := url.Values{
-			"grant_type": {"password"}, "service": {"trove.test"}, "client_id": {"containerd-client"},
+			"grant_type": {"password"}, "service": {"quader.test"}, "client_id": {"containerd-client"},
 			"username": {"rita"}, "password": {e.admin}, "scope": {"repository:web/docker-local/app:pull,push"},
 		}
 		a := e.send("default", req{
@@ -155,7 +155,7 @@ func TestR_OCI_004_TheLoginSequencesOfDockerAndContainerd(t *testing.T) {
 		}
 	})
 	t.Run("a refused login is 401 in the Docker shape", func(t *testing.T) {
-		a := e.send("default", req{method: "GET", path: "/v2/_token?account=rita&client_id=docker&offline_token=true&service=trove.test", auth: basic("rita", "trv_pat_nope")})
+		a := e.send("default", req{method: "GET", path: "/v2/_token?account=rita&client_id=docker&offline_token=true&service=quader.test", auth: basic("rita", "qdr_pat_nope")})
 		if a.Code != http.StatusUnauthorized || a.code(t) != "UNAUTHORIZED" || a.Header().Get("WWW-Authenticate") == "" {
 			t.Fatalf("%d %v %s", a.Code, a.Header(), a.Body.String())
 		}
@@ -202,7 +202,7 @@ func TestR_OCI_005_RemovingTheDeployGrantStopsThePush(t *testing.T) {
 }
 
 // R-OCI-006 / W3-5: the per-image decision on /v2/ is the handlers': a token whose scope grants read for the image names team/*
-// only reads those, with the trove token presented directly.
+// only reads those, with the quader token presented directly.
 func TestPathScopedGrantsAreDecidedPerImageOnV2(t *testing.T) {
 	e := newEnv(t, nil)
 	if a := e.push(bearer(e.admin), "web/docker-local/team/app", "1", newImage("a")); a.Code != http.StatusCreated {
@@ -303,7 +303,7 @@ func TestR_OCI_017_TheCatalogListsWhatTheCallerMayRead(t *testing.T) {
 		t.Fatalf("n=-1: %d", code)
 	}
 
-	// A registry token needs registry:catalog:* and lists what its trove token may read.
+	// A registry token needs registry:catalog:* and lists what its quader token may read.
 	rgt := e.mint("default", "", e.reader, registrytoken.Grant{Catalog: true}, false)
 	if got, _, code := list(bearer(rgt), ""); code != 200 || !slices.Equal(got, all[:4]) {
 		t.Fatalf("registry token with the catalog grant: %d %v", code, got)

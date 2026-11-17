@@ -1,11 +1,11 @@
 @if (creating()) {
-  <trove-page-header heading="New exposure rule" i18n-heading="@@ep.editor.heading.new" />
+  <quader-page-header heading="New exposure rule" i18n-heading="@@ep.editor.heading.new" />
 } @else {
-  <trove-page-header heading="Exposure rule" i18n-heading="@@ep.editor.heading.edit" />
+  <quader-page-header heading="Exposure rule" i18n-heading="@@ep.editor.heading.edit" />
 }
 
 @if (loadFailure(); as f) {
-  <trove-error-notice [error]="f" (retry)="loaded.reload()" />
+  <quader-error-notice [error]="f" (retry)="loaded.reload()" />
 } @else {
   <p class="subject">
     <span i18n="@@ep.editor.on">on endpoint</span>&ngsp;<strong translate="no">{{ endpoint() }}</strong>
@@ -35,10 +35,10 @@
     </p>
   }
 
-  <trove-error-summary [items]="summary()" />
+  <quader-error-summary [items]="summary()" />
   @if (failure(); as f) {
     @if (f.fieldErrors.size === 0) {
-      <trove-error-notice [error]="f" />
+      <quader-error-notice [error]="f" />
     }
   }
 
@@ -121,7 +121,7 @@
             <!-- The shared address field (R-UI-065), under its own label: the words and the address ran together before. -->
             <div class="endpoint-address">
               <span class="field-label">{{ addressCaption }}</span>
-              <trove-address-field [value]="a.url" [label]="addressCaption" [copyLabel]="copyAddress" />
+              <quader-address-field [value]="a.url" [label]="addressCaption" [copyLabel]="copyAddress" />
             </div>
             @if (!a.served) {
               <p class="hint" i18n="@@ep.address.not-served">This endpoint does not serve this address.</p>
@@ -477,7 +477,7 @@
           }
         </div>
         @if (previewFailure(); as f) {
-          <trove-error-notice [error]="f" />
+          <quader-error-notice [error]="f" />
         }
         @if (preview(); as p) {
           <p>
@@ -597,7 +597,7 @@
 
   <!-- The destructive action comes last, after the preview, behind its own closed section (the style guide's settings rule). -->
   @if (!creating() && canWrite()) {
-    <trove-disclosure
+    <quader-disclosure
       class="advanced"
       i18n-heading="@@ep.rule.advanced"
       heading="Advanced"
@@ -606,6 +606,6 @@
     >
       <p class="hint delete-note" i18n="@@ep.rule.delete-note">Deleting the rule makes content that only this rule exposes unavailable on this endpoint.</p>
       <button class="btn btn-danger" type="button" (click)="remove()" i18n="@@ep.editor.delete">Delete rule</button>
-    </trove-disclosure>
+    </quader-disclosure>
   }
 }

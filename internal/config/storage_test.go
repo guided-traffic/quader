@@ -8,9 +8,9 @@ import (
 
 func loadStorage(t *testing.T, file, role string, cmd Command) error {
 	t.Helper()
-	env := minimalEnv("TROVE_STORAGE_S3_BUCKET=blobs")
+	env := minimalEnv("QUADER_STORAGE_S3_BUCKET=blobs")
 	if role != "" {
-		env = append(env, "TROVE_PROCESS_ROLE="+role)
+		env = append(env, "QUADER_PROCESS_ROLE="+role)
 	}
 	_, err := Load(Options{File: "/c.yaml", ReadFile: fakeFS(map[string]string{"/c.yaml": file}), Environ: env, Command: cmd})
 	return err
@@ -72,7 +72,7 @@ func TestStorageConnectionRules(t *testing.T) {
 		{"prefix with a double slash", "storage:\n  s3:\n    prefix: \"a//b\"\n", "storage.s3.prefix", true},
 		{"prefix with a trailing slash", "storage:\n  s3:\n    prefix: \"a/\"\n", "storage.s3.prefix", true},
 		{"prefix with a space", "storage:\n  s3:\n    prefix: \"a b\"\n", "storage.s3.prefix", true},
-		{"nested prefix", "storage:\n  s3:\n    prefix: \"team-a/trove\"\n", "storage.s3.prefix", false},
+		{"nested prefix", "storage:\n  s3:\n    prefix: \"team-a/quader\"\n", "storage.s3.prefix", false},
 		{"empty prefix", "storage:\n  s3:\n    prefix: \"\"\n", "storage.s3.prefix", false},
 		{"http endpoint", "storage:\n  s3:\n    endpoint: \"http://s3.example.com\"\n", "storage.s3.endpoint", true},
 		{"http endpoint allowed", "storage:\n  s3:\n    endpoint: \"http://s3.example.com\"\n    allow_insecure_endpoint: true\n", "storage.s3.endpoint", false},
@@ -93,7 +93,7 @@ func TestStorageConnectionRules(t *testing.T) {
 func TestStorageEndpointScheme(t *testing.T) {
 	load := func(t *testing.T, y string) *Loaded {
 		t.Helper()
-		l, err := Load(Options{File: "/c.yaml", ReadFile: fakeFS(map[string]string{"/c.yaml": y}), Environ: servableEnv("TROVE_STORAGE_S3_BUCKET=blobs", "TROVE_PROCESS_ROLE=web"), Command: CommandServe})
+		l, err := Load(Options{File: "/c.yaml", ReadFile: fakeFS(map[string]string{"/c.yaml": y}), Environ: servableEnv("QUADER_STORAGE_S3_BUCKET=blobs", "QUADER_PROCESS_ROLE=web"), Command: CommandServe})
 		if err != nil {
 			t.Fatal(err)
 		}

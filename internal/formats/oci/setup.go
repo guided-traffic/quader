@@ -1,6 +1,6 @@
 package oci
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // The client IDs (R-OCI-030).
 const (
@@ -24,7 +24,7 @@ func clients() []formats.Client {
 const loginTarget = `{{shell .ImagePrefix}}`
 
 // The user name of a login. The token service records it and ignores it (R-OCI-004, INV-8), so the instructions use a fixed one.
-const loginUser = "trove"
+const loginUser = "quader"
 
 // SetupTemplates are the client setup snippets of R-OCI-030 and R-UI-018: how to sign a client in (configure), how to pull an
 // image through the repository (install) and how to push one (publish; the API renders it for a caller who holds deploy on the publish
@@ -48,12 +48,12 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
 	push := func(tool string) string {
 		return tool + " tag myapp:1.0 " + loginTarget + "/myapp:1.0\n" + tool + " push " + loginTarget + "/myapp:1.0\n"
 	}
-	// An image pull secret is how Kubernetes signs in; its password is a trove token (R-OCI-004). The server is the image prefix, so
+	// An image pull secret is how Kubernetes signs in; its password is a quader token (R-OCI-004). The server is the image prefix, so
 	// the kubelet sends the credential for the images below it only. The token reaches kubectl through a file it reads from standard
 	// input, built by the shell's printf (a builtin, so the token is in no argument list), and not through --docker-password, whose value
 	// would sit on kubectl's command line. A reader who asked for no credential gets a comment: a secret without one is no secret.
 	pullSecret := `{{if .RequiresAuth}}printf '{"auths":{"%s":{"username":"` + loginUser + `","password":"%s"}}}' ` + loginTarget + ` "` + formats.SetupTokenRef + `" | \
-  kubectl create secret generic trove-registry --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
+  kubectl create secret generic quader-registry --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
 {{else}}# An image pull secret holds a credential: ask for the snippet with one.
 {{end}}`
 	return []formats.SetupTemplate{

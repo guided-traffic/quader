@@ -14,7 +14,7 @@ const MarkerFormat = 1
 // delete run that meets it exits 4 (R-BAK-002, R-BAK-013).
 var ErrForeignTarget = errors.New("the backup target belongs to another installation or incarnation")
 
-// Marker is trove-backup-target.json (R-BAK-002). The first run on an empty prefix writes it; every create and delete run
+// Marker is quader-backup-target.json (R-BAK-002). The first run on an empty prefix writes it; every create and delete run
 // reads it at start and again before it writes a manifest or deletes anything.
 type Marker struct {
 	Format         int        `json:"format"`
@@ -85,5 +85,5 @@ type UnknownFormatError struct {
 }
 
 func (e *UnknownFormatError) Error() string {
-	return fmt.Sprintf("%s has format %d; this trove understands formats up to %d", e.What, e.Got, e.Known)
+	return fmt.Sprintf("%s has format %d; this Quader understands formats up to %d", e.What, e.Got, e.Known)
 }

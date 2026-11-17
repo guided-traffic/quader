@@ -6,8 +6,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
-	vmetrics "github.com/guided-traffic/trove/internal/vuln/metrics"
+	"github.com/guided-traffic/quader/internal/config"
+	vmetrics "github.com/guided-traffic/quader/internal/vuln/metrics"
 )
 
 type fixedCollector struct {
@@ -116,7 +116,7 @@ func TestR_VULN_024_GaugeOfTheFindings(t *testing.T) {
 		t.Errorf("an empty combination = %v, %v; want a series with 0", v, ok)
 	}
 	if n := seriesOf(t, reg, vmetrics.Findings); n != 6*5*2 {
-		t.Errorf("series of trove_vuln_findings = %d, want 60 (bounded, R-OPS-007)", n)
+		t.Errorf("series of quader_vuln_findings = %d, want 60 (bounded, R-OPS-007)", n)
 	}
 }
 

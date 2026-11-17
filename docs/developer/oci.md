@@ -57,7 +57,7 @@ names what is missing.
 | [settings.go](../../internal/formats/oci/settings.go), [settings.schema.json](../../internal/formats/oci/settings.schema.json) | The `oci` member of the repository document: `oci.mirror.tags`, `excludeTags`, `platforms` (remote repositories only) |
 | [store.go](../../internal/formats/oci/store.go) | `Store`, the data port: manifest rows, references, referrers, tags, catalog and sweep candidates |
 | [rows](../../internal/formats/oci/rows/rows.go) | The values that cross the port; a leaf (`internal/formats/<id>/rows` imports only `errs` and the standard library) |
-| [../formatdata/oci](../../internal/formatdata/oci/store.go) | The implementation of `Store` and the registration of the tables (`tables.go`); linked by the composition root ([wire_formats.go](../../internal/app/wire_formats.go)) and by `cmd/trove/registry.go` |
+| [../formatdata/oci](../../internal/formatdata/oci/store.go) | The implementation of `Store` and the registration of the tables (`tables.go`); linked by the composition root ([wire_formats.go](../../internal/app/wire_formats.go)) and by `cmd/quader/registry.go` |
 | [oci.sql](../../internal/meta/postgres/queries/oci.sql), [oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql) | The statements of the port as sqlc; `oci_manifests.sql` is the push path and the view reads ([store_manifests.go](../../internal/formatdata/oci/store_manifests.go)) |
 | [handlers_tags.go](../../internal/formats/oci/handlers_tags.go), [handlers_referrers.go](../../internal/formats/oci/handlers_referrers.go) | The tags list (`n`, `last`, the `Link`, 404 for a name that holds nothing) and the referrers API (the index answer, the `artifactType` filter, paging by the last digest, 4 MiB per page). The tags list is decided on `<name>/_taglist`, referrers on the subject's manifest path, each tag and referrer on its own (Q-OCI-140); it is in byte order (R-OCI-015) and does not use `tagorder`, whose rank order is the package view's and the mirror's (Q-OCI-64) |
 | [handlers_delete.go](../../internal/formats/oci/handlers_delete.go), [hooks_remove.go](../../internal/formats/oci/hooks_remove.go) | `DELETE` of a tag, a manifest and a blob (authorization, existence, ownership, then the item store), and `OnItemsRemoved`: the refusals, the cascade and the deletion event of every road of removal |
@@ -65,7 +65,7 @@ names what is missing.
 | [setup.go](../../internal/formats/oci/setup.go), [guide.go](../../internal/formats/oci/guide.go), [guide/](../../internal/formats/oci/guide) | The clients `docker` and `podman`, their setup snippets (login, the Kubernetes image pull secret, pull, push, Buildx) and the guide (R-OCI-030) |
 | [../formatdata/oci](../../internal/formatdata/oci/store.go), further files | `store_lists.go`: tags, referrers, holds, catalog names, the reads of the removal hook and the deletion event; `store_removal.go`: `RemoveManifest` and `ReferencedBy`; `store_sweep.go`: the sweep's statements and the marks; `sweep.go`: the job `oci-sweep`; `journal_replay.go`: the replay handler; `reinstate.go`: the administrator's command |
 | [oci_lists.sql](../../internal/meta/postgres/queries/oci_lists.sql) | The statements of the lists, the cascade, the sweep and the replay (sqlc) |
-| [admin_oci.go](../../cmd/trove/admin_oci.go) | `trove admin oci reinstate <projectKey>/<repoKey> <name>@<digest>` |
+| [admin_oci.go](../../cmd/quader/admin_oci.go) | `quader admin oci reinstate <projectKey>/<repoKey> <name>@<digest>` |
 
 ## The contract additions
 
@@ -129,8 +129,8 @@ The catalog's page is `Store.CatalogNames` of the data port. A registry request 
 
 **The walk (the end-to-end proof).** `registrytest.Walk{Enforcer, Handler, Patterns, Format, Repo, Mint, Prepare, Served, Bound}.Run(t)`
 with the endpoint's whole handler. The integration test ([registry_test.go](../../test/integration/registry/registry_test.go)) uses
-`App.EndpointHandler`, `EndpointRouter` and `RegistryEnforcer`, mints tokens at the token service with a real trove token, and reads
-which route served a request from the `trove_http_requests_total{handler=…}` series the replica counts (the dispatcher's label).
+`App.EndpointHandler`, `EndpointRouter` and `RegistryEnforcer`, mints tokens at the token service with a real Quader token, and reads
+which route served a request from the `quader_http_requests_total{handler=…}` series the replica counts (the dispatcher's label).
 `Bound` makes the walk one of a bound-host endpoint. It fails for a route of the format that is not mounted, a `/v2/` pattern around
 the enforcer, an example whose route the format's `Match` names differently or another route serves, a route an empty grant passes, and
 a route that a grant of every other action passes or a grant of exactly its action does not.
@@ -138,15 +138,15 @@ a route that a grant of every other action passes or a grant of exactly its acti
 ## Registry tokens and the token service
 
 R-OCI-004 to R-OCI-006 and R-OCI-034; decisions Q-OCI-50 to Q-OCI-57 and
-[ADR-163](../decisions.md#adr-163--registry-tokens-are-bound-to-their-trove-token-by-the-hash-of-its-secret-and-verified-through-the-token-cache);
+[ADR-163](../decisions.md#adr-163--registry-tokens-are-bound-to-their-quader-token-by-the-hash-of-its-secret-and-verified-through-the-token-cache);
 the security view is [security/oci-registry.md](../security/oci-registry.md).
 
 What has to be in your head:
 
-- **A registry token is its trove token narrowed.** The claims name the trove token by its ID, its type and the SHA-256 of its
+- **A registry token is its Quader token narrowed.** The claims name the Quader token by its ID, its type and the SHA-256 of its
   secret; the stage verifies the MAC without a lookup and then asks the token cache with the hash
   (`token.Service.CheckSecretHash`), and both paths share `Stage.accept`, so revocation, the freshness gate, the throttle and the
-  endpoint's rules are the trove token's. Claims that span more than `oci.token_lifetime` or are issued more than a minute ahead are
+  endpoint's rules are the Quader token's. Claims that span more than `oci.token_lifetime` or are issued more than a minute ahead are
   refused.
 - **The chain does not authenticate `/v2/_token`.** The stage returns the anonymous result for that path whatever the request
   carries; the token service takes the one credential (`auth.PresentedFrom` for the header of a `GET`, `auth.PresentedForm` for the
@@ -161,11 +161,11 @@ What has to be in your head:
 
 | File | Responsibility |
 |---|---|
-| [registrytoken/token.go](../../internal/auth/registrytoken/token.go) | `Signer` (`NewSigner(ring, lifetime)` derives the MAC keys from the ring with info `trove registry token v1`; `Issue`, `Verify`), `Claims`, `Binding`, the form `trv_rgt_` + base64url(`1:<key id>:<JSON>`) + `.` + MAC, the limits (`MaxLength` 4 KiB, `MaxEntries` 16, `MaxLifetime` 1 h, `MaxClockSkew` 1 min) |
+| [registrytoken/token.go](../../internal/auth/registrytoken/token.go) | `Signer` (`NewSigner(ring, lifetime)` derives the MAC keys from the ring with info `quader registry token v1`; `Issue`, `Verify`), `Claims`, `Binding`, the form `qdr_rgt_` + base64url(`1:<key id>:<JSON>`) + `.` + MAC, the limits (`MaxLength` 4 KiB, `MaxEntries` 16, `MaxLifetime` 1 h, `MaxClockSkew` 1 min) |
 | [registrytoken/grant.go](../../internal/auth/registrytoken/grant.go) | `Actions` (`Pull`, `Push`, `Delete`), `Entry`, `Grant.Allows`, `Grant.Add`, `FullName` |
 | [registrytoken/scope.go](../../internal/auth/registrytoken/scope.go) | `ParseScopes`: the scope grammar of the distribution token protocol, 16 entries at most, unknown entries skipped, the bound host's short names, a cache view under its base repository; `RepositoryScope` for a challenge |
 | [registrytoken/challenge.go](../../internal/auth/registrytoken/challenge.go) | `TokenPath`, `Realm` (realm and service of a base URL; `("", "")` without one), `Challenge` (the `WWW-Authenticate` of R-OCI-004 step 1), `ErrorInvalidToken`, `ErrorInsufficientScope` |
-| [registrytoken/metrics.go](../../internal/auth/registrytoken/metrics.go) | `trove_oci_registry_tokens_total{outcome}` |
+| [registrytoken/metrics.go](../../internal/auth/registrytoken/metrics.go) | `quader_oci_registry_tokens_total{outcome}` |
 | [stage.go](../../internal/auth/stage.go) | `byRegistryToken`, `anonymousRegistry`, `accept` (shared with `byToken`), `AuthenticateTokenRequest`, `Presented` (renders its kind only); the registry challenge below `/v2/` (`Options.RegistryRealm`, `Options.RegistryScope`); no session cookie below `/v2/` |
 | [api/registry/token.go](../../internal/api/registry/token.go) | `Token` (`NewToken`, `TokenOptions`): reads the `GET` and the `POST` form, checks `service`, authenticates through the hook, grants, signs, answers; the 400 body of Q-OCI-52; `auth.registry_token.denied` and the metric |
 | [api/registry/grantor.go](../../internal/api/registry/grantor.go) | `Grantor.Grant` over an `Asker` (`*edge.Access`) and a repository reader: the coarse check per entry and action, then only repositories of the format that are served; `ActionOf` |
@@ -359,7 +359,7 @@ and asks `OCIBlobStillUnreferenced` again (references and unfinished upload sess
 system actor `removal`; a blob the hook refuses because a push committed a reference meanwhile (`oci_referenced`) is counted as kept. The scan (`OCIUnreferencedBlobs`) walks the blob items of a repository in path order and has no index of its
 own (Q-OCI-71).
 
-The replay ([journal_replay.go](../../internal/formatdata/oci/journal_replay.go)) is registered with `journal.Register` in `init`; `cmd/trove`
+The replay ([journal_replay.go](../../internal/formatdata/oci/journal_replay.go)) is registered with `journal.Register` in `init`; `cmd/quader`
 links the package, and `TestR_HA_054_EveryJournaledEventHasAReplayHandler` fails when it is not there. It withholds (writes the mark and
 raises the revision) and deletes nothing. `Reinstate` ([reinstate.go](../../internal/formatdata/oci/reinstate.go)) is the command's transaction.
 The security view is [docs/security/oci-content.md](../security/oci-content.md).
@@ -387,7 +387,7 @@ read handlers of the local class hand a request addressed to a remote repository
   body (`digestBody`: the SHA-256 of what passed against the header, failing at the end of the body with `upstream_integrity_mismatch`, so nothing
   is stored; the engine raises the integrity event and counter for it in `bodyFailure`; the verdict is given when the body ends, which the spool's reads reach,
   `TestTheDigestOfATagIsCheckedWhicheverWayTheBodyIsRead`), and the cut of a tags list is recorded by a reader that adds the member
-  `x-trove-truncated` (`truncatedBody`), which makes the body longer than the length the upstream announced, so `AcceptResponse` sets `ContentLength` to -1 and
+  `x-quader-truncated` (`truncatedBody`), which makes the body longer than the length the upstream announced, so `AcceptResponse` sets `ContentLength` to -1 and
   deletes the header (Q-OCI-126). A manifest is bounded before it is spooled (`boundedBody`, and the announced length). The media type of a
   fetched manifest is the document's own `mediaType` member, and for a document without one an index when it has `manifests` and an image manifest
   otherwise (`fetchedMediaType`). Schema 1 is refused by type in `AcceptResponse` and by `schemaVersion` in `readFetched`. Everything the parser
@@ -406,7 +406,7 @@ read handlers of the local class hand a request addressed to a remote repository
 - **The tags list.** `remoteTagsList` fills the page from a `tagSource`: the stored document's window after `last` (byte order, deduplicated, tags outside the
   grammar dropped), decided in chunks with the listing-form check until `n` readable tags are found (the `Link` names the last tag listed, never a hidden one;
   the scan budget is the local class's), and, when the stored list was cut, the upstream's pages after the last tag taken (`pass`, `n` 1,000, passed through as
-  queries). The upstream's `Link` does not reach the format, so the `Link` is trove's: set whenever the stored list was cut or a pass-through page was used,
+  queries). The upstream's `Link` does not reach the format, so the `Link` is Quader's: set whenever the stored list was cut or a pass-through page was used,
   and a page that is empty ends the list. When the upstream cannot be asked (`unreachable`: offline, the circuit open, a caller who may not fill) the stored
   window answers; referrers answer 404 (Q-OCI-128).
 - **The upstream test** requests `/v2/` at the root of the host (Q-REPO-281); a `401` with a Bearer challenge reads as reachable with `authenticated: null`
@@ -424,7 +424,7 @@ Tests: [remote_test.go](../../internal/formats/oci/remote_test.go) (the adapter 
 ### Testing the remote class through the application
 
 [env_test.go](../../test/integration/ociremote/env_test.go) sends its requests to `/v2/<project>/<key>/` of a running replica with the registry token the token
-service issues to the trove token for the scope of the image (`registryToken`, cached for a minute), as a container client does, so the enforcement point and the grant
+service issues to the Quader token for the scope of the image (`registryToken`, cached for a minute), as a container client does, so the enforcement point and the grant
 check are in the path. Everything is the application's: the engine, the egress rules, the storage hooks, the data port,
 the repository validation. The stub runs in the test process on TLS; `Running.DialOverride()` reaches its three names (`registry.localhost`,
 `auth.localhost`, `cdn.localhost`) and a second stub answers as Docker Hub's three (`registry-1.docker.io`, `auth.docker.io`,
@@ -476,7 +476,7 @@ virtual repository as the addressed one.
 
 `walk` ([virtual_read.go](../../internal/formats/oci/virtual_read.go)) is the one rule for a miss and a failure (Q-OCI-162): a member that has not got the item, refuses the caller or may not be
 filled is a miss; a member that cannot be asked, or whose object is lost, is remembered and is the answer when nothing serves; an error after the first byte ends the request. It puts
-`Trove-Resolved-From` on the answer of the member that serves, when the status line goes out.
+`Quader-Resolved-From` on the answer of the member that serves, when the status line goes out.
 
 **Writes.** The write routes serve the class virtual (ADR-180). A handler that writes starts with `writeRequest`: the request itself for a local repository, a request made for the deployment
 target (`Request.WriteTarget`) for a virtual one. Decisions, the ownership rule, the package rows and the commit act on that request; the upload sessions are called with the addressed
@@ -497,7 +497,7 @@ the test asks (`autoClaim`). The security view is [oci-virtual.md](../security/o
 
 | Key | Default | Rule |
 |---|---|---|
-| `oci.token_lifetime` | `300s` | 60 s to 3600 s (R-OCI-005); the token service never issues a token beyond the expiry of the trove token that requested it |
+| `oci.token_lifetime` | `300s` | 60 s to 3600 s (R-OCI-005); the token service never issues a token beyond the expiry of the Quader token that requested it |
 | `oci.unreferenced_blob_grace` | `24h` | at least 1 m and above `storage.uploads.session_max_age` (R-OCI-019); `validateOCICoupling` in [oci.go](../../internal/config/oci.go) |
 | `storage.uploads.part_size`, `writer_lease`, `session_ttl`, `session_max_age`, `max_open_sessions` | `16MiB` (5MiB to 5GiB), `60s`, `4h`, `20h`, `100` | `max_open_sessions` is the cap per principal and repository (429 at `Start`, Q-STOR-176); `writer_lease` stays below `session_ttl` and above the time a part takes (a part must be sendable at 32 MiB/s within three quarters of it); the others exist since the storage section; `session_max_age` must stay below `storage.orphans.multipart_max_age`, and `storage.upload.max_size` must not exceed 10,000 parts of `part_size` (R-STOR-011) |
 
@@ -525,8 +525,8 @@ the test asks (`autoClaim`). The security view is [oci-virtual.md](../security/o
 | [test/integration/ocilocal](../../test/integration/ocilocal) | Against the stack: 2,500 tags in pages, the referrers, a raw delete of an index through a running replica (cascade, events, journal entries), the sweep (grace, sessions, the lock against a push, the job on a worker), the replay and the reinstate. The state is what a push leaves (items committed through the item store, the rows by SQL), so the sweep, the replay and a raw delete can be staged exactly |
 | [oci_test.go](../../test/integration/postgres/oci_test.go) | The tables, their export classes, the phases of the three migrations and the key grammar at the database (`make test-integration`) |
 | [registrytoken/*_test.go](../../internal/auth/registrytoken) | `TestRegistryTokenForm` (round trip, every character flipped, expiry, another endpoint, another key, unknown key, malformed values, the scanner pattern), `TestRegistryTokenClaimsRules` (with the configured lifetime and the issue time ahead), `TestR_ARCH_021_RegistryTokenKeyRingRotation`, `TestScopeGrammar` (with the cache view), `TestChallenge` (with no base URL), `TestGrantAllows`, `TestTokenServiceMetrics`, `TestTheLogScrubberHidesARegistryToken` |
-| [stage_registry_test.go](../../internal/auth/stage_registry_test.go) | The stage: a registry token below `/v2/` only, as `Bearer` only and not on an escaped path, refusals without a token lookup, a revoked trove token, a claims mismatch (ID, owner, type), the endpoint's token types, bindings and `principal_disabled` (`TestR_EP_011_TheTroveTokensRulesReachItsRegistryToken`), a forged token counted by the throttle (`TestR_AUTH_038_…`), anonymous registry tokens, no session cookie below `/v2/`, the challenge, `AuthenticateTokenRequest`, `Presented` never printing its secret (`TestR_AUTH_001_…`) |
-| [api/registry/*_test.go](../../internal/api/registry) | The token service (`TestTokenService`, `TestTokenServiceForm`: `GET` and `POST` with containerd's content type, the grant of read and deploy, the lifetime cap, the trove token that expires within the second, 400 in both shapes, the grant beyond 4 KiB, 405, the catalog, the cache view, a bound host; the `service` check; anonymous with and without anonymous requests; the event with its endpoint column and the metric; the request never printing its credential), `TestGrantIsTheCoarseCheck`, `TestActionOf`, the enforcement point through a whole handler with the real stage, signer, dispatcher and OCI routes (`TestTheEnforcementPointThroughTheWholeHandler` with `Walk`, the route table, the cache view, the own error code; `TestTheWalkCatchesAWrongMount`: a route left out, a matcher that resolves a push to the pull route, the version check off `/v2/`; `TestMountRefusesWhatItCannotEnforce`; `TestAlsoChecksTheMountsSourceActionByAction`); `TestTheRegistryMatchIsTheDispatchers` in [dispatch](../../internal/api/dispatch/registry_target_test.go) |
+| [stage_registry_test.go](../../internal/auth/stage_registry_test.go) | The stage: a registry token below `/v2/` only, as `Bearer` only and not on an escaped path, refusals without a token lookup, a revoked Quader token, a claims mismatch (ID, owner, type), the endpoint's token types, bindings and `principal_disabled` (`TestR_EP_011_TheQuaderTokensRulesReachItsRegistryToken`), a forged token counted by the throttle (`TestR_AUTH_038_…`), anonymous registry tokens, no session cookie below `/v2/`, the challenge, `AuthenticateTokenRequest`, `Presented` never printing its secret (`TestR_AUTH_001_…`) |
+| [api/registry/*_test.go](../../internal/api/registry) | The token service (`TestTokenService`, `TestTokenServiceForm`: `GET` and `POST` with containerd's content type, the grant of read and deploy, the lifetime cap, the Quader token that expires within the second, 400 in both shapes, the grant beyond 4 KiB, 405, the catalog, the cache view, a bound host; the `service` check; anonymous with and without anonymous requests; the event with its endpoint column and the metric; the request never printing its credential), `TestGrantIsTheCoarseCheck`, `TestActionOf`, the enforcement point through a whole handler with the real stage, signer, dispatcher and OCI routes (`TestTheEnforcementPointThroughTheWholeHandler` with `Walk`, the route table, the cache view, the own error code; `TestTheWalkCatchesAWrongMount`: a route left out, a matcher that resolves a push to the pull route, the version check off `/v2/`; `TestMountRefusesWhatItCannotEnforce`; `TestAlsoChecksTheMountsSourceActionByAction`); `TestTheRegistryMatchIsTheDispatchers` in [dispatch](../../internal/api/dispatch/registry_target_test.go) |
 | [api/dispatch/registry_test.go](../../internal/api/dispatch/registry_test.go) | The registry handler with the real OCI format and fakes: the 404 `NAME_UNKNOWN` shapes (`TestAPathThatNamesNoReadableRepositoryIsNameUnknown`), the unclean path before the decision point, a core route served by its match only (the escaped spellings reach none), `TestTheRouteServedIsTheRouteMatched` (the label equals `RegistryTarget` for a list of requests), the bound host (`TestEndpointFactsBoundIsTheMatchsReading`: `Endpoint.Bound` comes from the match; `TestABoundHostIsTheDistributionAPIOfItsRepository`: a repository of another format or a missing one is no binding, a failed lookup), 405 for a class |
 | [api/registry/root_test.go](../../internal/api/registry/root_test.go) | The version check per credential, the catalog's paging over repositories in byte order with fakes (`n`, `last`, bound, virtual, 501), `Enforcer.Scope`, `Register` |
 | [httpserver/routecheck_test.go](../../internal/httpserver/routecheck_test.go) | `CheckRouteTable`'s probe (`/v%32/{rest...}`, host-only patterns), `HandleUncleaned` and `HandleRegistryUncleaned`, `CheckRouter`'s uncleaned prefixes and fallback |
@@ -606,11 +606,11 @@ the wrong one:
 
 Without the URLs a request under a loopback name (`127.0.0.1`, `localhost`, `::1` or `*.localhost`) gets the registry `registry.localhost`, the realm
 `auth.localhost` and the CDN `cdn.localhost` on the same port (`LoopbackRegistryHost`, `LoopbackRealmHost`, `LoopbackCDNHost`): three names for one
-listener, which is how a Go test runs three hosts. The choice follows what trove can name and reach: the `extraHosts` grammar of a remote
+listener, which is how a Go test runs three hosts. The choice follows what Quader can name and reach: the `extraHosts` grammar of a remote
 (`^[a-z0-9*?.\-_]{1,253}$`) cannot name an IPv6 literal such as `[::1]`, `127.0.0.2` needs an alias on macOS, and `*.localhost` names are not resolved by Go itself (it hands them to the system resolver only when `nsswitch.conf` lists `myhostname`;
 otherwise it sends a DNS query, which a public resolver answers `no such host`). So the names are never resolved: `Running.DialOverride()` maps
 `registry.localhost:<port>`, `auth.localhost:<port>` and `cdn.localhost:<port>` (port 443 when a configured URL has none) to the listener, for
-trove's seam `app.Options.DialOverride` (`outbound.WithDialOverride`), and `Running.DialContext` is the `DialContext` of a test's `http.Transport`.
+Quader's seam `app.Options.DialOverride` (`outbound.WithDialOverride`), and `Running.DialContext` is the `DialContext` of a test's `http.Transport`.
 The TLS server name, the `Host` header and the host rules stay the names. A client that dials the listener
 under `127.0.0.1` has the wrong `Host` for the API and gets 404. The test certificate is `NewSelfSigned(LoopbackHosts...)`. Any other `Host` is
 used for all three. A blob `GET` or `HEAD` on the registry answers `307` with a signed CDN URL (HMAC over repository and digest), as distribution
@@ -735,10 +735,10 @@ defer run.Close()
 ### In the cluster
 
 [deploy/dev/ocistub.yaml](../../deploy/dev/ocistub.yaml): the Services `ocistub` (registry), `ocistub-auth` (realm) and `ocistub-cdn` (blob CDN) on 443
-in front of one pod (the counters are in memory), a certificate of the dev CA for the three names, the control token in Secret `trove-ocistub` (key
+in front of one pod (the counters are in memory), a certificate of the dev CA for the three names, the control token in Secret `quader-ocistub` (key
 `control-token`), TCP probes (an HTTP probe would be counted). The remote repository under test names `ocistub-auth.<ns>.svc` in `extraHosts` (with
 `sendCredentials` when it pulls with credentials) and `ocistub-cdn.<ns>.svc` without. `make oci-stub-image` builds the image; loading it into kind and applying the manifest is
-not wired into `deploy/dev/e2e.sh` yet (the e2e work package adds the marker and the `TROVE_E2E_OCISTUB` switch, as the other stubs have).
+not wired into `deploy/dev/e2e.sh` yet (the e2e work package adds the marker and the `QUADER_E2E_OCISTUB` switch, as the other stubs have).
 
 ### Not covered by the stub
 
@@ -746,7 +746,7 @@ It serves no writes (no push, no `DELETE`), no foreign layers (`urls`), and keep
 whole stub, not one per address or account, and a quota answer carries no `Retry-After`, which is the point of the case. The signed CDN URL has no
 expiry. Whether a client asks the realm for the scope of the repository it is about to read is checked only through the result: a token that does not
 cover the repository is answered 401 `insufficient_scope`. The stub is not a conformance reference: the conformance suite of R-OCI-035 runs against
-trove, not against the stub.
+Quader, not against the stub.
 
 ## What is built and what is not
 
@@ -755,14 +755,14 @@ keys; the descriptor, the grammars, the storage layout, the error shape, the rou
 registry root (the mount of `/v2/`, the one match, the enforcement point, the version check, the catalog, the bound host); the registry
 tokens and the token service; the manifest parser, the pulls and the pushes, the package view and the tag order; the upload sessions,
 the blob uploads and the mount; the tags list, the referrers, the deletes with the cascade, the sweep `oci-sweep`, the replay that
-withholds and `trove admin oci reinstate`; the setup snippets and the guide of `docker` and `podman`; the remote class, the mirror and
+withholds and `quader admin oci reinstate`; the setup snippets and the guide of `docker` and `podman`; the remote class, the mirror and
 the virtual class; the protocol tests, the conformance suite (v1.1.1, all four categories through a local address, pull, push and
 discovery through a virtual one), the counting stub registry, and the end-to-end rows with real clients on several replicas
 (`docker`, `podman`, Buildx, Kubernetes with an image pull secret, the Docker Engine mirror on a bound host, the drain during a push;
 [e2e.md](e2e.md#the-oci-tests)).
 
 Not built: an exposure adapter
-of the format (an endpoint with exposure rules serves no container images, Q-OCI-23); the metric `trove_oci_upstream_token_requests_total`
+of the format (an endpoint with exposure rules serves no container images, Q-OCI-23); the metric `quader_oci_upstream_token_requests_total`
 of R-OCI-034; the presigned redirect of blob downloads (H-601); retention of untagged manifests (H-580).
 
 ## What this page does not cover

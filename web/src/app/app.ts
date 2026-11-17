@@ -12,7 +12,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { OpenSubmenuOnClick } from './shared/ui/open-submenu-on-click';
 import { CdkMenu, CdkMenuItem, CdkMenuItemRadio, CdkMenuTrigger } from '@angular/cdk/menu';
-import { TroveDialog } from './shared/ui/dialog';
+import { QuaderDialog } from './shared/ui/dialog';
 import {
   ActivatedRouteSnapshot,
   NavigationEnd,
@@ -36,8 +36,8 @@ import { Banner } from './shared/banner';
 import { ErrorNotice } from './shared/error-notice';
 import { Notices } from './shared/notices';
 import { SessionDialog } from './shared/session-dialog';
-import { TroveMark } from './shared/brand/trove-mark';
-import { TroveAvatar } from './shared/ui/avatar';
+import { QuaderMark } from './shared/brand/quader-mark';
+import { QuaderAvatar } from './shared/ui/avatar';
 import { AvatarStore } from './core/avatar-store';
 import { ProjectSwitcher } from './features/projects/project-switcher';
 import { SearchField } from './features/search/search-field';
@@ -66,7 +66,7 @@ function isBare(route: ActivatedRouteSnapshot | null): boolean {
  * (sign-in and signed out, Q-UI-125) stands alone: none of the shell renders around it.
  */
 @Component({
-  selector: 'trove-root',
+  selector: 'quader-root',
   imports: [
     RouterOutlet,
     RouterLink,
@@ -77,8 +77,8 @@ function isBare(route: ActivatedRouteSnapshot | null): boolean {
     CdkMenuTrigger,
     OpenSubmenuOnClick,
     CdkTrapFocus,
-    TroveMark,
-    TroveAvatar,
+    QuaderMark,
+    QuaderAvatar,
     ProjectSwitcher,
     SearchField,
     Banner,
@@ -100,7 +100,7 @@ export class App {
   protected readonly navState = inject(NavState);
   protected readonly breadcrumbs = inject(Breadcrumbs);
   private readonly router = inject(Router);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
   private readonly search = viewChild(SearchField);
 

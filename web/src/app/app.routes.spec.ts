@@ -5,7 +5,7 @@ import { App } from './app';
 import { routes } from './app.routes';
 import { provideFakeApis } from './api/testing/fakes';
 import { Breadcrumbs } from './core/breadcrumbs';
-import { TroveTitleStrategy } from './core/title-strategy';
+import { QuaderTitleStrategy } from './core/title-strategy';
 import { seriousViolations } from './testing/axe';
 
 /** Every screen of the M1 route map (R-UI-003) with a concrete URL and its expected heading. */
@@ -78,7 +78,7 @@ async function open(url: string) {
     imports: [App],
     providers: [
       provideRouter(routes, withComponentInputBinding()),
-      { provide: TitleStrategy, useExisting: TroveTitleStrategy },
+      { provide: TitleStrategy, useExisting: QuaderTitleStrategy },
       provideHttpClient(),
       ...provideFakeApis(),
     ],
@@ -94,7 +94,7 @@ describe('route map', () => {
     it(`R-UI-003 ${url} shows "${h1 ?? heading}", sets the page title and has no serious accessibility violation (R-UI-044)`, async () => {
       const root = await open(url);
       expect(root.querySelector('main h1')?.textContent?.trim()).toBe(h1 ?? heading);
-      expect(document.title).toBe(`${heading} – trove`);
+      expect(document.title).toBe(`${heading} – Quader`);
       expect(await seriousViolations(root)).toEqual([]);
     });
   }
@@ -132,13 +132,13 @@ describe('route map', () => {
     expect(leaf().params['format']).toBe('npm');
     expect(leaf().params['name']).toBe('@team-a/ui');
     expect(root.querySelector('main h1')?.textContent?.trim()).toBe('@team-a/ui');
-    expect(document.title).toBe('Package – trove');
+    expect(document.title).toBe('Package – Quader');
     expect(await seriousViolations(root)).toEqual([]);
   });
 
   it('R-VULN-022 /projects/{project}/vulnerabilities/advisories/{ecosystem}/{id} binds both parameters and the trail names the advisory once, with a link that exists', async () => {
     const root = await open('/projects/web/vulnerabilities/advisories/npm/GHSA-aaaa-aaaa-0001');
-    expect(root.querySelector('main')?.textContent).toContain('Prototype pollution in trove-test-vuln');
+    expect(root.querySelector('main')?.textContent).toContain('Prototype pollution in quader-test-vuln');
     const trail = TestBed.inject(Breadcrumbs).trail();
     expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Vulnerabilities', 'GHSA-aaaa-aaaa-0001']);
     expect(trail[3]?.commands).toEqual(['/', 'projects', 'web', 'vulnerabilities', 'advisories', 'npm', 'GHSA-aaaa-aaaa-0001']);
@@ -146,7 +146,7 @@ describe('route map', () => {
 
   it('R-VULN-022 /projects/{project}/vulnerabilities/findings/{id} binds the finding and the trail links the report', async () => {
     const root = await open('/projects/web/vulnerabilities/findings/0193a000-0000-7000-8000-000000000001');
-    expect(root.querySelector('main')?.textContent).toContain('trove-test-vuln@1.0.0');
+    expect(root.querySelector('main')?.textContent).toContain('quader-test-vuln@1.0.0');
     expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Projects', 'web', 'Vulnerabilities', '0193a000-0000-7000-8000-000000000001']);
   });
 

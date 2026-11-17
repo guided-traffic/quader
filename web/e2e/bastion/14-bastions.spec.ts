@@ -4,14 +4,14 @@ import { expect, expectAccessible, signInLocal, test, unique } from '../support'
 // replicas of the e2e Bastion, registers a Bastion, issues a token that expires in 20 days, copies it once, and sees the
 // warning mark on the token afterwards. The token's value is never shown again.
 
-const registration = process.env['TROVE_E2E_BASTION_REGISTRATION'];
+const registration = process.env['QUADER_E2E_BASTION_REGISTRATION'];
 
 test('R-BAS-007 the Bastions screen shows the last contact of the replicas, issues a token once and marks one that expires soon', async ({
   page,
   admin,
   context,
 }) => {
-  if (!registration) throw new Error('TROVE_E2E_BASTION_REGISTRATION is not set: run the journey through TestBastion_R_BAS_007_Journey');
+  if (!registration) throw new Error('QUADER_E2E_BASTION_REGISTRATION is not set: run the journey through TestBastion_R_BAS_007_Journey');
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await signInLocal(page);
 
@@ -21,9 +21,9 @@ test('R-BAS-007 the Bastions screen shows the last contact of the replicas, issu
   // the Bastion of the e2e cluster: both replicas have made contact
   const e2e = page.getByRole('region', { name: registration, exact: true });
   await expect(e2e).toBeVisible();
-  const contacts = e2e.locator('trove-data-table').first();
+  const contacts = e2e.locator('quader-data-table').first();
   // the table also lists replicas of earlier pods of the release (the main installation keeps their last contact): the live ones are in it
-  for (const replica of (process.env['TROVE_E2E_BASTION_REPLICAS'] ?? '').split(',').filter((r) => r !== '')) {
+  for (const replica of (process.env['QUADER_E2E_BASTION_REPLICAS'] ?? '').split(',').filter((r) => r !== '')) {
     await expect(contacts).toContainText(replica);
   }
   await expect(contacts).toContainText('https://bastion-');
@@ -50,7 +50,7 @@ test('R-BAS-007 the Bastions screen shows the last contact of the replicas, issu
     await expect(secret).toBeVisible();
     await secret.getByRole('button', { name: 'Show' }).click();
     const value = await secret.locator('#secret-value').inputValue();
-    expect(value).toMatch(/^trv_bst_/);
+    expect(value).toMatch(/^qdr_bst_/);
     await secret.getByRole('button', { name: 'Copy' }).click();
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(value);
     await expectAccessible(page, 'the new Bastion token');
@@ -61,7 +61,7 @@ test('R-BAS-007 the Bastions screen shows the last contact of the replicas, issu
     await page.reload();
     await expect(page.getByText(value)).toHaveCount(0);
     const again = page.getByRole('region', { name, exact: true });
-    const row = again.getByRole('row', { name: /expires in 20 days|trv_bst_/ }).last();
+    const row = again.getByRole('row', { name: /expires in 20 days|qdr_bst_/ }).last();
     await expect(row).toContainText('Expires in');
     await expect(row).toContainText(/(19|20) days/);
     await expectAccessible(page, 'Bastions, a token with the warning mark');

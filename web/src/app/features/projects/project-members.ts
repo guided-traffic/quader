@@ -6,8 +6,8 @@ import { PROJECT_ROLES, ProjectMember, ProjectRole, ProjectsApi } from '../../ap
 import { SessionStore } from '../../core/session-store';
 import { Notifier } from '../../core/notifier';
 import { SelectOption } from '../../shared/access/fields';
-import { TroveAvatar } from '../../shared/ui/avatar';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderAvatar } from '../../shared/ui/avatar';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { ProjectNeeds } from './project-access';
@@ -19,12 +19,12 @@ import { projectRoleLabel } from './project-roles';
  * The members of a project with their roles (R-UI-041, R-AUTHZ-026, Q-AUTHZ-207, Q-UI-214): the list, adding a user or group
  * with a role in a dialog, changing a role and removing a member. The Owner of the project and the holder of `projects:write`
  * change it; every other member reads. Removing or demoting the last Owner is refused by the server (409
- * `last_owner`, Q-AUTHZ-217) and the refusal is shown here; an administrator of trove may leave a project without an
+ * `last_owner`, Q-AUTHZ-217) and the refusal is shown here; an administrator of Quader may leave a project without an
  * Owner, so the UI does not hide the action. The API decides in any case (R-UI-005).
  */
 @Component({
-  selector: 'trove-project-members',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuItemRadio, CdkMenuTrigger, ErrorNotice, ProjectNeeds, TroveAvatar],
+  selector: 'quader-project-members',
+  imports: [CdkMenu, CdkMenuItem, CdkMenuItemRadio, CdkMenuTrigger, ErrorNotice, ProjectNeeds, QuaderAvatar],
   template: `
     @if (error(); as e) {
       @if (e.code === 'last_owner') {
@@ -33,7 +33,7 @@ import { projectRoleLabel } from './project-roles';
           <span i18n="@@project-members.last-owner">A project keeps at least one Owner. Make another member an Owner first.</span>
         </p>
       } @else {
-        <trove-error-notice [error]="e" (retry)="load()" />
+        <quader-error-notice [error]="e" (retry)="load()" />
       }
     }
 
@@ -105,7 +105,7 @@ import { projectRoleLabel } from './project-roles';
                 @if (m.kind === 'group') {
                   <span class="avatar group" aria-hidden="true"><span class="material-icons">groups</span></span>
                 } @else {
-                  <trove-avatar class="avatar" aria-hidden="true" [seed]="m.id ?? m.principal" [imageUrl]="m.avatarUrl" />
+                  <quader-avatar class="avatar" aria-hidden="true" [seed]="m.id ?? m.principal" [imageUrl]="m.avatarUrl" />
                 }
                 <span class="who">
                   <span class="line">
@@ -170,7 +170,7 @@ import { projectRoleLabel } from './project-roles';
     }
 
     @if (!canWrite()) {
-      <trove-project-needs capability="projects:write" [state]="'denied'" />
+      <quader-project-needs capability="projects:write" [state]="'denied'" />
     }
   `,
   styleUrl: '../../shared/access/access.scss',
@@ -180,15 +180,15 @@ import { projectRoleLabel } from './project-roles';
       container: members / inline-size;
     }
     .count {
-      margin-inline-start: var(--trove-space-1);
+      margin-inline-start: var(--quader-space-1);
     }
     .toolbar {
       display: flex;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       align-items: center;
-      padding: var(--trove-space-3);
-      background: var(--trove-surface-subtle, transparent);
-      border-block-end: 1px solid var(--trove-border);
+      padding: var(--quader-space-3);
+      background: var(--quader-surface-subtle, transparent);
+      border-block-end: 1px solid var(--quader-border);
     }
     .filter {
       position: relative;
@@ -197,28 +197,28 @@ import { projectRoleLabel } from './project-roles';
     .filter input {
       inline-size: 100%;
       box-sizing: border-box;
-      padding-inline-end: var(--trove-space-6);
+      padding-inline-end: var(--quader-space-6);
     }
     .filter .material-icons {
       position: absolute;
-      inset-inline-end: var(--trove-space-2);
+      inset-inline-end: var(--quader-space-2);
       inset-block-start: 50%;
       transform: translateY(-50%);
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
       font-size: 1.125rem;
       pointer-events: none;
     }
     .members {
       inline-size: 100%;
       border-collapse: collapse;
-      margin-block-end: var(--trove-space-3);
+      margin-block-end: var(--quader-space-3);
     }
     .members th,
     .members td {
-      padding: var(--trove-space-3);
+      padding: var(--quader-space-3);
       text-align: start;
       vertical-align: middle;
-      border-block-end: 1px solid var(--trove-border);
+      border-block-end: 1px solid var(--quader-border);
     }
     .members thead th {
       font-weight: 600;
@@ -226,7 +226,7 @@ import { projectRoleLabel } from './project-roles';
     .account {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-3);
+      gap: var(--quader-space-3);
       font-weight: 400;
     }
     .avatar {
@@ -239,20 +239,20 @@ import { projectRoleLabel } from './project-roles';
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: var(--trove-badge-neutral-bg);
-      color: var(--trove-badge-neutral-fg);
+      background: var(--quader-badge-neutral-bg);
+      color: var(--quader-badge-neutral-fg);
     }
     .who,
     .line {
       display: flex;
-      gap: var(--trove-space-1);
+      gap: var(--quader-space-1);
     }
     .who {
       flex-direction: column;
     }
     .line {
       align-items: center;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
     }
     .name {
       font-weight: 600;
@@ -265,12 +265,12 @@ import { projectRoleLabel } from './project-roles';
     }
     .notice {
       display: flex;
-      gap: var(--trove-space-3);
-      padding: var(--trove-space-3) var(--trove-space-4);
-      border: 1px solid var(--trove-error);
-      border-radius: var(--trove-radius-m);
-      background: var(--trove-error-container);
-      color: var(--trove-on-error-container);
+      gap: var(--quader-space-3);
+      padding: var(--quader-space-3) var(--quader-space-4);
+      border: 1px solid var(--quader-error);
+      border-radius: var(--quader-radius-m);
+      background: var(--quader-error-container);
+      color: var(--quader-on-error-container);
     }
     /* Below 48 rem the rows stack as every list's do (Q-UI-306): the account and its menu, then the source and the role on a
        line each; at 390 px the four columns scrolled 100 px sideways. The head stays for assistive technology only. */
@@ -291,14 +291,14 @@ import { projectRoleLabel } from './project-roles';
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
-        gap: var(--trove-space-2) var(--trove-space-3);
-        padding-block: var(--trove-space-3);
-        border-block-end: 1px solid var(--trove-border);
+        gap: var(--quader-space-2) var(--quader-space-3);
+        padding-block: var(--quader-space-3);
+        border-block-end: 1px solid var(--quader-border);
       }
       .members tbody tr > * {
         display: block;
         grid-column: 1 / -1;
-        padding: 0 var(--trove-space-2);
+        padding: 0 var(--quader-space-2);
         border-block-end: 0;
       }
       .members tbody tr > th.account {
@@ -312,7 +312,7 @@ import { projectRoleLabel } from './project-roles';
       }
       .members td[data-label]::before {
         content: attr(data-label) ' ';
-        color: var(--trove-text-muted);
+        color: var(--quader-text-muted);
       }
     }
   `,
@@ -325,7 +325,7 @@ export class ProjectMembers {
   private readonly api = inject(ProjectsApi);
   private readonly session = inject(SessionStore);
   private readonly notifier = inject(Notifier);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
 
   protected readonly members = signal<readonly ProjectMember[]>([]);
   protected readonly loaded = signal(false);

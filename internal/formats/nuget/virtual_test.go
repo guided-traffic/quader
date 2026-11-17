@@ -10,15 +10,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/merge"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/merge"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // mergeResolver stands in for the virtual engine: Metadata merges the member documents the
@@ -63,10 +63,10 @@ func (r *mergeResolver) Metadata(ctx context.Context, rq *formats.Request, p for
 		h.Write([]byte(d.Member.Name.String()))
 		h.Write(d.Doc)
 	}
-	m := &formats.Merged{Bytes: body, Partial: r.partial, CacheStatus: "trove; fwd=miss"}
+	m := &formats.Merged{Bytes: body, Partial: r.partial, CacheStatus: "quader; fwd=miss"}
 	copy(m.MergeFingerprint[:], h.Sum(nil))
 	if r.partial {
-		m.CacheStatus = "trove; detail=partial"
+		m.CacheStatus = "quader; detail=partial"
 	}
 	return m, nil
 }
@@ -92,7 +92,7 @@ func (r *mergeResolver) DeployTarget(context.Context, *formats.Request) (*reposi
 
 func (r *mergeResolver) Artifact(_ context.Context, rq *formats.Request, p formats.Path, _ formats.PathInfo, w http.ResponseWriter) error {
 	r.served = append(r.served, p.Path)
-	w.Header().Set("Trove-Resolved-From", "member-a")
+	w.Header().Set("Quader-Resolved-From", "member-a")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("bytes of " + p.Path))
 	return nil
@@ -108,7 +108,7 @@ func virtualHost(t *testing.T, r *mergeResolver, data any) *formattest.Host {
 	return formattest.NewHost(f, formattest.HostOptions{Class: formats.Virtual, RepoKey: "all", Data: data, Resolver: r})
 }
 
-const feedOfAll = "https://trove.test/api/nuget/it/all/v3/"
+const feedOfAll = "https://quader.test/api/nuget/it/all/v3/"
 
 // localPart is the document of a local member at the path of the registration entries.
 func localPart(t *testing.T, key string, position int, vs ...rows.RegistrationVersion) formats.MemberDocument {
@@ -178,7 +178,7 @@ func TestR_NUGET_017_TheVersionListIsTheUnionOfTheMembers(t *testing.T) {
 	if r.Header().Get("Content-Type") != "application/json; charset=utf-8" || !strings.HasPrefix(r.Header().Get("ETag"), `W/"`) {
 		t.Errorf("headers: %v", r.Header())
 	}
-	if r.Header().Get("Cache-Status") != "trove; fwd=miss" {
+	if r.Header().Get("Cache-Status") != "quader; fwd=miss" {
 		t.Errorf("Cache-Status = %q", r.Header().Get("Cache-Status"))
 	}
 	head := get(t, h, http.MethodHead, "v3/flatcontainer/acme.widgets/index.json")
@@ -333,11 +333,11 @@ func TestR_NUGET_017_APartialMergeIsServedAndNeverKept(t *testing.T) {
 	res.f.Bind(h, &config.Config{}, m)
 	const path = "v3/registration-semver2/acme.widgets/index.json"
 	ae := func(r *http.Request) { r.Header.Set("Accept-Encoding", "gzip") }
-	if r := get(t, h, http.MethodGet, path, ae); r.Code != http.StatusOK || r.Header().Get("Cache-Status") != "trove; detail=partial" {
+	if r := get(t, h, http.MethodGet, path, ae); r.Code != http.StatusOK || r.Header().Get("Cache-Status") != "quader; detail=partial" {
 		t.Fatalf("partial: %d %v", r.Code, r.Header())
 	}
-	if got := counted(t, m, "trove_nuget_virtual_member_skipped_total"); got != 1 {
-		t.Errorf("trove_nuget_virtual_member_skipped_total = %v, want 1", got)
+	if got := counted(t, m, "quader_nuget_virtual_member_skipped_total"); got != 1 {
+		t.Errorf("quader_nuget_virtual_member_skipped_total = %v, want 1", got)
 	}
 	res.partial, res.docs = false, docsOf(nil, []formats.MemberDocument{two})
 	if r := get(t, h, http.MethodGet, path); len(leavesOf(t, r)) != 2 {
@@ -414,7 +414,7 @@ func TestR_NUGET_017_AFileIsResolvedThroughTheTiers(t *testing.T) {
 	res := &mergeResolver{}
 	h := virtualHost(t, res, nil)
 	nupkg := get(t, h, http.MethodGet, "v3/flatcontainer/Acme.Widgets/1.0.0.0/acme.widgets.1.0.0.0.nupkg")
-	if nupkg.Code != http.StatusOK || nupkg.Header().Get("Content-Type") != "application/octet-stream" || nupkg.Header().Get("Trove-Resolved-From") != "member-a" {
+	if nupkg.Code != http.StatusOK || nupkg.Header().Get("Content-Type") != "application/octet-stream" || nupkg.Header().Get("Quader-Resolved-From") != "member-a" {
 		t.Fatalf("nupkg: %d %v", nupkg.Code, nupkg.Header())
 	}
 	nuspec := get(t, h, http.MethodGet, "v3/flatcontainer/acme.widgets/1.0.0/acme.widgets.nuspec")

@@ -4,8 +4,8 @@
 // TLS): the bucket backend of R-BAS-030 shared by two replicas, the eviction sweep of R-BAS-031 and the integrity
 // of R-BAS-032, and the five S3 operations the backend may use.
 //
-// Variables read (testenv): TROVE_TEST_S3_ENDPOINT, _REGION, _ACCESS_KEY, _SECRET_KEY, _BUCKET_BACKUPS,
-// _FORCE_PATH_STYLE and TROVE_TEST_CA_FILE. Every test works below a prefix of its own in the unversioned backups
+// Variables read (testenv): QUADER_TEST_S3_ENDPOINT, _REGION, _ACCESS_KEY, _SECRET_KEY, _BUCKET_BACKUPS,
+// _FORCE_PATH_STYLE and QUADER_TEST_CA_FILE. Every test works below a prefix of its own in the unversioned backups
 // bucket and removes it when it ends; the blobs bucket and the other developers' prefixes are not touched.
 package bastioncache
 
@@ -31,12 +31,12 @@ import (
 
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const mib = 1 << 20

@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 func TestGuardBreaker(t *testing.T) {
@@ -51,8 +51,8 @@ func TestGuardBreaker(t *testing.T) {
 		if mem.Count("head") != before || !g.Open() {
 			t.Fatal("the sixth call reached the store or the circuit is closed")
 		}
-		if v := gauge(t, m, "trove_storage_s3_circuit_open"); v != 1 {
-			t.Fatalf("trove_storage_s3_circuit_open = %v", v)
+		if v := gauge(t, m, "quader_storage_s3_circuit_open"); v != 1 {
+			t.Fatalf("quader_storage_s3_circuit_open = %v", v)
 		}
 	})
 	t.Run("R-STOR-033 a call that only hit the caller's deadline is no answer: it neither closes nor opens the circuit", func(t *testing.T) {
@@ -134,8 +134,8 @@ func TestGuardBreaker(t *testing.T) {
 			if err := head(g); !errors.Is(err, blob.ErrCircuitOpen) || mem.Count("head") != before || !g.Open() {
 				t.Fatalf("%s: the sixth call did not fail fast on an open circuit: %v", code, err)
 			}
-			if v := gauge(t, m, "trove_storage_s3_circuit_open"); v != 1 {
-				t.Fatalf("%s: trove_storage_s3_circuit_open = %v", code, v)
+			if v := gauge(t, m, "quader_storage_s3_circuit_open"); v != 1 {
+				t.Fatalf("%s: quader_storage_s3_circuit_open = %v", code, v)
 			}
 			out := logs.String()
 			if !strings.Contains(out, "credential_source=static") || !strings.Contains(out, "code="+code) {
@@ -188,7 +188,7 @@ func TestGuardBreaker(t *testing.T) {
 		if err := head(g); !errors.Is(err, blob.ErrNotFound) {
 			t.Fatalf("probe: %v", err)
 		}
-		if g.Open() || gauge(t, m, "trove_storage_s3_circuit_open") != 0 {
+		if g.Open() || gauge(t, m, "quader_storage_s3_circuit_open") != 0 {
 			t.Fatal("the circuit did not close")
 		}
 	})
@@ -231,13 +231,13 @@ func TestGuardBreaker(t *testing.T) {
 		}
 		_ = readAll(t, body)
 		_ = head(g)
-		if v := counter(t, m, "trove_storage_s3_requests_total", map[string]string{"operation": "put", "outcome": "ok"}); v != 1 {
+		if v := counter(t, m, "quader_storage_s3_requests_total", map[string]string{"operation": "put", "outcome": "ok"}); v != 1 {
 			t.Fatalf("put ok = %v", v)
 		}
-		if v := counter(t, m, "trove_storage_s3_bytes_total", map[string]string{"direction": "up"}); v != float64(len(data)) {
+		if v := counter(t, m, "quader_storage_s3_bytes_total", map[string]string{"direction": "up"}); v != float64(len(data)) {
 			t.Fatalf("up bytes = %v", v)
 		}
-		if v := counter(t, m, "trove_storage_s3_bytes_total", map[string]string{"direction": "down"}); v != float64(len(data)) {
+		if v := counter(t, m, "quader_storage_s3_bytes_total", map[string]string{"direction": "down"}); v != float64(len(data)) {
 			t.Fatalf("down bytes = %v", v)
 		}
 		if errs := m.Check(); len(errs) > 0 {

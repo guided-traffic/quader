@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The suggestions of the search field (R-API-064, Q-API-274): two indexes over package names, without the extension pg_trgm
 -- (00017). packages_name_lower serves a whole-name prefix in byte order; packages_name_words a prefix of a word inside a name,

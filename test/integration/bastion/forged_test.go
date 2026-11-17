@@ -13,7 +13,7 @@ import (
 
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // valkeyAdmin is a client of the primary as the administrative user, for what the Bastion's own user may not do:
@@ -74,7 +74,7 @@ func TestR_BAS_034_R_BAS_020_AForgedAnswerRecordIsNotTrusted(t *testing.T) {
 	}
 	adm := valkeyAdmin(t)
 	ctx := context.Background()
-	pattern := "trove-bastion:" + b.sh.vprefix + ":*"
+	pattern := "quader-bastion:" + b.sh.vprefix + ":*"
 	var keys []string
 	cursor := uint64(0)
 	for {

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/npm/remote"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/npm/remote"
 )
 
 // sri is the integrity of a content text.
@@ -148,8 +148,8 @@ func TestR_NPM_024_CheckToleratesWhatRegistriesDo(t *testing.T) {
 
 func TestR_NPM_025_RewriteSetsTheTarballOfEveryVersionAndKeepsTheRest(t *testing.T) {
 	b := doc(t, "@acme/ui", []string{"1.0.0", "1.5.0"}, nil)
-	prefix := remote.TarballPrefix("https://trove.example.com/api/npm/npm-remote/", "@acme/ui")
-	if prefix != "https://trove.example.com/api/npm/npm-remote/@acme/ui/-/" {
+	prefix := remote.TarballPrefix("https://quader.example.com/api/npm/npm-remote/", "@acme/ui")
+	if prefix != "https://quader.example.com/api/npm/npm-remote/@acme/ui/-/" {
 		t.Fatalf("prefix = %q", prefix)
 	}
 	out, err := remote.Rewrite(b, "@acme/ui", prefix)

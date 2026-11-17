@@ -5,7 +5,7 @@
 // while the bytes reach the cluster. The forwarder does not terminate TLS and reads nothing of the
 // stream.
 //
-//	fwd -listen 127.0.0.1:8080 -to trove-edge.trove.svc:443 -target-file /tmp/target
+//	fwd -listen 127.0.0.1:8080 -to quader-edge.quader.svc:443 -target-file /tmp/target
 //
 // The target is resolved for every connection, so a Service or pod that is replaced during a run is
 // followed. With -target-file, a file that holds a host:port overrides -to for every connection made

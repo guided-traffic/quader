@@ -24,7 +24,7 @@ type CI struct {
 	// enables it is refused by name, not read as an unknown key.
 	JobTokenFallback CIJobTokenFallback `yaml:"job_token_fallback"`
 
-	Issuers []CIIssuer `yaml:"issuers" default:"[]" doc:"CI issuers declared here (R-CI-001, Q-CI-16): trove migrate applies them by name with source configuration, in one transaction, and disables the configuration issuers no longer listed; the API and the UI show them read-only. Each entry carries the fields of the issuer API in snake_case with the same validation and defaults; name, kind and issuer are required."`
+	Issuers []CIIssuer `yaml:"issuers" default:"[]" doc:"CI issuers declared here (R-CI-001, Q-CI-16): quader migrate applies them by name with source configuration, in one transaction, and disables the configuration issuers no longer listed; the API and the UI show them read-only. Each entry carries the fields of the issuer API in snake_case with the same validation and defaults; name, kind and issuer are required."`
 }
 
 // CISigningKeys are the discovery and key-set settings of R-CI-003.
@@ -89,7 +89,7 @@ type CIJobTokenFallback struct {
 
 // CIIssuer is one entry of ci.issuers (R-CI-001, Q-CI-16): the issuer fields of the API in snake_case.
 // An element of a list is decoded as it is written, so a key left out is the zero value and the
-// pointer fields tell "false" and "0" from "not set"; the defaults of R-CI-001 are applied by trove
+// pointer fields tell "false" and "0" from "not set"; the defaults of R-CI-001 are applied by quader
 // migrate when it stores the issuer.
 type CIIssuer struct {
 	Name                   string   `yaml:"name" json:"name"`

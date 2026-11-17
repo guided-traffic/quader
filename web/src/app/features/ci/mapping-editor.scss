@@ -9,131 +9,131 @@ fieldset.plain {
 
 .form-grid.wide {
   max-inline-size: 44rem;
-  gap: var(--trove-space-1);
+  gap: var(--quader-space-1);
 }
 
 .stack {
   display: flex;
   flex-direction: column;
-  gap: var(--trove-space-4);
+  gap: var(--quader-space-4);
 }
 
 h3 {
-  margin: var(--trove-space-4) 0 var(--trove-space-2);
-  font: var(--trove-type-title-small);
+  margin: var(--quader-space-4) 0 var(--quader-space-2);
+  font: var(--quader-type-title-small);
 }
 
 .view-switch {
   display: inline-flex;
-  gap: var(--trove-space-1);
-  margin-block-end: var(--trove-space-2);
+  gap: var(--quader-space-1);
+  margin-block-end: var(--quader-space-2);
 
   .switch[aria-pressed='true'] {
-    background: var(--trove-accent-container);
-    color: var(--trove-on-accent-container);
+    background: var(--quader-accent-container);
+    color: var(--quader-on-accent-container);
     font-weight: 600;
   }
 }
 
 .block-label {
   display: block;
-  margin-block: var(--trove-space-2) var(--trove-space-1);
-  font: var(--trove-type-label-large);
+  margin-block: var(--quader-space-2) var(--quader-space-1);
+  font: var(--quader-type-label-large);
 }
 
 .json-input {
   box-sizing: border-box;
   inline-size: 100%;
-  padding: var(--trove-space-2);
-  border: 1px solid var(--trove-border-strong);
-  border-radius: var(--trove-radius-s);
-  background: var(--trove-surface-raised);
-  color: var(--trove-on-surface);
-  font-family: var(--trove-font-mono);
+  padding: var(--quader-space-2);
+  border: 1px solid var(--quader-border-strong);
+  border-radius: var(--quader-radius-s);
+  background: var(--quader-surface-raised);
+  color: var(--quader-on-surface);
+  font-family: var(--quader-font-mono);
   font-size: 0.8125rem;
 }
 
 .summary {
-  margin-block: var(--trove-space-3) 0;
+  margin-block: var(--quader-space-3) 0;
   overflow-wrap: anywhere;
 }
 
 .hint {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
   align-items: center;
-  margin-block: var(--trove-space-2);
-  padding: var(--trove-space-2) var(--trove-space-3);
-  border: 1px solid var(--trove-border-strong);
-  border-radius: var(--trove-radius-s);
+  margin-block: var(--quader-space-2);
+  padding: var(--quader-space-2) var(--quader-space-3);
+  border: 1px solid var(--quader-border-strong);
+  border-radius: var(--quader-radius-s);
 
   &.warn {
-    border-color: var(--trove-status-warn);
+    border-color: var(--quader-status-warn);
   }
 
   &.bad {
-    border-color: var(--trove-status-bad);
+    border-color: var(--quader-status-bad);
   }
 }
 
 .inline-grant {
-  margin-block: var(--trove-space-3);
-  padding: var(--trove-space-3);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-m);
-  background: var(--trove-surface-raised);
+  margin-block: var(--quader-space-3);
+  padding: var(--quader-space-3);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-m);
+  background: var(--quader-surface-raised);
 }
 
 .inline-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 }
 
 .quick {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2);
-  margin-block-end: var(--trove-space-3);
+  gap: var(--quader-space-2);
+  margin-block-end: var(--quader-space-3);
 }
 
 .actions-set {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-1) var(--trove-space-3);
-  margin: var(--trove-space-2) 0;
+  gap: var(--quader-space-1) var(--quader-space-3);
+  margin: var(--quader-space-2) 0;
   padding: 0;
   border: 0;
 
   legend {
     padding: 0;
-    font: var(--trove-type-label-large);
+    font: var(--quader-type-label-large);
   }
 }
 
 .snippet-head {
   display: flex;
   align-items: center;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
 }
 
 .snippet {
   margin: 0;
-  padding: var(--trove-space-3);
+  padding: var(--quader-space-3);
   overflow: auto;
   max-block-size: 24rem;
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-s);
-  background: var(--trove-surface-raised);
-  font-family: var(--trove-font-mono);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-s);
+  background: var(--quader-surface-raised);
+  font-family: var(--quader-font-mono);
   font-size: 0.8125rem;
   white-space: pre;
 }
 
 // A select with long option texts takes the width of the form, so no option is cut off.
-trove-select-field {
+quader-select-field {
   display: block;
   max-inline-size: 44rem;
   inline-size: 100%;

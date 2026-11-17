@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // NuGet on an endpoint with exposure rules (R-NUGET-034, R-EP-018). The adapter is the

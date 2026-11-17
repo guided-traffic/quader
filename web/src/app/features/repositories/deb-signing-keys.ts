@@ -47,9 +47,9 @@ function stateSentence(state: DebSigningKeyState): string {
 export function keyErrorText(error: ApiError): string | null {
   switch (error.code) {
     case 'deb_key_in_use':
-      return $localize`:@@deb.key.err.in-use:This key is already known to trove, in this or another repository, in some state. A retired or withheld key cannot come back by import.`;
+      return $localize`:@@deb.key.err.in-use:This key is already known to Quader, in this or another repository, in some state. A retired or withheld key cannot come back by import.`;
     case 'deb_key_unsupported':
-      return $localize`:@@deb.key.err.unsupported:trove cannot use this key. It needs an EdDSALegacy (Ed25519) or RSA primary key of at least 3072 bits that can sign, is not revoked, has no expiry, was not created in the future and has no signing subkeys.`;
+      return $localize`:@@deb.key.err.unsupported:Quader cannot use this key. It needs an EdDSALegacy (Ed25519) or RSA primary key of at least 3072 bits that can sign, is not revoked, has no expiry, was not created in the future and has no signing subkeys.`;
     case 'deb_key_state':
       return $localize`:@@deb.key.err.state:The key is not in a state that allows this. Reload the list and try again.`;
     case 'deb_no_next_key':
@@ -67,7 +67,7 @@ export function keyErrorText(error: ApiError): string | null {
  * once and, with its passphrase, kept nowhere. The server enforces the permission; `canManage` only decides what is offered.
  */
 @Component({
-  selector: 'trove-deb-signing-keys',
+  selector: 'quader-deb-signing-keys',
   imports: [DatePipe, CopyButton, DataTable, ErrorNotice],
   template: `
     <section class="keys" aria-labelledby="deb-keys-heading">
@@ -79,7 +79,7 @@ export function keyErrorText(error: ApiError): string | null {
       </p>
 
       @if (failure(); as f) {
-        <trove-error-notice [error]="f" (retry)="load()" />
+        <quader-error-notice [error]="f" (retry)="load()" />
       } @else if (keys(); as list) {
         @if (!primary()) {
           <p class="banner-warning" role="status" data-testid="deb-no-primary">
@@ -101,16 +101,16 @@ export function keyErrorText(error: ApiError): string | null {
         }
         @if (next(); as n) {
           <p class="hint" role="note" data-testid="deb-overlap">
-            <span i18n="@@deb.keys.overlap">Both keys sign since</span>&ngsp;<time [attr.datetime]="n.createdAt">{{ n.createdAt | date: 'medium' }}</time>.&ngsp;<span i18n="@@deb.keys.overlap-hint">trove cannot know which clients replaced their key file. A client that holds only the old key fails to update after the promotion.</span>
+            <span i18n="@@deb.keys.overlap">Both keys sign since</span>&ngsp;<time [attr.datetime]="n.createdAt">{{ n.createdAt | date: 'medium' }}</time>.&ngsp;<span i18n="@@deb.keys.overlap-hint">Quader cannot know which clients replaced their key file. A client that holds only the old key fails to update after the promotion.</span>
           </p>
         }
 
-        <trove-data-table [caption]="caption" [columns]="columns()" [empty]="list.length === 0" data-testid="deb-key-table">
+        <quader-data-table [caption]="caption" [columns]="columns()" [empty]="list.length === 0" data-testid="deb-key-table">
           @for (k of list; track k.fingerprint) {
             <tr [attr.data-state]="k.state">
               <th scope="row">
                 <code translate="no" [attr.title]="k.fingerprint">{{ grouped(k.fingerprint) }}</code>
-                <trove-copy-button [value]="k.fingerprint" [label]="copyFingerprint" />
+                <quader-copy-button [value]="k.fingerprint" [label]="copyFingerprint" />
                 @if (k.state !== 'retired') {
                   <details>
                     <summary i18n="@@deb.keys.certificate">Public certificate</summary>
@@ -147,13 +147,13 @@ export function keyErrorText(error: ApiError): string | null {
               }
             </tr>
           }
-        </trove-data-table>
+        </quader-data-table>
 
         @if (actionFailure(); as f) {
           @if (errorText(f); as text) {
             <p class="field-error" role="alert" data-testid="deb-key-error">{{ text }}</p>
           } @else {
-            <trove-error-notice [error]="f" />
+            <quader-error-notice [error]="f" />
           }
         }
 
@@ -225,11 +225,11 @@ export function keyErrorText(error: ApiError): string | null {
   `,
   styles: `
     .keys {
-      margin-block-end: var(--trove-space-6);
+      margin-block-end: var(--quader-space-6);
     }
     h3 {
-      margin-block: var(--trove-space-4) var(--trove-space-2);
-      font: var(--trove-type-title-small);
+      margin-block: var(--quader-space-4) var(--quader-space-2);
+      font: var(--quader-type-title-small);
     }
     .actions {
       white-space: nowrap;
@@ -237,13 +237,13 @@ export function keyErrorText(error: ApiError): string | null {
     .buttons {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-3);
-      margin-block: var(--trove-space-3);
+      gap: var(--quader-space-3);
+      margin-block: var(--quader-space-3);
     }
     .import {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-3);
+      gap: var(--quader-space-3);
       max-width: 40rem;
     }
   `,

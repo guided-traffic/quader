@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The event types of these tests. authz.denied, token.rejected and
@@ -35,7 +35,7 @@ func init() {
 
 func count(t testing.TB, e *env, table, where string) int {
 	t.Helper()
-	return scalar[int](t, e.admin, "SELECT count(*) FROM trove."+table+" WHERE "+where)
+	return scalar[int](t, e.admin, "SELECT count(*) FROM quader."+table+" WHERE "+where)
 }
 
 // change is a stand-in for a state change in the transaction of an event: a
@@ -46,10 +46,10 @@ func change(t testing.TB, tx meta.Tx, key string) {
 	if !ok {
 		t.Fatal("not a PostgreSQL transaction")
 	}
-	if _, err := ptx.Exec(context.Background(), "INSERT INTO trove.project (id, key, display_name) VALUES (gen_random_uuid(), 'it', 'it') ON CONFLICT (key) DO NOTHING"); err != nil {
+	if _, err := ptx.Exec(context.Background(), "INSERT INTO quader.project (id, key, display_name) VALUES (gen_random_uuid(), 'it', 'it') ON CONFLICT (key) DO NOTHING"); err != nil {
 		t.Fatalf("change: project: %v", err)
 	}
-	if _, err := ptx.Exec(context.Background(), "INSERT INTO trove.repositories (key, format, class, project_id) SELECT $1, 'generic', 'local', id FROM trove.project WHERE key = 'it'", key); err != nil {
+	if _, err := ptx.Exec(context.Background(), "INSERT INTO quader.repositories (key, format, class, project_id) SELECT $1, 'generic', 'local', id FROM quader.project WHERE key = 'it'", key); err != nil {
 		t.Fatalf("change: %v", err)
 	}
 }
@@ -80,7 +80,7 @@ func TestR_OPS_015_TransactionalEvents(t *testing.T) {
 		var action, category, outcome, atype, aname, ip, repo, rtype, trace, replica, endpoint, auth string
 		var hasToken bool
 		err = e.admin.QueryRow(ctx, `SELECT action, category, outcome, actor_type, actor_name, host(source_ip), repository, resource_type,
-			trace_id, replica, endpoint, auth_method, token_id IS NOT NULL FROM trove.audit_event WHERE action = 'probe.thing.created'`).
+			trace_id, replica, endpoint, auth_method, token_id IS NOT NULL FROM quader.audit_event WHERE action = 'probe.thing.created'`).
 			Scan(&action, &category, &outcome, &atype, &aname, &ip, &repo, &rtype, &trace, &replica, &endpoint, &auth, &hasToken)
 		if err != nil {
 			t.Fatal(err)
@@ -145,8 +145,8 @@ func TestR_OPS_015_TransactionalEvents(t *testing.T) {
 		var same bool
 		var ev string
 		var got []byte
-		err = e.admin.QueryRow(ctx, `SELECT o.at = a.occurred_at, o.event, o.entry FROM trove.revocation_outbox o
-			JOIN trove.audit_event a ON a.id = o.id WHERE a.action = 'probe.access.revoked'`).Scan(&same, &ev, &got)
+		err = e.admin.QueryRow(ctx, `SELECT o.at = a.occurred_at, o.event, o.entry FROM quader.revocation_outbox o
+			JOIN quader.audit_event a ON a.id = o.id WHERE a.action = 'probe.access.revoked'`).Scan(&same, &ev, &got)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -216,7 +216,7 @@ func TestR_OPS_015_TransactionalEvents(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if n := scalar[int](t, e.admin, "SELECT count(DISTINCT occurred_at) FROM trove.audit_event WHERE action = 'probe.thing.deleted'"); n != 1 {
+		if n := scalar[int](t, e.admin, "SELECT count(DISTINCT occurred_at) FROM quader.audit_event WHERE action = 'probe.thing.deleted'"); n != 1 {
 			t.Errorf("distinct times = %d", n)
 		}
 	})

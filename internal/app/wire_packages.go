@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/packages/readme"
-	"github.com/guided-traffic/trove/internal/packages/view"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/packages/readme"
+	"github.com/guided-traffic/quader/internal/packages/view"
 )
 
 // AreaPackagesAPI is the services of the package screens' operations of the management
@@ -56,7 +56,7 @@ func (a *App) wirePackagesAPI(_ context.Context, in infra, az authzArea, repo re
 	}}, nil
 }
 
-// ownOrigins are the origins of trove itself: the base URL of the server, its
+// ownOrigins are the origins of quader itself: the base URL of the server, its
 // additional base URLs and the base URL of every further endpoint. A README image
 // from one of them is dropped (R-UI-008).
 func (a *App) ownOrigins() []string {

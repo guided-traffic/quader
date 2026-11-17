@@ -4,23 +4,23 @@
 # The pod shares one network namespace, so the forwarder's listener on 127.0.0.1:<edge port> is the registry the daemon, the
 # CLI and Podman reach; `localhost:<edge port>` is the base URL of the setup snippets.
 #
-#   TROVE_CA_FILE         the dev CA, PEM (default /etc/trove-ca/ca.crt, a ConfigMap mount)
-#   TROVE_REGISTRY_HOSTS  the registry hosts, host[:port] separated by blanks; each gets /etc/docker/certs.d/<host>/ca.crt
-#   TROVE_ENGINE_MIRROR   https URL of the Docker Engine mirror (registry-mirrors of daemon.json); empty: none
-#   arguments             the forwarder's: -listen, -to, -target-file
+#   QUADER_CA_FILE         the dev CA, PEM (default /etc/quader-ca/ca.crt, a ConfigMap mount)
+#   QUADER_REGISTRY_HOSTS  the registry hosts, host[:port] separated by blanks; each gets /etc/docker/certs.d/<host>/ca.crt
+#   QUADER_ENGINE_MIRROR   https URL of the Docker Engine mirror (registry-mirrors of daemon.json); empty: none
+#   arguments              the forwarder's: -listen, -to, -target-file
 set -eu
-ca="${TROVE_CA_FILE:-/etc/trove-ca/ca.crt}"
+ca="${QUADER_CA_FILE:-/etc/quader-ca/ca.crt}"
 [ -s "$ca" ] || { echo "entrypoint: the dev CA $ca is missing or empty" >&2; exit 1; }
-for h in ${TROVE_REGISTRY_HOSTS:?TROVE_REGISTRY_HOSTS is not set}; do
+for h in ${QUADER_REGISTRY_HOSTS:?QUADER_REGISTRY_HOSTS is not set}; do
   mkdir -p "/etc/docker/certs.d/$h"
   cp "$ca" "/etc/docker/certs.d/$h/ca.crt"
 done
 # BuildKit inside dockerd fetches the token of `buildx build --push` with a client of its own, which reads the system trust and not certs.d.
-cp "$ca" /usr/local/share/ca-certificates/trove-dev-ca.crt
+cp "$ca" /usr/local/share/ca-certificates/quader-dev-ca.crt
 update-ca-certificates >/dev/null
 mkdir -p /etc/docker
-if [ -n "${TROVE_ENGINE_MIRROR:-}" ]; then
-  printf '{"registry-mirrors":["%s"]}\n' "$TROVE_ENGINE_MIRROR" >/etc/docker/daemon.json
+if [ -n "${QUADER_ENGINE_MIRROR:-}" ]; then
+  printf '{"registry-mirrors":["%s"]}\n' "$QUADER_ENGINE_MIRROR" >/etc/docker/daemon.json
 else
   printf '{}\n' >/etc/docker/daemon.json
 fi

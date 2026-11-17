@@ -4,7 +4,7 @@
 // rule, ValidateLocal. An ID of a package cached by a remote repository must satisfy NuGet's
 // general rule with .NET's definition of a word character, ValidateUpstream, so legacy IDs
 // outside ASCII stay restorable. IDs are case-insensitive; the canonical package name is
-// Lower, which lowercases ASCII letters only: trove never lowercases a non-ASCII ID itself, so
+// Lower, which lowercases ASCII letters only: quader never lowercases a non-ASCII ID itself, so
 // no ID can map to different URLs on client and server (Q-NUGET-3).
 //
 // The package is a leaf: it imports the standard library and internal/errs.
@@ -15,7 +15,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // CodeInvalid is the error code of every ID this package refuses.

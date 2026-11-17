@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/claims"
 )
 
 func TestR_CI_010_TheGlobTable(t *testing.T) {

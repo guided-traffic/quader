@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 // OutOfRange is the answer of a bound of R-DEB-009 crossed (64 suites, 32 components, 32 coordinates): 422 validation_failed with the

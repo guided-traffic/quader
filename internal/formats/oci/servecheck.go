@@ -3,8 +3,8 @@ package oci
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // ServeCheck runs before the core serves a stored item of a local repository on any route, /files/ and the cache view included

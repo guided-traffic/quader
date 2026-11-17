@@ -19,14 +19,14 @@ describe('Profile avatar (R-UI-051)', () => {
     const screen = await renderScreen(Profile, { providers: [{ provide: IMAGE_SIZER, useValue: sizer }] });
     const api = screen.get(IdentityApi) as FakeIdentityApi;
     const store = screen.get(AvatarStore);
-    const section = screen.root.querySelector('trove-profile-avatar') as HTMLElement;
+    const section = screen.root.querySelector('quader-profile-avatar') as HTMLElement;
     const choose = async (file: File): Promise<void> => {
       const input = section.querySelector('input[type="file"]') as HTMLInputElement;
       Object.defineProperty(input, 'files', { configurable: true, value: { item: () => file, length: 1 } });
       input.dispatchEvent(new Event('change'));
       await sleep(screen.fixture, 30);
     };
-    const preview = () => section.querySelector('trove-avatar img') as HTMLImageElement;
+    const preview = () => section.querySelector('quader-avatar img') as HTMLImageElement;
     const sent = () => api.calls.filter((c) => c.startsWith('setAvatar'));
     return { ...screen, api, store, section, choose, preview, sent };
   }
@@ -118,7 +118,7 @@ describe('Profile avatar (R-UI-051)', () => {
     await choose(png());
     buttonByText(section, 'Remove avatar').click();
     await settle(fixture);
-    const confirm = overlay().querySelector('trove-confirm-dialog') as HTMLElement;
+    const confirm = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
     expect(confirm.textContent).toContain('Remove your avatar?');
     buttonByText(confirm, 'Remove avatar').click();
     await sleep(fixture, 300);

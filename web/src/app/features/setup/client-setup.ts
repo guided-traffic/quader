@@ -54,7 +54,7 @@ export function fillToken(content: string, token: string | null): string {
  * for its prefix, length and CRC-32 locally and is sent nowhere.
  */
 @Component({
-  selector: 'trove-client-setup',
+  selector: 'quader-client-setup',
   imports: [TabGroup, TabPage, NgTemplateOutlet, RouterLink, CopyButton, AddressField, ErrorNotice, PageHeader, Disclosure, VisibilityIcon],
   templateUrl: './client-setup.html',
   styleUrl: './client-setup.scss',

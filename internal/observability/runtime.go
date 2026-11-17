@@ -14,7 +14,7 @@ import (
 // registry (R-OPS-003, Q-OPS-175): the requests its client listener finished
 // since the previous heartbeat, and its CPU, memory and goroutines. Replicas
 // never ask each other, and nothing here reads Prometheus: the window is an
-// accumulator of its own, filled by RequestLog next to the trove_http_*
+// accumulator of its own, filled by RequestLog next to the quader_http_*
 // families and emptied by every sample.
 
 // The latency buckets of a window: upper bounds of 0.5 ms × 2^(i/4), a quarter
@@ -72,7 +72,7 @@ func (w *RequestWindow) leave() {
 }
 
 // observe counts one finished request: its status and its duration, measured
-// as RequestLog measures them for trove_http_request_duration_seconds.
+// as RequestLog measures them for quader_http_request_duration_seconds.
 func (w *RequestWindow) observe(status int, d time.Duration) {
 	if w == nil {
 		return

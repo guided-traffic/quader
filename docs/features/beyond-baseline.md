@@ -4,7 +4,7 @@ The other pages of this catalog describe the baseline feature set of a full-feat
 manager. This page goes past that baseline: package formats and registry capabilities that the
 wider ecosystem defines but the baseline does not cover, or covers only partly. Every entry states what the format or
 capability is, the specification or protocol it follows (linked to the standard, PEP, RFC or spec
-repository), which clients use it, why it matters for trove, a rough implementation size, and a
+repository), which clients use it, why it matters for Quader, a rough implementation size, and a
 priority under the rubric in [README.md](README.md). Protocol facts come from the cited sources as
 read on 2026-10-28. Settings listed here are proposals derived from those sources; a default is
 given only where a source states one, otherwise it is *unspecified*. Sizes mean: **small**, an
@@ -14,7 +14,7 @@ logs or policy engine.
 
 ## Candidates already covered by the baseline
 
-Evaluated and found covered, fully or for the part trove needs first. Only the gap listed in the
+Evaluated and found covered, fully or for the part Quader needs first. Only the gap listed in the
 last column is catalogued on this page.
 
 | Candidate | Where the baseline covers it | Remaining gap on this page |
@@ -55,7 +55,7 @@ as the reference for the database entry format.
 **Clients.** pacman (install, sync), makepkg (builds packages), repo-add and repo-remove (database
 maintenance).
 
-**Why it matters for trove.** Arch-based build images and workstations benefit from a caching
+**Why it matters for Quader.** Arch-based build images and workstations benefit from a caching
 proxy of the public mirrors, and teams with internal packages need a hosted repository with access
 control instead of a plain web directory.
 
@@ -132,7 +132,7 @@ payloads from arbitrary URLs. Three environment variables redirect these to a mi
 
 **Clients.** `brew` on macOS and Linux.
 
-**Why it matters for trove.** Developer machines and CI runners install from Homebrew daily; a
+**Why it matters for Quader.** Developer machines and CI runners install from Homebrew daily; a
 mirror speeds installs, works in restricted networks, and records what was installed. The bottle
 part reuses OCI remote repositories.
 
@@ -165,7 +165,7 @@ Behavior:
   bottle's build data (architecture, OS, OS version; glibc version on Linux). brew treats bottle
   blobs addressed by `sha256` digest as immutable.
 - Taps can point their formulas at their own bottle root with `root_url` in the `bottle do` block,
-  so a private tap can publish bottles to a trove OCI repository.
+  so a private tap can publish bottles to a Quader OCI repository.
 
 | Setting | Meaning | Default |
 |---|---|---|
@@ -208,7 +208,7 @@ client command [winget source](https://learn.microsoft.com/en-us/windows/package
 `--header <value>` (sent as the `Windows-Package-Manager` header on every REST call),
 `--trust-level`, `--explicit`. Adding a source requires administrator rights on the machine.
 
-**Why it matters for trove.** Windows fleets want an internal catalog of approved installers;
+**Why it matters for Quader.** Windows fleets want an internal catalog of approved installers;
 winget is the built-in client.
 
 **Size.** medium — a read API over stored manifests, a search engine over the match fields, and
@@ -239,7 +239,7 @@ Behavior:
 | Source identifier | Value returned in server information | unspecified |
 | Supported API versions | Versions announced to clients | unspecified |
 | Source agreements | Agreement texts clients must accept | unspecified |
-| Installer hosting | Rewrite installer URLs to trove-hosted copies | unspecified |
+| Installer hosting | Rewrite installer URLs to Quader-hosted copies | unspecified |
 
 | Operation | Inputs | Outputs | Privilege |
 |---|---|---|---|
@@ -250,7 +250,7 @@ Behavior:
 
 UI: repository browser shows manifests and installers per package identifier and version.
 
-Limits and edge cases: trove's tokens (INV-8 in [../spec/README.md](../spec/README.md)) cannot be
+Limits and edge cases: Quader's tokens (INV-8 in [../spec/README.md](../spec/README.md)) cannot be
 presented through the defined authentication types; a private source is therefore either anonymous
 on a protected network or bound to Microsoft Entra ID. Installer SHA-256 values in manifests must
 match the hosted copies exactly. The default community source uses a different, pre-indexed source
@@ -273,8 +273,8 @@ and [flatpak-json-oci.c](https://github.com/flatpak/flatpak/blob/main/common/fla
 
 **Clients.** `flatpak remote-add <name> oci+https://<host>/<path>`, then `flatpak install`.
 
-**Why it matters for trove.** Linux desktop and kiosk fleets distribute internal applications as
-Flatpaks; the OCI route reuses trove's container storage, permissions and replication.
+**Why it matters for Quader.** Linux desktop and kiosk fleets distribute internal applications as
+Flatpaks; the OCI route reuses Quader's container storage, permissions and replication.
 
 **Size.** medium — an index endpoint computed from labels of stored image configs, on top of the
 OCI format.
@@ -327,7 +327,7 @@ served by a static web server. Flathub, the central Flatpak repository, uses it.
 
 **Clients.** flatpak (`flatpak remote-add` with a `.flatpakrepo` file or URL), ostree.
 
-**Why it matters for trove.** Proxying Flathub gives caching and an install record; hosting
+**Why it matters for Quader.** Proxying Flathub gives caching and an install record; hosting
 internal applications in the native format avoids the OCI route's client configuration.
 
 **Size.** large — hosting requires creating OSTree commits, dirtree and dirmeta objects, a signed
@@ -348,7 +348,7 @@ Behavior:
   `Filter` and collection keys (`DeployCollectionID`, `DeploySideloadCollectionID`,
   `CollectionID`) ([flatpakrepo(5)](https://docs.flatpak.org/en/latest/flatpak-command-reference.html)).
 - Remote proxy: objects and deltas are immutable; `summary`, its signature and refs are mutable
-  metadata. A pass-through proxy keeps upstream signatures valid; any merge requires trove's own
+  metadata. A pass-through proxy keeps upstream signatures valid; any merge requires Quader's own
   signing key.
 
 | Setting | Meaning | Default |
@@ -381,7 +381,7 @@ registry list are content-addressed and cacheable forever.
 **Clients.** Julia's `Pkg`, pointed at a server by `JULIA_PKG_SERVER` (default
 `pkg.julialang.org`; an empty value disables servers and falls back to Git clones).
 
-**Why it matters for trove.** Scientific and data teams using Julia need caching and offline
+**Why it matters for Quader.** Scientific and data teams using Julia need caching and offline
 operation; the protocol's immutability makes it a natural fit for content-addressed storage.
 
 **Size.** medium for proxying (resources are verified by Git tree hash, which needs tree hashing of
@@ -423,7 +423,7 @@ Behavior:
 
 UI: repository browser by registry, package UUID and artifact hash.
 
-Limits and edge cases: the token-acquisition flow is server-defined; trove would issue an
+Limits and edge cases: the token-acquisition flow is server-defined; Quader would issue an
 `auth.toml` from its token UI (TOK pages in [access-tokens.md](access-tokens.md)). Hosted private
 packages need a private registry tree whose updates change the `/registries` answer.
 
@@ -445,7 +445,7 @@ layout), [hackage-repo-tool](https://github.com/haskell/hackage-security/tree/ma
 `secure: True`, `root-keys:` and `key-threshold:`; hackage.haskell.org is always used in secure
 mode with built-in root keys.
 
-**Why it matters for trove.** Haskell teams need a mirror and a home for internal packages; the
+**Why it matters for Quader.** Haskell teams need a mirror and a home for internal packages; the
 secure mode is the most complete TUF deployment among package ecosystems.
 
 **Size.** medium for a pass-through remote; large for local or virtual repositories, which need
@@ -463,9 +463,9 @@ Behavior:
   on every update. Range support is therefore not mandatory, but without it every index update
   costs a full download.
 - Remote: all files are passed through unchanged. Because they are signed with the upstream's keys,
-  clients keep their upstream root keys and treat trove as an untrusted mirror.
-- Local and virtual: the index changes, so trove must hold its own root, snapshot, timestamp and
-  targets keys and clients must be configured with trove's root key IDs and threshold. In the
+  clients keep their upstream root keys and treat Quader as an untrusted mirror.
+- Local and virtual: the index changes, so Quader must hold its own root, snapshot, timestamp and
+  targets keys and clients must be configured with Quader's root key IDs and threshold. In the
   file-based tool, timestamp and snapshot are valid for three days and must be re-signed regularly.
 - `.cabal` file revisions: the index may contain several revisions of a package description.
 
@@ -500,8 +500,8 @@ cached in a content-addressed directory.
 
 **Clients.** `opam repository add <name> <url>`, `opam admin index`, `opam admin cache`.
 
-**Why it matters for trove.** OCaml shops need a mirror and private packages; the archive cache
-layout maps directly onto trove's content-addressed blob store.
+**Why it matters for Quader.** OCaml shops need a mirror and private packages; the archive cache
+layout maps directly onto Quader's content-addressed blob store.
 
 **Size.** medium — generation of the repository archive from uploaded definitions, plus a
 content-addressed archive cache.
@@ -526,7 +526,7 @@ Behavior:
 |---|---|---|
 | Upstream repository | Remote upstream tree | unspecified |
 | Upstream archive cache | Remote upstream for archives by hash | unspecified |
-| Announce cache in `repo` | Write `archive-mirrors` pointing at trove | unspecified |
+| Announce cache in `repo` | Write `archive-mirrors` pointing at Quader | unspecified |
 
 | Operation | Inputs | Outputs | Privilege |
 |---|---|---|---|
@@ -556,7 +556,7 @@ provides it. A private repository with this layout is commonly called a DarkPAN.
 to use the mirror's index instead of the metadata database service; `--from`/`-M` to use one URL as
 the only source), cpm (`--resolver 02packages,<url>`).
 
-**Why it matters for trove.** Long-lived Perl estates need a reproducible mirror and a place for
+**Why it matters for Quader.** Long-lived Perl estates need a reproducible mirror and a place for
 internal distributions.
 
 **Size.** medium — the index needs package names and versions extracted from uploaded
@@ -610,7 +610,7 @@ JSR packages as npm packages under the `@jsr` scope.
 derives the management API URL by replacing the path of that URL with `/api/`); npm, pnpm and Yarn
 through the `@jsr` scope.
 
-**Why it matters for trove.** JSR packages appear in npm dependency trees (MVP format); the
+**Why it matters for Quader.** JSR packages appear in npm dependency trees (MVP format); the
 compatibility layer is reachable with existing npm support, the native API is not.
 
 **Size.** small for the npm compatibility layer (an npm remote with a scoped client line); medium
@@ -674,7 +674,7 @@ publishing CLI [ovsx](https://github.com/eclipse/openvsx/tree/master/cli).
 **Clients.** Editors configured with a gallery service URL; `ovsx publish -r <registry URL> -p
 <token>` (default registry `https://open-vsx.org`).
 
-**Why it matters for trove.** Organizations build internal extensions and want to vet public
+**Why it matters for Quader.** Organizations build internal extensions and want to vet public
 ones in one place; editor extensions run with the user's rights.
 
 **Size.** medium — `.vsix` parsing, the native API, and the gallery query protocol.
@@ -720,7 +720,7 @@ Behavior:
 
 UI: repository browser by namespace and extension, with target platforms and pre-release marks.
 
-Limits and edge cases: access logs must drop the `token` query parameter; trove should answer
+Limits and edge cases: access logs must drop the `token` query parameter; Quader should answer
 `/api/version` with a version of 1.3.0 or later so the CLI never needs it.
 
 Interactions: PKG-AI-018 and PKG-AI-021 in [formats/ai-and-ide.md](formats/ai-and-ide.md);
@@ -738,8 +738,8 @@ wasm-pkg-tools [registry metadata](https://github.com/bytecodealliance/wasm-pkg-
 **Clients.** `wkg` (`wkg get <namespace>:<name>@<version>`, `wkg publish`, `wkg oci pull`), Wasm
 runtimes that pull from OCI registries.
 
-**Why it matters for trove.** Component packages (WIT interfaces and libraries) are distributed
-only through OCI registries; trove can serve them once it recognizes the layout and answers the
+**Why it matters for Quader.** Component packages (WIT interfaces and libraries) are distributed
+only through OCI registries; Quader can serve them once it recognizes the layout and answers the
 discovery document.
 
 **Size.** small — OCI storage exists; the work is config parsing, a validation rule and one
@@ -793,7 +793,7 @@ configured in `/etc/portage/binrepos.conf` (`sync-uri` pointing at the directory
 cache directory, default `/var/cache/binhost/<name>` from portage-3.0.77)). `PORTAGE_BINHOST` is
 deprecated.
 
-**Why it matters for trove.** Gentoo fleets build once and install everywhere; a binhost with
+**Why it matters for Quader.** Gentoo fleets build once and install everywhere; a binhost with
 access control and caching replaces ad-hoc web directories.
 
 **Size.** medium — the `Packages` index is generated from metadata inside uploaded packages.
@@ -856,7 +856,7 @@ catalogue created by `pkg repo`.
 
 **Clients.** `pkg install`, `pkg update`, configured by UCL files in `/usr/local/etc/pkg/repos/`.
 
-**Why it matters for trove.** FreeBSD appliances and build farms need a mirror and internal
+**Why it matters for Quader.** FreeBSD appliances and build farms need a mirror and internal
 packages under the same access control as other formats.
 
 **Size.** medium — catalogue generation from package manifests and catalogue signing.
@@ -876,7 +876,7 @@ Behavior:
   `FINGERPRINTS`, `PRIORITY` (default 0, higher preferred), `IP_VERSION`, `SSH_ARGS`, and `ENV`
   (environment passed to the fetch library, which reads `HTTP_AUTH` as
   `basic:<realm>:<user>:<password>` for Basic credentials). URLs may contain `${ABI}`.
-- Remote: upstream mirrors resolved through SRV are fetched by trove; clients see one HTTPS URL.
+- Remote: upstream mirrors resolved through SRV are fetched by Quader; clients see one HTTPS URL.
 
 | Setting | Meaning | Default |
 |---|---|---|
@@ -892,7 +892,7 @@ Behavior:
 
 UI: repository browser by ABI and package origin.
 
-Limits and edge cases: credentials travel through the fetch library's environment; trove tokens
+Limits and edge cases: credentials travel through the fetch library's environment; Quader tokens
 work as the Basic password.
 
 Interactions: IAM-046 in [identity-and-access.md](identity-and-access.md); RMT-018 in
@@ -915,7 +915,7 @@ format and container signatures stored as OCI 1.1 referring artifacts are on by 
 ([cosign changelog](https://github.com/sigstore/cosign/blob/main/CHANGELOG.md), v3.0.0 and v2.6.0
 sections); the older tag-based format remains available behind a flag.
 
-**Why it matters for trove.** Verifying a signature of an image pulled through a proxy fails
+**Why it matters for Quader.** Verifying a signature of an image pulled through a proxy fails
 unless the proxy also answers the referrers query; this blocks signature checks on every proxied
 image.
 
@@ -969,7 +969,7 @@ promotion, deletion, retention and garbage collection. The baseline leaves this 
 
 **Clients.** Any OCI 1.1 tool that attaches artifacts.
 
-**Why it matters for trove.** Referrers are normally untagged manifests; a cleanup that deletes
+**Why it matters for Quader.** Referrers are normally untagged manifests; a cleanup that deletes
 untagged manifests silently removes every signature and SBOM, and a promotion that copies only the
 image leaves verification failing in the target repository.
 
@@ -1018,7 +1018,7 @@ Empty Descriptor*; IANA media type registrations; the cosign specifications.
 
 **Clients.** All OCI clients; the classification is server-side.
 
-**Why it matters for trove.** Without it, every artifact looks like an image, scanners try to
+**Why it matters for Quader.** Without it, every artifact looks like an image, scanners try to
 scan signatures, and users cannot find SBOMs.
 
 **Size.** small — derived from fields already stored.
@@ -1065,7 +1065,7 @@ development branch after release 1.1.1 and not part of a release as of 2026-10-2
 **Clients.** Clients configured to use a registry mirror; which clients send `ns` was not verified
 for this entry.
 
-**Why it matters for trove.** One virtual container repository can then act as the mirror for
+**Why it matters for Quader.** One virtual container repository can then act as the mirror for
 several public registries, routing each pull to the remote whose upstream matches the original
 host.
 
@@ -1098,7 +1098,7 @@ Interactions: PKG-OCI-003 and PKG-OCI-004 in [formats/oci.md](formats/oci.md); R
 ### BEYOND-019 · Signature verification gate for Sigstore-signed content
 Priority: **P2**
 
-**What it is.** Verifying Sigstore signatures and bundles when content enters trove (remote
+**What it is.** Verifying Sigstore signatures and bundles when content enters Quader (remote
 cache fill, deploy) or leaves it (download), against a policy per repository: accept, record, or
 refuse.
 
@@ -1109,9 +1109,9 @@ refuse.
 distribution.
 
 **Clients.** Producers: cosign (OCI), npm (`--provenance`), PyPI publishers (PEP 740).
-Verification happens in trove.
+Verification happens in Quader.
 
-**Why it matters for trove.** A pull-through proxy is the one place where all external content
+**Why it matters for Quader.** A pull-through proxy is the one place where all external content
 passes; checking signatures there stops tampered or unsigned content before it reaches builds.
 
 **Size.** large — verification libraries exist (for example sigstore-go), but the policy model,
@@ -1170,7 +1170,7 @@ the latest minor version; the v1.1 provenance page is marked retired); [in-toto 
 
 **Clients.** Builders that emit provenance (CI systems, cosign attestations, npm, PyPI).
 
-**Why it matters for trove.** A signature only proves who signed; provenance states how and from
+**Why it matters for Quader.** A signature only proves who signed; provenance states how and from
 what the artifact was built, which is what a promotion gate needs.
 
 **Size.** medium — parsing and policy evaluation on top of BEYOND-019.
@@ -1222,7 +1222,7 @@ attestation listing as served by the public registry.
 
 **Clients.** npm (`npm publish --provenance` or `--provenance-file <path>`), `npm audit signatures`.
 
-**Why it matters for trove.** npm generates provenance in GitLab CI (the owner's CI). A registry
+**Why it matters for Quader.** npm generates provenance in GitLab CI (the owner's CI). A registry
 that accepts only one publish attachment rejects such publishes; the MVP publish handler must at
 least accept the second attachment, and storing it is the next step.
 
@@ -1257,7 +1257,7 @@ Behavior:
 | Accept provenance attachments | Store the bundle instead of ignoring it | unspecified |
 | Verify on publish | off, warn, enforce | unspecified |
 | Visibility answer | What `/-/package/<name>/visibility` reports | unspecified |
-| Issue publish attestations | Sign a registry publish attestation with trove's key | unspecified |
+| Issue publish attestations | Sign a registry publish attestation with Quader's key | unspecified |
 
 | Operation | Inputs | Outputs | Privilege |
 |---|---|---|---|
@@ -1288,7 +1288,7 @@ PyPI [Integrity API](https://docs.pypi.org/api/integrity/).
 **Clients.** Twine (`twine upload --attestations`), publishing actions that produce attestations,
 installers and auditing tools that read `provenance`.
 
-**Why it matters for trove.** PyPI is P1; internal Python packages published from CI can carry
+**Why it matters for Quader.** PyPI is P1; internal Python packages published from CI can carry
 the same verifiable provenance as public ones.
 
 **Size.** medium — upload-time verification, storage of mutable provenance objects, and two index
@@ -1331,7 +1331,7 @@ UI: file view in the PyPI browser shows attestations and the publisher.
 
 Limits and edge cases: the publisher object can record the claims of the CI token used for upload
 (GitLab claims from the exchange); remote repositories must rewrite upstream provenance URLs to
-trove and cache the mutable objects with a metadata cache period.
+Quader and cache the mutable objects with a metadata cache period.
 
 Interactions: PKG-PYPI-006, PKG-PYPI-012 and PKG-PYPI-028 in [formats/pypi.md](formats/pypi.md);
 CIOIDC-018 in [oidc-ci-integration.md](oidc-ci-integration.md); BEYOND-019, BEYOND-020.
@@ -1348,7 +1348,7 @@ and the [simple repository API](https://packaging.python.org/en/latest/specifica
 
 **Clients.** pip, uv and other installers that read index metadata.
 
-**Why it matters for trove.** It gives repository states that trove already needs (read-only
+**Why it matters for Quader.** It gives repository states that Quader already needs (read-only
 packages, blocked packages) a standard representation that Python clients understand.
 
 **Size.** small — a per-project field and two index extensions.
@@ -1402,7 +1402,7 @@ contain component X".
 
 **Clients.** SBOM generators in CI; OCI tools attaching SBOMs as referrers.
 
-**Why it matters for trove.** When a vulnerability is announced, the first question is where an
+**Why it matters for Quader.** When a vulnerability is announced, the first question is where an
 affected component is used; supplied SBOMs answer it without a scanning engine.
 
 **Size.** medium — a document store, a component index and the attach path for non-OCI formats.
@@ -1447,7 +1447,7 @@ tampering, rollback and freeze attacks even when downloading through mirrors.
 **Clients.** cabal-install (secure repositories), Sigstore clients (trust root), npm (registry
 keys through the Sigstore TUF repository).
 
-**Why it matters for trove.** Local and virtual Hackage repositories need it; air-gapped
+**Why it matters for Quader.** Local and virtual Hackage repositories need it; air-gapped
 signature verification (BEYOND-019) needs a mirrored TUF trust root.
 
 **Size.** large — key custody (an offline root key, online timestamp and snapshot keys), periodic
@@ -1483,7 +1483,7 @@ Interactions: INV-12 in [../spec/README.md](../spec/README.md) (singleton schedu
 ### BEYOND-026 · Checksum database for hosted Go modules
 Priority: **Later**
 
-**What it is.** A Go checksum database (a transparency log of go.sum lines) operated by trove, so
+**What it is.** A Go checksum database (a transparency log of go.sum lines) operated by Quader, so
 that internal modules get the tamper evidence that public modules get from the public database.
 
 **Specification.** [Go modules reference, checksum database](https://go.dev/ref/mod#checksum-database);
@@ -1492,8 +1492,8 @@ that internal modules get the tamper evidence that public modules get from the p
 
 **Clients.** The `go` command, through `GOSUMDB="<name>+<public key> <url>"`.
 
-**Why it matters for trove.** Today internal modules are excluded from verification with
-`GOPRIVATE` or `GONOSUMDB`; a private database closes that gap, and the Go libraries fit trove's
+**Why it matters for Quader.** Today internal modules are excluded from verification with
+`GOPRIVATE` or `GONOSUMDB`; a private database closes that gap, and the Go libraries fit Quader's
 Go backend.
 
 **Size.** large — an append-only log with signed tree heads, tiles and key custody.
@@ -1506,8 +1506,8 @@ Behavior:
 - The `go` command checks inclusion and consistency proofs and stores signed tree heads and tiles in
   its module cache. A database unknown to the `go` command must be configured with its public key.
 - If a version is not yet logged, the database fetches it from its origin before replying.
-- Consequence: `GOSUMDB` names one database; a client pointed at trove's database is verified
-  only against it, so the private database must also log public modules (fetched through trove's
+- Consequence: `GOSUMDB` names one database; a client pointed at Quader's database is verified
+  only against it, so the private database must also log public modules (fetched through Quader's
   Go remote).
 - Records are never removed, also when a module version is deleted.
 
@@ -1534,7 +1534,7 @@ Interactions: PKG-GO-014 in [formats/go.md](formats/go.md); IAM-046 in
 Priority: **P2**
 
 **What it is.** Verifying Notary Project signatures, the second widely used signature format for
-OCI artifacts next to Sigstore, when content enters or leaves trove, against an X.509 trust
+OCI artifacts next to Sigstore, when content enters or leaves Quader, against an X.509 trust
 store and a trust policy per repository. BEYOND-019 covers Sigstore only; the two formats share
 discovery through referrers but differ in trust model (X.509 certificate chains to configured
 roots instead of short-lived keyless certificates and a transparency log).
@@ -1547,7 +1547,7 @@ roots instead of short-lived keyless certificates and a transparency log).
 **Clients.** notation (`notation sign`, `notation verify`); Kubernetes admission webhooks and
 other verifiers that implement the specification.
 
-**Why it matters for trove.** Organizations with an existing PKI sign images with X.509
+**Why it matters for Quader.** Organizations with an existing PKI sign images with X.509
 certificates instead of Sigstore; without this entry the verification gate either ignores those
 signatures or refuses the images.
 
@@ -1588,7 +1588,7 @@ Behavior:
 | Trust stores | Named sets of root certificates per kind | unspecified |
 | Trust policy | Scopes, level, trust stores, trusted identities | unspecified |
 | Timestamp verification | Always, or only after a certificate in the chain has expired | always (per the specification) |
-| Revocation source access | Whether trove may reach OCSP responders and CRL endpoints (air-gapped sites cannot) | unspecified |
+| Revocation source access | Whether Quader may reach OCSP responders and CRL endpoints (air-gapped sites cannot) | unspecified |
 
 | Operation | Inputs | Outputs | Privilege |
 |---|---|---|---|
@@ -1601,7 +1601,7 @@ Project signatures with signer subject and verification status.
 Limits and edge cases: the `skip` level cannot be applied to the global scope `*`. Revocation
 checks need outbound access at verification time; a revocation status that cannot be determined
 counts as a failure, which is enforced only at the `strict` level. The specification leaves trust
-store distribution out of scope, so trove must define how certificates reach every replica.
+store distribution out of scope, so Quader must define how certificates reach every replica.
 
 Interactions: BEYOND-015, BEYOND-016, BEYOND-017, BEYOND-019; IAM-049 in
 [identity-and-access.md](identity-and-access.md).
@@ -1628,7 +1628,7 @@ a default of 1440), Yarn `npmMinimalAgeGate`, uv `exclude-newer`, pip `--uploade
 effective only where the index supplies `upload-time`;
 [pip changelog](https://pip.pypa.io/en/stable/news/)).
 
-**Why it matters for trove.** Pull-through proxying is an owner constraint; enforcing a cooldown
+**Why it matters for Quader.** Pull-through proxying is an owner constraint; enforcing a cooldown
 once at the proxy protects every client, including those that cannot be configured.
 
 **Size.** medium — a per-format metadata filter, tag rewriting and time-aware caching.
@@ -1651,7 +1651,7 @@ Behavior:
 - Exceptions by package pattern let internal or urgently needed packages through.
 - Versions become eligible as time passes; cached metadata must expire no later than the next
   version's eligibility time.
-- Missing time: treat as old, treat as young, or use the time trove first saw the version.
+- Missing time: treat as old, treat as young, or use the time Quader first saw the version.
 
 | Setting | Meaning | Default |
 |---|---|---|
@@ -1690,7 +1690,7 @@ rejected.
 
 **Clients.** Server-side; effective for every client of a virtual repository.
 
-**Why it matters for trove.** Priority resolution still falls back to a remote when the internal
+**Why it matters for Quader.** Priority resolution still falls back to a remote when the internal
 package is missing (not yet published, deleted, or misspelled), which is exactly when an attacker's
 public package with the same name wins. A claim closes that gap.
 
@@ -1736,7 +1736,7 @@ upload times), Cargo and Go lock files, CycloneDX or SPDX documents with package
 
 **Clients.** Operators and CI jobs (for example before an offline window or a release build).
 
-**Why it matters for trove.** Upstream outages and rate limits hit builds at the worst time;
+**Why it matters for Quader.** Upstream outages and rate limits hit builds at the worst time;
 warming the cache from the lockfiles that builds use removes the dependency on the upstream.
 
 **Size.** medium — parsers per input format and a job runner with reporting.
@@ -1784,7 +1784,7 @@ signalling.
 
 **Clients.** All; package managers retry on 429 with varying respect for `Retry-After`.
 
-**Why it matters for trove.** One misbehaving CI pipeline or team must not exhaust storage,
+**Why it matters for Quader.** One misbehaving CI pipeline or team must not exhaust storage,
 bandwidth or the upstream's rate limit for everyone.
 
 **Size.** medium — counters shared across replicas through PostgreSQL, accounting rules, and
@@ -1835,9 +1835,9 @@ restrictions. Token verification uses the generic OIDC type.
 [Bitbucket Pipelines OIDC](https://support.atlassian.com/bitbucket-cloud/docs/integrate-pipelines-with-resource-servers-using-oidc/),
 [Jenkins OpenID Connect Provider plugin](https://plugins.jenkins.io/oidc-provider/).
 
-**Clients.** CI jobs that exchange their ID token for a trove token.
+**Clients.** CI jobs that exchange their ID token for a Quader token.
 
-**Why it matters for trove.** The rubric lists further CI OIDC providers as P1; presets prevent
+**Why it matters for Quader.** The rubric lists further CI OIDC providers as P1; presets prevent
 the most common mistake, a mapping that matches too broadly.
 
 **Size.** small — data and validation on top of CIOIDC-002.
@@ -1883,7 +1883,7 @@ Interactions: CIOIDC-001, CIOIDC-002, CIOIDC-007 and CIOIDC-018 in
 Priority: **P2**
 
 **What it is.** Accepting projected Kubernetes service-account tokens directly in the token
-exchange, so in-cluster jobs obtain trove tokens without stored secrets and without a cloud IAM
+exchange, so in-cluster jobs obtain Quader tokens without stored secrets and without a cloud IAM
 detour.
 
 **Specification.** Kubernetes [service accounts](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/),
@@ -1891,7 +1891,7 @@ sections *ServiceAccount token volume projection* and *Service account issuer di
 
 **Clients.** Pods with a projected `serviceAccountToken` volume (`audience`, `expirationSeconds`).
 
-**Why it matters for trove.** trove runs on Kubernetes; build jobs in the same or other
+**Why it matters for Quader.** Quader runs on Kubernetes; build jobs in the same or other
 clusters are the main consumers.
 
 **Size.** small — a provider type over CIOIDC-002 with Kubernetes-specific defaults.
@@ -1902,9 +1902,9 @@ Behavior:
   accepted). Discovery is served at `<issuer>/.well-known/openid-configuration`, keys at
   `/openid/v1/jwks`.
 - By default the discovery role is bound only to the group of all service accounts, not to
-  anonymous users; trove can read the keys only if the cluster exposes them or the keys are
+  anonymous users; Quader can read the keys only if the cluster exposes them or the keys are
   configured statically.
-- Without `--api-audiences`, the cluster's default audience is the issuer URL. trove must require
+- Without `--api-audiences`, the cluster's default audience is the issuer URL. Quader must require
   its own audience, otherwise it accepts tokens meant for the API server.
 - Subjects have the form `system:serviceaccount:<namespace>:<name>`.
 
@@ -1916,7 +1916,7 @@ Behavior:
 
 | Operation | Inputs | Outputs | Privilege |
 |---|---|---|---|
-| Token exchange | service-account token | trove token | per mapping |
+| Token exchange | service-account token | Quader token | per mapping |
 
 UI: administration, CI identity providers, Kubernetes type.
 
@@ -1929,14 +1929,14 @@ Interactions: CIOIDC-002, CIOIDC-018 and CIOIDC-029 in [oidc-ci-integration.md](
 Priority: **P2**
 
 **What it is.** Accepting SPIFFE JWT-SVIDs as identities in the token exchange: workloads with a
-SPIFFE ID obtain trove tokens, with signing keys taken from the trust domain's SPIFFE bundle.
+SPIFFE ID obtain Quader tokens, with signing keys taken from the trust domain's SPIFFE bundle.
 
 **Specification.** [JWT-SVID](https://github.com/spiffe/spiffe/blob/main/standards/JWT-SVID.md),
 [SPIFFE Trust Domain and Bundle](https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Trust_Domain_and_Bundle.md).
 
 **Clients.** Workloads in SPIFFE-enabled environments.
 
-**Why it matters for trove.** Platform teams with a SPIFFE deployment want one workload identity
+**Why it matters for Quader.** Platform teams with a SPIFFE deployment want one workload identity
 for every service, including package access.
 
 **Size.** small — a provider type that reads keys from a bundle and matches SPIFFE IDs.
@@ -1944,7 +1944,7 @@ for every service, including package access.
 Behavior:
 
 - `sub` is the SPIFFE ID (`spiffe://<trust domain>/<path>`); `aud` must be present and contain
-  trove's audience; `exp` must be present. The specification does not require `iss`, so the
+  Quader's audience; `exp` must be present. The specification does not require `iss`, so the
   generic OIDC type (which checks the issuer) does not fit.
 - `alg` is limited to the RSA, ECDSA and RSA-PSS families of RFC 7518; JWS compact serialization
   only; `typ`, if set, is `JWT` or `JOSE`.
@@ -1960,11 +1960,11 @@ Behavior:
 
 | Operation | Inputs | Outputs | Privilege |
 |---|---|---|---|
-| Token exchange | JWT-SVID | trove token | per mapping |
+| Token exchange | JWT-SVID | Quader token | per mapping |
 
 UI: administration, CI identity providers, SPIFFE type; mappings match SPIFFE ID path patterns.
 
-Limits and edge cases: JWT-SVIDs are bearer tokens with replay risk across audiences; trove must
+Limits and edge cases: JWT-SVIDs are bearer tokens with replay risk across audiences; Quader must
 accept only tokens whose audience list contains its own value.
 
 Interactions: CIOIDC-007 and CIOIDC-018 in [oidc-ci-integration.md](oidc-ci-integration.md);
@@ -1974,7 +1974,7 @@ BEYOND-032.
 
 - Signed metadata passes byte for byte: Homebrew's JWS API files, Hackage TUF files, OSTree
   summaries, pacman database signatures and FreeBSD catalogues break if re-serialized or
-  URL-rewritten. Any merge in a virtual repository needs trove's own key and client
+  URL-rewritten. Any merge in a virtual repository needs Quader's own key and client
   reconfiguration.
 - Referrers are untagged manifests. A cleanup rule for untagged manifests deletes every signature
   and SBOM unless referrers count as part of their subject (BEYOND-016).

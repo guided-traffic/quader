@@ -6,14 +6,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/evaluate"
-	_ "github.com/guided-traffic/trove/internal/vuln/triage" // the replay handler of the download blocks
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/evaluate"
+	_ "github.com/guided-traffic/quader/internal/vuln/triage" // the replay handler of the download blocks
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The replay of a block entry against a database whose evaluation answers the gates (R-VULN-026, Q-VULN-114, Q-VULN-131): the
@@ -84,7 +84,7 @@ func TestR_VULN_013_AReplayedBlockOfAnEvictedVersionKeepsTheShapeTheMissReads(t 
 	db := e.replayDB()
 	miss := func() vuln.Block {
 		t.Helper()
-		b, err := svc.EvaluateMiss(ctx, vuln.Miss{Repo: qr("npm-remote"), Format: "npm", Name: "trove-test-vuln", Version: "1.0.0"})
+		b, err := svc.EvaluateMiss(ctx, vuln.Miss{Repo: qr("npm-remote"), Format: "npm", Name: "quader-test-vuln", Version: "1.0.0"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -92,13 +92,13 @@ func TestR_VULN_013_AReplayedBlockOfAnEvictedVersionKeepsTheShapeTheMissReads(t 
 	}
 	e.st.Exec(`INSERT INTO vuln_finding (id, repo_id, ecosystem, package_name, version, advisory_id, kind, severity, severity_rank, fix_available,
 			status, status_before_resolution, resolved_reason, resolved_at, advisory_modified)
-		SELECT $1::uuid, r.id, 'npm', 'trove-test-vuln', '1.0.0', 'GHSA-aaaa-aaaa-0001', 'vulnerability', 'high', 4, false,
+		SELECT $1::uuid, r.id, 'npm', 'quader-test-vuln', '1.0.0', 'GHSA-aaaa-aaaa-0001', 'vulnerability', 'high', 4, false,
 		       'resolved', 'blocked', 'version_removed', now(), now() FROM repositories r WHERE r.key = 'npm-remote'`, restoredFinding)
 	if b := miss(); !b.Refused() || b.FindingID != restoredFinding {
 		t.Fatalf("before the replay the miss is %+v, want refused by the evicted block", b)
 	}
 
-	res := e.replay(db, restoredEntry, e.blockEntryJSON(restoredFinding, "npm-remote", "trove-test-vuln", "1.0.0", "GHSA-aaaa-aaaa-0001", "vulnerability"))
+	res := e.replay(db, restoredEntry, e.blockEntryJSON(restoredFinding, "npm-remote", "quader-test-vuln", "1.0.0", "GHSA-aaaa-aaaa-0001", "vulnerability"))
 	if res.Outcome != journal.AlreadyInEffect {
 		t.Errorf("the replay of a block that is in its shape: %s", res.Line())
 	}

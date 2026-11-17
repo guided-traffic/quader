@@ -11,11 +11,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// The load transaction of `trove backup restore` (R-BAK-021 step 4, R-BAK-004). One transaction on the restore's session
+// The load transaction of `quader backup restore` (R-BAK-021 step 4, R-BAK-004). One transaction on the restore's session
 // connection: the user triggers off, one TRUNCATE, `COPY FROM STDIN` per table in foreign-key order with the CycleBreak
 // column filled afterwards, the sequences, the damaged blobs, the row counts against the manifest, the triggers on, the
 // marker with phase "loaded", COMMIT. The statements are assembled from names of the catalog and the manifest, every

@@ -4,14 +4,14 @@
 # (Q-ARCH-356), so CI runs it as its own step before make dev-up, and dev-up reads the archives from .dev/charts without a
 # token. A missing archive is still fetched by dev-up itself (unauthenticated, locally).
 #
-# One budget covers both fetches (TROVE_DOWNLOAD_BUDGET, 900 s by default): each fetch gets the time left of it, so the two
+# One budget covers both fetches (QUADER_DOWNLOAD_BUDGET, 900 s by default): each fetch gets the time left of it, so the two
 # together stay within the budget, and the named error comes before the step's timeout.
 set -euo pipefail
 
 # shellcheck source=deploy/dev/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-budget="${TROVE_DOWNLOAD_BUDGET:-900}"
+budget="${QUADER_DOWNLOAD_BUDGET:-900}"
 deadline=$(( SECONDS + budget ))
 
 # fetch NAME FUNCTION: runs the chart fetch with the time left of the shared budget.
@@ -21,7 +21,7 @@ fetch() {
     log "dev charts: the budget of $budget s is spent before the $1 archive"
     exit 1
   fi
-  export TROVE_DOWNLOAD_BUDGET="$left"
+  export QUADER_DOWNLOAD_BUDGET="$left"
   "$2" >/dev/null
 }
 

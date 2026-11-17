@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 const (
@@ -102,8 +102,8 @@ func (s *Service) Check(ctx context.Context, raw string, req Request) (Info, err
 
 // CheckSecretHash is [Service.Check] from step 2 on, for a credential that names a token by the SHA-256 of its secret
 // and that the caller authenticated otherwise: a registry token, whose MAC the authentication stage verified and which
-// carries the hash of the trove token it was issued for (R-OCI-005, ADR-163). It answers from the same cache under the
-// same freshness gate, with the same throttle and the same rejection events, so a revocation of the trove token stops
+// carries the hash of the quader token it was issued for (R-OCI-005, ADR-163). It answers from the same cache under the
+// same freshness gate, with the same throttle and the same rejection events, so a revocation of the quader token stops
 // the registry token within the bound of R-AUTH-023. A Bastion token or an unknown type is unknown without a lookup.
 func (s *Service) CheckSecretHash(ctx context.Context, hash [32]byte, typ Type, req Request) (Info, error) {
 	if Prefix(typ) == "" || typ == TypeBST {

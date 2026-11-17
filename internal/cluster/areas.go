@@ -6,7 +6,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // AreaClass is how an area leaves the replica (R-ARCH-018).

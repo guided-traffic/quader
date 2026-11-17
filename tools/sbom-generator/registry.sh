@@ -17,7 +17,7 @@
 # by digest, so whoever else on the bridge can reach the registry can replace nothing the builder runs. The registry speaks
 # plain HTTP. Nothing is published: `down` removes everything, and a failed `up` removes the registry itself.
 #
-# Environment: TROVE_SBOM_RUN names the run (the workflow sets the run id and attempt; default `local`), so concurrent
+# Environment: QUADER_SBOM_RUN names the run (the workflow sets the run id and attempt; default `local`), so concurrent
 # runs on one Docker host never share a container name. The builder is the current one or BUILDX_BUILDER. The pins come
 # from tools/versions.env.
 set -euo pipefail
@@ -28,8 +28,8 @@ set -a
 . "$here/../versions.env"
 set +a
 
-run="${TROVE_SBOM_RUN:-local}"
-reg="trove-sbom-registry-${run}"
+run="${QUADER_SBOM_RUN:-local}"
+reg="quader-sbom-registry-${run}"
 
 address() {
   local ip

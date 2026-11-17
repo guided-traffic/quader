@@ -102,12 +102,12 @@ func TestR_UI_001_ThirdPartyNotices(t *testing.T) {
 			t.Fatalf("New: %v", err)
 		}
 		if h.Placeholder() {
-			// Without a web build there is no notices file to find. CI's web job builds the UI and sets TROVE_UI_BUILT=1,
+			// Without a web build there is no notices file to find. CI's web job builds the UI and sets QUADER_UI_BUILT=1,
 			// where the absence is a failure.
-			if os.Getenv("TROVE_UI_BUILT") != "" {
-				t.Fatal("TROVE_UI_BUILT is set, but internal/webui holds no web build (run make web-embed)")
+			if os.Getenv("QUADER_UI_BUILT") != "" {
+				t.Fatal("QUADER_UI_BUILT is set, but internal/webui holds no web build (run make web-embed)")
 			}
-			t.Skip("no web build is embedded (make web-embed); the web job of the release workflow requires it with TROVE_UI_BUILT=1")
+			t.Skip("no web build is embedded (make web-embed); the web job of the release workflow requires it with QUADER_UI_BUILT=1")
 		}
 		for _, l := range []string{"en", "de"} {
 			path := "/ui/" + l + "/" + noticesFile
@@ -122,7 +122,7 @@ func TestR_UI_001_ThirdPartyNotices(t *testing.T) {
 // of the locale, and each logo is served from the copies of web/public, unhashed and revalidated like the notices.
 func assertFormatLogos(t *testing.T, h http.Handler, locale, notices string) {
 	t.Helper()
-	if !strings.Contains(notices, "trove is not affiliated with, sponsored or endorsed by any of them.") {
+	if !strings.Contains(notices, "Quader is not affiliated with, sponsored or endorsed by any of them.") {
 		t.Errorf("%s: the notices lack the format logos of %s", locale, formatLogoNotice)
 	}
 	for _, logo := range []string{"formats/deb/openlogo-nd.svg", "formats/nuget/nuget.svg", "formats/oci/oci-icon-color.svg"} {

@@ -6,10 +6,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/osv"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/osv"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // The alias groups of R-VULN-006. Records of one ecosystem that name each other in aliases, directly or through a chain, are one

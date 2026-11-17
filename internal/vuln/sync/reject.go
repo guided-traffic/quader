@@ -8,9 +8,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	vmetrics "github.com/guided-traffic/trove/internal/vuln/metrics"
-	"github.com/guided-traffic/trove/internal/vuln/osv"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	vmetrics "github.com/guided-traffic/quader/internal/vuln/metrics"
+	"github.com/guided-traffic/quader/internal/vuln/osv"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // The key that sets the size bound of one record; the log line and the problem of a run name it.

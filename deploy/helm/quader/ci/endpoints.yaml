@@ -1,0 +1,80 @@
+# Two further endpoints beside the default one: customers, served by the main packages
+# pods through its own Ingress class, hosts, wildcard host and certificates chosen by SNI; and
+# partners, a minimal one. Neither has a pool of its own (ci/endpoints-pool.yaml has).
+config:
+  server:
+    base_url: https://quader.example.com
+    additional_base_urls: ["https://quader.internal.example.com"]
+    trusted_proxies: ["10.244.0.0/16"]
+  database:
+    host: quader-db-rw.quader.svc
+  storage:
+    s3:
+      bucket: quader-blobs
+  valkey:
+    sentinel:
+      addresses:
+        - quader-valkey-sentinel-0.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-1.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-2.quader-valkey-sentinel.quader.svc:26379
+      primary_name: quader
+tls:
+  secretName: quader-tls
+secrets:
+  database:
+    existingSecret: quader-db-app
+  valkey:
+    existingSecret: quader-valkey
+  encryption:
+    existingSecret: quader-encryption-keys
+    keys: [2026-10.key]
+ingress:
+  enabled: true
+  className: haproxy                               # example: the internal edge
+  backendTLS:
+    controller: haproxy
+    caSecret: quader-tls
+  tls:
+    - secretName: quader-tls
+      hosts: [quader.example.com]
+endpoints:
+  default:
+    hosts: [quader.example.com, quader.quader.svc] # example: the public name and the in-cluster Service name
+  customers:
+    port: 8443
+    baseUrl: https://packages.example.com
+    hosts: [pkgs.example.org]
+    wildcardHost: "*.registry.example.com"
+    hostRoots:
+      pkgs.example.org: web/docker-hub             # example: the qualified name <projectKey>/<repoKey>; reserved, no format uses it yet
+    surface: [packages, files]
+    trustedProxies: ["10.244.0.0/16"]
+    tls:
+      existingSecret: quader-packages-tls          # example: keys tls.crt, tls.key
+      extraSecrets: [quader-packages-wildcard-tls] # example: the wildcard pair, chosen by SNI
+      clientCaSecret: quader-customer-ca           # example: mutual TLS from the customers' edge
+    ingress:
+      enabled: true
+      className: traefik-external                  # example: another controller than the default endpoint
+      backendTLS:
+        controller: traefik
+        verify: false
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt
+      tls:
+        - secretName: packages-tls
+          hosts: [packages.example.com, "*.registry.example.com"]
+    networkPolicy:
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-external
+  partners:
+    port: 8444
+    baseUrl: https://partners.example.com
+    exposure: all
+    ingress:
+      enabled: true
+      tls:
+        - secretName: partners-tls
+          hosts: [partners.example.com]

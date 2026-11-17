@@ -5,9 +5,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // A format is registered once per process, and a process may hold several replicas (the integration tests start them in one), each
@@ -24,7 +24,7 @@ type replica struct {
 	ext map[any]any
 }
 
-// The outcomes of trove_ansible_publish_total (R-ANS-030).
+// The outcomes of quader_ansible_publish_total (R-ANS-030).
 const (
 	outcomeCompleted  = "completed"
 	outcomeFailed     = "failed"
@@ -44,7 +44,7 @@ func registerBinder(fn func(r *replica, m *observability.Metrics)) {
 
 func init() {
 	registerBinder(func(r *replica, m *observability.Metrics) {
-		r.publish = m.NewCounterVec("trove_ansible_publish_total",
+		r.publish = m.NewCounterVec("quader_ansible_publish_total",
 			"Publishes of collections to local Ansible Galaxy repositories by outcome: completed, failed, exists or tombstoned (R-ANS-030).", "outcome")
 	})
 }

@@ -7,7 +7,7 @@
 // cross the port are those of internal/formats/nuget/rows, a leaf both import. It owns the
 // four tables of migration 00017_nuget and registers them with the backup (tables.go), so
 // that the package must be linked wherever the migrated schema is checked against the
-// registry (cmd/trove/registry.go).
+// registry (cmd/quader/registry.go).
 //
 // The store persists what the format decided: the version order is the sort key the format
 // computed, the ID and version arrive normalized, and the store never parses either. It
@@ -31,12 +31,12 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 var errForeignTx = errors.New("nuget: the transaction is not one of internal/meta/postgres")

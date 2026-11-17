@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Bastion, BastionsApi } from '../../api/bastions-api';
 import { ApiError } from '../../api/problem';
@@ -14,40 +14,40 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { EmptyState } from '../../shared/ui/empty-state';
 
 /**
- * Administration → Bastions (R-BAS-007): the registrations of the trove Bastions in front of this
+ * Administration → Bastions (R-BAS-007): the registrations of the Quader Bastions in front of this
  * installation, each as a card with the last contact of every replica, its tokens and the actions
  * (R-BAS-004). There are at most `bastions.max_registrations` registrations, so the list is one page
  * and the screen holds all of them. A registration the caller may not change shows no action; the
  * API decides in any case (R-UI-005).
  */
 @Component({
-  selector: 'trove-bastion-list',
+  selector: 'quader-bastion-list',
   imports: [EmptyState, PageHeader, BastionCard, ErrorNotice, Needs],
   template: `
-    <trove-page-header heading="Bastions" i18n-heading="@@bastions.heading">
+    <quader-page-header heading="Bastions" i18n-heading="@@bastions.heading">
       <button actions class="btn btn-confirm" type="button" [disabled]="!canWrite()" aria-describedby="needs-bastions" (click)="add()" i18n="@@bastions.add">New Bastion</button>
-    </trove-page-header>
-    <trove-needs id="needs-bastions" capability="endpoints:write" />
+    </quader-page-header>
+    <quader-needs id="needs-bastions" capability="endpoints:write" />
     <p i18n="@@bastions.hint">
       A Bastion is a read-only cache of this installation for clients outside your network. Register it here, issue the token its chart reads, and check that every replica has made contact.
     </p>
 
     @if (error(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     }
     @if (!loaded()) {
       @if (!error()) {
         <p role="status" i18n="@@bastions.loading">Loading Bastions.</p>
       }
     } @else if (items().length === 0) {
-      <trove-empty-state text="No Bastion is registered." i18n-text="@@bastions.empty">
+      <quader-empty-state text="No Bastion is registered." i18n-text="@@bastions.empty">
         @if (canWrite()) {
           <button class="btn btn-default" type="button" (click)="add()" i18n="@@bastions.add">New Bastion</button>
         }
-      </trove-empty-state>
+      </quader-empty-state>
     } @else {
       @for (b of items(); track b.name) {
-        <trove-bastion-card [bastion]="b" [draft]="restored()" (changed)="load()" />
+        <quader-bastion-card [bastion]="b" [draft]="restored()" (changed)="load()" />
       }
     }
   `,
@@ -55,7 +55,7 @@ import { EmptyState } from '../../shared/ui/empty-state';
 })
 export class BastionList {
   private readonly api = inject(BastionsApi);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly session = inject(SessionStore);
 
   protected readonly items = signal<readonly Bastion[]>([]);

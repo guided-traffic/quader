@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Starts the integration stack (TLS on every connection, verified from the host), waits until it is healthy, creates the buckets
-# and writes .dev/integration/env with the TROVE_TEST_* variables the tests read
+# and writes .dev/integration/env with the QUADER_TEST_* variables the tests read
 # (see test/integration/testenv). Safe to run again: running containers are kept.
 #
-#   Valkey runs on the 9.1 line only: trove is in development and guarantees no older line.
+#   Valkey runs on the 9.1 line only: quader is in development and guarantees no older line.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -14,10 +14,10 @@ set -a
 . tools/versions.env
 set +a
 
-line="${TROVE_TEST_VALKEY_LINE:-9.1}"
+line="${QUADER_TEST_VALKEY_LINE:-9.1}"
 case "$line" in
   9.1) VALKEY_IMAGE="$VALKEY_91_IMAGE" ;;
-  *) echo "TROVE_TEST_VALKEY_LINE must be 9.1 (got '$line')" >&2; exit 2 ;;
+  *) echo "QUADER_TEST_VALKEY_LINE must be 9.1 (got '$line')" >&2; exit 2 ;;
 esac
 
 state="$root/.dev/integration"
@@ -51,39 +51,39 @@ env_file="$state/env"
 q() { printf "'%s'" "$1"; }
 {
   echo "# Written by test/integration/up.sh; sourced by make test-integration."
-  echo "TROVE_TEST_CA_FILE=$(q "$state/certs/ca.crt")"
-  echo "TROVE_TEST_CERT_DIR=$(q "$state/certs")"
-  echo "TROVE_TEST_PG_DSN=$(q "postgres://trove:trove-it@127.0.0.1:15432/trove?sslmode=verify-full&sslrootcert=$state/certs/ca.crt")"
-  echo "TROVE_TEST_PG_PGBOUNCER_DSN=$(q "postgres://trove:trove-it@127.0.0.1:16432/trove?sslmode=verify-full&sslrootcert=$state/certs/ca.crt")"
-  echo "TROVE_TEST_PG_HOST=127.0.0.1"
-  echo "TROVE_TEST_PG_PORT=15432"
-  echo "TROVE_TEST_PG_PGBOUNCER_PORT=16432"
-  echo "TROVE_TEST_PG_USER=trove"
-  echo "TROVE_TEST_PG_PASSWORD=trove-it"
-  echo "TROVE_TEST_PG_DATABASE=trove"
-  echo "TROVE_TEST_VALKEY_LINE=$line"
-  echo "TROVE_TEST_VALKEY_SENTINELS=127.0.0.1:26381,127.0.0.1:26382,127.0.0.1:26383"
-  echo "TROVE_TEST_VALKEY_NODES=127.0.0.1:16379,127.0.0.1:16380"
-  echo "TROVE_TEST_VALKEY_PRIMARY_NAME=trove"
-  echo "TROVE_TEST_VALKEY_USERNAME=trove"
-  echo "TROVE_TEST_VALKEY_PASSWORD=trove-valkey-it"
-  echo "TROVE_TEST_VALKEY_SENTINEL_PASSWORD=sentinel-valkey-it"
-  echo "TROVE_TEST_VALKEY_ADMIN_USERNAME=ops"
-  echo "TROVE_TEST_VALKEY_ADMIN_PASSWORD=ops-valkey-it"
-  echo "TROVE_TEST_VALKEY_CA_FILE=$(q "$state/certs/ca.crt")"
-  echo "TROVE_TEST_VALKEY_KEY_PREFIX=trove:"
-  echo "TROVE_TEST_VALKEY_CONTAINERS=trove-it-valkey-primary,trove-it-valkey-replica,trove-it-valkey-sentinel-1,trove-it-valkey-sentinel-2,trove-it-valkey-sentinel-3"
-  echo "TROVE_TEST_S3_ENDPOINT=https://127.0.0.1:18333"
-  echo "TROVE_TEST_S3_REGION=us-east-1"
-  echo "TROVE_TEST_S3_ACCESS_KEY=trove-it-access"
-  echo "TROVE_TEST_S3_SECRET_KEY=trove-it-secret-0123456789abcdef"
-  echo "TROVE_TEST_S3_BUCKET_BLOBS=trove-blobs"
-  echo "TROVE_TEST_S3_BUCKET_BACKUPS=trove-backups"
-  echo "TROVE_TEST_S3_FORCE_PATH_STYLE=true"
+  echo "QUADER_TEST_CA_FILE=$(q "$state/certs/ca.crt")"
+  echo "QUADER_TEST_CERT_DIR=$(q "$state/certs")"
+  echo "QUADER_TEST_PG_DSN=$(q "postgres://quader:quader-it@127.0.0.1:15432/quader?sslmode=verify-full&sslrootcert=$state/certs/ca.crt")"
+  echo "QUADER_TEST_PG_PGBOUNCER_DSN=$(q "postgres://quader:quader-it@127.0.0.1:16432/quader?sslmode=verify-full&sslrootcert=$state/certs/ca.crt")"
+  echo "QUADER_TEST_PG_HOST=127.0.0.1"
+  echo "QUADER_TEST_PG_PORT=15432"
+  echo "QUADER_TEST_PG_PGBOUNCER_PORT=16432"
+  echo "QUADER_TEST_PG_USER=quader"
+  echo "QUADER_TEST_PG_PASSWORD=quader-it"
+  echo "QUADER_TEST_PG_DATABASE=quader"
+  echo "QUADER_TEST_VALKEY_LINE=$line"
+  echo "QUADER_TEST_VALKEY_SENTINELS=127.0.0.1:26381,127.0.0.1:26382,127.0.0.1:26383"
+  echo "QUADER_TEST_VALKEY_NODES=127.0.0.1:16379,127.0.0.1:16380"
+  echo "QUADER_TEST_VALKEY_PRIMARY_NAME=quader"
+  echo "QUADER_TEST_VALKEY_USERNAME=quader"
+  echo "QUADER_TEST_VALKEY_PASSWORD=quader-valkey-it"
+  echo "QUADER_TEST_VALKEY_SENTINEL_PASSWORD=sentinel-valkey-it"
+  echo "QUADER_TEST_VALKEY_ADMIN_USERNAME=ops"
+  echo "QUADER_TEST_VALKEY_ADMIN_PASSWORD=ops-valkey-it"
+  echo "QUADER_TEST_VALKEY_CA_FILE=$(q "$state/certs/ca.crt")"
+  echo "QUADER_TEST_VALKEY_KEY_PREFIX=quader:"
+  echo "QUADER_TEST_VALKEY_CONTAINERS=quader-it-valkey-primary,quader-it-valkey-replica,quader-it-valkey-sentinel-1,quader-it-valkey-sentinel-2,quader-it-valkey-sentinel-3"
+  echo "QUADER_TEST_S3_ENDPOINT=https://127.0.0.1:18333"
+  echo "QUADER_TEST_S3_REGION=us-east-1"
+  echo "QUADER_TEST_S3_ACCESS_KEY=quader-it-access"
+  echo "QUADER_TEST_S3_SECRET_KEY=quader-it-secret-0123456789abcdef"
+  echo "QUADER_TEST_S3_BUCKET_BLOBS=quader-blobs"
+  echo "QUADER_TEST_S3_BUCKET_BACKUPS=quader-backups"
+  echo "QUADER_TEST_S3_FORCE_PATH_STYLE=true"
 } > "$env_file.tmp"
 mv "$env_file.tmp" "$env_file"
 
-# Buckets: trove-blobs with versioning on, trove-backups.
+# Buckets: quader-blobs with versioning on, quader-backups.
 set -a
 # shellcheck disable=SC1090
 . "$env_file"

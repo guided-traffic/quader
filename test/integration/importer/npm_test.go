@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	imp "github.com/guided-traffic/trove/internal/importer"
-	"github.com/guided-traffic/trove/test/npmstub"
+	imp "github.com/guided-traffic/quader/internal/importer"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // seedNPM puts the packages of the tests into a stub: three versions of imp-a with a beta tag, one of a scoped package and one
@@ -247,7 +247,7 @@ func TestR_IMP_004_ATokenWithoutThePublishRightIsRefusedPerPackageAndNothingIsSt
 		t.Error("the report of a refused import is clean")
 	}
 	// A token the target does not know stops the run before a package is read (R-IMP-006).
-	_, err = e.run("npm", e.npmURL, npmTarget(rNPM), "trv_pat_doesnotexist", "imp-a")
+	_, err = e.run("npm", e.npmURL, npmTarget(rNPM), "qdr_pat_doesnotexist", "imp-a")
 	if err == nil || !strings.Contains(err.Error(), "not usable") {
 		t.Errorf("unknown token: %v, want the target is not usable", err)
 	}

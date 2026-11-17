@@ -3,9 +3,9 @@
 Status: implemented in beta phase 5 (2026-11-03) for R-CI-001 to R-CI-021 and R-CI-028 to R-CI-030 — see the contract
 page [ci-oidc.md](../developer/ci-oidc.md); R-CI-022 to R-CI-027 stay P1 and P2 as marked.
 
-This page specifies how a CI job gets trove permissions without a stored secret. A GitLab job
-asks GitLab for an OIDC ID token addressed to trove. It exchanges that token at
-`POST /api/v1/auth/oidc/token` for a short-lived `trv_cit_` token (INV-8, INV-10). With that
+This page specifies how a CI job gets Quader permissions without a stored secret. A GitLab job
+asks GitLab for an OIDC ID token addressed to Quader. It exchanges that token at
+`POST /api/v1/auth/oidc/token` for a short-lived `qdr_cit_` token (INV-8, INV-10). With that
 token it installs dependencies and publishes the packages it builds. The page covers the trusted
 issuer configuration, ID-token validation, identity mappings (the ordered rules that turn
 verified claims into grants), grant templating and package-ownership binding, token lifetime,
@@ -35,11 +35,11 @@ the subject of the OIDC path:
 | | ID token (`id_tokens:` keyword) | `CI_JOB_TOKEN` |
 |---|---|---|
 | What it is | An OIDC ID token: a JWT that GitLab signs with RS256 using the instance's dedicated signing key | A GitLab credential for calling GitLab itself (API, registries, Git) with the triggering user's access level, restricted to a fixed set of GitLab endpoints |
-| Audience | Set by the job (`aud`); trove accepts only its own audience | None. Nothing ties it to a relying party. |
+| Audience | Set by the job (`aud`); Quader accepts only its own audience | None. Nothing ties it to a relying party. |
 | How a third party verifies it | Offline: signature against the issuer's published JWKS, plus `iss`, `aud`, `exp`, `nbf`, `iat` ([RFC 7519](https://www.rfc-editor.org/rfc/rfc7519)) | Only by calling GitLab (`GET /api/v4/job` with the token), while the job is running |
-| Format | JWT (compact JWS) | GitLab-internal. Since GitLab 19.0 job tokens use a JWT format by default (a group can switch back until 20.0), but GitLab documents neither claims nor verification keys for third parties. Observed on GitLab 19.0.1 on 2026-11-02: `glcbt-` followed by three dot-separated parts, 756 to 758 characters, in every recorded pipeline; the instance's key set does not list `ci_job_token_signing_key`, the key setting of job tokens. trove treats it as an opaque string and recognizes it by the prefix (R-CI-004 step 2). |
+| Format | JWT (compact JWS) | GitLab-internal. Since GitLab 19.0 job tokens use a JWT format by default (a group can switch back until 20.0), but GitLab documents neither claims nor verification keys for third parties. Observed on GitLab 19.0.1 on 2026-11-02: `glcbt-` followed by three dot-separated parts, 756 to 758 characters, in every recorded pipeline; the instance's key set does not list `ci_job_token_signing_key`, the key setting of job tokens. Quader treats it as an opaque string and recognizes it by the prefix (R-CI-004 step 2). |
 | Lifetime | Expires at the job's timeout, or after 5 minutes if no timeout is set | Valid while the job runs; revoked when the job finishes |
-| trove use | The normal path, MVP (R-CI-001 to R-CI-021) | Optional fallback, P2, off by default (R-CI-022, Q-CI-5) |
+| Quader use | The normal path, MVP (R-CI-001 to R-CI-021) | Optional fallback, P2, off by default (R-CI-022, Q-CI-5) |
 
 Sources: [ID token authentication](https://docs.gitlab.com/ci/secrets/id_token_authentication/),
 [CI/CD job token](https://docs.gitlab.com/ci/jobs/ci_job_token/),
@@ -53,11 +53,11 @@ sequenceDiagram
     autonumber
     participant GL as GitLab instance
     participant J as GitLab job (runner)
-    participant A as trove (any web replica)
+    participant A as Quader (any web replica)
     participant VK as Valkey
     participant PG as PostgreSQL
     participant C as npm / dotnet in the job
-    GL->>J: start job, inject TROVE_ID_TOKEN (JWT, aud = trove base URL)
+    GL->>J: start job, inject QUADER_ID_TOKEN (JWT, aud = Quader base URL)
     J->>A: POST /api/v1/auth/oidc/token (RFC 8693, subject_token = ID token)
     A->>VK: per-address rate-limit counter (cluster scope; replica share if Valkey is down)
     A->>A: parse JWT without trusting it, select CI issuer by iss
@@ -71,15 +71,15 @@ sequenceDiagram
     A->>VK: per-subject rate-limit counter
     A->>A: cross-project (fork) guard, evaluate mappings in order, render grants, compute TTL
     A->>PG: one transaction: re-check issuer and mappings (validate again if changed), restore cut-off, record jti, insert token hash, issuance record, audit event
-    A-->>J: 200 access_token = trv_cit_..., expires_in, scope
-    J->>C: export TROVE_TOKEN (.npmrc / nuget.config read it from the environment)
+    A-->>J: 200 access_token = qdr_cit_..., expires_in, scope
+    J->>C: export QUADER_TOKEN (.npmrc / nuget.config read it from the environment)
     C->>A: npm publish / dotnet nuget push (Bearer or X-NuGet-ApiKey), any web replica
     A->>PG: resolve token hash, authorize (grants, ownership), audit with token_id
 ```
 
 Valkey appears in the flow only as a rate-limit counter. It never holds a signing key, a mapping, a
 replay entry or a token, so its loss or a forged entry can refuse an exchange with 429 but cannot
-make trove accept one (R-CI-029, [architecture.md](architecture.md) R-ARCH-030).
+make Quader accept one (R-CI-029, [architecture.md](architecture.md) R-ARCH-030).
 
 Terms used on this page:
 
@@ -89,7 +89,7 @@ Terms used on this page:
 - **Identity mapping**: an ordered rule of one CI issuer. It has a claim condition and a grant
   specification.
 - **Subject token**: the token the job presents (RFC 8693 term): normally the GitLab ID token.
-- **CI token**: the `trv_cit_` token that trove issues.
+- **CI token**: the `qdr_cit_` token that Quader issues.
 - **Issuance record**: the stored link between a CI token and the verified job identity it was
   issued to.
 
@@ -98,7 +98,7 @@ Terms used on this page:
 ### R-CI-001 · CI issuer configuration
 Priority: **MVP** · Covers: CIOIDC-001, CIOIDC-002
 
-trove MUST let a system administrator register any number of CI issuers. A CI issuer has a
+Quader MUST let a system administrator register any number of CI issuers. A CI issuer has a
 unique name (`^[a-z0-9][a-z0-9._-]{1,63}$`), a kind (`gitlab` in the MVP; `github` and
 `generic` in P1, see R-CI-025 and R-CI-026) and an issuer URL. The issuer URL MUST be an
 `https` URL and MUST be unique across CI issuers, so that the `iss` claim of a token selects at
@@ -119,7 +119,7 @@ cannot be mixed up):
 | `discovery_url` | OIDC discovery document | `null` = `<issuer>/.well-known/openid-configuration` # default (proposed) |
 | `jwks_uri` | Overrides the key-set URL from discovery | `null` # default (proposed) |
 | `allowed_audiences` | Accepted `aud` values, exact string match; at least one entry, so the audience is always checked (R-CI-004 step 7). The second default value serves npm-family trusted publishing (below) | `[<server.base_url>, "npm:<host name of server.base_url>"]` # default (proposed) |
-| `exclusive_audience` | Every element of `aud` must be an entry of `allowed_audiences`, so the token names no recipient other than trove (Q-CI-3) | `true` # default (proposed) |
+| `exclusive_audience` | Every element of `aud` must be an entry of `allowed_audiences`, so the token names no recipient other than Quader (Q-CI-3) | `true` # default (proposed) |
 | `allowed_algorithms` | JWS algorithms accepted | `["RS256"]` # default (proposed) for `gitlab` and `github` |
 | `allowed_typ` | Accepted `typ` header values, compared case-insensitively | `["JWT"]` # default (proposed) |
 | `allow_missing_typ` | Accept tokens without a `typ` header | `true` # default (proposed) |
@@ -129,7 +129,7 @@ cannot be mixed up):
 | `pin_claims` | Claims that count as immutable identifiers for the pinning rule | `gitlab`: `project_id`, `namespace_id`, `job_project_id`, `job_namespace_id` # default (proposed) |
 | `single_use_subject_tokens` | Reject a second exchange of the same `jti` (R-CI-018, Q-CI-4) | kind preset: `false` for `gitlab`, `true` for `github` and `generic` # default (proposed) |
 | `max_ttl_seconds` | Upper bound for CI tokens of this issuer, between `ci.token.min_ttl` and `ci.token.max_ttl` ([Q-CI-47](#q-ci-47--a-project-tier-changes-only-what-its-own-tier-gives-a-token)) | `null` (global bound only) # default (proposed) |
-| `ca_bundle_ref` | Reference to a PEM bundle for instances behind a private CA: `file:<absolute path>` or `env:TROVE_CIC_<NAME>`, a variable that holds the PEM text ([Q-CI-31](#q-ci-31--the-syntax-of-ca_bundle_ref-and-the-trust-an-issuers-fetches-use)). It adds to the installation's trust (system roots and `proxy.outbound.tls.ca_files`), never replaces it | `null` # default (proposed) |
+| `ca_bundle_ref` | Reference to a PEM bundle for instances behind a private CA: `file:<absolute path>` or `env:QUADER_CIC_<NAME>`, a variable that holds the PEM text ([Q-CI-31](#q-ci-31--the-syntax-of-ca_bundle_ref-and-the-trust-an-issuers-fetches-use)). It adds to the installation's trust (system roots and `proxy.outbound.tls.ca_files`), never replaces it | `null` # default (proposed) |
 | `use_outbound_proxy` | Route discovery, key and GitLab API calls through the system outbound proxy ([repositories-and-proxy.md](repositories-and-proxy.md)) | `false` # default (proposed) |
 | `job_token_fallback` | R-CI-022 settings (P2) | `{"enabled": false}` # default (proposed) |
 | `enabled` | Disabled issuers reject every exchange | `true` # default (proposed) |
@@ -150,11 +150,11 @@ names another service is still rejected. An administrator who sets `allowed_audi
 and leaves out the `npm:` value breaks native trusted publishing for pnpm, which requires that
 audience, and for npm on GitHub Actions, which requests it. npm and Yarn 4 in GitLab CI check no
 audience on `NPM_ID_TOKEN`, and the generic exchange (R-CI-007) keeps working. Clients that reach
-trove under an origin of
+Quader under an origin of
 `server.additional_base_urls` ([operations-and-observability.md](operations-and-observability.md)
 R-OPS-005) request that origin's values, which the administrator adds.
 
-Several GitLab instances are several CI issuers (R-CI-005). trove MUST NOT accept an
+Several GitLab instances are several CI issuers (R-CI-005). Quader MUST NOT accept an
 `alg` of `none` or any HMAC algorithm (`HS256`, `HS384`, `HS512`) in `allowed_algorithms`
 ([RFC 8725 §3.1, §3.2](https://www.rfc-editor.org/rfc/rfc8725#section-3.1)). Only
 `RS256/384/512`, `PS256/384/512`, `ES256/384` and `EdDSA` are valid entries.
@@ -166,7 +166,7 @@ R-CI-005 with exactly the claims that rule exists to exclude. For an issuer URL 
 construction (`https://gitlab.com`, `https://token.actions.githubusercontent.com`),
 `public_issuer: false` answers 422 `public_issuer_required`.
 
-**Issuers from the system configuration (owner, [Q-CI-16](#q-ci-16--ci-issuers-provisioned-through-the-helm-values-are-read-only-in-trove)).**
+**Issuers from the system configuration (owner, [Q-CI-16](#q-ci-16--ci-issuers-provisioned-through-the-helm-values-are-read-only-in-quader)).**
 CI issuers can also be declared in the system configuration file under `ci.issuers`, which the chart renders from its
 `config` values, so that a GitOps repository provisions them. Each entry carries the fields of the table above in the
 configuration's snake_case, with the same validation and defaults; `name`, `kind` and `issuer` are required.
@@ -182,13 +182,13 @@ ci:
       ca_bundle_ref: file:/var/run/secrets/gitlab-ca/ca.crt  # example: an instance behind a private CA
 ```
 
-- The declared issuers are applied by `trove migrate`, the step the chart runs as its pre-install and pre-upgrade Job,
+- The declared issuers are applied by `quader migrate`, the step the chart runs as its pre-install and pre-upgrade Job,
   in one transaction: an issuer is created or replaced by `name` with `source = 'configuration'`. No `web` or `worker`
   replica writes them, so replicas of two releases during a rolling update never overwrite each other.
 - A configuration issuer whose name is also an API-created issuer, or whose `issuer` URL another issuer already has,
-  stops `trove migrate` with an error that names both; nothing is applied.
+  stops `quader migrate` with an error that names both; nothing is applied.
 - A declared name keeps its `issuer` URL and its `kind`, which the API keeps immutable too (R-CI-002): an entry that
-  changes either for an existing name stops `trove migrate` with an error that names the stored and the declared value
+  changes either for an existing name stops `quader migrate` with an error that names the stored and the declared value
   and tells the operator to declare the new instance under a new name; nothing is applied. The pins, the package owners
   `ci:<issuer>:project:<id>` (R-CI-015) and the mappings of the name belong to the instance they were made for. Declared
   under a new name, the new instance is created, and the old name, no longer declared, is disabled with its tokens
@@ -250,10 +250,10 @@ taken before a restore could match a different record of the same number afterwa
 **Acceptance criteria**
 
 - Creating a second CI issuer with `issuer = https://gitlab.com` fails with 409.
-- `ci.issuers` declares `gitlab-main`; after `trove migrate`, `GET /api/v1/ci/issuers/gitlab-main` answers 200 with
+- `ci.issuers` declares `gitlab-main`; after `quader migrate`, `GET /api/v1/ci/issuers/gitlab-main` answers 200 with
   `source: "configuration"`, and an exchange with an ID token of that instance works once a mapping exists. Removed from
-  `ci.issuers`, the next `trove migrate` disables it; exchanges answer `issuer_disabled`, and its issuance records stay.
-- `ci.issuers` declares `gitlab-main` with another `issuer` URL than the stored one: `trove migrate` fails with an error
+  `ci.issuers`, the next `quader migrate` disables it; exchanges answer `issuer_disabled`, and its issuance records stay.
+- `ci.issuers` declares `gitlab-main` with another `issuer` URL than the stored one: `quader migrate` fails with an error
   naming both URLs and a new name as the remedy, and the stored issuer is unchanged (Q-CI-48).
 - Creating a CI issuer with `allowed_algorithms: ["HS256"]` or `["none"]` fails with 422.
 - Creating a CI issuer with `issuer = http://gitlab.example.com` fails with 422.
@@ -294,7 +294,7 @@ The representation is fixed so that the catalog's open points (CIOIDC-005) have 
   one setting is GET, modify, PUT; the read-only fields of a GET body (`version`, `created_at`,
   `updated_at`) are accepted and ignored (R-API-003). There is no PATCH.
 - Two settings move trust that saved mappings and stored keys rest on
-  ([Q-CI-50](#q-ci-50--an-issuer-change-that-moves-trust-resets-the-keys-or-is-refused)), for a PUT and for `trove migrate`
+  ([Q-CI-50](#q-ci-50--an-issuer-change-that-moves-trust-resets-the-keys-or-is-refused)), for a PUT and for `quader migrate`
   alike. A change that switches `public_issuer` on, or removes a claim from `pin_claims`, answers 409 `mappings_unpinned`
   while a mapping of the issuer would fail the pin rule its save applies now (`pin_required` on a public issuer,
   `unpinned_write` on a private one, R-CI-010); the problem names them in `mappings`, and nothing changes. A change of
@@ -308,7 +308,7 @@ The representation is fixed so that the catalog's open points (CIOIDC-005) have 
   `ignoreCase`). Claim names inside conditions and templates (`project_id`) are data, not field
   names, and keep the issuer's spelling. The exchange endpoint (R-CI-007, R-CI-008) keeps the
   OAuth names of RFC 8693 and its extensions `ci_issuer`, `ttl`, `mappings` and `reason`. Its
-  error member `requestId` keeps the spelling it has in every other trove error body (R-API-009),
+  error member `requestId` keeps the spelling it has in every other Quader error body (R-API-009),
   so one key finds the matching log line and audit event everywhere.
 
 | Method and path | Purpose | Success | Errors |
@@ -344,7 +344,7 @@ Disabling (`enabled: false`) or deleting a CI issuer revokes all unexpired CI to
 through it, in the same transaction (R-CI-017). Deleting with `?cascade=true` deletes its mappings
 and their principals in that transaction (R-CI-009). The change writes `ci.issuer.disabled` or
 `ci.issuer.deleted`, and a cascade one `ci.mapping.deleted` per mapping; the revocation journal
-keeps these across a point-in-time restore and across the restore of a trove backup (R-CI-020).
+keeps these across a point-in-time restore and across the restore of a Quader backup (R-CI-020).
 
 Creating an issuer with `"validate": true` and `POST …/keys/refresh` fetch on the `web` replica that
 serves the request, outside any database transaction, and then store the key set as R-CI-003's
@@ -372,7 +372,7 @@ declare login providers; a CI issuer only ever serves the token exchange (INV-10
   with the request above returns 201, and `GET .../keys` lists at least one RSA key.
 - A non-administrator PAT receives 403 on every operation in the table.
 - After `PUT` with `"enabled": false` and the current `If-Match`, a CI token issued earlier
-  through the issuer gets 401 on `npm view @acme-billing/invoice-client` against trove, on every
+  through the issuer gets 401 on `npm view @acme-billing/invoice-client` against Quader, on every
   `web` replica within the revocation bound of
   [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-023 (2 s), with Valkey
   running or stopped.
@@ -387,7 +387,7 @@ declare login providers; a CI issuer only ever serves the token exchange (INV-10
 ### R-CI-003 · Discovery, signing keys, caching and rotation
 Priority: **MVP** · Covers: CIOIDC-019, CIOIDC-031
 
-Discovery: trove MUST fetch the discovery document from `discovery_url`
+Discovery: Quader MUST fetch the discovery document from `discovery_url`
 ([OpenID Connect Discovery 1.0 §4](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig)).
 It MUST reject a document whose `issuer` is not exactly the configured issuer (§4.3) and MUST
 take `jwks_uri` from it unless the CI issuer overrides `jwks_uri`. The `jwks_uri` MUST be an
@@ -397,7 +397,7 @@ take `jwks_uri` from it unless the CI issuer overrides `jwks_uri`. The `jwks_uri
 `https://gitlab.com/oauth/discovery/keys` and RS256 (fetched 2026-10-28). Self-managed
 instances serve the same paths under their own base URL.
 
-Key set ([RFC 7517](https://www.rfc-editor.org/rfc/rfc7517)): trove MUST use only keys that
+Key set ([RFC 7517](https://www.rfc-editor.org/rfc/rfc7517)): Quader MUST use only keys that
 meet all of these conditions:
 
 - `use` is absent or `sig`.
@@ -415,7 +415,7 @@ Caching and refresh (Q-CI-12):
   `SafetyTTL` `ci.signing_keys.cache_safety_ttl` ([architecture.md](architecture.md) R-ARCH-018).
   Storing a changed key set writes the change area `ci_issuer_keys` through `cluster.Notify`. The
   other replicas reload the row at once from the change message on Valkey, and within
-  `cluster.epoch_poll_interval` from the change-log poll when Valkey is unavailable. trove issues no
+  `cluster.epoch_poll_interval` from the change-log poll when Valkey is unavailable. Quader issues no
   `NOTIFY` (R-ARCH-018). A restarted replica validates tokens without contacting GitLab.
 - **Never in Valkey.** A key set decides whether a token is accepted. No copy of it, and nothing
   that selects one, is read from Valkey ([architecture.md](architecture.md) R-ARCH-030 rule 2): a
@@ -454,7 +454,7 @@ Caching and refresh (Q-CI-12):
   is refused only by the signature check, so neither step runs once per request: random `kid`
   values cause at most one row read per CI issuer, replica and `cluster.epoch_poll_interval`, and at
   most one fetch per CI issuer, replica and `unknown_kid_refresh_interval`, n of each with n `web`
-  replicas. They can neither turn trove into a request amplifier against GitLab nor turn anonymous
+  replicas. They can neither turn Quader into a request amplifier against GitLab nor turn anonymous
   requests into PostgreSQL load. Both throttles are per-replica state that can change an answer
   ([architecture.md](architecture.md) R-ARCH-032): a replica whose re-read is younger than the
   interval rejects a key that another replica stored meanwhile, for at most
@@ -475,7 +475,7 @@ Caching and refresh (Q-CI-12):
 - Removed keys: a key that is missing from the latest successful fetch is no longer accepted, on
   every replica within the change-area bound of R-ARCH-018. Removing a key from the JWKS is how an
   issuer revokes it.
-- Fetch failures: trove keeps using the last good key set. Its age is `now − fetched_at` of the
+- Fetch failures: Quader keeps using the last good key set. Its age is `now − fetched_at` of the
   shared row: once the set is older than `ci.signing_keys.max_stale`, exchanges answer 503
   `signing_keys_unavailable`. A refresh that stored an unchanged set sends no change message, so a
   replica's copy can carry an older `fetched_at` than the row; before answering 503, the replica
@@ -502,7 +502,7 @@ Caching and refresh (Q-CI-12):
   [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-038). `last_error`, the key-status
   API and the `ci.keys.refresh_failed` event record the failure class, the HTTP status and the
   URL's host, never bytes of a response body. A discovery document that points `jwks_uri` at an
-  internal service therefore cannot read that service's answer back through trove.
+  internal service therefore cannot read that service's answer back through Quader.
 
 **Data model**
 
@@ -546,13 +546,13 @@ ci:
   replica A, which fetches once. The same token's next exchange on replicas B and C succeeds at
   once, without a further fetch.
 - While `ci-keys-refresh` runs against an issuer double that delays its key response by 4 s,
-  `pg_stat_activity` shows no trove connection `idle in transaction`. Two replicas that fetch an
+  `pg_stat_activity` shows no Quader connection `idle in transaction`. Two replicas that fetch an
   unchanged key set at the same moment leave the epoch of area `ci_issuer_keys` unchanged. A key
   store held open by a test build for 2 s delays no concurrent exchange of the same issuer.
 - With the stored set 1 s short of `max_stale` on every replica's copy, a `ci-keys-refresh` run
   stores the unchanged set. Exchanges on every replica keep succeeding after the copies' age has
   passed `max_stale`.
-- After the restore of a trove backup, `GET …/keys` of every issuer lists no key until the first
+- After the restore of a Quader backup, `GET …/keys` of every issuer lists no key until the first
   exchange or the first `ci-keys-refresh` run has fetched one.
 - Removing a key from the double's JWKS and forcing a refresh makes tokens signed with that key
   fail with `unknown_signing_key`.
@@ -567,7 +567,7 @@ ci:
 ### R-CI-004 · Subject-token validation
 Priority: **MVP** · Covers: CIOIDC-019, CIOIDC-031, CIOIDC-032
 
-trove MUST validate a subject token in this order and MUST stop at the first failure. The
+Quader MUST validate a subject token in this order and MUST stop at the first failure. The
 reason code in brackets appears in the error response and the audit event (R-CI-008).
 
 1. Size: at most `ci.exchange.max_subject_token_bytes` [`subject_token_malformed`].
@@ -608,10 +608,10 @@ unknown issuer therefore answers `unknown_issuer` even when its algorithm would 
 
 GitLab sets `nbf` to `iat - 5` (observed on GitLab 19.0.1 on 2026-11-02, in every recorded case),
 so a token is valid from the moment GitLab issues it. The default 60-second skew absorbs normal
-clock drift between runners, GitLab and trove.
+clock drift between runners, GitLab and Quader.
 
 The audience is always checked at the CI issuer (catalog CIOIDC-019 leaves open whether an
-unconfigured audience means "no check" or whether only mapping conditions check `aud`). trove has
+unconfigured audience means "no check" or whether only mapping conditions check `aud`). Quader has
 no unconfigured state: `allowed_audiences` has at least one entry (R-CI-001), and step 7 runs for
 every token. A mapping condition MAY additionally test `aud` like any other claim (R-CI-010, array
 claims are multi-valued) to narrow which of the allowed audiences a mapping accepts; it never
@@ -666,22 +666,22 @@ Priority: **MVP** · Covers: CIOIDC-001, CIOIDC-002, CIOIDC-033
 ### R-CI-006 · GitLab job configuration contract
 Priority: **MVP** · Covers: CIOIDC-030, CIOIDC-031, CIOIDC-032, CIOIDC-033, CIOIDC-034
 
-The GitLab side needs only an `id_tokens:` entry whose `aud` equals trove's base URL
+The GitLab side needs only an `id_tokens:` entry whose `aud` equals Quader's base URL
 (INV-10):
 
 ```yaml
 publish:
   id_tokens:
-    TROVE_ID_TOKEN:                       # example: any variable name works
+    QUADER_ID_TOKEN:                       # example: any variable name works
       aud: https://packages.example.com     # example: one of the CI issuer's allowed_audiences
 ```
 
 - `aud` SHOULD be a single string. GitLab also accepts an array, which addresses the same token to
-  several services. trove rejects such a token by default when any listed audience is not one of
+  several services. Quader rejects such a token by default when any listed audience is not one of
   the CI issuer's `allowed_audiences` (R-CI-004 step 7).
 - Native trusted publishing of npm, pnpm and Yarn 4 ([formats/npm.md](formats/npm.md) R-NPM-022,
   P1) reads the ID token from `NPM_ID_TOKEN` instead, declared with
-  `aud: npm:<host name of trove's base URL>` (for example `npm:packages.example.com`), the audience
+  `aud: npm:<host name of quader's base URL>` (for example `npm:packages.example.com`), the audience
   pnpm requires. The default `allowed_audiences` (R-CI-001) accepts both audiences, so one CI
   issuer and its mappings serve both paths.
 - `id_tokens` may be set under `default:`. A job that declares its own `id_tokens` replaces the
@@ -690,13 +690,13 @@ publish:
   GitLab 19.0.1 on 2026-11-02).
 - The predecessors `CI_JOB_JWT` and `CI_JOB_JWT_V2` were removed in GitLab 17.0 (catalog
   CIOIDC-030) and are not supported.
-- trove never parses `sub`. Conditions SHOULD use the separate claims (`project_id`,
+- Quader never parses `sub`. Conditions SHOULD use the separate claims (`project_id`,
   `ref_type`, `ref`, …) and not a `sub` string, because a project can reconfigure the
   components of `sub`. Git forbids `:` in ref names
   ([git-check-ref-format](https://git-scm.com/docs/git-check-ref-format)), so the default `sub`
   format is unambiguous. It still adds nothing over the separate claims.
 
-Claims trove relies on (GitLab serializes IDs and booleans as JSON strings; R-CI-010 normalizes
+Claims Quader relies on (GitLab serializes IDs and booleans as JSON strings; R-CI-010 normalizes
 them). Observed on GitLab 19.0.1 on 2026-11-02 in every recorded case (push on a protected and an
 unprotected branch and on a protected tag, environments with `action: start` and `prepare`, a
 job timeout, schedule, API, same-project and fork merge requests;
@@ -751,7 +751,7 @@ job timeout, schedule, API, same-project and fork merge requests;
 Priority: **MVP** · Covers: CIOIDC-018, ADMAPI-031
 
 `POST /api/v1/auth/oidc/token` implements OAuth 2.0 Token Exchange
-([RFC 8693](https://www.rfc-editor.org/rfc/rfc8693)). It requires no trove credential: the
+([RFC 8693](https://www.rfc-editor.org/rfc/rfc8693)). It requires no Quader credential: the
 subject token is the credential. Other methods answer 405 `method_not_allowed` with `Allow: POST`
 (problem details, as every route, R-API-004). With `ci.exchange.enabled: false` the path answers 404
 (problem details `not_found`) as a path that does not exist, before the address budget is counted. The
@@ -772,13 +772,13 @@ A body larger than `ci.exchange.max_body_bytes` answers 400 [`malformed_request`
 |---|---|---|
 | `grant_type` | yes | `urn:ietf:params:oauth:grant-type:token-exchange` |
 | `subject_token` | yes | The GitLab ID token (or, R-CI-022, the job token) |
-| `subject_token_type` | yes | `urn:ietf:params:oauth:token-type:id_token` or `urn:ietf:params:oauth:token-type:jwt` (equivalent); `urn:trove:token-type:gitlab-job-token` only with R-CI-022 enabled |
+| `subject_token_type` | yes | `urn:ietf:params:oauth:token-type:id_token` or `urn:ietf:params:oauth:token-type:jwt` (equivalent); `urn:quader:token-type:gitlab-job-token` only with R-CI-022 enabled |
 | `requested_token_type` | no | Absent or `urn:ietf:params:oauth:token-type:access_token` |
 | `scope` | no | Narrows the grants: space-delimited items `<action>` or `<action>:<repository selector>`, e.g. `read:web/npm-all deploy:web/npm-internal` (grammar below, Q-CI-2) |
-| `audience`, `resource` | no | When present, MUST equal trove's configured base URL (a trailing slash aside); otherwise 400 `invalid_target` [`audience_not_this_server`] |
+| `audience`, `resource` | no | When present, MUST equal Quader's configured base URL (a trailing slash aside); otherwise 400 `invalid_target` [`audience_not_this_server`] |
 | `actor_token`, `actor_token_type` | no | Not supported: present → 400 [`actor_token_not_supported`] |
-| `ci_issuer` (trove extension) | no | CI issuer name; must match the issuer selected by `iss` (R-CI-005) |
-| `ttl` (trove extension) | no | Requested lifetime in whole seconds; can only shorten (R-CI-016); below `ci.token.min_ttl` 400 [`ttl_below_minimum`] at step 1 (Q-CI-41) |
+| `ci_issuer` (Quader extension) | no | CI issuer name; must match the issuer selected by `iss` (R-CI-005) |
+| `ttl` (Quader extension) | no | Requested lifetime in whole seconds; can only shorten (R-CI-016); below `ci.token.min_ttl` 400 [`ttl_below_minimum`] at step 1 (Q-CI-41) |
 
 **Scope parameter.** `scope` is an OAuth scope string
 ([RFC 6749 §3.3](https://www.rfc-editor.org/rfc/rfc6749#section-3.3)) whose items are a compact
@@ -833,7 +833,7 @@ of the `jti`, so a client retry is safe even with single-use enforcement, and th
 any `web` replica (INV-18). The rate limits of R-CI-021 are checked outside that transaction: the
 per-address limit before step 1, the per-subject limit after step 2.
 
-In that transaction trove MUST re-read the CI issuer row and every matched mapping row with
+In that transaction Quader MUST re-read the CI issuer row and every matched mapping row with
 `FOR SHARE` and confirm that each is still enabled, that each still carries the `version` the
 evaluation used, and that the issuer's `mappings_version` equals the one of the mapping set the
 evaluation used (Q-CI-15). Disabling, deleting or editing a CI issuer or mapping takes `FOR UPDATE`
@@ -870,7 +870,7 @@ Success response (200, `Content-Type: application/json`, `Cache-Control: no-stor
 
 ```json
 {
-  "access_token": "trv_cit_3kqN8sV1pTz0WmYbR4cD7fHj2LxQe9GuA5oKs6Bn1Vw0aB3cD",
+  "access_token": "qdr_cit_3kqN8sV1pTz0WmYbR4cD7fHj2LxQe9GuA5oKs6Bn1Vw0aB3cD",
   "issued_token_type": "urn:ietf:params:oauth:token-type:access_token",
   "token_type": "Bearer",
   "expires_in": 900,
@@ -890,7 +890,7 @@ Success response (200, `Content-Type: application/json`, `Cache-Control: no-stor
   index could decide. The inline grants follow. The authoritative grant is the issuance record (R-CI-020).
 - No `refresh_token` is ever returned. CI tokens cannot be refreshed. A job that needs a new
   token exchanges its ID token again.
-- The token value appears only in this response. trove stores only its SHA-256 (INV-8).
+- The token value appears only in this response. Quader stores only its SHA-256 (INV-8).
 
 **Configuration**
 
@@ -908,7 +908,7 @@ ci:
 - Form-encoded exchange:
 
   ```sh
-  printf '%s' "$TROVE_ID_TOKEN" | curl -sS https://packages.example.com/api/v1/auth/oidc/token \
+  printf '%s' "$QUADER_ID_TOKEN" | curl -sS https://packages.example.com/api/v1/auth/oidc/token \
     --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
     --data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:id_token' \
     --data-urlencode 'subject_token@-'
@@ -930,7 +930,7 @@ ci:
   or the grants of a later mapping.
 - With the same blocks, replica A creates `acme-mr-readonly` at priority 10 above
   `acme-release-publish` (100). The next exchange on B of a merge request pipeline from a protected
-  source branch receives only the read-only grants, and `trove_ci_mapping_set_stale_total` counts
+  source branch receives only the read-only grants, and `quader_ci_mapping_set_stale_total` counts
   one reload on B.
 - With the same blocks, replica A removes `https://vault.example.com` from the issuer's
   `allowed_audiences`. The next exchange on B of a token whose `aud` is
@@ -943,7 +943,7 @@ Errors use the OAuth error response of
 [RFC 6749 §5.2](https://www.rfc-editor.org/rfc/rfc6749#section-5.2), with
 `Content-Type: application/json` and `Cache-Control: no-store`, not the problem details of the
 management API. RFC 8693 §2.2.2 requires `invalid_request` for a subject token that is invalid or
-unacceptable by policy, so a rejected token answers 400, not 401 (Q-CI-8). trove adds two
+unacceptable by policy, so a rejected token answers 400, not 401 (Q-CI-8). Quader adds two
 members: a stable machine-readable `reason`, and `requestId`, which equals the `X-Request-Id`
 response header (R-API-019) and links the answer to the audit event:
 
@@ -981,7 +981,7 @@ response header (R-API-019) and links the answer to the audit event:
   is the second mismatch inside one transaction, which the lock protocol of this page rules out; a unit test with a
   store that disagrees with itself proves it ([Q-CI-43](#q-ci-43--the-reasons-the-integration-tier-cannot-reach)).
 - No response body or log line produced by these tests contains the subject token or any
-  `trv_cit_` value (checked with a grep over the captured output).
+  `qdr_cit_` value (checked with a grep over the captured output).
 
 ### R-CI-009 · Identity mapping model and evaluation order
 Priority: **MVP** · Covers: CIOIDC-007, CIOIDC-009
@@ -1233,7 +1233,7 @@ are rejected when the mapping is saved.
 
 Regular expressions are opt-in: they apply only through the `regex` operator, and a glob or
 `equals` literal is never interpreted as one. The dialect is Go RE2
-([syntax](https://github.com/google/re2/wiki/Syntax)), which runs in linear time. trove
+([syntax](https://github.com/google/re2/wiki/Syntax)), which runs in linear time. Quader
 anchors the expression as `^(?:…)$`, limits it to 512 characters, and compiles it when the
 mapping is saved; an invalid expression answers 422.
 
@@ -1288,7 +1288,7 @@ These nine codes are the whole list; the reason names live in `internal/ci/reaso
 ### R-CI-011 · Protected refs, environments and pipeline sources
 Priority: **MVP** · Covers: CIOIDC-035, CIOIDC-037
 
-These conditions are ordinary leaves (R-CI-010). trove enforces when they are mandatory:
+These conditions are ordinary leaves (R-CI-010). Quader enforces when they are mandatory:
 
 - `unprotected_write` rule: a mapping whose grants include `deploy`, `overwrite` or `delete` MUST
   contain `{"claim": "ref_protected", "equals": true}` in its top-level `all`. Otherwise the save
@@ -1428,14 +1428,14 @@ three, before caps and `scope` narrowing:
   issued. A save adds the missing entry with the actions `read` and removes the entry of a policy the mapping no longer
   lists; an entry that stays keeps the actions the policy gives it, which an administrator widens in the policy
   (Q-CI-35). The rules of R-CI-010 and R-CI-011 count the actions of these entries and of the listed groups.
-- `groups`: trove groups whose grants the token also carries, also evaluated at use time.
+- `groups`: Quader groups whose grants the token also carries, also evaluated at use time.
 - `inline`: grants defined in the mapping. Each has a set of `repositories`, selectors of
   [authorization.md](authorization.md) R-AUTHZ-004 in the form of the mapping's tier ([Q-AUTHZ-216](authorization.md#q-authz-216--repository-selectors-name-the-project-in-instance-contexts-and-a-bare-key-inside-a-project)): a
   system mapping's are an instance context (`web/npm-internal`, `web/npm-*`, `*/npm-remote`, `@any-local:npm`; a bare
   key is 422 `invalid_pattern`), as in the example above; a project tier's are a project context (`npm-internal`,
   `npm-*`, `@any-local:npm`), evaluated against the project's repositories only (R-CI-019). Each has exactly one of `packages` or `paths` (include/exclude patterns), `actions` from
   `read`, `annotate`, `deploy`, `overwrite`, `delete`, and `ownership` (`bind_project` or
-  `none`, see R-CI-015). Patterns may be templated (R-CI-014). trove renders inline grants once
+  `none`, see R-CI-015). Patterns may be templated (R-CI-014). Quader renders inline grants once
   at exchange time and stores them with the issuance (R-CI-020); a later mapping edit does not
   change them.
 - `ownership` defaults to `bind_project` when `actions` contain `deploy`, `overwrite` or
@@ -1451,11 +1451,11 @@ three, before caps and `scope` narrowing:
   ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-028, R-AUTH-029), so a
   job can inspect and revoke its own token (R-CI-017). The gate is the shared authorization step of the management API: a
   CI token is refused there with 403 `ci_token_restricted` on every operation except the public ones, the operations of
-  the action form (a repository action on a coordinate) and the two that declare `x-trove-ci: admitted`, so a new
+  the action form (a repository action on a coordinate) and the two that declare `x-quader-ci: admitted`, so a new
   operation is closed to CI tokens until its declaration says otherwise (Q-CI-18). The package-protocol endpoints and
   `/files/…` are not operations of that table and admit CI tokens as they admit any token.
 - No user subject: a CI token's principal is the mapping, with the job identity as attributes. It
-  is never a user. trove creates no transient user, and no "join automatically" group
+  is never a user. Quader creates no transient user, and no "join automatically" group
   membership applies to CI tokens. This deliberately departs from the behavior described in
   CIOIDC-014, where user-subject CI tokens silently inherit such groups. Acting within a human's
   permissions is the explicit, narrowing option of R-CI-024.
@@ -1532,7 +1532,7 @@ repository or project. The save fails with 422 `template_unanchored`. A `reposit
 `@`, since templating never produces a class selector ([authorization.md](authorization.md)
 R-AUTHZ-004): 422 `template_invalid`.
 
-Points the catalog leaves open (CIOIDC-011), fixed for trove:
+Points the catalog leaves open (CIOIDC-011), fixed for Quader:
 
 - List-valued claims: only a JSON array of strings is a list. In `groups_from_claim` (R-CI-024)
   the template runs once per element. A JSON string is one value and is never split at commas,
@@ -1543,7 +1543,7 @@ Points the catalog leaves open (CIOIDC-011), fixed for trove:
   [`grant_render_failed`]; there is no partial or "no-op" outcome.
 - Escaping inside a string argument is defined by the `string` rule above (`\"` and `\\`); `|`
   and `$` have no special meaning there.
-- trove does not implement the catalog's stage-pattern language (`$n` back-references,
+- Quader does not implement the catalog's stage-pattern language (`$n` back-references,
   `op:replaceAll`). Patterns written for it are rewritten by hand into this grammar. Literal
   text, `replace`, `segment`, `trim_prefix`, `trim_suffix` and `require` cover appending and
   stripping affixes, extracting path segments, replacing characters and rejecting values;
@@ -1655,7 +1655,7 @@ contribution window of every other contributing mapping = min( ttl, its own max_
   400 [`ttl_below_minimum`] with the description naming the bound. Another contribution's window below the floor is
   not refused: it ends that contribution early.
 - `ci.token.max_ttl` MUST NOT exceed `auth.tokens.cit.max_ttl`, the CI token ceiling of
-  [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-026 (6 h). trove
+  [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-026 (6 h). Quader
   refuses to start with a larger value. One ceiling governs every CI token, so the two pages
   cannot drift apart.
 - A job that runs longer than one CI token's lifetime exchanges again. A GitLab job presents the
@@ -1673,7 +1673,7 @@ ci:
     default_ttl: 15m   # default (proposed)
     max_ttl: 1h        # default (proposed); ceiling auth.tokens.cit.max_ttl (6h)
     min_ttl: 30s       # default (proposed)
-# environment override, example: TROVE_CI_TOKEN_MAX_TTL=30m
+# environment override, example: QUADER_CI_TOKEN_MAX_TTL=30m
 ```
 
 **Acceptance criteria**
@@ -1686,14 +1686,14 @@ ci:
 - A system mapping without a bound and a project mapping with `max_ttl_seconds: 1` (with `ci.token.min_ttl: 1s`) match one
   job: `expires_in` is the default 900, and after a second the token reads the system mapping's repositories but no
   longer the project's (Q-CI-47). `max_ttl_seconds` below `ci.token.min_ttl` is refused at the save.
-- `TROVE_CI_TOKEN_MAX_TTL=12h` with the default `auth.tokens.cit.max_ttl` makes startup fail
+- `QUADER_CI_TOKEN_MAX_TTL=12h` with the default `auth.tokens.cit.max_ttl` makes startup fail
   with a message that names both keys.
 
 ### R-CI-017 · CI token identity, presentation and revocation
 Priority: **MVP** · Covers: CIOIDC-010, CIOIDC-014, CIOIDC-018
 
 - Format, hashing and storage follow INV-8 and [identity-and-authentication.md](identity-and-authentication.md)
-  (prefix `trv_cit_`, SHA-256 at rest, CRC32 suffix). This page adds the issuance record
+  (prefix `qdr_cit_`, SHA-256 at rest, CRC32 suffix). This page adds the issuance record
   (R-CI-020).
 - Presentation per INV-8: `Authorization: Bearer <token>`, HTTP Basic with any username and the
   token as password, or `X-NuGet-ApiKey: <token>` on NuGet push.
@@ -1719,7 +1719,7 @@ Priority: **MVP** · Covers: CIOIDC-010, CIOIDC-014, CIOIDC-018
   until they expire, and policy and group grants follow live changes.
 
   Every revocation writes `ci.token.revoked` (R-CI-020). The revocation journal keeps it across a
-  point-in-time restore and across the restore of a trove backup, so a CI token revoked after the
+  point-in-time restore and across the restore of a Quader backup, so a CI token revoked after the
   restore point stays revoked. The token row carries a reason of the token table: `mapping_deleted` for a
   mapping disabled or deleted, `admin` for an issuer and the bulk revoke, the token API's reasons for one
   token by ID and for `DELETE /api/v1/tokens/current` (`owner`); the event's cause names which of the five it
@@ -1762,7 +1762,7 @@ Priority: **MVP** · Covers: CIOIDC-010, CIOIDC-014, CIOIDC-018
 ### R-CI-018 · Replay protection
 Priority: **MVP** · Covers: CIOIDC-018, CIOIDC-019
 
-- trove MUST record every exchanged subject token by (`ci_issuer`, `jti`) with the exchange
+- Quader MUST record every exchanged subject token by (`ci_issuer`, `jti`) with the exchange
   count and the subject's `exp`. This happens in the exchange transaction as an atomic upsert,
   so all replicas see the same count (INV-12).
 - **Only PostgreSQL holds the replay set (Q-CI-13).** No replica keeps replay state in memory,
@@ -1778,12 +1778,12 @@ Priority: **MVP** · Covers: CIOIDC-018, CIOIDC-019
 - **After a restore.** `ci_subject_token_uses` is backed up as `data`
   ([backup-and-restore.md](backup-and-restore.md) R-BAK-004), so a `jti` exchanged before the
   snapshot stays used. Exchanges after the snapshot are lost with the rest of the database. While
-  `single_use_subject_tokens` is `true`, trove therefore rejects a subject token whose `iat` is not
+  `single_use_subject_tokens` is `true`, Quader therefore rejects a subject token whose `iat` is not
   later than `restored_at + clock_skew` [`subject_token_predates_restore`]. `restored_at` is the
   `system_state` key that records when the last restore finished:
-  - `trove backup restore` sets it in the finishing transaction of
+  - `quader backup restore` sets it in the finishing transaction of
     [backup-and-restore.md](backup-and-restore.md) R-BAK-021 step 9, which also lets replicas
-    start serving (R-BAK-022). `trove admin post-restore` sets it in
+    start serving (R-BAK-022). `quader admin post-restore` sets it in
     [ha-and-helm.md](ha-and-helm.md) R-HA-025 step 4, after every writer was stopped in step 1.
   - The exchange transaction reads it for single-use issuers, next to the `jti` upsert. No replica
     keeps it from start-up, so the cut-off also holds on a replica that was already running when
@@ -1812,7 +1812,7 @@ Priority: **MVP** · Covers: CIOIDC-018, CIOIDC-019
 - Rows are deleted by the task `ci-replay-cleanup` (R-CI-030) once
   `exp + clock_skew + ci.replay.retention_after_expiry` has passed. After that the token fails the
   time check anyway. The task compares on the database clock and the time check runs on the replica's,
-  so `retention_after_expiry` is at least 1 minute (trove refuses to start with less), the margin for a
+  so `retention_after_expiry` is at least 1 minute (Quader refuses to start with less), the margin for a
   replica clock that lags the database's; the row stores the subject's `exp` rounded up to the second
   ([Q-CI-51](#q-ci-51--what-the-exchange-tells-a-caller-and-when-a-replica-learns-an-issuer)).
 - Why the default is off for GitLab: a GitLab job receives its ID tokens as the variables its
@@ -1869,12 +1869,12 @@ ci:
 - With single use on, 1,000 ID tokens of a test issuer are each sent to two replicas at once while
   Valkey is stopped, then again while a Sentinel failover is forced, then again around
   `valkey-cli FLUSHALL`. Every `jti` yields exactly one 200, and no exchange answers 5xx.
-- With single use on, a token issued ten minutes before the restore of a trove backup finished and
+- With single use on, a token issued ten minutes before the restore of a Quader backup finished and
   never exchanged answers 400 `subject_token_predates_restore` after the restore; a token issued
   more than `clock_skew` after the restore finished is exchanged. With single use off, the older
   token is exchanged.
 - With single use on and the default 60-second skew, a token with `iat` 30 s before the restore
-  finished is refused. The same holds after `trove admin post-restore` on a replica that was
+  finished is refused. The same holds after `quader admin post-restore` on a replica that was
   already running when the command ran.
 
 ### R-CI-019 · Mapping management API and dry-run evaluation
@@ -1989,7 +1989,7 @@ warning `scope_policy_grants_not_checked` (Q-CI-36):
 
 Every create, update, disable, enable and delete emits an audit event with the before and after
 record (R-CI-020). Disables, deletions and updates also enter the revocation journal, and its
-replay after a point-in-time restore or the restore of a trove backup disables, never deletes, a
+replay after a point-in-time restore or the restore of a Quader backup disables, never deletes, a
 mapping (R-CI-020). Every one of these writes increments the issuer's `mappings_version`
 (R-CI-009).
 
@@ -2113,16 +2113,16 @@ changes `true` to `false`, `.enabled` when it changes `false` to `true`, and `.u
 Each carries the full before and after record, so a `.disabled` event also shows the other fields
 changed with it. Applying a configuration document (R-OPS-030) writes the same events as the API.
 
-trove never logs the subject token, the job token or the issued token, at any log level. The
+Quader never logs the subject token, the job token or the issued token, at any log level. The
 HTTP client used for GitLab calls redacts the `JOB-TOKEN` and `Authorization` headers.
 
 **Revocation journal (MVP).** A database restore to time *t* undoes every access removal made
-after *t* ([ha-and-helm.md](ha-and-helm.md) H-37), and the restore of a trove backup does the same
+after *t* ([ha-and-helm.md](ha-and-helm.md) H-37), and the restore of a Quader backup does the same
 for every removal after its snapshot. The events below are therefore flagged
 `journal: revocation` in the event registry
 ([operations-and-observability.md](operations-and-observability.md) R-OPS-014). The audit writer
 copies each one into the revocation journal of [ha-and-helm.md](ha-and-helm.md) R-HA-054, and
-`trove admin post-restore` and `trove backup restore` re-apply it (Q-HA-9,
+`quader admin post-restore` and `quader backup restore` re-apply it (Q-HA-9,
 [backup-and-restore.md](backup-and-restore.md) R-BAK-024). An entry carries IDs and records, never a token
 value, hash or other secret. CI issuer and mapping records hold no secret: `ca_bundle_ref` is a
 reference to a PEM bundle, not key material.
@@ -2212,21 +2212,21 @@ keeps); a record the API would refuse proves nothing, so the update rule suspend
 
 **Metrics** (INV-16; labels have bounded cardinality and carry no project or user names):
 
-- `trove_ci_exchanges_total{issuer,outcome,reason}`
-- `trove_ci_exchange_duration_seconds{issuer}` (histogram)
-- `trove_ci_signing_keys_refresh_total{issuer,trigger,outcome}`, `trigger` one of `scheduled`,
+- `quader_ci_exchanges_total{issuer,outcome,reason}`
+- `quader_ci_exchange_duration_seconds{issuer}` (histogram)
+- `quader_ci_signing_keys_refresh_total{issuer,trigger,outcome}`, `trigger` one of `scheduled`,
   `unknown_kid`, `admin`
-- `trove_ci_signing_keys_age_seconds{issuer}`: a gauge read from PostgreSQL (the shared row's
+- `quader_ci_signing_keys_age_seconds{issuer}`: a gauge read from PostgreSQL (the shared row's
   `fetched_at`) under the rule of [operations-and-observability.md](operations-and-observability.md)
   R-OPS-007, so every replica reports the same value and dashboards aggregate it with `max`
-- `trove_ci_mapping_set_stale_total{issuer}`: exchanges whose mapping cache lagged behind the
+- `quader_ci_mapping_set_stale_total{issuer}`: exchanges whose mapping cache lagged behind the
   issuer's `mappings_version` and that evaluated again from PostgreSQL (R-CI-007). A steady rate
   means change propagation is slow on that replica.
-- `trove_ci_tokens_active{issuer}`: unexpired, unrevoked CI tokens, a gauge read from PostgreSQL
+- `quader_ci_tokens_active{issuer}`: unexpired, unrevoked CI tokens, a gauge read from PostgreSQL
   under the same rule (evaluated once per `metrics.db_gauge_interval` per replica, aggregated with
   `max`, never summed across replicas)
-- `trove_ci_job_token_lookups_total{issuer,outcome}`
-- `trove_ci_job_token_lookup_duration_seconds{issuer}`
+- `quader_ci_job_token_lookups_total{issuer,outcome}`
+- `quader_ci_job_token_lookup_duration_seconds{issuer}`
 
 **Configuration**
 
@@ -2251,7 +2251,7 @@ The task `ci-issuance-retention` (R-CI-030) deletes issuance records whose `expi
 - `PUT` of a mapping that changes only `enabled` from `true` to `false` writes one
   `ci.mapping.disabled` event and no `ci.mapping.updated` event.
 - Each of the following is made after the restore point *t*, followed by a restore to *t* and
-  `post-restore` (R-HA-025), and again after a backup's snapshot, followed by `trove backup restore`
+  `post-restore` (R-HA-025), and again after a backup's snapshot, followed by `quader backup restore`
   of that backup (R-BAK-024):
   - A CI token issued with `ttl=3600` and revoked through `POST /api/v1/ci/issuances/revoke` is
     rejected as revoked, not as expired, and the output lists `ci.token.revoked … applied`.
@@ -2279,28 +2279,28 @@ bounded:
   - `ci_exchange_address`: per client address, checked first for every request to the endpoint,
     before the body is read. The address comes from the trusted-proxy handling of
     [architecture.md](architecture.md) R-ARCH-006. Addresses in `exempt_cidrs` skip this limiter.
-    An installation whose runners reach trove through a few NAT addresses lists the runner
+    An installation whose runners reach Quader through a few NAT addresses lists the runner
     networks there, because one address then carries every job of the fleet.
   - `ci_exchange_subject`: per CI issuer and subject, checked after the subject token has passed
     R-CI-004 and before the exchange transaction (R-CI-007). The subject is the value of the
     first claim of the issuer's `pin_claims` that the token carries (`project_id` for GitLab,
     `repository_id` for GitHub), or `sub` when it carries none; in the job-token fallback (P2) it
     is the synthesized `project_id`. Forged tokens never reach this limiter. On a public issuer,
-    an outsider's own project spends only its own budget, never that of the projects trove
+    an outsider's own project spends only its own budget, never that of the projects Quader
     serves. The limiter also bounds the PostgreSQL writes that one runaway pipeline can cause.
   - Exceeding either answers 429 `slow_down` [`rate_limited`] with `Retry-After`. Both run before
     the `jti` is recorded, so a retry of a single-use token after a 429 is still accepted.
   - While Valkey is unavailable, each replica answers from its share of each budget: rate and
     burst divided by the number of live `web` replicas (R-ARCH-034). No exchange fails because
-    Valkey failed. A writer under trove's Valkey prefix can refuse exchanges with 429, but cannot
-    make trove accept one ([architecture.md](architecture.md) H-49).
+    Valkey failed. A writer under Quader's Valkey prefix can refuse exchanges with 429, but cannot
+    make Quader accept one ([architecture.md](architecture.md) H-49).
 - Cost bounds: the key-row re-read and key refetch throttles (R-CI-003), so a forged `kid` costs
   no PostgreSQL query of its own; bounded condition size and RE2 (R-CI-010);
   at most `ci.mappings.max_per_issuer` mappings. Requests from an exempt address are bounded by
   the replica's `server.max_in_flight` ([architecture.md](architecture.md) R-ARCH-005) until their
   token is validated, and by the per-subject budget after that.
 - Signature verification happens before any database write. An unauthenticated caller can make
-  trove write only an audit row for a denial. Denials are aggregated per replica: the first
+  Quader write only an audit row for a denial. Denials are aggregated per replica: the first
   denial of a client address and reason in a minute writes its `ci.exchange.denied` event at once,
   and the later ones of that minute are written as one event with their count when the minute
   ends. With n `web` replicas, that is at most 2n events per address, reason and minute. The
@@ -2324,7 +2324,7 @@ ci:
       exempt_cidrs: []                # default (proposed); example: ["10.20.0.0/16"], a runner network
 ```
 
-`per_issuer_per_second` of the earlier per-replica design no longer exists; trove refuses to start
+`per_issuer_per_second` of the earlier per-replica design no longer exists; Quader refuses to start
 when it is set and names the key and its replacement.
 
 **Acceptance criteria**
@@ -2361,21 +2361,21 @@ only for `gitlab` issuers.
 ```mermaid
 sequenceDiagram
     participant J as GitLab job
-    participant A as trove
+    participant A as Quader
     participant GL as GitLab API
     J->>A: POST /api/v1/auth/oidc/token (subject_token_type = gitlab-job-token, ci_issuer = gitlab-internal)
     A->>GL: GET /api/v4/job with header JOB-TOKEN
     GL-->>A: 200 job JSON (status running) or 401
     A->>A: synthesize claims, evaluate job_token mappings, cap to read
-    A-->>J: 200 trv_cit_... (short TTL)
+    A-->>J: 200 qdr_cit_... (short TTL)
 ```
 
 Behavior:
 
-- Request: `subject_token_type=urn:trove:token-type:gitlab-job-token` (a trove-private
+- Request: `subject_token_type=urn:quader:token-type:gitlab-job-token` (a Quader-private
   identifier; RFC 8693 §3 allows other URIs), `subject_token=$CI_JOB_TOKEN`, and `ci_issuer`
-  (required, since the token carries no issuer trove can read).
-- trove calls `GET <issuer>/api/v4/job` with header `JOB-TOKEN: <token>`. It never uses the
+  (required, since the token carries no issuer Quader can read).
+- Quader calls `GET <issuer>/api/v4/job` with header `JOB-TOKEN: <token>`. It never uses the
   query-string form, which ends up in proxy logs. The URL comes only from the CI issuer record
   (no SSRF). TLS, CA bundle and outbound proxy are as in R-CI-003. Timeout
   `ci.job_token_fallback.request_timeout`; one retry only on connection errors. GitLab 401/403 →
@@ -2383,7 +2383,7 @@ Behavior:
 - The response must have `status = "running"`, otherwise [`job_not_running`]. GitLab documents
   this endpoint only through an example response, with no field descriptions
   ([Jobs API, retrieve a job by job token](https://docs.gitlab.com/api/jobs/#retrieve-a-job-by-job-token),
-  read 2026-10-28). trove synthesizes claims only from fields of that example whose meaning is
+  read 2026-10-28). Quader synthesizes claims only from fields of that example whose meaning is
   unambiguous:
 
   | Synthesized claim | Source field |
@@ -2397,14 +2397,14 @@ Behavior:
   | `user_id`, `user_login` | `user.id`, `user.username` |
   | `iss` | the CI issuer's issuer URL (not from GitLab) |
 
-  The example contains no project path (only inside `web_url`, which trove does not parse), no
+  The example contains no project path (only inside `web_url`, which Quader does not parse), no
   namespace, no ref protection and no `job_project_*` or `source_project_*` fields; its `project`
   object holds only `ci_job_token_scope_enabled`. `project_path`, `namespace_*`,
   `ref_protected`, `environment*`, `job_project_*`, `source_project_*` and `jti` are therefore
   absent, and conditions on them behave as R-CI-010 defines for missing claims.
 - The example also carries `source` (`"push"`). Its meaning is not documented for this endpoint;
-  trove assumes it holds the pipeline-source values of `CI_PIPELINE_SOURCE` (not verified against
-  a GitLab instance). Because that meaning is an assumption, trove never synthesizes
+  Quader assumes it holds the pipeline-source values of `CI_PIPELINE_SOURCE` (not verified against
+  a GitLab instance). Because that meaning is an assumption, Quader never synthesizes
   `pipeline_source` from it, so no mapping can grant on it. It uses the field only to refuse: a
   job whose `source` is absent,
   `merge_request_event` or `external_pull_request_event` counts as cross-project, because the
@@ -2414,7 +2414,7 @@ Behavior:
   fails [`cross_project_source_denied`].
 - Only mappings with `job_token` in `subject_kinds` are evaluated. ID-token mappings never match
   fallback claims by accident. The pinning rule applies to `project_id`.
-- Fallback grants are always capped to `read`. Without `ref_protected`, trove cannot tell a
+- Fallback grants are always capped to `read`. Without `ref_protected`, Quader cannot tell a
   protected release pipeline from any branch push, so no write is possible in this mode.
 - TTL: `min(ci.job_token_fallback.max_ttl, other bounds of R-CI-016 except the subject exp)`.
 - Replay key: `jti = "job:" + hex(SHA-256(token))`. The raw token is never stored. Concurrent
@@ -2427,11 +2427,11 @@ Risks, per case, and their mitigations:
 
 | Risk | When it is real | Mitigation |
 |---|---|---|
-| trove receives a GitLab credential that also works on GitLab's packages, releases, deployments, environments, repository-file and job-artifact APIs with the triggering user's access level | Every fallback exchange, while the job runs | Off by default. Token used in memory for one request and never stored or logged. `JOB-TOKEN` redacted in the HTTP client. A leak in trove would expose GitLab data (H-28). |
-| A service that the job sends its job token to (another tool, a misconfigured upstream) can exchange it at trove | Fallback enabled and some job sends its job token elsewhere. The token has no audience, so nothing stops this. | Grants capped to `read`. Short TTL. Mappings pinned by `project_id`. Single use available through the replay key. |
+| Quader receives a GitLab credential that also works on GitLab's packages, releases, deployments, environments, repository-file and job-artifact APIs with the triggering user's access level | Every fallback exchange, while the job runs | Off by default. Token used in memory for one request and never stored or logged. `JOB-TOKEN` redacted in the HTTP client. A leak in Quader would expose GitLab data (H-28). |
+| A service that the job sends its job token to (another tool, a misconfigured upstream) can exchange it at Quader | Fallback enabled and some job sends its job token elsewhere. The token has no audience, so nothing stops this. | Grants capped to `read`. Short TTL. Mappings pinned by `project_id`. Single use available through the replay key. |
 | Dependency on GitLab's availability: GitLab down means no exchange | Every fallback exchange | 503 `gitlab_unreachable`. The ID-token path stays offline-verifiable and unaffected. |
-| Latency: one GitLab round trip per exchange | Every fallback exchange | 5-second timeout, single-flight, metrics `trove_ci_job_token_lookup_duration_seconds`. Exchanges happen once per job step, not per package request. |
-| GitLab-side scoping (job token allowlist, fine-grained permissions) does not apply to trove | Always: the allowlist governs access to GitLab resources only | trove's own mappings are the only gate. Documented in the CI issuer's UI help text. |
+| Latency: one GitLab round trip per exchange | Every fallback exchange | 5-second timeout, single-flight, metrics `quader_ci_job_token_lookup_duration_seconds`. Exchanges happen once per job step, not per package request. |
+| GitLab-side scoping (job token allowlist, fine-grained permissions) does not apply to Quader | Always: the allowlist governs access to GitLab resources only | Quader's own mappings are the only gate. Documented in the CI issuer's UI help text. |
 
 **Configuration**
 
@@ -2445,8 +2445,8 @@ ci:
 
 **Acceptance criteria**
 
-- With the mode disabled (default), `subject_token_type=urn:trove:token-type:gitlab-job-token`
-  answers 400 `unsupported_subject_token_type` and trove makes no call to GitLab.
+- With the mode disabled (default), `subject_token_type=urn:quader:token-type:gitlab-job-token`
+  answers 400 `unsupported_subject_token_type` and Quader makes no call to GitLab.
 - In a build without the mode, `PUT` of a CI issuer with `"job_token_fallback": {"enabled": true}`
   answers 422 `job_token_fallback_not_available`.
 - With the mode enabled and a mapping `{"claim": "project_id", "equals": "4242"}` with
@@ -2458,7 +2458,7 @@ ci:
   default settings, and a token with only `read:` items once the mapping sets
   `cross_project_source: read_only`.
 - A packet capture of the GitLab call shows the token only in the `JOB-TOKEN` header, and no
-  trove log line contains it.
+  Quader log line contains it.
 
 ### R-CI-023 · Delegated mapping management
 Priority: **P1** · Covers: CIOIDC-006, CIOIDC-015, ADMAPI-030
@@ -2537,7 +2537,7 @@ which narrows:
   pipelines from stored service-account tokens to OIDC without rewriting policies.
 - `groups_from_claim: {"claim": "groups_direct", "template": "gitlab-{{ value | slug }}", "allowed": ["gitlab-*"]}`:
   - each element of an array claim is rendered (R-CI-014, with `value` as the source);
-  - names that exist as trove groups and match an `allowed` glob contribute their grants,
+  - names that exist as Quader groups and match an `allowed` glob contribute their grants,
     while others are ignored and listed in the issuance record;
   - `allowed` is mandatory, so a claim value cannot name an arbitrary group such as an
     administrators group;
@@ -2550,7 +2550,7 @@ which narrows:
   default, GitLab 17.3+) and omits it for users in more than 200 groups
   ([token payload](https://docs.gitlab.com/ci/secrets/id_token_authentication/#token-payload)).
 - `triggering_user: {"login_provider": "<human OIDC provider name>", "if_unknown": "deny"}`:
-  - trove looks up the user whose login identity is (that provider's issuer, `sub` = the
+  - Quader looks up the user whose login identity is (that provider's issuer, `sub` = the
     token's `user_id`). GitLab's OIDC `sub` for a user is the user ID
     ([OpenID Connect provider](https://docs.gitlab.com/integration/openid_connect_provider/)),
     so this works when the same GitLab instance is also the human login provider (INV-7). The
@@ -2562,7 +2562,7 @@ which narrows:
   - `if_unknown: deny` fails the exchange [`no_matching_mapping`] when no such user exists;
     `mapping_only` skips the intersection.
   - The match uses the immutable `user_id`, never `user_login`.
-  - trove deliberately offers no "act as the user" mode, which would give every job the
+  - Quader deliberately offers no "act as the user" mode, which would give every job the
     triggering person's full rights.
 
 **Acceptance criteria**
@@ -2593,7 +2593,7 @@ Same mechanism, kind `github`:
 - npm's native trusted publishing on GitHub Actions requests its ID token itself, with audience
   exactly `npm:${new URL(registry).hostname}`, and posts it to the exchange route of
   [formats/npm.md](formats/npm.md) R-NPM-022. The default `allowed_audiences` of R-CI-001 contains
-  that value for a registry URL on trove's base URL, so no audience setting is needed for it.
+  that value for a registry URL on Quader's base URL, so no audience setting is needed for it.
 - The `unprotected_write` rule uses GitHub's `ref_protected` claim (listed in GitHub's
   discovery `claims_supported`). For reusable workflows, `job_workflow_ref` can pin the called
   workflow.
@@ -2607,7 +2607,7 @@ Same mechanism, kind `github`:
     publish:
       runs-on: ubuntu-latest
       steps:
-        - name: Exchange the GitHub ID token for a trove token
+        - name: Exchange the GitHub ID token for a quader token
           run: |
             id_token="$(curl -sS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
               "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://packages.example.com" | jq -r .value)"
@@ -2616,13 +2616,13 @@ Same mechanism, kind `github`:
               --data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:id_token' \
               --data-urlencode 'subject_token@-' | jq -er .access_token)"
             echo "::add-mask::${token}"
-            echo "TROVE_TOKEN=${token}" >> "$GITHUB_ENV"
+            echo "QUADER_TOKEN=${token}" >> "$GITHUB_ENV"
   ```
 
 **Acceptance criteria**
 
 - A GitHub Actions workflow in a test repository exchanges and runs `npm publish` against
-  trove. The same workflow in a fork, or in another owner's repository, gets
+  Quader. The same workflow in a fork, or in another owner's repository, gets
   `no_matching_mapping`.
 - A `github` mapping without a `repository_id` or `repository_owner_id` pin is rejected with
   `pin_required`.
@@ -2643,7 +2643,7 @@ Kubernetes service-account token issuers, and other CI systems.
   - `sub` `sc://<organization>/<project>/<service-connection>`;
   - audience `api://AzureADTokenExchange`.
 
-  Because that audience is shared with every other relying party of the same issuer, trove
+  Because that audience is shared with every other relying party of the same issuer, Quader
   cannot rely on it for exclusivity. Mappings should pin `sub` exactly. `generic` issuers
   therefore default to `single_use_subject_tokens: true` (R-CI-018, Q-CI-4).
 - Microsoft Entra applications that sign with application-specific keys are supported by setting
@@ -2689,8 +2689,8 @@ mapping that names none (patterns, classes, templates, policies) gets a placehol
 ### R-CI-028 · Reference pipeline: npm and NuGet from GitLab CI
 Priority: **MVP** · Covers: CIOIDC-030
 
-The examples in [Examples](#examples) are part of the specification. trove's end-to-end test
-suite runs them against the issuer double ([test/oidcstub](../../test/oidcstub)) and a trove
+The examples in [Examples](#examples) are part of the specification. Quader's end-to-end test
+suite runs them against the issuer double ([test/oidcstub](../../test/oidcstub)) and a Quader
 deployment from the Helm chart (INV-13), never against a real GitLab or gitlab.com
 ([Q-CI-25](#q-ci-25--gitlabs-behaviour-is-validated-against-a-real-instance-the-tests-run-against-the-double)).
 The double mints each job's ID token with the claim set GitLab issues to that job, as recorded from
@@ -2718,12 +2718,12 @@ R-ARCH-032), so a job's exchange, installs, publish and self-revocation reach di
   on `npm view`, although their `expires_in` has not passed.
 - A job whose exchange is refused prints `error`, `error_description`, `reason` and `requestId` of the answer and stops;
   the `requestId` leads to the denial's audit event (R-CI-020) and to the log of the request.
-- No output of a job's steps contains a `trv_cit_` value or the ID token.
+- No output of a job's steps contains a `qdr_cit_` value or the ID token.
 - The pipeline passes while the node of one `web` replica is drained with `kubectl drain` during
   its run, and again with Valkey stopped for the whole run.
 
 ### R-CI-029 · CI state across replicas, Valkey outages and restores
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 The exchange and every request made with a CI token run on `web` replicas. Any request of a job
 may reach any of them, because the Kubernetes Service distributes requests at random and without
@@ -2767,13 +2767,13 @@ state needs a row here before it ships.
 - During 500 exchanges and 500 package requests with CI tokens, a Sentinel failover is forced and
   `valkey-cli FLUSHALL` runs on the new primary. No request answers 5xx, and every exchange answers
   as in a run without the failover, apart from 429 answers.
-- After the CI suite, `valkey-cli --scan --pattern 'trove:*'` lists, for this page, only counter
+- After the CI suite, `valkey-cli --scan --pattern 'quader:*'` lists, for this page, only counter
   keys of the limiters `ci_exchange_address` and `ci_exchange_subject`.
 - A `web` pod is deleted gracefully while 50 jobs exchange in a loop. Every exchange answers 200,
   and no client sees a reset connection or a 5xx.
 
 ### R-CI-030 · Background tasks of the CI exchange
-Priority: **MVP** · Covers: trove-only
+Priority: **MVP** · Covers: quader-only
 
 Recurring CI work runs as maintenance tasks of
 [operations-and-observability.md](operations-and-observability.md) R-OPS-019 on the job queue. Only
@@ -2823,7 +2823,7 @@ maintenance:
 
 ## Examples
 
-### trove side
+### Quader side
 
 CI issuer for GitLab.com (`POST /api/v1/ci/issuers`; values are examples):
 
@@ -2886,7 +2886,7 @@ request body above in its lowerCamelCase wire form (R-CI-002); a `ciMappings` en
 the path parameter of the create operation (R-CI-019):
 
 ```yaml
-apiVersion: trove/v1
+apiVersion: quader/v1
 kind: Configuration
 metadata:
   name: ci-gitlab-com                      # example
@@ -2935,12 +2935,12 @@ spec:
 stages: [publish]
 
 variables:
-  TROVE_URL: "https://packages.example.com"          # example
+  QUADER_URL: "https://packages.example.com"          # example
 
 # Hidden job: requests the ID token and exchanges it in before_script.
-.trove:
+.quader:
   id_tokens:
-    TROVE_ID_TOKEN:
+    QUADER_ID_TOKEN:
       aud: https://packages.example.com                # must be an allowed audience of the CI issuer
   before_script:
     - |
@@ -2948,77 +2948,77 @@ variables:
         apt-get update -qq && apt-get install -y -qq --no-install-recommends curl jq ca-certificates >/dev/null
       fi
     - |
-      response="$(printf '%s' "$TROVE_ID_TOKEN" | curl -sS --retry 3 \
+      response="$(printf '%s' "$QUADER_ID_TOKEN" | curl -sS --retry 3 \
         --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
         --data-urlencode 'subject_token_type=urn:ietf:params:oauth:token-type:id_token' \
         --data-urlencode 'subject_token@-' \
-        "$TROVE_URL/api/v1/auth/oidc/token")"
-      TROVE_TOKEN="$(printf '%s' "$response" | jq -er '.access_token // empty')" \
+        "$QUADER_URL/api/v1/auth/oidc/token")"
+      QUADER_TOKEN="$(printf '%s' "$response" | jq -er '.access_token // empty')" \
         || { printf '%s\n' "$response" | jq '{error, error_description, reason, requestId}' >&2; exit 1; }
-      export TROVE_TOKEN
-      unset response TROVE_ID_TOKEN
+      export QUADER_TOKEN
+      unset response QUADER_ID_TOKEN
 
 publish-npm:
   stage: publish
   image: node:24-bookworm                               # example
-  extends: .trove
+  extends: .quader
   rules:
     - if: $CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"
   script:
-    # npm expands ${TROVE_TOKEN} at run time; the token is never written to disk.
+    # npm expands ${QUADER_TOKEN} at run time; the token is never written to disk.
     - |
       cat > .npmrc <<'EOF'
       registry=https://packages.example.com/api/npm/web/npm-all/
-      //packages.example.com/api/npm/web/npm-all/:_authToken=${TROVE_TOKEN}
-      //packages.example.com/api/npm/web/npm-internal/:_authToken=${TROVE_TOKEN}
+      //packages.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}
+      //packages.example.com/api/npm/web/npm-internal/:_authToken=${QUADER_TOKEN}
       EOF
     - npm ci
     - npm version --no-git-tag-version --allow-same-version "${CI_COMMIT_TAG#v}"
     - npm publish --registry https://packages.example.com/api/npm/web/npm-internal/
     # Last step: revoke the CI token, so it does not outlive the job (R-CI-017).
     - |
-      printf 'Authorization: Bearer %s\n' "$TROVE_TOKEN" | curl -sS -X DELETE -H @- "$TROVE_URL/api/v1/tokens/current"
+      printf 'Authorization: Bearer %s\n' "$QUADER_TOKEN" | curl -sS -X DELETE -H @- "$QUADER_URL/api/v1/tokens/current"
 
 push-nuget:
   stage: publish
   image: mcr.microsoft.com/dotnet/sdk:10.0              # example
-  extends: .trove
+  extends: .quader
   rules:
     - if: $CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"
   script:
-    # nuget.config (below) reads %TROVE_TOKEN% for restores from nuget-all.
+    # nuget.config (below) reads %QUADER_TOKEN% for restores from nuget-all.
     - dotnet restore
     - >-
       dotnet pack src/Acme.Billing.InvoiceApi/Acme.Billing.InvoiceApi.csproj
       -c Release -o out --no-restore -p:PackageVersion="${CI_COMMIT_TAG#v}"
     - >-
       dotnet nuget push "out/*.nupkg"
-      --source "$TROVE_URL/api/nuget/web/nuget-internal/v3/index.json"
-      --api-key "$TROVE_TOKEN"
+      --source "$QUADER_URL/api/nuget/web/nuget-internal/v3/index.json"
+      --api-key "$QUADER_TOKEN"
     - |
-      printf 'Authorization: Bearer %s\n' "$TROVE_TOKEN" | curl -sS -X DELETE -H @- "$TROVE_URL/api/v1/tokens/current"
+      printf 'Authorization: Bearer %s\n' "$QUADER_TOKEN" | curl -sS -X DELETE -H @- "$QUADER_URL/api/v1/tokens/current"
 ```
 
 `nuget.config` in the repository root. Developers use the same file with their personal access
-token in `TROVE_TOKEN`:
+token in `QUADER_TOKEN`:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
     <clear />
-    <add key="trove" value="https://packages.example.com/api/nuget/web/nuget-all/v3/index.json" />
-    <add key="trove-internal" value="https://packages.example.com/api/nuget/web/nuget-internal/v3/index.json" />
+    <add key="quader" value="https://packages.example.com/api/nuget/web/nuget-all/v3/index.json" />
+    <add key="quader-internal" value="https://packages.example.com/api/nuget/web/nuget-internal/v3/index.json" />
   </packageSources>
   <packageSourceCredentials>
-    <trove>
+    <quader>
       <add key="Username" value="ci" />
-      <add key="ClearTextPassword" value="%TROVE_TOKEN%" />
-    </trove>
-    <trove-internal>
+      <add key="ClearTextPassword" value="%QUADER_TOKEN%" />
+    </quader>
+    <quader-internal>
       <add key="Username" value="ci" />
-      <add key="ClearTextPassword" value="%TROVE_TOKEN%" />
-    </trove-internal>
+      <add key="ClearTextPassword" value="%QUADER_TOKEN%" />
+    </quader-internal>
   </packageSourceCredentials>
 </configuration>
 ```
@@ -3050,25 +3050,25 @@ Notes on the examples:
 - NuGet expands `%VAR%` in `nuget.config` values on every platform, and leaves the literal text
   when the variable is unset
   ([nuget.config reference](https://learn.microsoft.com/en-us/nuget/reference/nuget-config-file#using-environment-variables)).
-  An unset `TROVE_TOKEN` therefore shows up as a 401, not as anonymous access.
+  An unset `QUADER_TOKEN` therefore shows up as a 401, not as anonymous access.
 - `nuget-internal` is a source of `nuget.config` of its own because `dotnet nuget push` fetches the service index of its
   `--source` before it sends the API key, and an installation answers that request with 401 unless it carries credentials
   (R-AUTHZ-016). NuGet attaches the credentials of `packageSourceCredentials` to a `--source` URL that equals a configured
   source, so the push step needs no other change. Found by the end-to-end run of this pipeline on kind (Q-CI-44).
-- `--api-key "$TROVE_TOKEN"` puts the token in `dotnet`'s argument list. From NuGet 7.6 the
-  `NUGET_API_KEY` environment variable can carry it instead (same reference). trove accepts
+- `--api-key "$QUADER_TOKEN"` puts the token in `dotnet`'s argument list. From NuGet 7.6 the
+  `NUGET_API_KEY` environment variable can carry it instead (same reference). Quader accepts
   both through `X-NuGet-ApiKey` (INV-8). Pushing with the `nuget.config` Basic credentials and no
   API key depends on the 401 challenge behavior of [formats/nuget.md](formats/nuget.md).
-- `npm` resolves `${TROVE_TOKEN}` in `.npmrc` at run time
+- `npm` resolves `${QUADER_TOKEN}` in `.npmrc` at run time
   ([npmrc](https://docs.npmjs.com/cli/v11/configuring-npm/npmrc)). The auth lines are scoped to
-  trove's host, so npm never sends the token to another registry.
+  Quader's host, so npm never sends the token to another registry.
 
 ## Deferred
 
 - CIOIDC-016 (P2): switch hiding global mappings from the Owners of projects. Neither Owners nor
   delegates see system-tier mappings anyway (R-CI-019, R-CI-023).
 - IAM-040 (P2): the same switch, as a security setting. Not needed, for the same reason.
-- CIOIDC-020 (P2): reference token in the exchange response. trove's CI tokens are already
+- CIOIDC-020 (P2): reference token in the exchange response. Quader's CI tokens are already
   short opaque handles (INV-8).
 - CIOIDC-021 (P2): explicit mapping selection in the request. Could come later as an optional
   `mapping` parameter whose condition must still match.
@@ -3101,19 +3101,19 @@ Notes on the examples:
 - Subject tokens and CI tokens are bearer credentials. Both are kept out of logs, error bodies
   and process lists (examples). Responses carry `Cache-Control: no-store`.
 - An ID token that also names another service in `aud` is addressed to that service too, and it
-  could replay the token at trove. Such tokens are rejected by default; only audiences that all
-  belong to trove are accepted together (R-CI-004). Both default audiences, the base URL and
-  `npm:<host name>`, name this installation only (R-CI-001): trove owns the host it runs on
+  could replay the token at Quader. Such tokens are rejected by default; only audiences that all
+  belong to Quader are accepted together (R-CI-004). Both default audiences, the base URL and
+  `npm:<host name>`, name this installation only (R-CI-001): Quader owns the host it runs on
   ([operations-and-observability.md](operations-and-observability.md) R-OPS-005). The `npm:` value
   carries no port, so it relies on that ownership for every port of the host name, as the
-  `__Host-trv_session` cookie already does.
+  `__Host-qdr_session` cookie already does.
 - Algorithm and key handling follow RFC 8725:
   - an allowlist of asymmetric algorithms and no `none` or HMAC;
   - the key type must match the algorithm;
   - no keys taken from token headers;
   - `kid` used only as a lookup key.
 - Outbound calls go to administrator-configured URLs only: discovery, keys, and the GitLab Jobs
-  API in fallback mode (P2). Tokens cannot make trove fetch other URLs.
+  API in fallback mode (P2). Tokens cannot make Quader fetch other URLs.
 - Package ownership (R-CI-015) keeps overlapping name patterns and reused project paths from
   turning into package takeover.
 - Rate limits count cluster-wide (R-CI-021), so adding `web` replicas does not multiply an
@@ -3123,10 +3123,10 @@ Notes on the examples:
   R-CI-003.
 - Valkey is outside the CI trust path. It holds no signing key, mapping, replay entry, token or
   token hash, and no exchange reads a positive result from it (R-CI-029). Whoever can write under
-  trove's prefix can refuse exchanges with 429 or cause extra cache reloads
-  ([architecture.md](architecture.md) H-49), but cannot make trove accept a token, reopen a used
+  Quader's prefix can refuse exchanges with 429 or cause extra cache reloads
+  ([architecture.md](architecture.md) H-49), but cannot make Quader accept a token, reopen a used
   single-use `jti` or hide a mapping change (R-CI-007, R-CI-018).
-- A database restore, whether to a point in time or from a trove backup, would revive CI tokens,
+- A database restore, whether to a point in time or from a Quader backup, would revive CI tokens,
   issuers and mappings that were revoked, disabled or narrowed after the restore point
   ([ha-and-helm.md](ha-and-helm.md) H-37). The revocation journal replays those changes (R-CI-020).
   Replay disables but never deletes, and it suspends the later mappings of a disabled mapping's
@@ -3194,7 +3194,7 @@ install step, which runs third-party install scripts, a token without `deploy`. 
 without breaking the OAuth request format that RFC 8693 clients produce. The selector syntax is
 reused unchanged, so `read:@any-local:npm` means the same thing as in a policy. Package and path
 narrowing is not needed in the request, because the mapping's grants already carry it, and inside
-trove the stored scope still expresses it: the package-bound token of npm trusted publishing
+Quader the stored scope still expresses it: the package-bound token of npm trusted publishing
 ([formats/npm.md](formats/npm.md) R-NPM-022) uses the same structure. (a) would leave the
 authorization code with a second, weaker structure. The development agent would revisit this if
 one job has to narrow to individual packages at exchange time, for example a monorepo job
@@ -3212,13 +3212,13 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Reject every `aud` array with more than one element | Only a single audience is accepted. | Simple rule. | Also rejects a token that names two trove base URLs (internal and external host name), although no third party is involved. |
-| (b) Accept when one element is an allowed audience | The minimum of [RFC 7519 §4.1.3](https://www.rfc-editor.org/rfc/rfc7519#section-4.1.3). | Accepts every token GitLab can produce. | A token addressed to trove and to a secrets manager reaches that secrets manager, which can then exchange it at trove ([RFC 8725 §3.9](https://www.rfc-editor.org/rfc/rfc8725#section-3.9)). |
+| (a) Reject every `aud` array with more than one element | Only a single audience is accepted. | Simple rule. | Also rejects a token that names two Quader base URLs (internal and external host name), although no third party is involved. |
+| (b) Accept when one element is an allowed audience | The minimum of [RFC 7519 §4.1.3](https://www.rfc-editor.org/rfc/rfc7519#section-4.1.3). | Accepts every token GitLab can produce. | A token addressed to Quader and to a secrets manager reaches that secrets manager, which can then exchange it at Quader ([RFC 8725 §3.9](https://www.rfc-editor.org/rfc/rfc8725#section-3.9)). |
 | (c) Exclusive audience | Accept only when every element of `aud` is one of the CI issuer's `allowed_audiences`. Setting `exclusive_audience`, default `true`. | Blocks exactly the case that makes multi-audience tokens dangerous, another recipient, and accepts the harmless one. Same implementation cost as (a). | One more sentence to explain than (a). |
 
 **Choice:** (c) — every element of `aud` must be an allowed audience of the CI issuer.
 
-**Rationale:** The risk is not the number of audiences but a recipient other than trove that could
+**Rationale:** The risk is not the number of audiences but a recipient other than Quader that could
 replay the token. (c) states that property directly. It keeps the protection of (a) and does not
 reject a deployment that lists two host names of its own. (b) gives up the protection, and GitLab
 lets a job declare one ID token per audience in `id_tokens:` at no cost, so nobody needs it. The
@@ -3235,7 +3235,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Off for every kind, counted | Repeated exchanges are allowed, counted and audited beyond a threshold. | Never breaks a job. | For issuers with a shared audience, every other relying party can replay the token at trove, and only an audit event records it. |
+| (a) Off for every kind, counted | Repeated exchanges are allowed, counted and audited beyond a threshold. | Never breaks a job. | For issuers with a shared audience, every other relying party can replay the token at Quader, and only an audit event records it. |
 | (b) On for every kind | A second exchange of the same `jti` fails. | Strongest replay protection. | Breaks GitLab jobs that exchange per tool step, retry after a network error or re-exchange after the CI token expired, which R-CI-016 relies on for long jobs. |
 | (c) Preset by kind: off for `gitlab` and `github`, on for `generic` | Single use only where the audience is shared; overridable per CI issuer. | Covers the shared-audience case. | Leaves GitHub without single use although nothing there needs repeated exchanges of one token. |
 | (d) Preset by how the job obtains its subject token | Off for `gitlab`, whose job gets its ID tokens once as variables; on for `github`, whose steps request ID tokens on demand, and for `generic`, whose audiences are often shared. Overridable per CI issuer. | Each kind gets the strongest control its real clients tolerate. | The default differs between kinds and must be documented. |
@@ -3245,7 +3245,7 @@ Status: **Decided by the development agent** — selected from the options below
 **Rationale:** A GitLab job receives its ID tokens as the variables its `id_tokens:` block declares,
 and GitLab documents no way to request another during the run. Re-exchanging the same token is
 therefore how a long GitLab job renews its CI token (R-CI-016), and (b) would break it; the
-exclusive audience (Q-CI-3) already ensures that only the job and trove hold the token. A GitHub
+exclusive audience (Q-CI-3) already ensures that only the job and Quader hold the token. A GitHub
 step requests an ID token whenever it needs one (GitHub's OIDC documentation, read 2026-10-28), so
 the reason that keeps single use off for GitLab does not apply, and single use costs a correctly
 written workflow nothing. (c), the choice before this review, rested on "jobs exchange per tool step and
@@ -3272,17 +3272,17 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Build it in P1 as specified | Read-only, off by default, enabled per installation and CI issuer. | Ready for pipelines that cannot add `id_tokens:`. | Puts a live GitLab credential into trove (H-28), adds a runtime dependency on GitLab, can never grant writes and cannot recognize fork pipelines (H-29). Development time goes to a path nobody has asked for yet. |
-| (b) Keep the specification, move it to P2 | R-CI-022 stays specified and reviewed, but is built only when a concrete population of pipelines needs it. | No exposure and no effort until there is a need; the design is ready when it comes. | A pipeline that cannot add `id_tokens:` has no CI path to trove until then; it uses a service-account token. |
+| (a) Build it in P1 as specified | Read-only, off by default, enabled per installation and CI issuer. | Ready for pipelines that cannot add `id_tokens:`. | Puts a live GitLab credential into Quader (H-28), adds a runtime dependency on GitLab, can never grant writes and cannot recognize fork pipelines (H-29). Development time goes to a path nobody has asked for yet. |
+| (b) Keep the specification, move it to P2 | R-CI-022 stays specified and reviewed, but is built only when a concrete population of pipelines needs it. | No exposure and no effort until there is a need; the design is ready when it comes. | A pipeline that cannot add `id_tokens:` has no CI path to Quader until then; it uses a service-account token. |
 | (c) Drop it | Remove R-CI-022. | Smallest surface. | Throws away a worked-out design; a later need would start from zero. |
 
 **Choice:** (b) — R-CI-022 stays specified, priority P2, built only on a concrete need.
 
 **Rationale:** The owner constraint asks for an OIDC procedure, and every supported GitLab version
-issues ID tokens (the predecessors were removed in GitLab 17.0, CIOIDC-030). Because trove never
+issues ID tokens (the predecessors were removed in GitLab 17.0, CIOIDC-030). Because Quader never
 accepts foreign credentials on package endpoints (INV-8), the fallback still needs an exchange step
 in the job; it saves only the `id_tokens:` block. In return it brings a GitLab credential into
-trove and a read path that fork pipelines can use (H-28, H-29). H-29's premise was re-checked on
+Quader and a read path that fork pipelines can use (H-28, H-29). H-29's premise was re-checked on
 2026-10-28: the documented response of `GET /api/v4/job` has no project path, namespace,
 `ref_protected`, `job_project_*` or `source_project_*` fields, and its `project` object holds only
 `ci_job_token_scope_enabled`. (c) would discard a reviewed design that becomes useful if, for
@@ -3348,7 +3348,7 @@ Status: **Decided by the development agent** — selected from the options below
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) TTL bound only | The token lives until `expires_in`: 15 minutes by default, never past the job timeout (R-CI-016). | Nothing to build or configure. | Every token outlives its job by up to its remaining lifetime (H-26). |
-| (b) GitLab job webhooks | GitLab notifies trove when a job ends, and trove revokes that job's tokens. | Also covers failed, cancelled and timed-out jobs. | A webhook and its secret on every GitLab project or group, an inbound endpoint reachable from GitLab, and asynchronous best-effort delivery, all for a window of minutes. |
+| (b) GitLab job webhooks | GitLab notifies Quader when a job ends, and Quader revokes that job's tokens. | Also covers failed, cancelled and timed-out jobs. | A webhook and its secret on every GitLab project or group, an inbound endpoint reachable from GitLab, and asynchronous best-effort delivery, all for a window of minutes. |
 | (c) TTL bound plus self-revocation | The job revokes its own token through `DELETE /api/v1/tokens/current` (R-AUTH-029, already MVP) as the last command of `script`. The reference pipeline and the snippets include it. | No new server code. Closes the window for every job that succeeds, the common case. | Does not run when the job fails, is cancelled or times out before the last line. Depends on pipelines keeping the line. |
 | (d) Job-scoped revoke with the ID token | A new call presents the ID token and revokes every CI token issued for that job, from `after_script`. | GitLab documents ID tokens as usable in `after_script`, which runs after a script failure and, since GitLab 17.0, on cancellation. So it also covers failed and cancelled jobs. | A new unauthenticated endpoint that revokes by job identity. `after_script` does not run after a timeout unless the runner's script timeouts are configured for it, nor after other failure types ([`after_script`](https://docs.gitlab.com/ci/yaml/#after_script), read 2026-10-28). A job that defines its own `after_script` replaces the inherited one. |
 
@@ -3381,7 +3381,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) 400 `invalid_request` with `reason`, OAuth error body | As [RFC 8693 §2.2.2](https://www.rfc-editor.org/rfc/rfc8693#section-2.2.2) requires for invalid or unacceptable subject tokens, in the `application/json` error body of [RFC 6749 §5.2](https://www.rfc-editor.org/rfc/rfc6749#section-5.2), plus `reason` and `requestId`. | Standard behavior for token-exchange clients; `reason` gives scripts precise causes. | Differs from the catalog (CIOIDC-018); the only trove endpoint whose errors are not problem details. |
+| (a) 400 `invalid_request` with `reason`, OAuth error body | As [RFC 8693 §2.2.2](https://www.rfc-editor.org/rfc/rfc8693#section-2.2.2) requires for invalid or unacceptable subject tokens, in the `application/json` error body of [RFC 6749 §5.2](https://www.rfc-editor.org/rfc/rfc6749#section-5.2), plus `reason` and `requestId`. | Standard behavior for token-exchange clients; `reason` gives scripts precise causes. | Differs from the catalog (CIOIDC-018); the only Quader endpoint whose errors are not problem details. |
 | (b) 401 | As in the catalog. | Reads like "your credential was rejected". | Contradicts RFC 8693. No client is known to depend on it. |
 | (c) 400 `invalid_grant` for token failures | `invalid_grant` when the subject token fails validation or policy, `invalid_request` only for malformed requests, as some security token services answer. | Separates bad tokens from bad requests by `error`. | Deviates from the RFC's MUST; the same distinction is already in `reason`. |
 | (d) 400 `invalid_request` inside a problem-details body | The management API's `application/problem+json` body (R-API-009) with `error` and `error_description` added. | One error format across `/api/v1`. | Not the `application/json` body RFC 6749 §5.2 specifies; every message is carried twice (`detail` and `error_description`); OAuth clients gain nothing from the extra members. |
@@ -3393,12 +3393,12 @@ CI scripts of R-CI-028 test for `access_token` and print `reason`, so (b) and (c
 nothing. The body is the OAuth error JSON with `reason` and `requestId`, not problem details,
 because the endpoint speaks OAuth to OAuth clients; (d) would bend that format for the benefit of
 the management API's tooling, which never calls this endpoint. `requestId` keeps the spelling of
-every other trove error body and links the answer to the audit event. The development agent would
+every other Quader error body and links the answer to the audit event. The development agent would
 revisit this only if a client used in CI pipelines turned out to depend on 401 or `invalid_grant`.
 
 **Applied in the spec:** R-CI-008: content type, `Cache-Control: no-store` and the `requestId`
 member stated; the example carries it; `expose_reason: false` keeps `requestId`. R-CI-002: the
-naming rule lists `requestId` as the one member that keeps trove's spelling.
+naming rule lists `requestId` as the one member that keeps Quader's spelling.
 
 ### Q-CI-9 · Default for cross-project (fork) pipelines
 
@@ -3408,7 +3408,7 @@ Status: **Decided by the development agent** — selected from the options below
 |---|---|---|---|
 | (a) `deny` by default, opt-in per CI issuer or per mapping | A cross-project subject token gets no token unless the CI issuer or a matched mapping sets `read_only`, which caps grants to `read`. | One issuer-wide switch for groups that accept fork reads everywhere. | The issuer-wide switch reaches mappings written later, including delegated ones (P1), whose authors never chose it. As specified, one opted-in mapping released the capped grants of every matched mapping. |
 | (b) `read_only` by default | Cross-project tokens get read grants. | Fork merge request pipelines work out of the box. | Fork code controls its own CI configuration and can exfiltrate every package the token reads. The parent member who starts the pipeline may not have read the fork's `.gitlab-ci.yml` change. |
-| (c) Always deny, no opt-in | No cross-project token under any configuration. | No configuration can expose packages to fork code. | Removes a legitimate, deliberate choice for groups whose packages behind trove are not confidential. |
+| (c) Always deny, no opt-in | No cross-project token under any configuration. | No configuration can expose packages to fork code. | Removes a legitimate, deliberate choice for groups whose packages behind Quader are not confidential. |
 | (d) `deny` by default, opt-in per mapping only | Each matched mapping decides for itself: with `read_only` it contributes its grants capped to `read`; otherwise it contributes nothing and is not one of the token's mappings. No issuer-wide switch. | The opt-in sits on the grants it exposes, is visible in API, UI and audit, and never reaches another mapping or a later one. | A group that wants the opt-in on many mappings sets it on each. |
 
 **Choice:** (d) — `deny` by default, with an explicit opt-in to `read_only` on the mapping, applied
@@ -3506,8 +3506,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 This question was raised on 2026-10-28 by the owner's Valkey, horizontal-scale, backup and
 storage-class constraints. Until then every replica held the key set from PostgreSQL and reloaded
-it on `NOTIFY trove_ci_issuer_keys`, and the scheduled refresh claimed rows with
-`FOR UPDATE SKIP LOCKED` while it fetched. Four things changed. trove issues no `NOTIFY` any more
+it on `NOTIFY quader_ci_issuer_keys`, and the scheduled refresh claimed rows with
+`FOR UPDATE SKIP LOCKED` while it fetched. Four things changed. Quader issues no `NOTIFY` any more
 ([architecture.md](architecture.md) Q-ARCH-15), and no transaction may wait on an outbound call
 (R-ARCH-019). `web` replicas run no background work (INV-2). And a restore from a scheduled backup
 is an MVP path (INV-19).
@@ -3583,7 +3583,7 @@ optimization without a gain, because the transaction it would save runs for ever
 exchange anyway. That leaves (a), whose gap INV-19 makes real. A subject token used between a
 backup's snapshot and the incident is unknown to the restored database, and it stays usable for
 the rest of its lifetime. For GitHub that is minutes; a generic issuer chooses its own lifetime,
-which can be an hour or more. The cut-off closes that gap with data trove already has: `iat` is a
+which can be an hour or more. The cut-off closes that gap with data Quader already has: `iat` is a
 required claim (R-CI-004), and the restore paths know when they finished. The leeway is added to
 the cut-off rather than subtracted from it: subtracting it would accept a token issued in the last
 `clock_skew` before the restore and already used by the old installation. The exchange transaction
@@ -3613,7 +3613,7 @@ replica's memory, so the cluster-wide limit was the configured value times the r
 [architecture.md](architecture.md) Q-ARCH-17 makes cluster scope the normal mode for every limit
 that limits callers. Two consequences are specific to this endpoint:
 
-- GitLab runner fleets often reach trove through a few NAT addresses, so one address carries every
+- GitLab runner fleets often reach Quader through a few NAT addresses, so one address carries every
   job of the fleet. The multiplication by the replica count had hidden how small the per-address
   budget was.
 - A bucket per CI issuer, counted before the token is verified, becomes n times cheaper to exhaust.
@@ -3696,20 +3696,20 @@ an issuer change, the second and third bullets of what it prevents, and two new 
 criteria. R-CI-002: every issuer write notifies the change area `ci_mappings`. R-CI-009: the cache paragraph and
 `ci.mappings.cache_safety_ttl`. R-CI-019: every mapping write increments the counter; the
 acceptance criterion no longer relies on `NOTIFY`. R-CI-020: the metric
-`trove_ci_mapping_set_stale_total`. Cross-page: [backup-and-restore.md](backup-and-restore.md)
+`quader_ci_mapping_set_stale_total`. Cross-page: [backup-and-restore.md](backup-and-restore.md)
 R-BAK-022 (the four CI revision columns in the initial registry).
 
-### Q-CI-16 · CI issuers provisioned through the Helm values are read-only in trove
+### Q-CI-16 · CI issuers provisioned through the Helm values are read-only in Quader
 
 Status: **Decided by the owner on 2026-11-02** — option (a).
 
 Context: the owner provisions the installation from a GitOps repository and wants GitLab instances added as CI issuers
-there: visible in trove, changeable only in Git. R-CI-001 made issuers objects of the management API, and configuration
+there: visible in Quader, changeable only in Git. R-CI-001 made issuers objects of the management API, and configuration
 documents (R-OPS-029 to R-OPS-031), the general declarative way for objects held in the database, are P1.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `ci.issuers` in the system configuration, read-only in the API and the UI (chosen) | The chart renders the issuers from its `config` values; `trove migrate` applies them; API and UI show them with source "configuration" and refuse changes | Small; the same pattern as the login providers of `auth.oidc.providers`; GitOps for what the owner named | Mappings stay objects of the API until configuration documents ship |
+| (a) `ci.issuers` in the system configuration, read-only in the API and the UI (chosen) | The chart renders the issuers from its `config` values; `quader migrate` applies them; API and UI show them with source "configuration" and refuse changes | Small; the same pattern as the login providers of `auth.oidc.providers`; GitOps for what the owner named | Mappings stay objects of the API until configuration documents ship |
 | (b) Configuration documents pulled forward for `ciIssuers` and `ciMappings` | The general mechanism of R-OPS-029, locked managed objects | One declarative path for issuers and mappings, later for other objects | Diff and apply, pruning, ownership and locking in phase 5 |
 
 **Choice:** (a), the owner's decision; the development agent had recommended (b) because of the mappings.
@@ -3717,7 +3717,7 @@ documents (R-OPS-029 to R-OPS-031), the general declarative way for objects held
 **Rationale:** the owner's decision. The development agent records no revisit condition; configuration documents (P1)
 remain the later way to declare mappings, and they never declare an issuer that `ci.issuers` declares.
 
-**Applied in the spec:** R-CI-001 (the configuration section, `trove migrate`, removal, the columns `source` and
+**Applied in the spec:** R-CI-001 (the configuration section, `quader migrate`, removal, the columns `source` and
 `removed_from_configuration`, two acceptance criteria), R-CI-002 (read-only, 409 `issuer_managed_by_configuration`).
 
 ### Q-CI-17 · How a CI token reaches the authorization evaluator at use time
@@ -3781,11 +3781,11 @@ principal holds none, while an `authenticated` operation admits it and relies on
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Default-deny in the shared authorization step | A CI principal is refused with 403 `ci_token_restricted` on every operation except public ones, those of the action form and those that declare `x-trove-ci: admitted` | One place, fail-closed: a new operation is closed to CI tokens until it says otherwise. The document states which operations admit them | A new declaration member |
+| (a) Default-deny in the shared authorization step | A CI principal is refused with 403 `ci_token_restricted` on every operation except public ones, those of the action form and those that declare `x-quader-ci: admitted` | One place, fail-closed: a new operation is closed to CI tokens until it says otherwise. The document states which operations admit them | A new declaration member |
 | (b) A route table in the authentication stage | The stage refuses a CI token on every path outside a list | Refuses before any handler | A second list of routes beside the document, which the dispatcher and the document already disagree about now and then |
 | (c) A check in each handler | Each handler that must not serve a CI token refuses it | No framework change | An open default: one forgotten check is a CI token on a management operation |
 
-**Choice:** (a), as `ciGate` in `internal/api/v1/authorize.go` and the member `x-trove-ci: admitted` on `getCurrentToken`
+**Choice:** (a), as `ciGate` in `internal/api/v1/authorize.go` and the member `x-quader-ci: admitted` on `getCurrentToken`
 and `revokeCurrentToken`. The action form is the repository-content operations by definition: its declaration is a
 repository action on a coordinate, so a CI token passes the gate and the decision of that action (R-AUTHZ-015) is its
 ceiling.
@@ -3875,7 +3875,7 @@ and `exchange.go`, one file per concern, so each work package builds its impleme
 (`StubIssuers`, …) answer 501 `ci_not_implemented` and are wired in `internal/app/wire_ci.go` until a work package replaces its
 member and deletes its stub. The three tasks (`ci-keys-refresh`, `ci-replay-cleanup`, `ci-issuance-retention`) are registered
 with their schedules and the exclusive mode, and their handlers treat the not-implemented answer of a stub as "nothing to do
-yet", so they succeed and need no edit when the service arrives. `trove migrate` calls `Issuers.ApplyDeclared` only when
+yet", so they succeed and need no edit when the service arrives. `quader migrate` calls `Issuers.ApplyDeclared` only when
 `ci.issuers` is not empty until W1 exists, so a configuration that declares issuers stops the migration loudly instead of
 being ignored; W1 calls it always, so an empty list disables the issuers removed from the configuration.
 
@@ -3927,7 +3927,7 @@ keys, switch faults and read counters from outside (R-CI-003 and R-CI-004 accept
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A path prefix on the issuer's port, like the control API of the npm and NuGet test upstreams | `/-/stub/...` next to the discovery and key paths, same listener | One port, one Service port | The `unreachable` fault cuts the test off from the very API that heals it; every control call must be excluded from the counters by path; a bearer-token check sits on the listener that trove's own requests reach |
+| (a) A path prefix on the issuer's port, like the control API of the npm and NuGet test upstreams | `/-/stub/...` next to the discovery and key paths, same listener | One port, one Service port | The `unreachable` fault cuts the test off from the very API that heals it; every control call must be excluded from the counters by path; a bearer-token check sits on the listener that Quader's own requests reach |
 | (b) A second TLS listener (chosen) | The control API on its own port (`-control-listen`, 8444 in the manifest), same certificate, off without a control token | `unreachable` and the delay faults cannot touch it; the issuer listener carries nothing but what GitLab serves, so a counter never needs an exception | A second Service port, and the pod's readiness probe watches only the issuer port |
 | (c) A separate pod | The control API in a sidecar or second deployment, talking to the double over a socket | Full isolation | A protocol between the two for state that is a few maps in memory; a second image |
 
@@ -3935,7 +3935,7 @@ keys, switch faults and read counters from outside (R-CI-003 and R-CI-004 accept
 it the control listener is not started.
 
 **Rationale:** the faults of R-CI-003 include the issuer's death, and a test must still be able to end it. With (b) the
-double's one reachable surface for trove is exactly the two GitLab paths, so "no request" assertions need no exceptions.
+double's one reachable surface for Quader is exactly the two GitLab paths, so "no request" assertions need no exceptions.
 The development agent would revisit this if the cluster's network policy ever admits only one port per pod.
 
 **Applied in the spec:** none (test tooling); [e2e.md](../developer/e2e.md) section "The OIDC issuer double".
@@ -3945,7 +3945,7 @@ The development agent would revisit this if the cluster's network policy ever ad
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: the first acceptance criterion of R-CI-004 asks for a token "signed with HS256 using the RSA public key's bytes
-as the HMAC secret". "The bytes" of a public key are not one thing, and a unit test only proves that trove rejects the
+as the HMAC secret". "The bytes" of a public key are not one thing, and a unit test only proves that Quader rejects the
 algorithm if it uses the bytes an attacker would use.
 
 | Option | What it means | For | Against |
@@ -3977,7 +3977,7 @@ comparison with what a real GitLab issues.
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) A real GitLab instance in CI | The release workflow starts a GitLab container and a runner and runs the reference pipeline in it | The real thing on every full run | Start-up time and memory on the CI runners (the open "Not verified" of the roadmap); a root password, a runner token and an administrator's token as CI secrets; a run as flaky as the instance's start |
-| (b) gitlab.com | A project on gitlab.com runs the pipeline against a trove it can reach | No instance to operate | A public issuer (R-CI-005), not the self-managed kind trove is built for; an account and its secrets in CI; rate limits; trove reachable from the internet |
+| (b) gitlab.com | A project on gitlab.com runs the pipeline against a Quader it can reach | No instance to operate | A public issuer (R-CI-005), not the self-managed kind Quader is built for; an account and its secrets in CI; rate limits; Quader reachable from the internet |
 | (c) A standing test instance | An instance the CI reaches, kept running | Fast; real | A server to operate, patch and secure; a long-lived credential in CI; state that drifts between runs |
 | (d) The double, validated against a real instance (chosen) | Integration and end-to-end tests run against the double only. GitLab's behaviour is recorded by hand on a real instance (`make oidc-fixtures`) as fixtures, and the double's own tests check that it reproduces every fixture | Fast and deterministic; no GitLab credential in CI; the recording names the GitLab version it saw | The double is only as current as the last recording: a GitLab release that changes a claim is noticed when someone re-records |
 
@@ -4157,17 +4157,17 @@ unchanged. The development agent would revisit this if a client needs every viol
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 R-CI-001 calls `ca_bundle_ref` a reference to a PEM bundle, "file or environment variable (INV-15)", and gives one example,
-`file:/var/run/secrets/gitlab-ca/ca.crt`. The existing references of trove are the `secretRef` of a remote repository (a file name
-under `config_as_code.secrets_dir`, or a variable `TROVE_CAC_<NAME>`, so that trove's own variables and files cannot be routed to an
+`file:/var/run/secrets/gitlab-ca/ca.crt`. The existing references of Quader are the `secretRef` of a remote repository (a file name
+under `config_as_code.secrets_dir`, or a variable `QUADER_CAC_<NAME>`, so that Quader's own variables and files cannot be routed to an
 upstream, R-REPO-033) and the `*_file` and `*_env` keys of the configuration. A CA bundle holds certificates, no secret, but a
-reference that names any variable of the process would still let an administrator of issuers read trove's own variables into a
+reference that names any variable of the process would still let an administrator of issuers read Quader's own variables into a
 trust store and so observe them through the TLS error classes.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `file:` only | An absolute path | The example of R-CI-001; the trust store re-reads a changed file without a restart | No environment form, which R-CI-001 promises |
-| (b) `file:<absolute path>` and `env:TROVE_CIC_<NAME>` (chosen) | The file form as in the example; the variable holds the PEM text and must carry the prefix | Both forms; trove's own variables cannot be named; the prefix follows the `TROVE_CAC_` precedent | An environment form needs a restart to change, because a variable is fixed for the life of a process |
-| (c) Any variable | `env:<NAME>` | Simplest | A reference to `TROVE_DATABASE_PASSWORD_FILE` or a key ring path becomes a probe |
+| (b) `file:<absolute path>` and `env:QUADER_CIC_<NAME>` (chosen) | The file form as in the example; the variable holds the PEM text and must carry the prefix | Both forms; Quader's own variables cannot be named; the prefix follows the `QUADER_CAC_` precedent | An environment form needs a restart to change, because a variable is fixed for the life of a process |
+| (c) Any variable | `env:<NAME>` | Simplest | A reference to `QUADER_DATABASE_PASSWORD_FILE` or a key ring path becomes a probe |
 
 **Choice:** (b). The trust store of an issuer's fetch is the system roots and `proxy.outbound.tls.ca_files` (the installation's
 trust, R-ARCH-022, with `proxy.outbound.tls.use_system_roots` as it is set) **plus** the issuer's bundle; the bundle adds, it
@@ -4176,7 +4176,7 @@ the trust store when it changes (R-ARCH-035). A variable is written once to a pr
 directory) because the trust store reads files. A reference that does not load fails the fetch with the class
 `trust_store_unavailable` and the next fetch tries again.
 
-**Rationale:** the choice keeps R-CI-001's two promises and the precedent that a reference cannot name trove's own state. The
+**Rationale:** the choice keeps R-CI-001's two promises and the precedent that a reference cannot name Quader's own state. The
 development agent would revisit the prefix if the chart gains a values key that renders the variables, and the environment form if
 rotating a bundle without a restart is needed (then the file form is the answer).
 
@@ -4450,7 +4450,7 @@ cannot change before it compares it again.
 **Rationale:** the second mismatch exists for a writer outside the protocol, which a consistent test installation does not have; a
 retryable 503 is the right answer for it, and a unit test can make the store disagree. The development agent would revisit this when
 R-CI-022 is built (its three reasons then get their integration tests) or if a second mismatch is ever observed in the metrics
-(`trove_ci_exchanges_total{reason="configuration_changed"}`).
+(`quader_ci_exchanges_total{reason="configuration_changed"}`).
 
 **Applied in the spec:** R-CI-008 (the criterion names the four exceptions and the unit test). Code:
 `internal/ci/exchange_service_test.go`; `test/integration/ci/exchange_errors_test.go` (the other reasons).
@@ -4460,14 +4460,14 @@ R-CI-022 is built (its three reasons then get their integration tests) or if a s
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: the end-to-end run of the reference pipeline on kind ran the Example's `dotnet nuget push "out/*.nupkg" --source
-"$TROVE_URL/api/nuget/nuget-internal/v3/index.json" --api-key "$TROVE_TOKEN"` and got `401` on the service index of the source. The
-.NET client fetches the index of its `--source` before it sends the API key, trove answers an unauthenticated request with 401 and a
+"$QUADER_URL/api/nuget/nuget-internal/v3/index.json" --api-key "$QUADER_TOKEN"` and got `401` on the service index of the source. The
+.NET client fetches the index of its `--source` before it sends the API key, Quader answers an unauthenticated request with 401 and a
 challenge (R-AUTHZ-016, [formats/nuget.md](formats/nuget.md)), and the `nuget.config` of the Examples carried credentials for the
-source `trove` (`nuget-all`) only. NuGet attaches `packageSourceCredentials` to a `--source` URL that equals a configured source.
+source `quader` (`nuget-all`) only. NuGet attaches `packageSourceCredentials` to a `--source` URL that equals a configured source.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A second source in the `nuget.config` (chosen) | `trove-internal` for `nuget-internal`, with the same credentials; the push step stays as written | One file, no change to the push command, works for a repository that requires authentication | A restore also asks `nuget-internal`, which `nuget-all` already contains |
+| (a) A second source in the `nuget.config` (chosen) | `quader-internal` for `nuget-internal`, with the same credentials; the push step stays as written | One file, no change to the push command, works for a repository that requires authentication | A restore also asks `nuget-internal`, which `nuget-all` already contains |
 | (b) Push through `nuget-all` | The virtual repository forwards the push to its deployment target | One source | The CI token's inline grant names `nuget-internal`; a virtual repository authorizes a publish on its target (R-AUTHZ-009), an extra rule to rely on |
 | (c) Let the service index of `nuget-internal` answer anonymous requests | A repository that does not require authentication serves its index | No client configuration | R-AUTHZ-016 challenges every anonymous request; the repository would need an anonymous grant for a document that carries no package |
 
@@ -4592,7 +4592,7 @@ revocation per tier, the contribution dropped at use time, the principal mirror,
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
-Context: the security audit of phase 5 (2026-11-03, MEDIUM). `trove migrate` replaced a declared issuer by name with whatever the
+Context: the security audit of phase 5 (2026-11-03, MEDIUM). `quader migrate` replaced a declared issuer by name with whatever the
 entry said, `issuer` URL and `kind` included, although the API refuses both as `immutable`. The pins of its mappings, the package owners
 `ci:<issuer>:project:<id>` (stored by issuer ID) and the unpinned mappings of a private issuer moved under the same ID to another
 GitLab instance, whose projects with the same IDs then held what the old instance's had; the old key set stayed valid until the next
@@ -4600,7 +4600,7 @@ refresh, and nothing was revoked.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Refuse the change, name both values and the remedy (chosen) | `trove migrate` stops with an error naming the stored and the declared value and telling the operator to declare the new instance under a new name; nothing is applied | The same rule as the API; the operator decides the move consciously; the removal path that exists (disable, revoke, keep records) handles the old name | A GitOps change of an instance's URL takes two names |
+| (a) Refuse the change, name both values and the remedy (chosen) | `quader migrate` stops with an error naming the stored and the declared value and telling the operator to declare the new instance under a new name; nothing is applied | The same rule as the API; the operator decides the move consciously; the removal path that exists (disable, revoke, keep records) handles the old name | A GitOps change of an instance's URL takes two names |
 | (b) Treat the change as removal and creation under the same name | Disable and revoke the old, create a new ID | One step for the operator | The name would denote two issuers in the audit trail and in the issuance records; package owners and mappings would have to be dropped or migrated by a rule nobody reviews |
 | (c) Allow it and revoke everything | Keep the ID, revoke the tokens, reset the keys | Simple for the operator | The mappings and owners still move to the new instance, which is the exposure itself |
 
@@ -4640,7 +4640,7 @@ bounded size, with the compiled conditions and without a trace.
 
 **Rationale:** the exchange is an anonymous endpoint whose per-request cost a project administrator configures; each input of that
 cost needs its own bound, and the shared lock should not wait for work that needs no lock. The development agent would revisit this
-if evaluations still show up in the exchange's duration (`trove_ci_exchange_duration_seconds`) at the limits, in which case an index
+if evaluations still show up in the exchange's duration (`quader_ci_exchange_duration_seconds`) at the limits, in which case an index
 of the conditions by their pin values (an `in` on `project_id` decides most mappings) would skip the mappings a token cannot match.
 
 **Applied in the spec:** R-CI-009 (the limits, the configuration), R-CI-010 (the size bounds), R-CI-019 (the project's quota). Code:
@@ -4668,7 +4668,7 @@ settings in force, although their saves would now be refused (`pin_required`, `u
 | (b) Fetch from the new location inside the write | One step | No fail-closed window | A network call inside a transaction that holds the issuer row (R-ARCH-019) |
 | (c) Disable the unpinned mappings | The issuer change applies | No refusal | A silent grant change the administrator did not ask for; a disabled narrow mapping can let jobs fall through to a broader one |
 
-**Choice:** (a), for the API's `PUT` and for `trove migrate` (the error stops the migration).
+**Choice:** (a), for the API's `PUT` and for `quader migrate` (the error stops the migration).
 
 **Rationale:** the stored key set and the saved mappings are both derived from the issuer's settings; when the settings move, the
 derived state must move with them or the write must not happen. Failing closed until the new set arrives is the rule R-CI-003 already
@@ -4753,7 +4753,7 @@ request make the string no sum of its tiers); the inline grants of the kept cont
 which is what its administrator needs. The person who started a pipeline and the address of the runner belong to the job of another
 GitLab project when the mapping matched more than the project's own pipelines, and a project administrator manages mappings, not
 people. The development agent would revisit (f) if project administrators need to find who started a job (then `userLogin` returns
-for records of projects they administer in GitLab, which needs a link between a trove project and a GitLab project that does not
+for records of projects they administer in GitLab, which needs a link between a Quader project and a GitLab project that does not
 exist), and (a) if the revocation time of a deleted mapping's tokens is asked for (then (c) with a journal read).
 
 **Applied in the spec:** R-CI-020 (the state and the project's view, in the API paragraph), Q-CI-26 (the record shows the project's
@@ -4859,9 +4859,9 @@ development agent would revisit this with a third unbounded encoding of a lifeti
 
 ### H-24 · Trust in the GitLab instance and its signing key
 
-trove trusts every token signed with the issuer's published keys. A GitLab administrator, a
+Quader trusts every token signed with the issuer's published keys. A GitLab administrator, a
 compromise of GitLab's signing key, or a takeover of the issuer's domain or TLS can mint ID tokens
-for any project, ref and protection state. trove cannot detect this. Mappings can narrow
+for any project, ref and protection state. Quader cannot detect this. Mappings can narrow
 whose tokens count, but not whether the issuer itself is honest. Exposure is bounded by the
 CI token TTL, package ownership (R-CI-015), and the audit trail that links each publish to the
 claimed job.
@@ -4882,7 +4882,7 @@ Component: CI token lifetime and revocation (R-CI-016, R-CI-017). Subject: the C
 that fails, is cancelled or times out before its closing `DELETE /api/v1/tokens/current`, or of a
 pipeline that omits that step. Live with the MVP. Such a token stays valid until its
 `expires_in` after the job has finished: by default at most 15 minutes, never more than
-`ci.token.max_ttl` or the ID token's remaining lifetime. trove learns nothing about the job's end
+`ci.token.max_ttl` or the ID token's remaining lifetime. Quader learns nothing about the job's end
 (Q-CI-7). What makes it real: someone who read the token during the job (H-25) and uses it after a
 failed or cancelled run.
 
@@ -4900,14 +4900,14 @@ globs can be satisfied by a group created later under a released path. The pinni
 least one ID, so the exposure is limited to subgroups added later and not yet listed. Keeping
 those ID lists current is a manual task. Resolving a group's ID to its subgroups through the GitLab API is parked in
 [FULL.md](../projektplan/FULL.md#m10--identity-access-and-ci-breadth) as a topic the owner wants to discuss first
-(2026-11-02), not as a decided feature: a lookup with a credential of trove's own could show a user groups and projects
+(2026-11-02), not as a decided feature: a lookup with a credential of Quader's own could show a user groups and projects
 that the user cannot see in GitLab, so each user would likely bring their own GitLab token.
 
-### H-28 · The fallback hands trove a GitLab credential
+### H-28 · The fallback hands Quader a GitLab credential
 
-With R-CI-022 enabled, every fallback exchange gives trove a live `CI_JOB_TOKEN`. That token
+With R-CI-022 enabled, every fallback exchange gives Quader a live `CI_JOB_TOKEN`. That token
 can call GitLab's API with the triggering user's access level, within the job-token resource
-list, until the job ends. A memory disclosure or a logging defect in trove would turn into
+list, until the job ends. A memory disclosure or a logging defect in Quader would turn into
 GitLab access. Mitigations (in-memory only, header redaction, off by default) reduce but do not
 remove this. The mode is dormant unless an administrator enables it globally and on the CI
 issuer.

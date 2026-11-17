@@ -14,12 +14,12 @@ describe('Token administration (R-UI-030)', () => {
     expect(rows).toHaveLength(1);
     expect(text(rows[0]!)).toContain('laptop npm');
     expect(text(rows[0]!)).toContain('alice');
-    // The hint names the type (`trv_pat_…`); an active token shows its action, not the word "Active".
-    expect(rows[0]!.querySelector('th code')?.textContent).toMatch(/^trv_/);
+    // The hint names the type (`qdr_pat_…`); an active token shows its action, not the word "Active".
+    expect(rows[0]!.querySelector('th code')?.textContent).toMatch(/^qdr_/);
     expect(rows[0]!.querySelector('td.actions button')?.textContent).toContain('Revoke');
     const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace(/help_outline/g, ''));
     expect(heads).toEqual(['Select', 'Token', 'Owner', 'Scope', 'Expires', 'Last used', 'Actions']);
-    expect(root.querySelector('trove-data-table')?.classList.contains('stack-wide')).toBe(true);
+    expect(root.querySelector('quader-data-table')?.classList.contains('stack-wide')).toBe(true);
     expect(await seriousViolations(root)).toEqual([]);
   });
 
@@ -90,13 +90,13 @@ describe('Token administration (R-UI-030)', () => {
         ];
       },
     });
-    const boxes = root.querySelectorAll<HTMLInputElement>('tbody trove-checkbox input');
+    const boxes = root.querySelectorAll<HTMLInputElement>('tbody quader-checkbox input');
     boxes[0]!.click();
     boxes[1]!.click();
     await settle(fixture);
     buttonByText(root, 'Revoke selected').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-confirm-dialog') as HTMLElement, 'Revoke').click();
+    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Revoke').click();
     await sleep(fixture, 300);
     expect((get(TokensApi) as FakeTokensApi).calls).toEqual(['revoke t1', 'revoke t2']);
   });
@@ -112,7 +112,7 @@ describe('Token administration (R-UI-030)', () => {
     await settle(fixture);
     expect((get(TokensApi) as FakeTokensApi).calls).toContain(`revokeByValue ${SECRET_VALUE.length}`);
     expect((root.querySelector('input[name="value"]') as HTMLInputElement).value).toBe('');
-    expect(storedText()).not.toContain('trv_');
+    expect(storedText()).not.toContain('qdr_');
     expect(root.innerHTML).not.toContain(SECRET_VALUE);
   });
 

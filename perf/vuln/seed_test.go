@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/npm"
-	"github.com/guided-traffic/trove/internal/formats/nuget"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/internal/formats/npm"
+	"github.com/guided-traffic/quader/internal/formats/nuget"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // TestR_VULN_028_TheSeededInstallation checks the setup of the run: 100,000 stored versions of the stated shape, named like
@@ -80,7 +80,7 @@ func TestR_VULN_028_TheSeededInstallation(t *testing.T) {
 		WHERE r.key = $1 AND p.name = lower(p.display_name) AND p.name <> p.display_name`, repoNuGet); got != nugetPackages {
 		t.Errorf("%d NuGet packages carry the lower-cased ID as their name, want %d", got, nugetPackages)
 	}
-	if got := n(`SELECT count(*) FROM packages WHERE name = 'trove.test.filler0999' AND display_name = 'Trove.Test.Filler0999'`); got != 1 {
+	if got := n(`SELECT count(*) FROM packages WHERE name = 'quader.test.filler0999' AND display_name = 'Quader.Test.Filler0999'`); got != 1 {
 		t.Errorf("the last NuGet package is missing")
 	}
 }

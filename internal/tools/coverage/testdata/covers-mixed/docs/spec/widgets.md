@@ -1,12 +1,12 @@
 # Widget spec
 
 ### R-WID-001 · Make widgets
-Priority: **MVP** · Covers: trove-only, WID-001
+Priority: **MVP** · Covers: quader-only, WID-001
 
 Text.
 
 ### R-WID-002 · Own design
-Priority: **P1** · Covers: trove-only
+Priority: **P1** · Covers: quader-only
 
 ## Decisions
 

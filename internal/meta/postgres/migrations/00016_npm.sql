@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The npm format's tables (M2, WP2.S; R-NPM-006, R-NPM-008, R-NPM-024). The
 -- package's revision counter is packages.rev_seq of the core, not an npm column

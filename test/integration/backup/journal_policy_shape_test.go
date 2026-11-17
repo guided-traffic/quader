@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // producerState is a policy's state in the shape the producer journals it (stateOf in internal/authz): a selector of kind key names

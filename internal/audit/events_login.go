@@ -54,7 +54,7 @@ func init() {
 			`"severity":{"const":"high"},"failures":{"type":"integer"},"locked_until":{"type":"string","format":"date-time"}},` +
 			`"required":["severity"],"additionalProperties":false}`,
 	})
-	// trove admin break-glass unlock and, from wave 2, POST /api/v1/users/{breakGlassName}/unlock.
+	// quader admin break-glass unlock and, from wave 2, POST /api/v1/users/{breakGlassName}/unlock.
 	Register(EventType{
 		Name: EventAuthBreakGlassUnlocked, Category: CategoryAuth, Mode: Transactional,
 		Schema: `{"type":"object","properties":{` +
@@ -66,7 +66,7 @@ func init() {
 			`"session_id":{"type":"string"},"rp_initiated":{"type":"boolean"}},"additionalProperties":false}`,
 	})
 	// A session ended by someone or something other than its user: an
-	// administrator or trove admin (revoked), the session limit (evicted), a
+	// administrator or quader admin (revoked), the session limit (evicted), a
 	// disabled break-glass account, a password rotation. Idle and absolute expiry
 	// and the rotation of a re-authentication are not recorded (R-AUTH-041).
 	Register(EventType{

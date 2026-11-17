@@ -12,14 +12,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/index"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/openpgp"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/formats/deb/index"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The media types of the generated files (R-DEB-005).
@@ -88,8 +88,8 @@ const (
 	OutcomeFailed    = "failed"
 )
 
-// Observer receives what the metrics of R-DEB-033 count: trove_deb_index_builds_total, trove_deb_index_build_seconds and
-// trove_deb_index_delay_seconds, each labelled with the class of the repository (local or virtual).
+// Observer receives what the metrics of R-DEB-033 count: quader_deb_index_builds_total, quader_deb_index_build_seconds and
+// quader_deb_index_delay_seconds, each labelled with the class of the repository (local or virtual).
 type Observer interface {
 	// Build is one build of one suite of a repository of class and its outcome; Seconds the time it took.
 	Build(class, outcome string, seconds float64)

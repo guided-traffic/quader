@@ -1,6 +1,6 @@
 package ansible
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // The local class (R-ANS-001): a repository that takes the publish of collection archives, validates them, stores them and serves the
 // Galaxy documents it computes from the rows of its data port. It needs no adapter; its operations are the handlers of the routes it

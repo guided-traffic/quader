@@ -18,8 +18,8 @@ func TestDatabaseOutageGrace(t *testing.T) {
 	})
 	t.Run("R-OPS-001 a grace at or above retry.max_elapsed is refused naming the key", func(t *testing.T) {
 		for _, env := range [][]string{
-			{"TROVE_HEALTH_DATABASE_OUTAGE_GRACE=30s"},
-			{"TROVE_DATABASE_RETRY_MAX_ELAPSED=10s"}, // the default grace of 20 s no longer fits
+			{"QUADER_HEALTH_DATABASE_OUTAGE_GRACE=30s"},
+			{"QUADER_DATABASE_RETRY_MAX_ELAPSED=10s"}, // the default grace of 20 s no longer fits
 		} {
 			_, err := loadWith(t, env...)
 			if !hasIssue(err, "health.database_outage_grace") {
@@ -28,7 +28,7 @@ func TestDatabaseOutageGrace(t *testing.T) {
 		}
 	})
 	t.Run("R-OPS-001 a grace of 0 switches the tolerance off and fits any retry bound", func(t *testing.T) {
-		if _, err := loadWith(t, "TROVE_HEALTH_DATABASE_OUTAGE_GRACE=0s", "TROVE_DATABASE_RETRY_MAX_ELAPSED=2s"); err != nil {
+		if _, err := loadWith(t, "QUADER_HEALTH_DATABASE_OUTAGE_GRACE=0s", "QUADER_DATABASE_RETRY_MAX_ELAPSED=2s"); err != nil {
 			t.Fatal(err)
 		}
 	})

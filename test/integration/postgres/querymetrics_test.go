@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
-// A statement of the pool that runs longer than metrics.slow_query_threshold counts in trove_db_slow_queries_total under the name
+// A statement of the pool that runs longer than metrics.slow_query_threshold counts in quader_db_slow_queries_total under the name
 // of its query (R-OPS-008).
 func TestR_OPS_008_AStatementSlowerThanTheThresholdCountsUnderItsQueryName(t *testing.T) {
 	st := getStack(t)
@@ -57,9 +57,9 @@ func TestR_OPS_008_AStatementSlowerThanTheThresholdCountsUnderItsQueryName(t *te
 			}
 			q := s.GetLabel()[0].GetValue()
 			switch f.GetName() {
-			case "trove_db_slow_queries_total":
+			case "quader_db_slow_queries_total":
 				slow[q] = s.GetCounter().GetValue()
-			case "trove_db_query_duration_seconds":
+			case "quader_db_query_duration_seconds":
 				observed[q] = s.GetHistogram().GetSampleCount()
 			}
 		}

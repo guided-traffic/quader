@@ -11,8 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // release removes the item at path; the trigger queues its blob.
@@ -208,7 +208,7 @@ func TestGarbageCollection(t *testing.T) {
 		e, p, r := setup(t, nil)
 		g, _ := garbage(t, r, "h.bin")
 		// A running backup pins the digest: the claim's hold check (R-STOR-024 step 2b) finds the pin of a valid run.
-		p.exec(t, "INSERT INTO backup_run (id, operation, state, hold, trigger, target, pod, trove_version, lease_expires_at) VALUES ('0192f0c4-7a1e-7c3b-9d2e-0000000000aa', 'create', 'copying', 'pinned', 'manual', 's3://b/p', 'pod', '0.1.0', now() + interval '1 hour')")
+		p.exec(t, "INSERT INTO backup_run (id, operation, state, hold, trigger, target, pod, quader_version, lease_expires_at) VALUES ('0192f0c4-7a1e-7c3b-9d2e-0000000000aa', 'create', 'copying', 'pinned', 'manual', 's3://b/p', 'pod', '0.1.0', now() + interval '1 hour')")
 		p.exec(t, "INSERT INTO backup_blob_pin (run_id, sha256, size) VALUES ('0192f0c4-7a1e-7c3b-9d2e-0000000000aa', $1, 1)", g.Bytes())
 		res := run(t, r, blob.RunOptions{Mode: blob.GCIncremental})
 		if res.Held != 1 || res.Deleted != 0 || !objectExists(t, e, e.prefix, g) || p.count(t, "blob_gc_queue") != 1 {
@@ -278,7 +278,7 @@ func TestGCKeepsAReleaseThatCommitsDuringTheRun(t *testing.T) {
 			t.Fatal(err)
 		}
 		var before time.Time
-		if err := p.admin.QueryRow(ctx, "SELECT enqueued_at FROM trove.blob_gc_queue WHERE sha256 = $1", d.Bytes()).Scan(&before); err != nil {
+		if err := p.admin.QueryRow(ctx, "SELECT enqueued_at FROM quader.blob_gc_queue WHERE sha256 = $1", d.Bytes()).Scan(&before); err != nil {
 			t.Fatal(err)
 		}
 
@@ -303,7 +303,7 @@ func TestGCKeepsAReleaseThatCommitsDuringTheRun(t *testing.T) {
 			t.Fatalf("the collector deleted a blob it had found referenced: %+v", res)
 		}
 		var after time.Time
-		if err := p.admin.QueryRow(ctx, "SELECT enqueued_at FROM trove.blob_gc_queue WHERE sha256 = $1", d.Bytes()).Scan(&after); err != nil {
+		if err := p.admin.QueryRow(ctx, "SELECT enqueued_at FROM quader.blob_gc_queue WHERE sha256 = $1", d.Bytes()).Scan(&after); err != nil {
 			t.Fatalf("the queue entry is gone: %v", err)
 		}
 		if !after.After(before) {
@@ -364,7 +364,7 @@ func TestGCDrain(t *testing.T) {
 		}
 		// Handed over: state_changed_at lies handover_delay - delete_settle in the past.
 		var lagMs int64
-		if err := p.admin.QueryRow(ctx, `SELECT (extract(epoch FROM now() - min(state_changed_at)) * 1000)::bigint FROM trove.blobs WHERE state = 'deleting'`).Scan(&lagMs); err != nil {
+		if err := p.admin.QueryRow(ctx, `SELECT (extract(epoch FROM now() - min(state_changed_at)) * 1000)::bigint FROM quader.blobs WHERE state = 'deleting'`).Scan(&lagMs); err != nil {
 			t.Fatal(err)
 		}
 		if want := (6*time.Second - 300*time.Millisecond).Milliseconds(); lagMs < want-200 {

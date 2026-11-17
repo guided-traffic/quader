@@ -15,7 +15,7 @@ import (
 func inputs() Inputs {
 	return Inputs{
 		RenderVersion: 1, Repo: 7, Package: 11, Rev: 3, Variant: "registration-gz/index", Serving: "nuget-local",
-		BaseURL: "https://trove.example.com", Endpoint: "default", Settings: "4/64/128",
+		BaseURL: "https://quader.example.com", Endpoint: "default", Settings: "4/64/128",
 	}
 }
 
@@ -63,7 +63,7 @@ func TestR_NUGET_002_ETagIsWeakAndFollowsItsInputs(t *testing.T) {
 // the releases before Q-NUGET-87 computed, and a rolling upgrade does not turn its 304s into 200s.
 // The digest is the SHA-256 of the bytes in hex.
 func TestR_NUGET_002_AnEmptyContentKeepsTheValueOfEarlierReleases(t *testing.T) {
-	if got := inputs().ETag(); got != `W/"5e5fe61503a3a4ea2c96923aafe9e1cb"` {
+	if got := inputs().ETag(); got != `W/"adb6ec7d9f0830a072489012c5a5b9a3"` {
 		t.Errorf("ETag = %s, want the value of the earlier releases", got)
 	}
 	if got := ContentDigest([]byte("a")); got != "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb" {

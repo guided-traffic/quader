@@ -5,7 +5,7 @@ package coordination
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/cluster"
+	"github.com/guided-traffic/quader/internal/cluster"
 )
 
 // TestChangeAreasAreSeeded: a change area without its cluster_epoch row cannot

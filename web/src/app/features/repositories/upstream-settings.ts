@@ -81,7 +81,7 @@ export function upstreamPointerLabel(pointer: string): string | null {
  * What the section writes is `upstreamOf` of upstream-model.ts: on a create only what differs from the defaults (Q-UI-80).
  */
 @Component({
-  selector: 'trove-upstream-settings',
+  selector: 'quader-upstream-settings',
   imports: [DatePipe, ErrorNotice],
   template: `
     <section class="upstream" [id]="sectionId" tabindex="-1" aria-labelledby="upstream-heading">
@@ -243,7 +243,7 @@ export function upstreamPointerLabel(pointer: string): string | null {
           <span i18n="@@upstream.test.running">Testing the connection.</span>
         }
         @if (failure(); as f) {
-          <trove-error-notice [error]="f" />
+          <quader-error-notice [error]="f" />
         }
         @if (outcome(); as o) {
           <p class="verdict" [class.ok]="o.good" [class.warn]="!o.good" data-testid="upstream-test-result">
@@ -433,64 +433,64 @@ export function upstreamPointerLabel(pointer: string): string | null {
   `,
   styles: `
     .upstream {
-      margin-block-start: var(--trove-space-6);
+      margin-block-start: var(--quader-space-6);
     }
     .upstream > .hint {
-      margin-block: 0 var(--trove-space-4);
+      margin-block: 0 var(--quader-space-4);
     }
     .test-result {
-      max-inline-size: var(--trove-settings-measure);
+      max-inline-size: var(--quader-settings-measure);
     }
     .upstream-grid {
       display: grid;
-      grid-template-columns: minmax(0, var(--trove-settings-measure));
-      gap: var(--trove-space-4);
+      grid-template-columns: minmax(0, var(--quader-settings-measure));
+      gap: var(--quader-space-4);
     }
     .upstream-grid .field {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-1);
+      gap: var(--quader-space-1);
     }
     .upstream-grid.details {
-      padding-block: var(--trove-space-2) var(--trove-space-4);
+      padding-block: var(--quader-space-2) var(--quader-space-4);
     }
     .presets {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
     }
     .preset[aria-pressed='true'] {
-      background: var(--trove-accent-container);
-      color: var(--trove-on-accent-container);
-      border-color: var(--trove-accent);
+      background: var(--quader-accent-container);
+      color: var(--quader-on-accent-container);
+      border-color: var(--quader-accent);
       font-weight: 600;
     }
     .host-row {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--trove-space-1) var(--trove-space-4);
-      margin-block-end: var(--trove-space-2);
+      gap: var(--quader-space-1) var(--quader-space-4);
+      margin-block-end: var(--quader-space-2);
     }
     .host-row .text-input {
-      flex: 0 1 var(--trove-field-width-name);
+      flex: 0 1 var(--quader-field-width-name);
     }
     .test {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--trove-space-3);
-      margin-block: var(--trove-space-4) var(--trove-space-2);
+      gap: var(--quader-space-3);
+      margin-block: var(--quader-space-4) var(--quader-space-2);
     }
     .verdict {
-      margin-block: var(--trove-space-2);
+      margin-block: var(--quader-space-2);
     }
     .allow {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: var(--trove-space-2);
-      margin-block-end: var(--trove-space-2);
+      gap: var(--quader-space-2);
+      margin-block-end: var(--quader-space-2);
     }
     .allow p {
       margin: 0;
@@ -502,33 +502,33 @@ export function upstreamPointerLabel(pointer: string): string | null {
       overflow-wrap: anywhere;
       text-align: start;
     }
-    /* The look of a closed section's toggle (<trove-disclosure>), so that every fold of a form reads the same. */
+    /* The look of a closed section's toggle (<quader-disclosure>), so that every fold of a form reads the same. */
     .details-toggle {
       display: inline-flex;
       align-items: center;
-      gap: var(--trove-space-1);
-      margin-block-start: var(--trove-space-3);
+      gap: var(--quader-space-1);
+      margin-block-start: var(--quader-space-3);
       padding: 0;
       border: 0;
       background: none;
-      color: var(--trove-heading);
+      color: var(--quader-heading);
       font: inherit;
       font-weight: 600;
       cursor: pointer;
     }
     .details-toggle:focus-visible {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: 2px;
     }
     .details-toggle .chevron {
       font-size: 1.25rem;
-      transition: transform var(--trove-motion-duration) var(--trove-motion-easing);
+      transition: transform var(--quader-motion-duration) var(--quader-motion-easing);
     }
     .details-toggle[aria-expanded='true'] .chevron {
       transform: rotate(90deg);
     }
     #upstream-details .details {
-      padding-inline-start: calc(1.25rem + var(--trove-space-1));
+      padding-inline-start: calc(1.25rem + var(--quader-space-1));
     }
   `,
 })

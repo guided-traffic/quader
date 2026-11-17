@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // capture is an audit.Recorder that keeps the asynchronous events it is given.
@@ -205,12 +205,12 @@ func TestR_BAS_016_AnEventThatBreaksItsContractIsDroppedAndCountedNotTheBatch(t 
 
 func TestR_BAS_010_TheReleaseComesFromTheUserAgent(t *testing.T) {
 	for ua, want := range map[string]string{
-		"trove-bastion/0.14.0":                     "0.14.0",
-		"trove-bastion/0.14.0 (linux; go1.27)":     "0.14.0",
-		"trove-bastion/":                           "",
-		"curl/8.9":                                 "",
-		"npm/11.20.0 trove-bastion/0.1.0":          "",
-		"trove-bastion/" + strings.Repeat("9", 90): strings.Repeat("9", 64),
+		"quader-bastion/0.14.0":                     "0.14.0",
+		"quader-bastion/0.14.0 (linux; go1.27)":     "0.14.0",
+		"quader-bastion/":                           "",
+		"curl/8.9":                                  "",
+		"npm/11.20.0 quader-bastion/0.1.0":          "",
+		"quader-bastion/" + strings.Repeat("9", 90): strings.Repeat("9", 64),
 	} {
 		if got := Release(ua); got != want {
 			t.Errorf("Release(%q) = %q, want %q", ua, got, want)

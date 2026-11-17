@@ -45,16 +45,16 @@ func TestCITokens(t *testing.T) {
 	t.Run("R-CI-017 R-CI-028 npm whoami with Bearer, a NuGet source with Basic credentials, dotnet nuget push -k, and DELETE /api/v1/tokens/current then 401 on npm view", func(t *testing.T) {
 		claims := protectedTag(t, "v1.5.0")
 		tok, rec, _ := fx.citOf(t, claims, nil)
-		if !strings.HasPrefix(tok, "trv_cit_") {
+		if !strings.HasPrefix(tok, "qdr_cit_") {
 			t.Fatalf("the exchange returned %q", tok)
 		}
 		// npm: the token as the Bearer credential of the registry (.npmrc _authToken)
 		pod := npmClientPod(t, 1)
 		root := "/work/ci-client-npm-" + fx.run
 		_, _ = podExec(t, pod, "", time.Minute, "rm", "-rf", root)
-		putTree(t, pod, root, map[string]string{".npmrc": fmt.Sprintf("registry=%s%s/\n//%s%s/:_authToken=${TROVE_TOKEN}\n", fx.base, npmAddr(ciNpmAll), fx.host, npmAddr(ciNpmAll))})
+		putTree(t, pod, root, map[string]string{".npmrc": fmt.Sprintf("registry=%s%s/\n//%s%s/:_authToken=${QUADER_TOKEN}\n", fx.base, npmAddr(ciNpmAll), fx.host, npmAddr(ciNpmAll))})
 		npmEnv := []string{
-			"env", "-C", root, "HOME=" + root + "/home", "NODE_EXTRA_CA_CERTS=/etc/trove-ca/ca.crt", "TROVE_TOKEN=" + tok,
+			"env", "-C", root, "HOME=" + root + "/home", "NODE_EXTRA_CA_CERTS=/etc/quader-ca/ca.crt", "QUADER_TOKEN=" + tok,
 			"npm_config_update_notifier=false", "npm_config_cache=" + root + "/cache",
 		}
 		out, code := podExec(t, pod, "", 2*time.Minute, append(append([]string{}, npmEnv...), "npm11", "whoami", "--registry", fx.base+npmAddr(ciNpmAll)+"/")...)
@@ -70,7 +70,7 @@ func TestCITokens(t *testing.T) {
 		putTree(t, npod, nroot, fx.nugetRepoFiles())
 		nenv := []string{
 			"env", "-C", nroot, "NUGET_PACKAGES=" + nroot + "/packages", "NUGET_HTTP_CACHE_PATH=" + nroot + "/httpcache",
-			"NUGET_PLUGINS_CACHE_PATH=" + nroot + "/plugins", "TROVE_TOKEN=" + tok,
+			"NUGET_PLUGINS_CACHE_PATH=" + nroot + "/plugins", "QUADER_TOKEN=" + tok,
 		}
 		run := func(argv ...string) (string, int) {
 			return podExec(t, npod, "", 10*time.Minute, append(append([]string{}, nenv...), argv...)...)

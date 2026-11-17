@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // TestR_ARCH_028_StreamKeepsNothingAndStaysBounded: Stream passes the content of an entry to a writer without counting it as read into

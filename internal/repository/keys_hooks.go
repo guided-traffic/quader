@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // KeysRemovedHook runs in the transaction of an update (and of the replay of its journal entry) that took fingerprints out of

@@ -41,7 +41,7 @@ type MirrorSettings struct {
 // DefaultSettings are the settings of a repository whose document sets none (R-DEB-008, R-DEB-024).
 func DefaultSettings() Settings {
 	return Settings{
-		Architectures: []string{"amd64", "arm64"}, Compression: []string{}, Origin: "trove",
+		Architectures: []string{"amd64", "arm64"}, Compression: []string{}, Origin: "quader",
 		Suites: []string{}, Components: []string{"main"},
 		Mirror: MirrorSettings{Suites: []string{}, Components: []string{"main"}, Architectures: []string{"amd64"}, Translations: []string{"en"}},
 	}

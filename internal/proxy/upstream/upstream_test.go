@@ -22,15 +22,15 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/observability"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/secrets"
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/observability"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/secrets"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // seen is what a test upstream recorded.
@@ -445,10 +445,10 @@ func TestSecretRefs(t *testing.T) {
 		}
 	})
 
-	t.Run("R-REPO-033 a TROVE_CAC_ variable is read; any other name is refused even in a stored row", func(t *testing.T) {
-		f.setEnv("TROVE_CAC_NPM_TOKEN", "env-token")
-		f.setEnv("TROVE_DATABASE_PASSWORD", "db-secret")
-		ref(repository.SecretRef{Env: "TROVE_CAC_NPM_TOKEN"})
+	t.Run("R-REPO-033 a QUADER_CAC_ variable is read; any other name is refused even in a stored row", func(t *testing.T) {
+		f.setEnv("QUADER_CAC_NPM_TOKEN", "env-token")
+		f.setEnv("QUADER_DATABASE_PASSWORD", "db-secret")
+		ref(repository.SecretRef{Env: "QUADER_CAC_NPM_TOKEN"})
 		cl, err := f.clients.For(t.Context(), repo(21, "npm-env", 2), s)
 		if err != nil {
 			t.Fatal(err)
@@ -457,7 +457,7 @@ func TestSecretRefs(t *testing.T) {
 		if r := got.last(t); r.auth != "Bearer env-token" {
 			t.Fatalf("Authorization = %q", r.auth)
 		}
-		ref(repository.SecretRef{Env: "TROVE_DATABASE_PASSWORD"})
+		ref(repository.SecretRef{Env: "QUADER_DATABASE_PASSWORD"})
 		_, err = f.clients.For(t.Context(), repo(21, "npm-env", 3), s)
 		if e, ok := errs.As(err); !ok || e.Code != errs.CodeUpstreamSecretUnavailable {
 			t.Fatalf("err = %v", err)

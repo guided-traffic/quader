@@ -5,7 +5,7 @@ package vulnsync
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // R-VULN-006: the records of the live feeds, frozen in test/osvstub/testdata/real (SEMVER and ECOSYSTEM ranges, last_affected,

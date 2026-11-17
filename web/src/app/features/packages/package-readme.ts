@@ -41,7 +41,7 @@ export function headingSlug(heading: string, seen: Map<string, number>): string 
  * `name` and lets `vbscript:` links through; the component therefore finishes the job:
  *
  * - a link target other than a fragment, http, https or mailto is removed (the text stays); links
- *   that leave trove carry `rel="nofollow noopener noreferrer"` and no `target`;
+ *   that leave Quader carry `rel="nofollow noopener noreferrer"` and no `target`;
  * - an image whose source is neither an https address nor a path of this origin is removed;
  * - each heading gets the anchor `user-content-<slug>` again, so that `#user-content-…` links of a
  *   table of contents work. The server derives its heading anchors with the same rule ([headingSlug]);
@@ -55,7 +55,7 @@ export function headingSlug(heading: string, seen: Map<string, number>): string 
  *   the table is wider, and that can take focus for the same reason.
  */
 @Component({
-  selector: 'trove-package-readme',
+  selector: 'quader-package-readme',
   template: `
     @if (readme(); as r) {
       @if (r.truncated) {

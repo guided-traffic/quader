@@ -14,14 +14,14 @@ import (
 	"net/http"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 // MaxBulk is the number of findings one set-status request changes (R-VULN-013).
@@ -101,14 +101,14 @@ type Result struct {
 }
 
 // Validate checks the parts of a request that do not depend on the finding: the status is one a person sets (R-VULN-012:
-// resolved is trove's, 422 status_not_settable), the comment's length, and a dismissal reason that is a reason.
+// resolved is quader's, 422 status_not_settable), the comment's length, and a dismissal reason that is a reason.
 func (r Request) Validate(requireStatus bool) error {
 	if r.Status == "" {
 		if requireStatus {
 			return invalid("/status", "required", "The status is required.")
 		}
 	} else if err := vuln.CheckTransition(vuln.StatusConfirmed, r.Status); err != nil {
-		// From a confirmed finding the rules refuse only a status that is no status and resolved, which is trove's to set.
+		// From a confirmed finding the rules refuse only a status that is no status and resolved, which is quader's to set.
 		return err
 	}
 	if r.HasComment && utf8.RuneCountInString(r.Comment) > MaxComment {

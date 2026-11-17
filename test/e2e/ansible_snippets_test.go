@@ -3,7 +3,7 @@
 package e2e
 
 // The setup snippets of the Ansible format, pasted (R-ANS-032, R-ANS-025): what the client setup API renders for a repository is executed
-// unchanged in the pod of each image, with the token in $TROVE_TOKEN as the page's credentials=env mode spells it: the ansible.cfg, the
+// unchanged in the pod of each image, with the token in $QUADER_TOKEN as the page's credentials=env mode spells it: the ansible.cfg, the
 // variable of the token, the netrc line, the install command, the requirements.yml and the publish command.
 
 import (

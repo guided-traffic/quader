@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/internal/proxy"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/internal/proxy"
 )
 
 // TestMapFill is the table of docs/developer/mirror.md "What the host maps": which error of the engine's fill is a permanent

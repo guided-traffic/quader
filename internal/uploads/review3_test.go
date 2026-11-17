@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 func TestR_STOR_011_AStartAboveTheCapOfOpenSessionsIsRefused(t *testing.T) {

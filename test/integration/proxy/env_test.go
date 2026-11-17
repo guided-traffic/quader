@@ -34,34 +34,34 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/outbound"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/invalidation"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/proxy/upstream"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/invalidation"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/proxy/upstream"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-const schemaName = "trove"
+const schemaName = "quader"
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 
@@ -92,11 +92,11 @@ type env struct {
 
 func newEnv(t *testing.T) *env {
 	t.Helper()
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
-	host, user, secret := testenv.Get(t, "TROVE_TEST_PG_HOST"), testenv.Get(t, "TROVE_TEST_PG_USER"), testenv.Get(t, "TROVE_TEST_PG_PASSWORD")
+	host, user, secret := testenv.Get(t, "QUADER_TEST_PG_HOST"), testenv.Get(t, "QUADER_TEST_PG_USER"), testenv.Get(t, "QUADER_TEST_PG_PASSWORD")
 	connect := func(database string) *pgx.Conn {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -111,7 +111,7 @@ func newEnv(t *testing.T) *env {
 		t.Cleanup(func() { _ = conn.Close(context.Background()) })
 		return conn
 	}
-	name := "trove_proxy_" + randHex(5)
+	name := "quader_proxy_" + randHex(5)
 	maint := connect("postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatalf("create database: %v", err)
@@ -153,7 +153,7 @@ func newEnv(t *testing.T) *env {
 	if testenv.PgPooled(t) {
 		cfg = testenv.ThroughPgBouncer(t, cfg, user, maint)
 	}
-	e := &env{t: t, db: name, cfg: cfg, admin: connect(name), ks: randHex(8), prefix: "trove:itp" + randHex(3) + ":"}
+	e := &env{t: t, db: name, cfg: cfg, admin: connect(name), ks: randHex(8), prefix: "quader:itp" + randHex(3) + ":"}
 	e.exec("INSERT INTO project (id, key, display_name) VALUES (gen_random_uuid(), 'it', 'it')")
 	e.s3, e.obj = newS3(t)
 	return e
@@ -170,16 +170,16 @@ func newS3(t *testing.T) (config.Storage, blob.ObjectStore) {
 		return p
 	}
 	cfg := blobtest.Storage(t, t.TempDir())
-	cfg.S3.Endpoint = testenv.Get(t, "TROVE_TEST_S3_ENDPOINT")
-	cfg.S3.Region = testenv.Get(t, "TROVE_TEST_S3_REGION")
-	cfg.S3.Bucket = testenv.Get(t, "TROVE_TEST_S3_BUCKET_BLOBS")
-	cfg.S3.ForcePathStyle = testenv.Get(t, "TROVE_TEST_S3_FORCE_PATH_STYLE") == "true"
+	cfg.S3.Endpoint = testenv.Get(t, "QUADER_TEST_S3_ENDPOINT")
+	cfg.S3.Region = testenv.Get(t, "QUADER_TEST_S3_REGION")
+	cfg.S3.Bucket = testenv.Get(t, "QUADER_TEST_S3_BUCKET_BLOBS")
+	cfg.S3.ForcePathStyle = testenv.Get(t, "QUADER_TEST_S3_FORCE_PATH_STYLE") == "true"
 	cfg.S3.CAFile = testenv.CAFile(t)
 	cfg.S3.Prefix = "it-proxy/" + randHex(5)
 	cfg.S3.Credentials = config.StorageS3Credentials{
 		Source:              "static",
-		AccessKeyIDFile:     writeSecret("access-key", testenv.Get(t, "TROVE_TEST_S3_ACCESS_KEY")),
-		SecretAccessKeyFile: writeSecret("secret-key", testenv.Get(t, "TROVE_TEST_S3_SECRET_KEY")),
+		AccessKeyIDFile:     writeSecret("access-key", testenv.Get(t, "QUADER_TEST_S3_ACCESS_KEY")),
+		SecretAccessKeyFile: writeSecret("secret-key", testenv.Get(t, "QUADER_TEST_S3_SECRET_KEY")),
 	}
 	cfg.Spool.MinFreeBytes = 0
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true}})
@@ -574,8 +574,8 @@ func proxyConfig(t *testing.T) config.Proxy {
 	l, err := config.Load(config.Options{
 		ReadFile: func(string) ([]byte, error) { return nil, os.ErrNotExist },
 		Environ: []string{
-			"TROVE_DATABASE_HOST=db.invalid", "TROVE_DATABASE_NAME=trove", "TROVE_STORAGE_S3_BUCKET=blobs",
-			"TROVE_STORAGE_SPOOL_DIR=" + t.TempDir(),
+			"QUADER_DATABASE_HOST=db.invalid", "QUADER_DATABASE_NAME=quader", "QUADER_STORAGE_S3_BUCKET=blobs",
+			"QUADER_STORAGE_SPOOL_DIR=" + t.TempDir(),
 		},
 		Command: config.CommandMigrate,
 	})

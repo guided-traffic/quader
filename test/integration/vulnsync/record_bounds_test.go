@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 	otherSize = 560_000
 	oneMiB    = 1 << 20
 
-	recordSizeEnv = "TROVE_VULNERABILITIES_SOURCES_OSV_MAX_RECORD_SIZE=1MiB"
+	recordSizeEnv = "QUADER_VULNERABILITIES_SOURCES_OSV_MAX_RECORD_SIZE=1MiB"
 )
 
 // sha is the stored digest of a record.

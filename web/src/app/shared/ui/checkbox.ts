@@ -5,10 +5,10 @@ import { Component, input, output } from '@angular/core';
  * keyboard-operable and announced with its name and state. The label is the content; `describedBy` points the
  * input at a note (a hint or a ceiling) by its id.
  *
- *   <trove-checkbox [checked]="x()" (checkedChange)="x.set($event)">Label</trove-checkbox>
+ *   <quader-checkbox [checked]="x()" (checkedChange)="x.set($event)">Label</quader-checkbox>
  */
 @Component({
-  selector: 'trove-checkbox',
+  selector: 'quader-checkbox',
   template: `
     <label class="check-row">
       <input

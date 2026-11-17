@@ -16,7 +16,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The contract the spec writes down (the Go blocks of R-ARCH-008 and R-ARCH-009 in

@@ -14,7 +14,7 @@ func TestClassifyStartup(t *testing.T) {
 
 	t.Run("Q-HA-13 every Sentinel unreachable is transient", func(t *testing.T) {
 		probes := []sentinelProbe{{Addr: "a", Err: refused}, {Addr: "b", Err: refused}}
-		if cfg, _ := classifyStartup("trove", probes, someErr); cfg {
+		if cfg, _ := classifyStartup("quader", probes, someErr); cfg {
 			t.Fatal("unreachable Sentinels classified as a configuration error")
 		}
 	})
@@ -27,27 +27,27 @@ func TestClassifyStartup(t *testing.T) {
 	})
 	t.Run("Q-HA-13 one Sentinel that names the primary makes a null answer elsewhere irrelevant", func(t *testing.T) {
 		probes := []sentinelProbe{{Addr: "a", Unknown: true}, {Addr: "b", Primary: "10.0.0.1:6379"}}
-		if cfg, _ := classifyStartup("trove", probes, someErr); cfg {
+		if cfg, _ := classifyStartup("quader", probes, someErr); cfg {
 			t.Fatal("classified as a configuration error although a Sentinel knows the primary")
 		}
 	})
 	t.Run("Q-HA-13 rejected Sentinel credentials are a configuration error", func(t *testing.T) {
 		probes := []sentinelProbe{{Addr: "a", Err: noauth}, {Addr: "b", Err: refused}}
-		cfg, cause := classifyStartup("trove", probes, someErr)
+		cfg, cause := classifyStartup("quader", probes, someErr)
 		if !cfg || classify(cause) != KindAuth {
 			t.Fatalf("cause = %v, config = %v", cause, cfg)
 		}
 	})
 	t.Run("Q-HA-13 a rejected data-node credential is a configuration error", func(t *testing.T) {
 		probes := []sentinelProbe{{Addr: "a", Primary: "10.0.0.1:6379"}}
-		cfg, cause := classifyStartup("trove", probes, wrongpass)
+		cfg, cause := classifyStartup("quader", probes, wrongpass)
 		if !cfg || classify(cause) != KindAuth {
 			t.Fatalf("cause = %v, config = %v", cause, cfg)
 		}
 	})
 	t.Run("Q-HA-13 a data node that refuses connections is transient", func(t *testing.T) {
 		probes := []sentinelProbe{{Addr: "a", Primary: "10.0.0.1:6379"}}
-		if cfg, _ := classifyStartup("trove", probes, refused); cfg {
+		if cfg, _ := classifyStartup("quader", probes, refused); cfg {
 			t.Fatal("refused connection classified as a configuration error")
 		}
 	})

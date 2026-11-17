@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # The PostgreSQL side of the point-in-time restore drill (R-HA-023, R-HA-025 step 2, docs/developer/e2e.md#the-point-in-time-restore-drill)
-# on a cluster that TROVE_PITR=1 brought up (deploy/dev/up.sh):
+# on a cluster that QUADER_PITR=1 brought up (deploy/dev/up.sh):
 #
-#   pitr.sh status                    archive_mode, the last archived WAL and the base backups of trove-db
-#   pitr.sh backup                    a base backup of trove-db through the Barman Cloud plugin; waits until it is completed and prints its name
+#   pitr.sh status                    archive_mode, the last archived WAL and the base backups of quader-db
+#   pitr.sh backup                    a base backup of quader-db through the Barman Cloud plugin; waits until it is completed and prints its name
 #   pitr.sh archive-wal               switches the WAL segment on the primary and waits until the archiver has shipped it (and every segment before)
-#   pitr.sh restore <time>            recovers the archive into the new cluster trove-db-pitr up to <time> (a PostgreSQL timestamp, for
+#   pitr.sh restore <time>            recovers the archive into the new cluster quader-db-pitr up to <time> (a PostgreSQL timestamp, for
 #                                     example "2026-11-09 12:00:00.123456+00") and waits until it is ready
-#   pitr.sh down                      deletes trove-db-pitr and its volumes
+#   pitr.sh down                      deletes quader-db-pitr and its volumes
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 require_cluster
 
-primary() { kn get cluster trove-db -o jsonpath='{.status.currentPrimary}'; }
-psql_primary() { kn exec "$(primary)" -c postgres -- psql -U postgres -d trove -At -v ON_ERROR_STOP=1 "$@"; }
+primary() { kn get cluster quader-db -o jsonpath='{.status.currentPrimary}'; }
+psql_primary() { kn exec "$(primary)" -c postgres -- psql -U postgres -d quader -At -v ON_ERROR_STOP=1 "$@"; }
 backup_phase() { kn get backups.postgresql.cnpg.io "$1" -o jsonpath='{.status.phase}'; }
 
 case "${1:-}" in
@@ -23,18 +23,18 @@ case "${1:-}" in
     kn get backups.postgresql.cnpg.io -o wide
     ;;
   backup)
-    name="trove-db-base-$(date +%Y%m%d%H%M%S)"
+    name="quader-db-base-$(date +%Y%m%d%H%M%S)"
     kn apply -f - >/dev/null <<YAML
 apiVersion: postgresql.cnpg.io/v1
 kind: Backup
 metadata:
   name: $name
   labels:
-    app.kubernetes.io/part-of: trove-dev
+    app.kubernetes.io/part-of: quader-dev
 spec:
   method: plugin
   cluster:
-    name: trove-db
+    name: quader-db
   pluginConfiguration:
     name: barman-cloud.cloudnative-pg.io
 YAML
@@ -61,11 +61,11 @@ YAML
   restore)
     at="${2:?usage: pitr.sh restore <time>}"
     render "$DEV_DIR/pitr-restore.yaml" | sed -e "s|\${PITR_TARGET_TIME}|$at|g" | kn apply -f -
-    until kn get cluster trove-db-pitr >/dev/null 2>&1; do sleep 1; done
-    kn wait --for=condition=Ready cluster/trove-db-pitr --timeout=15m
+    until kn get cluster quader-db-pitr >/dev/null 2>&1; do sleep 1; done
+    kn wait --for=condition=Ready cluster/quader-db-pitr --timeout=15m
     ;;
   down)
-    kn delete cluster trove-db-pitr --ignore-not-found --wait=true
+    kn delete cluster quader-db-pitr --ignore-not-found --wait=true
     ;;
   *)
     die "usage: pitr.sh status | backup | archive-wal | restore <time> | down"

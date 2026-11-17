@@ -39,11 +39,11 @@ describe('Policy editor (R-UI-027)', () => {
       'Advanced',
     ]);
     // Package names and paths are details on demand: open here, where the policy has patterns, closed on a new draft.
-    const expanded = (r: HTMLElement) => r.querySelector('trove-disclosure.limits button[aria-expanded]')?.getAttribute('aria-expanded');
+    const expanded = (r: HTMLElement) => r.querySelector('quader-disclosure.limits button[aria-expanded]')?.getAttribute('aria-expanded');
     expect(expanded(root)).toBe('true');
     const draft = await renderScreen(PolicyEditor);
     expect(expanded(draft.root)).toBe('false');
-    const advanced = [...root.querySelectorAll('trove-disclosure')].pop()!;
+    const advanced = [...root.querySelectorAll('quader-disclosure')].pop()!;
     expect(advanced.querySelector('button.btn-danger')).toBeTruthy();
     expect(root.querySelector('.save-bar')!.textContent).not.toContain('Delete policy');
   });
@@ -76,7 +76,7 @@ describe('Policy editor (R-UI-027)', () => {
     });
     await afterDebounce();
     await settle(fixture);
-    const nameField = () => [...root.querySelectorAll('trove-text-field')].find((f) => text(f).startsWith('Name'))!;
+    const nameField = () => [...root.querySelectorAll('quader-text-field')].find((f) => text(f).startsWith('Name'))!;
     // An empty field the user has not touched is never red (UI-A-42), and the preview lists no problem of it either.
     expect(nameField().querySelector('.field-error')).toBeNull();
     expect(nameField().querySelector('input')?.getAttribute('aria-invalid')).toBeNull();
@@ -158,7 +158,7 @@ describe('Policy editor (R-UI-027)', () => {
     await settle(fixture);
     buttonByText(root, 'Review and save').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-policy-diff-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-policy-diff-dialog') as HTMLElement;
     const items = dialog.querySelectorAll('li');
     expect(items).toHaveLength(1);
     expect(text(items[0]!)).toContain('Principal added: user:bob');
@@ -184,9 +184,9 @@ describe('Policy editor (R-UI-027)', () => {
     await settle(fixture);
     buttonByText(root, 'Review and save').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-policy-diff-dialog') as HTMLElement, 'Save policy').click();
+    buttonByText(overlay().querySelector('quader-policy-diff-dialog') as HTMLElement, 'Save policy').click();
     await sleep(fixture, 300);
-    const conflict = overlay().querySelector('trove-conflict-dialog') as HTMLElement;
+    const conflict = overlay().querySelector('quader-conflict-dialog') as HTMLElement;
     expect(conflict).toBeTruthy();
     expect(text(conflict)).toContain('Changed by someone else');
     buttonByText(conflict, 'Overwrite').click();
@@ -208,11 +208,11 @@ describe('Policy editor (R-UI-027)', () => {
     };
     buttonByText(root, 'Review and save').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('trove-policy-diff-dialog') as HTMLElement, 'Save policy').click();
+    buttonByText(overlay().querySelector('quader-policy-diff-dialog') as HTMLElement, 'Save policy').click();
     await sleep(fixture, 300);
     expect(api.policies[0]?.description).toBe('Same text');
     expect(get(Notifier).notices().map((n) => n.text)).toContain('The change is stored.');
-    expect(document.querySelector('trove-conflict-dialog')).toBeNull();
+    expect(document.querySelector('quader-conflict-dialog')).toBeNull();
   });
 
   it('R-UI-027 the pattern tester says whether a value matches and why', async () => {

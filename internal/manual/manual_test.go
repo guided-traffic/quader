@@ -7,7 +7,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	docs "github.com/guided-traffic/trove/docs/manual"
+	docs "github.com/guided-traffic/quader/docs/manual"
 )
 
 // TestR_API_054_EmbeddedManualLoads: the manual the binary embeds loads without a

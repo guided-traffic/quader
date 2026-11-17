@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/ansible/rows"
+	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 )
 
 // TestR_ANS_036_AFileTitleIsItsFirstHeadingOrItsName: the title of a file of the tree is the text of the first heading of a Markdown

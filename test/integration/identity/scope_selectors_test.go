@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_AUTH_024_ASelectorOfAScopeNamesTheProject: the selectors of a token scope are written as in every

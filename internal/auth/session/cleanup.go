@@ -3,8 +3,8 @@ package session
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // TaskSessionCleanup deletes expired login flows and command-line logins and

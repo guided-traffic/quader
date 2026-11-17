@@ -1,8 +1,8 @@
 # Errors and troubleshooting
 
-What trove answers when a request fails and what to do about it. The page explains the shape of an error answer and its stable error code, how to pass the request ID to an administrator, what each HTTP status means in trove, the typical problems of npm, pnpm and Yarn through trove, what happens when your session ends, and closes with a reference of the error codes you can meet.
+What Quader answers when a request fails and what to do about it. The page explains the shape of an error answer and its stable error code, how to pass the request ID to an administrator, what each HTTP status means in Quader, the typical problems of npm, pnpm and Yarn through Quader, what happens when your session ends, and closes with a reference of the error codes you can meet.
 
-## How trove reports an error
+## How Quader reports an error
 
 Every error answer carries a **status**, a stable **code** in snake_case and a sentence that explains it. The code is the part to search for and to quote: it never changes its meaning within a major version.
 
@@ -38,7 +38,7 @@ Every answer carries the header `X-Request-Id`, 32 hexadecimal digits; a problem
 
 ## Status codes
 
-| Status | Meaning in trove | What to do |
+| Status | Meaning in Quader | What to do |
 |---|---|---|
 | `401` | No credential where one is needed (`credentials_required`), a token that is malformed, unknown, expired or revoked (`invalid_token`, the answer does not say which), a disabled owner (`principal_disabled`), or an ended session | Set the token, create a new one, or sign in again |
 | `403` | The credential is valid but lacks the permission for a write or an operation (`forbidden`), or a rule refuses it: package owners, the shadowing check, a read-only endpoint | Ask for the permission; the code names the rule |
@@ -50,7 +50,7 @@ Every answer carries the header `X-Request-Id`, 32 hexadecimal digits; a problem
 | `429` | Too many requests (`rate_limited`): the rate limit of the API or the endpoint, or too many rejected credentials from your address | Wait the seconds of `Retry-After`; fix a wrong token first, because every rejected attempt counts |
 | `503` | Temporarily unavailable: the replica is busy or stopping, the database or an upstream is not reachable, a check could not run. Always with `Retry-After` | Retry after that period; another replica may answer |
 
-Further statuses you may meet: `400` and `422` for a malformed or invalid request (the answer names the field), `413` for an upload above a limit, `501` for an operation of a protocol that trove does not implement, and `502` and `504` when a remote repository's upstream fails for content that is not cached.
+Further statuses you may meet: `400` and `422` for a malformed or invalid request (the answer names the field), `413` for an upload above a limit, `501` for an operation of a protocol that Quader does not implement, and `502` and `504` when a remote repository's upstream fails for content that is not cached.
 
 The UI repeats a read once by itself after `429`, waiting for `Retry-After` up to 30 seconds. npm repeats a failed `GET` and `PUT` itself.
 
@@ -60,18 +60,18 @@ These apply to npm, pnpm, Yarn Berry and Yarn Classic alike. The guide's **Troub
 
 ### E401 although a token is configured
 
-- `TROVE_TOKEN` is not set in the environment the client runs in, or is empty.
+- `QUADER_TOKEN` is not set in the environment the client runs in, or is empty.
 - The credential line does not name this repository's address exactly, with its trailing slash.
 - Yarn Classic needs `always-auth=true` and Yarn Berry `npmAlwaysAuth: true` for a repository that is not public.
 - The token is expired, revoked, unknown or mistyped: `invalid_token`. [Create a new token](access-tokens.md#create-a-token).
 - The token works on the main address but not on another endpoint, such as one for customers: further endpoints accept only service-account tokens bound to them unless configured otherwise.
 - The owner of the token is disabled: `principal_disabled`.
 
-trove never asks a client for a one-time password.
+Quader never asks a client for a one-time password.
 
 ### E404 for a package that exists
 
-A `404` with `not_found` has several causes, and trove does not say which, by design:
+A `404` with `not_found` has several causes, and Quader does not say which, by design:
 
 - The version was unpublished, or the upstream registry withdrew it; this also fails an install from a lockfile.
 - A **namespace claim** reserves the name for a local repository: a virtual repository then takes the name from that local repository only and never asks its remote members, so the answer is `404` while the local repository lacks the version. A claim for the whole installation also makes every remote repository refuse the name.
@@ -91,18 +91,18 @@ A `404` with `not_found` has several causes, and trove does not say which, by de
 | `endpoint_read_only` | A write on an endpoint with exposure rules | Publish through the default endpoint |
 | `populate_not_permitted` | You may read the remote repository but not bring new packages into its cache | Ask for that permission, or have the package fetched once by an account that holds it |
 
-When trove cannot ask the remote member whether it serves the name, the first publish answers `503` `shadow_check_unavailable` and stores nothing; retry later.
+When Quader cannot ask the remote member whether it serves the name, the first publish answers `503` `shadow_check_unavailable` and stores nothing; retry later.
 
 ### A download is blocked (E403 on install or restore)
 
-When trove refuses to hand out a version it answers `403` and says why. npm prints the text after `E403`; `dotnet restore` shows the status of the `.nupkg` address, and `curl` on that address prints the one-line reason. The text names the package and version, the repository you used, the reason and a link to the page that explains it, for example `trove blocked trove-test-mal@1.0.0 in web/npm-all: malicious package (MAL-2026-1234). Details: https://trove.example.com/ui/vulnerabilities/findings/…`.
+When Quader refuses to hand out a version it answers `403` and says why. npm prints the text after `E403`; `dotnet restore` shows the status of the `.nupkg` address, and `curl` on that address prints the one-line reason. The text names the package and version, the repository you used, the reason and a link to the page that explains it, for example `Quader blocked quader-test-mal@1.0.0 in web/npm-all: malicious package (MAL-2026-1234). Details: https://quader.example.com/ui/vulnerabilities/findings/…`.
 
 | Code | Cause | Fix |
 |---|---|---|
 | `vulnerability_blocked` | A finding of this version in the repository that stores it blocks it: it is a known malicious package, or a triager of your installation blocked it | Use another version (the advisory page names the fixed one, if there is one). Only a triager can lift the block, by dismissing the finding or setting it back to confirmed; the next request then succeeds. An answer is never cached |
-| `vulnerability_data_missing` | The repository refuses what it cannot check yet, and trove has not imported the advisory data of this ecosystem | Retry after the first import has finished; ask an administrator when it does not |
+| `vulnerability_data_missing` | The repository refuses what it cannot check yet, and Quader has not imported the advisory data of this ecosystem | Retry after the first import has finished; ask an administrator when it does not |
 
-A request through a virtual repository ends at the member that stores the blocked version: trove does not serve the same version from another member. The same version in another repository has a finding of its own and may download.
+A request through a virtual repository ends at the member that stores the blocked version: Quader does not serve the same version from another member. The same version in another repository has a finding of its own and may download.
 
 ### E405 and E409 when publishing
 
@@ -114,7 +114,7 @@ A NuGet push (`dotnet nuget push`, `nuget push`) goes to a local repository, or 
 
 | Answer | Code | What it means | What to do |
 |---|---|---|---|
-| `400` | `nuget_invalid_package` | The file is no package trove accepts: not a ZIP archive, no or several `.nuspec` at the root, a name the archive rules refuse, a limit exceeded, or a symbol package sent to the package push | Build the package again; push `.snupkg` files to the symbol push after their package |
+| `400` | `nuget_invalid_package` | The file is no package Quader accepts: not a ZIP archive, no or several `.nuspec` at the root, a name the archive rules refuse, a limit exceeded, or a symbol package sent to the package push | Build the package again; push `.snupkg` files to the symbol push after their package |
 | `400` | `nuget_invalid_id`, `nuget_invalid_version`, `nuget_invalid_version_range` | The ID (ASCII letters, digits, `_`, single `.` or `-`), the version or a dependency range does not follow the rules | Correct the `.nuspec` |
 | `403` | `forbidden`, `package_owned_by_other_owner`, `shadows_remote_package` | You may not deploy this ID, you are none of its owners, the first push of the ID would replace a package a remote repository serves, or the virtual repository you pushed to has no deployment target (its service index lists no publish address) | Ask for deploy or ownership, or a holder of manage; push to a local repository or to a virtual one with a deployment target |
 | `409` | `nuget_version_exists` | The version is stored with other bytes. A version never changes | Push the changed package under a new version; development feeds use a pre-release counter. `--skip-duplicate` treats the answer as success |
@@ -132,24 +132,24 @@ A remote NuGet repository reads the service index of its upstream (`remote.url`,
 
 | Answer | Code | What it means | What to do |
 |---|---|---|---|
-| `502` | `upstream_error` naming `PackageBaseAddress/3.0.0` or `RegistrationsBaseUrl` | The address is no NuGet v3 feed: its service index lacks a resource trove needs (a NuGet v2 feed is not supported) | Correct `remote.url`; it must end in the `index.json` of a v3 feed |
+| `502` | `upstream_error` naming `PackageBaseAddress/3.0.0` or `RegistrationsBaseUrl` | The address is no NuGet v3 feed: its service index lacks a resource Quader needs (a NuGet v2 feed is not supported) | Correct `remote.url`; it must end in the `index.json` of a v3 feed |
 | `502` | `foreign_host_denied` | The service index names a resource on a host that is neither the upstream's nor in the remote's extra hosts (nuget.org spreads its resources over hosts of `nuget.org`) | Add the host to the remote's extra hosts; for nuget.org the proposed entry is `*.nuget.org` |
-| `502` | `upstream_package_mismatch` | The upstream answered a request for one package with a package that declares another ID or version, or with an archive trove's reader refuses so that its ID and version cannot be checked (the detail names the reason); nothing was stored | Report it to the owner of the upstream; the restore works as soon as the upstream serves the right package |
-| `502` | `nuget_invalid_upstream_document` | A version list, registration index or page of the upstream is not what its address promises; the copy trove had stays | Retry later; if it persists the upstream is broken |
+| `502` | `upstream_package_mismatch` | The upstream answered a request for one package with a package that declares another ID or version, or with an archive Quader's reader refuses so that its ID and version cannot be checked (the detail names the reason); nothing was stored | Report it to the owner of the upstream; the restore works as soon as the upstream serves the right package |
+| `502` | `nuget_invalid_upstream_document` | A version list, registration index or page of the upstream is not what its address promises; the copy Quader had stays | Retry later; if it persists the upstream is broken |
 | `404` | `not_found` | The upstream does not have the ID or the version, or the ID matches an exclude pattern of the remote, or the ID was withdrawn by the upstream (its cached packages stay stored and are served by the cache view) | Check the spelling and the patterns |
 
-Cached packages are served while the upstream is down. Content that is no NuGet package at all (no ZIP archive, no `.nuspec` in it, a `.nuspec` that is not XML) is cached and served as the upstream sent it; it has no entry in the package view and no search hit, and is counted in `trove_nuget_remote_unparseable_packages_total`. The search of a remote answers from the packages it has cached; the forwarding of a search to the upstream is not built yet.
+Cached packages are served while the upstream is down. Content that is no NuGet package at all (no ZIP archive, no `.nuspec` in it, a `.nuspec` that is not XML) is cached and served as the upstream sent it; it has no entry in the package view and no search hit, and is counted in `quader_nuget_remote_unparseable_packages_total`. The search of a remote answers from the packages it has cached; the forwarding of a search to the upstream is not built yet.
 
 ### EINTEGRITY, audits and upstream failures
 
 - `EINTEGRITY` usually means the lockfile was written against a registry that served other bytes for that version.
-- An audit that answers `501` `npm_audit_unavailable` went to a repository whose audit mode is `disabled`, to the cache view of a remote repository (`<key>~cache`) or to an endpoint with exposure rules; audit through the repository itself. An audit that answers `503` `vulnerability_data_unavailable` came before trove had imported its npm advisory data; `npm install` completes and only logs it, and the audit works once the import is done.
-- `npm audit` through trove lists the advisories of the public advisory database for the versions in your lockfile. A package whose name your organisation has claimed in a local repository is not matched against public advisories, and npm says how many names were left out.
+- An audit that answers `501` `npm_audit_unavailable` went to a repository whose audit mode is `disabled`, to the cache view of a remote repository (`<key>~cache`) or to an endpoint with exposure rules; audit through the repository itself. An audit that answers `503` `vulnerability_data_unavailable` came before Quader had imported its npm advisory data; `npm install` completes and only logs it, and the audit works once the import is done.
+- `npm audit` through Quader lists the advisories of the public advisory database for the versions in your lockfile. A package whose name your organisation has claimed in a local repository is not matched against public advisories, and npm says how many names were left out.
 - `502`, `503` and `504` with an `upstream_` code concern a package that is not cached while the remote repository's upstream fails; what is cached is still served. Retry later, and tell an administrator if it persists.
 
 ### Debian: apt-get update, upload and install
 
-APT prints the status line of a failed request and no body; a signature that cannot be verified, a client clock that trails trove's, a `Hash Sum mismatch` and the answers of an upload are explained in [Debian packages with APT](apt-packages.md#when-something-goes-wrong). The upload's answers carry a code in the body, which `curl -fsS` hides: drop `-f` to read it.
+APT prints the status line of a failed request and no body; a signature that cannot be verified, a client clock that trails Quader's, a `Hash Sum mismatch` and the answers of an upload are explained in [Debian packages with APT](apt-packages.md#when-something-goes-wrong). The upload's answers carry a code in the body, which `curl -fsS` hides: drop `-f` to read it.
 
 ## Session ended and re-authentication
 
@@ -202,7 +202,7 @@ Each code with its status and meaning. `GET /api/v1/problems/<code>` gives the d
 | `nuget_version_deleted` | 409 | The NuGet version was deleted and is never accepted again |
 | `nuget_version_reserved` | 409 | After a restore, the number is kept for one exact package |
 | `deb_version_exists`, `deb_filename_conflict`, `deb_withheld` | 409 | A Debian package file is stored with other bytes, another version has its file name, or a restore withheld these bytes |
-| `generated_item` | 409 | A write or delete of a file that trove generates, such as a Debian index below `dists/` |
+| `generated_item` | 409 | A write or delete of a file that Quader generates, such as a Debian index below `dists/` |
 | `token_limit_reached` | 409 | You hold the maximum number of active tokens |
 | `idempotency_in_progress` | 409 | The same request is still running; retry after `Retry-After` |
 | `precondition_failed` | 412 | A condition header did not match |
@@ -211,19 +211,19 @@ Each code with its status and meaning. `GET /api/v1/problems/<code>` gives the d
 | `range_not_satisfiable` | 416 | The byte range lies beyond the end of the file |
 | `misdirected_request` | 421 | The host is not one this endpoint answers for |
 | `malformed_request`, `invalid_path`, `invalid_header` | 400 | The request, the path or a header is not valid |
-| `npm_invalid_name`, `npm_invalid_tag`, `npm_bad_publish`, `npm_manifest_mismatch` | 400 | A name, a dist-tag or a publish request that npm's rules or trove's checks refuse |
+| `npm_invalid_name`, `npm_invalid_tag`, `npm_bad_publish`, `npm_manifest_mismatch` | 400 | A name, a dist-tag or a publish request that npm's rules or Quader's checks refuse |
 | `nuget_invalid_package`, `nuget_invalid_id`, `nuget_invalid_version`, `nuget_invalid_version_range` | 400 | A NuGet package, ID, version or dependency range that the rules refuse |
 | `deb_distribution_required`, `deb_invalid_coordinate`, `deb_invalid_file_name` | 400 | A Debian upload without a suite, with a suite or component outside the rules, or with a file name that does not end in `.deb` |
-| `deb_invalid_archive`, `deb_invalid_control`, `deb_unsupported_compression` | 422 | A Debian package that is no `ar` archive, whose control data breaks a rule (the answer names the field), or whose control archive trove cannot read |
+| `deb_invalid_archive`, `deb_invalid_control`, `deb_unsupported_compression` | 422 | A Debian package that is no `ar` archive, whose control data breaks a rule (the answer names the field), or whose control archive Quader cannot read |
 | `invalid_scope`, `invalid_ttl`, `ttl_exceeds_maximum`, `description_required` | 400 | A token request with an invalid scope, lifetime or description |
 | `validation_failed` | 422 | A field of the request is invalid; the answer names it |
 | `rate_limited` | 429 | Too many requests; wait for `Retry-After` |
-| `npm_not_implemented`, `npm_audit_unavailable` | 501 | An npm operation, or an audit, that trove does not offer here |
-| `upstream_unreachable`, `upstream_error`, `upstream_auth_failed`, `upstream_integrity_mismatch`, `npm_invalid_upstream_document`, `nuget_invalid_upstream_document`, `upstream_package_mismatch`, `egress_denied`, `foreign_host_denied` | 502 | The remote repository's upstream failed, refused or sent something trove does not accept, and nothing usable is cached |
+| `npm_not_implemented`, `npm_audit_unavailable` | 501 | An npm operation, or an audit, that Quader does not offer here |
+| `upstream_unreachable`, `upstream_error`, `upstream_auth_failed`, `upstream_integrity_mismatch`, `npm_invalid_upstream_document`, `nuget_invalid_upstream_document`, `upstream_package_mismatch`, `egress_denied`, `foreign_host_denied` | 502 | The remote repository's upstream failed, refused or sent something Quader does not accept, and nothing usable is cached |
 | `server_busy`, `shutting_down` | 503 | The replica is at its limit or stopping; retry |
 | `database_unavailable`, `authz_stale`, `unavailable` | 503 | A dependency is temporarily unavailable; retry |
 | `upstream_assumed_offline`, `shadow_check_unavailable`, `fetch_queue_timeout` | 503 | The upstream is assumed down, or busy; retry after `Retry-After` |
-| `content_unavailable` | 503 | The stored object of the file is missing from the object store. A remote repository fetches it again from its upstream and answers this only while it cannot (offline, the upstream down, the cache view); a local repository answers it until the object is back (an administrator restores it; trove looks again at most every 30 seconds) or the same file is uploaded again. Retry after `Retry-After`; tell an administrator when it persists. The status is 500 when the object failed trove's verification instead |
+| `content_unavailable` | 503 | The stored object of the file is missing from the object store. A remote repository fetches it again from its upstream and answers this only while it cannot (offline, the upstream down, the cache view); a local repository answers it until the object is back (an administrator restores it; Quader looks again at most every 30 seconds) or the same file is uploaded again. Retry after `Retry-After`; tell an administrator when it persists. The status is 500 when the object failed Quader's verification instead |
 | `upstream_timeout` | 504 | The upstream did not answer in time |
 | `internal` | 500 | A defect; give the request ID to an administrator |
 

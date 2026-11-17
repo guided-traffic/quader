@@ -10,10 +10,10 @@ import (
 
 	dto "github.com/prometheus/client_model/go"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // TestR_BAK_006_AnIncrementalRunCopiesOnlyTheNewBlobs: after a first backup, one with 10 new blobs reports blobs.copied 10 and
@@ -36,7 +36,7 @@ func TestR_BAK_006_AnIncrementalRunCopiesOnlyTheNewBlobs(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := manifestOf(t, r.tgt, r.cfg, second.BackupID)
-	want := in.number(`SELECT count(DISTINCT blob_sha256) FROM trove.items`)
+	want := in.number(`SELECT count(DISTINCT blob_sha256) FROM quader.items`)
 	if m.Blobs.Copied != 10 || m.Blobs.Referenced != want || m.PreviousBackupID == nil || string(*m.PreviousBackupID) != first.BackupID {
 		t.Fatalf("blobs %+v referenced want %d previous %v", m.Blobs, want, m.PreviousBackupID)
 	}
@@ -117,7 +117,7 @@ func TestR_BAK_006_ADamagedSourceBlobIsRecordedAndTheRunCompletesWithWarnings(t 
 	if st, _ := in.blobState(bad); st != "live" {
 		t.Fatalf("the blob row is %q", st)
 	}
-	if got := scalarText(in, `SELECT state FROM trove.backup_run`); got != "completed_with_warnings" {
+	if got := scalarText(in, `SELECT state FROM quader.backup_run`); got != "completed_with_warnings" {
 		t.Fatalf("run state = %s", got)
 	}
 }
@@ -147,7 +147,7 @@ func TestR_BAK_008_ExcludeRemoteCaches(t *testing.T) {
 			t.Fatalf("pool has %x = %v, want %v", d[:4], !want, want)
 		}
 	}
-	if tf, _ := m.Table("items"); tf.Rows != in.number(`SELECT count(*) FROM trove.items`) {
+	if tf, _ := m.Table("items"); tf.Rows != in.number(`SELECT count(*) FROM quader.items`) {
 		t.Fatalf("items exported = %d: the database is exported in full", tf.Rows)
 	}
 	if tf, _ := m.Table("blobs"); tf.Rows != 3 {
@@ -158,8 +158,8 @@ func TestR_BAK_008_ExcludeRemoteCaches(t *testing.T) {
 // TestR_BAK_005_APartitionedTableAndAnUnregisteredTable: a table created by hand is exported and listed under unregisteredTables.
 func TestR_BAK_005_AnUnregisteredTableIsExportedAndListed(t *testing.T) {
 	in := newInstall(t)
-	in.exec(`CREATE TABLE trove.x_new (a int PRIMARY KEY)`)
-	in.exec(`INSERT INTO trove.x_new VALUES (1), (2), (3)`)
+	in.exec(`CREATE TABLE quader.x_new (a int PRIMARY KEY)`)
+	in.exec(`INSERT INTO quader.x_new VALUES (1), (2), (3)`)
 	r := in.newRig(t)
 	res, err := in.run(context.Background(), r, backup.CreateOptions{NoPrune: true})
 	if err != nil {

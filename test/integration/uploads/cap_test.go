@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/uploads"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/uploads"
 )
 
 // The cap on the open sessions of a principal on a repository is held by the insert itself (Q-STOR-176).
@@ -93,12 +93,12 @@ func TestR_STOR_011_ConcurrentStartsNeverExceedTheCapOfOpenSessions(t *testing.T
 // The count of a start and the listing of the cleaning are served by their indexes at the size where it matters.
 func TestR_STOR_011_TheCapCountAndTheCleaningListingUseTheirIndexes(t *testing.T) {
 	w := newWorld(t)
-	w.p.exec(t, `INSERT INTO trove.upload_sessions (id, repo_id, addressed_repo_id, principal_id, hash_state, part_size, s3_upload_id, state, received, last_activity_at)
+	w.p.exec(t, `INSERT INTO quader.upload_sessions (id, repo_id, addressed_repo_id, principal_id, hash_state, part_size, s3_upload_id, state, received, last_activity_at)
 		SELECT gen_random_uuid(), CASE WHEN g % 2 = 0 THEN $1::bigint ELSE $2::bigint END, $1::bigint,
 		       CASE WHEN g % 7 = 0 THEN NULL ELSE ('00000000-0000-4000-8000-' || lpad((g % 400)::text, 12, '0'))::uuid END,
 		       '\x00', 16777216, '', (ARRAY['open','completing','assembled','done','aborted'])[1 + g % 5], 1 + g % 3, now() - (g || ' seconds')::interval
 		FROM generate_series(1, 60000) g`, w.p.repo, w.p.other)
-	w.p.exec(t, "ANALYZE trove.upload_sessions")
+	w.p.exec(t, "ANALYZE quader.upload_sessions")
 	plan := func(sql string, args ...any) string {
 		t.Helper()
 		rows, err := w.p.admin.Query(context.Background(), "EXPLAIN "+sql, args...)
@@ -118,14 +118,14 @@ func TestR_STOR_011_TheCapCountAndTheCleaningListingUseTheirIndexes(t *testing.T
 	}
 	const zero = `'00000000-0000-0000-0000-000000000000'::uuid`
 	for name, principal := range map[string]string{"a principal": `'00000000-0000-4000-8000-000000000007'::uuid`, "none": `NULL::uuid`} {
-		p := plan(`SELECT count(*) FROM trove.upload_sessions o WHERE o.repo_id = $1 AND COALESCE(o.principal_id, `+zero+`) = COALESCE(`+principal+`, `+zero+`)
+		p := plan(`SELECT count(*) FROM quader.upload_sessions o WHERE o.repo_id = $1 AND COALESCE(o.principal_id, `+zero+`) = COALESCE(`+principal+`, `+zero+`)
 			AND o.state IN ('open', 'completing', 'assembled')`, w.p.repo)
 		if !strings.Contains(p, "upload_sessions_open_per_principal") {
 			t.Errorf("the count for %s does not use its index:\n%s", name, p)
 		}
 	}
 	for _, state := range []string{"aborted", "done"} {
-		p := plan(`SELECT id FROM trove.upload_sessions WHERE state = '` + state + `' AND NOT cleaned AND received > 0 ORDER BY last_activity_at LIMIT 200`)
+		p := plan(`SELECT id FROM quader.upload_sessions WHERE state = '` + state + `' AND NOT cleaned AND received > 0 ORDER BY last_activity_at LIMIT 200`)
 		if !strings.Contains(p, "upload_sessions_cleanup") || strings.Contains(p, "Sort") {
 			t.Errorf("the listing of the %s sessions does not read its index in order:\n%s", state, p)
 		}

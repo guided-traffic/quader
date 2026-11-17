@@ -1,6 +1,6 @@
 # Monitoring and operations
 
-This page is for the people who keep a trove installation running. It covers the health and readiness endpoints, the metrics and logs, how to follow one request through them, the System status, Jobs and Audit log screens, what happens when a pod stops or a node is drained, how to scale the two roles, how trove behaves while Valkey, PostgreSQL or the object store is unavailable, and which signals deserve an alert.
+This page is for the people who keep a Quader installation running. It covers the health and readiness endpoints, the metrics and logs, how to follow one request through them, the System status, Jobs and Audit log screens, what happens when a pod stops or a node is drained, how to scale the two roles, how Quader behaves while Valkey, PostgreSQL or the object store is unavailable, and which signals deserve an alert.
 
 ## The ops listener
 
@@ -29,7 +29,7 @@ The chart's probes use these paths: startup and liveness `/healthz`, readiness `
 
 ## Metrics
 
-The families are named `trove_*`, plus the Go runtime and process families. The label `endpoint` holds the configured endpoint names (`default` for the main listener), so its values are bounded. With the Prometheus operator's CRDs installed, the chart renders the ServiceMonitor:
+The families are named `quader_*`, plus the Go runtime and process families. The label `endpoint` holds the configured endpoint names (`default` for the main listener), so its values are bounded. With the Prometheus operator's CRDs installed, the chart renders the ServiceMonitor:
 
 ```yaml
 metrics:
@@ -43,43 +43,43 @@ metrics:
 
 With `tls.enabled` the ServiceMonitor verifies the pods against `ca.crt` of the ops listener's Secret and the name `<fullname>-ops.<namespace>.svc`.
 
-The ops Service selects every `api`, `packages`, `worker` and `web` pod, so each replica is scraped. `trove_build_info{role}` and the `role` of every log record name the role of the process (`api`, `packages`, `worker`, `web` or `all`); the ServiceMonitor copies `role` and `pool` onto every other series. To require a token, set `config.metrics.auth: static` and name a Secret in `secrets.metricsToken`; trove reads the token file on every scrape, so a rotated token applies without a restart.
+The ops Service selects every `api`, `packages`, `worker` and `web` pod, so each replica is scraped. `quader_build_info{role}` and the `role` of every log record name the role of the process (`api`, `packages`, `worker`, `web` or `all`); the ServiceMonitor copies `role` and `pool` onto every other series. To require a token, set `config.metrics.auth: static` and name a Secret in `secrets.metricsToken`; Quader reads the token file on every scrape, so a rotated token applies without a restart.
 
 <details>
 <summary>Metric families by area</summary>
 
 | Area | Families |
 |---|---|
-| Build and readiness | `trove_build_info` (version, revision, role), `trove_ready` |
-| HTTP | `trove_http_requests_total`, `trove_http_request_duration_seconds` (labels `listener`, `endpoint`, `handler`, `method`, `code`), `trove_http_requests_in_flight`, `trove_http_requests_shed_total` (`reason`: `in_flight`, `memory_slots`, `heap`), `trove_http_memory_slots`, `trove_http_transfers_cut_total` |
-| Endpoints and exposure | `trove_endpoint_listener_up`, `trove_endpoint_misdirected_total`, `trove_endpoint_forwarded_host_ignored_total`, `trove_endpoint_credentials_refused_total`, `trove_endpoint_cache_fill_refused_total`, `trove_exposure_rules`, `trove_exposure_hidden_total` |
-| TLS | `trove_tls_certificate_expiry_timestamp_seconds`, `trove_tls_reloads_total`, `trove_tls_reload_errors_total`, `trove_tls_temporary_certificate` |
-| Sign-in and permissions | `trove_auth_attempts_total`, `trove_auth_ratelimited_total`, `trove_auth_csrf_failures_total`, `trove_auth_lastused_flush_failures_total`, `trove_authz_decisions_total`, `trove_authz_index_staleness_seconds`, `trove_authz_stale_waits_total` |
-| Rate limits | `trove_api_rate_limited_total`, `trove_ratelimit_decisions_total`, `trove_ratelimit_fallback` |
-| Coordination | `trove_cluster_changes_applied_total`, `trove_cluster_poll_errors_total`, `trove_cluster_poll_last_success_timestamp_seconds`, `trove_lease_held`, `trove_lease_lost_total` |
-| Valkey | `trove_valkey_available`, `trove_valkey_circuit_open`, `trove_valkey_sentinels_reachable`, `trove_valkey_pubsub_subscribed`, `trove_valkey_primary_changes_total`, `trove_valkey_primary_views`, `trove_valkey_errors_total` |
-| Jobs | `trove_jobs_queued`, `trove_jobs_oldest_queued_age_seconds`, `trove_jobs_running`, `trove_jobs_claimed_total`, `trove_jobs_completed_total`, `trove_jobs_duration_seconds`, `trove_jobs_claim_errors_total` |
-| PostgreSQL | `trove_db_pool_connections`, `trove_db_pool_max_connections`, `trove_db_pool_empty_acquires_total`, `trove_db_pool_canceled_acquires_total`, `trove_db_pool_connections_opened_total`, `trove_db_pool_acquire_duration_seconds` (label `db_pool`: `request`, `control`, `lease`), `trove_db_retries_total` (`kind`), `trove_db_commit_unknown_total`, `trove_db_slow_queries_total` (`query`: statements slower than `metrics.slow_query_threshold`), `trove_db_query_duration_seconds` (`query`, only with `metrics.db_query_histograms: true`) |
-| Upload spool and garbage collection | `trove_spool_used_bytes`, `trove_spool_free_bytes`, `trove_gc_last_success_timestamp_seconds` (no series on a replica until a run there has ended), `trove_gc_deleted_blobs_total`, `trove_gc_reclaimed_bytes_total` |
-| Object store and upstreams | `trove_storage_s3_requests_total`, `trove_storage_s3_request_duration_seconds`, `trove_outbound_requests_total`, `trove_outbound_request_duration_seconds`, `trove_outbound_egress_denied_total` |
-| Caches | `trove_cache_requests_total`, `trove_cache_entries`, `trove_cache_bytes`, `trove_cache_flushes_total` |
-| Vulnerability scanning | `trove_vuln_source_last_success_timestamp_seconds`, `trove_vuln_source_records`, `trove_vuln_source_consecutive_failures` (labels `source`, `ecosystem`), `trove_vuln_sync_runs_total`, `trove_vuln_sync_records_total`, `trove_vuln_unevaluable_ranges_total`, `trove_vuln_evaluations_total`, `trove_vuln_evaluation_duration_seconds`, `trove_vuln_findings` (`severity`, `status`, `kind`), `trove_vuln_downloads_blocked_total`, `trove_vuln_audit_requests_total`, `trove_vuln_claimed_name_matches` (`ecosystem`, `kind`) |
-| Audit and telemetry | `trove_audit_events_total`, `trove_audit_events_dropped_total`, `trove_metrics_label_overflow_total`, `trove_tracing_spans_dropped_total` |
-| Package formats | Each format adds families named `trove_npm_*`, `trove_nuget_*`, `trove_oci_*` and `trove_deb_*`; [Container image repositories](container-repositories.md), [Debian (APT) repositories](apt-repositories.md) and the guide of a format name the ones an operator reads |
+| Build and readiness | `quader_build_info` (version, revision, role), `quader_ready` |
+| HTTP | `quader_http_requests_total`, `quader_http_request_duration_seconds` (labels `listener`, `endpoint`, `handler`, `method`, `code`), `quader_http_requests_in_flight`, `quader_http_requests_shed_total` (`reason`: `in_flight`, `memory_slots`, `heap`), `quader_http_memory_slots`, `quader_http_transfers_cut_total` |
+| Endpoints and exposure | `quader_endpoint_listener_up`, `quader_endpoint_misdirected_total`, `quader_endpoint_forwarded_host_ignored_total`, `quader_endpoint_credentials_refused_total`, `quader_endpoint_cache_fill_refused_total`, `quader_exposure_rules`, `quader_exposure_hidden_total` |
+| TLS | `quader_tls_certificate_expiry_timestamp_seconds`, `quader_tls_reloads_total`, `quader_tls_reload_errors_total`, `quader_tls_temporary_certificate` |
+| Sign-in and permissions | `quader_auth_attempts_total`, `quader_auth_ratelimited_total`, `quader_auth_csrf_failures_total`, `quader_auth_lastused_flush_failures_total`, `quader_authz_decisions_total`, `quader_authz_index_staleness_seconds`, `quader_authz_stale_waits_total` |
+| Rate limits | `quader_api_rate_limited_total`, `quader_ratelimit_decisions_total`, `quader_ratelimit_fallback` |
+| Coordination | `quader_cluster_changes_applied_total`, `quader_cluster_poll_errors_total`, `quader_cluster_poll_last_success_timestamp_seconds`, `quader_lease_held`, `quader_lease_lost_total` |
+| Valkey | `quader_valkey_available`, `quader_valkey_circuit_open`, `quader_valkey_sentinels_reachable`, `quader_valkey_pubsub_subscribed`, `quader_valkey_primary_changes_total`, `quader_valkey_primary_views`, `quader_valkey_errors_total` |
+| Jobs | `quader_jobs_queued`, `quader_jobs_oldest_queued_age_seconds`, `quader_jobs_running`, `quader_jobs_claimed_total`, `quader_jobs_completed_total`, `quader_jobs_duration_seconds`, `quader_jobs_claim_errors_total` |
+| PostgreSQL | `quader_db_pool_connections`, `quader_db_pool_max_connections`, `quader_db_pool_empty_acquires_total`, `quader_db_pool_canceled_acquires_total`, `quader_db_pool_connections_opened_total`, `quader_db_pool_acquire_duration_seconds` (label `db_pool`: `request`, `control`, `lease`), `quader_db_retries_total` (`kind`), `quader_db_commit_unknown_total`, `quader_db_slow_queries_total` (`query`: statements slower than `metrics.slow_query_threshold`), `quader_db_query_duration_seconds` (`query`, only with `metrics.db_query_histograms: true`) |
+| Upload spool and garbage collection | `quader_spool_used_bytes`, `quader_spool_free_bytes`, `quader_gc_last_success_timestamp_seconds` (no series on a replica until a run there has ended), `quader_gc_deleted_blobs_total`, `quader_gc_reclaimed_bytes_total` |
+| Object store and upstreams | `quader_storage_s3_requests_total`, `quader_storage_s3_request_duration_seconds`, `quader_outbound_requests_total`, `quader_outbound_request_duration_seconds`, `quader_outbound_egress_denied_total` |
+| Caches | `quader_cache_requests_total`, `quader_cache_entries`, `quader_cache_bytes`, `quader_cache_flushes_total` |
+| Vulnerability scanning | `quader_vuln_source_last_success_timestamp_seconds`, `quader_vuln_source_records`, `quader_vuln_source_consecutive_failures` (labels `source`, `ecosystem`), `quader_vuln_sync_runs_total`, `quader_vuln_sync_records_total`, `quader_vuln_unevaluable_ranges_total`, `quader_vuln_evaluations_total`, `quader_vuln_evaluation_duration_seconds`, `quader_vuln_findings` (`severity`, `status`, `kind`), `quader_vuln_downloads_blocked_total`, `quader_vuln_audit_requests_total`, `quader_vuln_claimed_name_matches` (`ecosystem`, `kind`) |
+| Audit and telemetry | `quader_audit_events_total`, `quader_audit_events_dropped_total`, `quader_metrics_label_overflow_total`, `quader_tracing_spans_dropped_total` |
+| Package formats | Each format adds families named `quader_npm_*`, `quader_nuget_*`, `quader_oci_*` and `quader_deb_*`; [Container image repositories](container-repositories.md), [Debian (APT) repositories](apt-repositories.md) and the guide of a format name the ones an operator reads |
 
-Gauges read from PostgreSQL, such as `trove_jobs_queued`, `trove_jobs_oldest_queued_age_seconds` and `trove_valkey_primary_views`, are reported by every replica; aggregate them with `max`, not `sum`.
+Gauges read from PostgreSQL, such as `quader_jobs_queued`, `quader_jobs_oldest_queued_age_seconds` and `quader_valkey_primary_views`, are reported by every replica; aggregate them with `max`, not `sum`.
 
 </details>
 
 ## Logs
 
-trove writes one JSON object per line to standard output (`log.format: text` for a readable form). Every record has `time`, `level`, `msg`, `replica`, `role` and `log`, which names the stream:
+Quader writes one JSON object per line to standard output (`log.format: text` for a readable form). Every record has `time`, `level`, `msg`, `replica`, `role` and `log`, which names the stream:
 
 | `log` | Content |
 |---|---|
-| `app` | start-up, warnings, errors; `component` names the part of trove |
+| `app` | start-up, warnings, errors; `component` names the part of Quader |
 | `request` | one record per request on a client listener: `endpoint`, `host`, `method`, `path`, `status`, `duration_ms`, `request_bytes`, `response_bytes`, `principal`, `principal_type`, `auth_method`, `token_id`, `repo`, `remote_addr`, `user_agent`, `trace_id` |
-| `upstream` | one record per request trove sends to an upstream registry |
+| `upstream` | one record per request Quader sends to an upstream registry |
 | `audit` | a copy of every audit event |
 
 Secrets are redacted in every record: tokens, passwords, `Authorization` and cookie values, URL credentials and the query parameters of `log.request.redact_query_params`. Probe and metrics requests are not logged unless `log.request.ops_listener: true`.
@@ -109,7 +109,7 @@ Every answer carries `X-Request-Id`. Problem answers repeat it as `requestId`, a
 - **Scheduled tasks**: each task with **Schedule (UTC)**, **Next run** and **Last run**. **Run now** (capability `settings:write`) queues one run; a worker executes it.
 - **Recent jobs**, with a link to **Jobs**.
 
-The screen cannot see disruption budgets or free capacity on other nodes, because trove holds no Kubernetes permissions. The **Backups** link leads to the [Backups](#backups) screen.
+The screen cannot see disruption budgets or free capacity on other nodes, because Quader holds no Kubernetes permissions. The **Backups** link leads to the [Backups](#backups) screen.
 
 ### Jobs
 
@@ -123,13 +123,13 @@ The chart's backup is off until you set `backup.enabled: true` and a bucket of i
 
 **Admin area › System › System status › Backups** (capability `settings:read`) shows the backup job and changes nothing: no control starts, deletes, verifies or restores a backup. It refreshes on the same interval as the status screen, with the same **Pause automatic refresh** and **Refresh now**.
 
-- **Status**: the last success with its age and the **Expected interval**. **Overdue** appears when the last success is older than 1.5 times that interval, the condition of the `TroveBackupStale` alert; **No backup yet** appears while no run has succeeded. **Last failure** appears when a failed or abandoned run, or a run whose process has stopped, is newer than the last success, with the reason in words and its code. A drain or an eviction ends a run as **Interrupted**, which is not a failure: the Job retries it.
+- **Status**: the last success with its age and the **Expected interval**. **Overdue** appears when the last success is older than 1.5 times that interval, the condition of the `QuaderBackupStale` alert; **No backup yet** appears while no run has succeeded. **Last failure** appears when a failed or abandoned run, or a run whose process has stopped, is newer than the last success, with the reason in words and its code. A drain or an eviction ends a run as **Interrupted**, which is not a failure: the Job retries it.
 - **Run in progress**: the state, the phase, the tables exported, the blobs and bytes copied against the totals, the pod and the start time. **Stopped** means the run's process has gone without finishing; the next run marks it abandoned.
 - **Runs**: the runs newest first, filtered by **Operation** and **State**, with **Load more**. **Details** opens a run with its error and its result.
-- **Stored backups**: the complete backups that the newest run found in the target, headed "As recorded by run … at …". Backups written or removed outside trove appear after the next run; `trove backup list` reads the target itself. Next to them: the target, how many of the newest backups are kept, the age below which backups are kept, and the expected interval.
+- **Stored backups**: the complete backups that the newest run found in the target, headed "As recorded by run … at …". Backups written or removed outside Quader appear after the next run; `quader backup list` reads the target itself. Next to them: the target, how many of the newest backups are kept, the age below which backups are kept, and the expected interval.
 - **Start a backup now**: the `kubectl` command that creates a Job from the CronJob, with a copy button. Run it with access to the cluster. The namespace and the CronJob name come from the chart; if the installation does not provide them, the command shows `<namespace>` and `<cronjob>` for you to replace. The run appears in the list once its pod has started. One backup runs at a time.
 - After a restore, a notice names the backup and the snapshot time this installation was restored from.
-- The output of the revocation journal replay (`trove backup restore`, `trove admin post-restore`) prints one line per entry with
+- The output of the revocation journal replay (`quader backup restore`, `quader admin post-restore`) prints one line per entry with
   its outcome. A repository whose entry could widen what it serves is listed as `suspended` and is **disabled** (the line prints
   the entry); a `vuln-rescan` that a stronger vulnerability setting needs is queued in the restored database and runs once the
   workers are up ([After a restore](repositories.md#after-a-restore)).
@@ -174,15 +174,15 @@ authz:
     reads: denied                       # default: none | denied | all (all also records allowed reads)
 ```
 
-The retention is applied by `trove migrate`, which the chart runs before every upgrade, and by the daily `audit-retention` task. Each event is also written to the log stream `audit`; ship that stream to a store outside trove if you need a copy that trove's own database users cannot change.
+The retention is applied by `quader migrate`, which the chart runs before every upgrade, and by the daily `audit-retention` task. Each event is also written to the log stream `audit`; ship that stream to a store outside Quader if you need a copy that Quader's own database users cannot change.
 
 ## Shutdown and node drains
 
-When a pod receives `SIGTERM`, trove shuts down in a fixed order within the pod's termination grace period (`api.terminationGracePeriodSeconds` and `packages.terminationGracePeriodSeconds` 120, `worker.terminationGracePeriodSeconds` 300):
+When a pod receives `SIGTERM`, Quader shuts down in a fixed order within the pod's termination grace period (`api.terminationGracePeriodSeconds` and `packages.terminationGracePeriodSeconds` 120, `worker.terminationGracePeriodSeconds` 300):
 
 1. `/readyz` answers `503` at once and the replica is marked draining.
 2. An `api` or `packages` replica keeps serving for `health.shutdown_drain_delay` (5 s) so the ingress controller can remove it; answers carry `Connection: close`.
-3. The listeners close and requests in flight finish, until the shutdown timeout (`server.shutdown_timeout`, derived as grace period minus drain delay minus 5 s). An upload that is committing gets up to 3 s more; other requests still running then are cut and counted in `trove_http_transfers_cut_total`.
+3. The listeners close and requests in flight finish, until the shutdown timeout (`server.shutdown_timeout`, derived as grace period minus drain delay minus 5 s). An upload that is committing gets up to 3 s more; other requests still running then are cut and counted in `quader_http_transfers_cut_total`.
 4. A `worker` stops claiming jobs at once. Shortly before the timeout, running jobs are cancelled and returned to the queue without counting an attempt; another worker continues them from their last checkpoint.
 5. Buffered audit events are written and the connections closed.
 
@@ -194,11 +194,11 @@ For a node drain, the chart's PodDisruptionBudgets (`maxUnavailable: 1` per role
 
 | Role | Scale it when | Setting |
 |---|---|---|
-| `api` | the UI or the management API is slow, or requests are shed with `503 server_busy` (`trove_http_requests_shed_total`) | `api.replicaCount` (default 2), `api.resources.limits.memory` |
+| `api` | the UI or the management API is slow, or requests are shed with `503 server_busy` (`quader_http_requests_shed_total`) | `api.replicaCount` (default 2), `api.resources.limits.memory` |
 | `packages` | package clients see `503 server_busy`, or latency grows | `packages.replicaCount` (default 3), `packages.resources.limits.memory` |
-| `worker` | `trove_jobs_queued` keeps growing | `worker.replicaCount` (default 2), `config.jobs.workers` (concurrent jobs per queue) |
+| `worker` | `quader_jobs_queued` keeps growing | `worker.replicaCount` (default 2), `config.jobs.workers` (concurrent jobs per queue) |
 
-Any `api` replica can answer any request of its routes, any `packages` replica any package request, and any worker can run any job; scheduled tasks run once for the whole installation. Each `api` and `packages` pod admits as many concurrent requests as its memory limit allows (`trove_http_memory_slots`), so the chart requires `resources.limits.memory` for each. A remote repository's `limits.maxConcurrentFetches` is shared by the `packages` replicas (and the `web` replicas of the bridge, and `all`): the other roles hold no share of it. With `highAvailability.enforce: true` (default) the chart requires at least two replicas per role.
+Any `api` replica can answer any request of its routes, any `packages` replica any package request, and any worker can run any job; scheduled tasks run once for the whole installation. Each `api` and `packages` pod admits as many concurrent requests as its memory limit allows (`quader_http_memory_slots`), so the chart requires `resources.limits.memory` for each. A remote repository's `limits.maxConcurrentFetches` is shared by the `packages` replicas (and the `web` replicas of the bridge, and `all`): the other roles hold no share of it. With `highAvailability.enforce: true` (default) the chart requires at least two replicas per role.
 
 Change replica counts through `helm upgrade` rather than `kubectl scale`: the migration Job then compares the connections all replicas may open with PostgreSQL's `max_connections` (`database.preflight.connection_budget: enforce`) and stops the upgrade if they do not fit.
 
@@ -207,15 +207,15 @@ Change replica counts through `helm upgrade` rather than `kubectl scale`: the mi
 | Dependency | What happens |
 |---|---|
 | Valkey | No request fails and replicas stay ready (`/readyz` lists `valkey` as degraded). Remote fetches are collapsed per replica only, the negative cache is per replica, rate limits fall back to a per-replica share of each budget, and changes reach other replicas through the PostgreSQL change log instead of an early message. System status shows **Degraded** |
-| PostgreSQL | Outages shorter than `health.database_outage_grace` (20 s) show as degraded; longer ones make the replicas unready. PostgreSQL holds everything durable, so trove cannot serve without it |
+| PostgreSQL | Outages shorter than `health.database_outage_grace` (20 s) show as degraded; longer ones make the replicas unready. PostgreSQL holds everything durable, so Quader cannot serve without it |
 | Object store | Requests for stored content fail with a retryable `503` on the affected replica; everything else keeps working. Readiness depends on it only with `health.require_object_store: true` |
 
-**When the object store loses objects.** The bucket can lose objects behind trove's back: a restore of the database to a point older than `storage.gc.grace_period`, a lifecycle rule or a deletion by another tool, an object store that lost its data. The rows that describe the content stay. The first read that finds an object missing marks its blob `missing`, logs `the object of a blob is missing from the object store` with its digest, and counts `trove_storage_blobs_damaged_total{status="missing"}`, which the alert `TroveBlobMissing` reads. What the clients see then:
+**When the object store loses objects.** The bucket can lose objects behind Quader's back: a restore of the database to a point older than `storage.gc.grace_period`, a lifecycle rule or a deletion by another tool, an object store that lost its data. The rows that describe the content stay. The first read that finds an object missing marks its blob `missing`, logs `the object of a blob is missing from the object store` with its digest, and counts `quader_storage_blobs_damaged_total{status="missing"}`, which the alert `QuaderBlobMissing` reads. What the clients see then:
 
 - **A remote repository** serves an item whose object is back without asking its upstream, and otherwise fetches the item again from its upstream on the next request, a cached package document as well as a tarball or a package, and writes the object again; the log line `the stored object of a cached item is not usable` names the repository, the path and the digest. While it cannot (offline, the upstream down, the cache view, a caller who may not fill the cache, also through a virtual repository), the answer is `503 content_unavailable` with `Retry-After`, never `404`. An artifact keeps the digest it was cached with: when the upstream now serves other bytes, nothing is stored, the answer stays `503`, and the audit event `proxy.upstream_digest_changed` is written once an hour; each replica then asks the upstream for that item again only after 5 minutes (`Retry-After` says when). The same holds for a package document that npm keeps because the upstream's copy is older.
 - **A local repository** answers `503 content_unavailable` (with `Retry-After: 30`). For 30 seconds per file it answers from the database alone; then the next read asks the object store again, and a file whose object is back (restored in the bucket, or a wrong `storage.s3.prefix` corrected) is served again and its mark is cleared. A lost object therefore costs the object store one request per file and 30 seconds, however many clients ask. Uploading the same file again also writes the object and clears the mark.
-- **After a mistake that hid the objects** (a wrong bucket prefix, a store pointed at an empty bucket): correct it, and the files come back on their own within 30 seconds of their next request; nothing has to be uploaded again. `TroveBlobMissing` fires for as long as new blobs are found missing.
-- **Something in front of the store answering 404.** trove takes every `404` of the object store as "no such object", except the codes `NoSuchBucket` and `NoSuchUpload`. A gateway, load balancer or proxy in front of the store that answers `404` during a rollout or a misrouting therefore marks every blob that is read meanwhile, `TroveBlobMissing` fires, and remote repositories fetch those items again from their upstreams. When `TroveBlobMissing` fires and the bucket still holds the objects, look at what stands between trove and the store first; once it answers again, the marks heal within 30 seconds of each file's next read.
+- **After a mistake that hid the objects** (a wrong bucket prefix, a store pointed at an empty bucket): correct it, and the files come back on their own within 30 seconds of their next request; nothing has to be uploaded again. `QuaderBlobMissing` fires for as long as new blobs are found missing.
+- **Something in front of the store answering 404.** Quader takes every `404` of the object store as "no such object", except the codes `NoSuchBucket` and `NoSuchUpload`. A gateway, load balancer or proxy in front of the store that answers `404` during a rollout or a misrouting therefore marks every blob that is read meanwhile, `QuaderBlobMissing` fires, and remote repositories fetch those items again from their upstreams. When `QuaderBlobMissing` fires and the bucket still holds the objects, look at what stands between Quader and the store first; once it answers again, the marks heal within 30 seconds of each file's next read.
 
 ## Caches
 
@@ -236,31 +236,31 @@ With `metrics.prometheusRule.enabled` the chart renders one PrometheusRule with 
 
 | Alert | Fires when | For | Severity |
 |---|---|---|---|
-| `TroveReplicasNotReady` | a Deployment of the chart (a role, a pool or the bridge) has fewer than two available replicas. Needs kube-state-metrics. A Deployment you scaled to one replica fires too | 5m | critical |
-| `TroveDatabaseUnreachable` | replicas retry their connection to PostgreSQL and answer `503` | 2m | critical |
-| `TroveObjectStoreUnreachable` | every replica has the circuit of the object store open | 2m | critical |
-| `TroveObjectStoreUnreachableSingleReplica` | some replicas have the circuit open and others do not: the cause is on the path of those pods | 5m | warning |
-| `TroveDatabasePoolSaturated` | the 95th percentile of the wait for a connection of a replica's request pool is above 100 ms | 10m | warning |
-| `TroveControlConnectionWaits` | the 95th percentile of the wait for the control connection is above one second; readiness checks are close to failing | 5m | warning |
-| `TroveJobsStuck` | a queued job has been waiting for more than 15 minutes | 5m | warning |
-| `TroveLeaseLost` | a singleton task lost its lease more than three times in 15 minutes | at once | warning |
-| `TroveMixedVersions` | replicas of more than one version run for two hours: an upgrade is stuck | 2h | warning |
-| `TroveSpoolNearlyFull` | running uploads hold more than nine times the free space of a replica's spool volume | 10m | warning |
-| `TroveGCStale` | the last garbage-collection run that ended without error is more than two days old. A worker that has not completed a run since it started reports nothing, so a freshly started installation does not fire | 1h | warning |
-| `TroveValkeyUnavailable` | every replica runs without Valkey | 2m | critical |
-| `TroveValkeyUnavailableSingleReplica` | some replicas lost Valkey, others did not | 5m | warning |
-| `TroveValkeySentinelsDegraded` | a replica reaches fewer than two Sentinels, so no failover can be elected | 5m | warning |
-| `TroveValkeyFailoverFlapping` | the Valkey primary changed more than twice within an hour | at once | warning |
-| `TroveValkeyPrimaryDisagreement` | replicas name different Valkey primaries | 5m | critical |
+| `QuaderReplicasNotReady` | a Deployment of the chart (a role, a pool or the bridge) has fewer than two available replicas. Needs kube-state-metrics. A Deployment you scaled to one replica fires too | 5m | critical |
+| `QuaderDatabaseUnreachable` | replicas retry their connection to PostgreSQL and answer `503` | 2m | critical |
+| `QuaderObjectStoreUnreachable` | every replica has the circuit of the object store open | 2m | critical |
+| `QuaderObjectStoreUnreachableSingleReplica` | some replicas have the circuit open and others do not: the cause is on the path of those pods | 5m | warning |
+| `QuaderDatabasePoolSaturated` | the 95th percentile of the wait for a connection of a replica's request pool is above 100 ms | 10m | warning |
+| `QuaderControlConnectionWaits` | the 95th percentile of the wait for the control connection is above one second; readiness checks are close to failing | 5m | warning |
+| `QuaderJobsStuck` | a queued job has been waiting for more than 15 minutes | 5m | warning |
+| `QuaderLeaseLost` | a singleton task lost its lease more than three times in 15 minutes | at once | warning |
+| `QuaderMixedVersions` | replicas of more than one version run for two hours: an upgrade is stuck | 2h | warning |
+| `QuaderSpoolNearlyFull` | running uploads hold more than nine times the free space of a replica's spool volume | 10m | warning |
+| `QuaderGCStale` | the last garbage-collection run that ended without error is more than two days old. A worker that has not completed a run since it started reports nothing, so a freshly started installation does not fire | 1h | warning |
+| `QuaderValkeyUnavailable` | every replica runs without Valkey | 2m | critical |
+| `QuaderValkeyUnavailableSingleReplica` | some replicas lost Valkey, others did not | 5m | warning |
+| `QuaderValkeySentinelsDegraded` | a replica reaches fewer than two Sentinels, so no failover can be elected | 5m | warning |
+| `QuaderValkeyFailoverFlapping` | the Valkey primary changed more than twice within an hour | at once | warning |
+| `QuaderValkeyPrimaryDisagreement` | replicas name different Valkey primaries | 5m | critical |
 
-The rule also holds the alerts of the backup runs (`TroveBackupStale` for a backup that is overdue or never succeeded, `TroveBackupFailed`, `TroveBackupRunningLong`, `TroveBackupGlobalHoldLong`, `TroveBackupSourceDamage`, `TroveBackupVerifyFindings`), but only while `backup.enabled` is true: with the backup off no run succeeds, and `TroveBackupStale` would fire one `config.backup.expected_interval` (a day by default) after the install. `TroveBackupCheckFailed` (a platform protection you declared in `backup.recovery_window` or `backup.object_versioning` is missing) and the revocation journal's `TroveRevocationJournalBacklog` and `TroveRevocationJournalQuarantined` are in the rule either way.
+The rule also holds the alerts of the backup runs (`QuaderBackupStale` for a backup that is overdue or never succeeded, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), but only while `backup.enabled` is true: with the backup off no run succeeds, and `QuaderBackupStale` would fire one `config.backup.expected_interval` (a day by default) after the install. `QuaderBackupCheckFailed` (a platform protection you declared in `backup.recovery_window` or `backup.object_versioning` is missing) and the revocation journal's `QuaderRevocationJournalBacklog` and `QuaderRevocationJournalQuarantined` are in the rule either way.
 
 ```yaml
 metrics:
   prometheusRule:
     enabled: true                  # default: false
     labels: {release: kube-prometheus-stack}   # example: the label your Prometheus selects rules by
-    disabledAlerts: []             # default; example: [TroveJobsStuck]
+    disabledAlerts: []             # default; example: [QuaderJobsStuck]
     extraRules: []                 # default: your own rules, appended after the chart's
 ```
 
@@ -272,13 +272,13 @@ The scanning needs the `worker` role: the sync of the advisory data and the eval
 
 | Alert | Fires when | Severity |
 |---|---|---|
-| `TroveVulnerabilityDataStale` | no sync run of a source and ecosystem has ended successfully for longer than `vulnerabilities.stale_after` (default 24h, read from `config.vulnerabilities.stale_after`) for 15 minutes. A source that never synced counts: its last success is 0 | warning |
-| `TroveVulnerabilitySyncFailing` | three consecutive runs of one source and ecosystem failed; a cancelled run does not count. The last error is on the sources page of the vulnerability section | warning |
-| `TroveVulnerabilityRecordsRejected` | the sync rejected an advisory record above a size bound (larger than `max_record_size`) within the last seven days; the worker's log names it. Records that fail validation are counted separately and do not fire it. Stays on for seven days after the last rejection | warning |
-| `TroveVulnerabilityRecordsInvalid` | at least ten records, and more than 1 % of those the sync processed in 24 hours, failed validation and were not applied; a single record that fails is only counted and logged | warning |
-| `TroveVulnerabilityMaliciousRecordRejected` | a malicious-package record (`MAL-…`) was rejected, by a size bound or by validation, so the package it names is not flagged or blocked by it | critical |
-| `TroveVulnerabilityClaimedNameMalicious` | a malicious-package advisory names a package name that a local repository claims | critical |
-| `TroveBlobMissing` | a replica found the object of a blob missing from the object store within the last hour (see "When the object store loses objects" above; a gateway in front of the store that answers 404 fires it too) | critical |
+| `QuaderVulnerabilityDataStale` | no sync run of a source and ecosystem has ended successfully for longer than `vulnerabilities.stale_after` (default 24h, read from `config.vulnerabilities.stale_after`) for 15 minutes. A source that never synced counts: its last success is 0 | warning |
+| `QuaderVulnerabilitySyncFailing` | three consecutive runs of one source and ecosystem failed; a cancelled run does not count. The last error is on the sources page of the vulnerability section | warning |
+| `QuaderVulnerabilityRecordsRejected` | the sync rejected an advisory record above a size bound (larger than `max_record_size`) within the last seven days; the worker's log names it. Records that fail validation are counted separately and do not fire it. Stays on for seven days after the last rejection | warning |
+| `QuaderVulnerabilityRecordsInvalid` | at least ten records, and more than 1 % of those the sync processed in 24 hours, failed validation and were not applied; a single record that fails is only counted and logged | warning |
+| `QuaderVulnerabilityMaliciousRecordRejected` | a malicious-package record (`MAL-…`) was rejected, by a size bound or by validation, so the package it names is not flagged or blocked by it | critical |
+| `QuaderVulnerabilityClaimedNameMalicious` | a malicious-package advisory names a package name that a local repository claims | critical |
+| `QuaderBlobMissing` | a replica found the object of a blob missing from the object store within the last hour (see "When the object store loses objects" above; a gateway in front of the store that answers 404 fires it too) | critical |
 
 A name in `disabledAlerts` that is no alert of the chart fails the install. If you set `stale_after` only through an environment variable (`extraEnv`), set it in `config.vulnerabilities.stale_after` as well, or the alert keeps the 24-hour default.
 
@@ -288,25 +288,25 @@ A name in `disabledAlerts` that is no alert of the chart fails the install. If y
 
 - every finding keeps its status, and every blocked or malicious version stays refused; a dismissed finding stays dismissed, and its history is intact;
 - no finding resolves while the data is missing, and new versions are served unevaluated (or refused, where a repository sets `onMissingData: block`);
-- `npm audit` through trove answers `503` and the NuGet vulnerability resource is not listed;
-- the system information shows each source with state `empty`, `TroveVulnerabilityDataStale` fires after 15 minutes, and the first `vuln-sync-osv` slot (every 15 minutes by default) imports the data and starts the full evaluation. You can start it at once from the task list.
+- `npm audit` through Quader answers `503` and the NuGet vulnerability resource is not listed;
+- the system information shows each source with state `empty`, `QuaderVulnerabilityDataStale` fires after 15 minutes, and the first `vuln-sync-osv` slot (every 15 minutes by default) imports the data and starts the full evaluation. You can start it at once from the task list.
 
 ## What to watch
 
 | Signal | Meaning |
 |---|---|
-| `trove_ready == 0` for a replica, or **Replicas unready** | the replica takes no traffic; `/readyz?verbose=1` names the check |
-| `trove_tls_certificate_expiry_timestamp_seconds - time() < 14 * 86400` | a certificate expires within two weeks |
-| `increase(trove_tls_reload_errors_total[15m]) > 0` | a rotated certificate did not load; the old one is still served |
-| `trove_valkey_available == 0` | degraded mode, see above |
-| `time() - trove_cluster_poll_last_success_timestamp_seconds` above a few seconds | the replica cannot read the change log |
-| `increase(trove_http_requests_shed_total[5m]) > 0` | a replica is at its concurrency or memory bound |
-| `trove_http_requests_total` with `code` 5xx | server-side failures; the request log names them |
-| `trove_jobs_queued` rising, or no live worker on System status | background work is not getting done; `TroveJobsStuck` fires on the age of the oldest queued job |
-| `increase(trove_audit_events_dropped_total[15m]) > 0` | audit events reached only the log stream |
-| `increase(trove_db_pool_empty_acquires_total[5m])` high | the database pool is too small for the load |
-| `TroveVulnerabilityDataStale`, `TroveVulnerabilitySyncFailing` | advisory data of a source is older than `vulnerabilities.stale_after`, or three sync runs in a row failed; see [Vulnerability scanning](#vulnerability-scanning) |
-| `TroveVulnerabilityClaimedNameMalicious` | a malicious-package advisory names a package name your installation treats as internal |
-| `trove_endpoint_misdirected_total` rising | clients or the ingress send an endpoint hosts it does not serve |
+| `quader_ready == 0` for a replica, or **Replicas unready** | the replica takes no traffic; `/readyz?verbose=1` names the check |
+| `quader_tls_certificate_expiry_timestamp_seconds - time() < 14 * 86400` | a certificate expires within two weeks |
+| `increase(quader_tls_reload_errors_total[15m]) > 0` | a rotated certificate did not load; the old one is still served |
+| `quader_valkey_available == 0` | degraded mode, see above |
+| `time() - quader_cluster_poll_last_success_timestamp_seconds` above a few seconds | the replica cannot read the change log |
+| `increase(quader_http_requests_shed_total[5m]) > 0` | a replica is at its concurrency or memory bound |
+| `quader_http_requests_total` with `code` 5xx | server-side failures; the request log names them |
+| `quader_jobs_queued` rising, or no live worker on System status | background work is not getting done; `QuaderJobsStuck` fires on the age of the oldest queued job |
+| `increase(quader_audit_events_dropped_total[15m]) > 0` | audit events reached only the log stream |
+| `increase(quader_db_pool_empty_acquires_total[5m])` high | the database pool is too small for the load |
+| `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing` | advisory data of a source is older than `vulnerabilities.stale_after`, or three sync runs in a row failed; see [Vulnerability scanning](#vulnerability-scanning) |
+| `QuaderVulnerabilityClaimedNameMalicious` | a malicious-package advisory names a package name your installation treats as internal |
+| `quader_endpoint_misdirected_total` rising | clients or the ingress send an endpoint hosts it does not serve |
 
 TLS details are in [TLS and certificates](tls-and-certificates.md); endpoint metrics in [Endpoints and exposure rules](endpoints.md). What to do when one of these fires is in the [Runbook](runbook.md).

@@ -246,7 +246,7 @@ func (s *Stub) kevBodyLocked() []byte {
 		return list[i].CVEID < list[j].CVEID
 	})
 	b, _ := json.Marshal(map[string]any{
-		"title":           "CISA Catalog of Known Exploited Vulnerabilities (trove test source)",
+		"title":           "CISA Catalog of Known Exploited Vulnerabilities (quader test source)",
 		"catalogVersion":  s.kevAt.Format("2006.01.02"),
 		"dateReleased":    stamp(s.kevAt),
 		"count":           len(list),

@@ -3,7 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
 /** The three pages of the profile as the tab strip of links (UI-A-20); the current page is marked with `aria-current`. */
 @Component({
-  selector: 'trove-profile-nav',
+  selector: 'quader-profile-nav',
   imports: [RouterLink, RouterLinkActive],
   template: `
     <nav class="tab-nav profile-nav" i18n-aria-label="@@profile.nav" aria-label="Profile pages">
@@ -14,7 +14,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   `,
   styles: `
     .profile-nav {
-      margin-block-end: var(--trove-space-4);
+      margin-block-end: var(--quader-space-4);
     }
   `,
 })

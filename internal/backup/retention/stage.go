@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/listing"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/listing"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // The reasons of system.backup.deleted.
@@ -167,7 +167,7 @@ func (s *Stage) finish(ctx context.Context, f Fencer, into *backup.Result, scan 
 	for _, b := range complete {
 		m := b.Manifest
 		into.Retained = append(into.Retained, backup.Retained{
-			BackupID: string(m.BackupID), SnapshotAt: m.SnapshotAt, TroveVersion: m.Trove.Version, SchemaStep: m.Schema.Step,
+			BackupID: string(m.BackupID), SnapshotAt: m.SnapshotAt, QuaderVersion: m.Quader.Version, SchemaStep: m.Schema.Step,
 			DatabaseBytes: listing.DatabaseBytes(m), BlobCount: m.Blobs.Referenced, BlobBytes: m.Blobs.ReferencedBytes,
 			Damaged: len(m.Blobs.Damaged) > 0,
 		})

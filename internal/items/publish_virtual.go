@@ -1,8 +1,8 @@
 package items
 
 import (
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // checkPublishTarget is the rule of Q-STOR-180: generated items live in a local repository and in a virtual one, the one exception to a

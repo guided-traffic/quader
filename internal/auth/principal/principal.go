@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/audit"
+	"github.com/guided-traffic/quader/internal/audit"
 )
 
 // Kind is the kind of a principal-table row (R-AUTHZ-002). The values match
@@ -111,7 +111,7 @@ type LoginClaims struct {
 	EmailVerified bool
 	// DisplayName is the user's name for display.
 	DisplayName string
-	// Groups are the trove group names the provider's mapping rules produced from
+	// Groups are the quader group names the provider's mapping rules produced from
 	// the group claim (R-AUTH-008); the provisioner makes the user's
 	// oidc:<provider> memberships exactly this set.
 	Groups []string

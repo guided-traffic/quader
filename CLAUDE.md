@@ -1,8 +1,8 @@
-# trove — working rules for agents
+# Quader — working rules for agents
 
 ## Stage: pre-alpha, no backward compatibility
 
-trove is pre-alpha. It has no users and no running installations (owner, 2026-11-06).
+Quader is pre-alpha. It has no users and no running installations (owner, 2026-11-06).
 
 Until the first stable release there is **no backward compatibility**, by the owner's rule:
 
@@ -31,7 +31,7 @@ The full gate returns with the first stable release.
 
 ## Product: simple by default, details on demand
 
-By the owner's decisions of 2026-11-12 (T-21 in [promt.md](docs/projektplan/promt.md#owner-task-of-2026-11-12)). trove is for people who
+By the owner's decisions of 2026-11-12 (T-21 in [promt.md](docs/projektplan/promt.md#owner-task-of-2026-11-12)). Quader is for people who
 want to keep and fetch their artifacts, not for people who want to configure a repository manager. "Keep it simple, for every
 repository type, but allow detailed settings."
 

@@ -14,14 +14,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 )
 
-const feedURL = "https://trove.example.com/api/nuget/it/main/v3/"
+const feedURL = "https://quader.example.com/api/nuget/it/main/v3/"
 
 func gunzip(t testing.TB, b []byte) []byte {
 	t.Helper()
@@ -783,7 +783,7 @@ func TestR_NUGET_002_ErrorsOfTheDataPortAreServerFaults(t *testing.T) {
 	fx := newDocFixture(t)
 	widgets(fx)
 	broken := &failingStore{docStore: fx.store}
-	fx.host = formattest.NewHost(fx.f, formattest.HostOptions{Data: broken, BaseURL: "https://trove.example.com"})
+	fx.host = formattest.NewHost(fx.f, formattest.HostOptions{Data: broken, BaseURL: "https://quader.example.com"})
 	fx.putAll("acme.widgets", registrationVersion("Acme.Widgets", "1.0.0", true, `{}`))
 	for _, path := range []string{"v3/flatcontainer/acme.widgets/index.json", "v3/registration/acme.widgets/index.json"} {
 		resp := fx.get(path)

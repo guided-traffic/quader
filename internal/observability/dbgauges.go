@@ -25,7 +25,7 @@ type GaugeSource struct {
 // DBGauges evaluates the registered sources once per metrics.db_gauge_interval
 // and serves the last values to every scrape. The database load of these gauges
 // thus depends on the replica count and the interval, never on the scrape rate
-// (Q-OPS-18). trove_metrics_db_gauges_last_success_timestamp_seconds is their
+// (Q-OPS-18). quader_metrics_db_gauges_last_success_timestamp_seconds is their
 // age.
 type DBGauges struct {
 	interval time.Duration
@@ -47,7 +47,7 @@ func newDBGauges(m *Metrics) *DBGauges {
 	return &DBGauges{
 		interval: interval,
 		values:   map[string][]prometheus.Metric{},
-		lastDesc: prometheus.NewDesc("trove_metrics_db_gauges_last_success_timestamp_seconds",
+		lastDesc: prometheus.NewDesc("quader_metrics_db_gauges_last_success_timestamp_seconds",
 			"End of the last successful evaluation of the gauges read from PostgreSQL.", nil, nil),
 	}
 }

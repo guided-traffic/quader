@@ -1281,7 +1281,7 @@ hosted-service plumbing without meaning for a self-hosted product; the pairing i
 - Policies are created disabled; for package cleanup and archive policies a create request that
   asks for "enabled" fails. Enabling is always a second call, so a compatible implementation keeps
   the rejection for every kind rather than silently accepting an enabled policy.
-- Path patterns appear in the forms but not in the create operations; trove defines them
+- Path patterns appear in the forms but not in the create operations; Quader defines them
   in both for package cleanup and must decide explicitly whether archive policies honor them
   (RET-003).
 - Repository-level caps (maximum unique snapshots and tags, tag revisions) act lazily on push, not

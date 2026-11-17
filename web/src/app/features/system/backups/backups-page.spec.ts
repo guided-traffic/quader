@@ -70,7 +70,7 @@ describe('The backups screen: status (R-UI-048)', () => {
     });
     const t = text(root.querySelector('section[aria-labelledby="bk-status"]')!);
     expect(t).toContain('Last failure');
-    expect(t).toContain('A blob of an earlier backup is missing in the target. Run trove backup verify.');
+    expect(t).toContain('A blob of an earlier backup is missing in the target. Run quader backup verify.');
     expect(t).toContain('pool_damaged');
   });
 
@@ -153,7 +153,7 @@ describe('The backups screen: runs (R-UI-048)', () => {
     const rows = [...root.querySelectorAll('section[aria-labelledby="bk-runs"] tbody tr')].map((r) => text(r));
     expect(rows).toHaveLength(2);
     expect(rows[0]).toContain('Create');
-    expect(rows[0]).toContain('trove-backup-29885880-x7k2q');
+    expect(rows[0]).toContain('quader-backup-29885880-x7k2q');
     expect(rows[0]).toContain('Completed');
     expect(rows[0]).toContain('20261027T020000Z-1c9e');
     expect(rows[0]).toContain('47 min');
@@ -241,13 +241,13 @@ describe('The backups screen: stored backups, the manual command and a restore (
     const card = root.querySelector('section[aria-labelledby="bk-stored"]')!;
     const t = text(card);
     expect(t).toContain('As recorded by run 01933a1b-8c22-7e41-b0f3-2a6d9e4c7b10 at');
-    expect(t).toContain('trove backup list');
+    expect(t).toContain('quader backup list');
     expect(t).toContain('20261027T020000Z-1c9e');
     expect(t).toContain('0.4.0');
     expect(t).toContain('42');
     expect(t).toContain('175.0 MiB');
     expect(t).toContain('384.0 GiB');
-    expect(t).toContain('Targets3://trove-backups/trove');
+    expect(t).toContain('Targets3://quader-backups/quader');
     expect(t).toContain('Keep the newest7');
     expect(t).toContain('Keep newer thanNot set');
     expect(t).toContain('Expected interval1 d');
@@ -267,8 +267,8 @@ describe('The backups screen: stored backups, the manual command and a restore (
     const { root, fixture } = await renderScreen(BackupsPage);
     const panel = root.querySelector('section[aria-labelledby="bk-manual"]')!;
     const command = text(panel.querySelector('pre')!);
-    expect(command).toMatch(/^kubectl -n trove create job --from=cronjob\/trove-backup trove-backup-manual-\d{10}$/);
-    (panel.querySelector('trove-copy-button button') as HTMLButtonElement).click();
+    expect(command).toMatch(/^kubectl -n quader create job --from=cronjob\/quader-backup quader-backup-manual-\d{10}$/);
+    (panel.querySelector('quader-copy-button button') as HTMLButtonElement).click();
     await settle(fixture);
     expect(writeText).toHaveBeenCalledWith(command);
     expect(text(panel)).toContain('One backup runs at a time');
@@ -292,12 +292,12 @@ describe('The backups screen: stored backups, the manual command and a restore (
   it('R-UI-048 shortens the CronJob part of the Job name so that it has at most 63 characters', () => {
     const cronJob = 'a'.repeat(51) + '-';
     expect(cronJob).toHaveLength(52);
-    const command = manualRunCommand({ namespace: 'trove', cronJob }, 1_793_000_000);
+    const command = manualRunCommand({ namespace: 'quader', cronJob }, 1_793_000_000);
     const name = command.split(' ').at(-1)!;
     expect(name.length).toBeLessThanOrEqual(JOB_NAME_MAX);
     expect(name).toBe('a'.repeat(45) + '-manual-1793000000');
     expect(command).toContain(`--from=cronjob/${cronJob} `);
-    const dashed = manualRunCommand({ namespace: 'trove', cronJob: 'a'.repeat(44) + '-' + 'b'.repeat(7) }, 1_793_000_000);
+    const dashed = manualRunCommand({ namespace: 'quader', cronJob: 'a'.repeat(44) + '-' + 'b'.repeat(7) }, 1_793_000_000);
     expect(dashed.split(' ').at(-1)).toBe('a'.repeat(44) + '-manual-1793000000');
   });
 

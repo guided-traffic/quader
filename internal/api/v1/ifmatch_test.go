@@ -30,13 +30,13 @@ var ifMatchExempt = map[string]string{
 }
 
 // TestR_API_012_OneMechanismForAMissingIfMatch holds the declaration side of
-// Q-API-43: every PUT and PATCH either declares x-trove-if-match: required with
+// Q-API-43: every PUT and PATCH either declares x-quader-if-match: required with
 // the shared IfMatch parameter, or is on the exempt list; no operation spells the
 // header inline on a PUT or PATCH.
 func TestR_API_012_OneMechanismForAMissingIfMatch(t *testing.T) {
 	type operation struct {
 		OperationID string           `yaml:"operationId"`
-		IfMatch     string           `yaml:"x-trove-if-match"`
+		IfMatch     string           `yaml:"x-quader-if-match"`
 		Parameters  []map[string]any `yaml:"parameters"`
 		Responses   map[string]any   `yaml:"responses"`
 	}

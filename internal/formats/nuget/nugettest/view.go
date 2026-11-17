@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 )
 
 // The package view of the twin (R-API-029, R-EP-016): the reads internal/formatdata/nuget

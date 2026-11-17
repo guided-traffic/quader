@@ -1,7 +1,7 @@
 package formats
 
 import (
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // ExposureDimensions say what exposure rules may narrow for the format

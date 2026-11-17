@@ -18,10 +18,10 @@ import (
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // maxCopySingle is the largest object CopyObject moves in one request (R-BAK-006).
@@ -123,7 +123,7 @@ func targetConfigError(err error) error {
 }
 
 // NewTarget builds the backup target from backup.target through the outbound factory, so that backup.target.ca_file is its
-// own trust store. It is how cmd/trove gets a target.Store from the configuration. The server-side copy requests go through a
+// own trust store. It is how cmd/quader gets a target.Store from the configuration. The server-side copy requests go through a
 // second HTTP client without a response-header timeout (see Client.copyAPI).
 func NewTarget(ctx context.Context, cfg config.Backup, f *outbound.Factory, opts ...TargetOption) (*Target, error) {
 	s := targetStorage(cfg)
@@ -388,7 +388,7 @@ func (t *Target) Delete(ctx context.Context, keys []string) error {
 
 // Probe implements target.Store: it writes a small object, reads it back, reports what HeadObject says and deletes it.
 func (t *Target) Probe(ctx context.Context, key string) (target.Object, error) {
-	want := []byte("trove backup target probe")
+	want := []byte("quader backup target probe")
 	if _, err := t.Put(ctx, key, want, target.PutOptions{ContentType: "text/plain"}); err != nil {
 		var se *blob.StoreError
 		if t.sseMode != "none" && errors.As(err, &se) && se.Status >= http.StatusBadRequest {

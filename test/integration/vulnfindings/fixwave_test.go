@@ -13,13 +13,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/evaluate"
-	"github.com/guided-traffic/trove/internal/vuln/store"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/evaluate"
+	"github.com/guided-traffic/quader/internal/vuln/store"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The fix wave of the evaluation and the findings (Q-VULN-64 to Q-VULN-67): the kind of a finding, the merge of two findings of
@@ -142,15 +142,15 @@ func TestR_VULN_012_TheKindOfAFindingIsThatOfTheRecordThatAffectsTheVersion(t *t
 	e := newEnv(t)
 	e.setComplete("npm", true)
 	e.addAdvisory("npm", "GHSA-aaaa-aaaa-1001", "MAL-2026-5001", "vulnerability", "high")
-	e.addAffected("npm", "GHSA-aaaa-aaaa-1001", 0, "trove-test-kind", fixedRange("SEMVER", "1.0.1"), nil, false, nil)
+	e.addAffected("npm", "GHSA-aaaa-aaaa-1001", 0, "quader-test-kind", fixedRange("SEMVER", "1.0.1"), nil, false, nil)
 	e.addAdvisory("npm", "MAL-2026-5001", "", "malicious", "critical")
-	e.addAffected("npm", "MAL-2026-5001", 0, "trove-test-kind", "[]", []string{"9.9.9"}, false, nil)
-	e.addVersion("npm-vendor", "trove-test-kind", "1.0.0")
-	e.addVersion("npm-vendor", "trove-test-kind", "9.9.9")
+	e.addAffected("npm", "MAL-2026-5001", 0, "quader-test-kind", "[]", []string{"9.9.9"}, false, nil)
+	e.addVersion("npm-vendor", "quader-test-kind", "1.0.0")
+	e.addVersion("npm-vendor", "quader-test-kind", "9.9.9")
 	e.rescan("npm-vendor")
 
 	kind := func(version string) string {
-		return e.st.Text(`SELECT COALESCE((SELECT kind || ' ' || advisory_id FROM vuln_finding WHERE package_name = 'trove-test-kind' AND version = $1), '')`, version)
+		return e.st.Text(`SELECT COALESCE((SELECT kind || ' ' || advisory_id FROM vuln_finding WHERE package_name = 'quader-test-kind' AND version = $1), '')`, version)
 	}
 	if got := kind("1.0.0"); got != "vulnerability MAL-2026-5001" {
 		t.Errorf("1.0.0 (affected by the ordinary record only): %q", got)
@@ -165,7 +165,7 @@ func TestR_VULN_012_TheKindOfAFindingIsThatOfTheRecordThatAffectsTheVersion(t *t
 	if got := kind("1.0.0"); got != "vulnerability MAL-2026-5001" {
 		t.Errorf("1.0.0 after the withdrawal: %q", got)
 	}
-	if got := e.st.Text(`SELECT status FROM vuln_finding WHERE package_name = 'trove-test-kind' AND version = '9.9.9'`); got != "resolved" {
+	if got := e.st.Text(`SELECT status FROM vuln_finding WHERE package_name = 'quader-test-kind' AND version = '9.9.9'`); got != "resolved" {
 		t.Errorf("9.9.9 after the withdrawal: %q, want resolved", got)
 	}
 }
@@ -185,11 +185,11 @@ func TestR_VULN_012_TwoFindingsOfOneAliasGroupMergeBlockFirst(t *testing.T) {
 			e.setComplete("npm", true)
 			for _, id := range []string{"GHSA-aaaa-aaaa-2001", "GHSA-aaaa-aaaa-2002"} {
 				e.addAdvisory("npm", id, "", "vulnerability", "high")
-				e.addAffected("npm", id, 0, "trove-test-merge", fixedRange("SEMVER", "1.0.1"), nil, false, nil)
+				e.addAffected("npm", id, 0, "quader-test-merge", fixedRange("SEMVER", "1.0.1"), nil, false, nil)
 			}
-			e.addVersion("npm-vendor", "trove-test-merge", "1.0.0")
+			e.addVersion("npm-vendor", "quader-test-merge", "1.0.0")
 			e.rescan("npm-vendor")
-			if got := e.findings("npm-vendor", "trove-test-merge", "1.0.0", ""); got != 2 {
+			if got := e.findings("npm-vendor", "quader-test-merge", "1.0.0", ""); got != 2 {
 				t.Fatalf("%d findings before the merge, want 2", got)
 			}
 			e.st.Exec(`UPDATE vuln_finding SET status = 'blocked' WHERE advisory_id = $1`, tc.blocked)
@@ -201,20 +201,20 @@ func TestR_VULN_012_TwoFindingsOfOneAliasGroupMergeBlockFirst(t *testing.T) {
 			e.queue("npm", "GHSA-aaaa-aaaa-2001", "GHSA-aaaa-aaaa-2002")
 			e.evaluate()
 
-			if got := e.findings("npm-vendor", "trove-test-merge", "1.0.0", ""); got != 1 {
+			if got := e.findings("npm-vendor", "quader-test-merge", "1.0.0", ""); got != 1 {
 				t.Fatalf("%d findings after the merge, want 1", got)
 			}
-			if got := e.st.Text(`SELECT advisory_id || ' ' || status FROM vuln_finding WHERE package_name = 'trove-test-merge'`); got != "GHSA-aaaa-aaaa-2001 blocked" {
+			if got := e.st.Text(`SELECT advisory_id || ' ' || status FROM vuln_finding WHERE package_name = 'quader-test-merge'`); got != "GHSA-aaaa-aaaa-2001 blocked" {
 				t.Errorf("the merged finding: %q", got)
 			}
-			h := e.history("npm-vendor", "trove-test-merge", "1.0.0")
+			h := e.history("npm-vendor", "quader-test-merge", "1.0.0")
 			if strings.Contains(h, "resolved") || !strings.Contains(h, "advisory_changed") {
 				t.Errorf("history %q: want the history of both findings and no resolution", h)
 			}
 			// Evaluating again changes nothing.
 			e.queue("npm", "GHSA-aaaa-aaaa-2001")
 			e.evaluate()
-			if got := e.history("npm-vendor", "trove-test-merge", "1.0.0"); got != h {
+			if got := e.history("npm-vendor", "quader-test-merge", "1.0.0"); got != h {
 				t.Errorf("history after a second evaluation %q, was %q", got, h)
 			}
 		})
@@ -227,8 +227,8 @@ func TestR_VULN_015_AResolvedBlockedFindingFollowsItsAdvisoryIntoANewGroup(t *te
 	e := newEnv(t)
 	e.setComplete("npm", true)
 	e.addAdvisory("npm", "GHSA-aaaa-aaaa-3002", "", "vulnerability", "high")
-	e.addAffected("npm", "GHSA-aaaa-aaaa-3002", 0, "trove-test-rekey", fixedRange("SEMVER", "1.0.1"), nil, false, nil)
-	e.addVersion("npm-remote", "trove-test-rekey", "1.0.0")
+	e.addAffected("npm", "GHSA-aaaa-aaaa-3002", 0, "quader-test-rekey", fixedRange("SEMVER", "1.0.1"), nil, false, nil)
+	e.addVersion("npm-remote", "quader-test-rekey", "1.0.0")
 	e.rescan("npm-remote")
 	id := e.st.Text(`SELECT id::text FROM vuln_finding`)
 	e.st.Exec(`UPDATE vuln_finding SET status = 'resolved', status_before_resolution = 'blocked', resolved_reason = 'version_removed', resolved_at = now() WHERE id = $1::uuid`, id)
@@ -237,7 +237,7 @@ func TestR_VULN_015_AResolvedBlockedFindingFollowsItsAdvisoryIntoANewGroup(t *te
 	// The advisory joins the group of another record: the group's identifier is GHSA-aaaa-aaaa-3001 from now on.
 	e.st.Exec(`UPDATE vuln_advisory SET canonical_id = 'GHSA-aaaa-aaaa-3001', aliases = ARRAY['GHSA-aaaa-aaaa-3001'], modified = now() + interval '1 hour' WHERE id = 'GHSA-aaaa-aaaa-3002'`)
 	svc := e.service(evaluate.Options{States: fixedStates{"npm": {Complete: true}}})
-	b, err := svc.EvaluateMiss(context.Background(), vuln.Miss{Repo: qr("npm-remote"), Format: "npm", Name: "trove-test-rekey", Version: "1.0.0"})
+	b, err := svc.EvaluateMiss(context.Background(), vuln.Miss{Repo: qr("npm-remote"), Format: "npm", Name: "quader-test-rekey", Version: "1.0.0"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -246,7 +246,7 @@ func TestR_VULN_015_AResolvedBlockedFindingFollowsItsAdvisoryIntoANewGroup(t *te
 	}
 	// The fetch happens (the block is not enforced by this service here): the version is back and the evaluation of its name
 	// re-keys the resolved finding and re-detects it blocked.
-	e.addVersion("npm-remote", "trove-test-rekey", "1.0.0")
+	e.addVersion("npm-remote", "quader-test-rekey", "1.0.0")
 	e.queue("npm", "GHSA-aaaa-aaaa-3002")
 	e.evaluate()
 	if got := e.st.Text(`SELECT id::text || ' ' || advisory_id || ' ' || status FROM vuln_finding`); got != id+" GHSA-aaaa-aaaa-3001 blocked" {
@@ -260,10 +260,10 @@ func TestR_VULN_012_TheWritesOfTheEvaluationAreConditional(t *testing.T) {
 	e := newEnv(t)
 	_, db := e.serviceDB(evaluate.Options{}, nil)
 	ctx := context.Background()
-	e.addVersion("npm-vendor", "trove-test-race", "1.0.0")
+	e.addVersion("npm-vendor", "quader-test-race", "1.0.0")
 	repoID := e.st.Number(`SELECT id FROM repositories WHERE key = 'npm-vendor'`)
 	nf := store.NewFinding{
-		ID: store.NewFindingID(), RepoID: repoID, Ecosystem: "npm", Name: "trove-test-race", Version: "1.0.0", AdvisoryID: "GHSA-aaaa-aaaa-4001",
+		ID: store.NewFindingID(), RepoID: repoID, Ecosystem: "npm", Name: "quader-test-race", Version: "1.0.0", AdvisoryID: "GHSA-aaaa-aaaa-4001",
 		Kind: "vulnerability", Severity: "high", CVSS: store.NoScore, AdvisoryModifiedU: 1,
 	}
 	var first, second bool
@@ -281,7 +281,7 @@ func TestR_VULN_012_TheWritesOfTheEvaluationAreConditional(t *testing.T) {
 			return err
 		}
 		var ok bool
-		read, ok, err = ev.FindingByIdentity(ctx, repoID, "npm", "trove-test-race", "1.0.0", "GHSA-aaaa-aaaa-4001")
+		read, ok, err = ev.FindingByIdentity(ctx, repoID, "npm", "quader-test-race", "1.0.0", "GHSA-aaaa-aaaa-4001")
 		if !ok {
 			return errors.New("the finding is not read")
 		}
@@ -292,7 +292,7 @@ func TestR_VULN_012_TheWritesOfTheEvaluationAreConditional(t *testing.T) {
 	if !first || second {
 		t.Fatalf("insert results %v then %v, want true then false", first, second)
 	}
-	if got := e.findings("npm-vendor", "trove-test-race", "1.0.0", ""); got != 1 {
+	if got := e.findings("npm-vendor", "quader-test-race", "1.0.0", ""); got != 1 {
 		t.Fatalf("%d findings", got)
 	}
 	// A triage sets the block after the evaluation read the finding.
@@ -311,7 +311,7 @@ func TestR_VULN_012_TheWritesOfTheEvaluationAreConditional(t *testing.T) {
 	if done {
 		t.Error("the status change of a stale read was applied")
 	}
-	if got := e.status("npm-vendor", "trove-test-race", "1.0.0"); got != "blocked" {
+	if got := e.status("npm-vendor", "quader-test-race", "1.0.0"); got != "blocked" {
 		t.Errorf("the block was lifted: %q", got)
 	}
 }
@@ -322,9 +322,9 @@ func TestR_VULN_012_ARedetectionKeepsTheTriageCommentUnlessTheFindingLeavesDismi
 	e := newEnv(t)
 	e.setComplete("npm", true)
 	e.addAdvisory("npm", "GHSA-aaaa-aaaa-5001", "", "vulnerability", "medium")
-	e.addAffected("npm", "GHSA-aaaa-aaaa-5001", 0, "trove-test-note", everyVersionRange, nil, true, nil)
-	e.addVersion("npm-vendor", "trove-test-note", "1.0.0")
-	e.addVersion("npm-vendor", "trove-test-note", "2.0.0")
+	e.addAffected("npm", "GHSA-aaaa-aaaa-5001", 0, "quader-test-note", everyVersionRange, nil, true, nil)
+	e.addVersion("npm-vendor", "quader-test-note", "1.0.0")
+	e.addVersion("npm-vendor", "quader-test-note", "2.0.0")
 	e.rescan("npm-vendor")
 	e.st.Exec(`UPDATE vuln_finding SET status = 'resolved', status_before_resolution = 'confirmed', resolved_reason = 'version_removed', resolved_at = now(),
 		comment = 'checked by the platform team' WHERE version = '1.0.0'`)
@@ -393,7 +393,7 @@ func TestR_VULN_027_ARescanResumesFromItsCheckpointWhileItsInputsAreUnchanged(t 
 	e.setComplete("npm", true)
 	e.st.Exec(`UPDATE repositories SET config = jsonb_set(config, '{vulnerabilities}', '{"matchPublicAdvisories":"always"}') WHERE key = 'npm-mirror'`)
 	for i := range 5 {
-		name := fmt.Sprintf("trove-test-n%d", i)
+		name := fmt.Sprintf("quader-test-n%d", i)
 		id := fmt.Sprintf("MAL-2026-91%02d", i)
 		e.addAdvisory("npm", id, "", "malicious", "critical")
 		e.addAffected("npm", id, 0, name, everyVersionRange, nil, true, nil)
@@ -439,12 +439,12 @@ func TestR_VULN_012_TheHistoryDoesNotGrowByModificationsOrByAFlappingCache(t *te
 	e.setComplete("npm", true)
 	svc, db := e.serviceDB(evaluate.Options{}, nil)
 	e.addAdvisory("npm", "GHSA-aaaa-aaaa-7001", "", "vulnerability", "medium")
-	e.addAffected("npm", "GHSA-aaaa-aaaa-7001", 0, "trove-test-flap", everyVersionRange, nil, true, nil)
-	e.addVersion("npm-vendor", "trove-test-flap", "1.0.0")
+	e.addAffected("npm", "GHSA-aaaa-aaaa-7001", 0, "quader-test-flap", everyVersionRange, nil, true, nil)
+	e.addVersion("npm-vendor", "quader-test-flap", "1.0.0")
 	e.rescan("npm-vendor")
 
 	rev := func() int64 {
-		return e.st.Number(`SELECT revision FROM vuln_finding WHERE package_name = 'trove-test-flap'`)
+		return e.st.Number(`SELECT revision FROM vuln_finding WHERE package_name = 'quader-test-flap'`)
 	}
 	before := rev()
 	e.st.Exec(`UPDATE vuln_advisory SET modified = modified + interval '1 hour'`)
@@ -453,16 +453,16 @@ func TestR_VULN_012_TheHistoryDoesNotGrowByModificationsOrByAFlappingCache(t *te
 	if got := rev(); got != before {
 		t.Errorf("the revision moved from %d to %d by a bare modification", before, got)
 	}
-	if got := e.history("npm-vendor", "trove-test-flap", "1.0.0"); got != "detected" {
+	if got := e.history("npm-vendor", "quader-test-flap", "1.0.0"); got != "detected" {
 		t.Errorf("history %q after a bare modification", got)
 	}
-	if got := e.st.Number(`SELECT (advisory_modified > now() + interval '30 minutes')::int FROM vuln_finding WHERE package_name = 'trove-test-flap'`); got != 1 {
+	if got := e.st.Number(`SELECT (advisory_modified > now() + interval '30 minutes')::int FROM vuln_finding WHERE package_name = 'quader-test-flap'`); got != 1 {
 		t.Error("the modification time was not stored")
 	}
 
 	evict := func() {
 		t.Helper()
-		id := e.st.Number(`SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.name = 'trove-test-flap'`)
+		id := e.st.Number(`SELECT pv.id FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.name = 'quader-test-flap'`)
 		if err := db.InTx(context.Background(), func(tx meta.Tx) error { return svc.OnVersionsRemoved(context.Background(), tx, []int64{id}) }); err != nil {
 			t.Fatal(err)
 		}
@@ -471,14 +471,14 @@ func TestR_VULN_012_TheHistoryDoesNotGrowByModificationsOrByAFlappingCache(t *te
 		evict()
 		e.rescan("npm-vendor")
 	}
-	if got := e.history("npm-vendor", "trove-test-flap", "1.0.0"); got != "detected,redetected" {
+	if got := e.history("npm-vendor", "quader-test-flap", "1.0.0"); got != "detected,redetected" {
 		t.Errorf("history %q after three cycles of eviction and refill", got)
 	}
 	// A resolution that lasted stays in the history.
 	evict()
 	e.st.Exec(`UPDATE vuln_finding_event SET at = now() - interval '2 hours' WHERE change = 'resolved'`)
 	e.rescan("npm-vendor")
-	if got := e.history("npm-vendor", "trove-test-flap", "1.0.0"); got != "detected,redetected,resolved,redetected" {
+	if got := e.history("npm-vendor", "quader-test-flap", "1.0.0"); got != "detected,redetected,resolved,redetected" {
 		t.Errorf("history %q after a resolution that lasted", got)
 	}
 }
@@ -509,13 +509,13 @@ func TestR_VULN_011_TheCommitEvaluationCostsAFixedNumberOfStatements(t *testing.
 		}
 		return tr.statements()
 	}
-	if got := count("npm-vendor", "trove-test-count-a"); len(got) != 6 {
+	if got := count("npm-vendor", "quader-test-count-a"); len(got) != 6 {
 		t.Errorf("%d statements for a public name, want 6:\n%s", len(got), strings.Join(got, "\n---\n"))
 	}
 	if n := tr.roundTrips(); n != 1 {
 		t.Errorf("%d round trips for a public name, want 1", n)
 	}
-	if got := count("npm-local", "trove-test-count-b"); len(got) != 7 {
+	if got := count("npm-local", "quader-test-count-b"); len(got) != 7 {
 		t.Errorf("%d statements for a claimed name, want 7:\n%s", len(got), strings.Join(got, "\n---\n"))
 	}
 	if n := tr.roundTrips(); n != 2 {
@@ -557,7 +557,7 @@ func TestR_VULN_011_TheCommitEvaluationReadsTheClaimsAndTheRepositoryInItsTransa
 	e.setComplete("npm", true)
 	svc, db := e.serviceDB(evaluate.Options{Claims: forbiddenClaims{t}, Repos: forbiddenRepos{Reader: e.rep.App.Repositories(), t: t}}, nil)
 	ctx := context.Background()
-	const name = "trove-test-txclaim"
+	const name = "quader-test-txclaim"
 	e.publish("npm-noclaim", name, "1.0.0")
 	item := e.st.Number(`SELECT pv.lead_item_id FROM package_versions pv JOIN packages p ON p.id = pv.package_id JOIN repositories r ON r.id = p.repo_id
 		WHERE r.key = 'npm-noclaim' AND p.name = $1`, name)
@@ -572,7 +572,7 @@ func TestR_VULN_011_TheCommitEvaluationReadsTheClaimsAndTheRepositoryInItsTransa
 	}
 	e.addAdvisory("npm", "MAL-2026-9101", "", "malicious", "critical")
 	e.addAffected("npm", "MAL-2026-9101", 0, name, everyVersionRange, nil, true, nil)
-	e.st.Exec(`INSERT INTO namespace_claims (repo_id, pattern, source, scope) SELECT id, 'trove-test-txclaim*', 'manual', 'members' FROM repositories WHERE key = 'npm-local'`)
+	e.st.Exec(`INSERT INTO namespace_claims (repo_id, pattern, source, scope) SELECT id, 'quader-test-txclaim*', 'manual', 'members' FROM repositories WHERE key = 'npm-local'`)
 	commit()
 	if got := e.findings("npm-noclaim", name, "", ""); got != 0 {
 		t.Errorf("%d findings of a name that a claim of npm-local covers", got)
@@ -580,7 +580,7 @@ func TestR_VULN_011_TheCommitEvaluationReadsTheClaimsAndTheRepositoryInItsTransa
 	if got := e.st.Number(`SELECT count(*) FROM vuln_claimed_match WHERE name = $1`, name); got != 1 {
 		t.Errorf("%d claimed-name matches, want 1", got)
 	}
-	e.st.Exec(`DELETE FROM namespace_claims WHERE pattern = 'trove-test-txclaim*'`)
+	e.st.Exec(`DELETE FROM namespace_claims WHERE pattern = 'quader-test-txclaim*'`)
 	commit()
 	if got := e.findings("npm-noclaim", name, "", ""); got != 1 {
 		t.Errorf("%d findings once the claim is gone, want 1", got)
@@ -591,8 +591,8 @@ func TestR_VULN_011_TheCommitEvaluationReadsTheClaimsAndTheRepositoryInItsTransa
 // upstream and a local repository that holds public packages are in scope, an unrecognised upstream and a claimed name are not.
 func TestR_VULN_010_InScopeIsTheRuleOfTheMiss(t *testing.T) {
 	e := newEnv(t)
-	e.publish("npm-local", "trove-test-scope", "1.0.0")
-	svc := e.service(evaluate.Options{Claims: fixedClaims{"trove-test-scope": "it/npm-local"}})
+	e.publish("npm-local", "quader-test-scope", "1.0.0")
+	svc := e.service(evaluate.Options{Claims: fixedClaims{"quader-test-scope": "it/npm-local"}})
 	ctx := context.Background()
 	for _, tc := range []struct {
 		repo, name string
@@ -602,7 +602,7 @@ func TestR_VULN_010_InScopeIsTheRuleOfTheMiss(t *testing.T) {
 		{"npm-mirror", "left-pad", false},
 		{"npm-vendor", "left-pad", true},
 		{"npm-noclaim", "left-pad", true},
-		{"npm-local", "trove-test-scope", false},
+		{"npm-local", "quader-test-scope", false},
 		{"files-internal", "left-pad", false},
 	} {
 		repo, err := e.rep.App.Repositories().ByName(ctx, qr(tc.repo))
@@ -626,28 +626,28 @@ func TestR_VULN_015_ACachedTarballWithoutAVersionGetsItsRowsInTheFullEvaluation(
 	e.setComplete("npm", true)
 	e.st.Exec(`INSERT INTO blobs (sha256, sha1, md5, sha512, size) VALUES (decode(repeat('ab', 32), 'hex'), decode(repeat('cd', 20), 'hex'),
 		decode(repeat('ef', 16), 'hex'), decode(repeat('12', 64), 'hex'), 10)`)
-	for _, path := range []string{"trove-test-old/-/trove-test-old-1.0.0.tgz", "trove-test-old/-/other.tgz", "trove-test-old"} {
+	for _, path := range []string{"quader-test-old/-/quader-test-old-1.0.0.tgz", "quader-test-old/-/other.tgz", "quader-test-old"} {
 		e.st.Exec(`INSERT INTO items (repo_id, path, parent_path, kind, blob_sha256, size) SELECT id, $2, $3, 'file', decode(repeat('ab', 32), 'hex'), 10
 			FROM repositories WHERE key = $1`, "npm-remote", path, path[:max(strings.LastIndexByte(path, '/'), 0)])
 	}
 	e.addAdvisory("npm", "MAL-2026-9001", "", "malicious", "critical")
-	e.addAffected("npm", "MAL-2026-9001", 0, "trove-test-old", everyVersionRange, nil, true, nil)
+	e.addAffected("npm", "MAL-2026-9001", 0, "quader-test-old", everyVersionRange, nil, true, nil)
 	e.st.Exec(`UPDATE vuln_source_state SET full_evaluation_requested_at = now() WHERE source = 'osv' AND ecosystem = 'npm'`)
 	e.evaluate()
 
-	if got := e.st.Text(`SELECT COALESCE(pv.version, '-') FROM items i LEFT JOIN package_versions pv ON pv.id = i.version_id WHERE i.path = 'trove-test-old/-/trove-test-old-1.0.0.tgz'`); got != "1.0.0" {
+	if got := e.st.Text(`SELECT COALESCE(pv.version, '-') FROM items i LEFT JOIN package_versions pv ON pv.id = i.version_id WHERE i.path = 'quader-test-old/-/quader-test-old-1.0.0.tgz'`); got != "1.0.0" {
 		t.Errorf("the tarball's version: %q", got)
 	}
-	if got := e.st.Number(`SELECT count(*) FROM items WHERE path IN ('trove-test-old/-/other.tgz', 'trove-test-old') AND version_id IS NOT NULL`); got != 0 {
+	if got := e.st.Number(`SELECT count(*) FROM items WHERE path IN ('quader-test-old/-/other.tgz', 'quader-test-old') AND version_id IS NOT NULL`); got != 0 {
 		t.Errorf("%d files that are no artifact got a version", got)
 	}
-	if got := e.st.Text(`SELECT kind || ' ' || status FROM vuln_finding WHERE package_name = 'trove-test-old' AND version = '1.0.0'`); got != "malicious needs_triage" {
+	if got := e.st.Text(`SELECT kind || ' ' || status FROM vuln_finding WHERE package_name = 'quader-test-old' AND version = '1.0.0'`); got != "malicious needs_triage" {
 		t.Errorf("the finding of the backfilled version: %q", got)
 	}
 	// Idempotent: a second full evaluation links nothing and changes nothing.
 	e.st.Exec(`UPDATE vuln_source_state SET full_evaluation_requested_at = now() WHERE source = 'osv' AND ecosystem = 'npm'`)
 	e.evaluate()
-	if got := e.st.Number(`SELECT count(*) FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.name = 'trove-test-old'`); got != 1 {
+	if got := e.st.Number(`SELECT count(*) FROM package_versions pv JOIN packages p ON p.id = pv.package_id WHERE p.name = 'quader-test-old'`); got != 1 {
 		t.Errorf("%d version rows after the second run, want 1", got)
 	}
 }

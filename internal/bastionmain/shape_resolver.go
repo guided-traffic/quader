@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // reachResolver implements [ShapeResolver] over the decision point's reach classification (R-BAS-012). The

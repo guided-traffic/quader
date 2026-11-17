@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // The methods below give a caller that must not import internal/blob (the Bastion's cache, R-BAS-001, R-BAS-030)

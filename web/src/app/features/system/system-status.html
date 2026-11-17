@@ -1,4 +1,4 @@
-<trove-page-header heading="System status" i18n-heading="@@system.heading">
+<quader-page-header heading="System status" i18n-heading="@@system.heading">
   <button actions class="btn btn-default" type="button" [attr.aria-pressed]="paused()" (click)="togglePause()">
     @if (paused()) {
       <ng-container i18n="@@system.resume">Resume automatic refresh</ng-container>
@@ -7,10 +7,10 @@
     }
   </button>
   <button actions class="btn btn-default" type="button" (click)="reload()" i18n="@@system.refresh">Refresh now</button>
-</trove-page-header>
+</quader-page-header>
 
 @if (failure(); as f) {
-  <trove-error-notice [error]="f" (retry)="reload()" />
+  <quader-error-notice [error]="f" (retry)="reload()" />
 }
 
 @if (state(); as s) {
@@ -179,7 +179,7 @@
                 </p>
               }
               @if (p.replicas.length > 0) {
-                <trove-data-table [caption]="replicasCaption(g.role, p.pool)" [columns]="replicaColumns">
+                <quader-data-table [caption]="replicasCaption(g.role, p.pool)" [columns]="replicaColumns">
                   @for (r of p.replicas; track r.instanceUid) {
                     <tr>
                       <th scope="row" translate="no">{{ r.name }}</th>
@@ -248,7 +248,7 @@
                       </td>
                     </tr>
                   }
-                </trove-data-table>
+                </quader-data-table>
               }
             </section>
           }
@@ -257,7 +257,7 @@
     }
     <p class="limits" i18n="@@system.replicas.limits">
       This screen cannot see disruption budgets, free capacity on other nodes, or whether the
-      remaining replicas carry the peak load, because trove holds no Kubernetes permissions.
+      remaining replicas carry the peak load, because Quader holds no Kubernetes permissions.
     </p>
   </section>
 }
@@ -323,7 +323,7 @@
 <section class="card" aria-labelledby="card-keys">
   <h2 id="card-keys" i18n="@@system.keys.heading">Stored-secret keys</h2>
   @if (encryptionFailure(); as f) {
-    <trove-error-notice [error]="f" (retry)="encryption.reload()" />
+    <quader-error-notice [error]="f" (retry)="encryption.reload()" />
   } @else if (valueOf(encryption); as e) {
     <p>
       <ng-container i18n="@@system.keys.active">Active key ID</ng-container>:
@@ -344,7 +344,7 @@
         >
       }
     </p>
-    <trove-data-table [caption]="keysCaption" [columns]="keyColumns()">
+    <quader-data-table [caption]="keysCaption" [columns]="keyColumns()">
       @for (k of e.keys; track k.id) {
         <tr>
           <th scope="row" translate="no">{{ k.id }}</th>
@@ -384,10 +384,10 @@
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
 
     <h3 i18n="@@system.keys.replicas.heading">Key IDs per replica</h3>
-    <trove-data-table [caption]="keyRingsCaption" [columns]="keyRingColumns">
+    <quader-data-table [caption]="keyRingsCaption" [columns]="keyRingColumns">
       @for (r of e.replicas; track r.name) {
         <tr>
           <th scope="row" translate="no">{{ r.name }}</th>
@@ -406,7 +406,7 @@
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
 
     @switch (step()?.kind) {
       @case ('incompatible') {
@@ -449,7 +449,7 @@
 
     @if (reencryptJob(); as id) {
       <div class="job-line">
-        <trove-job-progress [jobId]="id" [label]="reencryptLabel" (finished)="reencryptEnded()" />
+        <quader-job-progress [jobId]="id" [label]="reencryptLabel" (finished)="reencryptEnded()" />
       </div>
     }
     @if (canReencrypt()) {
@@ -473,17 +473,17 @@
   }
 </section>
 
-<trove-tasks-card />
+<quader-tasks-card />
 
 <section class="card" aria-labelledby="card-jobs">
   <h2 id="card-jobs" i18n="@@system.jobs.heading">Recent jobs</h2>
   @if (recentFailure(); as f) {
-    <trove-error-notice [error]="f" (retry)="recentJobs.reload()" />
+    <quader-error-notice [error]="f" (retry)="recentJobs.reload()" />
   } @else if (valueOf(recentJobs); as jobs) {
     @if (jobs.length === 0) {
       <p class="empty" i18n="@@jobs.empty-recent">No job has run yet.</p>
     } @else {
-      <trove-job-table
+      <quader-job-table
         [jobs]="jobs"
         [caption]="recentCaption"
         (cancelRequested)="cancelJob($event)"

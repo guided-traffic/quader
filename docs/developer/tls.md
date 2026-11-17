@@ -1,6 +1,6 @@
 # TLS material: loading, reloading, rotating, testing
 
-Every TLS certificate trove presents and every CA bundle it trusts is a PEM file that is read again without a
+Every TLS certificate Quader presents and every CA bundle it trusts is a PEM file that is read again without a
 restart ([R-ARCH-035](../spec/architecture.md), INV-20). This page says where the files come from, how the
 reloader decides that something changed, what a rotation looks like from the outside, and how the behaviour is
 tested. Configuration keys: [configuration.md](configuration.md); listeners: [architecture.md](architecture.md#tls-on-the-listeners).
@@ -30,7 +30,7 @@ pass (Reload / Refresh / Run tick)
       parse: pair (X509KeyPair, complete PEM, leaf neither expired nor not yet valid; a not-yet-valid content is looked at again every pass) / bundle (≥ 1 certificate, complete PEM)
         fails, pair ──► read both files once more; changed? parse that   (a rotation caught half-way)
         fails ────────► keep the last good content; count + log once for this content
-        loads ────────► swap the piece; trove_tls_reloads_total + info log (not for the first load)
+        loads ────────► swap the piece; quader_tls_reloads_total + info log (not for the first load)
   any swap ──► publish a new immutable snapshot (atomic pointer), Generation()++
 ```
 
@@ -61,8 +61,8 @@ content hash on a timer sees that on every volume type and cannot miss an event.
 
 | Situation | Listener | Client (PostgreSQL, Valkey, object store, outbound) |
 |---|---|---|
-| file absent or broken **at start** | the listener binds and refuses handshakes, except the ops listener, which answers with a temporary in-memory certificate (ECDSA, one hour, CN = instance, `trove_tls_temporary_certificate{listener="ops"}`) so HTTPS probes reach `/healthz` 200 and `/readyz` 503 (Q-ARCH-36); the `tls` readiness check (first readiness only) holds the replica unready; the pair is served as soon as it is valid, no restart | configuration error: `Open`, `NewValkey`, `NewFromFactory` fail and the process ends, as before; the outbound factory's own CA files hold the `outbound` first readiness and its clients fail closed until the files load |
-| file broken **after** a good load | the previous pair stays; `trove_tls_reload_errors_total` +1; ERROR log with the file names and the reason; readiness unchanged | the previous material stays; the same counter and log |
+| file absent or broken **at start** | the listener binds and refuses handshakes, except the ops listener, which answers with a temporary in-memory certificate (ECDSA, one hour, CN = instance, `quader_tls_temporary_certificate{listener="ops"}`) so HTTPS probes reach `/healthz` 200 and `/readyz` 503 (Q-ARCH-36); the `tls` readiness check (first readiness only) holds the replica unready; the pair is served as soon as it is valid, no restart | configuration error: `Open`, `NewValkey`, `NewFromFactory` fail and the process ends, as before; the outbound factory's own CA files hold the `outbound` first readiness and its clients fail closed until the files load |
+| file broken **after** a good load | the previous pair stays; `quader_tls_reload_errors_total` +1; ERROR log with the file names and the reason; readiness unchanged | the previous material stays; the same counter and log |
 
 A connection keeps what it negotiated: an open TLS connection is not touched by a rotation, and the outbound
 transport of the previous generation keeps its open connections and loses its idle ones. A client that resumes a TLS
@@ -76,12 +76,12 @@ Registered once per process (`tlsfiles.NewMetrics`, in `internal/app` telemetry)
 
 | Family | Meaning |
 |---|---|
-| `trove_tls_certificate_expiry_timestamp_seconds` | notAfter of the served leaf of a pair; the earliest notAfter of a bundle |
-| `trove_tls_reloads_total` | changed content that was loaded and swapped in (the first load is not counted) |
-| `trove_tls_reload_errors_total` | content that did not load, once per distinct content or read error; exported at 0 from the start. An empty file read from a piece that has loaded before waits one pass, because a writer that truncates and then writes can be read in between; an empty file that stays empty is counted on the next pass |
+| `quader_tls_certificate_expiry_timestamp_seconds` | notAfter of the served leaf of a pair; the earliest notAfter of a bundle |
+| `quader_tls_reloads_total` | changed content that was loaded and swapped in (the first load is not counted) |
+| `quader_tls_reload_errors_total` | content that did not load, once per distinct content or read error; exported at 0 from the start. An empty file read from a piece that has loaded before waits one pass, because a writer that truncates and then writes can be read in between; an empty file that stays empty is counted on the next pass |
 
-An expiry alert is `trove_tls_certificate_expiry_timestamp_seconds - time() < 14 * 86400`; a failed rotation is
-`increase(trove_tls_reload_errors_total[15m]) > 0`.
+An expiry alert is `quader_tls_certificate_expiry_timestamp_seconds - time() < 14 * 86400`; a failed rotation is
+`increase(quader_tls_reload_errors_total[15m]) > 0`.
 
 ## TLS on the listeners
 
@@ -110,7 +110,7 @@ request to an HTTPS server") and never reaches a handler.
 
 - **Kubernetes (the chart).** cert-manager (or anything else) updates the Secret; the kubelet swaps the projected
   volume; the reloader sees the new content within `reload_interval`. Nothing else to do; watch
-  `trove_tls_reloads_total` rise and the expiry gauge move. The chart must mount the Secret without `subPath`, or the
+  `quader_tls_reloads_total` rise and the expiry gauge move. The chart must mount the Secret without `subPath`, or the
   kubelet never updates the file.
 - **Files on a host.** Replace the files in place. Writing the key and then the certificate (or the other way) is
   safe: a pass that reads them half-way refuses the pair once and keeps the old one, the next pass loads the new
@@ -131,7 +131,7 @@ request to an HTTPS server") and never reaches a handler.
 Run the integration suite with the stack up:
 `set -a; . .dev/integration/env; set +a; go test -tags integration -race ./test/integration/tls/...`. Each test
 rewrites only its own copy of the stack's CA and restores it; nothing of the shared stack is restarted.
-Certificates for trove's own listeners come from `tlstest.NewCA` in the test; no openssl is needed.
+Certificates for Quader's own listeners come from `tlstest.NewCA` in the test; no openssl is needed.
 
 ## What this does not cover
 

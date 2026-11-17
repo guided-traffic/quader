@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- A session's withdrawal and its successor, for the delete job that a session queued (R-STOR-018, Q-AUTHZ-261, Q-AUTHZ-262). The job
 -- stops when the session that asked was withdrawn, and a session that already ended by time, by the session limit or by a

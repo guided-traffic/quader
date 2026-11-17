@@ -8,8 +8,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
 )
 
 func TestMemStore(t *testing.T) {

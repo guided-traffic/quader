@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const (
@@ -207,7 +207,7 @@ func TestR_NUGET_020_ASymbolPushNeedsDeployOnTheDeclaredID(t *testing.T) {
 			if ans.Status != c.status {
 				t.Errorf("%s, version %s: %d %s", name, version, ans.Status, ans.Body)
 			}
-			if c.status == 401 && ans.Header.Get("WWW-Authenticate") != `Basic realm="trove"` {
+			if c.status == 401 && ans.Header.Get("WWW-Authenticate") != `Basic realm="quader"` {
 				t.Errorf("%s: challenge %q", name, ans.Header.Get("WWW-Authenticate"))
 			}
 		}

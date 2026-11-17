@@ -117,9 +117,9 @@ export function inProject(options: RenderOptions = {}, url = '/projects/web/pack
 /** The text content of an element with whitespace collapsed. */
 export const text = (root: Element): string => root.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 
-/** The addresses of the `trove-address-field`s in `root`: the field holds the address as its value, not as text (R-UI-065). */
+/** The addresses of the `quader-address-field`s in `root`: the field holds the address as its value, not as text (R-UI-065). */
 export const addressValues = (root: ParentNode): string[] =>
-  [...root.querySelectorAll<HTMLInputElement>('trove-address-field input')].map((i) => i.value);
+  [...root.querySelectorAll<HTMLInputElement>('quader-address-field input')].map((i) => i.value);
 
 /** Fails the spec on a serious or critical axe violation in `root` (R-UI-044). */
 export async function expectAccessible(root: Element): Promise<void> {
@@ -149,7 +149,7 @@ export function type(
 
 /** Opens the filter panel of a list screen (a no-op when an applied filter opened it already). */
 export async function openFilters(fixture: ComponentFixture<unknown>, root: ParentNode): Promise<void> {
-  if (root.querySelector('trove-filter-panel form')) return;
+  if (root.querySelector('quader-filter-panel form')) return;
   button(root, /^\s*filter_list\s*Filters/).click();
   await settle(fixture);
 }
@@ -219,16 +219,16 @@ export function holdPages<A extends object>(api: A, method: keyof A): () => void
   return () => release();
 }
 
-/** The headings of the closed sections (`<trove-disclosure>`) of a page, in order, without their "Unsaved changes" note. */
+/** The headings of the closed sections (`<quader-disclosure>`) of a page, in order, without their "Unsaved changes" note. */
 export function sectionHeadings(root: ParentNode): string[] {
-  return [...root.querySelectorAll<HTMLElement>('trove-disclosure .toggle')].map((b) =>
+  return [...root.querySelectorAll<HTMLElement>('quader-disclosure .toggle')].map((b) =>
     text(b).replace(/^chevron_right\s*/, '').replace(/\s*Unsaved changes$/, ''),
   );
 }
 
 /** Opens the closed section whose heading contains `label`; one that is open already stays open. */
 export async function openSection(fixture: ComponentFixture<unknown>, root: ParentNode, label: string): Promise<void> {
-  const toggle = [...root.querySelectorAll<HTMLButtonElement>('trove-disclosure .toggle')].find((b) => text(b).includes(label));
+  const toggle = [...root.querySelectorAll<HTMLButtonElement>('quader-disclosure .toggle')].find((b) => text(b).includes(label));
   if (!toggle) throw new Error(`no section "${label}"`);
   if (toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
   await settle(fixture);

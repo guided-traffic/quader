@@ -18,8 +18,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/jws"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/auth/jws"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 func b64(b []byte) string { return base64.RawURLEncoding.EncodeToString(b) }

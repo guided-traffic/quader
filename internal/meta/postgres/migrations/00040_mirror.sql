@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Mirror mode of remote repositories (R-REPO-053, R-REPO-056, R-REPO-058), beta phase 6b, expand class (R-HA-018). The two
 -- tables are new and empty, so they take their keys and indexes inline.

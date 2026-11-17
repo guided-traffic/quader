@@ -1,6 +1,6 @@
 package ansible
 
-import "github.com/guided-traffic/trove/internal/formats"
+import "github.com/guided-traffic/quader/internal/formats"
 
 // ClientGalaxy is the client ID (R-ANS-025): `ansible-galaxy` of ansible-core, the only client of the format.
 const ClientGalaxy = "ansible-galaxy"
@@ -10,9 +10,9 @@ func clients() []formats.Client {
 	return []formats.Client{{ID: ClientGalaxy, DisplayName: "Ansible Galaxy (ansible-galaxy)", Versions: []string{"2.17", "2.21"}}}
 }
 
-// tokenEnv is the variable `ansible-galaxy` reads the token of the server `trove` from: ANSIBLE_GALAXY_SERVER_<SERVER>_<KEY> with the
-// server name and the key in upper case (Q-ANS-22). The server is named `trove` by the ansible.cfg snippet, so the name is fixed.
-const tokenEnv = "ANSIBLE_GALAXY_SERVER_TROVE_TOKEN" //nolint:gosec // the name of an environment variable, not a credential
+// tokenEnv is the variable `ansible-galaxy` reads the token of the server `quader` from: ANSIBLE_GALAXY_SERVER_<SERVER>_<KEY> with the
+// server name and the key in upper case (Q-ANS-22). The server is named `quader` by the ansible.cfg snippet, so the name is fixed.
+const tokenEnv = "ANSIBLE_GALAXY_SERVER_QUADER_TOKEN" //nolint:gosec // the name of an environment variable, not a credential
 
 // optionNames are the client names the templates and the guide spell although they contain "token" or "password" (kit check 8): the
 // variable above, the option --token and the netrc keyword. None is a value.
@@ -29,9 +29,9 @@ const anonymousNote = "This repository is open to anonymous readers: no credenti
 // open to anonymous readers.
 func (f *Format) SetupTemplates() []formats.SetupTemplate {
 	cfg := `[galaxy]
-server_list = trove
+server_list = quader
 
-[galaxy_server.trove]
+[galaxy_server.quader]
 url={{.RegistryURL}}
 `
 	envShell := `{{if .RequiresAuth}}export ` + tokenEnv + `="` + formats.SetupTokenRef + `"
@@ -46,13 +46,13 @@ url={{.RegistryURL}}
 	// netrc is a command and not the content of a file: ~/.netrc expands no variable, so a line that holds the reference would be read as the
 	// password itself (the client sends it as Basic, in place of its Token header, which the e2e set showed with ansible-core 2.17 and 2.21).
 	netrc := `{{if .RequiresAuth}}touch ~/.netrc && chmod 600 ~/.netrc
-printf 'machine %s login trove password %s\n' {{hostname .RegistryURL}} "` + formats.SetupTokenRef + `" >>~/.netrc
+printf 'machine %s login quader password %s\n' {{hostname .RegistryURL}} "` + formats.SetupTokenRef + `" >>~/.netrc
 {{else}}# This repository is open to anonymous readers: no ~/.netrc entry is needed.
 {{end}}`
 	requirements := `---
 collections:
   - name: ` + formats.SetupPackageRef + `
-    source: trove
+    source: quader
 # Roles are served by remote and virtual repositories of a Galaxy only. Install them with
 #   ansible-galaxy role install -r requirements.yml
 # roles:

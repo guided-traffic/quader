@@ -3,14 +3,14 @@ package server
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/guard"
-	"github.com/guided-traffic/trove/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
 )
 
 // openShared builds the shared state and the guard (R-BAS-034 to R-BAS-037): the local state for valkey.mode
 // none, the Valkey state otherwise. A Valkey that cannot be reached does not stop the start and does not make
-// the replica unready; it is a state of the client, which trove_valkey_available shows.
+// the replica unready; it is a state of the client, which quader_valkey_available shows.
 func (s *Server) openShared(signer *cache.Signer) (*shared.State, guard.Guard, error) {
 	b := s.cfg.Bastion
 	st, c, err := shared.Open(context.Background(), shared.Options{

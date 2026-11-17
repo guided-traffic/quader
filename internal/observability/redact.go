@@ -80,7 +80,7 @@ func DefaultQueryParams() []string {
 // parameters in addition to the fixed patterns.
 func NewScrubber(queryParams []string) *Scrubber {
 	s := &Scrubber{
-		token:  regexp.MustCompile(`trv_([a-z]{2,8})_[0-9A-Za-z_\-]+`),
+		token:  regexp.MustCompile(`qdr_([a-z]{2,8})_[0-9A-Za-z_\-]+`),
 		bearer: regexp.MustCompile(`(?i)\bBearer\s+[^\s",;]+`),
 		basic:  regexp.MustCompile(`(?i)\bBasic\s+[A-Za-z0-9+/=_\-]{8,}`),
 		// The user information of a URL runs from "//" to the last "@" before
@@ -120,8 +120,8 @@ func (s *Scrubber) String(in string) string {
 		return in
 	}
 	out := in
-	if strings.Contains(out, "trv_") {
-		out = s.token.ReplaceAllString(out, "trv_${1}_"+RedactedValue)
+	if strings.Contains(out, "qdr_") {
+		out = s.token.ReplaceAllString(out, "qdr_${1}_"+RedactedValue)
 	}
 	if len(out) >= 6 {
 		out = s.bearer.ReplaceAllString(out, "Bearer "+RedactedValue)

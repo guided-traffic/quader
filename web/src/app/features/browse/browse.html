@@ -1,4 +1,4 @@
-<trove-page-header [heading]="title" />
+<quader-page-header [heading]="title" />
 
 <div class="browse" [class.has-selection]="selected() !== null">
   <!-- The tree pane: a toolbar, the filter chips, the count and the tree (R-UI-010) -->
@@ -25,7 +25,7 @@
         />
       </label>
       <div class="tree-tools">
-        <trove-filter-toggle
+        <quader-filter-toggle
           [(open)]="panelOpen"
           [activeCount]="chips().length"
           [controls]="panel.panelId"
@@ -94,7 +94,7 @@
     }
 
     <div class="pane-body">
-      <trove-filter-panel
+      <quader-filter-panel
         #panel
         class="tree-filters"
         [(open)]="panelOpen"
@@ -102,7 +102,7 @@
         (apply)="submitFilters()"
         (clearAll)="clearPanelFilters()"
       >
-        <trove-filter-category
+        <quader-filter-category
           i18n-label="@@repo.col.class"
           label="Class"
           [active]="!!class()"
@@ -125,8 +125,8 @@
               </label>
             }
           </div>
-        </trove-filter-category>
-        <trove-filter-category
+        </quader-filter-category>
+        <quader-filter-category
           i18n-label="@@repo.col.format"
           label="Format"
           [active]="!!format()"
@@ -149,12 +149,12 @@
               </label>
             }
           </div>
-        </trove-filter-category>
-      </trove-filter-panel>
+        </quader-filter-category>
+      </quader-filter-panel>
 
       <div class="tree-scroll" [hidden]="panelOpen()">
         @if (list.error(); as f) {
-          <trove-error-notice [error]="f" (retry)="list.more()" />
+          <quader-error-notice [error]="f" (retry)="list.more()" />
         }
 
         <ng-template #nodeList let-nodes="nodes" let-parent="parent">
@@ -224,7 +224,7 @@
                     }
                     @if (node.error(); as e) {
                       <li class="status-row" role="presentation">
-                        <trove-error-notice [error]="e" (retry)="loadChildren(node, node.loaded())" />
+                        <quader-error-notice [error]="e" (retry)="loadChildren(node, node.loaded())" />
                       </li>
                     }
                   </ng-template>
@@ -329,11 +329,11 @@
                 <span class="material-icons" aria-hidden="true">download</span>
                 <ng-container i18n="@@browse.download">Download</ng-container>
               </a>
-              <trove-copy-button [value]="it.downloadUrl" [label]="copyUrl" icon="link" />
+              <quader-copy-button [value]="it.downloadUrl" [label]="copyUrl" icon="link" />
             } @else if (it.kind === 'folder' && it.listingUrl) {
-              <trove-copy-button [value]="it.listingUrl" [label]="copyListing" icon="link" />
+              <quader-copy-button [value]="it.listingUrl" [label]="copyListing" icon="link" />
             }
-            <trove-copy-button [value]="it.path" [label]="copyPath" />
+            <quader-copy-button [value]="it.path" [label]="copyPath" />
           }
           @if (repository()) {
             <a class="btn btn-default" routerLink="/setup" [queryParams]="{ repository: sel.repo }">
@@ -362,12 +362,12 @@
 
       <div class="pane-body details-body">
         @if (actionFailure(); as f) {
-          <trove-error-notice [error]="f" />
+          <quader-error-notice [error]="f" />
         }
         @if (deletion(); as d) {
           <div class="deleting">
             <span i18n="@@repo.deleting">Deleting</span>
-            <trove-job-progress
+            <quader-job-progress
               [jobId]="d.job.id"
               [label]="deleteProgress"
               (finished)="jobEnded($event.state)"
@@ -375,16 +375,16 @@
           </div>
         }
         @if (detailFailure(); as f) {
-          <trove-error-notice [error]="f" (retry)="detail.reload(); repositoryRead.reload()" />
+          <quader-error-notice [error]="f" (retry)="detail.reload(); repositoryRead.reload()" />
         } @else if (detailLoading()) {
           <p class="pane-status" role="status" i18n="@@repo.loading">Loading.</p>
         } @else if (selectionKind()) {
-          <trove-tab-group
+          <quader-tab-group
             [selectedIndex]="tabIndex()"
             (selectedIndexChange)="setTab($event)"
           >
             @for (t of tabNames(); track t) {
-              <trove-tab [label]="tabLabels[t]">
+              <quader-tab [label]="tabLabels[t]">
                 <div class="tab">
                   @switch (t) {
                     @case ('contents') {
@@ -392,7 +392,7 @@
                     }
                     @case ('statistics') {
                       @if (statsFailure(); as f) {
-                        <trove-error-notice [error]="f" (retry)="stats.reload()" />
+                        <quader-error-notice [error]="f" (retry)="stats.reload()" />
                       } @else if (valueOf(stats); as s) {
                         <dl class="facts">
                           <dt i18n="@@browse.stats.downloads">Downloads</dt>
@@ -558,7 +558,7 @@
                                 <dt translate="no">{{ d[1] }}</dt>
                                 <dd class="digest">
                                   <code translate="no">{{ value }}</code>
-                                  <trove-copy-button [value]="value" [label]="copyDigest" />
+                                  <quader-copy-button [value]="value" [label]="copyDigest" />
                                 </dd>
                               }
                             }
@@ -568,9 +568,9 @@
                     }
                   }
                 </div>
-              </trove-tab>
+              </quader-tab>
             }
-          </trove-tab-group>
+          </quader-tab-group>
         }
       </div>
     } @else {
@@ -587,7 +587,7 @@
 <!-- The children of a repository or folder as the shared data table (R-UI-010) -->
 <ng-template #contents let-node="node">
   @if (node) {
-    <trove-data-table
+    <quader-data-table
       [caption]="contentsCaption"
       [columns]="contentColumns"
       [loaded]="node.loaded()"
@@ -618,7 +618,7 @@
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   } @else {
     <p class="pane-status" role="status" i18n="@@repo.loading">Loading.</p>
   }

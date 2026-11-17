@@ -18,7 +18,7 @@ async function open(over: Partial<PackageVersion> = {}, name = '@team-a/ui') {
 describe('Install command panel', () => {
   it('R-UI-009 shows the install command of the server for the package and version, and passes the accessibility check', async () => {
     const r = await open();
-    expect((r.root.querySelector<HTMLInputElement>('trove-address-field input')?.value ?? r.root.querySelector('pre')?.textContent)).toBe('npm install @team-a/ui@1.4.0');
+    expect((r.root.querySelector<HTMLInputElement>('quader-address-field input')?.value ?? r.root.querySelector('pre')?.textContent)).toBe('npm install @team-a/ui@1.4.0');
     expect(r.fake.calls).toHaveLength(1);
     expect(r.fake.calls[0]?.query).toMatchObject({ client: 'npm', package: '@team-a/ui', version: '1.4.0' });
     await expectAccessible(r.root);
@@ -28,8 +28,8 @@ describe('Install command panel', () => {
     const r = await open();
     expect(r.fake.calls.every((c) => c.query.credentials === 'none')).toBe(true);
     expect(text(r.root)).not.toContain('{{token}}');
-    expect(text(r.root)).not.toContain('TROVE_TOKEN');
-    expect(text(r.root)).not.toContain('trv_');
+    expect(text(r.root)).not.toContain('QUADER_TOKEN');
+    expect(text(r.root)).not.toContain('qdr_');
   });
 
   it('R-UI-009 the client picker offers npm, pnpm, Yarn Berry and Yarn Classic and switches the command', async () => {
@@ -44,7 +44,7 @@ describe('Install command panel', () => {
       select.value = client;
       select.dispatchEvent(new Event('change', { bubbles: true }));
       await settle(r.fixture);
-      expect((r.root.querySelector<HTMLInputElement>('trove-address-field input')?.value ?? r.root.querySelector('pre')?.textContent), client).toBe(command);
+      expect((r.root.querySelector<HTMLInputElement>('quader-address-field input')?.value ?? r.root.querySelector('pre')?.textContent), client).toBe(command);
     }
   });
 
@@ -74,7 +74,7 @@ describe('Install command panel', () => {
 
   it('R-UI-009 R-API-030 a name the shell would interpret arrives quoted from the server and is shown as it is', async () => {
     const r = await open({}, 'a(b)');
-    expect((r.root.querySelector<HTMLInputElement>('trove-address-field input')?.value ?? r.root.querySelector('pre')?.textContent)).toBe(`npm install 'a(b)@1.4.0'`);
+    expect((r.root.querySelector<HTMLInputElement>('quader-address-field input')?.value ?? r.root.querySelector('pre')?.textContent)).toBe(`npm install 'a(b)@1.4.0'`);
   });
 
   it('R-UI-009 a command of more than three lines is collapsed behind an expander', async () => {
@@ -96,7 +96,7 @@ describe('Install command panel', () => {
     expander.click();
     await settle(r.fixture);
     expect(r.root.querySelector('pre')?.style.getPropertyValue('--lines')).toBe('5');
-    expect((r.root.querySelector<HTMLInputElement>('trove-address-field input')?.value ?? r.root.querySelector('pre')?.textContent)).toBe(lines);
+    expect((r.root.querySelector<HTMLInputElement>('quader-address-field input')?.value ?? r.root.querySelector('pre')?.textContent)).toBe(lines);
     expect(button(r.root, 'Show less').getAttribute('aria-expanded')).toBe('true');
     await expectAccessible(r.root);
   });
@@ -108,7 +108,7 @@ describe('Install command panel', () => {
       value: { writeText: async (t: string) => void written.push(t) },
     });
     const r = await open();
-    r.root.querySelector<HTMLButtonElement>('trove-copy-button button')!.click();
+    r.root.querySelector<HTMLButtonElement>('quader-copy-button button')!.click();
     await settle(r.fixture);
     expect(written).toEqual(['npm install @team-a/ui@1.4.0']);
     expect(r.get(Notifier).notices().map((n) => n.text)).toContain('Copied to the clipboard.');
@@ -128,7 +128,7 @@ describe('Install command panel', () => {
     expect(text(r.root)).toContain('temporarily unavailable');
     button(r.root, 'Retry').click();
     await settle(r.fixture);
-    expect((r.root.querySelector<HTMLInputElement>('trove-address-field input')?.value ?? r.root.querySelector('pre')?.textContent)).toBe('npm install @team-a/ui@1.4.0');
+    expect((r.root.querySelector<HTMLInputElement>('quader-address-field input')?.value ?? r.root.querySelector('pre')?.textContent)).toBe('npm install @team-a/ui@1.4.0');
   });
 
   it('R-UI-009 a format without client instructions says so', async () => {

@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Repository model (M1, WP1.4): the columns that R-REPO-001 adds to the table
 -- repositories of 00002_storage_core. config (R-REPO-004) keeps the settings

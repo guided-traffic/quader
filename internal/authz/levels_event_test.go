@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_AUTHZ_036_TheLevelsAreSettingsOfTheJournal: the settings comparator orders the two levels private, internal, public, so a

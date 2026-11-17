@@ -64,7 +64,7 @@ SELECT count(*)::int AS live
    AND roles && ARRAY['packages', 'web', 'all']::text[];
 
 -- name: ValkeyPrimaryViews :one
--- trove_valkey_primary_views (R-OPS-007, R-HA-045): the distinct primaries the live replicas name in their registry rows.
+-- quader_valkey_primary_views (R-OPS-007, R-HA-045): the distinct primaries the live replicas name in their registry rows.
 -- A replica without a primary (no Valkey, or not yet connected) names none and counts for nothing.
 SELECT count(DISTINCT valkey ->> 'primary')::bigint AS views
   FROM replica

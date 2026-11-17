@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // Roles through a virtual repository (R-ANS-022, Q-ANS-19). A role exists only in a remote member whose upstream has the v1 API (R-ANS-020),

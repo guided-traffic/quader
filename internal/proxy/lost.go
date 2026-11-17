@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/vuln/enforce"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/vuln/enforce"
 )
 
 // A cached item whose object is missing from the object store, or failed verification, is a cache miss of its remote
@@ -132,7 +132,7 @@ func storedObjectError(err error) error {
 
 // noteDamaged writes the log line of a cached item whose object is lost, at most once a minute per item and replica: the
 // repository, the path and the digest (blob.Store logs the detection itself, with the counter
-// trove_storage_blobs_damaged_total{status} that the alert TroveBlobMissing reads, R-HA-045).
+// quader_storage_blobs_damaged_total{status} that the alert QuaderBlobMissing reads, R-HA-045).
 func (e *Engine) noteDamaged(rq Request, digest [32]byte, status string) {
 	key := rq.Remote.Repo.Name.String() + "\x00" + rq.Path + "\x00" + rq.Variant + "\x00lost"
 	if !e.throttle(key, time.Minute) {

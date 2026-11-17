@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // The forwarded headers of a Bastion (R-BAS-017): exactly one forwarded-for entry in each family, the
@@ -37,7 +37,7 @@ func bastionHeaders(client, proto, host, port string) http.Header {
 }
 
 func bastionRequest(peer string, h http.Header) *http.Request {
-	r := httptest.NewRequest(http.MethodGet, "http://trove.example.com/api/npm/it/npm-all/@acme/sdk", nil)
+	r := httptest.NewRequest(http.MethodGet, "http://quader.example.com/api/npm/it/npm-all/@acme/sdk", nil)
 	r.RemoteAddr = peer + ":40000"
 	for k, vs := range h {
 		r.Header[k] = append([]string(nil), vs...)
@@ -49,20 +49,20 @@ func TestR_BAS_017_TheMainInstallationResolvesTheRealClientAndTheBastionsHost(t 
 	trusted := []string{"10.244.0.0/16", bastionEgress + "/32"}
 	additional := []string{"https://packages.example.com", "https://mirror.example.com:8443"}
 	server := config.Server{
-		Listen: ":8080", OpsListen: ":8081", BaseURL: "https://trove.example.com", MaxInFlight: 4096,
+		Listen: ":8080", OpsListen: ":8081", BaseURL: "https://quader.example.com", MaxInFlight: 4096,
 		ReplicaHeader: "authenticated", TrustedProxies: trusted, AdditionalBaseURLs: additional,
 	}
 	for _, family := range []ForwardedHeader{HeaderXForwardedFor, HeaderForwarded} {
 		resolvers := map[string]func(t *testing.T) *Resolver{
 			"resolver": func(t *testing.T) *Resolver {
-				r, err := NewResolver(trusted, "https://trove.example.com", additional, WithForwardedHeader(family))
+				r, err := NewResolver(trusted, "https://quader.example.com", additional, WithForwardedHeader(family))
 				if err != nil {
 					t.Fatal(err)
 				}
 				return r
 			},
 			"default endpoint": func(t *testing.T) *Resolver {
-				r, err := NewResolver(trusted, "https://trove.example.com", additional, WithForwardedHeader(family), ForEndpoint(endpointFixture(t, server, "default")))
+				r, err := NewResolver(trusted, "https://quader.example.com", additional, WithForwardedHeader(family), ForEndpoint(endpointFixture(t, server, "default")))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -118,24 +118,24 @@ func TestR_BAS_017_TheMainInstallationResolvesTheRealClientAndTheBastionsHost(t 
 
 	t.Run("a Bastion base URL that is no entry of additional_base_urls renders the main installation's host", func(t *testing.T) {
 		for _, family := range []ForwardedHeader{HeaderXForwardedFor, HeaderForwarded} {
-			r, err := NewResolver(trusted, "https://trove.example.com", nil, WithForwardedHeader(family))
+			r, err := NewResolver(trusted, "https://quader.example.com", nil, WithForwardedHeader(family))
 			if err != nil {
 				t.Fatal(err)
 			}
 			info := r.Resolve(bastionRequest(bastionEgress, bastionHeaders("203.0.113.7", "https", "packages.example.com", "443")))
-			if info.BaseURL != "https://trove.example.com" || info.Client.String() != "203.0.113.7" {
+			if info.BaseURL != "https://quader.example.com" || info.Client.String() != "203.0.113.7" {
 				t.Errorf("%s: base %s client %s", family, info.BaseURL, info.Client)
 			}
 		}
 	})
 
 	t.Run("a Bastion whose egress address is not a trusted proxy is the client itself", func(t *testing.T) {
-		r, err := NewResolver([]string{"10.244.0.0/16"}, "https://trove.example.com", additional)
+		r, err := NewResolver([]string{"10.244.0.0/16"}, "https://quader.example.com", additional)
 		if err != nil {
 			t.Fatal(err)
 		}
 		info := r.Resolve(bastionRequest(bastionEgress, bastionHeaders("203.0.113.7", "https", "packages.example.com", "443")))
-		if info.Client.String() != bastionEgress || info.BaseURL != "https://trove.example.com" {
+		if info.Client.String() != bastionEgress || info.BaseURL != "https://quader.example.com" {
 			t.Errorf("client %s base %s: the forwarded headers of an untrusted peer were honoured", info.Client, info.BaseURL)
 		}
 	})
@@ -145,7 +145,7 @@ func TestR_BAS_017_TheMainInstallationResolvesTheRealClientAndTheBastionsHost(t 
 		// installation. Were one to arrive to the left of the Bastion's entry, the right-most untrusted entry
 		// still wins.
 		for _, family := range []ForwardedHeader{HeaderXForwardedFor, HeaderForwarded} {
-			r, err := NewResolver(trusted, "https://trove.example.com", additional, WithForwardedHeader(family))
+			r, err := NewResolver(trusted, "https://quader.example.com", additional, WithForwardedHeader(family))
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -14,7 +14,7 @@ func gatewaySet() string { return filepath.Join(chartDir, "ci", "gateway.yaml") 
 // edgeTable returns the (path, service) pairs the Ingress names for its first host, in order.
 func edgeTable(docs []doc) []string {
 	var out []string
-	for _, p := range list(find(docs, "Ingress", "trove"), "spec", "rules", "0", "http", "paths") {
+	for _, p := range list(find(docs, "Ingress", "quader"), "spec", "rules", "0", "http", "paths") {
 		out = append(out, fmt.Sprintf("%s>%s", str(p, "path"), str(p, "backend", "service", "name")))
 	}
 	return out
@@ -53,9 +53,9 @@ func TestR_HA_038_GatewayAPIExposure(t *testing.T) {
 	})
 
 	_, docs := render(t, []string{gatewaySet()})
-	route := find(docs, "HTTPRoute", "trove")
+	route := find(docs, "HTTPRoute", "quader")
 	if route == nil {
-		t.Fatal("no HTTPRoute trove with gateway.enabled")
+		t.Fatal("no HTTPRoute quader with gateway.enabled")
 	}
 
 	t.Run("it attaches to gateway.parentRefs with the host of the base URL", func(t *testing.T) {
@@ -67,8 +67,8 @@ func TestR_HA_038_GatewayAPIExposure(t *testing.T) {
 			t.Errorf("parentRefs = %v", pr)
 		}
 		hn := list(route, "spec", "hostnames")
-		if len(hn) != 1 || hn[0] != "trove.example.com" {
-			t.Errorf("hostnames = %v, want [trove.example.com]", hn)
+		if len(hn) != 1 || hn[0] != "quader.example.com" {
+			t.Errorf("hostnames = %v, want [quader.example.com]", hn)
 		}
 	})
 
@@ -80,7 +80,7 @@ func TestR_HA_038_GatewayAPIExposure(t *testing.T) {
 		if strings.Join(got, " ") != strings.Join(want, " ") {
 			t.Errorf("HTTPRoute rules = %v\nIngress rows   = %v", got, want)
 		}
-		for _, row := range []string{"/api/v1/exports>trove-api-exports", "/api/v1>trove-api", "/api>trove-packages", "/files>trove-packages", "/v2>trove-packages", "/.well-known>trove-packages", "/>trove-api"} {
+		for _, row := range []string{"/api/v1/exports>quader-api-exports", "/api/v1>quader-api", "/api>quader-packages", "/files>quader-packages", "/v2>quader-packages", "/.well-known>quader-packages", "/>quader-api"} {
 			found := false
 			for _, g := range got {
 				found = found || g == row
@@ -107,7 +107,7 @@ func TestR_HA_038_GatewayAPIExposure(t *testing.T) {
 	})
 
 	t.Run("Ingress and HTTPRoute are rendered together", func(t *testing.T) {
-		if find(docs, "Ingress", "trove") == nil {
+		if find(docs, "Ingress", "quader") == nil {
 			t.Error("no Ingress beside the HTTPRoute")
 		}
 	})
@@ -139,7 +139,7 @@ func TestR_HA_038_GatewayAPIExposure(t *testing.T) {
 			"gateway.labels.team=platform", "gateway.annotations.note=x",
 			"gateway.extraRules[0].matches[0].path.type=PathPrefix", "gateway.extraRules[0].matches[0].path.value=/extra",
 			"gateway.extraRules[0].backendRefs[0].name=other", "gateway.extraRules[0].backendRefs[0].port=80")
-		r := find(d, "HTTPRoute", "trove")
+		r := find(d, "HTTPRoute", "quader")
 		if r == nil {
 			t.Fatal("no HTTPRoute")
 		}
@@ -164,17 +164,17 @@ func TestR_HA_038_GatewayAPIExposure(t *testing.T) {
 
 	t.Run("in the bridge the host goes whole to <fullname>", func(t *testing.T) {
 		_, d := render(t, required(), "gateway.enabled=true", "gateway.parentRefs[0].name=shared", "web.enabled=true")
-		r := find(d, "HTTPRoute", "trove")
+		r := find(d, "HTTPRoute", "quader")
 		if r == nil {
 			t.Fatal("no HTTPRoute")
 		}
-		if got := routeTable(t, r); strings.Join(got, " ") != "/>trove" {
-			t.Errorf("rules = %v, want [/>trove]", got)
+		if got := routeTable(t, r); strings.Join(got, " ") != "/>quader" {
+			t.Errorf("rules = %v, want [/>quader]", got)
 		}
 	})
 
 	t.Run("without the Gateway API in the cluster the render fails before anything is created", func(t *testing.T) {
-		args := []string{"template", "trove", chartDir, "--namespace", "default", "-f", gatewaySet()}
+		args := []string{"template", "quader", chartDir, "--namespace", "default", "-f", gatewaySet()}
 		_, stderr, err := helm(t, args...)
 		if err == nil {
 			t.Fatal("helm template succeeded without the Gateway API capability")
@@ -219,9 +219,9 @@ func TestServiceMonitor(t *testing.T) {
 		"metrics.serviceMonitor.labels.release=kube-prometheus-stack",
 		"metrics.serviceMonitor.relabelings[0].targetLabel=extra", "metrics.serviceMonitor.relabelings[0].replacement=x",
 		"metrics.serviceMonitor.metricRelabelings[0].action=drop", "metrics.serviceMonitor.metricRelabelings[0].sourceLabels[0]=__name__", "metrics.serviceMonitor.metricRelabelings[0].regex=go_.*")
-	sm := find(docs, "ServiceMonitor", "trove")
+	sm := find(docs, "ServiceMonitor", "quader")
 	if sm == nil {
-		t.Fatal("no ServiceMonitor trove")
+		t.Fatal("no ServiceMonitor quader")
 	}
 	ep := at(sm, "spec", "endpoints", "0")
 
@@ -230,16 +230,16 @@ func TestServiceMonitor(t *testing.T) {
 			t.Errorf("endpoint = %v", ep)
 		}
 		sel := at(sm, "spec", "selector", "matchLabels")
-		if str(sel, "app.kubernetes.io/component") != "ops" || str(sel, "app.kubernetes.io/instance") != "trove" {
+		if str(sel, "app.kubernetes.io/component") != "ops" || str(sel, "app.kubernetes.io/instance") != "quader" {
 			t.Errorf("selector = %v", sel)
 		}
-		ops := find(docs, "Service", "trove-ops")
+		ops := find(docs, "Service", "quader-ops")
 		if ops == nil {
-			t.Fatal("no Service trove-ops")
+			t.Fatal("no Service quader-ops")
 		}
 		for k, v := range sel.(map[string]any) {
 			if str(ops, "metadata", "labels", k) != v {
-				t.Errorf("the selector %s=%v does not match the labels of trove-ops: %v", k, v, at(ops, "metadata", "labels"))
+				t.Errorf("the selector %s=%v does not match the labels of quader-ops: %v", k, v, at(ops, "metadata", "labels"))
 			}
 		}
 		if names := at(sm, "spec", "namespaceSelector", "matchNames"); fmt.Sprint(names) != "[default]" {
@@ -255,7 +255,7 @@ func TestServiceMonitor(t *testing.T) {
 		if str(rel[0], "targetLabel") != "role" || fmt.Sprint(at(rel[0], "sourceLabels")) != "[__meta_kubernetes_pod_label_app_kubernetes_io_component]" {
 			t.Errorf("relabeling 0 = %v", rel[0])
 		}
-		if str(rel[1], "targetLabel") != "pool" || fmt.Sprint(at(rel[1], "sourceLabels")) != "[__meta_kubernetes_pod_label_trove_pool]" {
+		if str(rel[1], "targetLabel") != "pool" || fmt.Sprint(at(rel[1], "sourceLabels")) != "[__meta_kubernetes_pod_label_quader_pool]" {
 			t.Errorf("relabeling 1 = %v", rel[1])
 		}
 		if str(rel[2], "targetLabel") != "extra" {
@@ -270,33 +270,33 @@ func TestServiceMonitor(t *testing.T) {
 	})
 
 	t.Run("the pod labels the relabelings read are on every serving pod", func(t *testing.T) {
-		// component is the role (api, packages, worker), trove/pool the pool name, empty on the main Deployments.
-		for _, name := range []string{"trove-api", "trove-packages", "trove-worker"} {
+		// component is the role (api, packages, worker), quader/pool the pool name, empty on the main Deployments.
+		for _, name := range []string{"quader-api", "quader-packages", "quader-worker"} {
 			dep := find(docs, "Deployment", name)
 			if dep == nil {
 				t.Fatalf("no Deployment %s", name)
 			}
 			labels := at(dep, "spec", "template", "metadata", "labels")
-			if str(labels, "app.kubernetes.io/component") != strings.TrimPrefix(name, "trove-") {
+			if str(labels, "app.kubernetes.io/component") != strings.TrimPrefix(name, "quader-") {
 				t.Errorf("%s component = %v", name, labels)
 			}
-			if _, ok := labels.(map[string]any)["trove/pool"]; !ok {
-				t.Errorf("%s carries no trove/pool label: %v", name, labels)
+			if _, ok := labels.(map[string]any)["quader/pool"]; !ok {
+				t.Errorf("%s carries no quader/pool label: %v", name, labels)
 			}
 		}
 	})
 
 	t.Run("with TLS the endpoint verifies the pods against ca.crt of the listener's Secret", func(t *testing.T) {
-		if str(ep, "scheme") != "https" || str(ep, "tlsConfig", "serverName") != "trove-ops.default.svc" ||
-			str(ep, "tlsConfig", "ca", "secret", "name") != "trove-tls" || str(ep, "tlsConfig", "ca", "secret", "key") != "ca.crt" {
+		if str(ep, "scheme") != "https" || str(ep, "tlsConfig", "serverName") != "quader-ops.default.svc" ||
+			str(ep, "tlsConfig", "ca", "secret", "name") != "quader-tls" || str(ep, "tlsConfig", "ca", "secret", "key") != "ca.crt" {
 			t.Errorf("tlsConfig = %v scheme %q", at(ep, "tlsConfig"), str(ep, "scheme"))
 		}
-		_, d := render(t, required(), "metrics.serviceMonitor.enabled=true", "tls.ops.secretName=trove-ops-tls")
-		if got := str(at(find(d, "ServiceMonitor", "trove"), "spec", "endpoints", "0"), "tlsConfig", "ca", "secret", "name"); got != "trove-ops-tls" {
-			t.Errorf("CA Secret = %q, want the ops pair's trove-ops-tls", got)
+		_, d := render(t, required(), "metrics.serviceMonitor.enabled=true", "tls.ops.secretName=quader-ops-tls")
+		if got := str(at(find(d, "ServiceMonitor", "quader"), "spec", "endpoints", "0"), "tlsConfig", "ca", "secret", "name"); got != "quader-ops-tls" {
+			t.Errorf("CA Secret = %q, want the ops pair's quader-ops-tls", got)
 		}
 		_, plain := render(t, required(), "metrics.serviceMonitor.enabled=true", "tls.enabled=false")
-		pep := at(find(plain, "ServiceMonitor", "trove"), "spec", "endpoints", "0")
+		pep := at(find(plain, "ServiceMonitor", "quader"), "spec", "endpoints", "0")
 		if str(pep, "scheme") != "" || at(pep, "tlsConfig") != nil {
 			t.Errorf("plain-HTTP endpoint = %v", pep)
 		}
@@ -305,7 +305,7 @@ func TestServiceMonitor(t *testing.T) {
 	t.Run("the CA Secret is read from the namespace of the ServiceMonitor, so it must be the release namespace with TLS", func(t *testing.T) {
 		renderFails(t, required(), []string{"metrics.serviceMonitor.enabled=true", "metrics.serviceMonitor.namespace=monitoring"}, "metrics.serviceMonitor.namespace (monitoring) must be the release namespace")
 		_, d := render(t, required(), "metrics.serviceMonitor.enabled=true", "metrics.serviceMonitor.namespace=monitoring", "tls.enabled=false")
-		if str(find(d, "ServiceMonitor", "trove"), "metadata", "namespace") != "monitoring" {
+		if str(find(d, "ServiceMonitor", "quader"), "metadata", "namespace") != "monitoring" {
 			t.Error("the ServiceMonitor is not in the namespace set")
 		}
 	})
@@ -315,9 +315,9 @@ func TestServiceMonitor(t *testing.T) {
 			t.Errorf("authorization = %v without static metrics auth", at(ep, "authorization"))
 		}
 		_, d := render(t, required(), "metrics.serviceMonitor.enabled=true", "config.metrics.auth=static",
-			"secrets.metricsToken.existingSecret=trove-metrics", "secrets.metricsToken.key=bearer")
-		a := at(find(d, "ServiceMonitor", "trove"), "spec", "endpoints", "0", "authorization")
-		if str(a, "type") != "Bearer" || str(a, "credentials", "name") != "trove-metrics" || str(a, "credentials", "key") != "bearer" {
+			"secrets.metricsToken.existingSecret=quader-metrics", "secrets.metricsToken.key=bearer")
+		a := at(find(d, "ServiceMonitor", "quader"), "spec", "endpoints", "0", "authorization")
+		if str(a, "type") != "Bearer" || str(a, "credentials", "name") != "quader-metrics" || str(a, "credentials", "key") != "bearer" {
 			t.Errorf("authorization = %v", a)
 		}
 	})

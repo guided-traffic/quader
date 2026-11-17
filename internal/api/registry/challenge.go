@@ -3,8 +3,8 @@ package registry
 import (
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Challenge is the refusal of a request that carries no credential where one is needed: 401 with the challenge of R-OCI-004

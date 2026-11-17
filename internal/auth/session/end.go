@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // LoggedOut is what logout found: the provider and the stored ID token of the
@@ -92,7 +92,7 @@ func (s *Store) EndForPrincipal(ctx context.Context, tx meta.Tx, principalID, re
 }
 
 // EndPrincipalSessions is EndForPrincipal in a transaction of its own, with the
-// event auth.session.ended (trove admin sessions end --user, R-AUTH-015; the
+// event auth.session.ended (quader admin sessions end --user, R-AUTH-015; the
 // session API of wave 2). It returns the IDs of the sessions it ended and of
 // those it withdrew after they had ended; the event names both, apart, and is
 // written when there is either.
@@ -182,7 +182,7 @@ func (s *Store) EndExcept(ctx context.Context, principalID, keepID, reason strin
 }
 
 // EndBreakGlass ends every open break-glass session (R-AUTH-014): a rotated
-// password (password_changed), a disabled account or trove admin break-glass
+// password (password_changed), a disabled account or quader admin break-glass
 // end-sessions (revoked).
 func (s *Store) EndBreakGlass(ctx context.Context, reason string, actor audit.Actor) error {
 	return s.o.DB.InTx(ctx, func(tx meta.Tx) error {
@@ -242,7 +242,7 @@ func endedOf[R ~endStatementRow](rows []R) ([]string, []endedSession) {
 }
 
 // EndAll ends every session, in batches of at most 1000 per transaction
-// (trove admin sessions end --all, R-AUTH-015). It returns the number ended.
+// (quader admin sessions end --all, R-AUTH-015). It returns the number ended.
 func (s *Store) EndAll(ctx context.Context, actor audit.Actor) (int, error) {
 	total := 0
 	for {

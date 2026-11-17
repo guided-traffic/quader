@@ -1,6 +1,6 @@
 //go:build integration
 
-// Package storageverify tests `trove admin storage verify` (R-HA-024, R-HA-025) against the integration stack: the blob and item
+// Package storageverify tests `quader admin storage verify` (R-HA-024, R-HA-025) against the integration stack: the blob and item
 // rows of an installation database and the objects in its prefix of the S3 store, read through the same code the command runs.
 package storageverify
 
@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob/verify"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/blob/verify"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }

@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 const (
@@ -82,14 +82,14 @@ func TestCIMigration(t *testing.T) {
 
 	t.Run("R-ARCH-018 the change areas of the CI federation are seeded", func(t *testing.T) {
 		for _, a := range []string{"ci_mappings", "ci_issuer_keys"} {
-			if scalar[int](t, admin, "SELECT count(*) FROM trove.cluster_epoch WHERE area = $1", a) != 1 {
+			if scalar[int](t, admin, "SELECT count(*) FROM quader.cluster_epoch WHERE area = $1", a) != 1 {
 				t.Errorf("no cluster_epoch row for %s", a)
 			}
 		}
 	})
 
 	t.Run("the issuer rules are enforced by the table", func(t *testing.T) { // R-CI-001
-		insert := `INSERT INTO trove.ci_issuers (id, name, kind, issuer, allowed_audiences, required_claims, pin_claims, single_use_subject_tokens%s)
+		insert := `INSERT INTO quader.ci_issuers (id, name, kind, issuer, allowed_audiences, required_claims, pin_claims, single_use_subject_tokens%s)
 			VALUES ($1, $2, $3, $4, $5, ARRAY['jti'], ARRAY['project_id'], false%s)`
 		plain := func(extraCol, extraVal string) string {
 			return strings.Replace(strings.Replace(insert, "%s", extraCol, 1), "%s", extraVal, 1)
@@ -106,36 +106,36 @@ func TestCIMigration(t *testing.T) {
 		// R-CI-018, R-CI-020 (Q-CI-69): a negative skew and a bound of 0 are refused; NULL is the unbounded value.
 		wantState(t, admin, "23514", plain(", clock_skew", ", interval '-1 seconds'"), ciIssuerB, "gitlab-b", "gitlab", "https://gitlab.b.example", []string{"x"})
 		wantState(t, admin, "23514", plain(", max_ttl", ", interval '0 seconds'"), ciIssuerB, "gitlab-b", "gitlab", "https://gitlab.b.example", []string{"x"})
-		if v := scalar[int64](t, admin, "SELECT version FROM trove.ci_issuers WHERE id = $1", ciIssuerA); v != 1 {
+		if v := scalar[int64](t, admin, "SELECT version FROM quader.ci_issuers WHERE id = $1", ciIssuerA); v != 1 {
 			t.Errorf("version = %d, want 1", v)
 		}
-		if v := scalar[int64](t, admin, "SELECT mappings_version FROM trove.ci_issuers WHERE id = $1", ciIssuerA); v != 0 {
+		if v := scalar[int64](t, admin, "SELECT mappings_version FROM quader.ci_issuers WHERE id = $1", ciIssuerA); v != 0 {
 			t.Errorf("mappings_version = %d, want 0", v)
 		}
 	})
 
 	t.Run("a mapping is a principal of kind ci_mapping, unique by name and by priority in its tier", func(t *testing.T) { // R-CI-009
-		mustExec(t, admin, "INSERT INTO trove.principal (id, kind, name) VALUES ($1, 'ci_mapping', 'gitlab-a/release')", ciPrinc)
-		mustExec(t, admin, "INSERT INTO trove.principal (id, kind, name) VALUES ('cc000000-0000-0000-0000-0000000000d2', 'user', 'ci-test-user')")
-		insert := `INSERT INTO trove.ci_mappings (id, issuer_id, principal_id, name, priority, match, grants, created_by)
+		mustExec(t, admin, "INSERT INTO quader.principal (id, kind, name) VALUES ($1, 'ci_mapping', 'gitlab-a/release')", ciPrinc)
+		mustExec(t, admin, "INSERT INTO quader.principal (id, kind, name) VALUES ('cc000000-0000-0000-0000-0000000000d2', 'user', 'ci-test-user')")
+		insert := `INSERT INTO quader.ci_mappings (id, issuer_id, principal_id, name, priority, match, grants, created_by)
 			VALUES ($1, $2, $3, $4, $5, '{"all":[{"claim":"project_id","equals":"1"}]}', '{"policies":["p"]}', 'test')`
 		mustExec(t, admin, insert, ciMapping, ciIssuerA, ciPrinc, "release", 100)
 		// The principal must be of kind ci_mapping (AI001).
 		wantState(t, admin, "AI001", insert, "cc000000-0000-0000-0000-0000000000c2", ciIssuerA, "cc000000-0000-0000-0000-0000000000d2", "other", 200)
-		mustExec(t, admin, "INSERT INTO trove.principal (id, kind, name) VALUES ('cc000000-0000-0000-0000-0000000000d3', 'ci_mapping', 'gitlab-a/other')")
+		mustExec(t, admin, "INSERT INTO quader.principal (id, kind, name) VALUES ('cc000000-0000-0000-0000-0000000000d3', 'ci_mapping', 'gitlab-a/other')")
 		wantState(t, admin, "23505", insert, "cc000000-0000-0000-0000-0000000000c2", ciIssuerA, "cc000000-0000-0000-0000-0000000000d3", "release", 200)
 		wantState(t, admin, "23505", insert, "cc000000-0000-0000-0000-0000000000c2", ciIssuerA, "cc000000-0000-0000-0000-0000000000d3", "other", 100)
 		wantState(t, admin, "23514", insert, "cc000000-0000-0000-0000-0000000000c2", ciIssuerA, "cc000000-0000-0000-0000-0000000000d3", "other", 0)
 		// R-CI-020 (Q-CI-69): a mapping's bound of 0 is refused.
 		wantState(t, admin, "23514", strings.Replace(strings.Replace(insert, "created_by)", "created_by, max_ttl)", 1), "'test')", "'test', interval '0 seconds')", 1),
 			"cc000000-0000-0000-0000-0000000000c2", ciIssuerA, "cc000000-0000-0000-0000-0000000000d3", "other", 200)
-		wantState(t, admin, "23514", `INSERT INTO trove.principal (id, kind, name) VALUES (gen_random_uuid(), 'ci_mapping', 'no-slash')`)
+		wantState(t, admin, "23514", `INSERT INTO quader.principal (id, kind, name) VALUES (gen_random_uuid(), 'ci_mapping', 'no-slash')`)
 		// An issuer with mappings cannot be deleted (ON DELETE RESTRICT).
-		wantRestrict(t, admin, "DELETE FROM trove.ci_issuers WHERE id = $1", ciIssuerA)
+		wantRestrict(t, admin, "DELETE FROM quader.ci_issuers WHERE id = $1", ciIssuerA)
 	})
 
 	t.Run("the statements of the CI query files run against the schema", func(t *testing.T) { // R-CI-003 R-CI-018 R-CI-020
-		mustExec(t, admin, "SET search_path = trove, public")
+		mustExec(t, admin, "SET search_path = quader, public")
 		qs := q.New(admin)
 
 		list, err := qs.CiIssuerList(ctx)
@@ -186,18 +186,18 @@ func TestCIMigration(t *testing.T) {
 		if us, err := qs.CiExchangeRestoredAt(ctx); err != nil || us != 0 {
 			t.Fatalf("CiExchangeRestoredAt before a restore: %d %v", us, err)
 		}
-		mustExec(t, admin, `INSERT INTO trove.system_state (key, value) VALUES ('restored_at', to_jsonb('2026-11-02T10:00:00.5Z'::text))`)
+		mustExec(t, admin, `INSERT INTO quader.system_state (key, value) VALUES ('restored_at', to_jsonb('2026-11-02T10:00:00.5Z'::text))`)
 		if us, err := qs.CiExchangeRestoredAt(ctx); err != nil || us != time.Date(2026, 11, 2, 10, 0, 0, 5e8, time.UTC).UnixMicro() {
 			t.Fatalf("CiExchangeRestoredAt: %d %v", us, err)
 		}
-		mustExec(t, admin, `DELETE FROM trove.system_state WHERE key = 'restored_at'`)
+		mustExec(t, admin, `DELETE FROM quader.system_state WHERE key = 'restored_at'`)
 		if n, err := qs.CiReplayDeleteExpired(ctx, q.CiReplayDeleteExpiredParams{RetentionSecs: 900, MaxRows: 1000}); err != nil || n != 0 {
 			t.Fatalf("CiReplayDeleteExpired: %d %v", n, err)
 		}
 
 		// The issuance record and the revocation of the token it names.
-		mustExec(t, admin, "INSERT INTO trove.api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at) "+
-			"VALUES ($1, 'cit', decode(repeat('ab', 32), 'hex'), 'trv_cit_…abcd', $2, 'CI exchange', '{\"inherit\":true}', 'ci-exchange', now() + interval '1 hour')", ciToken, ciPrinc)
+		mustExec(t, admin, "INSERT INTO quader.api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at) "+
+			"VALUES ($1, 'cit', decode(repeat('ab', 32), 'hex'), 'qdr_cit_…abcd', $2, 'CI exchange', '{\"inherit\":true}', 'ci-exchange', now() + interval '1 hour')", ciToken, ciPrinc)
 		err = qs.CiExchangeInsertIssuance(ctx, q.CiExchangeInsertIssuanceParams{
 			TokenID: ciToken, IssuerID: ciIssuerA, MappingIds: []string{ciMapping}, MappingNames: []string{"release"}, SubjectKind: "id_token",
 			ProjectID: "4242", JobID: "9001", Claims: `{"project_id":"4242"}`, Grants: `{"issuer":"gitlab-a"}`, GrantedScope: "read",
@@ -254,7 +254,7 @@ func TestCIMigration(t *testing.T) {
 			t.Fatalf("CiMappingPrincipalsByName: %v %v", ps, err)
 		}
 		if _, err := qs.CiTokenInsert(ctx, q.CiTokenInsertParams{
-			ID: "cc000000-0000-0000-0000-0000000000e2", SecretSha256: make([]byte, 32), Hint: "trv_cit_0000", PrincipalID: ciPrinc,
+			ID: "cc000000-0000-0000-0000-0000000000e2", SecretSha256: make([]byte, 32), Hint: "qdr_cit_0000", PrincipalID: ciPrinc,
 			Description: "CI exchange gitlab-a job 9002", Scope: `{"inherit":true}`, TtlSecs: 60, CiContext: `{"version":1}`,
 		}); err != nil {
 			t.Fatalf("CiTokenInsert: %v", err)
@@ -298,7 +298,7 @@ func TestCIMigration(t *testing.T) {
 		}
 		if err := qs.CiMappingPrincipalDelete(ctx, ciPrinc); err == nil {
 			// api_token references the principal with ON DELETE CASCADE: the token row is gone too.
-			if scalar[int](t, admin, "SELECT count(*) FROM trove.api_token WHERE id = $1", ciToken) != 0 {
+			if scalar[int](t, admin, "SELECT count(*) FROM quader.api_token WHERE id = $1", ciToken) != 0 {
 				t.Error("the token of a deleted mapping principal remained")
 			}
 		} else {
@@ -308,7 +308,7 @@ func TestCIMigration(t *testing.T) {
 			t.Fatalf("CiIssuerDelete: %v", err)
 		}
 		for _, tbl := range []string{"ci_issuer_keys", "ci_subject_token_uses", "ci_token_issuances"} {
-			if scalar[int](t, admin, "SELECT count(*) FROM trove."+tbl+" WHERE issuer_id = $1", ciIssuerA) != 0 {
+			if scalar[int](t, admin, "SELECT count(*) FROM quader."+tbl+" WHERE issuer_id = $1", ciIssuerA) != 0 {
 				t.Errorf("%s rows of a deleted issuer remained", tbl)
 			}
 		}

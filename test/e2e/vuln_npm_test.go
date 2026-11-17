@@ -19,7 +19,7 @@ import (
 
 // The reasons a row's audit is not applicable (R-NPM-045, Q-NPM-65): the matrix's own, so the two reports say the same.
 const (
-	vulnNAPnpm10 = "pnpm 10 speaks only npm 6's audit endpoints (audits/quick, audits), which trove answers with 501 and does not translate (Q-NPM-65)"
+	vulnNAPnpm10 = "pnpm 10 speaks only npm 6's audit endpoints (audits/quick, audits), which quader answers with 501 and does not translate (Q-NPM-65)"
 	vulnNAYarn1  = "yarn audit sends its request to registry.yarnpkg.com whatever the .npmrc says (verified with --verbose), so it never reaches the registry under test (Q-NPM-65)"
 )
 
@@ -59,7 +59,7 @@ func (c *npmClient) audit(dir string) npmRun {
 	return c.run(dir, "audit")
 }
 
-// seedAuditContent makes the packages the audits read: trove-test-alias@2.0.0 in npm-local (published once per cluster:
+// seedAuditContent makes the packages the audits read: quader-test-alias@2.0.0 in npm-local (published once per cluster:
 // npm-local says always, so it is matched), and @acme/ui in npm-internal, whose claim makes it an internal name.
 func (e *vulnEnv) seedAuditContent(t *testing.T) {
 	t.Helper()
@@ -116,7 +116,7 @@ func TestVuln_R_VULN_017_NPMAuditThroughEveryRepository(t *testing.T) {
 		}
 	})
 	// Warm the package documents the audits make the registries serve (npm asks for the document of every flagged package): through
-	// each repository, for both names, a miss included (npm-remote holds no trove-test-alias; its negative answer is cached).
+	// each repository, for both names, a miss included (npm-remote holds no quader-test-alias; its negative answer is cached).
 	// The caches are the replicas' own (INV-18), so every replica is asked, one by one.
 	addrs, stopForwards := packagesForwards(t)
 	for _, addr := range addrs {
@@ -258,8 +258,8 @@ func TestVuln_R_VULN_017_NPMAuditBody(t *testing.T) {
 	}
 }
 
-// TestVuln_R_VULN_015_NPMBlockedInstallMalicious is E4b.4 for npm: `trove-test-mal@1.0.0` is refused through npm-all by every
-// gate row with the 403 and trove's text, the npm test upstream sees no request for the tarball and nothing is stored; the
+// TestVuln_R_VULN_015_NPMBlockedInstallMalicious is E4b.4 for npm: `quader-test-mal@1.0.0` is refused through npm-all by every
+// gate row with the 403 and quader's text, the npm test upstream sees no request for the tarball and nothing is stored; the
 // refusal is the one of R-VULN-016 (403, no-store, vulnerability_blocked) on the wire.
 func TestVuln_R_VULN_015_NPMBlockedInstallMalicious(t *testing.T) {
 	e := vulnFx(t)
@@ -275,7 +275,7 @@ func TestVuln_R_VULN_015_NPMBlockedInstallMalicious(t *testing.T) {
 		}
 		requireAll(t, c.row+" install of "+vulnNPMMal, r.Out, "403")
 		if c.family() == "npm" {
-			requireAll(t, c.row+" install of "+vulnNPMMal, r.Out, "E403", "trove blocked "+vulnNPMMal+"@1.0.0", "malicious package", "MAL-2026-1234")
+			requireAll(t, c.row+" install of "+vulnNPMMal, r.Out, "E403", "Quader blocked "+vulnNPMMal+"@1.0.0", "malicious package", "MAL-2026-1234")
 		}
 		if x := c.exec(dir, nil, "sh", "-c", "ls node_modules/"+vulnNPMMal+" 2>&1 || true"); !strings.Contains(x.Out, "No such file") {
 			t.Fatalf("%s left %s in node_modules: %s", c.row, vulnNPMMal, x.Out)
@@ -293,8 +293,8 @@ func TestVuln_R_VULN_015_NPMBlockedInstallMalicious(t *testing.T) {
 			Code    string `json:"code"`
 		}
 		r.JSON(t, &body)
-		if body.Code != "vulnerability_blocked" || !strings.Contains(body.Error, "trove blocked "+vulnNPMMal+"@1.0.0 in "+qn(npmRemoteKey)+": malicious package (MAL-2026-1234)") {
-			t.Errorf("the refusal = %+v, want code vulnerability_blocked and trove's text", body)
+		if body.Code != "vulnerability_blocked" || !strings.Contains(body.Error, "Quader blocked "+vulnNPMMal+"@1.0.0 in "+qn(npmRemoteKey)+": malicious package (MAL-2026-1234)") {
+			t.Errorf("the refusal = %+v, want code vulnerability_blocked and quader's text", body)
 		}
 		for _, m := range []string{http.MethodHead} {
 			a.do(m, npmAddr(npmAllKey)+"/"+vulnNPMMal+"/-/"+vulnNPMMal+"-1.0.0.tgz", nil).want(t, m+" of the malicious version", 403)
@@ -302,7 +302,7 @@ func TestVuln_R_VULN_015_NPMBlockedInstallMalicious(t *testing.T) {
 		if n := stub(t).counts(t).Tarballs(vulnNPMMal); n != 0 {
 			t.Errorf("the npm test upstream served the tarball of %s %d times, want none", vulnNPMMal, n)
 		}
-		stored := sql(t, `SELECT count(*) FROM trove.items i JOIN trove.repositories r ON r.id = i.repo_id WHERE r.key = '`+npmRemoteKey+`' AND i.path LIKE '%`+vulnNPMMal+`-1.0.0.tgz'`)
+		stored := sql(t, `SELECT count(*) FROM quader.items i JOIN quader.repositories r ON r.id = i.repo_id WHERE r.key = '`+npmRemoteKey+`' AND i.path LIKE '%`+vulnNPMMal+`-1.0.0.tgz'`)
 		if stored != "0" {
 			t.Errorf("%s: %s items of the malicious tarball are stored", npmRemoteKey, stored)
 		}
@@ -340,7 +340,7 @@ func TestVuln_R_VULN_015_NPMBlockedInstallInTriage(t *testing.T) {
 			}
 			requireAll(t, c.row+" "+strings.Join(cmd, " ")+" of a blocked version", r.Out, "403")
 			if c.family() == "npm" {
-				requireAll(t, c.row+" "+strings.Join(cmd, " "), r.Out, "trove blocked "+spec+" in "+qn(npmAllKey)+": blocked in triage ("+e.advisoryOf[name]+")")
+				requireAll(t, c.row+" "+strings.Join(cmd, " "), r.Out, "Quader blocked "+spec+" in "+qn(npmAllKey)+": blocked in triage ("+e.advisoryOf[name]+")")
 				if retry := retryNotice.FindString(r.Out); retry != "" {
 					t.Errorf("%s retried the refused request (%q): a 403 is final", c.row, retry)
 				}

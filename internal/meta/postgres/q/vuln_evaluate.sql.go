@@ -1449,7 +1449,7 @@ type VulnResolveFindingsRow struct {
 	OldStatus string
 }
 
-// trove resolves findings: the previous status is kept in status_before_resolution. Only a finding that is not resolved yet
+// quader resolves findings: the previous status is kept in status_before_resolution. Only a finding that is not resolved yet
 // changes, so a batch retried after a lost commit changes nothing the second time. The old status is returned for the events.
 func (q *Queries) VulnResolveFindings(ctx context.Context, arg VulnResolveFindingsParams) ([]VulnResolveFindingsRow, error) {
 	rows, err := q.db.Query(ctx, vulnResolveFindings, arg.Reason, arg.Ids)
@@ -1574,7 +1574,7 @@ type VulnSetFindingStatusParams struct {
 	ExpectRevision int64
 }
 
-// trove's own status change: a re-detection or a reopen, only when the finding still has the status and the revision the evaluation
+// quader's own status change: a re-detection or a reopen, only when the finding still has the status and the revision the evaluation
 // read, so that a triage that came between is never overwritten (Q-VULN-65). The resolution is cleared. The dismissal's reason and
 // comment go when the finding moves away from dismissed (also from a resolution that came from dismissed); a triage comment on
 // any other status stays (the history keeps what went).

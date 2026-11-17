@@ -1,8 +1,8 @@
 package postgres
 
 import (
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Registrations of the tables the first migrations create for other packages

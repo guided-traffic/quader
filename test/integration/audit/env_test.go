@@ -24,14 +24,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-const schemaName = "trove"
+const schemaName = "quader"
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 
@@ -50,13 +50,13 @@ type stack struct {
 
 func getStack(t testing.TB) stack {
 	t.Helper()
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
 	return stack{
-		host: testenv.Get(t, "TROVE_TEST_PG_HOST"), port: port,
-		user: testenv.Get(t, "TROVE_TEST_PG_USER"), secret: testenv.Get(t, "TROVE_TEST_PG_PASSWORD"),
+		host: testenv.Get(t, "QUADER_TEST_PG_HOST"), port: port,
+		user: testenv.Get(t, "QUADER_TEST_PG_USER"), secret: testenv.Get(t, "QUADER_TEST_PG_PASSWORD"),
 	}
 }
 
@@ -94,17 +94,17 @@ type env struct {
 	admin *pgx.Conn
 }
 
-// newEnv creates a database trove_audit_<random>, migrates it with the retention
+// newEnv creates a database quader_audit_<random>, migrates it with the retention
 // of the default configuration and drops it when the test ends.
 func newEnv(t *testing.T) *env {
 	t.Helper()
 	st := getStack(t)
-	// The migrations grant the schema to trove_app only if the role exists when they run
+	// The migrations grant the schema to quader_app only if the role exists when they run
 	// (two-role mode creates it first, 00001_foundation.sql). On a fresh cluster the first
 	// test of the package would otherwise migrate without the grant and the runtime role
 	// would not see the schema (the missing USAGE reads as "relation does not exist").
 	ensureRuntimeRole(t, st)
-	name := "trove_audit_" + randHex(5)
+	name := "quader_audit_" + randHex(5)
 	maint := st.admin(t, "postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatalf("create database: %v", err)
@@ -159,18 +159,18 @@ func (e *env) openWith(cfg config.Database) *postgres.DB {
 	return db
 }
 
-// runtimeCfg is the configuration of the runtime role trove_app, which holds
+// runtimeCfg is the configuration of the runtime role quader_app, which holds
 // INSERT and SELECT on audit_event and nothing more (Q-OPS-4).
 func (e *env) runtimeCfg() config.Database {
 	e.t.Helper()
 	ensureRuntimeRole(e.t, e.st)
 	c := e.cfg
-	c.UsernameFile, c.PasswordFile = writeFile(e.t, "username", "trove_app\n"), writeFile(e.t, "password", "trove-app-it\n")
+	c.UsernameFile, c.PasswordFile = writeFile(e.t, "username", "quader_app\n"), writeFile(e.t, "password", "quader-app-it\n")
 	c.Preflight.AllowSuperuser = false
 	return c
 }
 
-// runtimeConn is a plain connection as trove_app.
+// runtimeConn is a plain connection as quader_app.
 func (e *env) runtimeConn() *pgx.Conn {
 	e.t.Helper()
 	ensureRuntimeRole(e.t, e.st)
@@ -178,10 +178,10 @@ func (e *env) runtimeConn() *pgx.Conn {
 	if err != nil {
 		e.t.Fatal(err)
 	}
-	cfg.User, cfg.Password = "trove_app", "trove-app-it"
+	cfg.User, cfg.Password = "quader_app", "quader-app-it"
 	conn, err := pgx.ConnectConfig(context.Background(), cfg)
 	if err != nil {
-		e.t.Fatalf("connect as trove_app: %v", err)
+		e.t.Fatalf("connect as quader_app: %v", err)
 	}
 	e.t.Cleanup(func() { _ = conn.Close(context.Background()) })
 	return conn
@@ -194,19 +194,19 @@ func ensureRuntimeRole(t testing.TB, st stack) {
 	admin := st.admin(t, "postgres")
 	for range 5 {
 		_, err := admin.Exec(context.Background(), `DO $$ BEGIN
-			IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trove_app') THEN
-				CREATE ROLE trove_app LOGIN PASSWORD 'trove-app-it';
+			IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'quader_app') THEN
+				CREATE ROLE quader_app LOGIN PASSWORD 'quader-app-it';
 			END IF;
 		END $$`)
 		if err == nil {
-			_, err = admin.Exec(context.Background(), `ALTER ROLE trove_app LOGIN PASSWORD 'trove-app-it'`)
+			_, err = admin.Exec(context.Background(), `ALTER ROLE quader_app LOGIN PASSWORD 'quader-app-it'`)
 		}
 		if err == nil {
 			return
 		}
 		time.Sleep(100 * time.Millisecond) // a parallel package created it at the same moment
 	}
-	t.Fatal("could not create the runtime role trove_app")
+	t.Fatal("could not create the runtime role quader_app")
 }
 
 func scalar[T any](t testing.TB, c *pgx.Conn, sql string, args ...any) T {

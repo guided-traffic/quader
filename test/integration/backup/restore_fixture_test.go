@@ -19,13 +19,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/klauspost/compress/zstd"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/backup/target"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/secrets"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/secrets"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // seeded is what seedSource put into the source installation.
@@ -120,7 +120,7 @@ type exportOptions struct {
 	fetch func(format.Digest) []byte
 }
 
-// exportBackup writes a backup of src's database the way trove backup create does, built by hand from the format package:
+// exportBackup writes a backup of src's database the way quader backup create does, built by hand from the format package:
 // every exported table in one REPEATABLE READ snapshot as zstd-compressed COPY text, the sequences, the blob list and the
 // pool objects, the manifest last.
 func exportBackup(t *testing.T, src *testenv.Stack, st target.Store, layout format.Layout, blobs map[format.Digest][]byte, o exportOptions) *format.Manifest {
@@ -131,7 +131,7 @@ func exportBackup(t *testing.T, src *testenv.Stack, st target.Store, layout form
 		t.Fatal(err)
 	}
 	defer func() { _ = conn.Close(ctx) }()
-	if _, err := conn.Exec(ctx, "SET search_path TO trove"); err != nil {
+	if _, err := conn.Exec(ctx, "SET search_path TO quader"); err != nil {
 		t.Fatal(err)
 	}
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
@@ -150,7 +150,7 @@ func exportBackup(t *testing.T, src *testenv.Stack, st target.Store, layout form
 		o.id, _ = format.NewID(snapshotAt, nil)
 	}
 	m := &format.Manifest{
-		Format: format.ManifestFormat, BackupID: o.id, Trove: format.TroveInfo{Version: "0.1.0", Revision: "test"},
+		Format: format.ManifestFormat, BackupID: o.id, Quader: format.QuaderInfo{Version: "0.1.0", Revision: "test"},
 		Postgres:  format.PostgresRef{ServerVersion: version, Isolation: "repeatable read"},
 		StartedAt: snapshotAt.Add(-time.Second), SnapshotAt: snapshotAt,
 		Source:  format.Source{Storage: format.StorageRef{Bucket: "blobs", Prefix: "it"}},
@@ -174,12 +174,12 @@ func exportBackup(t *testing.T, src *testenv.Stack, st target.Store, layout form
 	}
 	rows.Close()
 
-	names, err := qs.SchemaTables(ctx, "trove")
+	names, err := qs.SchemaTables(ctx, "quader")
 	if err != nil {
 		t.Fatal(err)
 	}
 	cols := map[string][][2]string{}
-	colRows, err := qs.RestoreTableColumns(ctx, "trove")
+	colRows, err := qs.RestoreTableColumns(ctx, "quader")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +226,7 @@ func exportBackup(t *testing.T, src *testenv.Stack, st target.Store, layout form
 		})
 	}
 
-	seqRows, err := tx.Query(ctx, "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'trove' AND c.relkind = 'S' ORDER BY 1")
+	seqRows, err := tx.Query(ctx, "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'quader' AND c.relkind = 'S' ORDER BY 1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,7 +241,7 @@ func exportBackup(t *testing.T, src *testenv.Stack, st target.Store, layout form
 	seqRows.Close()
 	for _, n := range seqs {
 		s := format.Sequence{Name: n}
-		if err := tx.QueryRow(ctx, "SELECT last_value, is_called FROM "+pgx.Identifier{"trove", n}.Sanitize()).Scan(&s.LastValue, &s.IsCalled); err != nil {
+		if err := tx.QueryRow(ctx, "SELECT last_value, is_called FROM "+pgx.Identifier{"quader", n}.Sanitize()).Scan(&s.LastValue, &s.IsCalled); err != nil {
 			t.Fatal(err)
 		}
 		m.Sequences = append(m.Sequences, s)

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	_ "github.com/guided-traffic/trove/internal/formats/all" // registers the formats whose descriptors are served
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	_ "github.com/guided-traffic/quader/internal/formats/all" // registers the formats whose descriptors are served
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // TestR_UI_021_FormatDescriptorMirrorFact: the descriptor of GET /api/v1/formats says whether a remote of the format can run in

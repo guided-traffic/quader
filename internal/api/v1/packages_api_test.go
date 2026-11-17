@@ -10,15 +10,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	_ "github.com/guided-traffic/trove/internal/formats/all"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/packages/readme"
-	"github.com/guided-traffic/trove/internal/packages/view"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	_ "github.com/guided-traffic/quader/internal/formats/all"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/packages/readme"
+	"github.com/guided-traffic/quader/internal/packages/view"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_API_029_WithoutTheReadModelEveryOperationAnswers503: a replica that cannot
@@ -155,7 +155,7 @@ func get(h http.Handler, path string) *httptest.ResponseRecorder {
 }
 
 func TestR_API_030_ClientSetupAnswer(t *testing.T) {
-	h := setupServer(t, "https://trove.example.com", true)
+	h := setupServer(t, "https://quader.example.com", true)
 	w := get(h, "/api/v1/projects/it/repositories/npm-local/client-setup?client=pnpm&credentials=env&package=a(b)&version=1.0.0")
 	if w.Code != 200 {
 		t.Fatalf("%d %s", w.Code, w.Body.String())
@@ -164,7 +164,7 @@ func TestR_API_030_ClientSetupAnswer(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
 		t.Fatal(err)
 	}
-	if out.RegistryUrl != "https://trove.example.com/api/npm/it/npm-local/" || out.EndpointPath != "//trove.example.com/api/npm/it/npm-local/" ||
+	if out.RegistryUrl != "https://quader.example.com/api/npm/it/npm-local/" || out.EndpointPath != "//quader.example.com/api/npm/it/npm-local/" ||
 		out.Username == nil || *out.Username != "alice" || out.PublishTarget == nil || *out.PublishTarget != "it/npm-local" || out.TokenTtlSeconds != 36*3600 {
 		t.Fatalf("%+v", out)
 	}
@@ -175,10 +175,10 @@ func TestR_API_030_ClientSetupAnswer(t *testing.T) {
 	if got["pnpm.install"] != "pnpm add 'a(b)@1.0.0'\n" {
 		t.Errorf("install %q", got["pnpm.install"])
 	}
-	if got["pnpm.configure.npmrc"] != "registry=https://trove.example.com/api/npm/it/npm-local/\n//trove.example.com/api/npm/it/npm-local/:_authToken=${MY_TOKEN}\n" {
+	if got["pnpm.configure.npmrc"] != "registry=https://quader.example.com/api/npm/it/npm-local/\n//quader.example.com/api/npm/it/npm-local/:_authToken=${MY_TOKEN}\n" {
 		t.Errorf("npmrc %q", got["pnpm.configure.npmrc"])
 	}
-	if strings.Contains(w.Body.String(), "TROVE_TOKEN") {
+	if strings.Contains(w.Body.String(), "QUADER_TOKEN") {
 		t.Error("the reference of the template survived")
 	}
 }
@@ -187,11 +187,11 @@ func TestR_API_030_ClientSetupAnswer(t *testing.T) {
 // in every credential mode; the publish snippet only for a caller who may deploy.
 func TestR_GENERIC_016_TheClientSetupOfCurl(t *testing.T) {
 	function := func(header string) string {
-		return "trove_curl() {\n  curl --silent --show-error --config - \"$@\" <<EOF\n" + header + "EOF\n}\n"
+		return "quader_curl() {\n  curl --silent --show-error --config - \"$@\" <<EOF\n" + header + "EOF\n}\n"
 	}
 	const (
-		install = "trove_curl --fail --remote-name \"https://trove.example.com/files/it/files/<path>\"\n"
-		publish = "trove_curl --fail --upload-file <file> \"https://trove.example.com/files/it/files/<path>\"\n"
+		install = "quader_curl --fail --remote-name \"https://quader.example.com/files/it/files/<path>\"\n"
+		publish = "quader_curl --fail --upload-file <file> \"https://quader.example.com/files/it/files/<path>\"\n"
 	)
 	for _, c := range []struct {
 		credentials string
@@ -207,7 +207,7 @@ func TestR_GENERIC_016_TheClientSetupOfCurl(t *testing.T) {
 		{"none", true, map[string]string{"curl.configure.function": function(""), "curl.install": install, "curl.publish": publish}},
 		{"env", false, map[string]string{"curl.configure.function": function("header = \"Authorization: Bearer ${MY_TOKEN}\"\n"), "curl.install": install}},
 	} {
-		w := get(setupServer(t, "https://trove.example.com", c.deploy), "/api/v1/projects/it/repositories/files/client-setup?client=curl&credentials="+c.credentials)
+		w := get(setupServer(t, "https://quader.example.com", c.deploy), "/api/v1/projects/it/repositories/files/client-setup?client=curl&credentials="+c.credentials)
 		var out gen.ClientSetup
 		if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || w.Code != 200 {
 			t.Fatalf("%s: %d %s", c.credentials, w.Code, w.Body.String())
@@ -222,7 +222,7 @@ func TestR_GENERIC_016_TheClientSetupOfCurl(t *testing.T) {
 		if !reflect.DeepEqual(got, c.want) {
 			t.Errorf("%s, deploy %v:\n%q\nwant\n%q", c.credentials, c.deploy, got, c.want)
 		}
-		if out.RegistryUrl != "https://trove.example.com/files/it/files/" || out.Format != "generic" {
+		if out.RegistryUrl != "https://quader.example.com/files/it/files/" || out.Format != "generic" {
 			t.Errorf("%+v", out)
 		}
 	}
@@ -230,7 +230,7 @@ func TestR_GENERIC_016_TheClientSetupOfCurl(t *testing.T) {
 
 func TestR_API_030_PublishTargetFollowsTheDeployRight(t *testing.T) {
 	for deploy, want := range map[bool]bool{true: true, false: false} {
-		w := get(setupServer(t, "https://trove.example.com", deploy), "/api/v1/projects/it/repositories/npm-local/client-setup?client=npm")
+		w := get(setupServer(t, "https://quader.example.com", deploy), "/api/v1/projects/it/repositories/npm-local/client-setup?client=npm")
 		var out gen.ClientSetup
 		if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
 			t.Fatal(err)
@@ -240,7 +240,7 @@ func TestR_API_030_PublishTargetFollowsTheDeployRight(t *testing.T) {
 		}
 	}
 	// A remote repository takes no publish.
-	w := get(setupServer(t, "https://trove.example.com", true), "/api/v1/projects/it/repositories/npm-remote/client-setup?client=npm")
+	w := get(setupServer(t, "https://quader.example.com", true), "/api/v1/projects/it/repositories/npm-remote/client-setup?client=npm")
 	var out gen.ClientSetup
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || w.Code != 200 || out.PublishTarget != nil {
 		t.Fatalf("%d %s", w.Code, w.Body.String())
@@ -261,13 +261,13 @@ func TestR_API_030_AddressesNeverComeFromTheHostOfTheRequest(t *testing.T) {
 }
 
 func TestR_API_030_ClientSetupRefusesWhatItCannotAnswer(t *testing.T) {
-	h := setupServer(t, "https://trove.example.com", true)
+	h := setupServer(t, "https://quader.example.com", true)
 	for q, repo := range map[string]string{
 		"client=bun":                                     "npm-local",
 		"client=npm&credentials=token":                   "npm-local",
-		"client=npm&package=trv_pat_abcdefgh":            "npm-local",
-		"client=npm&scope=trv_sat_abcdefgh":              "npm-local",
-		"client=npm&version=trv_cit_x&package=x":         "npm-local",
+		"client=npm&package=qdr_pat_abcdefgh":            "npm-local",
+		"client=npm&scope=qdr_sat_abcdefgh":              "npm-local",
+		"client=npm&version=qdr_cit_x&package=x":         "npm-local",
 		"client=npm&package=" + url.QueryEscape("a\nb"):  "npm-local",
 		"client=npm&package=" + strings.Repeat("x", 257): "npm-local",
 		"client=npm&scope=%40a%2Fb":                      "npm-local",
@@ -379,10 +379,10 @@ func TestR_API_029_FilterParsing(t *testing.T) {
 // credential the configure snippet binds (Q-API-180). Without the deploy right, for a
 // virtual repository without a target and for a remote one there are none.
 func TestR_API_030_NpmPublishSnippets(t *testing.T) {
-	const local, all = "https://trove.example.com/api/npm/it/npm-local/", "https://trove.example.com/api/npm/it/npm-all/"
+	const local, all = "https://quader.example.com/api/npm/it/npm-local/", "https://quader.example.com/api/npm/it/npm-all/"
 	publish := func(deploy bool, repo, client string) (map[string]gen.ClientSnippet, gen.ClientSetup) {
 		t.Helper()
-		w := get(setupServer(t, "https://trove.example.com", deploy), "/api/v1/projects/it/repositories/"+repo+"/client-setup?client="+client+"&credentials=env")
+		w := get(setupServer(t, "https://quader.example.com", deploy), "/api/v1/projects/it/repositories/"+repo+"/client-setup?client="+client+"&credentials=env")
 		var out gen.ClientSetup
 		if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || w.Code != 200 {
 			t.Fatalf("%s %s: %d %s", repo, client, w.Code, w.Body.String())

@@ -30,10 +30,10 @@ type Spec struct {
 	Package      string
 	Version      string
 	Architecture string // amd64, arm64, all, ...
-	Maintainer   string // default "trove test archive <debstub@trove.invalid>"
+	Maintainer   string // default "quader test archive <debstub@quader.invalid>"
 	Section      string // default "misc"
 	Priority     string // default "optional"
-	Description  string // the synopsis, default "trove test package <Package>"
+	Description  string // the synopsis, default "quader test package <Package>"
 	// LongDescription is the extended description, one line per element; an empty element is a paragraph break.
 	LongDescription []string
 	Depends         string
@@ -49,11 +49,11 @@ type Spec struct {
 }
 
 func (s Spec) maintainer() string {
-	return orDefault(s.Maintainer, "trove test archive <debstub@trove.invalid>")
+	return orDefault(s.Maintainer, "quader test archive <debstub@quader.invalid>")
 }
 func (s Spec) section() string     { return orDefault(s.Section, "misc") }
 func (s Spec) priority() string    { return orDefault(s.Priority, "optional") }
-func (s Spec) description() string { return orDefault(s.Description, "trove test package "+s.Package) }
+func (s Spec) description() string { return orDefault(s.Description, "quader test package "+s.Package) }
 
 // Output is the line the installed script prints.
 func (s Spec) Output() string {

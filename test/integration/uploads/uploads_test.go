@@ -15,16 +15,16 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/uploads"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/uploads"
 )
 
 const mib = 1 << 20
 
-// replica is one trove replica as an upload sees it: its own blob store, spool and session service on the shared database and
+// replica is one quader replica as an upload sees it: its own blob store, spool and session service on the shared database and
 // bucket.
 type replica struct {
 	store *blob.Store
@@ -178,7 +178,7 @@ func TestR_STOR_011_HundredChunksMakeWholeParts(t *testing.T) {
 			t.Fatalf("chunk %d: %v", i, err)
 		}
 	}
-	rows := w.p.scalarInt(t, "SELECT count(*) FROM trove.upload_session_parts WHERE size = $1", 5*mib)
+	rows := w.p.scalarInt(t, "SELECT count(*) FROM quader.upload_session_parts WHERE size = $1", 5*mib)
 	if rows != 5 {
 		t.Fatalf("%d parts of 5 MiB recorded, want 5", rows)
 	}
@@ -263,13 +263,13 @@ func TestR_STOR_011_AZombieWriterFailsItsRecordAndLeavesTheRecordedTailAlone(t *
 		done <- result{n, err}
 	}()
 	<-reached
-	w.p.exec(t, "UPDATE trove.upload_sessions SET writer_until = now() - interval '1 second' WHERE id = $1::uuid", sess.ID.String()) // the lease of the zombie's claim runs out
+	w.p.exec(t, "UPDATE quader.upload_sessions SET writer_until = now() - interval '1 second' WHERE id = $1::uuid", sess.ID.String()) // the lease of the zombie's claim runs out
 	got, err := other.append(w.sc, sess.ID, 0, data[:4*mib])
 	if err != nil || got != 4*mib {
 		t.Fatalf("the second request: received %d, err %v", got, err)
 	}
 	var tailWriter string
-	if err := w.p.admin.QueryRow(ctx, "SELECT COALESCE(string_agg(writer::text, ',' ORDER BY seq), '') FROM trove.upload_session_tails WHERE session_id = $1::uuid", sess.ID.String()).Scan(&tailWriter); err != nil {
+	if err := w.p.admin.QueryRow(ctx, "SELECT COALESCE(string_agg(writer::text, ',' ORDER BY seq), '') FROM quader.upload_session_tails WHERE session_id = $1::uuid", sess.ID.String()).Scan(&tailWriter); err != nil {
 		t.Fatal(err)
 	}
 	close(resume)
@@ -278,7 +278,7 @@ func TestR_STOR_011_AZombieWriterFailsItsRecordAndLeavesTheRecordedTailAlone(t *
 		t.Fatalf("the zombie: received %d, err %v", r.received, r.err)
 	}
 	var after string
-	if err := w.p.admin.QueryRow(ctx, "SELECT COALESCE(string_agg(writer::text, ',' ORDER BY seq), '') FROM trove.upload_session_tails WHERE session_id = $1::uuid", sess.ID.String()).Scan(&after); err != nil || after != tailWriter {
+	if err := w.p.admin.QueryRow(ctx, "SELECT COALESCE(string_agg(writer::text, ',' ORDER BY seq), '') FROM quader.upload_session_tails WHERE session_id = $1::uuid", sess.ID.String()).Scan(&after); err != nil || after != tailWriter {
 		t.Fatalf("the recorded tail changed from %s to %s (%v)", tailWriter, after, err)
 	}
 	if keys := w.e.keys(t, blob.SessionPrefix(w.e.prefix, sess.ID.String())); len(keys) != 1 {
@@ -323,7 +323,7 @@ func TestR_STOR_011_AZombieFinalizeIsRefusedWithTheReceivedCountOfTheSession(t *
 		done <- result{res, err}
 	}()
 	<-reached
-	w.p.exec(t, "UPDATE trove.upload_sessions SET writer_until = now() - interval '1 second' WHERE id = $1::uuid", sess.ID.String())
+	w.p.exec(t, "UPDATE quader.upload_sessions SET writer_until = now() - interval '1 second' WHERE id = $1::uuid", sess.ID.String())
 	if got, err := other.append(w.sc, sess.ID, 0, data[:4*mib]); err != nil || got != 4*mib {
 		t.Fatalf("the second request: received %d, err %v", got, err)
 	}
@@ -455,8 +455,8 @@ func TestR_STOR_011_TheCollectionRunExpiresAbandonedSessions(t *testing.T) {
 		}
 		*dst = s.ID
 	}
-	w.p.exec(t, "UPDATE trove.upload_sessions SET last_activity_at = now() - interval '5 hours' WHERE id = $1::uuid", idle.String())
-	w.p.exec(t, "UPDATE trove.upload_sessions SET created_at = now() - interval '21 hours' WHERE id = $1::uuid", old.String())
+	w.p.exec(t, "UPDATE quader.upload_sessions SET last_activity_at = now() - interval '5 hours' WHERE id = $1::uuid", idle.String())
+	w.p.exec(t, "UPDATE quader.upload_sessions SET created_at = now() - interval '21 hours' WHERE id = $1::uuid", old.String())
 
 	res, err := collector(r, w, r.cfg.Uploads).Run(ctx, blob.RunOptions{Mode: blob.GCIncremental})
 	if err != nil {
@@ -480,7 +480,7 @@ func TestR_STOR_011_TheCollectionRunExpiresAbandonedSessions(t *testing.T) {
 		t.Fatal("the live session lost its objects")
 	}
 	// the request of a session past its age answers 404 and aborts it without any run
-	w.p.exec(t, "UPDATE trove.upload_sessions SET created_at = now() - interval '21 hours' WHERE id = $1::uuid", live.String())
+	w.p.exec(t, "UPDATE quader.upload_sessions SET created_at = now() - interval '21 hours' WHERE id = $1::uuid", live.String())
 	if _, err := r.append(w.sc, live, 7*mib, random(10)); kind(err) != errs.NotFound {
 		t.Fatalf("append past the age: %v", err)
 	}
@@ -615,8 +615,8 @@ func TestR_STOR_011_ASessionPastItsAgeIsRefusedWhileTheDeletionPauseKeepsTheRunF
 	if _, err := r.append(w.sc, s.ID, 0, random(7*mib)); err != nil {
 		t.Fatal(err)
 	}
-	w.p.exec(t, "UPDATE trove.upload_sessions SET created_at = now() - interval '21 hours' WHERE id = $1::uuid", s.ID.String())
-	w.p.exec(t, "INSERT INTO trove.system_state (key, value) VALUES ('deletions_paused_at', to_jsonb(now()::text)) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value")
+	w.p.exec(t, "UPDATE quader.upload_sessions SET created_at = now() - interval '21 hours' WHERE id = $1::uuid", s.ID.String())
+	w.p.exec(t, "INSERT INTO quader.system_state (key, value) VALUES ('deletions_paused_at', to_jsonb(now()::text)) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value")
 	res, err := collector(r, w, r.cfg.Uploads).Run(ctx, blob.RunOptions{Mode: blob.GCIncremental})
 	if err != nil {
 		t.Fatal(err)
@@ -635,7 +635,7 @@ func TestR_STOR_011_ASessionPastItsAgeIsRefusedWhileTheDeletionPauseKeepsTheRunF
 		t.Fatalf("state = %q", got)
 	}
 	// the run that resumes cleans it
-	w.p.exec(t, "DELETE FROM trove.system_state WHERE key = 'deletions_paused_at'")
+	w.p.exec(t, "DELETE FROM quader.system_state WHERE key = 'deletions_paused_at'")
 	if _, err := collector(r, w, r.cfg.Uploads).Run(ctx, blob.RunOptions{Mode: blob.GCIncremental}); err != nil {
 		t.Fatal(err)
 	}

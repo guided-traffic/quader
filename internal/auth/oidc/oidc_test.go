@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -21,11 +21,11 @@ var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 // testProvider is a provider with a discovery document and keys in place.
 func testProvider(t *testing.T, mut func(*config.AuthOIDCProvider), signers ...*signer) *Provider {
 	t.Helper()
-	raw := config.AuthOIDCProvider{DisplayName: "Corp", Issuer: "https://idp.test", ClientID: "trove", ClientAuthMethod: "none"}
+	raw := config.AuthOIDCProvider{DisplayName: "Corp", Issuer: "https://idp.test", ClientID: "quader", ClientAuthMethod: "none"}
 	if mut != nil {
 		mut(&raw)
 	}
-	p := &Provider{ID: "corp", cfg: raw.Defaulted(), redirectURI: "https://trove.test/auth/oidc/corp/callback", log: quiet}
+	p := &Provider{ID: "corp", cfg: raw.Defaulted(), redirectURI: "https://quader.test/auth/oidc/corp/callback", log: quiet}
 	p.doc = &discovery{Issuer: raw.Issuer, AuthorizationEndpoint: "https://idp.test/auth?tenant=a", TokenEndpoint: "https://idp.test/token", JWKSURI: "https://idp.test/jwks"}
 	p.keys = keysOf(t, signers...)
 	p.refetchAt = time.Now() // no network in unit tests
@@ -34,9 +34,9 @@ func testProvider(t *testing.T, mut func(*config.AuthOIDCProvider), signers ...*
 
 func goodClaims(now time.Time, nonce string) map[string]any {
 	return map[string]any{
-		"iss": "https://idp.test", "aud": "trove", "sub": "s-1", "exp": now.Add(5 * time.Minute).Unix(),
+		"iss": "https://idp.test", "aud": "quader", "sub": "s-1", "exp": now.Add(5 * time.Minute).Unix(),
 		"iat": now.Unix(), "nonce": nonce, "preferred_username": "Alice", "email": "a@example.com",
-		"email_verified": true, "name": "Alice Example", "groups": []string{"trove-team-web", "unrelated"},
+		"email_verified": true, "name": "Alice Example", "groups": []string{"quader-team-web", "unrelated"},
 	}
 }
 
@@ -55,9 +55,9 @@ func TestR_AUTH_006_IDTokenValidation(t *testing.T) {
 		{"a valid token passes", func(map[string]any) {}, ""},
 		{"iss other than the configured issuer is id_token_invalid", func(c map[string]any) { c["iss"] = "https://evil.test" }, ReasonIDTokenInvalid},
 		{"aud without the client ID is id_token_invalid", func(c map[string]any) { c["aud"] = "someone" }, ReasonIDTokenInvalid},
-		{"an extra untrusted audience is id_token_invalid", func(c map[string]any) { c["aud"] = []string{"trove", "untrusted"}; c["azp"] = "trove" }, ReasonIDTokenInvalid},
-		{"an extra trusted audience with azp passes", func(c map[string]any) { c["aud"] = []string{"trove", "other-trusted"}; c["azp"] = "trove" }, ""},
-		{"several audiences without azp are id_token_invalid", func(c map[string]any) { c["aud"] = []string{"trove", "other-trusted"} }, ReasonIDTokenInvalid},
+		{"an extra untrusted audience is id_token_invalid", func(c map[string]any) { c["aud"] = []string{"quader", "untrusted"}; c["azp"] = "quader" }, ReasonIDTokenInvalid},
+		{"an extra trusted audience with azp passes", func(c map[string]any) { c["aud"] = []string{"quader", "other-trusted"}; c["azp"] = "quader" }, ""},
+		{"several audiences without azp are id_token_invalid", func(c map[string]any) { c["aud"] = []string{"quader", "other-trusted"} }, ReasonIDTokenInvalid},
 		{"azp other than the client ID is id_token_invalid", func(c map[string]any) { c["azp"] = "other" }, ReasonIDTokenInvalid},
 		{"exp in the past beyond the skew is id_token_expired", func(c map[string]any) { c["exp"] = now.Add(-2 * time.Minute).Unix() }, ReasonIDTokenExpired},
 		{"exp within the skew passes", func(c map[string]any) { c["exp"] = now.Add(-30 * time.Second).Unix() }, ""},
@@ -105,8 +105,8 @@ func TestR_AUTH_007_ClaimMapping(t *testing.T) {
 	}
 	p := testProvider(t, func(c *config.AuthOIDCProvider) {
 		c.GroupSync.Rules = []config.AuthOIDCGroupRule{
-			{Match: "trove-platform-admins", Group: "platform-admins"},
-			{MatchRegex: "trove-team-(.+)", Group: "team-$1"},
+			{Match: "quader-platform-admins", Group: "platform-admins"},
+			{MatchRegex: "quader-team-(.+)", Group: "team-$1"},
 			{MatchRegex: "(?P<x>Bad.+)", Group: "${x}"},
 		}
 	})
@@ -138,9 +138,9 @@ func TestR_AUTH_007_ClaimMapping(t *testing.T) {
 		}
 	})
 
-	t.Run("R-AUTH-008 the rules map trove-team-web to team-web, ignore unrelated and skip invalid names", func(t *testing.T) {
+	t.Run("R-AUTH-008 the rules map quader-team-web to team-web, ignore unrelated and skip invalid names", func(t *testing.T) {
 		m, lerr := p.mapClaims(base(func(c claims) {
-			c["groups"] = []any{"trove-team-web", "unrelated", "trove-platform-admins", "BadName"}
+			c["groups"] = []any{"quader-team-web", "unrelated", "quader-platform-admins", "BadName"}
 		}), nil, "admin", quiet)
 		if lerr != nil {
 			t.Fatal(lerr)
@@ -251,7 +251,7 @@ func TestR_AUTH_005_AuthorizationRequest(t *testing.T) {
 	t.Run("R-AUTH-005 the request carries PKCE S256, state, nonce and the extra parameters", func(t *testing.T) {
 		if v.Get("code_challenge_method") != "S256" || len(v.Get("code_challenge")) != 43 || v.Get("response_type") != "code" ||
 			v.Get("state") != strings.Repeat("s", 43) || v.Get("nonce") != strings.Repeat("n", 43) ||
-			v.Get("redirect_uri") != "https://trove.test/auth/oidc/corp/callback" || v.Get("scope") != "openid profile email" ||
+			v.Get("redirect_uri") != "https://quader.test/auth/oidc/corp/callback" || v.Get("scope") != "openid profile email" ||
 			v.Get("kc_idp_hint") != "corp" || v.Get("tenant") != "a" {
 			t.Fatalf("%s", target)
 		}

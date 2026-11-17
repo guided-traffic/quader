@@ -1,14 +1,14 @@
 # Chart values of the restore drill's installation (R-BAK-021, R-HA-060, deploy/dev/restore-ns.sh): the same chart as the main
 # dev profile in the namespace ${RESTORE_NS}, against the database, the Valkey and the empty bucket restore-ns.yaml sets up, the
-# dev SeaweedFS of the namespace ${NS} and, as the backup target to restore from, that SeaweedFS's bucket trove-backups with the
+# dev SeaweedFS of the namespace ${NS} and, as the backup target to restore from, that SeaweedFS's bucket quader-backups with the
 # target of the source installation (the same location the source's CronJob writes to). The release is installed first with
 # restore.enabled and no replica, then upgraded with web and worker replicas (restore-ns.sh).
 #
 # No edge, no identity provider and no second endpoint: the drill reaches the restored installation through port-forwards to its
-# Services, with the dev CA that signs trove-tls.
+# Services, with the dev CA that signs quader-tls.
 image:
   registry: docker.io
-  repository: guidedtraffic/trove
+  repository: guidedtraffic/quader
   tag: dev
   pullPolicy: IfNotPresent
 
@@ -17,7 +17,7 @@ highAvailability:
 
 tls:
   enabled: true
-  secretName: trove-tls
+  secretName: quader-tls
 
 api:
   replicaCount: 1
@@ -35,10 +35,10 @@ worker:
     requests: {cpu: 50m, memory: 128Mi, ephemeral-storage: 128Mi}
     limits: {memory: 512Mi}
 
-# The dev CA, as in values-dev.yaml: the Secret trove-tls of this namespace carries only the CA certificate in ca.crt, not the CA's key. A restored
+# The dev CA, as in values-dev.yaml: the Secret quader-tls of this namespace carries only the CA certificate in ca.crt, not the CA's key. A restored
 # CI issuer (caBundleRef) and the test advisory source verify against it; the chart mounts it in every pod of the release, the Jobs included.
 trustedCA:
-  existingSecret: trove-tls
+  existingSecret: quader-tls
   keys: [ca.crt]
 
 restore:
@@ -79,8 +79,8 @@ config:
     metadata_cache_bytes: 32MiB
     merged_metadata_cache_bytes: 64MiB
   database:
-    host: trove-db-rw.${RESTORE_NS}.svc
-    name: trove
+    host: quader-db-rw.${RESTORE_NS}.svc
+    name: quader
     ssl_mode: verify-full
   valkey:
     mode: sentinel
@@ -95,9 +95,9 @@ config:
       mode: verify-full
   storage:
     s3:
-      bucket: trove-restore-blobs               # the empty bucket of restore-ns.yaml
+      bucket: quader-restore-blobs              # the empty bucket of restore-ns.yaml
       region: us-east-1
-      endpoint: https://trove-s3.${NS}.svc:9000
+      endpoint: https://quader-s3.${NS}.svc:9000
       force_path_style: true
       credentials:
         source: static
@@ -105,9 +105,9 @@ config:
       max_size: 1GiB
   backup:
     target:
-      bucket: trove-backups                     # where the source installation writes its backups
+      bucket: quader-backups                    # where the source installation writes its backups
       region: us-east-1
-      endpoint: https://trove-s3.${NS}.svc:9000
+      endpoint: https://quader-s3.${NS}.svc:9000
       force_path_style: true
       credentials:
         source: static
@@ -116,21 +116,21 @@ config:
 
 secrets:
   database:
-    existingSecret: trove-db-app
+    existingSecret: quader-db-app
   databaseCA:
-    existingSecret: trove-db-ca
+    existingSecret: quader-db-ca
     key: ca.crt
   s3:
-    existingSecret: trove-s3
+    existingSecret: quader-s3
   backupSource:
-    existingSecret: trove-s3                    # backup.enabled with static S3 keys needs the backup's own blob login (Q-BAK-49); the profile has one SeaweedFS login
+    existingSecret: quader-s3                   # backup.enabled with static S3 keys needs the backup's own blob login (Q-BAK-49); the profile has one SeaweedFS login
   backupTarget:
-    existingSecret: trove-s3
+    existingSecret: quader-s3
   s3CA:
-    existingSecret: trove-s3-tls
+    existingSecret: quader-s3-tls
     key: ca.crt
   backupTargetCA:
-    existingSecret: trove-s3-tls
+    existingSecret: quader-s3-tls
     key: ca.crt
   valkey:
     existingSecret: restore-valkey-auth
@@ -140,5 +140,5 @@ secrets:
   valkeyCA:
     existingSecret: restore-valkey-tls
   encryption:
-    existingSecret: trove-encryption-keys       # a copy of the source's: the restore opens its canary rows with it (R-BAK-020 check 3)
+    existingSecret: quader-encryption-keys      # a copy of the source's: the restore opens its canary rows with it (R-BAK-020 check 3)
     keys: [dev.key]

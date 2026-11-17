@@ -6,9 +6,9 @@ import { Disclosure } from './disclosure';
 @Component({
   imports: [Disclosure],
   template: `
-    <trove-disclosure heading="Details" hint="Where this repository fetches from.">
+    <quader-disclosure heading="Details" hint="Where this repository fetches from.">
       <p class="inside">Caches https://registry.npmjs.org/</p>
-    </trove-disclosure>
+    </quader-disclosure>
   `,
 })
 class Host {}

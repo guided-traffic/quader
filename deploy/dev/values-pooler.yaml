@@ -1,4 +1,4 @@
-# Chart values layered after values-dev.yaml by up.sh when TROVE_POOLER=1 (R-HA-058): the
+# Chart values layered after values-dev.yaml by up.sh when QUADER_POOLER=1 (R-HA-058): the
 # request pool and the control connection go through two poolers, the session-level work
 # (migration lock, leases) keeps the direct read-write Service.
 #
@@ -8,9 +8,9 @@
 # The role defaults that preflight reads on a pooled connection are set by up.sh.
 config:
   database:
-    host: trove-db-pooler-rw.trove.svc
-    session_host: trove-db-rw.trove.svc
-    control_host: trove-db-pooler-control.trove.svc
+    host: quader-db-pooler-rw.quader.svc
+    session_host: quader-db-rw.quader.svc
+    control_host: quader-db-pooler-control.quader.svc
     pool:
       max_conn_lifetime: 60s
       max_conn_lifetime_jitter: 15s

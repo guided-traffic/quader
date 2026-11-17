@@ -11,7 +11,7 @@ security relation. The decision itself is [permissions.md](permissions.md); the 
 
 A generic repository neither scans nor validates what it stores (H-131 in
 [formats/generic.md](../spec/formats/generic.md)). Everything below is about keeping stored content from becoming a weapon
-against trove's own origin, and about who may write and read it.
+against Quader's own origin, and about who may write and read it.
 
 ## The UI's content routes (R-API-025, Q-UI-106)
 
@@ -39,7 +39,7 @@ writer of a response that carries a file:
 
 The wrapper sets them when it is created, again at `WriteHeader` and again at the first `Write`, so code between those points that
 deletes or overwrites one of them does not change what is sent (unit test `TestContentWriter`). The same set, with the same checks,
-is on `200`, `206`, `304` and `HEAD`. The directory index of a folder is a page trove renders itself: it has `nosniff`,
+is on `200`, `206`, `304` and `HEAD`. The directory index of a folder is a page Quader renders itself: it has `nosniff`,
 `same-site` and the policy without `sandbox`, and no disposition, and every name in it is HTML-escaped and linked as `./` plus the
 percent-encoded name, so `javascript:x` stays a relative path. Problem answers carry none of this: their body is not content.
 
@@ -189,7 +189,7 @@ ownership and a folder batch (`TestR_STOR_018_EveryBatchOfTheDeleteJobAsksTheFor
 The gaps of the spec pages whose mechanism this page describes:
 
 - [H-3](../spec/architecture.md#h-3--ui-and-package-content-share-one-origin): the UI and package content share one origin.
-- [H-11](../spec/storage.md#h-11--object-store-principals-bypass-troves-authorization-and-integrity-checks): object-store principals bypass trove's authorization and integrity checks.
+- [H-11](../spec/storage.md#h-11--object-store-principals-bypass-quaders-authorization-and-integrity-checks): object-store principals bypass Quader's authorization and integrity checks.
 - [H-13](../spec/storage.md#h-13--deduplication-reveals-the-existence-of-known-content-through-upload-timing): deduplication reveals the existence of known content through upload timing; the same signal across projects is H-552.
 - [H-552](../spec/storage.md#h-552--a-deduplication-hit-across-projects-can-be-told-apart-by-its-timing): a deduplication hit across projects can be told apart by its timing; it is H-13's signal, accepted by the owner for the cross-project case.
 - [H-14](../spec/storage.md#h-14--no-per-principal-limit-on-concurrent-uploads-or-spool-use): no per-principal limit on concurrent uploads or spool use.

@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // stagedBlob puts data under a staging key and returns the Staged blob that names it with the digests of the whole content.
@@ -30,7 +30,7 @@ func TestR_STOR_011_AStagedBlobIsCommittedByAServerSideCopy(t *testing.T) {
 	t.Run("the object write of the commit protocol is a copy to the content address", func(t *testing.T) {
 		f := newFixture(t, nil)
 		data := content(40_000, 3)
-		key := blob.SessionKey("trove", "s1", "data")
+		key := blob.SessionKey("quader", "s1", "data")
 		staged := stagedBlob(t, f, data, key)
 		var linked int
 		res, err := f.store.Commit(ctx, staged, func(context.Context, meta.Tx) error { linked++; return nil })
@@ -59,7 +59,7 @@ func TestR_STOR_011_AStagedBlobIsCommittedByAServerSideCopy(t *testing.T) {
 		if _, err := f.store.Commit(ctx, f.ingest(t, data), noLink); err != nil {
 			t.Fatal(err)
 		}
-		staged := blob.Staged(f.ingest(t, data).Digests, "trove/_uploads/gone/data")
+		staged := blob.Staged(f.ingest(t, data).Digests, "quader/_uploads/gone/data")
 		res, err := f.store.Commit(ctx, staged, noLink)
 		if err != nil {
 			t.Fatal(err)
@@ -70,7 +70,7 @@ func TestR_STOR_011_AStagedBlobIsCommittedByAServerSideCopy(t *testing.T) {
 	})
 	t.Run("a staging object that is gone is ErrStagingGone", func(t *testing.T) {
 		f := newFixture(t, nil)
-		staged := blob.Staged(f.ingest(t, content(100, 5)).Digests, "trove/_uploads/gone/data")
+		staged := blob.Staged(f.ingest(t, content(100, 5)).Digests, "quader/_uploads/gone/data")
 		_, err := f.store.Commit(ctx, staged, noLink)
 		if !errors.Is(err, blob.ErrStagingGone) {
 			t.Fatalf("err = %v", err)
@@ -88,7 +88,7 @@ func TestR_STOR_011_AStagedBlobIsCommittedByAServerSideCopy(t *testing.T) {
 }
 
 func TestR_STOR_011_SessionKeys(t *testing.T) {
-	for _, prefix := range []string{"trove", "", "a/b"} {
+	for _, prefix := range []string{"quader", "", "a/b"} {
 		id := "0b9f1b0e-1111-4222-8333-444455556666"
 		key := blob.SessionKey(prefix, id, "tail-x")
 		if !strings.HasPrefix(key, blob.SessionPrefix(prefix, id)) || !strings.HasPrefix(key, blob.UploadsPrefix(prefix)) {
@@ -103,8 +103,8 @@ func TestR_STOR_011_SessionKeys(t *testing.T) {
 			t.Fatalf("%q: a blob key parsed as a session key", prefix)
 		}
 	}
-	for _, bad := range []string{"trove/_uploads/", "trove/_uploads/id", "trove/_uploads/id/", "trove/_uploads//x", "other/_uploads/id/x"} {
-		if _, _, ok := blob.ParseSessionKey("trove", bad); ok {
+	for _, bad := range []string{"quader/_uploads/", "quader/_uploads/id", "quader/_uploads/id/", "quader/_uploads//x", "other/_uploads/id/x"} {
+		if _, _, ok := blob.ParseSessionKey("quader", bad); ok {
 			t.Errorf("%q parsed", bad)
 		}
 	}

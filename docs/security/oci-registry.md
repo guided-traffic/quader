@@ -8,7 +8,7 @@ routes (the OCI format answers 501 until their work packages land) and the catal
 501 until it exists).
 
 Perspective: what a container client presents to the registry, what the token service gives it in return, what a registry token can do
-and for how long, which key signs it, and what a stolen one is worth. The trove tokens themselves are on
+and for how long, which key signs it, and what a stolen one is worth. The Quader tokens themselves are on
 [tokens-and-credentials.md](tokens-and-credentials.md), the decision of every request on [permissions.md](permissions.md), the key ring
 on [data-and-secret-flow.md](data-and-secret-flow.md). The requirements are R-OCI-004 to R-OCI-006 and R-OCI-034 in
 [spec/formats/oci.md](../spec/formats/oci.md); the code is [internal/auth/registrytoken](../../internal/auth/registrytoken), the stage
@@ -21,15 +21,15 @@ the enforcement point [internal/api/registry/enforce.go](../../internal/api/regi
 
 | Route | Credentials the stage accepts | Session cookie | Challenge of a 401 |
 |---|---|---|---|
-| `/v2/_token` (`GET`, `POST`) | Not evaluated by the chain. The token service takes the one credential of the request - the `Authorization` header of a `GET` (a trove token as `Basic` with any user name or as `Bearer`), or the `password` of the OAuth 2.0 form of a `POST` - and hands it to `Stage.AuthenticateTokenRequest`, which applies every rule of R-AUTH-001 and of the endpoint to it. A `POST` with a header and a form is refused (400). | ignored | `Basic realm="trove"` |
-| every other path below `/v2/` | A trove token as `Basic` or `Bearer` (direct credentials, R-OCI-004), or a registry token as `Bearer`, when both the escaped and the unescaped path lie below `/v2/`. | ignored, for every method (`sessionAllowed`) | `Bearer realm="<base>/v2/_token",service="<host>"`, with `error="invalid_token"` after a rejected credential |
-| every path outside `/v2/` | Unchanged; a value with the prefix `trv_rgt_` is no trove token and is refused at the syntax step without a query. | unchanged | unchanged |
+| `/v2/_token` (`GET`, `POST`) | Not evaluated by the chain. The token service takes the one credential of the request - the `Authorization` header of a `GET` (a Quader token as `Basic` with any user name or as `Bearer`), or the `password` of the OAuth 2.0 form of a `POST` - and hands it to `Stage.AuthenticateTokenRequest`, which applies every rule of R-AUTH-001 and of the endpoint to it. A `POST` with a header and a form is refused (400). | ignored | `Basic realm="quader"` |
+| every other path below `/v2/` | A Quader token as `Basic` or `Bearer` (direct credentials, R-OCI-004), or a registry token as `Bearer`, when both the escaped and the unescaped path lie below `/v2/`. | ignored, for every method (`sessionAllowed`) | `Bearer realm="<base>/v2/_token",service="<host>"`, with `error="invalid_token"` after a rejected credential |
+| every path outside `/v2/` | Unchanged; a value with the prefix `qdr_rgt_` is no Quader token and is refused at the syntax step without a query. | unchanged | unchanged |
 
 The handler never reads the presented secret: it holds an `auth.Presented` value that the stage made from the header or the form, and
 asks it only for the SHA-256 of the secret once the stage accepted it. `Presented` renders its kind only (`String`, `GoString`,
 `LogValue`), and the secret sits behind a pointer, so a reflective print of a struct that holds one shows an address. A registry token
-presented to the token service fails the syntax step of a trove token, so a registry token cannot be exchanged for a new one: the only
-way to extend access past a registry token's expiry is to present the trove token again.
+presented to the token service fails the syntax step of a Quader token, so a registry token cannot be exchanged for a new one: the only
+way to extend access past a registry token's expiry is to present the Quader token again.
 
 `auth.clients.basic.enabled: false` refuses the form's password as it refuses `Basic`, so with Basic off no registry client gets a token
 (Q-OCI-57); the configuration reference and the switch's description say so.
@@ -40,20 +40,20 @@ name a realm of its choosing for itself; the documentation calls that mode devel
 
 ## The registry token
 
-A registry token is `trv_rgt_` + base64url(`1:<key id>:<claims as JSON>`) + `.` + base64url(HMAC-SHA-256(key, the part before the dot)),
+A registry token is `qdr_rgt_` + base64url(`1:<key id>:<claims as JSON>`) + `.` + base64url(HMAC-SHA-256(key, the part before the dot)),
 at most 4 KiB ([token.go](../../internal/auth/registrytoken/token.go)). The claims are:
 
 | Claim | Content | Why |
 |---|---|---|
-| principal kind and ID | the owner of the trove token, none for anonymous | the stage compares it with the cache entry of the trove token |
-| binding | the trove token's ID, type and the SHA-256 of its secret | the key of the token cache of R-AUTH-023, so the registry token is checked through the same cache, gate, throttle and invalidation as its trove token (Q-OCI-50, ADR-163); the stage compares the cached ID, type and owner with the claims |
+| principal kind and ID | the owner of the Quader token, none for anonymous | the stage compares it with the cache entry of the Quader token |
+| binding | the Quader token's ID, type and the SHA-256 of its secret | the key of the token cache of R-AUTH-023, so the registry token is checked through the same cache, gate, throttle and invalidation as its Quader token (Q-OCI-50, ADR-163); the stage compares the cached ID, type and owner with the claims |
 | endpoint | the name of the endpoint the token request arrived on | a token is refused on another endpoint (R-EP-002) |
-| issue and expiry | Unix seconds; the expiry is at most `oci.token_lifetime` after the issue and never after the trove token's expiry | the lifetime of a stolen token |
+| issue and expiry | Unix seconds; the expiry is at most `oci.token_lifetime` after the issue and never after the Quader token's expiry | the lifetime of a stolen token |
 | grant | at most 16 entries of repository, image name and actions (`pull`, `push`, `delete`), and the catalog | a ceiling the enforcement point checks before the decision point |
 
 The claims carry no secret: the hash of a 256-bit random secret allows no guess of it (R-AUTH-023), and it is what the database holds. The
-token is not a reference token: it is stored nowhere, so a database dump or a backup holds none. A restore brings back the trove tokens
-of the snapshot; the restore replays the revocation journal before the installation serves (R-BAK-024, R-HA-054), so a trove token revoked
+token is not a reference token: it is stored nowhere, so a database dump or a backup holds none. A restore brings back the Quader tokens
+of the snapshot; the restore replays the revocation journal before the installation serves (R-BAK-024, R-HA-054), so a Quader token revoked
 after the snapshot is revoked again and its registry tokens stop with it.
 
 A registry token is bound to an endpoint name, not to a host or an installation: it is valid on every host its endpoint serves, and on
@@ -62,9 +62,9 @@ production's key ring accepts production's registry tokens while that token row 
 
 ## Keys
 
-The MAC key is derived with HKDF-SHA-256 from each key of the stored-secret key ring with the info `trove registry token v1`
+The MAC key is derived with HKDF-SHA-256 from each key of the stored-secret key ring with the info `quader registry token v1`
 (`secrets.KeyRing.Derive` in [keyring.go](../../internal/secrets/keyring.go), `NewSigner` in [token.go](../../internal/auth/registrytoken/token.go)).
-The key files themselves never leave the `secrets` package, and no other purpose shares the derived key (the fingerprints use `trove
+The key files themselves never leave the `secrets` package, and no other purpose shares the derived key (the fingerprints use `quader
 fingerprint v1`). The active key's derivation signs; every key's derivation verifies.
 
 A rotation of the ring (R-ARCH-021) therefore needs nothing of its own: during step 1 (the new key in every ring, not active) nothing
@@ -82,18 +82,18 @@ the other one, which is why R-ARCH-021 adds a key everywhere before any replica 
 | 2 | The MAC with the named key, compared in constant time | one HMAC | 401 `invalid_token` |
 | 3 | The claims parse strictly (no unknown member, no trailing data) and keep the rules of the issuer | a JSON decode of authenticated bytes | 401 `invalid_token` |
 | 4 | The expiry against the replica's clock; the issue time at most one minute ahead of it; the span at most `oci.token_lifetime`; the endpoint of the request | none | 401 `invalid_token` |
-| 5 | The endpoint's token types for the trove token's type (R-EP-010) | none | 401 `invalid_token` |
-| 6 | The trove token through the token cache with the hash (`token.Service.CheckSecretHash`) | a query only on a cache miss or while the freshness gate bypasses the cache | revoked, expired, unknown: 401 `invalid_token`; owner disabled: 401 `principal_disabled`; throttled address: 429; PostgreSQL unreachable: 503 |
+| 5 | The endpoint's token types for the Quader token's type (R-EP-010) | none | 401 `invalid_token` |
+| 6 | The Quader token through the token cache with the hash (`token.Service.CheckSecretHash`) | a query only on a cache miss or while the freshness gate bypasses the cache | revoked, expired, unknown: 401 `invalid_token`; owner disabled: 401 `principal_disabled`; throttled address: 429; PostgreSQL unreachable: 503 |
 | 7 | The cache entry names the token ID, the type and the principal of the claims | none | 401 `invalid_token` |
-| 8 | The endpoint bindings of the trove token's scope (R-EP-011), shared with a trove token presented itself (`Stage.accept`) | none | 401 `invalid_token` |
+| 8 | The endpoint bindings of the Quader token's scope (R-EP-011), shared with a Quader token presented itself (`Stage.accept`) | none | 401 `invalid_token` |
 
-The reason of a refusal goes to `trove_auth_attempts_total`, not to the client. A forged, tampered, expired or foreign token is refused at
+The reason of a refusal goes to `quader_auth_attempts_total`, not to the client. A forged, tampered, expired or foreign token is refused at
 steps 1 to 4 and costs no database query (`TestRegistryTokensAgainstTheRealStores` in [registrytoken_test.go](../../test/integration/identity/registrytoken_test.go),
 with a statement counter on the replica's pools); it counts as a failed credential of its address (R-AUTH-038). An anonymous registry
 token stops at step 4 and passes only while the endpoint admits anonymous requests (`auth.anonymous`); what it then pulls is decided by the visibility levels
 ([visibility.md](visibility.md)), as for a request without a token.
 
-The result is the trove token's principal with the trove token's scope as its ceiling (R-AUTH-024) and the grant as a further ceiling.
+The result is the Quader token's principal with the Quader token's scope as its ceiling (R-AUTH-024) and the grant as a further ceiling.
 
 ## The enforcement point
 
@@ -131,14 +131,14 @@ Q-OCI-56), and nothing can be mounted below `/v2/` around it:
   administrator rights (`insufficientText` in [enforce.go](../../internal/api/registry/enforce.go)). It is built from the request's
   address and the caller's own token scope, never from a lookup of the repository, so an existing repository, one the caller may not
   read and one that does not exist are answered with the same text; it does not say which right the owner lacks, because that would
-  need the decision point's answer for the repository. A trove token presented directly keeps the 403 of the decision point, which
+  need the decision point's answer for the repository. A Quader token presented directly keeps the 403 of the decision point, which
   names the action and the target the caller sent, and the 404 `NAME_UNKNOWN` that is byte-identical for a hidden and a missing
   repository. The test is `TestTheRefusalOfATokenWithoutRightsSaysWhyAndNothingAboutTheRepository` in
   [refusal_test.go](../../test/integration/registry/refusal_test.go).
 - **What `Mount` refuses.** A pattern outside `/v2/`, a pattern mounted twice, a route name twice, a route without its example request,
   a repository route under a core route's name, a second version check, and a version check other than `GET` or `HEAD` of `/v2/`.
 
-The version check passes any registry token on `/v2/` itself. A request with a trove token presented directly, or without a credential,
+The version check passes any registry token on `/v2/` itself. A request with a Quader token presented directly, or without a credential,
 is the decision point's alone. `Enforcer.Also` checks a further coordinate, the source of a cross-repository mount, action by action, with
 a cache view as its base repository. `registrytest.Walk` ([walk.go](../../internal/api/registry/registrytest/walk.go)) proves the wiring through the endpoint's whole handler
 with registry tokens in the `Authorization` header (the integration test mints them at the token service, so the proof includes it):
@@ -154,7 +154,7 @@ decision point decides every request again (R-AUTHZ-015).
 - **One handler, one match.** Everything below `/v2/` is the patterns `/v2` and `/v2/{rest...}` on one handler ([register.go](../../internal/api/registry/register.go),
   Q-OCI-100). The handler matches the request itself and serves the route the match names, so the escaped spelling of a core route
   (`/v2/%5Fcatalog`) reaches no handler its match did not name. A registry token on a path that matches no route is refused by the
-  enforcement point; a direct trove token or no credential meets the handler's 404 `NAME_UNKNOWN`.
+  enforcement point; a direct Quader token or no credential meets the handler's 404 `NAME_UNKNOWN`.
 - **The same 404 for what does not exist and what the caller cannot see** (R-AUTHZ-016, R-OCI-001): a path with fewer than three
   segments, a project or repository that does not exist, one of another format and one the decision point hides answer the same body
   (`TestNameUnknownIsTheSameForWhatDoesNotExistAndWhatTheCallerCannotSee` compares the bytes). The decision point is asked
@@ -179,11 +179,11 @@ decision point decides every request again (R-AUTHZ-015).
 
 | Event | Effect on a registry token |
 |---|---|
-| The trove token is revoked, expires, or its owner is disabled | Refused on every replica within `auth.revocation_bound` (2 s), with or without Valkey, because step 6 is the trove token's own lookup (`TestRegistryTokensAgainstTheRealStores`, both Valkey states) |
+| The Quader token is revoked, expires, or its owner is disabled | Refused on every replica within `auth.revocation_bound` (2 s), with or without Valkey, because step 6 is the Quader token's own lookup (`TestRegistryTokensAgainstTheRealStores`, both Valkey states) |
 | A grant of the principal is removed | Requests that need it are refused by the decision point (403 or 404) once the replica's grant index holds the change (R-AUTHZ-015) |
 | The endpoint stops admitting anonymous requests | Every anonymous registry token is refused (the stage reads the endpoint's rule on every request) |
 | The token's key leaves the key ring | Refused |
-| Nothing | Valid until its expiry: `oci.token_lifetime`, 300 s by default, at most 3600 s, never after the trove token's expiry |
+| Nothing | Valid until its expiry: `oci.token_lifetime`, 300 s by default, at most 3600 s, never after the Quader token's expiry |
 
 ## The grant
 
@@ -203,7 +203,7 @@ A token request the stage refuses with 401 writes `auth.registry_token.denied` (
 details, the endpoint in the event's column; never the credential), deduplicated per replica, client address, endpoint, reason and form of
 the credential within `audit.token_rejection_dedup_window` ([events_registry_token.go](../../internal/audit/events_registry_token.go),
 [dedup.go](../../internal/audit/dedup.go), Q-OCI-53). A disabled owner's token writes no `token.rejected`, so this event is its trail;
-a revoked or expired trove token also writes its `token.rejected`. An issued token writes no event. `trove_oci_registry_tokens_total{outcome}`
+a revoked or expired Quader token also writes its `token.rejected`. An issued token writes no event. `quader_oci_registry_tokens_total{outcome}`
 counts `issued`, `anonymous` and `denied` ([metrics.go](../../internal/auth/registrytoken/metrics.go)).
 
 The `Authorization` header is redacted in every log (R-AUTH-001). In any other logged text, a query string included, the scrubber's token
@@ -226,7 +226,7 @@ the pattern stops at the dot, so the 43 characters of the MAC stay in the line. 
 
 The gaps of the spec pages whose mechanism this page describes:
 
-- [H-579](../spec/formats/oci.md#h-579--a-holder-of-the-stored-secret-key-ring-can-mint-registry-tokens): a holder of the stored-secret key ring and of a live trove token's hash can mint registry tokens.
+- [H-579](../spec/formats/oci.md#h-579--a-holder-of-the-stored-secret-key-ring-can-mint-registry-tokens): a holder of the stored-secret key ring and of a live Quader token's hash can mint registry tokens.
 
 ### H-595 · A registry token is a bearer credential for its whole lifetime
 
@@ -235,13 +235,13 @@ the token service that issues it ([token.go](../../internal/api/registry/token.g
 
 Subject: every registry token, of every principal and the anonymous one; the repositories and actions of its grant.
 
-Live since the registry root mounts `/v2/`. A registry token is bound to an endpoint, a principal, a trove token and
-a grant, not to the client that requested it: whoever holds it can present it from any address until it expires or its trove token is
+Live since the registry root mounts `/v2/`. A registry token is bound to an endpoint, a principal, a Quader token and
+a grant, not to the client that requested it: whoever holds it can present it from any address until it expires or its Quader token is
 revoked. Docker and containerd keep it in memory, but a client's debug log, a proxy that records `Authorization` headers or a crash dump
 can carry it.
 
 What makes it real: a leaked registry token of a principal with `push` or `delete` on a repository. Within `oci.token_lifetime` (300 s by
-default, up to 3600 s) its holder can do what the grant names and the principal may still do, without the trove token. Revoking the trove
+default, up to 3600 s) its holder can do what the grant names and the principal may still do, without the Quader token. Revoking the Quader
 token ends it within the revocation bound; nothing ends one registry token alone, and a lower `oci.token_lifetime` is the lever for a
 shorter window.
 
@@ -265,15 +265,15 @@ bounds the number of reads of one request.
 
 Stage: the catalog handler and the enforcement point's check of `registry:catalog:*`.
 
-Subject: the holder of a registry token whose grant has `registry:catalog:*` and pull entries for fewer images than the trove token may
+Subject: the holder of a registry token whose grant has `registry:catalog:*` and pull entries for fewer images than the Quader token may
 read.
 
 Live. The grant is a ceiling for the routes that name an image; for the catalog the ceiling is the route itself, and the names are
-those the trove token's principal may read (R-OCI-017). A registry token requested for one image and the catalog therefore lists every
+those the Quader token's principal may read (R-OCI-017). A registry token requested for one image and the catalog therefore lists every
 image the principal can read, though it cannot pull them with that token.
 
 What makes it real: a registry token handed to a component that should see one image (a build step) and a principal who reads many.
-The token cannot read the images it lists, only learn their names; a scope on the trove token itself narrows the list.
+The token cannot read the images it lists, only learn their names; a scope on the Quader token itself narrows the list.
 
 ### H-650 · Token requests count in the bucket of the client address, whatever the principal's rate-limit class
 
@@ -292,8 +292,8 @@ per-principal limits.
 
 ### H-750 · The OCI client pods of the e2e tier are privileged, and the dev CA is added to a node's containerd
 
-Stage: the dev and CI clusters of the e2e sets `oci*` ([oci-clients.yaml](../../deploy/dev/oci-clients.yaml), `oci_node_setup` in [e2e.sh](../../deploy/dev/e2e.sh)). Not an installation of trove.
+Stage: the dev and CI clusters of the e2e sets `oci*` ([oci-clients.yaml](../../deploy/dev/oci-clients.yaml), `oci_node_setup` in [e2e.sh](../../deploy/dev/e2e.sh)). Not an installation of Quader.
 
-Live wherever those sets run. dockerd and Podman need a privileged container, so the pods `trove-e2e-oci-<i>` run privileged and as root in the namespace `trove-e2e-clients`, whose Pod Security level is `privileged` (Q-OCI-21); a container escape reaches the kind node, and with it every other pod of the cluster. The Kubernetes pull row also copies a forwarder and the dev CA with a `hosts.toml` into the control-plane node (`docker exec`, `docker cp`), so that node's containerd trusts the dev CA for `localhost:<edge port>`. The pods mount no ServiceAccount token and hold no credential of their own (the tests hand each command the token it needs), the namespace holds nothing else, and a dev cluster holds no data of value: the cluster is a throwaway of the runner or the laptop.
+Live wherever those sets run. dockerd and Podman need a privileged container, so the pods `quader-e2e-oci-<i>` run privileged and as root in the namespace `quader-e2e-clients`, whose Pod Security level is `privileged` (Q-OCI-21); a container escape reaches the kind node, and with it every other pod of the cluster. The Kubernetes pull row also copies a forwarder and the dev CA with a `hosts.toml` into the control-plane node (`docker exec`, `docker cp`), so that node's containerd trusts the dev CA for `localhost:<edge port>`. The pods mount no ServiceAccount token and hold no credential of their own (the tests hand each command the token it needs), the namespace holds nothing else, and a dev cluster holds no data of value: the cluster is a throwaway of the runner or the laptop.
 
 What makes it real: running the sets on a cluster that is not a throwaway (nothing in the repository does), or a malicious image in the pinned digests. The pins are digests in [tools/versions.env](../../tools/versions.env) that Renovate moves, so a changed pin is a reviewed pull request.

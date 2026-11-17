@@ -48,7 +48,7 @@ func TestBastionLong_R_BAS_049_ReplicaLost(t *testing.T) {
 					}
 					victim := ps[0].Name
 					survivor = ps[1].Name
-					hitsBefore = msum(basMetrics(t, survivor), "trove_bastion_requests_total", `class="artifact"`, `result="hit"`)
+					hitsBefore = msum(basMetrics(t, survivor), "quader_bastion_requests_total", `class="artifact"`, `result="hit"`)
 					start := time.Now()
 					kb(t, "delete", "pod", victim, "--grace-period=0", "--force")
 					waitBastionReady(t, site, 2)
@@ -56,7 +56,7 @@ func TestBastionLong_R_BAS_049_ReplicaLost(t *testing.T) {
 					t.Logf("%s was force-deleted; the pair was ready again after %s", victim, replacement.Round(time.Second))
 				},
 				check: func(t *testing.T, f *basFaultRecord) {
-					hitsAfter = msum(basMetrics(t, survivor), "trove_bastion_requests_total", `class="artifact"`, `result="hit"`)
+					hitsAfter = msum(basMetrics(t, survivor), "quader_bastion_requests_total", `class="artifact"`, `result="hit"`)
 					if hitsAfter <= hitsBefore {
 						t.Errorf("the surviving replica %s served no artifact from its cache during the loss (hits %v to %v): warm content was not served", survivor, hitsBefore, hitsAfter)
 					}
@@ -104,7 +104,7 @@ func TestBastionLong_R_BAS_049_MainFailover(t *testing.T) {
 					t.Fatalf("the main installation has %d packages pods, want at least 2", len(ps))
 				}
 				kn(t, "delete", "pod", ps[0].Name, "--grace-period=0", "--force")
-				kn(t, "rollout", "status", "deployment/trove-packages", "--timeout=5m")
+				kn(t, "rollout", "status", "deployment/quader-packages", "--timeout=5m")
 				waitServingSettled(t)
 			},
 		},
@@ -119,8 +119,8 @@ func TestBastionLong_R_BAS_049_RollingUpgradeMain(t *testing.T) {
 	env := basFx(t)
 	restart := func(role string) func() {
 		return func() {
-			kn(t, "rollout", "restart", "deployment/trove-"+role)
-			kn(t, "rollout", "status", "deployment/trove-"+role, "--timeout=10m")
+			kn(t, "rollout", "restart", "deployment/quader-"+role)
+			kn(t, "rollout", "status", "deployment/quader-"+role, "--timeout=10m")
 			waitServingSettled(t)
 		}
 	}
@@ -157,7 +157,7 @@ func TestBastionLong_R_BAS_049_RollingUpgradeBastion(t *testing.T) {
 				{
 					name: "R-HA-052 R-BAS-045 R-BAS-028 helm upgrade of the Bastion with a changed value that rolls its pods (" + site.variant + ")",
 					run: func() {
-						out, err := basScriptTryEnv([]string{"TROVE_BASTION_HELM_EXTRA=--set-string podAnnotations.e2e-roll=" + basRollTag(env, site.variant)}, "install", site.variant)
+						out, err := basScriptTryEnv([]string{"QUADER_BASTION_HELM_EXTRA=--set-string podAnnotations.e2e-roll=" + basRollTag(env, site.variant)}, "install", site.variant)
 						if err != nil {
 							t.Fatalf("bastion.sh install %s: %v\n%s", site.variant, err, tail(out, 2000))
 						}

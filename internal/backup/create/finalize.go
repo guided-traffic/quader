@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/listing"
-	"github.com/guided-traffic/trove/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/listing"
+	"github.com/guided-traffic/quader/internal/backup/target"
 )
 
 // finalize is the phase 'finalizing' (R-BAK-009): the fenced lease check, the spot check of the pool, the marker check and the
@@ -65,7 +65,7 @@ func (r *runState) finalize(ctx context.Context) error {
 }
 
 // spotCheck sends HeadObject for backup.verify_sample random digests that earlier backups listed (R-BAK-009): a missing object
-// fails the run with pool_damaged and the advice to run `trove backup verify`.
+// fails the run with pool_damaged and the advice to run `quader backup verify`.
 func (r *runState) spotCheck(ctx context.Context) error {
 	if len(r.list.sample) == 0 {
 		return nil
@@ -120,7 +120,7 @@ func (r *runState) buildManifest() (*format.Manifest, error) {
 	blobs.Copied, blobs.CopiedBytes, blobs.Damaged = r.copied.copied, r.copied.bytes, damaged
 	m := &format.Manifest{
 		Format: format.ManifestFormat, BackupID: r.id, InstallationID: r.facts.InstallationID, Incarnation: r.facts.Incarnation,
-		Trove:     format.TroveInfo{Version: d.Version, Revision: d.Revision},
+		Quader:    format.QuaderInfo{Version: d.Version, Revision: d.Revision},
 		Schema:    r.snapInfo.Schema,
 		Postgres:  format.PostgresRef{ServerVersion: r.snapInfo.ServerVersion, Isolation: "repeatable read"},
 		StartedAt: r.started.UTC(), SnapshotAt: r.snapInfo.At.UTC(), CompletedAt: d.Now().UTC(),

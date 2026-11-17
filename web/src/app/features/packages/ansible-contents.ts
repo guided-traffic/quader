@@ -14,7 +14,7 @@ export const CONTENTS_PAGE = 100;
  * hundreds. A row whose entry has documentation links to its page in the Documentation tab; one without is plain text.
  */
 @Component({
-  selector: 'trove-ansible-contents',
+  selector: 'quader-ansible-contents',
   imports: [RouterLink, DataTable],
   template: `
     @if (state() === 'pending') {
@@ -36,7 +36,7 @@ export const CONTENTS_PAGE = 100;
           </select>
         </label>
       </div>
-      <trove-data-table
+      <quader-data-table
         [caption]="caption"
         [columns]="columns"
         [loaded]="tree() !== null"
@@ -67,7 +67,7 @@ export const CONTENTS_PAGE = 100;
             <td translate="no">{{ e.shortDescription }}</td>
           </tr>
         }
-      </trove-data-table>
+      </quader-data-table>
     }
   `,
   styles: `
@@ -75,18 +75,18 @@ export const CONTENTS_PAGE = 100;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: var(--trove-space-3);
+      gap: var(--quader-space-3);
     }
     .state p {
       margin: 0;
     }
     .filter {
-      margin-block-end: var(--trove-space-3);
+      margin-block-end: var(--quader-space-3);
     }
     .picker {
       display: inline-flex;
       flex-direction: column;
-      gap: var(--trove-space-1);
+      gap: var(--quader-space-1);
     }
   `,
 })

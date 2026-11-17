@@ -13,11 +13,11 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/oidc"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/oidc"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The browser routes of the login (R-AUTH-005, R-AUTH-006, R-AUTH-013,
@@ -165,7 +165,7 @@ type loginRequest struct {
 // while the verification slots are taken.
 func (h *Handler) HandleLocalLogin(w http.ResponseWriter, r *http.Request) {
 	if !session.SameOrigin(r, h.o.Origin(r)) {
-		httpserver.Problem(w, r, errs.E(errs.Forbidden, errs.CodeCSRFFailed, "The local login must come from the trove UI (Origin or Sec-Fetch-Site)."))
+		httpserver.Problem(w, r, errs.E(errs.Forbidden, errs.CodeCSRFFailed, "The local login must come from the Quader UI (Origin or Sec-Fetch-Site)."))
 		return
 	}
 	addr := h.o.ClientAddr(r)

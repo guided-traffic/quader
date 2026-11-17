@@ -13,7 +13,7 @@ import { ApiError, isProblem, Problem } from '../../api/problem';
 import { AuthzEpoch } from '../authz-epoch';
 import { SessionStore } from '../session-store';
 
-/** Requests to these prefixes carry the trove conventions; everything else passes untouched. */
+/** Requests to these prefixes carry the Quader conventions; everything else passes untouched. */
 const API_PREFIXES = ['/api/v1/', '/auth/'];
 
 /** Calls whose 401 means "not signed in yet", not "the session ended". */
@@ -59,9 +59,9 @@ function retryAfterSeconds(err: HttpErrorResponse): number | null {
 }
 
 /**
- * Innermost: the headers of the conventions. `Trove-Authz-Min-Epoch` from the tab's epoch
+ * Innermost: the headers of the conventions. `Quader-Authz-Min-Epoch` from the tab's epoch
  * (R-UI-042), `Idempotency-Key` from the request context (R-API-014), JSON accept; and the
- * `Trove-Authz-Epoch` of a successful answer goes back into the epoch holder. CSRF is not here:
+ * `Quader-Authz-Epoch` of a successful answer goes back into the epoch holder. CSRF is not here:
  * Angular's XSRF support adds `X-CSRF-Token` to unsafe same-origin requests
  * (`withXsrfConfiguration`, R-AUTH-012).
  */
@@ -71,13 +71,13 @@ export const conventionsInterceptor: HttpInterceptorFn = (req, next) => {
   let headers = req.headers;
   if (!headers.has('Accept')) headers = headers.set('Accept', 'application/json, application/problem+json');
   const min = epoch.value();
-  if (min !== null) headers = headers.set('Trove-Authz-Min-Epoch', String(min));
+  if (min !== null) headers = headers.set('Quader-Authz-Min-Epoch', String(min));
   const key = req.context.get(IDEMPOTENCY_KEY);
   if (key) headers = headers.set('Idempotency-Key', key);
   return next(req.clone({ headers })).pipe(
     tap((event) => {
       if (event instanceof HttpResponse) {
-        const raw = event.headers.get('Trove-Authz-Epoch');
+        const raw = event.headers.get('Quader-Authz-Epoch');
         if (raw) epoch.note(Number.parseInt(raw, 10));
       }
     }),

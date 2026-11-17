@@ -43,7 +43,7 @@ func TestDebRanges(t *testing.T) {
 }
 
 func TestDebEnvironment(t *testing.T) {
-	l := mustLoad(t, Options{Environ: servableEnv("TROVE_DEB_INDEX_DELAY=5s"), Command: CommandServe})
+	l := mustLoad(t, Options{Environ: servableEnv("QUADER_DEB_INDEX_DELAY=5s"), Command: CommandServe})
 	if l.Config.Deb.IndexDelay != 5*time.Second || l.Sources["deb.index_delay"].Kind != "env" {
 		t.Errorf("index_delay = %s, source = %+v", l.Config.Deb.IndexDelay, l.Sources["deb.index_delay"])
 	}

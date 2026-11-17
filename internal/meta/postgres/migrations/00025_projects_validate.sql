@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Projects (R-AUTHZ-026), expand class (R-HA-018): the foreign keys that 00019 added NOT
 -- VALID are validated here, under a lock that lets reads and writes through.

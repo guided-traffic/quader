@@ -54,18 +54,18 @@ describe('Repository content page', () => {
     expect(text(r.root)).toContain('Images of the web team');
     expect(text(r.root)).not.toContain('not scanned for vulnerabilities yet');
     expect(text(r.root)).toContain('Vulnerabilities');
-    expect(r.root.querySelector('trove-data-table caption')?.textContent).toContain('Images');
-    expect(text(r.root.querySelector('tbody trove-grade .grade-text')!)).toBe('Grade C · OS end of life');
+    expect(r.root.querySelector('quader-data-table caption')?.textContent).toContain('Images');
+    expect(text(r.root.querySelector('tbody quader-grade .grade-text')!)).toBe('Grade C · OS end of life');
     const opener = r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!;
     expect(opener.getAttribute('aria-expanded')).toBe('false');
     opener.click();
     await settle(r.fixture);
     expect(opener.getAttribute('aria-expanded')).toBe('true');
     // Newest push first, with the digest of the format.
-    const rows = [...r.root.querySelectorAll('trove-repository-item-versions tbody tr')];
+    const rows = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')];
     expect(rows[0]?.textContent).toContain('1.2.0');
     expect(rows[0]?.textContent).toContain('sha256:');
-    expect((r.root.querySelector<HTMLInputElement>('trove-repository-item-versions trove-address-field input')?.value ?? r.root.querySelector('trove-repository-item-versions pre')?.textContent)).toMatch(/^docker pull \S*web\/oci-local\/team\/app:1\.2\.0$/);
+    expect((r.root.querySelector<HTMLInputElement>('quader-repository-item-versions quader-address-field input')?.value ?? r.root.querySelector('quader-repository-item-versions pre')?.textContent)).toMatch(/^docker pull \S*web\/oci-local\/team\/app:1\.2\.0$/);
     await expectAccessible(r.root);
   });
 
@@ -74,11 +74,11 @@ describe('Repository content page', () => {
     r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
     await settle(r.fixture);
     const setup = r.get(ClientSetupApi) as FakeClientSetupApi;
-    const rows = [...r.root.querySelectorAll('trove-repository-item-versions tbody tr')];
+    const rows = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')];
     rows.at(-1)!.querySelector<HTMLButtonElement>('button[aria-pressed]')!.click();
     await settle(r.fixture);
     expect(setup.calls.at(-1)?.query).toMatchObject({ client: 'docker', version: '1.1.0', credentials: 'none' });
-    const client = r.root.querySelector<HTMLSelectElement>('trove-repository-item-versions select')!;
+    const client = r.root.querySelector<HTMLSelectElement>('quader-repository-item-versions select')!;
     client.value = 'podman';
     client.dispatchEvent(new Event('change', { bubbles: true }));
     await settle(r.fixture);
@@ -102,13 +102,13 @@ describe('Repository content page', () => {
     const packages = r.get(PackagesApi) as FakePackagesApi;
     expect(packages.listFilters.at(-1)).toMatchObject({ repository: ['web/npm-local'], format: ['npm'], include: ['vulnerabilities'] });
     const row = [...r.root.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.includes('@team-a/ui'))!;
-    expect(text(row.querySelector('trove-grade .grade-text')!)).toBe('Grade C · 2 High');
+    expect(text(row.querySelector('quader-grade .grade-text')!)).toBe('Grade C · 2 High');
     row.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
     await settle(r.fixture);
     const vulnerabilities = r.get(VulnerabilitiesApi) as FakeVulnerabilitiesApi;
     expect(vulnerabilities.calls).toEqual(expect.arrayContaining(['packageReport pkg_01JBQ6V7S3K9 in web/npm-local']));
-    expect(text(r.root.querySelector('trove-repository-item-versions trove-grade .grade-text')!)).toBe('Grade C · 2 High');
-    expect((r.root.querySelector<HTMLInputElement>('trove-repository-item-versions trove-address-field input')?.value ?? r.root.querySelector('trove-repository-item-versions pre')?.textContent)).toBe('npm install @team-a/ui@1.4.0');
+    expect(text(r.root.querySelector('quader-repository-item-versions quader-grade .grade-text')!)).toBe('Grade C · 2 High');
+    expect((r.root.querySelector<HTMLInputElement>('quader-repository-item-versions quader-address-field input')?.value ?? r.root.querySelector('quader-repository-item-versions pre')?.textContent)).toBe('npm install @team-a/ui@1.4.0');
     await expectAccessible(r.root);
   });
 
@@ -121,7 +121,7 @@ describe('Repository content page', () => {
     // The server sorts by name; the browser by grade (Q-UI-373).
     expect(packages.listFilters.at(-1)).toMatchObject({ sort: 'name' });
     const order = ['N/A', 'S', 'A', 'B', 'C', 'D', 'E'];
-    const shown = [...r.root.querySelectorAll('tbody > tr > td trove-grade .grade-letter')].map((e) => order.indexOf(e.textContent?.trim() ?? ''));
+    const shown = [...r.root.querySelectorAll('tbody > tr > td quader-grade .grade-letter')].map((e) => order.indexOf(e.textContent?.trim() ?? ''));
     expect(shown.length).toBeGreaterThan(1);
     expect(shown[0]).toBe(order.indexOf('E'));
     expect(shown).toEqual([...shown].sort((a, b) => b - a));
@@ -132,7 +132,7 @@ describe('Repository content page', () => {
   it('R-UI-094 a list asked before the format was known to be scanned is asked again with the grades', async () => {
     @Component({
       imports: [RepositoryItems],
-      template: `<trove-repository-items repository="web/npm-local" format="npm" [shape]="shape" [scanned]="scanned()" />`,
+      template: `<quader-repository-items repository="web/npm-local" format="npm" [shape]="shape" [scanned]="scanned()" />`,
     })
     class Host {
       readonly shape = contentShapeOf('npm');
@@ -151,7 +151,7 @@ describe('Repository content page', () => {
       packages.packages = packages.packages.map((p) => ({ ...p, repositories: ['web/npm-local'] }));
     });
     expect([...r.root.querySelectorAll('thead th')].some((th) => th.textContent?.includes('Vulnerabilities'))).toBe(false);
-    expect(r.root.querySelector('tbody trove-grade')).toBeNull();
+    expect(r.root.querySelector('tbody quader-grade')).toBeNull();
   });
 
   it('R-UI-052 a generic repository lists its files with a link to the file and a copyable address, and a folder opens in place', async () => {
@@ -171,7 +171,7 @@ describe('Repository content page', () => {
       },
     });
     await settle(r.fixture);
-    expect(r.root.querySelector('trove-data-table caption')?.textContent).toContain('Files');
+    expect(r.root.querySelector('quader-data-table caption')?.textContent).toContain('Files');
     expect(text(r.root)).toContain('app.tar.gz');
     expect(r.root.querySelector<HTMLAnchorElement>('tbody a[href$="/browse/generic-local/app.tar.gz"]')).not.toBeNull();
     expect(generic.format).toBe('generic');
@@ -193,12 +193,12 @@ describe('Repository content page', () => {
       return r;
     };
     const r = await empty(false);
-    const state = r.root.querySelector('trove-data-table trove-empty-state')!;
+    const state = r.root.querySelector('quader-data-table quader-empty-state')!;
     expect(text(state)).toContain('This repository holds no files yet. Upload a file with your client.');
     expect(state.querySelector('a.btn')?.getAttribute('href')).toBe('/setup?repository=web%2Fgeneric-local');
     await expectAccessible(r.root);
     const off = await empty(true);
-    expect(off.root.querySelector('trove-data-table trove-empty-state a')).toBeNull();
+    expect(off.root.querySelector('quader-data-table quader-empty-state a')).toBeNull();
   });
 
   it('R-UI-052 a virtual repository names what it resolves from and a remote one says it lists what clients fetched', async () => {
@@ -223,10 +223,10 @@ describe('Repository content page', () => {
     const opener = r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!;
     opener.click();
     await settle(r.fixture);
-    const headers = [...r.root.querySelectorAll('trove-repository-item-versions th')].map((th) => th.textContent?.trim());
+    const headers = [...r.root.querySelectorAll('quader-repository-item-versions th')].map((th) => th.textContent?.trim());
     expect(headers).toContain('Fetched');
     expect(headers).not.toContain('Pushed');
-    const rows = [...r.root.querySelectorAll('trove-repository-item-versions tbody tr')];
+    const rows = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')];
     expect(rows[0]?.textContent).toContain('sha256:');
     await expectAccessible(r.root);
   });
@@ -249,8 +249,8 @@ describe('Repository content page', () => {
   });
 
   it('R-UI-052 the header shows the client address alone; Details names the address for downloads by path', async () => {
-    const npm = 'https://trove.example.net/api/npm/web/npm-local/';
-    const files = 'https://trove.example.net/files/web/npm-local/';
+    const npm = 'https://quader.example.net/api/npm/web/npm-local/';
+    const files = 'https://quader.example.net/files/web/npm-local/';
     const r = await open(NPM_REPO, ({ catalog }) => {
       // The consumer view of a reader: the protocol address first, the raw file address after it (R-REPO-010).
       catalog.get = async () => ({
@@ -258,19 +258,19 @@ describe('Repository content page', () => {
         etag: '"1"',
       });
     });
-    const header = [...r.root.querySelectorAll<HTMLInputElement>('trove-page-header trove-address-field input')].map((i) => i.value);
+    const header = [...r.root.querySelectorAll<HTMLInputElement>('quader-page-header quader-address-field input')].map((i) => i.value);
     expect(header).toEqual([npm]);
-    const details = r.root.querySelector('trove-disclosure')!;
-    expect(details.querySelector<HTMLInputElement>('trove-address-field input')?.value).toBe(files);
+    const details = r.root.querySelector('quader-disclosure')!;
+    expect(details.querySelector<HTMLInputElement>('quader-address-field input')?.value).toBe(files);
     expect(text(details)).toContain('Address for downloads by path (curl, wget)');
-    expect(details.querySelector('trove-address-field button')?.getAttribute('aria-label')).toBe('Copy address for downloads by path');
+    expect(details.querySelector('quader-address-field button')?.getAttribute('aria-label')).toBe('Copy address for downloads by path');
     await expectAccessible(r.root);
   });
 
   it('R-UI-052 a disabled repository offers no Set up client and says that it is disabled', async () => {
     const r = await open({ ...NPM_REPO, disabled: true });
     expect(r.root.querySelector('.page-header-actions a.btn-confirm')).toBeNull();
-    expect(text(r.root.querySelector('trove-page-header')!)).toContain('disabled');
+    expect(text(r.root.querySelector('quader-page-header')!)).toContain('disabled');
     await expectAccessible(r.root);
   });
 
@@ -284,7 +284,7 @@ describe('Repository content page', () => {
 
   it('R-UI-066 R-UI-067 the header shows the client address and offers Set up client as its primary action', async () => {
     const r = await open(NPM_REPO);
-    const field = r.root.querySelector<HTMLInputElement>('trove-page-header trove-address-field input');
+    const field = r.root.querySelector<HTMLInputElement>('quader-page-header quader-address-field input');
     expect(field?.value).toContain('web/npm-local/');
     const primary = r.root.querySelector('.page-header-actions a.btn-confirm');
     expect(primary?.textContent?.trim()).toBe('Set up client');

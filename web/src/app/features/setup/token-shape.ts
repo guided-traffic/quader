@@ -1,12 +1,12 @@
 /*
- * The offline shape check of a pasted trove token (INV-8, R-AUTH-022): a known prefix, 57
+ * The offline shape check of a pasted Quader token (INV-8, R-AUTH-022): a known prefix, 57
  * characters in all, base62 digits, and a trailing 6-digit base62 CRC-32 (IEEE) of everything
  * before it. It is no security mechanism: it only catches a mistyped or truncated paste before the
  * value is put into a configuration file. The value never leaves the browser.
  */
 
 const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-const PREFIXES = ['trv_pat_', 'trv_sat_', 'trv_cit_'] as const;
+const PREFIXES = ['qdr_pat_', 'qdr_sat_', 'qdr_cit_'] as const;
 const TOKEN_LENGTH = 57;
 const CHECKSUM_DIGITS = 6;
 
@@ -42,7 +42,7 @@ export function base62(value: number, width: number): string {
   return out.padStart(width, '0');
 }
 
-/** Why a pasted value is not a trove token; `ok` when it passes. Surrounding space is ignored. */
+/** Why a pasted value is not a Quader token; `ok` when it passes. Surrounding space is ignored. */
 export function checkTokenShape(input: string): TokenShape {
   const token = input.trim();
   if (token === '') return 'empty';

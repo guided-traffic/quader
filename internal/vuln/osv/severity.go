@@ -11,7 +11,7 @@ import (
 	gocvss31 "github.com/pandatix/go-cvss/31"
 	gocvss40 "github.com/pandatix/go-cvss/40"
 
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // Vector is one CVSS vector of a record that parsed, with its score and the level of its version's rating scale

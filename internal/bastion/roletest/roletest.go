@@ -1,5 +1,5 @@
 // Package roletest is the end-to-end scenario of the whole Bastion role in one process (R-BAS-048): the server
-// is started from a configuration file exactly as `trove serve --role bastion` starts it (config.LoadBastion on
+// is started from a configuration file exactly as `quader serve --role bastion` starts it (config.LoadBastion on
 // the file, then the server of internal/bastion/server), against the in-process main installation of
 // internal/bastion/maintest over TLS. The scenario is the same for every cache backend; a test supplies the
 // backend's part of the configuration. It is a test helper and nothing in the role imports it.
@@ -28,11 +28,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/engine"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
-	"github.com/guided-traffic/trove/internal/bastion/server"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/bastion/engine"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/server"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // Backend is the cache backend a run of the scenario uses.
@@ -166,7 +166,7 @@ func Run(t *testing.T, b Backend) {
 
 	tokenFile := filepath.Join(dir, "token")
 	write(t, tokenFile, main.NewToken()+"\n")
-	cfgFile := filepath.Join(dir, "trove.yaml")
+	cfgFile := filepath.Join(dir, "quader.yaml")
 	write(t, cfgFile, fmt.Sprintf(`server:
   listen: 127.0.0.1:0
   ops_listen: localhost:0
@@ -190,14 +190,14 @@ bastion:
     flush_interval: 1h
 %s`, hostName, main.URL(), tokenFile, main.CAFile(dir), period, grace, b.YAML(dir)))
 
-	// What `trove serve --role bastion` does with the file, then the server of the role.
+	// What `quader serve --role bastion` does with the file, then the server of the role.
 	loaded, err := config.LoadBastion(config.Options{File: cfgFile, Command: config.CommandServe})
 	if err != nil {
 		t.Fatalf("config: %v", err)
 	}
 	logs := &syncBuffer{}
 	srv, err := server.New(server.Options{
-		Loaded: loaded, Environ: []string{"TROVE_POD_NAME=bastion-e2e"}, LogWriter: logs, DrainDelay: 10 * time.Millisecond,
+		Loaded: loaded, Environ: []string{"QUADER_POD_NAME=bastion-e2e"}, LogWriter: logs, DrainDelay: 10 * time.Millisecond,
 		Deps: func(d *engine.Deps) { d.Now = ck.Now },
 	})
 	if err != nil {
@@ -213,10 +213,10 @@ bastion:
 	})
 	client, ops := "http://"+srv.ClientAddr().String(), "http://"+srv.OpsAddr().String()
 	eventually(t, 20*time.Second, "ready and connected", func() bool {
-		return srv.Health().Ready() && strings.Contains(metrics(t, b.Client, ops), "\ntrove_bastion_main_reachable 1\n")
+		return srv.Health().Ready() && strings.Contains(metrics(t, b.Client, ops), "\nquader_bastion_main_reachable 1\n")
 	})
 
-	reader1, reader2, reader3 := maintest.GenerateTokenWithPrefix(t, "trv_pat_"), maintest.GenerateTokenWithPrefix(t, "trv_pat_"), maintest.GenerateTokenWithPrefix(t, "trv_pat_")
+	reader1, reader2, reader3 := maintest.GenerateTokenWithPrefix(t, "qdr_pat_"), maintest.GenerateTokenWithPrefix(t, "qdr_pat_"), maintest.GenerateTokenWithPrefix(t, "qdr_pat_")
 	w.add(reader1, "tok-1")
 	w.add(reader2, "tok-2")
 	get := func(tok string) (int, []byte, http.Header) { return fetch(t, b.Client, client+pkg, tok) }
@@ -271,7 +271,7 @@ bastion:
 	// The main installation is cut off: the replica notices at its next handshake.
 	main.SetDown(true)
 	ck.Advance(6 * time.Second)
-	eventually(t, 20*time.Second, "unreachable", func() bool { return strings.Contains(metrics(t, b.Client, ops), "\ntrove_bastion_main_reachable 0\n") })
+	eventually(t, 20*time.Second, "unreachable", func() bool { return strings.Contains(metrics(t, b.Client, ops), "\nquader_bastion_main_reachable 0\n") })
 	f0, c0 = forwards(), checks()
 	// Past the period, inside the grace period: a reader the replica knows is still served from the cache.
 	ck.Advance(period)

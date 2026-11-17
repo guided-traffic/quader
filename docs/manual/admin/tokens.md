@@ -6,11 +6,11 @@ How administrators oversee the tokens of an installation: the Tokens screen, the
 
 | Type | Prefix | Owner | Created by |
 |---|---|---|---|
-| Personal access token (`pat`) | `trv_pat_` | A user | The user, under **Personal tokens**; nobody creates one for somebody else |
-| Service-account token (`sat`) | `trv_sat_` | A service account | An administrator, on the service account's screen or with the command line; for a service account of a project, also an Owner of the project |
-| CI token (`cit`) | `trv_cit_` | A CI pipeline | The token exchange of a GitLab CI job (`POST /api/v1/auth/oidc/token`), which lives minutes and is revoked as the job ends. See [GitLab CI federation](gitlab-ci.md) |
+| Personal access token (`pat`) | `qdr_pat_` | A user | The user, under **Personal tokens**; nobody creates one for somebody else |
+| Service-account token (`sat`) | `qdr_sat_` | A service account | An administrator, on the service account's screen or with the command line; for a service account of a project, also an Owner of the project |
+| CI token (`cit`) | `qdr_cit_` | A CI pipeline | The token exchange of a GitLab CI job (`POST /api/v1/auth/oidc/token`), which lives minutes and is revoked as the job ends. See [GitLab CI federation](gitlab-ci.md) |
 
-A token acts as its owner and its scope can only narrow the owner's permissions. trove stores the SHA-256 of a token, never the value; no event, log line or answer except the one that creates it holds the value. [Personal access tokens](../user/access-tokens.md) is the users' view of the same mechanisms.
+A token acts as its owner and its scope can only narrow the owner's permissions. Quader stores the SHA-256 of a token, never the value; no event, log line or answer except the one that creates it holds the value. [Personal access tokens](../user/access-tokens.md) is the users' view of the same mechanisms.
 
 ## The Tokens screen
 
@@ -26,7 +26,7 @@ The filter panel narrows the list:
 | **Expires before** | A date |
 | **Not used for (days)** | A number of days |
 
-**Not used for (days)** lists the tokens whose last use is older than that many days, and the tokens that were never used. trove records the last use of a token (time and client address) when the token authenticates a request, in batches: each replica flushes every 60 seconds and at shutdown, and a token's row changes at most once per `auth.tokens.last_used_granularity` (default `5m`), so the time can be a few minutes behind and a replica that is killed loses at most one interval of uses. A token that has not been used since this was introduced shows no last use.
+**Not used for (days)** lists the tokens whose last use is older than that many days, and the tokens that were never used. Quader records the last use of a token (time and client address) when the token authenticates a request, in batches: each replica flushes every 60 seconds and at shutdown, and a token's row changes at most once per `auth.tokens.last_used_granularity` (default `5m`), so the time can be a few minutes behind and a replica that is killed loses at most one interval of uses. A token that has not been used since this was introduced shows no last use.
 
 A token with administrator scope whose owner does not hold the administrator role now shows **Administrator rights inactive: the owner is no administrator now** in its scope cell; the token is not revoked, and its rights are back when the owner holds the role again. To revoke, choose **Revoke** on a row, or tick active tokens and choose **Revoke selected**; both ask for confirmation. **Revoke by value** takes a leaked token: paste it into **Token value** and choose **Revoke token**. The field is cleared whatever the answer. An administrator is told whose token was revoked. Anyone else, and anyone who pastes a value that is not a token, gets the same neutral message that the request was accepted: it does not say whether the value was a token, so the screen cannot be used to test guesses.
 
@@ -34,22 +34,22 @@ A token with administrator scope whose owner does not hold the administrator rol
 
 - **A user's screen** (**Admin area › Identity › Users**) lists the user's tokens in the section **Tokens** (open when the user holds a token; it stays open after the last one is revoked), with **Revoke**; **Revoke all tokens** is a red button in the section **Advanced** at the end of the screen. Nobody creates or rotates a personal token for another user. Disabling a user offers **Also revoke all tokens of this user**; without it the tokens remain but answer `401` `principal_disabled` while the user is disabled. Deleting a user removes the tokens.
 - **A service account's screen** (**Admin area › Identity › Service accounts**) has a section **Tokens** (open when the account holds a token; it stays open after the last one is revoked) with **Create token**, **Rotate** and **Revoke**; **Revoke all tokens** is a red button in the section **Advanced** at the end of the screen. The form is the one of personal tokens, plus the lifetime **Never expires** (see [Lifetime limits and defaults](#lifetime-limits-and-defaults)). **Administrator: everything on this installation** is offered only for an account of no project that holds the administrator role itself (the account's **Details** say so); for any other account the choice would take effect nowhere. The token then carries `inherit` with `admin`, and works as an administrator only while the account holds the role. The section needs the permission to read tokens. Creating and rotating a service-account token needs the administrator role and a recent sign-in, or a token of the account itself; the buttons **Create token** and **Rotate** therefore appear for the administrator role only, not for a holder of the permission to change identities alone (for example a security administrator), whom the server would refuse. Disabling the account offers **Also revoke all tokens of this account**; deleting it removes its tokens.
-- **A project's service account** (`sa:<projectKey>/<name>`, on the project page) is managed by the Owners of its project without any system role; see [Service accounts of a project](projects.md#service-accounts-of-a-project). They create its tokens with `POST /api/v1/projects/<projectKey>/service-accounts/<name>/tokens` and revoke all of them with `DELETE` on the same path; they do not rotate tokens. A token an Owner creates always expires, at most after the maximum lifetime of **Service account tokens** (a longer lifetime is refused with `ttl_exceeds_maximum`, a non-expiring one is refused too); its scope has no administrator scope and names no system item (`invalid_scope`), and it cannot rotate itself (`selfRotatable: true` is refused). An Owner may bind it to endpoints like any service-account token. An administrator of trove creates the tokens of a project's service account under the rules of every service account.
+- **A project's service account** (`sa:<projectKey>/<name>`, on the project page) is managed by the Owners of its project without any system role; see [Service accounts of a project](projects.md#service-accounts-of-a-project). They create its tokens with `POST /api/v1/projects/<projectKey>/service-accounts/<name>/tokens` and revoke all of them with `DELETE` on the same path; they do not rotate tokens. A token an Owner creates always expires, at most after the maximum lifetime of **Service account tokens** (a longer lifetime is refused with `ttl_exceeds_maximum`, a non-expiring one is refused too); its scope has no administrator scope and names no system item (`invalid_scope`), and it cannot rotate itself (`selfRotatable: true` is refused). An Owner may bind it to endpoints like any service-account token. An administrator of Quader creates the tokens of a project's service account under the rules of every service account.
 
-A rotation creates a new value with the same scope and gives the old one an overlap of **Not at all (revoked now)**, **One hour** or **One day** (the API accepts up to 86,400 seconds). If the token is bound to an endpoint that no longer accepts its type (the endpoint's `auth.token_types` changed, or the token was bound before trove checked this), the rotation is refused with `invalid_scope` naming the endpoint, because the new token would work nowhere; the old token stays as it is and can be revoked.
+A rotation creates a new value with the same scope and gives the old one an overlap of **Not at all (revoked now)**, **One hour** or **One day** (the API accepts up to 86,400 seconds). If the token is bound to an endpoint that no longer accepts its type (the endpoint's `auth.token_types` changed, or the token was bound before Quader checked this), the rotation is refused with `invalid_scope` naming the endpoint, because the new token would work nowhere; the old token stays as it is and can be revoked.
 
 ### From the command line
 
-The `trove` binary creates and revokes service-account tokens without the UI, with the installation's configuration (`--config`) and its own database connection. It records the actor `admin-cli` in the audit trail.
+The `quader` binary creates and revokes service-account tokens without the UI, with the installation's configuration (`--config`) and its own database connection. It records the actor `admin-cli` in the audit trail.
 
 ```shell
-trove admin service-account create ci-builds --description "CI builds"   # example
-trove admin token create --service-account ci-builds --ttl 720h --scope-file scope.json
-trove admin token revoke --id 0192f1d2-7c4e-7a51-9b0c-3f2e4d5c6b7a          # example ID
-trove admin token revoke --value-stdin < leaked.txt
+quader admin service-account create ci-builds --description "CI builds"   # example
+quader admin token create --service-account ci-builds --ttl 720h --scope-file scope.json
+quader admin token revoke --id 0192f1d2-7c4e-7a51-9b0c-3f2e4d5c6b7a          # example ID
+quader admin token revoke --value-stdin < leaked.txt
 ```
 
-`token create` prints only the value, so `T=$(trove admin token create …)` captures it; its lifetime is 15 minutes unless `--ttl` says otherwise, at most the service-account maximum. Without `--scope-file` the token has all repository permissions of the account. The commands create and address service accounts of no project only; the service accounts of a project and their tokens are managed through the API and the project's page.
+`token create` prints only the value, so `T=$(quader admin token create …)` captures it; its lifetime is 15 minutes unless `--ttl` says otherwise, at most the service-account maximum. Without `--scope-file` the token has all repository permissions of the account. The commands create and address service accounts of no project only; the service accounts of a project and their tokens are managed through the API and the project's page.
 
 ## Scopes
 
@@ -95,7 +95,7 @@ auth:
       sat: 20                           # default
 ui:
   client_setup:
-    token_env_var: TROVE_TOKEN          # default; the variable the snippets and guides read the token from
+    token_env_var: QUADER_TOKEN          # default; the variable the snippets and guides read the token from
     token_ttl: 720h                     # default; lifetime of a token created on the Client setup page
 ```
 
@@ -106,7 +106,7 @@ What a create request may ask for:
 - A non-expiring token (`ttlSeconds: 0`) only for a service account, only while `allow_non_expiring` is true (`400` `non_expiring_not_allowed`), and only by an administrator (`403` `non_expiring_restricted`).
 - At most the number of active tokens of `max_active_per_principal` (`409` `token_limit_reached`). With `allowed_groups` set, only members of those groups create personal tokens (`403` `pat_not_allowed`).
 
-The [configuration reference](https://github.com/guided-traffic/trove#configuration-keys) lists every key; [Configuration](configuration.md) explains how to set them.
+The [configuration reference](https://github.com/guided-traffic/quader#configuration-keys) lists every key; [Configuration](configuration.md) explains how to set them.
 
 ## Binding tokens to endpoints
 
@@ -120,7 +120,7 @@ Each endpoint decides which credentials it accepts, under `server.endpoints.<nam
 
 A token whose `endpoints` list is not empty works only on the endpoints it names; list `default` too if it should also work on the main address. The names are checked against the configuration when the token is created and kept on rotation. If an endpoint is later removed from the configuration, the token lists show **Bound to an endpoint that is not configured:** with the name; the token is valid on none of them.
 
-The token form shows the field **Endpoints** when you may read endpoints: one checkbox per configured endpoint that accepts the type of the token (personal tokens: the endpoints that list `pat` under `auth.token_types`; service-account tokens: those that list `sat`). Tick the endpoints the token is valid on; tick none and the token is unbound. The binding is part of the scope, so it cannot be changed afterwards and rotation keeps it. Without the permission to read endpoints the field is missing and the token is created unbound. The same binding is possible with the `--scope-file` of `trove admin token create`, or with `POST /api/v1/service-accounts/<name>/tokens` (`POST /api/v1/projects/<projectKey>/service-accounts/<name>/tokens` for a project's service account) and the scope as its `scope` member. The API caller is an administrator with a recent sign-in, an Owner of the account's project for a project's service account, or a token of the service account itself under the derivation rule above; an administrator's personal token from the UI form exercises no role and is refused. A binding to an endpoint that does not accept the type of the token answers `400` `invalid_scope` and names the endpoint, in the API and in `trove admin token create` alike: such a token would be refused on that endpoint by its type and on every other by its binding. A scope for a customer endpoint `customers` (example values):
+The token form shows the field **Endpoints** when you may read endpoints: one checkbox per configured endpoint that accepts the type of the token (personal tokens: the endpoints that list `pat` under `auth.token_types`; service-account tokens: those that list `sat`). Tick the endpoints the token is valid on; tick none and the token is unbound. The binding is part of the scope, so it cannot be changed afterwards and rotation keeps it. Without the permission to read endpoints the field is missing and the token is created unbound. The same binding is possible with the `--scope-file` of `quader admin token create`, or with `POST /api/v1/service-accounts/<name>/tokens` (`POST /api/v1/projects/<projectKey>/service-accounts/<name>/tokens` for a project's service account) and the scope as its `scope` member. The API caller is an administrator with a recent sign-in, an Owner of the account's project for a project's service account, or a token of the service account itself under the derivation rule above; an administrator's personal token from the UI form exercises no role and is refused. A binding to an endpoint that does not accept the type of the token answers `400` `invalid_scope` and names the endpoint, in the API and in `quader admin token create` alike: such a token would be refused on that endpoint by its type and on every other by its binding. A scope for a customer endpoint `customers` (example values):
 
 ```json
 {
@@ -131,11 +131,11 @@ The token form shows the field **Endpoints** when you may read endpoints: one ch
 }
 ```
 
-A virtual repository needs its members in the grant as well, as above. A refused credential answers `401` `invalid_token` like an unknown one. trove counts each refusal in `trove_endpoint_credentials_refused_total` by endpoint and reason (`token_type`, `token_binding`, `anonymous`) and records a refused token as `token.rejected` with the reason `endpoint_not_accepted`; these refusals do not count towards the protection below. [Endpoints and exposure rules](endpoints.md) describes the rest of the endpoint configuration.
+A virtual repository needs its members in the grant as well, as above. A refused credential answers `401` `invalid_token` like an unknown one. Quader counts each refusal in `quader_endpoint_credentials_refused_total` by endpoint and reason (`token_type`, `token_binding`, `anonymous`) and records a refused token as `token.rejected` with the reason `endpoint_not_accepted`; these refusals do not count towards the protection below. [Endpoints and exposure rules](endpoints.md) describes the rest of the endpoint configuration.
 
 ## Revocation and its propagation
 
-A token is revoked by its owner, by a holder of the permission to revoke tokens, by value through `POST /api/v1/tokens/revoke` (open to anyone who has the value), or with `trove admin token revoke`. Revoking is final and idempotent.
+A token is revoked by its owner, by a holder of the permission to revoke tokens, by value through `POST /api/v1/tokens/revoke` (open to anyone who has the value), or with `quader admin token revoke`. Revoking is final and idempotent.
 
 - **Cascade.** Tokens created with the revoked token are revoked with it. A revocation by value also follows rotations forward, in case the value was rotated by whoever found it.
 - **Propagation.** Every replica refuses a revoked token within `auth.revocation_bound`, 2 seconds by default, also while Valkey is unavailable: the replicas learn of the change from PostgreSQL, and a replica that cannot confirm it is up to date checks every token in PostgreSQL instead of its cache.
@@ -158,7 +158,7 @@ The expiry notice is this event; this version sends no mail. The token lists als
 
 ## Protection against guessing credentials
 
-trove counts rejected credentials per client address across all replicas: malformed, unknown, revoked and expired tokens. A disabled owner, a storage failure and an endpoint's type or binding refusal do not count.
+Quader counts rejected credentials per client address across all replicas: malformed, unknown, revoked and expired tokens. A disabled owner, a storage failure and an endpoint's type or binding refusal do not count.
 
 ```yaml
 auth:

@@ -19,10 +19,10 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
  * shows this page in its place for a format the installation does not have (`unknownFormat`).
  */
 @Component({
-  selector: 'trove-repository-format-chooser',
+  selector: 'quader-repository-format-chooser',
   imports: [RouterLink, ErrorNotice, FormatIconView, PageHeader],
   template: `
-    <trove-page-header
+    <quader-page-header
       i18n-heading="@@repo.new.heading"
       heading="New repository"
       i18n-description="@@repo.new.description"
@@ -35,7 +35,7 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
       </p>
     }
     @if (loadFailure(); as f) {
-      <trove-error-notice [error]="f" (retry)="formats.reload()" />
+      <quader-error-notice [error]="f" (retry)="formats.reload()" />
     } @else if (formats.isLoading()) {
       <p role="status" i18n="@@repo.loading">Loading.</p>
     } @else {
@@ -66,7 +66,7 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
         @for (f of shown(); track f.name) {
           <li>
             <a class="tile" [routerLink]="linkOf(f)" [queryParams]="query$()">
-              <trove-format-icon class="tile-icon" [format]="f.name" />
+              <quader-format-icon class="tile-icon" [format]="f.name" />
               <span class="tile-name" translate="no">{{ f.displayName ?? f.name }}</span>
             </a>
           </li>
@@ -78,15 +78,15 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
     .search {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-1);
-      margin-block-end: var(--trove-space-1);
+      gap: var(--quader-space-1);
+      margin-block-end: var(--quader-space-1);
     }
     .tiles {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-      gap: var(--trove-space-3);
+      gap: var(--quader-space-3);
       max-inline-size: 56rem;
-      margin: var(--trove-space-3) 0 0;
+      margin: var(--quader-space-3) 0 0;
       padding: 0;
       list-style: none;
     }
@@ -94,22 +94,22 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
       block-size: 100%;
       box-sizing: border-box;
-      padding: var(--trove-space-4) var(--trove-space-2);
-      border: 1px solid var(--trove-border-strong);
-      border-radius: var(--trove-radius-l);
-      background: var(--trove-surface-raised);
-      color: var(--trove-on-surface);
+      padding: var(--quader-space-4) var(--quader-space-2);
+      border: 1px solid var(--quader-border-strong);
+      border-radius: var(--quader-radius-l);
+      background: var(--quader-surface-raised);
+      color: var(--quader-on-surface);
       text-align: center;
       text-decoration: none;
     }
     .tile:hover {
-      background: var(--trove-row-hover);
+      background: var(--quader-row-hover);
     }
     .tile:focus-visible {
-      outline: var(--trove-focus-ring);
+      outline: var(--quader-focus-ring);
       outline-offset: 2px;
     }
     .tile-icon {

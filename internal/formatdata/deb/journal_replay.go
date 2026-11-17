@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 	"regexp"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The replay of deb.package.deleted and deb.coordinates.removed entries after a restore (R-DEB-032, Q-DEB-22, Q-DEB-34). The restore

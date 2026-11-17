@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Descriptor is the R-REPO-003 view of a request path as resolution needs it. The
@@ -46,7 +46,7 @@ func (d Descriptor) Name() string {
 type Caller struct {
 	Subject authz.Subject
 	Index   *authz.Index
-	// Rules is true for an endpoint with exposure: rules; the Trove-Resolved-From header is
+	// Rules is true for an endpoint with exposure: rules; the Quader-Resolved-From header is
 	// never sent there (R-EP-018).
 	Rules bool
 }

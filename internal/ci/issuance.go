@@ -3,7 +3,7 @@ package ci
 import (
 	"time"
 
-	"github.com/guided-traffic/trove/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/claims"
 )
 
 // Issuance is the record of one exchange (R-CI-020): the link between a CI token and the verified

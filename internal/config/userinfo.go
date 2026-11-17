@@ -6,7 +6,7 @@ import (
 )
 
 // URL-valued keys never carry credentials (S13 of the phase-1 review, R-OPS-013):
-// a value in user information is printed by `trove admin config validate`,
+// a value in user information is printed by `quader admin config validate`,
 // served by GET /api/v1/system/config and copied into error texts, while every
 // credential has its own `_file` key. Sections call rejectUserinfo from their
 // Validate for each URL-valued key; Effective redacts user information of every

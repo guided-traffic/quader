@@ -14,8 +14,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Patterns is an include and exclude list of globs (R-AUTHZ-005).

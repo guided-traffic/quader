@@ -47,7 +47,7 @@ function isVisit(v: unknown): v is Visit {
 }
 
 /**
- * The places a signed-in user opens, kept in this browser (Q-UI-405): per principal ID one key `trove.frequent.<ID>`, per
+ * The places a signed-in user opens, kept in this browser (Q-UI-405): per principal ID one key `quader.frequent.<ID>`, per
  * repository its qualified name and per project its key, each with its number of visits and the time of the last one, at most
  * 20 per kind. A visit counts once per entry in 15 minutes; a route under `/admin` is never recorded. Non-secret convenience data
  * (R-UI-043): with storage blocked nothing is kept and the lists that read it are left out. The server keeps no record of it.
@@ -61,7 +61,7 @@ export class FrequentPlaces {
   /** The storage key of the signed-in principal, or null for an anonymous caller. */
   private readonly key = computed(() => {
     const id = this.session.authenticated() ? this.session.whoami()?.principal?.id : undefined;
-    return id ? `trove.frequent.${id}` : null;
+    return id ? `quader.frequent.${id}` : null;
   });
   /** Bumped on every write, so that the readers below follow it. */
   private readonly version = signal(0);

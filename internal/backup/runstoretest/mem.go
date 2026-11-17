@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
 )
 
 // Mem is the store. The zero value is ready to use.
@@ -76,7 +76,7 @@ func (m *Mem) Begin(_ context.Context, n backup.NewRun) (backup.Run, error) {
 	}
 	r := &backup.Run{
 		ID: n.ID, Operation: n.Operation, BackupID: n.BackupID, State: backup.StateStarting, Hold: backup.HoldNone,
-		Trigger: n.Trigger, Target: n.Target, Pod: n.Pod, TroveVersion: n.TroveVersion, JobName: n.JobName,
+		Trigger: n.Trigger, Target: n.Target, Pod: n.Pod, QuaderVersion: n.QuaderVersion, JobName: n.JobName,
 		StartedAt: now, HeartbeatAt: now, LeaseExpiresAt: now.Add(n.Lease),
 	}
 	m.runs = append(m.runs, r)

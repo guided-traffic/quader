@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // maxSuggestion is the last number of a suggested key: <format>-<class>, then <format>-<class>-2 to -9 (R-REPO-063).

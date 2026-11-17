@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-// The rule of x-trove-owner-rights (R-API-021, Q-API-214) on the running composition root: real tokens through the real
+// The rule of x-quader-owner-rights (R-API-021, Q-API-214) on the running composition root: real tokens through the real
 // authentication stage and the shared authorization step. A token whose scope does not inherit its owner's rights does not
 // change the owner's preferences, sessions or tokens; a session and an inheriting token do. The avatar routes are asserted by
 // TestR_API_055_AvatarRefusals.
@@ -64,7 +64,7 @@ func TestR_API_021_ANarrowedTokenDoesNotChangeItsOwnersAccount(t *testing.T) {
 	bot := e.stack.ServiceAccount("deploy-bot")
 	file := testenv.WriteFile(t, t.TempDir(), "break-glass", password)
 	r := e.stack.Start(t, testenv.ReplicaOptions{Name: "own-account", Role: "api", Env: []string{
-		"TROVE_AUTH_BREAK_GLASS_ENABLED=true", "TROVE_AUTH_BREAK_GLASS_PASSWORD_FILE=" + file,
+		"QUADER_AUTH_BREAK_GLASS_ENABLED=true", "QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE=" + file,
 	}})
 	narrowOf := func(u testenv.Person) map[string]string {
 		out := map[string]string{}
@@ -91,7 +91,7 @@ func TestR_API_021_ANarrowedTokenDoesNotChangeItsOwnersAccount(t *testing.T) {
 		if m := got.JSON(t); got.Status != http.StatusOK || m["revision"] != float64(1) || m["locale"] != nil {
 			t.Fatalf("after the refusals: %d %s, want revision 1 and no locale", got.Status, got.Body)
 		}
-		if n := e.scalar("SELECT count(*) FROM trove.user_preferences WHERE user_id = $1::uuid", erin.ID); n != 0 {
+		if n := e.scalar("SELECT count(*) FROM quader.user_preferences WHERE user_id = $1::uuid", erin.ID); n != 0 {
 			t.Fatalf("%d preference rows after the refusals", n)
 		}
 		ok := patchPrefs(inherit, `"1"`)

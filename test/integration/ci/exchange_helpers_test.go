@@ -20,25 +20,25 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/oidcstub"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
 const (
 	exchangePath = "/api/v1/auth/oidc/token"
-	// troveAudience is the base URL of the test installation (testenv), the default audience of an issuer.
-	troveAudience = "http://trove.test"
-	xIssuer       = "gitlab-main"
-	formType      = "application/x-www-form-urlencoded"
+	// quaderAudience is the base URL of the test installation (testenv), the default audience of an issuer.
+	quaderAudience = "http://quader.test"
+	xIssuer        = "gitlab-main"
+	formType       = "application/x-www-form-urlencoded"
 )
 
 // xenv is an installation for the exchange: npm-internal (ownership enforced), npm-all (virtual over npm-internal,
 // deploying to it), nuget-internal, the policy ci-read-internal over npm-all and npm-internal, and the issuer double
-// whose tokens carry trove's audience. Every subject token the test sends is remembered, and the cleanup checks that
-// no error answer and no log line of a replica holds one or a trv_cit_ value (R-CI-008).
+// whose tokens carry quader's audience. Every subject token the test sends is remembered, and the cleanup checks that
+// no error answer and no log line of a replica holds one or a qdr_cit_ value (R-CI-008).
 type xenv struct {
 	*env
 	d *double
@@ -53,7 +53,7 @@ func newXEnv(t *testing.T, o options) *xenv {
 	t.Helper()
 	// The tests choose their client address through X-Forwarded-For (R-ARCH-006), so the per-address limiter of
 	// one test does not share a bucket with the requests of another part of it.
-	o.env = append([]string{`TROVE_SERVER_TRUSTED_PROXIES=["127.0.0.0/8"]`}, o.env...)
+	o.env = append([]string{`QUADER_SERVER_TRUSTED_PROXIES=["127.0.0.0/8"]`}, o.env...)
 	e := newEnv(t, o)
 	st := e.stack
 	st.Repository("npm-internal", "local", "npm", `{"local":{"packageOwnership":"enforce"}}`)
@@ -62,7 +62,7 @@ func newXEnv(t *testing.T, o options) *xenv {
 	e.exec(`INSERT INTO virtual_deploy_targets (virtual_id, target_id) SELECT v.id, m.id FROM repositories v, repositories m WHERE v.key = 'npm-all' AND m.key = 'npm-internal'`)
 	st.Repository("nuget-internal", "local", "nuget", `{"local":{"packageOwnership":"enforce"}}`)
 	st.Policy("ci-read-internal", nil, []string{"npm-all", "npm-internal"})
-	x := &xenv{env: e, d: startDouble(t, oidcstub.Config{Audience: troveAudience})}
+	x := &xenv{env: e, d: startDouble(t, oidcstub.Config{Audience: quaderAudience})}
 	t.Cleanup(func() { x.checkNoSecrets(t) })
 	return x
 }
@@ -192,7 +192,7 @@ func rawExchange(t *testing.T, r *testenv.Replica, addr, subject string) (int, s
 	}
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
-	if bytes.Contains(body, []byte(subject)) || bytes.Contains(body, []byte("trv_cit_")) && res.StatusCode != 200 {
+	if bytes.Contains(body, []byte(subject)) || bytes.Contains(body, []byte("qdr_cit_")) && res.StatusCode != 200 {
 		t.Errorf("an answer %d holds token material: %s", res.StatusCode, body)
 	}
 	return res.StatusCode, res.Header.Get("Retry-After")
@@ -240,7 +240,7 @@ func wantToken(t *testing.T, a testenv.Answer) granted {
 	if err := json.Unmarshal(a.Body, &g); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(g.Token, "trv_cit_") || g.Issued != ci.TokenTypeAccessToken || g.Type != "Bearer" || g.ExpiresIn <= 0 {
+	if !strings.HasPrefix(g.Token, "qdr_cit_") || g.Issued != ci.TokenTypeAccessToken || g.Type != "Bearer" || g.ExpiresIn <= 0 {
 		t.Fatalf("the answer %+v", g)
 	}
 	if a.Header.Get("Cache-Control") != "no-store" || a.Header.Get("Pragma") != "no-cache" {
@@ -249,12 +249,12 @@ func wantToken(t *testing.T, a testenv.Answer) granted {
 	return g
 }
 
-// citValue is a CI token value: the prefix and the token's own characters. A token hint (trv_cit_…ab12, R-AUTH-022)
+// citValue is a CI token value: the prefix and the token's own characters. A token hint (qdr_cit_…ab12, R-AUTH-022)
 // names a token without being one and does not match.
-var citValue = regexp.MustCompile(`trv_cit_[A-Za-z0-9]{8,}`)
+var citValue = regexp.MustCompile(`qdr_cit_[A-Za-z0-9]{8,}`)
 
 // checkNoSecrets is R-CI-008's grep: no error answer and no log line of a replica holds a subject token the test
-// sent or a trv_cit_ value; a 200 holds its own CI token and no subject token, and no log line holds a CI token an
+// sent or a qdr_cit_ value; a 200 holds its own CI token and no subject token, and no log line holds a CI token an
 // answer issued.
 func (x *xenv) checkNoSecrets(t *testing.T) {
 	x.mu.Lock()
@@ -267,7 +267,7 @@ func (x *xenv) checkNoSecrets(t *testing.T) {
 			}
 		}
 		if a.Status != 200 && citValue.Match(a.Body) {
-			t.Errorf("an answer %d holds a trv_cit_ value", a.Status)
+			t.Errorf("an answer %d holds a qdr_cit_ value", a.Status)
 		}
 		if a.Status == 200 {
 			var g granted
@@ -287,12 +287,12 @@ func (x *xenv) checkNoSecrets(t *testing.T) {
 			}
 		}
 		for _, tok := range issued {
-			if strings.Contains(logs, tok[len("trv_cit_"):]) {
+			if strings.Contains(logs, tok[len("qdr_cit_"):]) {
 				t.Errorf("the log of %s holds an issued CI token", r.Name)
 			}
 		}
 		if citValue.MatchString(logs) {
-			t.Errorf("the log of %s holds a trv_cit_ value", r.Name)
+			t.Errorf("the log of %s holds a qdr_cit_ value", r.Name)
 		}
 	}
 }
@@ -307,9 +307,9 @@ func metric(t *testing.T, r *testenv.Replica, series string) float64 {
 	return v
 }
 
-// exchanges is the series of trove_ci_exchanges_total.
+// exchanges is the series of quader_ci_exchanges_total.
 func exchanges(issuer, outcome, reason string) string {
-	return fmt.Sprintf(`trove_ci_exchanges_total{issuer=%q,outcome=%q,reason=%q}`, issuer, outcome, reason)
+	return fmt.Sprintf(`quader_ci_exchanges_total{issuer=%q,outcome=%q,reason=%q}`, issuer, outcome, reason)
 }
 
 // waitEvents waits until the audit buffer wrote n events of an action.

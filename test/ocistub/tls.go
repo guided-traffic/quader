@@ -68,7 +68,7 @@ func (s *Server) Start(addr string, cfg *tls.Config) (*Running, error) {
 var LoopbackHosts = []string{LoopbackRegistryHost, LoopbackRealmHost, LoopbackCDNHost, "localhost", "127.0.0.1"}
 
 // DialOverride maps the "host:port" of each of the three hosts, as a dialer is asked for it (the port 443 when the URL has none), to
-// the listener's address. It is the map for trove's seam app.Options.DialOverride (outbound.WithDialOverride): a remote repository
+// the listener's address. It is the map for quader's seam app.Options.DialOverride (outbound.WithDialOverride): a remote repository
 // whose URL is the registry host connects to the stub with the TLS server name, the Host header and every host rule those of the
 // URL. The egress address policy of the test installation has to allow the listener's address.
 func (r *Running) DialOverride() map[string]string {
@@ -117,7 +117,7 @@ func NewSelfSigned(hosts ...string) (*SelfSigned, error) {
 	now := time.Now()
 	caTmpl := &x509.Certificate{
 		SerialNumber:          big.NewInt(1),
-		Subject:               pkix.Name{CommonName: "trove ocistub test CA"},
+		Subject:               pkix.Name{CommonName: "quader ocistub test CA"},
 		NotBefore:             now.Add(-time.Hour),
 		NotAfter:              now.Add(30 * 24 * time.Hour),
 		IsCA:                  true,

@@ -66,7 +66,7 @@ func (NPM) Preflight(ctx context.Context, dst *TargetClient) error {
 	case http.StatusUnauthorized:
 		return &Refusal{Status: resp.Status, Code: "unauthorized", Msg: "the token is not accepted"}
 	}
-	return fmt.Errorf("the repository answered %d to whoami: is the address an npm repository of trove that the token can read?", resp.Status)
+	return fmt.Errorf("the repository answered %d to whoami: is the address an npm repository of Quader that the token can read?", resp.Status)
 }
 
 type npmSearch struct {
@@ -211,7 +211,7 @@ func (NPM) Plan(ctx context.Context, src *SourceClient, name string) (*Plan, err
 	sort.Strings(deprecated)
 	sort.Strings(attested)
 	if len(deprecated) > 0 {
-		p.NotKept = append(p.NotKept, "deprecation of "+strings.Join(deprecated, ", ")+" (trove has no way to set a deprecation yet)")
+		p.NotKept = append(p.NotKept, "deprecation of "+strings.Join(deprecated, ", ")+" (Quader has no way to set a deprecation yet)")
 	}
 	if len(attested) > 0 {
 		p.NotKept = append(p.NotKept, "provenance attestations of "+strings.Join(attested, ", "))

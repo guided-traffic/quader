@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // slowGate holds every fill back by d, until the context ends.
@@ -107,7 +107,7 @@ func TestR_REPO_053_AShutdownReleasesTheJobAndASecondEngineEndsThePass(t *testin
 	gate, _ := blockAt(pathOf("pkg-003"))
 	w.setGate(gate)
 	e := newEnv(t, w, "mirror", nil, nil)
-	a := e.start("rep-a", "all", "TROVE_SERVER_SHUTDOWN_TIMEOUT=8s")
+	a := e.start("rep-a", "all", "QUADER_SERVER_SHUTDOWN_TIMEOUT=8s")
 	e.dispatch(a)
 	e.waitFills(3, 60*time.Second)
 	if n := e.st.Number(`SELECT attempt FROM job WHERE kind = 'mirror-pass'`); n != 1 {
@@ -204,7 +204,7 @@ func TestR_REPO_053_ASwitchToPullThroughClearsThePass(t *testing.T) {
 func TestR_REPO_053_AnOfflineRepositoryEndsThePassWithoutAFailure(t *testing.T) {
 	w := newWorld(3)
 	e := newEnv(t, w, "mirror", nil, nil)
-	rep := e.start("rep-a", "all", "TROVE_PROXY_GLOBAL_OFFLINE=true")
+	rep := e.start("rep-a", "all", "QUADER_PROXY_GLOBAL_OFFLINE=true")
 	e.dispatch(rep)
 	e.waitOutcome("offline", 60*time.Second)
 	if w.namesCalls.Load() != 0 || w.storedCount() != 0 {

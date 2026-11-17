@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // watched runs fn under the stall watchdog the way Restore does and returns the cause that ended the context, nil if it
@@ -102,7 +102,7 @@ func TestR_BAK_021_AFinishedRestoreOfThisBackupIsNotRestoredAgain(t *testing.T) 
 	t.Run("R-BAK-021 killed after the commit of step 9: the next pod exits 0 and writes nothing", func(t *testing.T) {
 		e := newEnv(t)
 		finished(e)
-		e.blobs.foreign = "trove/sha256/ab/cd/x" // the restored blobs: check 5 would refuse them
+		e.blobs.foreign = "quader/sha256/ab/cd/x" // the restored blobs: check 5 would refuse them
 		rep, err := e.restorer().Restore(context.Background(), backup.RestoreOptions{ID: e.id})
 		if err != nil || rep == nil || !rep.AlreadyRestored {
 			t.Fatalf("report %+v, err %v", rep, err)

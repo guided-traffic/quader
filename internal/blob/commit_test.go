@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/blob/blobtest"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 type fixture struct {
@@ -97,7 +97,7 @@ func TestCommitDeduplicates(t *testing.T) {
 			t.Fatal(err)
 		}
 		keys := f.mem.Keys("")
-		if len(keys) != 1 || keys[0] != blob.Key("trove", sp.SHA256) {
+		if len(keys) != 1 || keys[0] != blob.Key("quader", sp.SHA256) {
 			t.Fatalf("keys: %v", keys)
 		}
 	})

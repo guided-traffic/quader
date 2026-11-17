@@ -1,6 +1,6 @@
 //go:build integration
 
-// Package bastioniface tests the main installation's side of the trove Bastion against the integration stack
+// Package bastioniface tests the main installation's side of the quader Bastion against the integration stack
 // (R-BAS-008 to R-BAS-017): the Recognize stage and the four operations of the interface behind the real chain,
 // the real authentication stage, token service, decision point and audit writer, on a database of their own.
 // What is a stand-in: the TokenAuthenticator of work package 1 and the ShapeResolver of work package 3 (the
@@ -27,32 +27,32 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastionmain"
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/idapi"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/idapi"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-const schemaName = "trove"
+const schemaName = "quader"
 
 var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 
@@ -99,12 +99,12 @@ func connect(t testing.TB, database string) *pgx.Conn {
 
 func newEnv(t *testing.T) *env {
 	t.Helper()
-	port, err := strconv.Atoi(testenv.Get(t, "TROVE_TEST_PG_PORT"))
+	port, err := strconv.Atoi(testenv.Get(t, "QUADER_TEST_PG_PORT"))
 	if err != nil {
-		t.Fatalf("TROVE_TEST_PG_PORT: %v", err)
+		t.Fatalf("QUADER_TEST_PG_PORT: %v", err)
 	}
-	host, user, secret := testenv.Get(t, "TROVE_TEST_PG_HOST"), testenv.Get(t, "TROVE_TEST_PG_USER"), testenv.Get(t, "TROVE_TEST_PG_PASSWORD")
-	name := "trove_bif_" + randHex(5)
+	host, user, secret := testenv.Get(t, "QUADER_TEST_PG_HOST"), testenv.Get(t, "QUADER_TEST_PG_USER"), testenv.Get(t, "QUADER_TEST_PG_PASSWORD")
+	name := "quader_bif_" + randHex(5)
 	maint := connect(t, "postgres")
 	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
 		t.Fatalf("create database: %v", err)
@@ -146,7 +146,7 @@ func newEnv(t *testing.T) *env {
 	return &env{t: t, db: name, cfg: cfg, admin: admin, ks: randHex(8), vcfg: valkeyConfig(t)}
 }
 
-var keyPrefix = "trove:itb" + randHex(3) + ":"
+var keyPrefix = "quader:itb" + randHex(3) + ":"
 
 func valkeyConfig(t *testing.T) config.Valkey {
 	v := testenv.ValkeyConfig(t)
@@ -392,7 +392,7 @@ type rulesBox struct {
 func (b *rulesBox) get() auth.EndpointRules { b.mu.Lock(); defer b.mu.Unlock(); return b.rules }
 func (b *rulesBox) anonymous(on bool)       { b.mu.Lock(); defer b.mu.Unlock(); b.rules.Anonymous = on }
 
-const baseURL = "https://trove.example.com"
+const baseURL = "https://quader.example.com"
 
 func (e *env) newSite(o siteOpts) *site {
 	t := e.t
@@ -714,7 +714,7 @@ func (s *site) iface(bastionToken, method, path string, body any, extra ...strin
 	s.t.Helper()
 	h := http.Header{
 		"Authorization": {"Bearer " + bastionToken}, iface.HeaderInterface: {strconv.Itoa(iface.InterfaceVersion)},
-		iface.HeaderReplica: {"trove-bastion-7d9c-x2k4q"}, "User-Agent": {"trove-bastion/0.14.0"},
+		iface.HeaderReplica: {"quader-bastion-7d9c-x2k4q"}, "User-Agent": {"quader-bastion/0.14.0"},
 	}
 	for i := 0; i+1 < len(extra); i += 2 {
 		if extra[i+1] == "-" {

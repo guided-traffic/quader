@@ -12,16 +12,16 @@ import { ErrorNotice } from '../../shared/error-notice';
 
 /** "New group" (R-UI-025). The idempotency key lives as long as the dialog (R-UI-042). */
 @Component({
-  selector: 'trove-group-create-dialog',
+  selector: 'quader-group-create-dialog',
   imports: [Checkbox, DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
-    <h2 troveDialogTitle i18n="@@group-create.title">New group</h2>
+    <h2 quaderDialogTitle i18n="@@group-create.title">New group</h2>
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
         @if (error(); as e) {
-          <trove-error-notice [error]="e" />
+          <quader-error-notice [error]="e" />
         }
-        <trove-text-field
+        <quader-text-field
           width="name"
           i18n-label="@@group-create.name"
           label="Name"
@@ -32,13 +32,13 @@ import { ErrorNotice } from '../../shared/error-notice';
           i18n-hint="@@group-create.name-hint"
           hint="Lower-case letters, digits and . _ -"
         />
-        <trove-text-field width="full" i18n-label="@@group-create.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
-        <trove-checkbox [checked]="autoJoin()" (checkedChange)="autoJoin.set($event)">
+        <quader-text-field width="full" i18n-label="@@group-create.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
+        <quader-checkbox [checked]="autoJoin()" (checkedChange)="autoJoin.set($event)">
           <ng-container i18n="@@group-create.auto-join">Every user joins this group automatically</ng-container>
-        </trove-checkbox>
+        </quader-checkbox>
       </div>
       <div class="dialog-actions">
-        <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@group-create.cancel">Cancel</button>
+        <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@group-create.cancel">Cancel</button>
         <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@group-create.submit">Create group</button>
       </div>
     </form>

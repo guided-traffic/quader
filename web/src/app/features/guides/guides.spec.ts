@@ -49,7 +49,7 @@ describe('Guides', () => {
       'generic.troubleshooting',
     ]);
     const configure = r.root.querySelector('[data-section="generic.configure"] .snippet pre')?.textContent ?? '';
-    expect(configure).toContain('header = "Authorization: Bearer ${TROVE_TOKEN}"');
+    expect(configure).toContain('header = "Authorization: Bearer ${QUADER_TOKEN}"');
     await expectAccessible(r.root);
   });
 
@@ -96,7 +96,7 @@ describe('Guides', () => {
     const setup = await new FakeClientSetupApi().get('web/npm-all', { client: 'npm', credentials: 'env' });
     const configure = [...r.root.querySelectorAll('[data-section="npm.configure"] .snippet pre')].map((p) => p.textContent);
     expect(configure).toEqual(setup.snippets.filter((s) => s.tab === 'configure').map((s) => s.content));
-    expect(configure.join('')).toContain('${TROVE_TOKEN}');
+    expect(configure.join('')).toContain('${QUADER_TOKEN}');
   });
 
   it('R-UI-049 an anonymous reader gets snippets without a credential and no publishing section', async () => {
@@ -118,13 +118,13 @@ describe('Guides', () => {
 
   it('R-UI-049 the sections carry the server HTML as a README does', async () => {
     const r = await open({ format: 'npm' });
-    const what = r.root.querySelector('[data-section="npm.virtual.what"] trove-package-readme .readme');
+    const what = r.root.querySelector('[data-section="npm.virtual.what"] quader-package-readme .readme');
     expect(what?.querySelector('h3')?.id).toBe('user-content-details');
   });
 
   it('R-UI-042 a failing guide shows the error with a retry', async () => {
     const r = await open({}, (g) => (g.failure = new ApiError(503, { code: 'unavailable', detail: 'down' }, null)));
-    expect(r.root.querySelector('trove-error-notice')).not.toBeNull();
+    expect(r.root.querySelector('quader-error-notice')).not.toBeNull();
     await expectAccessible(r.root);
   });
 });

@@ -3,8 +3,8 @@ package items
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // EraseCache removes every item of one remote repository through the same removal as the delete of a subtree (R-STOR-018),

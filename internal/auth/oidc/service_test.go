@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The domain calls the browser routes of internal/api/login make: plain inputs,
@@ -32,7 +32,7 @@ func TestR_AUTH_013_Logout(t *testing.T) {
 	spy := &eventSpy{}
 	p := testProvider(t, nil)
 	p.doc.EndSessionEndpoint = "https://idp.test/logout?tenant=a"
-	s := &Service{o: Options{Audit: spy, BaseURL: "https://trove.test/"}, byID: map[string]*Provider{"corp": p}}
+	s := &Service{o: Options{Audit: spy, BaseURL: "https://quader.test/"}, byID: map[string]*Provider{"corp": p}}
 	src := audit.Source{ClientAddr: "192.0.2.7", UserAgent: "test"}
 
 	t.Run("R-AUTH-013 a cookie of an ended or unknown session leads to the logged-out page and records nothing", func(t *testing.T) {
@@ -64,8 +64,8 @@ func TestR_AUTH_013_Logout(t *testing.T) {
 			t.Fatal(err)
 		}
 		q := u.Query()
-		if u.Host != "idp.test" || q.Get("tenant") != "a" || q.Get("id_token_hint") != "tok" || q.Get("client_id") != "trove" ||
-			q.Get("post_logout_redirect_uri") != "https://trove.test"+LoggedOutPath {
+		if u.Host != "idp.test" || q.Get("tenant") != "a" || q.Get("id_token_hint") != "tok" || q.Get("client_id") != "quader" ||
+			q.Get("post_logout_redirect_uri") != "https://quader.test"+LoggedOutPath {
 			t.Fatalf("redirect %s", out.RedirectTo)
 		}
 		var d map[string]any

@@ -7,17 +7,17 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/project"
-	"github.com/guided-traffic/trove/internal/visibility"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/project"
+	"github.com/guided-traffic/quader/internal/visibility"
 )
 
 // The permission operations of R-AUTHZ-021 to R-AUTHZ-023: policies, role
@@ -53,7 +53,7 @@ func (s *Server) policies() (*authz.Service, error) {
 // caller is the subject of the request, for the actor of an audit event.
 func caller(r *http.Request) authz.Subject { return SubjectFrom(r.Context()) }
 
-// setEpoch puts the epoch a write produced in Trove-Authz-Epoch (R-AUTHZ-032).
+// setEpoch puts the epoch a write produced in Quader-Authz-Epoch (R-AUTHZ-032).
 // authz.HeaderEpoch is the one name of the header and this the one setter: a write
 // answers it through here, and an idempotent create through [finishEpoch].
 func setEpoch(w http.ResponseWriter, epoch int64) {

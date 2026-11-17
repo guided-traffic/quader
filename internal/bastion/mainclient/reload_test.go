@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/maintest"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
 )
 
 type logSink struct {
@@ -161,8 +161,8 @@ func TestR_BAS_006_AMalformedTokenFileKeepsTheOldTokenAndIsLoggedWithoutItsConte
 	r := newRig(t, nil)
 	secret := newMountedSecret(t, r.token)
 	logs, _ := startReloader(t, r, secret.path(), time.Hour, nil)
-	junk := "trv_bst_" + strings.Repeat("Z", 43) + "AAAAAA"
-	for i, bad := range []string{junk, "", "trv_pat_" + r.token[8:], r.token[:30]} {
+	junk := "qdr_bst_" + strings.Repeat("Z", 43) + "AAAAAA"
+	for i, bad := range []string{junk, "", "qdr_pat_" + r.token[8:], r.token[:30]} {
 		secret.set(bad)
 		want := float64(i + 1)
 		eventually(t, 5*time.Second, "the refusal is counted", func() bool { return maintest.Value(r.m.TokenReloads.WithLabelValues("refused")) >= want })

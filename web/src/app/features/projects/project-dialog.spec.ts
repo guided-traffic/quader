@@ -4,7 +4,7 @@ import { buttonByText, renderScreen, settle, sleep, text, typeInto } from '../..
 import { ProjectList } from './project-list';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
-const dialogOf = (): HTMLElement => overlay().querySelector('trove-project-dialog') as HTMLElement;
+const dialogOf = (): HTMLElement => overlay().querySelector('quader-project-dialog') as HTMLElement;
 
 describe('The project dialog saves a sequence of calls (R-UI-041, R-UI-042, R-API-014)', () => {
   it('R-UI-041 R-API-014 a corrected retry after a refusal carries a new idempotency key', async () => {

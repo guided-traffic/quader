@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/roletest"
+	"github.com/guided-traffic/quader/internal/bastion/roletest"
 )
 
 // TestR_BAS_048_TheWholeRoleServesAColdMissAWarmHitARevocationAndTheOutage_Volume: the role started from a

@@ -1,7 +1,7 @@
 # Ansible Galaxy: the documentation of collections
 
 The documentation of a collection version (the README, the Markdown files of `docs/`, and one entry per module, plugin and role) is derived
-data that trove generates for a local repository, keeps for a remote one and reads from the winning member for a virtual one. The
+data that Quader generates for a local repository, keeps for a remote one and reads from the winning member for a virtual one. The
 requirements are [R-ANS-033 to R-ANS-046](../spec/formats/ansible.md), the screens are R-UI-060 to R-UI-064
 ([api-and-ui.md](../spec/api-and-ui.md)), the decisions [ADR-196](../decisions.md) and [ADR-197](../decisions.md), and the threats
 [docs/security/ansible-documentation.md](../security/ansible-documentation.md). The work-package cut is
@@ -50,7 +50,7 @@ Who may read a repository's artifacts may not be who may read its documentation 
 question form of the wiki check of R-AUTHZ-034; a handler that gets false answers as an absent resource. The route `ansible.version.docs`
 is declared `Wiki` in [routes.go](../../internal/formats/ansible/routes.go), so the dispatcher refuses a caller who may not read the wiki
 before the handler runs; the handlers ask again for the repository they read from, which for a virtual repository is a member. The three
-management operations carry the marker `x-trove-part: wiki` in [api/openapi.yaml](../../api/openapi.yaml) (read into `Operation.Part` by
+management operations carry the marker `x-quader-part: wiki` in [api/openapi.yaml](../../api/openapi.yaml) (read into `Operation.Part` by
 [document.go](../../internal/api/v1/document.go)) and decide each candidate repository with `Scope.MayReadWiki` in
 [ansible_docs.go](../../internal/api/v1/ansible_docs.go), the caller's `authz.ReadScope.MayReadWiki`; the announcement `metadata.docs` of
 the version details goes through the same function, so it is absent for a caller who may not read the wiki. `registerWikiSurface` lists

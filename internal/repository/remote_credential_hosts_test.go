@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // credentialCatalog has a default preset with a token realm host that receives the credential and a blob host that does not, as

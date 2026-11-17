@@ -167,7 +167,7 @@ type basSample struct {
 	Reachable []float64
 }
 
-// basWatch reads trove_bastion_interface_mismatch and trove_bastion_main_reachable of every running replica every two
+// basWatch reads quader_bastion_interface_mismatch and quader_bastion_main_reachable of every running replica every two
 // seconds. A replica that cannot be read at that moment (starting, terminating) is left out of the sample.
 type basWatch struct {
 	stopCh   chan struct{}
@@ -202,8 +202,8 @@ func startBasWatch(site *basSite) *basWatch {
 					continue
 				}
 				m := parseMetrics(body)
-				s.Mismatch = append(s.Mismatch, m["trove_bastion_interface_mismatch"])
-				s.Reachable = append(s.Reachable, m["trove_bastion_main_reachable"])
+				s.Mismatch = append(s.Mismatch, m["quader_bastion_interface_mismatch"])
+				s.Reachable = append(s.Reachable, m["quader_bastion_main_reachable"])
 			}
 			if len(s.Reachable) > 0 {
 				w.mu.Lock()
@@ -224,8 +224,8 @@ func (w *basWatch) stop() []basSample {
 }
 
 // linkStats are the facts about the link in [from, to]: the highest mismatch gauge, and the longest stretch in which every
-// readable replica reported the main installation unreachable (what TroveBastionMainUnreachable, `for: 2m`, reads) and the
-// longest in which any did (TroveBastionMainUnreachableSingleReplica, `for: 5m`).
+// readable replica reported the main installation unreachable (what QuaderBastionMainUnreachable, `for: 2m`, reads) and the
+// longest in which any did (QuaderBastionMainUnreachableSingleReplica, `for: 5m`).
 type linkStats struct {
 	Samples     int
 	MaxMismatch float64
@@ -374,10 +374,10 @@ func (e *basEnv) underLoad(t *testing.T, site *basSite, name string, coldN int, 
 				t.Errorf("no sample of the link gauges during the fault")
 			}
 			if r.Link.MaxMismatch != 0 {
-				t.Errorf("trove_bastion_interface_mismatch rose to %v: the interface version of the two sides must stay compatible (R-BAS-028)", r.Link.MaxMismatch)
+				t.Errorf("quader_bastion_interface_mismatch rose to %v: the interface version of the two sides must stay compatible (R-BAS-028)", r.Link.MaxMismatch)
 			}
 			if r.Link.AllDown >= 2*time.Minute {
-				t.Errorf("every replica reported the main installation unreachable for %s: TroveBastionMainUnreachable (for 2m) would fire on planned maintenance", r.Link.AllDown)
+				t.Errorf("every replica reported the main installation unreachable for %s: QuaderBastionMainUnreachable (for 2m) would fire on planned maintenance", r.Link.AllDown)
 			}
 			if r.check != nil {
 				r.check(t, r)

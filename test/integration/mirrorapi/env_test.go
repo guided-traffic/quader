@@ -14,8 +14,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // mirrorFormat is the format the suite creates its mirrors of.
@@ -87,7 +87,7 @@ func newEnv(t *testing.T) *env {
 	// An Owner administers its project through a session or a token with admin true (R-AUTHZ-026); a Maintainer needs none.
 	e.tok["pam"] = st.Token(e.pam, scope.Scope{Inherit: true, Admin: true})
 	e.tok["lena"] = st.Token(e.lena, scope.Default())
-	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web1", Env: []string{"TROVE_API_RATE_LIMITS_ENABLED=false"}})
+	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web1", Env: []string{"QUADER_API_RATE_LIMITS_ENABLED=false"}})
 	return e
 }
 

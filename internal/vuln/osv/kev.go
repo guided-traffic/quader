@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 // The bounds of the catalog (R-VULN-008).

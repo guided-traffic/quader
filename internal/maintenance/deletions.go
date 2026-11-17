@@ -1,4 +1,4 @@
-// Package maintenance is the logic of `trove admin maintenance pause-deletions` and `resume-deletions`: the deletion pause of
+// Package maintenance is the logic of `quader admin maintenance pause-deletions` and `resume-deletions`: the deletion pause of
 // R-HA-025, the `system_state` flag that stops garbage collection, the orphan sweep, retention and cap enforcement from deleting
 // anything. A post-restore sets it; an operator clears it after verifying the restored installation (step 7), or sets it by hand
 // before a planned restore drill.
@@ -10,10 +10,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // Pause is the state of the deletion pause.

@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The roles of project members in the decision path (R-AUTHZ-015, R-AUTHZ-026, Q-AUTHZ-207, Q-AUTHZ-208,
@@ -307,7 +307,7 @@ func TestR_AUTHZ_018_ADeployThroughARoleClaimsForTheMember(t *testing.T) {
 // user and group IDs once, through the index's memberships by principal, and looked up by the repository's project
 // (R-AUTHZ-015 performance target, R-ARCH-033): no query, and no work per project of the installation. A decision
 // of a subject in 200 groups allocates the same with 10 projects and with 100, 20 member groups each, and stays
-// within the 1 ms target (the p99 is enforced with TROVE_PERF_GATE=1, Q-ARCH-250). What grows is the subject's own
+// within the 1 ms target (the p99 is enforced with QUADER_PERF_GATE=1, Q-ARCH-250). What grows is the subject's own
 // memberships, which are few (Q-AUTHZ-207).
 func TestR_AUTHZ_015_ARoleDecisionDoesNotGrowWithTheProjects(t *testing.T) {
 	allocs := map[int]float64{}
@@ -336,7 +336,7 @@ func TestR_AUTHZ_015_ARoleDecisionDoesNotGrowWithTheProjects(t *testing.T) {
 		if p50 > time.Millisecond {
 			t.Errorf("median %s is above the 1 ms target of R-AUTHZ-015", p50)
 		}
-		if p99 > time.Millisecond && os.Getenv("TROVE_PERF_GATE") == "1" {
+		if p99 > time.Millisecond && os.Getenv("QUADER_PERF_GATE") == "1" {
 			t.Errorf("p99 %s (%s) is above the 1 ms target of R-AUTHZ-015", p99, cpuClock)
 		}
 	}

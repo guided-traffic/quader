@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync/atomic"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Access is what a request holds to ask the decision point: the subject, whose
@@ -39,7 +39,7 @@ type Access struct {
 
 // Begin takes the index a request decides on and returns the holder
 // ([authz.Decider.Begin]): it waits for a confirmed index or for the epoch of
-// Trove-Authz-Min-Epoch, and first makes keys known. The error is the refusal,
+// Quader-Authz-Min-Epoch, and first makes keys known. The error is the refusal,
 // 503 authz_stale or 412 authz_epoch_unknown.
 func Begin(ctx context.Context, d authz.Decider, sub authz.Subject, names ...qname.Repo) (*Access, error) {
 	idx, err := d.Begin(ctx, sub, names...)
@@ -85,7 +85,7 @@ func Resolve(ctx context.Context, d authz.Decider, sub authz.Subject, keys ...qn
 // Index returns the index the request decides on.
 func (a *Access) Index() *authz.Index { return a.idx.Load() }
 
-// Epoch returns the epoch of that index, the value of Trove-Authz-Epoch
+// Epoch returns the epoch of that index, the value of Quader-Authz-Epoch
 // (R-AUTHZ-032).
 func (a *Access) Epoch() int64 { return a.Index().Epoch() }
 

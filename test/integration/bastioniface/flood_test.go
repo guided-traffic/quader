@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_BAS_008_AFloodOfBastionTokensFromOneAddressIsThrottledBeforeTheTokenStore: the recognition runs before the

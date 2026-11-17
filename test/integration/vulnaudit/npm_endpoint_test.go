@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // customersHost and customersEndpoint are the fixture endpoint of R-EP-012: a second endpoint with exposure rules.
@@ -37,7 +37,7 @@ func TestR_VULN_017_AnEndpointWithExposureRulesKeepsThe501(t *testing.T) {
 		t.Fatalf("create the rule: %d %s", rule.Status, rule.Body)
 	}
 	x := e.st.DoAt(r.Addr("customers"), customersHost, "POST", "/api/npm/it/"+npmCustomer+"/"+bulk, acmeSAT, []byte(body),
-		"Trove-Authz-Min-Epoch", rule.Header.Get("Trove-Authz-Epoch"))
+		"Quader-Authz-Min-Epoch", rule.Header.Get("Quader-Authz-Epoch"))
 	if x.Status != http.StatusNotImplemented || npmCode(t, x) != "npm_audit_unavailable" {
 		t.Errorf("on customers: %d %s", x.Status, x.Body)
 	}

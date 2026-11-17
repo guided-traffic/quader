@@ -32,7 +32,7 @@ func (s *Stack) LogStatements(t testing.TB) {
 // StatementsSince returns the statements the database logged since an instant, without the transaction control.
 func StatementsSince(t testing.TB, at time.Time) []string {
 	t.Helper()
-	out, err := exec.CommandContext(t.Context(), "docker", "logs", "--since", at.UTC().Format(time.RFC3339Nano), "trove-it-postgres").CombinedOutput() //nolint:gosec // constant arguments and a formatted instant
+	out, err := exec.CommandContext(t.Context(), "docker", "logs", "--since", at.UTC().Format(time.RFC3339Nano), "quader-it-postgres").CombinedOutput() //nolint:gosec // constant arguments and a formatted instant
 	if err != nil {
 		t.Fatalf("docker logs: %v\n%s", err, out)
 	}

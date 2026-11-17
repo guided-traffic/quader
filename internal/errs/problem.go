@@ -16,7 +16,7 @@ const ProblemContentType = "application/problem+json"
 // relative to the origin, so it holds for every base URL.
 const ProblemTypePrefix = "/api/v1/problems/"
 
-// Problem is the wire form: the RFC 9457 members plus the trove extensions
+// Problem is the wire form: the RFC 9457 members plus the quader extensions
 // code, requestId and errors.
 type Problem struct {
 	Type      string       `json:"type"`

@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/create"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/retention"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/create"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/retention"
 )
 
 // TestR_BAK_029_IncrementalAndRetention is scenario 5 of R-BAK-029, the criteria of R-BAK-006 and R-BAK-016 through the
@@ -56,7 +56,7 @@ func TestR_BAK_029_IncrementalAndRetention(t *testing.T) {
 		t.Fatalf("R-BAK-006: the second backup copied %d blobs, want exactly the 10 new ones", b.BlobsCopied)
 	}
 	mb := manifestOf(t, r.tgt, r.cfg, b.BackupID)
-	if want := in.number(`SELECT count(DISTINCT blob_sha256) FROM trove.items WHERE blob_sha256 IS NOT NULL`); mb.Blobs.Referenced != want {
+	if want := in.number(`SELECT count(DISTINCT blob_sha256) FROM quader.items WHERE blob_sha256 IS NOT NULL`); mb.Blobs.Referenced != want {
 		t.Fatalf("R-BAK-006: referenced = %d, the source references %d", mb.Blobs.Referenced, want)
 	}
 	if !poolHas(t, r.tgt, r.cfg, fmtDigest(onlyA)) {

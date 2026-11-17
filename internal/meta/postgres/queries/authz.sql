@@ -229,7 +229,7 @@ DELETE FROM authz_role_binding WHERE role = sqlc.arg(role)::text AND principal_i
 
 -- name: AuthzDeleteAPIBinding :execrows
 -- The API's unbind: a binding the configuration keeps stays (R-AUTHZ-010,
--- Q-AUTHZ-170), so the source is part of the condition and a concurrent trove
+-- Q-AUTHZ-170), so the source is part of the condition and a concurrent quader
 -- migrate that takes the binding over cannot lose it.
 DELETE FROM authz_role_binding
  WHERE role = sqlc.arg(role)::text AND principal_id = sqlc.arg(principal_id)::text::uuid AND source = 'api';
@@ -252,7 +252,7 @@ UPDATE authz_role_binding SET source = 'configuration'
  WHERE role = sqlc.arg(role)::text AND principal_id = sqlc.arg(principal_id)::text::uuid AND source <> 'configuration';
 
 -- name: AuthzDeclaredBindings :many
--- The bindings the configuration keeps, for trove migrate to remove the ones no
+-- The bindings the configuration keeps, for quader migrate to remove the ones no
 -- longer declared (Q-AUTHZ-170).
 SELECT b.role, b.principal_id::text AS principal_id, p.kind AS principal_kind, p.name AS principal_name
   FROM authz_role_binding b

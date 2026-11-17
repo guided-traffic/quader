@@ -1,6 +1,6 @@
 package authz
 
-import "github.com/guided-traffic/trove/internal/formats/catalog"
+import "github.com/guided-traffic/quader/internal/formats/catalog"
 
 // The path of a question about a package as a whole (R-AUTHZ-005, Q-AUTHZ-250). A
 // protocol request states the canonical path of what it serves or writes: the format

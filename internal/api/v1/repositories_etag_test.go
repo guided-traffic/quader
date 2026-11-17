@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_API_012_TheTagOfARepositoryReadFollowsItsActivityTime: lastActivityAt is in

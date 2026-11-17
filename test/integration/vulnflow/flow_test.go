@@ -5,7 +5,7 @@
 // the task API; the vuln-evaluate job writes the findings of a version published to a local repository and of a version cached
 // through an npm remote; the findings API lists them; a triage PATCH confirms and blocks one; the download is refused in npm's
 // shape on another replica and served again after the block is lifted; a malicious version is refused on a remote miss before
-// any upstream tarball request; and npm's bulk audit endpoint names the advisory from trove's own data (exit criteria E4b.3
+// any upstream tarball request; and npm's bulk audit endpoint names the advisory from quader's own data (exit criteria E4b.3
 // and E4b.4 of the roadmap, R-VULN-004, R-VULN-009 to R-VULN-013, R-VULN-015 to R-VULN-017).
 package vulnflow
 
@@ -27,12 +27,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -108,16 +108,16 @@ func newFlow(t *testing.T) *flow {
 	}
 
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnflow", Env: []string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strings.Join(cas, ",") + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
-		"TROVE_VULNERABILITIES_SOURCES_OSV_BASE_URL=" + osvSrv.URL + "/",
-		`TROVE_VULNERABILITIES_SOURCES_OSV_ECOSYSTEMS=["npm"]`,
-		"TROVE_VULNERABILITIES_SOURCES_KEV_MODE=off",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strings.Join(cas, ",") + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
+		"QUADER_VULNERABILITIES_SOURCES_OSV_BASE_URL=" + osvSrv.URL + "/",
+		`QUADER_VULNERABILITIES_SOURCES_OSV_ECOSYSTEMS=["npm"]`,
+		"QUADER_VULNERABILITIES_SOURCES_KEV_MODE=off",
 		// The test upstream stands for the public registry: a remote repository is matched with auto when its host is listed (R-VULN-010).
-		`TROVE_VULNERABILITIES_MATCHING_PUBLIC_UPSTREAMS={"npm":["127.0.0.1"]}`,
-		"TROVE_MAINTENANCE_TASKS=" + taskOff,
-		"TROVE_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "TROVE_JOBS_POLL_INTERVAL=200ms",
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		`QUADER_VULNERABILITIES_MATCHING_PUBLIC_UPSTREAMS={"npm":["127.0.0.1"]}`,
+		"QUADER_MAINTENANCE_TASKS=" + taskOff,
+		"QUADER_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "QUADER_JOBS_POLL_INTERVAL=200ms",
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
 	}})
 	f := &flow{t: t, st: st, osv: osv, npm: up}
 	rita, reader := st.User("rita"), st.User("reader")
@@ -275,7 +275,7 @@ func npmRefusal(t *testing.T, a testenv.Answer, code string) map[string]string {
 // TestR_VULN_015_E4b3_E4b4_TheFlowFromTheAdvisorySourceToTheBlockedDownload is the flow of the phase: R-VULN-004 (the sync through
 // the task API), R-VULN-009 to R-VULN-011 (the evaluation in the job and in the publish commit), R-VULN-013 (the triage),
 // R-VULN-015 and R-VULN-016 (the block, the refusal in npm's shape on another replica, the remote miss without an upstream
-// request) and R-VULN-017 (npm's bulk audit from trove's data).
+// request) and R-VULN-017 (npm's bulk audit from quader's data).
 func TestR_VULN_015_E4b3_E4b4_TheFlowFromTheAdvisorySourceToTheBlockedDownload(t *testing.T) {
 	f := newFlow(t)
 	web1, web2 := f.web[0], f.web[1]
@@ -412,7 +412,7 @@ func TestR_VULN_015_E4b3_E4b4_TheFlowFromTheAdvisorySourceToTheBlockedDownload(t
 		}
 	})
 
-	t.Run("R-VULN-017 npm's bulk audit endpoint names the advisory from trove's data without an upstream request", func(t *testing.T) {
+	t.Run("R-VULN-017 npm's bulk audit endpoint names the advisory from quader's data without an upstream request", func(t *testing.T) {
 		asked := f.npm.Counts().Total()
 		for _, repo := range []string{repoLocal, repoRemote, repoAll} {
 			a := f.st.Do(web2, "POST", "/api/npm/it/"+repo+"/"+bulk, f.read, []byte(`{"`+pkgVuln+`":["1.0.0","1.0.1"],"`+pkgMal+`":["1.0.0"]}`))

@@ -87,13 +87,13 @@ describe('The sections of the repository settings page (R-UI-087)', () => {
     it('R-UI-087 a remote OCI repository shows key, description, visibility and upstream open, every other section closed, and no tab', async () => {
       const r = await openSettings(OCI_REMOTE);
       expect(r.root.querySelector('[role="tab"]')).toBeNull();
-      expect([...r.root.querySelectorAll('trove-page-header a')].map((a) => text(a))).toEqual(['Browse', 'Vulnerabilities']);
+      expect([...r.root.querySelectorAll('quader-page-header a')].map((a) => text(a))).toEqual(['Browse', 'Vulnerabilities']);
       expect(r.root.querySelector<HTMLInputElement>('#f-key')!.readOnly).toBe(true);
       expect(r.root.querySelector<HTMLTextAreaElement>('#f-description')!.value).toBe('Docker Hub, cached');
-      expect(r.root.querySelector('trove-repository-visibility')).not.toBeNull();
-      expect(r.root.querySelector('trove-upstream-settings')).not.toBeNull();
+      expect(r.root.querySelector('quader-repository-visibility')).not.toBeNull();
+      expect(r.root.querySelector('quader-upstream-settings')).not.toBeNull();
       expect(sectionHeadings(r.root)).toEqual(['Mirror', 'Access details', 'Administrator notes', 'How to use', 'Details', 'API', 'Advanced']);
-      for (const toggle of r.root.querySelectorAll('trove-disclosure .toggle')) expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      for (const toggle of r.root.querySelectorAll('quader-disclosure .toggle')) expect(toggle.getAttribute('aria-expanded')).toBe('false');
       for (const h of r.root.querySelectorAll('h1, h2, h3')) expect(text(h)).not.toMatch(/ and /);
       await expectAccessible(r.root);
     });
@@ -157,7 +157,7 @@ describe('The sections of the repository settings page (R-UI-087)', () => {
       await settle(r.fixture);
       expect(r.root.querySelector('#f-includePatterns')!.getAttribute('aria-invalid')).toBe('true');
       expect(r.root.querySelectorAll('[role="alert"]').length).toBe(1);
-      const access = [...r.root.querySelectorAll('trove-disclosure')].find((d) => d.querySelector('#f-includePatterns'))!;
+      const access = [...r.root.querySelectorAll('quader-disclosure')].find((d) => d.querySelector('#f-includePatterns'))!;
       expect(access.querySelector('[role="alert"]')).not.toBeNull();
     });
 

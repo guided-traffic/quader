@@ -3,8 +3,8 @@ package v1
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	_ "github.com/guided-traffic/trove/internal/formats/all" // registers the formats whose templates are checked
+	"github.com/guided-traffic/quader/internal/formats"
+	_ "github.com/guided-traffic/quader/internal/formats/all" // registers the formats whose templates are checked
 )
 
 // TestR_API_030_EverySetupTemplateLanguageIsReportedAsAValueOfTheEnum: the language of a setup

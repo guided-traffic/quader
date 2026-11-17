@@ -6,7 +6,7 @@ package e2e
 // npm_ha_test.go run under:
 //
 //   - npm ci loops (R-HA-059: eight) of a lockfile of at least 400 packages through npm-all, whose members are
-//     npm-local (three packages of this run) and npm-remote (the corpus of the counting test upstream), with trove's
+//     npm-local (three packages of this run) and npm-remote (the corpus of the counting test upstream), with quader's
 //     cache warm and an empty client cache per iteration (`npm ci --cache <new directory>`);
 //   - an npm publish of a new version to npm-local every 10 s;
 //   - the k6 npm requests of k6/npm.js through the edge.
@@ -34,7 +34,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 const (
@@ -88,7 +88,7 @@ var (
 func npmHAFx(t *testing.T) *npmHAFixture {
 	t.Helper()
 	fx := npmFx(t)
-	// The HA tests wait for the workers of the profile (troveSettled: the main worker and the pool vuln); the pool of the mirror tests
+	// The HA tests wait for the workers of the profile (quaderSettled: the main worker and the pool vuln); the pool of the mirror tests
 	// is not among them, whether a mirror test ran before in this process or not.
 	requireMirrorPool(t, false)
 	requireScatter(t, fx)
@@ -186,7 +186,7 @@ func buildNPMHAFixture(t *testing.T, fx *npmFixture) *npmHAFixture {
 	h.small50KiB = su.EscapedPath()
 
 	// The lockfile project: corpus roots whose closure has at least 400 names minus the three local packages, plus
-	// those. `npm install` resolves it through npm-all, writes the lockfile and fills trove's cache: the loops find it
+	// those. `npm install` resolves it through npm-all, writes the lockfile and fills quader's cache: the loops find it
 	// warm.
 	roots := corpus.Default().Reference(haMinLocked - len(h.locals)).Dependencies
 	deps := map[string]string{}
@@ -294,12 +294,12 @@ func pacedSATokens(t testing.TB, adm *api, sa string, n, ttl int) []string {
 // the output of a failed one stays.
 const ciLoopScript = `#!/bin/sh
 mkdir -p out caches
-first="$TROVE_TOKEN"
+first="$QUADER_TOKEN"
 n=0
 while [ ! -e stop ]; do
   n=$((n + 1))
-  if [ $((n % 2)) -eq 0 ]; then TROVE_TOKEN="$TROVE_TOKEN_ALT"; else TROVE_TOKEN="$first"; fi
-  export TROVE_TOKEN
+  if [ $((n % 2)) -eq 0 ]; then QUADER_TOKEN="$QUADER_TOKEN_ALT"; else QUADER_TOKEN="$first"; fi
+  export QUADER_TOKEN
   cache="$(mktemp -d -p "$PWD/caches")"
   start="$(date +%s%3N)"
   npm11 ci --cache "$cache" >"out/$n.log" 2>&1
@@ -321,7 +321,7 @@ while [ ! -e stop ]; do
   n=$((n + 1))
   v="1.0.$n"
   start="$(date +%s%3N)"
-  printf '{"name":"%s","version":"%s","description":"trove HA load","main":"index.js","license":"MIT"}\n' "$PKG" "$v" >pkg/package.json
+  printf '{"name":"%s","version":"%s","description":"quader HA load","main":"index.js","license":"MIT"}\n' "$PKG" "$v" >pkg/package.json
   printf 'module.exports = "marker:%s@%s";\n' "$PKG" "$v" >pkg/index.js
   (cd pkg && npm11 publish) >"out/$n.log" 2>&1
   rc=$?
@@ -368,7 +368,7 @@ func startNPMLoad(t *testing.T, h *npmHAFixture, name string, o npmLoadOpts) *np
 	for i := 0; i < o.ciLoops; i++ {
 		c := newNPMClient(t, h.fx, haRow, i%pods)
 		c.token = h.tokens[2*i]
-		c.extraEnv = []string{"TROVE_TOKEN_ALT=" + h.tokens[2*i+1]}
+		c.extraEnv = []string{"QUADER_TOKEN_ALT=" + h.tokens[2*i+1]}
 		c.tag = fmt.Sprintf("ha-%s-%s-ci%d", h.fx.run, name, i)
 		dir := c.dir("loop")
 		c.sh("/work", `rm -rf "/work/`+c.tag+`" && mkdir -p "`+dir+`"`)
@@ -585,7 +585,7 @@ process.stdout.write(bad.length ? bad.join('\n') : 'ok');`
 
 // committedTarballsReadable reads every version the registry lists for the publish loop's package and downloads its
 // tarball against its integrity: an item row without its object would answer an error here. It is the client's reading of
-// what the publish loop wrote (the upgrade tests' pass condition); the pod crash asks `trove admin storage verify`
+// what the publish loop wrote (the upgrade tests' pass condition); the pod crash asks `quader admin storage verify`
 // (requireStorageVerified) for every item of the installation.
 func (r npmLoadResult) committedTarballsReadable(t *testing.T, h *npmHAFixture) {
 	t.Helper()
@@ -817,21 +817,21 @@ func (r npmK6Result) distinctDocuments() int {
 
 // ── misc ─────────────────────────────────────────────────────────────────────
 
-// troveSettled waits until the release has exactly its api, packages and worker pods, all ready and none terminating, so a
+// quaderSettled waits until the release has exactly its api, packages and worker pods, all ready and none terminating, so a
 // scenario does not start inside the recovery of the one before.
-func troveSettled(t *testing.T, api, packages, worker int) {
+func quaderSettled(t *testing.T, api, packages, worker int) {
 	t.Helper()
-	waitFor(t, "the trove pods to settle", 5*time.Minute, 2*time.Second, func() bool {
-		ps := podsOf(t, selTrove)
+	waitFor(t, "the quader pods to settle", 5*time.Minute, 2*time.Second, func() bool {
+		ps := podsOf(t, selQuader)
 		a, p, w := 0, 0, 0
 		for _, pd := range ps {
 			if !pd.Ready || pd.Deleting {
 				return false
 			}
 			switch {
-			case strings.HasPrefix(pd.Name, "trove-api-"):
+			case strings.HasPrefix(pd.Name, "quader-api-"):
 				a++
-			case strings.HasPrefix(pd.Name, "trove-packages-"):
+			case strings.HasPrefix(pd.Name, "quader-packages-"):
 				p++
 			default:
 				w++
@@ -841,11 +841,11 @@ func troveSettled(t *testing.T, api, packages, worker int) {
 	})
 }
 
-// replicaMetric reads one series of every trove pod (api, packages and worker).
+// replicaMetric reads one series of every quader pod (api, packages and worker).
 func replicaMetric(t *testing.T, series string) map[string]float64 {
 	t.Helper()
 	out := map[string]float64{}
-	for _, p := range livePods(t, selTrove) {
+	for _, p := range livePods(t, selQuader) {
 		out[p.Name] = metricsOf(t, p.Name)[series]
 	}
 	return out

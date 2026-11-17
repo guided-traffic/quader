@@ -21,7 +21,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // invariant fails if a committed reference points at a blob that is not live
@@ -216,12 +216,12 @@ func TestGCKilledAtRandomPoints(t *testing.T) {
 // TestRaceWithDeletesAndCollection is the race test of R-STOR-005 with
 // collection running: uploads of the same content to random paths, deletes of
 // those items and collection with grace_period 0s in a loop, on several
-// replicas. It runs TROVE_TEST_BLOB_RACE_SECONDS seconds (default 15; the
+// replicas. It runs QUADER_TEST_BLOB_RACE_SECONDS seconds (default 15; the
 // specification's 10 minutes are for a soak run).
 func TestRaceWithDeletesAndCollection(t *testing.T) {
 	t.Run("R-STOR-005 uploads, deletes and collection with grace_period 0s leave every item's blob live with its object", func(t *testing.T) {
 		secs := 15
-		if v, err := strconv.Atoi(os.Getenv("TROVE_TEST_BLOB_RACE_SECONDS")); err == nil && v > 0 {
+		if v, err := strconv.Atoi(os.Getenv("QUADER_TEST_BLOB_RACE_SECONDS")); err == nil && v > 0 {
 			secs = v
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(secs)*time.Second)
@@ -458,11 +458,11 @@ func TestDownloadVerificationOnTheStore(t *testing.T) {
 	})
 }
 
-// The blob tier needs no Valkey. The tests above read no TROVE_TEST_VALKEY_*
+// The blob tier needs no Valkey. The tests above read no QUADER_TEST_VALKEY_*
 // variable; this one checks that the code under test cannot reach the client.
 func TestNoValkeyDependency(t *testing.T) {
 	t.Run("R-STOR-046 nothing below internal/blob depends on the Valkey client or the cluster package", func(t *testing.T) {
-		out, err := exec.Command("go", "list", "-deps", "github.com/guided-traffic/trove/internal/blob/...").CombinedOutput()
+		out, err := exec.Command("go", "list", "-deps", "github.com/guided-traffic/quader/internal/blob/...").CombinedOutput()
 		if err != nil {
 			t.Fatalf("go list: %v\n%s", err, out)
 		}

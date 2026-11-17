@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Vulnerabilities is the vulnerabilities section (R-VULN-025): the advisory sources, matching, findings and export of the
@@ -14,8 +14,8 @@ import (
 // The four maintenance tasks of the scanning are keys of maintenance.tasks, with their defaults there.
 type Vulnerabilities struct {
 	Enabled     bool          `yaml:"enabled" default:"true" doc:"false: no sync, no evaluation, no block and no client-audit mode local; the stored findings stay as they are."`
-	Enforcement string        `yaml:"enforcement" default:"enforce" validate:"oneof=enforce|report" doc:"enforce refuses the downloads the findings block (R-VULN-015); report blocks nothing anywhere: the would-be blocks are counted in trove_vuln_downloads_blocked_total{mode=\"report\"} and recorded with enforced false. The installation-wide override for an emergency and for measuring a policy before enforcing it."`
-	StaleAfter  time.Duration `yaml:"stale_after" default:"24h" validate:"min=1m,max=8760h" doc:"An ecosystem whose last successful sync is older than this is stale: evaluation and enforcement continue on the stored data, the report shows a banner and the alert TroveVulnerabilityDataStale fires. Staleness never affects readiness."`
+	Enforcement string        `yaml:"enforcement" default:"enforce" validate:"oneof=enforce|report" doc:"enforce refuses the downloads the findings block (R-VULN-015); report blocks nothing anywhere: the would-be blocks are counted in quader_vuln_downloads_blocked_total{mode=\"report\"} and recorded with enforced false. The installation-wide override for an emergency and for measuring a policy before enforcing it."`
+	StaleAfter  time.Duration `yaml:"stale_after" default:"24h" validate:"min=1m,max=8760h" doc:"An ecosystem whose last successful sync is older than this is stale: evaluation and enforcement continue on the stored data, the report shows a banner and the alert QuaderVulnerabilityDataStale fires. Staleness never affects readiness."`
 
 	Sources  VulnerabilitySources  `yaml:"sources"`
 	Matching VulnerabilityMatching `yaml:"matching"`
@@ -46,7 +46,7 @@ type VulnerabilityTrivy struct {
 type VulnerabilityImages struct {
 	Enabled             bool          `yaml:"enabled" default:"true" doc:"false: no image is scanned; a repository's images are not_covered. The findings stay as they are."`
 	Binary              string        `yaml:"binary" default:"/usr/local/bin/trivy" doc:"The analyser, the one the release image carries at the version of tools/versions.env."`
-	ScanDir             string        `yaml:"scan_dir" default:"/var/lib/trove/spool/imagescan" doc:"Local directory of the working files of the scans and of the unpacked database, below the worker's spool. The spool's budget counts every file in it: the database once, each scan the compressed size of its image plus 64 MiB. Lost with the pod without harm."`
+	ScanDir             string        `yaml:"scan_dir" default:"/var/lib/quader/spool/imagescan" doc:"Local directory of the working files of the scans and of the unpacked database, below the worker's spool. The spool's budget counts every file in it: the database once, each scan the compressed size of its image plus 64 MiB. Lost with the pod without harm."`
 	Concurrency         int           `yaml:"concurrency" default:"1" validate:"min=1,max=64" doc:"Images one job scans at a time."`
 	RunSlice            time.Duration `yaml:"run_slice" default:"10m" validate:"min=10s,max=24h" doc:"How long one job keeps its slot on the queue vuln before the rest of the work goes to the next job, so that an advisory sync gets its turn."`
 	ScanDelay           time.Duration `yaml:"scan_delay" default:"30s" validate:"min=0,max=1h" doc:"Delay before a new manifest is scanned, so that a pull of a remote image has brought its layers."`
@@ -83,7 +83,7 @@ type VulnerabilityKEV struct {
 // VulnerabilityEPSS is the key of the P1 exploit-probability enrichment (R-VULN-030, Q-VULN-21). Only off is accepted in
 // this release; the key exists so that a configuration that switches it on is refused by name, not read as an unknown key.
 type VulnerabilityEPSS struct {
-	Mode       string `yaml:"mode" default:"off" validate:"oneof=online|repository|off" doc:"Off, and only off is built in this release (P1). The operator who switches EPSS on decides whether the data's terms permit the installation's use: FIRST publishes the EPSS scores without a stated licence, its site reads \"All Rights Reserved\", and it asks for attribution in products that use the scores; trove makes no statement about what that permits."`
+	Mode       string `yaml:"mode" default:"off" validate:"oneof=online|repository|off" doc:"Off, and only off is built in this release (P1). The operator who switches EPSS on decides whether the data's terms permit the installation's use: FIRST publishes the EPSS scores without a stated licence, its site reads \"All Rights Reserved\", and it asks for attribution in products that use the scores; Quader makes no statement about what that permits."`
 	URL        string `yaml:"url" default:"https://epss.empiricalsecurity.com/epss_scores-current.csv.gz" doc:"The daily EPSS file; https only. Not fetched while mode is off."`
 	Repository string `yaml:"repository" default:"" doc:"Mode repository: the qualified name <projectKey>/<repoKey> of a generic local repository."`
 }

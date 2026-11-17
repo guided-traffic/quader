@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // SkewMargin is the 15 s of R-BAS-020: the main installation's revocation bound (at most 10 s, R-AUTH-023) and

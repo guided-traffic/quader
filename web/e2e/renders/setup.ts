@@ -36,7 +36,7 @@ export default async function setup(): Promise<void> {
   }
 }
 
-/** The edge answers once trove behind the dev server does; `deploy/ui-dev/renders.sh` started both or found them running. */
+/** The edge answers once Quader behind the dev server does; `deploy/ui-dev/renders.sh` started both or found them running. */
 async function waitForEdge(): Promise<void> {
   const ctx = await request.newContext({ baseURL: edge, ignoreHTTPSErrors: true });
   try {

@@ -1,0 +1,158 @@
+# A production installation (R-HA-031): three roles on autoscalers, a PodDisruptionBudget and topology spreading on every
+# Deployment, the transaction-mode pooler in front of PostgreSQL, the edge reachable through an Ingress and an HTTPRoute on a
+# platform-owned Gateway, ingress policies that name their peers, the ServiceMonitor and the PrometheusRule, and the backup.
+# Every host, bucket, namespace and Secret name below is an example; the keys are the chart's.
+global:
+  imagePullSecrets:
+    - name: registry-pull                          # example
+
+image:
+  tag: 0.0.0-example                               # example: the release to install
+
+highAvailability:
+  enforce: true                                    # default
+
+api:
+  autoscaling:
+    enabled: true
+    minReplicas: 2                                 # default
+    maxReplicas: 4                                 # default
+    targetCPUUtilizationPercentage: 70             # default
+packages:
+  autoscaling:
+    enabled: true
+    minReplicas: 3                                 # default
+    maxReplicas: 8                                 # default
+    targetCPUUtilizationPercentage: 70             # default
+worker:
+  autoscaling:
+    enabled: true
+    minReplicas: 2                                 # example
+    maxReplicas: 4                                 # example
+    targetCPUUtilizationPercentage: 80             # example
+  pools:
+    - name: vuln
+      queues: [vuln]
+      autoscaling:
+        enabled: true
+        minReplicas: 2                             # example
+        maxReplicas: 3                             # example
+        targetCPUUtilizationPercentage: 80         # example
+
+config:
+  server:
+    base_url: https://quader.example.com           # example
+    trusted_proxies: ["10.42.0.0/16"]              # example: the pod range of the edge proxy
+  database:
+    host: quader-db-pooler-rw.quader.svc           # example: the transaction-mode pooler (R-HA-058)
+    session_host: quader-db-rw.quader.svc          # example: the read-write Service, for the session-bound connections
+  storage:
+    s3:
+      bucket: quader-blobs                         # example
+      region: eu-central-1                         # example
+      credentials:
+        source: static
+    upload:
+      max_size: 10GiB                              # example; it must fit the spool below
+  valkey:
+    sentinel:
+      addresses:
+        - quader-valkey-sentinel-0.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-1.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-2.quader-valkey-sentinel.quader.svc:26379
+      primary_name: quader                         # example
+  backup:
+    target:
+      bucket: quader-backups                       # example: a bucket of its own
+
+secrets:
+  database:
+    existingSecret: quader-db-app                  # example
+  databaseMigration:
+    existingSecret: quader-db-owner                # example
+  databaseCA:
+    existingSecret: quader-db-ca                   # example
+  s3:
+    existingSecret: quader-s3                      # example
+  valkey:
+    existingSecret: quader-valkey                  # example
+  valkeySentinel:
+    existingSecret: quader-valkey-sentinel         # example
+  valkeyCA:
+    existingSecret: quader-valkey-ca               # example
+  encryption:
+    existingSecret: quader-encryption-keys         # example
+    keys: [2026-10.key]
+  backupSource:
+    existingSecret: quader-s3-read                 # example: a login that only reads the blob bucket
+
+spool:
+  type: ephemeral
+  sizeLimit: 14Gi                                  # example
+  ephemeral:
+    storageClassName: standard                     # example
+    size: 16Gi                                     # example
+    accessModes: [ReadWriteOnce]
+
+backup:
+  enabled: true
+
+tls:
+  secretName: quader-tls                           # example: a cert-manager Certificate's Secret (tls.crt, tls.key, ca.crt)
+  backendTLSPolicy:
+    enabled: true                                  # one BackendTLSPolicy per Service the HTTPRoute names
+    caConfigMapName: quader-tls-ca                 # example: a ConfigMap with the CA that signed quader-tls
+
+# The edge requirements of R-HA-039 for HAProxy Ingress: no body limit, timeouts that outlast a multi-GiB transfer on a slow
+# link. The Gateway's own are the HTTPRoute timeouts below (and the policies of R-HA-039, which the chart does not render).
+ingress:
+  enabled: true
+  className: haproxy                               # example
+  backendTLS:
+    controller: haproxy
+    caSecret: quader-tls                           # example: the Secret carries ca.crt
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt    # example
+    haproxy-ingress.github.io/timeout-client: 1h   # example
+    haproxy-ingress.github.io/timeout-server: 1h   # example
+    haproxy-ingress.github.io/proxy-body-size: "0" # example
+  tls:
+    - secretName: quader-edge-tls                  # example
+      hosts: [quader.example.com]
+gateway:
+  enabled: true
+  parentRefs:
+    - name: shared                                 # example: the platform's Gateway
+      namespace: gateway-system
+      sectionName: https
+  timeouts:
+    request: 2h                                    # example
+    backendRequest: 2h                             # example
+
+# Ingress policies name their peers (R-HA-042); the chart renders no egress rule.
+networkPolicy:
+  enabled: true                                    # default
+  ingress:
+    http:
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-controller    # example
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system  # example
+    ops:
+      from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring            # default
+
+metrics:
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack               # example: the label the Prometheus selects on
+  prometheusRule:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack               # example

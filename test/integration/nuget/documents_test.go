@@ -41,7 +41,7 @@ func TestR_NUGET_008_AnIDThatHoldsNoVersionIs404(t *testing.T) {
 			if head.Status != http.StatusNotFound || len(head.Body) != 0 {
 				t.Fatalf("HEAD: %d with %d body bytes", head.Status, len(head.Body))
 			}
-			if anon := e.get(a, "nuget-local", path, ""); anon.Status != http.StatusUnauthorized || anon.Header.Get("WWW-Authenticate") != `Basic realm="trove"` {
+			if anon := e.get(a, "nuget-local", path, ""); anon.Status != http.StatusUnauthorized || anon.Header.Get("WWW-Authenticate") != `Basic realm="quader"` {
 				t.Fatalf("without a credential: %d, WWW-Authenticate %q", anon.Status, anon.Header.Get("WWW-Authenticate"))
 			}
 			if none := e.get(a, "nuget-local", path, e.tokNobody); none.Status != http.StatusForbidden && none.Status != http.StatusNotFound {

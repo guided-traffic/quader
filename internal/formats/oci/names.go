@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats/oci/manifest"
+	"github.com/guided-traffic/quader/internal/formats/oci/manifest"
 )
 
 // The grammars of R-OCI-002. They are the ones of the distribution specification

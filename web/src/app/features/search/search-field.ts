@@ -27,7 +27,7 @@ import { PreferencesStore } from '../../core/preferences-store';
 import { ProjectContext } from '../../core/project-context';
 import { SessionStore } from '../../core/session-store';
 import { FormatIconView } from '../../shared/format-icon';
-import { TroveAvatar } from '../../shared/ui/avatar';
+import { QuaderAvatar } from '../../shared/ui/avatar';
 import { Segment, highlight } from './highlight';
 import {
   SearchEntry,
@@ -80,8 +80,8 @@ interface IndexedGroup {
  * under `/admin`.
  */
 @Component({
-  selector: 'trove-search-field',
-  imports: [NgTemplateOutlet, CdkMenu, CdkMenuItemRadio, CdkMenuTrigger, CdkTrapFocus, FormatIconView, TroveAvatar],
+  selector: 'quader-search-field',
+  imports: [NgTemplateOutlet, CdkMenu, CdkMenuItemRadio, CdkMenuTrigger, CdkTrapFocus, FormatIconView, QuaderAvatar],
   templateUrl: './search-field.html',
   host: { '[class.narrow]': 'layout.narrow()' },
 })

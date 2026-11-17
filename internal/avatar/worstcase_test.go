@@ -469,18 +469,18 @@ func TestR_API_055_TheWorstCaseInputsAreAccepted(t *testing.T) {
 	}
 }
 
-// cpuBudget is the CPU time the slowest accepted image may cost with TROVE_PERF_GATE=1 (Q-UI-174). Two decodes at a time
+// cpuBudget is the CPU time the slowest accepted image may cost with QUADER_PERF_GATE=1 (Q-UI-174). Two decodes at a time
 // (MaxConcurrent) share the CPU a pod has, so a pod needs twice the CPU one decode needs.
 const cpuBudget = time.Second
 
-// gateSamples is the number of decodes of each input under TROVE_PERF_GATE=1; the inputs are built once.
+// gateSamples is the number of decodes of each input under QUADER_PERF_GATE=1; the inputs are built once.
 const gateSamples = 7
 
 // TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline is the property behind DecodeTimeout: no image the checks
 // accept needs more than a fraction of it. The race detector slows a decoder beyond the bound of production (Test and Release
 // run 42409044656: 9.7 s for 2048 x 2048), so the per-change tier, which runs with it, judges nothing here. Without it each
 // input is decoded with a deadline of a minute, so that a slow decode (a busy host) is a reading and not a refusal, and wall
-// and CPU time are logged. With TROVE_PERF_GATE=1 (the nightly performance run) each input is decoded gateSamples times and
+// and CPU time are logged. With QUADER_PERF_GATE=1 (the nightly performance run) each input is decoded gateSamples times and
 // the least CPU time must be inside cpuBudget. Only the CPU time is judged: the wall time of a decode on a shared runner is
 // the runner's load (each fresh decode also pays a collection of the 40 MB it allocates), which is the lesson of Q-ARCH-220;
 // the least of several CPU readings is the cost of the image, and the one that H-641 turns into the CPU a pod needs.
@@ -488,7 +488,7 @@ func TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline(t *testing.T)
 	if raceDetector {
 		t.Skip("the race detector slows the decoders beyond the production bound and the inputs take minutes to build; judged without it")
 	}
-	gate := os.Getenv("TROVE_PERF_GATE") == "1"
+	gate := os.Getenv("QUADER_PERF_GATE") == "1"
 	samples := 1
 	if gate {
 		samples = gateSamples

@@ -14,12 +14,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// This file is the database half of `trove backup create` (R-BAK-005, R-BAK-006): the backup role's connection pool, the
+// This file is the database half of `quader backup create` (R-BAK-005, R-BAK-006): the backup role's connection pool, the
 // consistent snapshot with the shared migration lock and the table locks, the parallel export of every table under that one
 // snapshot, the sorted stream of referenced blobs and the sequences. It is the one place of the module that opens a
 // REPEATABLE READ transaction for a backup and the one that assembles COPY statements from catalog names; every identifier

@@ -10,13 +10,13 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
-	"github.com/guided-traffic/trove/test/npmstub/corpus"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
-// The object of a cached item is lost behind trove's back (an object store that lost its data, an out-of-band deletion,
+// The object of a cached item is lost behind quader's back (an object store that lost its data, an out-of-band deletion,
 // ha-and-helm.md R-HA-024): the rows stay. A remote repository treats the item as a cache miss and fills it again from its
 // upstream, whose commit writes the object again; while the upstream cannot serve it the answer is 503 content_unavailable
 // with Retry-After, never a 500 (storage.md R-STOR-027, R-STOR-012, Q-REPO-202 to Q-REPO-204, finding F-62).

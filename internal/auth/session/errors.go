@@ -3,7 +3,7 @@ package session
 import (
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // Problem maps an error of [Store.Validate] or [Store.CheckCSRF] to the error

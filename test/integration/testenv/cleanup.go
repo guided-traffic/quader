@@ -13,12 +13,12 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-// The stack's blob bucket keeps every version (the seed turns versioning on), so a deletion through trove's object store
+// The stack's blob bucket keeps every version (the seed turns versioning on), so a deletion through quader's object store
 // only writes a delete marker and the bytes stay as a noncurrent version. A suite that removed its objects that way still
 // filled the store: F-113 measured 9.1 GiB in 239,000 versions after one day of runs, and SeaweedFS refused every upload
 // once its 100 volumes were full. RemoveObjectsAtCleanup removes the versions themselves.
 
-// objectStore is a client of the stack's S3 gateway with the operator's credentials, outside trove's own client.
+// objectStore is a client of the stack's S3 gateway with the operator's credentials, outside quader's own client.
 func objectStore(tb testing.TB) *s3.Client {
 	tb.Helper()
 	o := S3Config(tb)

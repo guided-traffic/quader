@@ -9,8 +9,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/test/integration/stack"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/test/integration/stack"
 )
 
 // TestR_AUTHZ_026_Members: the members of a project and their roles over HTTP (R-AUTHZ-026, Q-AUTHZ-207,
@@ -172,7 +172,7 @@ func TestQ_AUTHZ_217_TheLastOwner(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-AUTHZ-217 an administrator of trove removes the last Owner and leaves the project without one", func(t *testing.T) {
+	t.Run("Q-AUTHZ-217 an administrator of quader removes the last Owner and leaves the project without one", func(t *testing.T) {
 		f.e.Exec("DELETE FROM project_member WHERE project_id = (SELECT id FROM project WHERE key = 'web')")
 		wantStatus(t, f.member("web", "user:alice", "owner"), 201, "")
 		wantStatus(t, f.do(f.admin, "DELETE", base+"/web/members/user:alice", nil), 204, "")

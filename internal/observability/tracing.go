@@ -19,10 +19,10 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
-const tracerName = "github.com/guided-traffic/trove"
+const tracerName = "github.com/guided-traffic/quader"
 
 // TracingOption configures Tracing.
 type TracingOption func(*tracingOptions)
@@ -36,7 +36,7 @@ type tracingOptions struct {
 	exporter sdktrace.SpanExporter
 }
 
-// WithTraceResource sets service.instance.id, trove.role and service.version.
+// WithTraceResource sets service.instance.id, quader.role and service.version.
 func WithTraceResource(instance, role, version string) TracingOption {
 	return func(o *tracingOptions) { o.instance, o.role, o.version = instance, role, version }
 }
@@ -109,7 +109,7 @@ func Tracing(cfg config.Tracing, opts ...TracingOption) (*Tracer, error) {
 }
 
 func traceResource(o tracingOptions) (*resource.Resource, error) {
-	attrs := []attribute.KeyValue{attribute.String("service.name", "trove")}
+	attrs := []attribute.KeyValue{attribute.String("service.name", "quader")}
 	if o.version != "" {
 		attrs = append(attrs, attribute.String("service.version", o.version))
 	}
@@ -117,7 +117,7 @@ func traceResource(o tracingOptions) (*resource.Resource, error) {
 		attrs = append(attrs, attribute.String("service.instance.id", o.instance))
 	}
 	if o.role != "" {
-		attrs = append(attrs, attribute.String("trove.role", o.role))
+		attrs = append(attrs, attribute.String("quader.role", o.role))
 	}
 	// OTEL_RESOURCE_ATTRIBUTES carries the Kubernetes attributes of the downward API.
 	res, err := resource.New(context.Background(), resource.WithFromEnv(), resource.WithAttributes(attrs...))
@@ -226,7 +226,7 @@ func randomHex(n int) string {
 func (t *Tracer) Middleware() func(http.Handler) http.Handler { return t.MiddlewareFor("") }
 
 // MiddlewareFor is Middleware for the listener of one endpoint: every server
-// span carries trove.endpoint with the endpoint's name (R-EP-009). The name is
+// span carries quader.endpoint with the endpoint's name (R-EP-009). The name is
 // the listener's and is fixed when the chain is built.
 func (t *Tracer) MiddlewareFor(endpoint string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -252,7 +252,7 @@ func (t *Tracer) MiddlewareFor(endpoint string) func(http.Handler) http.Handler 
 				attribute.String("network.peer.address", peerHost(r.RemoteAddr)),
 			))
 			if endpoint != "" {
-				startOpts = append(startOpts, trace.WithAttributes(attribute.String("trove.endpoint", endpoint)))
+				startOpts = append(startOpts, trace.WithAttributes(attribute.String("quader.endpoint", endpoint)))
 			}
 			ctx, span := t.tracer.Start(ctx, r.Method, startOpts...)
 			defer span.End()
@@ -269,13 +269,13 @@ func (t *Tracer) MiddlewareFor(endpoint string) func(http.Handler) http.Handler 
 			span.SetName(r.Method + " " + route)
 			span.SetAttributes(attribute.String("http.route", route), attribute.Int("http.response.status_code", status))
 			if facts.repo != "" {
-				span.SetAttributes(attribute.String("trove.repository.key", facts.repo))
+				span.SetAttributes(attribute.String("quader.repository.key", facts.repo))
 			}
 			if facts.format != "" {
-				span.SetAttributes(attribute.String("trove.repository.format", facts.format))
+				span.SetAttributes(attribute.String("quader.repository.format", facts.format))
 			}
 			if facts.principalType != "" {
-				span.SetAttributes(attribute.String("trove.principal.type", facts.principalType))
+				span.SetAttributes(attribute.String("quader.principal.type", facts.principalType))
 			}
 			if status >= 500 {
 				span.SetStatus(codes.Error, strconv.Itoa(status))

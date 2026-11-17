@@ -3,7 +3,7 @@ package rows_test
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 )
 
 func TestIndexBaseCutsTheCompressionOfPackagesAndSourcesOnly(t *testing.T) {

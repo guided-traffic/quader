@@ -7,17 +7,17 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // Role bindings declared in the system configuration (R-AUTHZ-010, Q-AUTHZ-170,
-// Q-AUTHZ-171). trove migrate applies authz.role_bindings in one transaction; no
+// Q-AUTHZ-171). quader migrate applies authz.role_bindings in one transaction; no
 // web or worker replica writes them. The API lists them with their source and
 // refuses to remove them (bindings.go).
 
@@ -34,12 +34,12 @@ const (
 // authz.role_bindings: system:configuration.
 func ConfigurationActor() audit.Actor { return audit.Actor{Kind: "system", Name: "configuration"} }
 
-// ConfigurationSubject is the caller of the writes `trove migrate` makes for declared state that go through
+// ConfigurationSubject is the caller of the writes `quader migrate` makes for declared state that go through
 // a service taking a subject (the CI issuers, whose disabling revokes tokens): the same system:configuration
 // as [ConfigurationActor]. Only this package builds a Subject (R-EP-013).
 func ConfigurationSubject() Subject { return Subject{Kind: "system", Name: "configuration"} }
 
-// declaredGroupDescription is the description of a group trove migrate creates
+// declaredGroupDescription is the description of a group quader migrate creates
 // for a declaration, shown on the group's page.
 const declaredGroupDescription = "Created for authz.role_bindings of the system configuration."
 
@@ -69,7 +69,7 @@ func (o DeclaredOutcome) Changed() bool {
 	return len(o.Bound)+len(o.Adopted)+len(o.Unbound)+len(o.GroupsCreated) > 0
 }
 
-// ErrDeclared marks a declaration trove migrate cannot apply: a user or service
+// ErrDeclared marks a declaration quader migrate cannot apply: a user or service
 // account that does not exist, an auto-join group, or the removal of the last
 // administrator. The message names every such entry.
 var ErrDeclared = errors.New("authz.role_bindings cannot be applied")
@@ -185,7 +185,7 @@ func suppressionKey(role string, ref Ref) string { return role + "|" + ref.Strin
 
 // resolveDeclared finds the principal of every declaration and creates the
 // missing groups. It collects every problem before it fails, so one run of
-// trove migrate names all of them.
+// quader migrate names all of them.
 func resolveDeclared(ctx context.Context, tx meta.Tx, qs *q.Queries, declared []config.AuthzRoleBinding, groups GroupCreator, out *DeclaredOutcome) ([]declaredBinding, error) {
 	var want []declaredBinding
 	var problems []string

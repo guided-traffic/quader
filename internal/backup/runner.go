@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/format"
 )
 
-// The operation interfaces of the backup commands. cmd/trove builds one implementation of each and calls it; the work
+// The operation interfaces of the backup commands. cmd/quader builds one implementation of each and calls it; the work
 // packages of the lane replace the implementation behind the interface, never the command wiring (docs/developer/backup.md).
 // Every method returns an error that [ExitCode] maps to the exit code of R-BAK-013, and a result for the log and --json.
 
-// CreateOptions are the flags of `trove backup create` (R-BAK-009).
+// CreateOptions are the flags of `quader backup create` (R-BAK-009).
 type CreateOptions struct {
 	Trigger             Trigger
 	ExcludeRemoteCaches bool
@@ -25,16 +25,16 @@ type Creator interface {
 	Create(ctx context.Context, opts CreateOptions) (*Result, error)
 }
 
-// ListOptions are the flags of `trove backup list` (R-BAK-018).
+// ListOptions are the flags of `quader backup list` (R-BAK-018).
 type ListOptions struct{ All bool }
 
-// Listing is one line of `trove backup list` (R-BAK-018): a backup of the target, complete or not. The fields from
-// TroveVersion on come from the manifest and are empty for an incomplete directory.
+// Listing is one line of `quader backup list` (R-BAK-018): a backup of the target, complete or not. The fields from
+// QuaderVersion on come from the manifest and are empty for an incomplete directory.
 type Listing struct {
 	BackupID      format.ID          `json:"backupId"`
 	Complete      bool               `json:"complete"`
 	SnapshotAt    time.Time          `json:"snapshotAt,omitzero"`
-	TroveVersion  string             `json:"troveVersion,omitempty"`
+	QuaderVersion string             `json:"quaderVersion,omitempty"`
 	SchemaStep    int                `json:"schemaStep,omitempty"`
 	DatabaseBytes int64              `json:"databaseBytes,omitempty"`
 	BlobCount     int64              `json:"blobCount,omitempty"`
@@ -52,7 +52,7 @@ type Lister interface {
 	List(ctx context.Context, opts ListOptions) ([]Listing, error)
 }
 
-// VerifyOptions are the flags of `trove backup verify` (R-BAK-019). Exactly one of ID, Latest and All is set.
+// VerifyOptions are the flags of `quader backup verify` (R-BAK-019). Exactly one of ID, Latest and All is set.
 type VerifyOptions struct {
 	ID             format.ID
 	Latest, All    bool
@@ -92,7 +92,7 @@ type Verifier interface {
 	Verify(ctx context.Context, opts VerifyOptions) (*VerifyReport, error)
 }
 
-// DeleteOptions are the flags of `trove backup delete` (R-BAK-016).
+// DeleteOptions are the flags of `quader backup delete` (R-BAK-016).
 type DeleteOptions struct {
 	ID        format.ID
 	Yes       bool
@@ -104,19 +104,19 @@ type Deleter interface {
 	Delete(ctx context.Context, opts DeleteOptions) (*Result, error)
 }
 
-// Pruner applies the retention policy and sweeps the pool (`trove backup prune`, the pruning phase of create).
+// Pruner applies the retention policy and sweeps the pool (`quader backup prune`, the pruning phase of create).
 type Pruner interface {
 	Prune(ctx context.Context) (*Result, error)
 }
 
 // PruneStage is the pruning phase as the create pipeline calls it inside its own run: same run row, same lease handle, no
 // slot of its own (R-BAK-009 state pruning). The retention work package implements it; the same implementation serves
-// `trove backup prune` and `delete` through their own runs.
+// `quader backup prune` and `delete` through their own runs.
 type PruneStage interface {
 	Prune(ctx context.Context, h *Handle, into *Result) error
 }
 
-// RestoreOptions are the flags of `trove backup restore` (R-BAK-020).
+// RestoreOptions are the flags of `quader backup restore` (R-BAK-020).
 type RestoreOptions struct {
 	ID                     format.ID
 	Check                  bool
@@ -150,7 +150,7 @@ type Restorer interface {
 	Restore(ctx context.Context, opts RestoreOptions) (*RestoreReport, error)
 }
 
-// PostRestoreOptions are the flags of `trove admin post-restore` (R-HA-025 step 4).
+// PostRestoreOptions are the flags of `quader admin post-restore` (R-HA-025 step 4).
 type PostRestoreOptions struct {
 	// RestoredTo is t, the point in time the platform restore went to.
 	RestoredTo time.Time
@@ -170,7 +170,7 @@ type PostRestoreReport struct {
 	MissingBlobs int64 `json:"missingBlobs"`
 }
 
-// PostRestorer is the clean-up of a platform restore (PITR): `trove admin post-restore`. It runs the fix-ups of R-BAK-022
+// PostRestorer is the clean-up of a platform restore (PITR): `quader admin post-restore`. It runs the fix-ups of R-BAK-022
 // that a PITR needs, sets the deletion pause, replays the journal and writes system.restored with source "pitr".
 type PostRestorer interface {
 	PostRestore(ctx context.Context, opts PostRestoreOptions) (*PostRestoreReport, error)
@@ -218,7 +218,7 @@ type Retention struct {
 type Retained struct {
 	BackupID      string    `json:"backupId"`
 	SnapshotAt    time.Time `json:"snapshotAt"`
-	TroveVersion  string    `json:"troveVersion"`
+	QuaderVersion string    `json:"quaderVersion"`
 	SchemaStep    int       `json:"schemaStep"`
 	DatabaseBytes int64     `json:"databaseBytes"`
 	BlobCount     int64     `json:"blobCount"`
@@ -226,7 +226,7 @@ type Retained struct {
 	Damaged       bool      `json:"damaged"`
 }
 
-// Runners is the set of implementations cmd/trove calls. A work package fills one field; until it does, the constructor
+// Runners is the set of implementations cmd/quader calls. A work package fills one field; until it does, the constructor
 // of the command returns [NotBuilt].
 type Runners struct {
 	Creator  Creator

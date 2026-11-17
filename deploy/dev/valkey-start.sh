@@ -10,11 +10,11 @@ OPNS=valkey-operator-system
 op() { kubectl --context "$CTX" -n "$OPNS" "$@"; }
 
 log "scaling back (2 Valkey pods, 3 Sentinels) and starting the operator"
-kn scale statefulset/trove-valkey --replicas=2 >/dev/null
-kn scale statefulset/trove-valkey-sentinel --replicas=3 >/dev/null
+kn scale statefulset/quader-valkey --replicas=2 >/dev/null
+kn scale statefulset/quader-valkey-sentinel --replicas=3 >/dev/null
 op scale deployment/valkey-operator --replicas=1 >/dev/null
-sts_wait_ready trove-valkey 2 300
-sts_wait_ready trove-valkey-sentinel 3 300
+sts_wait_ready quader-valkey 2 300
+sts_wait_ready quader-valkey-sentinel 3 300
 op rollout status deployment/valkey-operator --timeout=2m >/dev/null
 deadline=$(( $(date +%s) + 60 ))
 until primary="$(valkey_primary 2>/dev/null)"; do

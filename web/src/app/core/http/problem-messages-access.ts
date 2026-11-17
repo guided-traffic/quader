@@ -105,7 +105,7 @@ export function describeAccessProblem(code: string | null): string | null {
     case 'secret_value_required':
       return $localize`:@@problem.secret_value_required:Enter the password or token of this upstream again.`;
     case 'outbound_path_restricted':
-      return $localize`:@@problem.outbound_path_restricted:The outbound path of this repository is set by an administrator of trove.`;
+      return $localize`:@@problem.outbound_path_restricted:The outbound path of this repository is set by an administrator of Quader.`;
     default:
       return null;
   }

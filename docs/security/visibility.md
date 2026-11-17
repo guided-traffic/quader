@@ -52,7 +52,7 @@ No policy entry, role binding, project membership or owner record can name `anon
 
 ## The wiki
 
-The wiki of a repository is the documentation trove serves or shows apart from the files: npm's `readme` members, the NuGet README
+The wiki of a repository is the documentation Quader serves or shows apart from the files: npm's `readme` members, the NuGet README
 route, the README operation of the package API and the collection documentation of the Ansible format (R-AUTHZ-034). It is never
 more open than the artifacts, so a caller who reads the wiki reads the package. A caller who reads the artifacts and not the wiki
 gets the refusal of a read on a route that serves only wiki content and documents without the wiki members; the README tab is not
@@ -85,14 +85,14 @@ applies them again, and never applies a raise (R-AUTHZ-036, R-AUTH-041).
 Component: the wiki part of R-AUTHZ-034. Subject: a repository whose wiki is less open than its artifacts. Live once such a
 repository holds packages that carry their README inside the artifact: an npm tarball's `README.md`, the file a `.nupkg` names, the
 README and the plugin sources of an Ansible collection archive. Whoever may download the artifact reads them, whatever the wiki
-level says; trove cannot change an artifact's bytes without breaking every digest a client verifies. What makes it real: a README or
+level says; Quader cannot change an artifact's bytes without breaking every digest a client verifies. What makes it real: a README or
 documentation that is meant to stay inside while the package is public.
 
 ### H-881 · Anyone can make a public remote repository fetch from its upstream
 
 Component: the populate check of R-AUTHZ-008 for a read by a level (R-AUTHZ-035 rule 6). Subject: remote repositories whose artifacts
 are `public` and whose `cacheFillAction` is `read`. Dormant until such a repository exists; the write that creates the state answers
-with the warning `public_populates_remote`. Then every caller on the network can make trove download arbitrary upstream packages:
+with the warning `public_populates_remote`. Then every caller on the network can make Quader download arbitrary upstream packages:
 storage growth, upstream rate limits, possibly upstream cost. The installation-wide fetch budget of R-REPO-040 bounds concurrency,
 not volume. What closes it: `cacheFillAction: deploy` on public remote repositories.
 
@@ -106,7 +106,7 @@ employees flagged internal by hand instead.
 ### H-883 · Lowering a level withdraws nothing a caller already holds
 
 Component: the levels of R-AUTHZ-033. Subject: content that was readable by a level before it was lowered. Live on every lowering:
-what clients downloaded stays in their caches, lockfiles and mirrors outside trove; a Bastion keeps serving what it holds until its
+what clients downloaded stays in their caches, lockfiles and mirrors outside Quader; a Bastion keeps serving what it holds until its
 feed applies the `grants` entry (R-BAS-026). What makes it real: content that was opened by mistake and read before it was closed.
 
 ### H-884 · `internal` is a property of the user, not of the network

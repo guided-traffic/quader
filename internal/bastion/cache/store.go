@@ -11,10 +11,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/blob/s3"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/outbound"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/outbound"
 )
 
 // Options are what [New], [NewVolume] and [NewBucket] need besides the configuration. Every field is optional.
@@ -207,7 +207,7 @@ func (c *Cache) DeleteEntry(ctx context.Context, cacheKey string) error {
 // LookupEntry finds the entry of a cache key and checks it (R-BAS-031, R-BAS-032). [ErrNotFound] is a miss and
 // covers four cases: no entry; an entry whose signature fails, which is deleted and counted as stale; an entry
 // whose bytes are gone, which is deleted and counted as missing; an entry of another kind than the key's
-// bytes. Any other error is the backend's, already counted in trove_bastion_cache_errors_total, and the caller
+// bytes. Any other error is the backend's, already counted in quader_bastion_cache_errors_total, and the caller
 // serves the request as a miss.
 func (c *Cache) LookupEntry(ctx context.Context, cacheKey string) (Entry, ObjectInfo, error) {
 	kh := KeyHash(cacheKey)
@@ -265,7 +265,7 @@ func (c *Cache) corrupt(ctx context.Context, e Entry, keyHash string, cause erro
 // Open opens the bytes of an entry found under cacheKey for a full read, verified while they are served with
 // the hold-back (R-BAS-032): the last 64 KiB are released only when the SHA-256 and size equal the entry's. A
 // mismatch makes Read return [ErrCorrupt] instead of the held bytes, so the caller aborts the transfer; the
-// object and the entry of cacheKey are deleted and trove_bastion_cache_corrupt_total is counted, and the next
+// object and the entry of cacheKey are deleted and quader_bastion_cache_corrupt_total is counted, and the next
 // lookup is a miss. [ErrNotFound] says the bytes are gone; the entry is deleted as in [Cache.LookupEntry].
 func (c *Cache) Open(ctx context.Context, cacheKey string, e Entry) (io.ReadCloser, error) {
 	rc, err := c.back.GetObject(WithArea(ctx, e.Kind), e.SHA256, 0, -1)

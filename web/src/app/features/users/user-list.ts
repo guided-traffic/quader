@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
-import { TroveDialog } from '../../shared/ui/dialog';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { IdentityApi, User, UserFilters } from '../../api/identity-api';
@@ -13,7 +13,7 @@ import { FilterCategory, FilterPanel, FilterToggle } from '../../shared/ui/filte
 import { UserCreateDialog } from './user-create-dialog';
 import { originLabel } from './user-labels';
 import { PageHeader } from '../../shared/ui/page-header';
-import { TroveAvatar } from '../../shared/ui/avatar';
+import { QuaderAvatar } from '../../shared/ui/avatar';
 
 /**
  * Users (R-UI-024): username, display name, email, origin, status and last sign-in; filters text,
@@ -23,9 +23,9 @@ import { TroveAvatar } from '../../shared/ui/avatar';
  * pre-provisions a user linked to an identity-provider identity; there are no password fields.
  */
 @Component({
-  selector: 'trove-user-list',
+  selector: 'quader-user-list',
   imports: [
-    TroveAvatar,
+    QuaderAvatar,
     PageHeader,
     DatePipe,
     RouterLink,
@@ -42,7 +42,7 @@ import { TroveAvatar } from '../../shared/ui/avatar';
 })
 export class UserList {
   private readonly api = inject(IdentityApi);
-  private readonly dialog = inject(TroveDialog);
+  private readonly dialog = inject(QuaderDialog);
   private readonly router = inject(Router);
   protected readonly session = inject(SessionStore);
 

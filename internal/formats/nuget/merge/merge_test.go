@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/nuget/merge"
-	"github.com/guided-traffic/trove/internal/formats/nuget/remote"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/nuget/merge"
+	"github.com/guided-traffic/quader/internal/formats/nuget/remote"
 )
 
 func local(t *testing.T, entries ...merge.Entry) []byte {

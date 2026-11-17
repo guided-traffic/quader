@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/visibility"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/visibility"
 )
 
 // The levels of a repository (R-AUTHZ-033, R-REPO-004). They are columns of the repository row; the document carries them as the

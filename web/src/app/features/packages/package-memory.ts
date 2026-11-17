@@ -44,7 +44,7 @@ export class PackageMemory {
   private readonly key = computed(() => {
     const name = this.session.whoami()?.principal?.name;
     const project = this.context.key();
-    return name && project ? `trove.packages.${name}.${project}` : null;
+    return name && project ? `quader.packages.${name}.${project}` : null;
   });
   private readonly current = computed<Stored>(() => {
     const key = this.key();

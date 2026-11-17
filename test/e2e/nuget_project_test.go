@@ -43,8 +43,8 @@ func TestNuGetProjectPartner(t *testing.T) {
 	p.policy("write", []string{local}, "read", "deploy")
 	p.policy("read", []string{remote, virtual}, "read")
 	tok := p.token()
-	if !strings.HasPrefix(tok.Token, "trv_sat_") {
-		t.Fatalf("the token of a service account starts with %q, want trv_sat_", tok.Token[:min(8, len(tok.Token))])
+	if !strings.HasPrefix(tok.Token, "qdr_sat_") {
+		t.Fatalf("the token of a service account starts with %q, want qdr_sat_", tok.Token[:min(8, len(tok.Token))])
 	}
 	nugetReadableOnEveryReplica(t, tok.Token, local, remote, virtual)
 

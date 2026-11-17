@@ -51,7 +51,7 @@ internal/formats/ansible/
 ├── handlers_local.go     # the read operations, the download and the task read of the local class
 ├── hooks.go              # OnCommit (the version, its row and task), OnItemsRemoved (the tombstone), the fill and removal hooks of other classes
 ├── view.go               # the package screens' adapter; servecheck.go: the withheld archive
-├── bind.go               # the replica: the ansible: section, trove_ansible_publish_total, registerBinder for the other classes
+├── bind.go               # the replica: the ansible: section, quader_ansible_publish_total, registerBinder for the other classes
 ├── store.go              # the data port: Store = LocalStore + RemoteStore; ViewStore for the screens
 ├── ansibletest/          # the in-memory twin of the port for the unit tests and the conformance kit
 ├── settings.go, settings.schema.json  # the ansible member of the repository document (authUrl, clientId)
@@ -73,7 +73,7 @@ internal/config/ansible.go     # the ansible: section
 |---|---|
 | `handlers_remote.go`, `remote*.go` | The remote class and the roles: [ansible-remote.md](ansible-remote.md). `mirror.go` is the mirror's lister and `hub.go` the exchange of a hub behind single sign-on |
 | `class_virtual.go`, `handlers_virtual.go`, `virtual*.go`, `merge/` | The virtual class: [ansible-virtual.md](ansible-virtual.md) |
-| [`setup.go`](../../internal/formats/ansible/setup.go), [`guide.go`](../../internal/formats/ansible/guide.go), `guide/*.md` | The client surface: the eight setup templates (ids `ansible-galaxy.<name>.<section>`, Q-ANS-48; the token only as the variable `ANSIBLE_GALAXY_SERVER_TROVE_TOKEN`, Q-ANS-22; the netrc line uses the template function `hostname`) and the guide sections per class, which appear with the class the format registers; kit check 8 runs over them |
+| [`setup.go`](../../internal/formats/ansible/setup.go), [`guide.go`](../../internal/formats/ansible/guide.go), `guide/*.md` | The client surface: the eight setup templates (ids `ansible-galaxy.<name>.<section>`, Q-ANS-48; the token only as the variable `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN`, Q-ANS-22; the netrc line uses the template function `hostname`) and the guide sections per class, which appear with the class the format registers; kit check 8 runs over them |
 
 ## The routes
 
@@ -110,11 +110,11 @@ are in [codes.go](../../internal/errs/codes.go) (`CodeAnsible…`), the table th
 
 ## The scheme Token
 
-`formats.Route.TokenScheme` marks a route that takes `Authorization: Token <trove token>`; `auth.EndpointRules.TokenSchemeRoute` reports
+`formats.Route.TokenScheme` marks a route that takes `Authorization: Token <quader token>`; `auth.EndpointRules.TokenSchemeRoute` reports
 whether the request reaches one, answered by `Dispatcher.TokenSchemeRoute` (the same match as `APIKeyRoute`, [dispatcher.go](../../internal/api/dispatch/dispatcher.go));
 `credentialHeader` in [stage.go](../../internal/auth/stage.go) returns the secret with `MethodGalaxyToken` (`galaxy_token`, the label of
-the request log, of `trove_auth_attempts_total` and of the audit event) only then. The stage asks the route at most once and only for a
-header with that scheme. Everywhere else the header is "not a trove token" and is rejected without a lookup. The tests are in
+the request log, of `quader_auth_attempts_total` and of the audit event) only then. The stage asks the route at most once and only for a
+header with that scheme. Everywhere else the header is "not a Quader token" and is rejected without a lookup. The tests are in
 [galaxy_token_test.go](../../internal/auth/galaxy_token_test.go).
 
 ## The schema and the data port

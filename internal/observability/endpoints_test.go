@@ -47,12 +47,12 @@ func TestEndpointObservability(t *testing.T) {
 		}
 		body := scrapeBody(t, m, "")
 		for _, want := range []string{
-			`trove_http_requests_total{code="200",endpoint="default",handler="unmatched",listener="client",method="GET"} 1`,
-			`trove_http_requests_total{code="200",endpoint="customers",handler="unmatched",listener="client",method="GET"} 1`,
-			`trove_http_requests_total{code="200",endpoint="_other",handler="unmatched",listener="client",method="GET"} 1`,
+			`quader_http_requests_total{code="200",endpoint="default",handler="unmatched",listener="client",method="GET"} 1`,
+			`quader_http_requests_total{code="200",endpoint="customers",handler="unmatched",listener="client",method="GET"} 1`,
+			`quader_http_requests_total{code="200",endpoint="_other",handler="unmatched",listener="client",method="GET"} 1`,
 		} {
 			if !strings.Contains(body, want) {
-				t.Errorf("missing %s in\n%s", want, grepLines(body, "trove_http_requests_total"))
+				t.Errorf("missing %s in\n%s", want, grepLines(body, "quader_http_requests_total"))
 			}
 		}
 		if errs := m.Check(); len(errs) != 0 {
@@ -77,10 +77,10 @@ func TestEndpointObservability(t *testing.T) {
 		m.EndpointForwardedHostIgnored("customers")
 		body := scrapeBody(t, m, "")
 		for _, want := range []string{
-			`trove_endpoint_listener_up{endpoint="customers"} 1`,
-			`trove_endpoint_misdirected_total{endpoint="customers"} 1`,
-			`trove_endpoint_forwarded_host_ignored_total{endpoint="customers"} 1`,
-			`trove_endpoint_misdirected_total{endpoint="default"} 0`,
+			`quader_endpoint_listener_up{endpoint="customers"} 1`,
+			`quader_endpoint_misdirected_total{endpoint="customers"} 1`,
+			`quader_endpoint_forwarded_host_ignored_total{endpoint="customers"} 1`,
+			`quader_endpoint_misdirected_total{endpoint="default"} 0`,
 		} {
 			if !strings.Contains(body, want) {
 				t.Errorf("missing %s", want)

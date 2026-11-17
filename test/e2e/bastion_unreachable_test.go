@@ -37,7 +37,7 @@ func basCutMain(t testing.TB, s *basSite) func() {
 	}
 	manifest, err := json.Marshal(map[string]any{
 		"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy",
-		"metadata": map[string]any{"name": name, "namespace": basNS(), "labels": map[string]string{"app.kubernetes.io/part-of": "trove-e2e"}},
+		"metadata": map[string]any{"name": name, "namespace": basNS(), "labels": map[string]string{"app.kubernetes.io/part-of": "quader-e2e"}},
 		"spec": map[string]any{
 			"podSelector": labels("app.kubernetes.io/instance", s.release, "app.kubernetes.io/component", "bastion"),
 			"policyTypes": []string{"Egress"},
@@ -51,7 +51,7 @@ func basCutMain(t testing.TB, s *basSite) func() {
 					"ports": tcp(16379, 36379),
 				},
 				map[string]any{
-					"to":    []any{map[string]any{"namespaceSelector": labels("kubernetes.io/metadata.name", cfg.namespace), "podSelector": labels("app.kubernetes.io/name", "trove-s3")}},
+					"to":    []any{map[string]any{"namespaceSelector": labels("kubernetes.io/metadata.name", cfg.namespace), "podSelector": labels("app.kubernetes.io/name", "quader-s3")}},
 					"ports": tcp(9000),
 				},
 			},
@@ -79,12 +79,12 @@ func basCutMain(t testing.TB, s *basSite) func() {
 
 func itoa(i int) string { b, _ := json.Marshal(i); return string(b) }
 
-// reachableGauge reads trove_bastion_main_reachable of every ready replica.
+// reachableGauge reads quader_bastion_main_reachable of every ready replica.
 func basReachable(t testing.TB, s *basSite) []float64 {
 	t.Helper()
 	var out []float64
 	for _, p := range basReadyPods(t, s) {
-		out = append(out, basMetrics(t, p.Name)["trove_bastion_main_reachable"])
+		out = append(out, basMetrics(t, p.Name)["quader_bastion_main_reachable"])
 	}
 	return out
 }
@@ -99,7 +99,7 @@ func allEqual(v []float64, want float64) bool {
 }
 
 // TestBastion_R_BAS_049_MainUnreachable: the cut; warm runs succeed for the grace period, a cold package and an unseen token
-// get 503, everything 503 after period + grace_period; the gauges the alert TroveBastionMainUnreachable reads stay 0 for its
+// get 503, everything 503 after period + grace_period; the gauges the alert QuaderBastionMainUnreachable reads stay 0 for its
 // `for: 2m` (there is no Prometheus in the profile, Q-BAS-112); after the cut ends both replicas return to reachable.
 func TestBastion_R_BAS_049_MainUnreachable(t *testing.T) {
 	env := basFx(t)
@@ -128,11 +128,11 @@ func TestBastion_R_BAS_049_MainUnreachable(t *testing.T) {
 	// the new ones that the policy drops. (A replica that was restarted instead could not use its answers: it has no feed
 	// history, R-BAS-026.)
 	kn(t, "delete", "pod", "-l", selServing, "--wait=false", "--grace-period=1")
-	waitFor(t, "trove_bastion_main_reachable 0 on both replicas", 60*time.Second, time.Second, func() bool { return allEqual(basReachable(t, site), 0) })
+	waitFor(t, "quader_bastion_main_reachable 0 on both replicas", 60*time.Second, time.Second, func() bool { return allEqual(basReachable(t, site), 0) })
 	t.Logf("both replicas unreachable %s after the cut", time.Since(cutAt).Round(time.Second))
 	for _, p := range basReadyPods(t, site) {
-		if m := basMetrics(t, p.Name); m["trove_bastion_main_unreachable_since_timestamp_seconds"] <= 0 {
-			t.Errorf("%s: trove_bastion_main_unreachable_since_timestamp_seconds = %v", p.Name, m["trove_bastion_main_unreachable_since_timestamp_seconds"])
+		if m := basMetrics(t, p.Name); m["quader_bastion_main_unreachable_since_timestamp_seconds"] <= 0 {
+			t.Errorf("%s: quader_bastion_main_unreachable_since_timestamp_seconds = %v", p.Name, m["quader_bastion_main_unreachable_since_timestamp_seconds"])
 		}
 	}
 
@@ -172,18 +172,18 @@ func TestBastion_R_BAS_049_MainUnreachable(t *testing.T) {
 		t.Logf("npm ci after the grace period: exit %d: %s", r.Code, strings.ReplaceAll(tailLines(r.Out, 3), "\n", " | "))
 	})
 
-	// TroveBastionMainUnreachable: max(trove_bastion_main_reachable) == 0 for 2 minutes
+	// QuaderBastionMainUnreachable: max(quader_bastion_main_reachable) == 0 for 2 minutes
 	for time.Since(cutAt) < 2*time.Minute+10*time.Second {
 		if !allEqual(basReachable(t, site), 0) {
 			t.Fatalf("a replica was reachable again before the cut ended: %v", basReachable(t, site))
 		}
 		time.Sleep(5 * time.Second)
 	}
-	t.Logf("trove_bastion_main_reachable stayed 0 on every replica for %s: TroveBastionMainUnreachable's expression holds for its `for`", time.Since(cutAt).Round(time.Second))
+	t.Logf("quader_bastion_main_reachable stayed 0 on every replica for %s: QuaderBastionMainUnreachable's expression holds for its `for`", time.Since(cutAt).Round(time.Second))
 	for _, p := range basReadyPods(t, site) {
 		m := basMetrics(t, p.Name)
-		if m["trove_bastion_grace_period_seconds"] != basGrace.Seconds() || m["trove_bastion_answer_period_seconds"] != basAnswerPeriod.Seconds() {
-			t.Errorf("%s: grace %v period %v", p.Name, m["trove_bastion_grace_period_seconds"], m["trove_bastion_answer_period_seconds"])
+		if m["quader_bastion_grace_period_seconds"] != basGrace.Seconds() || m["quader_bastion_answer_period_seconds"] != basAnswerPeriod.Seconds() {
+			t.Errorf("%s: grace %v period %v", p.Name, m["quader_bastion_grace_period_seconds"], m["quader_bastion_answer_period_seconds"])
 		}
 	}
 
@@ -196,6 +196,6 @@ func TestBastion_R_BAS_049_MainUnreachable(t *testing.T) {
 		c.basInstall(t, dir, setN)
 		setD.restore(t, nc, project)
 		site.get(t, env.full.Token, npmDocPath(cold)).want(t, "the cold package after the recovery", 200)
-		waitFor(t, "the audit buffers to be empty", 60*time.Second, 2*time.Second, func() bool { return basSum(t, site, "trove_bastion_audit_buffer_events") == 0 })
+		waitFor(t, "the audit buffers to be empty", 60*time.Second, 2*time.Second, func() bool { return basSum(t, site, "quader_bastion_audit_buffer_events") == 0 })
 	})
 }

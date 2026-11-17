@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestUILocaleFollowsTheSavedPreference is R-UI-001 on the running composition
@@ -22,9 +22,9 @@ func TestUILocaleFollowsTheSavedPreference(t *testing.T) {
 	const password = "correct horse battery staple 1"
 	file := testenv.WriteFile(t, t.TempDir(), "break-glass", password)
 	r := e.stack.Start(t, testenv.ReplicaOptions{Name: "web-ui", Env: []string{
-		"TROVE_AUTH_BREAK_GLASS_ENABLED=true", "TROVE_AUTH_BREAK_GLASS_PASSWORD_FILE=" + file,
+		"QUADER_AUTH_BREAK_GLASS_ENABLED=true", "QUADER_AUTH_BREAK_GLASS_PASSWORD_FILE=" + file,
 	}})
-	const origin = "http://trove.test"
+	const origin = "http://quader.test"
 
 	login := e.stack.Do(r, "POST", "/auth/local/login", "", map[string]string{"username": "admin", "password": password}, "Origin", origin)
 	if login.Status != http.StatusNoContent {

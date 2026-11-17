@@ -43,8 +43,8 @@ func newFlightFixture(t *testing.T, ttl, poll time.Duration) *flightFixture {
 	return &flightFixture{srv: srv, v: v, reg: reg, lock: NewFlightLock(v, FlightLockOptions{TTL: ttl, PollInterval: poll, Registerer: reg})}
 }
 
-func lockKeyName(f FlightKey) string { return "trove:" + testKS + ":lock:fetch:v1:" + f.String() }
-func fillChannel(f FlightKey) string { return "trove:" + testKS + ":fill:v1:" + f.String() }
+func lockKeyName(f FlightKey) string { return "quader:" + testKS + ":lock:fetch:v1:" + f.String() }
+func fillChannel(f FlightKey) string { return "quader:" + testKS + ":fill:v1:" + f.String() }
 
 var testFlight = NewFlightKey(7, "/left-pad/-/left-pad-1.3.0.tgz", "")
 
@@ -186,8 +186,8 @@ func TestFlightLockLost(t *testing.T) {
 		}
 		bToken, _ := fx.srv.value(lockKeyName(testFlight))
 		eventually(t, "the first hold to notice", 2*fixtureTTL, a.Lost)
-		if got := gaugeValue(t, fx.reg, "trove_flight_lock_lost_total", ""); got != 1 {
-			t.Fatalf("trove_flight_lock_lost_total = %v, want 1", got)
+		if got := gaugeValue(t, fx.reg, "quader_flight_lock_lost_total", ""); got != 1 {
+			t.Fatalf("quader_flight_lock_lost_total = %v, want 1", got)
 		}
 		// the first hold finishes its fetch and releases: the second holder keeps its lock
 		if err := a.Release(t.Context(), OutcomeStored, ""); err != nil {
@@ -223,8 +223,8 @@ func TestFlightLockLost(t *testing.T) {
 			t.Fatalf("%d SET commands on the lock after the loss", got-n)
 		}
 		_ = a.Release(t.Context(), OutcomeFailed, "")
-		if got := gaugeValue(t, fx.reg, "trove_flight_lock_lost_total", ""); got != 1 {
-			t.Fatalf("trove_flight_lock_lost_total = %v, want 1 for one lost hold", got)
+		if got := gaugeValue(t, fx.reg, "quader_flight_lock_lost_total", ""); got != 1 {
+			t.Fatalf("quader_flight_lock_lost_total = %v, want 1 for one lost hold", got)
 		}
 	})
 }
@@ -401,13 +401,13 @@ func TestFlightLockWait(t *testing.T) {
 			t.Fatalf("fail = %v, want the context's deadline error and not ErrUnavailable", err)
 		}
 		if got := degradedCount(t, reg, MechanismFlightLock); got != 0 {
-			t.Fatalf("trove_valkey_degraded_total{flight_lock} = %v, want 0", got)
+			t.Fatalf("quader_valkey_degraded_total{flight_lock} = %v, want 0", got)
 		}
 		if err := l.fail(context.Background(), errors.New("connection refused")); !errors.Is(err, ErrUnavailable) {
 			t.Fatalf("fail without a deadline = %v, want ErrUnavailable", err)
 		}
 		if got := degradedCount(t, reg, MechanismFlightLock); got != 1 {
-			t.Fatalf("trove_valkey_degraded_total{flight_lock} = %v, want 1", got)
+			t.Fatalf("quader_valkey_degraded_total{flight_lock} = %v, want 1", got)
 		}
 	})
 	t.Run("R-ARCH-033 a killed holder frees the flight within the TTL plus the poll interval", func(t *testing.T) {
@@ -422,12 +422,12 @@ func TestFlightLockWait(t *testing.T) {
 		}
 		// The takeover itself is bounded per change by expect's ttl+poll+500 ms above. The tight bound, ttl+poll plus
 		// 150 ms of scheduling, is a tail latency that a CPU-throttled runner stretches (Q-ARCH-220), so it is enforced
-		// with TROVE_PERF_GATE=1 and logged otherwise.
+		// with QUADER_PERF_GATE=1 and logged otherwise.
 		if took := r.at.Sub(start); took > fixtureTTL+fixturePoll+150*time.Millisecond {
-			if os.Getenv("TROVE_PERF_GATE") == "1" {
+			if os.Getenv("QUADER_PERF_GATE") == "1" {
 				t.Fatalf("the waiter needed %s, want at most ttl+poll = %s (and scheduling)", took, fixtureTTL+fixturePoll)
 			}
-			t.Logf("the waiter needed %s, more than ttl+poll = %s and 150 ms of scheduling; enforced with TROVE_PERF_GATE=1 (Q-ARCH-220)", took, fixtureTTL+fixturePoll)
+			t.Logf("the waiter needed %s, more than ttl+poll = %s and 150 ms of scheduling; enforced with QUADER_PERF_GATE=1 (Q-ARCH-220)", took, fixtureTTL+fixturePoll)
 		}
 		h2, ok, err := fx.lock.Acquire(t.Context(), testFlight)
 		if err != nil || !ok {
@@ -563,7 +563,7 @@ func TestFlightLockUnavailable(t *testing.T) {
 			t.Fatal("a call reached the server while the breaker was open")
 		}
 	})
-	t.Run("R-ARCH-033 a failing call is ErrUnavailable too, and counts trove_valkey_degraded_total{flight_lock}", func(t *testing.T) {
+	t.Run("R-ARCH-033 a failing call is ErrUnavailable too, and counts quader_valkey_degraded_total{flight_lock}", func(t *testing.T) {
 		srv := newFakeServer(t, func(args []string) string {
 			switch strings.ToUpper(args[0]) {
 			case "HELLO":
@@ -588,8 +588,8 @@ func TestFlightLockUnavailable(t *testing.T) {
 		if _, ok, err := l.Acquire(t.Context(), testFlight); ok || !errors.Is(err, ErrUnavailable) {
 			t.Fatalf("Acquire = %v, %v, want ErrUnavailable", ok, err)
 		}
-		if got := gaugeValue(t, reg, "trove_valkey_degraded_total", MechanismFlightLock); got != 1 {
-			t.Fatalf("trove_valkey_degraded_total{flight_lock} = %v", got)
+		if got := gaugeValue(t, reg, "quader_valkey_degraded_total", MechanismFlightLock); got != 1 {
+			t.Fatalf("quader_valkey_degraded_total{flight_lock} = %v", got)
 		}
 	})
 }

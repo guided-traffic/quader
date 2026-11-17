@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The CI mappings of a project (Q-CI-26, R-CI-019, R-AUTHZ-026): the tier, the bounds, the narrowing of the
@@ -45,7 +45,7 @@ func newProjectEnv(t *testing.T) *projectEnv {
 // bob sends a request as the Owner of the project to either replica.
 func (p *projectEnv) bob(r *testenv.Replica, method, path string, body any, hdr ...string) testenv.Answer {
 	p.t.Helper()
-	return p.as(r, p.bobPAT, method, path, body, append([]string{"Trove-Authz-Min-Epoch", p.epoch}, hdr...)...)
+	return p.as(r, p.bobPAT, method, path, body, append([]string{"Quader-Authz-Min-Epoch", p.epoch}, hdr...)...)
 }
 
 // webPublish is the mapping of the project web that publishes to its repositories.

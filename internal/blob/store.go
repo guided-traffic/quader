@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // Store is the blob store of one replica: its spool, its object-store client

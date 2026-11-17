@@ -20,11 +20,11 @@ import (
 // replicas, a PodDisruptionBudget, the Ingress with the edge-limit annotations and a NetworkPolicy, and no Secret, no Role and no
 // PersistentVolumeClaim; an edge limit at or below the Bastion's own fails and names both values.
 func TestBastion_R_BAS_049_ChartRender(t *testing.T) {
-	chart := filepath.Join(cfg.repo, "deploy/helm/trove-bastion")
+	chart := filepath.Join(cfg.repo, "deploy/helm/quader-bastion")
 	required := []string{
 		"--set", "config.server.base_url=https://packages.example.com",
-		"--set", "config.bastion.main.url=https://trove.example.com",
-		"--set", "secrets.mainToken.existingSecret=trove-bastion-token",
+		"--set", "config.bastion.main.url=https://quader.example.com",
+		"--set", "secrets.mainToken.existingSecret=quader-bastion-token",
 		"--set", "tls.certManager.issuerRef.name=internal-ca",
 		"--set", "config.server.trusted_proxies[0]=10.244.0.0/16", // required behind an Ingress (Q-BAS-130)
 	}
@@ -91,17 +91,17 @@ func TestBastion_R_BAS_049_ChartRender(t *testing.T) {
 func TestBastion_R_BAS_049_Metrics(t *testing.T) {
 	env := basFx(t)
 	names := []string{
-		"trove_bastion_requests_total", "trove_bastion_bytes_served_total", "trove_bastion_main_requests_total",
-		"trove_bastion_main_request_duration_seconds", "trove_bastion_main_in_flight", "trove_bastion_main_budget",
-		"trove_bastion_main_budget_exhausted_total", "trove_bastion_main_reachable",
-		"trove_bastion_main_unreachable_since_timestamp_seconds", "trove_bastion_base_url_mismatch", "trove_bastion_interface_mismatch",
-		"trove_bastion_interface_version", "trove_bastion_grace_period_seconds", "trove_bastion_answer_period_seconds",
-		"trove_bastion_answers", "trove_bastion_answers_total", "trove_bastion_feed_lag_seconds", "trove_bastion_feed_entries_applied_total",
-		"trove_bastion_feed_resets_total", "trove_bastion_token_remaining_seconds", "trove_bastion_token_warn_before_seconds",
-		"trove_bastion_main_token_refused", "trove_bastion_token_reloads_total", "trove_bastion_cache_bytes",
-		"trove_bastion_cache_capacity_bytes", "trove_bastion_cache_evictions_total", "trove_bastion_cache_corrupt_total",
-		"trove_bastion_cache_errors_total", "trove_bastion_refused_total", "trove_bastion_blocks_total", "trove_bastion_blocked_addresses",
-		"trove_bastion_audit_events_total", "trove_bastion_audit_buffer_events", "trove_bastion_audit_events_dropped_total",
+		"quader_bastion_requests_total", "quader_bastion_bytes_served_total", "quader_bastion_main_requests_total",
+		"quader_bastion_main_request_duration_seconds", "quader_bastion_main_in_flight", "quader_bastion_main_budget",
+		"quader_bastion_main_budget_exhausted_total", "quader_bastion_main_reachable",
+		"quader_bastion_main_unreachable_since_timestamp_seconds", "quader_bastion_base_url_mismatch", "quader_bastion_interface_mismatch",
+		"quader_bastion_interface_version", "quader_bastion_grace_period_seconds", "quader_bastion_answer_period_seconds",
+		"quader_bastion_answers", "quader_bastion_answers_total", "quader_bastion_feed_lag_seconds", "quader_bastion_feed_entries_applied_total",
+		"quader_bastion_feed_resets_total", "quader_bastion_token_remaining_seconds", "quader_bastion_token_warn_before_seconds",
+		"quader_bastion_main_token_refused", "quader_bastion_token_reloads_total", "quader_bastion_cache_bytes",
+		"quader_bastion_cache_capacity_bytes", "quader_bastion_cache_evictions_total", "quader_bastion_cache_corrupt_total",
+		"quader_bastion_cache_errors_total", "quader_bastion_refused_total", "quader_bastion_blocks_total", "quader_bastion_blocked_addresses",
+		"quader_bastion_audit_events_total", "quader_bastion_audit_buffer_events", "quader_bastion_audit_events_dropped_total",
 	}
 	for _, s := range env.sites() {
 		for _, p := range basReadyPods(t, s) {
@@ -115,10 +115,10 @@ func TestBastion_R_BAS_049_Metrics(t *testing.T) {
 				}
 			}
 			m := parseMetrics(body)
-			if s.variant == "bucket" && m["trove_valkey_available"] != 1 {
-				t.Errorf("%s: trove_valkey_available = %v with Valkey configured", p.Name, m["trove_valkey_available"])
+			if s.variant == "bucket" && m["quader_valkey_available"] != 1 {
+				t.Errorf("%s: quader_valkey_available = %v with Valkey configured", p.Name, m["quader_valkey_available"])
 			}
-			if m["trove_bastion_main_reachable"] != 1 {
+			if m["quader_bastion_main_reachable"] != 1 {
 				t.Errorf("%s: not reachable", p.Name)
 			}
 		}

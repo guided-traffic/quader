@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const repo = "generic-local"
@@ -42,7 +42,7 @@ func newInstall(t *testing.T) *install {
 	return &install{stack: s, token: s.Token(u, scope.Scope{Inherit: true})}
 }
 
-// replica is one running `trove serve --role web`.
+// replica is one running `quader serve --role web`.
 type replica struct {
 	client, ops string
 	cmd         *exec.Cmd
@@ -56,7 +56,7 @@ func (in *install) start(t *testing.T, name string, extra ...string) *replica {
 	r := &replica{client: testenv.FreeAddr(t), ops: testenv.FreeAddr(t), logs: &testenv.SyncBuffer{}, exited: make(chan error, 1)}
 	r.cmd = exec.Command(binary, "serve", "--role", "web")
 	r.cmd.Env = append(append(append([]string{"PATH=" + os.Getenv("PATH")}, in.stack.Environ()...),
-		"TROVE_SERVER_LISTEN="+r.client, "TROVE_SERVER_OPS_LISTEN="+r.ops, "TROVE_POD_NAME="+name), extra...)
+		"QUADER_SERVER_LISTEN="+r.client, "QUADER_SERVER_OPS_LISTEN="+r.ops, "QUADER_POD_NAME="+name), extra...)
 	r.cmd.Stdout, r.cmd.Stderr = r.logs, r.logs
 	if err := r.cmd.Start(); err != nil {
 		t.Fatal(err)

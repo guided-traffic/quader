@@ -26,49 +26,49 @@ type metrics struct {
 func newMetrics(reg prometheus.Registerer) *metrics {
 	m := &metrics{
 		lookups: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_remote_cache_lookups_total",
+			Name: "quader_remote_cache_lookups_total",
 			Help: "Pull-through cache outcomes of remote repositories.",
 		}, []string{"repo", "kind", "result"}),
 		upstreamReqs: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_remote_upstream_requests_total",
+			Name: "quader_remote_upstream_requests_total",
 			Help: "Requests sent to an upstream, by status code or error.",
 		}, []string{"repo", "code"}),
 		upstreamDur: prometheus.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "trove_remote_upstream_request_duration_seconds",
+			Name:    "quader_remote_upstream_request_duration_seconds",
 			Help:    "Upstream response time including the body.",
 			Buckets: []float64{.01, .05, .1, .25, .5, 1, 2.5, 5, 10, 30, 60, 120, 300},
 		}, []string{"repo"}),
 		upstreamUp: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "trove_remote_upstream_up",
+			Name: "quader_remote_upstream_up",
 			Help: "1 while the upstream counts as reachable, 0 while the circuit is open.",
 		}, []string{"repo"}),
 		collapsed: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_remote_collapsed_requests_total",
+			Name: "quader_remote_collapsed_requests_total",
 			Help: "Cache misses that waited for an in-flight fetch instead of fetching, on this replica or another.",
 		}, []string{"repo"}),
 		sourceNet: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_remote_source_network_unavailable_total",
+			Name: "quader_remote_source_network_unavailable_total",
 			Help: "Fetches answered 502 source_network_unavailable: this replica has no address in the remote's sourceNetwork.",
 		}, []string{"repo"}),
 		bypass: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_flight_lock_bypass_total",
+			Name: "quader_flight_lock_bypass_total",
 			Help: "Fetches that went ahead without the cross-replica lock.",
 		}, []string{"reason"}),
 		queueWait: prometheus.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "trove_remote_fetch_queue_wait_seconds",
+			Name:    "quader_remote_fetch_queue_wait_seconds",
 			Help:    "Time a fetch waited for a free fetch slot.",
 			Buckets: []float64{.001, .01, .05, .1, .5, 1, 2.5, 5, 10},
 		}, []string{"repo"}),
 		integrity: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_remote_integrity_failures_total",
+			Name: "quader_remote_integrity_failures_total",
 			Help: "Upstream artifacts refused or kept apart because of a digest.",
 		}, []string{"repo", "reason"}),
 		egressDenied: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_remote_egress_denied_total",
+			Name: "quader_remote_egress_denied_total",
 			Help: "Upstream requests refused by the egress address policy.",
 		}, []string{"repo"}),
 		fillRefused: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_endpoint_cache_fill_refused_total",
+			Name: "quader_endpoint_cache_fill_refused_total",
 			Help: "Upstream contacts the endpoint's cache-fill policy prevented.",
 		}, []string{"endpoint"}),
 	}
@@ -96,7 +96,7 @@ func (m *metrics) forget(name string) {
 	m.egressDenied.DeletePartialMatch(l)
 }
 
-// The lookup results of trove_remote_cache_lookups_total.
+// The lookup results of quader_remote_cache_lookups_total.
 const (
 	resultHit      = "hit"
 	resultMiss     = "miss"

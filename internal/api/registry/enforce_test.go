@@ -13,24 +13,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/dispatch"
-	"github.com/guided-traffic/trove/internal/api/registry"
-	"github.com/guided-traffic/trove/internal/api/registry/registrytest"
-	"github.com/guided-traffic/trove/internal/api/registry/route"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	_ "github.com/guided-traffic/trove/internal/formats/all" // registers the OCI format, whose routes are mounted
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/api/dispatch"
+	"github.com/guided-traffic/quader/internal/api/registry"
+	"github.com/guided-traffic/quader/internal/api/registry/registrytest"
+	"github.com/guided-traffic/quader/internal/api/registry/route"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	_ "github.com/guided-traffic/quader/internal/formats/all" // registers the OCI format, whose routes are mounted
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 // R-OCI-005 ("Use", the grant as a ceiling below /v2/). The tests below build the mount the way the registry root does - the dispatcher's own match, every route of the
@@ -155,7 +155,7 @@ func newMount(t *testing.T, matcher route.Matcher, skip string) *mount {
 	// The token service refuses a registry token as its credential; its stand-in here does the same.
 	must(e.Mount(m.router, []string{"/v2/_token"}, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		recording.ServeHTTP(httptest.NewRecorder(), r)
-		w.Header().Set("WWW-Authenticate", `Basic realm="trove"`)
+		w.Header().Set("WWW-Authenticate", `Basic realm="quader"`)
 		w.WriteHeader(http.StatusUnauthorized)
 	}), registry.Route{Name: route.NameToken, Kind: registry.RouteToken, Method: "GET", Example: "/v2/_token"}))
 
@@ -168,7 +168,7 @@ func newMount(t *testing.T, matcher route.Matcher, skip string) *mount {
 	})
 	rules := auth.EndpointRules{Name: "default", TokenTypes: []token.Type{token.TypePAT}}
 	m.handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r = r.WithContext(httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://trove.test"}))
+		r = r.WithContext(httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://quader.test"}))
 		res, err := stage.Authenticate(r, rules)
 		if err != nil {
 			writeError(w, r, err)
@@ -299,7 +299,7 @@ func TestTheEnforcementPointThroughTheWholeHandler(t *testing.T) {
 		}
 		code, ch, c := m.send("POST", exampleBase+"app/blobs/uploads/", g)
 		if code != 401 || c != errs.CodeOCIInsufficientScope ||
-			ch != `Bearer realm="https://trove.test/v2/_token",service="trove.test",scope="repository:web/docker-local/app:push",error="insufficient_scope"` {
+			ch != `Bearer realm="https://quader.test/v2/_token",service="quader.test",scope="repository:web/docker-local/app:push",error="insufficient_scope"` {
 			t.Fatalf("push: %d %s %s", code, ch, c)
 		}
 	})
@@ -436,7 +436,7 @@ func TestAlsoChecksTheMountsSourceActionByAction(t *testing.T) {
 			})
 		}
 		p := httpserver.Principal{Kind: httpserver.KindUser, ID: alice.ID, Credential: httpserver.Credential{Registry: hg}}
-		ctx := httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://trove.test"})
+		ctx := httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://quader.test"})
 		return m.enforcer.Also(r.WithContext(httpserver.WithPrincipal(ctx, p)), source, a)
 	}
 	pushOnTarget := registrytoken.Grant{Entries: []registrytoken.Entry{{Repo: local, Name: "app", Actions: registrytoken.Push}}}
@@ -477,7 +477,7 @@ func TestTheInsufficientScopeRefusalSaysMoreWithoutLeaking(t *testing.T) {
 			Kind: httpserver.KindUser, ID: alice.ID,
 			Credential: httpserver.Credential{Registry: &httpserver.RegistryGrant{}, Scope: sc, TokenType: typ},
 		}
-		ctx := httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://trove.test"})
+		ctx := httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://quader.test"})
 		err := m.enforcer.Check(r.WithContext(httpserver.WithPrincipal(ctx, p)))
 		e, ok := errs.As(err)
 		if !ok || e.Code != errs.CodeOCIInsufficientScope {

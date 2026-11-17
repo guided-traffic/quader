@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-// TestR_AUTH_015_TheTokenCommandNamesAProjectAccount: `trove admin token create --service-account` takes the
+// TestR_AUTH_015_TheTokenCommandNamesAProjectAccount: `quader admin token create --service-account` takes the
 // name of an instance-wide account, and <project>/<name> or sa:<project>/<name> for the account of a project
 // (R-AUTHZ-026); the bare name never reaches a project's account.
 func TestR_AUTH_015_TheTokenCommandNamesAProjectAccount(t *testing.T) {
@@ -32,17 +32,17 @@ func TestR_AUTH_015_TheTokenCommandNamesAProjectAccount(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bin := filepath.Join(t.TempDir(), "trove")
-	build := exec.Command("go", "build", "-o", bin, "github.com/guided-traffic/trove/cmd/trove")
+	bin := filepath.Join(t.TempDir(), "quader")
+	build := exec.Command("go", "build", "-o", bin, "github.com/guided-traffic/quader/cmd/quader")
 	build.Env = append(os.Environ(), "CGO_ENABLED=0")
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("go build: %v\n%s", err, out)
 	}
 	cfgEnv := []string{
-		"TROVE_DATABASE_HOST=" + e.cfg.Host, "TROVE_DATABASE_PORT=" + strconv.Itoa(e.cfg.Port), "TROVE_DATABASE_NAME=" + e.cfg.Name,
-		"TROVE_DATABASE_USERNAME_FILE=" + e.cfg.UsernameFile, "TROVE_DATABASE_PASSWORD_FILE=" + e.cfg.PasswordFile,
-		"TROVE_DATABASE_SSL_MODE=verify-full", "TROVE_DATABASE_SSL_ROOT_CERT_FILE=" + testenv.CAFile(t),
-		"TROVE_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true", "TROVE_LOG_LEVEL=warn",
+		"QUADER_DATABASE_HOST=" + e.cfg.Host, "QUADER_DATABASE_PORT=" + strconv.Itoa(e.cfg.Port), "QUADER_DATABASE_NAME=" + e.cfg.Name,
+		"QUADER_DATABASE_USERNAME_FILE=" + e.cfg.UsernameFile, "QUADER_DATABASE_PASSWORD_FILE=" + e.cfg.PasswordFile,
+		"QUADER_DATABASE_SSL_MODE=verify-full", "QUADER_DATABASE_SSL_ROOT_CERT_FILE=" + testenv.CAFile(t),
+		"QUADER_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true", "QUADER_LOG_LEVEL=warn",
 	}
 	run := func(account string) (int, string, string) {
 		runCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -64,7 +64,7 @@ func TestR_AUTH_015_TheTokenCommandNamesAProjectAccount(t *testing.T) {
 
 	for _, ref := range []string{"web/partner", "sa:web/partner", "ops", "sa:ops"} {
 		code, out, errOut := run(ref)
-		if code != 0 || !strings.HasPrefix(out, "trv_sat_") {
+		if code != 0 || !strings.HasPrefix(out, "qdr_sat_") {
 			t.Errorf("%s: exit %d, stdout %q, stderr %s", ref, code, out, errOut)
 		}
 	}

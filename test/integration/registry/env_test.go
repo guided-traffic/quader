@@ -18,10 +18,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -29,10 +29,10 @@ func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
 // The hosts of the mirror endpoint: mirrorHost is bound to an OCI repository, plainHost to a repository of another format, which
 // behaves as no binding (R-EP-006).
 const (
-	mirrorHost = "mirror.trove.test"
-	plainHost  = "plain.trove.test"
+	mirrorHost = "mirror.quader.test"
+	plainHost  = "plain.quader.test"
 	// filesHost belongs to an endpoint whose surface holds files only.
-	filesHost = "files.trove.test"
+	filesHost = "files.quader.test"
 )
 
 var local = qname.Repo{Project: "web", Key: "docker-local"}
@@ -133,10 +133,10 @@ func (e *env) do(endpoint, host, method, path, bearer string) answer {
 	return answer{w}
 }
 
-// mint asks the endpoint's token service, with the trove token, for a registry token with the grant, as a client does: the scope
+// mint asks the endpoint's token service, with the quader token, for a registry token with the grant, as a client does: the scope
 // entries name the images the way the endpoint's host reads them (the full name on an unbound host, the image alone on a bound
 // one).
-func (e *env) mint(endpoint, host, troveToken string, g registrytoken.Grant, bound bool) string {
+func (e *env) mint(endpoint, host, quaderToken string, g registrytoken.Grant, bound bool) string {
 	e.t.Helper()
 	q := url.Values{}
 	for _, en := range g.Entries {
@@ -149,7 +149,7 @@ func (e *env) mint(endpoint, host, troveToken string, g registrytoken.Grant, bou
 	if g.Catalog {
 		q.Add("scope", "registry:catalog:*")
 	}
-	a := e.do(endpoint, host, http.MethodGet, "/v2/_token?"+q.Encode(), troveToken)
+	a := e.do(endpoint, host, http.MethodGet, "/v2/_token?"+q.Encode(), quaderToken)
 	if a.Code != http.StatusOK {
 		e.t.Fatalf("token request %s: %d %s", q.Encode(), a.Code, a.Body.String())
 	}
@@ -162,7 +162,7 @@ func (e *env) mint(endpoint, host, troveToken string, g registrytoken.Grant, bou
 	return body.Token
 }
 
-var requestSeries = regexp.MustCompile(`(?m)^trove_http_requests_total\{[^}]*handler="([^"]+)"[^}]*\} (\S+)$`)
+var requestSeries = regexp.MustCompile(`(?m)^quader_http_requests_total\{[^}]*handler="([^"]+)"[^}]*\} (\S+)$`)
 
 // handlers reads the requests the replica counted per handler label: a request is labelled with the route the dispatcher served.
 func (e *env) handlers() map[string]float64 {

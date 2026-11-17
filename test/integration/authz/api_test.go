@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/api/v1/apitest"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/test/integration/stack"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/api/v1/apitest"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/test/integration/stack"
 )
 
 // The permission operations of the management API over HTTP, on three web
@@ -104,7 +104,7 @@ func wantProblem(t *testing.T, r stack.Response, status int, code string) {
 // current is the header that makes the next request see every write so far on
 // whichever replica answers it (R-AUTHZ-032).
 func (f *apiFixture) current() []string {
-	return []string{"Trove-Authz-Min-Epoch", fmt.Sprint(f.e.AuthzEpoch())}
+	return []string{"Quader-Authz-Min-Epoch", fmt.Sprint(f.e.AuthzEpoch())}
 }
 
 func (f *apiFixture) auditCount(action string) int64 {
@@ -121,7 +121,7 @@ func TestR_AUTHZ_021_PolicyLifecycleOverHTTP(t *testing.T) {
 
 	created := f.cl.Do(me, "POST", policies, policyBody("team-web-publish", entry("group:team-web", "annotate", "deploy", "read")))
 	wantStatus(t, created, 201, "")
-	if loc := created.Header.Get("Location"); loc != "http://trove.test"+policies+"/team-web-publish" {
+	if loc := created.Header.Get("Location"); loc != "http://quader.test"+policies+"/team-web-publish" {
 		t.Errorf("Location = %q", loc)
 	}
 	if created.Header.Get("ETag") != `"1"` || created.Epoch() == 0 {
@@ -135,7 +135,7 @@ func TestR_AUTHZ_021_PolicyLifecycleOverHTTP(t *testing.T) {
 
 	// The next request names the epoch and sees the policy on whichever replica answers.
 	for range 3 {
-		g := f.cl.Do(me, "GET", policies+"/team-web-publish", nil, "Trove-Authz-Min-Epoch", fmt.Sprint(firstEpoch))
+		g := f.cl.Do(me, "GET", policies+"/team-web-publish", nil, "Quader-Authz-Min-Epoch", fmt.Sprint(firstEpoch))
 		wantStatus(t, g, 200, "")
 		if g.Header.Get("ETag") != `"1"` {
 			t.Fatalf("ETag = %q", g.Header.Get("ETag"))
@@ -280,7 +280,7 @@ func TestR_AUTHZ_021_ValidationAndPermissions(t *testing.T) {
 		// A role is read through a binding: the auditor reads policies and bindings but writes nothing.
 		r := f.cl.Do(me, "PUT", "/api/v1/role-bindings/auditor/user:carol", nil)
 		wantStatus(t, r, 201, "")
-		min := "Trove-Authz-Min-Epoch"
+		min := "Quader-Authz-Min-Epoch"
 		ep := fmt.Sprint(r.Epoch())
 		for range 3 {
 			wantStatus(t, f.cl.Do(f.carol.Name, "GET", policies, nil, min, ep), 200, "")
@@ -531,7 +531,7 @@ func TestR_AUTHZ_023_ChecksOverHTTP(t *testing.T) {
 // carry its epoch on B and C, and its removal by twenty more.
 func TestR_AUTHZ_032_MinEpochOverHTTP(t *testing.T) {
 	f := newAPI(t, stack.Options{Poll: 30 * time.Second, Staleness: 120 * time.Second})
-	min := "Trove-Authz-Min-Epoch"
+	min := "Quader-Authz-Min-Epoch"
 	mobile := f.e.Group("team-mobile")
 	f.e.Join(mobile, f.bob)
 	// The grant is made through A; the index of B and C was built at start and the change
@@ -553,7 +553,7 @@ func TestR_AUTHZ_032_MinEpochOverHTTP(t *testing.T) {
 				}
 				mu.Lock()
 				defer mu.Unlock()
-				seen[r.Header.Get("X-Trove-Replica")]++
+				seen[r.Header.Get("X-Quader-Replica")]++
 				if got := r.JSON(t)["results"].([]any)[0].(map[string]any)["allowed"]; got != want {
 					t.Errorf("request %d with epoch %d: allowed %v, want %v", i, epoch, got, want)
 				}
@@ -685,7 +685,7 @@ func TestR_API_002_EveryPermissionOperationAnswersAsDocumented(t *testing.T) {
 			t.Errorf("%s %s: %d %q, want %d\n%s", step.method, step.path, r.Status, r.Code(), step.want, r.Body)
 		}
 	}
-	// The member and move operations answer as documented to the administrator of trove (R-AUTHZ-026, R-REPO-060).
+	// The member and move operations answer as documented to the administrator of quader (R-AUTHZ-026, R-REPO-060).
 	for _, step := range []struct {
 		method, path string
 		body         any

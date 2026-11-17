@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The virtual class (R-NUGET-017, R-NUGET-018, R-NUGET-019) against PostgreSQL, through the whole stack: the
@@ -98,7 +98,7 @@ func (e *venv) mustFlat(r *testenv.Replica, repo, id, token string, want ...stri
 
 // TestR_NUGET_017_AVirtualRepositoryMergesTheDocumentsAndFilesOfItsMembers: the version list is the
 // union of the members' versions, the registration entry of a version two members hold is the first
-// member's and so is the package the client downloads (Trove-Resolved-From names it), the
+// member's and so is the package the client downloads (Quader-Resolved-From names it), the
 // documents carry the address of the virtual repository, and two replicas answer with one body and
 // one validator.
 func TestR_NUGET_017_AVirtualRepositoryMergesTheDocumentsAndFilesOfItsMembers(t *testing.T) {
@@ -146,8 +146,8 @@ func TestR_NUGET_017_AVirtualRepositoryMergesTheDocumentsAndFilesOfItsMembers(t 
 	t.Run("the package comes from the member whose entry the registration shows", func(t *testing.T) {
 		for version, member := range map[string]string{"1.0.0": vA, "1.5.0": vA, "2.0.0": vB} {
 			ans := e.at(a, vAll, "flatcontainer/acme.widgets/"+version+"/acme.widgets."+version+".nupkg", e.tokDev)
-			if ans.Status != 200 || !bytes.Equal(ans.Body, pk[member+"/"+version]) || ans.Header.Get("Trove-Resolved-From") != member {
-				t.Errorf("%s: %d from %q, %d bytes (want the bytes of %s)", version, ans.Status, ans.Header.Get("Trove-Resolved-From"), len(ans.Body), member)
+			if ans.Status != 200 || !bytes.Equal(ans.Body, pk[member+"/"+version]) || ans.Header.Get("Quader-Resolved-From") != member {
+				t.Errorf("%s: %d from %q, %d bytes (want the bytes of %s)", version, ans.Status, ans.Header.Get("Quader-Resolved-From"), len(ans.Body), member)
 			}
 		}
 		ns := e.at(a, vAll, "flatcontainer/acme.widgets/1.5.0/acme.widgets.nuspec", e.tokDev)
@@ -408,7 +408,7 @@ func (s vSearch) ids() []string {
 // hold, and a page at or beyond virtual_merge_window is empty.
 func TestR_NUGET_018_SearchMergesTheLocalMembers(t *testing.T) {
 	e := newVirtualEnv(t)
-	a := e.replica("web-a", "TROVE_NUGET_SEARCH_VIRTUAL_MERGE_WINDOW=4")
+	a := e.replica("web-a", "QUADER_NUGET_SEARCH_VIRTUAL_MERGE_WINDOW=4")
 	for _, p := range []struct {
 		repo, id, version string
 	}{

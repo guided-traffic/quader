@@ -37,17 +37,17 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
 
 /**
  * A table of tokens (R-UI-029, R-UI-030, R-UI-026), its columns from the job of who reads it (Q-UI-332): the token (its
- * description, and its hint, which also names its type: `trv_pat_…`), the owner in the administrator's list of everyone's
+ * description, and its hint, which also names its type: `qdr_pat_…`), the owner in the administrator's list of everyone's
  * tokens, the scope, when it expires and when it was last used, and at the row's end **Revoke** with a quiet **Rotate** where
  * the caller may rotate, or the state of a token that is no longer active. When it was created and through what are `narrow`
  * columns of an owner's list, shown from 64 rem of the list. Status and expiry warnings carry text and icon, never colour
  * alone. Neither the value nor its hash is part of a listed token, only the `hint` that helps to recognise one.
  */
 @Component({
-  selector: 'trove-token-table',
+  selector: 'quader-token-table',
   imports: [DatePipe, DataTable, Checkbox, Tooltip],
   template: `
-    <trove-data-table
+    <quader-data-table
       [caption]="caption"
       [columns]="columns()"
       [empty]="tokens().length === 0"
@@ -62,7 +62,7 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
           @if (selectable()) {
             <td>
               @if (t.state === 'active') {
-                <trove-checkbox
+                <quader-checkbox
                   [checked]="selected().includes(t.id)"
                   (checkedChange)="toggle(t.id, $event)"
                   [ariaLabel]="selectLabel(t)"
@@ -129,7 +129,7 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
             @switch (t.state) {
               @case ('active') {
                 @if (canRotate()) {
-                  <button class="btn btn-tertiary btn-icon" type="button" [troveTooltip]="rotateText" (click)="rotate.emit(t)">
+                  <button class="btn btn-tertiary btn-icon" type="button" [quaderTooltip]="rotateText" (click)="rotate.emit(t)">
                     <span class="material-icons" aria-hidden="true">autorenew</span>
                     <span class="visually-hidden"><ng-container i18n="@@token-table.rotate">Rotate</ng-container> {{ t.description }}</span>
                   </button>
@@ -151,7 +151,7 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
           </td>
         </tr>
       }
-    </trove-data-table>
+    </quader-data-table>
   `,
   styleUrl: './access.scss',
 })

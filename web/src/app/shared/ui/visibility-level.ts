@@ -111,10 +111,10 @@ let nextGroupId = 1;
  * chosen stays visible, muted, with its reason under the sentence (`reasons`); the radio is disabled and the reason is
  * part of the option's description. Native radios, so the arrow keys move and select, and Tab enters and leaves the group once.
  *
- *   <trove-visibility-level label="Artifacts" subject="artifacts" [(value)]="artifacts" [reasons]="{ public: 'The project is internal.' }" />
+ *   <quader-visibility-level label="Artifacts" subject="artifacts" [(value)]="artifacts" [reasons]="{ public: 'The project is internal.' }" />
  */
 @Component({
-  selector: 'trove-visibility-level',
+  selector: 'quader-visibility-level',
   template: `
     <fieldset class="levels" [disabled]="disabled()">
       <legend class="field-label">{{ label() }}</legend>
@@ -155,13 +155,13 @@ let nextGroupId = 1;
     }
     legend {
       padding: 0;
-      margin-block-end: var(--trove-space-2);
+      margin-block-end: var(--quader-space-2);
     }
     .level {
       display: flex;
       align-items: flex-start;
-      gap: var(--trove-space-2);
-      margin-block-end: var(--trove-space-3);
+      gap: var(--quader-space-2);
+      margin-block-end: var(--quader-space-3);
     }
     .text {
       display: flex;
@@ -171,15 +171,15 @@ let nextGroupId = 1;
       font-weight: 600;
     }
     .muted {
-      color: var(--trove-text-muted);
-      font-size: var(--trove-text-muted-size);
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-muted-size);
     }
     .unavailable .name {
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
       font-weight: 400;
     }
     fieldset:disabled .name {
-      color: var(--trove-text-muted);
+      color: var(--quader-text-muted);
     }
   `,
 })
@@ -194,7 +194,7 @@ export class VisibilityLevelControl {
   /** The whole group cannot be changed (a reader without the right to write). */
   readonly disabled = input(false);
 
-  protected readonly group = `trove-visibility-level-${nextGroupId++}`;
+  protected readonly group = `quader-visibility-level-${nextGroupId++}`;
 
   protected readonly options = computed(() =>
     VISIBILITY_LEVELS.map((level) => {
@@ -220,9 +220,9 @@ export class VisibilityLevelControl {
  * tooltip. Rendered inline, so it sits in front of the name in a list cell or a header.
  */
 @Component({
-  selector: 'trove-visibility-icon',
+  selector: 'quader-visibility-icon',
   imports: [Tooltip],
-  template: `<span class="material-icons inline" role="img" [attr.aria-label]="name()" [troveTooltip]="name()">{{ icon() }}</span>`,
+  template: `<span class="material-icons inline" role="img" [attr.aria-label]="name()" [quaderTooltip]="name()">{{ icon() }}</span>`,
 })
 export class VisibilityIcon {
   readonly level = input.required<VisibilityLevel>();

@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 // The names of the routes (R-NUGET-028): the handler name of the metrics and the request
@@ -121,8 +121,8 @@ func (f *Format) buildRoutes() []formats.Route {
 		// The vulnerability information (R-VULN-018): the same for every caller that may read the repository.
 		route(routeVulnIndex, http.MethodGet, "/v3/vulnerabilities/index.json", formats.Computed, read,
 			matchVulnerabilities(indexFile), []string{"v3/vulnerabilities/index.json"}, f.handleVulnIndex),
-		route(routeVulnPage, http.MethodGet, "/v3/vulnerabilities/trove.json", formats.Computed, read,
-			matchVulnerabilities(vulnPageFile), []string{"v3/vulnerabilities/trove.json"}, f.handleVulnPage),
+		route(routeVulnPage, http.MethodGet, "/v3/vulnerabilities/quader.json", formats.Computed, read,
+			matchVulnerabilities(vulnPageFile), []string{"v3/vulnerabilities/quader.json"}, f.handleVulnPage),
 
 		// The symbol server (R-NUGET-021, P1): the key is <file>/<index>/<file>.
 		route(routeSymbols, http.MethodGet, "/v3/symbols/{key...}", formats.Download, read,

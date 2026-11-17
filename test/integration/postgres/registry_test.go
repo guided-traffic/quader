@@ -11,9 +11,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/guided-traffic/trove/internal/backup/tables"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 func problems(t *testing.T, admin *pgx.Conn, reg *tables.Registry) []tables.Problem {
@@ -63,7 +63,7 @@ func TestTableRegistry(t *testing.T) {
 
 	t.Run("R-BAK-004 the migration test fails on a test migration that adds an unregistered table", func(t *testing.T) {
 		cfg, _, admin := migrated(t, st)
-		extra := stepsWith(t, map[string]string{nextStep(1, "unregistered"): "-- trove:phase expand\nCREATE TABLE x_new (id bigint PRIMARY KEY);\n"})
+		extra := stepsWith(t, map[string]string{nextStep(1, "unregistered"): "-- quader:phase expand\nCREATE TABLE x_new (id bigint PRIMARY KEY);\n"})
 		if _, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, opts(extra)); err != nil {
 			t.Fatal(err)
 		}
@@ -73,7 +73,7 @@ func TestTableRegistry(t *testing.T) {
 		}
 	})
 
-	cycle := map[string]string{nextStep(1, "cycle"): `-- trove:phase expand
+	cycle := map[string]string{nextStep(1, "cycle"): `-- quader:phase expand
 CREATE TABLE cyc_a (id bigint PRIMARY KEY, b_id bigint);
 CREATE TABLE cyc_b (id bigint PRIMARY KEY, a_id bigint REFERENCES cyc_a (id));
 ALTER TABLE cyc_a ADD FOREIGN KEY (b_id) REFERENCES cyc_b (id);
@@ -114,7 +114,7 @@ func TestRevisionColumns(t *testing.T) {
 	})
 	t.Run("the revision-column check finds a test migration that adds an unregistered revision column", func(t *testing.T) {
 		cfg, _, admin := migrated(t, st)
-		extra := stepsWith(t, map[string]string{nextStep(1, "rev"): "-- trove:phase expand\nALTER TABLE repositories ADD COLUMN revision bigint NOT NULL DEFAULT 1;\n"})
+		extra := stepsWith(t, map[string]string{nextStep(1, "rev"): "-- quader:phase expand\nALTER TABLE repositories ADD COLUMN revision bigint NOT NULL DEFAULT 1;\n"})
 		if _, err := postgres.Migrate(ctxT(t, 30*time.Second), cfg, opts(extra)); err != nil {
 			t.Fatal(err)
 		}
@@ -137,7 +137,7 @@ func TestBlobReferenceRules(t *testing.T) {
 			  JOIN pg_class cl ON cl.oid = c.conrelid
 			  JOIN pg_namespace n ON n.oid = cl.relnamespace
 			  JOIN pg_attribute att ON att.attrelid = c.conrelid AND att.attnum = c.conkey[1]
-			 WHERE c.contype = 'f' AND c.confrelid = 'trove.blobs'::regclass AND n.nspname = 'trove'`)
+			 WHERE c.contype = 'f' AND c.confrelid = 'quader.blobs'::regclass AND n.nspname = 'quader'`)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -159,15 +159,15 @@ func TestBlobReferenceRules(t *testing.T) {
 				t.Errorf("%s: the referencing column must be blob_sha256, is %s", r.table, r.column)
 			}
 			indexed := scalar[bool](t, admin, `SELECT EXISTS (
-				SELECT 1 FROM pg_index i WHERE i.indrelid = ('trove.' || $1)::regclass AND i.indisvalid
+				SELECT 1 FROM pg_index i WHERE i.indrelid = ('quader.' || $1)::regclass AND i.indisvalid
 				   AND i.indkey[0] = (SELECT attnum FROM pg_attribute WHERE attrelid = i.indrelid AND attname = $2))`, r.table, r.column)
 			if !indexed {
 				t.Errorf("%s.%s has no index", r.table, r.column)
 			}
-			guard := scalar[bool](t, admin, `SELECT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid = ('trove.' || $1)::regclass
-				AND NOT tgisinternal AND tgfoid = 'trove.blob_ref_guard'::regproc)`, r.table)
-			release := scalar[int](t, admin, `SELECT count(*) FROM pg_trigger WHERE tgrelid = ('trove.' || $1)::regclass
-				AND NOT tgisinternal AND tgfoid IN ('trove.blob_ref_release'::regproc, 'trove.blob_ref_release_update'::regproc)`, r.table)
+			guard := scalar[bool](t, admin, `SELECT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid = ('quader.' || $1)::regclass
+				AND NOT tgisinternal AND tgfoid = 'quader.blob_ref_guard'::regproc)`, r.table)
+			release := scalar[int](t, admin, `SELECT count(*) FROM pg_trigger WHERE tgrelid = ('quader.' || $1)::regclass
+				AND NOT tgisinternal AND tgfoid IN ('quader.blob_ref_release'::regproc, 'quader.blob_ref_release_update'::regproc)`, r.table)
 			if !guard || release < 2 {
 				t.Errorf("%s: guard trigger %v, release triggers %d (want the guard and a delete and an update release)", r.table, guard, release)
 			}
@@ -192,19 +192,19 @@ func TestStorageSchema(t *testing.T) {
 		for i := range sum {
 			sum[i] = b
 		}
-		exec(`INSERT INTO trove.blobs (sha256, sha1, md5, sha512, size, state) VALUES ($1, $2, $3, $4, $5, $6)`,
+		exec(`INSERT INTO quader.blobs (sha256, sha1, md5, sha512, size, state) VALUES ($1, $2, $3, $4, $5, $6)`,
 			sum, make([]byte, 20), make([]byte, 16), make([]byte, 64), size, state)
 		return sum
 	}
-	exec(`INSERT INTO trove.repositories (key, format, class, project_id) VALUES ('raw-local', 'raw', 'local', (SELECT id FROM trove.project WHERE key = 'it'))`)
-	repo := scalar[int64](t, admin, `SELECT id FROM trove.repositories WHERE key = 'raw-local'`)
+	exec(`INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('raw-local', 'raw', 'local', (SELECT id FROM quader.project WHERE key = 'it'))`)
+	repo := scalar[int64](t, admin, `SELECT id FROM quader.repositories WHERE key = 'raw-local'`)
 	file := func(path string, sha []byte, size int64) {
-		exec(`INSERT INTO trove.items (repo_id, path, parent_path, kind, blob_sha256, size) VALUES ($1, $2, '', 'file', $3, $4)`, repo, path, sha, size)
+		exec(`INSERT INTO quader.items (repo_id, path, parent_path, kind, blob_sha256, size) VALUES ($1, $2, '', 'file', $3, $4)`, repo, path, sha, size)
 	}
 	fold := func() (logical, files, folders, physical, blobs int64) {
 		t.Helper()
 		err := admin.QueryRow(ctx, `SELECT coalesce(sum(logical_bytes),0), coalesce(sum(files),0), coalesce(sum(folders),0),
-			coalesce(sum(physical_bytes),0), coalesce(sum(blobs),0) FROM trove.storage_usage_deltas`).Scan(&logical, &files, &folders, &physical, &blobs)
+			coalesce(sum(physical_bytes),0), coalesce(sum(blobs),0) FROM quader.storage_usage_deltas`).Scan(&logical, &files, &folders, &physical, &blobs)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -215,14 +215,14 @@ func TestStorageSchema(t *testing.T) {
 	dying := blob(2, 50, "deleting")
 
 	t.Run("R-STOR-005 the reference guard refuses a blob that is not live, with SQLSTATE AS001", func(t *testing.T) {
-		_, err := admin.Exec(ctx, `INSERT INTO trove.items (repo_id, path, parent_path, kind, blob_sha256, size) VALUES ($1, 'dying', '', 'file', $2, 50)`, repo, dying)
+		_, err := admin.Exec(ctx, `INSERT INTO quader.items (repo_id, path, parent_path, kind, blob_sha256, size) VALUES ($1, 'dying', '', 'file', $2, 50)`, repo, dying)
 		var pe *pgconn.PgError
 		if err == nil || !asPg(err, &pe) || pe.Code != "AS001" {
 			t.Fatalf("err = %v", err)
 		}
 		missing := make([]byte, 32)
 		missing[0] = 0xEE
-		_, err = admin.Exec(ctx, `INSERT INTO trove.items (repo_id, path, parent_path, kind, blob_sha256, size) VALUES ($1, 'nothing', '', 'file', $2, 1)`, repo, missing)
+		_, err = admin.Exec(ctx, `INSERT INTO quader.items (repo_id, path, parent_path, kind, blob_sha256, size) VALUES ($1, 'nothing', '', 'file', $2, 1)`, repo, missing)
 		if err == nil || !asPg(err, &pe) || (pe.Code != "AS001" && pe.Code != "23503") {
 			t.Fatalf("a reference to an unknown blob must be refused, err = %v", err)
 		}
@@ -235,24 +235,24 @@ func TestStorageSchema(t *testing.T) {
 		}
 		file("a/one", live, 100)
 		file("a/two", live, 100)
-		exec(`INSERT INTO trove.items (repo_id, path, parent_path, kind, explicit_folder) VALUES ($1, 'a', '', 'folder', true)`, repo)
+		exec(`INSERT INTO quader.items (repo_id, path, parent_path, kind, explicit_folder) VALUES ($1, 'a', '', 'folder', true)`, repo)
 		if l, f, fo, _, _ := fold(); l != 200 || f != 2 || fo != 1 {
 			t.Fatalf("after inserts: logical %d files %d folders %d", l, f, fo)
 		}
-		before := scalar[int](t, admin, `SELECT count(*) FROM trove.storage_usage_deltas`)
-		exec(`UPDATE trove.items SET updated_at = now() WHERE path = 'a/one'`)
-		if after := scalar[int](t, admin, `SELECT count(*) FROM trove.storage_usage_deltas`); after != before {
+		before := scalar[int](t, admin, `SELECT count(*) FROM quader.storage_usage_deltas`)
+		exec(`UPDATE quader.items SET updated_at = now() WHERE path = 'a/one'`)
+		if after := scalar[int](t, admin, `SELECT count(*) FROM quader.storage_usage_deltas`); after != before {
 			t.Fatalf("a touch that changes nothing the counters see appended %d delta rows", after-before)
 		}
-		exec(`UPDATE trove.items SET trashed_at = now() WHERE path = 'a/one'`)
+		exec(`UPDATE quader.items SET trashed_at = now() WHERE path = 'a/one'`)
 		if l, f, _, _, _ := fold(); l != 100 || f != 1 {
 			t.Fatalf("after trashing: logical %d files %d", l, f)
 		}
-		exec(`DELETE FROM trove.items WHERE path = 'a/one'`) // trashed rows were already subtracted
+		exec(`DELETE FROM quader.items WHERE path = 'a/one'`) // trashed rows were already subtracted
 		if l, f, _, _, _ := fold(); l != 100 || f != 1 {
 			t.Fatalf("deleting a trashed row must not subtract twice: logical %d files %d", l, f)
 		}
-		exec(`UPDATE trove.blobs SET state = 'deleting' WHERE sha256 = $1`, live)
+		exec(`UPDATE quader.blobs SET state = 'deleting' WHERE sha256 = $1`, live)
 		if _, _, _, p, b := fold(); p != 0 || b != 0 {
 			t.Fatalf("a blob leaving live subtracts: physical %d blobs %d", p, b)
 		}
@@ -262,52 +262,52 @@ func TestStorageSchema(t *testing.T) {
 		b1 := blob(3, 10, "live")
 		b2 := blob(4, 10, "live")
 		file("g/x", b1, 10)
-		exec(`UPDATE trove.items SET blob_sha256 = $1 WHERE path = 'g/x'`, b2)
-		if scalar[int](t, admin, `SELECT count(*) FROM trove.blob_gc_queue WHERE sha256 = $1`, b1) != 1 {
+		exec(`UPDATE quader.items SET blob_sha256 = $1 WHERE path = 'g/x'`, b2)
+		if scalar[int](t, admin, `SELECT count(*) FROM quader.blob_gc_queue WHERE sha256 = $1`, b1) != 1 {
 			t.Fatal("an overwrite in place must queue the old blob")
 		}
-		if scalar[int](t, admin, `SELECT count(*) FROM trove.blob_gc_queue WHERE sha256 = $1`, b2) != 0 {
+		if scalar[int](t, admin, `SELECT count(*) FROM quader.blob_gc_queue WHERE sha256 = $1`, b2) != 0 {
 			t.Fatal("the new blob must not be queued")
 		}
-		exec(`DELETE FROM trove.items WHERE path = 'g/x'`)
-		if scalar[int](t, admin, `SELECT count(*) FROM trove.blob_gc_queue WHERE sha256 = $1`, b2) != 1 {
+		exec(`DELETE FROM quader.items WHERE path = 'g/x'`)
+		if scalar[int](t, admin, `SELECT count(*) FROM quader.blob_gc_queue WHERE sha256 = $1`, b2) != 1 {
 			t.Fatal("a delete must queue the blob")
 		}
 	})
 
 	t.Run("R-STOR-003 deleting a repository cascades to its items and queues their blobs", func(t *testing.T) {
-		exec(`INSERT INTO trove.repositories (key, format, class, project_id) VALUES ('doomed', 'raw', 'local', (SELECT id FROM trove.project WHERE key = 'it'))`)
-		doomed := scalar[int64](t, admin, `SELECT id FROM trove.repositories WHERE key = 'doomed'`)
+		exec(`INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('doomed', 'raw', 'local', (SELECT id FROM quader.project WHERE key = 'it'))`)
+		doomed := scalar[int64](t, admin, `SELECT id FROM quader.repositories WHERE key = 'doomed'`)
 		b := blob(5, 7, "live")
-		exec(`INSERT INTO trove.items (repo_id, path, parent_path, kind, blob_sha256, size) VALUES ($1, 'f', '', 'file', $2, 7)`, doomed, b)
-		exec(`DELETE FROM trove.repositories WHERE id = $1`, doomed)
-		if scalar[int](t, admin, `SELECT count(*) FROM trove.items WHERE repo_id = $1`, doomed) != 0 ||
-			scalar[int](t, admin, `SELECT count(*) FROM trove.blob_gc_queue WHERE sha256 = $1`, b) != 1 {
+		exec(`INSERT INTO quader.items (repo_id, path, parent_path, kind, blob_sha256, size) VALUES ($1, 'f', '', 'file', $2, 7)`, doomed, b)
+		exec(`DELETE FROM quader.repositories WHERE id = $1`, doomed)
+		if scalar[int](t, admin, `SELECT count(*) FROM quader.items WHERE repo_id = $1`, doomed) != 0 ||
+			scalar[int](t, admin, `SELECT count(*) FROM quader.blob_gc_queue WHERE sha256 = $1`, b) != 1 {
 			t.Fatal("the cascade must remove the items and queue the blob")
 		}
-		if scalar[int64](t, admin, `SELECT coalesce(sum(files), 0) FROM trove.storage_usage_deltas WHERE repo_id = $1`, doomed) != 0 {
+		if scalar[int64](t, admin, `SELECT coalesce(sum(files), 0) FROM quader.storage_usage_deltas WHERE repo_id = $1`, doomed) != 0 {
 			t.Fatal("the cascade must net the repository's file count to zero")
 		}
 	})
 
 	t.Run("R-STOR-003 a property value of 2400 four-byte characters is stored and found by key and value", func(t *testing.T) {
-		exec(`INSERT INTO trove.items (repo_id, path, parent_path, kind, explicit_folder) VALUES ($1, 'props', '', 'folder', true)`, repo)
-		item := scalar[int64](t, admin, `SELECT id FROM trove.items WHERE path = 'props'`)
+		exec(`INSERT INTO quader.items (repo_id, path, parent_path, kind, explicit_folder) VALUES ($1, 'props', '', 'folder', true)`, repo)
+		item := scalar[int64](t, admin, `SELECT id FROM quader.items WHERE path = 'props'`)
 		value := strings.Repeat("\U0001F600", 2400)
-		exec(`INSERT INTO trove.item_properties (item_id, key, value) VALUES ($1, 'build.note', $2)`, item, value)
-		if scalar[int](t, admin, `SELECT count(*) FROM trove.item_properties WHERE key = 'build.note' AND value = $1`, value) != 1 {
+		exec(`INSERT INTO quader.item_properties (item_id, key, value) VALUES ($1, 'build.note', $2)`, item, value)
+		if scalar[int](t, admin, `SELECT count(*) FROM quader.item_properties WHERE key = 'build.note' AND value = $1`, value) != 1 {
 			t.Fatal("the long value was not found by key and value")
 		}
-		if _, err := admin.Exec(ctx, `INSERT INTO trove.item_properties (item_id, key, value) VALUES ($1, 'build.note', $2)`, item, value); err == nil {
+		if _, err := admin.Exec(ctx, `INSERT INTO quader.item_properties (item_id, key, value) VALUES ($1, 'build.note', $2)`, item, value); err == nil {
 			t.Fatal("the same key and value twice must violate item_properties_unique")
 		}
 	})
 
 	t.Run("R-STOR-003 paths sort bytewise: a subtree query for a/b does not return a/b0", func(t *testing.T) {
 		for _, p := range []string{"s/a/b", "s/a/b/c", "s/a/b0", "s/a/b-"} {
-			exec(`INSERT INTO trove.items (repo_id, path, parent_path, kind, explicit_folder) VALUES ($1, $2, '', 'folder', true)`, repo, p)
+			exec(`INSERT INTO quader.items (repo_id, path, parent_path, kind, explicit_folder) VALUES ($1, $2, '', 'folder', true)`, repo, p)
 		}
-		rows, err := admin.Query(ctx, `SELECT path FROM trove.items WHERE repo_id = $1 AND (path = 's/a/b' OR (path >= 's/a/b/' AND path < 's/a/b0')) ORDER BY path`, repo)
+		rows, err := admin.Query(ctx, `SELECT path FROM quader.items WHERE repo_id = $1 AND (path = 's/a/b' OR (path >= 's/a/b/' AND path < 's/a/b0')) ORDER BY path`, repo)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -326,19 +326,19 @@ func TestStorageSchema(t *testing.T) {
 	})
 
 	t.Run("R-STOR-003 a package row keeps its rev_seq default and the version cycle resolves through lead_item_id", func(t *testing.T) {
-		exec(`INSERT INTO trove.packages (repo_id, name, display_name) VALUES ($1, 'left-pad', 'left-pad')`, repo)
-		if scalar[int64](t, admin, `SELECT rev_seq FROM trove.packages WHERE name = 'left-pad'`) != 1 {
+		exec(`INSERT INTO quader.packages (repo_id, name, display_name) VALUES ($1, 'left-pad', 'left-pad')`, repo)
+		if scalar[int64](t, admin, `SELECT rev_seq FROM quader.packages WHERE name = 'left-pad'`) != 1 {
 			t.Fatal("rev_seq must start at 1")
 		}
-		pkg := scalar[int64](t, admin, `SELECT id FROM trove.packages WHERE name = 'left-pad'`)
-		exec(`INSERT INTO trove.package_versions (package_id, version, display_version) VALUES ($1, '1.0.0', '1.0.0')`, pkg)
-		ver := scalar[int64](t, admin, `SELECT id FROM trove.package_versions WHERE package_id = $1`, pkg)
+		pkg := scalar[int64](t, admin, `SELECT id FROM quader.packages WHERE name = 'left-pad'`)
+		exec(`INSERT INTO quader.package_versions (package_id, version, display_version) VALUES ($1, '1.0.0', '1.0.0')`, pkg)
+		ver := scalar[int64](t, admin, `SELECT id FROM quader.package_versions WHERE package_id = $1`, pkg)
 		file("pkg/left-pad-1.0.0.tgz", live2(t, blob, 9), 5)
-		item := scalar[int64](t, admin, `SELECT id FROM trove.items WHERE path = 'pkg/left-pad-1.0.0.tgz'`)
-		exec(`UPDATE trove.items SET version_id = $1 WHERE id = $2`, ver, item)
-		exec(`UPDATE trove.package_versions SET lead_item_id = $1 WHERE id = $2`, item, ver)
-		exec(`DELETE FROM trove.items WHERE id = $1`, item)
-		if scalar[bool](t, admin, `SELECT lead_item_id IS NOT NULL FROM trove.package_versions WHERE id = $1`, ver) {
+		item := scalar[int64](t, admin, `SELECT id FROM quader.items WHERE path = 'pkg/left-pad-1.0.0.tgz'`)
+		exec(`UPDATE quader.items SET version_id = $1 WHERE id = $2`, ver, item)
+		exec(`UPDATE quader.package_versions SET lead_item_id = $1 WHERE id = $2`, item, ver)
+		exec(`DELETE FROM quader.items WHERE id = $1`, item)
+		if scalar[bool](t, admin, `SELECT lead_item_id IS NOT NULL FROM quader.package_versions WHERE id = $1`, ver) {
 			t.Fatal("deleting the lead item must set lead_item_id to NULL")
 		}
 	})

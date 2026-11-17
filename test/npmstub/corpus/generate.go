@@ -142,7 +142,7 @@ func generate(seed uint64, i int, name string, epoch time.Time, c *Corpus) *Pack
 
 	p := &Package{
 		Name:        name,
-		Description: "Synthetic package " + name + " of the trove test corpus",
+		Description: "Synthetic package " + name + " of the quader test corpus",
 		Created:     epoch.Add(time.Duration(i) * 30 * time.Hour),
 		DistTags:    map[string]string{},
 	}
@@ -353,7 +353,7 @@ func (c *Corpus) Reference(minNames int) Reference {
 		p := c.byName[bestName]
 		roots[bestName] = "^" + p.DistTags["latest"]
 	}
-	return Reference{Name: "trove-npm-reference", Version: "1.0.0", Dependencies: roots}
+	return Reference{Name: "quader-npm-reference", Version: "1.0.0", Dependencies: roots}
 }
 
 // PackageJSON renders the project's package.json: private, with the root dependencies and nothing
@@ -366,7 +366,7 @@ func (ref Reference) PackageJSON() []byte {
 		Description  string            `json:"description"`
 		License      string            `json:"license"`
 		Dependencies map[string]string `json:"dependencies"`
-	}{ref.Name, ref.Version, true, "Reference project of the trove performance and e2e tests: resolved only from the synthetic corpus.", "MIT", ref.Dependencies}, "", "  ")
+	}{ref.Name, ref.Version, true, "Reference project of the quader performance and e2e tests: resolved only from the synthetic corpus.", "MIT", ref.Dependencies}, "", "  ")
 	if err != nil {
 		panic(err) // strings and a map of strings
 	}

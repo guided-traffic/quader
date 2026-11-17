@@ -3,8 +3,8 @@ package npm
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestR_AUTHZ_013_TheAuditForwarderAsksForTheMemberOnBehalfOfTheAddressedVirtualRepository: the

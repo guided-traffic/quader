@@ -25,22 +25,22 @@ export const ROLE_NAMES: readonly RoleName[] = [
  * The system roles bound to one principal (R-UI-024, R-AUTHZ-022), with bind and unbind where the
  * caller holds `roles:write`. The last-administrator guard (R-UI-005) is shown before the API
  * refuses it: when the principal is the only holder of `admin`, "Unbind" on that row is disabled
- * and says why. Every write answers `Trove-Authz-Epoch`; the HTTP layer sends it on the reads
+ * and says why. Every write answers `Quader-Authz-Epoch`; the HTTP layer sends it on the reads
  * that follow, so the list below shows the change at once (R-AUTHZ-032), and the caller's own
  * capabilities are read again because the caller may have changed their own.
  */
 @Component({
-  selector: 'trove-principal-roles',
+  selector: 'quader-principal-roles',
   imports: [DatePipe, RouterLink, ErrorNotice, SelectField, Disclosure],
   template: `
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@principal-roles.heading"
       heading="System roles"
       i18n-hint="@@principal-roles.hint"
       hint="The system roles bound to this principal."
     >
       @if (error(); as e) {
-        <trove-error-notice [error]="e" (retry)="load()" />
+        <quader-error-notice [error]="e" (retry)="load()" />
       }
       @if (loaded()) {
         @if (bindings().length === 0) {
@@ -89,7 +89,7 @@ export const ROLE_NAMES: readonly RoleName[] = [
         }
         @if (canWrite() && free().length > 0) {
           <div class="field-action-row">
-            <trove-select-field
+            <quader-select-field
               i18n-label="@@principal-roles.bind-label"
               label="Role to bind"
               name="role"
@@ -103,7 +103,7 @@ export const ROLE_NAMES: readonly RoleName[] = [
         }
         <p><a routerLink="/admin/roles" i18n="@@principal-roles.link">All system roles</a></p>
       }
-    </trove-disclosure>
+    </quader-disclosure>
   `,
   styleUrl: './access.scss',
 })

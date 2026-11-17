@@ -1561,5 +1561,5 @@ Priority: **P2**
   and SHA-256 first; a server without indexes on those columns turns the recommended query shapes
   into full scans (SRCH-064).
 - **Exact identifiers are left to the spec.** This page names query-language fields, operators,
-  parameters and headers by meaning only; trove's own identifiers are defined in
+  parameters and headers by meaning only; Quader's own identifiers are defined in
   [docs/spec/](../spec/README.md).

@@ -1,4 +1,4 @@
-// Package postrestore is the clean-up of a platform (point-in-time) restore: `trove admin post-restore` (R-HA-025 step 4).
+// Package postrestore is the clean-up of a platform (point-in-time) restore: `quader admin post-restore` (R-HA-025 step 4).
 package postrestore
 
 import (
@@ -10,13 +10,13 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/fixup"
-	"github.com/guided-traffic/trove/internal/journal"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/fixup"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 // pitrOrders are the orders of the registered fix-ups a platform restore needs (R-HA-025 step 4): the jobs that were running
@@ -35,7 +35,7 @@ type Options struct {
 	// Replayer replays the revocation journal; a call to OpenReplayer builds it with the credentials of the file the
 	// operator passed, or the runtime credential when empty.
 	OpenReplayer func(ctx context.Context, credentialsFile string) (journal.Replayer, error)
-	// VerifyStorage checks that the object of every live blob is in the object store (`trove admin storage verify`, R-HA-025 step 4);
+	// VerifyStorage checks that the object of every live blob is in the object store (`quader admin storage verify`, R-HA-025 step 4);
 	// nil leaves the check out of the report. It checks every blob and not only those changed since t, because an object that
 	// the old database's collector deleted after t belongs to a row of any age (Q-HA-213).
 	VerifyStorage func(ctx context.Context) (StorageCheck, error)
@@ -258,7 +258,7 @@ func (p *PostRestorer) cleanUp(ctx context.Context, fx []fixup.Fixup, t string, 
 		if err := qs.JournalPauseDeletions(ctx, "post-restore"); err != nil {
 			return fmt.Errorf("setting the deletion pause: %w", err)
 		}
-		step("deletion pause set: garbage collection, the orphan sweep, retention and cap enforcement delete nothing until `trove admin maintenance resume-deletions`")
+		step("deletion pause set: garbage collection, the orphan sweep, retention and cap enforcement delete nothing until `quader admin maintenance resume-deletions`")
 		sessions := 0
 		for {
 			ended, err := qs.EndAllSessions(ctx)
@@ -296,20 +296,20 @@ func (p *PostRestorer) cleanUp(ctx context.Context, fx []fixup.Fixup, t string, 
 }
 
 // verifyStorage reports the referenced blobs whose objects are missing (R-HA-025 step 4). A check that cannot run is a line, not an
-// error: the restore is done, and the operator repeats `trove admin storage verify` after step 5.
+// error: the restore is done, and the operator repeats `quader admin storage verify` after step 5.
 func (p *PostRestorer) verifyStorage(ctx context.Context, step func(string)) {
 	if p.o.VerifyStorage == nil {
 		return
 	}
 	c, err := p.o.VerifyStorage(ctx)
 	if err != nil {
-		step(fmt.Sprintf("storage verify failed: %v; run `trove admin storage verify` before step 6", err))
+		step(fmt.Sprintf("storage verify failed: %v; run `quader admin storage verify` before step 6", err))
 		return
 	}
 	step(fmt.Sprintf("storage verify: %d blobs checked, %d without object, %d of another size, %d not checked, %d items affected",
 		c.Checked, c.Missing, c.SizeMismatch, c.Unchecked, c.ItemsAffected))
 	if c.Missing > 0 || c.SizeMismatch > 0 {
-		step("referenced blobs without their object: repair them (step 5, `trove admin storage restore-versions` on a versioned bucket) and run `trove admin storage verify` before step 6")
+		step("referenced blobs without their object: repair them (step 5, `quader admin storage restore-versions` on a versioned bucket) and run `quader admin storage verify` before step 6")
 	}
 }
 

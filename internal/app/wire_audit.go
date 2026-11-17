@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/observability"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // wireAudit is the audit area, step 4 of R-ARCH-024: it reconciles
@@ -74,8 +74,8 @@ type counters struct {
 }
 
 func newAuditMetrics(m *observability.Metrics) audit.Metrics {
-	ev := m.NewCounterVec("trove_audit_events_total", "Audit events recorded.", "kind", "outcome")
-	dr := m.NewCounterVec("trove_audit_events_dropped_total", "Access events lost to a full buffer.")
+	ev := m.NewCounterVec("quader_audit_events_total", "Audit events recorded.", "kind", "outcome")
+	dr := m.NewCounterVec("quader_audit_events_dropped_total", "Access events lost to a full buffer.")
 	dr.WithLabelValues() // the series exists from the first scrape
 	return counters{
 		recorded: func(kind, outcome string) { ev.WithLabelValues(kind, outcome).Inc() },

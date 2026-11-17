@@ -105,7 +105,7 @@ func TestNuGetReplicas(t *testing.T) {
 // E3.6, R-NUGET-032, Q-NUGET-6: the edge drops the answer of a push the replica has committed; the client waits for it,
 // gives up on the request, and repeats the push, which reaches another replica and finds the version stored. The identical
 // push answers 201, so `dotnet nuget push` exits 0. The evidence that the push was repeated is the counter of the
-// replays (trove_nuget_push_replayed_total, summed over the replicas): it rises, and the version exists once.
+// replays (quader_nuget_push_replayed_total, summed over the replicas): it rises, and the version exists once.
 func TestNuGetPushRetry(t *testing.T) {
 	fx := nugetFx(t)
 	auth := nugetFeed(t, "localhost", nugetAuthKey)
@@ -114,15 +114,15 @@ func TestNuGetPushRetry(t *testing.T) {
 		c := fx.client(t, 0, "dropped")
 		c.config(auth, true)
 		file := c.place(id, "1.0.0", fx.nugetPack(t, id, "1.0.0", "the answer of this push is dropped"))
-		before := sumSeries(t, "trove_nuget_push_replayed_total")
+		before := sumSeries(t, "quader_nuget_push_replayed_total")
 		undo := dropOneAnswerOf(t, "path_end /v3/package /v3/package/", "201")
 		defer undo()
 		out, err := c.dotnetPush(file, auth, "az")
 		if err != nil || !pushedRE.MatchString(out) {
 			t.Fatalf("dotnet nuget push exited with %v after the edge dropped the answer of its PUT:\n%s", err, out)
 		}
-		if after := sumSeries(t, "trove_nuget_push_replayed_total"); after < before+1 {
-			t.Fatalf("trove_nuget_push_replayed_total rose from %v to %v, want at least one replay (the edge has one stick table per HAProxy pod, so each pod drops one answer): the client did not repeat the push, so the edge dropped nothing and the test proves nothing:\n%s", before, after, out)
+		if after := sumSeries(t, "quader_nuget_push_replayed_total"); after < before+1 {
+			t.Fatalf("quader_nuget_push_replayed_total rose from %v to %v, want at least one replay (the edge has one stick table per HAProxy pod, so each pod drops one answer): the client did not repeat the push, so the edge dropped nothing and the test proves nothing:\n%s", before, after, out)
 		}
 		if got := fx.flatVersions(t, nugetAuthKey, id); len(got) != 1 || got[0] != "1.0.0" {
 			t.Fatalf("flat container versions = %v, want [1.0.0]", got)

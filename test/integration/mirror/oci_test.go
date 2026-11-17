@@ -15,11 +15,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/mirror"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/ocistub"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/mirror"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/ocistub"
 )
 
 // An OCI remote in mode mirror against the counting registry of test/ocistub (docs/spec/formats/oci.md "Mirror discovery", R-OCI-026,
@@ -97,11 +97,11 @@ func newOCIRig(t *testing.T, o ociOptions) *ociRig {
 	r := &rig{t: t, format: "oci", traf: &traffic{}, url: run.URL, upstream: upstream, dial: run.DialOverride()}
 	ca := testenv.WriteFile(t, t.TempDir(), "stub-ca.pem", string(ss.CAPEM))
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "mirrorit", Env: append([]string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
-		"TROVE_API_RATE_LIMITS_ENABLED=false",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_API_RATE_LIMITS_ENABLED=false",
 	}, fastJobs...)})
 	st.Repository(repoKey, "remote", "oci", string(raw))
 	st.Exec(`INSERT INTO mirror_state (repo_id, next_pass_at) SELECT id, now() + interval '1 hour' FROM repositories WHERE key = $1`, repoKey)
@@ -476,9 +476,9 @@ func TestR_OCI_025_ADockerHubQuotaAnswerIsAQuotaHeaderRateLimitOfThePass(t *test
 	r.waitPass(t0, "full", "complete", 3*passWithin)
 
 	t.Run("R-OCI-025 the answer is counted with the reason quota_header", func(t *testing.T) {
-		got := r.metric(one, "trove_mirror_rate_limited_total", "reason", "quota_header")
-		if two := r.metric(r.st.Replicas()[1], "trove_mirror_rate_limited_total", "reason", "quota_header"); got+two < 1 {
-			t.Errorf("trove_mirror_rate_limited_total{reason=quota_header} = %v and %v", got, two)
+		got := r.metric(one, "quader_mirror_rate_limited_total", "reason", "quota_header")
+		if two := r.metric(r.st.Replicas()[1], "quader_mirror_rate_limited_total", "reason", "quota_header"); got+two < 1 {
+			t.Errorf("quader_mirror_rate_limited_total{reason=quota_header} = %v and %v", got, two)
 		}
 	})
 

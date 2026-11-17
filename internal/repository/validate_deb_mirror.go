@@ -3,7 +3,7 @@ package repository
 import (
 	"encoding/json"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The mirror rules of the Debian format's member that the document alone decides (R-DEB-024, Q-DEB-91): an APT archive has no list of

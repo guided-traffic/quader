@@ -506,7 +506,7 @@ type AuthzDeclaredBindingsRow struct {
 	PrincipalName string
 }
 
-// The bindings the configuration keeps, for trove migrate to remove the ones no
+// The bindings the configuration keeps, for quader migrate to remove the ones no
 // longer declared (Q-AUTHZ-170).
 func (q *Queries) AuthzDeclaredBindings(ctx context.Context) ([]AuthzDeclaredBindingsRow, error) {
 	rows, err := q.db.Query(ctx, authzDeclaredBindings)
@@ -544,7 +544,7 @@ type AuthzDeleteAPIBindingParams struct {
 }
 
 // The API's unbind: a binding the configuration keeps stays (R-AUTHZ-010,
-// Q-AUTHZ-170), so the source is part of the condition and a concurrent trove
+// Q-AUTHZ-170), so the source is part of the condition and a concurrent quader
 // migrate that takes the binding over cannot lose it.
 func (q *Queries) AuthzDeleteAPIBinding(ctx context.Context, arg AuthzDeleteAPIBindingParams) (int64, error) {
 	result, err := q.db.Exec(ctx, authzDeleteAPIBinding, arg.Role, arg.PrincipalID)

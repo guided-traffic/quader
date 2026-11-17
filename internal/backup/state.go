@@ -76,7 +76,7 @@ type Progress struct {
 	BlobsToCopy int64  `json:"blobsToCopy,omitempty"`
 	BlobsCopied int64  `json:"blobsCopied,omitempty"`
 	BytesCopied int64  `json:"bytesCopied,omitempty"`
-	// PinsLeft is the number of pins not yet removed, the value of trove_backup_pinned_blobs. No query counts
+	// PinsLeft is the number of pins not yet removed, the value of quader_backup_pinned_blobs. No query counts
 	// backup_blob_pin for the gauges (R-BAK-014).
 	PinsLeft int64 `json:"pinsLeft,omitempty"`
 	// SnapshotOpenSince is when the snapshot transaction began; nil while no snapshot is open.
@@ -85,15 +85,15 @@ type Progress struct {
 
 // Run is one row of backup_run.
 type Run struct {
-	ID           string
-	Operation    Operation
-	BackupID     string
-	State        State
-	Hold         Hold
-	Trigger      Trigger
-	Target       string
-	Pod          string
-	TroveVersion string
+	ID            string
+	Operation     Operation
+	BackupID      string
+	State         State
+	Hold          Hold
+	Trigger       Trigger
+	Target        string
+	Pod           string
+	QuaderVersion string
 	// JobName is the Kubernetes Job the run belongs to; empty for a run without one (R-BAK-010).
 	JobName        string
 	SnapshotAt     *time.Time
@@ -114,13 +114,13 @@ func (r Run) LeaseExpired(now time.Time) bool {
 
 // NewRun is what Begin inserts.
 type NewRun struct {
-	ID           string
-	Operation    Operation
-	BackupID     string
-	Trigger      Trigger
-	Target       string
-	Pod          string
-	TroveVersion string
+	ID            string
+	Operation     Operation
+	BackupID      string
+	Trigger       Trigger
+	Target        string
+	Pod           string
+	QuaderVersion string
 	// JobName is the Job of the pod (the chart passes its job-name label); empty when the process runs outside a Job.
 	JobName string
 	Lease   time.Duration

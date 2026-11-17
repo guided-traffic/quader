@@ -1,39 +1,39 @@
 .subject {
-  margin-block: 0 var(--trove-space-3);
-  font: var(--trove-type-title-medium);
+  margin-block: 0 var(--quader-space-3);
+  font: var(--quader-type-title-medium);
 }
 
 // The state's word beside its switch, on the row's first line.
 .switch {
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
   min-block-size: 24px;
 }
 
 .settings {
-  max-inline-size: var(--trove-settings-measure);
+  max-inline-size: var(--quader-settings-measure);
 }
 
 .row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--trove-space-6);
+  gap: var(--quader-space-6);
 }
 
 .rules {
-  padding-block-start: var(--trove-space-5);
-  border-block-start: 1px solid var(--trove-border);
+  padding-block-start: var(--quader-space-5);
+  border-block-start: 1px solid var(--quader-border);
 }
 
 // An address this endpoint does not serve: a warning glyph where the copy button would be, its sentence the name and tooltip.
 .not-served {
   display: inline-flex;
   vertical-align: top;
-  margin-inline-end: var(--trove-space-2);
+  margin-inline-end: var(--quader-space-2);
   font-size: 1.25rem;
 }
 
-td.actions trove-copy-button {
-  margin-inline-end: var(--trove-space-1);
+td.actions quader-copy-button {
+  margin-inline-end: var(--quader-space-1);
 }

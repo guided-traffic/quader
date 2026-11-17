@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
+	"github.com/guided-traffic/quader/internal/audit"
 )
 
 // The end of a pass attempt (R-REPO-053 step 4, the stops and the errors): what is written, counted and recorded for each of

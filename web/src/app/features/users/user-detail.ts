@@ -17,7 +17,7 @@ import { Needs } from '../../shared/access/needs';
 import { PrincipalRoles } from '../../shared/access/principal-roles';
 import { ErrorNotice } from '../../shared/error-notice';
 import { Disclosure } from '../../shared/ui/disclosure';
-import { TroveAvatar } from '../../shared/ui/avatar';
+import { QuaderAvatar } from '../../shared/ui/avatar';
 import { TokenManager, TokenOwnerScope } from '../tokens/token-manager';
 import { isLocked, originLabel } from './user-labels';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -30,24 +30,24 @@ import { PageHeader } from '../../shared/ui/page-header';
  * disable or delete themselves here.
  */
 @Component({
-  selector: 'trove-user-detail',
-  imports: [PageHeader, DatePipe, RouterLink, Checkbox, ErrorNotice, Needs, PrincipalRoles, Disclosure, TextField, TokenManager, TroveAvatar],
+  selector: 'quader-user-detail',
+  imports: [PageHeader, DatePipe, RouterLink, Checkbox, ErrorNotice, Needs, PrincipalRoles, Disclosure, TextField, TokenManager, QuaderAvatar],
   templateUrl: './user-detail.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .settings {
-      max-inline-size: var(--trove-settings-measure);
+      max-inline-size: var(--quader-settings-measure);
     }
     form {
-      padding-block-end: var(--trove-space-6);
+      padding-block-end: var(--quader-space-6);
     }
     .row {
       display: grid;
       grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
-      gap: var(--trove-space-6);
+      gap: var(--quader-space-6);
     }
     .ids {
-      margin-block-start: var(--trove-space-5);
+      margin-block-start: var(--quader-space-5);
     }
     @media (max-width: 40rem) {
       .row {

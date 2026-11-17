@@ -43,9 +43,9 @@ async function openDashboard(inputs: Record<string, unknown> = {}, capabilities:
   return { ...r, fake: r.get(VulnerabilitiesApi) as FakeVulnerabilitiesApi };
 }
 
-const rows = (r: { root: HTMLElement }) => [...r.root.querySelectorAll('trove-data-table tbody tr')];
+const rows = (r: { root: HTMLElement }) => [...r.root.querySelectorAll('quader-data-table tbody tr')];
 /** The names of the severity bar's links (R-UI-092, Q-UI-376). */
-const bar = (r: { root: HTMLElement }) => [...r.root.querySelectorAll('trove-severity-bar a')].map((a) => a.getAttribute('aria-label') ?? '');
+const bar = (r: { root: HTMLElement }) => [...r.root.querySelectorAll('quader-severity-bar a')].map((a) => a.getAttribute('aria-label') ?? '');
 const navigate = () => vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 const field = (root: HTMLElement, name: string) => root.querySelector<HTMLInputElement>(`form[role="search"] input[name="${name}"]`)!;
 
@@ -63,13 +63,13 @@ describe('The auditor\'s security dashboard (Q-UI-130, R-VULN-022)', () => {
     expect(cell.querySelector('wbr')).toBeTruthy();
     const all = rows(r).map((tr) => text(tr));
     expect(all.some((t) => t.includes('shop') && t.includes('minimist'))).toBe(true);
-    expect(all.some((t) => t.includes('web') && t.includes('trove-test-vuln'))).toBe(true);
+    expect(all.some((t) => t.includes('web') && t.includes('quader-test-vuln'))).toBe(true);
     // the API was asked without a project: the counts and the trend cover every project the caller may read
     expect(r.fake.listed.at(-1)?.project).toEqual([]);
     expect(r.fake.calls).toContain('summary');
     expect(r.fake.calls.some((c) => c.startsWith('trend'))).toBe(true);
     expect(bar(r)).toContain('2 Critical');
-    expect(r.root.querySelector('trove-vuln-trend')).toBeTruthy();
+    expect(r.root.querySelector('quader-vuln-trend')).toBeTruthy();
     await expectAccessible(r.root);
   });
 
@@ -80,7 +80,7 @@ describe('The auditor\'s security dashboard (Q-UI-130, R-VULN-022)', () => {
     expect(text(rows(r)[0]!)).toContain('minimist');
     expect(bar(r)).toContain('1 Critical');
     expect(bar(r)).toContain('0 High');
-    const critical = [...r.root.querySelectorAll<HTMLAnchorElement>('trove-severity-bar a')].find((a) => a.getAttribute('aria-label') === '1 Critical')!;
+    const critical = [...r.root.querySelectorAll<HTMLAnchorElement>('quader-severity-bar a')].find((a) => a.getAttribute('aria-label') === '1 Critical')!;
     expect(critical.getAttribute('href')).toContain('project=shop');
     const chip = [...r.root.querySelectorAll('.chip')].find((c) => text(c).includes('Project: shop'))!;
     const nav = navigate();

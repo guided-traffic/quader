@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The digests a remote Ansible Galaxy repository's version documents announce (R-ANS-018, Q-ANS-13): a row per version, written in the
 -- transaction that stores the version document. The archive of a version is verified against the digest recorded here, whatever

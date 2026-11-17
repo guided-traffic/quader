@@ -3,7 +3,7 @@ package ansible
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats"
 )
 
 func TestR_ANS_002_NamesNormalize(t *testing.T) {

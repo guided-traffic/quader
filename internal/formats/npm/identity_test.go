@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
+	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // TestR_NPM_019_WhoamiAndPing: whoami names the principal as R-AUTH-033 renders it and
@@ -50,7 +50,7 @@ func TestR_NPM_019_WhoamiAndPing(t *testing.T) {
 			if r.Code != 401 || errorBodyOf(t, r.ResponseRecorder).Code != "unauthenticated" {
 				t.Fatalf("%s: %d %s", p, r.Code, r.Body.String())
 			}
-			if c := r.Header().Get("WWW-Authenticate"); c != `Basic realm="trove"` {
+			if c := r.Header().Get("WWW-Authenticate"); c != `Basic realm="quader"` {
 				t.Fatalf("%s: challenge %q", p, c)
 			}
 		}

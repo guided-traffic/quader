@@ -4,9 +4,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/semver"
 )
 
 // The format takes part in the vulnerability scanning through the optional adapter of the format contract (R-VULN-009,

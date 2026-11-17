@@ -3,7 +3,7 @@ package registrytoken
 import (
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Actions is a set of the actions of the distribution token protocol (R-OCI-006): pull, push and delete.

@@ -38,7 +38,7 @@ work="$repo/.out/npm-reference"
 rm -rf "$work"; mkdir -p "$work/project" "$work/ca"
 chmod 777 "$work/ca"   # the stub runs as another user and writes its CA certificate here
 
-net="trove-npm-reference-$$"
+net="quader-npm-reference-$$"
 stub="$net-stub"
 cleanup() { docker rm -f "$stub" >/dev/null 2>&1 || true; docker network rm "$net" >/dev/null 2>&1 || true; }
 trap cleanup EXIT

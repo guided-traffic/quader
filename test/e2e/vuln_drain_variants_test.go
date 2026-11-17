@@ -31,10 +31,10 @@ func TestVulnLong_R_VULN_015_BlockHoldsThroughDrainVariants(t *testing.T) {
 		{variantE, "R-HA-059 R-VULN-015 R-VULN-027 E5.13 drain variant E (a running backup pod on the node): every replica refuses, the replacement from its first request, the backup Job completes with backoffLimit 0"},
 	} {
 		t.Run(v.name, func(t *testing.T) {
-			troveSettled(t, 3, 3, 4)
+			quaderSettled(t, 3, 3, 4)
 			d := prepareVariantDrain(t, v.variant)
 			// the preparation moves primaries and starts the backup Job; the probes start on a settled release, so a failure is the drain's
-			troveSettled(t, 3, 3, 4)
+			quaderSettled(t, 3, 3, 4)
 			tally := probeDuring(t, probes, 20*time.Second, 40*time.Second, func() { d.Run(t) })
 			// the three packages replicas and the replacement of the one on the node
 			tally.report(t, 4)

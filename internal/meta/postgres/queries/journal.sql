@@ -160,7 +160,7 @@ VALUES ('restored_at', to_jsonb(to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
 
 -- name: JournalSuppressBinding :exec
--- A role binding that a replay removed ("<role>|<principal id>"). trove migrate does not apply a declared binding that is
+-- A role binding that a replay removed ("<role>|<principal id>"). quader migrate does not apply a declared binding that is
 -- marked until an administrator binds it again (R-AUTHZ-010, Q-AUTHZ-235).
 INSERT INTO system_state (key, value) VALUES ('journal_suppressed_bindings', jsonb_build_array(sqlc.arg(entry)::text))
 ON CONFLICT (key) DO UPDATE
@@ -183,7 +183,7 @@ SELECT COALESCE((extract(epoch FROM max(occurred_at)) * 1000000)::bigint, 0)::bi
 
 -- name: JournalQuarantine :exec
 -- An outbox row that cannot be encoded as a journal object. It leaves the outbox so that it does not hold back the rows
--- behind it, and stays visible here (post-restore prints it) and in trove_revocation_journal_quarantined_total.
+-- behind it, and stays visible here (post-restore prints it) and in quader_revocation_journal_quarantined_total.
 INSERT INTO system_state (key, value) VALUES ('journal_quarantined', jsonb_build_array(sqlc.arg(entry)::text::jsonb))
 ON CONFLICT (key) DO UPDATE SET value = system_state.value || EXCLUDED.value, updated_at = now();
 

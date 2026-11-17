@@ -1,4 +1,4 @@
-// Package tables is the table registry of R-BAK-004: every table of trove's
+// Package tables is the table registry of R-BAK-004: every table of quader's
 // schema has an export class, registered by its owning package.
 //
 // It is a leaf package so that internal/meta/postgres, internal/jobs,

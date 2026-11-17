@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/formats/formattest"
-	"github.com/guided-traffic/trove/internal/formats/npm/npmtest"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/formats/npm/npmtest"
 )
 
 // scriptedRemote is a remote engine whose answers a test sets.
@@ -428,8 +428,8 @@ func TestR_NPM_025_AnErrorOfTheEngineKeepsItsCacheStatus(t *testing.T) {
 	f := New()
 	w := httptest.NewRecorder()
 	f.WriteError(w, httptest.NewRequest(http.MethodGet, "/x", nil),
-		errs.E(errs.NotFound, errs.CodeNotFound, "gone", errs.WithHeader("Cache-Status", "trove; hit; detail=negative")))
-	if w.Header().Get("Cache-Status") != "trove; hit; detail=negative" {
+		errs.E(errs.NotFound, errs.CodeNotFound, "gone", errs.WithHeader("Cache-Status", "quader; hit; detail=negative")))
+	if w.Header().Get("Cache-Status") != "quader; hit; detail=negative" {
 		t.Errorf("headers = %v", w.Header())
 	}
 }

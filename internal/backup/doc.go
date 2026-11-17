@@ -1,4 +1,4 @@
-// Package backup is the domain of trove's own backup and restore (INV-19, docs/spec/backup-and-restore.md): the contracts
+// Package backup is the domain of quader's own backup and restore (INV-19, docs/spec/backup-and-restore.md): the contracts
 // that the commands of the `backup` role are built on, and the small parts every command shares.
 //
 // What is here (the lane's work packages build on it and do not change it without a decision; docs/developer/backup.md
@@ -11,7 +11,7 @@
 //   - handle.go: the lease, heartbeat and stall detection of a running operation (R-BAK-010, R-BAK-013).
 //   - ports.go: the interfaces to the source database and the blob store that the create pipeline plugs into.
 //   - runner.go: the operation interfaces (Creator, Lister, Verifier, Deleter, Pruner, Restorer), their options and
-//     results; cmd/trove wires one implementation of each.
+//     results; cmd/quader wires one implementation of each.
 //   - metrics.go: the metric families of R-BAK-014, registered once.
 //
 // The subpackages: format (the on-target format), target (the port of the S3 target and an in-memory fake), tables (the

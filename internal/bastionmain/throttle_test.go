@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 type countingThrottle struct {
@@ -28,7 +28,7 @@ func TestR_BAS_008_TheRecognitionAppliesTheFailedCredentialThrottle(t *testing.T
 	tokens := &fakeTokens{}
 	o := RecognizeOptions{
 		Tokens: tokens, Throttle: func(*http.Request) Throttle { return th },
-		Source: func(*http.Request) (string, string) { return "198.51.100.20", "trove-bastion/0.15.0" },
+		Source: func(*http.Request) (string, string) { return "198.51.100.20", "quader-bastion/0.15.0" },
 	}
 	if w, _ := run(t, o, forwarded("/api/npm/web/npm-all/x", iface.HeaderAuthorization, "Bearer "+tokRevoked, iface.HeaderInterface, version())); w.Code != http.StatusUnauthorized || th.counted != 1 {
 		t.Errorf("a revoked token: %d, counted %d", w.Code, th.counted)
@@ -47,7 +47,7 @@ func TestR_BAS_008_TheRecognitionAppliesTheFailedCredentialThrottle(t *testing.T
 		t.Errorf("body %s", w.Body)
 	}
 	for _, req := range tokens.reqs {
-		if req.Throttle == nil || req.ClientAddr != "198.51.100.20" || req.UserAgent != "trove-bastion/0.15.0" {
+		if req.Throttle == nil || req.ClientAddr != "198.51.100.20" || req.UserAgent != "quader-bastion/0.15.0" {
 			t.Errorf("the authenticator was not given the request's throttle and source: %+v", req)
 		}
 	}

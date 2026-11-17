@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/target/targettest"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target/targettest"
 )
 
 // Spec describes one backup.
@@ -88,7 +88,7 @@ func Put(tb testing.TB, m *targettest.Mem, l format.Layout, s Spec) Backup {
 
 	man := &format.Manifest{
 		Format: format.ManifestFormat, BackupID: s.ID, InstallationID: s.Installation, Incarnation: s.Incarnation,
-		Trove:     format.TroveInfo{Version: "0.1.0", Revision: "abc"},
+		Quader:    format.QuaderInfo{Version: "0.1.0", Revision: "abc"},
 		Schema:    format.SchemaInfo{Step: 46, Steps: []format.SchemaStep{{Step: 1, Name: "00001_core", SHA256: "x"}}},
 		Postgres:  format.PostgresRef{ServerVersion: "17.6", Isolation: "repeatable read"},
 		StartedAt: s.ID.Time(), SnapshotAt: s.SnapshotAt, CompletedAt: s.SnapshotAt.Add(time.Minute),

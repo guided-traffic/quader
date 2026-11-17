@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // discoveringRemote has the two optional interfaces of a remote adapter.

@@ -7,13 +7,13 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	nugetdata "github.com/guided-traffic/trove/internal/formatdata/nuget"
-	"github.com/guided-traffic/trove/internal/formats/nuget/rows"
-	"github.com/guided-traffic/trove/internal/formats/nuget/version"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	nugetdata "github.com/guided-traffic/quader/internal/formatdata/nuget"
+	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
+	"github.com/guided-traffic/quader/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_NUGET_034_TheStoreReadsTheScanAsOneStatement (Q-NUGET-74): the data port hands the scan of

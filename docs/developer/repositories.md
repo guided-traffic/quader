@@ -7,7 +7,7 @@ that every request path reads. Code: [internal/repository](../../internal/reposi
 and the first format, [formats/generic.md](../spec/formats/generic.md)), the statements in
 [queries/repository.sql](../../internal/meta/postgres/queries/repository.sql). The management API operations are thin handlers
 over the functions below, in [repositories_api.go](../../internal/api/v1/repositories_api.go) (see "HTTP operations"); the
-`x-trove-permission` declaration, the ETag/`If-Match` headers, the cursor and the idempotency key are the API layer's, everything
+`x-quader-permission` declaration, the ETag/`If-Match` headers, the cursor and the idempotency key are the API layer's, everything
 else is decided in the domain.
 Milestone M1 implements the local class of the generic format only. Since M2 the remote settings (R-REPO-024, R-REPO-033),
 their secrets and the upstream test are built for any format that registers the remote class (see "Remote settings"), and the
@@ -247,7 +247,7 @@ The ordered checklist with the contract's details is in [formats.md](formats.md#
 3. Register it in [formats/all/all.go](../../internal/formats/all/all.go).
 4. If it has settings, give the format a JSON Schema (`catalog.Facts.SettingsSchema`) and add them to `repository.Settings` as a member named after the format (a strict
    document refuses a member the struct does not know) with an entry in `formatMembers`; `validateFormatSettings` runs the schema, so `validate.go` needs no change
-   ([formats.md](formats.md#format-settings), Q-REPO-122). A setting that applies to one class says so in the schema (`x-trove-classes`).
+   ([formats.md](formats.md#format-settings), Q-REPO-122). A setting that applies to one class says so in the schema (`x-quader-classes`).
 5. Name the requirement IDs in the tests; run `make coverage` and `go run ./internal/tools/coverage -links`.
 
 ## Paths and patterns

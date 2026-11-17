@@ -1,8 +1,8 @@
 {
-  "name": "trove-npm-reference",
+  "name": "quader-npm-reference",
   "version": "1.0.0",
   "private": true,
-  "description": "Reference project of the trove performance and e2e tests: resolved only from the synthetic corpus.",
+  "description": "Reference project of the quader performance and e2e tests: resolved only from the synthetic corpus.",
   "license": "MIT",
   "dependencies": {
     "@cobalt/dusky-gauge": "^2.0.0",

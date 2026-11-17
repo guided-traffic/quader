@@ -2,7 +2,7 @@ import { join, resolve } from 'node:path';
 
 /** The repository root: web/e2e/renders/../../.. */
 export const root = resolve(__dirname, '..', '..', '..');
-/** The edge of the UI development profile: the dev server, which proxies everything outside /ui/ to trove. */
+/** The edge of the UI development profile: the dev server, which proxies everything outside /ui/ to Quader. */
 export const edge = process.env['UI_RENDERS_EDGE'] ?? 'https://localhost:4200';
 /** The generated state of the profile (deploy/ui-dev/up.sh): the break-glass password. */
 export const stateDir = join(root, '.dev', 'ui-dev');

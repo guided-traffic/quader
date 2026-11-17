@@ -23,7 +23,7 @@ describe('Groups (R-UI-025)', () => {
     const { fixture, root, get } = await renderScreen(GroupList);
     buttonByText(root, 'New group').click();
     await settle(fixture);
-    const dialog = overlay().querySelector('trove-group-create-dialog') as HTMLElement;
+    const dialog = overlay().querySelector('quader-group-create-dialog') as HTMLElement;
     typeInto(dialog, 'Name', 'ops');
     buttonByText(dialog, 'Create group').click();
     await settle(fixture);
@@ -46,7 +46,7 @@ describe('Groups (R-UI-025)', () => {
 
   it('R-UI-025 only manual members can be removed', async () => {
     const { root } = await renderScreen(GroupDetail, { inputs: { name: 'team-web' } });
-    const rows = [...root.querySelectorAll('trove-disclosure tbody tr')];
+    const rows = [...root.querySelectorAll('quader-disclosure tbody tr')];
     expect(rows).toHaveLength(2);
     const provider = rows.find((r) => text(r).startsWith('alice'))!;
     const mixed = rows.find((r) => text(r).startsWith('sa:ci-bot'))!;
@@ -107,7 +107,7 @@ describe('Groups (R-UI-025)', () => {
     await settle(fixture);
     expect(save.disabled).toBe(false);
     expect(root.querySelector<HTMLInputElement>('input[name="origin"]')!.readOnly).toBe(true);
-    const advanced = [...root.querySelectorAll('trove-disclosure')].find((e) => text(e).includes('Advanced'))!;
+    const advanced = [...root.querySelectorAll('quader-disclosure')].find((e) => text(e).includes('Advanced'))!;
     expect(text(advanced)).toContain('Delete group');
     expect(advanced.querySelector('button.btn-danger')).toBeTruthy();
   });
@@ -119,6 +119,6 @@ describe('Groups (R-UI-025)', () => {
     await settle(fixture);
     buttonByText(root, 'Save changes').click();
     await settle(fixture);
-    expect(document.querySelector('.cdk-overlay-container trove-conflict-dialog')).toBeTruthy();
+    expect(document.querySelector('.cdk-overlay-container quader-conflict-dialog')).toBeTruthy();
   });
 });

@@ -25,27 +25,27 @@ certs="$root/.dev/integration/certs"
 case "$svc" in
   postgres)
     "$here/certs.sh" --issue postgres "$certs" "$days"
-    docker exec trove-it-postgres /conf/postgres.sh refresh
-    docker exec trove-it-postgres psql -U trove -d trove -qtAc "select pg_reload_conf()" >/dev/null
+    docker exec quader-it-postgres /conf/postgres.sh refresh
+    docker exec quader-it-postgres psql -U quader -d quader -qtAc "select pg_reload_conf()" >/dev/null
     ;;
   pgbouncer)
     "$here/certs.sh" --issue pgbouncer "$certs" "$days"
-    docker kill --signal=HUP trove-it-pgbouncer >/dev/null
+    docker kill --signal=HUP quader-it-pgbouncer >/dev/null
     ;;
   valkey)
     "$here/certs.sh" --issue server "$certs" "$days"
     for port in 16379 16380 26381 26382 26383; do
       auth=(--user ops --pass ops-valkey-it)
       case "$port" in 263*) auth=(-a sentinel-valkey-it) ;; esac
-      docker exec trove-it-valkey-primary valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p "$port" "${auth[@]}" --no-auth-warning \
+      docker exec quader-it-valkey-primary valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p "$port" "${auth[@]}" --no-auth-warning \
         CONFIG SET tls-cert-file /certs/server.crt tls-key-file /certs/server.key >/dev/null
     done
     ;;
   s3)
     "$here/certs.sh" --issue s3 "$certs" "$days"
-    docker restart trove-it-seaweedfs >/dev/null
+    docker restart quader-it-seaweedfs >/dev/null
     for _ in $(seq 1 60); do
-      [ "$(docker inspect -f '{{.State.Health.Status}}' trove-it-seaweedfs)" = healthy ] && exit 0
+      [ "$(docker inspect -f '{{.State.Health.Status}}' quader-it-seaweedfs)" = healthy ] && exit 0
       sleep 2
     done
     echo "rotate-cert.sh: the S3 gateway did not become healthy after the restart" >&2

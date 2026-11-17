@@ -18,7 +18,7 @@
 // A request that never got a response has status 0 and k6's error code and text (<code>:<text>, spaces as _) in the replica column.
 // k6's own summary (handleSummary) goes to /out/summary.json as a cross-check.
 //
-// Environment: TARGET (base URL, default http://trove-control-plane:30080, the edge's NodePort on the
+// Environment: TARGET (base URL, default http://quader-control-plane:30080, the edge's NodePort on the
 // kind Docker network; https:// for a TLS edge, whose CA the container gets in SSL_CERT_FILE), HOST (the
 // Host header, and the server name of a TLS edge, default localhost), HOSTS_ADDR (optional host:port
 // that HOST resolves to, for a TLS edge whose certificate names HOST while TARGET names the node), RATE
@@ -27,7 +27,7 @@ import http from 'k6/http';
 import { sleep } from 'k6';
 import exec from 'k6/execution';
 
-const TARGET = __ENV.TARGET || 'http://trove-control-plane:30080';
+const TARGET = __ENV.TARGET || 'http://quader-control-plane:30080';
 const HOST = __ENV.HOST || 'localhost';
 const PATHS = ['/api/v1/system/ping', '/api/v1/system/replicas'];
 
@@ -77,7 +77,7 @@ function request(vu) {
   const t0 = Date.now();
   const res = http.get(TARGET + path, { headers: { Host: HOST }, timeout: __ENV.TIMEOUT || '15s', tags: { name: path } });
   // A request without a response carries k6's error code and text in the replica column: <code>:<text>.
-  const replica = res.status === 0 ? `${res.error_code || 0}:${res.error || 'error'}` : (res.headers['X-Trove-Replica'] || '-');
+  const replica = res.status === 0 ? `${res.error_code || 0}:${res.error || 'error'}` : (res.headers['X-Quader-Replica'] || '-');
   console.log(`R ${t0} ${res.status} ${String(replica).replace(/\s+/g, '_')} ${Date.now() - t0} ${path}${vu === undefined ? '' : ' ' + vu}`);
 }
 

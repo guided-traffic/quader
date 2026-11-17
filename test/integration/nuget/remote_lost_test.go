@@ -10,11 +10,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/nugetstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
-// The objects of a remote's cached items are lost behind trove's back, as the object store of the dev profile lost its data
+// The objects of a remote's cached items are lost behind quader's back, as the object store of the dev profile lost its data
 // (finding F-62): the rows stay. The remote fills every item again from its upstream, the service index it addresses the
 // upstream by included, and while the upstream cannot serve them the answer is 503 with Retry-After, never a 500
 // (storage.md R-STOR-027, ha-and-helm.md R-HA-024, Q-REPO-202, Q-REPO-203).

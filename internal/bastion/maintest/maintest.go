@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // Release is the release the fake reports in the handshake.
@@ -295,7 +295,7 @@ func (m *Main) FeedReads() []string {
 	return append([]string(nil), m.feedReads...)
 }
 
-// Replicas returns the Trove-Bastion-Replica values seen, with the time of the last request.
+// Replicas returns the Quader-Bastion-Replica values seen, with the time of the last request.
 func (m *Main) Replicas() map[string]time.Time {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -628,7 +628,7 @@ func GenerateToken(t testing.TB) string {
 }
 
 // GenerateTokenWithPrefix returns a well-formed token of the form of R-AUTH-022 with the given prefix, for example
-// "trv_pat_": the credential of a caller of the Bastion in a test.
+// "qdr_pat_": the credential of a caller of the Bastion in a test.
 func GenerateTokenWithPrefix(t testing.TB, prefix string) string {
 	t.Helper()
 	random := make([]byte, 43)

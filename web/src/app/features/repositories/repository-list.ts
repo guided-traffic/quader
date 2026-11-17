@@ -42,7 +42,7 @@ import { classLabel } from './repository-class';
  * the virtual repositories that include it, and follows the deletion job until the row is gone.
  */
 @Component({
-  selector: 'trove-repository-list',
+  selector: 'quader-repository-list',
   imports: [
     FormatIconView,
     CdkMenu,

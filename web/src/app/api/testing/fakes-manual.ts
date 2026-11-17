@@ -35,7 +35,7 @@ const PAGES: readonly (Omit<ManualPage, 'previous' | 'next'>)[] = [
   {
     section: 'admin',
     id: 'overview',
-    title: 'How trove runs',
+    title: 'How Quader runs',
     summary: 'The roles, the dependencies and the listeners.',
     html: '<p>The roles, the dependencies and the listeners.</p><h2 id="user-content-roles">Roles</h2><p>Text.</p><table><thead><tr><th>Role</th><th>Purpose</th></tr></thead><tbody><tr><td><code>all</code></td><td>Serves the API and the UI.</td></tr></tbody></table>',
     headings: [{ level: 2, id: 'user-content-roles', text: 'Roles' }],

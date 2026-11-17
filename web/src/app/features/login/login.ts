@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, computed, effect, inject, input, isDevMode, resource, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
@@ -9,8 +9,8 @@ import { BrowserNavigation, safeReturnTo } from '../../core/browser-navigation';
 import { describeProblem } from '../../core/http/problem-messages';
 import { SessionStore } from '../../core/session-store';
 import { Banner } from '../../shared/banner';
+import { QuaderMark } from '../../shared/brand/quader-mark';
 import { ErrorNotice } from '../../shared/error-notice';
-import { LogoPreview } from './logo-preview';
 
 /**
  * Sign-in (R-UI-004, Q-UI-125). A screen without the shell, laid out as one column: the wordmark, the
@@ -22,12 +22,12 @@ import { LogoPreview } from './logo-preview';
  * no username and password form for regular users (INV-7).
  */
 @Component({
-  selector: 'trove-login',
-  imports: [RouterLink, Banner, ErrorNotice, LogoPreview],
+  selector: 'quader-login',
+  imports: [RouterLink, Banner, ErrorNotice, QuaderMark],
   template: `
-    <trove-banner />
+    <quader-banner />
     <div class="bare-panel">
-      <img class="bare-logo" src="brand/trove-horizontal.svg" alt="trove" width="190" height="64" />
+      <quader-mark class="bare-logo" [wordmark]="true" />
       <h1 tabindex="-1" i18n="@@login.heading">Sign in</h1>
 
       @if (reauth() === '1') {
@@ -37,7 +37,7 @@ import { LogoPreview } from './logo-preview';
       }
 
       @if (options.error(); as failure) {
-        <trove-error-notice [error]="asApiError(failure)" (retry)="options.reload()" />
+        <quader-error-notice [error]="asApiError(failure)" (retry)="options.reload()" />
       } @else if (options.isLoading()) {
         <p role="status" class="state" i18n="@@login.loading">Loading the sign-in options.</p>
       } @else if (options.value(); as o) {
@@ -124,59 +124,56 @@ import { LogoPreview } from './logo-preview';
         }
       }
     </div>
-    @if (logoPreview) {
-      <trove-logo-preview />
-    }
   `,
   styles: `
     .local,
     .providers {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-4);
+      gap: var(--quader-space-4);
     }
     .field {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-2);
+      gap: var(--quader-space-2);
     }
     .providers {
       list-style: none;
       margin: 0;
       padding: 0;
-      gap: var(--trove-space-3);
+      gap: var(--quader-space-3);
     }
     .providers li {
       display: flex;
       flex-direction: column;
-      gap: var(--trove-space-1);
+      gap: var(--quader-space-1);
     }
     .unavailable,
     .state {
-      color: var(--trove-text-muted);
-      font-size: var(--trove-text-muted-size);
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-muted-size);
       text-align: center;
     }
     .local-error {
       margin: 0;
-      color: var(--trove-status-bad);
+      color: var(--quader-status-bad);
     }
     .divider {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-3);
-      margin: var(--trove-space-6) 0 var(--trove-space-4);
-      color: var(--trove-text-muted);
-      font-size: var(--trove-text-muted-size);
+      gap: var(--quader-space-3);
+      margin: var(--quader-space-6) 0 var(--quader-space-4);
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-muted-size);
     }
     .divider::before,
     .divider::after {
       content: '';
       flex: 1 1 auto;
-      border-block-start: 1px solid var(--trove-border);
+      border-block-start: 1px solid var(--quader-border);
     }
     .anonymous {
-      margin-block-start: var(--trove-space-6);
+      margin-block-start: var(--quader-space-6);
       text-align: center;
     }
   `,
@@ -193,8 +190,6 @@ export class Login {
 
   readonly reauth = input<string | undefined>();
 
-  /** The logo drafts under the sign-in column, while the logo is designed; never in a production build. */
-  protected readonly logoPreview = isDevMode();
   protected readonly options = resource({ loader: () => this.api.options() });
   protected readonly redirecting = signal(false);
   protected readonly username = signal('');

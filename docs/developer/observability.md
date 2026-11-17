@@ -55,7 +55,7 @@ Applied by the handler to every record, in every format, including the ring buff
 | Rule | Where |
 |---|---|
 | attribute keys containing `password`, `secret`, `token`, `authorization`, `cookie`, `api_key`, `apikey`, `private_key`, `credential` (case-insensitive) get the value `[REDACTED]`; `token_id` and `token_type` are exempt | `SensitiveKey` |
-| `trv_<type>_<body>` becomes `trv_<type>_[REDACTED]`; `Bearer x`, `Basic x`, URL user information, query parameters of `log.request.redact_query_params`, the segment after `/auth/cli/`, the whole query of `/auth/oidc/<provider>/callback` and the value of `id_token_hint` (Q-OPS-91) | `Scrubber.String`, applied to `msg` and every string attribute and error text |
+| `qdr_<type>_<body>` becomes `qdr_<type>_[REDACTED]`; `Bearer x`, `Basic x`, URL user information, query parameters of `log.request.redact_query_params`, the segment after `/auth/cli/`, the whole query of `/auth/oidc/<provider>/callback` and the value of `id_token_hint` (Q-OPS-91) | `Scrubber.String`, applied to `msg` and every string attribute and error text |
 | URL user information runs from `scheme://` to the **last** `@` before the authority ends (`/`, `?`, `#`, `<`, `>`, whitespace), so a password with an unencoded `@`, a `'` or a `"` is redacted whole; `user:secret@` keeps the user name, a bare `token@` keeps nothing. The rule errs towards hiding: text that follows a path-less URL up to a later `@` is redacted too | `Scrubber.String` |
 | values of kind `Any`: an `error`, a `fmt.Stringer` and a `*url.URL`/`url.URL` are logged as their scrubbed text (URLs through `Scrubber.URL`, without user information); an `http.Header` keeps its names, values of sensitive headers (`SensitiveKey` of the name with `-` read as `_`: `Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`, `X-Api-Key`, …) become `[REDACTED]`, the others are scrubbed; anything else (maps, slices, structs, pointers) is encoded as JSON, decoded again (numbers kept exact), and every string is scrubbed and every value under a sensitive key redacted; a typed nil is `null` | `Logging.scrubAny` |
 | `observability.Secret` and `config.Secret` print `[REDACTED]` through slog, `fmt` and JSON | `Secret`, `replaceAttr` |
@@ -66,30 +66,30 @@ Rules for code:
   with an innocent key cannot print it.
 - Errors that leave the process (client responses, support bundles) go through `observability.ScrubError` or
   `Scrubber.Error`.
-- `Trove-Bastion-Authorization` is a secret header (R-BAS-008): `SensitiveKey` matches the word `authorization` in a header name, so a logged
-  `http.Header` shows it as `[REDACTED]`, and `trv_bst_…` is a token for the scrubber like every `trv_<type>_` value. The Recognize stage also
-  removes the header from the request the later stages receive. The other `Trove-Bastion-*` headers carry no secret.
+- `Quader-Bastion-Authorization` is a secret header (R-BAS-008): `SensitiveKey` matches the word `authorization` in a header name, so a logged
+  `http.Header` shows it as `[REDACTED]`, and `qdr_bst_…` is a token for the scrubber like every `qdr_<type>_` value. The Recognize stage also
+  removes the header from the request the later stages receive. The other `Quader-Bastion-*` headers carry no secret.
 - Never log bodies or headers other than `User-Agent`, `Content-Type`, `Content-Length`, `Accept`.
 - Span attributes are scrubbed again right before export (`scrubExporter`), so a missed call site cannot leak.
 
 ## Metrics
 
-`observability.NewMetrics(role, WithMetricsConfig(cfg.Metrics), WithEndpointNames(names...))` owns the registry; `role` is the `--role` name (`api`, `packages`, `worker`, `web`, `all`, Q-OPS-161) and is the value of `trove_build_info{role}` and of the `role` of every log record. It exposes the Go runtime
-and process collectors (`go_*`, `process_*`, the only families without the `trove_` prefix),
-`trove_build_info{version,revision,goversion,role}`, the HTTP families, `trove_ready`,
-`trove_metrics_label_overflow_total`, `trove_tracing_spans_dropped_total` and
-`trove_metrics_db_gauges_last_success_timestamp_seconds`. The three HTTP request families carry the label `endpoint`
+`observability.NewMetrics(role, WithMetricsConfig(cfg.Metrics), WithEndpointNames(names...))` owns the registry; `role` is the `--role` name (`api`, `packages`, `worker`, `web`, `all`, Q-OPS-161) and is the value of `quader_build_info{role}` and of the `role` of every log record. It exposes the Go runtime
+and process collectors (`go_*`, `process_*`, the only families without the `quader_` prefix),
+`quader_build_info{version,revision,goversion,role}`, the HTTP families, `quader_ready`,
+`quader_metrics_label_overflow_total`, `quader_tracing_spans_dropped_total` and
+`quader_metrics_db_gauges_last_success_timestamp_seconds`. The three HTTP request families carry the label `endpoint`
 (R-EP-009): the configured endpoint names, bounded by `WithEndpointNames` (a name outside the set folds into `_other`
 and counts in the overflow counter); the ops listener's series carry the empty value. The families
-`trove_endpoint_listener_up`, `trove_endpoint_misdirected_total` and `trove_endpoint_forwarded_host_ignored_total` are
+`quader_endpoint_listener_up`, `quader_endpoint_misdirected_total` and `quader_endpoint_forwarded_host_ignored_total` are
 exported at 0 per endpoint (`Metrics.ExportEndpoints`); see [endpoints.md](endpoints.md#observability). So is
-`trove_http_requests_shed_total{endpoint,reason}` for each reason (`in_flight`, `memory_slots`, `heap`; `Metrics.RequestShed`
-counts no other), beside the gauges `trove_http_memory_slots` (`Metrics.MemorySlots`) and `trove_http_memory_slots_in_use` (`Metrics.MemorySlotsInUse`, read at each scrape) of the memory guard
+`quader_http_requests_shed_total{endpoint,reason}` for each reason (`in_flight`, `memory_slots`, `heap`; `Metrics.RequestShed`
+counts no other), beside the gauges `quader_http_memory_slots` (`Metrics.MemorySlots`) and `quader_http_memory_slots_in_use` (`Metrics.MemorySlotsInUse`, read at each scrape) of the memory guard
 ([architecture.md](architecture.md#stage-4-and-the-memory-guard)).
 
-The main installation's side of the Bastion adds `trove_bastion_interface_requests_total{bastion,operation,outcome}`, counted by the Recognize
+The main installation's side of the Bastion adds `quader_bastion_interface_requests_total{bastion,operation,outcome}`, counted by the Recognize
 stage for every request on `/api/v1/bastion/…` (the outcome from the status of the answer: `ok`, `refused`, `error`, `not_implemented`; `invalid_token` and
-`interface_mismatch` from the stage's own refusals), and `trove_bastion_forwarded_requests_total{bastion,class}`, counted by the marking; both are
+`interface_mismatch` from the stage's own refusals), and `quader_bastion_forwarded_requests_total{bastion,class}`, counted by the marking; both are
 defined once in [bastionmain/metrics.go](../../internal/bastionmain/metrics.go) and registered once by `App.bastionMetrics`. The `bastion` label is the registration's
 name, bounded by `bastions.max_registrations`; a token that names no registration counts as `unknown`.
 
@@ -99,7 +99,7 @@ name, bounded by `bastions.max_registrations`; a token that names no registratio
 every scrape, so a rotated Secret takes effect without a restart. A scrape reads the registry only.
 
 `role` and `pool` of every other series are target labels the ServiceMonitor attaches (Q-OPS-13); the process
-never emits them outside `trove_build_info`.
+never emits them outside `quader_build_info`.
 
 ### How to add a metric
 
@@ -107,10 +107,10 @@ never emits them outside `trove_build_info`.
 2. Create it through the guarded constructors, once, where the owning component is built:
 
    ```go
-   queued := m.NewCounterVec("trove_cache_flushes_total", "Cache flushes by cause.", "cache", "reason")
+   queued := m.NewCounterVec("quader_cache_flushes_total", "Cache flushes by cause.", "cache", "reason")
    ```
 
-   `NewCounterVec`, `NewGaugeVec` and `NewHistogramVec` panic at start-up when the name lacks the `trove_`
+   `NewCounterVec`, `NewGaugeVec` and `NewHistogramVec` panic at start-up when the name lacks the `quader_`
    prefix, when a counter lacks `_total` (or a non-counter has it), or when a label is not in the allowed list
    of R-OPS-007 ([labels.go](../../internal/observability/labels.go)). If you need a new label, the spec table
    changes first.
@@ -119,7 +119,7 @@ never emits them outside `trove_build_info`.
    overflow counter). A `repo` value is the repository's qualified name `qname.Repo.String()` (`<projectKey>/<repoKey>`); the `repo`
    cap follows the repository snapshot: `SnapshotReader` calls `ReaderOptions.OnLoad` with the repositories in creation order on
    every rebuild, and `App.updateRepoLabels` ([wire_repository.go](../../internal/app/wire_repository.go)) hands them to
-   `CappedLabels.UpdateRepositories`, which matches `repository_label_include` against them and announces every name that left the snapshot (a deleted repository, or a moved one under its old name) to the functions registered with `CappedLabels.OnForget`. The owners of families with a `repo` label register there and delete the series of that name (R-OPS-007): the remote engine (`proxy.Engine.Forget`: every `repo` family and the entry that republishes `trove_remote_upstream_up`), the mirror (`mirror.Metrics.Forget`) and the virtual engine (`virtual.Resolver.Forget`); the wiring is in `wire_proxy_engine.go`, `wire_mirror_host.go`, `wire_mirror.go` and `wire_virtual_engine.go`. The npm and NuGet formats hold the `CappedLabels` themselves and register their families with `CappedLabels.DeleteOnForget` where they create them (`npm/bind.go`, `nuget/metrics*.go`, `nuget/remote_fill.go`). Every family with a `repo` label must register in one of these ways, whatever its type; a family that does not keeps the series of a gone repository until the process restarts. The outbound client (`trove_outbound_*`, label `kind` = purpose) and the item store carry no series keyed by a repository name. A request that is in flight when its repository leaves the snapshot can still record once under the old name; the mirror, whose passes last minutes, closes this with a handle per pass ([mirror.md](mirror.md)). The entries are selectors of an instance
+   `CappedLabels.UpdateRepositories`, which matches `repository_label_include` against them and announces every name that left the snapshot (a deleted repository, or a moved one under its old name) to the functions registered with `CappedLabels.OnForget`. The owners of families with a `repo` label register there and delete the series of that name (R-OPS-007): the remote engine (`proxy.Engine.Forget`: every `repo` family and the entry that republishes `quader_remote_upstream_up`), the mirror (`mirror.Metrics.Forget`) and the virtual engine (`virtual.Resolver.Forget`); the wiring is in `wire_proxy_engine.go`, `wire_mirror_host.go`, `wire_mirror.go` and `wire_virtual_engine.go`. The npm and NuGet formats hold the `CappedLabels` themselves and register their families with `CappedLabels.DeleteOnForget` where they create them (`npm/bind.go`, `nuget/metrics*.go`, `nuget/remote_fill.go`). Every family with a `repo` label must register in one of these ways, whatever its type; a family that does not keeps the series of a gone repository until the process restarts. The outbound client (`quader_outbound_*`, label `kind` = purpose) and the item store carry no series keyed by a repository name. A request that is in flight when its repository leaves the snapshot can still record once under the old name; the mirror, whose passes last minutes, closes this with a handle per pass ([mirror.md](mirror.md)). The entries are selectors of an instance
    context (`web/npm-*`, classes such as `@any-remote`), refused at start when one is a bare key; `*` stays within the project or the
    key. Never a user name, token ID, IP, path, package name, version, trace ID or error text.
 4. Take `*observability.Metrics` (or only a `prometheus.Registerer` from `m.Registry()`) in your constructor.
@@ -134,7 +134,7 @@ background. Register a source; the evaluator calls it once per `metrics.db_gauge
 a scrape returns the last values without touching PostgreSQL:
 
 ```go
-desc := prometheus.NewDesc("trove_jobs_queued", "Queued jobs (max across replicas).", []string{"kind"}, nil)
+desc := prometheus.NewDesc("quader_jobs_queued", "Queued jobs (max across replicas).", []string{"kind"}, nil)
 m.DBGauges().Add(observability.GaugeSource{
     Name: "jobs", Descs: []*prometheus.Desc{desc},
     Collect: func(ctx context.Context) ([]prometheus.Metric, error) { /* query on the request pool */ },
@@ -142,28 +142,28 @@ m.DBGauges().Add(observability.GaugeSource{
 go m.DBGauges().Run(ctx) // the composition root starts it once
 ```
 
-The job queue registers two: `jobs` (`trove_jobs_queued` and `trove_jobs_oldest_queued_age_seconds`, the sqlc query `JobQueueGauges`) and
-`valkey-primary-views` (`trove_valkey_primary_views`, `ValkeyPrimaryViews`), both in [wire_gauges.go](../../internal/app/wire_gauges.go). Their
+The job queue registers two: `jobs` (`quader_jobs_queued` and `quader_jobs_oldest_queued_age_seconds`, the sqlc query `JobQueueGauges`) and
+`valkey-primary-views` (`quader_valkey_primary_views`, `ValkeyPrimaryViews`), both in [wire_gauges.go](../../internal/app/wire_gauges.go). Their
 SQL is tested against PostgreSQL in [gauges_test.go](../../test/integration/coordination/gauges_test.go), the rendering of a row into a series
 in `wire_gauges_test.go`, which is how a gauge from the database is kept testable without a database in the unit tier: the query returns
 rows, a pure function turns the rows into metrics.
 
 The vulnerability scanning registers one such source, `vuln` ([store/gauges.go](../../internal/vuln/store/gauges.go),
 registered in the `WP-G` block of [wire_vuln.go](../../internal/app/wire_vuln.go)): the five gauges of
-[R-VULN-024](../spec/vulnerability-scanning.md) (`trove_vuln_source_*`, `trove_vuln_findings`, `trove_vuln_claimed_name_matches`) over three
+[R-VULN-024](../spec/vulnerability-scanning.md) (`quader_vuln_source_*`, `quader_vuln_findings`, `quader_vuln_claimed_name_matches`) over three
 statements of [vuln_ops.sql](../../internal/meta/postgres/queries/vuln_ops.sql). The descriptors are `vmetrics.GaugeDescs()`, so the
 families stay defined in one place. The source fills the series a dashboard and the alerts need but the tables do not have rows for:
 a series with 0 for every configured source without a row of `vuln_source_state` (after a restore or before the first run, so that
-`TroveVulnerabilityDataStale` fires on it), every severity, status and kind of the findings gauge, and both kinds for every
+`QuaderVulnerabilityDataStale` fires on it), every severity, status and kind of the findings gauge, and both kinds for every
 ecosystem of the claimed-match gauge (Q-VULN-56). A source whose mode is `off`, and a disabled scanning, have no source series.
 
-A failing source keeps its previous values; `trove_metrics_db_gauges_last_success_timestamp_seconds` advances
+A failing source keeps its previous values; `quader_metrics_db_gauges_last_success_timestamp_seconds` advances
 only when every source succeeded and is absent until the first success. The help text of such a gauge says to
 aggregate with `max`, not `sum`.
 
 ## Request log and request facts
 
-`RequestLog(logger, m, opts...)` counts every request in `trove_http_*` and writes the R-OPS-010 record. Options:
+`RequestLog(logger, m, opts...)` counts every request in `quader_http_*` and writes the R-OPS-010 record. Options:
 `WithListener("client"|"ops")`, `WithEndpoint(name)` (the listener's endpoint: label and the `endpoint` field; a client listener without it is `default`; `host` is the effective host set by the chain), `WithRequestRecords(false)` (metrics only, for the ops listener without
 `log.request.ops_listener`), `WithRemoteAddr(func)`, `WithRequestScrubber`, `WithRequestWindow(w)` (also counts the
 request in the runtime snapshot's window, [below](#runtime-snapshot-of-the-replica-registry-q-ops-175)). Absent values are JSON `null`,
@@ -209,10 +209,10 @@ figures come from two instances the composition root owns per replica, on `telem
 
 | Figure | Where it is measured |
 |---|---|
-| `requests`, `errors`, `latencyMs.p50/p95/p99` | `RequestWindow`, fed by `RequestLog` with `WithRequestWindow` at the point where it observes `trove_http_request_duration_seconds`: the same status and duration. `clientStages` passes the one window to the chain of every client endpoint; `opsStages` passes none, so probes and scrapes do not count. `errors` is a status of 500 or more. The latencies go into 70 buckets, upper bounds 0.5 ms × 2^(i/4) up to 65.536 s and one above; a percentile is interpolated linearly inside its bucket, as `histogram_quantile` does, so it is off by at most the bucket's width (19 % of its upper bound), and a rank in the bucket above reads as 65.536 s. No request in the window: the percentiles are `null` |
-| `inFlight` | `RequestWindow`'s counter, raised and lowered around the handler like `trove_http_requests_in_flight`; read, not reset, by the sample |
+| `requests`, `errors`, `latencyMs.p50/p95/p99` | `RequestWindow`, fed by `RequestLog` with `WithRequestWindow` at the point where it observes `quader_http_request_duration_seconds`: the same status and duration. `clientStages` passes the one window to the chain of every client endpoint; `opsStages` passes none, so probes and scrapes do not count. `errors` is a status of 500 or more. The latencies go into 70 buckets, upper bounds 0.5 ms × 2^(i/4) up to 65.536 s and one above; a percentile is interpolated linearly inside its bucket, as `histogram_quantile` does, so it is off by at most the bucket's width (19 % of its upper bound), and a rank in the bucket above reads as 65.536 s. No request in the window: the percentiles are `null` |
+| `inFlight` | `RequestWindow`'s counter, raised and lowered around the handler like `quader_http_requests_in_flight`; read, not reset, by the sample |
 | `cpuCores` | the process's CPU time, user and system, from `getrusage(RUSAGE_SELF)` (`processCPUTime`, unix builds), divided by the window's wall time. Not `runtime/metrics`' `/cpu/classes/*`: the runtime refreshes those only at the end of a garbage collection (`cpuStatsAggregate.compute` reads the stop-the-world snapshot), so a period without a collection read as idle and the next as a burst. A build without getrusage falls back to that estimate (`processcpu_other.go`); the images are Linux |
-| `cpuLimitCores` | `runtime.GOMAXPROCS(0)`: the Go runtime derives it from the container's CPU limit; the chart sets `GOMAXPROCS` from the CPU request when a role has no CPU limit ([_deployment.tpl](../../deploy/helm/trove/templates/_deployment.tpl)) |
+| `cpuLimitCores` | `runtime.GOMAXPROCS(0)`: the Go runtime derives it from the container's CPU limit; the chart sets `GOMAXPROCS` from the CPU request when a role has no CPU limit ([_deployment.tpl](../../deploy/helm/quader/templates/_deployment.tpl)) |
 | `memoryBytes` | `runtime/metrics`: `/memory/classes/total:bytes` minus `/memory/classes/heap/released:bytes`, read without stopping the world |
 | `memoryLimitBytes` | `runtime.memory_limit_bytes`, the value `GET /api/v1/system/info` reports as `runtime.memoryLimitBytes`; 0 when none is known |
 | `goroutines`, `sampledAt`, `windowSeconds` | `runtime.NumGoroutine()`, the time of the sample, and the time since the previous sample; the first sample covers the time since `newTelemetry` built the sampler, at the start of the replica |
@@ -229,7 +229,7 @@ period: the stored snapshot stays the previous one, and the next covers only its
 `observability.Tracing(cfg.Tracing, opts...)` always creates W3C trace IDs, whether or not export is enabled; the
 trace ID is the request ID. Middleware order on a listener: `tracer.Middleware()` outermost, then `RequestLog`,
 then the application. `tracer.MiddlewareFor(endpoint)` is the same middleware for one endpoint's listener and adds the span
-attribute `trove.endpoint`.
+attribute `quader.endpoint`.
 
 | Question | Answer |
 |---|---|
@@ -237,17 +237,17 @@ attribute `trove.endpoint`.
 | Incoming `traceparent`? | continued per `tracing.incoming_context`: `trusted_peers` (default; the TCP peer is in `tracing.trusted_peers`, default empty), `all`, `none`. Otherwise a new trace starts and the incoming context becomes a span link. A malformed header is ignored. `server.trusted_proxies` grants no trace trust: the edge passes the client's own `traceparent` through, so trusting it would let every client choose its `X-Request-Id` and the trace ID of its audit events. There is no option that passes `server.trusted_proxies` to the tracer. |
 | Get the ID in code | `observability.RequestID(ctx)`, `SpanID(ctx)`, `Sampled(ctx)` |
 | Start a span for a job or call | `tracer.Start(ctx, name, kind, attrs...)`; outbound calls get theirs from the outbound client |
-| Export | `tracing.enabled: true`: OTLP over `http/protobuf` or `grpc`, `https://` unless `tracing.allow_insecure` (an `http://` endpoint and `OTEL_EXPORTER_OTLP_INSECURE=true` are refused at load without it; `ca_file` with `http://` is refused); unset trove keys fall back to `OTEL_EXPORTER_OTLP_*`; resource attributes from `WithTraceResource` plus `OTEL_RESOURCE_ATTRIBUTES` |
-| Queue | bounded by `tracing.queue_size`: spans wait in the queue until they are exported, and the exporter takes at most one batch (up to `min(512, queue_size)` spans) out at a time, so the processor never holds more than twice the queue size; a full queue drops the span and counts `trove_tracing_spans_dropped_total`; handling never waits. A tick and a `ForceFlush` export the spans queued when they arrived (never "until empty", which does not end under a steady rate); `Shutdown` drains fully |
+| Export | `tracing.enabled: true`: OTLP over `http/protobuf` or `grpc`, `https://` unless `tracing.allow_insecure` (an `http://` endpoint and `OTEL_EXPORTER_OTLP_INSECURE=true` are refused at load without it; `ca_file` with `http://` is refused); unset Quader keys fall back to `OTEL_EXPORTER_OTLP_*`; resource attributes from `WithTraceResource` plus `OTEL_RESOURCE_ATTRIBUTES` |
+| Queue | bounded by `tracing.queue_size`: spans wait in the queue until they are exported, and the exporter takes at most one batch (up to `min(512, queue_size)` spans) out at a time, so the processor never holds more than twice the queue size; a full queue drops the span and counts `quader_tracing_spans_dropped_total`; handling never waits. A tick and a `ForceFlush` export the spans queued when they arrived (never "until empty", which does not end under a steady rate); `Shutdown` drains fully |
 | Sampling | parent-based with `tracing.sample_ratio`; disabled tracing never samples |
 
-Spans carry attributes under the `trove.` namespace and never user names, e-mail addresses or tokens. Database
+Spans carry attributes under the `quader.` namespace and never user names, e-mail addresses or tokens. Database
 spans carry statements with placeholders only.
 
 ## Outbound requests
 
 All outbound HTTP goes through [internal/outbound](../../internal/outbound). Its factory adds, per request:
-`User-Agent: trove/<version>`, a client span, a `traceparent` only with `tracing.propagate_to_upstreams`, one
+`User-Agent: quader/<version>`, a client span, a `traceparent` only with `tracing.propagate_to_upstreams`, one
 `log: upstream` record (R-OPS-011: `purpose`, `repo`, `subscription`, scrubbed `url`, `status`, `error`,
 `request_bytes`, `response_bytes`, `duration_ms` including the body, `attempt`, `on_behalf_of`, `collapsed_waiters`;
 pass `on_behalf_of`, `attempt`, `repo`, `collapsed_waiters` and, for `purpose=remote`, `flight_role`, `cache_status` and
@@ -255,8 +255,8 @@ pass `on_behalf_of`, `attempt`, `repo`, `collapsed_waiters` and, for `purpose=re
 (and `job_id`, the id of a mirror's pass, for a background request, R-REPO-057)
 with `outbound.WithCall` (`CollapsedWaiters` and `CacheStatus` are functions read when the request completes, because
 waiters join while the body streams), extra fields with `outbound.WithLogAttrs`) and the families
-`trove_outbound_requests_total{kind,code}`, `trove_outbound_request_duration_seconds{kind}` and
-`trove_outbound_egress_denied_total{kind}`, where `kind` is the purpose. The record completes when the body ends or is closed: a `304`
+`quader_outbound_requests_total{kind,code}`, `quader_outbound_request_duration_seconds{kind}` and
+`quader_outbound_egress_denied_total{kind}`, where `kind` is the purpose. The record completes when the body ends or is closed: a `304`
 or `404` (no body the fetch reads) at the close in `fetcher.notModified` / `notFound`, so the record's `duration_ms` leaves out the renewal
 transaction or the negative entry. Only the `304` sets the `Cache-Status` box before the close; a `404` sets none, so its `cache_status`
 stays `null`. `slot_wait_ms` is reported once per request (`outbound.SlotWait`): the first hop
@@ -269,7 +269,7 @@ The factory (`outbound.New(cfg.Proxy.Outbound, opts...)`; call `Err()` at start-
 | trust store | system roots (if enabled) plus `proxy.outbound.tls.ca_files`; no switch turns verification off; read again on a request at most every `outbound.DefaultTrustCheckEvery` (10 s), so a changed bundle applies within the 60 s of R-REPO-035 and R-ARCH-022; each client builds a new `http.Transport` per trust generation (the old one keeps its open connections and loses its idle ones); a bundle that breaks after a good load keeps the last good one; a bundle that never loaded fails the clients closed and is reported by `Err()` until it loads. `TrustStore(purpose, files...)` with `WithRootCAs` gives one client a trust store of its own (`storage.s3.ca_file`) |
 | minimum TLS | `proxy.outbound.tls.min_version` |
 | egress policy | `deny_cidrs` / `allow_cidrs` checked in the dialer's `Control` hook after resolution, and behind a proxy on the resolved target; applies to every purpose except `objectstore`; a refusal is `errors.Is(err, outbound.ErrEgressDenied)`. Before the lists: a zoned IPv6 address (`fe80::1%eth0`, `::1%1`) is refused whatever `allow_cidrs` says (a zone scopes an address to an interface of this host, and `netip.Prefix.Contains` is false for every zoned address, so it would pass every rule unchecked); IPv4-mapped IPv6 is unmapped; an address of the NAT64 prefix `64:ff9b::/96` is also checked as the IPv4 address it translates to (`64:ff9b::a9fe:a9fe` is refused like `169.254.169.254`; an explicit allow of the IPv6 address wins). Default deny list: `127.0.0.0/8`, `::1/128`, `0.0.0.0/8`, `::/128`, `::/96`, `169.254.0.0/16`, `fe80::/10`, `fd00:ec2::254/128`, `100.100.100.200/32`, `168.63.129.16/32`, `224.0.0.0/4`, `ff00::/8`, `255.255.255.255/32` |
-| proxy | `WithProxyURL(url, bypass...)`, or `proxy.outbound.proxy_from_environment`; behind a proxy trove resolves and checks the target itself first (the proxy's own connection is unchecked, H-6) |
+| proxy | `WithProxyURL(url, bypass...)`, or `proxy.outbound.proxy_from_environment`; behind a proxy Quader resolves and checks the target itself first (the proxy's own connection is unchecked, H-6) |
 | timeouts | connect 10 s, TLS handshake 10 s, response headers 30 s; overall 30 s for `oidc_discovery`, `jwks`, `webhook`, none for `remote` and `objectstore`; `WithSocketTimeout` maps a remote's socket timeout |
 | redirects | at most 5 hops (`WithMaxRedirects`), `https` to `http` refused, `WithRedirectCheck` for format rules |
 | source address | `WithLocalPrefix(prefix, list)` binds every connection to the first address of `list` (default `outbound.LocalAddrs`, the interface addresses) inside `prefix`; enumerated when the client is built and on the first dial after the last enumeration is `outbound.LocalRefresh` (60 s) old; no address inside the prefix fails the request with `errors.Is(err, outbound.ErrSourceNetworkUnavailable)` (502 `source_network_unavailable`, not a circuit failure); a failing lister keeps the last good address (Q-ARCH-198). The egress check still runs |
@@ -277,8 +277,8 @@ The factory (`outbound.New(cfg.Proxy.Outbound, opts...)`; call `Err()` at start-
 | dial override (tests only) | `outbound.WithDialOverride(map[host:port]host:port)` (a factory option, `app.Options.DialOverride`): the connection goes to the mapped address, while the TLS name, the Host header and every rule that reads the URL stay the URL's; the egress policy applies to the address connected to. The integration suite of the mirror reaches a stub as `https://registry.npmjs.org/` with it ([mirror.md](mirror.md#the-integration-suite)); production passes none |
 | compression | not transparent: callers choose `Accept-Encoding` |
 
-The trust stores report `trove_tls_certificate_expiry_timestamp_seconds`, `trove_tls_reloads_total` and
-`trove_tls_reload_errors_total` with `kind="outbound"` (the factory's) or the purpose (`objectstore`) when the factory
+The trust stores report `quader_tls_certificate_expiry_timestamp_seconds`, `quader_tls_reloads_total` and
+`quader_tls_reload_errors_total` with `kind="outbound"` (the factory's) or the purpose (`objectstore`) when the factory
 gets `outbound.WithTLSMetrics`; reload errors are logged through `outbound.WithLogger`. The families and their labels
 are on [tls.md](tls.md#metrics).
 

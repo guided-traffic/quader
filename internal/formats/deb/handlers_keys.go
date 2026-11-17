@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/openpgp"
 )
 
 // The public key of a repository (R-DEB-018): GET <repo URL>/signing-key.asc. A local or virtual repository serves the primary and the

@@ -8,14 +8,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Cache-Status values of a virtual response (R-REPO-047).
 const (
-	statusPartial = "trove; detail=partial"
-	statusMiss    = "trove; fwd=miss"
+	statusPartial = "quader; detail=partial"
+	statusMiss    = "quader; fwd=miss"
 )
 
 // Metadata answers a metadata request of the virtual repository (R-REPO-019 step 6, R-REPO-020):
@@ -109,7 +109,7 @@ func (r *Resolver) valid(ctx context.Context, e *mergedEntry, p *Plan) (bool, er
 func (e *mergedEntry) result(now time.Time, hit bool) *Merged {
 	status := e.status
 	if hit {
-		status = fmt.Sprintf("trove; hit; ttl=%d", max(0, int64(e.expires.Sub(now)/time.Second)))
+		status = fmt.Sprintf("quader; hit; ttl=%d", max(0, int64(e.expires.Sub(now)/time.Second)))
 	}
 	return &Merged{Bytes: e.bytes, MergeFingerprint: e.fingerprint, Partial: e.partial, CacheStatus: status}
 }

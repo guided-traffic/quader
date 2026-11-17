@@ -12,8 +12,8 @@ import (
 
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 const (
@@ -312,8 +312,8 @@ func TestFlightLock(t *testing.T) {
 		if took := time.Since(start); took > 50*time.Millisecond {
 			t.Fatalf("the calls took %s with the breaker open", took)
 		}
-		if got := metric(t, c.Reg, "trove_valkey_degraded_total", cluster.MechanismFlightLock); got < 2 {
-			t.Fatalf("trove_valkey_degraded_total{mechanism=flight_lock} = %v, want at least 2", got)
+		if got := metric(t, c.Reg, "quader_valkey_degraded_total", cluster.MechanismFlightLock); got < 2 {
+			t.Fatalf("quader_valkey_degraded_total{mechanism=flight_lock} = %v, want at least 2", got)
 		}
 	})
 }
@@ -382,8 +382,8 @@ func TestFlightLockFailover(t *testing.T) {
 
 		// from now on the second holder extends: nobody else gets in
 		eventually(t, "the first hold to notice the loss", 3*flightTTL, hA.Lost)
-		if got := metric(t, a.Reg, "trove_flight_lock_lost_total", ""); got != 1 {
-			t.Fatalf("trove_flight_lock_lost_total on the first holder = %v, want 1", got)
+		if got := metric(t, a.Reg, "quader_flight_lock_lost_total", ""); got != 1 {
+			t.Fatalf("quader_flight_lock_lost_total on the first holder = %v, want 1", got)
 		}
 		for end := time.Now().Add(flightTTL + time.Second); time.Now().Before(end); time.Sleep(200 * time.Millisecond) {
 			if h, ok, err := c.lock.Acquire(ctx, f); err == nil && ok {

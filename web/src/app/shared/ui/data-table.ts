@@ -4,7 +4,7 @@ import { ApiError } from '../../api/problem';
 import { ErrorNotice } from '../error-notice';
 import { EmptyState } from './empty-state';
 
-/** One column of a `<trove-data-table>`. The label is the translated header text. */
+/** One column of a `<quader-data-table>`. The label is the translated header text. */
 export interface TableColumn {
   readonly id: string;
   readonly label: string;
@@ -61,18 +61,18 @@ let nextTableId = 1;
  * list with the sort the API understands. A column is `sortable` only where that is true.
  */
 @Component({
-  selector: 'trove-data-table',
+  selector: 'quader-data-table',
   imports: [Tooltip, ErrorNotice, EmptyState],
   template: `
     @if (error(); as e) {
-      <trove-error-notice [error]="e" (retry)="retry.emit()" />
+      <quader-error-notice [error]="e" (retry)="retry.emit()" />
     }
     @if (!loaded()) {
       @if (loading()) {
         <p class="table-status" role="status" i18n="@@table.loading">Loading.</p>
       }
     } @else if (empty()) {
-      <trove-empty-state [text]="emptyText()"><ng-content select="[emptyAction]" /></trove-empty-state>
+      <quader-empty-state [text]="emptyText()"><ng-content select="[emptyAction]" /></quader-empty-state>
     } @else {
       <div class="table-frame">
         <div class="scroll table-scroll" tabindex="0" role="region" [attr.aria-labelledby]="captionId">
@@ -97,7 +97,7 @@ let nextTableId = 1;
                         <button
                           type="button"
                           class="th-help"
-                          [troveTooltip]="c.help"
+                          [quaderTooltip]="c.help"
                           [attr.aria-label]="helpLabel(c)"
                         >
                           <span class="material-icons" aria-hidden="true">help_outline</span>
@@ -129,11 +129,11 @@ let nextTableId = 1;
     }
   `,
   host: {
-    class: 'trove-data-table',
+    class: 'quader-data-table',
     '[class.stack]': 'stack()',
     '[class.stack-wide]': 'stackWide()',
-    '[style.--trove-list-others]': 'others()',
-    '[style.--trove-list-narrow]': 'narrowRoom()',
+    '[style.--quader-list-others]': 'others()',
+    '[style.--quader-list-narrow]': 'narrowRoom()',
   },
 })
 export class DataTable {
@@ -163,7 +163,7 @@ export class DataTable {
    */
   readonly stackWide = input(false);
 
-  protected readonly captionId = `trove-table-${nextTableId++}`;
+  protected readonly captionId = `quader-table-${nextTableId++}`;
 
   /**
    * The room of every column but the `fill` one, with their padding: `td.address-cell` leaves it to them (Q-UI-308). A column
@@ -174,7 +174,7 @@ export class DataTable {
     if (!cols.some((c) => c.fill)) return null;
     const rest = cols.filter((c) => !c.fill);
     const widths = rest.map((c) => c.prefer ?? c.width ?? '0px').join(' + ');
-    return `calc(${widths} + ${rest.length + 1} * 2 * var(--trove-space-4))`;
+    return `calc(${widths} + ${rest.length + 1} * 2 * var(--quader-space-4))`;
   });
   /**
    * In a list with a column that prefers a width, every other column keeps its width (the header cell gets it as its size, not
@@ -189,7 +189,7 @@ export class DataTable {
   protected readonly narrowRoom = computed(() => {
     const narrow = this.columns().filter((c) => c.narrow && !c.fill);
     if (narrow.length === 0) return null;
-    return `calc(${narrow.map((c) => c.width ?? '0px').join(' + ')} + ${narrow.length} * 2 * var(--trove-space-4))`;
+    return `calc(${narrow.map((c) => c.width ?? '0px').join(' + ')} + ${narrow.length} * 2 * var(--quader-space-4))`;
   });
 
   constructor() {

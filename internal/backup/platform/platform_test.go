@@ -9,8 +9,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/backup/platform"
-	"github.com/guided-traffic/trove/internal/blob/s3"
+	"github.com/guided-traffic/quader/internal/backup/platform"
+	"github.com/guided-traffic/quader/internal/blob/s3"
 )
 
 type fakeBucket struct {
@@ -144,9 +144,9 @@ func gather(t *testing.T, g *prometheus.GaugeVec) map[string]float64 {
 	return out
 }
 
-// TestR_HA_023_ExportsTheGauge (R-HA-023, R-OPS-008): trove_backup_check_ok{check} is 1, 0, or absent.
+// TestR_HA_023_ExportsTheGauge (R-HA-023, R-OPS-008): quader_backup_check_ok{check} is 1, 0, or absent.
 func TestR_HA_023_ExportsTheGauge(t *testing.T) {
-	g := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "trove_backup_check_ok"}, []string{"check"})
+	g := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "quader_backup_check_ok"}, []string{"check"})
 	platform.Export(g, platform.Report{Results: []platform.Result{
 		{Check: platform.CheckArchiveMode, Status: platform.StatusOK},
 		{Check: platform.CheckObjectVersioning, Status: platform.StatusFailed},

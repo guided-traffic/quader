@@ -21,7 +21,7 @@ type VulnOpsClaimedMatchCountsRow struct {
 	N         int64
 }
 
-// trove_vuln_claimed_name_matches (R-VULN-024): the public advisories for claimed names, by ecosystem and kind.
+// quader_vuln_claimed_name_matches (R-VULN-024): the public advisories for claimed names, by ecosystem and kind.
 func (q *Queries) VulnOpsClaimedMatchCounts(ctx context.Context) ([]VulnOpsClaimedMatchCountsRow, error) {
 	rows, err := q.db.Query(ctx, vulnOpsClaimedMatchCounts)
 	if err != nil {
@@ -58,7 +58,7 @@ type VulnOpsFindingCountsRow struct {
 
 // Statements of the vulnerability scanning, work package ops (docs/developer/vulnerabilities.md). One file per work package;
 // every statement of this file is the package's. Plain Go types only (no pgtype): COALESCE nullable columns.
-// trove_vuln_findings (R-VULN-024): the findings by severity, status and kind.
+// quader_vuln_findings (R-VULN-024): the findings by severity, status and kind.
 func (q *Queries) VulnOpsFindingCounts(ctx context.Context) ([]VulnOpsFindingCountsRow, error) {
 	rows, err := q.db.Query(ctx, vulnOpsFindingCounts)
 	if err != nil {

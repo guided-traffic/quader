@@ -12,10 +12,10 @@ export interface PolicyDiffData {
  * word as well as its sign, never colour alone (R-UI-044). Confirming sends the `PUT`.
  */
 @Component({
-  selector: 'trove-policy-diff-dialog',
+  selector: 'quader-policy-diff-dialog',
   imports: [DialogTitle, DialogClose],
   template: `
-    <h2 troveDialogTitle i18n="@@policy-diff.title">Save these changes?</h2>
+    <h2 quaderDialogTitle i18n="@@policy-diff.title">Save these changes?</h2>
     <div class="dialog-body">
       @if (data.lines.length === 0) {
         <p i18n="@@policy-diff.none">Nothing differs from the stored policy.</p>
@@ -45,8 +45,8 @@ export interface PolicyDiffData {
       }
     </div>
     <div class="dialog-actions">
-      <button class="btn btn-tertiary" type="button" [troveDialogClose]="false" i18n="@@policy-diff.cancel">Keep editing</button>
-      <button class="btn btn-confirm" type="button" [troveDialogClose]="true" i18n="@@policy-diff.confirm">Save policy</button>
+      <button class="btn btn-tertiary" type="button" [quaderDialogClose]="false" i18n="@@policy-diff.cancel">Keep editing</button>
+      <button class="btn btn-confirm" type="button" [quaderDialogClose]="true" i18n="@@policy-diff.confirm">Save policy</button>
     </div>
   `,
   styles: `
@@ -58,15 +58,15 @@ export interface PolicyDiffData {
     li {
       display: flex;
       align-items: center;
-      gap: var(--trove-space-2);
-      padding-block: var(--trove-space-1);
+      gap: var(--quader-space-2);
+      padding-block: var(--quader-space-1);
       overflow-wrap: anywhere;
     }
     .added {
-      color: var(--trove-status-ok);
+      color: var(--quader-status-ok);
     }
     .removed {
-      color: var(--trove-status-bad);
+      color: var(--quader-status-bad);
     }
     .material-icons {
       font-size: 1.125rem;

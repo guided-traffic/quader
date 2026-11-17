@@ -1,63 +1,63 @@
-# The dev PKI (R-ARCH-035, R-HA-063): one self-signed root and the Issuer trove-dev-ca that signs every
+# The dev PKI (R-ARCH-035, R-HA-063): one self-signed root and the Issuer quader-dev-ca that signs every
 # certificate of the profile. cert-manager issues, renews and re-issues them; nothing is made by hand.
 #
-#   trove-dev-ca        the root (Secret trove-dev-ca; ca.crt is what a client trusts, see local-profile.md)
-#   trove-tls           trove's own listeners (:8080, :8081), Secret trove-tls; chart tls.secretName and
-#                       ingress.backendTLS.caSecret. HAProxy Ingress verifies this certificate for the name
-#                       trove.trove.svc; clients in the cluster call the role Services trove-api and trove-packages.
-#   trove-edge-tls      the edge's certificate for clients on the host (https://localhost:<port>)
-#   trove-s3-tls        the SeaweedFS S3 endpoint (https://trove-s3.trove.svc:9000)
-#   trove-customers-tls            the endpoint `customers` (values-dev.yaml endpoints.customers): its exact host and
-#                                  the Service names the edge verifies, trove-ep-customers.<ns>.svc (packages pods)
-#                                  and trove-api-ep-customers.<ns>.svc (api pods)
-#   trove-customers-wildcard-tls   the endpoint's wildcard pair (extraSecrets), chosen by SNI
-#   trove-customers-edge-tls       the edge's certificate for the endpoint's host and its wildcard
-#   trove-ocimirror-tls            the endpoint `ocimirror` (values-dev.yaml endpoints.ocimirror, the bound host of the Docker Engine
-#                                  mirror, R-OCI-029): its host and the Service name the edge verifies, trove-ep-ocimirror.<ns>.svc
-#   trove-ocimirror-edge-tls       the edge's certificate for the endpoint's host
-#   <name>-tls          the Valkey operator's own Certificate for the Valkey CR (valkey.yaml, one for both tiers)
+#   quader-dev-ca        the root (Secret quader-dev-ca; ca.crt is what a client trusts, see local-profile.md)
+#   quader-tls           quader's own listeners (:8080, :8081), Secret quader-tls; chart tls.secretName and
+#                        ingress.backendTLS.caSecret. HAProxy Ingress verifies this certificate for the name
+#                        quader.quader.svc; clients in the cluster call the role Services quader-api and quader-packages.
+#   quader-edge-tls      the edge's certificate for clients on the host (https://localhost:<port>)
+#   quader-s3-tls        the SeaweedFS S3 endpoint (https://quader-s3.quader.svc:9000)
+#   quader-customers-tls            the endpoint `customers` (values-dev.yaml endpoints.customers): its exact host and
+#                                   the Service names the edge verifies, quader-ep-customers.<ns>.svc (packages pods)
+#                                   and quader-api-ep-customers.<ns>.svc (api pods)
+#   quader-customers-wildcard-tls   the endpoint's wildcard pair (extraSecrets), chosen by SNI
+#   quader-customers-edge-tls       the edge's certificate for the endpoint's host and its wildcard
+#   quader-ocimirror-tls            the endpoint `ocimirror` (values-dev.yaml endpoints.ocimirror, the bound host of the Docker Engine
+#                                   mirror, R-OCI-029): its host and the Service name the edge verifies, quader-ep-ocimirror.<ns>.svc
+#   quader-ocimirror-edge-tls       the edge's certificate for the endpoint's host
+#   <name>-tls           the Valkey operator's own Certificate for the Valkey CR (valkey.yaml, one for both tiers)
 #
-# The Issuer is namespaced in the release namespace, so a namespace other than `trove` needs the names below
+# The Issuer is namespaced in the release namespace, so a namespace other than `quader` needs the names below
 # to follow (kubectl apply of this file goes to -n $NS).
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
-  name: trove-dev-selfsigned
+  name: quader-dev-selfsigned
 spec:
   selfSigned: {}
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: trove-dev-ca
+  name: quader-dev-ca
 spec:
   isCA: true
-  commonName: trove dev CA
-  secretName: trove-dev-ca
+  commonName: quader dev CA
+  secretName: quader-dev-ca
   duration: 87600h          # ten years: the root outlives every cluster built from it
   privateKey:
     algorithm: ECDSA
     size: 256
   issuerRef:
-    name: trove-dev-selfsigned
+    name: quader-dev-selfsigned
     kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
-  name: trove-dev-ca
+  name: quader-dev-ca
 spec:
   ca:
-    secretName: trove-dev-ca
+    secretName: quader-dev-ca
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: trove-tls
+  name: quader-tls
 spec:
-  secretName: trove-tls
-  commonName: trove
+  secretName: quader-tls
+  commonName: quader
   duration: 2160h           # 90 days
   renewBefore: 720h
   privateKey:
@@ -66,36 +66,36 @@ spec:
     rotationPolicy: Always  # a renewal changes the key as well, so the e2e rotation drill is a real one
   usages: [digital signature, key encipherment, server auth, client auth]
   dnsNames:
-    - trove
-    - trove.${NS}
-    - trove.${NS}.svc
-    - trove.${NS}.svc.cluster.local
-    - trove-api
-    - trove-api.${NS}
-    - trove-api.${NS}.svc
-    - trove-api.${NS}.svc.cluster.local
-    - trove-packages
-    - trove-packages.${NS}
-    - trove-packages.${NS}.svc
-    - trove-packages.${NS}.svc.cluster.local
-    - trove-ops
-    - trove-ops.${NS}
-    - trove-ops.${NS}.svc
-    - trove-ops.${NS}.svc.cluster.local
+    - quader
+    - quader.${NS}
+    - quader.${NS}.svc
+    - quader.${NS}.svc.cluster.local
+    - quader-api
+    - quader-api.${NS}
+    - quader-api.${NS}.svc
+    - quader-api.${NS}.svc.cluster.local
+    - quader-packages
+    - quader-packages.${NS}
+    - quader-packages.${NS}.svc
+    - quader-packages.${NS}.svc.cluster.local
+    - quader-ops
+    - quader-ops.${NS}
+    - quader-ops.${NS}.svc
+    - quader-ops.${NS}.svc.cluster.local
     - localhost
   ipAddresses:
     - 127.0.0.1
   issuerRef:
-    name: trove-dev-ca
+    name: quader-dev-ca
     kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: trove-edge-tls
+  name: quader-edge-tls
 spec:
-  secretName: trove-edge-tls
+  secretName: quader-edge-tls
   commonName: localhost
   duration: 2160h
   renewBefore: 720h
@@ -109,17 +109,17 @@ spec:
     - 127.0.0.1
     - ::1
   issuerRef:
-    name: trove-dev-ca
+    name: quader-dev-ca
     kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: trove-s3-tls
+  name: quader-s3-tls
 spec:
-  secretName: trove-s3-tls
-  commonName: trove-s3
+  secretName: quader-s3-tls
+  commonName: quader-s3
   duration: 2160h
   renewBefore: 720h
   privateKey:
@@ -127,23 +127,23 @@ spec:
     size: 256
   usages: [digital signature, key encipherment, server auth]
   dnsNames:
-    - trove-s3
-    - trove-s3.${NS}
-    - trove-s3.${NS}.svc
-    - trove-s3.${NS}.svc.cluster.local
+    - quader-s3
+    - quader-s3.${NS}
+    - quader-s3.${NS}.svc
+    - quader-s3.${NS}.svc.cluster.local
     - localhost
   issuerRef:
-    name: trove-dev-ca
+    name: quader-dev-ca
     kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: trove-customers-tls
+  name: quader-customers-tls
 spec:
-  secretName: trove-customers-tls
-  commonName: packages.trove.localhost
+  secretName: quader-customers-tls
+  commonName: packages.quader.localhost
   duration: 2160h
   renewBefore: 720h
   privateKey:
@@ -152,27 +152,27 @@ spec:
     rotationPolicy: Always
   usages: [digital signature, key encipherment, server auth]
   dnsNames:
-    - packages.trove.localhost
-    - trove-ep-customers
-    - trove-ep-customers.${NS}
-    - trove-ep-customers.${NS}.svc
-    - trove-ep-customers.${NS}.svc.cluster.local
-    - trove-api-ep-customers
-    - trove-api-ep-customers.${NS}
-    - trove-api-ep-customers.${NS}.svc
-    - trove-api-ep-customers.${NS}.svc.cluster.local
+    - packages.quader.localhost
+    - quader-ep-customers
+    - quader-ep-customers.${NS}
+    - quader-ep-customers.${NS}.svc
+    - quader-ep-customers.${NS}.svc.cluster.local
+    - quader-api-ep-customers
+    - quader-api-ep-customers.${NS}
+    - quader-api-ep-customers.${NS}.svc
+    - quader-api-ep-customers.${NS}.svc.cluster.local
   issuerRef:
-    name: trove-dev-ca
+    name: quader-dev-ca
     kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: trove-customers-wildcard-tls
+  name: quader-customers-wildcard-tls
 spec:
-  secretName: trove-customers-wildcard-tls
-  commonName: "*.packages.trove.localhost"
+  secretName: quader-customers-wildcard-tls
+  commonName: "*.packages.quader.localhost"
   duration: 2160h
   renewBefore: 720h
   privateKey:
@@ -181,19 +181,19 @@ spec:
     rotationPolicy: Always
   usages: [digital signature, key encipherment, server auth]
   dnsNames:
-    - "*.packages.trove.localhost"
+    - "*.packages.quader.localhost"
   issuerRef:
-    name: trove-dev-ca
+    name: quader-dev-ca
     kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: trove-customers-edge-tls
+  name: quader-customers-edge-tls
 spec:
-  secretName: trove-customers-edge-tls
-  commonName: packages.trove.localhost
+  secretName: quader-customers-edge-tls
+  commonName: packages.quader.localhost
   duration: 2160h
   renewBefore: 720h
   privateKey:
@@ -201,22 +201,22 @@ spec:
     size: 256
   usages: [digital signature, key encipherment, server auth]
   dnsNames:
-    - packages.trove.localhost
-    - "*.packages.trove.localhost"
+    - packages.quader.localhost
+    - "*.packages.quader.localhost"
   ipAddresses:
     - 127.0.0.1
   issuerRef:
-    name: trove-dev-ca
+    name: quader-dev-ca
     kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: trove-ocimirror-tls
+  name: quader-ocimirror-tls
 spec:
-  secretName: trove-ocimirror-tls
-  commonName: oci-mirror.trove.localhost
+  secretName: quader-ocimirror-tls
+  commonName: oci-mirror.quader.localhost
   duration: 2160h
   renewBefore: 720h
   privateKey:
@@ -225,23 +225,23 @@ spec:
     rotationPolicy: Always
   usages: [digital signature, key encipherment, server auth]
   dnsNames:
-    - oci-mirror.trove.localhost
-    - trove-ep-ocimirror
-    - trove-ep-ocimirror.${NS}
-    - trove-ep-ocimirror.${NS}.svc
-    - trove-ep-ocimirror.${NS}.svc.cluster.local
+    - oci-mirror.quader.localhost
+    - quader-ep-ocimirror
+    - quader-ep-ocimirror.${NS}
+    - quader-ep-ocimirror.${NS}.svc
+    - quader-ep-ocimirror.${NS}.svc.cluster.local
   issuerRef:
-    name: trove-dev-ca
+    name: quader-dev-ca
     kind: Issuer
     group: cert-manager.io
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: trove-ocimirror-edge-tls
+  name: quader-ocimirror-edge-tls
 spec:
-  secretName: trove-ocimirror-edge-tls
-  commonName: oci-mirror.trove.localhost
+  secretName: quader-ocimirror-edge-tls
+  commonName: oci-mirror.quader.localhost
   duration: 2160h
   renewBefore: 720h
   privateKey:
@@ -249,10 +249,10 @@ spec:
     size: 256
   usages: [digital signature, key encipherment, server auth]
   dnsNames:
-    - oci-mirror.trove.localhost
+    - oci-mirror.quader.localhost
   ipAddresses:
     - 127.0.0.1
   issuerRef:
-    name: trove-dev-ca
+    name: quader-dev-ca
     kind: Issuer
     group: cert-manager.io

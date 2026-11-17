@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/formattest/crafted"
-	"github.com/guided-traffic/trove/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/formattest/crafted"
+	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
 func tarGz(t *testing.T, build func(tw *tar.Writer)) []byte {

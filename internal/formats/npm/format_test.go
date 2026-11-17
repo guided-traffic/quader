@@ -10,10 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/observability"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 func TestR_REPO_003_TheCatalogFactsOfNPM(t *testing.T) {
@@ -138,13 +138,13 @@ func TestR_NPM_044_MetricsOfTheProtocol(t *testing.T) {
 	for _, fam := range fams {
 		for _, mm := range fam.GetMetric() {
 			switch fam.GetName() {
-			case "trove_npm_requests_total":
+			case "quader_npm_requests_total":
 				key := ""
 				for _, l := range mm.GetLabel() {
 					key += l.GetName() + "=" + l.GetValue() + ","
 				}
 				got[key] = mm.GetCounter().GetValue()
-			case "trove_npm_request_duration_seconds":
+			case "quader_npm_request_duration_seconds":
 				durations += mm.GetHistogram().GetSampleCount()
 			}
 		}

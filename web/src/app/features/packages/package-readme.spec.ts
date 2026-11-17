@@ -171,7 +171,7 @@ describe('README rendering', () => {
     expect([...body.querySelectorAll('img')].map((i) => i.alt)).toEqual(['a', 'b']);
   });
 
-  it('R-UI-008 links that leave trove carry rel nofollow noopener noreferrer and no target', async () => {
+  it('R-UI-008 links that leave Quader carry rel nofollow noopener noreferrer and no target', async () => {
     const { body } = await show(
       '<a href="https://example.com/a" target="_blank">a</a><a href="mailto:team@example.com" rel="author">m</a><a href="#user-content-x">in page</a>',
     );

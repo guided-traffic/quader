@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// The sources of trove_virtual_resolutions_total (R-REPO-047).
+// The sources of quader_virtual_resolutions_total (R-REPO-047).
 const (
 	sourceLocal    = "local"
 	sourceCache    = "cache"
@@ -15,7 +15,7 @@ const (
 	sourceNone     = "none"
 )
 
-// The outcomes of trove_shadow_checks_total (R-REPO-048).
+// The outcomes of quader_shadow_checks_total (R-REPO-048).
 const (
 	OutcomeNoExposure          = "no-exposure"
 	OutcomeClear               = "clear"
@@ -33,11 +33,11 @@ type metrics struct {
 func newMetrics(reg prometheus.Registerer) (*metrics, error) {
 	m := &metrics{
 		resolutions: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_virtual_resolutions_total",
+			Name: "quader_virtual_resolutions_total",
 			Help: "Resolutions of artifacts and metadata documents through a virtual repository, by the tier that served them (local, cache, upstream) or none (R-REPO-047).",
 		}, []string{"repo", "source"}),
 		shadow: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "trove_shadow_checks_total",
+			Name: "quader_shadow_checks_total",
 			Help: "Shadowing checks of first publishes by the local repository and their outcome (R-REPO-048).",
 		}, []string{"repo", "outcome"}),
 	}

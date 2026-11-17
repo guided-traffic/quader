@@ -45,7 +45,7 @@ export function formatPartNodes(nodes: readonly SettingNode[], part: FormatPart)
  * setting to the format's default when the document is written (Q-UI-80).
  */
 @Component({
-  selector: 'trove-format-settings',
+  selector: 'quader-format-settings',
   imports: [NgTemplateOutlet],
   template: `
     <div class="format-settings" [id]="sectionId()" tabindex="-1">
@@ -232,26 +232,26 @@ export function formatPartNodes(nodes: readonly SettingNode[], part: FormatPart)
       min-inline-size: 0;
 
       > .hint {
-        margin-block: var(--trove-space-1) 0;
+        margin-block: var(--quader-space-1) 0;
       }
 
       .form-grid {
-        margin-block: var(--trove-space-3) 0;
+        margin-block: var(--quader-space-3) 0;
       }
     }
 
     // On the settings page a group heading is the size of the section's headings (repository-detail.scss, .details h3).
     .group-heading {
       margin: 0;
-      font-size: var(--trove-text-size);
+      font-size: var(--quader-text-size);
       font-weight: 600;
     }
 
     // In Advanced settings of the creation form it is the type of the form's other group headings (repository-create.scss).
     :host-context(.advanced-settings) .group-heading {
-      margin-block-start: var(--trove-space-1);
-      font: var(--trove-type-title-medium);
-      font-weight: var(--trove-heading-weight);
+      margin-block-start: var(--quader-space-1);
+      font: var(--quader-type-title-medium);
+      font-weight: var(--quader-heading-weight);
     }
 
     // The options of a list are checkboxes under the setting's label, as any other field.
@@ -263,7 +263,7 @@ export function formatPartNodes(nodes: readonly SettingNode[], part: FormatPart)
 
       legend {
         padding: 0;
-        margin-block-end: var(--trove-space-1);
+        margin-block-end: var(--quader-space-1);
       }
     }
   `,

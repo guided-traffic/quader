@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/backup/format"
-	"github.com/guided-traffic/trove/internal/backup/listing/fixture"
-	"github.com/guided-traffic/trove/internal/backup/runstoretest"
-	"github.com/guided-traffic/trove/internal/backup/target/targettest"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/listing/fixture"
+	"github.com/guided-traffic/quader/internal/backup/runstoretest"
+	"github.com/guided-traffic/quader/internal/backup/target/targettest"
 )
 
 type env struct {
@@ -24,7 +24,7 @@ type env struct {
 func newEnv(t *testing.T) *env {
 	t.Helper()
 	mem := targettest.New()
-	l := format.Layout{Prefix: "trove"}
+	l := format.Layout{Prefix: "quader"}
 	raw, err := format.NewMarker("inst-1", "inc-1", time.Now()).Encode()
 	if err != nil {
 		t.Fatal(err)

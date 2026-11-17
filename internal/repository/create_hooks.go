@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // CreatedRepo is the repository a creation hook is run for: the row the creating transaction has just written.

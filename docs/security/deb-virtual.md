@@ -10,7 +10,7 @@ gate and the member paths ([virtual_gate.go](../../internal/formats/deb/virtual_
 ([publish_virtual.go](../../internal/items/publish_virtual.go)) and the hooks that enqueue its builds
 ([wire_deb_virtual.go](../../internal/app/wire_deb_virtual.go)). The requirements are
 [R-DEB-025 to R-DEB-028](../spec/formats/debian.md#r-deb-025--virtual-repository-what-it-serves-and-how-it-merges); the developer view is
-[deb.md](../developer/deb.md#the-virtual-class). The key trove signs with is [deb-signing.md](deb-signing.md); what a remote member checks before it
+[deb.md](../developer/deb.md#the-virtual-class). The key Quader signs with is [deb-signing.md](deb-signing.md); what a remote member checks before it
 stores a byte is [deb-remote.md](deb-remote.md); the build and publication path it shares with a local repository is [deb-index.md](deb-index.md).
 
 A client that trusts the key of a virtual repository trusts the merge: every package that one of its members lists and that the claims and

@@ -176,7 +176,7 @@ describe('Virtual repository member editor (R-UI-022)', () => {
     expect(errors).toHaveLength(1);
     expect(option(root, 'vm-members', 'npm-team').contains(errors[0]!)).toBe(true);
     expect(option(root, 'vm-members', 'npm-team').getAttribute('aria-invalid')).toBe('true');
-    expect(root.querySelector('trove-error-notice')).toBeNull();
+    expect(root.querySelector('quader-error-notice')).toBeNull();
   });
 
   it('R-UI-022 a 412 tells the stored repository changed and offers to load it', async () => {

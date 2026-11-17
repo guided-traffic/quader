@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 func ciRequest(kind httpserver.PrincipalKind) *http.Request {
@@ -16,7 +16,7 @@ func ciRequest(kind httpserver.PrincipalKind) *http.Request {
 }
 
 // TestACITokenIsRefusedOnTheManagementAPIByDefault (R-CI-013): the gate admits a CI token only on the
-// operations of the action form, on public operations and on those that declare x-trove-ci: admitted
+// operations of the action form, on public operations and on those that declare x-quader-ci: admitted
 // (Q-CI-18); every other form is refused with 403 ci_token_restricted, and every other caller passes.
 // Contract of R-CI-013 (phase 5); the requirement's evidence comes from the tests of its work package.
 func TestACITokenIsRefusedOnTheManagementAPIByDefault(t *testing.T) {
@@ -50,7 +50,7 @@ func TestACITokenIsRefusedOnTheManagementAPIByDefault(t *testing.T) {
 }
 
 // TestOnlyTheCurrentTokenOperationsAdmitACIToken (R-CI-017): of the document's operations, exactly
-// GET and DELETE /tokens/current declare x-trove-ci: admitted (R-CI-013, R-CI-017).
+// GET and DELETE /tokens/current declare x-quader-ci: admitted (R-CI-013, R-CI-017).
 // Contract of R-CI-017 (phase 5); the requirement's evidence comes from the tests of its work package.
 func TestOnlyTheCurrentTokenOperationsAdmitACIToken(t *testing.T) {
 	doc, err := LoadDocument(EmbeddedYAML())

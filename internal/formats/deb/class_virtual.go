@@ -5,9 +5,9 @@ import (
 	"context"
 	"slices"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/deb/index"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/index"
 )
 
 // The virtual class (R-DEB-001, R-DEB-025 to R-DEB-028): a virtual repository merges the package indexes of its local and remote members

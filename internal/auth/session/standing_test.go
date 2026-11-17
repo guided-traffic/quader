@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
 type unreadable struct{ t *testing.T }

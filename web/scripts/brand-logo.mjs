@@ -1,432 +1,270 @@
-// Generates trove's logo as SVG files into web/public/brand/ (run: node scripts/brand-logo.mjs).
+// Generates Quader's brand files (run: node scripts/brand-logo.mjs in web/):
+//   public/brand/quader-{mark,horizontal,square}.svg          Quader, the product
+//   public/brand/quader-bastion-{mark,horizontal,square}.svg  Quader Bastion, the internet-facing cache
+//   public/favicon.svg, public/favicon.ico                     the wall mark for the browser tab
+//   src/app/shared/brand/mark-geometry.ts                      the wall and the lockup for the app's inline mark
+// Every file of public/brand that this run does not write is removed, so the directory holds exactly the set above.
 //
-// The mark is the "v" of trove drawn as a flow: the left arm is one solid band, the package coming in once
-// (an upload from CI, or the first fetch through a proxy); the point at the bottom is trove, the store; the
-// right arm is the same band split into lanes that fan out, the requests trove serves from then on.
+// Both marks are stones on a 64 grid with a margin of 4: every stone is 16 high, the joints are 4, the corners are rounded
+// by 1.5. At 16 px a stone is 4 px and a joint 1 px, so at every multiple of 16 px each edge falls on a whole pixel. The
+// coordinates are the owner's (2026-11-17) and are not tuned here.
+//   Quader: a wall of three courses, the right stone of the middle course coloured.
+//   Quader Bastion: a tower of three courses, the battlements with the middle merlon coloured, the overhanging crown and
+//   the shaft.
 //
-// The wordmark is outlined paths of Inter Bold (no <text>, so it looks the same on every platform), and the
-// favicon is a reduced form of the mark (two lanes, thicker strokes) on a dark tile, as SVG and as an ICO whose
-// PNG frames this script rasterises itself.
-//
-// Work in progress with the owner: the candidate and the alternatives below are drafts, shown on the sign-in
-// page in development builds only (features/login/logo-preview.ts). Once one is chosen, the drafts directory
-// and the preview go.
+// The wordmark is outlined paths of Inter (no <text>, so it looks the same on every platform): "Quader" in Bold, and in
+// the Bastion's lockup "Bastion" after it in Regular. The favicon's ICO frames are rasterised by this script itself, so
+// no image tool is needed and the bytes are deterministic.
 import { Buffer } from 'node:buffer';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { crc32, deflateSync } from 'node:zlib';
 import opentype from 'opentype.js';
+import * as prettier from 'prettier';
 
 const webDir = join(fileURLToPath(new URL('.', import.meta.url)), '..');
-const outDir = join(webDir, 'public', 'brand');
-const draftsDir = join(outDir, 'drafts');
-
-// ---- Geometry ----------------------------------------------------------------------------------
+const publicDir = join(webDir, 'public');
+const outDir = join(publicDir, 'brand');
+const geometryFile = join(webDir, 'src', 'app', 'shared', 'brand', 'mark-geometry.ts');
 
 const r = (n) => Math.round(n * 100) / 100;
-const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
-const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
-const mul = (a, k) => [a[0] * k, a[1] * k];
-const norm = (a) => {
-  const l = Math.hypot(a[0], a[1]);
-  return [a[0] / l, a[1] / l];
+
+// ---- The marks ---------------------------------------------------------------------------------
+
+/** The side of the mark's square box. */
+const GRID = 64;
+/** The corner radius of every stone. */
+const RADIUS = 1.5;
+
+/** A stone as [x, y, width, height] on the 64 grid. */
+const MARKS = {
+  quader: {
+    name: 'Quader',
+    stones: [
+      [4, 4, 36, 16],
+      [44, 4, 16, 16],
+      [4, 24, 16, 16],
+      [4, 44, 36, 16],
+      [44, 44, 16, 16],
+    ],
+    coloured: [24, 24, 36, 16],
+  },
+  bastion: {
+    name: 'Quader Bastion',
+    stones: [
+      [4, 4, 12, 16],
+      [48, 4, 12, 16],
+      [4, 24, 24, 16],
+      [32, 24, 28, 16],
+      [12, 44, 24, 16],
+      [40, 44, 12, 16],
+    ],
+    coloured: [24, 4, 16, 16],
+  },
 };
-const perp = (a) => [-a[1], a[0]];
-const pt = (p) => `${r(p[0])} ${r(p[1])}`;
-/** p turned by deg degrees around c; positive turns clockwise on screen (y points down), i.e. to the right. */
-const turn = (p, c, deg) => {
-  const a = (deg * Math.PI) / 180;
-  const v = sub(p, c);
-  return add(c, [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a)]);
-};
-/** x where the line through p with direction d crosses y. */
-const xAt = (p, d, y) => p[0] + ((y - p[1]) / d[1]) * d[0];
-
-/** The point of a cubic at t. */
-const cubicAt = (p0, p1, p2, p3, t) => {
-  const u = 1 - t;
-  return [0, 1].map(
-    (k) => u * u * u * p0[k] + 3 * u * u * t * p1[k] + 3 * u * t * t * p2[k] + t * t * t * p3[k],
-  );
-};
-/** Splits a cubic at t (de Casteljau): the control points of both halves. */
-function splitCubic(p0, p1, p2, p3, t) {
-  const lerp = (a, b) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-  const a = lerp(p0, p1),
-    b = lerp(p1, p2),
-    c = lerp(p2, p3);
-  const d = lerp(a, b),
-    e = lerp(b, c),
-    m = lerp(d, e);
-  return [
-    [p0, a, d, m],
-    [m, e, c, p3],
-  ];
-}
-
-/**
- * The lanes and the band of one mark in a 256 × 256 box, centred. Parameters:
- * W width of the lane bundle where it leaves the band, band the width of the band itself, n lanes, gap between lanes,
- * fan (how far the lanes spread at the top, 1 = parallel), under, share and follow (a lane that starts beneath another),
- * bend (degrees per lane: from the middle of its visible height on, the lane curves this far to the right),
- * mode 'fan' (straight lanes) or 'swoosh' (lanes leave the band along its direction and bend up).
- */
-function markGeometry(p) {
-  const { W, n, gap, fan, mode, top } = p;
-  const band = p.band ?? W;
-  const L = [60, top];
-  const B = [124, 206];
-  const R = [188, top];
-  const uL = norm(sub(B, L));
-  const uR = norm(sub(R, B));
-  const nL = perp(uL);
-  const nR = perp(uR);
-  const w = (W - (n - 1) * gap) / n;
-  const ext = 80;
-
-  // The lanes start inside the band's rounded end: their start offsets shrink with the band, so no start shows beside it.
-  const spread = Math.min(0.6, (band / 2 - w / 2) / (W / 2 - w / 2));
-  const lanes = [];
-  const starts = [];
-  let right = -Infinity;
-  for (let i = 0; i < n; i++) {
-    const o = -W / 2 + w / 2 + i * (w + gap);
-    const bend = p.bend?.[i] ?? 0;
-    let p0, p1, p2, p3;
-    if (mode === 'swoosh') {
-      p0 = add(B, mul(nR, o * spread));
-      p1 = add(p0, mul(uL, 18 + i * 6));
-      p2 = add(add(B, mul(uR, 70)), mul(nR, o * (1 + (fan - 1) * 0.4)));
-      p3 = add(add(R, mul(uR, ext)), mul(nR, o * fan));
-      // A lane that starts under another (under[i] = its index) leaves from that lane's start and along its first
-      // stretch; `share` (0 to 1) is how far it runs hidden beneath before it turns out to its own place.
-      const under = p.under?.[i];
-      if (under !== undefined) {
-        const [q0, q1, q2, q3] = starts[under];
-        const k = p.share ?? 0;
-        p0 = q0;
-        p1 = q1;
-        p2 = add(mul(q2, k), mul(p2, 1 - k));
-        // follow: the lane takes the other lane's whole path, so it shows only where its bend leaves it.
-        if (p.follow) [p2, p3] = [q2, q3];
-      }
-      starts[i] = [p0, p1, p2, p3];
-    } else {
-      p0 = add(B, mul(nR, o));
-      p3 = add(add(R, mul(uR, ext)), mul(nR, o * fan));
-      p1 = add(p0, mul(sub(p3, p0), 1 / 3));
-      p2 = add(p0, mul(sub(p3, p0), 2 / 3));
-    }
-    let d;
-    if (bend) {
-      // The parameter at half the visible height, found by bisection (y falls along the lane).
-      const yHalf = (p0[1] + top) / 2;
-      let lo = 0,
-        hi = 1;
-      for (let k = 0; k < 40; k++) {
-        const t = (lo + hi) / 2;
-        if (cubicAt(p0, p1, p2, p3, t)[1] > yHalf) lo = t;
-        else hi = t;
-      }
-      const [[, a, b, m], [, e]] = splitCubic(p0, p1, p2, p3, (lo + hi) / 2);
-      // From the middle on: leave along the tangent there, end turned to the right around the middle.
-      const end = turn(p3, m, bend);
-      const q = add(m, mul(norm(sub(e, m)), Math.hypot(...sub(end, m)) * 0.5));
-      d = `M${pt(p0)} C${pt(a)} ${pt(b)} ${pt(m)} Q${pt(q)} ${pt(end)}`;
-      right = Math.max(right, xAt(q, sub(end, q), top) + w / 2);
-    } else {
-      d = `M${pt(p0)} C${pt(p1)} ${pt(p2)} ${pt(p3)}`;
-      right = Math.max(right, xAt(p2, sub(p3, p2), top) + w / 2);
-    }
-    lanes.push({ d, w });
-  }
-  const left = Math.min(
-    xAt(add(L, mul(nL, band / 2)), uL, top),
-    xAt(add(L, mul(nL, -band / 2)), uL, top),
-  );
-  const bottom = B[1] + band / 2;
-  // Centre the drawing in the box: horizontally by its extent, vertically between the top line and the band's end.
-  const dx = (256 - (right - left)) / 2 - left;
-  const dy = (256 - (bottom - top)) / 2 - top;
-  const Lx = sub(L, mul(uL, ext));
-  // Outermost lane first, so a lane that starts under its inner neighbour is drawn beneath it.
-  const order = [...lanes.keys()].reverse();
-  return {
-    transform: `translate(${r(dx)} ${r(dy)})`,
-    top,
-    // The drawing's own box after the translation: its top edge is the cut line, so a viewport of this box cuts the
-    // lanes and the band there without a clip path.
-    box: [r(left + dx - 2), r(top + dy), r(right - left + 4), r(bottom - top + 1)],
-    lanes: order.map((i) => ({ lane: i, d: lanes[i].d, width: r(lanes[i].w) })),
-    band: { d: `M${pt(Lx)} L${pt(B)}`, width: band },
-  };
-}
-
-/** The mark's shapes as SVG markup, the lanes with the classes o0, o1, ... and the band with the class in. */
-function markShapes(p) {
-  const g = markGeometry(p);
-  let s = `<defs><clipPath id="clip"><rect x="-200" y="${g.top}" width="656" height="400"/></clipPath></defs>`;
-  s += `<g transform="${g.transform}"><g clip-path="url(#clip)">`;
-  for (const l of g.lanes) {
-    s += `<path class="o${l.lane}" d="${l.d}" fill="none" stroke-width="${l.width}"/>`;
-  }
-  s += `<path class="in" d="${g.band.d}" fill="none" stroke-width="${g.band.width}" stroke-linecap="round"/>`;
-  s += `</g></g>`;
-  return s;
-}
 
 // ---- Colours -----------------------------------------------------------------------------------
 
-// The hues of the mark, each on a dark and a light ground: saturated, bright neon tones without a halo (owner,
-// 2026-11-06). On a light ground the same hues a step deeper, so a lane does not fade into white. The band and the middle
-// lane are neutral (the wordmark's colour). Green was tried for the inner lane and turned back to blue; it stays here
-// only for the comparison draft.
-const hues = {
-  // The band is the wordmark's colour, so the v sits in the lockup like a letter of the name.
-  neutral: ['#e8eaec', '#1c2433'],
-  blue: ['#1fb6ff', '#0a84ff'],
-  green: ['#2ee87a', '#0a9c4a'],
-  yellow: ['#ffe94d', '#ffb700'],
-  red: ['#ff2d55', '#ff1f4b'],
-  violet: ['#c26bff', '#9b3dff'],
-  orange: ['#ff8a1f', '#ff6a00'],
+/** The stones (and the wordmark) and the coloured stone, on a light and on a dark ground (owner, 2026-11-17). */
+const COLOURS = {
+  light: { stone: '#28272d', coloured: '#b4690e' },
+  dark: { stone: '#ececef', coloured: '#e9a13b' },
 };
-const text = ['#e8eaec', '#1c2433'];
+/** The dark rounded tile of the square forms and of the ICO: the dark scheme's page colour. */
+const TILE = '#18171d';
 
-/** A palette is the input's hue and one hue per lane, inside to outside. */
-function colours(palette, scheme) {
-  const k = scheme === 'dark' ? 0 : 1;
-  return {
-    in: hues[palette.in][k],
-    out: palette.out.map((h) => hues[h][k]),
-    text: text[k],
-  };
-}
-
-function rules(c) {
-  return [
-    `.in{stroke:${c.in}}`,
-    ...c.out.map((v, i) => `.o${i}{stroke:${v}}`),
-    `.word{fill:${c.text}}`,
-  ].join('');
-}
+const rules = (c) => `.s{fill:${c.stone}}.c{fill:${c.coloured}}`;
 
 /** A style block: one scheme fixed, or both following prefers-color-scheme. */
-function style(palette, scheme) {
+function style(scheme) {
   if (scheme === 'auto') {
-    return `<style>${rules(colours(palette, 'light'))}@media (prefers-color-scheme: dark){${rules(colours(palette, 'dark'))}}</style>`;
+    return `<style>${rules(COLOURS.light)}@media (prefers-color-scheme: dark){${rules(COLOURS.dark)}}</style>`;
   }
-  return `<style>${rules(colours(palette, scheme))}</style>`;
+  return `<style>${rules(COLOURS[scheme])}</style>`;
+}
+
+const rect = ([x, y, w, h], cls) =>
+  `<rect class="${cls}" x="${x}" y="${y}" width="${w}" height="${h}" rx="${RADIUS}"/>`;
+
+/** The mark's stones in its own 64 box: the plain stones with the class s, the coloured one with the class c. */
+function markShapes(mark) {
+  return mark.stones.map((s) => rect(s, 's')).join('') + rect(mark.coloured, 'c');
 }
 
 // ---- The wordmark as paths ---------------------------------------------------------------------
 
-// Inter Bold of @fontsource/inter, a static file of the same Inter release as the UI's variable font
-// (@fontsource-variable/inter): opentype.js reads .woff but not .woff2, and fontkit cannot instance a variable
-// .woff2 font's outlines.
-const inter = (() => {
+// Inter of @fontsource/inter, static files of the same Inter release as the UI's variable font
+// (@fontsource-variable/inter): opentype.js reads .woff but not .woff2, and cannot instance a variable font's outlines.
+function loadInter(weight) {
   const file = join(
     dirname(createRequire(import.meta.url).resolve('@fontsource/inter/package.json')),
     'files',
-    'inter-latin-700-normal.woff',
+    `inter-latin-${weight}-normal.woff`,
   );
   const buf = readFileSync(file);
   return opentype.parse(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.length));
-})();
+}
+const bold = loadInter(700);
+const regular = loadInter(400);
 
 /**
- * The word as one path (class word), its left edge at x and its baseline at y, set at fontSize with the font's pair
- * kerning and `tracking` user units after each letter. Returns the path markup and the word's width.
+ * The text as path data, its pen starting at x on the baseline y, set at fontSize with the font's pair kerning (which is 0
+ * for every pair of these words in the static files). Returns the path data, the left and right edge of the ink and the
+ * pen's end.
  */
-function wordPath(word, x, y, fontSize, tracking, anchor = 'start') {
-  const glyphs = [...word].map((c) => inter.charToGlyph(c));
-  const scale = fontSize / inter.unitsPerEm;
-  let width = 0;
-  const advances = glyphs.map((g, i) => {
-    const kern = i + 1 < glyphs.length ? inter.getKerningValue(g, glyphs[i + 1]) : 0;
-    const a = (g.advanceWidth + kern) * scale + (i + 1 < glyphs.length ? tracking : 0);
-    width += a;
-    return a;
-  });
-  let pen = anchor === 'middle' ? x - width / 2 : x;
+function textPath(font, text, x, y, fontSize) {
+  const glyphs = [...text].map((c) => font.charToGlyph(c));
+  const scale = fontSize / font.unitsPerEm;
+  let pen = x;
   let d = '';
+  let left = Infinity;
+  let right = -Infinity;
   glyphs.forEach((g, i) => {
     d += g.getPath(pen, y, fontSize).toPathData(2);
-    pen += advances[i];
+    const box = g.getBoundingBox();
+    if (box.x2 > box.x1) {
+      left = Math.min(left, pen + box.x1 * scale);
+      right = Math.max(right, pen + box.x2 * scale);
+    }
+    const kern = i + 1 < glyphs.length ? font.getKerningValue(g, glyphs[i + 1]) : 0;
+    pen += (g.advanceWidth + kern) * scale;
   });
-  return { markup: `<path class="word" d="${d}"/>`, width };
+  return { d, left, right, end: pen };
+}
+
+/**
+ * The words of a lockup as one path, the ink starting at x: "Quader" in Bold, then the further words (Bastion) after a
+ * space in Regular. Returns the path data and the right edge of the ink.
+ */
+function wordmark(words, x, baseline, fontSize) {
+  // Where the pen has to start so the ink of the Q begins at x.
+  const shift = x - textPath(bold, words[0], 0, baseline, fontSize).left;
+  const first = textPath(bold, words[0], shift, baseline, fontSize);
+  let d = first.d;
+  let right = first.right;
+  let pen = first.end;
+  for (const word of words.slice(1)) {
+    pen += (regular.charToGlyph(' ').advanceWidth * fontSize) / regular.unitsPerEm;
+    const next = textPath(regular, word, pen, baseline, fontSize);
+    d += next.d;
+    right = next.right;
+    pen = next.end;
+  }
+  return { d, right };
+}
+
+// The lockup's word has a cap height of 40 (Inter's cap height is 1490 of 2048 units), centred on the mark's box: its caps
+// run from 12 to the baseline at 52, the Q's tail ends at 55.3. The ink starts one stone height (16) after the mark's
+// right edge at 60. The lockup ends at least the mark's margin of 4 after the ink, its width rounded up to a multiple of
+// 8, so at every multiple of 16 px of height it is a whole and even number of pixels wide: centred in a box of even
+// width, the mark's edges stay on whole pixels.
+const CAP_HEIGHT = 40;
+const WORD_SIZE = (CAP_HEIGHT * bold.unitsPerEm) / bold.tables.os2.sCapHeight;
+const WORD_BASELINE = GRID / 2 + CAP_HEIGHT / 2;
+const WORD_GAP = 16;
+const MARGIN = 4;
+
+function lockup(mark) {
+  const word = wordmark(mark.name.split(' '), GRID - MARGIN + WORD_GAP, WORD_BASELINE, WORD_SIZE);
+  return { word: word.d, width: Math.ceil((word.right + MARGIN) / 8) * 8 };
 }
 
 // ---- The three forms ---------------------------------------------------------------------------
 
-function markSvg(p, palette, scheme, title) {
+function markSvg(mark) {
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="${title}">` +
-    style(palette, scheme) +
-    markShapes(p) +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${GRID} ${GRID}" role="img" aria-label="${mark.name}">` +
+    style('auto') +
+    markShapes(mark) +
     `</svg>\n`
   );
 }
 
-/** The app icon: the mark above the wordmark on a dark rounded square, the same in both schemes. */
-function squareSvg(p, palette) {
+/** The horizontal lockup: the mark, then the wordmark, in the colours of the viewer's colour scheme. */
+function horizontalSvg(mark) {
+  const l = lockup(mark);
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="trove">` +
-    style(palette, 'dark') +
-    `<rect width="512" height="512" rx="96" fill="#121822"/>` +
-    `<g transform="translate(112 40) scale(1.125)">${markShapes(p)}</g>` +
-    wordPath('trove', 256, 436, 104, 4, 'middle').markup +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${l.width} ${GRID}" role="img" aria-label="${mark.name}">` +
+    style('auto') +
+    markShapes(mark) +
+    `<path class="s" d="${l.word}"/>` +
     `</svg>\n`
   );
 }
 
-/** The horizontal lockup: the mark, then the wordmark on its baseline. */
-function horizontalSvg(p, palette, scheme) {
+// The square app icon: the mark above its words on the dark tile, the same in both schemes. The mark is drawn at 3 times
+// its size (each edge still on a whole unit), the words one per line, each line centred.
+const SQUARE = 512;
+const SQUARE_RADIUS = 96;
+const SQUARE_MARK_SCALE = 3;
+const SQUARE_WORD_SIZE = 88;
+/** Between the mark's last course and the first line's caps, and between two lines' baselines. */
+const SQUARE_GAP = 48;
+const SQUARE_LEADING = 1.25;
+
+function squareSvg(mark) {
+  const words = mark.name.split(' ');
+  const cap = (SQUARE_WORD_SIZE * bold.tables.os2.sCapHeight) / bold.unitsPerEm;
+  const markInk = (GRID - 2 * MARGIN) * SQUARE_MARK_SCALE;
+  const lines = words.length;
+  const height = markInk + SQUARE_GAP + cap + (lines - 1) * SQUARE_WORD_SIZE * SQUARE_LEADING;
+  // On a whole unit, so the mark's edges stay on the grid.
+  const top = Math.round((SQUARE - height) / 2);
+  const markX = SQUARE / 2 - (GRID / 2) * SQUARE_MARK_SCALE;
+  const markY = top - MARGIN * SQUARE_MARK_SCALE;
+  let paths = '';
+  words.forEach((word, i) => {
+    const font = i === 0 ? bold : regular;
+    const baseline = top + markInk + SQUARE_GAP + cap + i * SQUARE_WORD_SIZE * SQUARE_LEADING;
+    const probe = textPath(font, word, 0, baseline, SQUARE_WORD_SIZE);
+    const x = SQUARE / 2 - (probe.left + probe.right) / 2;
+    paths += `<path class="s" d="${textPath(font, word, x, baseline, SQUARE_WORD_SIZE).d}"/>`;
+  });
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 256" role="img" aria-label="trove">` +
-    style(palette, scheme) +
-    markShapes(p) +
-    wordPath('trove', 252, 196, 168, 6).markup +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SQUARE} ${SQUARE}" role="img" aria-label="${mark.name}">` +
+    style('dark') +
+    `<rect width="${SQUARE}" height="${SQUARE}" rx="${SQUARE_RADIUS}" fill="${TILE}"/>` +
+    `<g transform="translate(${r(markX)} ${r(markY)}) scale(${SQUARE_MARK_SCALE})">${markShapes(mark)}</g>` +
+    paths +
     `</svg>\n`
   );
 }
 
-// ---- Candidate and alternatives ----------------------------------------------------------------
+// ---- The favicon -------------------------------------------------------------------------------
 
-// Owner, 2026-11-06: three lanes, the outermost red and curving to the right from its middle on; neon colours without a
-// halo; a slim band (26, as slim as two lanes) in the wordmark's colour, so no hue is used twice; the red lane starts
-// beneath the yellow one instead of beside it, where it looked stuck on.
-const base = {
-  W: 44,
-  band: 26,
-  n: 3,
-  gap: 4,
-  fan: 2.2,
-  top: 40,
-  mode: 'swoosh',
-  bend: [0, 0, 18],
-  under: [undefined, undefined, 1],
-  share: 0,
-};
-// Owner, 2026-11-06: the red lane fully beneath the middle one until it curves (variant Z1); the middle lane in the
-// band's neutral colour, the inner one blue.
-const candidate = { ...base, share: 1 };
-const palette = { in: 'neutral', out: ['blue', 'neutral', 'red'] };
-// The keys and notes are repeated in features/login/logo-preview.ts, which shows them.
-const alternatives = {
-  Z1: [candidate, palette, 'the candidate: blue, neutral, red'],
-  Z4: [
-    { ...candidate, follow: true },
-    palette,
-    'red on the middle path up to half height, then curves out',
-  ],
-  G1: [
-    candidate,
-    { in: 'neutral', out: ['green', 'neutral', 'red'] },
-    'before: green, neutral, red',
-  ],
-};
-
-// ---- The favicon: a reduced form of the mark ---------------------------------------------------
-
-// At 16 and 32 px three slim lanes run together. The reduced form keeps the idea (a band that splits and fans out,
-// the outer lane curving right from beneath its neighbour) with two lanes instead of three and a much thicker band
-// and lanes, in the candidate's blue and red, on the app icon's dark tile (the same in both schemes, so the tab's
-// colour does not decide whether the mark can be read).
-const reduced = {
-  W: 76,
-  band: 48,
-  n: 2,
-  gap: 8,
-  fan: 1.8,
-  top: 40,
-  mode: 'swoosh',
-  bend: [0, 22],
-  under: [undefined, 0],
-  share: 1,
-};
-const reducedPalette = { in: 'neutral', out: ['blue', 'red'] };
-const TILE = '#121822';
-const TILE_RADIUS = 56;
-/** The mark's share of the tile: it is drawn at this scale around the tile's centre. */
-const FAVICON_SCALE = 0.84;
+// favicon.svg is the wall mark without a tile, its colours following the colour scheme. favicon.ico is the wall mark at
+// its full size in the dark scheme's colours on the dark tile, whose corner radius of 12 stays clear of the corner stones
+// (a radius above 15 would cut them): at 16 px the tile shows as a border of 1 px around the stones.
+const TILE_RADIUS = 12;
 const FAVICON_SIZES = [16, 32, 48];
 
-function faviconSvg(p, palette) {
-  const o = (1 - FAVICON_SCALE) * 128;
+function faviconSvg(mark) {
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">` +
-    style(palette, 'dark') +
-    `<rect width="256" height="256" rx="${TILE_RADIUS}" fill="${TILE}"/>` +
-    `<g transform="translate(${r(o)} ${r(o)}) scale(${FAVICON_SCALE})">${markShapes(p)}</g>` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${GRID} ${GRID}">` +
+    style('auto') +
+    markShapes(mark) +
     `</svg>\n`
   );
 }
 
-/** The points of a path of M, C and Q commands (as markGeometry writes them), flattened to a polyline. */
-function flatten(d) {
-  const n = d.match(/-?\d+(?:\.\d+)?/g).map(Number);
-  let i = 0;
-  const take = () => [n[i++], n[i++]];
-  const out = [];
-  let cur;
-  for (const c of d.match(/[MCQL]/g)) {
-    if (c === 'M' || c === 'L') {
-      cur = take();
-      out.push(cur);
-    } else {
-      const ctrl = c === 'C' ? [take(), take()] : [take()];
-      const end = take();
-      for (let k = 1; k <= 48; k++) {
-        const t = k / 48;
-        const u = 1 - t;
-        out.push(
-          [0, 1].map((a) =>
-            ctrl.length === 2
-              ? u * u * u * cur[a] +
-                3 * u * u * t * ctrl[0][a] +
-                3 * u * t * t * ctrl[1][a] +
-                t * t * t * end[a]
-              : u * u * cur[a] + 2 * u * t * ctrl[0][a] + t * t * end[a],
-          ),
-        );
-      }
-      cur = end;
-    }
-  }
-  return out;
-}
-
-/** Distance of point q to the polyline. */
-function distance(poly, q) {
-  let best = Infinity;
-  for (let k = 1; k < poly.length; k++) {
-    const a = poly[k - 1];
-    const ab = sub(poly[k], a);
-    const len2 = ab[0] * ab[0] + ab[1] * ab[1];
-    const t =
-      len2 === 0
-        ? 0
-        : Math.max(0, Math.min(1, ((q[0] - a[0]) * ab[0] + (q[1] - a[1]) * ab[1]) / len2));
-    best = Math.min(best, Math.hypot(q[0] - a[0] - t * ab[0], q[1] - a[1] - t * ab[1]));
-  }
-  return best;
+/** Whether point q lies in the rounded rect [x, y, w, h] with corner radius rad. */
+function inRoundedRect(q, [x, y, w, h], rad) {
+  if (q[0] < x || q[0] > x + w || q[1] < y || q[1] > y + h) return false;
+  const cx = Math.min(Math.max(q[0], x + rad), x + w - rad);
+  const cy = Math.min(Math.max(q[1], y + rad), y + h - rad);
+  return Math.hypot(q[0] - cx, q[1] - cy) <= rad;
 }
 
 const hex = (h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));
 
-/** The favicon at size × size pixels as RGBA, by 8 × 8 samples per pixel: the same shapes and colours as the SVG. */
-function faviconPixels(p, palette, size) {
-  const g = markGeometry(p);
-  const [dx, dy] = g.transform.match(/-?\d+(?:\.\d+)?/g).map(Number);
-  const k = hex(TILE);
-  const c = colours(palette, 'dark');
-  // Painted in the SVG's order: the lanes (outermost first), then the band.
+/** The ICO's picture at size × size pixels as RGBA, by 8 × 8 samples per pixel: the same shapes as the SVG. */
+function faviconPixels(mark, size) {
+  const tile = hex(TILE);
   const shapes = [
-    ...g.lanes.map((l) => ({ poly: flatten(l.d), half: l.width / 2, rgb: hex(c.out[l.lane]) })),
-    { poly: flatten(g.band.d), half: g.band.width / 2, rgb: hex(c.in) },
+    ...mark.stones.map((s) => ({ rect: s, rgb: hex(COLOURS.dark.stone) })),
+    { rect: mark.coloured, rgb: hex(COLOURS.dark.coloured) },
   ];
   const N = 8;
   const px = new Uint8Array(size * size * 4);
@@ -436,20 +274,10 @@ function faviconPixels(p, palette, size) {
       const sum = [0, 0, 0];
       for (let j = 0; j < N; j++) {
         for (let i = 0; i < N; i++) {
-          const q = [((x + (i + 0.5) / N) / size) * 256, ((y + (j + 0.5) / N) / size) * 256];
-          // The tile: a square with rounded corners.
-          const cx = Math.min(Math.max(q[0], TILE_RADIUS), 256 - TILE_RADIUS);
-          const cy = Math.min(Math.max(q[1], TILE_RADIUS), 256 - TILE_RADIUS);
-          if (Math.hypot(q[0] - cx, q[1] - cy) > TILE_RADIUS) continue;
-          let rgb = k;
-          // The same point in the mark's own coordinates (before the scale around the centre and the centring translate).
-          const m = [
-            (q[0] - 128) / FAVICON_SCALE + 128 - dx,
-            (q[1] - 128) / FAVICON_SCALE + 128 - dy,
-          ];
-          if (m[1] >= g.top) {
-            for (const s of shapes) if (distance(s.poly, m) <= s.half) rgb = s.rgb;
-          }
+          const q = [((x + (i + 0.5) / N) / size) * GRID, ((y + (j + 0.5) / N) / size) * GRID];
+          if (!inRoundedRect(q, [0, 0, GRID, GRID], TILE_RADIUS)) continue;
+          let rgb = tile;
+          for (const s of shapes) if (inRoundedRect(q, s.rect, RADIUS)) rgb = s.rgb;
           a++;
           for (let ch = 0; ch < 3; ch++) sum[ch] += rgb[ch];
         }
@@ -508,58 +336,53 @@ function ico(frames) {
   return Buffer.concat([head, ...dir, ...frames.map(([, data]) => data)]);
 }
 
-writeFileSync(join(webDir, 'public', 'favicon.svg'), faviconSvg(reduced, reducedPalette));
+// ---- The app's inline mark ---------------------------------------------------------------------
+
+// shared/brand/quader-mark.ts draws the wall (and, on the sign-in and signed-out screens, the lockup) inline, so its
+// colours are the tokens of the theme the viewer chose, which an <img> of the files above cannot follow.
+async function geometrySource(mark) {
+  const box = ([x, y, width, height]) => ({ x, y, width, height });
+  const l = lockup(mark);
+  const source =
+    `// Generated by web/scripts/brand-logo.mjs; do not edit, run the script.\n\n` +
+    `/** Quader's mark on its 64 grid: the plain stones and the coloured one, each corner rounded by \`radius\`. */\n` +
+    `export const MARK = ${JSON.stringify({
+      viewBox: `0 0 ${GRID} ${GRID}`,
+      radius: RADIUS,
+      stones: mark.stones.map(box),
+      coloured: box(mark.coloured),
+    })} as const;\n\n` +
+    `/** The horizontal lockup: the mark at the left of a box of the same height, then the wordmark as one path. */\n` +
+    `export const LOCKUP = ${JSON.stringify({ viewBox: `0 0 ${l.width} ${GRID}`, word: l.word })} as const;\n`;
+  return prettier.format(source, {
+    ...(await prettier.resolveConfig(geometryFile)),
+    filepath: geometryFile,
+  });
+}
+
+// ---- Writing -----------------------------------------------------------------------------------
+
+mkdirSync(outDir, { recursive: true });
+const written = new Set();
+const write = (name, content) => {
+  writeFileSync(join(outDir, name), content);
+  written.add(name);
+};
+for (const [key, mark] of Object.entries(MARKS)) {
+  const base = key === 'quader' ? 'quader' : `quader-${key}`;
+  write(`${base}-mark.svg`, markSvg(mark));
+  write(`${base}-horizontal.svg`, horizontalSvg(mark));
+  write(`${base}-square.svg`, squareSvg(mark));
+}
+for (const name of readdirSync(outDir)) {
+  if (!written.has(name)) rmSync(join(outDir, name), { recursive: true, force: true });
+}
+
+writeFileSync(join(publicDir, 'favicon.svg'), faviconSvg(MARKS.quader));
 writeFileSync(
-  join(webDir, 'public', 'favicon.ico'),
-  ico(FAVICON_SIZES.map((n) => [n, png(n, faviconPixels(reduced, reducedPalette, n))])),
+  join(publicDir, 'favicon.ico'),
+  ico(FAVICON_SIZES.map((n) => [n, png(n, faviconPixels(MARKS.quader, n))])),
 );
 
-rmSync(draftsDir, { recursive: true, force: true });
-mkdirSync(draftsDir, { recursive: true });
-
-writeFileSync(join(outDir, 'trove-mark.svg'), markSvg(candidate, palette, 'auto', 'trove'));
-writeFileSync(join(outDir, 'trove-square.svg'), squareSvg(candidate, palette));
-writeFileSync(join(outDir, 'trove-horizontal.svg'), horizontalSvg(candidate, palette, 'auto'));
-for (const scheme of ['dark', 'light']) {
-  writeFileSync(
-    join(draftsDir, `mark-${scheme}.svg`),
-    markSvg(candidate, palette, scheme, 'trove'),
-  );
-  writeFileSync(
-    join(draftsDir, `horizontal-${scheme}.svg`),
-    horizontalSvg(candidate, palette, scheme),
-  );
-}
-for (const [key, [p, pal]] of Object.entries(alternatives)) {
-  writeFileSync(join(draftsDir, `alt-${key}.svg`), markSvg(p, pal, 'dark', `draft ${key}`));
-}
-// The candidate's geometry for the app itself (shared/brand/trove-mark.ts draws it inline, so the neutral parts take the
-// theme's text colour, which an <img> cannot).
-const geometry = markGeometry(candidate);
-const geometryFile = join(
-  fileURLToPath(new URL('.', import.meta.url)),
-  '..',
-  'src',
-  'app',
-  'shared',
-  'brand',
-  'mark-geometry.ts',
-);
-mkdirSync(join(geometryFile, '..'), { recursive: true });
-writeFileSync(
-  geometryFile,
-  `// Generated by web/scripts/brand-logo.mjs from the logo's candidate; do not edit, run the script.\n\n` +
-    `/** A lane's hue: neutral is the text colour of the surface it sits on. */\n` +
-    `export type MarkHue = ${[...new Set(palette.out)].map((h) => `'${h}'`).join(' | ')};\n\n` +
-    `export const MARK_GEOMETRY = ${JSON.stringify(
-      {
-        viewBox: geometry.box.join(' '),
-        transform: geometry.transform,
-        lanes: geometry.lanes.map((l) => ({ ...l, hue: palette.out[l.lane] })),
-        band: geometry.band,
-      },
-      null,
-      2,
-    )} as const;\n`,
-);
-console.log(`brand: wrote ${outDir} and ${geometryFile}`);
+writeFileSync(geometryFile, await geometrySource(MARKS.quader));
+console.log(`brand: wrote ${outDir}, the favicons in ${publicDir} and ${geometryFile}`);

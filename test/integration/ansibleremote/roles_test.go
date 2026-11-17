@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/ansiblestub"
-	"github.com/guided-traffic/trove/test/ansiblestub/ansiblegen"
+	"github.com/guided-traffic/quader/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/ansiblestub/ansiblegen"
 )
 
 func roleNames(t *testing.T, doc map[string]any) []string {
@@ -112,7 +112,7 @@ func TestR_ANS_020_ARolesVersionListIsPagedAndAVersionOnAnUnlistedHostIsDropped(
 		t.Errorf("the stub's unlisted host saw %d requests", n)
 	}
 	eventually(t, 10*time.Second, "the dropped-versions metric", func() bool {
-		return strings.Contains(r.Metrics(t), `trove_ansible_role_versions_dropped_total{repo="`+project+`/`+repo+`"} 1`)
+		return strings.Contains(r.Metrics(t), `quader_ansible_role_versions_dropped_total{repo="`+project+`/`+repo+`"} 1`)
 	})
 
 	// A repository whose extra hosts do not hold the GitHub hosts offers no version of a GitHub role.

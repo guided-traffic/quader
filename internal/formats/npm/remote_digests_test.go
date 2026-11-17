@@ -8,8 +8,8 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // TestR_REPO_041_TheAnnouncedDigestIsTheStrongestTheSpoolComputes: sha512 of dist.integrity, else sha256, else sha1 of the

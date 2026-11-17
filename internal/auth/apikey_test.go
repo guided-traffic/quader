@@ -11,10 +11,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/auth/principal"
-	"github.com/guided-traffic/trove/internal/auth/session"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/auth/principal"
+	"github.com/guided-traffic/quader/internal/auth/session"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // The NuGet API key (R-AUTH-001 item 1, R-AUTH-033, R-NUGET-012). The stage reads
@@ -255,7 +255,7 @@ func TestR_AUTH_033_TheAPIKeyRule(t *testing.T) {
 			res, err := s.Authenticate(req(tc.method, tc.path, tc.hdr...), ep)
 			if tc.want.status != 0 {
 				e := wantErr(t, err, tc.want.status, tc.want.code)
-				if strings.HasPrefix(tc.path, "/api/nuget/") && e.Challenge != `Basic realm="trove"` {
+				if strings.HasPrefix(tc.path, "/api/nuget/") && e.Challenge != `Basic realm="quader"` {
 					t.Fatalf("R-NUGET-012 the challenge of a NuGet endpoint is Basic: %q", e.Challenge)
 				}
 				return
@@ -451,7 +451,7 @@ func TestR_AUTH_033_AnAPIKeyFollowsTheRulesOfABearerToken(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, mf := range mfs {
-			if mf.GetName() != "trove_auth_attempts_total" {
+			if mf.GetName() != "quader_auth_attempts_total" {
 				continue
 			}
 			for _, x := range mf.GetMetric() {
@@ -463,7 +463,7 @@ func TestR_AUTH_033_AnAPIKeyFollowsTheRulesOfABearerToken(t *testing.T) {
 			}
 		}
 		if got["nuget_apikey/success/"] != 1 || got["nuget_apikey/failure/revoked"] != 1 || len(got) != 2 {
-			t.Fatalf("trove_auth_attempts_total: %v", got)
+			t.Fatalf("quader_auth_attempts_total: %v", got)
 		}
 	})
 }

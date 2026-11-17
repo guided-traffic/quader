@@ -32,9 +32,9 @@ describe('Frequently visited places (R-UI-096, Q-UI-405)', () => {
     const first = await places('id-sam', 'sam');
     first.visitRepository('web-frontend', 'npm-vendor');
     first.visitProject('web-frontend');
-    expect(new BrowserStorage().get('local', 'trove.frequent.id-sam')).toContain('web-frontend/npm-vendor');
+    expect(new BrowserStorage().get('local', 'quader.frequent.id-sam')).toContain('web-frontend/npm-vendor');
     const second = await places('id-bob', 'bob');
-    new BrowserStorage().set('local', 'trove.frequent.id-sam', JSON.stringify({ repositories: [{ id: 'web-frontend/npm-vendor', visits: 3, last: Date.now() }], projects: [] }));
+    new BrowserStorage().set('local', 'quader.frequent.id-sam', JSON.stringify({ repositories: [{ id: 'web-frontend/npm-vendor', visits: 3, last: Date.now() }], projects: [] }));
     expect(second.frequentRepositories()).toEqual([]);
   });
 
@@ -111,6 +111,6 @@ describe('Frequently visited places (R-UI-096, Q-UI-405)', () => {
     const store = TestBed.inject(FrequentPlaces);
     store.visitRepository('web', 'npm-local');
     expect(store.available()).toBe(false);
-    expect(new BrowserStorage().entries('local').filter(([k]) => k.startsWith('trove.frequent.'))).toEqual([]);
+    expect(new BrowserStorage().entries('local').filter(([k]) => k.startsWith('quader.frequent.'))).toEqual([]);
   });
 });

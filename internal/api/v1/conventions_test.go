@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 type widget struct {
@@ -413,7 +413,7 @@ func TestCORS(t *testing.T) {
 		rec := do("OPTIONS", "https://portal.example.com", "Access-Control-Request-Method", "PATCH")
 		if rec.Code != 204 || rec.Header().Get("Access-Control-Allow-Origin") != "https://portal.example.com" ||
 			!strings.Contains(rec.Header().Get("Access-Control-Allow-Headers"), "Idempotency-Key") ||
-			!strings.Contains(rec.Header().Get("Access-Control-Allow-Headers"), "Trove-Authz-Min-Epoch") {
+			!strings.Contains(rec.Header().Get("Access-Control-Allow-Headers"), "Quader-Authz-Min-Epoch") {
 			t.Fatalf("%d %v", rec.Code, rec.Header())
 		}
 		if rec.Header().Get("Access-Control-Allow-Credentials") != "" {

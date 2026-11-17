@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // The path dimension of a resource set on the npm protocol (R-AUTHZ-005, Q-AUTHZ-250): a protocol request is
@@ -30,7 +30,7 @@ type pathEnv struct {
 
 func newPathEnv(t *testing.T) *pathEnv {
 	t.Helper()
-	st := testenv.NewStack(t, testenv.StackOptions{Name: "npmpath", Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
+	st := testenv.NewStack(t, testenv.StackOptions{Name: "npmpath", Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off"}})
 	e := &pathEnv{env: &env{t: t, st: st}}
 	st.Repository("npm-path", "local", "npm", `{"local":{"packageOwnership":"off"}}`)
 	repos := []string{"npm-path"}

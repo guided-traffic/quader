@@ -17,7 +17,7 @@ import (
 
 	"github.com/valkey-io/valkey-go"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 var keepAlive = &http.Client{Timeout: 10 * time.Second}
@@ -87,11 +87,11 @@ func burstOf(t *testing.T, e *env, nodes []*node, token string, total int) (admi
 	return int(ok.Load()), int(no.Load()), elapsed, int(noRetry.Load())
 }
 
-// fallback is the value of trove_ratelimit_fallback{limiter="api_read"} on a
+// fallback is the value of quader_ratelimit_fallback{limiter="api_read"} on a
 // replica; -1 if the series is absent.
 func fallback(t *testing.T, n *node) float64 {
 	t.Helper()
-	return testenv.MetricValue(n.Metrics(t), `trove_ratelimit_fallback{limiter="api_read"}`)
+	return testenv.MetricValue(n.Metrics(t), `quader_ratelimit_fallback{limiter="api_read"}`)
 }
 
 // startWebs starts three web replicas and waits until each has counted all three:
@@ -122,7 +122,7 @@ func TestClusterWideRateLimit(t *testing.T) {
 		// command timeout of 500 ms, the limiter ran its fallback for it, and the gauge read 1 with Valkey running. What the
 		// limiter does when a command is given up on is the subject of the subtests below and of
 		// TestRateLimitAddsNoDelayOnceTheCircuitIsOpen.
-		e := newEnv(t, true, append([]string{"TROVE_VALKEY_COMMAND_TIMEOUT=10s"}, rateLimitsOn...)...)
+		e := newEnv(t, true, append([]string{"QUADER_VALKEY_COMMAND_TIMEOUT=10s"}, rateLimitsOn...)...)
 		nodes := e.startWebs(t)
 		admitted, refused, elapsed, noRetry := burstOf(t, e, nodes, e.alice.token, 1000)
 		t.Logf("admitted %d, refused %d in %s", admitted, refused, elapsed)
@@ -144,7 +144,7 @@ func TestClusterWideRateLimit(t *testing.T) {
 		}
 		for _, n := range nodes {
 			if v := fallback(t, n); v != 0 {
-				t.Errorf("%s: trove_ratelimit_fallback = %v with Valkey running", n.Name, v)
+				t.Errorf("%s: quader_ratelimit_fallback = %v with Valkey running", n.Name, v)
 			}
 		}
 	})
@@ -168,7 +168,7 @@ func TestClusterWideRateLimit(t *testing.T) {
 			}
 			for _, n := range nodes {
 				if v := fallback(t, n); v != 1 {
-					t.Errorf("%s: trove_ratelimit_fallback{limiter=api_read} = %v, want 1", n.Name, v)
+					t.Errorf("%s: quader_ratelimit_fallback{limiter=api_read} = %v, want 1", n.Name, v)
 				}
 			}
 		})
@@ -181,11 +181,11 @@ func TestClusterWideRateLimit(t *testing.T) {
 // the breaker is open.
 func TestRateLimitAddsNoDelayOnceTheCircuitIsOpen(t *testing.T) {
 	e := newEnv(t, true, append(rateLimitsOn,
-		"TROVE_API_RATE_LIMITS_READ_REQUESTS_PER_SECOND=1000", "TROVE_API_RATE_LIMITS_READ_BURST=100000",
+		"QUADER_API_RATE_LIMITS_READ_REQUESTS_PER_SECOND=1000", "QUADER_API_RATE_LIMITS_READ_BURST=100000",
 		// The client's timings the criterion is stated for: a command that waits at
 		// most 500 ms, five failures that open the circuit, a probe every 500 ms.
-		"TROVE_VALKEY_COMMAND_TIMEOUT=500ms", "TROVE_VALKEY_CIRCUIT_BREAKER_FAILURE_THRESHOLD=5",
-		"TROVE_VALKEY_CIRCUIT_BREAKER_OPEN_DURATION=2s", "TROVE_VALKEY_HEALTH_CHECK_INTERVAL=500ms")...)
+		"QUADER_VALKEY_COMMAND_TIMEOUT=500ms", "QUADER_VALKEY_CIRCUIT_BREAKER_FAILURE_THRESHOLD=5",
+		"QUADER_VALKEY_CIRCUIT_BREAKER_OPEN_DURATION=2s", "QUADER_VALKEY_HEALTH_CHECK_INTERVAL=500ms")...)
 	n := e.newNode("web-1", nodeOpts{})
 	vk := n.App.Valkey()
 	v := testenv.ValkeyConfig(t)

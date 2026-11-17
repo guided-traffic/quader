@@ -5,8 +5,8 @@ package proxy
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/proxy"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/proxy"
 )
 
 // TestR_BAS_013_UpstreamNotFoundIsMarkedAbsent: the remote engine tells the marking of a Bastion request which 404

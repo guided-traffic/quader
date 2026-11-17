@@ -3,7 +3,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
 
   .version-select {
     inline-size: 12rem;
@@ -12,81 +12,81 @@
 
 // The selected version's grade, a link to its Vulnerabilities tab (R-UI-094, Q-UI-375).
 .version-grade {
-  color: var(--trove-on-surface);
+  color: var(--quader-on-surface);
   text-decoration: none;
 
   &:hover {
-    color: var(--trove-link);
+    color: var(--quader-link);
   }
 
   &:focus-visible {
-    outline: var(--trove-focus-ring);
+    outline: var(--quader-focus-ring);
     outline-offset: 2px;
   }
 }
 
 .pkg-details {
   display: block;
-  margin-block-start: var(--trove-space-6);
+  margin-block-start: var(--quader-space-6);
 }
 
 .type-badge {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: var(--trove-space-1);
-  padding: 0 var(--trove-space-2);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-full);
+  gap: var(--quader-space-1);
+  padding: 0 var(--quader-space-2);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-full);
   font-size: 0.8125rem;
 
-  trove-format-icon {
+  quader-format-icon {
     font-size: 1rem;
   }
 }
 
 .pkg-header {
-  margin-block-end: var(--trove-space-4);
+  margin-block-end: var(--quader-space-4);
 }
 
 .version-picker {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 
   li {
-    padding: 0 var(--trove-space-2);
-    border: 1px solid var(--trove-border);
-    border-radius: var(--trove-radius-full);
+    padding: 0 var(--quader-space-2);
+    border: 1px solid var(--quader-border);
+    border-radius: var(--quader-radius-full);
     font-size: 0.8125rem;
   }
 }
 
 .badge {
-  margin-inline-start: var(--trove-space-2);
+  margin-inline-start: var(--quader-space-2);
 }
 
 .plain {
   margin: 0;
-  padding-inline-start: var(--trove-space-4);
+  padding-inline-start: var(--quader-space-4);
 }
 
 .tab {
-  padding-block: var(--trove-space-4);
+  padding-block: var(--quader-space-4);
 
   h2 {
-    margin-block: var(--trove-space-4) var(--trove-space-2);
-    font: var(--trove-type-title-medium);
+    margin-block: var(--quader-space-4) var(--quader-space-2);
+    font: var(--quader-type-title-medium);
 
     &:first-child {
       margin-block-start: 0;
@@ -99,7 +99,7 @@
 .pkg-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--trove-space-4);
+  gap: var(--quader-space-4);
   align-items: start;
 }
 
@@ -122,7 +122,7 @@
     grid-column: 2;
     grid-row: 1;
     position: sticky;
-    inset-block-start: var(--trove-space-3);
+    inset-block-start: var(--quader-space-3);
   }
 
   .pkg-layout:not(.stacked) .pkg-tabs {

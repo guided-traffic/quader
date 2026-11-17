@@ -28,21 +28,21 @@ import { PageHeader } from '../../shared/ui/page-header';
  * offers to attach it again (`syncDetached: false`, the only value the API takes).
  */
 @Component({
-  selector: 'trove-group-detail',
+  selector: 'quader-group-detail',
   imports: [PageHeader, DatePipe, Checkbox, RouterLink, ErrorNotice, Needs, SelectField, Disclosure, TextField],
   templateUrl: './group-detail.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .settings {
-      max-inline-size: var(--trove-settings-measure);
+      max-inline-size: var(--quader-settings-measure);
     }
     form[novalidate] {
-      padding-block-end: var(--trove-space-6);
+      padding-block-end: var(--quader-space-6);
     }
     .row {
       display: grid;
       grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
-      gap: var(--trove-space-6);
+      gap: var(--quader-space-6);
     }
     @media (max-width: 40rem) {
       .row {

@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- Foundation: the default privileges of the two-role setup (R-HA-014), the
 -- migration bookkeeping tables (R-HA-018) and the key-value table system_state
@@ -10,10 +10,10 @@
 -- granted. The statements run in the schema the runner put on search_path.
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trove_app') THEN
-        EXECUTE format('GRANT USAGE ON SCHEMA %I TO trove_app', current_schema());
-        EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA %I GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO trove_app', current_schema());
-        EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA %I GRANT USAGE, SELECT ON SEQUENCES TO trove_app', current_schema());
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'quader_app') THEN
+        EXECUTE format('GRANT USAGE ON SCHEMA %I TO quader_app', current_schema());
+        EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA %I GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO quader_app', current_schema());
+        EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA %I GRANT USAGE, SELECT ON SEQUENCES TO quader_app', current_schema());
     END IF;
 END $$;
 

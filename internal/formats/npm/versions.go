@@ -3,9 +3,9 @@ package npm
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/npm/name"
-	"github.com/guided-traffic/trove/internal/formats/npm/rows"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/npm/name"
+	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 )
 
 // The versions a caller's own grants hide (R-AUTHZ-005, Q-AUTHZ-255, Q-NPM-82). A version is decided on its tarball's

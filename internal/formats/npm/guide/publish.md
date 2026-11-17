@@ -13,8 +13,8 @@ A scoped package goes to the registry of its scope when your configuration binds
 
 A tarball may hold at most 256 MiB, unpack to at most 2 GiB in at most 100,000 files, with a `package.json` of at most 1 MiB (the defaults; an installation can change the first three). A larger publish answers `413` `npm_too_large`.
 
-When the connection breaks after trove stored the version, npm sends the publish again. trove recognises an identical retry by the same publisher within ten minutes (the default), changes nothing and answers success with the notice `<name>@<version> was already published by you at <time>; nothing changed`.
+When the connection breaks after Quader stored the version, npm sends the publish again. Quader recognises an identical retry by the same publisher within ten minutes (the default), changes nothing and answers success with the notice `<name>@<version> was already published by you at <time>; nothing changed`.
 
-`npm publish --provenance` needs `--access public`: trove stores the provenance bundle with the version, and serves no attestations yet. Staged publishing (`npm publish --stage`) answers `501`.
+`npm publish --provenance` needs `--access public`: Quader stores the provenance bundle with the version, and serves no attestations yet. Staged publishing (`npm publish --stage`) answers `501`.
 {{else}}You cannot publish through `{{.Repository}}`: {{if eq .Class "virtual"}}it has no deployment target, or you do not hold the deploy permission on it{{else}}you do not hold the deploy permission on it{{end}}. Ask whoever manages the repository for the permission, or publish to another repository.
 {{end}}{{end}}

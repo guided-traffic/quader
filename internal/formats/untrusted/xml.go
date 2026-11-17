@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 var encodingDecl = regexp.MustCompile(`encoding\s*=\s*["']([^"']*)["']`)

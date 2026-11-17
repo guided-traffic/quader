@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 func TestParseReportMergesThePackagesOfOneAdvisoryAndKeepsTheFacts(t *testing.T) {
@@ -283,13 +283,13 @@ func TestR_VULN_035_AnArchiveOfAnotherSchemaIsRefused(t *testing.T) {
 // TestRealTrivyScansTheFixture is the end-to-end proof of the command line of the pinned binary: analysis to an SBOM, then detection against
 // a real database from that SBOM. It needs three things the unit tier does not ship, so it runs when they are named:
 //
-//	TROVE_TEST_TRIVY_BIN     the binary of .bin/trivy-<version>
-//	TROVE_TEST_TRIVY_CACHE   a cache directory holding db/trivy.db
-//	TROVE_TEST_IMAGE_LAYOUT  an OCI layout directory of a vulnerable image
+//	QUADER_TEST_TRIVY_BIN     the binary of .bin/trivy-<version>
+//	QUADER_TEST_TRIVY_CACHE   a cache directory holding db/trivy.db
+//	QUADER_TEST_IMAGE_LAYOUT  an OCI layout directory of a vulnerable image
 func TestRealTrivyScansTheFixture(t *testing.T) {
-	bin, cache, layout := os.Getenv("TROVE_TEST_TRIVY_BIN"), os.Getenv("TROVE_TEST_TRIVY_CACHE"), os.Getenv("TROVE_TEST_IMAGE_LAYOUT")
+	bin, cache, layout := os.Getenv("QUADER_TEST_TRIVY_BIN"), os.Getenv("QUADER_TEST_TRIVY_CACHE"), os.Getenv("QUADER_TEST_IMAGE_LAYOUT")
 	if bin == "" || cache == "" || layout == "" {
-		t.Skip("TROVE_TEST_TRIVY_BIN, TROVE_TEST_TRIVY_CACHE and TROVE_TEST_IMAGE_LAYOUT name the real analyser")
+		t.Skip("QUADER_TEST_TRIVY_BIN, QUADER_TEST_TRIVY_CACHE and QUADER_TEST_IMAGE_LAYOUT name the real analyser")
 	}
 	ctx := context.Background()
 	tr, err := NewTrivy(ctx, bin)
@@ -320,7 +320,7 @@ func TestRealTrivyScansTheFixture(t *testing.T) {
 	if len(det.Advisories) == 0 || det.OSFamily == "" {
 		t.Fatalf("a vulnerable image reported nothing: %+v", det)
 	}
-	if want := os.Getenv("TROVE_TEST_IMAGE_ADVISORIES"); want != "" {
+	if want := os.Getenv("QUADER_TEST_IMAGE_ADVISORIES"); want != "" {
 		n, _ := strconv.Atoi(want)
 		if len(det.Advisories) != n {
 			t.Fatalf("%d advisories, want %d", len(det.Advisories), n)

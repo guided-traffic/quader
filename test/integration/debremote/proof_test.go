@@ -12,13 +12,13 @@ import (
 )
 
 // TestProofServer is the harness of the by-hand proof of the remote class with real APT clients (docs/developer/deb.md, "Proven by
-// hand"). It does nothing unless TROVE_DEB_PROOF_DIR names a directory: then it starts the installation, a replica and the stub, writes
+// hand"). It does nothing unless QUADER_DEB_PROOF_DIR names a directory: then it starts the installation, a replica and the stub, writes
 // what a client needs into the directory (the repository URL, the token, the stub's key a and the host name to put in /etc/hosts) and
 // serves until the file "done" appears there. The clients are `docker run --rm` containers of debian:13 and ubuntu:22.04.
 func TestProofServer(t *testing.T) {
-	dir := os.Getenv("TROVE_DEB_PROOF_DIR")
+	dir := os.Getenv("QUADER_DEB_PROOF_DIR")
 	if dir == "" {
-		t.Skip("TROVE_DEB_PROOF_DIR is not set")
+		t.Skip("QUADER_DEB_PROOF_DIR is not set")
 	}
 	e := newEnv(t)
 	port := e.r.Addr("default")
@@ -29,7 +29,7 @@ func TestProofServer(t *testing.T) {
 		}
 	}
 	write("port", port)
-	write("host", "trove.test")
+	write("host", "quader.test")
 	write("token", e.admin)
 	write("key.asc", e.keyA)
 	write("repo-keyed", "/api/deb/"+project+"/"+rKeyed+"/")

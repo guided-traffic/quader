@@ -5,9 +5,9 @@ import (
 	"context"
 	stdsync "sync"
 
-	"github.com/guided-traffic/trove/internal/vuln/match"
-	"github.com/guided-traffic/trove/internal/vuln/osv"
-	"github.com/guided-traffic/trove/internal/vuln/store"
+	"github.com/guided-traffic/quader/internal/vuln/match"
+	"github.com/guided-traffic/quader/internal/vuln/osv"
+	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
 func validRecordID(id string) bool { return osv.ValidID(id) }

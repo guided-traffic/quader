@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/test/debstub/debgen"
+	"github.com/guided-traffic/quader/test/debstub/debgen"
 )
 
 const controlPrefix = "/-/stub/"
@@ -247,7 +247,7 @@ func isIndex(rest string) bool {
 
 // mismatched returns the index with a paragraph appended, so that it differs from what the Release lists.
 func mismatched(rest string, o *object) *object {
-	const bogus = "Package: trove-not-in-the-release\nVersion: 9-9\nArchitecture: all\nDescription: appended by the index_mismatch switch\n\n"
+	const bogus = "Package: quader-not-in-the-release\nVersion: 9-9\nArchitecture: all\nDescription: appended by the index_mismatch switch\n\n"
 	data := o.data
 	if strings.HasSuffix(rest, ".gz") {
 		return newObject(debgen.Gzip(append(gunzip(data), bogus...)), o.modified)
@@ -301,7 +301,7 @@ func (s *Server) docsFor(a *archive, m Mode) (*signedDocs, error) {
 		return nil, err
 	}
 	if m.BrokenSignature {
-		in = bytes.Replace(in, []byte("Origin: trove-debstub"), []byte("Origin: trove-debstux"), 1)
+		in = bytes.Replace(in, []byte("Origin: quader-debstub"), []byte("Origin: quader-debstux"), 1)
 	}
 	gpg, err := detachSign(signers, signedText)
 	if err != nil {

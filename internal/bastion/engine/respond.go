@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/iface"
-	"github.com/guided-traffic/trove/internal/bastion/mainclient"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The retry hints of the Bastion's own answers (R-BAS-029).
@@ -51,7 +51,7 @@ func errShapeNone(r *http.Request, status int) *errs.Error {
 }
 
 // refuse answers with one of the Bastion's own problem details (R-BAS-029): Cache-Control: no-store, the
-// challenge on a 401, and the counters of a refusal. reason is the label of trove_bastion_refused_total, or
+// challenge on a 401, and the counters of a refusal. reason is the label of quader_bastion_refused_total, or
 // empty for a refusal that has none (a read-shape answer none).
 func (e *engine) refuse(q *rq, err *errs.Error, reason string) {
 	q.finish(metrics.ClassRefused, metrics.ResultRefused)
@@ -111,10 +111,10 @@ func hopByHop(name string) bool {
 
 // neverReplayed reports a response header that is dropped whatever the main installation sent: the replica
 // header, the cache state (Q-BAS-40), cookies (R-BAS-003) and the main installation's request ID. The headers of
-// the interface (Trove-Bastion-*) are dropped by their prefix.
+// the interface (Quader-Bastion-*) are dropped by their prefix.
 func neverReplayed(name string) bool {
 	switch name {
-	case "X-Trove-Replica", "Cache-Status", "Set-Cookie", "X-Request-Id":
+	case "X-Quader-Replica", "Cache-Status", "Set-Cookie", "X-Request-Id":
 		return true
 	}
 	return false

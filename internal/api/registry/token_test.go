@@ -19,19 +19,19 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/auth"
-	"github.com/guided-traffic/trove/internal/auth/registrytoken"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/oci"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/internal/secrets"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/auth"
+	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/oci"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 var (
@@ -148,14 +148,14 @@ func newFixture(t *testing.T, anonymous bool) *fixture {
 		case c.None() && anonymous:
 			return httpserver.AnonymousPrincipal(), nil
 		case c.None():
-			return httpserver.Principal{}, errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "x", errs.WithChallenge(`Basic realm="trove"`))
+			return httpserver.Principal{}, errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "x", errs.WithChallenge(`Basic realm="quader"`))
 		case c.SecretSHA256() == token.Hash(f.pat):
 			exp := f.expires
 			return httpserver.Principal{Kind: httpserver.KindUser, ID: aliceID, Name: "alice", Credential: httpserver.Credential{
 				Method: httpserver.MethodBasic, TokenID: "t1", TokenType: httpserver.TokenPAT, ExpiresAt: &exp,
 			}}, nil
 		}
-		return httpserver.Principal{}, errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "x", errs.WithChallenge(`Basic realm="trove"`))
+		return httpserver.Principal{}, errs.E(errs.Unauthenticated, errs.CodeInvalidToken, "x", errs.WithChallenge(`Basic realm="quader"`))
 	}
 	f.h, err = NewToken(TokenOptions{
 		Authenticate: authenticate, Signer: f.signer, Decider: decider{allow: f.allow}, Format: "oci", ValidName: nameRE.MatchString, Documents: NewDocuments(oci.New()),
@@ -237,7 +237,7 @@ func TestTokenService(t *testing.T) {
 	f.allow[aliceID+" web/docker-local app deploy"] = true
 	scope := "service=example.com&scope=" + url.QueryEscape("repository:web/docker-local/app:pull,push")
 
-	t.Run("GET with the trove token as Basic: 200, token and access_token equal, the lifetime, the grant of read and deploy", func(t *testing.T) {
+	t.Run("GET with the quader token as Basic: 200, token and access_token equal, the lifetime, the grant of read and deploy", func(t *testing.T) {
 		w := f.get(scope, "Authorization", basic(f.pat))
 		a, c := f.answer(t, w)
 		if a.Token != a.AccessToken || a.ExpiresIn != 300 || a.IssuedAt != "2026-11-08T10:00:00Z" {
@@ -266,7 +266,7 @@ func TestTokenService(t *testing.T) {
 			t.Fatalf("a repository of another format granted %+v", c.Grant)
 		}
 	})
-	t.Run("the lifetime never reaches beyond the trove token's expiry", func(t *testing.T) {
+	t.Run("the lifetime never reaches beyond the quader token's expiry", func(t *testing.T) {
 		f.expires = t0.Add(90 * time.Second)
 		defer func() { f.expires = t0.Add(24 * time.Hour) }()
 		a, c := f.answer(t, f.get(scope, "Authorization", basic(f.pat)))
@@ -274,12 +274,12 @@ func TestTokenService(t *testing.T) {
 			t.Fatalf("expires_in %d, %v", a.ExpiresIn, c.ExpiresAt)
 		}
 	})
-	t.Run("a trove token that expires within this second gets no token: 401, counted and recorded", func(t *testing.T) {
+	t.Run("a quader token that expires within this second gets no token: 401, counted and recorded", func(t *testing.T) {
 		f.expires = t0.Add(500 * time.Millisecond)
 		defer func() { f.expires = t0.Add(24 * time.Hour) }()
 		denied, events := f.count(registrytoken.OutcomeDenied), len(f.rec.events)
 		w := f.get(scope, "Authorization", basic(f.pat))
-		if w.Code != 401 || w.Header().Get("WWW-Authenticate") != `Basic realm="trove"` {
+		if w.Code != 401 || w.Header().Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Fatalf("%d %v", w.Code, w.Header())
 		}
 		if f.count(registrytoken.OutcomeDenied) != denied+1 || len(f.rec.events) != events+1 {
@@ -382,15 +382,15 @@ func TestTokenServiceChecksTheService(t *testing.T) {
 	f := newFixture(t, false)
 	r := httptest.NewRequest(http.MethodGet, "/v2/_token?service=other.example.com", nil)
 	r.Header.Set("Authorization", basic(f.pat))
-	r = r.WithContext(httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://trove.example.com"}))
+	r = r.WithContext(httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://quader.example.com"}))
 	w := httptest.NewRecorder()
 	f.h.ServeHTTP(w, r)
-	if w.Code != 400 || !strings.Contains(w.Body.String(), "trove.example.com") {
+	if w.Code != 400 || !strings.Contains(w.Body.String(), "quader.example.com") {
 		t.Fatalf("%d %s", w.Code, w.Body)
 	}
-	r = httptest.NewRequest(http.MethodGet, "/v2/_token?service=trove.example.com", nil)
+	r = httptest.NewRequest(http.MethodGet, "/v2/_token?service=quader.example.com", nil)
 	r.Header.Set("Authorization", basic(f.pat))
-	r = r.WithContext(httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://trove.example.com"}))
+	r = r.WithContext(httpserver.WithResolved(r.Context(), httpserver.RequestInfo{BaseURL: "https://quader.example.com"}))
 	w = httptest.NewRecorder()
 	f.h.ServeHTTP(w, r)
 	if w.Code != 200 {
@@ -412,10 +412,10 @@ func TestAnonymousTokenRequests(t *testing.T) {
 			t.Fatalf("metrics anonymous %v issued %v", f.count(registrytoken.OutcomeAnonymous), f.count(registrytoken.OutcomeIssued))
 		}
 	})
-	t.Run("R-AUTH-037 without: 401 with Basic realm=\"trove\", counted as denied and recorded", func(t *testing.T) {
+	t.Run("R-AUTH-037 without: 401 with Basic realm=\"quader\", counted as denied and recorded", func(t *testing.T) {
 		f := newFixture(t, false)
 		w := f.get("scope=" + url.QueryEscape("repository:web/docker-hub/library/alpine:pull"))
-		if w.Code != 401 || w.Header().Get("WWW-Authenticate") != `Basic realm="trove"` {
+		if w.Code != 401 || w.Header().Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Fatalf("%d %v", w.Code, w.Header())
 		}
 		if f.count(registrytoken.OutcomeDenied) != 1 || len(f.rec.events) != 1 {
@@ -448,7 +448,7 @@ func TestTokenServiceEventAndMetrics(t *testing.T) {
 			d["credential"] != want || ev.Endpoint != "default" || ev.Reason != "invalid_token" {
 			t.Fatalf("event %d: %+v %s", i, ev, ev.Details)
 		}
-		if strings.Contains(string(ev.Details), bogus) || strings.Contains(string(ev.Details), "trv_") {
+		if strings.Contains(string(ev.Details), bogus) || strings.Contains(string(ev.Details), "qdr_") {
 			t.Fatal("the event carries the credential")
 		}
 	}
@@ -466,7 +466,7 @@ func TestTheTokenRequestNeverPrintsItsCredential(t *testing.T) {
 		{credential: auth.PresentedForm("ci", pat), presented: "form"},
 	} {
 		for _, out := range []string{fmt.Sprintf("%v", tr), fmt.Sprintf("%+v", tr), fmt.Sprintf("%#v", tr), fmt.Sprint(tr.credential)} {
-			if strings.Contains(out, "trv_") || strings.Contains(out, pat[8:20]) {
+			if strings.Contains(out, "qdr_") || strings.Contains(out, pat[8:20]) {
 				t.Fatalf("printed: %s", out)
 			}
 		}

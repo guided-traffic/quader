@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_API_061_ASuggestionNamesOnlyWhatTheCallerMayRead: the acceptance rows of R-API-061 on the worked rows of R-AUTHZ-035
@@ -181,7 +181,7 @@ func TestR_API_060_TheSuggestionsOperation(t *testing.T) {
 		})
 	}
 	// The general rate limits are off on the stack's replicas; this one has them on.
-	limited := f.st.Start(t, testenv.ReplicaOptions{Name: "limited", Env: []string{"TROVE_API_RATE_LIMITS_ENABLED=true"}})
+	limited := f.st.Start(t, testenv.ReplicaOptions{Name: "limited", Env: []string{"QUADER_API_RATE_LIMITS_ENABLED=true"}})
 	t.Run("R-API-060 kind=repository answers only the member repositories, in the read class, never stored", func(t *testing.T) {
 		a := f.st.Do(limited, "GET", "/api/v1/search/suggestions?q=npm&kind=repository", f.tokFrank, nil)
 		if a.Status != 200 || !strings.HasPrefix(string(a.Body), `{"repositories":`) || strings.Contains(string(a.Body), `"packages"`) {

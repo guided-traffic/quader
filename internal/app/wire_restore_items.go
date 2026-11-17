@@ -6,18 +6,18 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/backup/fixup"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/formathost"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/backup/fixup"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
-// RestoreItems is the storage delete path of `trove backup restore` (R-BAK-008, R-BAK-021 step 7): the item store composed with
+// RestoreItems is the storage delete path of `quader backup restore` (R-BAK-008, R-BAK-021 step 7): the item store composed with
 // the storage hooks of every format, over the restore's session, without a replica around it. It builds what the removal of
 // cached files needs and nothing that serves, loops or talks to Valkey: the format data ports and their hooks, with signals that
 // publish nothing (the restore holds no Valkey credential and no replica runs, R-BAK-022), a blob store that refuses every call

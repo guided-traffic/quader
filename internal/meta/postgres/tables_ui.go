@@ -1,6 +1,6 @@
 package postgres
 
-import "github.com/guided-traffic/trove/internal/backup/tables"
+import "github.com/guided-traffic/quader/internal/backup/tables"
 
 // Registration of the table of 00043_ui_assets (R-HA-020, R-BAK-004, Q-HA-120):
 //

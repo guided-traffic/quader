@@ -14,7 +14,7 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 )
 
-// The reasons a verification fails, for the metric label of trove_deb_upstream_signature_failures_total and the audit event
+// The reasons a verification fails, for the metric label of quader_deb_upstream_signature_failures_total and the audit event
 // (R-DEB-020). Reason(err) returns one.
 const (
 	ReasonMalformed    = "malformed"    // not a cleartext message or a signature, or trailing text

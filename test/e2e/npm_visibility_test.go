@@ -82,7 +82,7 @@ func TestNPMVisibility_R_AUTHZ_034(t *testing.T) {
 		c := fx.clientOn(t, "npm11", 2, key, "visview")
 		d := c.anonymousProject(t, "view")
 		out := c.must(d, "view", name, "readme")
-		if strings.Contains(out.Out, "Published by the trove end-to-end tests") {
+		if strings.Contains(out.Out, "Published by the quader end-to-end tests") {
 			t.Fatalf("npm view printed the README to an anonymous caller:\n%s", out.Out)
 		}
 	})
@@ -102,7 +102,7 @@ func TestNPMVisibility_R_AUTHZ_034(t *testing.T) {
 		d := c.project("view", nil)
 		c.configure(d)
 		out := c.must(d, "view", name, "readme")
-		if !strings.Contains(out.Out, "Published by the trove end-to-end tests") {
+		if !strings.Contains(out.Out, "Published by the quader end-to-end tests") {
 			t.Fatalf("npm view with an internal user's token did not print the README:\n%s", out.Out)
 		}
 	})

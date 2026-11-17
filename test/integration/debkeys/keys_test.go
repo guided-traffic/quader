@@ -15,12 +15,12 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/armor"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	debdata "github.com/guided-traffic/trove/internal/formatdata/deb"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/openpgp"
-	"github.com/guided-traffic/trove/internal/secrets"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/audit"
+	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/openpgp"
+	"github.com/guided-traffic/quader/internal/secrets"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestR_DEB_015_ACreatedRepositoryHasAGeneratedPrimaryKey(t *testing.T) {
@@ -42,12 +42,12 @@ func TestR_DEB_015_ACreatedRepositoryHasAGeneratedPrimaryKey(t *testing.T) {
 	if lead < 3600 || lead > 3601 {
 		t.Errorf("the key was created %d s before its row, want 3600 s", lead)
 	}
-	// Its certificate is what trove's own library reads, with the user ID of the repository.
+	// Its certificate is what quader's own library reads, with the user ID of the repository.
 	certs, err := openpgp.ParseCertificates([]byte(k["publicKey"].(string)), time.Now(), openpgp.Limits{})
 	if err != nil || len(certs) != 1 || certs[0].Fingerprint != fp(k) || certs[0].Algorithm != 22 {
 		t.Fatalf("the published certificate: %v, %v", certs, err)
 	}
-	if !strings.Contains(userIDs(t, k["publicKey"].(string)), "trove "+project+"/apt-first") {
+	if !strings.Contains(userIDs(t, k["publicKey"].(string)), "quader "+project+"/apt-first") {
 		t.Errorf("user ID %q does not name the repository", userIDs(t, k["publicKey"].(string)))
 	}
 	// The private key is sealed under the key ring, bound to its row (R-ARCH-021).
@@ -186,7 +186,7 @@ func TestR_DEB_015_ImportRules(t *testing.T) {
 		t.Errorf("after the retirement: %d %s", a.Status, a.Body)
 	}
 
-	// An EdDSALegacy key made by trove's own library imports too, and a key created in the past with a fresh binding is accepted.
+	// An EdDSALegacy key made by quader's own library imports too, and a key created in the past with a fresh binding is accepted.
 	if a := e.call("admin", "POST", keysPath("apt-import"), map[string]any{"privateKey": generated(t, now.Add(-24*time.Hour))}); a.Status != 201 {
 		t.Errorf("import EdDSALegacy: %d %s", a.Status, a.Body)
 	}
@@ -438,7 +438,7 @@ func TestR_ARCH_021_APrivateKeyIsBoundToItsRow(t *testing.T) {
 	}
 }
 
-// craft describes a secret key the tests build with the module directly to hit a rule of R-DEB-015 that trove's own generator never
+// craft describes a secret key the tests build with the module directly to hit a rule of R-DEB-015 that quader's own generator never
 // breaks.
 type craft struct {
 	rsaBits       int
@@ -484,10 +484,10 @@ func craftKey(t *testing.T, now time.Time, c craft) string {
 	return buf.String() + "\n"
 }
 
-// generated is a key made by trove's library, created at the time.
+// generated is a key made by quader's library, created at the time.
 func generated(t *testing.T, created time.Time) string {
 	t.Helper()
-	secret, _, _, err := openpgp.Generate("trove test", created)
+	secret, _, _, err := openpgp.Generate("quader test", created)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -496,7 +496,7 @@ func generated(t *testing.T, created time.Time) string {
 
 func publicOnly(t *testing.T) string {
 	t.Helper()
-	_, pub, _, err := openpgp.Generate("trove test", time.Now().Add(-time.Hour))
+	_, pub, _, err := openpgp.Generate("quader test", time.Now().Add(-time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}

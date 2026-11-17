@@ -52,7 +52,7 @@ func TestEmbeddedSteps(t *testing.T) {
 // TestParseSteps holds the expand/contract rules of R-HA-018 (strict), which are switched off until the first stable
 // release (EnforceMigrationPhases, Q-ARCH-340): it runs them on, so they are ready when the switch is set again.
 func TestParseSteps(t *testing.T) {
-	ok := "-- trove:phase expand\nCREATE TABLE a (id int);\n"
+	ok := "-- quader:phase expand\nCREATE TABLE a (id int);\n"
 	cases := []struct {
 		name  string
 		files map[string]string
@@ -62,71 +62,71 @@ func TestParseSteps(t *testing.T) {
 		{
 			"R-ARCH-026 a file without a phase header is refused",
 			map[string]string{"00001_a.sql": "CREATE TABLE a (id int);\n"},
-			"missing -- trove:phase",
+			"missing -- quader:phase",
 		},
 		{
 			"R-ARCH-026 an unknown phase is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase sideways\nSELECT 1;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase sideways\nSELECT 1;\n"},
 			"expand or contract",
 		},
 		{
 			"R-ARCH-026 two phase headers are refused",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\n-- trove:phase contract\nSELECT 1;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\n-- quader:phase contract\nSELECT 1;\n"},
 			"more than one",
 		},
 		{
 			"R-ARCH-026 a contract step without requires-app is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase contract\nDROP TABLE a;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase contract\nDROP TABLE a;\n"},
 			"requires-app",
 		},
 		{
 			"R-ARCH-026 requires-app on an expand step is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\n-- trove:requires-app >= 0.2.0\nSELECT 1;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\n-- quader:requires-app >= 0.2.0\nSELECT 1;\n"},
 			"contract steps only",
 		},
 		{
 			"R-ARCH-026 a valid contract step",
-			map[string]string{"00001_a.sql": "-- trove:phase contract\n-- trove:requires-app >= 0.2.0\nDROP TABLE a;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase contract\n-- quader:requires-app >= 0.2.0\nDROP TABLE a;\n"},
 			"",
 		},
 		{
 			"R-ARCH-026 requires-app must name a release",
-			map[string]string{"00001_a.sql": "-- trove:phase contract\n-- trove:requires-app >= soon\nDROP TABLE a;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase contract\n-- quader:requires-app >= soon\nDROP TABLE a;\n"},
 			"not a release version",
 		},
 		{
 			"R-HA-018 DROP in an expand step is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\nDROP TABLE a;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\nDROP TABLE a;\n"},
 			"contract-class",
 		},
 		{
 			"R-HA-018 RENAME in an expand step is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\nALTER TABLE a RENAME TO b;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\nALTER TABLE a RENAME TO b;\n"},
 			"contract-class",
 		},
 		{
 			"R-HA-018 SET NOT NULL in an expand step is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\nALTER TABLE a ALTER COLUMN x SET NOT NULL;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\nALTER TABLE a ALTER COLUMN x SET NOT NULL;\n"},
 			"contract-class",
 		},
 		{
 			"R-HA-018 ON DELETE SET NULL and words in comments or strings are not contract statements",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\n-- we never DROP TABLE here\nCREATE TABLE a (x int REFERENCES b ON DELETE SET NULL, note text DEFAULT 'drop table');\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\n-- we never DROP TABLE here\nCREATE TABLE a (x int REFERENCES b ON DELETE SET NULL, note text DEFAULT 'drop table');\n"},
 			"",
 		},
 		{
 			"R-HA-018 a dollar-quoted body is not scanned for contract statements",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\nCREATE FUNCTION f() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DROP TABLE x; END $$;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\nCREATE FUNCTION f() RETURNS void LANGUAGE plpgsql AS $$ BEGIN DROP TABLE x; END $$;\n"},
 			"",
 		},
 		{
 			"R-HA-018 a no-transaction step holds exactly one statement",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\n-- trove:no-transaction\nCREATE INDEX CONCURRENTLY i ON a (x);\nCREATE INDEX CONCURRENTLY j ON a (y);\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\n-- quader:no-transaction\nCREATE INDEX CONCURRENTLY i ON a (x);\nCREATE INDEX CONCURRENTLY j ON a (y);\n"},
 			"exactly one statement",
 		},
 		{
 			"R-HA-018 a no-transaction step with one statement",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\n-- trove:no-transaction\nCREATE INDEX CONCURRENTLY i ON a (x);\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\n-- quader:no-transaction\nCREATE INDEX CONCURRENTLY i ON a (x);\n"},
 			"",
 		},
 		{
@@ -140,33 +140,33 @@ func TestParseSteps(t *testing.T) {
 			"NNNNN_<name>.sql",
 		},
 		{
-			"R-ARCH-026 an unknown trove header is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\n-- trove:frobnicate\nSELECT 1;\n"},
+			"R-ARCH-026 an unknown quader header is refused",
+			map[string]string{"00001_a.sql": "-- quader:phase expand\n-- quader:frobnicate\nSELECT 1;\n"},
 			"unknown header",
 		},
 		{
 			"R-HA-022 a contract step names the background migrations it depends on, one header each",
-			map[string]string{"00001_a.sql": "-- trove:phase contract\n-- trove:requires-app >= 0.2.0\n-- trove:requires-background backfill_a\n-- trove:requires-background backfill_b\nDROP TABLE a;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase contract\n-- quader:requires-app >= 0.2.0\n-- quader:requires-background backfill_a\n-- quader:requires-background backfill_b\nDROP TABLE a;\n"},
 			"",
 		},
 		{
 			"R-HA-022 requires-background on an expand step is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\n-- trove:requires-background backfill_a\nSELECT 1;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\n-- quader:requires-background backfill_a\nSELECT 1;\n"},
 			"requires-background belongs to contract steps only",
 		},
 		{
 			"R-HA-022 requires-background names one migration by its name",
-			map[string]string{"00001_a.sql": "-- trove:phase contract\n-- trove:requires-app >= 0.2.0\n-- trove:requires-background backfill_a, backfill_b\nDROP TABLE a;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase contract\n-- quader:requires-app >= 0.2.0\n-- quader:requires-background backfill_a, backfill_b\nDROP TABLE a;\n"},
 			"must name one background migration",
 		},
 		{
 			"R-HA-022 requires-background without a name is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase contract\n-- trove:requires-app >= 0.2.0\n-- trove:requires-background\nDROP TABLE a;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase contract\n-- quader:requires-app >= 0.2.0\n-- quader:requires-background\nDROP TABLE a;\n"},
 			"must name one background migration",
 		},
 		{
 			"R-HA-022 a background migration named twice is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase contract\n-- trove:requires-app >= 0.2.0\n-- trove:requires-background backfill_a\n-- trove:requires-background backfill_a\nDROP TABLE a;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase contract\n-- quader:requires-app >= 0.2.0\n-- quader:requires-background backfill_a\n-- quader:requires-background backfill_a\nDROP TABLE a;\n"},
 			"named twice",
 		},
 	}
@@ -182,7 +182,7 @@ func TestParseSteps(t *testing.T) {
 		})
 	}
 	t.Run("R-HA-022 the parsed step carries its background dependencies in header order", func(t *testing.T) {
-		steps, err := ParseSteps(files(map[string]string{"00001_a.sql": "-- trove:phase contract\n-- trove:requires-app >= 0.2.0\n-- trove:requires-background backfill_b\n-- trove:requires-background backfill_a\nDROP TABLE a;\n"}))
+		steps, err := ParseSteps(files(map[string]string{"00001_a.sql": "-- quader:phase contract\n-- quader:requires-app >= 0.2.0\n-- quader:requires-background backfill_b\n-- quader:requires-background backfill_a\nDROP TABLE a;\n"}))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -200,7 +200,7 @@ func TestParseSteps(t *testing.T) {
 }
 
 // TestParseStepsRelaxed holds the rules while the expand/contract rules are switched off (Q-ARCH-340): every header is
-// optional, a file without -- trove:phase is an expand step, and the phase does not restrict the SQL. The rules that do
+// optional, a file without -- quader:phase is an expand step, and the phase does not restrict the SQL. The rules that do
 // not rest on expand/contract stay.
 func TestParseStepsRelaxed(t *testing.T) {
 	cases := []struct {
@@ -216,47 +216,47 @@ func TestParseStepsRelaxed(t *testing.T) {
 		},
 		{
 			"R-HA-018 DROP, RENAME and SET NOT NULL are allowed in an expand step",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\nDROP TABLE a;\nALTER TABLE b RENAME TO c;\nALTER TABLE c ALTER COLUMN x SET NOT NULL;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\nDROP TABLE a;\nALTER TABLE b RENAME TO c;\nALTER TABLE c ALTER COLUMN x SET NOT NULL;\n"},
 			"",
 		},
 		{
 			"R-ARCH-026 requires-app without a phase header is refused",
-			map[string]string{"00001_a.sql": "-- trove:requires-app >= 0.2.0\nSELECT 1;\n"},
+			map[string]string{"00001_a.sql": "-- quader:requires-app >= 0.2.0\nSELECT 1;\n"},
 			"contract steps only",
 		},
 		{
 			"R-ARCH-026 a contract step without requires-app is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase contract\nDROP TABLE a;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase contract\nDROP TABLE a;\n"},
 			"requires-app",
 		},
 		{
 			"R-ARCH-026 an unknown phase is refused",
-			map[string]string{"00001_a.sql": "-- trove:phase sideways\nSELECT 1;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase sideways\nSELECT 1;\n"},
 			"expand or contract",
 		},
 		{
 			"R-ARCH-026 two phase headers are refused",
-			map[string]string{"00001_a.sql": "-- trove:phase expand\n-- trove:phase contract\nSELECT 1;\n"},
+			map[string]string{"00001_a.sql": "-- quader:phase expand\n-- quader:phase contract\nSELECT 1;\n"},
 			"more than one",
 		},
 		{
-			"R-ARCH-026 an unknown trove header is refused",
-			map[string]string{"00001_a.sql": "-- trove:frobnicate\nSELECT 1;\n"},
+			"R-ARCH-026 an unknown quader header is refused",
+			map[string]string{"00001_a.sql": "-- quader:frobnicate\nSELECT 1;\n"},
 			"unknown header",
 		},
 		{
 			"R-HA-018 a no-transaction step holds exactly one statement",
-			map[string]string{"00001_a.sql": "-- trove:no-transaction\nCREATE INDEX CONCURRENTLY i ON a (x);\nCREATE INDEX CONCURRENTLY j ON a (y);\n"},
+			map[string]string{"00001_a.sql": "-- quader:no-transaction\nCREATE INDEX CONCURRENTLY i ON a (x);\nCREATE INDEX CONCURRENTLY j ON a (y);\n"},
 			"exactly one statement",
 		},
 		{
 			"R-HA-018 semicolons in comments, strings and a dollar-quoted body do not count as statements",
-			map[string]string{"00001_a.sql": "-- trove:no-transaction\n-- one; two\nCREATE FUNCTION f() RETURNS text LANGUAGE plpgsql AS $body$ BEGIN PERFORM 1; RETURN 'a;b'; END $body$;\n"},
+			map[string]string{"00001_a.sql": "-- quader:no-transaction\n-- one; two\nCREATE FUNCTION f() RETURNS text LANGUAGE plpgsql AS $body$ BEGIN PERFORM 1; RETURN 'a;b'; END $body$;\n"},
 			"",
 		},
 		{
 			"R-ARCH-026 a file of comments only holds no statement",
-			map[string]string{"00001_a.sql": "-- trove:no-transaction\n-- nothing here\n"},
+			map[string]string{"00001_a.sql": "-- quader:no-transaction\n-- nothing here\n"},
 			"no statement",
 		},
 		{
@@ -277,7 +277,7 @@ func TestParseStepsRelaxed(t *testing.T) {
 		})
 	}
 	t.Run("R-ARCH-026 a step without a phase header is an expand step without requires-app", func(t *testing.T) {
-		steps, err := parseSteps(files(map[string]string{"00001_a.sql": "-- trove:no-transaction\nCREATE INDEX CONCURRENTLY i ON a (x);\n"}), false)
+		steps, err := parseSteps(files(map[string]string{"00001_a.sql": "-- quader:no-transaction\nCREATE INDEX CONCURRENTLY i ON a (x);\n"}), false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -297,8 +297,8 @@ func TestParseStepsRelaxed(t *testing.T) {
 // step it ships last; with the rules switched off (Q-ARCH-340) it needs the highest step it embeds.
 func TestRequiredSchemaBothModes(t *testing.T) {
 	steps, err := parseSteps(files(map[string]string{
-		"00001_a.sql": "-- trove:phase expand\nCREATE TABLE a (id int);\n",
-		"00002_b.sql": "-- trove:phase contract\n-- trove:requires-app >= 0.2.0\nDROP TABLE a;\n",
+		"00001_a.sql": "-- quader:phase expand\nCREATE TABLE a (id int);\n",
+		"00002_b.sql": "-- quader:phase contract\n-- quader:requires-app >= 0.2.0\nDROP TABLE a;\n",
 	}), true)
 	if err != nil {
 		t.Fatal(err)

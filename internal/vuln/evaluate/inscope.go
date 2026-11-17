@@ -3,7 +3,7 @@ package evaluate
 import (
 	"context"
 
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // InScope reports whether a version of the package in the repository is one that public advisories apply to (R-VULN-010): the

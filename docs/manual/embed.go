@@ -1,4 +1,4 @@
-// Package manual embeds the pages of the trove manual (docs/manual) into the binary,
+// Package manual embeds the pages of the quader manual (docs/manual) into the binary,
 // so that the help area of the UI always shows the manual of the running version
 // (R-API-054, R-UI-050). internal/manual renders them; this package only holds the
 // files, because go:embed cannot reach a directory above the package.

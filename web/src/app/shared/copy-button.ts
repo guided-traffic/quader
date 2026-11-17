@@ -6,7 +6,7 @@ import { Notifier } from '../core/notifier';
  * `label` names what is copied, so that a screen reader hears "Copy SHA-256" and not just "Copy".
  */
 @Component({
-  selector: 'trove-copy-button',
+  selector: 'quader-copy-button',
   imports: [],
   template: `
     <button class="btn btn-icon"

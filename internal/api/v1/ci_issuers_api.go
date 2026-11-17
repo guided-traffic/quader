@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The CI issuer and signing-key operations (R-CI-001 to R-CI-003, R-CI-005, Q-CI-16), work package W1.
 // The declarations are in the document: ci:read for the reads and ci:write for the writes, recent
-// authentication for create, replace and delete, x-trove-if-match required on the replace. The handlers
+// authentication for create, replace and delete, x-quader-if-match required on the replace. The handlers
 // are thin: the service ([ci.Issuers]) owns the defaults, the validation, the transaction, the audit
 // events and the revocation.
 //

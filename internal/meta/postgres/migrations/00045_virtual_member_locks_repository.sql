@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- A write that names a repository by ID locks it FOR SHARE in the database (R-REPO-060, Q-REPO-234, F-68). The
 -- same-project guard of a member row (AI006, 00024) read the project of the repository before the foreign key

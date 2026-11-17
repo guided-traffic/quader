@@ -1,20 +1,20 @@
 @if (unknownFormat(); as name) {
-  <trove-repository-format-chooser [project]="project()" [unknownFormat]="name" />
+  <quader-repository-format-chooser [project]="project()" [unknownFormat]="name" />
 } @else if (loadFailure(); as f) {
-  <trove-page-header i18n-heading="@@repo.new.heading" heading="New repository" />
-  <trove-error-notice [error]="f" (retry)="formats.reload()" />
+  <quader-page-header i18n-heading="@@repo.new.heading" heading="New repository" />
+  <quader-error-notice [error]="f" (retry)="formats.reload()" />
 } @else if (descriptor(); as fmt) {
-  <trove-page-header [heading]="heading()" [description]="projectLine()">
+  <quader-page-header [heading]="heading()" [description]="projectLine()">
     <a actions class="btn btn-default" [routerLink]="chooserLink()" [queryParams]="chooserQuery()" i18n="@@repo.create.change-format"
       >Change format</a
     >
-  </trove-page-header>
+  </quader-page-header>
 
   <form class="create" (submit)="create($event)" novalidate>
-    <trove-error-summary [items]="summary()" (reveal)="reveal($event)" />
+    <quader-error-summary [items]="summary()" (reveal)="reveal($event)" />
     @if (failure(); as f) {
       @if (f.fieldErrors.size === 0) {
-        <trove-error-notice [error]="f" />
+        <quader-error-notice [error]="f" />
       }
     }
 
@@ -114,7 +114,7 @@
     </div>
 
     @if (artifacts(); as level) {
-      <trove-visibility-level
+      <quader-visibility-level
         i18n-label="@@repo.create.visibility"
         label="Visibility"
         subject="artifacts"
@@ -129,7 +129,7 @@
 
     @if (cls() === 'remote') {
       <div class="group">
-        <trove-upstream-settings
+        <quader-upstream-settings
           [(form)]="form"
           [format]="fmt"
           [project]="chosenProject()"
@@ -146,7 +146,7 @@
         <p class="hint" i18n="@@repo.create.members-hint">
           The repositories this one serves from, asked in this order. Only local and remote repositories of this project and format are offered.
         </p>
-        <trove-member-picker
+        <quader-member-picker
           [pool]="pool()"
           [(members)]="members"
           [emptyText]="membersEmpty"
@@ -167,7 +167,7 @@
       </section>
     }
 
-    <trove-disclosure
+    <quader-disclosure
       class="advanced-settings"
       i18n-heading="@@repo.create.advanced"
       heading="Advanced settings"
@@ -176,17 +176,17 @@
       [(expanded)]="advancedOpen"
     >
       <h3 i18n="@@repo.field.notes">Administrator notes</h3>
-      <trove-repository-fields section="notes" [(form)]="form" [fieldErrors]="fieldErrors()" />
+      <quader-repository-fields section="notes" [(form)]="form" [fieldErrors]="fieldErrors()" />
 
       <h3 i18n="@@repo.group.paths">Paths</h3>
-      <trove-repository-fields section="paths" [(form)]="form" [fieldErrors]="fieldErrors()" />
+      <quader-repository-fields section="paths" [(form)]="form" [fieldErrors]="fieldErrors()" />
 
       <h3 i18n="@@repo.group.access">Access details</h3>
-      <trove-repository-fields section="access" [(form)]="form" [fieldErrors]="fieldErrors()" />
+      <quader-repository-fields section="access" [(form)]="form" [fieldErrors]="fieldErrors()" />
 
       @if (mirrorGroup()) {
         <h3 i18n="@@mirror.heading">Mirror</h3>
-        <trove-mirror-settings
+        <quader-mirror-settings
           [(form)]="form"
           [format]="fmt"
           [upstreamUrl]="form().upstream.url"
@@ -195,7 +195,7 @@
           [fieldErrors]="fieldErrors()"
         />
         @if (form().remoteMode === 'mirror' && formatMirrorNodes().length > 0) {
-          <trove-format-settings
+          <quader-format-settings
             part="mirror"
             [headingLevel]="4"
             [nodes]="nodes()"
@@ -209,7 +209,7 @@
 
       @if (formatNodes().length > 0) {
         <h3 i18n="@@repo.format.heading-plain"><span translate="no">{{ formatLabel() }}</span> settings</h3>
-        <trove-format-settings
+        <quader-format-settings
           [headingLevel]="4"
           [nodes]="nodes()"
           [pointer]="memberPointer()"
@@ -218,7 +218,7 @@
           [fieldErrors]="fieldErrors()"
         />
       }
-    </trove-disclosure>
+    </quader-disclosure>
 
     <details class="api-request">
       <summary i18n="@@repo.review.api">Show as API request</summary>

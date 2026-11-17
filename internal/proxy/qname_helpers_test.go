@@ -1,6 +1,6 @@
 package proxy
 
-import "github.com/guided-traffic/trove/internal/qname"
+import "github.com/guided-traffic/quader/internal/qname"
 
 // qnameRepo is the name of a repository in a project.
 func qnameRepo(project, key string) qname.Repo { return qname.Repo{Project: project, Key: key} }

@@ -14,12 +14,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/proxy"
-	"github.com/guided-traffic/trove/internal/proxy/proxytest"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/proxy"
+	"github.com/guided-traffic/quader/internal/proxy/proxytest"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // TestURLMap is R-REPO-043 at the engine: a recorded URL is used, a host outside the
@@ -50,7 +50,7 @@ func TestURLMap(t *testing.T) {
 			t.Fatalf("the foreign host got %d requests", cdn.Total())
 		}
 	})
-	t.Run("R-REPO-043 with the host in extraHosts the artifact is fetched from there and served under the trove path", func(t *testing.T) {
+	t.Run("R-REPO-043 with the host in extraHosts the artifact is fetched from there and served under the quader path", func(t *testing.T) {
 		allowed := rem
 		allowed.Repo.Version++ // a new configuration version is a new client
 		allowed.Settings.ExtraHosts = []repository.ExtraHost{{Pattern: "127.0.0.1"}}
@@ -153,7 +153,7 @@ func TestOfflineAndCacheView(t *testing.T) {
 		off := rem
 		off.Settings.Availability.Mode = repository.AvailabilityOffline
 		s := r.metadata(off, "pkg/stored")
-		if s.status != 200 || !bytes.Equal(s.body, doc) || s.cacheStatus() != "trove; hit; detail=served-stale" {
+		if s.status != 200 || !bytes.Equal(s.body, doc) || s.cacheStatus() != "quader; hit; detail=served-stale" {
 			t.Fatalf("%d %q", s.status, s.cacheStatus())
 		}
 		if s := r.artifact(off, "pkg/stored/-/stored-1.tgz"); s.status != 200 {
@@ -310,7 +310,7 @@ func TestProbe(t *testing.T) {
 			t.Fatalf("%v", got)
 		}
 		_ = probe("pkg/busy")
-		waitFor(t, "the circuit to open", 2*time.Second, func() bool { return r.metric("trove_remote_upstream_up", "repo", "probe") == 0 })
+		waitFor(t, "the circuit to open", 2*time.Second, func() bool { return r.metric("quader_remote_upstream_up", "repo", "probe") == 0 })
 		before := up.Total()
 		res := probe("pkg/there")
 		if res.Outcome != proxy.Undetermined || res.RetryAfter <= 0 || up.Total() != before {
@@ -393,13 +393,13 @@ func TestObservability(t *testing.T) {
 				t.Fatalf("Cache-Status = %q, want %q", got.cacheStatus(), prefix)
 			}
 		}
-		want(r.metadata(rem, "pkg/obs"), "trove; fwd=uri-miss; fwd-status=200; stored")
-		want(r.metadata(rem, "pkg/obs"), "trove; hit; ttl=")
+		want(r.metadata(rem, "pkg/obs"), "quader; fwd=uri-miss; fwd-status=200; stored")
+		want(r.metadata(rem, "pkg/obs"), "quader; hit; ttl=")
 		time.Sleep(1200 * time.Millisecond)
-		want(r.metadata(rem, "pkg/obs"), "trove; fwd=stale; fwd-status=304")
+		want(r.metadata(rem, "pkg/obs"), "quader; fwd=stale; fwd-status=304")
 		time.Sleep(1200 * time.Millisecond)
 		up.Set("/pkg/obs", proxytest.Route{Status: 503})
-		want(r.metadata(rem, "pkg/obs"), "trove; fwd=stale; fwd-status=503; detail=served-stale")
+		want(r.metadata(rem, "pkg/obs"), "quader; fwd=stale; fwd-status=503; detail=served-stale")
 	})
 	t.Run("R-REPO-047 R-OPS-011 the upstream log carries repo, flight_role, collapsed_waiters and cache_status", func(t *testing.T) {
 		var wg sync.WaitGroup
@@ -420,7 +420,7 @@ func TestObservability(t *testing.T) {
 		if rec == nil {
 			t.Fatalf("no upstream log record for the artifact in %q", logs.String())
 		}
-		if rec["repo"] != "it/obs" || rec["flight_role"] != "leader" || !strings.HasPrefix(asString(rec["cache_status"]), "trove; fwd=uri-miss") {
+		if rec["repo"] != "it/obs" || rec["flight_role"] != "leader" || !strings.HasPrefix(asString(rec["cache_status"]), "quader; fwd=uri-miss") {
 			t.Fatalf("%v", rec)
 		}
 		if n, _ := rec["collapsed_waiters"].(float64); n < 15 {
@@ -432,17 +432,17 @@ func TestObservability(t *testing.T) {
 			name   string
 			labels []string
 		}{
-			{"trove_remote_cache_lookups_total", []string{"repo", "obs", "kind", "metadata", "result", "hit"}},
-			{"trove_remote_cache_lookups_total", []string{"repo", "obs", "kind", "artifact", "result", "miss"}},
-			{"trove_remote_upstream_requests_total", []string{"repo", "obs", "code", "200"}},
-			{"trove_remote_upstream_requests_total", []string{"repo", "obs", "code", "304"}},
-			{"trove_remote_upstream_requests_total", []string{"repo", "obs", "code", "503"}},
-			{"trove_remote_upstream_request_duration_seconds", []string{"repo", "obs"}},
-			{"trove_remote_collapsed_requests_total", []string{"repo", "obs"}},
-			{"trove_remote_fetch_queue_wait_seconds", []string{"repo", "obs"}},
-			{"trove_remote_upstream_up", []string{"repo", "obs"}},
+			{"quader_remote_cache_lookups_total", []string{"repo", "obs", "kind", "metadata", "result", "hit"}},
+			{"quader_remote_cache_lookups_total", []string{"repo", "obs", "kind", "artifact", "result", "miss"}},
+			{"quader_remote_upstream_requests_total", []string{"repo", "obs", "code", "200"}},
+			{"quader_remote_upstream_requests_total", []string{"repo", "obs", "code", "304"}},
+			{"quader_remote_upstream_requests_total", []string{"repo", "obs", "code", "503"}},
+			{"quader_remote_upstream_request_duration_seconds", []string{"repo", "obs"}},
+			{"quader_remote_collapsed_requests_total", []string{"repo", "obs"}},
+			{"quader_remote_fetch_queue_wait_seconds", []string{"repo", "obs"}},
+			{"quader_remote_upstream_up", []string{"repo", "obs"}},
 		} {
-			if r.metric(tc.name, tc.labels...) <= 0 && tc.name != "trove_remote_upstream_up" {
+			if r.metric(tc.name, tc.labels...) <= 0 && tc.name != "quader_remote_upstream_up" {
 				t.Errorf("%s%v = 0", tc.name, tc.labels)
 			}
 		}
@@ -501,7 +501,7 @@ func TestPopulateAtTheEngine(t *testing.T) {
 
 	t.Run("R-AUTHZ-008 a caller who may read but not populate gets the expired document as it is, without a refresh", func(t *testing.T) {
 		s := r.metadata(rem, "pkg/pop", func(rq *proxy.Request) { rq.Populate = customers })
-		if s.status != 200 || !bytes.Equal(s.body, doc) || s.cacheStatus() != "trove; hit; detail=served-stale" {
+		if s.status != 200 || !bytes.Equal(s.body, doc) || s.cacheStatus() != "quader; hit; detail=served-stale" {
 			t.Fatalf("%d %q", s.status, s.cacheStatus())
 		}
 		if customers.Denies() != 0 {
@@ -514,13 +514,13 @@ func TestPopulateAtTheEngine(t *testing.T) {
 			t.Fatalf("%d %s", s.status, s.body)
 		}
 		if up.Total() != asked {
-			t.Fatal("the endpoint made trove contact the upstream")
+			t.Fatal("the endpoint made quader contact the upstream")
 		}
 		if _, ok := getKey(t, e.valkeyAdmin(r), e.negativeKey(rem, "pkg/pop/-/pop-2.tgz", "")); ok {
 			t.Fatal("a refused fill wrote a negative entry")
 		}
-		if got := r.metric("trove_endpoint_cache_fill_refused_total", "endpoint", "customers"); got < 2 {
-			t.Fatalf("trove_endpoint_cache_fill_refused_total{customers} = %v", got)
+		if got := r.metric("quader_endpoint_cache_fill_refused_total", "endpoint", "customers"); got < 2 {
+			t.Fatalf("quader_endpoint_cache_fill_refused_total{customers} = %v", got)
 		}
 	})
 	t.Run("R-AUTHZ-008 a populate that fetches writes its event in the fill transaction, once", func(t *testing.T) {

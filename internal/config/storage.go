@@ -31,7 +31,7 @@ type StorageS3 struct {
 	Endpoint              string               `yaml:"endpoint" default:"" doc:"Empty means AWS endpoint resolution for the region. A host without a scheme means https://; plain HTTP needs http:// and allow_insecure_endpoint."`
 	Region                string               `yaml:"region" default:""`
 	Bucket                string               `yaml:"bucket" default:"" doc:"Blob bucket; required to serve."`
-	Prefix                string               `yaml:"prefix" default:"trove"`
+	Prefix                string               `yaml:"prefix" default:"quader"`
 	ForcePathStyle        bool                 `yaml:"force_path_style" default:"false" doc:"True for SeaweedFS, MinIO and Ceph RGW."`
 	AllowInsecureEndpoint bool                 `yaml:"allow_insecure_endpoint" default:"false"`
 	CAFile                string               `yaml:"ca_file" default:"" doc:"Empty means the system trust store."`
@@ -81,7 +81,7 @@ type StorageS3HTTP struct {
 	ResponseHeaderTimeout time.Duration `yaml:"response_header_timeout" default:"30s" validate:"min=1s"`
 	IdleConnTimeout       time.Duration `yaml:"idle_conn_timeout" default:"90s"`
 	IdleTransferTimeout   time.Duration `yaml:"idle_transfer_timeout" default:"60s"`
-	ReceiveWindow         ByteSize      `yaml:"receive_window" default:"256KiB" validate:"min=16KiB,max=1GiB" doc:"HTTP/2 only: how far the store may send ahead of what trove has read of one object; it bounds what a slow download holds (Q-ARCH-241). The transport's own default is 4 MiB."`
+	ReceiveWindow         ByteSize      `yaml:"receive_window" default:"256KiB" validate:"min=16KiB,max=1GiB" doc:"HTTP/2 only: how far the store may send ahead of what Quader has read of one object; it bounds what a slow download holds (Q-ARCH-241). The transport's own default is 4 MiB."`
 	ProxyURL              string        `yaml:"proxy_url" default:"" doc:"Empty means the environment."`
 	ProxyCredentialsFile  string        `yaml:"proxy_credentials_file" default:"" secret:"file"`
 	NoProxy               string        `yaml:"no_proxy" default:""`
@@ -116,7 +116,7 @@ type StorageS3Presign struct {
 
 // StorageSpool is the replica-local scratch space (R-STOR-004, R-HA-035).
 type StorageSpool struct {
-	Dir             string   `yaml:"dir" default:"/var/lib/trove/spool" validate:"required"`
+	Dir             string   `yaml:"dir" default:"/var/lib/quader/spool" validate:"required"`
 	MaxBytes        ByteSize `yaml:"max_bytes" default:"50GiB" validate:"min=1MiB" doc:"Budget shared by all concurrent uploads of a replica; the chart derives it."`
 	MinFreeBytes    ByteSize `yaml:"min_free_bytes" default:"2GiB" validate:"min=0"`
 	MemoryThreshold ByteSize `yaml:"memory_threshold" default:"1MiB" validate:"min=0"`

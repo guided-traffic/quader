@@ -23,7 +23,7 @@ Every page after login shares one frame:
 | Section navigation | unspecified | The sections and screens of the current area (UI-002). |
 | Content pane | remaining space | The current screen. |
 
-The header also carries a help icon that links to help and training material (for trove: its own
+The header also carries a help icon that links to help and training material (for Quader: its own
 documentation), an AI assistant button on hosted instances (UI-060) and, on hosted instances, a
 site launcher (UI-059). Unspecified: the position of the area switcher and the section navigation,
 a notification center, a theme switch, and behavior on narrow screens. Branding is configurable
@@ -233,7 +233,7 @@ and Edge in its Chromium-based form. Older versions, other browsers and mobile b
 covered; whether they work is unspecified, as are a minimum version and a policy for how long a
 browser version stays supported.
 
-For trove: the Angular UI targets the same evergreen set; the supported-browser list belongs in
+For Quader: the Angular UI targets the same evergreen set; the supported-browser list belongs in
 the user documentation so that support requests from other browsers can be answered against it.
 
 ## Packages and artifacts

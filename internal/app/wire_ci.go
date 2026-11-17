@@ -7,15 +7,15 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	v1 "github.com/guided-traffic/trove/internal/api/v1"
-	"github.com/guided-traffic/trove/internal/auth/token"
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/jobs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/observability"
+	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/observability"
 )
 
 // The wiring of the CI federation (docs/developer/ci-oidc.md): the issuer and key service (W1), the mapping store
@@ -235,7 +235,7 @@ func (a *App) registerCIJobs(r *jobs.Registry) {
 }
 
 // registerCIMetrics registers the two gauges of R-CI-020 that are read from PostgreSQL
-// (trove_ci_signing_keys_age_seconds, trove_ci_tokens_active) as a database gauge source, evaluated once
+// (quader_ci_signing_keys_age_seconds, quader_ci_tokens_active) as a database gauge source, evaluated once
 // per metrics.db_gauge_interval and aggregated with max, never sum, across replicas (R-OPS-007). The
 // counters and histograms are the replica's own, created by wireCI; the key service and the exchange increment them.
 func (a *App) registerCIMetrics() error {
@@ -265,7 +265,7 @@ func (a *App) registerCIMetrics() error {
 			if err := rows.Err(); err != nil {
 				return nil, err
 			}
-			// trove_ci_tokens_active: the issuance service's count, 0 for an issuer without a live token, so a
+			// quader_ci_tokens_active: the issuance service's count, 0 for an issuer without a live token, so a
 			// dashboard sees the series drop to zero after a revocation instead of vanishing.
 			counts, err := ci.ActiveTokens(ctx, a.database())
 			if err != nil {

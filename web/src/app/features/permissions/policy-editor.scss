@@ -5,24 +5,24 @@
 .editor {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--trove-space-4);
+  gap: var(--quader-space-4);
   align-items: start;
 }
 
 .toc ul {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--trove-space-2);
+  gap: var(--quader-space-2);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .link {
-  padding: var(--trove-space-1) var(--trove-space-2);
+  padding: var(--quader-space-1) var(--quader-space-2);
   border: 0;
   background: none;
-  color: var(--trove-link);
+  color: var(--quader-link);
   font: inherit;
   text-decoration: underline;
   cursor: pointer;
@@ -30,18 +30,18 @@
 }
 
 .preview {
-  padding: var(--trove-space-4);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-l);
+  padding: var(--quader-space-4);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-l);
 
   h2 {
-    margin-block: 0 var(--trove-space-2);
-    font: var(--trove-type-title-medium);
+    margin-block: 0 var(--quader-space-2);
+    font: var(--quader-type-title-medium);
   }
 
   h3 {
-    margin-block: var(--trove-space-3) var(--trove-space-1);
-    font: var(--trove-type-title-small);
+    margin-block: var(--quader-space-3) var(--quader-space-1);
+    font: var(--quader-type-title-small);
   }
 }
 
@@ -50,10 +50,10 @@
 }
 
 .entry {
-  margin: 0 0 var(--trove-space-3);
-  padding: var(--trove-space-2) var(--trove-space-3);
-  border: 1px solid var(--trove-border);
-  border-radius: var(--trove-radius-m);
+  margin: 0 0 var(--quader-space-3);
+  padding: var(--quader-space-2) var(--quader-space-3);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-m);
 }
 
 .actions-row,
@@ -61,14 +61,14 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-1) var(--trove-space-3);
+  gap: var(--quader-space-1) var(--quader-space-3);
 }
 
 .help {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: var(--trove-space-1) var(--trove-space-4);
-  margin: 0 0 var(--trove-space-3);
+  gap: var(--quader-space-1) var(--quader-space-4);
+  margin: 0 0 var(--quader-space-3);
 
   dd {
     margin: 0;
@@ -78,7 +78,7 @@
 .two {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
 }
 
 .tester,
@@ -86,14 +86,14 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--trove-space-3);
+  gap: var(--quader-space-3);
 }
 
 .problems,
 .steps,
 .covered {
   margin: 0;
-  padding-inline-start: var(--trove-space-6);
+  padding-inline-start: var(--quader-space-6);
 }
 
 .steps {
@@ -102,7 +102,7 @@
 
   li {
     display: flex;
-    gap: var(--trove-space-2);
+    gap: var(--quader-space-2);
     align-items: flex-start;
   }
 }
@@ -114,10 +114,10 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-3);
-  padding: var(--trove-space-3);
-  background: var(--trove-surface);
-  border-block-start: 1px solid var(--trove-border);
+  gap: var(--quader-space-3);
+  padding: var(--quader-space-3);
+  background: var(--quader-surface);
+  border-block-start: 1px solid var(--quader-border);
 }
 
 @media (min-width: 60rem) {
@@ -127,7 +127,7 @@
 
   .toc {
     position: sticky;
-    inset-block-start: var(--trove-space-4);
+    inset-block-start: var(--quader-space-4);
     grid-column: 1;
     grid-row: 1;
 
@@ -144,7 +144,7 @@
 
   .preview {
     position: sticky;
-    inset-block-start: var(--trove-space-4);
+    inset-block-start: var(--quader-space-4);
     grid-column: 3;
     grid-row: 1;
     max-block-size: calc(100vh - 8rem);
@@ -185,15 +185,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--trove-space-2);
-  margin-block-end: var(--trove-space-2);
+  gap: var(--quader-space-2);
+  margin-block-end: var(--quader-space-2);
 
   // A long repository key wraps inside its button instead of widening the section: at 390 px a key of the project
   // (release-candidates-for-the-customer-portal-…) pushed the page 39 px sideways.
   .btn {
     max-inline-size: 100%;
     block-size: auto;
-    min-block-size: var(--trove-control-height);
+    min-block-size: var(--quader-control-height);
     white-space: normal;
     overflow-wrap: anywhere;
     text-align: start;
@@ -203,7 +203,7 @@
 // The icon before a line's text keeps a gap to it (the global policy note, the covered repositories).
 .subject .material-icons,
 .covers .material-icons {
-  margin-inline-end: var(--trove-space-1);
+  margin-inline-end: var(--quader-space-1);
   vertical-align: -0.2em;
   font-size: 1.125rem;
 }
@@ -213,6 +213,6 @@
   align-items: flex-end;
 
   .explain {
-    margin-block-end: var(--trove-space-3);
+    margin-block-end: var(--quader-space-3);
   }
 }

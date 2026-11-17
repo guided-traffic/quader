@@ -9,7 +9,7 @@ import (
 	"github.com/valkey-io/valkey-go"
 )
 
-// The methods below are the commands trove needs and no others (R-ARCH-031's
+// The methods below are the commands quader needs and no others (R-ARCH-031's
 // list). Every call carries valkey.command_timeout, passes the circuit breaker,
 // and returns [ErrUnavailable] without network I/O while Valkey cannot be used.
 // There is no way to write a key without an expiry: a [Key] carries its own.

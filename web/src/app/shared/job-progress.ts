@@ -44,12 +44,12 @@ export function jobStateText(state: JobState): string {
  * final state. `finished` emits the last job once, so the screen can reload what the job changed.
  */
 @Component({
-  selector: 'trove-job-progress',
+  selector: 'quader-job-progress',
   imports: [ErrorNotice],
   template: `
     <div class="job">
       @if (failure(); as f) {
-        <trove-error-notice [error]="f" (retry)="resume()" />
+        <quader-error-notice [error]="f" (retry)="resume()" />
       } @else {
         @if (job(); as j) {
           @if (bar(); as b) {
@@ -71,7 +71,7 @@ export function jobStateText(state: JobState): string {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--trove-space-3);
+      gap: var(--quader-space-3);
     }
     progress {
       inline-size: 12rem;

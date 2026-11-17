@@ -2,10 +2,10 @@
 
 Status: built (T-16, WP8): the remote class of the OCI format, a cache in front of another registry (R-OCI-021 to R-OCI-025). The handshake's I/O, the
 credential hosts and the token cache are the engine's and are on [remote-repositories.md](remote-repositories.md#the-token-handshake-and-the-credential-hosts);
-this page is what the format adds: what a registry can make trove store and show, in pull-through and in mirror mode ([the mirror](#the-mirror)). The virtual class is another page.
+this page is what the format adds: what a registry can make Quader store and show, in pull-through and in mirror mode ([the mirror](#the-mirror)). The virtual class is another page.
 
-The upstream is a party trove does not trust. A registry names the realm trove asks for a token, the host a blob is redirected to, the bytes of a manifest
-and the tags it lists; trove stores some of it and serves it to clients that trust trove. The outbound rules it relies on are on [egress.md](egress.md) and
+The upstream is a party Quader does not trust. A registry names the realm Quader asks for a token, the host a blob is redirected to, the bytes of a manifest
+and the tags it lists; Quader stores some of it and serves it to clients that trust Quader. The outbound rules it relies on are on [egress.md](egress.md) and
 [transport-encryption.md](transport-encryption.md), the read permission on [permissions.md](permissions.md). The requirements are R-OCI-020 to R-OCI-025 in
 [spec/formats/oci.md](../spec/formats/oci.md); the code is [internal/formats/oci](../../internal/formats/oci) (`remote.go`, `remote_auth.go`,
 `remote_revalidate.go`, `remote_handlers.go`).
@@ -19,7 +19,7 @@ and the tags it lists; trove stores some of it and serves it to clients that tru
 | A blob's redirect target | The upstream's `Location` | The engine's redirect rules (R-REPO-039): up to `proxy.max_redirects` hops, `https` to `http` refused, every hop through the egress rules and TLS verification. `extraHosts` does **not** gate a redirect (Q-OCI-125), so the upstream chooses the host a blob comes from; the repository's credential and the token go to no redirect target (the stub's CDN answers 400 to an `Authorization`) |
 | A pass-through query | The image name and a digest or the `n` and `last` of the client, as the grammars admit them | `UpstreamQuery`; a path that is none of the two shapes is 404 |
 
-The scope of a token is taken from the request and never from the challenge (Q-OCI-82): a hostile or stale challenge cannot make trove ask the realm for
+The scope of a token is taken from the request and never from the challenge (Q-OCI-82): a hostile or stale challenge cannot make Quader ask the realm for
 a repository the request does not address. The scope is read from the right of the path, so an image name that holds a protocol word (`a/manifests/b`) is
 scoped as itself. The token goes to the upstream origin only.
 
@@ -30,7 +30,7 @@ The upstream test asks `/v2/` at the root of the host, never below the namespace
 | Document | Bound | What is checked | Where |
 |---|---|---|---|
 | A manifest by tag or by digest | 4 MiB, 32 levels, 100,000 values, 10,000 descriptors (R-OCI-020); a longer answer is refused by its announced length or while it is read, before it is spooled | The strict parser of the format; every digest in a descriptor passes the grammar; `schemaVersion` 1 and the schema 1 types are refused; a manifest by digest is verified against the digest of the path by the engine, a tag against the `Docker-Content-Digest` it announces | `PrepareFill`, `InspectFill`, `AcceptResponse` |
-| A tags list | 4 MiB and 100,000 entries | JSON of `name` and `tags`; a tag outside the grammar is dropped; the page a client gets is rendered by trove, with trove's name | `PrepareFill`, `parseTaglist` |
+| A tags list | 4 MiB and 100,000 entries | JSON of `name` and `tags`; a tag outside the grammar is dropped; the page a client gets is rendered by Quader, with Quader's name | `PrepareFill`, `parseTaglist` |
 | A referrers answer | 4 MiB; at most 1,000 descriptors are decided and listed | An image index of descriptors; a descriptor with a digest outside the grammar, one the caller may not read, or (with a filter) of another `artifactType` is dropped | `readableReferrers` |
 | A token document | 64 KiB; the token 16 KiB | `token` or `access_token`; a token with a space, a control character or a non-ASCII byte is refused | `ReadToken` |
 | A blob | `limits.maxArtifactBytes` | The SHA-256 of the bytes against the digest of the path | the engine; blobs are not parsed or unpacked |
@@ -49,19 +49,19 @@ typed name as a ceiling; the handler decides both. A cross-repository mount whos
 (`SourceSpeller`). Below a namespace prefix nothing is mapped. The catalog of the registry root decides each name with the decision point only, not with the patterns
 and the claims of a remote (R3-2): a name of a remote whose row predates a pattern or a claim is listed and unreadable.
 
-## When trove cannot ask the upstream
+## When Quader cannot ask the upstream
 
 A repository that is offline, the installation in offline mode, an open circuit and a caller who may not fill the repository (`cacheFillAction`) are answered
 from the cache: a tags list ends at the stored window, without a `Link`, and referrers answer 404 so that a client falls back to the tag schema through the same
 remote. They are not answered with an empty index, which would say that nothing refers to the digest (Q-OCI-128). A pass-through query is decided for populate
 with no package (the engine builds the check with the path of the query), so a populate grant scoped by package is never met by it and fails closed (H-669).
 
-## A tag the upstream does not allow trove
+## A tag the upstream does not allow Quader
 
 A registry answers `401` with `error="insufficient_scope"` to a valid token for a repository that does not exist or is private (Docker Hub). That is read as a
 missing image: 404 `MANIFEST_UNKNOWN` with a negative entry, and the remembered challenge is kept (Q-OCI-127). It is read only after the engine's own token was
 refused; it is a miss only (a stored tag whose revalidation meets it keeps serving stale, and no gone mark is set, so the cached manifests and blobs of the image keep
-serving). It is also what a private image of the upstream looks like to a client of trove, so trove does not tell the two apart. The negative entry is keyed by
+serving). It is also what a private image of the upstream looks like to a client of Quader, so Quader does not tell the two apart. The negative entry is keyed by
 repository and path, not by credential: a rotation of the secret does not clear it, the not-found period or `POST …/cache/invalidate` does.
 
 ## What a reader of the cache may see
@@ -72,10 +72,10 @@ repository (`cacheFillAction`) gets what the cache holds and a refused fill is a
 
 ## The mirror
 
-A mirror pass (R-OCI-026) fetches without a client asking, so what the upstream names decides what trove requests. The engine's rules are on [mirror.md](mirror.md) (the system actor, the
+A mirror pass (R-OCI-026) fetches without a client asking, so what the upstream names decides what Quader requests. The engine's rules are on [mirror.md](mirror.md) (the system actor, the
 background slots, the bounds); this is what the OCI lister adds.
 
-| What the upstream controls | What trove does with it | Where it stops |
+| What the upstream controls | What Quader does with it | Where it stops |
 |---|---|---|
 | The names of a catalog | Each name is checked against the include and exclude patterns, the claims and the name grammar before anything is asked for it; a name below another namespace prefix is dropped | `Scope.Admits`; the engine checks the name again before it plans it |
 | The tags of an image | At most 100,000; only those `oci.mirror.tags` selects, minus `excludeTags`, and, of the wildcard matches, the newest `maxVersionsPerPackage` | The tag grammar (R-OCI-002), `selectTags`; a longer list fails the plan (`too_many_tags`) |
@@ -110,7 +110,7 @@ hostile upstream the client pinning by digest. Live today for every remote.
 ### H-668 · The descriptors of a referrers answer are the upstream's claims
 
 A referrers answer is passed through after the caller's readability filter. The `artifactType`, the `annotations` and the sizes of its descriptors are what the
-upstream says; trove does not fetch the manifests to compare them. A client that reads them (a signature verifier selecting by `artifactType`) trusts the
+upstream says; Quader does not fetch the manifests to compare them. A client that reads them (a signature verifier selecting by `artifactType`) trusts the
 upstream for the listing and verifies the manifest it then pulls by digest. Live today for every remote; the answer is kept for the metadata period.
 
 ### H-669 · A populate grant scoped by package never admits a pass-through query

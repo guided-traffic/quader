@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // The populate check of R-AUTHZ-008 and MemberUsable of R-AUTHZ-015. Fetching a

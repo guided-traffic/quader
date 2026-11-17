@@ -15,9 +15,9 @@ import (
 	"time"
 )
 
-const basNamespace = "trove-bastion"
+const basNamespace = "quader-bastion"
 
-// basDumpLogs writes the logs of the pods of the namespaces trove-bastion and the main installation's, and their events, to
+// basDumpLogs writes the logs of the pods of the namespaces quader-bastion and the main installation's, and their events, to
 // <artifacts>/bastion-diag-<label>/. It never fails a test.
 func basDumpLogs(t testing.TB, label string) {
 	t.Helper()

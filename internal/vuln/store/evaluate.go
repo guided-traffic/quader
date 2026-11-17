@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/vuln"
-	"github.com/guided-traffic/trove/internal/vuln/advisory"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/vuln"
+	"github.com/guided-traffic/quader/internal/vuln/advisory"
 )
 
 // The data access of the evaluation (work package B, queries/vuln_evaluate.sql): the affected entries of names, the stored
@@ -319,7 +319,7 @@ func (e *Eval) RefreshFinding(ctx context.Context, id string, f NewFinding) erro
 	})
 }
 
-// SetStatus is trove's own status change: a re-detection or a reopen. It clears the resolution. It holds only while the finding
+// SetStatus is quader's own status change: a re-detection or a reopen. It clears the resolution. It holds only while the finding
 // still has the status and the revision the caller read, and reports whether it did: a finding that a triage changed meanwhile is
 // left as it is.
 func (e *Eval) SetStatus(ctx context.Context, id string, expect vuln.Status, revision int64, status vuln.Status) (bool, error) {
@@ -372,7 +372,7 @@ func (e *Eval) Rekey(ctx context.Context, id, advisoryID string) error {
 	return e.qs.VulnRekeyFinding(ctx, q.VulnRekeyFindingParams{ID: id, AdvisoryID: advisoryID})
 }
 
-// Resolved is a finding trove resolved, with the status it had.
+// Resolved is a finding quader resolved, with the status it had.
 type Resolved struct {
 	ID  string
 	Old vuln.Status

@@ -32,7 +32,7 @@ import (
 type settings struct {
 	repo, kubeContext, namespace string
 	edgeURL                      string // from the host: http://localhost:<port>
-	k6Target, k6Image            string // from the kind Docker network: http://trove-control-plane:30080
+	k6Target, k6Image            string // from the kind Docker network: http://quader-control-plane:30080
 	out                          string
 	proxy                        string // kubectl proxy, to reach :8081 of a pod
 	// The scheme of the pods' ops listener (probes) as the API server reaches it, a CA bundle that
@@ -53,10 +53,10 @@ func TestMain(m *testing.M) {
 		return v
 	}
 	cfg = settings{
-		repo: need("TROVE_E2E_REPO"), kubeContext: need("TROVE_E2E_CONTEXT"), namespace: need("TROVE_E2E_NAMESPACE"),
-		edgeURL: need("TROVE_E2E_EDGE_URL"), k6Target: need("TROVE_E2E_K6_TARGET"), k6Image: need("TROVE_E2E_K6_IMAGE"),
-		out: need("TROVE_E2E_OUT"), opsScheme: os.Getenv("TROVE_E2E_OPS_SCHEME"), caFile: os.Getenv("TROVE_E2E_CA_FILE"),
-		host: os.Getenv("TROVE_E2E_HOST"), k6HostsAddr: os.Getenv("TROVE_E2E_K6_HOSTS_ADDR"),
+		repo: need("QUADER_E2E_REPO"), kubeContext: need("QUADER_E2E_CONTEXT"), namespace: need("QUADER_E2E_NAMESPACE"),
+		edgeURL: need("QUADER_E2E_EDGE_URL"), k6Target: need("QUADER_E2E_K6_TARGET"), k6Image: need("QUADER_E2E_K6_IMAGE"),
+		out: need("QUADER_E2E_OUT"), opsScheme: os.Getenv("QUADER_E2E_OPS_SCHEME"), caFile: os.Getenv("QUADER_E2E_CA_FILE"),
+		host: os.Getenv("QUADER_E2E_HOST"), k6HostsAddr: os.Getenv("QUADER_E2E_K6_HOSTS_ADDR"),
 	}
 	if cfg.opsScheme == "" {
 		cfg.opsScheme = "http"
@@ -174,18 +174,18 @@ type pod struct {
 }
 
 const (
-	selAPI        = "app.kubernetes.io/instance=trove,app.kubernetes.io/component=api,trove/serve=true"
-	selPackages   = "app.kubernetes.io/instance=trove,app.kubernetes.io/component=packages,trove/serve=true"
-	selWorker     = "app.kubernetes.io/instance=trove,app.kubernetes.io/component=worker,trove/serve=true"                   // the main worker and the pool vuln
-	selMainWorker = selWorker + ",trove/pool="                                                                               // the main worker without its pools: the one that runs the probe jobs
-	selServing    = "app.kubernetes.io/instance=trove,trove/serve=true,app.kubernetes.io/component in (api,packages)"        // the pods that open the client listener :8080
-	selTrove      = "app.kubernetes.io/instance=trove,trove/serve=true,app.kubernetes.io/component in (api,packages,worker)" // the replicas: not the driver pod, which carries the serve label for the Valkey NetworkPolicy
+	selAPI        = "app.kubernetes.io/instance=quader,app.kubernetes.io/component=api,quader/serve=true"
+	selPackages   = "app.kubernetes.io/instance=quader,app.kubernetes.io/component=packages,quader/serve=true"
+	selWorker     = "app.kubernetes.io/instance=quader,app.kubernetes.io/component=worker,quader/serve=true"                   // the main worker and the pool vuln
+	selMainWorker = selWorker + ",quader/pool="                                                                                // the main worker without its pools: the one that runs the probe jobs
+	selServing    = "app.kubernetes.io/instance=quader,quader/serve=true,app.kubernetes.io/component in (api,packages)"        // the pods that open the client listener :8080
+	selQuader     = "app.kubernetes.io/instance=quader,quader/serve=true,app.kubernetes.io/component in (api,packages,worker)" // the replicas: not the driver pod, which carries the serve label for the Valkey NetworkPolicy
 )
 
 func podsOf(t testing.TB, selector string) []pod { return podsOfIn(t, cfg.namespace, selector) }
 
 // apiServerUnreachable reports a kubectl error that never reached the kind API server: on a starved runner its
-// TLS handshake or connection times out now and then, while trove under test is not involved.
+// TLS handshake or connection times out now and then, while quader under test is not involved.
 var apiServerUnreachable = regexp.MustCompile(`Unable to connect to the server|TLS handshake timeout|connect: connection refused|i/o timeout`)
 
 // podsOfIn lists the pods of a namespace. The read is idempotent, so a call that did not reach the API server is
@@ -330,7 +330,7 @@ func (r replica) role() string { return strings.Join(r.Roles, ",") }
 
 func pgPrimary(t testing.TB) string {
 	t.Helper()
-	return strings.TrimSpace(kn(t, "get", "cluster", "trove-db", "-o", "jsonpath={.status.currentPrimary}"))
+	return strings.TrimSpace(kn(t, "get", "cluster", "quader-db", "-o", "jsonpath={.status.currentPrimary}"))
 }
 
 // sql runs a statement as the superuser on the current primary; it retries while a failover moves it.
@@ -338,7 +338,7 @@ func sql(t testing.TB, query string) string {
 	t.Helper()
 	var last error
 	for i := 0; i < 30; i++ {
-		out, err := kubectl("-n", cfg.namespace, "exec", pgPrimary(t), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-F", "|", "-c", query)
+		out, err := kubectl("-n", cfg.namespace, "exec", pgPrimary(t), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", "|", "-c", query)
 		if err == nil {
 			return strings.TrimSpace(out)
 		}
@@ -351,7 +351,7 @@ func sql(t testing.TB, query string) string {
 
 // ── driver pod ───────────────────────────────────────────────────────────────
 
-const driverPod = "trove-e2e-driver"
+const driverPod = "quader-e2e-driver"
 
 func driver(t testing.TB, args ...string) string {
 	t.Helper()
@@ -514,7 +514,7 @@ type k6Opts struct {
 // startK6Script runs a script of test/e2e/k6 the way startK6 runs load.js.
 func startK6Script(t testing.TB, name, scriptName string, d time.Duration, o k6Opts) *k6run {
 	t.Helper()
-	k := &k6run{closed: o.closed, name: name, container: fmt.Sprintf("trove-e2e-k6-%s-%d", name, os.Getpid()), dir: filepath.Join(cfg.out, "k6-"+name), done: make(chan error, 1)}
+	k := &k6run{closed: o.closed, name: name, container: fmt.Sprintf("quader-e2e-k6-%s-%d", name, os.Getpid()), dir: filepath.Join(cfg.out, "k6-"+name), done: make(chan error, 1)}
 	if err := os.MkdirAll(k.dir, 0o777); err != nil {
 		t.Fatal(err)
 	}

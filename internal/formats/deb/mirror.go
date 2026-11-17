@@ -9,10 +9,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/deb/rows"
-	"github.com/guided-traffic/trove/internal/formats/deb/version"
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/deb/rows"
+	"github.com/guided-traffic/quader/internal/formats/deb/version"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The mirror's discovery (R-REPO-050 to R-REPO-052; debian.md "Mirror discovery", R-DEB-024, Q-DEB-91 to Q-DEB-95). The remote adapter

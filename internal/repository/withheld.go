@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // Withheld search terms (R-REPO-023, R-NUGET-016): a format that forwards a free-text search to a

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 // R-VULN-003 acceptance: with the default configuration the sync requests exactly npm/all.zip and NuGet/all.zip, and later the
@@ -85,14 +85,14 @@ func TestR_VULN_004_FirstRunImportsBothArchives(t *testing.T) {
 	}
 	metrics := e.worker.Metrics(t)
 	for _, s := range []string{
-		`trove_vuln_sync_runs_total{ecosystem="npm",kind="full",outcome="changed",source="osv"}`,
-		`trove_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="changed",source="osv"}`,
+		`quader_vuln_sync_runs_total{ecosystem="npm",kind="full",outcome="changed",source="osv"}`,
+		`quader_vuln_sync_runs_total{ecosystem="NuGet",kind="full",outcome="changed",source="osv"}`,
 	} {
 		if testenv.MetricValue(metrics, s) != 1 {
 			t.Errorf("%s = %v", s, testenv.MetricValue(metrics, s))
 		}
 	}
-	if v := testenv.MetricValue(metrics, `trove_vuln_sync_records_total{ecosystem="npm",result="written",source="osv"}`); v != float64(e.stub.Info().Ecosystems["npm"].Records) {
+	if v := testenv.MetricValue(metrics, `quader_vuln_sync_records_total{ecosystem="npm",result="written",source="osv"}`); v != float64(e.stub.Info().Ecosystems["npm"].Records) {
 		t.Errorf("records written = %v", v)
 	}
 }
@@ -209,7 +209,7 @@ func TestR_VULN_004_IncrementalRunWithoutRangeSupport(t *testing.T) {
 // R-VULN-004: the change file is read in parts of 64 KiB while the last row of a part is newer than the watermark, and a
 // 404 for a listed record is left to the next full sync.
 func TestR_VULN_004_ChangeFileInSeveralParts(t *testing.T) {
-	e := newEnv(t, options{Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_FULL_RESYNC_THRESHOLD=5000"}})
+	e := newEnv(t, options{Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_FULL_RESYNC_THRESHOLD=5000"}})
 	e.mustSucceed(taskOSV, nil)
 	// 2,000 rows of about 50 bytes are above 64 KiB.
 	if err := e.stub.SetFiller("npm", 2000); err != nil {
@@ -239,7 +239,7 @@ func TestR_VULN_004_ChangeFileInSeveralParts(t *testing.T) {
 // R-VULN-004: more changed records than full_resync_threshold turn an incremental run into a full sync; a watermark older than
 // 7 days does too.
 func TestR_VULN_004_TheIncrementalRunTurnsFull(t *testing.T) {
-	e := newEnv(t, options{Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_FULL_RESYNC_THRESHOLD=2"}})
+	e := newEnv(t, options{Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_FULL_RESYNC_THRESHOLD=2"}})
 	e.mustSucceed(taskOSV, nil)
 	for _, id := range []string{osvstub.IDVuln, osvstub.IDMal, osvstub.IDLeftPad} {
 		e.touch("npm", id)
@@ -414,7 +414,7 @@ func TestR_VULN_004_DigestMismatchIsRefused(t *testing.T) {
 
 // R-VULN-004: an archive larger than max_archive_size ends the run with archive_too_large before the body is read.
 func TestR_VULN_004_ArchiveTooLarge(t *testing.T) {
-	e := newEnv(t, options{Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_MAX_ARCHIVE_SIZE=1MiB"}})
+	e := newEnv(t, options{Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_MAX_ARCHIVE_SIZE=1MiB"}})
 	if err := e.stub.SetFiller("npm", 12000); err != nil {
 		t.Fatal(err)
 	}
@@ -432,7 +432,7 @@ func TestR_VULN_004_ArchiveTooLarge(t *testing.T) {
 // R-VULN-004 acceptance: a base URL resolving to 169.254.169.254 fails the run with egress_denied. The failure is recorded
 // (last_error, consecutive failures, the counter) and the audit event is written once in the hour however many runs fail.
 func TestR_VULN_004_EgressDeniedAndFailureBookkeeping(t *testing.T) {
-	e := newEnv(t, options{Env: []string{"TROVE_VULNERABILITIES_SOURCES_OSV_BASE_URL=https://169.254.169.254/"}})
+	e := newEnv(t, options{Env: []string{"QUADER_VULNERABILITIES_SOURCES_OSV_BASE_URL=https://169.254.169.254/"}})
 	if got := e.mustFail(taskOSV, "osv", "npm", nil); got != "egress_denied" {
 		t.Fatalf("code %q", got)
 	}
@@ -446,7 +446,7 @@ func TestR_VULN_004_EgressDeniedAndFailureBookkeeping(t *testing.T) {
 	if e.stateOf("state", "osv", "npm") != "empty" {
 		t.Errorf("state %q", e.stateOf("state", "osv", "npm"))
 	}
-	if v := testenv.MetricValue(e.worker.Metrics(t), `trove_vuln_sync_runs_total{ecosystem="npm",kind="full",outcome="failed",source="osv"}`); v != 2 {
+	if v := testenv.MetricValue(e.worker.Metrics(t), `quader_vuln_sync_runs_total{ecosystem="npm",kind="full",outcome="failed",source="osv"}`); v != 2 {
 		t.Errorf("failed runs counted: %v", v)
 	}
 	within(t, "the audit event of the failure", 20*time.Second, func() bool {
@@ -485,7 +485,7 @@ func TestR_VULN_027_ASyncStartsWithoutValkeyWithinThePollInterval(t *testing.T) 
 	e := newEnv(t, options{})
 	e.mustSucceed(taskOSV, nil)
 	// The stack of this test has no Valkey wake-ups (testenv.StackOptions.Valkey is false): the worker finds the job by polling.
-	const pollInterval = 200 * time.Millisecond // TROVE_JOBS_POLL_INTERVAL of the environment
+	const pollInterval = 200 * time.Millisecond // QUADER_JOBS_POLL_INTERVAL of the environment
 	e.mustSucceed(taskOSV, nil)
 	got := time.Duration(e.number("SELECT (extract(epoch FROM started_at - created_at) * 1000)::bigint FROM job WHERE kind = $1 ORDER BY created_at DESC LIMIT 1", taskOSV)) * time.Millisecond
 	// One second of slack for a loaded CI machine on top of the specified bound.

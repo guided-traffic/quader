@@ -1,0 +1,49 @@
+# The ServiceMonitor, the PrometheusRule (the alerts of the vulnerability scanning) and the vulnerabilities section
+# the chart reads, with the backup on so that the rule holds the alerts of the backup runs as well. The rules are rendered
+# into a rule file and tested with promtool (deploy/helm/quader/tests/rules_test.yaml, test/chart).
+backup:
+  enabled: true
+config:
+  backup:
+    target:
+      bucket: quader-backups
+  server:
+    base_url: https://quader.example.com
+  database:
+    host: quader-db-rw.quader.svc
+  storage:
+    s3:
+      bucket: quader-blobs
+  valkey:
+    sentinel:
+      addresses:
+        - quader-valkey-sentinel-0.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-1.quader-valkey-sentinel.quader.svc:26379
+        - quader-valkey-sentinel-2.quader-valkey-sentinel.quader.svc:26379
+      primary_name: quader
+  vulnerabilities:
+    enabled: true
+    stale_after: 24h
+    sources:
+      osv:
+        mode: online
+        max_archive_size: 1GiB
+tls:
+  secretName: quader-tls
+secrets:
+  database:
+    existingSecret: quader-db-app
+  valkey:
+    existingSecret: quader-valkey
+  encryption:
+    existingSecret: quader-encryption-keys
+    keys: [2026-10.key]
+metrics:
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack
+  prometheusRule:
+    enabled: true
+    labels:
+      release: kube-prometheus-stack

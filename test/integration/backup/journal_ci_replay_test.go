@@ -11,15 +11,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/cluster"
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // R-CI-020: the issuer and mapping entries of the revocation journal replayed into the database a restore brings back,
@@ -45,11 +45,11 @@ func newCIServices(t *testing.T, s *twinSide) ciServices {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mappings, err := ci.NewMappings(ci.MappingsOptions{DB: s.db, Changes: s.changes, Recorder: s.rec, Revoker: revoker, Config: cfg, BaseURL: "https://trove.example.com"})
+	mappings, err := ci.NewMappings(ci.MappingsOptions{DB: s.db, Changes: s.changes, Recorder: s.rec, Revoker: revoker, Config: cfg, BaseURL: "https://quader.example.com"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	issuers, err := ci.New(ci.Options{DB: s.db, Changes: s.changes, Recorder: s.rec, Config: cfg, BaseURL: "https://trove.example.com", Revoker: revoker, Mappings: mappings})
+	issuers, err := ci.New(ci.Options{DB: s.db, Changes: s.changes, Recorder: s.rec, Config: cfg, BaseURL: "https://quader.example.com", Revoker: revoker, Mappings: mappings})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func (c ciServices) issuer(t *testing.T, name string) ci.Issuer {
 	t.Helper()
 	is, err := c.issuers.Create(context.Background(), ciAdmin, ci.IssuerInput{
 		Name: name, Kind: ci.KindGitLab, Issuer: "https://" + name + ".example.com",
-		AllowedAudiences: []string{"https://trove.example.com", "npm:trove.example.com"},
+		AllowedAudiences: []string{"https://quader.example.com", "npm:quader.example.com"},
 	}, false)
 	if err != nil {
 		t.Fatalf("issuer %s: %v", name, err)
@@ -183,7 +183,7 @@ func TestR_CI_020_IssuerAndMappingEntriesReplayIntoTheRestoredDatabase(t *testin
 	isD := svc.issuer(t, "gitlab-d")
 	mD := svc.mapping(t, "gitlab-d", ci.MappingInput{Name: "d-read", Priority: 10, Grants: readGrant("web/npm-internal"), Match: node(t, `{"all": [{"claim": "namespace_id", "equals": "4711"}]}`)})
 	token := src.text(`INSERT INTO api_token (id, type, secret_sha256, hint, principal_id, description, scope, created_via, expires_at)
-		VALUES (gen_random_uuid(), 'cit', decode(md5(random()::text) || md5(random()::text), 'hex'), 'trv_cit_…abcd', $1::uuid, 'CI exchange', '{"inherit":true}', 'ci-exchange', now() + interval '1 hour')
+		VALUES (gen_random_uuid(), 'cit', decode(md5(random()::text) || md5(random()::text), 'hex'), 'qdr_cit_…abcd', $1::uuid, 'CI exchange', '{"inherit":true}', 'ci-exchange', now() + interval '1 hour')
 		RETURNING id::text`, mD.PrincipalID)
 	src.exec(`INSERT INTO ci_token_issuances (token_id, issuer_id, mapping_ids, mapping_names, subject_kind, project_id, job_id, claims, grants, granted_scope, issued_at, expires_at)
 		VALUES ($1::uuid, $2::uuid, ARRAY[$3::uuid], ARRAY['d-read'], 'id_token', '4242', '9001', '{}', '{}', 'read', now(), now() + interval '1 hour')`, token, isD.ID, mD.ID)
@@ -211,7 +211,7 @@ func TestR_CI_020_IssuerAndMappingEntriesReplayIntoTheRestoredDatabase(t *testin
 		t.Fatal(err)
 	}
 	if _, err := svc.issuers.Replace(ctx, ciAdmin, "gitlab-c", errs.AnyRevision, ci.IssuerInput{
-		Name: "gitlab-c", Kind: ci.KindGitLab, Issuer: c.Issuer, AllowedAudiences: []string{"https://trove.example.com"},
+		Name: "gitlab-c", Kind: ci.KindGitLab, Issuer: c.Issuer, AllowedAudiences: []string{"https://quader.example.com"},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -303,7 +303,7 @@ func TestR_CI_020_IssuerAndMappingEntriesReplayIntoTheRestoredDatabase(t *testin
 		if o := got["ci.issuer.updated gitlab-c"]; !slices.Equal(o, []journal.Outcome{journal.Applied}) {
 			t.Errorf("gitlab-c: %v, want applied", o)
 		}
-		if a := rst.text(`SELECT array_to_string(allowed_audiences, ',') FROM ci_issuers WHERE name = 'gitlab-c'`); a != "https://trove.example.com" {
+		if a := rst.text(`SELECT array_to_string(allowed_audiences, ',') FROM ci_issuers WHERE name = 'gitlab-c'`); a != "https://quader.example.com" {
 			t.Errorf("gitlab-c audiences %s", a)
 		}
 		if o := got["ci.issuer.disabled gitlab-d"]; !slices.Equal(o, []journal.Outcome{journal.Applied}) || rst.issuerEnabled("gitlab-d") {

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/cache"
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // TestR_AUTH_023_ASharedLookupDoesNotHandOneRequestsCancellationToTheOthers: the

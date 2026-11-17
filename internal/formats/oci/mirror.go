@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"sort"
 
-	"github.com/guided-traffic/trove/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
 // The mirror's discovery (R-REPO-050, R-REPO-051; oci.md "Mirror discovery", Q-OCI-16 and Q-OCI-180 to Q-OCI-186). The remote adapter

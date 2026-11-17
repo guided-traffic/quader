@@ -13,7 +13,7 @@ const MaxRuntimeNodes = 1000
 // maxRequiresAnsible bounds the stored value of requires_ansible; a specifier is a few dozen bytes.
 const maxRequiresAnsible = 256
 
-// requiresAnsible reads the one scalar trove takes from meta/runtime.yml: the top-level key requires_ansible (R-ANS-010,
+// requiresAnsible reads the one scalar quader takes from meta/runtime.yml: the top-level key requires_ansible (R-ANS-010,
 // Q-ANS-30). The document is decoded into a node tree, never into Go values, and the tree is walked and not interpreted: a document
 // with an anchor, an alias, an explicit tag or a merge key, with more than [MaxRuntimeNodes] nodes, that is not a mapping at its top,
 // or whose key is not a plain string is refused, so the parser's own expansion rules are never relied on. The caller turns the error

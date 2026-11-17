@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // A start through a virtual repository locks its deployment target and needs a key share on the virtual row for its insert; the
@@ -20,7 +20,7 @@ func TestR_STOR_011_AStartThroughAVirtualRepositoryDoesNotDeadlockWithItsConfigu
 	w := newWorld(t)
 	r := newReplica(t, w.e, w.p, func(c *config.Storage) { c.Uploads.MaxOpenSessions = 10000 })
 	ctx := context.Background()
-	virtual := w.p.scalarInt(t, `INSERT INTO trove.repositories (key, format, class, project_id) SELECT 'docker-virtual', 'generic', 'virtual', id FROM trove.project WHERE key = $1 RETURNING id`, "it")
+	virtual := w.p.scalarInt(t, `INSERT INTO quader.repositories (key, format, class, project_id) SELECT 'docker-virtual', 'generic', 'virtual', id FROM quader.project WHERE key = $1 RETURNING id`, "it")
 	sc := w.sc
 	sc.Addressed = virtual
 

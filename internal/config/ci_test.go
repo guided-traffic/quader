@@ -47,13 +47,13 @@ func TestTheCISectionDefaults(t *testing.T) {
 // Contract of R-CI-016 (phase 5); the requirement's evidence comes from the tests of its work package.
 func TestTheLifetimeCeilingIsOne(t *testing.T) {
 	t.Run("ci.token.max_ttl above auth.tokens.cit.max_ttl names both keys", func(t *testing.T) { // R-CI-016
-		_, err := loadCI(t, "", "TROVE_CI_TOKEN_MAX_TTL=6h", "TROVE_AUTH_TOKENS_CIT_MAX_TTL=2h")
+		_, err := loadCI(t, "", "QUADER_CI_TOKEN_MAX_TTL=6h", "QUADER_AUTH_TOKENS_CIT_MAX_TTL=2h")
 		if err == nil || !strings.Contains(err.Error(), "ci.token.max_ttl") || !strings.Contains(err.Error(), "auth.tokens.cit.max_ttl") {
 			t.Fatalf("err = %v", err)
 		}
 	})
 	t.Run("the environment override of the specification", func(t *testing.T) { // R-CI-016
-		l, err := loadCI(t, "", "TROVE_CI_TOKEN_MAX_TTL=30m")
+		l, err := loadCI(t, "", "QUADER_CI_TOKEN_MAX_TTL=30m")
 		if err != nil || l.Config.CI.Token.MaxTTL != 30*time.Minute {
 			t.Fatalf("%v %v", l, err)
 		}
@@ -101,7 +101,7 @@ func TestThePerIssuerBucketIsRetired(t *testing.T) {
 		}
 	})
 	t.Run("the environment variable names its replacement", func(t *testing.T) { // R-CI-021
-		_, err := loadCI(t, "", "TROVE_CI_EXCHANGE_RATE_LIMIT_PER_ISSUER_PER_SECOND=5")
+		_, err := loadCI(t, "", "QUADER_CI_EXCHANGE_RATE_LIMIT_PER_ISSUER_PER_SECOND=5")
 		if err == nil || !strings.Contains(err.Error(), "per_subject_per_minute") {
 			t.Fatalf("err = %v", err)
 		}
@@ -169,10 +169,10 @@ func TestIssuersFromTheConfiguration(t *testing.T) {
 func TestR_AUTH_026_TheTokenLifetimeCeilingsStopAtOneHundredYears(t *testing.T) {
 	for _, kind := range []string{"PAT", "SAT"} {
 		key := "auth.tokens." + strings.ToLower(kind) + ".max_ttl"
-		if l, err := loadCI(t, "", "TROVE_AUTH_TOKENS_"+kind+"_MAX_TTL=876000h"); err != nil {
+		if l, err := loadCI(t, "", "QUADER_AUTH_TOKENS_"+kind+"_MAX_TTL=876000h"); err != nil {
 			t.Errorf("%s: 876000h refused: %v (%v)", key, err, l)
 		}
-		_, err := loadCI(t, "", "TROVE_AUTH_TOKENS_"+kind+"_MAX_TTL=876001h")
+		_, err := loadCI(t, "", "QUADER_AUTH_TOKENS_"+kind+"_MAX_TTL=876001h")
 		if err == nil || !strings.Contains(err.Error(), key) {
 			t.Errorf("%s: 876001h: err = %v, want a refusal naming the key", key, err)
 		}

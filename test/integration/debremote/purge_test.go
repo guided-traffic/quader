@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	debdata "github.com/guided-traffic/trove/internal/formatdata/deb"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	debdata "github.com/guided-traffic/quader/internal/formatdata/deb"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // A restore without remote caches deletes the cache rows of every Debian remote: the releases, the files they list, the parsed indexes

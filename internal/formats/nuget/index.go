@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/nuget/document"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/document"
 )
 
 // RenderVersion is the version of the rendering of the documents of this format. It is part
@@ -50,7 +50,7 @@ type serviceIndex struct {
 func ServiceIndex(feed string, publish bool) []byte { return serviceIndexOf(feed, publish, false) }
 
 // serviceIndexOf renders the service index; vulnerabilities says that VulnerabilityInfo/6.7.0 is listed, which it is while
-// nuget.vulnerabilityInfo is local and trove's NuGet advisory data is complete (R-VULN-018).
+// nuget.vulnerabilityInfo is local and quader's NuGet advisory data is complete (R-VULN-018).
 func serviceIndexOf(feed string, publish, vulnerabilities bool) []byte {
 	var rs []resource
 	add := func(path string, types ...string) {
@@ -98,7 +98,7 @@ func takesPushes(ctx context.Context, rq *formats.Request) (bool, error) {
 // of the rendering, computed without rendering. The inputs are the render version, the
 // repository (its id, and the key it is served under, which the URLs of the document
 // carry) and its configuration version, the base URL, whether the publish resources
-// are listed, whether trove's own vulnerability information is listed (the mode is local and the NuGet data is
+// are listed, whether quader's own vulnerability information is listed (the mode is local and the NuGet data is
 // complete, R-VULN-018), and the endpoint of the request with its exposure fingerprint (R-NUGET-034).
 // Every replica sends the same value for the same inputs.
 func indexETag(rq *formats.Request, base string, publish, vulnerabilities bool) string {

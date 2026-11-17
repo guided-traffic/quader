@@ -34,7 +34,7 @@ func TestR_OPS_024_OperationsAllowedInMaintenanceMode(t *testing.T) {
 		if op.MaintenanceAllowed {
 			got = append(got, op.ID)
 			if !refusedInMaintenance(method) {
-				t.Errorf("%s declares x-trove-maintenance on a method that is never refused", pattern)
+				t.Errorf("%s declares x-quader-maintenance on a method that is never refused", pattern)
 			}
 		}
 	}
@@ -69,11 +69,11 @@ func TestR_OPS_024_MaintenanceDeclarationIsValidated(t *testing.T) {
 		ok     bool
 	}{
 		"absent":      {map[string]any{}, "post", true},
-		"allowed":     {map[string]any{"x-trove-maintenance": "allowed"}, "post", true},
-		"other word":  {map[string]any{"x-trove-maintenance": "refused"}, "post", false},
-		"boolean":     {map[string]any{"x-trove-maintenance": true}, "post", false},
-		"on a read":   {map[string]any{"x-trove-maintenance": "allowed"}, "get", false},
-		"on a delete": {map[string]any{"x-trove-maintenance": "allowed"}, "delete", true},
+		"allowed":     {map[string]any{"x-quader-maintenance": "allowed"}, "post", true},
+		"other word":  {map[string]any{"x-quader-maintenance": "refused"}, "post", false},
+		"boolean":     {map[string]any{"x-quader-maintenance": true}, "post", false},
+		"on a read":   {map[string]any{"x-quader-maintenance": "allowed"}, "get", false},
+		"on a delete": {map[string]any{"x-quader-maintenance": "allowed"}, "delete", true},
 	} {
 		if _, err := parseMaintenanceAllowed(tc.op, tc.method); (err == nil) != tc.ok {
 			t.Errorf("%s: %v", name, err)

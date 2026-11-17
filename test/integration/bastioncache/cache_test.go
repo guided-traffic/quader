@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/bastion/cache"
-	"github.com/guided-traffic/trove/internal/bastion/metrics"
-	"github.com/guided-traffic/trove/internal/bastion/shared"
-	"github.com/guided-traffic/trove/internal/config"
+	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 func TestR_BAS_030_TwoReplicasSharingABucketSeeEachOthersBytes(t *testing.T) {
@@ -183,7 +183,7 @@ func TestR_BAS_030_AFailingBucketAfterReadinessTurnsHitsIntoCountedMisses(t *tes
 		t.Fatalf("an unreachable bucket must be an error the caller passes through as a miss: %v", err)
 	}
 	if value(t, r.m.CacheErrors.WithLabelValues(metrics.OpGet)) == 0 {
-		t.Error("trove_bastion_cache_errors_total{op=get} was not counted")
+		t.Error("quader_bastion_cache_errors_total{op=get} was not counted")
 	}
 	e.count.down.Store(false)
 	if got, err := r.read("/k"); err != nil || !bytes.Equal(got, data) {
@@ -314,10 +314,10 @@ func TestR_BAS_031_EvictionKeepsTheRecentlyReadTwentyMiBOfThreeHundred(t *testin
 		t.Errorf("only %d of the 280 untouched tarballs were evicted", gone)
 	}
 	if got := value(t, r.m.CacheEvictions.WithLabelValues(metrics.EvictSize)); got < 200 {
-		t.Errorf("trove_bastion_cache_evictions_total{size} = %v", got)
+		t.Errorf("quader_bastion_cache_evictions_total{size} = %v", got)
 	}
 	if got := value(t, r.m.CacheBytes.WithLabelValues(metrics.AreaArtifacts)); got != float64(u.Artifacts) {
-		t.Errorf("trove_bastion_cache_bytes{artifacts} = %v, backend holds %d", got, u.Artifacts)
+		t.Errorf("quader_bastion_cache_bytes{artifacts} = %v, backend holds %d", got, u.Artifacts)
 	}
 }
 
@@ -429,7 +429,7 @@ func TestR_BAS_032_AReplacedObjectAbortsBeforeItsLastHoldBackAndTheNextReadIsAMi
 		t.Fatalf("%d of %d bytes were released, the last %d must be withheld", n, len(data), cache.DefaultHoldBack)
 	}
 	if value(t, r.m.CacheCorrupt) != 1 {
-		t.Errorf("trove_bastion_cache_corrupt_total = %v", value(t, r.m.CacheCorrupt))
+		t.Errorf("quader_bastion_cache_corrupt_total = %v", value(t, r.m.CacheCorrupt))
 	}
 	// The next read is a miss, and the object and the entry are gone from the bucket.
 	if _, _, err := r.LookupEntry(ctx, "/big.tgz"); !errors.Is(err, cache.ErrNotFound) {

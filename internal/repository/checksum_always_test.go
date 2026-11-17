@@ -3,8 +3,8 @@ package repository
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 )
 
 // TestR_REPO_041_IgnoreAndPassThroughAreRefusedForAFormatThatAlwaysVerifies: the catalog fact

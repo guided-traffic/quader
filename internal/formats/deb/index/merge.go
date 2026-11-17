@@ -17,7 +17,7 @@ import (
 
 	"github.com/ulikunitz/xz"
 
-	"github.com/guided-traffic/trove/internal/formats/deb/control"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
 )
 
 // MaxMergedParagraphs bounds one merged index (R-DEB-034): the set of the packages kept so far holds at most this many 128-bit hashes.

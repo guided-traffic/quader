@@ -1,25 +1,25 @@
-<trove-page-header heading="Authentication settings" i18n-heading="@@auth-settings.heading" />
-<trove-needs capability="settings:write" />
+<quader-page-header heading="Authentication settings" i18n-heading="@@auth-settings.heading" />
+<quader-needs capability="settings:write" />
 
 @if (loadError(); as e) {
-  <trove-error-notice [error]="e" (retry)="load()" />
+  <quader-error-notice [error]="e" (retry)="load()" />
 }
 
 @if (settings(); as s) {
   <div class="settings">
     @if (saveError(); as e) {
-      <trove-error-notice [error]="e" />
+      <quader-error-notice [error]="e" />
     }
 
     <form (submit)="save($event, 'external')" novalidate>
-      <trove-checkbox
+      <quader-checkbox
         [checked]="newUsersExternal()"
         [disabled]="!canWrite()"
         [describedBy]="'new-users-external-note'"
         (checkedChange)="newUsersExternal.set($event)"
       >
         <ng-container i18n="@@auth-settings.new-users-external">New users are external</ng-container>
-      </trove-checkbox>
+      </quader-checkbox>
       <p id="new-users-external-note" class="muted" i18n="@@auth-settings.new-users-external-note">Users created from now on start as external users; existing users keep their flag.</p>
       @if (canWrite()) {
         <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirtyExternal()">
@@ -29,7 +29,7 @@
       }
     </form>
 
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@auth-settings.tokens"
       heading="Token lifetimes"
       i18n-hint="@@auth-settings.tokens-note"
@@ -39,7 +39,7 @@
       <form (submit)="save($event, 'tokens')" novalidate>
         <div class="form-grid">
           <h3 i18n="@@auth-settings.pat">Personal tokens</h3>
-          <trove-text-field
+          <quader-text-field
             width="duration"
             i18n-label="@@auth-settings.pat-default"
             label="Default lifetime (days)"
@@ -50,7 +50,7 @@
             [error]="fieldError('/tokens/pat/defaultTTLSeconds')"
             [hint]="ceilingHint(s.ceilings.tokens.pat.defaultTTLSeconds)"
           />
-          <trove-text-field
+          <quader-text-field
             width="duration"
             i18n-label="@@auth-settings.pat-max"
             label="Maximum lifetime (days)"
@@ -62,7 +62,7 @@
             [hint]="ceilingHint(s.ceilings.tokens.pat.maxTTLSeconds)"
           />
           <h3 i18n="@@auth-settings.sat">Service account tokens</h3>
-          <trove-text-field
+          <quader-text-field
             width="duration"
             i18n-label="@@auth-settings.sat-default"
             label="Default lifetime (days)"
@@ -73,7 +73,7 @@
             [error]="fieldError('/tokens/sat/defaultTTLSeconds')"
             [hint]="ceilingHint(s.ceilings.tokens.sat.defaultTTLSeconds)"
           />
-          <trove-text-field
+          <quader-text-field
             width="duration"
             i18n-label="@@auth-settings.sat-max"
             label="Maximum lifetime (days)"
@@ -85,7 +85,7 @@
             [hint]="ceilingHint(s.ceilings.tokens.sat.maxTTLSeconds)"
           />
           <h3 i18n="@@auth-settings.notice">Expiry notice</h3>
-          <trove-text-field
+          <quader-text-field
             width="duration"
             i18n-label="@@auth-settings.notice-lead"
             label="Notify this many days before a token expires"
@@ -104,9 +104,9 @@
           </button>
         }
       </form>
-    </trove-disclosure>
+    </quader-disclosure>
 
-    <trove-disclosure
+    <quader-disclosure
       i18n-heading="@@auth-settings.status"
       heading="Status"
       i18n-hint="@@auth-settings.status-note"
@@ -176,6 +176,6 @@
           <ng-container i18n="@@auth-settings.basic-off">HTTP Basic with a token as the password is disabled.</ng-container>
         }
       </p>
-    </trove-disclosure>
+    </quader-disclosure>
   </div>
 }

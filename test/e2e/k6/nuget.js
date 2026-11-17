@@ -23,7 +23,7 @@ import exec from 'k6/execution';
 import crypto from 'k6/crypto';
 import { SharedArray } from 'k6/data';
 
-const TARGET = __ENV.TARGET || 'http://trove-control-plane:30080';
+const TARGET = __ENV.TARGET || 'http://quader-control-plane:30080';
 const HOST = __ENV.HOST || 'localhost';
 const TOKENS = open('/out/token').split('\n').map((s) => s.trim()).filter((s) => s);
 const FIXTURE = new SharedArray('fixture', () => [JSON.parse(open('/out/nuget-fixture.json'))]);
@@ -48,7 +48,7 @@ export const options = {
 const etags = {};
 
 function line(t0, res, kind, note, path) {
-  const replica = res.status === 0 ? `${res.error_code || 0}:${res.error || 'error'}` : (res.headers['X-Trove-Replica'] || '-');
+  const replica = res.status === 0 ? `${res.error_code || 0}:${res.error || 'error'}` : (res.headers['X-Quader-Replica'] || '-');
   console.log(`G ${t0} ${res.status} ${String(replica).replace(/\s+/g, '_')} ${Date.now() - t0} ${kind} ${note} ${path}`);
 }
 

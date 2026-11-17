@@ -7,7 +7,7 @@
 // origin and the extraHosts entries that take them. The credentials are resolved
 // here, on the replica that uses them: a sealed value is unsealed with the key
 // ring under the row key (repository id, field), a secretRef is read from a file
-// directly under config_as_code.secrets_dir or from a TROVE_CAC_ variable, and a
+// directly under config_as_code.secrets_dir or from a QUADER_CAC_ variable, and a
 // value that cannot be resolved fails the request with 502
 // upstream_secret_unavailable while other repositories go on.
 //

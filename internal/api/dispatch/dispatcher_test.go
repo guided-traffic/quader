@@ -10,14 +10,14 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // probe is a format with routes and its own error shape.
@@ -440,7 +440,7 @@ func TestR_AUTH_002_ARefusalOfTheDecisionPointCarriesTheChallengeOfThePackageRou
 	for _, c := range []struct {
 		name, fetch, want string
 	}{
-		{"a package client", "", `Basic realm="trove"`},
+		{"a package client", "", `Basic realm="quader"`},
 		{"a browser", "navigate", "Bearer"},
 	} {
 		t.Run("R-AUTH-002 "+c.name, func(t *testing.T) {

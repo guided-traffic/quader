@@ -34,11 +34,11 @@ export interface DataNotice {
  * caller without it sees stale and pending only.
  */
 @Component({
-  selector: 'trove-vuln-summary',
+  selector: 'quader-vuln-summary',
   imports: [DecimalPipe, RouterLink, ErrorNotice, SeverityBar],
   template: `
     @if (failure(); as f) {
-      <trove-error-notice [error]="f" (retry)="summary.reload()" />
+      <quader-error-notice [error]="f" (retry)="summary.reload()" />
     }
     @for (n of notices(); track n.key) {
       <p class="banner-warning" role="note">
@@ -52,7 +52,7 @@ export interface DataNotice {
       </p>
     }
     @if (summary.hasValue() && bySeverity(); as severities) {
-      <trove-severity-bar class="vuln-bar" [counts]="severities" [queries]="barQueries()" />
+      <quader-severity-bar class="vuln-bar" [counts]="severities" [queries]="barQueries()" />
     }
     @if (counts().length > 0) {
       <ul class="vuln-counts" aria-label="Open findings by state" i18n-aria-label="@@vuln.counts.state-label">

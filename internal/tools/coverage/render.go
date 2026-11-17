@@ -83,7 +83,7 @@ func renderChecklist(m *model) string {
 	feats := m.Features
 	specN := m.countSpecified(feats)
 	openN := m.countOpen(feats)
-	only := m.troveOnlyReqs()
+	only := m.quaderOnlyReqs()
 	anyImpl := m.implementedReqs() > 0
 
 	out := []string{
@@ -123,7 +123,7 @@ func renderChecklist(m *model) string {
 	}
 	totals += fmt.Sprintf("%s spec requirements: %s cover catalog features, %d cover none (`%s`, "+
 		"[listed at the end](#requirements-that-cover-no-catalog-feature)).",
-		num(len(m.Reqs)), num(len(m.Reqs)-len(only)), len(only), troveOnly)
+		num(len(m.Reqs)), num(len(m.Reqs)-len(only)), len(only), quaderOnly)
 	out = append(out, "")
 	out = append(out, wrap(totals, 100)...)
 	out = append(out, "", "## Pages", "")
@@ -186,7 +186,7 @@ func renderChecklist(m *model) string {
 	}
 
 	out = append(out, "", "## Requirements that cover no catalog feature", "",
-		fmt.Sprintf("Requirements whose `Covers:` line says `%s`: trove's own design work that no", troveOnly),
+		fmt.Sprintf("Requirements whose `Covers:` line says `%s`: Quader's own design work that no", quaderOnly),
 		"catalog feature measures. They count toward the requirement total, not toward any share.", "")
 	var orows [][]string
 	for _, r := range only {

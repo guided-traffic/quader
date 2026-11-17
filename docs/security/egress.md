@@ -3,10 +3,10 @@
 Status: implemented in M0 for the outbound HTTP clients of the process: an address check at connect time for every purpose except
 the object store, a deny list and an allow list, and the refusal of zoned IPv6 addresses. In M2 the upstream clients of remote
 repositories use it: the proxy engine ([internal/proxy](../../internal/proxy)) answers a refused fetch `502 egress_denied`, counts it in
-`trove_remote_egress_denied_total{repo}` and records the security event `proxy.egress_denied`, and the upstream test reports a
+`quader_remote_egress_denied_total{repo}` and records the security event `proxy.egress_denied`, and the upstream test reports a
 refusal as `egress_denied`. Credentials of a remote repository travel over `https` only, unless its upstream itself is `http`.
 
-This page says which connections trove opens to addresses that other parties name, which check applies to each, and where
+This page says which connections Quader opens to addresses that other parties name, which check applies to each, and where
 the check does not reach. It describes the code of [internal/outbound](../../internal/outbound).
 
 ## Which connections are checked
@@ -20,7 +20,7 @@ whose policy denies nothing:
 | `oidc_discovery`, `jwks` | on | addresses an operator or a provider names: the login's identity providers and the CI issuers' discovery and keys ([ci/keys_fetch.go](../../internal/ci/keys_fetch.go)) |
 | `webhook` | on | declared for the webhooks; no client of this purpose is built |
 | `remote` | on | addresses that a repository's upstream, its redirects and its upstream metadata name, and the advisory provider of an npm audit forward (`Engine.Exchange`, [exchange.go](../../internal/proxy/exchange.go)); the clients are built in [proxy/upstream](../../internal/proxy/upstream/clients.go) |
-| `remote` (the import command) | on | `trove admin import` builds its two clients, to the source registry and to the target repository, with the purpose `remote` and the policy of the process's `proxy.outbound`; the source's address and every file address it names are checked in the dialer ([import.md](import.md)) |
+| `remote` (the import command) | on | `quader admin import` builds its two clients, to the source registry and to the target repository, with the purpose `remote` and the policy of the process's `proxy.outbound`; the source's address and every file address it names are checked in the dialer ([import.md](import.md)) |
 | `vuln_source` | on | the advisory sources of the vulnerability scanning, at the base URL of `vulnerabilities.sources` ([vuln/sync/service.go](../../internal/vuln/sync/service.go), `Purpose`; [wire_vuln_sync.go](../../internal/app/wire_vuln_sync.go)) |
 | `bastion_main` | **in effect off**: the Bastion builds its own factory with an empty deny list, so only a zoned IPv6 address is refused ([bastion/mainclient/client.go](../../internal/bastion/mainclient/client.go), `factoryClient`) | the main installation a Bastion asks is operator configuration (`bastion.main.url`) and may sit in a private range; see [H-446](../spec/bastion.md#h-446--the-connection-to-the-main-installation-is-not-under-the-egress-address-policy) |
 | `objectstore` | **off** ([factory.go](../../internal/outbound/factory.go), `defaults`) | the endpoint is operator configuration and, in development, a local service; see [H-56](../spec/architecture.md#h-56--the-object-store-endpoint-skips-the-egress-address-policy) |
@@ -28,7 +28,7 @@ whose policy denies nothing:
 Every S3 client is of purpose `objectstore`, because each is built through `s3.NewFromFactory`
 ([blob/s3/client.go](../../internal/blob/s3/client.go)): the blob store and the journal shipper of the replicas, and, in the Jobs of the
 backup lane, the backup target client (`backup.target`, [target.go](../../internal/blob/s3/target.go), `NewTarget`), the backup's read of
-the blob bucket (`backup.source`, [backup_create.go](../../cmd/trove/backup_create.go)) and the journal reader of a restore and of the
+the blob bucket (`backup.source`, [backup_create.go](../../cmd/quader/backup_create.go)) and the journal reader of a restore and of the
 post-restore ([journal/replay/open.go](../../internal/journal/replay/open.go), `OpenJournal`). None of them passes the address policy, so
 the endpoint of `backup.target` is as unchecked as `storage.s3.endpoint`.
 
@@ -39,8 +39,8 @@ The OTLP span export does not use the factory at all; it uses the SDK's transpor
 The check runs in the dialer's `Control` hook, after DNS resolution and before `connect`, on the literal address that is about to be
 dialed ([policy.go](../../internal/outbound/policy.go), `control`; [factory.go](../../internal/outbound/factory.go), where the hook is set).
 A name that resolves to a denied address is refused even when its first answer was public (a DNS rebinding). For a request through
-an outbound proxy, trove resolves the target itself and checks the addresses before it hands the request to the proxy
-(`checkedProxy`); what the proxy connects to after that is not visible to trove ([H-40](../spec/operations-and-observability.md#h-40--outbound-address-checks-are-weaker-through-an-outbound-proxy)).
+an outbound proxy, Quader resolves the target itself and checks the addresses before it hands the request to the proxy
+(`checkedProxy`); what the proxy connects to after that is not visible to Quader ([H-40](../spec/operations-and-observability.md#h-40--outbound-address-checks-are-weaker-through-an-outbound-proxy)).
 
 The order of the rules in `check` ([policy.go](../../internal/outbound/policy.go)):
 
@@ -53,7 +53,7 @@ The order of the rules in `check` ([policy.go](../../internal/outbound/policy.go
    32 bits (`64:ff9b::a9fe:a9fe` is checked as `169.254.169.254`).
 
 Everything else is permitted. A refusal is an `EgressDeniedError` that names the address and the rule, and it counts in
-`trove_outbound_egress_denied_total{kind}`. The proxy engine maps it to `502 egress_denied` ([classify.go](../../internal/proxy/classify.go)),
+`quader_outbound_egress_denied_total{kind}`. The proxy engine maps it to `502 egress_denied` ([classify.go](../../internal/proxy/classify.go)),
 without naming the address in the answer.
 
 ## The default deny list
@@ -85,7 +85,7 @@ IPv6 addresses are refused before it is consulted, so an allow entry cannot open
   [H-78](#h-78--the-nat64-check-knows-only-the-well-known-prefix).
 - The object store and the backup target, by design ([H-56](../spec/architecture.md#h-56--the-object-store-endpoint-skips-the-egress-address-policy)).
 - The OTLP span export ([H-53](../spec/operations-and-observability.md#h-53--span-export-bypasses-the-egress-address-policy)).
-- The connection a proxy makes after trove checked the target ([H-40](../spec/operations-and-observability.md#h-40--outbound-address-checks-are-weaker-through-an-outbound-proxy)).
+- The connection a proxy makes after Quader checked the target ([H-40](../spec/operations-and-observability.md#h-40--outbound-address-checks-are-weaker-through-an-outbound-proxy)).
 - The private ranges, which the default list does not deny ([H-6](../spec/repositories-and-proxy.md#h-6--remote-repositories-reach-private-networks)).
 - The pod's other outbound paths: database, Valkey and Sentinel connections have their own addresses from configuration and are not
   checked by this policy. Their egress is the one of the pod network ([H-516](#h-516--the-chart-restricts-no-egress-of-its-pods)).
@@ -161,7 +161,7 @@ and `mirror` as reason ([R-REPO-057](../spec/repositories-and-proxy.md)); and th
 `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream-test` and `POST /api/v1/projects/{projectKey}/upstream-tests` send one
 request through a remote repository's client ([proxy/upstream/probe.go](../../internal/proxy/upstream/probe.go)). The client is the one real fetches use, so the address check, the
 trust store, the source network, the redirect limit and the credential policy apply unchanged; a refusal is reported as the result's
-`error.code` `egress_denied` with the address and the rule, and counts in `trove_outbound_egress_denied_total{kind="remote"}`. The
+`error.code` `egress_denied` with the address and the rule, and counts in `quader_outbound_egress_denied_total{kind="remote"}`. The
 operation needs `repositories:write-config`, or the Owner role in the project the path names; the saved test reads the repository by
 its project and key, so an Owner tests only the repositories of its project. The unsaved test of an Owner without the capability takes no
 `secretRef`, no `sourceNetwork` and no `outboundProxy.mode` but `default` (Q-REPO-127, [Q-REPO-128](../spec/repositories-and-proxy.md#q-repo-128--a-project-administrators-remote-repository-takes-the-installations-outbound-path)),
@@ -190,7 +190,7 @@ The gaps of the spec pages whose mechanism this page describes:
 - [H-53](../spec/operations-and-observability.md#h-53--span-export-bypasses-the-egress-address-policy): the span export bypasses the egress address policy.
 - [H-56](../spec/architecture.md#h-56--the-object-store-endpoint-skips-the-egress-address-policy): the object-store endpoint, and with it the backup target, skips the egress address policy.
 - [H-504](../spec/repositories-and-proxy.md#h-504--npms-replication-host-is-contacted-although-it-is-not-an-extrahosts-entry): npm's replication host is contacted although it is not an `extraHosts` entry.
-- [H-971](#h-971--the-upstream-test-tells-its-caller-whether-a-credential-is-accepted-from-troves-address): the upstream test tells its caller whether a credential is accepted, from trove's address.
+- [H-971](#h-971--the-upstream-test-tells-its-caller-whether-a-credential-is-accepted-from-quaders-address): the upstream test tells its caller whether a credential is accepted, from Quader's address.
 
 ### H-78 · The NAT64 check knows only the well-known prefix
 
@@ -213,12 +213,12 @@ HTTP status, the subject and expiry of the certificate, the duration and a code 
 unknown name. Subject: hosts and ports of the internal networks that the pods can reach, probed one request at a time by a principal who
 may already configure a remote repository.
 
-What makes it real: a principal with the capability and an installation whose cluster restricts no egress of trove's pods
+What makes it real: a principal with the capability and an installation whose cluster restricts no egress of Quader's pods
 ([H-516](#h-516--the-chart-restricts-no-egress-of-its-pods)). The body of
 the response is never returned, at most 64 KiB are read and dropped, and the messages never repeat the URL; the status and the timing are
 the channel.
 
-### H-971 · The upstream test tells its caller whether a credential is accepted, from trove's address
+### H-971 · The upstream test tells its caller whether a credential is accepted, from Quader's address
 
 Stage: the upstream tests of [R-REPO-024](../spec/repositories-and-proxy.md#r-repo-024--remote-repository-settings) and
 [R-REPO-064](../spec/repositories-and-proxy.md#r-repo-064--the-upstream-test-follows-a-token-handshake-and-names-the-token-service)
@@ -226,37 +226,37 @@ Stage: the upstream tests of [R-REPO-024](../spec/repositories-and-proxy.md#r-re
 
 Subject: the accounts of an upstream registry and of its token service. A holder of `repositories:write-config`, or the Owner of a
 project, can send a typed credential to a registry, or since R-REPO-064 to its token service, and read `authenticated`; the registry
-sees trove's egress address, not the caller's, so its per-address limits and blocks fall on trove. Live for upstreams that answer
+sees Quader's egress address, not the caller's, so its per-address limits and blocks fall on Quader. Live for upstreams that answer
 the probe with Basic and, since R-REPO-064, for the token service of a registry whose host receives the credential
 (`Clients.tokenCheck` in [probe.go](../../internal/proxy/upstream/probe.go)). What bounds it: the management API's rate limits
 ([R-API-016](../spec/api-and-ui.md#r-api-016--rate-limits)), the request log that records the call
 ([R-OPS-010](../spec/operations-and-observability.md#r-ops-010--request-log)), and that the caller must already be able to configure a
 repository; the test is not an audit event. What makes it real: a caller
-who guesses another account's password through trove.
+who guesses another account's password through Quader.
 
 
 ### H-516 · The chart restricts no egress of its pods
 
 Stage: the pod network of every pod the chart deploys (the serving Deployments, the migration Job, the backup and restore
 pods); the chart's policies are ingress rules only
-([networkpolicy.yaml](../../deploy/helm/trove/templates/networkpolicy.yaml)), by the owner's rule of 2026-11-04
+([networkpolicy.yaml](../../deploy/helm/quader/templates/networkpolicy.yaml)), by the owner's rule of 2026-11-04
 ([ADR-154](../decisions.md#adr-154--network-policies-are-ingress-rules-between-the-charts-pods-each-with-its-port)).
 
 Live for every installation whose cluster operator adds no egress policy of their own. Subject: every address the pod
-network reaches from a trove pod, the cloud metadata endpoints (`169.254.169.254`) and in-cluster services among them,
-reached by a process that is no longer trove's own code, or by a connection the address check does not cover: the object
+network reaches from a Quader pod, the cloud metadata endpoints (`169.254.169.254`) and in-cluster services among them,
+reached by a process that is no longer Quader's own code, or by a connection the address check does not cover: the object
 store ([H-56](../spec/architecture.md#h-56--the-object-store-endpoint-skips-the-egress-address-policy)), the span export
 ([H-53](../spec/operations-and-observability.md#h-53--span-export-bypasses-the-egress-address-policy)), and the database,
 Valkey and Sentinel connections, whose addresses come from configuration.
 
-What remains is the address policy of this page, which every outbound client that trove builds applies at connect time in
+What remains is the address policy of this page, which every outbound client that Quader builds applies at connect time in
 every role, and the cluster operator's own policy. The second layer an egress policy of the chart would have added was weighed
 and dropped with the owner's rule; R-HA-042 lists what each role must reach for an operator who writes one.
 
-What makes it real: a flaw that lets an attacker run code in a trove process or steer a connection outside the outbound
+What makes it real: a flaw that lets an attacker run code in a Quader process or steer a connection outside the outbound
 clients of `internal/outbound`, in a cluster without an egress policy.
 
-The chart `trove-bastion` follows the same rule since the owner's decision of 2026-11-05; the gap of its pods, which are built
+The chart `quader-bastion` follows the same rule since the owner's decision of 2026-11-05; the gap of its pods, which are built
 to face the internet, is [H-522](bastion.md#h-522--the-chart-restricts-no-egress-of-the-bastion-pods).
 
 
@@ -267,7 +267,7 @@ Stage: the requests of a mirror's pass to a host the format's lister names ([Cli
 
 Live for every mirror of an upstream whose lister names such a host: npm's replication host `replicate.npmjs.com`, for a mirror whose
 `remote.url` is the public registry (the lister is built). The request carries no credential, no custom header and no client certificate, but it carries the path and query, the
-`Accept` header, trove's `User-Agent` and the source address of the pod. Subject: the discovery host sees which key ranges and
+`Accept` header, Quader's `User-Agent` and the source address of the pod. Subject: the discovery host sees which key ranges and
 change sequences the mirror reads and when, so it learns that this installation mirrors the upstream, the include patterns' literal
 prefixes (a lister narrows its ranges by them) and the pace of the passes.
 

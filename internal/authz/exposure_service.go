@@ -9,14 +9,14 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats/catalog"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 // Limits of an exposure rule (R-EP-012).
@@ -559,7 +559,7 @@ func (s *ExposureService) writableEndpoint(ctx context.Context, qs *q.Queries, e
 // Create stores a new rule in the caller's transaction (the idempotent
 // operation of the handler, R-API-014) and notifies the change area authz there.
 // onEpoch, when set, receives the authz epoch of the write just before the
-// commit, for Trove-Authz-Epoch (R-AUTHZ-032).
+// commit, for Quader-Authz-Epoch (R-AUTHZ-032).
 func (s *ExposureService) Create(ctx context.Context, tx meta.Tx, actor Subject, endpoint string, in ExposureRuleInput, onEpoch func(int64)) (ExposureRule, error) {
 	qs, err := queriesOf(tx)
 	if err != nil {

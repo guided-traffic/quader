@@ -7,8 +7,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // LinkFunc adds the reference to the blob inside the commit transaction: it

@@ -61,10 +61,10 @@ test('R-UI-018 R-UI-019 the NuGet clients, their snippets with the index.json UR
     // The server renders the shell form, the PowerShell form and the nuget.config, in that order; the source is
     // always the index.json URL, and the push names the repository the caller chose (a virtual one forwards it).
     await expect(configure.locator('.snippet pre').first()).toContainText(
-      `dotnet nuget add source ${feed(virtualKey)} --name trove`,
+      `dotnet nuget add source ${feed(virtualKey)} --name quader`,
     );
     await expect(configure.locator('.snippet pre').nth(1)).toContainText(
-      `dotnet nuget add source ${feed(virtualKey)} --name trove`,
+      `dotnet nuget add source ${feed(virtualKey)} --name quader`,
     );
     await expect(configure.locator('.snippet pre').nth(2)).toContainText('<clear />');
     await expect(configure.locator('.snippet pre').nth(2)).toContainText(
@@ -90,7 +90,7 @@ test('R-UI-018 R-UI-019 the NuGet clients, their snippets with the index.json UR
     await clientStep.getByRole('radio', { name: 'Visual Studio', exact: true }).check();
     await expect(
       page.getByRole('tabpanel', { name: 'Configure' }).locator('.snippet pre').first(),
-    ).toContainText(`<add key="trove" value="${feed(virtualKey)}" protocolVersion="3" />`);
+    ).toContainText(`<add key="quader" value="${feed(virtualKey)}" protocolVersion="3" />`);
   });
 
   for (const scheme of ['light', 'dark'] as const) {

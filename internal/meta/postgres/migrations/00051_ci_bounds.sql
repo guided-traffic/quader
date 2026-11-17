@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The bounds of a CI issuer and a mapping that the API and the configuration enforce, in the schema as well (Q-CI-69): a
 -- clock skew is not negative, which would move the restore cut-off of R-CI-018 before restored_at, and a lifetime bound is

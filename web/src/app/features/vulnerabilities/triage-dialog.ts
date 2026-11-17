@@ -52,10 +52,10 @@ export interface TriageDialogResult {
  * `finding_not_confirmed` of one row is not lost.
  */
 @Component({
-  selector: 'trove-triage-dialog',
+  selector: 'quader-triage-dialog',
   imports: [DialogTitle, DialogClose, ErrorNotice, SelectField, TextField],
   template: `
-    <h2 troveDialogTitle>{{ title() }}</h2>
+    <h2 quaderDialogTitle>{{ title() }}</h2>
     @if (results(); as r) {
       <div class="dialog-body">
         <p role="status">{{ summary() }}</p>
@@ -94,7 +94,7 @@ export interface TriageDialogResult {
       <form (submit)="submit($event)" novalidate>
         <div class="dialog-body">
           @if (error(); as e) {
-            <trove-error-notice [error]="e" />
+            <quader-error-notice [error]="e" />
           }
           @if (data.mode === 'single') {
             <p translate="no">{{ data.targets[0]?.label }}</p>
@@ -102,7 +102,7 @@ export interface TriageDialogResult {
             <p>{{ selectedText() }}</p>
           }
           @if (data.mode === 'bulk') {
-            <trove-select-field
+            <quader-select-field
               i18n-label="@@vuln.triage.status"
               label="New status"
               name="status"
@@ -118,7 +118,7 @@ export interface TriageDialogResult {
             </p>
           }
           @if (status() === 'dismissed') {
-            <trove-select-field
+            <quader-select-field
               i18n-label="@@vuln.triage.reason"
               label="Reason"
               name="dismissalReason"
@@ -128,7 +128,7 @@ export interface TriageDialogResult {
               (valueChange)="reason.set($any($event))"
             />
           }
-          <trove-text-field
+          <quader-text-field
             width="full"
             i18n-label="@@vuln.triage.comment"
             label="Comment"
@@ -140,7 +140,7 @@ export interface TriageDialogResult {
           />
         </div>
         <div class="dialog-actions">
-          <button class="btn btn-tertiary" type="button" troveDialogClose i18n="@@vuln.triage.cancel">Cancel</button>
+          <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@vuln.triage.cancel">Cancel</button>
           <button class="btn btn-confirm" type="submit" [disabled]="busy()">{{ submitLabel() }}</button>
         </div>
       </form>
@@ -153,9 +153,9 @@ export interface TriageDialogResult {
     }
     .bulk-results th,
     .bulk-results td {
-      padding: var(--trove-space-2);
+      padding: var(--quader-space-2);
       text-align: start;
-      border-block-end: 1px solid var(--trove-border);
+      border-block-end: 1px solid var(--quader-border);
     }
   `,
 })

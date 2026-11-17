@@ -3,10 +3,10 @@ package app
 import (
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/config"
-	"github.com/guided-traffic/trove/internal/items"
-	"github.com/guided-traffic/trove/internal/vuln"
-	vmetrics "github.com/guided-traffic/trove/internal/vuln/metrics"
+	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/vuln"
+	vmetrics "github.com/guided-traffic/quader/internal/vuln/metrics"
 )
 
 // R-VULN-025 (contract test): the task a scanning part registers takes the specification's schedule, replaced by

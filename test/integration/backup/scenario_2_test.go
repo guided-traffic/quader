@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/backup"
-	"github.com/guided-traffic/trove/internal/blob"
+	"github.com/guided-traffic/quader/internal/backup"
+	"github.com/guided-traffic/quader/internal/blob"
 )
 
 // TestR_BAK_029_SourceBlobsCollectedAfterTheBackup is scenario 2 of R-BAK-029: after backup B every item is deleted and a full
@@ -29,7 +29,7 @@ func TestR_BAK_029_SourceBlobsCollectedAfterTheBackup(t *testing.T) {
 		t.Fatalf("create: %v", err)
 	}
 
-	in.exec(`DELETE FROM trove.items`)
+	in.exec(`DELETE FROM quader.items`)
 	for _, d := range digests {
 		in.waitGone(d)
 	}

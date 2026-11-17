@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/osvstub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/osvstub"
 )
 
 func readyz(t *testing.T, r *testenv.Replica) int {
@@ -28,7 +28,7 @@ func readyz(t *testing.T, r *testenv.Replica) int {
 
 // TestR_VULN_024_DatabaseGauges: the five gauges read from PostgreSQL follow the rows, once per interval and without a query
 // per scrape, and a source that fails three times does not make any replica unready (R-VULN-024). The values are the inputs
-// of TroveVulnerabilityDataStale, TroveVulnerabilitySyncFailing and TroveVulnerabilityClaimedNameMalicious.
+// of QuaderVulnerabilityDataStale, QuaderVulnerabilitySyncFailing and QuaderVulnerabilityClaimedNameMalicious.
 func TestR_VULN_024_DatabaseGauges(t *testing.T) {
 	e := newEnv(t)
 	a, b := e.web("web-a"), e.web("web-b")
@@ -45,20 +45,20 @@ func TestR_VULN_024_DatabaseGauges(t *testing.T) {
 		// shows the claimed match without the source's state: wait for both rows, not for one gauge.
 		testenv.WaitFor(t, "the gauges on "+r.Name, 20*time.Second, func() bool {
 			text = r.Metrics(t)
-			return testenv.MetricValue(text, `trove_vuln_claimed_name_matches{ecosystem="npm",kind="malicious"}`) == 1 &&
-				testenv.MetricValue(text, `trove_vuln_source_records{ecosystem="npm",source="osv"}`) == 231000
+			return testenv.MetricValue(text, `quader_vuln_claimed_name_matches{ecosystem="npm",kind="malicious"}`) == 1 &&
+				testenv.MetricValue(text, `quader_vuln_source_records{ecosystem="npm",source="osv"}`) == 231000
 		})
-		if v := testenv.MetricValue(text, `trove_vuln_source_consecutive_failures{ecosystem="npm",source="osv"}`); v != 3 {
+		if v := testenv.MetricValue(text, `quader_vuln_source_consecutive_failures{ecosystem="npm",source="osv"}`); v != 3 {
 			t.Errorf("%s: consecutive failures = %v, want 3", r.Name, v)
 		}
-		if v := testenv.MetricValue(text, `trove_vuln_source_records{ecosystem="npm",source="osv"}`); v != 231000 {
+		if v := testenv.MetricValue(text, `quader_vuln_source_records{ecosystem="npm",source="osv"}`); v != 231000 {
 			t.Errorf("%s: records = %v, want 231000", r.Name, v)
 		}
-		last := testenv.MetricValue(text, `trove_vuln_source_last_success_timestamp_seconds{ecosystem="npm",source="osv"}`)
+		last := testenv.MetricValue(text, `quader_vuln_source_last_success_timestamp_seconds{ecosystem="npm",source="osv"}`)
 		if age := float64(time.Now().Unix()) - last; age < 2*86400-120 || age > 2*86400+120 {
 			t.Errorf("%s: the last success is %.0f s old, want about two days", r.Name, age)
 		}
-		if v := testenv.MetricValue(text, `trove_vuln_claimed_name_matches{ecosystem="npm",kind="vulnerability"}`); v != 0 {
+		if v := testenv.MetricValue(text, `quader_vuln_claimed_name_matches{ecosystem="npm",kind="vulnerability"}`); v != 0 {
 			t.Errorf("%s: claimed vulnerability matches = %v, want a series with 0", r.Name, v)
 		}
 		if got := readyz(t, r); got != 200 {
@@ -71,8 +71,8 @@ func TestR_VULN_024_DatabaseGauges(t *testing.T) {
 	e.st.Exec(`DELETE FROM vuln_claimed_match`)
 	testenv.WaitFor(t, "the gauges to follow the rows", 20*time.Second, func() bool {
 		text := a.Metrics(t)
-		return testenv.MetricValue(text, `trove_vuln_source_consecutive_failures{ecosystem="npm",source="osv"}`) == 0 &&
-			testenv.MetricValue(text, `trove_vuln_claimed_name_matches{ecosystem="npm",kind="malicious"}`) == 0
+		return testenv.MetricValue(text, `quader_vuln_source_consecutive_failures{ecosystem="npm",source="osv"}`) == 0 &&
+			testenv.MetricValue(text, `quader_vuln_claimed_name_matches{ecosystem="npm",kind="malicious"}`) == 0
 	})
 }
 
@@ -84,12 +84,12 @@ func TestR_VULN_024_GaugesWithoutAnyRow(t *testing.T) {
 	var text string
 	testenv.WaitFor(t, "the gauges", 20*time.Second, func() bool {
 		text = r.Metrics(t)
-		return testenv.MetricValue(text, `trove_vuln_source_last_success_timestamp_seconds{ecosystem="npm",source="osv"}`) == 0
+		return testenv.MetricValue(text, `quader_vuln_source_last_success_timestamp_seconds{ecosystem="npm",source="osv"}`) == 0
 	})
-	if v := testenv.MetricValue(text, `trove_vuln_findings{kind="malicious",severity="critical",status="blocked"}`); v != 0 {
+	if v := testenv.MetricValue(text, `quader_vuln_findings{kind="malicious",severity="critical",status="blocked"}`); v != 0 {
 		t.Errorf("findings gauge without findings = %v, want a series with 0", v)
 	}
-	if v := testenv.MetricValue(text, `trove_vuln_source_last_success_timestamp_seconds{ecosystem="NuGet",source="osv"}`); v != -1 {
+	if v := testenv.MetricValue(text, `quader_vuln_source_last_success_timestamp_seconds{ecosystem="NuGet",source="osv"}`); v != -1 {
 		t.Errorf("a series for NuGet, which the configuration narrowed away: %v", v)
 	}
 }

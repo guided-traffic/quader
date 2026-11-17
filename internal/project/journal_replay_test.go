@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/journal"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/journal"
 )
 
 // TestR_AUTHZ_031_RepositoryEntriesAreReadStrictly: repository.disabled and repository.deleted name the repository by the

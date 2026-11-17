@@ -4,7 +4,7 @@ package e2e
 
 // The pooler profile's rows of R-HA-007 and R-HA-058 under the npm load (E5.10): an instance of the request pooler or of the
 // control pooler deleted, gracefully and with --grace-period=0 --force, while the eight npm ci loops, the publish loop and k6
-// run. The set is ha-pooler (deploy/dev/e2e.sh): the scatter profile with the poolers (TROVE_POOLER=1, deploy/dev/pooler.yaml,
+// run. The set is ha-pooler (deploy/dev/e2e.sh): the scatter profile with the poolers (QUADER_POOLER=1, deploy/dev/pooler.yaml,
 // values-pooler.yaml). docs/developer/e2e.md#the-failure-suite-ha-faults describes the whole; Q-HA-250 to Q-HA-259 record the choices.
 
 import (
@@ -35,7 +35,7 @@ func TestHAPooler_InstanceLoss(t *testing.T) {
 		if c.forced {
 			how = "force-deleted (--grace-period=0)"
 		}
-		t.Run(fmt.Sprintf("R-HA-058 R-HA-007 R-HA-052 E5.10 an instance of %s %s under the npm load: every npm command exits 0, no trove container restarts, %s", c.pooler, how, map[bool]string{
+		t.Run(fmt.Sprintf("R-HA-058 R-HA-007 R-HA-052 E5.10 an instance of %s %s under the npm load: every npm command exits 0, no quader container restarts, %s", c.pooler, how, map[bool]string{
 			false: "k6 only 2xx and 304 and /readyz 200 throughout",
 			true:  "k6 failures only 503 within retry.max_elapsed of the kill and none after the pooler is whole again",
 		}[c.forced]), func(t *testing.T) {
@@ -77,7 +77,7 @@ func TestHAPooler_InstanceLoss(t *testing.T) {
 				t.Logf("%d of %d k6 requests failed, all 503 within retry.max_elapsed (%s) of the kill", n, r.res.K6.Total, maxElapsed)
 			}
 			r.res.installPublished(t, h)
-			troveSettled(t, 3, 3, 4)
+			quaderSettled(t, 3, 3, 4)
 		})
 	}
 }

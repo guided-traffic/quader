@@ -27,26 +27,26 @@ export type IssuerTab = (typeof ISSUER_TABS)[number];
  * opens it. Deleting asks for the name and says what goes with the issuer.
  */
 @Component({
-  selector: 'trove-ci-issuer-detail',
+  selector: 'quader-ci-issuer-detail',
   imports: [PageHeader, TabContent, TabGroup, TabPage, RouterLink, ErrorNotice, IssuanceList, IssuerForm, IssuerKeys, MappingList, Disclosure],
   template: `
-    <trove-page-header [heading]="issuer()" [name]="true">
+    <quader-page-header [heading]="issuer()" [name]="true">
       <span meta class="badge" i18n="@@ci.issuer.heading">CI issuer</span>
       <a actions class="btn btn-default" [routerLink]="testLink()" i18n="@@ci.issuer.test">Test with claims</a>
-    </trove-page-header>
+    </quader-page-header>
 
     @if (error(); as e) {
-      <trove-error-notice [error]="e" (retry)="load()" />
+      <quader-error-notice [error]="e" (retry)="load()" />
     }
     @if (current(); as i) {
       <p class="muted" translate="no">{{ i.issuer }}</p>
-      <trove-tab-group [selectedIndex]="index()" (selectedIndexChange)="select($event)">
-        <trove-tab label="Settings" i18n-label="@@ci.issuer.tab.settings">
-          <ng-template troveTabContent>
+      <quader-tab-group [selectedIndex]="index()" (selectedIndexChange)="select($event)">
+        <quader-tab label="Settings" i18n-label="@@ci.issuer.tab.settings">
+          <ng-template quaderTabContent>
             <div class="settings">
-              <trove-ci-issuer-form [issuer]="i" [etag]="etag()" (saved)="saved($event.value, $event.etag)" />
+              <quader-ci-issuer-form [issuer]="i" [etag]="etag()" (saved)="saved($event.value, $event.etag)" />
               @if (session.has('ci:write') && deletable()) {
-                <trove-disclosure
+                <quader-disclosure
                   i18n-heading="@@ci.issuer.advanced"
                   heading="Advanced"
                   i18n-hint="@@ci.issuer.advanced-hint"
@@ -54,42 +54,42 @@ export type IssuerTab = (typeof ISSUER_TABS)[number];
                 >
                   <p class="muted" i18n="@@ci.issuer.delete-note">Deleting the issuer revokes the tokens issued through it and deletes its mappings.</p>
                   <button class="btn btn-danger" type="button" [disabled]="busy()" (click)="remove()" i18n="@@ci.issuer.delete">Delete issuer</button>
-                </trove-disclosure>
+                </quader-disclosure>
               }
             </div>
           </ng-template>
-        </trove-tab>
-        <trove-tab label="Keys" i18n-label="@@ci.issuer.tab.keys">
-          <ng-template troveTabContent>
+        </quader-tab>
+        <quader-tab label="Keys" i18n-label="@@ci.issuer.tab.keys">
+          <ng-template quaderTabContent>
             <section aria-labelledby="ci-keys">
               <h2 id="ci-keys" i18n="@@ci.issuer.keys">Signing keys</h2>
-              <trove-ci-issuer-keys [issuer]="i.name" />
+              <quader-ci-issuer-keys [issuer]="i.name" />
             </section>
           </ng-template>
-        </trove-tab>
-        <trove-tab label="Mappings" i18n-label="@@ci.issuer.tab.mappings">
-          <ng-template troveTabContent>
+        </quader-tab>
+        <quader-tab label="Mappings" i18n-label="@@ci.issuer.tab.mappings">
+          <ng-template quaderTabContent>
             <section aria-labelledby="ci-mappings">
               <h2 id="ci-mappings" i18n="@@ci.issuer.mappings">Mappings</h2>
-              <trove-ci-mapping-list [issuer]="i.name" />
+              <quader-ci-mapping-list [issuer]="i.name" />
             </section>
           </ng-template>
-        </trove-tab>
-        <trove-tab label="Issuances" i18n-label="@@ci.issuer.tab.issuances">
-          <ng-template troveTabContent>
+        </quader-tab>
+        <quader-tab label="Issuances" i18n-label="@@ci.issuer.tab.issuances">
+          <ng-template quaderTabContent>
             <section aria-labelledby="ci-issuances">
               <h2 id="ci-issuances" i18n="@@ci.issuer.issuances">Issued tokens</h2>
-              <trove-ci-issuance-list [issuer]="i.name" />
+              <quader-ci-issuance-list [issuer]="i.name" />
             </section>
           </ng-template>
-        </trove-tab>
-      </trove-tab-group>
+        </quader-tab>
+      </quader-tab-group>
     }
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .settings {
-      max-inline-size: var(--trove-settings-measure);
+      max-inline-size: var(--quader-settings-measure);
     }
   `,
 })
@@ -183,18 +183,18 @@ export class IssuerDetail {
 
 /** The form of a new issuer (R-UI-035): after the save the issuer's page opens. */
 @Component({
-  selector: 'trove-ci-issuer-create',
+  selector: 'quader-ci-issuer-create',
   imports: [PageHeader, IssuerForm],
   template: `
-    <trove-page-header heading="New CI issuer" i18n-heading="@@ci.create.heading" />
+    <quader-page-header heading="New CI issuer" i18n-heading="@@ci.create.heading" />
     <div class="settings">
-      <trove-ci-issuer-form (saved)="created($event.value.name)" />
+      <quader-ci-issuer-form (saved)="created($event.value.name)" />
     </div>
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
     .settings {
-      max-inline-size: var(--trove-settings-measure);
+      max-inline-size: var(--quader-settings-measure);
     }
   `,
 })

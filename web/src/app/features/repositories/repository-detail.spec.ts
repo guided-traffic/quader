@@ -60,7 +60,7 @@ describe('Repository edit form', () => {
     const fake = get(RepositoriesApi) as FakeRepositoriesApi;
     const save = saveButton(root);
     expect(save.parentElement!.textContent).not.toContain('Delete');
-    const advanced = [...root.querySelectorAll('trove-disclosure')].at(-1)!;
+    const advanced = [...root.querySelectorAll('quader-disclosure')].at(-1)!;
     expect(text(advanced.querySelector('.heading span:not(.material-icons)')!)).toBe('Advanced');
     expect(save.compareDocumentPosition(advanced) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const remove = button(advanced, 'Delete repository');
@@ -216,7 +216,7 @@ describe('Repository edit form', () => {
     expect(guides.calls.at(-1)).toEqual({ repository: 'web/generic-local', client: 'curl' });
     expect(r.root.querySelector('[data-section="generic.local.what"]')).not.toBeNull();
     const configure = r.root.querySelector('[data-section="generic.configure"] .snippet pre')?.textContent ?? '';
-    expect(configure).toContain('trove_curl() {');
+    expect(configure).toContain('quader_curl() {');
     const hrefs = [...r.root.querySelectorAll<HTMLAnchorElement>('.links a')].map((a) => a.getAttribute('href'));
     expect(hrefs).toEqual([
       '/setup?format=generic&client=curl&repository=web%2Fgeneric-local',
@@ -273,14 +273,14 @@ describe('Repository edit form', () => {
 
   it('R-REPO-002 R-UI-021 R-UI-066 the client address and the curl command carry the configured base URL even though the page is served from another origin', async () => {
     const r = await open((fake) => (fake.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT]));
-    expect(location.origin).not.toBe('https://trove.example.net');
-    expect(addressValues(r.root)).toEqual(['https://trove.example.net/files/web/generic-local/']);
+    expect(location.origin).not.toBe('https://quader.example.net');
+    expect(addressValues(r.root)).toEqual(['https://quader.example.net/files/web/generic-local/']);
     type(r.root.querySelector<HTMLTextAreaElement>('#f-description')!, 'Api');
     await settle(r.fixture);
     await openSection(r.fixture, r.root, 'API');
     await settle(r.fixture);
     expect(text(r.root)).toContain(
-      "curl -X PATCH 'https://trove.example.net/api/v1/projects/web/repositories/generic-local'",
+      "curl -X PATCH 'https://quader.example.net/api/v1/projects/web/repositories/generic-local'",
     );
     expect(text(r.root)).not.toContain(location.origin);
   });
@@ -295,7 +295,7 @@ describe('Repository edit form', () => {
       },
     });
     expect(text(r.root)).not.toContain(location.origin);
-    expect(r.root.querySelector('trove-address-field')).toBeNull();
+    expect(r.root.querySelector('quader-address-field')).toBeNull();
   });
 
   it('R-UI-021 the section API shows the stored document and the request that saves the change', async () => {

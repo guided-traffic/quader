@@ -34,14 +34,14 @@ const upgradeCutRelease = "v0.16.0"
 // switched edge) must meet them too.
 const upgradeHold = 45 * time.Second
 
-// underTestVersion is the version the image under test reports (`trove version`), which the registry lists for its replicas.
+// underTestVersion is the version the image under test reports (`quader version`), which the registry lists for its replicas.
 func underTestVersion(t testing.TB) string {
 	t.Helper()
 	out, err := exec.Command("docker", "run", "--rm", upImage(), "version").CombinedOutput()
 	if err != nil {
 		t.Fatalf("docker run %s version: %v\n%s (run `make image` first)", upImage(), err, out)
 	}
-	m := regexp.MustCompile(`^trove (\S+)`).FindStringSubmatch(string(out))
+	m := regexp.MustCompile(`^quader (\S+)`).FindStringSubmatch(string(out))
 	if m == nil {
 		t.Fatalf("cannot read the version from %q", out)
 	}
@@ -102,7 +102,7 @@ func (s *upSampler) mixed() bool {
 
 func requireUpgradeSetup(t *testing.T) {
 	t.Helper()
-	for _, name := range []string{"TROVE_E2E_NPMSTUB_HOST", "TROVE_E2E_NUGETSTUB_HOST", "TROVE_E2E_NPM_CLIENTS_PODS", "TROVE_E2E_NUGET_CLIENTS_PODS"} {
+	for _, name := range []string{"QUADER_E2E_NPMSTUB_HOST", "QUADER_E2E_NUGETSTUB_HOST", "QUADER_E2E_NPM_CLIENTS_PODS", "QUADER_E2E_NUGET_CLIENTS_PODS"} {
 		if os.Getenv(name) == "" {
 			t.Fatalf("%s is not set: run the upgrade tests through `deploy/dev/e2e.sh upgrade` (make e2e SET=upgrade)", name)
 		}
@@ -118,10 +118,10 @@ func requireUpgradeSetup(t *testing.T) {
 //	guard   `helm upgrade` with web.enabled false (the default) is refused before anything changes, naming web.enabled and the three
 //	        steps, and the same values render under `helm template`, which cannot read the cluster;
 //	step 1  `helm upgrade --wait` with --set web.enabled=true: the registry lists the roles web, api, packages and worker;
-//	guard   `helm upgrade` with web.enabled false while the edge still routes to the Service trove is refused (Q-HA-130);
+//	guard   `helm upgrade` with web.enabled false while the edge still routes to the Service quader is refused (Q-HA-130);
 //	step 2  `helm upgrade --wait` with --set web.enabled=true --set web.routed=false: the edge routes by role and no path to the
-//	        Service trove, while trove-web and the Service trove still run;
-//	step 3  `helm upgrade --wait` with web.enabled false: the registry lists no web replica, and trove-web and the Service trove
+//	        Service quader, while quader-web and the Service quader still run;
+//	step 3  `helm upgrade --wait` with web.enabled false: the registry lists no web replica, and quader-web and the Service quader
 //	        are gone;
 //
 // with an npm ci loop set, an npm publish loop, dotnet restore loops and a browser journey running through all of it: no
@@ -135,11 +135,11 @@ func TestUpgrade_R_HA_064_AcrossTheCut(t *testing.T) {
 
 	resetInstallation(t)
 	installPrior(t, prior)
-	if got := kn(t, "get", "deployment", "-l", upgradeRolesSelector, "-o", "jsonpath={.items[*].metadata.name}"); !strings.Contains(" "+got+" ", " trove-web ") || strings.Contains(got, "trove-api") {
+	if got := kn(t, "get", "deployment", "-l", upgradeRolesSelector, "-o", "jsonpath={.items[*].metadata.name}"); !strings.Contains(" "+got+" ", " quader-web ") || strings.Contains(got, "quader-api") {
 		t.Fatalf("%s is not of the shape before the cut: its Deployments are %q", prior.tag, got)
 	}
 
-	t.Run("R-HA-064 web.enabled false against trove-web without a ready trove-api is refused before anything changes", func(t *testing.T) {
+	t.Run("R-HA-064 web.enabled false against quader-web without a ready quader-api is refused before anything changes", func(t *testing.T) {
 		beforeDeps, beforeRev := upDeployments(t), helmRevision(t)
 		_, _, out, err := upgradeToTree(t, "guard")
 		if err == nil {
@@ -157,13 +157,13 @@ func TestUpgrade_R_HA_064_AcrossTheCut(t *testing.T) {
 			t.Errorf("after the refusal the registry lists %s (%v), want only the replicas of %s", describeReplicas(rs), err, prior.tag)
 		}
 		// the same values render where the chart cannot read the cluster: the guard has nothing to look up there
-		targs := append([]string{"template", "trove", upChart(), "-n", cfg.namespace}, upReleaseValues(t, "")...)
+		targs := append([]string{"template", "quader", upChart(), "-n", cfg.namespace}, upReleaseValues(t, "")...)
 		tout, terr := upHelm(t, "guard-template", 3*time.Minute, targs...)
 		if terr != nil {
 			t.Fatalf("helm template with the same values: %v\n%s", terr, tail(tout, 1500))
 		}
-		if !strings.Contains(tout, "name: trove-api") || strings.Contains(tout, "name: trove-web\n") {
-			t.Errorf("helm template did not render the target shape (trove-api present: %v)", strings.Contains(tout, "name: trove-api"))
+		if !strings.Contains(tout, "name: quader-api") || strings.Contains(tout, "name: quader-web\n") {
+			t.Errorf("helm template did not render the target shape (quader-api present: %v)", strings.Contains(tout, "name: quader-api"))
 		}
 		t.Logf("refused: %s", firstLines(out, 3))
 	})
@@ -188,11 +188,11 @@ func TestUpgrade_R_HA_064_AcrossTheCut(t *testing.T) {
 	})
 	t.Logf("between steps 1 and 2 the registry lists: %s", describeReplicas(rs))
 
-	t.Run("R-HA-064 Q-HA-130 web.enabled false while the edge still routes to the Service trove is refused before anything changes", func(t *testing.T) {
+	t.Run("R-HA-064 Q-HA-130 web.enabled false while the edge still routes to the Service quader is refused before anything changes", func(t *testing.T) {
 		beforeDeps, beforeRev := upDeployments(t), helmRevision(t)
 		_, _, out, err := upgradeToTree(t, "guard-bridge")
 		if err == nil {
-			t.Fatalf("helm upgrade with web.enabled false succeeded while the Ingress trove routes to the Service trove; the guard must refuse it\n%s", tail(out, 1500))
+			t.Fatalf("helm upgrade with web.enabled false succeeded while the Ingress quader routes to the Service quader; the guard must refuse it\n%s", tail(out, 1500))
 		}
 		for _, want := range []string{"still routes", "--set web.enabled=true --set web.routed=false", "three upgrades"} {
 			if !strings.Contains(out, want) {
@@ -206,7 +206,7 @@ func TestUpgrade_R_HA_064_AcrossTheCut(t *testing.T) {
 	})
 	time.Sleep(upgradeHold)
 
-	// step 2: the edge moves to the roles while the bridge keeps running behind the Service trove
+	// step 2: the edge moves to the roles while the bridge keeps running behind the Service quader
 	sampler = startSampler()
 	from2, to2, out, err := upgradeToTree(t, "step2", "--set", "web.enabled=true", "--set", "web.routed=false")
 	s2 := sampler.finish()
@@ -214,14 +214,14 @@ func TestUpgrade_R_HA_064_AcrossTheCut(t *testing.T) {
 		t.Fatalf("step 2 (helm upgrade --set web.enabled=true --set web.routed=false): %v\n%s", err, tail(out, 3000))
 	}
 	t.Logf("step 2 took %s; role sets seen in the registry %v, registry reads %v", to2.Sub(from2).Round(time.Second), s2.roles, s2.codes)
-	if got := kn(t, "get", "ingress", "trove", "-o", "jsonpath={.spec.rules[*].http.paths[*].backend.service.name}"); slices.Contains(strings.Fields(got), "trove") || !slices.Contains(strings.Fields(got), "trove-api") {
-		t.Errorf("after step 2 the Ingress trove routes to %q, want the role Services and not the Service trove", got)
+	if got := kn(t, "get", "ingress", "quader", "-o", "jsonpath={.spec.rules[*].http.paths[*].backend.service.name}"); slices.Contains(strings.Fields(got), "quader") || !slices.Contains(strings.Fields(got), "quader-api") {
+		t.Errorf("after step 2 the Ingress quader routes to %q, want the role Services and not the Service quader", got)
 	}
-	if _, ok := upDeployments(t)["trove-web"]; !ok {
-		t.Errorf("trove-web is gone after step 2; the bridge must outlive the step that moves the edge")
+	if _, ok := upDeployments(t)["quader-web"]; !ok {
+		t.Errorf("quader-web is gone after step 2; the bridge must outlive the step that moves the edge")
 	}
-	if got, err := kubectl("-n", cfg.namespace, "get", "service", "trove", "--ignore-not-found", "-o", "name"); err != nil || strings.TrimSpace(got) == "" {
-		t.Errorf("the Service trove is gone after step 2 (%q, %v); it must outlive the step that moves the edge", strings.TrimSpace(got), err)
+	if got, err := kubectl("-n", cfg.namespace, "get", "service", "quader", "--ignore-not-found", "-o", "name"); err != nil || strings.TrimSpace(got) == "" {
+		t.Errorf("the Service quader is gone after step 2 (%q, %v); it must outlive the step that moves the edge", strings.TrimSpace(got), err)
 	}
 	time.Sleep(upgradeHold)
 
@@ -237,11 +237,11 @@ func TestUpgrade_R_HA_064_AcrossTheCut(t *testing.T) {
 		return slices.Equal(upRoles(rs), []string{"api", "packages", "worker"}) && slices.Equal(upVersions(rs), []string{version})
 	})
 	t.Logf("after step 3 the registry lists: %s", describeReplicas(rs))
-	if _, ok := upDeployments(t)["trove-web"]; ok {
-		t.Errorf("trove-web is still there after step 3")
+	if _, ok := upDeployments(t)["quader-web"]; ok {
+		t.Errorf("quader-web is still there after step 3")
 	}
-	if got, err := kubectl("-n", cfg.namespace, "get", "service", "trove", "--ignore-not-found", "-o", "name"); err != nil || strings.TrimSpace(got) != "" {
-		t.Errorf("the Service trove of the old shape is still there after step 3 (%q, %v)", strings.TrimSpace(got), err)
+	if got, err := kubectl("-n", cfg.namespace, "get", "service", "quader", "--ignore-not-found", "-o", "name"); err != nil || strings.TrimSpace(got) != "" {
+		t.Errorf("the Service quader of the old shape is still there after step 3 (%q, %v)", strings.TrimSpace(got), err)
 	}
 	t.Run("R-HA-020 R-HA-064 after step 2 GET /api/v1/system/migrations shows no pending step and the background migrations succeeded", func(t *testing.T) {
 		requireMigrationsDone(t, version)
@@ -308,7 +308,7 @@ func TestUpgrade_R_HA_020_RollingFromThePreviousRelease(t *testing.T) {
 	// the rollback, to the revision the upgrade started from
 	sampler = startSampler()
 	fromR := time.Now()
-	out, err = upHelm(t, "rollback", 20*time.Minute, "rollback", "trove", strconv.Itoa(rev), "-n", cfg.namespace, "--wait", "--timeout", "15m")
+	out, err = upHelm(t, "rollback", 20*time.Minute, "rollback", "quader", strconv.Itoa(rev), "-n", cfg.namespace, "--wait", "--timeout", "15m")
 	toR := time.Now()
 	sr := sampler.finish()
 	if err != nil {

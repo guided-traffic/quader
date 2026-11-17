@@ -4,8 +4,8 @@ Status: built (2026-11-10) for npm, NuGet and Ansible Galaxy collections. Specif
 the operator's page is [manual/admin/import.md](../manual/admin/import.md), the security perspective is
 [security/import.md](../security/import.md).
 
-`trove admin import <format>` copies the packages of an existing registry into a trove local repository. It is a **client**: it
-reads the source over HTTP, writes the target through the format's own publish protocol with a trove token, and has no database, no
+`quader admin import <format>` copies the packages of an existing registry into a Quader local repository. It is a **client**: it
+reads the source over HTTP, writes the target through the format's own publish protocol with a Quader token, and has no database, no
 storage and no server-side component. That is the central fact of the design ([Q-IMP-1](../spec/import.md#q-imp-1--the-import-is-an-admin-subcommand-that-is-a-client-of-both-registries),
 [Q-IMP-2](../spec/import.md#q-imp-2--an-imported-version-takes-the-road-of-a-publish-with-the-token-of-the-operator)): every rule of a
 publish (permissions, digests, immutability, audit, vulnerability evaluation, quota) is decided by the code that decides a publish,
@@ -27,7 +27,7 @@ and the importer reimplements none of them.
 
 ```
 internal/importer/        # the library (a domain package, archtest layer "domain")
-cmd/trove/admin_import.go # the command: flags, secrets from files, the config for proxy.outbound, the summary
+cmd/quader/admin_import.go # the command: flags, secrets from files, the config for proxy.outbound, the summary
 test/integration/importer # the importer against the counting stubs and a replica on the shared stack
 ```
 
@@ -40,10 +40,10 @@ test/integration/importer # the importer against the counting stubs and a replic
 | [assemble.go](../../internal/importer/assemble.go) | `Params`, `Build` (address rule through `repository.NormalizeUpstreamURL`, the two clients, the hop policies), `FormatByID` |
 | [npm.go](../../internal/importer/npm.go) | `NPM`: name grammar, search, `Plan` from the full document, `Held` from the target's document, `Publish` (the `package.json` of the tarball, the streamed base64 body), `Finish` (dist-tags) |
 | [nuget.go](../../internal/importer/nuget.go) | `NuGet`: service index of both sides, search, `Plan` from the registration (paged or inline, gzip tolerated), `Held` (registration plus a `HEAD` for `Repr-Digest`), `Publish` (multipart), `Finish` (unlist only where `deleteMode` is read as `unlist`) |
-| [ansible.go](../../internal/importer/ansible.go) | `Ansible`: name grammar (R-ANS-002, folded to lower case), `Preflight` (the discovery document is a trove one with `v3`), `Search` (the collection index, `links.next` followed), `Plan` (version list and version documents, `artifact.sha256` as the digest, the roles of the source and the deprecation flag as `NotKept`), `Held` (the target's version documents), `Publish` (multipart `sha256` and `file`, then the import task is polled), `Finish` (nothing) |
+| [ansible.go](../../internal/importer/ansible.go) | `Ansible`: name grammar (R-ANS-002, folded to lower case), `Preflight` (the discovery document is a Quader one with `v3`), `Search` (the collection index, `links.next` followed), `Plan` (version list and version documents, `artifact.sha256` as the digest, the roles of the source and the deprecation flag as `NotKept`), `Held` (the target's version documents), `Publish` (multipart `sha256` and `file`, then the import task is polled), `Finish` (nothing) |
 | [journal.go](../../internal/importer/journal.go) | the state file: header, one flushed line per complete package, a cut last line ignored |
 | [order.go](../../internal/importer/order.go) | the import order (source time, then version number), `compareVersions`, `maybeGunzip` |
-| [cmd/trove/admin_import.go](../../cmd/trove/admin_import.go) | `importCmd`, `secret` (file or environment, never an argument), `readNames`, `writeReport` |
+| [cmd/quader/admin_import.go](../../cmd/quader/admin_import.go) | `importCmd`, `secret` (file or environment, never an argument), `readNames`, `writeReport` |
 
 ## How a run goes
 
@@ -63,7 +63,7 @@ test/integration/importer # the importer against the counting stubs and a replic
 
 ## Add a format ("how to add an X")
 
-The format has to exist in trove first: the importer writes a trove repository through that format's protocol. The Galaxy
+The format has to exist in Quader first: the importer writes a Quader repository through that format's protocol. The Galaxy
 collections are the example of a publish that answers with a task: `Ansible.Publish` returns when the task is finished, and a task
 that failed becomes a `*Refusal` with the task's code.
 
@@ -85,11 +85,11 @@ that failed becomes a `*Refusal` with the task's code.
 
 | Tier | Where | What |
 |---|---|---|
-| Unit | [internal/importer](../../internal/importer/importer_test.go), [cmd/trove/admin_import_test.go](../../cmd/trove/admin_import_test.go) | the limiter and the retry (a fake sleep), the address rule, the egress denial, the credential scope with real servers, the state file, the runner's outcomes over a fake `Format`, the npm plan and the publish body, `Repr-Digest` |
+| Unit | [internal/importer](../../internal/importer/importer_test.go), [cmd/quader/admin_import_test.go](../../cmd/quader/admin_import_test.go) | the limiter and the retry (a fake sleep), the address rule, the egress denial, the credential scope with real servers, the state file, the runner's outcomes over a fake `Format`, the npm plan and the publish body, `Repr-Digest` |
 | Integration | [test/integration/importer](../../test/integration/importer) (`go test -tags integration`, through the slot wrapper) | the importer over TLS to the counting stubs and into a replica started in the test: full imports of both formats, rerun, a run cut after two publishes and resumed, a conflicting version, a bad digest, a reader token, the unlisted state with `deleteMode` `unlist` and `delete`. The audit log and the stored versions are read from PostgreSQL |
 | e2e | none yet | needs the kind cluster; the sets of the two formats gain `npm install` and `dotnet restore` of imported packages |
 
-The integration environment reaches the replica by the name its base URL carries (`trove.test`), using the factory's
+The integration environment reaches the replica by the name its base URL carries (`quader.test`), using the factory's
 `WithDialOverride` test seam, and admits `127.0.0.1` in the address policy as an operator would. A run is cut with a
 `RoundTripper` around the target client that cancels the context after the n-th `201`.
 

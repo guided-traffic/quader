@@ -1,6 +1,6 @@
 package authz
 
-import "github.com/guided-traffic/trove/internal/qname"
+import "github.com/guided-traffic/quader/internal/qname"
 
 // testProject is the project key of a fixture repository: the repositories of the project fixtures live in their
 // projects, every other one in the project "it".

@@ -1,5 +1,5 @@
-// Package openpgp is trove's only door to the OpenPGP module (Q-ARCH-383, Q-DEB-24). It signs the Release documents of local
-// and virtual Debian repositories with keys trove generates or imports, and it verifies the signatures of the documents a remote
+// Package openpgp is quader's only door to the OpenPGP module (Q-ARCH-383, Q-DEB-24). It signs the Release documents of local
+// and virtual Debian repositories with keys quader generates or imports, and it verifies the signatures of the documents a remote
 // repository's upstream signs. Nothing outside this package imports the module.
 //
 // The package is a leaf: it reads no clock (every function takes the time it decides against), writes no log line and has no
@@ -27,7 +27,7 @@ const (
 	AlgorithmRSA uint8 = 1
 	// AlgorithmEdDSALegacy is EdDSA over Ed25519 as GnuPG 2.1 and later write it (algorithm 22).
 	AlgorithmEdDSALegacy uint8 = 22
-	// AlgorithmEd25519 is the Ed25519 of RFC 9580 (algorithm 27), which trove never generates or imports.
+	// AlgorithmEd25519 is the Ed25519 of RFC 9580 (algorithm 27), which quader never generates or imports.
 	AlgorithmEd25519 uint8 = 27
 )
 

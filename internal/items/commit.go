@@ -9,14 +9,14 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/qname"
 
-	"github.com/guided-traffic/trove/internal/audit"
-	"github.com/guided-traffic/trove/internal/blob"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/meta"
-	"github.com/guided-traffic/trove/internal/meta/postgres/q"
-	"github.com/guided-traffic/trove/internal/repository"
+	"github.com/guided-traffic/quader/internal/audit"
+	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 const retryAfter = 2 * time.Second
@@ -373,7 +373,7 @@ func (s *Store) linkFile(ctx context.Context, tx meta.Tx, repo RepoRef, spec Com
 		case rows[0].Kind != KindFile:
 			return PathConflict("the path is a folder")
 		case rows[0].Generated && !spec.generated:
-			// A file trove generates from rows is never written by a client (R-STOR-018, Q-STOR-182); only the publication port and
+			// A file quader generates from rows is never written by a client (R-STOR-018, Q-STOR-182); only the publication port and
 			// a format's own companions (Companion.Generated) replace it.
 			return GeneratedItem()
 		case spec.CreateOnly:

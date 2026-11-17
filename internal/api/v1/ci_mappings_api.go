@@ -6,19 +6,19 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/auth/jws"
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/ci"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/qname"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/auth/jws"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/ci"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // The identity-mapping operations and the dry run (R-CI-009, R-CI-019), work package W3. The declarations are
 // in the document: ci:read for the reads and the dry run, ci:write with recent authentication for create,
-// replace and delete, x-trove-if-match required on the replace. The handlers are thin: the service
+// replace and delete, x-quader-if-match required on the replace. The handlers are thin: the service
 // ([ci.Mappings]) owns the rules, the transaction, the principal, the audit events and the revocation.
 //
 //   - createCiMapping, replaceCiMapping: the answer carries `warnings` (R-CI-010, R-CI-011); 409 priority_taken;

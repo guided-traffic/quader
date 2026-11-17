@@ -3,11 +3,11 @@ package v1
 import (
 	"net/http"
 
-	"github.com/guided-traffic/trove/internal/api/edge"
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/httpserver"
-	"github.com/guided-traffic/trove/internal/sysstate"
+	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/sysstate"
 )
 
 // The banner and the read-only maintenance mode (R-OPS-025, R-OPS-024; the settings surface of R-API-037). Both live in system_state
@@ -116,7 +116,7 @@ func (s *Server) GetSystemMaintenance(w http.ResponseWriter, r *http.Request) {
 }
 
 // PutSystemMaintenance implements PUT /api/v1/system/maintenance (R-OPS-024); settings:write was decided by the shared step, and the
-// operation declares x-trove-maintenance: allowed, so an administrator can switch the mode off while it is on.
+// operation declares x-quader-maintenance: allowed, so an administrator can switch the mode off while it is on.
 func (s *Server) PutSystemMaintenance(w http.ResponseWriter, r *http.Request) {
 	store, err := s.systemState()
 	var in gen.MaintenanceInput
@@ -156,7 +156,7 @@ func strOf[T ~string](p *T) string {
 }
 
 // maintenanceGate is the refusal of R-OPS-024 in the shared step: an operation that writes and does not declare
-// x-trove-maintenance: allowed answers 503 unavailable with Retry-After and the operator's message while the installation is in
+// x-quader-maintenance: allowed answers 503 unavailable with Retry-After and the operator's message while the installation is in
 // read-only mode. It runs after the declaration was decided, so a caller who may not do the action is told 401 or 403 and learns
 // nothing from the mode. A replica without the settings (a shell, a unit test) never refuses.
 func (s *Server) maintenanceGate(r *http.Request, op Operation) error {

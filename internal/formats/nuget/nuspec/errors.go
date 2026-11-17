@@ -3,7 +3,7 @@ package nuspec
 import (
 	"errors"
 
-	"github.com/guided-traffic/trove/internal/errs"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
 // CodeInvalidPackage is the code of every refusal of a package's content: the

@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/api/v1/gen"
-	"github.com/guided-traffic/trove/internal/errs"
-	"github.com/guided-traffic/trove/internal/formats"
-	"github.com/guided-traffic/trove/internal/packages/readme"
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/packages/readme"
 )
 
 func guideOf(t *testing.T, w *httptest.ResponseRecorder) gen.Guide {
@@ -50,7 +50,7 @@ func sectionOf(t *testing.T, g gen.Guide, id string) gen.GuideSection {
 // snippets the guide attaches are the client setup's answer for the same repository
 // with credentials=env, byte for byte.
 func TestR_API_053_TheGuideShowsTheSnippetsOfTheClientSetup(t *testing.T) {
-	h := setupServer(t, "https://trove.example.com", true)
+	h := setupServer(t, "https://quader.example.com", true)
 	for _, client := range []string{"npm", "pnpm", "yarn", "yarn-classic"} {
 		g := guideOf(t, get(h, "/api/v1/projects/it/repositories/npm-local/guide?client="+client))
 		var setup gen.ClientSetup
@@ -86,7 +86,7 @@ func snippetsEqual(a, b gen.ClientSnippet) bool {
 // the HTML is the sanitized rendering and the credential reference is the configured
 // variable's.
 func TestR_API_053_TheSectionsFollowTheClassInTopicOrder(t *testing.T) {
-	h := setupServer(t, "https://trove.example.com", true)
+	h := setupServer(t, "https://quader.example.com", true)
 	local := guideOf(t, get(h, "/api/v1/projects/it/repositories/npm-local/guide?client=yarn"))
 	want := []string{"npm.local.what", "npm.configure", "npm.authenticate", "npm.install", "npm.publish", "npm.maintain", "npm.audit", "npm.lockfiles", "npm.troubleshooting"}
 	if got := sectionIDs(local); !slices.Equal(got, want) {
@@ -100,7 +100,7 @@ func TestR_API_053_TheSectionsFollowTheClassInTopicOrder(t *testing.T) {
 		t.Errorf("not rendered: %s", what.Html)
 	}
 	conf := sectionOf(t, local, "npm.configure")
-	if !strings.Contains(conf.Html, "${MY_TOKEN}") || strings.Contains(conf.Html, "TROVE_TOKEN") {
+	if !strings.Contains(conf.Html, "${MY_TOKEN}") || strings.Contains(conf.Html, "QUADER_TOKEN") {
 		t.Errorf("the credential reference is not the configured variable's: %s", conf.Html)
 	}
 
@@ -121,7 +121,7 @@ func TestR_API_053_TheSectionsFollowTheClassInTopicOrder(t *testing.T) {
 // TestR_API_053_ACallerWhoMayNotPublishIsTold: without deploy on the target the guide
 // names no target and says why.
 func TestR_API_053_ACallerWhoMayNotPublishIsTold(t *testing.T) {
-	g := guideOf(t, get(setupServer(t, "https://trove.example.com", false), "/api/v1/projects/it/repositories/npm-local/guide?client=npm"))
+	g := guideOf(t, get(setupServer(t, "https://quader.example.com", false), "/api/v1/projects/it/repositories/npm-local/guide?client=npm"))
 	if g.PublishTarget != nil {
 		t.Fatalf("%v", *g.PublishTarget)
 	}
@@ -133,7 +133,7 @@ func TestR_API_053_ACallerWhoMayNotPublishIsTold(t *testing.T) {
 // TestR_API_053_AnAnonymousReaderGetsNoCredentialSteps: an anonymous caller gets the
 // snippets without a credential line and no publishing sections.
 func TestR_API_053_AnAnonymousReaderGetsNoCredentialSteps(t *testing.T) {
-	h := setupServerAs(t, "https://trove.example.com", true, nil)
+	h := setupServerAs(t, "https://quader.example.com", true, nil)
 	g := guideOf(t, get(h, "/api/v1/projects/it/repositories/npm-local/guide?client=yarn"))
 	if g.Credentials != gen.GuideCredentialsNone || g.PublishTarget != nil {
 		t.Fatalf("%+v", g)
@@ -163,14 +163,14 @@ func TestR_API_053_AnAnonymousReaderGetsNoCredentialSteps(t *testing.T) {
 // TestR_API_053_TheGuideOfAFormat: the guide without a repository names the address
 // with the placeholder and no target; it refuses what it cannot answer.
 func TestR_API_053_TheGuideOfAFormat(t *testing.T) {
-	h := setupServer(t, "https://trove.example.com", true)
+	h := setupServer(t, "https://quader.example.com", true)
 	g := guideOf(t, get(h, "/api/v1/formats/npm/guide?class=virtual&client=pnpm"))
-	if g.Repository != nil || g.PublishTarget != nil || g.RegistryUrl != "https://trove.example.com/api/npm/"+formats.GuideProjectPlaceholder+"/"+formats.GuideRepositoryPlaceholder+"/" ||
+	if g.Repository != nil || g.PublishTarget != nil || g.RegistryUrl != "https://quader.example.com/api/npm/"+formats.GuideProjectPlaceholder+"/"+formats.GuideRepositoryPlaceholder+"/" ||
 		g.Class != gen.GuideClassVirtual || sectionIDs(g)[0] != "npm.virtual.what" {
 		t.Fatalf("%+v", g)
 	}
 	conf := sectionOf(t, g, "npm.configure").Snippets
-	if len(conf) != 1 || !strings.Contains(conf[0].Content, "//trove.example.com/api/npm/<project>/<repository>/:_authToken=${MY_TOKEN}") {
+	if len(conf) != 1 || !strings.Contains(conf[0].Content, "//quader.example.com/api/npm/<project>/<repository>/:_authToken=${MY_TOKEN}") {
 		t.Errorf("%+v", conf)
 	}
 	for q, want := range map[string]int{
@@ -222,7 +222,7 @@ func (clientless) Guide() []formats.GuideSection { return nil }
 // and publish snippets of the guide of a generic repository are the client setup's
 // answer for curl with credentials=env, byte for byte.
 func TestR_GENERIC_016_TheGuideShowsTheSnippetsOfTheClientSetup(t *testing.T) {
-	h := setupServer(t, "https://trove.example.com", true)
+	h := setupServer(t, "https://quader.example.com", true)
 	g := guideOf(t, get(h, "/api/v1/projects/it/repositories/files/guide?client=curl"))
 	var setup gen.ClientSetup
 	w := get(h, "/api/v1/projects/it/repositories/files/client-setup?credentials=env&client=curl")
@@ -241,7 +241,7 @@ func TestR_GENERIC_016_TheGuideShowsTheSnippetsOfTheClientSetup(t *testing.T) {
 			t.Errorf("%s: guide %+v, setup %+v", tab, got, want)
 		}
 	}
-	if g.RegistryUrl != "https://trove.example.com/files/it/files/" || g.Format != "generic" || g.Class != gen.GuideClassLocal || g.Credentials != gen.GuideCredentialsEnv {
+	if g.RegistryUrl != "https://quader.example.com/files/it/files/" || g.Format != "generic" || g.Class != gen.GuideClassLocal || g.Credentials != gen.GuideCredentialsEnv {
 		t.Errorf("%+v", g)
 	}
 	want := []string{
@@ -270,8 +270,8 @@ func TestR_API_053_AddressesNeverComeFromTheHostOfTheRequest(t *testing.T) {
 // TestR_API_053_NoGuideHoldsAToken: no answer, for any class, client and caller, matches
 // the shape of a token.
 func TestR_API_053_NoGuideHoldsAToken(t *testing.T) {
-	shape := regexp.MustCompile(`trv_(pat|sat|cit)_`)
-	for _, h := range []http.Handler{setupServer(t, "https://trove.example.com", true), setupServerAs(t, "https://trove.example.com", false, nil)} {
+	shape := regexp.MustCompile(`qdr_(pat|sat|cit)_`)
+	for _, h := range []http.Handler{setupServer(t, "https://quader.example.com", true), setupServerAs(t, "https://quader.example.com", false, nil)} {
 		for _, p := range []string{"projects/it/repositories/npm-local/guide?", "projects/it/repositories/npm-remote/guide?", "formats/npm/guide?class=virtual&"} {
 			for _, client := range []string{"npm", "pnpm", "yarn", "yarn-classic"} {
 				w := get(h, "/api/v1/"+p+"client="+client)
@@ -297,8 +297,8 @@ func TestR_API_053_TheEndpointNoteIsForEndpointsWithRules(t *testing.T) {
 	}
 	f, _ := formats.Lookup("npm")
 	in := guideInput{
-		Format: f, Class: formats.Virtual, Client: "npm", TokenEnvVar: "TROVE_TOKEN",
-		Data: formats.SetupData{RegistryURL: "https://trove.example.com/api/npm/it/npm-all/", Repository: "npm-all"},
+		Format: f, Class: formats.Virtual, Client: "npm", TokenEnvVar: "QUADER_TOKEN",
+		Data: formats.SetupData{RegistryURL: "https://quader.example.com/api/npm/it/npm-all/", Repository: "npm-all"},
 	}
 	without, err := renderGuide(rd, in)
 	if err != nil {
@@ -320,7 +320,7 @@ func TestR_API_053_TheEndpointNoteIsForEndpointsWithRules(t *testing.T) {
 // TestR_API_053_TheFormatsNameTheirClients: the catalog lists npm's four clients in the
 // format's order and curl for generic.
 func TestR_API_053_TheFormatsNameTheirClients(t *testing.T) {
-	w := get(setupServer(t, "https://trove.example.com", true), "/api/v1/formats")
+	w := get(setupServer(t, "https://quader.example.com", true), "/api/v1/formats")
 	var out gen.FormatList
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || w.Code != 200 {
 		t.Fatalf("%d %s", w.Code, w.Body.String())

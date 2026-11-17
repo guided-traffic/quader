@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/repository"
-	"github.com/guided-traffic/trove/test/integration/testenv"
-	"github.com/guided-traffic/trove/test/npmstub"
+	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/npmstub"
 )
 
 // The byte bound and the release at shutdown against the counting npm stub (E6b.4; R-REPO-052, R-REPO-053). The npm registry
@@ -97,7 +97,7 @@ func TestR_REPO_053_AShutdownReleasesThePassAndASecondProcessFetchesEveryTarball
 	r.dumpOnFailure()
 	names := r.publishMany("@acme", packages)
 	r.setStub(npmstub.Mode{DelayMS: map[string]int{npmstub.KindTarball: 60}})
-	a := r.runner("runner-a", "TROVE_SERVER_SHUTDOWN_TIMEOUT=8s")
+	a := r.runner("runner-a", "QUADER_SERVER_SHUTDOWN_TIMEOUT=8s")
 	t0 := r.pass(a)
 	began := time.Now()
 	testenv.WaitFor(t, "50 packages to be done", passWithin, func() bool {

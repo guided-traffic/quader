@@ -11,22 +11,22 @@ remote adapter ([remote.go](../../internal/formats/deb/remote.go), [remote_gate.
 ([validate_deb.go](../../internal/repository/validate_deb.go)) and the OpenPGP library under the verification
 ([internal/openpgp](../../internal/openpgp)). The requirements are
 [R-DEB-018 to R-DEB-023](../spec/formats/debian.md#r-deb-019--remote-repository-upstream-and-release-documents); the developer view is
-[deb.md](../developer/deb.md#the-remote-class). The keys trove signs with are [deb-signing.md](deb-signing.md); the egress, credential and
+[deb.md](../developer/deb.md#the-remote-class). The keys Quader signs with are [deb-signing.md](deb-signing.md); the egress, credential and
 redirect rules every remote repository follows are [remote-repositories.md](remote-repositories.md) and [egress.md](egress.md).
 
 A remote repository passes its upstream's archive through. It signs nothing (Q-DEB-13): the release documents reach the client byte for
-byte, so the client verifies the upstream's own signatures with a key it holds. What trove adds is a second check in front of its cache,
+byte, so the client verifies the upstream's own signatures with a key it holds. What Quader adds is a second check in front of its cache,
 when the operator gives it the upstream's keys.
 
 ## Trust boundaries
 
 ```
- APT client ---(1)--> trove remote repository ---(2)--> upstream archive (deb.debian.org, archive.ubuntu.com, ...)
+ APT client ---(1)--> Quader remote repository ---(2)--> upstream archive (deb.debian.org, archive.ubuntu.com, ...)
    holds the key         verifies, stores, serves           signs InRelease / Release.gpg with its archive key
    verifies InRelease    deb.upstreamKeys (optional)        serves indexes, by-hash files, pool files
 
  (1) the client's request is decided by the decision point (read; a package file on its name and version, everything else on its path)
- (2) trove's request is built from remote.url and the path the client asked for; the egress, credential and redirect rules apply
+ (2) Quader's request is built from remote.url and the path the client asked for; the egress, credential and redirect rules apply
 ```
 
 | Party | Trusts | Can do |
@@ -49,7 +49,7 @@ when the operator gives it the upstream's keys.
 
 The order of the rules matters in one place: **the anti-rollback**. `floor_date` holds the newest `Date` of any release that was ever
 verified for a directory, rises only, and survives the removal of the key that verified it. While keys are set a received release
-older than the floor leaves the stored document where it is and counts in `trove_deb_release_rollbacks_total`, so a validly signed old
+older than the floor leaves the stored document where it is and counts in `quader_deb_release_rollbacks_total`, so a validly signed old
 release replayed by a mirror or an attacker, also one signed by a key that stays in the set, never replaces a newer one. Between
 unverified releases (no keys) the received copy replaces the stored one by fetch time, and the 10-minute bound on `Date` keeps a forged
 far-future date from freezing the remote. Integration tests: `TestR_DEB_020_ARepositoryWithKeysStoresAReleaseOnlyWhenAKeyOfTheSetVerifiesIt`,
@@ -129,7 +129,7 @@ against the index it read, so a wrong file fails at the client and stays in the 
 
 ### H-738 · A failed verification is written once an hour per replica and only where a client meets it
 
-`trove_deb_upstream_signature_failures_total` and the event `deb.upstream_signature_invalid` are recorded by the handler that sees the
+`quader_deb_upstream_signature_failures_total` and the event `deb.upstream_signature_invalid` are recorded by the handler that sees the
 error of the fill (Q-DEB-86). A fill made by a job (the parse, the re-verification, the shadowing check's fetch) logs a failure and does
 not count it, and every replica writes the event at most once an hour for a repository and directory, so n replicas may write it n times.
 An upstream that only a job meets goes unreported in the metric until a client asks. Live whenever a remote has keys; real for operators
@@ -138,7 +138,7 @@ who alert on the metric only.
 ### H-739 · A pdiff patch is passed through unverified
 
 Files below a `*.diff/` directory other than its `Index` are passed through as content (R-DEB-021): the release lists the patches only
-through their `Index`, and trove does not parse that file, so a patch is stored without a digest to compare. APT verifies a patch against
+through their `Index`, and Quader does not parse that file, so a patch is stored without a digest to compare. APT verifies a patch against
 the hashes of the `Index` it read, which the release lists, and fails the update on a wrong one. Live for every remote whose upstream
 serves pdiffs; real for upstreams that serve wrong patches.
 

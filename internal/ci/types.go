@@ -4,10 +4,10 @@ import (
 	"slices"
 	"time"
 
-	"github.com/guided-traffic/trove/internal/authz"
-	"github.com/guided-traffic/trove/internal/ci/claims"
-	"github.com/guided-traffic/trove/internal/ci/reason"
-	"github.com/guided-traffic/trove/internal/ci/subject"
+	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/ci/reason"
+	"github.com/guided-traffic/quader/internal/ci/subject"
 )
 
 // Reason is a reason name of the exchange or a management `code` (internal/ci/reason).
@@ -132,7 +132,7 @@ type IssuerInput struct {
 }
 
 // DeclaredIssuer is an issuer of ci.issuers in the system configuration (R-CI-001, Q-CI-16): the
-// same fields in snake_case, applied by `trove migrate` with source "configuration".
+// same fields in snake_case, applied by `quader migrate` with source "configuration".
 type DeclaredIssuer = IssuerInput
 
 // KeyInfo is one key of a stored key set as the key status shows it (R-CI-002).
@@ -166,7 +166,7 @@ type KeyStatus struct {
 	LastErrorAt   *time.Time
 }
 
-// RefreshTrigger is the trigger label of trove_ci_signing_keys_refresh_total (R-CI-020).
+// RefreshTrigger is the trigger label of quader_ci_signing_keys_refresh_total (R-CI-020).
 type RefreshTrigger string
 
 // The triggers.

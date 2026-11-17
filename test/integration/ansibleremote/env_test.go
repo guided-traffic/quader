@@ -28,10 +28,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/guided-traffic/trove/internal/auth/scope"
-	_ "github.com/guided-traffic/trove/internal/formats/all"
-	"github.com/guided-traffic/trove/test/ansiblestub"
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/internal/auth/scope"
+	_ "github.com/guided-traffic/quader/internal/formats/all"
+	"github.com/guided-traffic/quader/test/ansiblestub"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func TestMain(m *testing.M) { os.Exit(testenv.Main(m)) }
@@ -53,7 +53,7 @@ const (
 	// host is an extraHosts entry with sendCredentials in rHub1 to rHub3 and without in rHubNoHost.
 	rHub1, rHub2, rHub3, rHubNoHost = "ans-hub1", "ans-hub2", "ans-hub3", "ans-hubnohost"
 	// hubSecretEnv holds the offline token of the hub repositories.
-	hubSecretEnv = "TROVE_CAC_ANSIBLEREMOTE_IT_OFFLINE_TOKEN"
+	hubSecretEnv = "QUADER_CAC_ANSIBLEREMOTE_IT_OFFLINE_TOKEN"
 	// offlineToken is that token; the stub's realm takes it once SetRealm lists it.
 	offlineToken = "offline-token-1"
 )
@@ -97,11 +97,11 @@ func newEnv(t *testing.T, o options) *aenv {
 
 	ca := testenv.WriteFile(t, t.TempDir(), "stub-ca.pem", string(ss.CAPEM))
 	e.st = testenv.NewStack(t, testenv.StackOptions{Name: "ansibleremote", Valkey: o.valkey, Env: append([]string{
-		"TROVE_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]",
-		`TROVE_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-		"TROVE_PROXY_LOCK_POLL_INTERVAL_MS=50",
-		"TROVE_VULNERABILITIES_SOURCES_OSV_MODE=off",
-		"TROVE_API_RATE_LIMITS_ENABLED=false",
+		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]",
+		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
+		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
+		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off",
+		"QUADER_API_RATE_LIMITS_ENABLED=false",
 	}, o.env...)})
 
 	roleHosts := []string{ansiblestub.DefaultGitHubHost, ansiblestub.DefaultCodeloadHost}
@@ -241,7 +241,7 @@ func (e *aenv) as(r *testenv.Replica, authorization, repo, path string) testenv.
 	return e.st.Do(r, http.MethodGet, base(repo)+path, "", nil, "Authorization", authorization)
 }
 
-// basic is the Authorization value of a client that sends a trove token as the password of HTTP Basic, as netrc does.
+// basic is the Authorization value of a client that sends a quader token as the password of HTTP Basic, as netrc does.
 func basic(token string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte("netrc:"+token))
 }

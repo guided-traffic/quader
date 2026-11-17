@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/guided-traffic/trove/test/integration/testenv"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_EP_018_PathRulesDecideAnNPMPackageOnItsDocumentPath: an exposure rule's path patterns on an npm repository are
@@ -38,10 +38,10 @@ func TestR_EP_018_PathRulesDecideAnNPMPackageOnItsDocumentPath(t *testing.T) {
 		if a.Status != http.StatusCreated {
 			t.Fatalf("rule: %d %s", a.Status, a.Body)
 		}
-		x.epoch = a.Header.Get("Trove-Authz-Epoch")
+		x.epoch = a.Header.Get("Quader-Authz-Epoch")
 	}
 	on := func(repo, path string) testenv.Answer {
-		return st.DoAt(r.Addr("customers"), customersHost, "GET", "/api/npm/it/"+repo+"/"+path, x.acmeSAT, nil, "Trove-Authz-Min-Epoch", x.epoch)
+		return st.DoAt(r.Addr("customers"), customersHost, "GET", "/api/npm/it/"+repo+"/"+path, x.acmeSAT, nil, "Quader-Authz-Min-Epoch", x.epoch)
 	}
 	reads := func(name string) []string {
 		return []string{name, name + "/1.0.0", name + "/-/" + name + "-1.0.0.tgz", "-/package/" + name + "/dist-tags"}
@@ -114,9 +114,9 @@ func TestR_EP_018_AVersionPathRuleHidesTheVersionFromNPMDocuments(t *testing.T) 
 	if a.Status != http.StatusCreated {
 		t.Fatalf("rule: %d %s", a.Status, a.Body)
 	}
-	x.epoch = a.Header.Get("Trove-Authz-Epoch")
+	x.epoch = a.Header.Get("Quader-Authz-Epoch")
 	on := func(path string, hdr ...string) testenv.Answer {
-		return st.DoAt(r.Addr("customers"), customersHost, "GET", "/api/npm/it/npm-pver/"+path, x.acmeSAT, nil, append(hdr, "Trove-Authz-Min-Epoch", x.epoch)...)
+		return st.DoAt(r.Addr("customers"), customersHost, "GET", "/api/npm/it/npm-pver/"+path, x.acmeSAT, nil, append(hdr, "Quader-Authz-Min-Epoch", x.epoch)...)
 	}
 	if a := on("tool/-/tool-2.0.0.tgz"); a.Status != http.StatusNotFound {
 		t.Errorf("the excluded tarball on customers: %d, want 404", a.Status)

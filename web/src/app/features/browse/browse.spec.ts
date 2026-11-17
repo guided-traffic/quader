@@ -93,7 +93,7 @@ describe('File tree', () => {
     expect(text(root)).toContain('releases/1.0/app.zip');
     expect(text(root)).toContain('SHA-256');
     expect(
-      root.querySelectorAll('trove-copy-button button[aria-label="Copy checksum"]').length,
+      root.querySelectorAll('quader-copy-button button[aria-label="Copy checksum"]').length,
     ).toBeGreaterThan(1);
     const download = [...root.querySelectorAll<HTMLAnchorElement>('a')].find((a) =>
       a.textContent?.includes('Download'),
@@ -291,16 +291,16 @@ describe('File tree', () => {
     expect(text(root)).toContain('"kind": "file"');
   });
 
-  it('R-UI-010 the curl commands quote the header in double quotes so the shell expands $TROVE_TOKEN', async () => {
+  it('R-UI-010 the curl commands quote the header in double quotes so the shell expands $QUADER_TOKEN', async () => {
     const { root } = await open({ repo: 'web/generic-local', path: 'readme.txt', tab: 'api' });
     const blocks = Array.from(root.querySelectorAll('pre.code-block')).map((e) => e.textContent ?? '');
     const commands = blocks.filter((b) => b.startsWith('curl'));
     expect(commands.length).toBe(2);
     for (const c of commands) {
-      expect(c).toContain('-H "Authorization: Bearer $TROVE_TOKEN"');
-      expect(c).not.toContain("'Authorization: Bearer $TROVE_TOKEN'");
+      expect(c).toContain('-H "Authorization: Bearer $QUADER_TOKEN"');
+      expect(c).not.toContain("'Authorization: Bearer $QUADER_TOKEN'");
     }
-    expect(commands[0]).toMatch(/ 'https:\/\/trove\.example\.net\/api\/v1\/projects\/web\/repositories\/generic-local\/items\?path=readme\.txt'$/);
+    expect(commands[0]).toMatch(/ 'https:\/\/quader\.example\.net\/api\/v1\/projects\/web\/repositories\/generic-local\/items\?path=readme\.txt'$/);
     expect(commands[1]).toMatch(/^curl -L -O -H /);
   });
 
@@ -446,7 +446,7 @@ describe('Browser panes', () => {
     expect(text(root.querySelector('.path')!)).toBe('web/files');
     expect(text(root)).toContain('Build outputs');
     expect(root.querySelector('a[href*="/setup"]')).toBeTruthy();
-    const rows = [...root.querySelectorAll('trove-data-table tbody th')].map(text);
+    const rows = [...root.querySelectorAll('quader-data-table tbody th')].map(text);
     expect(rows).toEqual(expect.arrayContaining([expect.stringContaining('releases'), expect.stringContaining('readme.txt')]));
   });
 });
@@ -501,7 +501,7 @@ describe('Browser empty states and actions', () => {
       };
     });
     const link = [...old.root.querySelectorAll('#browse-actions a')].find((a) => a.textContent?.includes('Download'))!;
-    expect(link.getAttribute('href')).toBe('https://trove.example.net/files/web/generic-local/readme.txt');
+    expect(link.getAttribute('href')).toBe('https://quader.example.net/files/web/generic-local/readme.txt');
 
     const current = await open({ repo: 'web/generic-local', path: 'readme.txt' });
     const href = [...current.root.querySelectorAll('#browse-actions a')].find((a) => a.textContent?.includes('Download'))!;
@@ -527,7 +527,7 @@ describe('Browser empty states and actions', () => {
 
   it('R-UI-010 a folder is browsed from the right pane: its children link to their own address', async () => {
     const { root } = await openWith({ repo: 'web/files', path: 'releases' }, MIXED);
-    const link = [...root.querySelectorAll<HTMLAnchorElement>('trove-data-table a.entry')].find((a) =>
+    const link = [...root.querySelectorAll<HTMLAnchorElement>('quader-data-table a.entry')].find((a) =>
       text(a).includes('1.0'),
     );
     expect(link?.getAttribute('href')).toContain('/projects/web/browse/files/releases/1.0');

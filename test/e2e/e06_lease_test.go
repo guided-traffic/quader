@@ -15,7 +15,7 @@ import (
 
 // schedulerHolders asks PostgreSQL, the authority of the lease: the session advisory lock
 // (class 1 = LockLease, object 1 = the scheduler lease, internal/cluster/locks.go) joined to the
-// connection that holds it. The connection's application_name is trove:<pod>:lease.
+// connection that holds it. The connection's application_name is quader:<pod>:lease.
 const schedulerHoldersSQL = `SELECT a.application_name FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid
  WHERE l.locktype = 'advisory' AND l.classid = 1 AND l.objid = 1 AND l.objsubid = 2 AND l.granted ORDER BY 1`
 
@@ -25,7 +25,7 @@ func schedulerHolders(t testing.TB) []string {
 	for _, line := range strings.Split(sql(t, schedulerHoldersSQL), "\n") {
 		if line = strings.TrimSpace(line); line != "" {
 			parts := strings.Split(line, ":")
-			if len(parts) != 3 || parts[0] != "trove" || parts[2] != "lease" {
+			if len(parts) != 3 || parts[0] != "quader" || parts[2] != "lease" {
 				t.Fatalf("unexpected lease connection name %q", line)
 			}
 			out = append(out, parts[1])
@@ -49,7 +49,7 @@ func TestE06Lease(t *testing.T) {
 		if len(h) != 1 || !workers[h[0]] {
 			t.Fatalf("scheduler lease holders %v, want exactly one worker pod of %v", h, workers)
 		}
-		for _, line := range strings.Split(sql(t, `SELECT DISTINCT application_name FROM pg_stat_activity WHERE application_name LIKE 'trove:%:lease'`), "\n") {
+		for _, line := range strings.Split(sql(t, `SELECT DISTINCT application_name FROM pg_stat_activity WHERE application_name LIKE 'quader:%:lease'`), "\n") {
 			if line = strings.TrimSpace(line); line != "" && webs[strings.Split(line, ":")[1]] {
 				t.Errorf("api or packages replica holds a lease connection: %s", line)
 			}
@@ -57,7 +57,7 @@ func TestE06Lease(t *testing.T) {
 		// Jobs run while this is sampled, so locked_by is populated.
 		l := startDriverLoad(t, "e06-steady", 25*time.Second)
 		for i := 0; i < 20; i++ {
-			if n := sql(t, `SELECT count(*) FROM trove.job j JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE r.roles && ARRAY['api','packages','web']`); n != "0" {
+			if n := sql(t, `SELECT count(*) FROM quader.job j JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE r.roles && ARRAY['api','packages','web']`); n != "0" {
 				t.Errorf("%s jobs are locked by an api or packages replica", n)
 			}
 			time.Sleep(time.Second)
@@ -65,7 +65,7 @@ func TestE06Lease(t *testing.T) {
 		s := l.wait(t)
 		noteResult(t, "e06-steady", s)
 		// P-13 and P-14 on the dev profile, Valkey up: delivery and the p50 per change, the p99 only with
-		// TROVE_PERF_GATE=1, because the CPU limit of the runner pods throttles a process for 100 ms at a time (Q-ARCH-220).
+		// QUADER_PERF_GATE=1, because the CPU limit of the runner pods throttles a process for 100 ms at a time (Q-ARCH-220).
 		if s.Changes.NotPropagated != 0 || s.Changes.WriteErrors != 0 || s.Jobs.EnqueueErrors != 0 || s.Jobs.Unfinished != 0 {
 			t.Errorf("steady load had errors: %+v %+v", s.Changes, s.Jobs)
 		}
@@ -181,7 +181,7 @@ func TestE06Lease(t *testing.T) {
 				// full 30 s; the 2 s are the polling of this test (every 500 ms, one API call each).
 				t.Errorf("the registry showed the killed instance as lost after %s, want within system.heartbeat_stale_after (30 s) plus 2 s of observation", lostAfter)
 			}
-			if n := sql(t, `SELECT count(*) FROM trove.job j JOIN trove.replica r ON r.instance_uid = j.locked_by WHERE r.roles && ARRAY['api','packages','web']`); n != "0" {
+			if n := sql(t, `SELECT count(*) FROM quader.job j JOIN quader.replica r ON r.instance_uid = j.locked_by WHERE r.roles && ARRAY['api','packages','web']`); n != "0" {
 				t.Errorf("%s jobs are locked by an api or packages replica", n)
 			}
 			// selWorker holds the main worker and its pools (the vuln pool of the dev profile): wait until as many are ready
@@ -215,7 +215,7 @@ func sigkill(t *testing.T, victim pod) {
 		}
 		return strings.TrimSpace(string(out))
 	}
-	cid := crictl("ps", "-q", "--label", "io.kubernetes.pod.name="+victim.Name, "--label", "io.kubernetes.container.name=trove")
+	cid := crictl("ps", "-q", "--label", "io.kubernetes.pod.name="+victim.Name, "--label", "io.kubernetes.container.name=quader")
 	pid := crictl("inspect", "-o", "go-template", "--template", "{{.info.pid}}", cid)
 	if out, err := exec.Command("docker", "exec", victim.Node, "kill", "-9", pid).CombinedOutput(); err != nil {
 		t.Fatalf("kill -9 %s on %s: %v %s", pid, victim.Node, err, out)
@@ -244,7 +244,7 @@ func startHolderWatch(t testing.TB) *holderWatch {
  FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid WHERE l.locktype = 'advisory' AND l.classid = 1 AND l.objid = 1 AND l.objsubid = 2 AND l.granted;
 \watch 0.2
 `
-	w.cmd = exec.Command("kubectl", "--context", cfg.kubeContext, "-n", cfg.namespace, "exec", "-i", pgPrimary(t), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "trove", "-At", "-F", "|")
+	w.cmd = exec.Command("kubectl", "--context", cfg.kubeContext, "-n", cfg.namespace, "exec", "-i", pgPrimary(t), "-c", "postgres", "--", "psql", "-U", "postgres", "-d", "quader", "-At", "-F", "|")
 	w.cmd.Stdin = strings.NewReader(query)
 	out, err := w.cmd.StdoutPipe()
 	if err != nil {
@@ -308,7 +308,7 @@ func (w *holderWatch) stop() []holderSample {
 }
 
 // checkTail applies the bounds of Q-ARCH-220 to one latency distribution of the driver: at least 15 samples and the
-// p50 bound always, the p99 bound only with TROVE_PERF_GATE=1; without it a p99 above the bound is logged.
+// p50 bound always, the p99 bound only with QUADER_PERF_GATE=1; without it a p99 above the bound is logged.
 func checkTail(t *testing.T, what string, d stat, p50Bound, p99Bound float64) {
 	t.Helper()
 	if d.N < 15 || d.P50 > p50Bound {
@@ -316,8 +316,8 @@ func checkTail(t *testing.T, what string, d stat, p50Bound, p99Bound float64) {
 	}
 	switch {
 	case d.P99 <= p99Bound:
-	case os.Getenv("TROVE_PERF_GATE") != "1":
-		t.Logf("%s: p99=%.1f ms above %.0f ms; enforced with TROVE_PERF_GATE=1 (Q-ARCH-220)", what, d.P99, p99Bound)
+	case os.Getenv("QUADER_PERF_GATE") != "1":
+		t.Logf("%s: p99=%.1f ms above %.0f ms; enforced with QUADER_PERF_GATE=1 (Q-ARCH-220)", what, d.P99, p99Bound)
 	default:
 		t.Errorf("%s: p99=%.1f ms, want <= %.0f ms", what, d.P99, p99Bound)
 	}

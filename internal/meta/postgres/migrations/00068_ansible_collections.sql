@@ -1,4 +1,4 @@
--- trove:phase expand
+-- quader:phase expand
 --
 -- The tables of the Ansible Galaxy format's local repositories (R-ANS-011, Q-ANS-24): a row per stored collection version with the
 -- metadata read from its archive at publish, and the tombstones of deleted versions. The rows carry no blob reference (no blob_sha256
