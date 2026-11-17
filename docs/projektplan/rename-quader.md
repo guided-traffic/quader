@@ -36,8 +36,8 @@ No compatibility: no alias, no old prefix accepted, no migration path (pre-alpha
 - [x] 2.3 Test vectors and golden files that carry the prefix or the name are recomputed, not hand-edited
       (token vector of R-AUTH-022, scanner pattern, recorded fixtures)
 - [x] 2.4 `make lint`, `make test`
-- [ ] 2.5 `make test-integration` (needs the local stack) — locally 22 packages and the six Bastion packages green, the other
-      44 not run here; the pull request's pipeline runs the whole suite
+- [x] 2.5 `make test-integration` (needs the local stack) — locally 22 packages and the six Bastion packages green, the other
+      44 not run here; all three integration shards are green in the pull request's pipeline (run 44150760311)
 
 ## 3 Web and mark (subagent)
 
@@ -57,9 +57,10 @@ No compatibility: no alias, no old prefix accepted, no migration path (pre-alpha
       the machine's Docker Desktop buildx (older than the pin, as before the rename); `compat-check` red by intent (the
       rename breaks the API against the last release) and on the migrations rule, which was red before
 - [x] 4.4 What a release publishes and where is listed for the owner: image repository, chart location, release assets
-- [ ] 4.5 `make image` builds; `make e2e` for at least the default set (needs kind) — image green; default set 9 of 10
+- [x] 4.5 `make image` builds; `make e2e` for at least the default set (needs kind) — image green; default set 9 of 10
       (`TestE13Failover`: a worker pod OOM-killed under its 512Mi limit); bastion set 14 of 16, `RoutingByPath` red twice with
-      the signature of the open finding F-116, not shown to be independent of the rename
+      the signature of the open finding F-116; in the pull request's pipeline every e2e set is green, `e2e (bastion)` included
+      (run 44150760311), so the local failures are the machine's (arm64, memory), not the rename's
 
 ## 5 Documentation (subagent)
 
@@ -81,9 +82,9 @@ No compatibility: no alias, no old prefix accepted, no migration path (pre-alpha
 By the owner's instruction of 2026-11-17 the rename lands as one pull request, not as a commit on `main`, and the agent
 follows its pipeline until it is green.
 
-- [ ] 7.1 Branch `rename-quader`, one commit, pushed; one pull request against `main`
-- [ ] 7.2 The pull request's pipeline is watched job by job until it is green; a job the change broke is fixed on the branch
-- [ ] 7.3 What the merge publishes (section 4.4) is named to the owner in the pull request
+- [x] 7.1 Branch `rename-quader`, one commit, pushed; one pull request against `main`
+- [x] 7.2 The pull request's pipeline is watched job by job until it is green; a job the change broke is fixed on the branch
+- [x] 7.3 What the merge publishes (section 4.4) is named to the owner in the pull request
 - [ ] 7.4 This file is deleted on the branch once every box above is ticked
 - [ ] 7.5 With the merge: GitHub `guided-traffic/trove` renamed to `guided-traffic/quader`, local `origin` follows (the owner's
       step, or the agent's on his word)
