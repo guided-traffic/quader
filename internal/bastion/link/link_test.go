@@ -580,6 +580,54 @@ func TestR_BAS_026_AQuietFeedThatReSendsAnEntryPastItsLookbackDoesNotApplyItAgai
 	}
 }
 
+// TestR_BAS_026_PagesWithMoreEntriesThanTheLimitInsideTheLookbackApplyEachEntryOnce: a busy feed, read by a starting
+// replica from its synthetic cursor and then by a running one, with more entries inside the lookback than one page
+// holds. The limit cuts only the entries after the cursor; the entries behind it within the lookback are all sent
+// again on every read (R-BAS-015), so a read never leaves out an entry of the window for lack of room, and the IDs that
+// Settle forgets are those of entries that fell out of the window behind a cursor that moved on (Q-BAS-152). Every
+// entry is applied once, through the paging and through ten minutes of a quiet feed, and the log keeps exactly the IDs
+// of the window behind the last cursor.
+func TestR_BAS_026_PagesWithMoreEntriesThanTheLimitInsideTheLookbackApplyEachEntryOnce(t *testing.T) {
+	r := newRig(t, rigOpts{mutate: func(c *link.Config) { c.FeedLimit = 50 }})
+	// Before the replica's first read: 150 entries over ten minutes, after its synthetic start cursor (period +
+	// grace + 15 s back), so the start read pages through them, 50 at a time.
+	var added []iface.FeedEntry
+	for i := range 150 {
+		added = append(added, r.main.AddEntry(iface.FeedEntry{Kind: iface.FeedContent, Repositories: []string{fmt.Sprintf("web/r%d", i)}}))
+		r.clock.Advance(4 * time.Second)
+	}
+	r.connect()
+	if r.applied("content") != 150 {
+		t.Fatalf("the start read applied %v entries, want 150", r.applied("content"))
+	}
+	// Then a burst of 120 entries within one second: more than two pages inside the lookback of every cursor.
+	for i := range 120 {
+		added = append(added, r.main.AddEntry(iface.FeedEntry{Kind: iface.FeedContent, Repositories: []string{fmt.Sprintf("web/b%d", i)}}))
+	}
+	r.tickAfter(time.Second)
+	if r.applied("content") != 270 {
+		t.Fatalf("after the burst %v entries applied, want 270", r.applied("content"))
+	}
+	window := func() (n int) {
+		last := added[len(added)-1].At
+		for _, e := range added {
+			if e.At.After(last.Add(-maintest.Lookback)) {
+				n++
+			}
+		}
+		return n
+	}
+	for range 300 {
+		r.tickAfter(2 * time.Second)
+		if r.applied("content") != 270 {
+			t.Fatalf("at %s an entry was applied again: %v applied, want 270", r.clock.Now().Format(time.TimeOnly), r.applied("content"))
+		}
+	}
+	if got, want := r.l.Feed().Known(), window(); got != want {
+		t.Fatalf("the log keeps %d IDs, want the %d entries within the lookback behind the last cursor", got, want)
+	}
+}
+
 // TestR_BAS_026_EveryKindIsAppliedAndMatchesWhatTheRulesSay: a token, a principal, a grants and a content entry
 // each make exactly the answers unusable that R-BAS-020 rule 3 names; each is counted by kind.
 func TestR_BAS_026_EveryKindIsAppliedAndMatchesWhatTheRulesSay(t *testing.T) {

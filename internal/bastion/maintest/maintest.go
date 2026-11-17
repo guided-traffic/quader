@@ -535,13 +535,12 @@ func (m *Main) feed(w http.ResponseWriter, r *http.Request) {
 	ahead := 0
 	for i, e := range m.entries {
 		within := e.At.After(cur.At.Add(-Lookback))
-		if i <= pos {
+		// Behind the cursor: an entry up to the one the cursor names, or before the time of a synthetic cursor. These
+		// are all sent while they lie within the lookback; the limit cuts only what follows (Q-BAS-152 relies on it).
+		if i <= pos || (cur.Synthetic() && e.At.Before(cur.At)) {
 			if within {
 				out = append(out, e)
 			}
-			continue
-		}
-		if cur.Synthetic() && !within {
 			continue
 		}
 		if limit > 0 && ahead == limit {
@@ -551,8 +550,9 @@ func (m *Main) feed(w http.ResponseWriter, r *http.Request) {
 		out = append(out, e)
 		ahead++
 	}
+	// The cursor names the last entry after the request's cursor; entries behind it never move it.
 	next := after
-	if n := len(out); n > 0 {
+	if n := len(out); ahead > 0 {
 		next = iface.Cursor{At: out[n-1].At, ID: out[n-1].ID}.String()
 	}
 	m.writeJSON(w, iface.FeedAnswer{Entries: out, Cursor: next, More: more})

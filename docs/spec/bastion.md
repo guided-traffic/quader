@@ -1268,7 +1268,7 @@ The Bastion follows the revocation feed every few seconds, so a revoked token or
   `answers.period + grace_period + 15 s`. The ID of an applied entry is kept for as long as the feed may send the entry again,
   so that an entry the feed sends again is not applied again: the lookback of R-BAS-015 is measured behind the cursor, which
   stands still while no entry is committed, so a quiet feed sends the same entries on every read. An ID goes when a read from a
-  cursor later than its entry no longer returns it; the window only moves forward with the cursor, which therefore never moves
+  cursor later than its entry no longer returns it (on any page: the limit cuts only the entries after the cursor); the window only moves forward with the cursor, which therefore never moves
   backwards ([Q-BAS-152](#q-bas-152--the-id-of-an-applied-entry-is-kept-until-a-read-behind-which-it-lies-no-longer-returns-it)).
 - **Start.** A starting replica reads the feed from `t:<now − answers.period − answers.grace_period − 15 s>` before it uses any
   answer from Valkey; that time is the start of its feed history (rule 4). Until the first read succeeds it uses no shared answer. A read that returns no entry moves a synthetic cursor forward to
@@ -5491,10 +5491,25 @@ the test, the first run with this decision (44191314996) shows 44, every entry o
 Bastion only has to stop forgetting what that set still contains. A content or grants entry that a replica applies for the first time
 still makes the entries validated in the 15 s before unusable, as R-BAS-022 specifies: that is the margin of R-BAS-020 and not a defect.
 The synthetic cursor of an empty read moves to the time of the read only when that is later than the cursor (Q-BAS-76), so a Bastion clock
-behind the main installation's cannot widen the window again. The development agent records no revisit condition.
+behind the main installation's cannot widen the window again.
+
+**Paging.** The rule holds for every page, also one that says `more`, because `limit` never cuts the entries behind the cursor:
+R-BAS-015 reads them in a query of their own that returns all of them within the lookback (`BastionFeedBehind`, bounded at four times
+`max_page`, beyond which the answer is `reset: true` and the log is emptied), and only the entries after the cursor are cut by `limit`
+(`BastionFeedAhead`, ordered by `(occurred_at, id)`). An entry before the cursor that a page leaves out therefore lies outside the
+lookback; entries after the cursor that the page cut away lie at or after the cursor's time, which Settle never forgets. A synthetic
+cursor (the start, or after an empty read) is the same with the nil ID: the entries before its time within the lookback are all sent. At
+the start the log holds no ID, so the first read forgets nothing; each later page's cursor is the last entry of the page before, and
+the IDs of start-read entries that fall more than the lookback behind it go, which they may, since the window does not move back.
+`TestR_BAS_015_MoreEntriesBehindTheCursorThanFourPagesResets` pins the main installation's side (eight entries behind a cursor with
+`max_page: 2` are all returned), `TestR_BAS_026_PagesWithMoreEntriesThanTheLimitInsideTheLookbackApplyEachEntryOnce` the Bastion's: a
+start read of 150 entries and a burst of 120 within a second, pages of 50, every entry applied once through ten quiet minutes, and the
+log keeping exactly the IDs of the window behind the last cursor; with a feed that cut the entries behind the cursor at the limit the
+test applies 25 entries twice. The development agent records no revisit condition.
 
 **Applied in the spec:** R-BAS-026; code: `answers.FeedLog.Settle`, `link.pollOnce`;
-`TestR_BAS_026_AQuietFeedThatReSendsAnEntryPastItsLookbackDoesNotApplyItAgain`, `TestR_BAS_026_AnAppliedIDIsKeptWhileTheFeedSendsItsEntry`.
+`TestR_BAS_026_AQuietFeedThatReSendsAnEntryPastItsLookbackDoesNotApplyItAgain`, `TestR_BAS_026_AnAppliedIDIsKeptWhileTheFeedSendsItsEntry`,
+`TestR_BAS_026_PagesWithMoreEntriesThanTheLimitInsideTheLookbackApplyEachEntryOnce`.
 
 ### Q-BAS-153 · A stale answer in a replica's memory does not hide the one Valkey holds
 
