@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
-import { e2eProject, expect, expectAccessible, openFilter, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
+import { e2eProject, expect, expectAccessible, fillKey, openFilter, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
 // R-UI-047 journey "packages" (E2.8; R-UI-006 to R-UI-009, R-UI-016, R-UI-017): a version published to an npm local
 // repository through the npm protocol appears in the packages list, its README renders sanitized, and the client setup
@@ -235,7 +235,7 @@ test('R-UI-021 R-ARCH-004 R-UI-083 the npm settings in Advanced settings and on 
     await expect(page.getByRole('heading', { name: 'New npm repository', level: 1 })).toBeVisible();
     await page.getByLabel('Project', { exact: true }).selectOption(e2eProject);
     await expect(page.getByRole('radio', { name: /^Local/ })).toBeChecked();
-    await page.locator('#f-key').fill(wizardKey);
+    await fillKey(page, 'npm-local', wizardKey);
     // The format's settings wait in the closed Advanced settings (R-UI-083).
     await expect(guard).toBeHidden();
     await page.getByRole('button', { name: 'Advanced settings' }).click();
@@ -281,7 +281,7 @@ test('R-UI-021 R-UI-083 R-REPO-050 the Mirror group of a remote npm repository i
     await page.getByLabel('Project', { exact: true }).selectOption(e2eProject);
     await expect(page.getByRole('radio', { name: /^Virtual/ })).toBeEnabled();
     await page.getByRole('radio', { name: /^Remote/ }).check();
-    await page.locator('#f-key').fill(mirrorKey);
+    await fillKey(page, 'npm-remote', mirrorKey);
     await page.getByRole('button', { name: 'Advanced settings' }).click();
 
     await expect(page.getByRole('heading', { name: 'Mirror', level: 3 })).toBeVisible();
