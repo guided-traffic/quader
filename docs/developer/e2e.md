@@ -711,7 +711,9 @@ and in the Go test's log. To see it for real, rotate by hand and start the run a
 - **Act on a settled page.** A journey acts only after the state its action depends on is on the page, never right after
   the action that starts it. The repository creation form writes its suggested key into the field when the class's defaults
   arrive (Q-UI-342), so the key is typed with `fillKey(page, '<format>-<class>', key)`, which waits for the suggestion first;
-  a fill before it ended as the suggestion followed by the typed key.
+  a fill before it ended as the suggestion followed by the typed key. A list page that takes its filter over from the address
+  after a navigation (the backups runs) sets its fields back when it does, so the journey waits for the request of the new
+  filter before it changes a field again.
 - **TLS.** Chromium does not read `NODE_EXTRA_CA_CERTS`, and the dev CA is in no system store, so the browser contexts
   ignore certificate errors. `global-setup.ts` makes up for it: before any journey it opens a verified TLS connection
   (dev CA, name checked) to the edge and to the IdP and fails the run on a wrong or expired certificate.

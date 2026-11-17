@@ -32,8 +32,12 @@ test('R-UI-048 the backups screen shows the status, the runs, the stored backups
     const runs = page.getByRole('region', { name: 'Runs', exact: true });
     await expect(runs.getByRole('combobox', { name: 'Operation' })).toBeVisible();
     await runs.getByRole('combobox', { name: 'State' }).selectOption('failed');
+    // After the navigation the page takes the filter over from the address: it sets the fields from it and then asks for the
+    // runs. A field changed before that request is set back by the take-over, and the next Search sends the old filter again.
+    const filtered = page.waitForRequest((r) => /\/api\/v1\/system\/backups\?(.*&)?state=failed(&|$)/.test(r.url()));
     await runs.getByRole('button', { name: 'Search' }).click();
     await expect(page).toHaveURL(/state=failed/);
+    await filtered;
     await runs.getByRole('combobox', { name: 'State' }).selectOption('');
     await runs.getByRole('button', { name: 'Search' }).click();
     await expect(page).not.toHaveURL(/state=/);
