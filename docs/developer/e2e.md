@@ -708,6 +708,10 @@ and in the Go test's log. To see it for real, rotate by hand and start the run a
   a journey visits, in English with the light theme and, in the German journey, in the dark theme.
 - **CSP.** Every page of every journey is watched for `securitypolicyviolation` events; one fails the test (the
   security tier of R-UI-047).
+- **Act on a settled page.** A journey acts only after the state its action depends on is on the page, never right after
+  the action that starts it. The repository creation form writes its suggested key into the field when the class's defaults
+  arrive (Q-UI-342), so the key is typed with `fillKey(page, '<format>-<class>', key)`, which waits for the suggestion first;
+  a fill before it ended as the suggestion followed by the typed key.
 - **TLS.** Chromium does not read `NODE_EXTRA_CA_CERTS`, and the dev CA is in no system store, so the browser contexts
   ignore certificate errors. `global-setup.ts` makes up for it: before any journey it opens a verified TLS connection
   (dev CA, name checked) to the edge and to the IdP and fails the run on a wrong or expired certificate.
