@@ -30,7 +30,7 @@ func fakeCgroup(t *testing.T, self, rel, memMax, stat string) string {
 }
 
 func TestKernelMemory(t *testing.T) {
-	// memory.stat of the forced reproduction of F-134, the second before the OOM kill (sizes in bytes).
+	// memory.stat of the forced reproduction of Q-ARCH-500, the second before the OOM kill (sizes in bytes).
 	const stat = "anon 649068544\nfile 2097152\nkernel 3145728\nkernel_stack 2621440\npagetables 262144\nsock 401604608\nshmem 0\n"
 
 	t.Run("Q-ARCH-500 the kernel's memory is sock plus kernel of the replica's own cgroup v2", func(t *testing.T) {

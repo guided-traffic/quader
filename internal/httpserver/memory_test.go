@@ -223,7 +223,7 @@ func TestMemoryGuard(t *testing.T) {
 	})
 
 	t.Run("Q-ARCH-500 the kernel gate closes at 80 % of the kernel's share, stays closed above 70 % and opens below it, whatever the heap and the charges say", func(t *testing.T) {
-		// The forced reproduction of F-134: 860 downloads whose clients stopped reading held 383 MiB of send queues
+		// The forced reproduction of Q-ARCH-500: 860 downloads whose clients stopped reading held 383 MiB of send queues
 		// (sock) beside 619 MiB of Go memory, the container was OOM-killed at 1 GiB, and the heap gate and the slots
 		// never refused: the live heap stayed below its mark and the charges below the slots.
 		var kern atomic.Int64
