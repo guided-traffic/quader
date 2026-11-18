@@ -1426,6 +1426,33 @@ agent** is not decided until the owner has said so.
   whose release jobs do not wait for the integration and e2e legs; the commit after it changes a test only. The owner's
   installation on `wds18-k8s-main` follows the newest chart by itself (the HelmRelease asks for `*`) and runs that release,
   two ready replicas of each of `quader-api`, `quader-packages` and `quader-worker`; read, nothing changed there.
+- **The night of 2026-11-18** (owner, 21:35 CET: "ich erwarte, dass du jetzt im Nacht-Modus selbstständig an der
+  Veröffentlichung der aktuellen Version arbeitest und im Anschluss weiter an der CI von "HA and Performance (nightly)"
+  arbeitest … Triff die für unser Projekt optimalen Entscheidungen selbstständig."). Test and Release 44384406557 of cf297363
+  (W-20) was red in two legs and cut no release; the three findings below.
+- **F-146 · A worker drained after a database failover stops silently for 35 s and leaves its row in the state `ready`**
+  (2026-11-18, `e2e (push)` of Test and Release 44384406557, `TestE14Drain`, by the assertion W-13 added that day; the test had
+  passed in the two runs before). The drained node held the PostgreSQL primary: between 20:01:48 and 20:01:54 UTC every pod
+  lost its connections ("terminating connection due to administrator command"). `quader-worker-vuln-…-7pspc` took the
+  scheduler lease again at 20:01:56 and stopped in 9 ms at 20:02:19, its row gone. `quader-worker-…-4n77h` logged nothing
+  about the database after 20:01:54, got the SIGTERM at 20:02:19, wrote nothing but the object store's probe for 35 s and
+  "stopped took 35.004s"; no line about the registry, no overrun; its row stayed `ready` with a stale heartbeat, listed as
+  lost. No SIGKILL, the load saw only 200s. This is the gap W-13 named ("a database that cannot be reached during the
+  shutdown"), met on the first night, and worse than named: the database was back for the other worker. Cause not read:
+  why neither the mark `draining` nor the deletion was written or reported, and what waited for 35 s. A builder has the
+  evidence (the leg's artifacts) and the task: reproduce it on the integration stack, fix the cause, retry mark and
+  deletion within their phases, and a line in the log for every wait.
+- **F-147 · `apt-get update` hung a gating job for 19 minutes and the release was skipped** (2026-11-18, job `chart` of the
+  same run): "installing build-essential" at 19:50:58 UTC, `Ign:1 http://archive.ubuntu.com/ubuntu noble InRelease` at
+  19:51:28, nothing until the job's timeout at 20:10:06; **Semantic Release** needs the job and was skipped, so W-20 has no
+  release yet. The family of F-117; its remedy (`apt-get update || warning`) guards a failing update, not a hanging one,
+  and about twenty steps of the two workflows install packages that way. A builder has the task: one helper that skips the
+  network when the package is there and bounds every call, used by every step, and steps of the gate that fail fast.
+- **F-148 · The journey of the vulnerability report asked for the chips by a name they lost in the morning** (2026-11-18,
+  `e2e (vuln)` of the same run): "Applied filters" is "Filters that are set" since ADR-200. The leg had been green all day
+  because it runs its journeys only when their files change; W-20 changed one. Fixed in 90896979, not run locally. What it
+  shows: a leg that skips by path is green without having looked; a rename in a shared piece needs a search over
+  `web/e2e/vuln/` too, which the builders' brief now names.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
