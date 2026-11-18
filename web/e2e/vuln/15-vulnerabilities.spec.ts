@@ -71,7 +71,7 @@ test('R-VULN-022 the Critical-style count filters the list, the sort and the fin
       await expect(page).toHaveURL(new RegExp(`severity=${finding!.severity}`));
       await expect(page).toHaveURL(new RegExp(`repository=${e2eProject}(%2F|/)${repo}`));
       await expect(page.getByRole('row', { name: new RegExp(finding!.advisory) })).toBeVisible();
-      await expect(page.getByRole('list', { name: 'Applied filters' })).toContainText(`Severity: ${label}`);
+      await expect(page.getByRole('list', { name: 'Filters that are set' })).toContainText(`Severity: ${label}`);
     });
 
     await test.step('sorting by detection keeps the filter', async () => {
