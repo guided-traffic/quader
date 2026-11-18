@@ -718,7 +718,7 @@ jobs:
   # 80 minutes, and edge port 8100, the first free one.
   # Legs ha-faults (the database at 0 instances for 2 minutes, R-HA-057's Sentinel quorum loss, FLUSHALL and slow Valkey, a Valkey credential
   # mismatch; E5.10, R-HA-007) and ha-pooler (a pooler instance deleted, gracefully and
-  # forced, in the pooler profile; R-HA-058) run the same steps with the budgets of ha-suite, on edge ports 8112 and 8111.
+  # forced, and a PostgreSQL switchover behind the poolers, in the pooler profile; R-HA-058, Q-HA-302) run the same steps with the budgets of ha-suite, on edge ports 8112 and 8111.
   # Lane 1 (Q-ARCH-431): npm-ha, then ha-suite, ha-faults and ha-pooler, one large leg at a time.
   e2e-npm:
     name: e2e (${{ matrix.set }})
