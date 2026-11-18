@@ -1099,6 +1099,57 @@ agent** is not decided until the owner has said so.
     half of the page is an empty box until something is chosen.
   - `browse` against `repository-generic`: both show the files of a repository. Upload, copy, move and the trash can exist only in
     **Browse**; the repository's own page lists its files and offers none of them (seen as the power user `priya`).
+  - Station of the administrator (`ada`), all 19 screens of the admin area looked at before the owner on 2026-11-18, dark, 1440 px,
+    in the running UI (not a render run; light and narrow not looked at):
+    - **Layout that is broken** (the kind of W-5, to be fixed without a decision):
+      - `system/jobs`: the state's icon stands on one line and its word ("succeeded") on the next, in every row; the replica's name
+        breaks ("ms2022.local-" / "39645") while the result column beside it is half the page and mostly empty. The filter is its
+        own form (a text field "Kind (comma separated)", six check boxes, **Search**) instead of **Filters** and chips.
+      - `audit`: the action's code breaks inside a word ("user.groups.claim_missin" / "g"); the target is "user" and a UUID broken
+        across two lines where the row beside it names the same person as "ada"; the outcome is written "success" / "failure" in
+        lower case where every other status of the app starts with a capital.
+      - `tokens`: the token's name has a column of about 190 px and breaks into three lines ("Client setup: npm, web-frontend/npm-
+        vendor, 2026-11-18") while the scope column has 280 px for "Repository grants: 1". The page is titled "Token administration",
+        its menu entry "Tokens".
+      - `repositories` (admin): the labels of **Format** and **Class** stand 2 px lower than the name, the project, the visibility
+        and the time in the same row (measured: 607.5 against 605.5); the project's name breaks into three lines
+        ("Customer portal / release engineering / and delivery") beside a wide, mostly empty **Last activity** column.
+      - `dashboard`: in the card of a component the rows **In flight**, **CPU**, **Memory** stand closer together and without the
+        line that separates **Nodes** to **Server errors** above them; the card is as wide as the page, so a label and its value
+        are 1,100 px apart.
+      - `system`: "77" and the check mark of "supported" touch; the version breaks into three lines ("dev" / "(3897aa…47" /
+        "708f8a)") in a card whose right half is empty.
+      - `endpoints`: the sentence under the title is set smaller and tighter than the same kind of sentence on every other screen,
+        and the table follows it without the gap the other lists have.
+    - **One thing written or built in two ways:**
+      - the button that makes a new thing: **New project**, **New group**, **New service account**, **New policy**, **New issuer**,
+        **New Bastion**, but **Create repository** and **Add user**;
+      - nothing to show in a cell: an en dash on `repositories`, `service-accounts`, `endpoints`, `jobs`; an empty cell on `projects`
+        (Owners, Your role), `users` (Email, Last sign-in);
+      - a project in a cell: mark and name on `repositories`, the bare key ("web-frontend") on `service-accounts`;
+      - a row's action: the word **Edit** on `projects`, **Revoke** on `tokens`, **Unbind** on `roles`, a copy icon and a menu on
+        `repositories`;
+      - a count: left on `projects` (Members, Repositories), right on `groups` and `advisory-sources`;
+      - the empty list: `permissions` says "No policy matches." with no filter set and nothing else; `bastions` repeats **New
+        Bastion** under its sentence; `ci` has only the sentence;
+      - a filter: `security` has three fields with **Search** above the chart and a filter field with **Filters** above the findings;
+        `jobs` and `backups` have their own forms, `backups` with the browser's own select boxes;
+      - a setting's name: in code type in the sentence under the buttons of `advisory-sources`, in plain type in the paragraph below.
+    - **For the owner to decide:**
+      - `projects` (admin): the column **Your role** is empty in every row for an administrator, **Owners** in three of four.
+      - `roles`: a role is bound by typing "user:name, group:name or sa:name" into a field; no choice of a person. This is the only
+        way to make someone an administrator. The capabilities are 25 codes in four columns, in no order.
+      - `system` and `dashboard` are red ("Replicas unready", "A role is not ready", "Not drain-safe") because two processes that
+        were stopped at 10:29 and 14:20 are still listed as **lost**: a registry row is pruned after 24 hours
+        (`replicaPruneAfter` in [builtin.go](../../internal/jobs/builtin.go)). Verified in the code: the 24 hours. Not verified:
+        whether a pod that ends in a rolling update signs off or stays "lost" for a day as well; if it does, every update turns
+        the dashboard red for 24 hours.
+      - `dashboard`: the component is called "all" and shows "Nodes 0" beside "1 of 1 ready".
+      - `audit`: every sign-in of a user whose provider sends no groups writes a second, red entry "Group claim missing at
+        sign-in · failure". Half of the log of this stack is that entry.
+      - `security`: the fields show examples as grey text ("CVE-2021-23337", "lodash", "shop"); the chart of 90 days is one bar
+        at the right edge on an installation whose data is a day old.
+      - `system/jobs` and `system/backups` have no entry in the side bar; **System status** stays marked on both.
 - **Tooling, done in the walk:** the dev server of the `local` configuration listens on `127.0.0.1` like Quader and the sign-in
   provider; it listened on `::1` only, which the owner's Firefox (IPv6 lookups off) could not reach
   ([web-ui.md](../developer/web-ui.md#local-ui-development)). A checkout that still holds the fixed secrets of before the rename in
