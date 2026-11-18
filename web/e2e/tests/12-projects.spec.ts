@@ -72,7 +72,7 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     await expect(page.locator('dt', { hasText: 'Storage' }).locator('xpath=following-sibling::dd[1]')).toHaveText('0 B');
     await expectAccessible(page, 'project settings (administrator)');
     await page.goto(`/ui/en/projects/${key}/repositories`);
-    await expect(page.getByRole('link', { name: repoKey })).toBeVisible();
+    await expect(page.getByRole('link', { name: repoKey, exact: true })).toBeVisible();
     await expectAccessible(page, 'project repositories (administrator)');
   });
 

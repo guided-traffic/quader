@@ -43,11 +43,12 @@ test('E2.13 R-UI-049 R-UI-124 Guides lead from a tile to the page Set up client 
 
   await test.step('the npm tile lists the npm repositories with their class, and the guide of each class', async () => {
     await expect(page.getByRole('heading', { name: 'npm repositories', level: 1 })).toBeVisible();
-    const row = page.getByRole('row').filter({ hasText: `${e2eProject}/${virtualKey}` });
+    const row = page.getByRole('row').filter({ hasText: virtualKey });
     await expect(row).toContainText('Virtual');
     await expect(page.getByRole('link', { name: /^A local repository/ })).toBeVisible();
     await expectAccessible(page, 'guides of npm');
-    await row.getByRole('link', { name: 'Set up client', exact: true }).click();
+    // The row's action ends its accessible name with the key (Q-UI-487).
+    await row.getByRole('link', { name: `Set up client ${virtualKey}`, exact: true }).click();
   });
 
   await test.step('Set up client of the virtual repository: the client is one control, the snippets come first, the explanation after', async () => {

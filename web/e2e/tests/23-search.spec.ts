@@ -137,7 +137,7 @@ test('R-UI-095 R-UI-097 R-UI-098 a reader finds a repository by a part of its ke
     await field(page).press('Enter');
     await expect(page).toHaveURL(/\/search\?q=/);
     await expect(page.getByRole('heading', { name: 'Search', level: 1 })).toBeVisible();
-    await expect(page.getByRole('link', { name: repoKey })).toBeVisible();
+    await expect(page.getByRole('link', { name: repoKey, exact: true })).toBeVisible();
     expect(await adminLinks(page)).toEqual([]);
     await expectAccessible(page, 'search results');
   });
