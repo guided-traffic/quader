@@ -34,9 +34,9 @@ type FillCount struct {
 	every      time.Duration
 	n          atomic.Int32
 
-	mu     sync.Mutex
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
+	mu sync.Mutex
+	// life is the refresh loop's: Stop waits for a count in flight instead of cutting it (Q-ARCH-503). Nil before Start.
+	life *loopLife
 }
 
 // NewFillCount creates the count over the replica's control connection; every is system.heartbeat_interval and
@@ -69,37 +69,39 @@ func (c *FillCount) Start(ctx context.Context) error {
 	rctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	_ = c.Refresh(rctx) // the first value is a convenience: n stays 1 until a read succeeds
 	cancel()
-	lctx, stop := context.WithCancel(context.WithoutCancel(ctx))
+	life := newLoopLife(ctx)
 	c.mu.Lock()
-	c.cancel = stop
+	c.life = life
 	c.mu.Unlock()
-	c.wg.Add(1)
-	go func() {
-		defer c.wg.Done()
+	life.run(func() {
 		t := time.NewTicker(c.every)
 		defer t.Stop()
 		for {
 			select {
-			case <-lctx.Done():
+			case <-life.ctx.Done():
+				return
+			case <-life.stopping:
 				return
 			case <-t.C:
-				rctx, cancel := context.WithTimeout(lctx, 2*time.Second)
-				_ = c.Refresh(rctx)
-				cancel()
 			}
+			if life.stopped() {
+				return
+			}
+			rctx, cancel := context.WithTimeout(life.ctx, 2*time.Second)
+			_ = c.Refresh(rctx)
+			cancel()
 		}
-	}()
+	})
 	return nil
 }
 
-// Stop ends the refresh loop.
-func (c *FillCount) Stop(context.Context) error {
+// Stop ends the refresh loop; a count in flight is waited for until ctx ends, not cut (Q-ARCH-503).
+func (c *FillCount) Stop(ctx context.Context) error {
 	c.mu.Lock()
-	cancel := c.cancel
+	life := c.life
 	c.mu.Unlock()
-	if cancel != nil {
-		cancel()
+	if life != nil {
+		life.stop(ctx)
 	}
-	c.wg.Wait()
 	return nil
 }

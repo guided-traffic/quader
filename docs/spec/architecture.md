@@ -4487,7 +4487,14 @@ learns of the removal with a delay. The steps cover that delay first:
    15 s and never past the close deadline,
    [Q-HA-307](ha-and-helm.md#q-ha-307--the-registry-rows-shutdown-writes-are-retried-within-their-step)),
    the change-log poll and the grant-index rebuilds stop, and the Valkey client and the pools
-   close. Every one of these steps ends with the close phase: the pools close at once and a
+   close. A loop that runs its statements on the control connection (the change-log poll, the
+   heartbeat, the count of the fetch share) stops between two statements: it starts none after its
+   stop, and a statement it has in flight is let finish; only one still running at the close
+   deadline, a database that does not answer, is cut. A readiness probe's statement still running
+   when the pools close is ended by the close, and its connection is logged as that, not as a
+   connection that came back closed
+   ([Q-ARCH-503](#q-arch-503--a-control-loop-stops-between-two-statements-and-a-healthy-stop-cuts-none)).
+   Every one of these steps ends with the close phase: the pools close at once and a
    connection still held by a detached write is named in the error, not waited for
    ([Q-HA-203](ha-and-helm.md#q-ha-203--the-close-of-the-database-pools-ends-with-the-close-phase)).
    The process exits `0` when every close step finished in time. When a pool still holds a
@@ -10469,6 +10476,56 @@ for.
 **Applied in the spec:** R-ARCH-024 steps 3 and 4. Code: `waitForTheRest` in [app.go](../../internal/app/app.go), `Settle` and `Quiesce`
 in [worker.go](../../internal/jobs/worker.go). Tests: `TestShutdownWorkerEndsWhenItsJobsAreReleased` and the plan subtest for the dev
 profile's worker in [shutdown_test.go](../../internal/app/shutdown_test.go).
+
+### Q-ARCH-503 · A control loop stops between two statements, and a healthy stop cuts none
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-136, the trigger of H-822. In five integration runs (2026-11-12 to 2026-11-18) a web replica's control connection came back
+closed about 0.2 s after `shutting down`, on a database that answered. Read from the code: with the integration setting (drain delay
+200 ms, `server.shutdown_timeout` 5 s) the quiesce instant falls on the end of the drain delay, an idle web replica has nothing to wait
+for, and the close phase begins right there; a normal stop takes 204 ms in those logs. The close phase stops the components in reverse
+start order, and the three loops that run on the control connection, the change-log poll (R-ARCH-018), the registry heartbeat
+(R-OPS-003) and the count of the fetch share (R-REPO-040), stopped by cancelling their context. A loop that had its statement in flight
+at that instant had it cut: the driver closed the connection, and before [Q-ARCH-498](#q-arch-498--a-connection-the-pool-gives-up-on-gives-its-place-back-at-once-its-cancel-request-goes-out-on-its-own)
+the pool waited for its cleanup. A poll of 1 s with a statement of a few milliseconds is caught so about once in a few hundred stops,
+which is the rate seen. The close of the pools ends a readiness probe's statement the same way, on purpose
+([Q-HA-284](ha-and-helm.md#q-ha-284--a-readiness-probe-does-not-cut-its-statement-at-the-end-of-its-check)), and its connection was logged
+with the same warning. Forced on the integration stack: a poll held by a table lock at the change log's stop was cut at once and logged
+`a database connection came back closed and is discarded`, borrower `ListClusterEpochs`, the line of H-822's recurrences. Which loop
+or probe it was in those five runs is not known; their logs predate the borrower's name. The 8 s the cleanup then waited in its read
+for the server's close (Test and Release 44213944004) is not the server's: the replicas of the integration tier connect to
+PostgreSQL directly over TLS, without PgBouncer, and PostgreSQL ends a backend at its terminate message. A cut that lands while the
+statement is being written leaves Go's TLS connection unable to write again, so the terminate message never leaves; the server,
+waiting for the rest of a message, keeps the connection until its socket closes. That is the one way known here to leave the cleanup
+reading from a server that answers; a cut in the read sends the terminate message, and the server closes within milliseconds. Not
+verified for 44213944004: its dump shows the read, not what the server had received. Since Q-ARCH-498 a connection the pool gives up on has its socket closed at once, which bounds both: the place is free within
+milliseconds and the server's backend ends when its socket closes.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the cut, as since Q-ARCH-498 | A stop cancels its loops; the discard frees the place at once | Nothing changes | Every few hundred healthy stops send a cancel request, discard a connection and log a warning that names a fault, so the line no longer tells a fault apart |
+| (b) A loop stops between two statements (chosen) | The stop closes the loop's stopping signal: no further statement starts, the one in flight is waited for, and the loop's context ends only when the stop's own context ends (the close deadline) | A healthy stop cuts no control statement; the warning keeps its meaning; a database that does not answer is still cut at the deadline | A stop waits for a statement of a few milliseconds |
+| (c) Stop the loops before the server phase | No loop runs in the close phase | Nothing in flight at the close | The poll must run until the last request ends (R-ARCH-018), and the heartbeat must keep the row alive through the drain |
+
+For the probes, (b) does not apply: a probe whose statement waits on a database that does not answer would hold the control connection
+past the close deadline ([Q-HA-284](ha-and-helm.md#q-ha-284--a-readiness-probe-does-not-cut-its-statement-at-the-end-of-its-check)). The
+close keeps ending a probe's statement, and the connection it ends is logged as `a statement still running when the database pools
+closed was ended` at `INFO`, with the pool and the borrower.
+
+**Choice:** (b), in [loop_stop.go](../../internal/cluster/loop_stop.go) (`loopLife`), used by `Changes`
+([changelog.go](../../internal/cluster/changelog.go)), `Registry` ([replica_registry.go](../../internal/cluster/replica_registry.go); `StopHeartbeat`,
+the fault tests' kill, still cuts at once) and `FillCount` ([replica_roles.go](../../internal/cluster/replica_roles.go)); the probe's line in
+[holders.go](../../internal/meta/postgres/holders.go). **Rationale:** the close waits for what a borrower holds and not for the driver
+(Q-ARCH-499); a loop of the replica cancelling its own statement was the one borrower the close cut on a healthy database. The job
+worker's heartbeat of its running jobs runs on the control connection too, but no job runs any more when the worker stops. The
+development agent would revisit the choice if a loop's statement were seen to hold a healthy stop for longer than its own call timeout.
+
+**Applied in the spec:** R-ARCH-024 step 6. Tests: `TestR_ARCH_024_TheStopOfTheChangeLogWaitsForItsPollInFlight`,
+`TestR_ARCH_024_TheStopOfTheRegistryWaitsForItsHeartbeatInFlight`, `TestR_ARCH_024_TheStopOfTheFillCountWaitsForItsCountInFlight`
+([stop_inflight_test.go](../../test/integration/coordination/stop_inflight_test.go)), `TestR_ARCH_024_ALoopStopWaitsForTheCallInFlight`
+([loop_stop_test.go](../../internal/cluster/loop_stop_test.go)), `TestR_HA_011_CloseContextEndsAProbeStatementThatIsStillRunning`
+([close_held_test.go](../../test/integration/postgres/close_held_test.go)).
 
 ## What this does not cover
 

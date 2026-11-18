@@ -147,8 +147,8 @@ type Registry struct {
 	// been logged (Q-HA-309).
 	lastWritten time.Time
 	staleLogged bool
-	cancel      context.CancelFunc
-	wg          sync.WaitGroup
+	// life is the heartbeat loop's: Stop waits for a heartbeat in flight instead of cutting it (Q-ARCH-503). Nil before Start.
+	life *loopLife
 }
 
 // NewRegistry creates the registry.
@@ -189,15 +189,13 @@ func (r *Registry) Start(ctx context.Context) error {
 		case <-time.After(r.o.Config.HeartbeatInterval):
 		}
 	}
-	lctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
-	r.cancel = cancel
-	r.wg.Add(1)
-	go r.loop(lctx)
+	r.life = newLoopLife(ctx)
+	r.life.run(r.loop)
 	return nil
 }
 
-func (r *Registry) loop(ctx context.Context) {
-	defer r.wg.Done()
+func (r *Registry) loop() {
+	ctx := r.life.ctx
 	loop := WatchLoop(r.o.Watchdog, "cluster.registry", r.o.WatchdogTimeout)
 	defer loop.Stop()
 	t := time.NewTicker(r.o.Config.HeartbeatInterval)
@@ -206,7 +204,12 @@ func (r *Registry) loop(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
+		case <-r.life.stopping:
+			return
 		case <-t.C:
+		}
+		if r.life.stopped() {
+			return
 		}
 		err := r.beat(ctx)
 		if ctx.Err() == nil {
@@ -390,21 +393,28 @@ func (r *Registry) Drain(ctx context.Context) {
 	}
 }
 
-// StopHeartbeat ends the heartbeat and leaves the row, as a process that was
-// killed does. Fault-injection tests use it to show a replica turning lost.
+// StopHeartbeat ends the heartbeat at once and leaves the row, as a process that was killed does: a heartbeat in flight is cut.
+// Fault-injection tests use it to show a replica turning lost.
 func (r *Registry) StopHeartbeat() {
-	if r.cancel != nil {
-		r.cancel()
+	ended, cancel := context.WithCancel(context.Background())
+	cancel()
+	r.stopHeartbeat(ended)
+}
+
+// stopHeartbeat ends the heartbeat loop; a heartbeat in flight is waited for until ctx ends (Q-ARCH-503).
+func (r *Registry) stopHeartbeat(ctx context.Context) {
+	if r.life != nil {
+		r.life.stop(ctx)
 	}
-	r.wg.Wait()
 }
 
 // Stop ends the heartbeat and deletes the replica's own row (a clean shutdown, R-OPS-003). A replica that is killed leaves the
-// row to go stale. The deletion is a close step (R-ARCH-024 step 6): it is retried for at most deleteWindow and never past ctx,
-// the deadline of the close phase, so the process exits inside its grace period (R-HA-011, Q-HA-307). A row that could not be
-// deleted in time goes stale: signed off when the mark draining reached it, lost otherwise (Q-OPS-210); the log says which.
+// row to go stale. A heartbeat in flight is waited for, not cut (Q-ARCH-503). The deletion is a close step (R-ARCH-024 step 6):
+// it is retried for at most deleteWindow and never past ctx, the deadline of the close phase, so the process exits inside its
+// grace period (R-HA-011, Q-HA-307). A row that could not be deleted in time goes stale: signed off when the mark draining
+// reached it, lost otherwise (Q-OPS-210); the log says which.
 func (r *Registry) Stop(ctx context.Context) error {
-	r.StopHeartbeat()
+	r.stopHeartbeat(ctx)
 	wctx, cancel := context.WithTimeout(ctx, deleteWindow)
 	defer cancel()
 	n, err := r.retryShutdownWrite(wctx, "delete", deleteAttempt, func(c context.Context) error {

@@ -31,6 +31,9 @@ type holders struct {
 	log      *slog.Logger // nil logs nothing
 	cleaning atomic.Int32 // closed connections whose cleanup has not ended
 	warnAt   time.Duration
+	// closing is closed when the close of the pools begins (DB.life); nil never is. A statement that is still running then, a
+	// readiness probe's, is ended by the close on purpose (Q-HA-284, Q-ARCH-503), and its connection is logged as that.
+	closing <-chan struct{}
 }
 
 // cleanupWarnAfter is how long the cleanup of a closed connection may take before it is logged: on a quiet host it takes 15 to
@@ -82,10 +85,28 @@ func (h *holders) released(c *pgx.Conn) {
 			if held {
 				borrower = v.(hold).name()
 			}
-			h.log.Warn("a database connection came back closed and is discarded", "db_pool", h.pool, "borrower", borrower)
+			if h.closed() {
+				h.log.Info("a statement still running when the database pools closed was ended; its connection is discarded",
+					"db_pool", h.pool, "borrower", borrower)
+			} else {
+				h.log.Warn("a database connection came back closed and is discarded", "db_pool", h.pool, "borrower", borrower)
+			}
 		}
 		h.watchCleanup(pc.CleanupDone())
 	}
+}
+
+// closed reports whether the close of the pools has begun.
+func (h *holders) closed() bool {
+	if h.closing == nil {
+		return false
+	}
+	select {
+	case <-h.closing:
+		return true
+	default:
+	}
+	return false
 }
 
 // watchCleanup counts a closed connection until done, the end of its cleanup, and logs a cleanup that takes longer than warnAt: once

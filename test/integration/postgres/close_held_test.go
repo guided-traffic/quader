@@ -5,12 +5,14 @@ package postgres
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // R-HA-011, R-ARCH-024 step 6: a connection still acquired from a pool must not hold the close of the pools past the close
@@ -46,11 +48,13 @@ func TestR_HA_011_CloseContextEndsWithTheClosePhaseWhileAConnectionIsHeld(t *tes
 
 // R-HA-011, R-ARCH-024 step 6: a readiness probe that is running a statement holds the control connection, and no check deadline cuts
 // its statement (Q-HA-284); closing the pools ends the statement, so the control pool is back before the close deadline and a replica
-// that stops while a probe is stuck does not report "control pool (1 connection held)".
+// that stops while a probe is stuck does not report "control pool (1 connection held)". The connection the close ended is logged as
+// that, not as a connection that came back closed, which names a fault (Q-ARCH-503, F-136).
 func TestR_HA_011_CloseContextEndsAProbeStatementThatIsStillRunning(t *testing.T) {
 	st := getStack(t)
 	cfg, _, admin := migrated(t, st)
-	db, err := postgres.Open(ctxT(t, 30*time.Second), cfg, "pod-close-probe", meta.RoleWeb, quiet)
+	logs := &testenv.SyncBuffer{}
+	db, err := postgres.Open(ctxT(t, 30*time.Second), cfg, "pod-close-probe", meta.RoleWeb, slog.New(slog.NewJSONHandler(logs, nil)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,5 +84,18 @@ func TestR_HA_011_CloseContextEndsAProbeStatementThatIsStillRunning(t *testing.T
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("the probe is still running after the pools closed")
+	}
+	deadline = time.Now().Add(5 * time.Second)
+	for !strings.Contains(logs.String(), "still running when the database pools closed was ended") {
+		if time.Now().After(deadline) {
+			t.Fatalf("the connection the close ended was not logged as that:\n%s", logs.String())
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !strings.Contains(logs.String(), `"borrower":"readiness probe: schema"`) {
+		t.Errorf("the probe is not named as the borrower:\n%s", logs.String())
+	}
+	if strings.Contains(logs.String(), "came back closed") {
+		t.Errorf("the connection the close ended was logged as a fault:\n%s", logs.String())
 	}
 }

@@ -73,14 +73,13 @@ type Changes struct {
 	listeners []Listener
 	lmu       sync.RWMutex
 
-	kick   chan struct{}
-	wmu    sync.Mutex
-	waits  []chan error
-	msgq   chan Message
-	pubq   chan pubItem
-	cancel context.CancelFunc
-	lctx   context.Context
-	wg     sync.WaitGroup
+	kick  chan struct{}
+	wmu   sync.Mutex
+	waits []chan error
+	msgq  chan Message
+	pubq  chan pubItem
+	// life is the loops': Stop waits for a poll in flight instead of cutting it (Q-ARCH-503). Nil before Start.
+	life   *loopLife
 	closed atomic.Bool
 
 	smu        sync.Mutex
@@ -250,9 +249,7 @@ func (c *Changes) Start(ctx context.Context) error {
 		case <-time.After(c.o.Config.EpochPollInterval):
 		}
 	}
-	lctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
-	c.cancel = cancel
-	c.lctx = lctx
+	c.life = newLoopLife(ctx)
 	if c.o.Bus != nil {
 		c.trySubscribe()
 		// A reconnect of the subscriber may have lost messages: one poll at
@@ -263,21 +260,17 @@ func (c *Changes) Start(ctx context.Context) error {
 			}
 		})
 	}
-	c.wg.Add(3)
-	go c.pollLoop(lctx)
-	go c.messageLoop(lctx)
-	go c.publishLoop(lctx)
+	c.life.run(c.pollLoop)
+	c.life.run(c.messageLoop)
+	c.life.run(c.publishLoop)
 	return nil
 }
 
 // Stop ends the loops. The poll runs through the drain and ends here, after
-// the last request (R-ARCH-024 step 6).
-func (c *Changes) Stop(context.Context) error {
+// the last request (R-ARCH-024 step 6). A poll in flight is waited for until ctx ends, not cut (Q-ARCH-503).
+func (c *Changes) Stop(ctx context.Context) error {
 	if !c.closed.CompareAndSwap(false, true) {
 		return nil
-	}
-	if c.cancel != nil {
-		c.cancel()
 	}
 	c.smu.Lock()
 	subs := c.subs
@@ -285,7 +278,9 @@ func (c *Changes) Stop(context.Context) error {
 	for _, s := range subs {
 		s()
 	}
-	c.wg.Wait()
+	if c.life != nil {
+		c.life.stop(ctx)
+	}
 	c.wmu.Lock()
 	for _, w := range c.waits {
 		w <- errors.New("the change log is stopped")
@@ -307,7 +302,7 @@ func (c *Changes) trySubscribe() {
 	ch, err := c.o.Bus.channel(invChannels)
 	if err == nil {
 		var cancel func()
-		if cancel, err = c.o.Bus.subscribe(c.lctx, ch, c.onMessage); err == nil {
+		if cancel, err = c.o.Bus.subscribe(c.life.ctx, ch, c.onMessage); err == nil {
 			c.subs = append(c.subs, cancel)
 			c.subscribed = true
 			return
@@ -344,8 +339,8 @@ func (c *Changes) PollNow(ctx context.Context) error {
 	}
 }
 
-func (c *Changes) pollLoop(ctx context.Context) {
-	defer c.wg.Done()
+func (c *Changes) pollLoop() {
+	ctx := c.life.ctx
 	loop := WatchLoop(c.o.Watchdog, "cluster.changes", c.o.WatchdogTimeout)
 	defer loop.Stop()
 	t := time.NewTicker(c.o.Config.EpochPollInterval)
@@ -354,8 +349,13 @@ func (c *Changes) pollLoop(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
+		case <-c.life.stopping:
+			return
 		case <-t.C:
 		case <-c.kick:
+		}
+		if c.life.stopped() {
+			return
 		}
 		c.wmu.Lock()
 		waiters := c.waits
@@ -394,8 +394,8 @@ type wireChange struct {
 	P json.RawMessage `json:"p"`
 }
 
-func (c *Changes) messageLoop(ctx context.Context) {
-	defer c.wg.Done()
+func (c *Changes) messageLoop() {
+	ctx := c.life.ctx
 	loop := WatchLoop(c.o.Watchdog, "cluster.signals", c.o.WatchdogTimeout)
 	defer loop.Stop()
 	t := time.NewTicker(max(c.o.WatchdogTimeout/4, time.Second))
@@ -403,6 +403,8 @@ func (c *Changes) messageLoop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			return
+		case <-c.life.stopping:
 			return
 		case <-t.C: // the subscriber records progress while Valkey is unreachable
 			loop.Beat()

@@ -154,11 +154,13 @@ func (c *Changes) afterCommit(t *txNotes) {
 // publishLoop sends the queued change messages. Delivery is at most once and
 // never a correctness condition: while Valkey is unavailable the message is
 // dropped and counted, and the poll applies the change.
-func (c *Changes) publishLoop(ctx context.Context) {
-	defer c.wg.Done()
+func (c *Changes) publishLoop() {
+	ctx := c.life.ctx
 	for {
 		select {
 		case <-ctx.Done():
+			return
+		case <-c.life.stopping:
 			return
 		case it := <-c.pubq:
 			c.publish(ctx, it)

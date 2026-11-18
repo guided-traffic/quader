@@ -212,10 +212,9 @@ func TestNotify(t *testing.T) {
 		return c, l, reg
 	}
 	run := func(c *Changes) (stop func()) {
-		ctx, cancel := context.WithCancel(context.Background())
-		c.wg.Add(1)
-		go c.publishLoop(ctx)
-		return func() { cancel(); c.wg.Wait() }
+		c.life = newLoopLife(context.Background())
+		c.life.run(c.publishLoop)
+		return func() { c.life.stop(context.Background()) }
 	}
 
 	t.Run("R-ARCH-018 areas are written in name order whatever the call order", func(t *testing.T) {

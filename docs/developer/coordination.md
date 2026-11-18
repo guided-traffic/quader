@@ -30,6 +30,7 @@ this page covers what is built on it.
 | `internal/cluster/locks.go` | Lock categories, `RegisterLease`, `LeaseScheduler`, `LockConfigObject` |
 | `internal/cluster/lease_manager.go`, `lease_held.go` | `Leases` (hold loops, check loop), `Held` (writes on the lease's session) |
 | `internal/cluster/lease_watch.go` | `Watchdog`, `WatchLoop`, `CallTimeout`: the liveness hooks of the loops |
+| `internal/cluster/loop_stop.go` | `loopLife`: the life of the loops that run on the control connection (the change-log poll, the registry heartbeat, `FillCount`); their stop starts no further statement, waits for the one in flight and cuts it only when the stop's context ends (Q-ARCH-503) |
 | `internal/cluster/changelog.go` | `Changes`: start, stop, freshness, listeners, Valkey messages |
 | `internal/cluster/changelog_notify.go` | `Changes.Notify`: the two statements of R-ARCH-018 step 1, the post-commit publish |
 | `internal/cluster/changelog_poll.go` | The poll and the epoch reconciliation (step 5) |
@@ -289,7 +290,8 @@ A cache with `MaxBytes` needs `Weigh`. Metrics: `quader_cache_requests_total{cac
 
 `cluster.Registry` (one per replica, of the roles `api`, `packages`, `worker`, `web` and `all`, the constants and `ValidRole` of [replica_roles.go](../../internal/cluster/replica_roles.go); `NewRegistry` refuses any other role, Q-OPS-161, Q-OPS-166): `Start` upserts the row (retrying until PostgreSQL answers), a loop on the control connection upserts again every
 `system.heartbeat_interval` with the snapshot from `RegistryOptions.Snapshot` (state, checks, Valkey view, runtime) and `RegistryOptions.Leases`. `Drain` writes `draining` and `Stop` deletes the row, both on `RegistryOptions.ShutdownDB` (the request pool, `DB.Main()`, so they do not queue behind the poll and the checks on the control connection), `Drain` within the drain step of the shutdown plan and `Stop` within the close phase's context;
-`StopHeartbeat` leaves it (fault injection). The heartbeat is an upsert, so a row removed by the prune or a restore comes back; the upsert
+`StopHeartbeat` leaves it (fault injection) and cuts a heartbeat in flight, as a kill does, while `Stop` waits for that heartbeat
+until its context ends (`loopLife`, Q-ARCH-503). The heartbeat is an upsert, so a row removed by the prune or a restore comes back; the upsert
 never writes over `draining` (Q-HA-308). Both shutdown writes go through `retryShutdownWrite` (Q-HA-307): 250 ms doubling to 2 s between
 attempts, the mark until the drain step's context ends (the heartbeat writes `draining` after that), the deletion for at most
 `deleteWindow` (15 s) inside the close phase. The first failure is logged with the write's name, the outcome after a retry, and a row left

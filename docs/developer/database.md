@@ -109,7 +109,10 @@ The connection string carries neither.
   bounded by `database.connect_timeout`; the driver's cleanup then has nothing left to wait for and the place is free at once. A
   healthy idle connection (lifetime, idle time, the close of the pool) still closes with a terminate message. A connection that comes
   back closed is logged with its pool and the borrower whose statement was cut (`a database connection came back closed and is
-  discarded`). `CloseContext` returns as soon as no open pool has a connection a borrower holds (the pool's acquired count less the
+  discarded`); one that `CloseContext` ended, a readiness probe's statement still running when the close began, is logged at `INFO` as
+  `a statement still running when the database pools closed was ended`, so the warning keeps naming a statement cut while the pools
+  were open ([Q-ARCH-503](../spec/architecture.md#q-arch-503--a-control-loop-stops-between-two-statements-and-a-healthy-stop-cuts-none)).
+  `CloseContext` returns as soon as no open pool has a connection a borrower holds (the pool's acquired count less the
   closed connections being cleaned up): a discarded connection and one still being opened are not waited for, and the stop ends
   without an error
   ([Q-ARCH-499](../spec/architecture.md#q-arch-499--the-close-of-the-pools-waits-for-borrowers-only-not-for-the-drivers-own-work)).

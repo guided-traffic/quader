@@ -86,6 +86,9 @@ func Open(ctx context.Context, cfg config.Database, instance, role string, log *
 	db := &DB{cfg: cfg, log: log, instance: instance, role: role, retry: newRetrier(cfg.Retry)}
 	db.life, db.endingLife = context.WithCancel(context.Background())
 	db.holds = map[string]*holders{poolRequest: newHolders(poolRequest, log), poolControl: newHolders(poolControl, log), poolLease: newHolders(poolLease, log)}
+	for _, h := range db.holds {
+		h.closing = db.life.Done()
+	}
 	db.retry.metrics = o.metrics
 	var err error
 	if role == meta.RoleBackup {
