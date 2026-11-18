@@ -1,5 +1,7 @@
 import { seriousViolations } from '../../testing/axe';
-import { buttonByText, openFilters, renderScreen, settle, text, typeInto, chipTexts } from '../../testing/screen';
+import { buttonByText, choosePrincipal, openFilters, renderScreen, settle, text, typeInto, chipTexts } from '../../testing/screen';
+import { IdentityApi } from '../../api/identity-api';
+import { FakeIdentityApi } from '../../api/testing/access-fakes';
 import { UserList } from './user-list';
 
 describe('Users list table and filter panel (R-UI-024, R-UI-020)', () => {
@@ -64,5 +66,22 @@ describe('Users list table and filter panel (R-UI-024, R-UI-020)', () => {
     const drawer = await openFilters(fixture, root);
     expect(await seriousViolations(drawer)).toEqual([]);
     expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-UI-150 the group filter is chosen from the search and sent by the group\'s name', async () => {
+    const { fixture, root, get } = await renderScreen(UserList);
+    const api = get(IdentityApi) as FakeIdentityApi;
+    const seen: (string | undefined)[] = [];
+    const users = api.users.bind(api);
+    api.users = (filters) => {
+      seen.push(filters.group);
+      return users(filters);
+    };
+    const drawer = await openFilters(fixture, root);
+    await choosePrincipal(fixture, drawer, 'Group', 'leads', 'web-leads');
+    buttonByText(drawer, 'Apply filters').click();
+    await settle(fixture);
+    expect(seen.at(-1)).toBe('web-leads');
+    expect(chipTexts(root)).toEqual(['Group: web-leads']);
   });
 });

@@ -1,4 +1,4 @@
-import { alicePassword, bobPassword, e2eProject, expect, expectAccessible, qualified, repositories, repositoryApi, signInLocal, signInWithKeycloak, signOut, test, unique, watchCsp } from '../support';
+import { alicePassword, bobPassword, choosePrincipal, e2eProject, expect, expectAccessible, qualified, repositories, repositoryApi, signInLocal, signInWithKeycloak, signOut, test, unique, watchCsp } from '../support';
 
 // R-UI-047 journeys "policy edit" and the effect of a grant (R-UI-025, R-UI-026, R-AUTH-018, R-API-052, E1.11): the
 // administrator puts bob into a new group and writes a permission policy for it, in the editor with its
@@ -52,9 +52,9 @@ test('R-UI-025 R-UI-026 a group, a policy with its preview, and the effect for b
     await expect(page).toHaveURL(new RegExp(`/admin/groups/${groupName}$`));
     // A detail page names its object in the heading (Q-UI-307).
     await expect(page.getByRole('heading', { name: groupName, level: 1 })).toBeVisible();
-    await page.getByLabel('Add a member').fill('bob');
+    await choosePrincipal(page, 'Add a member', 'bob', /@bob/);
     await page.getByRole('button', { name: 'Add', exact: true }).click();
-    await expect(page.getByRole('link', { name: 'bob' })).toBeVisible();
+    await expect(page.getByRole('link', { name: /bob/i }).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Members (1)' })).toBeVisible();
     await expectAccessible(page, 'group detail');
   });
@@ -70,7 +70,7 @@ test('R-UI-025 R-UI-026 a group, a policy with its preview, and the effect for b
     await page.getByLabel('Name', { exact: true }).first().fill(policyName);
     await page.getByRole('button', { name: 'Add principal' }).click();
     const entry = page.getByRole('group', { name: 'Entry 1' });
-    await entry.getByLabel('Principal', { exact: true }).fill(`group:${groupName}`);
+    await choosePrincipal(entry, 'Principal', groupName, groupName);
     await entry.getByRole('checkbox', { name: 'read' }).check();
     await page.getByLabel('Repository selectors').fill(qualified(repoKey));
     await expect(page.locator('.covers')).toContainText('Repositories covered now: 1');
@@ -79,7 +79,7 @@ test('R-UI-025 R-UI-026 a group, a policy with its preview, and the effect for b
 
     // "Try it" evaluates the draft only.
     const preview = page.getByRole('complementary', { name: 'Preview' });
-    await preview.getByLabel('Principal', { exact: true }).fill(`group:${groupName}`);
+    await choosePrincipal(preview, 'Principal', groupName, groupName);
     await preview.getByLabel('Repository', { exact: true }).fill(qualified(repoKey));
     await preview.getByRole('button', { name: 'Explain' }).click();
     await expect(page.getByText('Allowed by this draft')).toBeVisible();

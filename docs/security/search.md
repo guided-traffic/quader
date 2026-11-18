@@ -16,7 +16,10 @@ what the browser keeps.
     and the repository's include and exclude patterns admit it ([suggest.go](../../internal/packages/view/suggest.go), Q-API-275);
   - a project by the rule of the project list: a member, a holder of `projects:read`, or a level that admits the caller
     (`projectListed` in [projects_api.go](../../internal/api/v1/projects_api.go));
-  - users and groups only to a holder of `identities:read`.
+  - users, groups and service accounts only to a holder of `identities:read`. A user suggestion carries the path of its uploaded
+    avatar, which every authenticated caller may read anyway; a service account its description and project. These three kinds are
+    also the source of every field of the admin area that names a principal (R-UI-150, R-API-078): that field reads nothing its
+    caller could not list through `GET /api/v1/users`, `/groups` and `/service-accounts`, and less of each (no e-mail address).
 - T-18's rules hold as on the lists: `internal` admits an internal subject only, so a user flagged external, a service account, a
   CI token and a request through a Bastion get what grants, roles and `public` give them; a token's scope narrows grants and
   `internal`, not `public`; an endpoint's exposure rules narrow every caller on it.
@@ -30,14 +33,14 @@ what the browser keeps.
 - A repository's or a package's project is named by its key, which is part of the qualified name the caller reads; the display
   name appears only in a project entry the project rule admits (Q-API-277).
 - The parameters are checked first (400), then the anonymous gate (401 while nothing is `public`), then `identities:read` for
-  `kind` `user` or `group` (403); each answer is the same for every text, and the 403 comes before any lookup.
+  `kind` `user`, `group` or `service_account` (403); each answer is the same for every text, and the 403 comes before any lookup.
 
 ## What a request can make the database do
 
 - One request per settled text, in the `read` class of its principal or the `anonymous` class of its client address (R-API-016,
   Q-API-281); `q` holds 2 to 100 characters.
-- At most a fixed number of statements per request, whatever the number of matches: the projects, the users and the groups one
-  statement each, and for packages the withheld query of each format the caller reads, a plan setting, statement A and, while A
+- At most a fixed number of statements per request, whatever the number of matches: the projects, the users, the groups and the
+  service accounts one statement each, and for packages the withheld query of each format the caller reads, a plan setting, statement A and, while A
   leaves room, statement B ([search.sql](../../internal/meta/postgres/queries/search.sql);
   `TestR_API_064_ASuggestionCostsAFixedNumberOfStatements` counts them with 10 and with 10,000 matches). Each package statement
   reads at most 200 rows, and each row one served-version check. The repositories are matched over the grant index in memory.

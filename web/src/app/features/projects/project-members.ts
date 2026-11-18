@@ -13,7 +13,6 @@ import { ListHead } from '../../shared/ui/list-head';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { ProjectNeeds } from './project-access';
-import { PickablePrincipal } from './principal-picker';
 import { ProjectMemberChoice, ProjectMemberDialog, ProjectMemberDialogData } from './project-member-dialog';
 import { projectRoleLabel } from './project-roles';
 
@@ -220,12 +219,6 @@ export class ProjectMembers {
     label: projectRoleLabel(r),
   }));
 
-  /** The users and groups whose name starts with the text (Q-AUTHZ-182). */
-  protected readonly search = async (text: string): Promise<readonly PickablePrincipal[]> => {
-    const found = await this.api.lookupPrincipals(this.project(), text);
-    return found.map((p): PickablePrincipal => ({ ref: p.principal, kind: p.kind }));
-  };
-
   constructor() {
     effect(() => {
       this.project();
@@ -243,7 +236,7 @@ export class ProjectMembers {
 
   /** Opens the dialog that adds a member. */
   async openAdd(): Promise<void> {
-    const data: ProjectMemberDialogData = { search: this.search, exclude: this.refs() };
+    const data: ProjectMemberDialogData = { project: this.project(), exclude: this.refs() };
     const ref = this.dialog.open<ProjectMemberDialog, ProjectMemberDialogData, ProjectMemberChoice>(ProjectMemberDialog, { data, width: '32rem' });
     const choice = await firstValueFrom(ref.closed);
     if (choice) await this.add(choice);

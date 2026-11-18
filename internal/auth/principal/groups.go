@@ -448,6 +448,10 @@ type MemberPage struct {
 	Member  string
 	Kind    Kind
 	Sources []string
+	// ID is the member's principal ID, the seed of a user's generated avatar; DisplayName and AvatarSHA256 are a user's
+	// display name and the digest of its uploaded avatar, empty for none and for a service account (R-UI-151). Only the read
+	// of a page fills them.
+	ID, DisplayName, AvatarSHA256 string
 }
 
 // ListMemberPage lists the members of a group ordered by kind and name, each with
@@ -472,7 +476,10 @@ func (m *Manager) ListMemberPage(ctx context.Context, group, source, afterKind, 
 		}
 		out = out[:0]
 		for _, r := range rows {
-			out = append(out, MemberPage{Member: memberName(r.MemberKind, r.MemberName), Kind: Kind(r.MemberKind), Sources: r.Sources})
+			out = append(out, MemberPage{
+				Member: memberName(r.MemberKind, r.MemberName), Kind: Kind(r.MemberKind), Sources: r.Sources,
+				ID: r.MemberID, DisplayName: r.DisplayName, AvatarSHA256: r.AvatarSha256,
+			})
 		}
 		return nil
 	})

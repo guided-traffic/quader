@@ -2,7 +2,7 @@ import { Router } from '@angular/router';
 import { AuditApi } from '../../api/audit-api';
 import { ApiError } from '../../api/problem';
 import { FakeAuditApi, sampleEvent } from '../../api/testing/fakes-catalog';
-import { applyFilters, button, chipTexts, expectAccessible, openFilters, renderScreen, settle, text, type } from '../../testing/screen';
+import { applyFilters, button, chipTexts, choosePrincipal, expectAccessible, openFilters, renderScreen, settle, text, type } from '../../testing/screen';
 import { AuditLog } from './audit-log';
 
 async function open(inputs: Record<string, unknown> = {}, setup?: (audit: FakeAuditApi) => void) {
@@ -133,17 +133,17 @@ describe('Audit log', () => {
     expect(span).toBe(7 * 24 * 3_600_000);
   });
 
-  it('R-UI-037 Apply puts the filters into the URL and keeps the other parameters', async () => {
+  it('R-UI-037 R-UI-150 Apply puts the filters into the URL and keeps the other parameters; the actor is chosen from the search', async () => {
     const { root, fixture, router } = await open();
     const drawer = await openFilters(fixture, root);
-    type(drawer.querySelector<HTMLInputElement>('#a-actor')!, 'alice');
+    await choosePrincipal(fixture, drawer, 'Actor', 'sam', '@sam');
     type(drawer.querySelector<HTMLSelectElement>('#a-category')!, 'authz');
     type(drawer.querySelector<HTMLSelectElement>('#a-range')!, '7d');
     await settle(fixture);
     await applyFilters(fixture);
     const [, extras] = (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1)!;
     expect(extras.queryParams).toMatchObject({
-      actor: 'alice',
+      actor: 'sam',
       category: 'authz',
       range: '7d',
       event: null,

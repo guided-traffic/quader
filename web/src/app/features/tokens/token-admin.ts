@@ -13,6 +13,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { PageHeader } from '../../shared/ui/page-header';
+import { PrincipalField, choiceFromRef } from '../../shared/ui/principal-field';
 
 /**
  * Tokens, the token administration (R-UI-030): every token with filters (type, owner, state, expiring before,
@@ -30,6 +31,7 @@ import { PageHeader } from '../../shared/ui/page-header';
     FilterPanel,
     ListHead,
     Needs,
+    PrincipalField,
     SelectField,
     TextField,
     TokenTable,
@@ -44,7 +46,10 @@ export class TokenAdmin {
   protected readonly session = inject(SessionStore);
 
   protected readonly list = new PagedResource<Token>();
+  /** The owner to filter by, chosen from the shared field (R-UI-150): a user's or a service account's reference. */
   protected readonly owner = signal('');
+  /** Tokens belong to users and service accounts, of the instance and of every project. */
+  protected readonly ownerKinds = ['user', 'service_account'] as const;
   protected readonly type = signal('');
   protected readonly state = signal('active');
   protected readonly expiresBefore = signal('');
@@ -58,7 +63,7 @@ export class TokenAdmin {
     const a = this.applied();
     const out: ListChip[] = [];
     const named = (options: readonly SelectOption[], value: string): string => options.find((o) => o.value === value)?.label ?? value;
-    if (a.owner.trim()) out.push({ key: 'owner', label: $localize`:@@tokens-admin.owner:Owner`, value: a.owner.trim() });
+    if (a.owner) out.push({ key: 'owner', label: $localize`:@@tokens-admin.owner:Owner`, value: choiceFromRef(a.owner).name });
     if (a.type) out.push({ key: 'type', label: $localize`:@@tokens-admin.type:Type`, value: named(this.typeOptions, a.type) });
     if (a.state !== 'active') out.push({ key: 'state', label: $localize`:@@tokens-admin.state:State`, value: named(this.stateOptions, a.state) });
     if (a.expiresBefore) out.push({ key: 'expiresBefore', label: $localize`:@@tokens-admin.expires-before:Expires before`, value: a.expiresBefore });
@@ -98,7 +103,7 @@ export class TokenAdmin {
     this.selected.set([]);
     const days = Number.parseInt(this.unusedDays(), 10);
     const filters: TokenFilters = {
-      owner: this.owner().trim() || undefined,
+      owner: ownerParam(this.owner()),
       type: (this.type() || undefined) as TokenFilters['type'],
       state: this.state() as TokenFilters['state'],
       expiresBefore: this.expiresBefore() ? `${this.expiresBefore()}T23:59:59Z` : undefined,
@@ -195,4 +200,11 @@ export class TokenAdmin {
       this.busy.set(false);
     }
   }
+}
+
+/** The API names a token's owner by the username, or by `sa:<name>` for a service account; the field holds a reference. */
+function ownerParam(ref: string): string | undefined {
+  if (!ref) return undefined;
+  const chosen = choiceFromRef(ref);
+  return chosen.kind === 'user' ? chosen.name : ref;
 }

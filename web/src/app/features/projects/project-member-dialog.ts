@@ -2,12 +2,12 @@ import { Component, inject, signal } from '@angular/core';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
 import { PROJECT_ROLES, ProjectRole } from '../../api/projects-api';
 import { SelectField, SelectOption } from '../../shared/access/fields';
-import { PickablePrincipal, PrincipalPicker } from './principal-picker';
+import { PrincipalField } from '../../shared/ui/principal-field';
 import { projectRoleHint, projectRoleLabel } from './project-roles';
 
 export interface ProjectMemberDialogData {
-  /** The users and groups whose name starts with the text. */
-  readonly search: (text: string) => Promise<readonly PickablePrincipal[]>;
+  /** The project: its principal lookup finds the users and groups (Q-AUTHZ-182). */
+  readonly project: string;
   /** The references that are members already. */
   readonly exclude: readonly string[];
 }
@@ -17,24 +17,30 @@ export interface ProjectMemberChoice {
   readonly role: ProjectRole;
 }
 
-/** Adds a member to a project (R-UI-041, Q-UI-214): the user or group through the principal lookup and its role. */
+/**
+ * Adds a member to a project (R-UI-041, Q-UI-214): the user or group from the shared principal field over the project's lookup
+ * (R-UI-150), and its role.
+ */
 @Component({
   selector: 'quader-project-member-dialog',
-  imports: [DialogTitle, DialogClose, PrincipalPicker, SelectField],
+  imports: [DialogTitle, DialogClose, PrincipalField, SelectField],
   template: `
     <h2 quaderDialogTitle i18n="@@project-members.add">Add member</h2>
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
-        <quader-principal-picker
+        <quader-principal-field
           i18n-label="@@project-members.find"
-          label="Find a user or group"
-          name="member-search"
-          [search]="data.search"
+          label="User or group"
+          name="member"
+          [kinds]="kinds"
+          [project]="data.project"
           [exclude]="data.exclude"
-          (picked)="chosen.set($event)"
+          [width]="'full'"
+          [(value)]="chosen"
+          i18n-hint="@@project-members.find-hint"
+          hint="Type a name or a username."
         />
-        @if (chosen(); as c) {
-          <p class="chosen"><span translate="no">{{ c }}</span></p>
+        @if (chosen().length > 0) {
           <quader-select-field
             i18n-label="@@project-members.role"
             label="Role"
@@ -48,7 +54,7 @@ export interface ProjectMemberChoice {
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@project-members.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="!chosen()" i18n="@@project-members.add-confirm">
+        <button class="btn btn-confirm" type="submit" [disabled]="chosen().length === 0" i18n="@@project-members.add-confirm">
           Add member
         </button>
       </div>
@@ -60,7 +66,8 @@ export class ProjectMemberDialog {
   protected readonly data = inject<ProjectMemberDialogData>(DIALOG_DATA);
   private readonly ref = inject<DialogRef<ProjectMemberChoice>>(DialogRef);
 
-  protected readonly chosen = signal<string | null>(null);
+  protected readonly kinds = ['user', 'group'] as const;
+  protected readonly chosen = signal<readonly string[]>([]);
   protected readonly role = signal<ProjectRole>('developer');
   protected readonly roleOptions: readonly SelectOption[] = PROJECT_ROLES.map((r) => ({ value: r, label: projectRoleLabel(r) }));
 
@@ -70,7 +77,7 @@ export class ProjectMemberDialog {
 
   protected submit(event: Event): void {
     event.preventDefault();
-    const principal = this.chosen();
+    const principal = this.chosen()[0];
     if (principal) this.ref.close({ principal, role: this.role() });
   }
 }

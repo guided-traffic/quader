@@ -194,6 +194,27 @@ export function buttonByText(root: ParentNode, label: string): HTMLButtonElement
   return found;
 }
 
+/**
+ * Names a principal in the shared principal field labelled `label` (R-UI-150), as a person does: types `search`, waits for the
+ * debounce and the answer, and clicks the match whose row contains `match` (the first match without it). Nobody types a
+ * reference; the field takes the chosen match.
+ */
+export async function choosePrincipal(
+  fixture: ComponentFixture<unknown>,
+  root: ParentNode,
+  label: string,
+  search: string,
+  match?: string,
+): Promise<void> {
+  typeInto(root, label, search);
+  await sleep(fixture, 320);
+  const options = [...document.querySelectorAll<HTMLElement>('quader-principal-field [role="option"]')];
+  const option = options.find((o) => match === undefined || text(o).includes(match));
+  if (!option) throw new Error(`no match "${match ?? search}" under "${label}": ${options.map((o) => text(o)).join(' | ')}`);
+  option.click();
+  await settle(fixture);
+}
+
 /** Sets the value of the field labelled `label` and fires the matching event. */
 export function typeInto(root: ParentNode, label: string, value: string): void {
   const labelEl = [...root.querySelectorAll<HTMLLabelElement>('label')].find((l) =>

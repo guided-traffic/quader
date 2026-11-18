@@ -63,12 +63,22 @@ export class FakeProjectsApi extends ProjectsApi {
   /** The repositories the next level change lowers, as the server reports them. */
   loweredNext: { repository: string; before: { artifacts: Project['visibility']; wiki: Project['visibility'] } }[] = [];
   principals: ProjectPrincipal[] = [
-    { kind: 'user', name: 'alice', principal: 'user:alice' },
-    { kind: 'user', name: 'bob', principal: 'user:bob' },
+    {
+      kind: 'user',
+      name: 'alice',
+      principal: 'user:alice',
+      displayName: 'Alice Archer',
+      id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1b01',
+      avatarUrl: null,
+    },
+    { kind: 'user', name: 'bob', principal: 'user:bob', displayName: null, id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1b02', avatarUrl: null },
     { kind: 'group', name: 'web-leads', principal: 'group:web-leads' },
     { kind: 'group', name: 'web-partners', principal: 'group:web-partners' },
+    { kind: 'service_account', name: 'web/deploy', principal: 'sa:web/deploy', project: 'web' },
   ];
-  lookups: { key: string; q: string }[] = [];
+  lookups: { key: string; q: string; kinds?: readonly ProjectPrincipal['kind'][] }[] = [];
+  /** Rejects the next lookup once. */
+  lookupFailure: ApiError | null = null;
   /** Rejects the next write once. */
   failure: ApiError | null = null;
 
@@ -258,15 +268,25 @@ export class FakeProjectsApi extends ProjectsApi {
     this.refresh(key);
   }
 
+  /** Matches as the server does in outline: the name, a word of it or a word of the display name starts with the text. */
   override async lookupPrincipals(
     key: string,
     q: string,
-    kind?: ProjectPrincipal['kind'],
+    kinds?: readonly ProjectPrincipal['kind'][],
   ): Promise<readonly ProjectPrincipal[]> {
     this.find(key);
-    this.lookups.push({ key, q });
-    if (q.length < 2) throw problem(422, 'invalid_request');
-    return this.principals.filter((p) => p.name.startsWith(q) && (!kind || p.kind === kind)).slice(0, 20);
+    this.lookups.push({ key, q, kinds });
+    if (this.lookupFailure) {
+      const e = this.lookupFailure;
+      this.lookupFailure = null;
+      throw e;
+    }
+    if (q.trim().length < 2) throw problem(422, 'invalid_request');
+    const text = q.trim().toLowerCase();
+    const words = (p: ProjectPrincipal): string[] => [p.name, ...p.name.split(/[^a-z0-9]+/), ...(p.displayName ?? '').toLowerCase().split(/\s+/)];
+    return this.principals
+      .filter((p) => (!kinds?.length || kinds.includes(p.kind)) && words(p).some((w) => w.startsWith(text)))
+      .slice(0, 20);
   }
 }
 

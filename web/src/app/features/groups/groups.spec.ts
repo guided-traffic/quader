@@ -1,6 +1,6 @@
 import { IdentityApi } from '../../api/identity-api';
 import { FakeIdentityApi } from '../../api/testing/access-fakes';
-import { buttonByText, renderScreen, settle, text, typeInto } from '../../testing/screen';
+import { buttonByText, choosePrincipal, renderScreen, settle, text, typeInto } from '../../testing/screen';
 import { seriousViolations } from '../../testing/axe';
 import { GroupDetail } from './group-detail';
 import { GroupList } from './group-list';
@@ -32,16 +32,26 @@ describe('Groups (R-UI-025)', () => {
     expect(api.keys).toHaveLength(1);
   });
 
-  it('R-UI-025 adding a manual member lists it with the source manual', async () => {
+  it('R-UI-025 R-UI-150 adding a manual member chosen from the search lists it with the source manual', async () => {
     const { fixture, root, get } = await renderScreen(GroupDetail, { inputs: { name: 'platform' } });
-    typeInto(root, 'Add a member', 'bob');
-    await settle(fixture);
+    await choosePrincipal(fixture, root, 'Add a member', 'sam', '@sam');
     buttonByText(root, 'Add').click();
     await settle(fixture);
-    expect((get(IdentityApi) as FakeIdentityApi).calls).toContain('changeGroupMembers platform +bob -');
-    const row = [...root.querySelectorAll('tbody tr')].find((r) => text(r).startsWith('bob'));
+    expect((get(IdentityApi) as FakeIdentityApi).calls).toContain('changeGroupMembers platform +sam -');
+    const row = [...root.querySelectorAll('tbody tr')].find((r) => text(r).startsWith('sam'));
     expect(row).toBeTruthy();
     expect(text(row!)).toContain('Manual');
+  });
+
+  it('R-UI-151 a member row shows the avatar, the name and the username; a service account its icon and its kind', async () => {
+    const { root } = await renderScreen(GroupDetail, { inputs: { name: 'team-web' } });
+    const rows = [...root.querySelectorAll<HTMLElement>('quader-disclosure tbody tr')];
+    const alice = rows.find((r) => text(r).startsWith('alice'))!;
+    expect(alice.querySelector('th > .person-line quader-avatar')).not.toBeNull();
+    expect(text(alice.querySelector('th')!)).toContain('@alice');
+    const bot = rows.find((r) => text(r).includes('ci-bot'))!;
+    expect(bot.querySelector('th > .person-line .material-icons')?.textContent).toBe('smart_toy');
+    expect(text(bot.querySelector('th')!)).toContain('Service account');
   });
 
   it('R-UI-025 only manual members can be removed', async () => {
@@ -49,7 +59,7 @@ describe('Groups (R-UI-025)', () => {
     const rows = [...root.querySelectorAll('quader-disclosure tbody tr')];
     expect(rows).toHaveLength(2);
     const provider = rows.find((r) => text(r).startsWith('alice'))!;
-    const mixed = rows.find((r) => text(r).startsWith('sa:ci-bot'))!;
+    const mixed = rows.find((r) => text(r).includes('ci-bot'))!;
     expect(provider.querySelector('button')).toBeNull();
     expect(mixed.querySelector('button')).toBeTruthy();
     // Remove is a direct child of its cell in a table.data, which the shared rule centres on the row's first line (R-UI-145, Q-UI-562).

@@ -43,8 +43,10 @@ On a virtual repository a role gives `read` and `manage`; a publish through a vi
 
 The page **Members** of a project lists every member with its role; the number of members stands after the heading. **Filter
 members** above the list keeps the members whose name contains what you type; select the heading **Account** or **Role** to sort
-by it, **Role** with the Owners first. An Owner adds a member with **Add member**, changes a role in the member's row and removes a
-member through the row's menu.
+by it, **Role** with the Owners first. An Owner adds a member with **Add member**: type part of the person's name or username, or of a
+group's name, choose the match (each shows the avatar, the full name and the username) and its role ([Choosing a person, a group or a
+service account](permissions.md#choosing-a-person-a-group-or-a-service-account)). A person who has never signed in cannot be found
+yet. The Owner changes a role in the member's row and removes a member through the row's menu.
 
 The members are read with `GET /api/v1/projects/<projectKey>/members` and written with one request per member:
 
@@ -65,7 +67,7 @@ A member is named `user:<name>` or `group:<name>`; the role is `reader`, `develo
 
 | Area | Allows, in the project and nowhere else |
 |---|---|
-| Members | Add users and groups, change their roles and remove them. Look up users and groups by the start of their name with `GET /api/v1/projects/<projectKey>/principals?q=` (at least two characters, at most 20 matches, kind and name only) |
+| Members | Add users and groups, change their roles and remove them. Look up users, groups and the project's service accounts by the start of their name or of a word of it with `GET /api/v1/projects/<projectKey>/principals?q=` (at least two characters, at most 20 matches; a user with its display name and avatar, never its e-mail address); this is the search behind the fields **Add member** and **Principal** of the project |
 | Repositories | Create, change and delete the project's repositories of every class: local, remote and virtual. Read their full configuration, never a secret value. Test the saved and the unsaved upstream of a remote repository. Move a repository to another project of which it is Owner too |
 | Permission policies | Create, change and delete the project's policies, granting any action to users, groups, the project's service accounts, service accounts of no project and CI mappings, never to `anonymous`, `authenticated` or an automatically joined group |
 | Service accounts | Create, change, disable, enable and delete the project's service accounts; issue and revoke their tokens within the limits below |

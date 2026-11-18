@@ -57,11 +57,14 @@ export abstract class ProjectsApi {
   abstract setMember(key: string, principal: string, role: ProjectRole): Promise<ProjectMember>;
   /** 409 `last_owner` when it is the last Owner. */
   abstract removeMember(key: string, principal: string): Promise<void>;
-  /** Users and groups whose name starts with `q` (two characters at least), for the entries of a project policy. */
+  /**
+   * The principal lookup of a project (Q-AUTHZ-182, R-API-077): users, groups and service accounts whose name or a word of it
+   * starts with `q` (two characters at least), at most 20, with what a member's row shows. Every kind when `kinds` is empty.
+   */
   abstract lookupPrincipals(
     key: string,
     q: string,
-    kind?: ProjectPrincipal['kind'],
+    kinds?: readonly ProjectPrincipal['kind'][],
   ): Promise<readonly ProjectPrincipal[]>;
 }
 
@@ -122,11 +125,11 @@ export class HttpProjectsApi extends ProjectsApi {
   override async lookupPrincipals(
     key: string,
     q: string,
-    kind?: ProjectPrincipal['kind'],
+    kinds?: readonly ProjectPrincipal['kind'][],
   ): Promise<readonly ProjectPrincipal[]> {
     const r = await this.client.getJson<{ items: ProjectPrincipal[] }>(
       `/api/v1/projects/${seg(key)}/principals`,
-      { params: cleanQuery({ q, kind }) },
+      { params: cleanQuery({ q, kind: kinds?.length ? kinds.join(',') : undefined }) },
     );
     return r.body.items;
   }

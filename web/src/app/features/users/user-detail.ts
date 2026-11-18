@@ -21,6 +21,7 @@ import { QuaderAvatar } from '../../shared/ui/avatar';
 import { TokenManager, TokenOwnerScope } from '../tokens/token-manager';
 import { isLocked, originLabel } from './user-labels';
 import { PageHeader } from '../../shared/ui/page-header';
+import { PrincipalField, choiceFromRef } from '../../shared/ui/principal-field';
 
 /**
  * One user (R-UI-024). Attributes from the identity provider are read-only and labelled as such;
@@ -31,7 +32,7 @@ import { PageHeader } from '../../shared/ui/page-header';
  */
 @Component({
   selector: 'quader-user-detail',
-  imports: [PageHeader, DatePipe, RouterLink, Checkbox, ErrorNotice, Needs, PrincipalRoles, Disclosure, TextField, TokenManager, QuaderAvatar],
+  imports: [PageHeader, DatePipe, RouterLink, Checkbox, ErrorNotice, Needs, PrincipalField, PrincipalRoles, Disclosure, TextField, TokenManager, QuaderAvatar],
   templateUrl: './user-detail.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -89,7 +90,9 @@ export class UserDetail {
   protected readonly external = signal(false);
   protected readonly email = signal('');
   protected readonly displayName = signal('');
-  protected readonly newGroup = signal('');
+  /** The group to add the user to, chosen from the shared field (R-UI-150). */
+  protected readonly newGroup = signal<readonly string[]>([]);
+  protected readonly groupKinds = ['group'] as const;
   protected readonly busy = signal(false);
 
   protected readonly originLabel = originLabel;
@@ -263,13 +266,14 @@ export class UserDetail {
 
   protected async addGroup(event: Event): Promise<void> {
     event.preventDefault();
-    const name = this.newGroup().trim();
-    if (!name) return;
+    const ref = this.newGroup()[0];
+    if (!ref) return;
+    const name = choiceFromRef(ref).name;
     await this.run(
       this.actionError,
       async () => {
         this.setGroups(await this.api.changeUserGroups(this.username(), { add: [name] }));
-        this.newGroup.set('');
+        this.newGroup.set([]);
       },
       $localize`:@@user.group-added:Group membership added.`,
     );
@@ -317,6 +321,11 @@ export class UserDetail {
     if (reason === 'wrong_type') return $localize`:@@user.claim-reason.wrong-type:a group claim of the wrong type`;
     if (reason === 'overage') return $localize`:@@user.claim-reason.overage:too many groups for the token`;
     return $localize`:@@user.claim-reason.absent:no group claim`;
+  }
+
+  /** The groups the user is in already, which the field does not offer again. */
+  protected groupRefs(): readonly string[] {
+    return (this.user()?.groups ?? []).map((g) => `group:${g.name}`);
   }
 
   private setGroups(groups: readonly UserGroupMembership[]): void {

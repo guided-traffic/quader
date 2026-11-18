@@ -77,7 +77,24 @@
             <tbody>
               @for (m of members.items(); track m.principal) {
                 <tr>
-                  <th scope="row"><a [routerLink]="memberLink(m)" translate="no">{{ m.principal }}</a></th>
+                  <th scope="row">
+                    <!-- The cell stays a table cell, so its line meets its neighbours'; the avatar and the name share a line inside it. -->
+                    <span class="person-line">
+                      @if (m.kind === 'user') {
+                        <quader-avatar class="avatar" aria-hidden="true" [seed]="m.id ?? m.principal" [imageUrl]="m.avatarUrl" />
+                      } @else {
+                        <span class="avatar account" aria-hidden="true"><span class="material-icons">smart_toy</span></span>
+                      }
+                      <span class="who">
+                        <a [routerLink]="memberLink(m)" translate="no">{{ memberName(m) }}</a>
+                        @if (m.kind === 'user') {
+                          <span class="secondary" translate="no">&#64;{{ m.principal }}</span>
+                        } @else {
+                          <span class="secondary" i18n="@@group.kind-account">Service account</span>
+                        }
+                      </span>
+                    </span>
+                  </th>
                   <td>
                     @for (s of m.sources; track s) {
                       <span class="badge">{{ sourceLabel(s) }}</span>{{ ' ' }}
@@ -103,16 +120,17 @@
     }
     @if (canWrite() && !readOnly()) {
       <form class="toolbar" (submit)="addMember($event)">
-        <quader-text-field
-          width="name"
+        <quader-principal-field
           i18n-label="@@group.add-member"
           label="Add a member"
           name="member"
+          [kinds]="memberKinds"
+          [exclude]="memberRefs()"
           [(value)]="newMember"
           i18n-hint="@@group.add-member-hint"
-          hint="A user name, or sa:name for a service account"
+          hint="A user or a service account: type its name."
         />
-        <button class="btn btn-confirm" type="submit" [disabled]="busy() || newMember().trim() === ''" i18n="@@group.add-member-submit">Add</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy() || newMember().length === 0" i18n="@@group.add-member-submit">Add</button>
       </form>
     }
   </quader-disclosure>

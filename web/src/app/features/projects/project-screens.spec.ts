@@ -14,7 +14,7 @@ import { describeProblem } from '../../core/http/problem-messages';
 import { helpFor } from '../../core/help-topics';
 import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
-import { button, buttonByText, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
+import { button, buttonByText, choosePrincipal, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
 import { PREVIEW_DEBOUNCE_MS, PolicyEditor } from '../permissions/policy-editor';
 import { RepositoryCreate } from '../repositories/repository-create';
 import { ServiceAccountDetail } from '../service-accounts/service-account-detail';
@@ -36,7 +36,7 @@ function projectOwner(role: 'owner' | 'maintainer' = 'owner') {
 }
 
 describe('The project policy editor (R-UI-041, R-AUTHZ-026)', () => {
-  it('R-UI-041 a new project policy is named within the project, names its project and finds principals through the lookup', async () => {
+  it('R-UI-041 R-UI-150 a new project policy is named within the project, names its project and finds principals through the lookup', async () => {
     const { fixture, root, get } = await renderScreen(PolicyEditor, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -51,13 +51,19 @@ describe('The project policy editor (R-UI-041, R-AUTHZ-026)', () => {
     buttonByText(root, 'generic-local').click();
     await settle(fixture);
     expect(root.querySelector<HTMLTextAreaElement>('textarea[name="repositories"]')!.value).toBe('generic-local');
-    // The lookup (Q-AUTHZ-182): two characters, then the match becomes an entry.
-    typeInto(root, 'Find a user or group', 'web');
-    await sleep(fixture, 400);
-    buttonByText(root, 'group:web-leads').click();
+    // An entry's principal comes from the project's lookup (Q-AUTHZ-182) through the shared field: the project's own service
+    // account is offered beside users and groups.
+    buttonByText(root, 'Add principal').click();
     await settle(fixture);
-    expect(root.querySelector<HTMLInputElement>('input[name="principal-0"]')!.value).toBe('group:web-leads');
-    expect((get(ProjectsApi) as FakeProjectsApi).lookups).toEqual([{ key: 'web', q: 'web' }]);
+    typeInto(root, 'Principal', 'deploy');
+    await sleep(fixture, 320);
+    expect(text(document.querySelector('quader-principal-field [role="listbox"]')!)).toContain('Service account of web');
+    await choosePrincipal(fixture, root, 'Principal', 'leads', 'web-leads');
+    expect(text(root.querySelector('fieldset.entry .chips')!)).toContain('web-leads');
+    expect((get(ProjectsApi) as FakeProjectsApi).lookups.map((l) => [l.key, l.q])).toEqual([
+      ['web', 'deploy'],
+      ['web', 'leads'],
+    ]);
 
     const policies = get(PolicyApi) as FakePolicyApi;
     await sleep(fixture, PREVIEW_DEBOUNCE_MS + 100);
@@ -81,7 +87,7 @@ describe('The project policy editor (R-UI-041, R-AUTHZ-026)', () => {
     });
     expect(text(root)).toContain('Read only: changing this needs the permission policies:write');
     expect(root.querySelector('button[type="submit"]')).toBeNull();
-    expect(root.querySelector('quader-principal-picker')).toBeNull();
+    expect(root.querySelector('fieldset.entry quader-principal-field input[role="combobox"]')).toBeNull();
   });
 
   it('R-UI-041 a stored project policy keeps its project through a save', async () => {
@@ -108,7 +114,6 @@ describe('The project policy editor (R-UI-041, R-AUTHZ-026)', () => {
   it('R-UI-027 a global policy is unchanged: no project line, the capability decides', async () => {
     const { root, get } = await renderScreen(PolicyEditor);
     expect(text(root)).not.toContain('Project policy of');
-    expect(root.querySelector('quader-principal-picker')).toBeNull();
     expect((get(PolicyApi) as FakePolicyApi).validated.every((v) => v.project === undefined)).toBe(true);
   });
 

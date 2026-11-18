@@ -22,6 +22,7 @@ import { ProjectLink } from '../../shared/ui/project-mark';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
 import { actionSuggestions, auditActionLabel, categoryLabel, outcomeLabel } from './audit-labels';
 import { PageHeader } from '../../shared/ui/page-header';
+import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
 
 /** The page size of the table (the server default and a good fit for one screen). */
 export const AUDIT_PAGE_SIZE = 100;
@@ -53,6 +54,7 @@ const PRESETS: Readonly<Record<string, number>> = {
     FilterPanel,
     ListHead,
     NoValue,
+    PrincipalField,
     ProjectLink,
   ],
   templateUrl: './audit-log.html',
@@ -209,6 +211,24 @@ export class AuditLog {
 
   protected setDraft(name: string, value: string): void {
     this.draft.update((d) => ({ ...d, [name]: value }));
+  }
+
+  /** The actor filter is the shared field (R-UI-150): a user or a service account, of the instance or of a project. */
+  protected readonly actorKinds = ['user', 'service_account'] as const;
+  /** The reference last chosen, so a service account keeps its kind in the field; the filter itself is the actor's name. */
+  private readonly actorRef = signal<string | null>(null);
+
+  protected actorRefs(): readonly string[] {
+    const name = this.draft()['actor']?.trim();
+    if (!name) return [];
+    const ref = this.actorRef();
+    return [ref && choiceFromRef(ref).name === name ? ref : refOf('user', name)];
+  }
+
+  protected setActor(refs: readonly string[]): void {
+    const ref = refs[0] ?? null;
+    this.actorRef.set(ref);
+    this.setDraft('actor', ref ? choiceFromRef(ref).name : '');
   }
 
   protected apply(): void {

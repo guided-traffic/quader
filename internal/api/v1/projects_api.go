@@ -428,33 +428,24 @@ func (s *Server) mayBypassLastOwner(r *http.Request) bool {
 const maxLookupQuery = 128
 
 // LookupProjectPrincipals implements GET /api/v1/projects/{key}/principals
-// (Q-AUTHZ-182): a caller with identities:read, or an Owner of the project. The project must exist (404). The answer is kind, name and
-// the reference to write in a policy entry.
+// (Q-AUTHZ-182, R-API-077): a caller with identities:read, or an Owner of the project. The project must exist (404). The
+// answer is what a member's row shows and the reference to write: the project's own service accounts, and the instance-wide
+// ones for a holder of identities:read, who lists them anyway.
 func (s *Server) LookupProjectPrincipals(w http.ResponseWriter, r *http.Request, key string, params gen.LookupProjectPrincipalsParams) {
 	svc, err := s.projects()
 	if err == nil {
 		_, err = svc.Get(r.Context(), key)
 	}
-	var fields []errs.FieldError
-	if err == nil && len(params.Q) > maxLookupQuery {
-		fields = append(fields, errs.FieldError{Pointer: "/q", Code: "prefix_too_long", Detail: "The prefix has at most 128 characters."})
-	}
-	limit := 0
-	if params.Limit != nil {
-		if limit = *params.Limit; limit < 1 || limit > project.MaxLookup {
-			fields = append(fields, errs.FieldError{Pointer: "/limit", Code: "invalid_limit", Detail: "The limit is 1 to 20."})
-		}
-	}
-	if err == nil && len(fields) > 0 {
-		err = errs.E(errs.Invalid, errs.CodeValidation, fields[0].Detail, errs.WithFields(fields...))
-	}
-	var found []project.PrincipalRef
+	query := project.Lookup{Prefix: params.Q, Project: key}
 	if err == nil {
-		var kind project.PrincipalKind
-		if params.Kind != nil {
-			kind = project.PrincipalKind(*params.Kind)
-		}
-		found, err = svc.LookupPrincipals(r.Context(), params.Q, kind, limit)
+		err = lookupParams(params, &query)
+	}
+	if err == nil {
+		query.InstanceAccounts, err = s.holds(r.Context(), string(authz.IdentitiesRead))
+	}
+	var found []project.Found
+	if err == nil {
+		found, err = svc.LookupPrincipals(r.Context(), query)
 	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
@@ -462,9 +453,56 @@ func (s *Server) LookupProjectPrincipals(w http.ResponseWriter, r *http.Request,
 	}
 	out := gen.ProjectPrincipalList{Items: make([]gen.ProjectPrincipal, 0, len(found))}
 	for _, p := range found {
-		out.Items = append(out.Items, gen.ProjectPrincipal{Kind: gen.ProjectPrincipalKind(p.Kind), Name: p.Name, Principal: p.String()})
+		out.Items = append(out.Items, toProjectPrincipal(p))
 	}
 	writeJSON(w, r, http.StatusOK, out)
+}
+
+// lookupParams checks the bounds of the document the generated binding does not (the length of q, the limit) and reads the
+// kinds, repeated or comma-separated, into the lookup (422).
+func lookupParams(params gen.LookupProjectPrincipalsParams, query *project.Lookup) error {
+	var fields []errs.FieldError
+	if len(params.Q) > maxLookupQuery {
+		fields = append(fields, errs.FieldError{Pointer: "/q", Code: "prefix_too_long", Detail: "The prefix has at most 128 characters."})
+	}
+	if params.Limit != nil {
+		if query.Limit = *params.Limit; query.Limit < 1 || query.Limit > project.MaxLookup {
+			fields = append(fields, errs.FieldError{Pointer: "/limit", Code: "invalid_limit", Detail: "The limit is 1 to 20."})
+		}
+	}
+	if params.Kind != nil {
+		raw := make([]string, 0, len(*params.Kind))
+		for _, k := range *params.Kind {
+			raw = append(raw, string(k))
+		}
+		for _, k := range splitValues(raw) {
+			kind := project.PrincipalKind(k)
+			if kind != project.KindUser && kind != project.KindGroup && kind != project.KindServiceAccount {
+				fields = append(fields, errs.FieldError{Pointer: "/kind", Code: "invalid_kind", Detail: "The kind is user, group or service_account."})
+				break
+			}
+			query.Kinds = append(query.Kinds, kind)
+		}
+	}
+	if len(fields) > 0 {
+		return errs.E(errs.Invalid, errs.CodeValidation, fields[0].Detail, errs.WithFields(fields...))
+	}
+	return nil
+}
+
+// toProjectPrincipal renders a principal of the lookup: a user with its display name and what its avatar needs, a service
+// account with its project.
+func toProjectPrincipal(p project.Found) gen.ProjectPrincipal {
+	item := gen.ProjectPrincipal{Kind: gen.ProjectPrincipalKind(p.Kind), Name: p.Name, Principal: p.Ref()}
+	switch p.Kind {
+	case project.KindUser:
+		item.Id = &p.ID
+		item.DisplayName = optString(p.DisplayName)
+		item.AvatarUrl = avatarURL(p.AvatarSHA256)
+	case project.KindServiceAccount:
+		item.Project = optString(p.Project)
+	}
+	return item
 }
 
 // notFoundProject is the answer for a project the caller may not see: the same as for one that does not exist.

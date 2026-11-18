@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { IdentityApi, User, UserFilters } from '../../api/identity-api';
 import { SessionStore } from '../../core/session-store';
-import { SelectField, SelectOption, TextField } from '../../shared/access/fields';
+import { SelectField, SelectOption } from '../../shared/access/fields';
 import { Needs } from '../../shared/access/needs';
 import { PagedResource } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
@@ -15,6 +15,7 @@ import { TimeAgo } from '../../shared/ui/time-ago';
 import { UserCreateDialog } from './user-create-dialog';
 import { originLabel } from './user-labels';
 import { PageHeader } from '../../shared/ui/page-header';
+import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
 import { QuaderAvatar } from '../../shared/ui/avatar';
 
 /**
@@ -34,8 +35,8 @@ import { QuaderAvatar } from '../../shared/ui/avatar';
     FilterPanel,
     ListHead,
     Needs,
+    PrincipalField,
     SelectField,
-    TextField,
     NoValue,
     TimeAgo,
   ],
@@ -52,7 +53,11 @@ export class UserList {
   protected readonly q = signal('');
   protected readonly status = signal('');
   protected readonly origin = signal('');
+  /** The group to filter by, chosen from the shared field (R-UI-150); the API takes its name. */
   protected readonly group = signal('');
+  protected readonly groupKinds = ['group'] as const;
+  protected readonly groupRef = (name: string): string => refOf('group', name);
+  protected readonly groupName = (ref: string | undefined): string => (ref ? choiceFromRef(ref).name : '');
   protected readonly admin = signal('');
   protected readonly external = signal('');
   protected readonly panelOpen = signal(false);

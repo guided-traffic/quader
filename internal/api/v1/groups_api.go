@@ -168,9 +168,19 @@ func (s *Server) DeleteGroup(w http.ResponseWriter, r *http.Request, name string
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// toMember renders a member of a page with what its row shows (R-UI-151): the ID that seeds a user's generated avatar, the
+// display name and the uploaded avatar.
 func toMember(m principal.MemberPage) gen.GroupMember {
 	kind := gen.GroupMemberKind(m.Kind)
-	return gen.GroupMember{Principal: m.Member, Kind: kind, Sources: orEmptyStrings(m.Sources)}
+	out := gen.GroupMember{Principal: m.Member, Kind: kind, Sources: orEmptyStrings(m.Sources)}
+	if m.ID != "" {
+		out.Id = &m.ID
+	}
+	if m.Kind == principal.KindUser {
+		out.DisplayName = optString(m.DisplayName)
+		out.AvatarUrl = avatarURL(m.AvatarSHA256)
+	}
+	return out
 }
 
 // ListGroupMembers implements GET /api/v1/groups/{name}/members (R-AUTH-018).

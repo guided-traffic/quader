@@ -72,18 +72,19 @@
 
       @if (canWrite()) {
         <form class="toolbar" (submit)="bind($event, r.name)">
-          <quader-text-field
-            width="name"
+          <quader-principal-field
             i18n-label="@@roles.bind-principal"
             label="Bind to"
             [name]="'principal-' + r.name"
+            [kinds]="bindKinds"
+            [exclude]="holderRefs(r.name)"
             [value]="draft(r.name)"
             (valueChange)="setDraft(r.name, $event)"
-            [error]="fieldError()"
+            [error]="draftRole() === r.name ? fieldError() : null"
             i18n-hint="@@roles.bind-hint"
-            hint="user:name, group:name or sa:name"
+            hint="A user, a group or a service account: type its name."
           />
-          <button class="btn btn-confirm" type="submit" [disabled]="busy() || draft(r.name).trim() === ''">
+          <button class="btn btn-confirm" type="submit" [disabled]="busy() || draft(r.name).length === 0">
             <ng-container i18n="@@roles.bind-button">Bind</ng-container>
             <span class="visually-hidden" translate="no"> {{ r.name }}</span>
           </button>

@@ -10,14 +10,16 @@
 <!-- The policies have no search by name; the head is Filters and the filters that are set (Q-UI-420). -->
 <quader-list-head [chips]="chips()" (removeChip)="removeChip($event)" [(filtersOpen)]="panelOpen" [controls]="panel.panelId" />
 <quader-filter-panel #panel [(open)]="panelOpen" [activeCount]="chips().length" (apply)="apply()" (clearAll)="clear()" (dismissed)="restage()">
-  <quader-text-field
-    width="name"
+  <quader-principal-field
     i18n-label="@@policies.principal"
     label="Principal"
     name="principal"
-    [(value)]="principalFilter"
+    [kinds]="principalKinds"
+    [project]="routeProject()"
+    [value]="principalFilter() ? [principalFilter()] : []"
+    (valueChange)="principalFilter.set($event[0] ?? '')"
     i18n-hint="@@policies.principal-hint"
-    hint="user:name, group:name or sa:name"
+    hint="A user, a group or a service account: type its name."
   />
   <quader-text-field width="name" i18n-label="@@policies.repository" label="Repository" name="repository" [(value)]="repositoryFilter" />
   @if (!inProject()) {

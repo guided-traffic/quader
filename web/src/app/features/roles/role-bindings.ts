@@ -6,7 +6,7 @@ import { ApiError } from '../../api/problem';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { Confirm } from '../../shared/confirm-dialog';
-import { TextField } from '../../shared/access/fields';
+import { PrincipalField } from '../../shared/ui/principal-field';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { Needs } from '../../shared/access/needs';
 import { asApiError } from '../../shared/paged-resource';
@@ -27,7 +27,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
  */
 @Component({
   selector: 'quader-role-bindings',
-  imports: [DataTable, PageHeader, DatePipe, ErrorNotice, Needs, TextField],
+  imports: [DataTable, PageHeader, DatePipe, ErrorNotice, Needs, PrincipalField],
   templateUrl: './role-bindings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -59,8 +59,12 @@ export class RoleBindings {
   protected readonly loadError = signal<ApiError | null>(null);
   protected readonly writeError = signal<ApiError | null>(null);
   protected readonly busy = signal(false);
-  /** The principal reference typed per role. */
-  protected readonly drafts = signal<Readonly<Record<string, string>>>({});
+  /** The principal chosen per role, from the shared field (R-UI-150): nobody types a reference. */
+  protected readonly drafts = signal<Readonly<Record<string, readonly string[]>>>({});
+  /** The role whose bind the server refused last: its field shows the error. */
+  protected readonly draftRole = signal<RoleName | null>(null);
+  /** A role is bound to users, groups and instance-wide service accounts (R-AUTHZ-022, Q-AUTHZ-175). */
+  protected readonly bindKinds = ['user', 'group', 'service_account'] as const;
 
   protected readonly canWrite = computed(() => this.session.has('roles:write'));
   /** The holders of a role in the shared data table, which stacks below 48 rem (no sideways scroll at 390 px). */
@@ -108,12 +112,17 @@ export class RoleBindings {
     return this.holders(role).some((b) => this.fromConfiguration(b));
   }
 
-  protected draft(role: RoleName): string {
-    return this.drafts()[role] ?? '';
+  protected draft(role: RoleName): readonly string[] {
+    return this.drafts()[role] ?? [];
   }
 
-  protected setDraft(role: RoleName, value: string): void {
+  protected setDraft(role: RoleName, value: readonly string[]): void {
     this.drafts.update((d) => ({ ...d, [role]: value }));
+  }
+
+  /** The holders of a role are not offered again. */
+  protected holderRefs(role: RoleName): readonly string[] {
+    return this.holders(role).map((b) => b.principal);
   }
 
   protected fieldError(): string | null {
@@ -122,11 +131,12 @@ export class RoleBindings {
 
   protected async bind(event: Event, role: RoleName): Promise<void> {
     event.preventDefault();
-    const principal = this.draft(role).trim();
+    const principal = this.draft(role)[0];
     if (!principal) return;
+    this.draftRole.set(role);
     await this.write(async () => {
       await this.api.bind(role, principal);
-      this.setDraft(role, '');
+      this.setDraft(role, []);
     }, $localize`:@@roles.bound:Role bound.`);
   }
 

@@ -11,14 +11,16 @@
   }
 </quader-list-head>
 <quader-filter-panel #panel [(open)]="panelOpen" [activeCount]="chips().length" (apply)="apply()" (clearAll)="clear()" (dismissed)="restage()">
-  <quader-text-field
-    width="name"
+  <quader-principal-field
     i18n-label="@@tokens-admin.owner"
     label="Owner"
     name="owner"
-    [(value)]="owner"
+    [kinds]="ownerKinds"
+    [accounts]="'all'"
+    [value]="owner() ? [owner()] : []"
+    (valueChange)="owner.set($event[0] ?? '')"
     i18n-hint="@@tokens-admin.owner-hint"
-    hint="me, a user name or sa:name"
+    hint="A user or a service account: type its name."
   />
   <quader-select-field i18n-label="@@tokens-admin.type" label="Type" name="type" [options]="typeOptions" [(value)]="type" />
   <quader-select-field i18n-label="@@tokens-admin.state" label="State" name="state" [options]="stateOptions" [(value)]="state" />

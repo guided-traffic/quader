@@ -111,9 +111,19 @@ func TestR_API_061_ASuggestionNamesOnlyWhatTheCallerMayRead(t *testing.T) {
 		if u := f.suggest(f.tokAda, "external", "&kind=user"); len(u.Users.Items) != 1 || u.Users.Items[0].Username != "erin" {
 			t.Fatalf("a user is matched by its display name: %+v", u.Users)
 		}
+		if sa := f.suggest(f.tokAda, "bot", "&kind=service_account"); sa.ServiceAccounts == nil || len(sa.ServiceAccounts.Items) != 1 ||
+			sa.ServiceAccounts.Items[0].Name != "bot" || sa.ServiceAccounts.Items[0].Project != nil {
+			t.Fatalf("R-UI-150 an instance-wide service account: %+v", sa.ServiceAccounts)
+		}
+		if u := f.suggest(f.tokAda, "frank", "&kind=user"); len(u.Users.Items) != 1 || u.Users.Items[0].AvatarURL != nil {
+			t.Fatalf("R-UI-150 a user without an uploaded avatar has avatarUrl null: %+v", u.Users)
+		}
 		a, b := f.get(f.tokFrank, "q=fr&kind=user"), f.get(f.tokFrank, "q=zz&kind=user")
 		if a.Status != 403 || b.Status != 403 || a.Problem(t) != b.Problem(t) {
 			t.Fatalf("%d %s / %d %s", a.Status, a.Body, b.Status, b.Body)
+		}
+		if c := f.get(f.tokFrank, "q=bo&kind=service_account"); c.Status != 403 {
+			t.Fatalf("R-UI-150 service accounts without identities:read: %d %s", c.Status, c.Body)
 		}
 	})
 }

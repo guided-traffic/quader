@@ -1,7 +1,7 @@
 import { TokensApi } from '../../api/tokens-api';
 import { FakeTokensApi, SECRET_VALUE, sampleToken } from '../../api/testing/access-fakes';
 import { Notifier } from '../../core/notifier';
-import { buttonByText, openFilters, renderScreen, settle, storedText, text, typeInto, sleep, chipTexts } from '../../testing/screen';
+import { buttonByText, choosePrincipal, openFilters, renderScreen, settle, storedText, text, typeInto, sleep, chipTexts } from '../../testing/screen';
 import { seriousViolations } from '../../testing/axe';
 import { TokenAdmin } from './token-admin';
 
@@ -147,5 +147,25 @@ describe('Token administration (R-UI-030)', () => {
     const { root } = await renderScreen(TokenAdmin, { capabilities: ['tokens:read'] });
     expect(root.textContent).not.toContain('Revoke by value');
     expect(root.querySelector('tbody button')).toBeNull();
+  });
+
+  it('R-UI-150 the owner filter is chosen from the search: a user by its username, a project\'s service account by sa:<name>', async () => {
+    const { fixture, root, get } = await renderScreen(TokenAdmin);
+    const api = get(TokensApi) as FakeTokensApi;
+    let drawer = await openFilters(fixture, root);
+    await choosePrincipal(fixture, drawer, 'Owner', 'sam', '@sam');
+    buttonByText(drawer, 'Apply filters').click();
+    await settle(fixture);
+    expect(api.lastFilters?.owner).toBe('sam');
+    expect(chipTexts(root)).toEqual(['Owner: sam']);
+
+    drawer = await openFilters(fixture, root);
+    buttonByText(drawer, 'Clear all').click();
+    await settle(fixture);
+    drawer = await openFilters(fixture, root);
+    await choosePrincipal(fixture, drawer, 'Owner', 'deploy', 'Service account of web');
+    buttonByText(drawer, 'Apply filters').click();
+    await settle(fixture);
+    expect(api.lastFilters?.owner).toBe('sa:web/deploy');
   });
 });

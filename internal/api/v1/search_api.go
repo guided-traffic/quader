@@ -30,7 +30,8 @@ import (
 //     repositories:read-config or to an Owner of its project, as GET /api/v1/repositories decides;
 //   - a package through the read scope of GET /api/v1/packages (view.Service.Suggest);
 //   - a project by the rule of GET /api/v1/projects (projectListed);
-//   - a user or a group for a holder of identities:read, through the principal manager.
+//   - a user, a group or a service account for a holder of identities:read, through the principal manager; these are also what
+//     the fields of the admin area that name a principal search (R-UI-150).
 
 // The kinds of the suggestions, as the parameter `kind` names them.
 const (
@@ -39,6 +40,7 @@ const (
 	kindProject    = "project"
 	kindUser       = "user"
 	kindGroup      = "group"
+	kindAccount    = "service_account"
 )
 
 // The bounds of a request (R-API-060, Q-API-281).
@@ -51,7 +53,7 @@ const (
 
 // suggestKinds lists every kind, in the order of the answer's members.
 func suggestKinds() []string {
-	return []string{kindRepository, kindPackage, kindProject, kindUser, kindGroup}
+	return []string{kindRepository, kindPackage, kindProject, kindUser, kindGroup, kindAccount}
 }
 
 // defaultSuggestKinds are the kinds of a request without `kind`.
@@ -69,6 +71,11 @@ type suggestRequest struct {
 
 // wants reports whether the request asks for a kind.
 func (sr suggestRequest) wants(kind string) bool { return sr.kinds[kind] }
+
+// wantsIdentities reports whether the request asks for a kind that needs identities:read.
+func (sr suggestRequest) wantsIdentities() bool {
+	return sr.wants(kindUser) || sr.wants(kindGroup) || sr.wants(kindAccount)
+}
 
 // suggestParamError is the 400 of a parameter, with the parameter as the pointer.
 func suggestParamError(name, code, detail string) error {
@@ -117,7 +124,7 @@ func (s *Server) GetSearchSuggestions(w http.ResponseWriter, r *http.Request, pa
 	if err == nil {
 		err = s.anonymousGate(ctx)
 	}
-	if err == nil && (sr.wants(kindUser) || sr.wants(kindGroup)) {
+	if err == nil && sr.wantsIdentities() {
 		err = s.requireIdentitiesRead(r)
 	}
 	var out gen.SearchSuggestions
@@ -139,7 +146,7 @@ func (s *Server) requireIdentitiesRead(r *http.Request) error {
 		return err
 	}
 	if !held {
-		return errs.E(errs.Forbidden, errs.CodeForbidden, "Users and groups are suggested to a holder of "+string(authz.IdentitiesRead)+".")
+		return errs.E(errs.Forbidden, errs.CodeForbidden, "Users, groups and service accounts are suggested to a holder of "+string(authz.IdentitiesRead)+".")
 	}
 	return nil
 }
@@ -172,7 +179,7 @@ func (s *Server) suggest(r *http.Request, sr suggestRequest) (gen.SearchSuggesti
 	if err == nil && sr.wants(kindProject) {
 		out.Projects, err = s.suggestProjects(r.WithContext(ctx), sr)
 	}
-	if err == nil && (sr.wants(kindUser) || sr.wants(kindGroup)) {
+	if err == nil && sr.wantsIdentities() {
 		err = s.suggestIdentities(ctx, sr, &out)
 	}
 	return out, err
@@ -195,6 +202,9 @@ func emptySuggestions(sr suggestRequest) gen.SearchSuggestions {
 	}
 	if sr.wants(kindGroup) {
 		out.Groups = &gen.GroupSuggestions{Items: []gen.GroupSuggestion{}}
+	}
+	if sr.wants(kindAccount) {
+		out.ServiceAccounts = &gen.ServiceAccountSuggestions{Items: []gen.ServiceAccountSuggestion{}}
 	}
 	return out
 }
@@ -330,7 +340,7 @@ func projectSuggestions(sr suggestRequest, rows []q.SearchProjectsRow, listed fu
 	return &gen.ProjectSuggestions{Items: items, More: more}
 }
 
-// suggestIdentities fills the users and the groups the request asks for; the caller holds identities:read.
+// suggestIdentities fills the users, the groups and the service accounts the request asks for; the caller holds identities:read.
 func (s *Server) suggestIdentities(ctx context.Context, sr suggestRequest, out *gen.SearchSuggestions) error {
 	m := s.o.Auth.Manager
 	if m == nil {
@@ -343,7 +353,9 @@ func (s *Server) suggestIdentities(ctx context.Context, sr suggestRequest, out *
 		}
 		out.Users = &gen.UserSuggestions{Items: make([]gen.UserSuggestion, 0, len(users)), More: more}
 		for _, u := range users {
-			out.Users.Items = append(out.Users.Items, gen.UserSuggestion{Id: uuidOf(u.ID), Username: u.Username, DisplayName: optString(u.DisplayName), Disabled: u.Disabled})
+			out.Users.Items = append(out.Users.Items, gen.UserSuggestion{
+				Id: uuidOf(u.ID), Username: u.Username, DisplayName: optString(u.DisplayName), Disabled: u.Disabled, AvatarUrl: avatarURL(u.AvatarSHA256),
+			})
 		}
 	}
 	if sr.wants(kindGroup) {
@@ -354,6 +366,16 @@ func (s *Server) suggestIdentities(ctx context.Context, sr suggestRequest, out *
 		out.Groups = &gen.GroupSuggestions{Items: make([]gen.GroupSuggestion, 0, len(groups)), More: more}
 		for _, g := range groups {
 			out.Groups.Items = append(out.Groups.Items, gen.GroupSuggestion{Name: g.Name, Description: g.Description})
+		}
+	}
+	if sr.wants(kindAccount) {
+		accounts, more, err := m.SuggestServiceAccounts(ctx, sr.text, sr.terms, sr.limit)
+		if err != nil {
+			return err
+		}
+		out.ServiceAccounts = &gen.ServiceAccountSuggestions{Items: make([]gen.ServiceAccountSuggestion, 0, len(accounts)), More: more}
+		for _, a := range accounts {
+			out.ServiceAccounts.Items = append(out.ServiceAccounts.Items, gen.ServiceAccountSuggestion{Name: a.Name, Description: a.Description, Project: optString(a.Project)})
 		}
 	}
 	return nil

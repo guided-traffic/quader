@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { describe, expect, it, vi } from 'vitest';
 import { CiApi } from '../../api/ci-api';
 import { PolicyApi } from '../../api/authz-api';
-import { IdentityApi } from '../../api/identity-api';
 import { ApiError } from '../../api/problem';
 import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
@@ -11,7 +10,7 @@ import { FakeCiApi, sampleIssuance, sampleMapping } from '../../api/testing/fake
 import { Notifier } from '../../core/notifier';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeRepositoriesApi } from '../../api/testing/fakes-catalog';
-import { storedText, buttonByText, expectAccessible, holdCalls, holdPages, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
+import { storedText, buttonByText, choosePrincipal, expectAccessible, holdCalls, holdPages, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
 import { ClaimTester } from './claim-tester';
 import { MappingEditor } from './mapping-editor';
 import { ProjectCi } from './project-ci';
@@ -101,23 +100,19 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     expect(navigate).toHaveBeenCalledWith(['/admin/ci', 'gitlab-com', 'mappings', 'team-b-release'], expect.objectContaining({ replaceUrl: true }));
   });
 
-  it('R-UI-035 Q-UI-334 the policy and group pickers are one text field from the start: held and saying so while their lists load, then suggesting the names', async () => {
+  it('R-UI-035 Q-UI-334 the policy picker is one text field from the start: held and saying so while its list loads, then suggesting the names', async () => {
     let releasePolicies!: () => void;
-    let releaseGroups!: () => void;
     const { root, fixture } = await renderScreen(MappingEditor, {
       inputs: { issuer: 'gitlab-com' },
       setup: (g) => {
         releasePolicies = holdPages(g(PolicyApi), 'list');
-        releaseGroups = holdPages(g(IdentityApi), 'groups');
       },
     });
     const policies = pickerField(root, 0);
-    const groups = pickerField(root, 1);
     expect(root.querySelectorAll('quader-ci-name-picker select')).toHaveLength(0);
     expect(policies.disabled).toBe(true);
     expect(policies.getAttribute('aria-busy')).toBe('true');
     expect(policies.placeholder).toBe('Loading policies…');
-    expect(groups.placeholder).toBe('Loading groups…');
 
     releasePolicies();
     await settle(fixture);
@@ -127,11 +122,6 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     expect(policies.placeholder).toBe('Add a policy');
     expect(policies.getAttribute('list')).toBe(picker(root, 0).querySelector('datalist')!.id);
     expect(suggestions(root, 0)).toEqual(['team-web-publish']);
-    expect(groups.disabled).toBe(true);
-    releaseGroups();
-    await settle(fixture);
-    expect(pickerField(root, 1)).toBe(groups);
-    expect(groups.disabled).toBe(false);
 
     pick(root, 'team-web-publish');
     await settle(fixture);
@@ -146,6 +136,13 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     policies.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     await settle(fixture);
     expect(chips(root)).toEqual(['team-web-publish', 'not-yet-listed']);
+  });
+
+  it('R-UI-035 R-UI-150 the groups of a system mapping are chosen from the search and kept by name', async () => {
+    const { root, fixture } = await renderScreen(MappingEditor, { inputs: { issuer: 'gitlab-com' } });
+    expect(root.querySelector('quader-principal-field')).not.toBeNull();
+    await choosePrincipal(fixture, root, 'Groups', 'leads', 'web-leads');
+    expect(text(root.querySelector('quader-principal-field .chips')!)).toContain('web-leads');
   });
 
   it('R-UI-035 Q-UI-334 a policy list that cannot be read leaves the same field for typed names', async () => {

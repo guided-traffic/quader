@@ -135,21 +135,42 @@ func TestR_AUTHZ_026_RolesOfAMember(t *testing.T) {
 func TestR_AUTHZ_026_LookupBounds(t *testing.T) {
 	s := &service{}
 	ctx := context.Background()
-	for _, prefix := range []string{"", "a", "ä"} {
-		if _, err := s.LookupPrincipals(ctx, prefix, "", 0); err == nil {
+	for _, prefix := range []string{"", "a", "ä", " a "} {
+		if _, err := s.LookupPrincipals(ctx, Lookup{Prefix: prefix}); err == nil {
 			t.Errorf("a prefix of %q was accepted", prefix)
 		} else if got := fieldsOf(t, err); got["/q"] != "prefix_too_short" {
 			t.Errorf("%q: %v", prefix, got)
 		}
 	}
-	if _, err := s.LookupPrincipals(ctx, "al", "service_account", 0); err == nil {
-		t.Error("a kind that cannot administer was accepted")
+	if _, err := s.LookupPrincipals(ctx, Lookup{Prefix: "al", Kinds: []PrincipalKind{"ci_mapping"}}); err == nil {
+		t.Error("a kind the lookup does not know was accepted")
 	}
-	if _, err := s.LookupPrincipals(ctx, "al", "", -1); err == nil {
+	if _, err := s.LookupPrincipals(ctx, Lookup{Prefix: "al", Limit: -1}); err == nil {
 		t.Error("a negative limit was accepted")
 	}
 	if MaxLookup != 20 || MinLookupPrefix != 2 {
 		t.Errorf("the bounds of Q-AUTHZ-182 are 2 and 20, not %d and %d", MinLookupPrefix, MaxLookup)
+	}
+}
+
+// R-API-077: the kinds of a lookup are ranked and cut together: an exact name first, then a name that starts with the text,
+// then a word that does; within a rank users before groups before service accounts, then by name. The reference of a service
+// account is sa:<stored name>.
+func TestR_API_077_LookupRanksTheKindsTogether(t *testing.T) {
+	found := []Found{
+		{Kind: KindServiceAccount, Name: "web/swa-sync", Project: "web", rank: 1},
+		{Kind: KindGroup, Name: "swat", rank: 1},
+		{Kind: KindUser, Name: "lena", DisplayName: "Swantje Lena", rank: 2},
+		{Kind: KindUser, Name: "swa", rank: 0},
+		{Kind: KindUser, Name: "swantje", rank: 1},
+	}
+	got := rankFound(found, 4)
+	var refs []string
+	for _, f := range got {
+		refs = append(refs, f.Ref())
+	}
+	if want := "user:swa user:swantje group:swat sa:web/swa-sync"; strings.Join(refs, " ") != want {
+		t.Errorf("order %q, want %q", strings.Join(refs, " "), want)
 	}
 }
 

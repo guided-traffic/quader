@@ -2496,7 +2496,7 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 
 | Method and path | Operation | Permission |
 |---|---|---|
-| `GET /api/v1/search/suggestions` | `getSearchSuggestions` | public; the best matches of `q` per `kind` among what the caller may read, decided as the lists decide; `kind` `user` and `group` need `identities:read` ([security](docs/security/search.md)) |
+| `GET /api/v1/search/suggestions` | `getSearchSuggestions` | public; the best matches of `q` per `kind` among what the caller may read, decided as the lists decide; `kind` `user`, `group` and `service_account` need `identities:read` ([security](docs/security/search.md)) |
 
 **ownership**
 

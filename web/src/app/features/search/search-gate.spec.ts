@@ -41,7 +41,7 @@ async function walk(persona: Persona): Promise<Opened[]> {
     setup: (get) => {
       if (persona !== 'ada') (get(SessionApi) as FakeSessionApi).meResult = { capabilities: [], ...ME[persona] } as never;
       const s = get(SearchApi) as FakeSearchApi;
-      s.users = [{ id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a12', username: 'users-bot', displayName: null, disabled: false }];
+      s.users = [{ id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a12', username: 'users-bot', displayName: null, disabled: false, avatarUrl: null }];
       s.groups = [{ name: 'users', description: '' }];
       s.repositories = Array.from({ length: 6 }, (_, i) => ({ project: 'web', key: `users-${i}`, format: 'npm', class: 'local' as const }));
     },

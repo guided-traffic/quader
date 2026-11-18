@@ -1,7 +1,9 @@
 import { PolicyApi } from '../../api/authz-api';
 import { FakePolicyApi, problem } from '../../api/testing/access-fakes';
 import { Notifier } from '../../core/notifier';
-import { buttonByText, chipTexts, renderScreen, settle, text, typeAndLeave, typeInto, sleep } from '../../testing/screen';
+import { SearchApi } from '../../api/search-api';
+import { FakeSearchApi } from '../../api/testing/fakes-search';
+import { buttonByText, chipTexts, choosePrincipal, renderScreen, settle, text, typeAndLeave, typeInto, sleep } from '../../testing/screen';
 import { seriousViolations } from '../../testing/axe';
 import { PREVIEW_DEBOUNCE_MS, PolicyEditor } from './policy-editor';
 import { PolicyList } from './policy-list';
@@ -23,7 +25,7 @@ describe('Policy list (R-UI-027)', () => {
   it('R-UI-027 the principal query parameter filters the list', async () => {
     const { root } = await renderScreen(PolicyList, { inputs: { principal: 'user:nobody' } });
     expect(root.textContent).toContain('No policy matches');
-    expect(chipTexts(root)).toEqual(['Principal: user:nobody']);
+    expect(chipTexts(root)).toEqual(['Principal: nobody']);
   });
 });
 
@@ -129,14 +131,13 @@ describe('Policy editor (R-UI-027)', () => {
     expect(text(root)).toContain('Fix the problems in the preview first');
   });
 
-  it('R-UI-027 creating through the editor sends the same document the API takes, with an idempotency key', async () => {
+  it('R-UI-027 R-UI-150 creating through the editor sends the same document the API takes, with an idempotency key', async () => {
     const { fixture, root, get } = await renderScreen(PolicyEditor);
     typeInto(root, 'Name', 'team-x');
     typeInto(root, 'Repository selectors', 'npm-internal\nnpm-team-*');
     buttonByText(root, 'Add principal').click();
     await settle(fixture);
-    typeInto(root, 'Principal', 'group:team-web');
-    await settle(fixture);
+    await choosePrincipal(fixture, root, 'Principal', 'leads', 'web-leads');
     buttonByText(root.querySelector('fieldset.entry')!, 'write').click();
     await settle(fixture);
     buttonByText(root, 'Create policy').click();
@@ -146,7 +147,7 @@ describe('Policy editor (R-UI-027)', () => {
     expect(api.keys[0]).toMatch(/^[0-9a-f-]{36}$/);
     const stored = api.policies.find((p) => p.name === 'team-x')!;
     expect(stored.resources.repositories).toEqual(['npm-internal', 'npm-team-*']);
-    expect(stored.entries).toEqual([{ principal: 'group:team-web', actions: ['read', 'annotate', 'deploy'] }]);
+    expect(stored.entries).toEqual([{ principal: 'group:web-leads', actions: ['read', 'annotate', 'deploy'] }]);
   });
 
   it('R-UI-027 saving an existing policy shows the diff, then PUTs with the loaded ETag', async () => {
@@ -154,14 +155,13 @@ describe('Policy editor (R-UI-027)', () => {
     buttonByText(root, 'Add principal').click();
     await settle(fixture);
     const rows = root.querySelectorAll('fieldset.entry');
-    typeInto(rows[1]!, 'Principal', 'user:bob');
-    await settle(fixture);
+    await choosePrincipal(fixture, rows[1]!, 'Principal', 'sam', '@sam');
     buttonByText(root, 'Review and save').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-policy-diff-dialog') as HTMLElement;
     const items = dialog.querySelectorAll('li');
     expect(items).toHaveLength(1);
-    expect(text(items[0]!)).toContain('Principal added: user:bob');
+    expect(text(items[0]!)).toContain('Principal added: user:sam');
     expect(await seriousViolations(overlay())).toEqual([]);
     buttonByText(dialog, 'Save policy').click();
     await sleep(fixture, 300);
@@ -228,12 +228,24 @@ describe('Policy editor (R-UI-027)', () => {
   });
 
   it('R-UI-027 "Try it" explains an allowed and a denied question from the draft, in order', async () => {
-    const { fixture, root } = await renderScreen(PolicyEditor, { inputs: { name: 'team-web-publish' } });
+    const { fixture, root } = await renderScreen(PolicyEditor, {
+      inputs: { name: 'team-web-publish' },
+      setup: (get) => {
+        (get(SearchApi) as FakeSearchApi).users.push({
+          id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a30',
+          username: 'alice',
+          displayName: 'Alice Archer',
+          disabled: false,
+          avatarUrl: null,
+        });
+      },
+    });
     await afterDebounce();
     await settle(fixture);
+    // The principal is chosen once from the search (R-UI-150); the field keeps it for both questions.
+    await choosePrincipal(fixture, root.querySelector('.try') as HTMLElement, 'Principal', 'alice', '@alice');
     const ask = async (action: string): Promise<string> => {
       const form = root.querySelector('.try') as HTMLElement;
-      typeInto(form, 'Principal', 'user:alice');
       typeInto(form, 'Repository', 'npm-internal');
       typeInto(form, 'Action', action);
       await settle(fixture);

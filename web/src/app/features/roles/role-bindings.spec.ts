@@ -2,7 +2,7 @@ import { RolesApi } from '../../api/authz-api';
 import { FakeRolesApi, problem } from '../../api/testing/access-fakes';
 import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
-import { buttonByText, renderScreen, settle, text, typeInto, sleep } from '../../testing/screen';
+import { buttonByText, choosePrincipal, renderScreen, settle, text, sleep } from '../../testing/screen';
 import { seriousViolations } from '../../testing/axe';
 import { RoleBindings } from './role-bindings';
 
@@ -29,7 +29,7 @@ describe('System roles (R-UI-024)', () => {
     expect(text(root.querySelector('#last-admin-guard')!)).toContain('last administrator binding cannot be removed');
   });
 
-  it('R-AUTHZ-022 binds a role, reads the lists again and refreshes the caller\'s capabilities', async () => {
+  it('R-AUTHZ-022 R-UI-150 binds a role to a principal chosen from the search, reads the lists again and refreshes the caller\'s capabilities', async () => {
     const { fixture, root, get } = await renderScreen(RoleBindings);
     const me = get(SessionApi) as FakeSessionApi;
     let refreshed = 0;
@@ -39,12 +39,11 @@ describe('System roles (R-UI-024)', () => {
       return original();
     };
     const auditor = root.querySelectorAll('section.card')[2] as HTMLElement;
-    typeInto(auditor, 'Bind to', 'group:security');
-    await settle(fixture);
+    await choosePrincipal(fixture, auditor, 'Bind to', 'leads', 'web-leads');
     buttonByText(auditor, 'Bind').click();
     await settle(fixture);
-    expect((get(RolesApi) as FakeRolesApi).calls).toContain('bind auditor group:security');
-    expect(text(root.querySelectorAll('section.card')[2]!)).toContain('group:security');
+    expect((get(RolesApi) as FakeRolesApi).calls).toContain('bind auditor group:web-leads');
+    expect(text(root.querySelectorAll('section.card')[2]!)).toContain('group:web-leads');
     expect(refreshed).toBe(1);
   });
 
@@ -62,8 +61,7 @@ describe('System roles (R-UI-024)', () => {
     const { fixture, root, get } = await renderScreen(RoleBindings);
     (get(RolesApi) as FakeRolesApi).failure = problem(409, 'auto_join_admin_conflict');
     const admin = root.querySelectorAll('section.card')[0] as HTMLElement;
-    typeInto(admin, 'Bind to', 'group:everyone');
-    await settle(fixture);
+    await choosePrincipal(fixture, admin, 'Bind to', 'leads', 'web-leads');
     buttonByText(admin, 'Bind').click();
     await settle(fixture);
     expect(text(root)).toContain('An auto-join group cannot hold the administrator role');

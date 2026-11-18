@@ -52,10 +52,13 @@ SELECT p.key, p.display_name, p.visibility
 -- name: SearchUsers :many
 -- The users of which every term is part of the lower-cased username or display name, best first by the ranks of R-API-062: 0 the
 -- username equals the text, 1 it starts with it, 2 the display name or one of its words starts with it, 3 any other; then by
--- username. At most max_rows; the caller asks for one more than it shows.
-SELECT p.id::text AS id, p.name AS username, u.display_name, (p.status = 'disabled')::boolean AS disabled
+-- username. At most max_rows; the caller asks for one more than it shows. The avatar's digest is what a field that names a person
+-- shows beside the name (R-UI-150).
+SELECT p.id::text AS id, p.name AS username, u.display_name, (p.status = 'disabled')::boolean AS disabled,
+       coalesce(encode(a.blob_sha256, 'hex'), '')::text AS avatar_sha256
   FROM principal p
   JOIN app_user u ON u.principal_id = p.id
+  LEFT JOIN user_avatars a ON a.user_id = p.id
  WHERE p.kind = 'user'
    AND NOT EXISTS (SELECT 1 FROM unnest(sqlc.arg(terms)::text[]) t
                     WHERE strpos(lower(p.name), t) = 0 AND strpos(lower(coalesce(u.display_name, '')), t) = 0)
@@ -73,6 +76,22 @@ SELECT p.name, g.description
   FROM principal p
   JOIN user_group g ON g.principal_id = p.id
  WHERE p.kind = 'group'
+   AND NOT EXISTS (SELECT 1 FROM unnest(sqlc.arg(terms)::text[]) t WHERE strpos(lower(p.name), t) = 0)
+ ORDER BY CASE WHEN lower(p.name) = sqlc.arg(text)::text THEN 0
+               WHEN starts_with(lower(p.name), sqlc.arg(text)::text) THEN 1
+               ELSE 3 END,
+          p.name COLLATE "C"
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: SearchServiceAccounts :many
+-- The service accounts of which every term is part of the lower-cased name, active only, best first: 0 the name equals the text,
+-- 1 it starts with it, 3 any other; then by name. A project's account (<project key>/<name>, Q-AUTHZ-209) matches by its stored
+-- name; project_key is empty for an instance-wide account. At most max_rows.
+SELECT p.name, s.description, coalesce(pr.key, '')::text AS project_key
+  FROM principal p
+  JOIN service_account s ON s.principal_id = p.id
+  LEFT JOIN project pr ON pr.id = s.project_id
+ WHERE p.kind = 'service_account' AND p.status = 'active'
    AND NOT EXISTS (SELECT 1 FROM unnest(sqlc.arg(terms)::text[]) t WHERE strpos(lower(p.name), t) = 0)
  ORDER BY CASE WHEN lower(p.name) = sqlc.arg(text)::text THEN 0
                WHEN starts_with(lower(p.name), sqlc.arg(text)::text) THEN 1

@@ -2047,11 +2047,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Look up users and groups to name in a project's policies
-         * @description How an Owner of a project without `identities:read` finds the users and groups it adds as members and names in
-         *     project policies (Q-AUTHZ-182): the active users and groups whose name starts with `q` (at least 2 characters), at
-         *     most 20, by kind and name. The answer holds the kind and the name and nothing else: no e-mail address, no
-         *     membership. Needs the capability, or the role Owner of the project.
+         * Look up users, groups and service accounts to name in a project
+         * @description How an Owner of a project without `identities:read` finds the principals it adds as members and names in project
+         *     policies (Q-AUTHZ-182, R-API-077): the active principals whose name, or a word of it, starts with `q` (at least 2
+         *     characters), at most 20, ranked and cut together. A user is matched by its username and by the words of its display
+         *     name; the break-glass account, disabled principals and auto-join groups are never offered. Service accounts are the
+         *     project's own, which its Owner reads anyway, and for a holder of `identities:read` the instance-wide ones too. An item
+         *     holds what a member's row shows: the kind, the reference, the name, and for a user the display name, the ID that seeds
+         *     its generated avatar and the path of its uploaded avatar; no e-mail address, status, origin, sign-in time or membership.
+         *     Needs the capability, or the role Owner of the project.
          */
         get: operations["lookupProjectPrincipals"];
         put?: never;
@@ -4816,7 +4820,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Suggest repositories, packages, projects, users and groups for a text
+         * Suggest repositories, packages, projects, users, groups and service accounts for a text
          * @description The suggestions of the UI's search field (R-API-060): in one request, the best `limit` matches of `q` for each kind of
          *     `kind`, among what the caller may read (R-API-061), ranked by R-API-062. The answer holds one member per kind asked
          *     and none for a kind not asked; each member's `more` is `true` when the kind left out a readable match it found. It is
@@ -4828,8 +4832,9 @@ export interface paths {
          *     caller may read (in a repository read in part, its document and the repository's patterns decide); a project the
          *     caller is a member of, holds `projects:read` for, or whose level admits it. The suggestions are filtered before they
          *     are cut, `hideExistence` changes nothing here, and a repository's or a package's project is named by its key only.
-         *     `kind` `user` or `group` needs `identities:read`: without it the answer is `403` before any lookup, the same for every
-         *     `q`. A caller without a credential gets `401` while no repository's artifacts are `public`. The request costs a fixed
+         *     `kind` `user`, `group` or `service_account` needs `identities:read`: without it the answer is `403` before any lookup,
+         *     the same for every `q`. These three kinds are what the fields of the admin area that name a principal search
+         *     (R-UI-150); a service account is active and named by its stored name, a project's with its project. A caller without a credential gets `401` while no repository's artifacts are `public`. The request costs a fixed
          *     number of statements (R-API-064) and is limited by the class `read`, or `anonymous` without a credential (R-API-016).
          */
         get: operations["getSearchSuggestions"];
@@ -5746,6 +5751,12 @@ export interface components {
             principal: string;
             /** @enum {string} */
             kind: "user" | "service_account";
+            /** @description The ID of the principal, the seed of a user's generated avatar (R-UI-151). Not on the answer of a write. */
+            id?: string;
+            /** @description The display name of a user; `null` for none and for a service account. Not on the answer of a write. */
+            displayName?: string | null;
+            /** @description The path of a user's uploaded avatar, `null` for none. Not on the answer of a write. */
+            avatarUrl?: string | null;
             /** @description Empty for a member the request removed that holds no other source. */
             sources: string[];
         };
@@ -5882,12 +5893,25 @@ export interface components {
             /** @description The key of the target project. The project of the path itself is allowed, and the answer is `200` with nothing changed. */
             project: string;
         };
+        /**
+         * @description A principal the lookup of a project found (Q-AUTHZ-182): what a member's row shows and the reference to write. No e-mail
+         *     address, status, origin or sign-in time.
+         */
         ProjectPrincipal: {
             /** @enum {string} */
-            kind: "user" | "group";
+            kind: "user" | "group" | "service_account";
+            /** @description The username, the group's name or the service account's name (`<project>/<name>` for a project's). */
             name: string;
             /** @description The reference to put in a policy entry or a member. */
             principal: string;
+            /** @description The display name of a user, `null` for none. Only on a user. */
+            displayName?: string | null;
+            /** @description The ID of a user, the seed of its generated avatar. Only on a user. */
+            id?: string;
+            /** @description The path of a user's uploaded avatar (`/api/v1/avatars/<sha256>`), `null` for none. Only on a user. */
+            avatarUrl?: string | null;
+            /** @description The project of a service account, `null` for an instance-wide one. Only on a service account. */
+            project?: string | null;
         };
         ProjectPrincipalList: {
             items: components["schemas"]["ProjectPrincipal"][];
@@ -9943,6 +9967,7 @@ export interface components {
             projects?: components["schemas"]["ProjectSuggestions"];
             users?: components["schemas"]["UserSuggestions"];
             groups?: components["schemas"]["GroupSuggestions"];
+            serviceAccounts?: components["schemas"]["ServiceAccountSuggestions"];
         };
         RepositorySuggestions: {
             items: components["schemas"]["RepositorySuggestion"][];
@@ -9991,11 +10016,16 @@ export interface components {
             more: boolean;
         };
         UserSuggestion: {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description The ID of the user, the seed of its generated avatar.
+             */
             id: string;
             username: string;
             displayName: string | null;
             disabled: boolean;
+            /** @description The path of the user's uploaded avatar (`/api/v1/avatars/<sha256>`), `null` for none (R-UI-150). */
+            avatarUrl: string | null;
         };
         GroupSuggestions: {
             items: components["schemas"]["GroupSuggestion"][];
@@ -10005,6 +10035,18 @@ export interface components {
         GroupSuggestion: {
             name: string;
             description: string;
+        };
+        ServiceAccountSuggestions: {
+            items: components["schemas"]["ServiceAccountSuggestion"][];
+            /** @description Another matching service account was left out. */
+            more: boolean;
+        };
+        ServiceAccountSuggestion: {
+            /** @description The stored name, `<project>/<name>` for an account of a project (Q-AUTHZ-209); the reference is `sa:<name>`. */
+            name: string;
+            description: string;
+            /** @description The project of the account, `null` for an instance-wide one. */
+            project: string | null;
         };
     };
     responses: {
@@ -14645,10 +14687,10 @@ export interface operations {
     lookupProjectPrincipals: {
         parameters: {
             query: {
-                /** @description The start of the name, 2 to 128 characters. */
+                /** @description The start of the name or of one of its words, 2 to 128 characters; compared lower-cased. */
                 q: string;
-                /** @description Restrict the result to users or to groups. */
-                kind?: "user" | "group";
+                /** @description The kinds to look up, repeated or comma-separated; every kind when absent. */
+                kind?: ("user" | "group" | "service_account")[];
                 /** @description At most 20 (the default). */
                 limit?: number;
             };
@@ -14661,7 +14703,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The matching principals. */
+            /** @description The matching principals, best first. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -14672,13 +14714,22 @@ export interface operations {
                      *       "items": [
                      *         {
                      *           "kind": "user",
-                     *           "name": "alice",
-                     *           "principal": "user:alice"
+                     *           "principal": "user:swantje",
+                     *           "name": "swantje",
+                     *           "displayName": "Swantje Wagner",
+                     *           "id": "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10",
+                     *           "avatarUrl": null
                      *         },
                      *         {
                      *           "kind": "group",
-                     *           "name": "web-leads",
-                     *           "principal": "group:web-leads"
+                     *           "principal": "group:swat-team",
+                     *           "name": "swat-team"
+                     *         },
+                     *         {
+                     *           "kind": "service_account",
+                     *           "principal": "sa:web/swagger-sync",
+                     *           "name": "web/swagger-sync",
+                     *           "project": "web"
                      *         }
                      *       ]
                      *     }
@@ -20458,9 +20509,9 @@ export interface operations {
                 q: string;
                 /**
                  * @description The kinds to suggest, repeated or comma-separated; `repository,package,project` when absent. An unknown kind answers
-                 *     `400 malformed_request`; `user` and `group` need `identities:read` (`403` otherwise).
+                 *     `400 malformed_request`; `user`, `group` and `service_account` need `identities:read` (`403` otherwise).
                  */
-                kind?: ("repository" | "package" | "project" | "user" | "group")[];
+                kind?: ("repository" | "package" | "project" | "user" | "group" | "service_account")[];
                 /** @description Suggestions per kind, 1 to 10; else `400 malformed_request`. */
                 limit?: number;
             };

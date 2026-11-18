@@ -1,7 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
 import { newIdempotencyKey } from '../../api/client';
-import { IdentityApi } from '../../api/identity-api';
 import { ApiError } from '../../api/problem';
 import { VisibilityApi, VisibilityChoices } from '../../api/visibility-api';
 import {
@@ -18,7 +17,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
 import { TextField } from '../../shared/access/fields';
-import { PickablePrincipal, PrincipalPicker } from './principal-picker';
+import { PrincipalField } from '../../shared/ui/principal-field';
 
 /** What the dialog is opened with: nothing to create a project, the loaded project to edit it. */
 export interface ProjectDialogData {
@@ -37,7 +36,7 @@ export interface ProjectDialogData {
  */
 @Component({
   selector: 'quader-project-dialog',
-  imports: [DialogTitle, DialogClose, ErrorNotice, PrincipalPicker, TextField, VisibilityLevelControl],
+  imports: [DialogTitle, DialogClose, ErrorNotice, PrincipalField, TextField, VisibilityLevelControl],
   template: `
     <h2 quaderDialogTitle>
       @if (existing(); as p) {
@@ -92,34 +91,17 @@ export interface ProjectDialogData {
             [reasons]="levelReasons()"
             [notes]="levelNotes()"
           />
-          <fieldset class="group">
-            <legend i18n="@@project-dialog.owners">First Owners</legend>
-            @if (owners().length === 0) {
-              <p class="hint" i18n="@@project-dialog.no-owners">
-                No Owner yet. Users and groups can own a project; members are added on the project's screen.
-              </p>
-            } @else {
-              <ul class="chips" [attr.aria-label]="ownersLabel">
-                @for (a of owners(); track a) {
-                  <li>
-                    <span translate="no">{{ a }}</span>
-                    <button class="btn btn-icon" type="button" (click)="removeOwner(a)">
-                      <span class="material-icons" aria-hidden="true">close</span>
-                      <span class="visually-hidden"><ng-container i18n="@@project-dialog.remove-owner">Remove owner</ng-container> {{ a }}</span>
-                    </button>
-                  </li>
-                }
-              </ul>
-            }
-            <quader-principal-picker
-              i18n-label="@@project-dialog.find-owner"
-              label="Find a user or group"
-              name="owner-search"
-              [search]="searchIdentities"
-              [exclude]="owners()"
-              (picked)="addOwner($event)"
-            />
-          </fieldset>
+          <quader-principal-field
+            i18n-label="@@project-dialog.owners"
+            label="First Owners"
+            name="owners"
+            [kinds]="ownerKinds"
+            [multiple]="true"
+            [width]="'full'"
+            [(value)]="owners"
+            i18n-hint="@@project-dialog.owners-hint"
+            hint="Users and groups can own a project; members are added on the project's screen."
+          />
         }
       </div>
       <div class="dialog-actions">
@@ -136,33 +118,6 @@ export interface ProjectDialogData {
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
-    .group {
-      margin: 0 0 var(--quader-space-3);
-      padding: var(--quader-space-2) var(--quader-space-3);
-      border: 1px solid var(--quader-border);
-      border-radius: var(--quader-radius-m);
-    }
-    .hint {
-      margin: 0 0 var(--quader-space-2);
-      color: var(--quader-text-muted);
-      font: var(--quader-type-body-small);
-    }
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--quader-space-2);
-      margin: 0 0 var(--quader-space-2);
-      padding: 0;
-      list-style: none;
-    }
-    .chips li {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--quader-space-1);
-      padding-inline: var(--quader-space-3) var(--quader-space-1);
-      border: 1px solid var(--quader-border-strong);
-      border-radius: var(--quader-radius-full);
-    }
     .move {
       color: var(--quader-text-muted);
       font: var(--quader-type-label-small);
@@ -171,7 +126,6 @@ export interface ProjectDialogData {
 })
 export class ProjectDialog {
   private readonly api = inject(ProjectsApi);
-  private readonly identity = inject(IdentityApi);
   private readonly conflicts = inject(ConflictResolver);
   private readonly context = inject(ProjectContext);
   private readonly ref = inject<DialogRef<Project, ProjectDialog>>(DialogRef);
@@ -207,18 +161,7 @@ export class ProjectDialog {
     }
   }
 
-  protected readonly ownersLabel = $localize`:@@project-dialog.owners-label:First Owners of the project`;
-
-  protected readonly searchIdentities = async (text: string): Promise<readonly PickablePrincipal[]> => {
-    const [users, groups] = await Promise.all([
-      this.identity.users({ q: text, status: 'active' })(null, 10),
-      this.identity.groups({ q: text })(null, 10),
-    ]);
-    return [
-      ...users.items.map((u): PickablePrincipal => ({ ref: `user:${u.username}`, kind: 'user' })),
-      ...groups.items.map((g): PickablePrincipal => ({ ref: `group:${g.name}`, kind: 'group' })),
-    ];
-  };
+  protected readonly ownerKinds = ['user', 'group'] as const;
 
   protected keyError(): string | null {
     const server = fieldErrorAt(this.error(), '/key');
@@ -245,14 +188,6 @@ export class ProjectDialog {
 
   protected fieldError(pointer: string): string | null {
     return fieldErrorAt(this.error(), pointer);
-  }
-
-  protected addOwner(ref: string): void {
-    this.owners.update((list) => (list.includes(ref) ? list : [...list, ref]));
-  }
-
-  protected removeOwner(ref: string): void {
-    this.owners.update((list) => list.filter((a) => a !== ref));
   }
 
   protected async submit(event: Event): Promise<void> {

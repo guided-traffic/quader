@@ -360,40 +360,164 @@ func (q *Queries) ProjectLock(ctx context.Context, key string) ([]string, error)
 	return items, nil
 }
 
-const projectLookupPrincipals = `-- name: ProjectLookupPrincipals :many
-SELECT kind, name
-  FROM principal
- WHERE kind IN ('user', 'group') AND status = 'active'
-   AND ($1::text = '' OR kind = $1::text)
-   AND starts_with(name, $2::text)
- ORDER BY kind, name
- LIMIT $3::int
+const projectLookupGroups = `-- name: ProjectLookupGroups :many
+SELECT p.name,
+       (CASE WHEN p.name = $1::text THEN 0
+             WHEN starts_with(p.name, $1::text) THEN 1
+             ELSE 2 END)::int AS rank
+  FROM principal p
+  JOIN user_group g ON g.principal_id = p.id
+ WHERE p.kind = 'group' AND p.status = 'active' AND NOT g.auto_join
+   AND (starts_with(p.name, $1::text)
+        OR strpos(' ' || regexp_replace(p.name, '[^a-z0-9]+', ' ', 'g'), ' ' || $1::text) > 0)
+ ORDER BY rank, p.name COLLATE "C"
+ LIMIT $2::int
 `
 
-type ProjectLookupPrincipalsParams struct {
-	Kind    string
-	Prefix  string
+type ProjectLookupGroupsParams struct {
+	Text    string
 	MaxRows int32
 }
 
-type ProjectLookupPrincipalsRow struct {
-	Kind string
+type ProjectLookupGroupsRow struct {
 	Name string
+	Rank int32
 }
 
-// Users and groups whose name starts with the prefix, for a project owner
-// who names principals as members and in policies (Q-AUTHZ-182). Active principals only; the
-// answer is the kind and the name, nothing else. kind is empty, 'user' or 'group'.
-func (q *Queries) ProjectLookupPrincipals(ctx context.Context, arg ProjectLookupPrincipalsParams) ([]ProjectLookupPrincipalsRow, error) {
-	rows, err := q.db.Query(ctx, projectLookupPrincipals, arg.Kind, arg.Prefix, arg.MaxRows)
+// The groups of the principal lookup of a project (Q-AUTHZ-182): the active groups whose name, or one of its words (split at
+// every character that is no letter or digit), starts with the text; rank as for the users. The auto-join groups are left out:
+// a project neither takes one as a member nor names one in a policy (R-AUTHZ-026). The name is all the answer holds.
+func (q *Queries) ProjectLookupGroups(ctx context.Context, arg ProjectLookupGroupsParams) ([]ProjectLookupGroupsRow, error) {
+	rows, err := q.db.Query(ctx, projectLookupGroups, arg.Text, arg.MaxRows)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ProjectLookupPrincipalsRow{}
+	items := []ProjectLookupGroupsRow{}
 	for rows.Next() {
-		var i ProjectLookupPrincipalsRow
-		if err := rows.Scan(&i.Kind, &i.Name); err != nil {
+		var i ProjectLookupGroupsRow
+		if err := rows.Scan(&i.Name, &i.Rank); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const projectLookupServiceAccounts = `-- name: ProjectLookupServiceAccounts :many
+SELECT p.name, coalesce(pr.key, '')::text AS project_key,
+       (CASE WHEN p.name = $1::text OR split_part(p.name, '/', 2) = $1::text THEN 0
+             WHEN starts_with(p.name, $1::text) OR starts_with(split_part(p.name, '/', 2), $1::text) THEN 1
+             ELSE 2 END)::int AS rank
+  FROM principal p
+  JOIN service_account s ON s.principal_id = p.id
+  LEFT JOIN project pr ON pr.id = s.project_id
+ WHERE p.kind = 'service_account' AND p.status = 'active'
+   AND (($2::boolean AND s.project_id IS NULL) OR pr.key = $3::text)
+   AND (starts_with(p.name, $1::text)
+        OR starts_with(split_part(p.name, '/', 2), $1::text)
+        OR strpos(' ' || regexp_replace(p.name, '[^a-z0-9]+', ' ', 'g'), ' ' || $1::text) > 0)
+ ORDER BY rank, p.name COLLATE "C"
+ LIMIT $4::int
+`
+
+type ProjectLookupServiceAccountsParams struct {
+	Text       string
+	Instance   bool
+	ProjectKey string
+	MaxRows    int32
+}
+
+type ProjectLookupServiceAccountsRow struct {
+	Name       string
+	ProjectKey string
+	Rank       int32
+}
+
+// The service accounts of the principal lookup of a project (Q-AUTHZ-182): the active accounts of the project project_key, and
+// the instance-wide ones when instance is set (the caller holds identities:read). A project's account is stored as
+// <project key>/<name> (Q-AUTHZ-209) and matches by its name within the project as well; rank as for the users. project_key of
+// the row is empty for an instance-wide account.
+func (q *Queries) ProjectLookupServiceAccounts(ctx context.Context, arg ProjectLookupServiceAccountsParams) ([]ProjectLookupServiceAccountsRow, error) {
+	rows, err := q.db.Query(ctx, projectLookupServiceAccounts,
+		arg.Text,
+		arg.Instance,
+		arg.ProjectKey,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ProjectLookupServiceAccountsRow{}
+	for rows.Next() {
+		var i ProjectLookupServiceAccountsRow
+		if err := rows.Scan(&i.Name, &i.ProjectKey, &i.Rank); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const projectLookupUsers = `-- name: ProjectLookupUsers :many
+SELECT p.id::text AS id, p.name, coalesce(u.display_name, '')::text AS display_name,
+       coalesce(encode(a.blob_sha256, 'hex'), '')::text AS avatar_sha256,
+       (CASE WHEN p.name = $1::text THEN 0
+             WHEN starts_with(p.name, $1::text) THEN 1
+             ELSE 2 END)::int AS rank
+  FROM principal p
+  JOIN app_user u ON u.principal_id = p.id
+  LEFT JOIN user_avatars a ON a.user_id = p.id
+ WHERE p.kind = 'user' AND p.status = 'active' AND NOT u.is_break_glass
+   AND (starts_with(p.name, $1::text)
+        OR strpos(' ' || regexp_replace(lower(coalesce(u.display_name, '')), '\s+', ' ', 'g'), ' ' || $1::text) > 0
+        OR strpos(' ' || regexp_replace(p.name, '[^a-z0-9]+', ' ', 'g'), ' ' || $1::text) > 0)
+ ORDER BY rank, p.name COLLATE "C"
+ LIMIT $2::int
+`
+
+type ProjectLookupUsersParams struct {
+	Text    string
+	MaxRows int32
+}
+
+type ProjectLookupUsersRow struct {
+	ID           string
+	Name         string
+	DisplayName  string
+	AvatarSha256 string
+	Rank         int32
+}
+
+// The users of the principal lookup of a project (Q-AUTHZ-182, R-API-077): the active users, without the break-glass account,
+// whose username starts with the text, or one of whose words (the display name split at white space, the username split at every
+// character that is no letter or digit) starts with it; the text is lower-cased by the caller. rank 0 the username equals the
+// text, 1 it starts with it, 2 a word does. The text is a value of strpos and starts_with, never a pattern. The answer holds what
+// a member's row shows: the ID (the seed of the generated avatar), the username, the display name and the avatar's digest; never
+// the e-mail address, the status, the origin or a sign-in time (H-392). At most max_rows; the caller asks for one more.
+func (q *Queries) ProjectLookupUsers(ctx context.Context, arg ProjectLookupUsersParams) ([]ProjectLookupUsersRow, error) {
+	rows, err := q.db.Query(ctx, projectLookupUsers, arg.Text, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ProjectLookupUsersRow{}
+	for rows.Next() {
+		var i ProjectLookupUsersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.DisplayName,
+			&i.AvatarSha256,
+			&i.Rank,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

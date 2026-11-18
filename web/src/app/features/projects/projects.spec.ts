@@ -3,7 +3,7 @@ import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeProjectsApi, sampleProject } from '../../api/testing/fakes-projects';
 import { ProjectsApi } from '../../api/projects-api';
 import { seriousViolations } from '../../testing/axe';
-import { buttonByText, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
+import { buttonByText, choosePrincipal, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
 import { ProjectSettings } from './project-settings';
 import { ProjectPoliciesPage, ProjectServiceAccountsPage } from './project-list-pages';
 import { ProjectList } from './project-list';
@@ -87,23 +87,20 @@ describe('Projects overview (R-UI-041)', () => {
     expect(root.textContent).toContain('Edit web');
   });
 
-  it('R-UI-041 R-AUTHZ-026 creates a project with a first Owner group, then opens it', async () => {
+  it('R-UI-041 R-AUTHZ-026 R-UI-150 creates a project with a first Owner group chosen from the search, then opens it', async () => {
     const { fixture, root, get } = await renderScreen(ProjectList);
     buttonByText(root, 'New project').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
     typeInto(dialog, 'Key', 'team-a');
     typeInto(dialog, 'Display name', 'Team A');
-    typeInto(dialog, 'Find a user or group', 'team');
-    await sleep(fixture, 400);
-    buttonByText(dialog, 'group:team-web').click();
-    await settle(fixture);
+    await choosePrincipal(fixture, dialog, 'First Owners', 'leads', 'web-leads');
     buttonByText(dialog, 'Create project').click();
     await sleep(fixture, 100);
     const api = get(ProjectsApi) as FakeProjectsApi;
     expect(api.calls).toEqual(['create team-a']);
     expect(api.keys).toHaveLength(1);
-    expect(api.projects.find((x) => x.key === 'team-a')?.owners).toEqual(['group:team-web']);
+    expect(api.projects.find((x) => x.key === 'team-a')?.owners).toEqual(['group:web-leads']);
   });
 
   it('R-UI-041 a key that does not match the pattern is refused before any request', async () => {

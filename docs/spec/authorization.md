@@ -2442,7 +2442,7 @@ What the Owner may do, within its project and nowhere else:
 
 | Area | What it allows |
 |---|---|
-| Members | Add users and groups, change their roles, remove them; look up users and groups by a name prefix ([Q-AUTHZ-182](#q-authz-182--how-a-project-administrator-finds-the-users-and-groups-it-names)) |
+| Members | Add users and groups, change their roles, remove them; look up users, groups and the project's service accounts by the start of a name or of a word of it, with what a member's row shows ([Q-AUTHZ-182](#q-authz-182--how-a-project-administrator-finds-the-users-and-groups-it-names), [api-and-ui.md](api-and-ui.md) R-API-077) |
 | Repositories | Create, change and delete the project's repositories of every class: local, remote and virtual ([Q-AUTHZ-173](#q-authz-173--a-project-administrator-creates-remote-repositories)); read their full configuration (as `repositories:read-config` does, never a secret value); test the saved and the unsaved upstream of a remote; request a pass of a mirror (R-REPO-056); move a repository to another project of which it is Owner too (R-REPO-060). A remote's upstream stays subject to the outbound address rules of the installation ([security/egress.md](../security/egress.md)). An Owner without `repositories:write-config` gives an upstream secret as a value, never as a reference of the installation, and a stored one does not follow a new address ([Q-REPO-127](repositories-and-proxy.md#q-repo-127--a-project-administrator-gives-an-upstream-secret-as-a-value-and-a-stored-one-stays-with-its-hosts), 422 `secret_value_required`); it takes the installation's outbound path ([Q-REPO-128](repositories-and-proxy.md#q-repo-128--a-project-administrators-remote-repository-takes-the-installations-outbound-path), 422 `outbound_path_restricted`); and it keeps `remote.mode`, `remote.mirror`, the include and exclude lists, `remote.url` and `remote.extraHosts` of a mirror as stored (Q-REPO-193), pauses and resumes it, or turns the mode back to `pullThrough` ([Q-REPO-142](repositories-and-proxy.md#q-repo-142--who-may-switch-a-remote-to-mirror), 422 `mirror_restricted`) |
 | Policies | Create, change and delete the project's policies, granting any action (`manage` included, except to CI mappings) to users, groups, the project's service accounts, service accounts of no project and CI mappings, never to an auto-join group; validate a policy of the project |
 | Visibility | Set the levels of the project's repositories, artifacts and wiki, up to the project's level (R-AUTHZ-033); the project's own level is the administrator's |
@@ -2576,7 +2576,7 @@ API:
 | `GET /api/v1/projects/{projectKey}/members` | The members with their roles | 200; 404 | `projects:read` or a member |
 | `PUT /api/v1/projects/{projectKey}/members/{principalRef}` | Add a member or change its role: `{"role": "developer"}` | 201 added, 200 changed or unchanged; 404 unknown project or principal; 409 `last_owner`; 422 `principal_not_allowed` or an unknown role | `projects:write` or an Owner |
 | `DELETE /api/v1/projects/{projectKey}/members/{principalRef}` | Remove a member | 204; 404; 409 `last_owner` | `projects:write` or an Owner |
-| `GET /api/v1/projects/{projectKey}/principals?q=&kind=&limit=` | Users and groups whose name starts with `q` (2 characters at least, 20 at most): kind and name only | 200; 404; 422 | `identities:read` or an Owner |
+| `GET /api/v1/projects/{projectKey}/principals?q=&kind=&limit=` | Active users, groups and service accounts whose name or a word of it starts with `q` (2 characters at least, 20 at most): kind, name, reference, and a user's display name, ID and avatar path; the project's own service accounts, the instance-wide ones for `identities:read`; no e-mail address, status, origin or sign-in time ([api-and-ui.md](api-and-ui.md) R-API-077) | 200; 404; 422 | `identities:read` or an Owner |
 
 Operations of other pages below a project, each declared with `project: path.projectKey` (the declarations are in
 `api/openapi.yaml`):
@@ -5045,17 +5045,27 @@ not hold, and giving it would expose every identity, e-mail address and membersh
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A lookup bounded to the project administrator's need (chosen) | `GET /projects/{key}/principals?q=&kind=&limit=`: active users and groups whose name starts with `q` (2 characters at least), at most 20, the kind and the name only; for `identities:read` or an administrator of the project with `managePolicies` | Names are found by what the administrator knows; nothing but kind and name leaves; cheap | Names of users and groups can be enumerated by prefix (H-392) |
+| (a) A lookup bounded to the project administrator's need (chosen) | `GET /projects/{key}/principals?q=&kind=&limit=`: active users, groups and service accounts whose name or a word of it starts with `q` (2 characters at least), at most 20; the kind, the name, the reference, and for a user its display name, ID and avatar path; for `identities:read` or an Owner of the project | Names are found by what the administrator knows; no e-mail address, status, origin or sign-in time leaves; cheap | Names, usernames and display names of users and the names of groups can be enumerated by prefix (H-392) |
 | (b) Free text in the policy form, no lookup | The administrator types a reference; an unknown one answers 422 `unknown_principal` | No new operation | The same enumeration through 422, without paging bound, and typing names blindly |
 | (c) `identities:read` for project administrators | Full lists | Simple | Every identity of the installation, with e-mail, visible to every team lead |
 
 **Choice:** (a). Besides it, a project administrator reads: the project, its administrators, its policies, the full
 configuration of its repositories, its service accounts and their tokens' metadata. Nothing else of the global data.
 
+**Revised on 2026-11-18** (the owner's W-12, [api-and-ui.md](api-and-ui.md) Q-API-336, R-API-077): the field that names a principal
+shows each match with its avatar, its display name and its username (R-UI-150), so the lookup answers a user's display name, its ID
+(the seed of the generated avatar) and the path of its uploaded avatar besides the kind and the name; a user is also matched by a
+word of its display name or of its username, a group by a word of its name. It offers the project's own service accounts, which the
+Owner lists anyway, and to a holder of `identities:read` the instance-wide ones, which that capability lists anyway. It never offers
+a disabled principal, the break-glass account or an auto-join group, which a project neither takes as a member nor names in a policy.
+The callers, the minimum of 2 characters, the limit of 20 and the rate limit are unchanged. This widens what H-392 describes: the
+display names of the installation's users are now readable by prefix to every Owner of a project. The e-mail address, the status, the
+origin and the sign-in times stay with `identities:read`.
+
 **Rationale:** the question is "which principals exist" for the grant it is about to write, not "who is who". The
 development agent revisits it when the identity provider's directory can answer the lookup (the IdP then owns the answer).
 
-**Applied in the spec:** R-AUTHZ-026 (the API table, the right table). Gap: [H-392](#h-392--a-project-administrator-can-enumerate-user-and-group-names).
+**Applied in the spec:** R-AUTHZ-026 (the API table, the right table); [api-and-ui.md](api-and-ui.md) R-API-077. Gap: [H-392](#h-392--a-project-administrator-can-enumerate-user-and-group-names).
 
 ### Q-AUTHZ-183 · Who administers a project and through which credentials
 
@@ -6952,12 +6962,15 @@ reconstructed from the audit store unless `reads: all` was set beforehand.
 
 ### H-392 · A project administrator can enumerate user and group names
 
-An Owner of a project looks up users and groups by a name prefix of two characters or more, 20
-results per call, kind and name only (Q-AUTHZ-182), to name its members and the principals of its policies. Repeated calls list every active user and group name of the
-installation, which is also what an `unknown_principal` answer on a policy write reveals. The general rate limit
-(R-API-016) bounds the speed, the 2-character minimum and the limit of 20 the width of one call, and nothing but kind and
-name is returned. Names of people stay visible to every Owner of the installation; a deployment where
-that is unacceptable names few Owners when it creates a project.
+An Owner of a project looks up users, groups and the project's service accounts by the start of a name or of a word of it, two
+characters or more, 20 results per call (Q-AUTHZ-182), to name its members and the principals of its policies. Since 2026-11-18
+(W-12, R-API-077) a user's result carries its display name, its ID and the path of its uploaded avatar besides its username, so the
+field can show the person's row (R-UI-150). Repeated calls list every active user's username and display name and every active
+group's name of the installation, which is in part also what an `unknown_principal` answer on a policy write reveals. The general rate
+limit (R-API-016) bounds the speed, the 2-character minimum and the limit of 20 the width of one call. No e-mail address, status,
+origin, sign-in time or membership is returned; disabled users, the break-glass account and auto-join groups are not offered. Names
+and faces of people stay visible to every Owner of the installation; a deployment where that is unacceptable names few Owners when it
+creates a project.
 
 ### H-393 · A project administrator with `manageRepositories` probes the addresses the outbound rules allow
 

@@ -185,8 +185,15 @@
     }
     @if (canWrite() && editable()) {
       <form class="toolbar" (submit)="addGroup($event)">
-        <quader-text-field width="name" i18n-label="@@user.add-group" label="Add to group" name="group" [(value)]="newGroup" />
-        <button class="btn btn-confirm" type="submit" [disabled]="busy() || newGroup().trim() === ''" i18n="@@user.add-group-submit">Add</button>
+        <quader-principal-field
+          i18n-label="@@user.add-group"
+          label="Add to group"
+          name="group"
+          [kinds]="groupKinds"
+          [exclude]="groupRefs()"
+          [(value)]="newGroup"
+        />
+        <button class="btn btn-confirm" type="submit" [disabled]="busy() || newGroup().length === 0" i18n="@@user.add-group-submit">Add</button>
       </form>
     }
   </quader-disclosure>

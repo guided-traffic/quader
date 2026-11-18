@@ -134,6 +134,7 @@ type suggestions struct {
 			Username    string  `json:"username"`
 			DisplayName *string `json:"displayName"`
 			Disabled    bool    `json:"disabled"`
+			AvatarURL   *string `json:"avatarUrl"`
 		} `json:"items"`
 		More bool `json:"more"`
 	} `json:"users"`
@@ -141,6 +142,13 @@ type suggestions struct {
 		Items []struct{ Name, Description string } `json:"items"`
 		More  bool                                 `json:"more"`
 	} `json:"groups"`
+	ServiceAccounts *struct {
+		Items []struct {
+			Name    string  `json:"name"`
+			Project *string `json:"project"`
+		} `json:"items"`
+		More bool `json:"more"`
+	} `json:"serviceAccounts"`
 }
 
 // repos names the suggested repositories <project>/<key>.

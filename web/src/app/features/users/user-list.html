@@ -15,7 +15,14 @@
 <quader-filter-panel #panel [(open)]="panelOpen" [activeCount]="chips().length" (apply)="apply()" (clearAll)="clear()" (dismissed)="restage()">
   <quader-select-field i18n-label="@@users.status" label="Status" name="status" [options]="statusOptions" [(value)]="status" />
   <quader-select-field i18n-label="@@users.origin" label="Origin" name="origin" [options]="originOptions" [(value)]="origin" />
-  <quader-text-field width="name" i18n-label="@@users.group" label="Group" name="group" [(value)]="group" />
+  <quader-principal-field
+    i18n-label="@@users.group"
+    label="Group"
+    name="group"
+    [kinds]="groupKinds"
+    [value]="group() ? [groupRef(group())] : []"
+    (valueChange)="group.set(groupName($event[0]))"
+  />
   <quader-select-field i18n-label="@@users.admin" label="Administrator" name="admin" [options]="adminOptions" [(value)]="admin" />
   <quader-select-field i18n-label="@@users.external" label="External" name="external" [options]="externalOptions" [(value)]="external" />
 </quader-filter-panel>

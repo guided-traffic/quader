@@ -250,3 +250,12 @@ export async function applyFilters(page: Page): Promise<void> {
   await expect(drawer).toBeHidden();
 }
 
+/**
+ * Names a principal in the shared principal field labelled `label` (R-UI-150), as a person does: types `search` into the
+ * combobox and clicks the match whose row names `match` (a name, a username or a group's name). Nobody types a reference.
+ */
+export async function choosePrincipal(scope: Page | Locator, label: string, search: string, match: string | RegExp): Promise<void> {
+  await scope.getByRole('combobox', { name: label, exact: true }).fill(search);
+  await scope.getByRole('option', { name: match }).first().click();
+}
+

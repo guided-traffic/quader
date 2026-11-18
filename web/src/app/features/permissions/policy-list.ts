@@ -11,6 +11,7 @@ import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { ProjectLink } from '../../shared/ui/project-mark';
 import { expandActions } from './policy-model';
+import { PrincipalField, choiceFromRef } from '../../shared/ui/principal-field';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /** "Users: 2, groups: 3": the entries of a policy by kind of principal (R-UI-027). */
@@ -41,7 +42,7 @@ export function actionSummary(policy: Pick<PermissionPolicy, 'entries'>): string
  */
 @Component({
   selector: 'quader-policy-list',
-  imports: [PageHeader, RouterLink, DataTable, FilterPanel, ListHead, Needs, NoValue, ProjectLink, TextField],
+  imports: [PageHeader, RouterLink, DataTable, FilterPanel, ListHead, Needs, NoValue, PrincipalField, ProjectLink, TextField],
   templateUrl: './policy-list.html',
   styleUrl: '../../shared/access/access.scss',
 })
@@ -63,6 +64,10 @@ export class PolicyList {
   protected readonly panelOpen = signal(false);
   /** The list is a project's (`/projects/<key>/policies`): the project is the route's and no filter. */
   protected readonly inProject = (): boolean => this.route.snapshot.paramMap.has('project');
+  /** The project of a project's list: the filter by principal searches through its lookup (Q-AUTHZ-182). */
+  protected readonly routeProject = (): string | null => this.route.snapshot.paramMap.get('project');
+  /** The filter by principal is the shared field (R-UI-150): a user, a group or a service account. */
+  protected readonly principalKinds = ['user', 'group', 'service_account'] as const;
   /** The filters the list shows now; the drawer's fields stage the next ones. */
   /** An empty list says there is no policy yet; a filter that finds none says so (Q-UI-565). */
   protected readonly noPolicy = $localize`:@@policies.empty-none:There is no policy yet.`;
@@ -71,7 +76,7 @@ export class PolicyList {
   protected readonly chips = computed<readonly ListChip[]>(() => {
     const f = this.applied();
     const out: ListChip[] = [];
-    if (f.principal) out.push({ key: 'principal', label: $localize`:@@policies.principal:Principal`, value: f.principal });
+    if (f.principal) out.push({ key: 'principal', label: $localize`:@@policies.principal:Principal`, value: choiceFromRef(f.principal).name });
     if (f.repository) out.push({ key: 'repository', label: $localize`:@@policies.repository:Repository`, value: f.repository });
     if (f.project && !this.inProject()) out.push({ key: 'project', label: $localize`:@@policies.project:Project`, value: f.project });
     return out;

@@ -100,6 +100,7 @@ func TestR_API_060_TheAnswerHoldsAMemberPerKindAsked(t *testing.T) {
 		{"kind=repository", kinds("repository"), []string{"repositories"}},
 		{"kind=package&kind=project", kinds("package", "project"), []string{"packages", "projects"}},
 		{"kind=user,group,repository", kinds("user,group,repository"), []string{"groups", "repositories", "users"}},
+		{"R-UI-150 kind=user,group,service_account", kinds("user,group,service_account"), []string{"groups", "serviceAccounts", "users"}},
 	}
 	for _, c := range cases {
 		t.Run("R-API-060 "+c.name, func(t *testing.T) {
@@ -143,7 +144,7 @@ func TestR_API_060_TheAnswerHoldsAMemberPerKindAsked(t *testing.T) {
 // with the same body for every text (Q-API-272); a caller without a credential gets 401 while nothing is public.
 func TestR_API_061_TheAdminKindsAreRefusedBeforeAnyLookup(t *testing.T) {
 	s := newSetup(t, func(o *Options) { o.Access = denyCapability(authz.IdentitiesRead) }, authed)
-	for _, kind := range []string{"user", "group", "repository,user"} {
+	for _, kind := range []string{"user", "group", "service_account", "repository,user"} {
 		t.Run("R-API-061 kind="+kind+" without identities:read answers 403, the same for two texts", func(t *testing.T) {
 			a := s.get("/api/v1/search/suggestions?q=fr&kind=" + kind)
 			b := s.get("/api/v1/search/suggestions?q=zz&kind=" + kind)

@@ -3,7 +3,7 @@ import { FakeIdentityApi, problem, sampleUser } from '../../api/testing/access-f
 import { SessionsApi } from '../../api/sessions-api';
 import { FakeSessionsApi } from '../../api/testing/access-fakes';
 import { seriousViolations } from '../../testing/axe';
-import { buttonByText, renderScreen, settle, text, typeInto, sleep, searchList } from '../../testing/screen';
+import { buttonByText, choosePrincipal, renderScreen, settle, text, typeInto, sleep, searchList } from '../../testing/screen';
 import { UserDetail } from './user-detail';
 import { UserList } from './user-list';
 
@@ -144,7 +144,8 @@ describe('User detail (R-UI-024)', () => {
     expect(notice).toContain('are kept as they were');
     const plain = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     const groups = [...plain.root.querySelectorAll('quader-disclosure')].find((d) => text(d.querySelector('.heading')!).includes('Groups'))!;
-    expect(groups.querySelector('p[role="status"]')).toBeNull();
+    // The field Add to group has a live region of its own; the notice is the warning.
+    expect(groups.querySelector('p[role="status"].warn')).toBeNull();
     expect(groups.querySelector('.toggle')?.getAttribute('aria-expanded')).toBe('false');
   });
 
@@ -165,6 +166,14 @@ describe('User detail (R-UI-024)', () => {
     platform.querySelector('button')!.click();
     await settle(fixture);
     expect((get(IdentityApi) as FakeIdentityApi).calls).toContain('changeUserGroups alice + -platform');
+  });
+
+  it('R-UI-150 a group is added from the search and sent by its name', async () => {
+    const { fixture, root, get } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
+    await choosePrincipal(fixture, root, 'Add to group', 'leads', 'web-leads');
+    buttonByText(root.querySelector('form.toolbar') as HTMLElement, 'Add').click();
+    await settle(fixture);
+    expect((get(IdentityApi) as FakeIdentityApi).calls).toContain('changeUserGroups alice +web-leads -');
   });
 
   it('R-UI-051 an administrator removes the avatar of another user after a confirmation; a user without one shows none to remove', async () => {

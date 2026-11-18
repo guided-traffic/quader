@@ -6,6 +6,7 @@ import {
   ProjectSuggestion,
   RepositorySuggestion,
   SearchApi,
+  ServiceAccountSuggestion,
   SearchSuggestions,
   SuggestRequest,
   SuggestionKind,
@@ -54,18 +55,24 @@ export class FakeSearchApi extends SearchApi {
       username: 'sam',
       displayName: 'Sam Reader',
       disabled: false,
+      avatarUrl: null,
     },
     {
       id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a11',
       username: 'ada',
       displayName: null,
       disabled: false,
+      avatarUrl: null,
     },
   ];
   groups: GroupSuggestion[] = [{ name: 'web-leads', description: 'The leads of the web team' }];
+  serviceAccounts: ServiceAccountSuggestion[] = [
+    { name: 'ci-bot', description: 'Publishes from the pipeline', project: null },
+    { name: 'web/deploy', description: '', project: 'web' },
+  ];
   /** Set to answer every request with this error, such as a 429 with `retryAfterSeconds`. */
   failure: ApiError | null = null;
-  /** While false, a request with the kind `user` or `group` answers 403, as for a caller without `identities:read`. */
+  /** While false, a request with the kind `user`, `group` or `service_account` answers 403, as for a caller without `identities:read`. */
   identitiesRead = true;
   /** While true, a request waits until `release()` or the abort of its signal. */
   hold = false;
@@ -84,7 +91,7 @@ export class FakeSearchApi extends SearchApi {
     if (this.hold) await this.held(request.signal);
     if (this.failure) throw this.failure;
     const kinds = request.kinds?.length ? request.kinds : DEFAULT_KINDS;
-    if (!this.identitiesRead && (kinds.includes('user') || kinds.includes('group'))) {
+    if (!this.identitiesRead && (kinds.includes('user') || kinds.includes('group') || kinds.includes('service_account'))) {
       throw new ApiError(403, { status: 403, code: 'forbidden' }, null);
     }
     const terms = request.q.trim().toLowerCase().split(/\s+/);
@@ -107,6 +114,7 @@ export class FakeSearchApi extends SearchApi {
       out.users = cut(this.users.filter((u) => matches(u.username) || matches(u.displayName)));
     }
     if (kinds.includes('group')) out.groups = cut(this.groups.filter((g) => matches(g.name)));
+    if (kinds.includes('service_account')) out.serviceAccounts = cut(this.serviceAccounts.filter((a) => matches(a.name)));
     return out;
   }
 

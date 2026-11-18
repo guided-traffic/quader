@@ -194,10 +194,10 @@ operation does not use `ParseList` and checks its own three parameters.
 
 | Step | What | Answer |
 |---|---|---|
-| Parameters | `parseSuggest`: `q` trimmed, 2 to 100 characters, lower-cased, its terms; `kind` repeated or comma-separated from the five kinds, default `repository,package,project`; `limit` 1 to 10, default 5 | `400 malformed_request` with the parameter as the pointer (`suggestParamError`) |
+| Parameters | `parseSuggest`: `q` trimmed, 2 to 100 characters, lower-cased, its terms; `kind` repeated or comma-separated from the six kinds, default `repository,package,project`; `limit` 1 to 10, default 5 | `400 malformed_request` with the parameter as the pointer (`suggestParamError`) |
 | Anonymous gate | `anonymousGate`, as on the lists | `401` while nothing is `public` |
-| Admin kinds | `requireIdentitiesRead` for `user` or `group`, before any lookup, the same body for every text | `403` |
-| Kinds | `suggest`: one holder of the request (`requestHolder`), then `suggestRepositories` (the index's `Repositories()`, decided as `visibleRepositories` decides), `suggestPackages` (`view.Service.Suggest` on the package list's read scope), `suggestProjects` (`SearchProjects`, `projectListed`), `suggestIdentities` (`principal.Manager.SuggestUsers`, `SuggestGroups`) | `200`, `Cache-Control: no-store`; `503` for a kind whose service the replica lacks |
+| Admin kinds | `requireIdentitiesRead` for `user`, `group` or `service_account` (`wantsIdentities`), before any lookup, the same body for every text | `403` |
+| Kinds | `suggest`: one holder of the request (`requestHolder`), then `suggestRepositories` (the index's `Repositories()`, decided as `visibleRepositories` decides), `suggestPackages` (`view.Service.Suggest` on the package list's read scope), `suggestProjects` (`SearchProjects`, `projectListed`), `suggestIdentities` (`principal.Manager.SuggestUsers`, `SuggestGroups`, `SuggestServiceAccounts`; the admin area's principal field reads these three kinds, R-API-078) | `200`, `Cache-Control: no-store`; `503` for a kind whose service the replica lacks |
 
 The ranks of R-API-062, the terms, the words, the tsquery text and the prefix bounds are in
 [search_match.go](../../internal/api/v1/search_match.go); `cutRanked` takes the readable matches only, so the filter always runs before

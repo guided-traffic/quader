@@ -12,13 +12,15 @@ const (
 )
 
 // PrincipalKind is the kind of a project member or of a lookup result: a user or a
-// group (Q-AUTHZ-207, Q-AUTHZ-215). Service accounts and CI mappings are no members.
+// group (Q-AUTHZ-207, Q-AUTHZ-215), and in a lookup a service account, which a
+// project's policies name. Service accounts and CI mappings are no members.
 type PrincipalKind string
 
-// The two kinds that are members of a project.
+// The two kinds that are members of a project, and the service account a lookup finds as well.
 const (
-	KindUser  PrincipalKind = "user"
-	KindGroup PrincipalKind = "group"
+	KindUser           PrincipalKind = "user"
+	KindGroup          PrincipalKind = "group"
+	KindServiceAccount PrincipalKind = "service_account"
 )
 
 // PrincipalRef names a user or a group the way the API does: "user:alice",

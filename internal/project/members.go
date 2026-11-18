@@ -3,7 +3,6 @@ package project
 import (
 	"context"
 	"fmt"
-	"unicode/utf8"
 
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/principal"
@@ -289,42 +288,4 @@ func memberEvent(name string, actor authz.Subject, key, projectID string, pr Pri
 		ev.Journal = mustJSON(journal)
 	}
 	return ev
-}
-
-// LookupPrincipals answers the lookup of Q-AUTHZ-182. The bounds are the service's
-// own, so that no caller can widen them: a prefix of at least MinLookupPrefix
-// characters, at most MaxLookup results.
-func (s *service) LookupPrincipals(ctx context.Context, prefix string, kind PrincipalKind, limit int) ([]PrincipalRef, error) {
-	var fields []errs.FieldError
-	if utf8.RuneCountInString(prefix) < MinLookupPrefix {
-		fields = append(fields, errs.FieldError{
-			Pointer: "/q", Code: "prefix_too_short",
-			Detail: fmt.Sprintf("The prefix has at least %d characters.", MinLookupPrefix),
-		})
-	}
-	if kind != "" && kind != KindUser && kind != KindGroup {
-		fields = append(fields, errs.FieldError{Pointer: "/kind", Code: "invalid_kind", Detail: "The kind is user or group."})
-	}
-	if limit < 0 {
-		fields = append(fields, errs.FieldError{Pointer: "/limit", Code: "invalid_limit", Detail: fmt.Sprintf("The limit is 1 to %d.", MaxLookup)})
-	}
-	if len(fields) > 0 {
-		return nil, errs.E(errs.Invalid, errs.CodeValidation, fields[0].Detail, errs.WithFields(fields...))
-	}
-	if limit == 0 || limit > MaxLookup {
-		limit = MaxLookup
-	}
-	var out []PrincipalRef
-	err := s.inTx(ctx, func(_ meta.Tx, qs *q.Queries) error {
-		rows, err := qs.ProjectLookupPrincipals(ctx, q.ProjectLookupPrincipalsParams{Kind: string(kind), Prefix: prefix, MaxRows: int32(limit)}) //nolint:gosec // at most MaxLookup
-		if err != nil {
-			return err
-		}
-		out = make([]PrincipalRef, 0, len(rows))
-		for _, r := range rows {
-			out = append(out, PrincipalRef{Kind: PrincipalKind(r.Kind), Name: r.Name})
-		}
-		return nil
-	})
-	return out, err
 }

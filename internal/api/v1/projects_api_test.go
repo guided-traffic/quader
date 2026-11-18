@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 
@@ -30,11 +31,24 @@ func (f fakeProjects) Get(_ context.Context, key string) (project.Project, error
 	return project.Project{}, errs.E(errs.NotFound, errs.CodeNotFound, "no such project")
 }
 
-func (f fakeProjects) LookupPrincipals(_ context.Context, prefix string, _ project.PrincipalKind, limit int) ([]project.PrincipalRef, error) {
-	if limit == 0 {
-		limit = project.MaxLookup
+// LookupPrincipals answers a user with a display name and an avatar, a group and, when the lookup asks for the instance's
+// accounts, an instance-wide service account; every kind asked, in that order.
+func (f fakeProjects) LookupPrincipals(_ context.Context, query project.Lookup) ([]project.Found, error) {
+	all := []project.Found{
+		{Kind: project.KindUser, Name: query.Prefix + "-x", ID: "u-1", DisplayName: "Al X", AvatarSHA256: "ab12"},
+		{Kind: project.KindGroup, Name: query.Prefix + "-ops"},
+		{Kind: project.KindServiceAccount, Name: query.Project + "/" + query.Prefix + "-bot", Project: query.Project},
 	}
-	return []project.PrincipalRef{{Kind: project.KindUser, Name: prefix + "-x"}}[:min(limit, 1)], nil
+	if query.InstanceAccounts {
+		all = append(all, project.Found{Kind: project.KindServiceAccount, Name: query.Prefix + "-ci"})
+	}
+	var out []project.Found
+	for _, f := range all {
+		if len(query.Kinds) == 0 || slices.Contains(query.Kinds, f.Kind) {
+			out = append(out, f)
+		}
+	}
+	return out, nil
 }
 
 func sampleProjects() fakeProjects {
@@ -145,6 +159,9 @@ func TestR_AUTHZ_026_TheLookupBoundsItsInput(t *testing.T) {
 	if w := s.get("/api/v1/projects/web/principals?q=al"); w.Code != 200 || !strings.Contains(w.Body.String(), `"principal":"user:al-x"`) {
 		t.Errorf("a valid lookup: %d %s", w.Code, w.Body)
 	}
+	if w := s.get("/api/v1/projects/web/principals?q=al&kind=bot"); w.Code != 422 {
+		t.Errorf("an unknown kind: %d", w.Code)
+	}
 	if w := s.get("/api/v1/projects/web/principals?q=al&limit=21"); w.Code != 422 {
 		t.Errorf("limit above the maximum: %d", w.Code)
 	}
@@ -199,6 +216,61 @@ func TestR_STOR_049_TheProjectCarriesItsLogicalSize(t *testing.T) {
 	t.Run("R-STOR-049 a project the caller is no member of stays hidden with its figure", func(t *testing.T) {
 		if w := projectsSetup(t, member).get("/api/v1/projects/docs"); w.Code != 404 {
 			t.Errorf("%d %s", w.Code, w.Body)
+		}
+	})
+}
+
+// R-API-077: the lookup answers what a member's row shows: a user with its display name, the ID that seeds its avatar and the
+// path of its uploaded avatar, never an e-mail address; a service account with its project. The project's own accounts are found
+// by its Owner; the instance-wide ones only by a holder of identities:read. kind narrows, repeated or comma-separated.
+func TestR_API_077_TheLookupAnswersWhatARowShows(t *testing.T) {
+	owner := projectCaller{members: map[string]authz.ProjectRole{"web": authz.ProjectRoleOwner}, owns: map[string]bool{"web": true}}
+	read := func(t *testing.T, c projectCaller, query string) []map[string]any {
+		t.Helper()
+		w := projectsSetup(t, c).get("/api/v1/projects/web/principals?" + query)
+		if w.Code != 200 {
+			t.Fatalf("%d %s", w.Code, w.Body)
+		}
+		var page struct{ Items []map[string]any }
+		if err := json.Unmarshal(w.Body.Bytes(), &page); err != nil {
+			t.Fatal(err)
+		}
+		return page.Items
+	}
+	t.Run("R-API-077 a user carries its display name and avatar, a service account its project", func(t *testing.T) {
+		items := read(t, owner, "q=al")
+		if len(items) != 3 {
+			t.Fatalf("%v", items)
+		}
+		u := items[0]
+		if u["principal"] != "user:al-x" || u["displayName"] != "Al X" || u["id"] != "u-1" || u["avatarUrl"] != "/api/v1/avatars/ab12" {
+			t.Errorf("user: %v", u)
+		}
+		for _, key := range []string{"email", "status", "origin", "lastLoginAt"} {
+			if _, has := u[key]; has {
+				t.Errorf("the user carries %s: %v", key, u)
+			}
+		}
+		if sa := items[2]; sa["principal"] != "sa:web/al-bot" || sa["project"] != "web" {
+			t.Errorf("service account: %v", sa)
+		}
+	})
+	t.Run("R-API-077 the instance-wide accounts are found by a holder of identities:read only", func(t *testing.T) {
+		for _, it := range read(t, owner, "q=al&kind=service_account") {
+			if it["principal"] == "sa:al-ci" {
+				t.Errorf("the Owner found an instance-wide account: %v", it)
+			}
+		}
+		admin := projectCaller{caps: map[string]bool{"identities:read": true}}
+		items := read(t, admin, "q=al&kind=service_account")
+		if len(items) != 2 || items[1]["principal"] != "sa:al-ci" {
+			t.Errorf("identities:read: %v", items)
+		}
+	})
+	t.Run("R-API-077 kind narrows, comma-separated", func(t *testing.T) {
+		items := read(t, owner, "q=al&kind=user,group")
+		if len(items) != 2 || items[0]["kind"] != "user" || items[1]["kind"] != "group" {
+			t.Errorf("%v", items)
 		}
 	})
 }

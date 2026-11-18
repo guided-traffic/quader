@@ -55,15 +55,6 @@
         <target>Seine <ph id="0" equiv="count" disp="count"/> Zuordnungen und deren Prinzipale werden mit gelöscht.</target>
       </segment>
     </unit>
-    <unit id="project-dialog.no-owners">
-      <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:92,94</note>
-      </notes>
-      <segment>
-        <source> No Owner yet. Users and groups can own a project; members are added on the project&apos;s screen. </source>
-        <target> Noch kein Eigentümer. Benutzer und Gruppen können ein Projekt besitzen; Mitglieder werden auf der Seite des Projekts hinzugefügt. </target>
-      </segment>
-    </unit>
     <unit id="switcher.search">
       <notes>
         <note category="location">src/app/features/projects/project-switcher.ts:54,55</note>
@@ -1420,8 +1411,8 @@
         <note category="location">src/app/features/projects/project-member-dialog.ts:30,32</note>
       </notes>
       <segment>
-        <source>Find a user or group</source>
-        <target>Benutzer oder Gruppe suchen</target>
+        <source>User or group</source>
+        <target>Benutzer oder Gruppe</target>
       </segment>
     </unit>
     <unit id="ansible.imports.caption">
@@ -1440,15 +1431,6 @@
       <segment>
         <source>Repositories and patterns</source>
         <target>Repositories und Muster</target>
-      </segment>
-    </unit>
-    <unit id="policy.try-principal-hint">
-      <notes>
-        <note category="location">src/app/features/permissions/policy-editor.html:290,291</note>
-      </notes>
-      <segment>
-        <source>for example user:alice</source>
-        <target>zum Beispiel user:alice</target>
       </segment>
     </unit>
     <unit id="repo.list.empty">
@@ -5469,15 +5451,6 @@
         <target>Inline-Berechtigungen</target>
       </segment>
     </unit>
-    <unit id="picker.results">
-      <notes>
-        <note category="location">src/app/features/projects/principal-picker.ts:99</note>
-      </notes>
-      <segment>
-        <source>Matching users and groups</source>
-        <target>Passende Benutzer und Gruppen</target>
-      </segment>
-    </unit>
     <unit id="job.progress.label">
       <notes>
         <note category="location">src/app/shared/job-progress.ts:95</note>
@@ -5830,15 +5803,6 @@
       <segment>
         <source>One per line. Immutable ID claims only. Empty: project_id, namespace_id, job_project_id and job_namespace_id.</source>
         <target>Eine pro Zeile. Nur unveränderliche ID-Claims. Leer: project_id, namespace_id, job_project_id und job_namespace_id.</target>
-      </segment>
-    </unit>
-    <unit id="picker.failed">
-      <notes>
-        <note category="location">src/app/features/projects/principal-picker.ts:132</note>
-      </notes>
-      <segment>
-        <source>The search failed. Try again.</source>
-        <target>Die Suche ist fehlgeschlagen. Versuchen Sie es erneut.</target>
       </segment>
     </unit>
     <unit id="problem.not_found">
@@ -7201,8 +7165,8 @@
         <note category="location">src/app/features/groups/group-detail.html:113,115</note>
       </notes>
       <segment>
-        <source>A user name, or sa:name for a service account</source>
-        <target>Ein Benutzername oder sa:name für ein Servicekonto</target>
+        <source>A user or a service account: type its name.</source>
+        <target>Ein Benutzer oder ein Servicekonto: Geben Sie den Namen ein.</target>
       </segment>
     </unit>
     <unit id="ansible.tombstones.intro">
@@ -10736,15 +10700,6 @@
         <target>Widerrufen</target>
       </segment>
     </unit>
-    <unit id="ci.editor.groups-add">
-      <notes>
-        <note category="location">src/app/features/ci/mapping-editor.html:170,171</note>
-      </notes>
-      <segment>
-        <source>Add a group</source>
-        <target>Gruppe hinzufügen</target>
-      </segment>
-    </unit>
     <unit id="dashboard.objects">
       <notes>
         <note category="location">src/app/features/system/dashboard.html:250,251</note>
@@ -11509,15 +11464,6 @@
         <target>Paket</target>
       </segment>
     </unit>
-    <unit id="ci.editor.groups-loading">
-      <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:114</note>
-      </notes>
-      <segment>
-        <source>Loading groups…</source>
-        <target>Gruppen werden geladen …</target>
-      </segment>
-    </unit>
     <unit id="problem.package_owned_by_other_owner">
       <notes>
         <note category="location">src/app/core/http/problem-messages.ts:123</note>
@@ -11534,15 +11480,6 @@
       <segment>
         <source>Open sessions of this user.</source>
         <target>Offene Sitzungen dieses Benutzers.</target>
-      </segment>
-    </unit>
-    <unit id="policy.find-principal">
-      <notes>
-        <note category="location">src/app/features/permissions/policy-editor.html:133,134</note>
-      </notes>
-      <segment>
-        <source>Find a user or group</source>
-        <target>Benutzer oder Gruppe suchen</target>
       </segment>
     </unit>
     <unit id="pkg.version-count">
@@ -12544,8 +12481,8 @@
         <note category="location">src/app/features/permissions/policy-list.html:30,32</note>
       </notes>
       <segment>
-        <source>user:name, group:name or sa:name</source>
-        <target>user:name, group:name oder sa:name</target>
+        <source>A user, a group or a service account: type its name.</source>
+        <target>Ein Benutzer, eine Gruppe oder ein Servicekonto: Geben Sie den Namen ein.</target>
       </segment>
     </unit>
     <unit id="bastion.tokens-caption">
@@ -13739,8 +13676,8 @@
         <note category="location">src/app/features/audit/audit-log.html:60</note>
       </notes>
       <segment>
-        <source>Actor (name or ID)</source>
-        <target>Akteur (Name oder ID)</target>
+        <source>Actor</source>
+        <target>Akteur</target>
       </segment>
     </unit>
     <unit id="audit.col.action">
@@ -15593,15 +15530,6 @@
         <target>Befund als triage-bedürftig markieren</target>
       </segment>
     </unit>
-    <unit id="picker.none">
-      <notes>
-        <note category="location">src/app/features/projects/principal-picker.ts:42,44</note>
-      </notes>
-      <segment>
-        <source>No user or group matches.</source>
-        <target>Kein Benutzer und keine Gruppe passt.</target>
-      </segment>
-    </unit>
     <unit id="bastion.delete">
       <notes>
         <note category="location">src/app/features/bastions/bastion-card.ts:77,78</note>
@@ -15662,8 +15590,8 @@
         <note category="location">src/app/features/roles/role-bindings.html:84,86</note>
       </notes>
       <segment>
-        <source>user:name, group:name or sa:name</source>
-        <target>user:name, group:name oder sa:name</target>
+        <source>A user, a group or a service account: type its name.</source>
+        <target>Ein Benutzer, eine Gruppe oder ein Servicekonto: Geben Sie den Namen ein.</target>
       </segment>
     </unit>
     <unit id="ci.issuers.col.kind">
@@ -15709,15 +15637,6 @@
       <segment>
         <source>Dismiss</source>
         <target>Verwerfen</target>
-      </segment>
-    </unit>
-    <unit id="project-dialog.find-owner">
-      <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:109,111</note>
-      </notes>
-      <segment>
-        <source>Find a user or group</source>
-        <target>Benutzer oder Gruppe suchen</target>
       </segment>
     </unit>
     <unit id="general.visibility.summary-public">
@@ -18691,15 +18610,6 @@
         <target>Die Zuordnung, von der Sie kommen</target>
       </segment>
     </unit>
-    <unit id="project-dialog.remove-owner">
-      <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:101,102</note>
-      </notes>
-      <segment>
-        <source>Remove owner</source>
-        <target>Eigentümer entfernen</target>
-      </segment>
-    </unit>
     <unit id="ep.rule.enabled">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:155</note>
@@ -21554,15 +21464,6 @@
         <target>Aktivieren</target>
       </segment>
     </unit>
-    <unit id="policy.find-principal-hint">
-      <notes>
-        <note category="location">src/app/features/permissions/policy-editor.html:136,137</note>
-      </notes>
-      <segment>
-        <source>Type at least two characters of the name. The match becomes a new entry.</source>
-        <target>Geben Sie mindestens zwei Zeichen des Namens ein. Der Treffer wird ein neuer Eintrag.</target>
-      </segment>
-    </unit>
     <unit id="problem.last_admin">
       <notes>
         <note category="location">src/app/core/http/problem-messages-access.ts:34</note>
@@ -22457,15 +22358,6 @@
       <segment>
         <source>This address does not lead to a page of this application.</source>
         <target>Diese Adresse führt zu keiner Seite dieser Anwendung.</target>
-      </segment>
-    </unit>
-    <unit id="project-dialog.owners-label">
-      <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:204</note>
-      </notes>
-      <segment>
-        <source>First Owners of the project</source>
-        <target>Erste Eigentümer des Projekts</target>
       </segment>
     </unit>
     <unit id="ci.op.glob">
@@ -26862,15 +26754,6 @@
       <segment>
         <source>The documentation of this version is not available.</source>
         <target>Die Dokumentation dieser Version ist nicht verfügbar.</target>
-      </segment>
-    </unit>
-    <unit id="picker.searching">
-      <notes>
-        <note category="location">src/app/features/projects/principal-picker.ts:40,41</note>
-      </notes>
-      <segment>
-        <source>Searching.</source>
-        <target>Suche läuft.</target>
       </segment>
     </unit>
     <unit id="repo.move.hint">
@@ -31893,8 +31776,8 @@
         <note category="location">src/app/features/permissions/policy-editor.html:99,101</note>
       </notes>
       <segment>
-        <source>user:name, group:name or sa:name</source>
-        <target>user:name, group:name oder sa:name</target>
+        <source>A user, a group or a service account: type its name.</source>
+        <target>Ein Benutzer, eine Gruppe oder ein Servicekonto: Geben Sie den Namen ein.</target>
       </segment>
     </unit>
     <unit id="vuln.trend.show-table">
@@ -33401,8 +33284,8 @@
         <note category="location">src/app/features/tokens/token-admin.html:30,32</note>
       </notes>
       <segment>
-        <source>me, a user name or sa:name</source>
-        <target>me, ein Benutzername oder sa:name</target>
+        <source>A user or a service account: type its name.</source>
+        <target>Ein Benutzer oder ein Servicekonto: Geben Sie den Namen ein.</target>
       </segment>
     </unit>
     <unit id="repo.content.oci-remote-note">
@@ -34195,6 +34078,168 @@
       <segment>
         <source>no group claim</source>
         <target>keinen Gruppen-Claim</target>
+      </segment>
+    </unit>
+    <unit id="ci.editor.groups-hint">
+      <notes>
+        <note category="location">src/app/features/ci/mapping-editor.html:178,181</note>
+      </notes>
+      <segment>
+        <source>Type the name of a group.</source>
+        <target>Geben Sie den Namen einer Gruppe ein.</target>
+      </segment>
+    </unit>
+    <unit id="group.kind-account">
+      <notes>
+        <note category="location">src/app/features/groups/group-detail.html:91,93</note>
+      </notes>
+      <segment>
+        <source>Service account</source>
+        <target>Servicekonto</target>
+      </segment>
+    </unit>
+    <unit id="project-dialog.owners-hint">
+      <notes>
+        <note category="location">src/app/features/projects/project-dialog.ts:103,107</note>
+      </notes>
+      <segment>
+        <source>Users and groups can own a project; members are added on the project&apos;s screen.</source>
+        <target>Benutzer und Gruppen können ein Projekt besitzen; Mitglieder werden auf der Seite des Projekts hinzugefügt.</target>
+      </segment>
+    </unit>
+    <unit id="project-members.find-hint">
+      <notes>
+        <note category="location">src/app/features/projects/project-member-dialog.ts:41,43</note>
+      </notes>
+      <segment>
+        <source>Type a name or a username.</source>
+        <target>Geben Sie einen Namen oder einen Benutzernamen ein.</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.failed">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:430</note>
+      </notes>
+      <segment>
+        <source>The search failed. Change the text to try again.</source>
+        <target>Die Suche ist fehlgeschlagen. Ändern Sie den Text, um es erneut zu versuchen.</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.searching">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:431</note>
+      </notes>
+      <segment>
+        <source>Searching…</source>
+        <target>Suche läuft …</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.none-user">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:436</note>
+      </notes>
+      <segment>
+        <source>Nobody matches “<ph id="0" equiv="text" disp="text"/>”. A person can be found after their first sign-in.</source>
+        <target>Niemand passt zu „<ph id="0" equiv="text" disp="text"/>“. Eine Person ist nach ihrer ersten Anmeldung zu finden.</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.none">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:437</note>
+      </notes>
+      <segment>
+        <source>Nothing matches “<ph id="0" equiv="text" disp="text"/>”.</source>
+        <target>Nichts passt zu „<ph id="0" equiv="text" disp="text"/>“.</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.more">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:441</note>
+      </notes>
+      <segment>
+        <source>More match. Type more of the name.</source>
+        <target>Es gibt weitere Treffer. Geben Sie mehr vom Namen ein.</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.one-match">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:450</note>
+      </notes>
+      <segment>
+        <source>1 match.</source>
+        <target>1 Treffer.</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.matches">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:450</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> matches.</source>
+        <target><ph id="0" equiv="count" disp="n"/> Treffer.</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.list">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:485</note>
+      </notes>
+      <segment>
+        <source>Matches for <ph id="0" equiv="field" disp="this.label()"/></source>
+        <target>Treffer für <ph id="0" equiv="field" disp="this.label()"/></target>
+      </segment>
+    </unit>
+    <unit id="principal-field.chosen">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:489</note>
+      </notes>
+      <segment>
+        <source>Chosen for <ph id="0" equiv="field" disp="this.label()"/></source>
+        <target>Gewählt für <ph id="0" equiv="field" disp="this.label()"/></target>
+      </segment>
+    </unit>
+    <unit id="principal-field.remove">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:493</note>
+      </notes>
+      <segment>
+        <source>Remove <ph id="0" equiv="name" disp="this.primaryOf(c)"/></source>
+        <target><ph id="0" equiv="name" disp="this.primaryOf(c)"/> entfernen</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.kind-group">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:508</note>
+      </notes>
+      <segment>
+        <source>Group</source>
+        <target>Gruppe</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.kind-other">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:509</note>
+      </notes>
+      <segment>
+        <source>CI identity</source>
+        <target>CI-Identität</target>
+      </segment>
+    </unit>
+    <unit id="principal-field.kind-project-account">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:511</note>
+      </notes>
+      <segment>
+        <source>Service account of <ph id="0" equiv="project" disp="c.project"/></source>
+        <target>Servicekonto von <ph id="0" equiv="project" disp="c.project"/></target>
+      </segment>
+    </unit>
+    <unit id="principal-field.kind-account">
+      <notes>
+        <note category="location">src/app/shared/ui/principal-field.ts:512</note>
+      </notes>
+      <segment>
+        <source>Service account</source>
+        <target>Servicekonto</target>
       </segment>
     </unit>
   </file>

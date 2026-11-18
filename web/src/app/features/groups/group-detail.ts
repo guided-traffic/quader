@@ -19,6 +19,8 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { groupOriginLabel } from './group-list';
 import { PageHeader } from '../../shared/ui/page-header';
+import { QuaderAvatar } from '../../shared/ui/avatar';
+import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
 
 /**
  * One group (R-UI-025): name, description and auto-join; members with their sources, where only
@@ -29,7 +31,7 @@ import { PageHeader } from '../../shared/ui/page-header';
  */
 @Component({
   selector: 'quader-group-detail',
-  imports: [PageHeader, DatePipe, Checkbox, RouterLink, ErrorNotice, Needs, SelectField, Disclosure, TextField],
+  imports: [PageHeader, DatePipe, Checkbox, RouterLink, ErrorNotice, Needs, PrincipalField, QuaderAvatar, SelectField, Disclosure, TextField],
   templateUrl: './group-detail.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -48,6 +50,21 @@ import { PageHeader } from '../../shared/ui/page-header';
       .row {
         grid-template-columns: minmax(0, 1fr);
       }
+    }
+    /* A service account has no picture: its icon on the neutral fill, in the place and the size of an avatar (th.person). */
+    .avatar.account {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--quader-badge-neutral-bg);
+      color: var(--quader-badge-neutral-fg);
+    }
+    .avatar.account .material-icons {
+      font-size: 1.25rem;
+    }
+    .secondary {
+      color: var(--quader-text-muted);
+      font: var(--quader-type-body-small);
     }
   `,
 })
@@ -75,7 +92,13 @@ export class GroupDetail {
   protected readonly newName = signal('');
   protected readonly description = signal('');
   protected readonly autoJoin = signal(false);
-  protected readonly newMember = signal('');
+  /** The member to add, chosen from the shared field (R-UI-150): a user or an instance-wide service account (Q-AUTHZ-175). */
+  protected readonly newMember = signal<readonly string[]>([]);
+  protected readonly memberKinds = ['user', 'service_account'] as const;
+  /** The members of the loaded page as references, which the field does not offer again. */
+  protected readonly memberRefs = computed(() =>
+    this.members.items().map((m) => (m.kind === 'user' ? refOf('user', m.principal) : m.principal)),
+  );
   protected readonly sourceFilter = signal('');
   protected readonly busy = signal(false);
   protected readonly originLabel = groupOriginLabel;
@@ -210,10 +233,13 @@ export class GroupDetail {
 
   protected async addMember(event: Event): Promise<void> {
     event.preventDefault();
-    const principal = this.newMember().trim();
-    if (!principal) return;
+    const ref = this.newMember()[0];
+    if (!ref) return;
+    // The members API names a user by its username and a service account by sa:<name>.
+    const chosen = choiceFromRef(ref);
+    const principal = chosen.kind === 'user' ? chosen.name : ref;
     await this.changeMembers({ add: [principal] }, $localize`:@@group.member-added:Member added.`, () =>
-      this.newMember.set(''),
+      this.newMember.set([]),
     );
   }
 
@@ -251,6 +277,11 @@ export class GroupDetail {
     if (source === 'auto') return $localize`:@@group.src.auto:Auto-join`;
     if (source === 'scim') return 'SCIM';
     return $localize`:@@group.src.provider:Identity provider`;
+  }
+
+  /** A member's name as its row shows it: a user's display name, else the username or the account's name. */
+  protected memberName(m: GroupMember): string {
+    return (m.kind === 'user' && m.displayName) || m.principal.replace(/^sa:/, '');
   }
 
   protected memberLink(m: GroupMember): string[] | null {

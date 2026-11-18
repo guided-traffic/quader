@@ -2250,14 +2250,17 @@ func (e PermissionPolicyInputResourceType) Valid() bool {
 
 // Defines values for ProjectPrincipalKind.
 const (
-	ProjectPrincipalKindGroup ProjectPrincipalKind = "group"
-	ProjectPrincipalKindUser  ProjectPrincipalKind = "user"
+	ProjectPrincipalKindGroup          ProjectPrincipalKind = "group"
+	ProjectPrincipalKindServiceAccount ProjectPrincipalKind = "service_account"
+	ProjectPrincipalKindUser           ProjectPrincipalKind = "user"
 )
 
 // Valid indicates whether the value is a known member of the ProjectPrincipalKind enum.
 func (e ProjectPrincipalKind) Valid() bool {
 	switch e {
 	case ProjectPrincipalKindGroup:
+		return true
+	case ProjectPrincipalKindServiceAccount:
 		return true
 	case ProjectPrincipalKindUser:
 		return true
@@ -4107,14 +4110,17 @@ func (e ListProjectPermissionPoliciesParamsSort) Valid() bool {
 
 // Defines values for LookupProjectPrincipalsParamsKind.
 const (
-	LookupProjectPrincipalsParamsKindGroup LookupProjectPrincipalsParamsKind = "group"
-	LookupProjectPrincipalsParamsKindUser  LookupProjectPrincipalsParamsKind = "user"
+	LookupProjectPrincipalsParamsKindGroup          LookupProjectPrincipalsParamsKind = "group"
+	LookupProjectPrincipalsParamsKindServiceAccount LookupProjectPrincipalsParamsKind = "service_account"
+	LookupProjectPrincipalsParamsKindUser           LookupProjectPrincipalsParamsKind = "user"
 )
 
 // Valid indicates whether the value is a known member of the LookupProjectPrincipalsParamsKind enum.
 func (e LookupProjectPrincipalsParamsKind) Valid() bool {
 	switch e {
 	case LookupProjectPrincipalsParamsKindGroup:
+		return true
+	case LookupProjectPrincipalsParamsKindServiceAccount:
 		return true
 	case LookupProjectPrincipalsParamsKindUser:
 		return true
@@ -4326,11 +4332,12 @@ func (e ListRepositoriesParamsView) Valid() bool {
 
 // Defines values for GetSearchSuggestionsParamsKind.
 const (
-	GetSearchSuggestionsParamsKindGroup      GetSearchSuggestionsParamsKind = "group"
-	GetSearchSuggestionsParamsKindPackage    GetSearchSuggestionsParamsKind = "package"
-	GetSearchSuggestionsParamsKindProject    GetSearchSuggestionsParamsKind = "project"
-	GetSearchSuggestionsParamsKindRepository GetSearchSuggestionsParamsKind = "repository"
-	GetSearchSuggestionsParamsKindUser       GetSearchSuggestionsParamsKind = "user"
+	GetSearchSuggestionsParamsKindGroup          GetSearchSuggestionsParamsKind = "group"
+	GetSearchSuggestionsParamsKindPackage        GetSearchSuggestionsParamsKind = "package"
+	GetSearchSuggestionsParamsKindProject        GetSearchSuggestionsParamsKind = "project"
+	GetSearchSuggestionsParamsKindRepository     GetSearchSuggestionsParamsKind = "repository"
+	GetSearchSuggestionsParamsKindServiceAccount GetSearchSuggestionsParamsKind = "service_account"
+	GetSearchSuggestionsParamsKindUser           GetSearchSuggestionsParamsKind = "user"
 )
 
 // Valid indicates whether the value is a known member of the GetSearchSuggestionsParamsKind enum.
@@ -4343,6 +4350,8 @@ func (e GetSearchSuggestionsParamsKind) Valid() bool {
 	case GetSearchSuggestionsParamsKindProject:
 		return true
 	case GetSearchSuggestionsParamsKindRepository:
+		return true
+	case GetSearchSuggestionsParamsKindServiceAccount:
 		return true
 	case GetSearchSuggestionsParamsKindUser:
 		return true
@@ -6539,6 +6548,14 @@ type GroupList struct {
 
 // GroupMember defines model for GroupMember.
 type GroupMember struct {
+	// AvatarUrl The path of a user's uploaded avatar, `null` for none. Not on the answer of a write.
+	AvatarUrl *string `json:"avatarUrl,omitempty"`
+
+	// DisplayName The display name of a user; `null` for none and for a service account. Not on the answer of a write.
+	DisplayName *string `json:"displayName,omitempty"`
+
+	// Id The ID of the principal, the seed of a user's generated avatar (R-UI-151). Not on the answer of a write.
+	Id   *string         `json:"id,omitempty"`
 	Kind GroupMemberKind `json:"kind"`
 
 	// Principal The username, or `sa:<name>` for a service account.
@@ -8136,13 +8153,27 @@ type ProjectList struct {
 	NextCursor *string `json:"nextCursor"`
 }
 
-// ProjectPrincipal defines model for ProjectPrincipal.
+// ProjectPrincipal A principal the lookup of a project found (Q-AUTHZ-182): what a member's row shows and the reference to write. No e-mail
+// address, status, origin or sign-in time.
 type ProjectPrincipal struct {
+	// AvatarUrl The path of a user's uploaded avatar (`/api/v1/avatars/<sha256>`), `null` for none. Only on a user.
+	AvatarUrl *string `json:"avatarUrl,omitempty"`
+
+	// DisplayName The display name of a user, `null` for none. Only on a user.
+	DisplayName *string `json:"displayName,omitempty"`
+
+	// Id The ID of a user, the seed of its generated avatar. Only on a user.
+	Id   *string              `json:"id,omitempty"`
 	Kind ProjectPrincipalKind `json:"kind"`
-	Name string               `json:"name"`
+
+	// Name The username, the group's name or the service account's name (`<project>/<name>` for a project's).
+	Name string `json:"name"`
 
 	// Principal The reference to put in a policy entry or a member.
 	Principal string `json:"principal"`
+
+	// Project The project of a service account, `null` for an instance-wide one. Only on a service account.
+	Project *string `json:"project,omitempty"`
 }
 
 // ProjectPrincipalKind defines model for ProjectPrincipal.Kind.
@@ -8853,11 +8884,12 @@ type ScopeSummary struct {
 // SearchSuggestions The suggestions of `getSearchSuggestions` (R-API-060, Q-API-271): one member per kind asked, absent for a kind not
 // asked.
 type SearchSuggestions struct {
-	Groups       *GroupSuggestions      `json:"groups,omitempty"`
-	Packages     *PackageSuggestions    `json:"packages,omitempty"`
-	Projects     *ProjectSuggestions    `json:"projects,omitempty"`
-	Repositories *RepositorySuggestions `json:"repositories,omitempty"`
-	Users        *UserSuggestions       `json:"users,omitempty"`
+	Groups          *GroupSuggestions          `json:"groups,omitempty"`
+	Packages        *PackageSuggestions        `json:"packages,omitempty"`
+	Projects        *ProjectSuggestions        `json:"projects,omitempty"`
+	Repositories    *RepositorySuggestions     `json:"repositories,omitempty"`
+	ServiceAccounts *ServiceAccountSuggestions `json:"serviceAccounts,omitempty"`
+	Users           *UserSuggestions           `json:"users,omitempty"`
 }
 
 // SecretField A secret member of a document (R-REPO-033). A request sends `value`, which is sealed at once, or
@@ -8917,6 +8949,25 @@ type ServiceAccountList struct {
 // ServiceAccountPatch The read-only members of `ServiceAccount` are accepted and ignored.
 type ServiceAccountPatch struct {
 	Description *string `json:"description,omitempty"`
+}
+
+// ServiceAccountSuggestion defines model for ServiceAccountSuggestion.
+type ServiceAccountSuggestion struct {
+	Description string `json:"description"`
+
+	// Name The stored name, `<project>/<name>` for an account of a project (Q-AUTHZ-209); the reference is `sa:<name>`.
+	Name string `json:"name"`
+
+	// Project The project of the account, `null` for an instance-wide one.
+	Project *string `json:"project"`
+}
+
+// ServiceAccountSuggestions defines model for ServiceAccountSuggestions.
+type ServiceAccountSuggestions struct {
+	Items []ServiceAccountSuggestion `json:"items"`
+
+	// More Another matching service account was left out.
+	More bool `json:"more"`
 }
 
 // Session defines model for Session.
@@ -9399,10 +9450,14 @@ type UserPatch struct {
 
 // UserSuggestion defines model for UserSuggestion.
 type UserSuggestion struct {
-	Disabled    bool               `json:"disabled"`
-	DisplayName *string            `json:"displayName"`
-	Id          openapi_types.UUID `json:"id"`
-	Username    string             `json:"username"`
+	// AvatarUrl The path of the user's uploaded avatar (`/api/v1/avatars/<sha256>`), `null` for none (R-UI-150).
+	AvatarUrl   *string `json:"avatarUrl"`
+	Disabled    bool    `json:"disabled"`
+	DisplayName *string `json:"displayName"`
+
+	// Id The ID of the user, the seed of its generated avatar.
+	Id       openapi_types.UUID `json:"id"`
+	Username string             `json:"username"`
 }
 
 // UserSuggestions defines model for UserSuggestions.
@@ -10857,11 +10912,11 @@ type ReplaceProjectPermissionPolicyParams struct {
 
 // LookupProjectPrincipalsParams defines parameters for LookupProjectPrincipals.
 type LookupProjectPrincipalsParams struct {
-	// Q The start of the name, 2 to 128 characters.
+	// Q The start of the name or of one of its words, 2 to 128 characters; compared lower-cased.
 	Q string `form:"q" json:"q"`
 
-	// Kind Restrict the result to users or to groups.
-	Kind *LookupProjectPrincipalsParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
+	// Kind The kinds to look up, repeated or comma-separated; every kind when absent.
+	Kind *[]LookupProjectPrincipalsParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
 
 	// Limit At most 20 (the default).
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
@@ -11229,7 +11284,7 @@ type GetSearchSuggestionsParams struct {
 	Q string `form:"q" json:"q"`
 
 	// Kind The kinds to suggest, repeated or comma-separated; `repository,package,project` when absent. An unknown kind answers
-	// `400 malformed_request`; `user` and `group` need `identities:read` (`403` otherwise).
+	// `400 malformed_request`; `user`, `group` and `service_account` need `identities:read` (`403` otherwise).
 	Kind *[]GetSearchSuggestionsParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
 
 	// Limit Suggestions per kind, 1 to 10; else `400 malformed_request`.
@@ -12370,7 +12425,7 @@ type ServerInterface interface {
 	// ReplaceProjectPermissionPolicy Replace a permission policy of a project
 	// (PUT /api/v1/projects/{projectKey}/policies/{name})
 	ReplaceProjectPermissionPolicy(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, name string, params ReplaceProjectPermissionPolicyParams)
-	// LookupProjectPrincipals Look up users and groups to name in a project's policies
+	// LookupProjectPrincipals Look up users, groups and service accounts to name in a project
 	// (GET /api/v1/projects/{projectKey}/principals)
 	LookupProjectPrincipals(w http.ResponseWriter, r *http.Request, projectKey string, params LookupProjectPrincipalsParams)
 	// ListProjectRepositories List the repositories of a project
@@ -12532,7 +12587,7 @@ type ServerInterface interface {
 	// ListRoles List the system roles
 	// (GET /api/v1/roles)
 	ListRoles(w http.ResponseWriter, r *http.Request)
-	// GetSearchSuggestions Suggest repositories, packages, projects, users and groups for a text
+	// GetSearchSuggestions Suggest repositories, packages, projects, users, groups and service accounts for a text
 	// (GET /api/v1/search/suggestions)
 	GetSearchSuggestions(w http.ResponseWriter, r *http.Request, params GetSearchSuggestionsParams)
 	// ListServiceAccounts List service accounts
@@ -17931,7 +17986,7 @@ func (siw *ServerInterfaceWrapper) LookupProjectPrincipals(w http.ResponseWriter
 
 	// ------------- Optional query parameter "kind" -------------
 
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
 	if err != nil {
 		var requiredError *runtime.RequiredParameterError
 		if errors.As(err, &requiredError) {

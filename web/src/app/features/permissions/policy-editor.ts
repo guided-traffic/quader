@@ -8,7 +8,6 @@ import { newIdempotencyKey } from '../../api/client';
 import { LoadedPolicy, PermissionPolicyInput, PolicyApi, PolicyProblem, PolicyValidation } from '../../api/authz-api';
 import { ApiError } from '../../api/problem';
 import { ExplainDraft, Explanation, PolicyExplainer } from '../../api/policy-explainer';
-import { ProjectsApi } from '../../api/projects-api';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { describeAccessProblem } from '../../core/http/problem-messages-access';
 import { Notifier } from '../../core/notifier';
@@ -21,7 +20,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { ConflictResolver } from '../../shared/conflict-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { ProjectNeeds, createState } from '../projects/project-access';
-import { PickablePrincipal, PrincipalPicker } from '../projects/principal-picker';
+import { PrincipalField } from '../../shared/ui/principal-field';
 import { SetVerdict, verdict } from './glob';
 import { PolicyDiffDialog } from './policy-diff-dialog';
 import {
@@ -62,7 +61,7 @@ export const PREVIEW_DEBOUNCE_MS = 500;
     Disclosure,
     ErrorNotice,
     Needs,
-    PrincipalPicker,
+    PrincipalField,
     ProjectNeeds,
     SelectField,
     TextField,
@@ -80,7 +79,6 @@ export class PolicyEditor {
   readonly project = input<string | undefined>();
 
   private readonly api = inject(PolicyApi);
-  private readonly projectsApi = inject(ProjectsApi);
   private readonly repositoriesApi = inject(RepositoriesApi);
   private readonly explainer = inject(PolicyExplainer);
   private readonly dialog = inject(QuaderDialog);
@@ -135,11 +133,12 @@ export class PolicyEditor {
   });
   /** The repositories of the project, offered as selectors (Q-AUTHZ-179: a project policy covers nothing else). */
   protected readonly projectRepositories = signal<readonly string[]>([]);
-  protected readonly lookupPrincipals = async (text: string): Promise<readonly PickablePrincipal[]> => {
-    const key = this.policyProject();
-    if (!key) return [];
-    return (await this.projectsApi.lookupPrincipals(key, text)).map((p) => ({ ref: p.principal, kind: p.kind }));
-  };
+  /**
+   * An entry names a user, a group or a service account from the shared field (R-UI-150): in a project policy through the
+   * project's lookup, which offers the project's own accounts; in a global policy through the admin area's search, which offers
+   * the instance-wide ones (Q-AUTHZ-175).
+   */
+  protected readonly principalKinds = ['user', 'group', 'service_account'] as const;
   protected readonly form = computed<PolicyForm>(() => ({
     name: this.policyName(),
     description: this.description(),
@@ -195,7 +194,8 @@ export class PolicyEditor {
   });
 
   // "Try it".
-  protected readonly askPrincipal = signal('');
+  /** The principal of "Try it", one choice of the shared field. */
+  protected readonly askPrincipal = signal<readonly string[]>([]);
   protected readonly askRepository = signal('');
   protected readonly askAction = signal('read');
   protected readonly explanation = signal<Explanation | null>(null);
@@ -286,11 +286,6 @@ export class PolicyEditor {
     if (!lines(this.repositories()).includes(key)) {
       this.repositories.update((text) => (text.trim() === '' ? key : `${text.replace(/\s+$/, '')}\n${key}`));
     }
-  }
-
-  /** A user or group found through the project lookup becomes a new entry with read access. */
-  protected addFound(principal: string): void {
-    this.entries.update((list) => (list.some((e) => e.principal === principal) ? list : [...list, newRow(principal)]));
   }
 
   protected entryPrincipals(): readonly string[] {
@@ -449,7 +444,7 @@ export class PolicyEditor {
 
   protected async explain(event: Event): Promise<void> {
     event.preventDefault();
-    this.askMissing.set(this.askPrincipal().trim() === '' || this.askRepository().trim() === '');
+    this.askMissing.set(this.askPrincipal().length === 0 || this.askRepository().trim() === '');
     if (this.askMissing()) return;
     const v = this.validation();
     const draft: ExplainDraft = {
@@ -458,7 +453,7 @@ export class PolicyEditor {
       invalid: v === null || !v.valid,
     };
     const question = {
-      principal: this.askPrincipal().trim(),
+      principal: this.askPrincipal()[0] ?? '',
       repository: this.askRepository().trim(),
       action: this.askAction(),
     };

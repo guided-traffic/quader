@@ -89,6 +89,32 @@ project's objects inside it. It does not repeat the model of permissions ([permi
   `auto_join_member_conflict` and names the projects ([groups.go](../../internal/auth/principal/groups.go), `UpdateGroup`, query
   `IdentityGroupProjects`). The two checks run one after the other, so neither can pass on a state the other is changing.
 
+## What an Owner reads of the installation's people
+
+An Owner names its members and the principals of its policies in the shared principal field of the UI (R-UI-150), which searches
+the project's lookup `GET /api/v1/projects/{projectKey}/principals` ([Q-AUTHZ-182](../spec/authorization.md#q-authz-182--how-a-project-administrator-finds-the-users-and-groups-it-names),
+R-API-077, [lookup.go](../../internal/project/lookup.go), the `ProjectLookup*` statements of
+[project.sql](../../internal/meta/postgres/queries/project.sql)). This lets every Owner of every project read, by prefix, the
+username and the display name of every active user of the installation and the name of every active group; that is the gap
+[H-392](../spec/authorization.md#h-392--a-project-administrator-can-enumerate-user-and-group-names), widened on 2026-11-18 by the
+display name and the avatar so that the field shows a person's row. The bounds:
+
+- **Who.** An Owner of the addressed project through a credential that administers it (a session, a token with `admin: true`), or a
+  holder of `identities:read`. A Reader, a Developer and a Maintainer get 403, a caller who is no member 404, an anonymous caller 401.
+  An internal user who owns no project has no person search at all; the UI never falls back to another read (Q-UI-581).
+- **What leaves.** The kind, the name, the reference, and for a user its display name, its principal ID (the seed of its generated
+  avatar) and the path of its uploaded avatar; for a service account its project. Never the e-mail address, the status, the origin,
+  a sign-in time or a membership: those stay with `identities:read` and `GET /api/v1/users`. The avatar's path names a picture that
+  every authenticated caller may read anyway ([user-avatars.md](user-avatars.md)).
+- **What is never offered.** A disabled principal, the break-glass account and an auto-join group. Service accounts are the project's
+  own, which the Owner lists anyway; the instance-wide ones only to a holder of `identities:read`, which lists them anyway.
+- **How much.** A prefix of 2 characters or more, compared as the start of the name or of one of its words and never as a pattern, at
+  most 20 results per call, at most four statements per call, and the general rate limit of the `read` class (R-API-016).
+
+Outside a project, the fields of the admin area search through the suggestions of the search field (`GET /api/v1/search/suggestions`
+with the kinds `user`, `group` and `service_account`), which answer only to a holder of `identities:read` ([search.md](search.md)); a
+caller there reads nothing it could not list before.
+
 ## What keeps a project's objects inside it
 
 - **Selectors.** A project policy names repositories by bare key, key pattern or class, read in the project's context
@@ -156,7 +182,8 @@ drives every rule over HTTP as an Owner and as an administrator.
 The gaps of these mechanisms recorded on the spec pages are linked here; the ones only this page describes follow.
 
 - [H-392](../spec/authorization.md#h-392--a-project-administrator-can-enumerate-user-and-group-names): the lookup of users and
-  groups lists the names of every active user and group by prefix, now to every Owner.
+  groups lists the username and the display name of every active user and the name of every active group by prefix to every Owner;
+  since 2026-11-18 with the display name and the avatar's path (see [What an Owner reads of the installation's people](#what-an-owner-reads-of-the-installations-people)).
 - [H-393](../spec/authorization.md#h-393--a-project-administrator-with-managerepositories-probes-the-addresses-the-outbound-rules-allow):
   the upstream test of a project's remote repository (it extends [H-282](egress.md#h-282--the-upstream-test-tells-a-holder-of-repositorieswrite-config-what-it-sees-of-an-address)).
 - [H-394](../spec/authorization.md#h-394--whoever-controls-a-project-administrator-group-administers-the-project): whoever controls

@@ -2125,6 +2125,72 @@ Acceptance criteria (`TestR_AUTHZ_037_RestrictedLevels`, "R-API-076 every signed
 restricted, the project's Owner reads `"mayChooseRestricted": false` and the administrator `true`; without a credential the read
 answers 401.
 
+### R-API-077 · The principal lookup of a project answers what a member's row shows
+Priority: **MVP** · Covers: quader-only
+
+The owner's W-12 (2026-11-18): a person is chosen from a search that shows the people it found, each with the avatar, the name and
+the username (R-UI-150). Inside a project the search is the lookup of
+[Q-AUTHZ-182](authorization.md#q-authz-182--how-a-project-administrator-finds-the-users-and-groups-it-names),
+`GET /api/v1/projects/{projectKey}/principals?q=&kind=&limit=`, which its Owner and a holder of `identities:read` call; it keeps its
+callers, its minimum of 2 characters, its limit of 20 and the rate limit of its class
+([Q-API-336](#q-api-336--the-project-lookup-answers-the-rows-display-name-and-avatar-finds-the-projects-service-accounts-and-matches-words)):
+
+| Parameter | Meaning |
+|---|---|
+| `q` | Required. 2 to 128 characters after trimming; compared lower-cased as the start of the name or of one of its words, never as a pattern (`422 prefix_too_short`, `prefix_too_long`) |
+| `kind` | `user`, `group`, `service_account`; repeated or comma-separated; every kind when absent (`422 invalid_kind` for another) |
+| `limit` | 1 to 20, default 20 (`422 invalid_limit`) |
+
+```json
+{"items": [
+  {"kind": "user", "principal": "user:swantje", "name": "swantje", "displayName": "Swantje Wagner", "id": "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10", "avatarUrl": null},
+  {"kind": "group", "principal": "group:swat-team", "name": "swat-team"},
+  {"kind": "service_account", "principal": "sa:web/swagger-sync", "name": "web/swagger-sync", "project": "web"}
+]}
+```
+
+- **Matches.** A user matches when its username starts with `q`, or a word of its display name (split at white space) or of its
+  username (split at every character that is no letter or digit) does; a group by its name or a word of it; a service account by
+  its stored name, its name within the project, or a word of it. Ranked together: the name equal to `q`, then a name that starts with
+  it, then a word that does; within a rank users, groups, service accounts; then by name.
+- **What is never offered.** A disabled principal, the break-glass account (an emergency sign-in, not a person to grant to), and an
+  auto-join group, which a project neither takes as a member nor names in a policy (R-AUTHZ-026, Q-AUTHZ-200).
+- **Service accounts** are the project's own, which its Owner lists anyway (`GET /api/v1/projects/{projectKey}/service-accounts`),
+  and for a holder of `identities:read` also the instance-wide ones, which that capability lists anyway. Another project's accounts
+  are never offered: a project policy cannot name them (`422 principal_outside_project`).
+- **What an item holds.** The kind, the reference to write, the name; a user's display name, its ID (the seed of the generated
+  avatar, R-UI-002) and the path of its uploaded avatar (R-API-055); a service account's project. Never the e-mail address, a status,
+  an origin, a sign-in time or a membership.
+
+Schema: `ProjectPrincipal`, `ProjectPrincipalList`.
+
+Acceptance criteria (`TestR_AUTHZ_026_PrincipalLookupBounds` in `test/integration/projects`, `TestR_API_077_*` in
+`internal/api/v1` and `internal/project`): `q=swa&kind=user` finds the user whose display name is "Swantje Albers" by its word and
+answers its display name and ID without an e-mail address; `q=al` answers at most 20 and never a disabled user or an auto-join
+group; `kind=service_account` answers the Owner the project's account only and the administrator also the instance-wide one;
+`q=ops&kind=group` finds `al-ops` and `zed-ops` by a word; `q=ps` finds nothing; `kind=ci_mapping` answers 422.
+
+### R-API-078 · The admin area's principal search: service accounts and avatars in the suggestions
+Priority: **MVP** · Covers: quader-only
+
+Outside a project the fields that name a principal sit in the admin area, whose screens need `identities:read` or a capability every
+role that holds it pairs with `identities:read` (R-AUTHZ-010). They search through the suggestions of R-API-060, which answer the kinds
+`user` and `group` to that capability already, extended by
+[Q-API-335](#q-api-335--the-admin-areas-fields-search-through-the-suggestions-which-gain-service-accounts-and-the-avatar):
+
+- A new kind `service_account`, under the same rule as `user` and `group` (`identities:read`, else `403` before any lookup): the
+  active accounts of which every term is part of the stored name, ranked 0 equal, 1 starts with, 3 any other, then by name. An item is
+  `{"name", "description", "project"}`; `name` is the stored name (`<project>/<name>` for a project's account, the reference
+  `sa:<name>`), `project` `null` for an instance-wide one.
+- A user suggestion carries `avatarUrl` beside `id`, `username`, `displayName` and `disabled`.
+- The members of a group (`GET /api/v1/groups/{name}/members`, `identities:read`) carry each member's `id`, and a user's
+  `displayName` and `avatarUrl`, so a member's row shows what the field's row shows (R-UI-151). The answer of a write does not.
+
+Acceptance criteria (`TestR_API_060_TheAnswerHoldsAMemberPerKindAsked`, `TestR_API_061_TheAdminKindsAreRefusedBeforeAnyLookup`,
+`TestR_API_061_ASuggestionNamesOnlyWhatTheCallerMayRead` in `test/integration/search`): `kind=user,group,service_account` answers the
+members `users`, `groups` and `serviceAccounts`; `kind=service_account` without `identities:read` answers 403 the same for every `q`;
+the administrator's `q=bot&kind=service_account` names the instance-wide `bot` with `project: null`.
+
 ### R-API-058 · Operations that serve wiki content
 Priority: **MVP** · Covers: quader-only
 
@@ -2163,7 +2229,7 @@ The owner's task T-22 (2026-11-12): one search field with live suggestions for e
 | Parameter | Meaning |
 |---|---|
 | `q` | Required. The text, trimmed: 2 to 100 characters, else `400 malformed_request` with the pointer `q` |
-| `kind` | `repository`, `package`, `project`, `user`, `group`; repeated or comma-separated; default `repository,package,project`. An unknown kind answers `400 malformed_request` |
+| `kind` | `repository`, `package`, `project`, `user`, `group`, `service_account` (R-API-078); repeated or comma-separated; default `repository,package,project`. An unknown kind answers `400 malformed_request` |
 | `limit` | Suggestions per kind, 1 to 10, default 5 |
 
 ```json
@@ -2174,13 +2240,13 @@ The owner's task T-22 (2026-11-12): one search field with live suggestions for e
 }
 ```
 
-- One member per kind asked (`repositories`, `packages`, `projects`, `users`, `groups`), absent for a kind not asked; `items` in the
-  order of R-API-062, `more` by R-API-061. A user is `{"id", "username", "displayName", "disabled"}`, a group `{"name",
-  "description"}`; a package's `name` is its display name and `id` the identifier of `GET /api/v1/packages/{packageId}`
+- One member per kind asked (`repositories`, `packages`, `projects`, `users`, `groups`, `serviceAccounts`), absent for a kind not
+  asked; `items` in the order of R-API-062, `more` by R-API-061. A user is `{"id", "username", "displayName", "disabled",
+  "avatarUrl"}`, a group `{"name", "description"}`, a service account `{"name", "description", "project"}` (R-API-078); a package's `name` is its display name and `id` the identifier of `GET /api/v1/packages/{packageId}`
   ([Q-API-271](#q-api-271--the-answer-holds-one-typed-member-per-kind-and-no-cursor)).
 - Not a list of R-API-010: no `cursor`, `nextCursor` or `Link`. The results page reads the lists (R-UI-098).
 - Permission: any caller (`x-quader-permission: public: true`), decided in the handler by R-API-061. Without a credential `401`
-  while no repository's artifacts are `public`, as the lists answer. `kind` `user` or `group` needs `identities:read`; without it
+  while no repository's artifacts are `public`, as the lists answer. `kind` `user`, `group` or `service_account` needs `identities:read`; without it
   the answer is `403`, before any lookup and the same for every `q`
   ([Q-API-272](#q-api-272--users-and-groups-need-identitiesread-checked-before-any-lookup)).
 - Rate limit: the class `read` with a credential, `anonymous` without (R-API-016); no class of its own
@@ -2209,7 +2275,7 @@ decision point and the same index of the request:
 | repository | the caller may read it, by a grant, a role or its artifacts level (R-AUTHZ-035), or, holding `repositories:read-config`, the endpoint of the request exposes it; a repository being deleted is never in the index | `acc.Readable`, `acc.Exposed` for `repositories:read-config`, as `GET /api/v1/repositories` |
 | package | in a physical repository the caller reads whole (read shape `ReadAll`), one version is live and served; in one it reads in part (`ReadRows`), the caller may read the package's document and the repository's include and exclude patterns admit the name ([Q-API-275](#q-api-275--a-package-in-a-repository-read-in-part-is-decided-on-its-document)) | the read scope of `GET /api/v1/packages` (`authz.ReadScope`) |
 | project | the caller is a member, holds `projects:read`, or the project's level admits it (R-AUTHZ-035 rule 8) | the rule of `GET /api/v1/projects` |
-| user, group | the caller holds `identities:read` | the capability, checked before any lookup |
+| user, group, service account | the caller holds `identities:read` | the capability, checked before any lookup |
 
 - **Hidden existence holds.** `hideExistence` (R-AUTHZ-017) changes only the status of a refused read. A repository with
   `hideExistence: false` that the caller cannot read is suggested no more than any other. A virtual repository is suggested by its own
@@ -2251,6 +2317,7 @@ Priority: **MVP** · Covers: quader-only
 | package | the name starts with `q`, or every **word** of `q` begins a word of the name; a word is a run of `a` to `z` and `0` to `9` ([Q-API-274](#q-api-274--package-names-a-whole-name-prefix-on-a-c-collation-b-tree-and-word-prefixes-on-a-gin-tsvector-without-pg_trgm)) | 0 the name equals `q`; 1 the name starts with `q`; 2 by words | the name, byte order; then the format |
 | user | every term is part of the username or of the display name | 0 the username equals `q`; 1 the username starts with `q`; 2 the display name or one of its words starts with `q`; 3 any other | username |
 | group | every term is part of the name | 0 equal; 1 starts with `q`; 3 any other | name |
+| service account | every term is part of the stored name; active accounts only (R-API-078) | 0 equal; 1 starts with `q`; 3 any other | name |
 
 - A package matches on its stored name (`packages.name`, the format's normalized name) and shows its display name. A package held by
   several repositories is one entry, placed in the first of them by qualified name that the caller reads; these are local and
@@ -2302,7 +2369,7 @@ How each kind is read ([Q-API-273](#q-api-273--repositories-are-matched-over-the
 | repository | the repositories of the request's grant index, in memory; no statement | — | every active repository, 10,000 in the reference environment ([architecture.md](architecture.md) R-ARCH-027 P-15) |
 | project | one statement over `project`, as the project list | none | every project |
 | package | statement A: names that start with `q` in the repositories the caller reads whole or in part, as the range `low <= lower(p.name) COLLATE "C" < high`, where `low` is `q` and `high` the least string above every string that starts with `q`, ordered by the same expression, at most 200 rows; statement B, only when A found fewer than `limit + 1` readable packages: names whose words begin with the words of `q` (`p.name_words @@ to_tsquery('simple', 'w1:* & w2:*')`), without A's rows, at most 200 rows. Every row needs a live, served version: `EXISTS` over `package_version_listing` (`package_versions_live`), without the withheld versions of the formats, read as `GET /api/v1/packages` reads them. Both run in one transaction after `SET LOCAL plan_cache_mode = force_custom_plan` | A: `packages_name_lower`; B: `packages_name_words` | 400 candidate rows, one served-version check each |
-| user, group | one statement each over `principal` with `app_user` or `user_group`, `kind` fixed, `strpos` on the lower-cased columns, ranked in the statement and cut at `limit + 1` | none (`principal` is unique on `kind, name`) | every user or group |
+| user, group, service account | one statement each over `principal` with `app_user` (and `user_avatars` for the avatar), `user_group` or `service_account`, `kind` fixed, `strpos` on the lower-cased columns, ranked in the statement and cut at `limit + 1` | none (`principal` is unique on `kind, name`) | every user, group or service account |
 
 - The words of a tsquery are runs of `a` to `z` and `0` to `9` taken from `q`, so no operator of the tsquery syntax reaches the
   database; the name prefix is two bound values, not a pattern, so no character of `q` is an operator there either.
@@ -2808,7 +2875,7 @@ and groups are members with a role, [Q-AUTHZ-206](authorization.md#q-authz-206--
 | GET | `/api/v1/projects/{projectKey}/members` | The members (users and groups) with their roles | `projects:read`, or a member |
 | PUT | `/api/v1/projects/{projectKey}/members/{principalRef}` | Add a member or change its role, `{"role": "developer"}` (`reader`, `developer`, `maintainer` or `owner`); 409 `last_owner` when it demotes the last Owner ([Q-AUTHZ-217](authorization.md#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-quader)) | `projects:write`, or Owner; recent authentication |
 | DELETE | `/api/v1/projects/{projectKey}/members/{principalRef}` | Remove a member; 409 `last_owner` for the last Owner | as `PUT` |
-| GET | `/api/v1/projects/{projectKey}/principals?q=&kind=&limit=` | The users and groups whose name starts with `q`, to name as members and in policies | `identities:read`, or Owner |
+| GET | `/api/v1/projects/{projectKey}/principals?q=&kind=&limit=` | The users, groups and service accounts whose name or a word of it starts with `q`, with what a member's row shows, to name as members and in policies (R-API-077) | `identities:read`, or Owner |
 
 The members operations cover the user and group membership operations of ADMAPI-064 and ADMAPI-065. What a project
 holds is addressed below it and listed with its family: repositories, their sub-resources, the move and the upstream
@@ -4305,7 +4372,7 @@ Priority: **MVP** · Covers: UI-035, UI-036
   user's record in Quader with **Create user** ([Q-UI-573](#q-ui-573--the-button-that-makes-a-new-thing-says-new-thing-and-a-new-user-is-made-not-added)). No password
   fields exist.
 - `/admin/roles` lists the fixed roles of `GET /api/v1/roles` with their bindings and offers bind
-  and unbind.
+  and unbind; a binding's principal is chosen in the shared principal field (R-UI-150, R-UI-152).
 
 Acceptance criteria:
 
@@ -4330,8 +4397,8 @@ Priority: **MVP** · Covers: UI-037
 
 Acceptance criteria:
 
-- Adding a manual member through the editor makes `GET /api/v1/groups/{name}/members` list the user
-  with source `manual`.
+- Adding a manual member chosen in the shared principal field (R-UI-150) makes `GET /api/v1/groups/{name}/members` list the
+  user with source `manual`; a member's row shows its avatar, name and username (R-UI-151).
 
 ### R-UI-026 · Service accounts
 Priority: **MVP** · Covers: quader-only
@@ -4376,8 +4443,8 @@ Priority: **MVP** · Covers: UI-039, UI-040
   repository filled in, so the draft in the editor stays untouched.
 - Editor sections, following the policy model of
   [authorization.md](authorization.md): general (name on create only, description); principals
-  (users, groups, service accounts, CI identity mappings) through
-  searchable pickers; resources with a live "covers 4 repositories" preview, whose selectors take the form of the
+  (users, groups, service accounts) chosen per entry in the shared principal field (R-UI-150); a CI identity a stored entry names
+  shows as a chip and is not offered (Q-UI-583); resources with a live "covers 4 repositories" preview, whose selectors take the form of the
   policy's context: `<projectGlob>/<keyGlob>[:<format>]` or a class for a policy of no project, bare keys, key globs
   and classes of the project for a project's policy ([authorization.md](authorization.md) R-AUTHZ-004,
   [Q-AUTHZ-216](authorization.md#q-authz-216--repository-selectors-name-the-project-in-instance-contexts-and-a-bare-key-inside-a-project)); include and exclude
@@ -5069,14 +5136,16 @@ the model gives the screens:
   dashboard only.
 - Members screen (`/projects/{project}/members`, Q-UI-214, R-UI-142): the users and groups of the project with their roles, in the
   head and the table of every list, the number of members after the heading, read for every member; an Owner and an
-  administrator add a member through the principal lookup (Q-AUTHZ-182), change a role and remove a member. The last
+  administrator add a member chosen in the shared principal field over the project's lookup (R-UI-150, Q-AUTHZ-182), change a role
+  and remove a member. The last
   Owner cannot be removed or demoted except by an administrator: the action is shown disabled with the reason, and a
   `409 last_owner` from a concurrent change is reported as such
   ([Q-AUTHZ-217](authorization.md#q-authz-217--the-last-owner-of-a-project-is-removed-or-demoted-only-by-an-administrator-of-quader)).
 - For an Owner of a project, also without any capability, the project's side bar holds the project's administration (as
   for the delegates of Q-AUTHZ-181): its repositories (create in the project, edit, delete and move to another project
   it owns; R-UI-020, R-UI-021), its policies (`/projects/{project}/policies`, named within the project; the editor offers the
-  project's repositories as bare keys, key globs and classes, and the principal lookup), its service accounts
+  project's repositories as bare keys, key globs and classes, and names each entry's principal in the shared principal field over
+  the project's lookup, R-UI-150), its service accounts
   (`/projects/{project}/service-accounts`, named within the project, shown as `sa:<projectKey>/<name>`, listed through the
   project's route `GET /api/v1/projects/{projectKey}/service-accounts`, which admits the Owner, as the policies are, never
   through the instance-wide list, which needs `identities:read`; the admin area's filter by project takes the same route; create, enable, disable and delete) and their tokens (issue, with the lifetime cap and without a `system` scope, and revoke), its CI
@@ -6756,6 +6825,95 @@ Acceptance criteria:
   "No … matches." filtered, and the Bastions' empty state has no button; the jobs and the backups have the list head, chips and
   the drawer, and no form of their own.
 - The journeys that name a changed text use the new one (02, 03, 12, 16).
+
+### R-UI-150 · A principal is chosen from a search that shows the people it found
+Priority: **MVP** · Covers: quader-only
+
+The owner's W-12 (2026-11-18, at **System roles**, where a role was bound by typing `user:name`, `group:name` or `sa:name`): "a person
+is chosen through a person search that shows the possible people, everywhere a person search plays a role". His reference is the
+member field of his GitLab: one types "Swa", and under the field a row shows the avatar, the full name and under it the username of
+the match ([Q-UI-580](#q-ui-580--one-shared-field-names-a-principal-everywhere-and-nobody-types-a-reference)).
+
+- **One field**, `<quader-principal-field>` ([principal-field.ts](../../web/src/app/shared/ui/principal-field.ts)), names a user, a
+  group or a service account wherever the UI names one (R-UI-152). Nobody types a reference: the field holds the chosen principals as
+  chips (avatar or the kind's icon, the name, a remove button) and hands the reference to its form.
+- **While one types** it searches, from the second character and after a pause of 250 ms; an older answer that arrives late is
+  dropped. Under the field it lists the matches, each a row with the avatar (the uploaded picture, else the generated robot of
+  R-UI-002) or the kind's icon (a group, a service account), the display name or the name, and under it in the secondary type the
+  `@username`, **Group**, **Service account** or **Service account of `<project>`**
+  ([Q-UI-582](#q-ui-582--a-match-is-a-row-of-avatar-name-and-username-and-a-choice-is-a-chip)).
+- **Inputs:** the kinds (users; users and groups; users, groups and service accounts; groups; users and service accounts), one choice or
+  many, the project the principal is named in, the references already taken (not offered again), read-only.
+- **Where the matches come from** decides who may search, and the field never widens it
+  ([Q-UI-581](#q-ui-581--the-field-searches-what-its-caller-may-already-search)): with a project, the project's lookup
+  (R-API-077, its Owner and `identities:read`); without one, the suggestions of the admin area's kinds (R-API-078, `identities:read`).
+  The admin area offers the instance-wide service accounts, the accounts that a role, a group or a global policy can name; a filter by
+  owner or actor offers every account. A disabled user is not offered.
+- **Keyboard and assistive technology**, by the combobox pattern of WAI-ARIA with a listbox: the focus stays in the input,
+  `aria-activedescendant` names the active row; ↓ and ↑ move it, Enter takes it (and never submits the form around the field while
+  there is text), Escape closes the list and then empties the text, Backspace on an empty text removes the last chip of a field of
+  many. A polite live region says how many matches there are, or the state below.
+- **States** under the matches: "Searching…" until the first answer; "Nobody matches “Swa”. A person can be found after their first
+  sign-in." when no user matches (for a field without users, "Nothing matches “…”."); "More match. Type more of the name." when the
+  search left matches out; "The search failed. Change the text to try again." when it was refused or failed, with no stale row
+  ([Q-UI-585](#q-ui-585--a-person-who-has-never-signed-in-is-not-found-and-the-field-says-so)).
+- **A stored reference** the field cannot search is shown, never offered: a CI identity that a stored policy entry names reads
+  **CI identity** with its reference and can be removed
+  ([Q-UI-583](#q-ui-583--a-ci-identity-is-never-offered-a-stored-one-shows-as-a-chip)).
+
+Acceptance criteria:
+
+- Unit (`principal-field.spec.ts`): one character asks nothing; two ask once after the pause with the field's kinds; a match shows the
+  avatar, the display name and `@username`, a group its icon and **Group**; a disabled user is not offered; ↓ sets
+  `aria-activedescendant`, Enter takes the match (default prevented) and the chip replaces the input of a field of one; Escape closes
+  and then empties; many choices are chips and Backspace removes the last; nothing found, more and a failed search say so; with a
+  project the lookup answers with the field's kinds and the search API is not asked; the admin area offers instance-wide accounts and
+  a filter every account; a taken reference is not offered; the open list passes axe.
+- Unit, per place of R-UI-152 (`role-bindings.spec.ts`, `groups.spec.ts`, `policy-editor.spec.ts`, `policy-list-table.spec.ts`,
+  `project-screens.spec.ts`, `project-members.spec.ts`, `projects.spec.ts`, `ci-editor-screens.spec.ts`, `audit-log.spec.ts`,
+  `token-admin.spec.ts`, `user-list-table.spec.ts`, `users.spec.ts`): the principal is chosen from the search and the write or the
+  filter carries the form the API takes.
+- Rendered (rule 11): `admin-roles` and `admin-group` with the state `search` (the matches open under **Bind to** and **Add a member**),
+  as administrator, light and dark, at 1440 and 390 px.
+
+### R-UI-151 · A member of a group shows its avatar, its name and its username
+Priority: **MVP** · Covers: quader-only
+
+Seen by the development agent on the admin area's group page (2026-11-18): the members table showed bare usernames ("priya", "sam")
+under the field that now shows the owner's row. A member's row shows what a match of R-UI-150 shows: the avatar, the display name
+(else the username) as the link to the user, and `@username` under it in the secondary type; a service account its icon, its name
+and **Service account**. The members API carries what it needs (R-API-078).
+
+Acceptance criteria: unit (`groups.spec.ts`) — a user's row has the avatar and `@alice`, a service account's the icon and
+**Service account**. Rendered: `admin-group` as administrator.
+
+### R-UI-152 · Every place that names a principal uses the field
+Priority: **MVP** · Covers: quader-only
+
+The places of the UI that name a user, a group or a service account, as the builder of W-12 found them on 2026-11-18
+([Q-UI-584](#q-ui-584--a-filter-by-person-keeps-the-reference-in-the-field-and-sends-what-its-api-takes)):
+
+| Place | Kinds | Choices | Source | What it sends |
+|---|---|---|---|---|
+| **System roles**, **Bind to** of each role (R-UI-024) | user, group, service account (instance-wide) | one | suggestions | the reference |
+| A group's page, **Add a member** (R-UI-025) | user, service account (instance-wide) | one | suggestions | the username or `sa:<name>` |
+| A user's page, **Add to group** (R-UI-024) | group | one | suggestions | the group's name |
+| **New project**, **First Owners** (R-UI-041) | user, group | many | suggestions | the references |
+| A project's **Add member** dialog (R-UI-041) | user, group | one | the project's lookup | the reference |
+| Permission policy editor, an entry's **Principal** (R-UI-027) | user, group, service account | one per entry | the project's lookup in a project policy, else suggestions | the reference |
+| Permission policy editor, **Try it**, **Principal** | user, group, service account | one | as the entries | the reference |
+| Permission policies list, filter **Principal** (R-UI-027) | user, group, service account | one | the project's lookup in a project's list, else suggestions | the reference |
+| A CI mapping of the system tier, **Groups** (R-UI-035) | group | many | suggestions | the groups' names |
+| **Token administration**, filter **Owner** (R-UI-030) | user, service account (every account) | one | suggestions | the username or `sa:<name>` |
+| **Audit log**, filter **Actor** (R-UI-037) | user, service account (every account) | one | suggestions | the actor's name |
+| **Users**, filter **Group** (R-UI-024) | group | one | suggestions | the group's name |
+
+Looked at and not a place that names a principal: the exposure rule editor (package names and versions), the vulnerability triage
+(a status and a justification), a CI mapping's **Policies** (policies, not principals; they keep the name picker of Q-UI-334), the
+project's service accounts and the profile (they create or show one principal, they do not name another).
+
+Acceptance criteria: the unit tests of R-UI-150 per place; no template of `web/src/app` holds a hint or a placeholder with
+`user:`, `group:` or `sa:`.
 
 ## Deferred
 
@@ -14777,6 +14935,48 @@ no revisit condition.
 
 **Applied in the spec:** R-API-056, R-API-075; [authorization.md](authorization.md) R-AUTHZ-036.
 
+### Q-API-335 · The admin area's fields search through the suggestions, which gain service accounts and the avatar
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-12. Outside a project every field that names a principal is on a screen of the admin area (R-UI-152), whose caller holds
+`identities:read` (every role that holds `roles:write`, `identities:write`, `policies:write`, `ci:write`, `tokens:read` or `audit:read`
+holds it too, R-AUTHZ-010). The field needs, per text, the users with display name and avatar, the groups and the service accounts.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The suggestions of R-API-060 with the kind `service_account` and the user's `avatarUrl` (chosen) | One request per settled text for every kind the field asks | One read with ranks over the username and the display name; the permission and its 403 before any lookup exist; a fixed number of statements | The suggestions now serve two fields |
+| (b) The identity lists with `q` (`/users`, `/groups`, `/service-accounts`) | Up to three requests per text | No change of the API | The user list matches the e-mail address and not the display name, so "Swa" finds people by their mail domain and misses "Swantje"; full records with the e-mail address travel for a row that shows none |
+| (c) A new operation for the admin area's principal search | A dedicated read | Its own shape | A second ranking of users and groups beside R-API-062 |
+
+**Choice:** (a). **Rationale:** the suggestions already answer "which users and groups match this text" to exactly the callers of
+these screens; adding the service accounts and the avatar is the whole gap. The development agent revisits it if a field outside the
+admin area must name a principal without a project (none does today).
+
+**Applied in the spec:** R-API-078, R-API-060, R-API-061, R-API-062, R-API-064, R-UI-150.
+
+### Q-API-336 · The project lookup answers the row's display name and avatar, finds the project's service accounts and matches words
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The rule
+that no caller gains a search it did not have before is the development agent's correction of 2026-11-18 to its first brief for W-12,
+which had opened the search to every internal user.
+
+Context: inside a project the field searches the lookup of Q-AUTHZ-182, which answered the kind and the name of users and groups whose
+name starts with the text. The owner's row needs the display name and the avatar, and "Swa" must find "Swantje Wagner", whose
+username may be `s.wagner`. A project policy names the project's service accounts too, which the lookup did not offer.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Extend the lookup: a user's display name, ID and avatar path; words of the display name and of the names match; the project's own service accounts, the instance-wide ones for `identities:read`; no disabled principal, no break-glass account, no auto-join group (chosen) | Same callers, minimum, limit and rate limit | The row the owner asked for from the read an Owner already has; the accounts the Owner already lists; nothing offered that the write would refuse | Display names become readable by prefix to every Owner (H-392, widened) |
+| (b) Keep kind and name only | As before | No widening | A row of usernames, not the owner's row; no service account |
+| (c) An open search for every internal user | GitLab's model | Every member could suggest | A new enumeration surface; withdrawn |
+
+**Choice:** (a). **Rationale:** the Owner already names these principals with this read; showing their faces and names is what makes
+the choice reliable, and the e-mail address, status, origin and sign-in times stay with `identities:read`. The development agent
+revisits it when the identity provider's directory can answer the lookup.
+
+**Applied in the spec:** R-API-077; [authorization.md](authorization.md) Q-AUTHZ-182 and H-392 revised.
+
 ### Q-UI-510 · A folder and a file are the repository's page at `files` and their path
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
@@ -15790,6 +15990,125 @@ missing." It said neither since when nor that with `keep` nothing goes missing.
 would revisit it when a user with two providers whose claims are both missing is seen in practice.
 
 **Applied in the spec:** R-UI-024. Code: [user-detail.html](../../web/src/app/features/users/user-detail.html).
+
+### Q-UI-580 · One shared field names a principal everywhere, and nobody types a reference
+
+Status: **Decided by the owner on 2026-11-18** (W-12: "a person is chosen through a person search that shows the possible people,
+everywhere a person search plays a role"); the shape of the field was decided by the development agent — selected from the options
+below; the owner reviews it at the walkthrough.
+
+Context: the UI named principals three ways: text fields that took `user:name`, `group:name` or `sa:name` (system roles, the policy
+editor's entries and **Try it**, the filters of the policies and the tokens), a field that took a bare name (a group's members, a user's
+groups, the audit log's actor, the users list's group), and a search box with the matches as buttons (`quader-principal-picker`: the
+project dialog, the project member dialog, the project policy editor). The CI mapping editor offered the groups in the browser's
+`datalist`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One shared field, `<quader-principal-field>`, a combobox that searches while one types and lists the matches under it; the picker and every typed reference go (chosen) | Kinds, one or many, the project, by inputs | One control and one way to name a principal in the whole app; nobody needs the reference syntax | Every place changes at once |
+| (b) The text fields keep their syntax and get suggestions | A `datalist` per field | Little change | The syntax stays in the UI; a `datalist` cannot show an avatar |
+| (c) A button that opens a dialog with a search | "Choose a person" | Room for a long list | A second step for the common case; GitLab's field, the owner's reference, has none |
+
+**Choice:** (a). **Rationale:** the owner asked for one behaviour everywhere; one component makes that a property of the app rather
+than of each screen. The development agent revisits it if a place needs to name more principals than a field of chips holds.
+
+**Applied in the spec:** R-UI-150, R-UI-152. Code: [principal-field.ts](../../web/src/app/shared/ui/principal-field.ts).
+
+### Q-UI-581 · The field searches what its caller may already search
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The rule
+that no caller gains a search it did not have is the development agent's correction of 2026-11-18 to its first brief, which had
+opened the search to every internal user as on the owner's GitLab.
+
+Context: the places of R-UI-152 are of two kinds. In a project (its members, its policies) the caller is the project's Owner, who
+has the lookup of Q-AUTHZ-182 and not `identities:read`. Everywhere else the caller is on a screen of the admin area and holds
+`identities:read`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The project's lookup with `project`, the admin area's suggestions without (chosen) | The field picks its source by its input | No new enumeration surface: each caller searches what it could list before; the answers hold no e-mail address | Two sources with two limits (20 and 10 per kind) |
+| (b) An open principal search for every internal user | As on GitLab | One source; a member could name people anywhere | A new way to enumerate every user's name and username for every internal user; withdrawn |
+| (c) Pass a search function into each field | As the picker did | Each screen decides | The same two sources written again at every place |
+
+**Choice:** (a). A refused search (a token whose scope lacks the capability) shows the failure and never falls back to another source.
+**Rationale:** the owner asked for a person search where one is needed, not for a wider directory; every place that needs one already
+has a read. The development agent revisits it if a place appears where a caller with neither must name a person; that place is then
+reported, not widened.
+
+**Applied in the spec:** R-UI-150, R-API-077, R-API-078.
+
+### Q-UI-582 · A match is a row of avatar, name and username, and a choice is a chip
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The row is
+the owner's (W-12).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A row of two lines, the avatar or the kind's icon in a 32 px circle, the name, the `@username` or the kind under it; a choice is a chip in the field, a field of one hides its input while it holds a choice (chosen) | As the members list's account cell (R-UI-142) | The owner's reference; the same look as the lists that show people | Two lines per match |
+| (b) One line, "Name · @username", as the top bar's suggestions | Compact | Ten matches fit | Not the owner's reference |
+| (c) The matches as buttons under the field | The old picker | Simple | No keyboard path through the matches; no avatar |
+
+**Choice:** (a); the search starts at the second character (both sources refuse one), after 250 ms. **Rationale:** the owner showed
+the row he wants; the members list already draws it. The development agent revisits the two lines if a long list of matches needs
+to fit at 390 px.
+
+**Applied in the spec:** R-UI-150, R-UI-151.
+
+### Q-UI-583 · A CI identity is never offered; a stored one shows as a chip
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a policy entry may name a CI identity mapping (`ci:<issuer>/<mapping>`). The old editor took it as typed text. A CI mapping
+receives its grants on its own page, which names its policies (R-UI-035), so a policy that names the mapping says the same thing a
+second time.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The field offers users, groups and service accounts; a stored `ci:` entry shows as a chip **CI identity** with its reference and can be removed (chosen) | The mapping's page grants | No typed reference; one place grants a mapping | A new policy entry for a mapping needs the mapping's page or the API |
+| (b) A fourth kind, CI mappings, in the search | Searchable | Complete | A search over the CI tiers with its own permission rule for one rare case |
+| (c) A text field for CI references beside the field | As before | Complete | The syntax returns |
+
+**Choice:** (a). **Rationale:** the mapping editor is where a CI identity gets its rights; the policy editor stays a list of people,
+groups and accounts. The development agent revisits it if CI entries in policies turn out to be common.
+
+**Applied in the spec:** R-UI-150, R-UI-027.
+
+### Q-UI-584 · A filter by person keeps the reference in the field and sends what its API takes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the filters by person in a list's drawer take different forms in their APIs: the policies a reference, the tokens a username
+or `sa:<name>` (and `me`), the audit log an actor's name or ID, the users list a group's name.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The field holds the reference; each screen sends its API's form; the chip says the name (chosen) | `owner=sam`, `actor=sam`, `group=web-team` | No API changes for a filter; the chip reads as a name | Each screen converts |
+| (b) Every API takes a reference | One form | Uniform | Changes three list operations for no reader's gain |
+
+**Choice:** (a). The token filter's `me` goes from the UI: an administrator finds itself in the search. The audit log's actor filter
+offers users and every service account; a link that names the actor by name shows it as a user's chip. **Rationale:** the person who
+filters sees a name; what the API takes is the screen's business. The development agent revisits it if a filter must name a CI
+token's mapping or the system as the actor.
+
+**Applied in the spec:** R-UI-152.
+
+### Q-UI-585 · A person who has never signed in is not found, and the field says so
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a user exists once it signed in through the identity provider (just in time), was provisioned by SCIM, or was created by an
+administrator ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-007, R-AUTH-039, R-AUTH-016; R-API-031). The search finds users only.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The empty state says "A person can be found after their first sign-in." (chosen) | One sentence | Says the product's answer where the person is missing | Does not offer the administrator's **Add user** |
+| (b) Invite by e-mail from the field | A new flow | GitLab has it | Out of scope of W-12; no invitation exists |
+| (c) Say nothing | "Nothing matches" | Short | The Owner does not learn why a colleague is missing |
+
+**Choice:** (a). **Rationale:** the sign-in is how nearly every person becomes a user; an administrator's pre-provisioning is an
+admin task with its own screen. Open: an invitation of a person who has never signed in (not built).
+
+**Applied in the spec:** R-UI-150.
 
 ## What this does not cover
 

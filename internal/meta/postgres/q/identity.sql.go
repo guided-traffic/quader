@@ -770,10 +770,14 @@ func (q *Queries) IdentityGroupHasAdminRole(ctx context.Context, id string) (boo
 
 const identityGroupMemberPage = `-- name: IdentityGroupMemberPage :many
 
-SELECT mp.kind AS member_kind, mp.name AS member_name, array_agg(m.source ORDER BY m.source)::text[] AS sources
+SELECT mp.kind AS member_kind, mp.name AS member_name, array_agg(m.source ORDER BY m.source)::text[] AS sources,
+       mp.id::text AS member_id, coalesce(u.display_name, '')::text AS display_name,
+       coalesce(encode(a.blob_sha256, 'hex'), '')::text AS avatar_sha256
   FROM group_membership m JOIN principal mp ON mp.id = m.member_id
+  LEFT JOIN app_user u ON u.principal_id = mp.id
+  LEFT JOIN user_avatars a ON a.user_id = mp.id
  WHERE m.group_id = $1::text::uuid
- GROUP BY mp.kind, mp.name
+ GROUP BY mp.kind, mp.name, mp.id, u.display_name, a.blob_sha256
 HAVING (mp.kind, mp.name) > ($2::text, $3::text)
    AND ($4::text = '' OR $4::text = ANY(array_agg(m.source)))
  ORDER BY mp.kind, mp.name
@@ -789,15 +793,19 @@ type IdentityGroupMemberPageParams struct {
 }
 
 type IdentityGroupMemberPageRow struct {
-	MemberKind string
-	MemberName string
-	Sources    []string
+	MemberKind   string
+	MemberName   string
+	Sources      []string
+	MemberID     string
+	DisplayName  string
+	AvatarSha256 string
 }
 
 // Group members, one row per member (R-AUTH-018) --------------------------------
 // The members of a group ordered by kind and name, each with all its sources; the
 // optional source keeps the members that hold it. after_kind and after_name are the
-// last member of the previous page (” on the first).
+// last member of the previous page (” on the first). A user comes with what its row shows (R-UI-151): the ID (the seed of the
+// generated avatar), the display name and the avatar's digest.
 func (q *Queries) IdentityGroupMemberPage(ctx context.Context, arg IdentityGroupMemberPageParams) ([]IdentityGroupMemberPageRow, error) {
 	rows, err := q.db.Query(ctx, identityGroupMemberPage,
 		arg.GroupID,
@@ -813,7 +821,14 @@ func (q *Queries) IdentityGroupMemberPage(ctx context.Context, arg IdentityGroup
 	items := []IdentityGroupMemberPageRow{}
 	for rows.Next() {
 		var i IdentityGroupMemberPageRow
-		if err := rows.Scan(&i.MemberKind, &i.MemberName, &i.Sources); err != nil {
+		if err := rows.Scan(
+			&i.MemberKind,
+			&i.MemberName,
+			&i.Sources,
+			&i.MemberID,
+			&i.DisplayName,
+			&i.AvatarSha256,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

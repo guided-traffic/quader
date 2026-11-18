@@ -10,8 +10,9 @@ export type PackageSuggestion = Schema<'PackageSuggestion'>;
 export type ProjectSuggestion = Schema<'ProjectSuggestion'>;
 export type UserSuggestion = Schema<'UserSuggestion'>;
 export type GroupSuggestion = Schema<'GroupSuggestion'>;
+export type ServiceAccountSuggestion = Schema<'ServiceAccountSuggestion'>;
 
-/** A kind of the suggestions: `user` and `group` need `identities:read`, else the answer is 403 (Q-API-272). */
+/** A kind of the suggestions: `user`, `group` and `service_account` need `identities:read`, else the answer is 403 (Q-API-272). */
 export type SuggestionKind = NonNullable<
   operations['getSearchSuggestions']['parameters']['query']['kind']
 >[number];

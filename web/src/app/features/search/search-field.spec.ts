@@ -245,7 +245,7 @@ describe('Live suggestions (R-UI-097)', () => {
     const { root, fixture } = await render('ada', {
       setup: (get) => {
         const s = get(SearchApi) as FakeSearchApi;
-        s.users = [{ id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a12', username: 'users-bot', displayName: null, disabled: true }];
+        s.users = [{ id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a12', username: 'users-bot', displayName: null, disabled: true, avatarUrl: null }];
         s.groups = [{ name: 'users', description: '' }];
       },
     });

@@ -163,17 +163,19 @@
           @if (project()) {
             <p class="muted" i18n="@@ci.editor.project-policies">Only the permission policies of this project can be named. Groups are global and not available here.</p>
           } @else {
-            <quader-ci-name-picker
+            <quader-principal-field
               i18n-label="@@ci.editor.groups"
               label="Groups"
-              i18n-addLabel="@@ci.editor.groups-add"
-              addLabel="Add a group"
-              [options]="groupOptions()"
-              [loading]="groupsLoading() ? loadingGroups : null"
-              [value]="form().groups"
-              (valueChange)="patch({ groups: $event })"
+              name="groups"
+              [kinds]="groupKinds"
+              [multiple]="true"
+              [width]="'full'"
+              [value]="groupRefs()"
+              (valueChange)="patch({ groups: groupNames($event) })"
               [readonly]="!writable()"
               [error]="underError('/grants/groups')"
+              i18n-hint="@@ci.editor.groups-hint"
+              hint="Type the name of a group."
             />
           }
         </div>

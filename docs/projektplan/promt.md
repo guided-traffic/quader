@@ -1044,7 +1044,23 @@ agent** is not decided until the owner has said so.
   answer grows by the display name and the avatar, never the email address, and H-392 says so. Corrected the same day: the
   development agent had first written that no screen offers a person while one types and had decided to open the search to
   every signed-in user who is not external; it had not read the project dialogs. The builder was redirected before it
-  committed. Status: a builder is briefed.
+  committed.
+  - **Built** (on `main`; R-UI-150 to R-UI-152, R-API-077, R-API-078, Q-UI-580 to Q-UI-585, Q-API-335, Q-API-336; Q-AUTHZ-182
+    and H-392 rewritten): `<quader-principal-field>` replaces the old picker and every typed reference, in twelve places (the
+    binding of a system role, a group's and a project's members, a user's groups, the first Owners of a new project, the
+    entries and "Try it" of a policy, the principal filter of the policies, a CI mapping's groups, the owner filter of the
+    tokens, the actor filter of the audit log, the group filter of the users). Inside a project it asks the lookup of
+    Q-AUTHZ-182, elsewhere the search's suggestions, which need `identities:read`. A group's members show avatar, name and
+    username.
+  - **Looked at** in the running UI as `ada`, dark, 1440 px: **Bind to** of a system role (typing "sa" lists Sam Taylor with
+    avatar and `@sam`; the choice is a chip and **Bind** becomes active), the owner filter in the tokens' drawer, a group's
+    members. Fixed by the development agent before the landing: the list of matches was 24 rem wide in a drawer of 21 and
+    left it at the side; the line under a member's cell stood half a pixel under its neighbours' (707.0 against 706.5,
+    measured), because the cell was a flex box.
+  - **Open:** the table of a system role's bindings still writes `user:ada`; a person who has never signed in cannot be
+    found, and nothing invites one; not looked at: a project's **Add member** as `priya`, the policy editor, the dialog of a
+    new project, 390 px, the light scheme. The integration tests of the lookup and the suggestions and the journeys 03 and
+    12 were changed and not run.
 - **W-13 · An update does not turn the status red** (owner, 2026-11-18, at **Dashboard** and **System status**, both red with
   "A role is not ready" and "Replicas unready" on his stack): "Ich denke, da wurden einfach die Prozesse rotiert. Bitte
   nachprüfen, dass solche Prozesse sich abmelden und es nicht zu rotem Status kommt, nur weil ein Update eingespielt wurde."

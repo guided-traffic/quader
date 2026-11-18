@@ -3,7 +3,7 @@ import { ProjectsApi } from '../../api/projects-api';
 import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeProjectsApi } from '../../api/testing/fakes-projects';
-import { buttonByText, expectAccessible, inProject, renderScreen, searchList, settle, sleep, text, type, typeInto } from '../../testing/screen';
+import { buttonByText, choosePrincipal, expectAccessible, inProject, renderScreen, searchList, settle, sleep, text, type } from '../../testing/screen';
 import { ProjectMembersPage } from './project-members-page';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
@@ -30,7 +30,7 @@ function asMember(role: 'reader' | 'developer' | 'maintainer' | 'owner') {
 }
 
 describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
-  it('Q-AUTHZ-207 an Owner adds a member with a role, changes it and removes it', async () => {
+  it('Q-AUTHZ-207 R-UI-150 an Owner adds a member found by the lookup with a role, changes it and removes it', async () => {
     const { fixture, root, get } = await renderScreen(ProjectMembersPage, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -41,10 +41,8 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
     buttonByText(root, 'Add member').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-project-member-dialog') as HTMLElement;
-    typeInto(dialog, 'Find a user or group', 'bo');
-    await sleep(fixture, 400);
-    buttonByText(dialog, 'user:bob').click();
-    await settle(fixture);
+    await choosePrincipal(fixture, dialog, 'User or group', 'bo', '@bob');
+    expect((get(ProjectsApi) as FakeProjectsApi).lookups.at(-1)).toEqual({ key: 'web', q: 'bo', kinds: ['user', 'group'] });
     type(dialog.querySelector<HTMLSelectElement>('select[name="new-role"]')!, 'maintainer');
     await settle(fixture);
     buttonByText(dialog, 'Add member').click();

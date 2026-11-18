@@ -3,7 +3,6 @@ import { Checkbox } from '../../shared/ui/checkbox';
 import { Router, RouterLink } from '@angular/router';
 import { CiApi, CiMapping, CiMappingInput, CiWarning, SnippetFormat } from '../../api/ci-api';
 import { PolicyApi } from '../../api/authz-api';
-import { IdentityApi } from '../../api/identity-api';
 import { collectAll } from '../../api/pagination';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi, Versioned } from '../../api/repositories-api';
@@ -42,6 +41,7 @@ import {
 import { ConditionBuilder } from './condition-builder';
 import { NamePicker } from './name-picker';
 import { PageHeader } from '../../shared/ui/page-header';
+import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
 
 /**
  * The mapping editor (R-UI-035, R-CI-009 to R-CI-014): a mapping of the system tier of an issuer, or, with
@@ -66,6 +66,7 @@ import { PageHeader } from '../../shared/ui/page-header';
     ErrorSummary,
     NamePicker,
     Needs,
+    PrincipalField,
     ProjectNeeds,
     SelectField,
     TextField,
@@ -83,7 +84,6 @@ export class MappingEditor implements HasUnsavedChanges {
 
   private readonly api = inject(CiApi);
   private readonly policiesApi = inject(PolicyApi);
-  private readonly identityApi = inject(IdentityApi);
   private readonly repositoriesApi = inject(RepositoriesApi);
   private readonly conflicts = inject(ConflictResolver);
   private readonly drafts = inject(DraftStore);
@@ -106,12 +106,15 @@ export class MappingEditor implements HasUnsavedChanges {
   private baseline = '';
 
   protected readonly policyOptions = signal<readonly string[] | null>(null);
-  protected readonly groupOptions = signal<readonly string[] | null>(null);
   /** The pickers are the same control while their lists load, held and saying so (Q-UI-334). */
   protected readonly policiesLoading = signal(true);
-  protected readonly groupsLoading = signal(true);
   protected readonly loadingPolicies = $localize`:@@ci.editor.policies-loading:Loading policies…`;
-  protected readonly loadingGroups = $localize`:@@ci.editor.groups-loading:Loading groups…`;
+  /** The groups of a system mapping are chosen from the shared field (R-UI-150); the mapping keeps their names. */
+  protected readonly groupKinds = ['group'] as const;
+  protected readonly groupRefs = computed(() => this.form().groups.map((g) => refOf('group', g)));
+  protected groupNames(refs: readonly string[]): string[] {
+    return refs.map((r) => choiceFromRef(r).name);
+  }
   protected readonly loadingIssuers = $localize`:@@ci.editor.issuers-loading:Loading issuers…`;
   protected readonly projectRepositories = signal<readonly string[]>([]);
   /** A project's mapping names bare keys, a system mapping `<project>/<key>` (R-AUTHZ-004). */
@@ -293,13 +296,12 @@ export class MappingEditor implements HasUnsavedChanges {
   }
 
   /**
-   * The choices the editor offers: policies, groups, the project's repositories and the issuer's kind of audience, read side by
-   * side. A list's picker is held while it loads; a failure leaves typed names.
+   * The choices the editor offers: policies, the project's repositories and the issuer's kind of audience, read side by side. A
+   * list's picker is held while it loads; a failure leaves typed names. The groups search as one types (the principal field).
    */
   private async loadContext(): Promise<void> {
     const project = this.project();
     this.policiesLoading.set(true);
-    this.groupsLoading.set(true);
     this.issuersLoading.set(true);
     const policies = async (): Promise<void> => {
       try {
@@ -330,15 +332,6 @@ export class MappingEditor implements HasUnsavedChanges {
       }
       this.issuersLoading.set(false);
     };
-    const groups = async (): Promise<void> => {
-      try {
-        const names = await collectAll(this.identityApi.groups({}));
-        this.groupOptions.set(names.map((g) => g.name));
-      } catch {
-        this.groupOptions.set(null);
-      }
-      this.groupsLoading.set(false);
-    };
     const audience = async (): Promise<void> => {
       try {
         this.publicIssuer.set((await this.api.getIssuer(this.issuer() ?? '')).value.publicIssuer);
@@ -346,7 +339,7 @@ export class MappingEditor implements HasUnsavedChanges {
         this.publicIssuer.set(false);
       }
     };
-    await Promise.all(project ? [policies(), repositories(), issuers()] : [policies(), groups(), audience()]);
+    await Promise.all(project ? [policies(), repositories(), issuers()] : [policies(), audience()]);
   }
 
   protected chooseIssuer(name: string): void {

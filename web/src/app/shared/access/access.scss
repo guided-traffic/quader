@@ -187,8 +187,11 @@ fieldset.form-grid {
   vertical-align: middle;
 }
 
-// A person in a list (UI-A-27): the avatar, the name and the @username under it, as on the members screen.
-th.person {
+// A person in a list (UI-A-27): the avatar, the name and the @username under it, as on the members screen. In a table whose
+// cells carry the row's line themselves (a group's members), the cell stays a cell and `.person-line` inside it is the line:
+// a cell that is a flex box draws its line a pixel under its neighbours'.
+th.person,
+th > .person-line {
   display: flex;
   align-items: center;
   gap: var(--quader-space-3);

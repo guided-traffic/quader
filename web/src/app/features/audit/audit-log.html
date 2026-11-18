@@ -49,10 +49,15 @@
       <input id="a-to" class="text-input" type="datetime-local" [value]="draft()['to']" (input)="setDraft('to', $any($event.target).value)" />
     </div>
   }
-  <div class="field">
-    <label class="field-label" for="a-actor" i18n="@@audit.filter.actor">Actor (name or ID)</label>
-    <input id="a-actor" class="text-input" autocomplete="off" [value]="draft()['actor']" (input)="setDraft('actor', $any($event.target).value)" />
-  </div>
+  <quader-principal-field
+    i18n-label="@@audit.filter.actor"
+    label="Actor"
+    name="actor"
+    [kinds]="actorKinds"
+    [accounts]="'all'"
+    [value]="actorRefs()"
+    (valueChange)="setActor($event)"
+  />
   <div class="field">
     <label class="field-label" for="a-action" i18n="@@audit.filter.action">Action</label>
     <input

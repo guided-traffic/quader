@@ -41,6 +41,19 @@ export interface Screen {
 }
 
 /**
+ * A screen with a field that names a principal (R-UI-150): as it opens, then with the matches of a search open under the field
+ * (the avatar, the name and the username of each match).
+ */
+function principalSearch(label: string, text: string): Screen['walk'] {
+  return async function* (page) {
+    yield '';
+    await page.getByRole('combobox', { name: label, exact: true }).first().fill(text);
+    await expect(page.locator('quader-principal-field [role="option"]').first()).toBeVisible();
+    yield 'search';
+  };
+}
+
+/**
  * A list as it opens, then with its filter drawer open over the page (Q-UI-420): the list behind it keeps its width and columns.
  * With `fill`, the drawer's filters are then set through its fields and applied: the head shows them as chips beside **Filters**
  * (Q-UI-422), and at 390 px more chips than fit fold into **+N more**.
@@ -809,12 +822,12 @@ export const screens: readonly Screen[] = [
   { id: 'admin-user-break-glass', path: '/ui/admin/users/admin', kinds: admins },
   { id: 'admin-user-advanced', path: '/ui/admin/users/sam', kinds: admins, walk: advancedOpen },
   { id: 'admin-groups', path: '/ui/admin/groups', kinds: admins, walk: filtersOpen() },
-  { id: 'admin-group', path: `/ui/admin/groups/${group}`, kinds: admins },
+  { id: 'admin-group', path: `/ui/admin/groups/${group}`, kinds: admins, walk: principalSearch('Add a member', 'ad') },
   { id: 'admin-service-accounts', path: '/ui/admin/service-accounts', kinds: admins, walk: searched('release') },
   { id: 'admin-service-account', path: `/ui/admin/service-accounts/${serviceAccount}`, kinds: admins },
   { id: 'admin-permissions', path: '/ui/admin/permissions', kinds: admins, walk: filtersOpen() },
   { id: 'admin-permission-new', path: '/ui/admin/permissions/new', kinds: admins },
-  { id: 'admin-roles', path: '/ui/admin/roles', kinds: admins },
+  { id: 'admin-roles', path: '/ui/admin/roles', kinds: admins, walk: principalSearch('Bind to', 'sa') },
   { id: 'admin-tokens', path: '/ui/admin/tokens', kinds: admins, walk: filtersOpen() },
   { id: 'admin-ci', path: '/ui/admin/ci', kinds: admins },
   { id: 'admin-ci-new', path: '/ui/admin/ci/new', kinds: admins },

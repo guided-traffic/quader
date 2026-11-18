@@ -147,16 +147,62 @@ SELECT count(*)::bigint
   FROM project_member
  WHERE project_id = sqlc.arg(project_id)::text::uuid AND role = 'owner';
 
--- name: ProjectLookupPrincipals :many
--- Users and groups whose name starts with the prefix, for a project owner
--- who names principals as members and in policies (Q-AUTHZ-182). Active principals only; the
--- answer is the kind and the name, nothing else. kind is empty, 'user' or 'group'.
-SELECT kind, name
-  FROM principal
- WHERE kind IN ('user', 'group') AND status = 'active'
-   AND (sqlc.arg(kind)::text = '' OR kind = sqlc.arg(kind)::text)
-   AND starts_with(name, sqlc.arg(prefix)::text)
- ORDER BY kind, name
+-- name: ProjectLookupUsers :many
+-- The users of the principal lookup of a project (Q-AUTHZ-182, R-API-077): the active users, without the break-glass account,
+-- whose username starts with the text, or one of whose words (the display name split at white space, the username split at every
+-- character that is no letter or digit) starts with it; the text is lower-cased by the caller. rank 0 the username equals the
+-- text, 1 it starts with it, 2 a word does. The text is a value of strpos and starts_with, never a pattern. The answer holds what
+-- a member's row shows: the ID (the seed of the generated avatar), the username, the display name and the avatar's digest; never
+-- the e-mail address, the status, the origin or a sign-in time (H-392). At most max_rows; the caller asks for one more.
+SELECT p.id::text AS id, p.name, coalesce(u.display_name, '')::text AS display_name,
+       coalesce(encode(a.blob_sha256, 'hex'), '')::text AS avatar_sha256,
+       (CASE WHEN p.name = sqlc.arg(text)::text THEN 0
+             WHEN starts_with(p.name, sqlc.arg(text)::text) THEN 1
+             ELSE 2 END)::int AS rank
+  FROM principal p
+  JOIN app_user u ON u.principal_id = p.id
+  LEFT JOIN user_avatars a ON a.user_id = p.id
+ WHERE p.kind = 'user' AND p.status = 'active' AND NOT u.is_break_glass
+   AND (starts_with(p.name, sqlc.arg(text)::text)
+        OR strpos(' ' || regexp_replace(lower(coalesce(u.display_name, '')), '\s+', ' ', 'g'), ' ' || sqlc.arg(text)::text) > 0
+        OR strpos(' ' || regexp_replace(p.name, '[^a-z0-9]+', ' ', 'g'), ' ' || sqlc.arg(text)::text) > 0)
+ ORDER BY rank, p.name COLLATE "C"
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: ProjectLookupGroups :many
+-- The groups of the principal lookup of a project (Q-AUTHZ-182): the active groups whose name, or one of its words (split at
+-- every character that is no letter or digit), starts with the text; rank as for the users. The auto-join groups are left out:
+-- a project neither takes one as a member nor names one in a policy (R-AUTHZ-026). The name is all the answer holds.
+SELECT p.name,
+       (CASE WHEN p.name = sqlc.arg(text)::text THEN 0
+             WHEN starts_with(p.name, sqlc.arg(text)::text) THEN 1
+             ELSE 2 END)::int AS rank
+  FROM principal p
+  JOIN user_group g ON g.principal_id = p.id
+ WHERE p.kind = 'group' AND p.status = 'active' AND NOT g.auto_join
+   AND (starts_with(p.name, sqlc.arg(text)::text)
+        OR strpos(' ' || regexp_replace(p.name, '[^a-z0-9]+', ' ', 'g'), ' ' || sqlc.arg(text)::text) > 0)
+ ORDER BY rank, p.name COLLATE "C"
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: ProjectLookupServiceAccounts :many
+-- The service accounts of the principal lookup of a project (Q-AUTHZ-182): the active accounts of the project project_key, and
+-- the instance-wide ones when instance is set (the caller holds identities:read). A project's account is stored as
+-- <project key>/<name> (Q-AUTHZ-209) and matches by its name within the project as well; rank as for the users. project_key of
+-- the row is empty for an instance-wide account.
+SELECT p.name, coalesce(pr.key, '')::text AS project_key,
+       (CASE WHEN p.name = sqlc.arg(text)::text OR split_part(p.name, '/', 2) = sqlc.arg(text)::text THEN 0
+             WHEN starts_with(p.name, sqlc.arg(text)::text) OR starts_with(split_part(p.name, '/', 2), sqlc.arg(text)::text) THEN 1
+             ELSE 2 END)::int AS rank
+  FROM principal p
+  JOIN service_account s ON s.principal_id = p.id
+  LEFT JOIN project pr ON pr.id = s.project_id
+ WHERE p.kind = 'service_account' AND p.status = 'active'
+   AND ((sqlc.arg(instance)::boolean AND s.project_id IS NULL) OR pr.key = sqlc.arg(project_key)::text)
+   AND (starts_with(p.name, sqlc.arg(text)::text)
+        OR starts_with(split_part(p.name, '/', 2), sqlc.arg(text)::text)
+        OR strpos(' ' || regexp_replace(p.name, '[^a-z0-9]+', ' ', 'g'), ' ' || sqlc.arg(text)::text) > 0)
+ ORDER BY rank, p.name COLLATE "C"
  LIMIT sqlc.arg(max_rows)::int;
 
 -- name: ProjectPrincipalByRef :many

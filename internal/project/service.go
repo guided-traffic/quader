@@ -89,11 +89,10 @@ type Service interface {
 	// global policy names the repository (kind global_policy, Q-REPO-232), whose grant would follow it.
 	// It returns the new name and the epoch.
 	MoveRepository(ctx context.Context, actor authz.Subject, from qname.Repo, toProject string, restricted bool) (to qname.Repo, epoch int64, err error)
-	// LookupPrincipals returns active users and groups whose name starts with prefix,
-	// for an Owner of a project who names principals in policies (Q-AUTHZ-182). kind
-	// is "", user or group; limit is at most MaxLookup. The answer holds the kind and
-	// the name, nothing else.
-	LookupPrincipals(ctx context.Context, prefix string, kind PrincipalKind, limit int) ([]PrincipalRef, error)
+	// LookupPrincipals answers the lookup of Q-AUTHZ-182 (R-API-077): the active principals of the kinds asked whose name, or
+	// a word of it, starts with the prefix, ranked and cut together. The answer holds what a member's row shows and nothing
+	// else: no e-mail address, status, origin or sign-in time.
+	LookupPrincipals(ctx context.Context, q Lookup) ([]Found, error)
 }
 
 // MaxLookup is the most results a lookup returns, and MinLookupPrefix the shortest

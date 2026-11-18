@@ -1,4 +1,4 @@
-import { bobPassword, expect, expectAccessible, repositories, repositoryApi, signInLocal, signInWithKeycloak, test, unique, watchCsp } from '../support';
+import { bobPassword, choosePrincipal, expect, expectAccessible, repositories, repositoryApi, signInLocal, signInWithKeycloak, test, unique, watchCsp } from '../support';
 
 // R-UI-047 journey "projects" (R-UI-041, R-AUTHZ-026, Q-AUTHZ-175, Q-AUTHZ-177, Q-AUTHZ-182, Q-AUTHZ-207, Q-AUTHZ-217): the
 // administrator creates a project with an Owner group in the dialog; bob, a member of that group and without any system
@@ -49,9 +49,9 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Key', { exact: true }).fill(key);
     await dialog.getByLabel('Display name', { exact: true }).fill('Journey project');
-    // The first Owners are named in the dialog (Q-AUTHZ-229); members and roles are changed on the project's screen.
-    await dialog.getByLabel('Find a user or group').fill(groupName.slice(0, 8));
-    await dialog.getByRole('button', { name: `group:${groupName}` }).click();
+    // The first Owners are named in the dialog (Q-AUTHZ-229) from the search of the shared field (R-UI-150); members and roles
+    // are changed on the project's screen.
+    await choosePrincipal(dialog, 'First Owners', groupName.slice(0, 8), groupName);
     await expectAccessible(page, 'new project dialog');
     await dialog.getByRole('button', { name: 'Create project' }).click();
 
@@ -137,8 +137,9 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     await expect(bob.getByText('Project policy of')).toBeVisible();
     const name = bob.getByLabel('Name', { exact: true }).first();
     await name.fill(policyName);
-    await bob.getByLabel('Find a user or group').fill(groupName.slice(0, 8));
-    await bob.getByRole('button', { name: `group:${groupName}` }).click();
+    // An entry's principal comes from the project's lookup (Q-AUTHZ-182) through the shared field (R-UI-150).
+    await bob.getByRole('button', { name: 'Add principal' }).click();
+    await choosePrincipal(bob.getByRole('group', { name: 'Entry 1' }), 'Principal', groupName.slice(0, 8), groupName);
     await bob.getByRole('button', { name: new RegExp(repoKey) }).click();
     await expect(bob.getByText('No problems found.')).toBeVisible();
     await expect(bob.locator('.covers')).toContainText('Repositories covered now: 1');

@@ -128,7 +128,7 @@ The `auditor` reads everything that is not secret and changes nothing: the confi
 To create a policy, select **New policy**. **New policy** in a project's **Permission policies** creates a policy of that project; **New policy** in the admin area's list creates a global policy, and the editor says **Global policy — applies to every repository**:
 
 1. Under **General**, enter a **Name** (it cannot be changed later) and a **Description**.
-2. Under **Principals and actions**, select **Add principal** for each entry, enter a reference such as `group:team-web`, and tick actions or select a **Preset**.
+2. Under **Principals and actions**, select **Add principal** for each entry, choose the user, group or service account in its **Principal** field (see [Choosing a person, a group or a service account](#choosing-a-person-a-group-or-a-service-account)), and tick actions or select a **Preset**. A project's policy offers the project's own service accounts; a global policy the service accounts of no project. An entry for a CI mapping that a policy already holds shows as **CI identity** and can be removed; a CI mapping gets its rights on its own page.
 3. Under **Repositories and patterns**, enter **Repository selectors**, one per line. **Repositories covered now** counts the matches. To narrow the policy further, open **Limit to package names or paths** (it opens by itself when a policy has such patterns) and enter **Package names** and **Paths** with **Include** and **Exclude**; its **Pattern tester** checks a package name or path against the patterns.
 4. Check the **Preview**. It lists errors with **The policy has problems:**, **Warnings**, and **Covered repositories**.
 5. Select **Create policy**.
@@ -139,13 +139,33 @@ The editor refuses an entry for `anonymous` or `authenticated` (`principal_not_a
 
 ### Why can X do Y
 
-The **Try it** section of the preview answers whether a principal may do an action on a repository under the draft. Enter a **Principal** such as `user:alice`, a **Repository** and an **Action**, and select **Explain** (without a principal and a repository it says so). The preview's list of problems names each field by its label and shows a problem of a field once you have filled the field or tried to save. The answer lists the steps: whether the selectors cover the repository, which entry applies (directly, or through a group of the user), and whether it holds the action. It ends with **Allowed by this draft** or **Not granted by this draft**, and tells you whether you yourself may do this under the stored policies.
+The **Try it** section of the preview answers whether a principal may do an action on a repository under the draft. Choose a **Principal** by typing part of its name, enter a **Repository** and an **Action**, and select **Explain** (without a principal and a repository it says so). The preview's list of problems names each field by its label and shows a problem of a field once you have filled the field or tried to save. The answer lists the steps: whether the selectors cover the repository, which entry applies (directly, or through a group of the user), and whether it holds the action. It ends with **Allowed by this draft** or **Not granted by this draft**, and tells you whether you yourself may do this under the stored policies.
 
 The answer evaluates only the draft. Other policies, visibility levels, token scopes, exposure rules and package ownership are not part of it. To answer the question for all stored policies, filter the policy list by the principal and by the repository.
 
 ## The System roles screen
 
-**Admin area › Access › System roles** shows every role with its **Capabilities** and the principals that hold it, with **Granted**, **Granted by** and **Source**. To bind a role, enter `user:<name>`, `group:<name>` or `sa:<name>` in **Bind to** and select **Bind**; a service account of a project holds no system role (`role_not_allowed`); **Unbind** removes a holder. Both need `roles:write` and a recent sign-in. The last administrator cannot be removed (`last_admin`) while the break-glass account is disabled, and a group with auto-join cannot hold a role. A binding with the source **Configuration** is declared in `authz.role_bindings` and shows **Managed in the configuration** instead of **Unbind**; change it in your Helm values ([Administrators from the Helm values](sign-in-and-identity.md#administrators-from-the-helm-values)).
+**Admin area › Access › System roles** shows every role with its **Capabilities** and the principals that hold it, with **Granted**, **Granted by** and **Source**. To bind a role, type part of a name in **Bind to**, choose the user, group or service account from the matches and select **Bind**; the field offers the service accounts of no project, because a service account of a project holds no system role (`role_not_allowed`); **Unbind** removes a holder. Both need `roles:write` and a recent sign-in. The last administrator cannot be removed (`last_admin`) while the break-glass account is disabled, and a group with auto-join cannot hold a role. A binding with the source **Configuration** is declared in `authz.role_bindings` and shows **Managed in the configuration** instead of **Unbind**; change it in your Helm values ([Administrators from the Helm values](sign-in-and-identity.md#administrators-from-the-helm-values)).
+
+## Choosing a person, a group or a service account
+
+Wherever a screen names a user, a group or a service account, you choose it from a search: **Bind to** on **System roles**, **Add a
+member** of a group, **Add to group** of a user, the principals of a permission policy and its **Try it**, the **First Owners** of a new
+project, **Add member** of a project, the **Groups** of a CI mapping, and the filters **Principal**, **Owner**, **Actor** and **Group** of
+the lists. Type at least two characters of a name, a username or a group's name: under the field the matches appear, a person with the
+avatar, the full name and under it the `@username`, a group or a service account with its icon and its kind. Choose one with the mouse,
+or with **↓**, **↑** and **Enter**; **Escape** closes the list. The choice stands in the field with a button that removes it. Nobody
+types a reference such as `user:alice` any more; the API still takes one.
+
+What the search finds depends on where you are, and it never shows more than you may already read:
+
+- In a project (its members and its policies), the search is the project's lookup, which its Owner and a holder of
+  `identities:read` may use: active users, groups and the project's own service accounts, at most 20, with no e-mail address. Groups
+  that every user joins automatically are not offered there, because a project takes none as a member.
+- In the admin area, the search needs `identities:read`, which every role with access to these screens holds. A token whose scope
+  leaves that permission out cannot search, and the field says that the search failed.
+- A disabled user is never offered. A person who has never signed in is not a user of Quader yet and cannot be found; the field says
+  so. They become a user at their first sign-in, through SCIM, or when an administrator adds them under **Users**.
 
 ## Visibility levels
 
