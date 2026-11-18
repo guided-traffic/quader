@@ -1761,6 +1761,9 @@ connections stay supported and remain the default.
   `database.retry.max_elapsed`: every replica turns not ready and the edge answers `503` for everything. Each pooler
   therefore sets `server_login_retry` to 1 s (an installation requirement like the ones above), so the pooler serves again
   about a second after the new primary does, and the switchover is the stall of the failure table, not an outage.
+  What the pooler answers a client during the switchover is retried within `database.retry.max_elapsed` like the
+  switchover itself, also the two answers that look final: `invalid server parameter` (`08P01`) and `password authentication
+  failed` (`28P01`) on a connection that is already authenticated ([Q-HA-303](#q-ha-303--the-poolers-own-answers-to-a-switchover-are-retried-a-wrong-password-at-connect-is-not)).
 - **Pooler limits.** Each request-pooler instance accepts `max_client_conn ≥ (web_max + worker_max)
   × database.pool.max_conns`, because one instance may receive every client while the other
   drains; each control-pooler instance accepts `max_client_conn ≥ web_max + worker_max`.
@@ -10245,6 +10248,38 @@ of every pooler instance in its artifacts.
 **Applied in the spec:** R-HA-058 (the switchover bullet and the example), R-HA-059 rule 5 (the pooler row), the failure table's switchover row; R-HA-058's acceptance criteria;
 [deploy/dev/pooler.yaml](../../deploy/dev/pooler.yaml), [docs/developer/local-profile.md](../developer/local-profile.md), the pooler requirements of the
 [README](../../README.md) and of the manual ([configuration](../manual/admin/configuration.md#behind-a-transaction-mode-pooler), [runbook](../manual/admin/runbook.md)).
+
+### Q-HA-303 · The pooler's own answers to a switchover are retried; a wrong password at connect is not
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the first runs of `TestHAPooler_Switchover` (Q-HA-302; run 44206453722, the poolers at PgBouncer's default `server_login_retry`) answered 8
+k6 requests with Quader's own `500` besides the edge's `503`s. Verified in the replicas' logs (`npm request failed status=500 code=internal`) and the
+poolers' logs of that run, two answers of PgBouncer that `classify` ([retry.go](../../internal/meta/postgres/retry.go)) took for final:
+
+- `FATAL: invalid server parameter (SQLSTATE 08P01)`, at the moment of the switchover: PgBouncer had linked the client to a server connection of the old
+  primary and was setting the client's parameters on it (`varcache_apply failed: FATAL: terminating connection due to administrator command`). The
+  client's statement was not sent; PgBouncer links a server at the first statement of a transaction, so it never meets a `COMMIT`.
+- `FATAL: password authentication failed for user "quader" (SQLSTATE 28P01)`, 15 s later: the clients that waited for a server connection when the
+  pooler's login on the new primary failed (its verifier had changed, Q-HA-302) get the server's error. Their statement did not run either.
+
+The fix of Q-HA-302 shortens the window but does not remove either answer: the old primary's connections end at every switchover, and the new
+primary's verifier changes at every promotion.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Retry both, `28P01` only on an authenticated connection (chosen) | `08P01` with `invalid server parameter` and a `28P01` that is not inside pgx's `ConnectError` are `retryFailover` | The request waits out the switchover as R-HA-015 says; a wrong password of Quader's own still fails at once (it comes at connect) | Two more PgBouncer texts and one structural rule to keep |
+| (b) Retry every `28P01` | The code decides | No structural rule | A wrong password in `secrets.database` would be retried until `max_elapsed` on every request instead of failing at connect |
+| (c) Leave them final | Nothing changes | | Every switchover behind a pooler answers some requests `500`, which R-HA-007's failure table does not allow |
+
+**Choice:** (a). PostgreSQL itself sends `28P01` only during authentication, which pgx reports as a `ConnectError`; on an established connection it
+can only come from a pooler that forwards its own failed server login. `TestClassify` has the three cases.
+
+**Rationale:** both answers mean "no server yet", and the statement was not run, so running it again is safe. The development agent would revisit the
+match when PgBouncer changes the text (the pinned CloudNativePG pooler image is what the test of Q-HA-302 runs), or if a pooler forwards a server's
+`28P01` on a connection whose statement may have run.
+
+**Applied in the spec:** R-HA-058 (the switchover bullet). Code: [retry.go](../../internal/meta/postgres/retry.go).
 
 ## What this does not cover
 

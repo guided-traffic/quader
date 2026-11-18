@@ -59,7 +59,22 @@ func classify(err error) retryKind {
 			if strings.Contains(pe.Message, "server shutting down") || strings.Contains(pe.Message, "pgbouncer cannot connect to server") || strings.Contains(pe.Message, "server login has been failing") {
 				return retryFailover
 			}
+			// "invalid server parameter": the server PgBouncer linked the client to died while PgBouncer set the client's
+			// parameters on it (a switchover ends the old primary's connections), before the client's statement was sent.
+			// It comes at the first statement of a transaction, never at COMMIT, so the work runs again (Q-HA-303).
+			if strings.Contains(pe.Message, "invalid server parameter") {
+				return retryFailover
+			}
 			return retryNo
+		case pe.Code == "28P01":
+			// invalid_password. At connect it is Quader's own credential, which no wait repairs. On a connection that is
+			// already authenticated only a pooler sends it: its server login failed while the client waited for a server
+			// (after a switchover the new primary holds a new verifier, R-HA-058), and the statement never ran (Q-HA-303).
+			var ce *pgconn.ConnectError
+			if errors.As(err, &ce) {
+				return retryNo
+			}
+			return retryFailover
 		case strings.HasPrefix(pe.Code, "08"), // connection exception
 			pe.Code == "57P01", // admin_shutdown
 			pe.Code == "57P02", // crash_shutdown
