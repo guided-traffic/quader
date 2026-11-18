@@ -207,7 +207,8 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
       accounts
         .getByRole('row')
         .filter({ has: page.getByRole('link', { name: accountName, exact: true }) })
-        .filter({ has: page.getByRole('link', { name: key, exact: true }) }),
+        // The project is its mark and its display name (Q-UI-424): the row is found by where that link leads.
+        .filter({ has: page.locator(`a[href$="/projects/${key}"]`) }),
     ).toHaveCount(1);
     await expectAccessible(page, 'service account list with the project column');
   });

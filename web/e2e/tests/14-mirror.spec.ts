@@ -128,7 +128,12 @@ test('R-REPO-059 R-UI-021 Q-UI-104 Q-UI-105 the status of a mirror, pause, resum
 
     await notice.getByRole('link', { name: 'Open the mirror jobs' }).click();
     await expect(page).toHaveURL(/\/admin\/system\/jobs\?kind=mirror-pass$/);
-    await expect(page.getByRole('heading', { name: 'Jobs', level: 1 })).toBeVisible();
+    // Jobs is a tab of the page System status (R-UI-164).
+    await expect(page.getByRole('heading', { name: 'System status', level: 1 })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'System status pages' }).getByRole('link', { name: 'Jobs', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
   await signOut(page);
