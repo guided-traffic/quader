@@ -1,6 +1,5 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
-import { setupCommands } from '../../../core/project-links';
 import { RouterLink } from '@angular/router';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { PackageSort, PackageSummary, PackagesApi } from '../../../api/packages-api';
@@ -10,7 +9,7 @@ import { DataTable, TableColumn, TableSort } from '../../../shared/ui/data-table
 import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { gradeRank } from '../../../shared/vulnerability/grade-words';
 import { packageCommands } from '../../packages/package-links';
-import { ContentShape } from './content-shape';
+import { ContentShape, emptyContentText } from './content-shape';
 import { RepositoryItemVersions } from './repository-item-versions';
 
 /** How long a change of the filter waits before it asks the server. */
@@ -58,17 +57,11 @@ export const GRADE_SORT_MAX = 1000;
       [loading]="list.loading()"
       [error]="list.error()"
       [empty]="list.items().length === 0"
-      [emptyText]="q() ? shape().emptyFilteredText : shape().emptyText"
+      [emptyText]="q() ? shape().emptyFilteredText : emptyText()"
       [hasMore]="list.hasMore()"
       (more)="list.more()"
       (retry)="list.more()"
     >
-      @if (offerSetup() && !q()) {
-        <!-- The action that fills an empty repository (Q-UI-309): the setup shows how to publish or upload with a client. -->
-        <a emptyAction class="btn btn-default" [routerLink]="setupLink()" i18n="@@repo.content.tab.setup"
-          >Set up client</a
-        >
-      }
       @for (p of rows(); track p.id) {
         <tr>
           <th scope="row" class="wrap-name">
@@ -131,8 +124,6 @@ export class RepositoryItems {
 
   /** The qualified name of the repository. */
   readonly repository = input.required<string>();
-  /** Set up client of this repository (R-UI-126). */
-  protected readonly setupLink = computed(() => setupCommands(this.repository()));
   readonly format = input.required<string>();
   readonly shape = input.required<ContentShape>();
   /** The format is matched against advisories: the column of findings is shown. */
@@ -140,8 +131,11 @@ export class RepositoryItems {
   /** The filter and the sort, from the URL of the page. */
   readonly q = input<string>('');
   readonly sortParam = input<ItemSort>('name');
-  /** Whether an empty repository offers Set up client: not for a disabled one, which no client can use. */
-  readonly offerSetup = input(true);
+  /**
+   * What the empty state says fills the repository, for this caller (R-UI-144, Q-UI-555): `publisher` who may publish to it,
+   * `other` who may not, `none` for a disabled repository. It offers no button: **Set up client** is the header's.
+   */
+  readonly fill = input<'publisher' | 'other' | 'none'>('other');
   readonly filterChange = output<string>();
   readonly sortParamChange = output<ItemSort>();
 
@@ -159,6 +153,7 @@ export class RepositoryItems {
     return { column: raw.replace('-', ''), direction: raw.startsWith('-') ? 'desc' : 'asc' };
   });
   protected readonly caption = computed(() => this.shape().itemsLabel);
+  protected readonly emptyText = computed(() => emptyContentText(this.shape(), this.fill()));
   /** The answer carries grades: a signed-in caller of an installation that scans, for a format it scans (Q-VULN-158, Q-UI-377). */
   protected readonly graded = computed(() => this.scanned() && this.list.items().some((p) => p.vulnerabilityGrade !== undefined));
   protected readonly gradeSorted = computed(() => this.sortParam().replace('-', '') === 'grade');

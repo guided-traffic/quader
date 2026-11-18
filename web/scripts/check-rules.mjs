@@ -6,6 +6,7 @@
 //  - R-UI-050: every manual page that src/app/core/help-topics.ts names is a file of docs/manual/.
 //  - Q-UI-335: every number field of a template names its width (field-width-rule.mjs).
 //  - R-UI-126: no link to the removed routes /setup and /browse (removed-routes-rule.mjs).
+//  - Q-UI-552: no bare <details> in a template: every fold is <quader-disclosure>, with the app's one chevron.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,6 +27,11 @@ const sources = [...walk(join(root, 'src'))].filter((p) => /\.(ts|html|scss|css)
 const rules = [
   { id: 'R-ARCH-004', re: /NgModule\(|provideZoneChangeDetection|zone\.js/, files: [...sources, join(root, 'angular.json')] },
   { id: 'R-UI-001', re: /bypassSecurityTrust|addSvgIcon/, files: sources },
+  {
+    id: 'Q-UI-552',
+    re: /<details[\s>]/,
+    files: sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts')),
+  },
   {
     id: 'R-ARCH-007',
     re: /['"`]\/(files\/|api\/(?!v[0-9]+\/)[a-z][a-z0-9-]*\/)/,

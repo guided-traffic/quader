@@ -106,8 +106,8 @@ describe('The package page: its versions (R-UI-110)', () => {
     );
     expect(headers(graded)).toEqual(['Version', 'Size', 'Vulnerabilities', 'Published', 'Last fetched']);
     const cell = (v: string) => rows(graded).find((tr) => text(tr.querySelector('th a')!) === v)!.querySelectorAll('td')[1]!;
-    expect(text(cell('1.4.0').querySelector('.version-grade-text')!)).toBe('Grade E · 1,145 findings · 112 fixable');
-    expect(text(cell('1.3.0').querySelector('.version-grade-text')!)).toBe('Grade N/A · not scanned');
+    expect(text(cell('1.4.0').querySelector('.grade-text')!)).toBe('Grade E · 1,145 findings · 112 fixable');
+    expect(text(cell('1.3.0').querySelector('.grade-text')!)).toBe('Grade N/A · not scanned');
     await expectAccessible(graded.root);
     const plain = await open();
     expect(headers(plain)).not.toContain('Vulnerabilities');

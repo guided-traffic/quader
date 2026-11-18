@@ -36,7 +36,7 @@ import { asApiError } from '../../shared/paged-resource';
           [hint]="nameHint"
         />
         <quader-text-field
-          width="full"
+          width="name"
           i18n-label="@@bastion-create.description"
           label="Description"
           name="description"
@@ -133,7 +133,7 @@ export interface BastionTokenDialogData {
           <quader-error-notice [error]="e" />
         }
         <quader-text-field
-          width="full"
+          width="name"
           i18n-label="@@bastion-token.description"
           label="Description"
           name="description"

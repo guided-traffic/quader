@@ -55,7 +55,7 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
           <quader-text-field width="name" i18n-label="@@ci.form.name" label="Name" name="ro-name" [value]="i.name" [readonly]="true" />
           <quader-text-field width="name" i18n-label="@@ci.form.kind" label="Kind" name="ro-kind" [value]="i.kind" [readonly]="true" />
           <quader-text-field width="full" i18n-label="@@ci.form.issuer" label="Issuer URL" name="ro-issuer" [value]="i.issuer" [readonly]="true" />
-          <quader-text-field width="full" i18n-label="@@ci.form.description" label="Description" name="ro-description" [value]="i.description || '–'" [readonly]="true" />
+          <quader-text-field width="name" i18n-label="@@ci.form.description" label="Description" name="ro-description" [value]="i.description || '–'" [readonly]="true" />
           <quader-text-field width="name" i18n-label="@@ci.form.enabled" label="Enabled" name="ro-enabled" [value]="i.enabled ? yes : no" [readonly]="true" />
           <quader-text-field width="full" i18n-label="@@ci.form.audiences" label="Accepted audiences" name="ro-audiences" [value]="i.allowedAudiences.join(', ')" [readonly]="true" />
           <quader-text-field width="name" i18n-label="@@ci.form.exclusive" label="Only these audiences" name="ro-exclusive" [value]="i.exclusiveAudience ? yes : no" [readonly]="true" />
@@ -103,7 +103,7 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
           i18n-hint="@@ci.form.issuer-hint"
           hint="The base URL of the GitLab instance, https only. It must match the iss claim exactly."
         />
-        <quader-text-field width="full" i18n-label="@@ci.form.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
+        <quader-text-field width="name" i18n-label="@@ci.form.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
         <quader-checkbox [checked]="enabled()" (checkedChange)="enabled.set($event)" i18n="@@ci.form.enabled-check">Enabled (disabling revokes the tokens issued through this issuer)</quader-checkbox>
         <quader-text-field
           width="full"

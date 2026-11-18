@@ -7024,15 +7024,6 @@
         <target>Der eingefügte Token wurde in Ihrem Browser dekodiert und verworfen. Nur seine Claims werden verwendet; die Signatur wurde nicht geprüft.</target>
       </segment>
     </unit>
-    <unit id="repo.content.files-empty2">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:135</note>
-      </notes>
-      <segment>
-        <source>This repository holds no files yet. Upload a file with your client.</source>
-        <target>Dieses Repository enthält noch keine Dateien. Laden Sie eine Datei mit Ihrem Client hoch.</target>
-      </segment>
-    </unit>
     <unit id="repo.list.heading">
       <notes>
         <note category="location">src/app/features/repositories/repository-list.ts:119</note>
@@ -24809,15 +24800,6 @@
         <target>Digest von <ph id="0" equiv="platform" disp="platform"/> kopieren</target>
       </segment>
     </unit>
-    <unit id="repo.content.oci.empty-remote2">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:37</note>
-      </notes>
-      <segment>
-        <source>This repository has cached no images yet. Pull an image through it with your client.</source>
-        <target>Dieses Repository hat noch keine Images zwischengespeichert. Laden Sie ein Image mit Ihrem Client darüber herunter.</target>
-      </segment>
-    </unit>
     <unit id="login.local.password">
       <notes>
         <note category="location">src/app/features/login/login.ts:70,72</note>
@@ -27654,15 +27636,6 @@
         <target>Neue Freigaberegel</target>
       </segment>
     </unit>
-    <unit id="repo.content.empty2">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:57</note>
-      </notes>
-      <segment>
-        <source>This repository holds no packages yet. Publish a package with your client.</source>
-        <target>Dieses Repository enthält noch keine Pakete. Veröffentlichen Sie ein Paket mit Ihrem Client.</target>
-      </segment>
-    </unit>
     <unit id="audit.action.npm.dist_tag.set">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:187</note>
@@ -29472,15 +29445,6 @@
       <segment>
         <source>No entries match</source>
         <target>Keine passenden Einträge</target>
-      </segment>
-    </unit>
-    <unit id="project-members.direction">
-      <notes>
-        <note category="location">src/app/features/projects/project-members.ts:85,86</note>
-      </notes>
-      <segment>
-        <source>Reverse the order</source>
-        <target>Reihenfolge umkehren</target>
       </segment>
     </unit>
     <unit id="ci.test.view-form">
@@ -31799,15 +31763,6 @@
         <target>Deaktiviert</target>
       </segment>
     </unit>
-    <unit id="repo.content.oci.empty2">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:38</note>
-      </notes>
-      <segment>
-        <source>This repository holds no images yet. Push an image with your client.</source>
-        <target>Dieses Repository enthält noch keine Images. Laden Sie ein Image mit Ihrem Client hoch.</target>
-      </segment>
-    </unit>
     <unit id="policy.toc">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:33,35</note>
@@ -31824,15 +31779,6 @@
       <segment>
         <source>The name matches the pin rule</source>
         <target>Der Name passt auf die Pin-Regel</target>
-      </segment>
-    </unit>
-    <unit id="project-members.tab">
-      <notes>
-        <note category="location">src/app/features/projects/project-members.ts:42,43</note>
-      </notes>
-      <segment>
-        <source>Members</source>
-        <target>Mitglieder</target>
       </segment>
     </unit>
     <unit id="route.profile.tokens.title">
@@ -33739,6 +33685,150 @@
       <segment>
         <source>Copy command</source>
         <target>Befehl kopieren</target>
+      </segment>
+    </unit>
+    <unit id="ansible.imports.one-message">
+      <notes>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:103</note>
+      </notes>
+      <segment>
+        <source>1 message</source>
+        <target>1 Meldung</target>
+      </segment>
+    </unit>
+    <unit id="ansible.imports.messages">
+      <notes>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:103</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="count"/> messages</source>
+        <target><ph id="0" equiv="count" disp="count"/> Meldungen</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.fill-remote">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:39</note>
+      </notes>
+      <segment>
+        <source>It fills as clients pull images through it; Set up client shows how.</source>
+        <target>Es füllt sich, wenn Clients Images darüber herunterladen; Client einrichten zeigt, wie.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.fill">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:40</note>
+      </notes>
+      <segment>
+        <source>Push an image with your client; Set up client shows how.</source>
+        <target>Pushen Sie ein Image mit Ihrem Client; Client einrichten zeigt, wie.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.empty-remote3">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:48</note>
+      </notes>
+      <segment>
+        <source>This repository has cached no images yet.</source>
+        <target>Dieses Repository hat noch keine Images zwischengespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.empty3">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:49</note>
+      </notes>
+      <segment>
+        <source>This repository holds no images yet.</source>
+        <target>Dieses Repository enthält noch keine Images.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.fill-others">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:51</note>
+      </notes>
+      <segment>
+        <source>Members who may push to it fill it with their client.</source>
+        <target>Mitglieder, die darin pushen dürfen, füllen es mit ihrem Client.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.fill-remote">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:61</note>
+      </notes>
+      <segment>
+        <source>It fills as clients fetch through it; Set up client shows how.</source>
+        <target>Es füllt sich, wenn Clients darüber abrufen; Client einrichten zeigt, wie.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.fill">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:63</note>
+      </notes>
+      <segment>
+        <source>Upload files with your client; Set up client shows how.</source>
+        <target>Laden Sie Dateien mit Ihrem Client hoch; Client einrichten zeigt, wie.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.empty-remote">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:68</note>
+      </notes>
+      <segment>
+        <source>This repository has cached no files yet.</source>
+        <target>Dieses Repository hat noch keine Dateien zwischengespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.empty3">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:69</note>
+      </notes>
+      <segment>
+        <source>This repository holds no files yet.</source>
+        <target>Dieses Repository enthält noch keine Dateien.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.fill-others">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:71</note>
+      </notes>
+      <segment>
+        <source>Members who may upload to it fill it with their client.</source>
+        <target>Mitglieder, die darin hochladen dürfen, füllen es mit ihrem Client.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.fill">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:74</note>
+      </notes>
+      <segment>
+        <source>Publish a package with your client; Set up client shows how.</source>
+        <target>Veröffentlichen Sie ein Paket mit Ihrem Client; Client einrichten zeigt, wie.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.empty-remote3">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:82</note>
+      </notes>
+      <segment>
+        <source>This repository has cached no packages yet.</source>
+        <target>Dieses Repository hat noch keine Pakete zwischengespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.empty3">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:83</note>
+      </notes>
+      <segment>
+        <source>This repository holds no packages yet.</source>
+        <target>Dieses Repository enthält noch keine Pakete.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.fill-others">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:85</note>
+      </notes>
+      <segment>
+        <source>Members who may publish to it fill it with their client.</source>
+        <target>Mitglieder, die darin veröffentlichen dürfen, füllen es mit ihrem Client.</target>
       </segment>
     </unit>
   </file>

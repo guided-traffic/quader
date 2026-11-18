@@ -30,9 +30,14 @@
 
 // The field label and the text, select and area inputs are controls: _controls.scss (Q-UI-126).
 
+// An area takes the width of its form unless it names its own (`field-w-name` for a description, Q-UI-551): this rule comes
+// after the width classes of _controls.scss and would otherwise undo them.
 .area-input {
-  inline-size: 100%;
   resize: vertical;
+}
+
+.area-input:not([class*='field-w-']) {
+  inline-size: 100%;
 }
 
 .field-error {

@@ -537,10 +537,10 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
 
     it('R-UI-082 R-UI-083 Upstream details is closed at first and holds the further hosts and the periods; Offline only on the settings page', async () => {
       const r = await section(OCI_FORMAT);
-      const toggle = r.root.querySelector<HTMLButtonElement>('.details-toggle')!;
+      const toggle = r.root.querySelector<HTMLButtonElement>('.upstream-details .inline-toggle')!;
       expect(toggle.getAttribute('aria-expanded')).toBe('false');
-      expect(r.root.querySelector('#upstream-details')!.classList).not.toContain('open');
-      expect(r.root.querySelector('#upstream-details #f-remote-cache-metadataTtlSeconds')).not.toBeNull();
+      expect(r.root.querySelector('.upstream-details .collapse-region')!.classList).not.toContain('open');
+      expect(r.root.querySelector('.upstream-details #f-remote-cache-metadataTtlSeconds')).not.toBeNull();
       expect(r.root.querySelector('#f-remote-availability-mode')).toBeNull();
       toggle.click();
       await settle(r.fixture);
@@ -558,7 +558,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       await expectAccessible(r.root);
 
       const page = await section(OCI_FORMAT, { edit: true });
-      expect(page.root.querySelector('#upstream-details #f-remote-availability-mode')).not.toBeNull();
+      expect(page.root.querySelector('.upstream-details #f-remote-availability-mode')).not.toBeNull();
     });
 
     it('R-UI-083 a server error at a further host opens Upstream details and sits at the host', async () => {
@@ -568,7 +568,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
         new Map([['/remote/extraHosts/0/pattern', { pointer: '/remote/extraHosts/0/pattern', code: 'invalid_pattern', detail: 'a host name' }]]),
       );
       await settle(r.fixture);
-      expect(r.root.querySelector('.details-toggle')!.getAttribute('aria-expanded')).toBe('true');
+      expect(r.root.querySelector('.upstream-details .inline-toggle')!.getAttribute('aria-expanded')).toBe('true');
       expect(control(r.root, 'f-remote-extraHosts-0').getAttribute('aria-invalid')).toBe('true');
     });
 

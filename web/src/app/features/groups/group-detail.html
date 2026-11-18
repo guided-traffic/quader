@@ -35,7 +35,7 @@
         <quader-text-field width="name" i18n-label="@@group.origin" label="Origin" name="origin" [value]="originLabel(g.origin)" [readonly]="true" />
       </div>
       <quader-text-field width="name" i18n-label="@@group.created" label="Created" name="created" [value]="(g.createdAt | date: 'medium') ?? ''" [readonly]="true" />
-      <quader-text-field width="full" i18n-label="@@group.description" label="Description" name="description" [(value)]="description" [readonly]="readOnly() || !canWrite()" [error]="fieldError('/description')" />
+      <quader-text-field width="name" i18n-label="@@group.description" label="Description" name="description" [(value)]="description" [readonly]="readOnly() || !canWrite()" [error]="fieldError('/description')" />
       <quader-checkbox [checked]="autoJoin()" [disabled]="readOnly() || !canWrite()" (checkedChange)="autoJoin.set($event)">
         <ng-container i18n="@@group.auto-join">Every user joins this group automatically</ng-container>
       </quader-checkbox>

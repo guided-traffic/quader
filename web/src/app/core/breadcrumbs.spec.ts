@@ -1,16 +1,19 @@
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { RepositoriesApi } from '../api/repositories-api';
 import { provideFakeApis } from '../api/testing/fakes';
+import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT } from '../api/testing/fakes-catalog';
 import { routes } from '../app.routes';
 import { Breadcrumbs } from './breadcrumbs';
 
 /** The trail of a URL of the real route map (R-UI-003), as the shell would render it. */
-async function trailAt(url: string) {
+async function trailAt(url: string, setup?: () => void) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [provideRouter(routes), provideHttpClient(), ...provideFakeApis()],
   });
+  setup?.();
   const router = TestBed.inject(Router);
   const crumbs = TestBed.inject(Breadcrumbs);
   await router.navigateByUrl(url);
@@ -61,6 +64,19 @@ describe('Breadcrumbs', () => {
         await router.navigateByUrl(url);
       }
     }
+  });
+
+  it('R-UI-124 Q-UI-553 the guides name a format as people read it, not by its key', async () => {
+    const catalog = (): void => {
+      (TestBed.inject(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [GENERIC_FORMAT, OCI_FORMAT];
+    };
+    expect(await trailAt('/guides/oci', catalog)).toEqual([
+      { label: 'Guides', link: '//guides', literal: false },
+      { label: 'OCI (Docker)', link: '//guides/oci', literal: true },
+    ]);
+    expect((await trailAt('/guides/oci/local', catalog)).map((c) => c.label)).toEqual(['Guides', 'OCI (Docker)', 'Set up client']);
+    // A format the catalog does not know keeps its key.
+    expect((await trailAt('/guides/zzz', catalog)).map((c) => c.label)).toEqual(['Guides', 'zzz']);
   });
 
   it('R-UI-002 a literal child route such as "new" uses its title', async () => {

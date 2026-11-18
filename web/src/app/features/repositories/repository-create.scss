@@ -94,14 +94,19 @@ quader-visibility-level {
   }
 }
 
+// The request as the API takes it: the second closed section of the form, under Advanced settings and with its look; the two
+// sections share one rule between them.
 .api-request {
-  margin-block: var(--quader-space-4);
-  padding-block-start: var(--quader-space-3);
-  border-block-start: 1px solid var(--quader-border);
+  margin-block-end: var(--quader-space-4);
 
   h3 {
+    margin: var(--quader-space-3) 0 var(--quader-space-2);
     font-size: var(--quader-text-size);
     font-weight: 600;
+
+    &:first-child {
+      margin-block-start: 0;
+    }
   }
 
   // The request wraps instead of scrolling: a curl line is longer than the column.

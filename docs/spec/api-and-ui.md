@@ -3530,6 +3530,8 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   [Q-UI-517](#q-ui-517--the-client-address-and-set-up-client-stand-on-one-line-of-the-header)). At the right, **Settings** for a
   caller who can read the configuration (`repositories:read-config`, or the Owner of the project) and a `more_vert` menu with
   **Files** (every format but generic, whose content is its files, Q-UI-511) and **Vulnerabilities** (not for generic and virtual).
+- Below 36 rem of content the header is one flow (Q-UI-554): the heading, the sentence, the badges and the address field each on a
+  line, then **Set up client**, **Settings** and the menu on one line; no button stands alone on a line.
 - No tabs: the content (captioned Images, Packages or Files) follows the header. **Set up client** opens the repository's page
   Set up client (`…/repositories/<key>/setup`, R-UI-120); it is the page's one way to the setup (Q-UI-321).
 - A package format (npm, NuGet, OCI, Debian, every format with a view adapter) lists its items from `GET /api/v1/packages` with
@@ -3562,10 +3564,11 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   R-REPO-002; the UI labels by that order and names no path of its own, R-ARCH-007), the upstream a remote repository caches (its
   URL), and the members a virtual repository resolves from, each linked to its content page as far as the caller may read them (the
   consumer view of R-REPO-010 has neither).
-- An empty repository says how it is filled ("This repository holds no packages yet. Publish a package with your client.",
-  for OCI images and generic files the same) and offers **Set up client** under it (the empty state of Q-UI-309), except for
-  a disabled repository, and except where the folder's toolbar offers **Upload files** (R-UI-011): there the sentence names the
-  upload and the page has no second upload button. Without a description the header's sentence says what the class means; for a
+- An empty repository says what fills it and for whom, and offers no button: **Set up client** is the header's (R-UI-144,
+  Q-UI-555). A caller who may publish reads "This repository holds no packages yet. Publish a package with your client; Set up
+  client shows how." (push an image; upload files), anyone else who fills it, a remote repository that it fills as clients fetch
+  through it; where the folder's toolbar offers **Upload files** (R-UI-011) the sentence names the upload, and a disabled
+  repository says only that it is empty. Without a description the header's sentence says what the class means; for a
   local repository "Holds what is published to it."
 - Opening the page records it in the recently opened repositories of the browser (R-UI-020), which the start page shows
   (Q-UI-311, Q-UI-323).
@@ -4897,7 +4900,8 @@ the model gives the screens:
 - The project's settings show the logical size the project is charged (`logicalBytes`, in binary units, with the exact byte count as its
   tooltip), for every member and every holder of `projects:read`. The physical size of the object store is a figure of the admin
   dashboard only.
-- Members screen (`/projects/{project}/members`, Q-UI-214): the users and groups of the project with their roles, read for every member; an Owner and an
+- Members screen (`/projects/{project}/members`, Q-UI-214, R-UI-142): the users and groups of the project with their roles, in the
+  head and the table of every list, the number of members after the heading, read for every member; an Owner and an
   administrator add a member through the principal lookup (Q-AUTHZ-182), change a role and remove a member. The last
   Owner cannot be removed or demoted except by an administrator: the action is shown disabled with the reason, and a
   `409 last_owner` from a concurrent change is reported as such
@@ -5523,6 +5527,9 @@ Priority: **MVP** · Covers: UI-031
   repository's content page (R-UI-052). **Show as API request** shows the body (a typed password as `<the password>`, R-UI-043)
   and the same request as `curl`. A form that asks for a recent sign-in keeps its draft without secrets, as before.
 
+- **Show as API request** is the form's last closed section, under **Advanced settings** and with its chevron: the request body
+  and the same request with curl ([Q-UI-552](#q-ui-552--every-fold-is-the-shared-disclosure-a-fold-inside-a-section-is-its-inline-form)).
+
 Acceptance criteria:
 
 - **Create repository** on the repository list opens the chooser; typing `nu` leaves the NuGet tile; Enter opens a page whose
@@ -5635,12 +5642,13 @@ Priority: **MVP** · Covers: UI-031
   | `field-w-number` | `--quader-field-width-number` | 6 rem | a count of up to six digits |
   | `field-w-duration` | `--quader-field-width-duration` | 8 rem | a period in seconds, up to eight digits |
   | `field-w-bytes` | `--quader-field-width-bytes` | 13 rem | a byte count, up to nineteen digits |
-  | `field-w-name` | `--quader-field-width-name` | 28 rem, half the column | a key, a name, a host, every select and every picker |
-  | `field-w-full` | — | the column | a URL, a description, a list, a key block |
+  | `field-w-name` | `--quader-field-width-name` | 28 rem, half the column | a key, a name, a host, a description, every select and every picker |
+  | `field-w-full` | — | the column | a URL, a note, a list, a key block |
 
 - A field is never wider than its column; a narrower column shrinks it and its text scrolls inside it.
 - Which field gets which: key, username, password, project, authentication, hide existence, discovery, deployment target, a host
-  of Further hosts: `name`; upstream URL, description, administrator notes, patterns: `full`; the two cache periods, the pass and
+  of Further hosts, description (one sentence, [Q-UI-551](#q-ui-551--a-description-is-as-wide-as-a-name)): `name`; upstream URL,
+  administrator notes, patterns: `full`; the two cache periods, the pass and
   full-pass intervals: `duration`; concurrent fetches, versions per package: `number`; storage limit: `bytes`. A schema member:
   `integer` and `number` → `number`; a string with `format: uri` or `maxLength` above 128, and every list → `full`; any other
   string and every choice → `name`.
@@ -5775,6 +5783,9 @@ Priority: **P1** · Covers: quader-only
   Critical": the letter and its separator are in the text, hidden from sight. Where no shield stands (a tooltip, the order of a
   sort) the text keeps its letter. The shield is centred on the line it stands in, whatever that line's height, and adds
   nothing to it; in a table cell a badge is too, so that the text of every cell of a row stands on one line (Q-UI-308).
+- **Revised on 2026-11-18 (R-UI-143, Q-UI-556):** beside the shield, in every list and on a version's page, the text is the
+  statement of R-UI-112, the total and the fixable findings; the deciding count ("13 Critical") and the rule are the tooltip's and
+  the card's.
 - `<quader-grade>` ([grade.ts](../../web/src/app/shared/vulnerability/grade.ts)) is the shield of 20 px and the text on one line,
   for a list cell, a header and a tab. Its tooltip (`[quaderTooltip]`) names every count, "13 Critical · 160 High · 113 Medium ·
   16 Low · 843 Unknown", and "OS end of life" when it is; the text stays the accessible name of the cell.
@@ -5849,10 +5860,10 @@ their severity (R-VULN-022). The list shows the grade; the bar and the facts are
 
 | Screen | Place | What |
 |---|---|---|
-| Repository content (R-UI-052) | The column **Vulnerabilities** of the items | `<quader-grade>` of the item's latest version (`vulnerabilityGrade`, R-VULN-039); the column sorts by grade ([Q-UI-373](#q-ui-373--the-list-sorts-by-grade-in-the-browser-over-the-whole-list-up-to-1000-entries)) |
+| Repository content (R-UI-052) | The column **Vulnerabilities** of the items | `<quader-grade>` of the item's latest version (`vulnerabilityGrade`, R-VULN-039): the total and the fixable findings, as the versions table says them (R-UI-143); the column sorts by grade ([Q-UI-373](#q-ui-373--the-list-sorts-by-grade-in-the-browser-over-the-whole-list-up-to-1000-entries)) |
 | Repository content, the opened row | The column **Vulnerabilities** of the versions | `<quader-grade>` of each version in this repository |
-| Package page (R-UI-007), the versions table (R-UI-110) | The column **Vulnerabilities** | `<quader-version-grade>` of each version: the grade, the total of its open findings and how many have a fix (R-UI-112) |
-| Version page (R-UI-111) | The line of facts | `<quader-version-grade>` of the version (the worst of its repositories), a link to the tab **Vulnerabilities** ([Q-UI-375](#q-ui-375--the-package-page-shows-the-versions-grade-in-its-header-and-a-card-per-repository-on-its-tab), Q-UI-454) |
+| Package page (R-UI-007), the versions table (R-UI-110) | The column **Vulnerabilities** | `<quader-grade>` of each version: the grade, the total of its open findings and how many have a fix (R-UI-112) |
+| Version page (R-UI-111) | The line of facts | `<quader-grade>` of the version (the worst of its repositories), a link to the tab **Vulnerabilities** ([Q-UI-375](#q-ui-375--the-package-page-shows-the-versions-grade-in-its-header-and-a-card-per-repository-on-its-tab), Q-UI-454) |
 | Version page, tab **Vulnerabilities** (R-VULN-023) | Each repository's section | `<quader-grade-card>` above the block banner, its bar's segments the severity filter of the findings below (`severity` in the URL); then the open findings, 25 at a time from the findings API, worst first, with their number from the grade's counts ([Q-UI-379](#q-ui-379--the-vulnerabilities-tab-pages-the-open-findings-of-a-version-from-the-findings-api-filtered-by-the-cards-bar)) |
 | Vulnerability report (R-VULN-022), a project's and the admin area's security dashboard | The header | `<quader-severity-bar [links]>` of the open findings in scope in place of the five severity counts; the counts **Malicious**, **Needs triage** and **Blocked versions** stay ([Q-UI-376](#q-ui-376--the-reports-header-shows-the-severity-bar-whose-segments-are-its-filter-links)) |
 
@@ -6068,11 +6079,12 @@ closed. Every list screen has one row above its table, built by one component, `
 
 - **The search by name** ([Q-UI-421](#q-ui-421--the-search-by-name-is-a-field-above-the-list-outside-the-drawer)): a field as wide
   as a name (R-UI-085), named and hinted by its job (**Filter repositories**, **Filter packages**, **Filter findings**, **Filter
-  users**, **Filter groups**, **Filter service accounts**, **Filter projects**). It filters as the list's name filter does, through
+  users**, **Filter groups**, **Filter service accounts**, **Filter projects**, **Filter members**). It filters as the list's name filter does, through
   the same query parameter or request member, 250 ms after the last key or at once on Enter. A list whose API has no search by name
   (the permission policies, the token administration, the audit log, the issued CI tokens) has no field.
 - **Filters**, the button that opens the list's drawer (R-UI-101), with the number of filters that are set. A list whose only filter
-  is the name (the admin area's projects, the service accounts, the start page's projects) has no button and no drawer.
+  is the name (the admin area's projects, the service accounts, the start page's projects, a project's members) has no button and no
+  drawer.
 - **The filters that are set**, one chip each, to the right of the button
   ([Q-UI-422](#q-ui-422--a-set-filter-is-a-chip-beside-filters-and-what-does-not-fit-folds-into-n-more)): the filter's name muted,
   its value, and a button that removes that filter alone, named "Remove the filter Format: npm". Chips that do not fit beside the
@@ -6244,7 +6256,8 @@ The owner's walk of 2026-11-18 (W-7): the row of a version shows its grade, the 
 fix. The page that opened before said **Vulnerabilities (1145)** in its tab and **E · 13 Critical** beside the version: two
 numbers whose relation the reader had to know.
 
-- `<quader-version-grade>` shows the shield, the letter and "1,145 findings · 112 fixable" (the sum of `open` and `fixable` of the
+- `<quader-grade>` (R-UI-143; `<quader-version-grade>` until 2026-11-18) shows the shield, which carries the letter, and "1,145
+  findings · 112 fixable" (the sum of `open` and `fixable` of the
   grade, R-VULN-040), "no findings" for S, "not scanned" for N/A; its tooltip names the rule of the letter and every count. The
   versions table and the version page's facts show it; the card of each repository on the tab keeps the rule and the bar
   ([Q-UI-454](#q-ui-454--a-version-says-its-grade-total-and-fixable-findings-once-the-tab-carries-no-count)).
@@ -6349,7 +6362,8 @@ Priority: **MVP** · Covers: quader-only
 - **`/guides`** (the navigation entry **Guides**, also the user menu's): the heading **Guides**, one sentence, and the formats of
   `GET /api/v1/formats` that list clients as the tiles of R-UI-127, in the catalog's order; nothing else to choose (owner,
   2026-11-18). A signed-out visitor sees it while `publicContent` is true.
-- **`/guides/{format}`** (Q-UI-481): the heading "<display name> repositories", a sentence, and the repositories of that format
+- **`/guides/{format}`** (Q-UI-481): the trail **Guides / <display name>** and the title the display name, never the key
+  ([Q-UI-553](#q-ui-553--the-guides-trail-names-a-format-as-people-read-it)); the heading "<display name> repositories", a sentence, and the repositories of that format
   the reader may read and that are not disabled, virtual first (marked **recommended**), then by name. The list is built from the
   parts of every repository list ([Q-UI-430](#q-ui-430--the-searchs-repository-rows-are-built-from-the-parts-of-the-repository-list),
   Q-UI-425, Q-UI-426): **Repository** (the visibility icon, the key as a link to the repository, the description as its muted second
@@ -6393,7 +6407,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: quader-only
 
 - One label, **Set up client**, and one target: the repository's page of R-UI-120. It stands in the repository's header beside its
-  client address (not for a disabled repository), in the empty state of a repository and of its files, in the rows of a project's
+  client address (not for a disabled repository; once on the page, also when the repository is empty, R-UI-144), in the rows of a project's
   list of repositories (W-4), in the recently opened repositories of the start page, in the install panel of a version (with the
   panel's client as `?client=`) and in the rows of the repositories behind a format's tile (R-UI-124). The repository's settings
   have no section that points to it (the development agent, 2026-11-18): the repository's own page carries it in its header.
@@ -6422,6 +6436,77 @@ Priority: **MVP** · Covers: quader-only
 Acceptance criteria:
 
 - Renders (rule 11): `guides` and `repository-new` at 1440 px show the six formats of the render seed in one row.
+
+### R-UI-142 · The members list is built like every other list
+Priority: **MVP** · Covers: quader-only
+
+Seen by the development agent on the power user's screens of the owner's walk of 2026-11-18 (`members`): the filter field was as
+wide as the page, a sort button **Account** with an arrow stood beside it instead of the head of every list, and a tab strip with
+a single tab, **Members 2**, stood above it ([Q-UI-550](#q-ui-550--the-members-list-takes-the-head-and-the-table-of-every-list-and-its-count-moves-to-the-heading)).
+
+- The list has the head of R-UI-100: the field **Filter members**, as wide as a name, which searches the display name and the user
+  name. The list has no filter besides the name, so it has no **Filters** and no drawer.
+- The list is the shared data table (`<quader-data-table>`): **Account** (the avatar, the display name with **It's you**, the user
+  name or **Group** under it), **Source**, **Role** and the row's menu. **Account** and **Role** sort by their column headers;
+  **Role** puts the strongest role first and then the accounts in order. The answer holds every member, so the search and the sort
+  run in the browser and are exact. Below 48 rem the rows stack as every list's do (Q-UI-306).
+- The page has one view and no tab strip. The number of members is a neutral badge after the heading, **Members 2**
+  (`count` of the page header).
+
+Acceptance criteria:
+
+- Unit (`project-members.spec.ts`): the heading reads "Members 2", there is no tab strip, the head has **Filter members** and no
+  **Filters**, the table's sortable headers are Account and Role, a click on a header reverses or changes the order, and the search
+  narrows the list.
+- Rendered (rule 11): `members` as plain user, power user and administrator, light and dark, at 1440 and 390 px.
+
+### R-UI-143 · A grade says the same thing in every list
+Priority: **MVP** · Covers: quader-only
+
+Seen by the builder of the guides and the development agent on 2026-11-18: a repository's list of packages said the count that
+decides the letter ("2 High" beside the shield C), the package's versions table "1,145 findings · 112 fixable" beside the shield; a
+reader sees the two one after the other ([Q-UI-556](#q-ui-556--a-repositorys-list-of-packages-says-a-grade-as-the-versions-table-does)).
+
+- `<quader-grade>` ([grade.ts](../../web/src/app/shared/vulnerability/grade.ts)) is the one statement of a grade beside its shield:
+  the total of the open findings and how many have a fix ("1,145 findings · 112 fixable"), "no findings" without one, "not scanned"
+  for N/A, and "OS end of life" last for an image whose OS is ("OS end of life" alone when it has no finding). The letter stands on
+  the shield only (R-UI-091, revised 2026-11-18); a screen reader hears "Grade E · 1,145 findings · 112 fixable". Its tooltip is the
+  rule of the letter and every count.
+- It stands in the column **Vulnerabilities** of a repository's list of packages and of the versions an opened row lists, in the
+  versions table of a package and in the facts of a version: four places, one wording. The card of a version's page keeps the
+  deciding count, the rule and the bar (R-UI-093).
+- Each part of the statement stays on one line; where the cell is narrow, the statement breaks between its parts.
+
+Acceptance criteria:
+
+- Unit (`grade-components.spec.ts`): E with 13 Critical, 160 High, 113 Medium, 16 Low and 843 Unknown of which 112 have a fix reads
+  "Grade E · 1,145 findings · 112 fixable", its tooltip "More than 5 Critical: 13 Critical · …"; S "no findings", N/A "not
+  scanned", an image at its end of life "OS end of life". Unit (`repository-content.spec.ts`): the list of an npm repository and its
+  opened row say "5 findings · 1 fixable" for C with 2 High and 3 Low of which 1 has a fix.
+- Rendered (rule 11): `repository-npm-vendor`, `repository-oci` and `package-npm-graded` at 1440 and 390 px.
+
+### R-UI-144 · An empty repository says what fills it, and for whom
+Priority: **MVP** · Covers: quader-only
+
+Seen by the builder of the guides on 2026-11-18: an empty repository showed **Set up client** twice, in its header and under the
+sentence of its empty state ([Q-UI-555](#q-ui-555--an-empty-repository-shows-set-up-client-once-in-its-header-and-its-empty-state-says-what-fills-it-and-for-whom)).
+
+- **Set up client** stands once, in the header beside the address (R-UI-126). The empty state of the repository's content and of
+  the root of its files is a sentence and no button: what it does not hold yet, then what fills it, for this caller.
+- A caller who may deploy to the repository (`deploy` of `POST /api/v1/authz/check` at its root) reads "This repository holds no
+  packages yet. Publish a package with your client; Set up client shows how." (images: push; files: upload); in a generic repository
+  where the toolbar offers **Upload files**, "This repository holds no files yet. Upload files here or with your client." Anyone else
+  reads who fills it: "… Members who may publish to it fill it with their client." A remote repository fills by the fetches of every
+  client: "This repository has cached no packages yet. It fills as clients fetch through it; Set up client shows how." (images: pull).
+  A disabled repository says only what it does not hold: no client can use it, and its header has no **Set up client**.
+
+Acceptance criteria:
+
+- Unit (`repository-content.spec.ts`, `repository-files.spec.ts`): an empty npm repository shows one **Set up client**, in the
+  header; its empty state says the publisher's sentence to a caller who may deploy and the members' sentence to one who may not, with
+  no link or button; an empty OCI remote says that it fills as clients pull through it; a disabled repository says only that it is
+  empty.
+- Rendered (rule 11): `repository-empty` as plain user, power user and administrator, light and dark, at 1440 and 390 px.
 
 ## Deferred
 
@@ -11192,6 +11277,11 @@ Context: the screen showed `user:name` in a plain table with a labelled select p
 
 **Applied in the spec:** R-UI-041. Code: `web/src/app/features/projects/project-members.ts`, `project-member-dialog.ts`, `toProjectMember`'s caller in `internal/api/v1/projects_api.go`.
 
+**Revised by [Q-UI-550](#q-ui-550--the-members-list-takes-the-head-and-the-table-of-every-list-and-its-count-moves-to-the-heading)
+(2026-11-18):** the tab with the count, the filter bar and the sort button are gone; the list has the head and the table of every
+list, sorts by its headers **Account** and **Role**, and the count follows the heading, **Members 2**. The columns and the row menu
+stay.
+
 ### Q-UI-215 · Settings are fields in one column, and everything that folds is animated
 
 Status: **Decided by the owner** (2026-11-10): the screenshot of the reference's general settings, "Ja settings bitte umbauen", and "Auf und Zu-klapp Aktionen sind bitte immer Annimationen".
@@ -11247,8 +11337,9 @@ push an image, and an OCI remote carried a note that nothing is listed.
 | (c) The generic remote note ("Only what clients have fetched is listed here.") | The note of the other formats | One text | It leaves out the mirror pass, which fills the cache without a client |
 
 **Choice:** (a). The note reads "Only the tags this repository has cached are listed here: those clients have pulled and, in mirror mode, those a pass has fetched."
-The empty text reads "This repository has cached no images yet. Pull an image through it with your client.", with **Set up client**
-under it (fix wave 2 of T-21). The version table keeps its
+The empty text reads "This repository has cached no images yet. It fills as clients pull images through it; Set up client shows
+how." without a button of its own (revised by Q-UI-555 on 2026-11-18; until then it said "Pull an image through it with your
+client." with **Set up client** under it, fix wave 2 of T-21). The version table keeps its
 columns; the column of the findings is shown when the format is scanned, as for a local repository. No styling is added.
 
 **Rationale:** the screen should not call a fetch a push. The development agent would revisit it if the page gains a "checked" time from the entry's validation,
@@ -12038,6 +12129,10 @@ was filtered (UI-A-17, UI-A-20, UI-A-25).
 revisits an illustration if the owner wants the reference's.
 
 **Applied in the spec:** R-UI-020, R-UI-052 (an empty repository with **Set up client**), R-UI-029 (the token list's empty text).
+
+**Revised by [Q-UI-555](#q-ui-555--an-empty-repository-shows-set-up-client-once-in-its-header-and-its-empty-state-says-what-fills-it-and-for-whom)
+(2026-11-18):** an empty repository's action is the header's **Set up client**; its empty state is the sentence alone, which says
+what fills it and for whom.
 Code: [empty-state.ts](../../web/src/app/shared/ui/empty-state.ts).
 
 ### Q-UI-310 · The kind of user is read from the roles in force, per project, and is no role of its own
@@ -13027,6 +13122,10 @@ Status: **Decided by the development agent** — selected from the options below
 the package and the version: the scanned object cogpit links to is, in Quader, that list. **Rationale:** simple by default,
 details on demand. The development agent records no revisit condition. **Applied in the spec:** R-UI-091, R-UI-093, R-UI-094.
 
+**Revised by [Q-UI-556](#q-ui-556--a-repositorys-list-of-packages-says-a-grade-as-the-versions-table-does) (2026-11-18):** a list
+cell says the total and the fixable findings beside the shield, as the versions table of a package does; the deciding count is the
+tooltip's and the card's.
+
 ### Q-UI-375 · The package page shows the version's grade in its header and a card per repository on its tab
 
 **Revisited on 2026-11-18** (the owner's walk of 2026-11-18, W-7): the grade with its total and fixable findings is in the version page's facts and in each row of the package page's versions table; the tab carries no count ([Q-UI-454](#q-ui-454--a-version-says-its-grade-total-and-fixable-findings-once-the-tab-carries-no-count)).
@@ -13904,7 +14003,9 @@ statement holds is the owner's (2026-11-18, W-7).
 
 **Choice:** (a). **Rationale:** the row answers the question once. The card on the tab keeps the letter's basis, its rule and the
 bar. The development agent revisits it if readers miss the deciding count in the row. **Applied in the spec:** R-UI-112, R-UI-094,
-R-VULN-023; [version-grade.ts](../../web/src/app/features/packages/version-grade.ts).
+R-VULN-023; [grade.ts](../../web/src/app/shared/vulnerability/grade.ts) (`<quader-version-grade>` was merged into
+`<quader-grade>` by [Q-UI-556](#q-ui-556--a-repositorys-list-of-packages-says-a-grade-as-the-versions-table-does), which says the
+statement in every list).
 
 ### Q-UI-455 · The install command stands at the page's width and is as wide as its command
 
@@ -14527,7 +14628,8 @@ Context: seen by the development agent in the walk of 2026-11-18 (`repository-np
 | (b) Both in the action corner | Together at the right | The style guide's place of a primary action | A field of 40 rem in the corner pushes the title to a narrow column |
 | (c) As before | Nothing to change | — | The defect stays |
 
-**Choice:** (a). The line wraps where it is narrow: the button goes under the field. **Rationale:** what is used together stands
+**Choice:** (a). The line wraps where it is narrow: the button goes under the field, and the page's actions join it there
+([Q-UI-554](#q-ui-554--where-the-header-is-narrow-the-pages-actions-share-the-line-of-set-up-client)). **Rationale:** what is used together stands
 together; GitLab's clone field and its button share one line too. The development agent revisits it if the button is missed at the
 left.
 
@@ -14633,6 +14735,174 @@ screens.
 (`between`, `here`) and `.files-head`, `.files-trail` in [repository-content.scss](../../web/src/app/features/repositories/content/repository-content.scss).
 Tests: `Q-UI-521` in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts); the render
 `files-deep` with its walk.
+
+### Q-UI-550 · The members list takes the head and the table of every list, and its count moves to the heading
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's walk of 2026-11-18, the power user's screens; the owner found "nothing gross" and asked which details the
+development agent would change. `members` had a filter field as wide as the page, a sort button **Account** and an arrow beside
+it, and a tab strip with a single tab, **Members 2** (Q-UI-214 took the reference's tab and sort). Every other list has the head of
+R-UI-100 and sorts by its column headers. The members API answers one list: a project has no pending invitations and no access
+requests, and groups are members of the same list, so the page has one view.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The head of R-UI-100 with the search alone, the shared data table sorted by **Account** and **Role** in its headers, no tab strip, the count as a badge after the heading (chosen) | **Members 2** as the page's `h1` | One list pattern in the app; the count stays where the eye starts | A count in a heading is new; the page header gains `count` |
+| (b) The same, with a drawer of two filters (role, user or group) | **Filters** beside the field | A long list narrows by role | Sorting by **Role** already groups the roles; a drawer for two choices is an expert's detail in a plain list |
+| (c) The count in the table's caption | Nothing beside the heading | No new element | The caption is for assistive technology; a sighted reader loses the count |
+| (d) Keep the tab strip | As before | The reference's look | A tab strip of one is not a view, and it is the objection |
+
+**Choice:** (a). **Rationale:** the members list is a list like the others and should read like them; the tab of the reference
+carried a count, and the heading is the place a reader looks first. The development agent revisits (b) if a project's list grows
+past a page, and a tab strip when the page gets a second view (invitations, access requests).
+
+**Applied in the spec:** R-UI-142, R-UI-041; Q-UI-214 revised. Code: [project-members.ts](../../web/src/app/features/projects/project-members.ts),
+[project-members-page.ts](../../web/src/app/features/projects/project-members-page.ts), `count` of
+[page-header.ts](../../web/src/app/shared/ui/page-header.ts).
+
+### Q-UI-551 · A description is as wide as a name
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's walk of 2026-11-18, `new-<format>-<class>`: the description was a text area as wide as the form (56 rem) for
+one sentence. The rule is that a field is as wide as its expected input (R-UI-085); the style guide gave every description the
+column (Q-UI-334, Q-UI-335). The fields above it, **Project** and **Key**, are 28 rem.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every description takes `name`, 28 rem, wherever it is entered or shown (chosen) | About 60 characters a line; a text area of two rows holds a sentence of 120 | Lines up with the key and the project above it, so the form's right edge stays even; one rule for every form | A long description scrolls inside its field |
+| (b) A sixth width for a sentence (40 rem) | A token of its own | A longer line | A width that no other field shares makes the column ragged; Q-UI-335 revisits a width by the next one, not a new one |
+| (c) Keep the column | As before | Room for anything | The objection |
+
+**Choice:** (a), for the creation form and the settings of a repository, the creation dialog and the settings of a project, a group,
+a service account, a permission policy, a CI mapping and a CI issuer, a Bastion and its tokens, and a personal token. The administrator
+notes stay the column: they are a note, not a sentence. **Rationale:** the description is one sentence that names the thing, as long
+as a few names. The development agent revisits it if the renders show common descriptions cut.
+
+**Applied in the spec:** R-UI-085 (its table); ui-style-guide.md (Forms). Code: `field-w-name` on `#f-description` in
+[repository-create.html](../../web/src/app/features/repositories/repository-create.html) and
+[repository-detail.html](../../web/src/app/features/repositories/repository-detail.html), `width="name"` on every
+`<quader-text-field name="description">`.
+
+### Q-UI-552 · Every fold is the shared disclosure; a fold inside a section is its inline form
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's walk of 2026-11-18, `new-<format>-<class>`: **Show as API request** opened with the browser's own triangle (a
+bare `<details>`), every other section of the form with the chevron of `<quader-disclosure>`. Five more bare `<details>` stood in
+the app: the pattern syntax of a repository's paths and of an exposure rule's names and paths, a Debian key's certificate and the
+messages of an Ansible import; the upstream's **Upstream details** copied the disclosure's look in its own code.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<quader-disclosure>` everywhere: a section of a form or a page as it is (a heading at the text's size, a rule above it), a fold inside a section or a cell as its `inline` form (the same chevron and weight, no heading element, no rule, no room above and below); a lint rule refuses a bare `<details>` in a template (chosen) | Six folds move to it | One look and one animation for every fold; a fold in a section does not pretend to be a section heading; the rule keeps it so | A new input |
+| (b) Style the native `<details>` like the disclosure | The `summary` with the chevron | Native element | Two implementations of one look, and the triangle back in every browser that styles `summary` differently |
+| (c) Every fold a section | One form | Simplest | A pattern syntax inside **Advanced settings** would be a heading under a heading, with a rule across a form group |
+
+**Choice:** (a). **Show as API request** is the form's second section under **Advanced settings**. The messages of an import
+toggle under their count, "3 messages". `check-rules.mjs` fails on `<details` in a template (`Q-UI-552`). **Rationale:** a state that
+folds is one concept (Q-UI-215), so it has one look. The development agent records no revisit condition.
+
+**Applied in the spec:** R-UI-080. Code: `inline` of [disclosure.ts](../../web/src/app/shared/ui/disclosure.ts),
+[repository-create.html](../../web/src/app/features/repositories/repository-create.html),
+[repository-fields.ts](../../web/src/app/features/repositories/repository-fields.ts),
+[exposure-rule-editor.html](../../web/src/app/features/endpoints/exposure-rule-editor.html),
+[deb-signing-keys.ts](../../web/src/app/features/repositories/deb-signing-keys.ts),
+[ansible-import-tasks.ts](../../web/src/app/features/repositories/ansible-import-tasks.ts),
+[upstream-settings.ts](../../web/src/app/features/repositories/upstream-settings.ts), [check-rules.mjs](../../web/scripts/check-rules.mjs).
+
+### Q-UI-553 · The guides' trail names a format as people read it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: seen by the builder of the guides on 2026-11-18: the trail read `Guides / oci` where every other place says **OCI
+(Docker)**; the step was the route's parameter. The page's title was the key too.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The route `:format` resolves the format's display name from the catalog (`crumbLabel`), and the trail and the title show it; the key where the catalog does not know it (chosen) | `Guides / OCI (Docker)`, the tab "OCI (Docker) – Quader" | One name for a format in every place; the resolver runs once, the page below reads it | One request of the catalog before the page |
+| (b) A map of keys to names in the UI | No request | Instant | A second list of the formats beside the catalog, which every new format must extend |
+
+**Choice:** (a). `data.crumbParam` of a path route takes a resolved `crumbLabel` of the same route instead of the parameter's value.
+**Rationale:** the catalog names the formats (`GET /api/v1/formats`, `displayName`); the UI should not keep a copy. No revisit condition.
+
+**Applied in the spec:** R-UI-124. Code: `formatDisplayName` in [guides.routes.ts](../../web/src/app/features/guides/guides.routes.ts),
+`collect` in [breadcrumbs.ts](../../web/src/app/core/breadcrumbs.ts). Test: `Q-UI-553` in
+[breadcrumbs.spec.ts](../../web/src/app/core/breadcrumbs.spec.ts).
+
+### Q-UI-554 · Where the header is narrow, the page's actions share the line of Set up client
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: seen by the builder of the guides on 2026-11-18, a repository's page at 390 px: the header's parts wrapped one by one,
+the address field, **Set up client**, then the page's actions on a line of their own; for a reader, whose only action is the menu,
+the menu button stood alone on a line. The header is two blocks (the main column with the client row, and the actions), and the
+actions block wraps below the main one where the two do not fit beside each other (below about 33 rem).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Below 36 rem of the content, a header with a client row is one flow: the heading, the sentence, the facts and the address field each a line, then **Set up client** and the page's actions (as one unit) on the next (chosen) | At 390 px: Set up client, Settings and the menu on one line, about 250 of 358 px | No button alone; the address keeps the whole width; the order of the focus is the wide layout's | A CSS rule that dissolves the header's two blocks there (`display: contents`) |
+| (b) The actions beside the heading at the top right | The style guide's place of a page's actions | Familiar | The heading, a long key, keeps 230 px at 390 px and breaks into more lines |
+| (c) The menu inside the client row at every width | Always together | No width rule | The menu leaves the action corner where the wide layout has it |
+
+**Choice:** (a), for every header with a client row (the repository's page). A header without one keeps its two blocks; a page
+whose actions are buttons with labels does not leave one alone. **Rationale:** the line under the address is the line of the
+actions; the defect is a line with one icon on it. The development agent revisits the threshold if the actions grow.
+
+**Applied in the spec:** R-UI-052; Q-UI-517. Code: the container query at the end of the styles of
+[page-header.ts](../../web/src/app/shared/ui/page-header.ts).
+
+### Q-UI-555 · An empty repository shows Set up client once, in its header, and its empty state says what fills it and for whom
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: seen by the builder of the guides on 2026-11-18: an empty repository showed **Set up client** in its header, beside the
+address, and again under the sentence of its empty state (Q-UI-309). The sentence said "Publish a package with your client." to
+every reader, also to one who may not publish, and to a remote repository, which nobody publishes to.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The header's button stays; the empty state is a sentence: what the repository does not hold yet, then what fills it for this caller, naming **Set up client** where that is the way (chosen) | One button, one sentence per reader | The action stands where it stands on every page of the repository; the reader learns whether the next step is theirs | One permission check more on the page of a package format (`deploy`, cached 60 s) |
+| (b) The empty state keeps the button, the header loses it while the repository is empty | The action under the sentence | The empty state of Q-UI-309 as it is | The header changes with the content, and the address loses its button |
+| (c) Both stay | As before | Two ways | The objection |
+
+**Choice:** (a). A caller who may deploy reads "Publish a package with your client; Set up client shows how." (push an image,
+upload files); in a generic repository whose toolbar offers **Upload files**, "Upload files here or with your client."; anyone else
+"Members who may publish to it fill it with their client."; a remote repository "It fills as clients fetch through it; Set up client
+shows how." to everyone; a disabled repository only what it does not hold. **Rationale:** the empty state's action is the header's
+here, so the empty state's job is to say what to do with it and whether it is the reader's to do. The development agent revisits
+(b) if readers miss the action at an empty repository.
+
+**Applied in the spec:** R-UI-144, R-UI-052, R-UI-126; Q-UI-309 and Q-UI-217 revised. Code: `emptyContentText` in
+[content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts), `fill` in
+[repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts).
+
+### Q-UI-556 · A repository's list of packages says a grade as the versions table does
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. What the
+versions table says is the owner's (2026-11-18, W-7).
+
+Context: the list of a repository's packages said the count that decides the letter, "2 High" beside the shield C (R-UI-091,
+Q-UI-374); the versions table of a package, which a reader opens from that list, says "1,145 findings · 112 fixable" beside the
+shield (R-UI-112, Q-UI-454). Two statements of one thing on two lists read one after the other. The list's grade carries the same
+`open` and `fixable` as a version's (R-VULN-040), so either statement can stand in both.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every list says the versions table's statement: the total and the fixable, "OS end of life" for an image whose OS is; the deciding count and the rule are the tooltip's and the card's; one component, `<quader-grade>` (chosen) | The repository's list, its opened rows, the versions table and a version's facts say the same | The owner chose the total and the fixable for the version a reader looks for; a reader compares one number across the two lists | The list no longer says why the letter is C; the tooltip does |
+| (b) The versions table goes back to the deciding count | "2 High" everywhere | The letter's reason in every row | Against the owner's W-7 |
+| (c) Each list keeps its statement | As before | No change | The objection |
+
+**Choice:** (a). `<quader-version-grade>` is merged into `<quader-grade>`; the deciding count ("13 Critical") stays on the card of
+a version's page with the rule and the bar (R-UI-093). An image whose OS is at its end of life says so after its counts, because
+that, not its findings, can be what made it C. The letter stays on the shield only (R-UI-091, revised 2026-11-18). **Rationale:** a
+grade is one statement wherever a reader meets it, and the owner chose its words for the version. The development agent revisits it
+if readers ask why a row is C without hovering.
+
+**Applied in the spec:** R-UI-143, R-UI-091, R-UI-094, R-UI-112; Q-UI-374 and Q-UI-454 revised. Code:
+[grade.ts](../../web/src/app/shared/vulnerability/grade.ts), `gradeSummaryParts` in
+[grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts).
 
 ## What this does not cover
 

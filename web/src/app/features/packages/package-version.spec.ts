@@ -97,7 +97,7 @@ describe('The page of a version (R-UI-111)', () => {
     });
     const graded = await open({}, (_, v) => v.versionReports.set('pkg_01JBQ6V7S3K9/1.4.0', report(sampleGrade('B', { medium: 2 }, { fixable: 1 }))));
     expect(tabLabels(graded)).toEqual(['Vulnerabilities', 'README', 'Files', 'Details']);
-    expect(text(graded.root.querySelector('.facts-grade .version-grade-text')!)).toBe('Grade B · 2 findings · 1 fixable');
+    expect(text(graded.root.querySelector('.facts-grade .grade-text')!)).toBe('Grade B · 2 findings · 1 fixable');
     const unscanned = await open({}, (_, v) => v.versionReports.set('pkg_01JBQ6V7S3K9/1.4.0', report(sampleGrade('N/A'))));
     expect(tabLabels(unscanned)).toEqual(['README', 'Files', 'Details', 'Vulnerabilities']);
   });

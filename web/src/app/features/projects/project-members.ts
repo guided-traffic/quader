@@ -1,4 +1,4 @@
-import { CdkMenu, CdkMenuItem, CdkMenuItemRadio, CdkMenuTrigger } from '@angular/cdk/menu';
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../../api/problem';
@@ -7,7 +7,9 @@ import { SessionStore } from '../../core/session-store';
 import { Notifier } from '../../core/notifier';
 import { SelectOption } from '../../shared/access/fields';
 import { QuaderAvatar } from '../../shared/ui/avatar';
+import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { QuaderDialog } from '../../shared/ui/dialog';
+import { ListHead } from '../../shared/ui/list-head';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { ProjectNeeds } from './project-access';
@@ -21,153 +23,103 @@ import { projectRoleLabel } from './project-roles';
  * change it; every other member reads. Removing or demoting the last Owner is refused by the server (409
  * `last_owner`, Q-AUTHZ-217) and the refusal is shown here; an administrator of Quader may leave a project without an
  * Owner, so the UI does not hide the action. The API decides in any case (R-UI-005).
+ *
+ * The list is built like every other list (R-UI-142, Q-UI-550): the head with the search by name (no drawer: the list has no
+ * other filter), the shared data table, sorted by its column headers Account and Role. The answer holds every member, so the
+ * search and the sort run in the browser and are exact. The number of members is the page's heading's (`count`).
  */
 @Component({
   selector: 'quader-project-members',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuItemRadio, CdkMenuTrigger, ErrorNotice, ProjectNeeds, QuaderAvatar],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, ErrorNotice, ListHead, ProjectNeeds, QuaderAvatar],
   template: `
-    @if (error(); as e) {
+    @if (writeError(); as e) {
       @if (e.code === 'last_owner') {
         <p class="notice" role="alert">
           <span class="material-icons" aria-hidden="true">error</span>
           <span i18n="@@project-members.last-owner">A project keeps at least one Owner. Make another member an Owner first.</span>
         </p>
       } @else {
-        <quader-error-notice [error]="e" (retry)="load()" />
+        <quader-error-notice [error]="e" />
       }
     }
 
-    <div class="tab-nav">
-      <span class="tab-link" aria-current="page">
-        <ng-container i18n="@@project-members.tab">Members</ng-container>
-        <span class="badge count">{{ members().length }}</span>
-      </span>
-    </div>
+    <quader-list-head [searchLabel]="searchLabel" [search]="filter()" (searchChange)="filter.set($event)" [filters]="false" />
 
-    @if (members().length === 0 && loaded()) {
-      <p class="muted" i18n="@@project-members.empty">The project has no member yet.</p>
-    } @else if (members().length > 0) {
-      <div class="toolbar">
-        <div class="filter">
-          <input
-            class="text-input"
-            type="search"
-            name="member-filter"
-            i18n-placeholder="@@project-members.filter"
-            placeholder="Filter members"
-            i18n-aria-label="@@project-members.filter"
-            aria-label="Filter members"
-            [value]="filter()"
-            (input)="filter.set($any($event.target).value)"
-          />
-          <span class="material-icons" aria-hidden="true">search</span>
-        </div>
-        <button class="btn btn-default" type="button" [cdkMenuTriggerFor]="sortMenu">
-          {{ sort() === 'role' ? roleLabel : accountLabel }}
-          <span class="material-icons" aria-hidden="true">expand_more</span>
-        </button>
-        <ng-template #sortMenu>
-          <div class="menu" cdkMenu>
-            <button type="button" class="menu-item" cdkMenuItemRadio [cdkMenuItemChecked]="sort() === 'account'" (cdkMenuItemTriggered)="sort.set('account')">
-              <span class="material-icons" aria-hidden="true">{{ sort() === 'account' ? 'check' : '' }}</span>
-              {{ accountLabel }}
-            </button>
-            <button type="button" class="menu-item" cdkMenuItemRadio [cdkMenuItemChecked]="sort() === 'role'" (cdkMenuItemTriggered)="sort.set('role')">
-              <span class="material-icons" aria-hidden="true">{{ sort() === 'role' ? 'check' : '' }}</span>
-              {{ roleLabel }}
-            </button>
-          </div>
-        </ng-template>
-        <button
-          class="btn btn-default btn-icon"
-          type="button"
-          i18n-aria-label="@@project-members.direction"
-          aria-label="Reverse the order"
-          (click)="descending.set(!descending())"
-        >
-          <span class="material-icons" aria-hidden="true">{{ descending() ? 'south' : 'north' }}</span>
-        </button>
-      </div>
-
-      <table class="members" [attr.aria-label]="caption">
-        <thead>
-          <tr>
-            <th scope="col">{{ accountLabel }}</th>
-            <th scope="col" i18n="@@project-members.col.source">Source</th>
-            <th scope="col">{{ roleLabel }}</th>
-            <th scope="col"><span class="visually-hidden" i18n="@@project-members.col.actions">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (m of shown(); track m.principal) {
-            <tr>
-              <th scope="row" class="account">
-                @if (m.kind === 'group') {
-                  <span class="avatar group" aria-hidden="true"><span class="material-icons">groups</span></span>
-                } @else {
-                  <quader-avatar class="avatar" aria-hidden="true" [seed]="m.id ?? m.principal" [imageUrl]="m.avatarUrl" />
+    <quader-data-table
+      [caption]="caption"
+      [columns]="columns"
+      [sort]="sort()"
+      (sortChange)="sort.set($event)"
+      [loaded]="loaded()"
+      [loading]="!loaded()"
+      [error]="loadError()"
+      (retry)="load()"
+      [empty]="shown().length === 0"
+      [emptyText]="emptyText()"
+    >
+      @for (m of shown(); track m.principal) {
+        <tr>
+          <th scope="row" class="person">
+            @if (m.kind === 'group') {
+              <span class="avatar group" aria-hidden="true"><span class="material-icons">groups</span></span>
+            } @else {
+              <quader-avatar class="avatar" aria-hidden="true" [seed]="m.id ?? m.principal" [imageUrl]="m.avatarUrl" />
+            }
+            <span class="who">
+              <span class="line">
+                <span class="name" translate="no">{{ m.displayName || m.name }}</span>
+                @if (isMe(m)) {
+                  <span class="badge info" i18n="@@project-members.me">It's you</span>
                 }
-                <span class="who">
-                  <span class="line">
-                    <span class="name" translate="no">{{ m.displayName || m.name }}</span>
-                    @if (isMe(m)) {
-                      <span class="badge info" i18n="@@project-members.me">It's you</span>
-                    }
-                  </span>
-                  @if (m.kind === 'group') {
-                    <span class="muted" i18n="@@project-members.kind-group">Group</span>
-                  } @else {
-                    <span class="muted" translate="no">&#64;{{ m.name }}</span>
-                  }
-                </span>
-              </th>
-              <td i18n="@@project-members.direct">Direct member</td>
-              <td [attr.data-label]="roleLabel">
-                @if (canWrite()) {
-                  <select
-                    class="select-input role"
-                    [name]="'role-' + m.principal"
-                    [attr.aria-label]="roleOf(m)"
-                    [disabled]="busy()"
-                    (change)="change(m, $any($event.target).value)"
-                  >
-                    @for (o of roleOptions; track o.value) {
-                      <option [value]="o.value" [selected]="o.value === m.role">{{ o.label }}</option>
-                    }
-                  </select>
-                } @else {
-                  {{ roleText(m.role) }}
+              </span>
+              @if (m.kind === 'group') {
+                <span class="secondary" i18n="@@project-members.kind-group">Group</span>
+              } @else {
+                <span class="secondary" translate="no">&#64;{{ m.name }}</span>
+              }
+            </span>
+          </th>
+          <td i18n="@@project-members.direct">Direct member</td>
+          <td>
+            @if (canWrite()) {
+              <select
+                class="select-input role"
+                [name]="'role-' + m.principal"
+                [attr.aria-label]="roleOf(m)"
+                [disabled]="busy()"
+                (change)="change(m, $any($event.target).value)"
+              >
+                @for (o of roleOptions; track o.value) {
+                  <option [value]="o.value" [selected]="o.value === m.role">{{ o.label }}</option>
                 }
-              </td>
-              <td class="actions">
-                @if (canWrite()) {
-                  <button
-                    class="btn btn-tertiary btn-icon"
-                    type="button"
-                    [attr.aria-label]="actionsOf(m)"
-                    [disabled]="busy()"
-                    [cdkMenuTriggerFor]="rowMenu"
-                  >
-                    <span class="material-icons" aria-hidden="true">more_vert</span>
+              </select>
+            } @else {
+              {{ roleText(m.role) }}
+            }
+          </td>
+          <td class="actions">
+            @if (canWrite()) {
+              <button
+                class="btn btn-tertiary btn-icon"
+                type="button"
+                [attr.aria-label]="actionsOf(m)"
+                [disabled]="busy()"
+                [cdkMenuTriggerFor]="rowMenu"
+              >
+                <span class="material-icons" aria-hidden="true">more_vert</span>
+              </button>
+              <ng-template #rowMenu>
+                <div class="menu" cdkMenu>
+                  <button type="button" class="menu-item" cdkMenuItem (cdkMenuItemTriggered)="remove(m)" i18n="@@project-members.remove">
+                    Remove member
                   </button>
-                  <ng-template #rowMenu>
-                    <div class="menu" cdkMenu>
-                      <button type="button" class="menu-item" cdkMenuItem (cdkMenuItemTriggered)="remove(m)" i18n="@@project-members.remove">
-                        Remove member
-                      </button>
-                    </div>
-                  </ng-template>
-                }
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="4" class="muted" i18n="@@project-members.no-match">No member matches.</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
+                </div>
+              </ng-template>
+            }
+          </td>
+        </tr>
+      }
+    </quader-data-table>
 
     @if (!canWrite()) {
       <quader-project-needs capability="projects:write" [state]="'denied'" />
@@ -177,64 +129,8 @@ import { projectRoleLabel } from './project-roles';
   styles: `
     :host {
       display: block;
-      container: members / inline-size;
     }
-    .count {
-      margin-inline-start: var(--quader-space-1);
-    }
-    .toolbar {
-      display: flex;
-      gap: var(--quader-space-2);
-      align-items: center;
-      padding: var(--quader-space-3);
-      background: var(--quader-surface-subtle, transparent);
-      border-block-end: 1px solid var(--quader-border);
-    }
-    .filter {
-      position: relative;
-      flex: 1;
-    }
-    .filter input {
-      inline-size: 100%;
-      box-sizing: border-box;
-      padding-inline-end: var(--quader-space-6);
-    }
-    .filter .material-icons {
-      position: absolute;
-      inset-inline-end: var(--quader-space-2);
-      inset-block-start: 50%;
-      transform: translateY(-50%);
-      color: var(--quader-text-muted);
-      font-size: 1.125rem;
-      pointer-events: none;
-    }
-    .members {
-      inline-size: 100%;
-      border-collapse: collapse;
-      margin-block-end: var(--quader-space-3);
-    }
-    .members th,
-    .members td {
-      padding: var(--quader-space-3);
-      text-align: start;
-      vertical-align: middle;
-      border-block-end: 1px solid var(--quader-border);
-    }
-    .members thead th {
-      font-weight: 600;
-    }
-    .account {
-      display: flex;
-      align-items: center;
-      gap: var(--quader-space-3);
-      font-weight: 400;
-    }
-    .avatar {
-      flex: none;
-      inline-size: 3rem;
-      block-size: 3rem;
-      border-radius: 50%;
-    }
+    /* A group has no picture: its icon on the neutral fill, in the place and the size of an avatar (th.person, 32 px). */
     .avatar.group {
       display: inline-flex;
       align-items: center;
@@ -242,78 +138,31 @@ import { projectRoleLabel } from './project-roles';
       background: var(--quader-badge-neutral-bg);
       color: var(--quader-badge-neutral-fg);
     }
-    .who,
+    .avatar.group .material-icons {
+      font-size: 1.25rem;
+    }
+    /* The name and the badge It's you on one line where they fit; the badge never breaks. */
     .line {
       display: flex;
-      gap: var(--quader-space-1);
-    }
-    .who {
-      flex-direction: column;
-    }
-    .line {
+      flex-wrap: wrap;
       align-items: center;
-      gap: var(--quader-space-2);
+      gap: var(--quader-space-1) var(--quader-space-2);
     }
     .name {
-      font-weight: 600;
+      overflow-wrap: anywhere;
     }
     .role {
       inline-size: auto;
     }
-    .actions {
-      text-align: end;
-    }
     .notice {
       display: flex;
       gap: var(--quader-space-3);
+      margin-block: 0 var(--quader-space-3);
       padding: var(--quader-space-3) var(--quader-space-4);
       border: 1px solid var(--quader-error);
       border-radius: var(--quader-radius-m);
       background: var(--quader-error-container);
       color: var(--quader-on-error-container);
-    }
-    /* Below 48 rem the rows stack as every list's do (Q-UI-306): the account and its menu, then the source and the role on a
-       line each; at 390 px the four columns scrolled 100 px sideways. The head stays for assistive technology only. */
-    @container members (max-width: 48rem) {
-      .members thead {
-        position: absolute;
-        inline-size: 1px;
-        block-size: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-        white-space: nowrap;
-      }
-      .members,
-      .members tbody {
-        display: block;
-      }
-      .members tbody tr {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-        gap: var(--quader-space-2) var(--quader-space-3);
-        padding-block: var(--quader-space-3);
-        border-block-end: 1px solid var(--quader-border);
-      }
-      .members tbody tr > * {
-        display: block;
-        grid-column: 1 / -1;
-        padding: 0 var(--quader-space-2);
-        border-block-end: 0;
-      }
-      .members tbody tr > th.account {
-        display: flex;
-        grid-column: 1;
-        grid-row: 1;
-      }
-      .members tbody tr > td.actions {
-        grid-column: 2;
-        grid-row: 1;
-      }
-      .members td[data-label]::before {
-        content: attr(data-label) ' ';
-        color: var(--quader-text-muted);
-      }
     }
   `,
 })
@@ -321,6 +170,8 @@ export class ProjectMembers {
   readonly project = input.required<string>();
   /** Emitted after a write so that the counts of the project screen are read again. */
   readonly changed = output<void>();
+  /** The number of members after every read: the page's heading carries it (Q-UI-550). */
+  readonly count = output<number>();
 
   private readonly api = inject(ProjectsApi);
   private readonly session = inject(SessionStore);
@@ -330,22 +181,36 @@ export class ProjectMembers {
   protected readonly members = signal<readonly ProjectMember[]>([]);
   protected readonly loaded = signal(false);
   protected readonly busy = signal(false);
-  protected readonly error = signal<ApiError | null>(null);
+  /** A read of the list that failed: the table shows it with its retry. */
+  protected readonly loadError = signal<ApiError | null>(null);
+  /** A change the server refused (the last Owner, Q-AUTHZ-217): shown above the list, which stays. */
+  protected readonly writeError = signal<ApiError | null>(null);
   protected readonly filter = signal('');
-  protected readonly sort = signal<'account' | 'role'>('account');
-  protected readonly descending = signal(false);
-  protected readonly accountLabel = $localize`:@@project-members.col.account:Account`;
-  protected readonly roleLabel = $localize`:@@project-members.col.role:Role`;
+  protected readonly sort = signal<TableSort>({ column: 'account', direction: 'asc' });
+  protected readonly searchLabel = $localize`:@@project-members.filter:Filter members`;
+  protected readonly columns: readonly TableColumn[] = [
+    { id: 'account', label: $localize`:@@project-members.col.account:Account`, sortable: true, width: '16rem' },
+    { id: 'source', label: $localize`:@@project-members.col.source:Source` },
+    { id: 'role', label: $localize`:@@project-members.col.role:Role`, sortable: true },
+    { id: 'actions', label: $localize`:@@project-members.col.actions:Actions`, hideLabel: true },
+  ];
   protected readonly refs = computed(() => this.members().map((m) => m.principal));
-  /** The members that match the filter, in the chosen order. */
+  /** The members that match the filter, in the order of the sorted column; Role sorts Owner first, then by account. */
   protected readonly shown = computed(() => {
     const text = this.filter().trim().toLowerCase();
     const found = this.members().filter((m) => !text || accountOf(m).toLowerCase().includes(text) || m.name.toLowerCase().includes(text));
-    const by = this.sort() === 'role'
-      ? (a: ProjectMember, b: ProjectMember) => PROJECT_ROLES.indexOf(b.role) - PROJECT_ROLES.indexOf(a.role) || accountOf(a).localeCompare(accountOf(b))
-      : (a: ProjectMember, b: ProjectMember) => accountOf(a).localeCompare(accountOf(b));
-    return [...found].sort((a, b) => (this.descending() ? by(b, a) : by(a, b)));
+    const { column, direction } = this.sort();
+    const by =
+      column === 'role'
+        ? (a: ProjectMember, b: ProjectMember) => PROJECT_ROLES.indexOf(b.role) - PROJECT_ROLES.indexOf(a.role) || accountOf(a).localeCompare(accountOf(b))
+        : (a: ProjectMember, b: ProjectMember) => accountOf(a).localeCompare(accountOf(b));
+    return [...found].sort((a, b) => (direction === 'desc' ? by(b, a) : by(a, b)));
   });
+  protected readonly emptyText = computed(() =>
+    this.members().length === 0
+      ? $localize`:@@project-members.empty:The project has no member yet.`
+      : $localize`:@@project-members.no-match:No member matches.`,
+  );
   protected readonly canWrite = computed(
     () => this.session.has('projects:write') || this.session.isOwnerOf(this.project()),
   );
@@ -393,11 +258,12 @@ export class ProjectMembers {
   }
 
   protected async load(): Promise<void> {
-    this.error.set(null);
+    this.loadError.set(null);
     try {
       this.members.set(await this.api.members(this.project()));
+      this.count.emit(this.members().length);
     } catch (e) {
-      this.error.set(asApiError(e));
+      this.loadError.set(asApiError(e));
     } finally {
       this.loaded.set(true);
     }
@@ -427,7 +293,7 @@ export class ProjectMembers {
 
   private async write(step: () => Promise<void>): Promise<void> {
     this.busy.set(true);
-    this.error.set(null);
+    this.writeError.set(null);
     let failure: ApiError | null = null;
     try {
       await step();
@@ -436,7 +302,7 @@ export class ProjectMembers {
       failure = asApiError(e);
     }
     await this.load();
-    this.error.set(failure);
+    this.writeError.set(failure);
     this.busy.set(false);
   }
 }

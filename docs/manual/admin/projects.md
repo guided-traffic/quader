@@ -41,6 +41,11 @@ On a virtual repository a role gives `read` and `manage`; a publish through a vi
 - A publish through a role makes the publishing user the package owner, as a grant does.
 - A project keeps at least one Owner: removing or demoting the last one answers `409 last_owner`, unless the caller is an administrator of Quader, who may leave a project without an Owner and administers it alone.
 
+The page **Members** of a project lists every member with its role; the number of members stands after the heading. **Filter
+members** above the list keeps the members whose name contains what you type; select the heading **Account** or **Role** to sort
+by it, **Role** with the Owners first. An Owner adds a member with **Add member**, changes a role in the member's row and removes a
+member through the row's menu.
+
 The members are read with `GET /api/v1/projects/<projectKey>/members` and written with one request per member:
 
 ```sh

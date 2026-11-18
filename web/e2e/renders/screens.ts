@@ -368,7 +368,8 @@ async function chooseProject(page: Page): Promise<void> {
 
 /**
  * The creation form of one format and class (R-UI-080 to R-UI-088): as it opens with the class chosen, a virtual repository with
- * two members, Advanced settings open, and the key's error after a wrong key was typed and left. Nothing is created.
+ * two members, Advanced settings open, for a local one Show as API request open, and the key's error after a wrong key was typed
+ * and left. Nothing is created.
  */
 function createForm(cls: 'Local' | 'Remote' | 'Virtual'): Screen['walk'] {
   return async function* (page) {
@@ -391,6 +392,13 @@ function createForm(cls: 'Local' | 'Remote' | 'Virtual'): Screen['walk'] {
     await page.getByRole('button', { name: 'Advanced settings' }).click();
     await expect(page.locator('.advanced-settings .collapse-region.open')).toHaveCount(1);
     yield 'advanced';
+    if (cls === 'Local') {
+      // The request as the API takes it: the form's second closed section, with the chevron of every other one (Q-UI-552).
+      await page.getByRole('button', { name: 'Advanced settings' }).click();
+      await page.getByRole('button', { name: 'Show as API request' }).click();
+      await expect(page.locator('.api-request .collapse-region.open')).toHaveCount(1);
+      yield 'api-request';
+    }
     await page.locator('#f-key').fill('A');
     await page.locator('#f-key').blur();
     await expect(page.locator('#e-key')).toBeVisible();
@@ -704,6 +712,8 @@ export const screens: readonly Screen[] = [
   // Guides (R-UI-124): the formats as tiles, the repositories of a format, the guide of a class without a repository.
   { id: 'guides', path: '/ui/guides', kinds: ['anonymous', ...all], expected: noSession },
   { id: 'guides-format', path: '/ui/guides/npm', kinds: all },
+  // The trail names the format as people read it: Guides / OCI (Docker), not its key (Q-UI-553).
+  { id: 'guides-format-oci', path: '/ui/guides/oci', kinds: ['plain'] },
   { id: 'guides-format-anonymous', path: '/ui/guides/ansible', kinds: ['anonymous'], expected: noSession },
   { id: 'guides-class', path: '/ui/guides/npm/local', kinds: ['plain', 'power'], walk: explained },
   { id: 'help', path: '/ui/help', kinds: all },

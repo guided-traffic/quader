@@ -238,9 +238,12 @@ export class RepositoryContent {
     this.isGeneric() ? ['/projects', this.project(), 'repositories', this.key()] : filesCommands(this.ref()),
   );
 
-  /** What the caller may do at the path (R-UI-005): one batched check, cached by the session for 60 seconds. */
+  /**
+   * What the caller may do at the path (R-UI-005): one batched check, cached by the session for 60 seconds. The list of a package
+   * format asks it at the repository's root, for the words of its empty state (`fill`).
+   */
   protected readonly allowed = resource({
-    params: () => (this.showsFiles() && this.repository() ? { repo: this.ref(), path: this.path() } : null),
+    params: () => (this.repository() ? { repo: this.ref(), path: this.showsFiles() ? this.path() : '' } : null),
     loader: async ({ params }): Promise<FilePermissions> => {
       if (!params || this.session.state() !== 'authenticated') return NO_FILE_PERMISSIONS;
       const at = { repository: params.repo, ...(params.path ? { path: params.path } : {}) };
@@ -267,6 +270,16 @@ export class RepositoryContent {
       overwrite: can.overwrite && uploads,
       delete: can.delete && r.class !== 'virtual' && this.path() !== '',
     };
+  });
+
+  /**
+   * What the empty state says fills the repository (R-UI-144, Q-UI-555): **Set up client** stands once, in the header, and the
+   * empty state says in a sentence what to do and who does it. A caller who may deploy here is told to publish; anyone else who
+   * does; a remote repository fills by every client's fetches; a disabled one says only that it is empty.
+   */
+  protected readonly fill = computed<'publisher' | 'other' | 'none'>(() => {
+    if (this.disabled()) return 'none';
+    return valueOf(this.allowed)?.deploy ? 'publisher' : 'other';
   });
 
   /** A delete that runs as a job (R-UI-042), and the folder whose list reloads when it has ended. */

@@ -43,7 +43,7 @@ describe('Debian signing keys panel', () => {
     expect(text(first)).toContain('BEGIN PGP PUBLIC KEY BLOCK');
     expect(r.root.textContent).not.toContain('PRIVATE KEY');
     // a retired key keeps its record but offers no certificate to install
-    expect(rows(r.root)[3]!.querySelector('details')).toBeNull();
+    expect(rows(r.root)[3]!.querySelector('quader-disclosure')).toBeNull();
     await expectAccessible(r.root);
   });
 

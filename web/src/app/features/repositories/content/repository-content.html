@@ -68,7 +68,7 @@
       [scanned]="scanned()"
       [q]="filter()"
       [sortParam]="order()"
-      [offerSetup]="!disabled()"
+      [fill]="fill()"
       (filterChange)="setFilter($event)"
       (sortParamChange)="setSort($event)"
     />
@@ -169,7 +169,8 @@
           [filesAddress]="filesAddress()"
           [path]="path()"
           [permissions]="permissions()"
-          [offerSetup]="!disabled()"
+          [fill]="fill()"
+          [shape]="shape()"
           [revision]="revision()"
           (remove)="remove()"
         />

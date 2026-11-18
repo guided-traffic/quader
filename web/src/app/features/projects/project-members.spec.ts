@@ -3,7 +3,7 @@ import { ProjectsApi } from '../../api/projects-api';
 import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeProjectsApi } from '../../api/testing/fakes-projects';
-import { buttonByText, expectAccessible, inProject, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
+import { buttonByText, expectAccessible, inProject, renderScreen, searchList, settle, sleep, text, type, typeInto } from '../../testing/screen';
 import { ProjectMembersPage } from './project-members-page';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
@@ -79,12 +79,38 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
     expect(text(row)).toContain("It's you");
     expect(text(row)).toContain('Direct member');
     expect(row.querySelector('quader-avatar img')?.getAttribute('src')).toBe('/api/v1/avatars/abc');
-    expect(text(members.querySelector('.tab-link') as HTMLElement)).toContain('2');
     // Below 48 rem the rows stack (Q-UI-306); the role's cell carries its column's name for its own line.
     expect(row.querySelector('td[data-label="Role"] select')).toBeTruthy();
   });
 
-  it('R-UI-041 Q-UI-214 the filter narrows the list by name and the order can be changed', async () => {
+  it('R-UI-142 Q-UI-550 the list has the head of every list and no tab strip; the number of members follows the heading', async () => {
+    const { root } = await renderScreen(ProjectMembersPage, {
+      inputs: { project: 'web' },
+      capabilities: [],
+      setup: (get) => {
+        asMember('owner')(get);
+        (get(ProjectsApi) as FakeProjectsApi).memberLists['web'] = [
+          { project: 'web', principal: 'user:alice', kind: 'user', name: 'alice', role: 'owner' },
+          { project: 'web', principal: 'group:web-leads', kind: 'group', name: 'web-leads', role: 'developer' },
+        ];
+      },
+    });
+    expect(text(root.querySelector('h1')!)).toBe('Members 2');
+    expect(root.querySelector('h1 .badge')?.textContent).toBe('2');
+    expect(root.querySelector('.tab-nav, .tab-link, [role="tablist"]')).toBeNull();
+    const members = root.querySelector('quader-project-members') as HTMLElement;
+    // The search field of a name's width; no Filters button and no drawer, because the list has no other filter (R-UI-100).
+    expect(members.querySelector('quader-list-head .list-search input')?.getAttribute('aria-label')).toBe('Filter members');
+    expect(members.querySelector('quader-filter-toggle')).toBeNull();
+    // The list is the shared data table; its order is chosen in its headers, not with a sort menu.
+    expect(members.querySelector('quader-data-table table.data')).toBeTruthy();
+    const sortable = [...members.querySelectorAll('thead th[aria-sort]')].map((th) => text(th).replace(/\s*(unfold_more|arrow_upward|arrow_downward)$/, ''));
+    expect(sortable).toEqual(['Account', 'Role']);
+    expect(members.querySelector('button[aria-label="Reverse the order"]')).toBeNull();
+    await expectAccessible(root);
+  });
+
+  it('R-UI-041 Q-UI-214 R-UI-142 the search narrows the list by name and the column headers sort it', async () => {
     const { fixture, root } = await renderScreen(ProjectMembersPage, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -93,23 +119,27 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
         (get(ProjectsApi) as FakeProjectsApi).memberLists['web'] = [
           { project: 'web', principal: 'user:bob', kind: 'user', name: 'bob', role: 'owner' },
           { project: 'web', principal: 'user:alice', kind: 'user', name: 'alice', role: 'reader' },
+          { project: 'web', principal: 'user:carol', kind: 'user', name: 'carol', role: 'developer' },
         ];
       },
     });
     const members = root.querySelector('quader-project-members') as HTMLElement;
     const names = (): (string | undefined)[] => Array.from(members.querySelectorAll('tbody .name')).map((n) => n.textContent?.trim());
-    expect(names()).toEqual(['alice', 'bob']);
-    members.querySelector<HTMLButtonElement>('button[aria-label="Reverse the order"]')!.click();
+    const header = (label: string): HTMLButtonElement =>
+      [...members.querySelectorAll<HTMLButtonElement>('thead .th-sort')].find((b) => text(b).startsWith(label))!;
+    expect(names()).toEqual(['alice', 'bob', 'carol']);
+    expect(header('Account').closest('th')?.getAttribute('aria-sort')).toBe('ascending');
+    header('Account').click();
     await settle(fixture);
-    expect(names()).toEqual(['bob', 'alice']);
-    const filter = members.querySelector<HTMLInputElement>('input[name="member-filter"]')!;
-    filter.value = 'ali';
-    filter.dispatchEvent(new Event('input'));
+    expect(names()).toEqual(['carol', 'bob', 'alice']);
+    // Role sorts the strongest role first, then by account.
+    header('Role').click();
     await settle(fixture);
+    expect(names()).toEqual(['bob', 'carol', 'alice']);
+    expect(header('Role').closest('th')?.getAttribute('aria-sort')).toBe('ascending');
+    await searchList(fixture, members, 'ali');
     expect(names()).toEqual(['alice']);
-    filter.value = 'nobody';
-    filter.dispatchEvent(new Event('input'));
-    await settle(fixture);
+    await searchList(fixture, members, 'nobody');
     expect(text(members)).toContain('No member matches.');
   });
 

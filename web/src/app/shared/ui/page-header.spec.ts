@@ -38,4 +38,32 @@ describe('Page header and empty state', () => {
     expect(root.querySelector('quader-empty-state a.btn')).toBeTruthy();
     await expectAccessible(root);
   });
+
+  it('R-UI-142 Q-UI-550 a list page shows its number of entries as a badge after the heading', async () => {
+    @Component({
+      imports: [PageHeader],
+      template: `<quader-page-header heading="Members" [count]="2" /><quader-page-header heading="Groups" />`,
+    })
+    class Counted {}
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [Counted] }).compileComponents();
+    const fixture = TestBed.createComponent(Counted);
+    await settle(fixture);
+    const [members, groups] = [...(fixture.nativeElement as HTMLElement).querySelectorAll('h1')];
+    expect(members!.textContent).toBe('Members 2');
+    expect(members!.querySelector('.badge.heading-count')?.textContent).toBe('2');
+    expect(groups!.textContent).toBe('Groups');
+    expect(groups!.querySelector('.badge')).toBeNull();
+  });
+
+  it('Q-UI-554 where the content is narrow, a header with a client row is one flow and its actions share the line of Set up client', async () => {
+    await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
+    const fixture = TestBed.createComponent(Host);
+    await settle(fixture);
+    // The test environment lays nothing out; what it can check is that the rule ships with the component, scoped to a header
+    // with a client row, below 36 rem of content. The renders of the repository pages at 390 px are the look.
+    const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n');
+    expect(css).toMatch(/@container content \(max-width: 36rem\)[^@]*quader-page-header:has\(\.client-row\) :is\(\.page-header-main, \.client-row\)\s*\{\s*display: contents/);
+    expect(css).toMatch(/quader-page-header:has\(\.client-row\) \.page-header-actions\s*\{\s*flex: none;\s*flex-wrap: nowrap/);
+  });
 });

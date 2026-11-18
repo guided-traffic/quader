@@ -34,7 +34,9 @@ describe('Ansible import tasks', () => {
     expect(text(done!)).toContain('1.0.0');
     expect(text(done!)).toContain('Completed');
     expect(done!.querySelector('.badge')?.classList.contains('ok')).toBe(true);
-    expect(done!.querySelector('details li')?.textContent).toContain('Collection acme.tools 1.0.0 stored');
+    expect(done!.querySelector('quader-disclosure li')?.textContent).toContain('Collection acme.tools 1.0.0 stored');
+    // Q-UI-552: the messages fold with the app's disclosure, its toggle named by their number.
+    expect(text(failed!.querySelector('quader-disclosure .inline-toggle span:not(.chevron)')!)).toBe('1 message');
     expect(text(failed!)).toContain('Failed');
     expect(failed!.querySelector('.badge')?.classList.contains('bad')).toBe(true);
     expect(failed!.querySelector('[data-testid="ansible-import-error"]')?.textContent).toContain('MANIFEST.json is missing');

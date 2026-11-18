@@ -23,7 +23,8 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   ['/projects/web/repositories/generic-local/files/releases/1.0/app.zip', 'app.zip', 'generic-local'],
   ['/projects/web/repositories/generic-local/files', 'Files', 'generic-local'],
   ['/projects/web/repositories/npm-local/settings', 'Settings'],
-  ['/projects/web/members', 'Members'],
+  // The heading carries the number of members (Q-UI-550).
+  ['/projects/web/members', 'Members', 'Members 1'],
   ['/projects/web/settings', 'Settings'],
   ['/projects/web/policies', 'Permission policies'],
   ['/projects/web/policies/new', 'New permission policy'],
@@ -38,7 +39,8 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   // <<< M4b vulnerabilities
   ['/projects/web/repositories/npm-local/setup', 'Set up client'],
   ['/guides', 'Guides'],
-  ['/guides/generic', 'generic', 'Generic repositories'],
+  // The title names the format as people read it (Q-UI-553).
+  ['/guides/generic', 'Generic', 'Generic repositories'],
   ['/guides/generic/local', 'Set up client'],
   ['/help', 'Documentation'],
   ['/help/user/getting-started', 'Getting started'],

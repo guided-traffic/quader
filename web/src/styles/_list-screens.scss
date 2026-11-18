@@ -673,6 +673,12 @@ td.class-cell .material-icons {
       grid-row: 1;
     }
 
+    // A person (`th.person`: the avatar, the name and the user name under it; the members and the users) keeps the avatar beside
+    // the name in a block, as in a row; the rule above would put the avatar on a line of its own.
+    tbody tr > th.person[scope='row'] {
+      display: flex;
+    }
+
     td[data-label]::before {
       content: attr(data-label) ' ';
       color: var(--quader-text-muted);

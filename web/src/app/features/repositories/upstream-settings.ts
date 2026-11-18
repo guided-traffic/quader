@@ -8,6 +8,7 @@ import {
   UpstreamTestResult,
 } from '../../api/repositories-api';
 import { ErrorNotice } from '../../shared/error-notice';
+import { Disclosure } from '../../shared/ui/disclosure';
 import { fieldMessage, problemsAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
 import { RepositoryForm } from './repository-model';
@@ -82,7 +83,7 @@ export function upstreamPointerLabel(pointer: string): string | null {
  */
 @Component({
   selector: 'quader-upstream-settings',
-  imports: [DatePipe, ErrorNotice],
+  imports: [DatePipe, Disclosure, ErrorNotice],
   template: `
     <section class="upstream" [id]="sectionId" tabindex="-1" aria-labelledby="upstream-heading">
       <h2 id="upstream-heading" i18n="@@upstream.heading">Upstream</h2>
@@ -294,141 +295,136 @@ export function upstreamPointerLabel(pointer: string): string | null {
         }
       </div>
 
-      <button
-        class="details-toggle"
-        type="button"
-        aria-controls="upstream-details"
-        [attr.aria-expanded]="detailsOpen()"
-        (click)="detailsOpened.set(!detailsOpen())"
+      <quader-disclosure
+        class="upstream-details"
+        [inline]="true"
+        i18n-heading="@@upstream.details"
+        heading="Upstream details"
+        [expanded]="detailsOpen()"
+        (expandedChange)="detailsOpened.set($event)"
       >
-        <span class="material-icons chevron" aria-hidden="true">chevron_right</span>
-        <ng-container i18n="@@upstream.details">Upstream details</ng-container>
-      </button>
-      <div id="upstream-details" class="collapse-region" [class.open]="detailsOpen()">
-        <div>
-          <div class="upstream-grid details">
-            <div class="field" role="group" aria-labelledby="upstream-hosts-label" [id]="hostsId">
-              <span id="upstream-hosts-label" class="field-label" i18n="@@upstream.hosts">Further hosts</span>
-              <p class="hint" i18n="@@upstream.hosts.hint">
-                Hosts the upstream's documents and its token service may lead to. Only a host that receives the credential gets it.
-              </p>
-              @for (h of hosts(); track $index; let i = $index) {
-                <div class="host-row">
-                  <label class="visually-hidden" [for]="'f-remote-extraHosts-' + i" i18n="@@upstream.hosts.pattern">Host pattern</label>
+        <div class="upstream-grid details">
+          <div class="field" role="group" aria-labelledby="upstream-hosts-label" [id]="hostsId">
+            <span id="upstream-hosts-label" class="field-label" i18n="@@upstream.hosts">Further hosts</span>
+            <p class="hint" i18n="@@upstream.hosts.hint">
+              Hosts the upstream's documents and its token service may lead to. Only a host that receives the credential gets it.
+            </p>
+            @for (h of hosts(); track $index; let i = $index) {
+              <div class="host-row">
+                <label class="visually-hidden" [for]="'f-remote-extraHosts-' + i" i18n="@@upstream.hosts.pattern">Host pattern</label>
+                <input
+                  class="text-input field-w-name"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                  translate="no"
+                  [id]="'f-remote-extraHosts-' + i"
+                  [value]="h.pattern"
+                  [attr.aria-invalid]="invalid('/remote/extraHosts/' + i)"
+                  (input)="setHost(i, { pattern: $any($event.target).value })"
+                />
+                <label class="check-row" [for]="'f-remote-extraHosts-' + i + '-send'">
                   <input
-                    class="text-input field-w-name"
-                    type="text"
-                    autocomplete="off"
-                    spellcheck="false"
-                    translate="no"
-                    [id]="'f-remote-extraHosts-' + i"
-                    [value]="h.pattern"
-                    [attr.aria-invalid]="invalid('/remote/extraHosts/' + i)"
-                    (input)="setHost(i, { pattern: $any($event.target).value })"
+                    type="checkbox"
+                    [id]="'f-remote-extraHosts-' + i + '-send'"
+                    [checked]="h.sendCredentials"
+                    (change)="setHost(i, { sendCredentials: $any($event.target).checked })"
                   />
-                  <label class="check-row" [for]="'f-remote-extraHosts-' + i + '-send'">
-                    <input
-                      type="checkbox"
-                      [id]="'f-remote-extraHosts-' + i + '-send'"
-                      [checked]="h.sendCredentials"
-                      (change)="setHost(i, { sendCredentials: $any($event.target).checked })"
-                    />
-                    <span i18n="@@upstream.hosts.send">Receives the credential</span>
-                  </label>
-                  <button class="btn btn-tertiary" type="button" (click)="removeHost(i)">
-                    <ng-container i18n="@@upstream.hosts.remove">Remove</ng-container><span class="visually-hidden">&ngsp;{{ h.pattern }}</span>
-                  </button>
-                </div>
-                @for (e of problems('/remote/extraHosts/' + i); track $index) {
-                  <p class="field-error">{{ message(e) }}</p>
-                }
-              } @empty {
-                <p class="hint" i18n="@@upstream.hosts.none">No further host.</p>
-              }
-              <div>
-                <button class="btn btn-default" type="button" (click)="addHost()">
-                  <ng-container i18n="@@upstream.hosts.add">Add host</ng-container>
+                  <span i18n="@@upstream.hosts.send">Receives the credential</span>
+                </label>
+                <button class="btn btn-tertiary" type="button" (click)="removeHost(i)">
+                  <ng-container i18n="@@upstream.hosts.remove">Remove</ng-container><span class="visually-hidden">&ngsp;{{ h.pattern }}</span>
                 </button>
               </div>
-              @for (e of problems('/remote/extraHosts'); track $index) {
+              @for (e of problems('/remote/extraHosts/' + i); track $index) {
                 <p class="field-error">{{ message(e) }}</p>
               }
+            } @empty {
+              <p class="hint" i18n="@@upstream.hosts.none">No further host.</p>
+            }
+            <div>
+              <button class="btn btn-default" type="button" (click)="addHost()">
+                <ng-container i18n="@@upstream.hosts.add">Add host</ng-container>
+              </button>
             </div>
-
-            <div class="field">
-              <label class="field-label" for="f-remote-cache-metadataTtlSeconds" i18n="@@upstream.metadata-ttl"
-                >Metadata cache period in seconds</label
-              >
-              <input
-                id="f-remote-cache-metadataTtlSeconds"
-                class="text-input field-w-duration"
-                type="text"
-                inputmode="numeric"
-                autocomplete="off"
-                spellcheck="false"
-                [value]="shown(upstream().metadataTtl, proposed().metadataTtlSeconds)"
-                [attr.aria-invalid]="invalid('/remote/cache/metadataTtlSeconds')"
-                aria-describedby="d-remote-metadata-ttl"
-                (input)="set({ metadataTtl: number($any($event.target).value) })"
-                (blur)="leavePeriod('metadataTtl')"
-              />
-              <p id="d-remote-metadata-ttl" class="hint" i18n="@@upstream.metadata-ttl.hint-value">
-                How long fetched metadata is served without asking the upstream again.
-              </p>
-              @for (e of problems('/remote/cache/metadataTtlSeconds'); track $index) {
-                <p class="field-error">{{ message(e) }}</p>
-              }
-            </div>
-
-            <div class="field">
-              <label class="field-label" for="f-remote-cache-notFoundTtlSeconds" i18n="@@upstream.notfound-ttl"
-                >Negative cache period in seconds</label
-              >
-              <input
-                id="f-remote-cache-notFoundTtlSeconds"
-                class="text-input field-w-duration"
-                type="text"
-                inputmode="numeric"
-                autocomplete="off"
-                spellcheck="false"
-                [value]="shown(upstream().notFoundTtl, proposed().notFoundTtlSeconds)"
-                [attr.aria-invalid]="invalid('/remote/cache/notFoundTtlSeconds')"
-                aria-describedby="d-remote-notfound-ttl"
-                (input)="set({ notFoundTtl: number($any($event.target).value) })"
-                (blur)="leavePeriod('notFoundTtl')"
-              />
-              <p id="d-remote-notfound-ttl" class="hint" i18n="@@upstream.notfound-ttl.hint-value">
-                How long a "not found" answer of the upstream is remembered.
-              </p>
-              @for (e of problems('/remote/cache/notFoundTtlSeconds'); track $index) {
-                <p class="field-error">{{ message(e) }}</p>
-              }
-            </div>
-
-            @if (edit()) {
-              <div class="field">
-                <label class="check-row" for="f-remote-availability-mode">
-                  <input
-                    id="f-remote-availability-mode"
-                    type="checkbox"
-                    [checked]="upstream().offline"
-                    [attr.aria-invalid]="invalid('/remote/availability/mode')"
-                    aria-describedby="d-remote-offline"
-                    (change)="set({ offline: $any($event.target).checked })"
-                  />
-                  <span i18n="@@upstream.offline">Offline</span>
-                </label>
-                <p id="d-remote-offline" class="hint" i18n="@@upstream.offline.hint">
-                  The upstream is not contacted: clients get what is already stored.
-                </p>
-                @for (e of problems('/remote/availability/mode'); track $index) {
-                  <p class="field-error">{{ message(e) }}</p>
-                }
-              </div>
+            @for (e of problems('/remote/extraHosts'); track $index) {
+              <p class="field-error">{{ message(e) }}</p>
             }
           </div>
+
+          <div class="field">
+            <label class="field-label" for="f-remote-cache-metadataTtlSeconds" i18n="@@upstream.metadata-ttl"
+              >Metadata cache period in seconds</label
+            >
+            <input
+              id="f-remote-cache-metadataTtlSeconds"
+              class="text-input field-w-duration"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              spellcheck="false"
+              [value]="shown(upstream().metadataTtl, proposed().metadataTtlSeconds)"
+              [attr.aria-invalid]="invalid('/remote/cache/metadataTtlSeconds')"
+              aria-describedby="d-remote-metadata-ttl"
+              (input)="set({ metadataTtl: number($any($event.target).value) })"
+              (blur)="leavePeriod('metadataTtl')"
+            />
+            <p id="d-remote-metadata-ttl" class="hint" i18n="@@upstream.metadata-ttl.hint-value">
+              How long fetched metadata is served without asking the upstream again.
+            </p>
+            @for (e of problems('/remote/cache/metadataTtlSeconds'); track $index) {
+              <p class="field-error">{{ message(e) }}</p>
+            }
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="f-remote-cache-notFoundTtlSeconds" i18n="@@upstream.notfound-ttl"
+              >Negative cache period in seconds</label
+            >
+            <input
+              id="f-remote-cache-notFoundTtlSeconds"
+              class="text-input field-w-duration"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              spellcheck="false"
+              [value]="shown(upstream().notFoundTtl, proposed().notFoundTtlSeconds)"
+              [attr.aria-invalid]="invalid('/remote/cache/notFoundTtlSeconds')"
+              aria-describedby="d-remote-notfound-ttl"
+              (input)="set({ notFoundTtl: number($any($event.target).value) })"
+              (blur)="leavePeriod('notFoundTtl')"
+            />
+            <p id="d-remote-notfound-ttl" class="hint" i18n="@@upstream.notfound-ttl.hint-value">
+              How long a "not found" answer of the upstream is remembered.
+            </p>
+            @for (e of problems('/remote/cache/notFoundTtlSeconds'); track $index) {
+              <p class="field-error">{{ message(e) }}</p>
+            }
+          </div>
+
+          @if (edit()) {
+            <div class="field">
+              <label class="check-row" for="f-remote-availability-mode">
+                <input
+                  id="f-remote-availability-mode"
+                  type="checkbox"
+                  [checked]="upstream().offline"
+                  [attr.aria-invalid]="invalid('/remote/availability/mode')"
+                  aria-describedby="d-remote-offline"
+                  (change)="set({ offline: $any($event.target).checked })"
+                />
+                <span i18n="@@upstream.offline">Offline</span>
+              </label>
+              <p id="d-remote-offline" class="hint" i18n="@@upstream.offline.hint">
+                The upstream is not contacted: clients get what is already stored.
+              </p>
+              @for (e of problems('/remote/availability/mode'); track $index) {
+                <p class="field-error">{{ message(e) }}</p>
+              }
+            </div>
+          }
         </div>
-      </div>
+      </quader-disclosure>
     </section>
   `,
   styles: `
@@ -502,33 +498,9 @@ export function upstreamPointerLabel(pointer: string): string | null {
       overflow-wrap: anywhere;
       text-align: start;
     }
-    /* The look of a closed section's toggle (<quader-disclosure>), so that every fold of a form reads the same. */
-    .details-toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--quader-space-1);
+    /* The details are the app's one disclosure, as a fold inside the section (Q-UI-552). */
+    .upstream-details {
       margin-block-start: var(--quader-space-3);
-      padding: 0;
-      border: 0;
-      background: none;
-      color: var(--quader-heading);
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .details-toggle:focus-visible {
-      outline: var(--quader-focus-ring);
-      outline-offset: 2px;
-    }
-    .details-toggle .chevron {
-      font-size: 1.25rem;
-      transition: transform var(--quader-motion-duration) var(--quader-motion-easing);
-    }
-    .details-toggle[aria-expanded='true'] .chevron {
-      transform: rotate(90deg);
-    }
-    #upstream-details .details {
-      padding-inline-start: calc(1.25rem + var(--quader-space-1));
     }
   `,
 })

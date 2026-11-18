@@ -67,7 +67,7 @@ export interface ProjectDialogData {
           [error]="displayNameError()"
         />
         <quader-text-field
-          width="full"
+          width="name"
           i18n-label="@@project-dialog.description"
           label="Description"
           name="description"

@@ -292,7 +292,7 @@ describe('The files of a repository', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-052 an empty folder says so; an empty repository points who may upload at the one Upload files, and offers Set up client to anyone else', async () => {
+  it('R-UI-052 R-UI-144 an empty folder says so; an empty repository points who may upload at the one Upload files, and tells anyone else who fills it', async () => {
     const emptyFolder = await open('generic-local', 'releases', (f) => {
       f.tree.set('web/generic-local', [{ path: 'releases', kind: 'folder' }]);
     });
@@ -303,6 +303,9 @@ describe('The files of a repository', () => {
       [...all].filter((b) => b.textContent?.includes('Upload files')).length === 1,
     );
     const reader = await open('generic-local', undefined, (f) => f.tree.set('web/generic-local', []), (c) => c.action === 'read');
-    expect(reader.root.querySelector('quader-empty-state a')?.getAttribute('href')).toBe('/projects/web/repositories/generic-local/setup');
+    // Set up client is the header's, once (Q-UI-555): the empty state offers no second one.
+    expect(reader.root.querySelector('quader-empty-state :is(a, button)')).toBeNull();
+    expect(text(reader.root.querySelector('quader-empty-state')!)).toBe('This repository holds no files yet. Members who may upload to it fill it with their client.');
+    expect([...reader.root.querySelectorAll('a, button')].filter((b) => text(b) === 'Set up client')).toHaveLength(1);
   });
 });

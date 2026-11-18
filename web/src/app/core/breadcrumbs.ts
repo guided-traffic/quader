@@ -31,7 +31,8 @@ export interface CrumbSpec {
  *   repository, and the page's own path shows the folders (Q-UI-510);
  * - a matcher route with `data.crumbParam` adds one step with that parameter's value (a package
  *   name such as `@team-a/ui`, whose slash belongs to the name); so does a path route with
- *   `data.crumbParam` (the project of `/projects/:project`), whose step links to that route itself.
+ *   `data.crumbParam` (the project of `/projects/:project`), whose step links to that route itself; a resolved
+ *   `crumbLabel` of that route replaces the parameter's value (the format of `/guides/:format`, Q-UI-553).
  *
  * A trail of one step repeats the page title and is not shown.
  */
@@ -94,8 +95,10 @@ export function collect(root: ActivatedRouteSnapshot): Crumb[] {
     const crumbParam = config?.data?.['crumbParam'] as string | undefined;
     if (config && config.path !== undefined && !config.matcher && crumbParam) {
       // A path route whose parameter names the thing (the project of `/projects/:project`): one step whose target is
-      // that route itself, so the route has to answer there (it redirects to the project's first screen).
-      add({ label: route.params[crumbParam] ?? crumbParam, commands: [...before, ...own], literal: true });
+      // that route itself, so the route has to answer there (it redirects to the project's first screen). A route that
+      // resolves `crumbLabel` (a format's name, `OCI (Docker)` for `oci`) shows that instead of the parameter.
+      const resolved = route.data['crumbLabel'] as string | undefined;
+      add({ label: resolved || (route.params[crumbParam] ?? crumbParam), commands: [...before, ...own], literal: true });
     } else if (config && config.path === undefined && config.matcher && crumbParam) {
       // A matcher route whose parameter names the thing (a package name with its slash): one step. A version's page
       // (`data.crumbVersion`, `ui@1.4.0`) adds the package, linked to its page without the version, and then the version.

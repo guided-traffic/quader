@@ -6,6 +6,8 @@ import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from 
 import { FakeFilesApi } from '../../../api/testing/fakes-catalog';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../../api/testing/fakes-vulnerabilities';
 import { FilesApi } from '../../../api/files-api';
+import { SessionApi } from '../../../api/session-api';
+import { FakeSessionApi } from '../../../api/testing/fakes';
 import { expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
 import { RepositoryContent } from './repository-content';
 import { RepositoryItems } from './repository-items';
@@ -26,6 +28,7 @@ async function open(repo: RepoDoc, setup?: (fakes: {
   catalog: FakeRepositoriesApi;
   packages: FakePackagesApi;
   vulnerabilities: FakeVulnerabilitiesApi;
+  session: FakeSessionApi;
 }) => void, capabilities?: readonly string[], inputs: Record<string, unknown> = {}) {
   const r = await renderScreen(RepositoryContent, {
     inputs: { project: repo.project, key: repo.key, ...inputs },
@@ -34,7 +37,7 @@ async function open(repo: RepoDoc, setup?: (fakes: {
       const catalog = get(RepositoriesApi) as FakeRepositoriesApi;
       catalog.repositories = [...catalog.repositories, repo as never];
       catalog.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT, OCI_FORMAT];
-      setup?.({ catalog, packages: get(PackagesApi) as FakePackagesApi, vulnerabilities: get(VulnerabilitiesApi) as FakeVulnerabilitiesApi });
+      setup?.({ catalog, packages: get(PackagesApi) as FakePackagesApi, vulnerabilities: get(VulnerabilitiesApi) as FakeVulnerabilitiesApi, session: get(SessionApi) as FakeSessionApi });
     },
   });
   await settle(r.fixture);
@@ -55,6 +58,7 @@ describe('Repository content page', () => {
     expect(text(r.root)).not.toContain('not scanned for vulnerabilities yet');
     expect(text(r.root)).toContain('Vulnerabilities');
     expect(r.root.querySelector('quader-data-table caption')?.textContent).toContain('Images');
+    // An image whose OS is at its end of life says so beside the shield; the letter is the shield's (R-UI-143).
     expect(text(r.root.querySelector('tbody quader-grade .grade-text')!)).toBe('Grade C · OS end of life');
     const opener = r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!;
     expect(opener.getAttribute('aria-expanded')).toBe('false');
@@ -87,27 +91,30 @@ describe('Repository content page', () => {
     expect(setup.calls.every((c) => c.query.credentials === 'none')).toBe(true);
   });
 
-  it('R-UI-052 R-UI-094 an npm repository shows the packages with the grade of their latest version and the install command of the version, and grades each version of an opened row', async () => {
+  it('R-UI-052 R-UI-094 R-UI-143 an npm repository shows the packages with the grade of their latest version and the install command of the version, and grades each version of an opened row, in the words of the versions table', async () => {
     const r = await open(NPM_REPO, ({ packages, vulnerabilities }) => {
       packages.packages = packages.packages.map((p) =>
         p.name === '@team-a/ui'
-          ? { ...p, repositories: ['web/npm-local'], vulnerabilityGrade: sampleGrade('C', { high: 2 }) }
+          ? { ...p, repositories: ['web/npm-local'], vulnerabilityGrade: sampleGrade('C', { high: 2, low: 3 }, { fixable: 1 }) }
           : { ...p, repositories: ['web/npm-local'], vulnerabilityGrade: sampleGrade('S') },
       );
       vulnerabilities.packageReports.set('pkg_01JBQ6V7S3K9', {
         packageId: 'pkg_01JBQ6V7S3K9',
-        versions: [{ version: '1.4.0', grade: sampleGrade('C', { high: 2 }) }],
+        versions: [{ version: '1.4.0', grade: sampleGrade('C', { high: 2, low: 3 }, { fixable: 1 }) }],
       });
     });
     const packages = r.get(PackagesApi) as FakePackagesApi;
     expect(packages.listFilters.at(-1)).toMatchObject({ repository: ['web/npm-local'], format: ['npm'], include: ['vulnerabilities'] });
     const row = [...r.root.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.includes('@team-a/ui'))!;
-    expect(text(row.querySelector('quader-grade .grade-text')!)).toBe('Grade C · 2 High');
+    // The statement of the package's versions table (Q-UI-556): the total and the fixable, not the count that decides the letter.
+    expect(text(row.querySelector('quader-grade .grade-text')!)).toBe('Grade C · 5 findings · 1 fixable');
+    const clean = [...r.root.querySelectorAll('tbody tr')].find((tr) => tr !== row && tr.querySelector('quader-grade'))!;
+    expect(text(clean.querySelector('quader-grade .grade-text')!)).toBe('Grade S · no findings');
     row.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
     await settle(r.fixture);
     const vulnerabilities = r.get(VulnerabilitiesApi) as FakeVulnerabilitiesApi;
     expect(vulnerabilities.calls).toEqual(expect.arrayContaining(['packageReport pkg_01JBQ6V7S3K9 in web/npm-local']));
-    expect(text(r.root.querySelector('quader-repository-item-versions quader-grade .grade-text')!)).toBe('Grade C · 2 High');
+    expect(text(r.root.querySelector('quader-repository-item-versions quader-grade .grade-text')!)).toBe('Grade C · 5 findings · 1 fixable');
     expect((r.root.querySelector<HTMLInputElement>('quader-repository-item-versions quader-address-field input')?.value ?? r.root.querySelector('quader-repository-item-versions pre')?.textContent)).toBe('npm install @team-a/ui@1.4.0');
     await expectAccessible(r.root);
   });
@@ -179,8 +186,8 @@ describe('Repository content page', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-052 an empty repository says how it is filled and offers the upload to who may upload; a disabled one offers nothing', async () => {
-    const empty = async (disabled: boolean) => {
+  it('R-UI-052 R-UI-144 an empty repository says how it is filled and offers the upload to who may upload; a disabled one offers nothing', async () => {
+    const empty = async (disabled: boolean, deploy = true) => {
       const r = await renderScreen(RepositoryContent, {
         inputs: { project: 'web', key: 'generic-local' },
         setup: (get) => {
@@ -188,6 +195,7 @@ describe('Repository content page', () => {
           catalog.formatsResult = [GENERIC_FORMAT];
           catalog.repositories = catalog.repositories.map((x) => (x.key === 'generic-local' ? { ...x, disabled } : x));
           (get(FilesApi) as FakeFilesApi).children = () => async () => ({ items: [], nextCursor: null });
+          (get(SessionApi) as FakeSessionApi).allow = (c) => deploy || c.action !== 'deploy';
         },
       });
       await settle(r.fixture);
@@ -202,6 +210,31 @@ describe('Repository content page', () => {
     await expectAccessible(r.root);
     const off = await empty(true);
     expect(off.root.querySelector('quader-data-table quader-empty-state :is(a, button)')).toBeNull();
+    expect(text(off.root.querySelector('quader-data-table quader-empty-state')!)).toBe('This repository holds no files yet.');
+    // A reader is told who fills it; Set up client stands once, in the header (Q-UI-555).
+    const reader = await empty(false, false);
+    const said = reader.root.querySelector('quader-data-table quader-empty-state')!;
+    expect(text(said)).toBe('This repository holds no files yet. Members who may upload to it fill it with their client.');
+    expect(said.querySelector(':is(a, button)')).toBeNull();
+    expect([...reader.root.querySelectorAll('a, button')].filter((b) => text(b) === 'Set up client')).toHaveLength(1);
+  });
+
+  it('R-UI-144 Q-UI-555 an empty package repository shows Set up client once, in its header, and its empty state says what fills it and for whom', async () => {
+    const owner = await open(NPM_REPO, ({ packages }) => {
+      packages.packages = [];
+    });
+    const state = owner.root.querySelector('quader-data-table quader-empty-state')!;
+    expect(text(state)).toBe('This repository holds no packages yet. Publish a package with your client; Set up client shows how.');
+    expect(state.querySelector(':is(a, button)')).toBeNull();
+    expect([...owner.root.querySelectorAll('a, button')].filter((b) => text(b) === 'Set up client')).toHaveLength(1);
+    expect(owner.root.querySelector('quader-page-header .client-row a.btn')?.textContent?.trim()).toBe('Set up client');
+    const reader = await open(NPM_REPO, ({ packages, session }) => {
+      packages.packages = [];
+      session.allow = (c) => c.action !== 'deploy';
+    });
+    expect(text(reader.root.querySelector('quader-data-table quader-empty-state')!)).toBe(
+      'This repository holds no packages yet. Members who may publish to it fill it with their client.',
+    );
   });
 
   it('R-UI-052 a virtual repository names what it resolves from and a remote one says it lists what clients fetched', async () => {
@@ -239,7 +272,7 @@ describe('Repository content page', () => {
     const r = await open(remote, ({ packages }) => {
       packages.packages = [];
     });
-    expect(text(r.root)).toContain('This repository has cached no images yet. Pull an image through it');
+    expect(text(r.root)).toContain('This repository has cached no images yet. It fills as clients pull images through it; Set up client shows how.');
   });
 
   it('R-UI-052 the page has no setup tab: its Set up client opens the setup for this repository', async () => {
@@ -297,6 +330,15 @@ describe('Repository content page', () => {
     // The other views are in the header's menu, not loose links beside the tabs.
     expect(r.root.querySelector('.page-header-actions button[aria-label="More actions"]')).toBeTruthy();
     await expectAccessible(r.root);
+  });
+
+  it('Q-UI-554 in the header the address, Set up client, Settings and the menu follow each other in the order of the narrow line', async () => {
+    const r = await open(NPM_REPO);
+    const header = r.root.querySelector('quader-page-header')!;
+    const order = [...header.querySelectorAll('quader-address-field input, a.btn, button.btn')].map(
+      (e) => (e.tagName === 'INPUT' ? 'address' : e.getAttribute('aria-label') ?? text(e)),
+    );
+    expect(order.filter((o) => o !== 'Copy client address')).toEqual(['address', 'Set up client', 'Settings', 'More actions']);
   });
 
   it('R-UI-052 the filter of the list is sent to the server and lives in the URL', async () => {

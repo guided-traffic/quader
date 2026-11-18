@@ -8,6 +8,7 @@ import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { Disclosure } from '../../shared/ui/disclosure';
 
 /** The fingerprint in groups of four, the way an operator compares it with a second channel (R-DEB-018). */
 export function groupedFingerprint(fingerprint: string): string {
@@ -68,7 +69,7 @@ export function keyErrorText(error: ApiError): string | null {
  */
 @Component({
   selector: 'quader-deb-signing-keys',
-  imports: [DatePipe, CopyButton, DataTable, ErrorNotice],
+  imports: [DatePipe, CopyButton, DataTable, Disclosure, ErrorNotice],
   template: `
     <section class="keys" aria-labelledby="deb-keys-heading">
       <h2 id="deb-keys-heading" class="visually-hidden" i18n="@@deb.keys.heading">Signing keys</h2>
@@ -112,10 +113,9 @@ export function keyErrorText(error: ApiError): string | null {
                 <code translate="no" [attr.title]="k.fingerprint">{{ grouped(k.fingerprint) }}</code>
                 <quader-copy-button [value]="k.fingerprint" [label]="copyFingerprint" />
                 @if (k.state !== 'retired') {
-                  <details>
-                    <summary i18n="@@deb.keys.certificate">Public certificate</summary>
+                  <quader-disclosure [inline]="true" i18n-heading="@@deb.keys.certificate" heading="Public certificate">
                     <pre class="code-block" translate="no" tabindex="0">{{ k.publicKey }}</pre>
-                  </details>
+                  </quader-disclosure>
                 }
               </th>
               <td>

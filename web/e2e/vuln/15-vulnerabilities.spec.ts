@@ -222,9 +222,9 @@ test('R-VULN-023 R-VULN-022 the package page shows the finding on the affected v
     await test.step('the versions table of the package shows the grade of each version, S on 1.0.1 only', async () => {
       await page.goto(`/ui/en/projects/${e2eProject}/packages/npm/quader-test-cvss`);
       const row = (v: string) => page.getByRole('row', { name: new RegExp(`^${v.replace('.', '\\.')}`) });
-      await expect(row('1.0.0').locator('quader-version-grade')).toBeVisible();
-      await expect(row('1.0.0').locator('quader-version-grade')).not.toContainText('S ·');
-      await expect(row('1.0.1').locator('quader-version-grade')).toContainText('S · no findings');
+      await expect(row('1.0.0').locator('quader-grade')).toBeVisible();
+      await expect(row('1.0.0').locator('quader-grade')).not.toContainText('S ·');
+      await expect(row('1.0.1').locator('quader-grade')).toContainText('S · no findings');
     });
 
     await test.step('confirm the finding, then block downloads', async () => {

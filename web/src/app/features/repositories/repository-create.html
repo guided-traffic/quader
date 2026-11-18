@@ -99,7 +99,7 @@
       <label class="field-label" for="f-description" i18n="@@repo.field.description-optional">Description (optional)</label>
       <textarea
         id="f-description"
-        class="area-input field-w-full"
+        class="area-input field-w-name"
         rows="2"
         maxlength="2000"
         [value]="form().description"
@@ -220,13 +220,13 @@
       }
     </quader-disclosure>
 
-    <details class="api-request">
-      <summary i18n="@@repo.review.api">Show as API request</summary>
+    <!-- A section of the form like Advanced settings, with the app's one disclosure (Q-UI-552). -->
+    <quader-disclosure class="api-request" i18n-heading="@@repo.review.api" heading="Show as API request">
       <h3 i18n="@@repo.review.api.json">Request body</h3>
       <pre class="code-block" translate="no" tabindex="0">{{ requestJson() }}</pre>
       <h3 i18n="@@repo.review.api.curl">The same request with curl</h3>
       <pre class="code-block" translate="no" tabindex="0">{{ curl() }}</pre>
-    </details>
+    </quader-disclosure>
 
     <div class="actions">
       <button class="btn btn-confirm" type="submit" [disabled]="creating()" i18n="@@repo.wizard.create">Create repository</button>

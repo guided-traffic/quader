@@ -8,7 +8,7 @@ Every repository has a page **Set up client**: the configuration and the command
 
 | How to open it | What you get |
 |---|---|
-| **Set up client** at the top of a repository's page, in its row of a list of repositories, beside a repository you opened recently on the start page, or under an empty repository | The page of that repository |
+| **Set up client** at the top of a repository's page (an empty repository has it there too, and says under its list what fills it), in its row of a list of repositories, or beside a repository you opened recently on the start page | The page of that repository |
 | **Set up client** in the **Install** panel of a package | The page of the repository chosen in the panel, with the client chosen there |
 | **Guides** in the side bar or the user menu | The package types as tiles; a tile lists the repositories of that type you may use, each with **Set up client**, and the guide of each kind of repository for when you have none yet |
 

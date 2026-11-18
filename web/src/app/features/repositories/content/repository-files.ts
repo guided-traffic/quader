@@ -4,14 +4,14 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Child, FilesApi } from '../../../api/files-api';
 import { Notifier } from '../../../core/notifier';
-import { filesCommands, setupCommands } from '../../../core/project-links';
+import { filesCommands } from '../../../core/project-links';
 import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { QuaderDialog } from '../../../shared/ui/dialog';
 import { formatSize } from '../../packages/format-size';
 import { TimeAgo } from '../../../shared/ui/time-ago';
-import { contentShapeOf } from './content-shape';
+import { ContentShape, contentShapeOf, emptyContentText } from './content-shape';
 import { FilePermissions, NO_FILE_PERMISSIONS, iconOf } from './file-paths';
 import { FolderDialog, FolderDialogData } from './folder-dialog';
 import { UploadDialog, UploadDialogData } from './upload-dialog';
@@ -95,12 +95,6 @@ export const FILES_PAGE = 200;
       (more)="list.more()"
       (retry)="list.more()"
     >
-      <!-- The action that fills an empty repository (Q-UI-309): the client setup, for whoever the toolbar offers no upload. -->
-      @if (path() === '' && !filter() && !permissions().deploy && offerSetup()) {
-        <a emptyAction class="btn btn-default" [routerLink]="setupLink()" i18n="@@repo.content.tab.setup"
-          >Set up client</a
-        >
-      }
       @for (c of shown(); track c.path) {
         <tr>
           <th scope="row" class="wrap-name">
@@ -146,14 +140,16 @@ export class RepositoryFiles {
    * it from the server's addresses or the format catalog; empty while it is not known.
    */
   readonly filesAddress = input<string>('');
-  /** Set up client of this repository (R-UI-126). */
-  protected readonly setupLink = computed(() => setupCommands(this.repository()));
   /** The folder shown; '' is the root. */
   readonly path = input<string>('');
   /** What the caller may do here, as the page decided it (Q-UI-512). */
   readonly permissions = input<FilePermissions>(NO_FILE_PERMISSIONS);
-  /** Whether an empty repository offers Set up client: not for a disabled one, which no client can use. */
-  readonly offerSetup = input(true);
+  /**
+   * What the empty root says fills the repository for a caller the toolbar offers no upload (R-UI-144, Q-UI-555): `publisher`,
+   * `other` or `none` (a disabled repository). It offers no button: **Set up client** is the header's, **Upload files** the
+   * toolbar's.
+   */
+  readonly fill = input<'publisher' | 'other' | 'none'>('other');
   /** Changes when the folder changed by something the list did not do itself (a delete job that ended): the list reloads. */
   readonly revision = input(0);
   /** Delete this folder: the page asks and deletes (R-UI-011). */
@@ -167,12 +163,14 @@ export class RepositoryFiles {
     return f ? this.list.items().filter((c) => c.path.toLowerCase().includes(f)) : this.list.items();
   });
 
+  /** The words of the repository's files: a generic repository's, or a package format's raw files, by its class. */
+  readonly shape = input<ContentShape>(contentShapeOf('generic'));
   protected readonly caption = contentShapeOf('generic').itemsLabel;
   protected readonly emptyText = computed(() => {
     if (this.filter()) return $localize`:@@repo.content.files-empty-filtered:No file matches the filter.`;
     if (this.path() !== '') return $localize`:@@files.folder-empty:This folder is empty.`;
     if (this.permissions().deploy) return $localize`:@@files.empty-upload:This repository holds no files yet. Upload files here or with your client.`;
-    return $localize`:@@repo.content.files-empty2:This repository holds no files yet. Upload a file with your client.`;
+    return emptyContentText(this.shape(), this.fill());
   });
   protected readonly columns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@repo.content.col.name:Name`, width: '12rem' },

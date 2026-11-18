@@ -1,6 +1,7 @@
 import { Component, input, model } from '@angular/core';
 import { FieldProblem } from '../../api/problem';
 import { fieldMessage, problemsAt } from '../../shared/field-errors';
+import { Disclosure } from '../../shared/ui/disclosure';
 import { RepositoryForm } from './repository-model';
 
 /** The detail groups of the repository document's common members (R-UI-083, R-UI-087): each is a group of its own. */
@@ -15,6 +16,7 @@ export type RepositoryFieldsSection = 'notes' | 'paths' | 'access';
  */
 @Component({
   selector: 'quader-repository-fields',
+  imports: [Disclosure],
   template: `
     @switch (section()) {
       @case ('notes') {
@@ -77,8 +79,7 @@ export type RepositoryFieldsSection = 'notes' | 'paths' | 'access';
             One pattern per line. An empty include list admits every path; an exclude pattern wins.
           </p>
         </div>
-        <details class="syntax">
-          <summary i18n="@@pattern.help.summary">Pattern syntax</summary>
+        <quader-disclosure class="syntax" [inline]="true" i18n-heading="@@pattern.help.summary" heading="Pattern syntax">
           <ul>
             <li>
               <code>*</code>
@@ -97,7 +98,7 @@ export type RepositoryFieldsSection = 'notes' | 'paths' | 'access';
               <span i18n="@@pattern.help.backslash">makes the next character literal.</span>
             </li>
           </ul>
-        </details>
+        </quader-disclosure>
       }
       @case ('access') {
         <div class="field">

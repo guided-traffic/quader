@@ -51,7 +51,7 @@ export interface TokenDraft {
   template: `
     <form class="form" (submit)="submit($event)" novalidate>
       <quader-text-field
-        width="full"
+        width="name"
         i18n-label="@@token-form.description"
         label="Description"
         name="description"

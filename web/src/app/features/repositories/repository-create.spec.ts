@@ -338,13 +338,21 @@ describe('The creation form of a repository', () => {
     expect(created(r.fake, 'npm-virtual').virtual).toEqual({ members: ['npm-local', 'npm-remote'], deployTarget: 'npm-local' });
   });
 
-  it('R-UI-080 R-UI-043 Show as API request shows the body with a typed password masked and the curl on the base URL', async () => {
+  it('R-UI-080 R-UI-043 Q-UI-552 Show as API request shows the body with a typed password masked and the curl on the base URL', async () => {
     const r = await openForm('npm');
     await chooseClass(r, 'remote');
     type($<HTMLSelectElement>(r, '#f-remote-authMode'), 'bearer');
     await settle(r.fixture);
     type($(r, '#f-remote-password'), 'tok-123');
     await settle(r.fixture);
+    // Q-UI-552: a closed section of the form with the app's disclosure, as Advanced settings is; no bare <details>.
+    expect(r.root.querySelector('details')).toBeNull();
+    const toggle = $<HTMLButtonElement>(r, 'quader-disclosure.api-request h2 button');
+    expect(text(toggle)).toContain('Show as API request');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    toggle.click();
+    await settle(r.fixture);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
     const request = text($(r, '.api-request'));
     expect(request).toContain('"value": "<the password>"');
     expect(request).not.toContain('tok-123');
@@ -364,11 +372,11 @@ describe('The creation form of a repository', () => {
     expect($<HTMLTextAreaElement>(r, '#f-adminNotes').value).toBe('');
   });
 
-  it('R-UI-085 every field takes the width of its kind of input', async () => {
+  it('R-UI-085 Q-UI-551 every field takes the width of its kind of input; the description is a sentence, as wide as the key above it', async () => {
     const r = await openForm('npm');
     expect($(r, '#f-key').classList.contains('field-w-name')).toBe(true);
     expect($(r, '#f-project').classList.contains('field-w-name')).toBe(true);
-    expect($(r, '#f-description').classList.contains('field-w-full')).toBe(true);
+    expect($(r, '#f-description').classList.contains('field-w-name')).toBe(true);
     await openAdvanced(r);
     expect($(r, '#f-adminNotes').classList.contains('field-w-full')).toBe(true);
     expect($(r, '#f-includePatterns').classList.contains('field-w-full')).toBe(true);

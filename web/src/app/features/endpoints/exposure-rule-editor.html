@@ -195,8 +195,7 @@
               }
             </div>
           </div>
-          <details class="syntax">
-            <summary i18n="@@ep.syntax.names.summary">Name pattern syntax</summary>
+          <quader-disclosure class="syntax" [inline]="true" i18n-heading="@@ep.syntax.names.summary" heading="Name pattern syntax">
             <ul>
               <li>
                 <code>*</code>
@@ -219,7 +218,7 @@
             <p i18n="@@ep.syntax.empty-include">
               An empty include list leaves the dimension open; an exclude pattern wins.
             </p>
-          </details>
+          </quader-disclosure>
         </fieldset>
 
         <fieldset class="dimension">
@@ -361,8 +360,7 @@
               }
             </div>
           </div>
-          <details class="syntax">
-            <summary i18n="@@ep.syntax.paths.summary">Path pattern syntax</summary>
+          <quader-disclosure class="syntax" [inline]="true" i18n-heading="@@ep.syntax.paths.summary" heading="Path pattern syntax">
             <ul>
               <li>
                 <code>*</code>
@@ -390,7 +388,7 @@
             <p i18n="@@ep.syntax.empty-include">
               An empty include list leaves the dimension open; an exclude pattern wins.
             </p>
-          </details>
+          </quader-disclosure>
         </fieldset>
       }
 

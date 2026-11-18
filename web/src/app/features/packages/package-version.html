@@ -23,7 +23,7 @@
       <span class="dot-separated">
         @if (grade(); as g) {
           <a class="facts-grade" [routerLink]="[]" [queryParams]="{ tab: 'vulnerabilities' }" queryParamsHandling="merge">
-            <quader-version-grade [grade]="g" />
+            <quader-grade [grade]="g" />
           </a>
         }
         <span

@@ -60,7 +60,7 @@ import { PageHeader } from '../../shared/ui/page-header';
             <quader-text-field width="name" i18n-label="@@project.key" label="Key" name="key" [value]="p.key" [readonly]="true" />
           </div>
           <quader-text-field
-            width="full"
+            width="name"
             i18n-label="@@project.description-optional"
             label="Description (optional)"
             name="description"

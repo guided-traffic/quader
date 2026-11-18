@@ -26,7 +26,7 @@ import {
   versionRows,
   versionSortParam,
 } from './package-versions-model';
-import { VersionGrade } from './version-grade';
+import { GradeLabel } from '../../shared/vulnerability/grade';
 
 /**
  * A package's page is its versions (R-UI-007, R-UI-110, the owner's walk of 2026-11-18): the name, the format and the
@@ -38,7 +38,7 @@ import { VersionGrade } from './version-grade';
  */
 @Component({
   selector: 'quader-package-detail',
-  imports: [DecimalPipe, RouterLink, TimeAgo, PageHeader, Disclosure, DataTable, ErrorNotice, FormatIconView, PackageReadmeView, VersionGrade],
+  imports: [DecimalPipe, RouterLink, TimeAgo, PageHeader, Disclosure, DataTable, ErrorNotice, FormatIconView, PackageReadmeView, GradeLabel],
   templateUrl: './package-detail.html',
   styleUrl: './package-detail.scss',
 })

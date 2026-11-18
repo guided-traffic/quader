@@ -1025,7 +1025,17 @@ agent** is not decided until the owner has said so.
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
   that opens with the browser's triangle on the creation form.
+  **Built on 2026-11-18** by a builder without the render stack, which was the owner's, and checked by the development agent with
+  pictures of the running UI (R-UI-142 to R-UI-144, Q-UI-550 to Q-UI-556): the members list; a description as wide as a name in
+  every form; one disclosure in the app, with a lint rule against a bare `<details>`; the guides trail with the format's name; an
+  empty repository with one **Set up client** and a sentence; a repository's header at 390 px; one statement of a grade in every
+  list ("1,145 findings · 112 fixable"). The pictures showed one thing the builder's reading of the styles had not: the
+  description of the creation form kept the form's width, because a later rule gave every text area the full width; fixed.
+  Not done: the wiki's visibility behind a disclosure, which waits for W-11 in the same forms.
 - **Seen by the development agent, not decided:**
+  - A session that has ended shows a red box on the page, "The session has ended. Sign in again." with a request ID and "Give
+    this ID to your administrator", and under it the page as if it were empty ("The project has no member yet."). An ended
+    session is no error to report; the reader needs the sign-in.
   - Station of the power user (`priya`), looked at before the owner on 2026-11-18:
     - `members`: a list that is not built like the lists of W-6. Its filter field is as wide as the page, beside it stand a sort
       button **Account** and an arrow instead of **Filters** and chips, and above it a tab strip with one tab, **Members 2**.

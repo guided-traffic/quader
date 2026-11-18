@@ -3683,7 +3683,7 @@
         <note category="location">src/app/features/audit/audit-log.html:259,261</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:15,16</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:156,160</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:186,189</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:187,190</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:117,119</note>
         <note category="location">src/app/features/repositories/repository-create.html:237,239</note>
         <note category="location">src/app/features/repositories/repository-detail.html:44,45</note>
@@ -7580,7 +7580,7 @@
     <unit id="ep.yes">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:94,95</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:582,583</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:580,581</note>
       </notes>
       <segment>
         <source>yes</source>
@@ -7589,7 +7589,7 @@
     <unit id="ep.no">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:96,97</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:585,586</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:583,584</note>
       </notes>
       <segment>
         <source>no</source>
@@ -7697,7 +7697,7 @@
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:107</note>
         <note category="location">src/app/features/guides/guide-format.ts:147</note>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:181</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:179</note>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:178</note>
         <note category="location">src/app/features/repositories/repository-list.ts:225</note>
         <note category="location">src/app/features/repositories/repository-list.ts:227</note>
@@ -8070,9 +8070,9 @@
     <unit id="ep.field.include">
       <notes>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:165,167</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:251,253</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:294,296</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:331,333</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:250,252</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:293,295</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:330,332</note>
       </notes>
       <segment>
         <source>Include (one per line)</source>
@@ -8081,9 +8081,9 @@
     <unit id="ep.field.exclude">
       <notes>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:182,184</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:265,267</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:311,313</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:348,350</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:264,266</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:310,312</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:347,349</note>
       </notes>
       <segment>
         <source>Exclude (one per line)</source>
@@ -8091,7 +8091,7 @@
     </unit>
     <unit id="ep.syntax.names.summary">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:199,201</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:198,200</note>
       </notes>
       <segment>
         <source>Name pattern syntax</source>
@@ -8099,7 +8099,7 @@
     </unit>
     <unit id="ep.syntax.star">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:203,205</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:202,204</note>
       </notes>
       <segment>
         <source>matches any run of characters except the slash.</source>
@@ -8107,7 +8107,7 @@
     </unit>
     <unit id="ep.syntax.starstar">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:208,210</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:207,209</note>
       </notes>
       <segment>
         <source>matches any run of characters including the slash.</source>
@@ -8115,7 +8115,7 @@
     </unit>
     <unit id="ep.syntax.question">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:212,214</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:211,213</note>
       </notes>
       <segment>
         <source>matches one character.</source>
@@ -8123,7 +8123,7 @@
     </unit>
     <unit id="ep.syntax.backslash">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:216,218</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:215,217</note>
       </notes>
       <segment>
         <source>makes the next character literal.</source>
@@ -8131,8 +8131,8 @@
     </unit>
     <unit id="ep.syntax.empty-include">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:220,222</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:391,393</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:219,221</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:389,391</note>
       </notes>
       <segment>
         <source> An empty include list leaves the dimension open; an exclude pattern wins. </source>
@@ -8140,7 +8140,7 @@
     </unit>
     <unit id="ep.dim.versions">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:226,227</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:225,226</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -8148,7 +8148,7 @@
     </unit>
     <unit id="ep.field.range">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:229,231</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:228,230</note>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.ts:100</note>
       </notes>
       <segment>
@@ -8157,7 +8157,7 @@
     </unit>
     <unit id="ep.field.range.hint">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:242,244</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:241,243</note>
       </notes>
       <segment>
         <source> In the version syntax of the format, for example &quot;&gt;=2.0.0&quot;. The server checks it. </source>
@@ -8165,7 +8165,7 @@
     </unit>
     <unit id="ep.field.prereleases">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:285,287</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:284,286</note>
       </notes>
       <segment>
         <source>Expose pre-release versions</source>
@@ -8173,7 +8173,7 @@
     </unit>
     <unit id="ep.dim.tags">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:290,291</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:289,290</note>
       </notes>
       <segment>
         <source>Tags (formats with tags only)</source>
@@ -8181,7 +8181,7 @@
     </unit>
     <unit id="ep.dim.paths">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:327,328</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:326,327</note>
       </notes>
       <segment>
         <source>Paths</source>
@@ -8189,7 +8189,7 @@
     </unit>
     <unit id="ep.syntax.paths.summary">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:365,367</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:363,365</note>
       </notes>
       <segment>
         <source>Path pattern syntax</source>
@@ -8197,7 +8197,7 @@
     </unit>
     <unit id="ep.syntax.path.star">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:370,372</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:368,370</note>
       </notes>
       <segment>
         <source>matches any run of characters within one segment.</source>
@@ -8205,7 +8205,7 @@
     </unit>
     <unit id="ep.syntax.path.starstar">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:376,378</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:374,376</note>
       </notes>
       <segment>
         <source>as a whole segment matches any number of segments.</source>
@@ -8213,7 +8213,7 @@
     </unit>
     <unit id="ep.syntax.path.question">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:382,384</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:380,382</note>
       </notes>
       <segment>
         <source>matches one character within a segment.</source>
@@ -8221,7 +8221,7 @@
     </unit>
     <unit id="ep.syntax.path.backslash">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:387,389</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:385,387</note>
       </notes>
       <segment>
         <source>makes the next character literal.</source>
@@ -8229,7 +8229,7 @@
     </unit>
     <unit id="ep.editor.create">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:401,402</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:399,400</note>
       </notes>
       <segment>
         <source>Create rule</source>
@@ -8237,7 +8237,7 @@
     </unit>
     <unit id="ep.editor.review">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:403,405</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:401,403</note>
       </notes>
       <segment>
         <source>Review and save</source>
@@ -8245,7 +8245,7 @@
     </unit>
     <unit id="repo.edit.reset">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:412,414</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:410,412</note>
         <note category="location">src/app/features/repositories/repository-detail.html:35,38</note>
       </notes>
       <segment>
@@ -8254,7 +8254,7 @@
     </unit>
     <unit id="repo.edit.unsaved">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:416,418</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:414,416</note>
       </notes>
       <segment>
         <source>You have unsaved changes.</source>
@@ -8262,7 +8262,7 @@
     </unit>
     <unit id="ep.preview.heading">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:424,425</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:422,423</note>
       </notes>
       <segment>
         <source>Preview</source>
@@ -8270,7 +8270,7 @@
     </unit>
     <unit id="ep.preview.hint">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:426,428</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:424,426</note>
       </notes>
       <segment>
         <source> Shows what this endpoint would expose with the rule as you have it now, saved or not. </source>
@@ -8278,7 +8278,7 @@
     </unit>
     <unit id="ep.preview.choose">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:429,431</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:427,429</note>
       </notes>
       <segment>
         <source>Choose a repository to see the preview.</source>
@@ -8286,7 +8286,7 @@
     </unit>
     <unit id="ep.preview.package">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:434,436</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:432,434</note>
       </notes>
       <segment>
         <source>Package to test</source>
@@ -8294,7 +8294,7 @@
     </unit>
     <unit id="ep.preview.versions">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:447,449</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:445,447</note>
       </notes>
       <segment>
         <source>Versions to test (one per line, empty for the stored ones)</source>
@@ -8302,7 +8302,7 @@
     </unit>
     <unit id="ep.preview.paths">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:461,463</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:459,461</note>
       </notes>
       <segment>
         <source>Paths to test (one per line)</source>
@@ -8310,7 +8310,7 @@
     </unit>
     <unit id="ep.preview.updating">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:476,479</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:474,477</note>
       </notes>
       <segment>
         <source>Updating the preview.</source>
@@ -8318,7 +8318,7 @@
     </unit>
     <unit id="ep.preview.exposed">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:486,488</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:484,486</note>
       </notes>
       <segment>
         <source>The repository or package is exposed</source>
@@ -8326,7 +8326,7 @@
     </unit>
     <unit id="ep.preview.hidden">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:489,491</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:487,489</note>
       </notes>
       <segment>
         <source>The repository or package is hidden</source>
@@ -8334,7 +8334,7 @@
     </unit>
     <unit id="ep.preview.paths.caption">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:499,500</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:497,498</note>
       </notes>
       <segment>
         <source> Verdict per path </source>
@@ -8342,7 +8342,7 @@
     </unit>
     <unit id="ep.preview.col.path">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:503,504</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:501,502</note>
       </notes>
       <segment>
         <source>Path</source>
@@ -8350,8 +8350,8 @@
     </unit>
     <unit id="ep.preview.col.verdict">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:504,505</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:536,537</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:502,503</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:534,535</note>
       </notes>
       <segment>
         <source>Verdict</source>
@@ -8359,8 +8359,8 @@
     </unit>
     <unit id="ep.preview.col.rule">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:505,507</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:537,539</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:503,505</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:535,537</note>
       </notes>
       <segment>
         <source>Rule</source>
@@ -8368,7 +8368,7 @@
     </unit>
     <unit id="ep.preview.versions.caption">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:531,533</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:529,531</note>
       </notes>
       <segment>
         <source> Verdict per version </source>
@@ -8376,8 +8376,8 @@
     </unit>
     <unit id="ep.preview.col.version">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:535,536</note>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:568,569</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:533,534</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:566,567</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -8385,7 +8385,7 @@
     </unit>
     <unit id="ep.preview.tags.caption">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:563,564</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:561,562</note>
       </notes>
       <segment>
         <source> Visibility per tag </source>
@@ -8393,7 +8393,7 @@
     </unit>
     <unit id="ep.preview.col.tag">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:568</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:566</note>
       </notes>
       <segment>
         <source>Tag</source>
@@ -8401,7 +8401,7 @@
     </unit>
     <unit id="ep.preview.col.visible">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:569,571</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:567,569</note>
       </notes>
       <segment>
         <source>Visible</source>
@@ -8409,7 +8409,7 @@
     </unit>
     <unit id="ep.rule.advanced">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:603,604</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:601,602</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -8417,7 +8417,7 @@
     </unit>
     <unit id="ep.rule.advanced-hint">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:605,607</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:603,605</note>
       </notes>
       <segment>
         <source>Delete this rule.</source>
@@ -8425,7 +8425,7 @@
     </unit>
     <unit id="ep.rule.delete-note">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:607,608</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:605,606</note>
       </notes>
       <segment>
         <source>Deleting the rule makes content that only this rule exposes unavailable on this endpoint.</source>
@@ -8433,7 +8433,7 @@
     </unit>
     <unit id="ep.editor.delete">
       <notes>
-        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:608,609</note>
+        <note category="location">src/app/features/endpoints/exposure-rule-editor.html:606,607</note>
       </notes>
       <segment>
         <source>Delete rule</source>
@@ -9224,8 +9224,6 @@
         <note category="location">src/app/features/packages/package-list.html:2,5</note>
         <note category="location">src/app/features/projects/projects-home.ts:61,63</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:26,30</note>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:101,104</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:69,72</note>
         <note category="location">src/app/features/repositories/repository-list.html:162,163</note>
       </notes>
       <segment>
@@ -9392,7 +9390,7 @@
     </unit>
     <unit id="route.guides.title">
       <notes>
-        <note category="location">src/app/features/guides/guides.routes.ts:10</note>
+        <note category="location">src/app/features/guides/guides.routes.ts:25</note>
       </notes>
       <segment>
         <source>Guides</source>
@@ -9400,7 +9398,7 @@
     </unit>
     <unit id="route.setup.title">
       <notes>
-        <note category="location">src/app/features/guides/guides.routes.ts:28</note>
+        <note category="location">src/app/features/guides/guides.routes.ts:46</note>
         <note category="location">src/app/features/repositories/repositories.routes.ts:95</note>
       </notes>
       <segment>
@@ -11270,56 +11268,6 @@
       </notes>
       <segment>
         <source>Package</source>
-      </segment>
-    </unit>
-    <unit id="pkg.grade.not-scanned">
-      <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:20</note>
-      </notes>
-      <segment>
-        <source>not scanned</source>
-      </segment>
-    </unit>
-    <unit id="pkg.grade.no-findings">
-      <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:22</note>
-      </notes>
-      <segment>
-        <source>no findings</source>
-      </segment>
-    </unit>
-    <unit id="pkg.grade.one-finding">
-      <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:26</note>
-      </notes>
-      <segment>
-        <source>1 finding</source>
-      </segment>
-    </unit>
-    <unit id="pkg.grade.findings">
-      <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:27</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="count" disp="n.format(total)"/> findings</source>
-      </segment>
-    </unit>
-    <unit id="pkg.grade.fixable">
-      <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:28</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="count" disp="n.format(g.fixable)"/> fixable</source>
-      </segment>
-    </unit>
-    <unit id="vuln.grade.prefix">
-      <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:39</note>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:24</note>
-        <note category="location">src/app/shared/vulnerability/grade.ts:20</note>
-      </notes>
-      <segment>
-        <source>Grade</source>
       </segment>
     </unit>
     <unit id="pkg.image.no-platform">
@@ -13727,7 +13675,7 @@
     <unit id="project-members.add">
       <notes>
         <note category="location">src/app/features/projects/project-member-dialog.ts:25,26</note>
-        <note category="location">src/app/features/projects/project-members-page.ts:14,16</note>
+        <note category="location">src/app/features/projects/project-members-page.ts:17,19</note>
       </notes>
       <segment>
         <source>Add member</source>
@@ -13767,7 +13715,7 @@
     </unit>
     <unit id="project.members">
       <notes>
-        <note category="location">src/app/features/projects/project-members-page.ts:12</note>
+        <note category="location">src/app/features/projects/project-members-page.ts:15</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -13775,7 +13723,7 @@
     </unit>
     <unit id="project-members.hint">
       <notes>
-        <note category="location">src/app/features/projects/project-members-page.ts:22</note>
+        <note category="location">src/app/features/projects/project-members-page.ts:25</note>
       </notes>
       <segment>
         <source>Users and groups with their role in the project. The role decides what a member may do in the project&apos;s repositories.</source>
@@ -13783,64 +13731,15 @@
     </unit>
     <unit id="project-members.last-owner">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:33,36</note>
+        <note category="location">src/app/features/projects/project-members.ts:39,42</note>
       </notes>
       <segment>
         <source>A project keeps at least one Owner. Make another member an Owner first.</source>
       </segment>
     </unit>
-    <unit id="project-members.tab">
-      <notes>
-        <note category="location">src/app/features/projects/project-members.ts:42,43</note>
-      </notes>
-      <segment>
-        <source>Members</source>
-      </segment>
-    </unit>
-    <unit id="project-members.empty">
-      <notes>
-        <note category="location">src/app/features/projects/project-members.ts:48,49</note>
-      </notes>
-      <segment>
-        <source>The project has no member yet.</source>
-      </segment>
-    </unit>
-    <unit id="project-members.filter">
-      <notes>
-        <note category="location">src/app/features/projects/project-members.ts:57,58</note>
-        <note category="location">src/app/features/projects/project-members.ts:59,61</note>
-      </notes>
-      <segment>
-        <source>Filter members</source>
-      </segment>
-    </unit>
-    <unit id="project-members.direction">
-      <notes>
-        <note category="location">src/app/features/projects/project-members.ts:85,86</note>
-      </notes>
-      <segment>
-        <source>Reverse the order</source>
-      </segment>
-    </unit>
-    <unit id="project-members.col.source">
-      <notes>
-        <note category="location">src/app/features/projects/project-members.ts:96,97</note>
-      </notes>
-      <segment>
-        <source>Source</source>
-      </segment>
-    </unit>
-    <unit id="project-members.col.actions">
-      <notes>
-        <note category="location">src/app/features/projects/project-members.ts:98,100</note>
-      </notes>
-      <segment>
-        <source>Actions</source>
-      </segment>
-    </unit>
     <unit id="project-members.me">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:114,116</note>
+        <note category="location">src/app/features/projects/project-members.ts:72,74</note>
       </notes>
       <segment>
         <source>It&apos;s you</source>
@@ -13848,7 +13747,7 @@
     </unit>
     <unit id="project-members.kind-group">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:118,120</note>
+        <note category="location">src/app/features/projects/project-members.ts:76,78</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -13856,7 +13755,7 @@
     </unit>
     <unit id="project-members.direct">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:124,125</note>
+        <note category="location">src/app/features/projects/project-members.ts:82,84</note>
       </notes>
       <segment>
         <source>Direct member</source>
@@ -13864,39 +13763,71 @@
     </unit>
     <unit id="project-members.remove">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:156,157</note>
+        <note category="location">src/app/features/projects/project-members.ts:114,115</note>
       </notes>
       <segment>
         <source> Remove member </source>
       </segment>
     </unit>
-    <unit id="project-members.no-match">
+    <unit id="project-members.filter">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:165,168</note>
+        <note category="location">src/app/features/projects/project-members.ts:190</note>
       </notes>
       <segment>
-        <source>No member matches.</source>
+        <source>Filter members</source>
       </segment>
     </unit>
     <unit id="project-members.col.account">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:337</note>
+        <note category="location">src/app/features/projects/project-members.ts:192</note>
       </notes>
       <segment>
         <source>Account</source>
       </segment>
     </unit>
+    <unit id="project-members.col.source">
+      <notes>
+        <note category="location">src/app/features/projects/project-members.ts:193</note>
+      </notes>
+      <segment>
+        <source>Source</source>
+      </segment>
+    </unit>
     <unit id="project-members.col.role">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:338</note>
+        <note category="location">src/app/features/projects/project-members.ts:194</note>
       </notes>
       <segment>
         <source>Role</source>
       </segment>
     </unit>
+    <unit id="project-members.col.actions">
+      <notes>
+        <note category="location">src/app/features/projects/project-members.ts:195</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+      </segment>
+    </unit>
+    <unit id="project-members.empty">
+      <notes>
+        <note category="location">src/app/features/projects/project-members.ts:211</note>
+      </notes>
+      <segment>
+        <source>The project has no member yet.</source>
+      </segment>
+    </unit>
+    <unit id="project-members.no-match">
+      <notes>
+        <note category="location">src/app/features/projects/project-members.ts:212</note>
+      </notes>
+      <segment>
+        <source>No member matches.</source>
+      </segment>
+    </unit>
     <unit id="project-members.caption">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:352</note>
+        <note category="location">src/app/features/projects/project-members.ts:217</note>
       </notes>
       <segment>
         <source>Members of the project</source>
@@ -13904,7 +13835,7 @@
     </unit>
     <unit id="project-members.actions-of">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:376</note>
+        <note category="location">src/app/features/projects/project-members.ts:241</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="member" disp="m.principal"/></source>
@@ -13912,7 +13843,7 @@
     </unit>
     <unit id="project-members.role-of">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:388</note>
+        <note category="location">src/app/features/projects/project-members.ts:253</note>
       </notes>
       <segment>
         <source>Role of <ph id="0" equiv="member" disp="m.principal"/></source>
@@ -13920,7 +13851,7 @@
     </unit>
     <unit id="project-members.added">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:409</note>
+        <note category="location">src/app/features/projects/project-members.ts:275</note>
       </notes>
       <segment>
         <source>Member added.</source>
@@ -13928,7 +13859,7 @@
     </unit>
     <unit id="project-members.changed">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:417</note>
+        <note category="location">src/app/features/projects/project-members.ts:283</note>
       </notes>
       <segment>
         <source>Role changed.</source>
@@ -13936,7 +13867,7 @@
     </unit>
     <unit id="project-members.removed">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:424</note>
+        <note category="location">src/app/features/projects/project-members.ts:290</note>
       </notes>
       <segment>
         <source>Member removed.</source>
@@ -14595,7 +14526,7 @@
     </unit>
     <unit id="ansible.imports.state.completed">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:10</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:11</note>
       </notes>
       <segment>
         <source>Completed</source>
@@ -14603,7 +14534,7 @@
     </unit>
     <unit id="ansible.imports.state.failed">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:11</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:12</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -14611,7 +14542,7 @@
     </unit>
     <unit id="ansible.imports.heading">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:24,25</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:25,26</note>
       </notes>
       <segment>
         <source>Import tasks</source>
@@ -14619,7 +14550,7 @@
     </unit>
     <unit id="ansible.imports.intro">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:26,29</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:27,30</note>
       </notes>
       <segment>
         <source> Every publish that got as far as reading the archive has a task. It is already final when ansible-galaxy first asks, and it is kept for a limited time; the published version stays. </source>
@@ -14633,9 +14564,25 @@
         <source>Import tasks of this repository, newest first</source>
       </segment>
     </unit>
+    <unit id="ansible.imports.one-message">
+      <notes>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:103</note>
+      </notes>
+      <segment>
+        <source>1 message</source>
+      </segment>
+    </unit>
+    <unit id="ansible.imports.messages">
+      <notes>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:103</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="count"/> messages</source>
+      </segment>
+    </unit>
     <unit id="ansible.imports.empty">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:101</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:105</note>
       </notes>
       <segment>
         <source>No collection has been published to this repository yet, or the tasks have been deleted.</source>
@@ -14643,7 +14590,7 @@
     </unit>
     <unit id="ansible.imports.col.collection">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:103</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:107</note>
       </notes>
       <segment>
         <source>Collection</source>
@@ -14651,7 +14598,7 @@
     </unit>
     <unit id="ansible.imports.col.version">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:104</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:108</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -14659,7 +14606,7 @@
     </unit>
     <unit id="ansible.imports.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:105</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:109</note>
       </notes>
       <segment>
         <source>State</source>
@@ -14667,7 +14614,7 @@
     </unit>
     <unit id="ansible.imports.col.created">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:106</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:110</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -14675,7 +14622,7 @@
     </unit>
     <unit id="ansible.imports.col.messages">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:109</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:113</note>
       </notes>
       <segment>
         <source>Messages</source>
@@ -14683,7 +14630,7 @@
     </unit>
     <unit id="ansible.imports.help.messages">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:110</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:114</note>
       </notes>
       <segment>
         <source>The number of messages of the import. Open the row to read them.</source>
@@ -14817,9 +14764,25 @@
         <source>The tombstone was cleared.</source>
       </segment>
     </unit>
+    <unit id="repo.content.oci.fill-remote">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:39</note>
+      </notes>
+      <segment>
+        <source>It fills as clients pull images through it; Set up client shows how.</source>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.fill">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:40</note>
+      </notes>
+      <segment>
+        <source>Push an image with your client; Set up client shows how.</source>
+      </segment>
+    </unit>
     <unit id="repo.content.oci.items">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:31</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:42</note>
       </notes>
       <segment>
         <source>Images</source>
@@ -14827,7 +14790,7 @@
     </unit>
     <unit id="repo.content.oci.item">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:32</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:43</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -14835,7 +14798,7 @@
     </unit>
     <unit id="repo.content.oci.versions">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:33</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:44</note>
       </notes>
       <segment>
         <source>Tags</source>
@@ -14843,7 +14806,7 @@
     </unit>
     <unit id="repo.content.oci.version">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:34</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:45</note>
       </notes>
       <segment>
         <source>Tag</source>
@@ -14851,31 +14814,39 @@
     </unit>
     <unit id="repo.content.oci.filter">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:35</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:46</note>
       </notes>
       <segment>
         <source>Filter images</source>
       </segment>
     </unit>
-    <unit id="repo.content.oci.empty-remote2">
+    <unit id="repo.content.oci.empty-remote3">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:37</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:48</note>
       </notes>
       <segment>
-        <source>This repository has cached no images yet. Pull an image through it with your client.</source>
+        <source>This repository has cached no images yet.</source>
       </segment>
     </unit>
-    <unit id="repo.content.oci.empty2">
+    <unit id="repo.content.oci.empty3">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:38</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:49</note>
       </notes>
       <segment>
-        <source>This repository holds no images yet. Push an image with your client.</source>
+        <source>This repository holds no images yet.</source>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.fill-others">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:51</note>
+      </notes>
+      <segment>
+        <source>Members who may push to it fill it with their client.</source>
       </segment>
     </unit>
     <unit id="repo.content.oci.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:39</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:52</note>
       </notes>
       <segment>
         <source>No image matches the filter.</source>
@@ -14883,7 +14854,7 @@
     </unit>
     <unit id="repo.content.oci.fetched">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:41</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:54</note>
       </notes>
       <segment>
         <source>Fetched</source>
@@ -14891,7 +14862,7 @@
     </unit>
     <unit id="repo.content.oci.published">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:42</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:55</note>
       </notes>
       <segment>
         <source>Pushed</source>
@@ -14899,7 +14870,7 @@
     </unit>
     <unit id="repo.content.oci.command">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:44</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:57</note>
       </notes>
       <segment>
         <source>Pull command</source>
@@ -14907,24 +14878,72 @@
     </unit>
     <unit id="repo.content.no-scanning">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:45</note>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:62</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:58</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:90</note>
       </notes>
       <segment>
         <source>This package type is not scanned for vulnerabilities yet.</source>
       </segment>
     </unit>
+    <unit id="repo.content.fill-remote">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:61</note>
+      </notes>
+      <segment>
+        <source>It fills as clients fetch through it; Set up client shows how.</source>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.fill">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:63</note>
+      </notes>
+      <segment>
+        <source>Upload files with your client; Set up client shows how.</source>
+      </segment>
+    </unit>
     <unit id="repo.content.files">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:49</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:66</note>
       </notes>
       <segment>
         <source>Files</source>
       </segment>
     </unit>
+    <unit id="repo.content.files.empty-remote">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:68</note>
+      </notes>
+      <segment>
+        <source>This repository has cached no files yet.</source>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.empty3">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:69</note>
+      </notes>
+      <segment>
+        <source>This repository holds no files yet.</source>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.fill-others">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:71</note>
+      </notes>
+      <segment>
+        <source>Members who may upload to it fill it with their client.</source>
+      </segment>
+    </unit>
+    <unit id="repo.content.fill">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:74</note>
+      </notes>
+      <segment>
+        <source>Publish a package with your client; Set up client shows how.</source>
+      </segment>
+    </unit>
     <unit id="repo.content.items">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:52</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:76</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -14932,7 +14951,7 @@
     </unit>
     <unit id="repo.content.item">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:53</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:77</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -14940,7 +14959,7 @@
     </unit>
     <unit id="repo.content.versions">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:54</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:78</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -14948,7 +14967,7 @@
     </unit>
     <unit id="repo.content.version">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:55</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:79</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -14956,23 +14975,39 @@
     </unit>
     <unit id="repo.content.filter">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:56</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:80</note>
       </notes>
       <segment>
         <source>Filter packages</source>
       </segment>
     </unit>
-    <unit id="repo.content.empty2">
+    <unit id="repo.content.empty-remote3">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:57</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:82</note>
       </notes>
       <segment>
-        <source>This repository holds no packages yet. Publish a package with your client.</source>
+        <source>This repository has cached no packages yet.</source>
+      </segment>
+    </unit>
+    <unit id="repo.content.empty3">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:83</note>
+      </notes>
+      <segment>
+        <source>This repository holds no packages yet.</source>
+      </segment>
+    </unit>
+    <unit id="repo.content.fill-others">
+      <notes>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:85</note>
+      </notes>
+      <segment>
+        <source>Members who may publish to it fill it with their client.</source>
       </segment>
     </unit>
     <unit id="repo.content.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:58</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:86</note>
       </notes>
       <segment>
         <source>No package matches the filter.</source>
@@ -14980,7 +15015,7 @@
     </unit>
     <unit id="repo.content.published">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:59</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:87</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -14988,7 +15023,7 @@
     </unit>
     <unit id="repo.content.command">
       <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:61</note>
+        <note category="location">src/app/features/repositories/content/content-shape.ts:89</note>
       </notes>
       <segment>
         <source>Install command</source>
@@ -15155,7 +15190,7 @@
     </unit>
     <unit id="repo.content.upstream">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:202</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:203</note>
       </notes>
       <segment>
         <source>Caches</source>
@@ -15163,7 +15198,7 @@
     </unit>
     <unit id="repo.content.resolves-from">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:207,208</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:208,209</note>
       </notes>
       <segment>
         <source>Resolves from</source>
@@ -15243,7 +15278,7 @@
     </unit>
     <unit id="files.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:277</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:290</note>
       </notes>
       <segment>
         <source>Deleting items</source>
@@ -15251,7 +15286,7 @@
     </unit>
     <unit id="files.copy-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:278</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:291</note>
       </notes>
       <segment>
         <source>Copy path</source>
@@ -15259,7 +15294,7 @@
     </unit>
     <unit id="files.delete.folder-many">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:326</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:339</note>
       </notes>
       <segment>
         <source>The folder holds more than <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> items. They are deleted for good.</source>
@@ -15267,7 +15302,7 @@
     </unit>
     <unit id="files.delete.folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:327</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:340</note>
       </notes>
       <segment>
         <source>The folder holds <ph id="0" equiv="count" disp="count"/> items. They are deleted for good.</source>
@@ -15275,7 +15310,7 @@
     </unit>
     <unit id="files.delete.file">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:335</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:348</note>
       </notes>
       <segment>
         <source>The file is deleted for good.</source>
@@ -15283,7 +15318,7 @@
     </unit>
     <unit id="files.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:338</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:351</note>
       </notes>
       <segment>
         <source>Delete <ph id="0" equiv="path" disp="path"/>?</source>
@@ -15291,7 +15326,7 @@
     </unit>
     <unit id="files.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:340</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:353</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -15299,8 +15334,8 @@
     </unit>
     <unit id="files.deleted">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:348</note>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:358</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:361</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:371</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="path" disp="path"/> deleted.</source>
@@ -15308,7 +15343,7 @@
     </unit>
     <unit id="files.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:359</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:372</note>
       </notes>
       <segment>
         <source>The deletion failed. Some items may be gone.</source>
@@ -15535,7 +15570,7 @@
     </unit>
     <unit id="repo.content.files-empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:172</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:170</note>
       </notes>
       <segment>
         <source>No file matches the filter.</source>
@@ -15543,7 +15578,7 @@
     </unit>
     <unit id="files.folder-empty">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:173</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:171</note>
       </notes>
       <segment>
         <source>This folder is empty.</source>
@@ -15551,23 +15586,15 @@
     </unit>
     <unit id="files.empty-upload">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:174</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:172</note>
       </notes>
       <segment>
         <source>This repository holds no files yet. Upload files here or with your client.</source>
       </segment>
     </unit>
-    <unit id="repo.content.files-empty2">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:175</note>
-      </notes>
-      <segment>
-        <source>This repository holds no files yet. Upload a file with your client.</source>
-      </segment>
-    </unit>
     <unit id="repo.content.col.name">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:178</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:176</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -15575,7 +15602,7 @@
     </unit>
     <unit id="repo.content.col.size">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:179</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:177</note>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:174</note>
       </notes>
       <segment>
@@ -15584,7 +15611,7 @@
     </unit>
     <unit id="repo.content.col.modified">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:180</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:178</note>
       </notes>
       <segment>
         <source>Last change</source>
@@ -15592,7 +15619,7 @@
     </unit>
     <unit id="files.folder-actions">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:215</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:213</note>
       </notes>
       <segment>
         <source>More actions for this folder</source>
@@ -15600,7 +15627,7 @@
     </unit>
     <unit id="files.copy-url-of">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:218</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:216</note>
       </notes>
       <segment>
         <source>Copy the download address of <ph id="0" equiv="name" disp="c.path"/></source>
@@ -15608,7 +15635,7 @@
     </unit>
     <unit id="files.folder-created">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:241</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:239</note>
       </notes>
       <segment>
         <source>Folder <ph id="0" equiv="path" disp="created"/> created.</source>
@@ -15649,7 +15676,7 @@
     <unit id="repo.content.col.vulnerabilities">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:177</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:185</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:180</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -15657,7 +15684,7 @@
     </unit>
     <unit id="repo.content.grade-sort-partial">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:123,126</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:116,119</note>
       </notes>
       <segment>
         <source> Sorted by grade among the first <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries; the list holds more. </source>
@@ -15665,7 +15692,7 @@
     </unit>
     <unit id="repo.content.col.latest">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:179</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:174</note>
       </notes>
       <segment>
         <source>Latest</source>
@@ -15673,7 +15700,7 @@
     </unit>
     <unit id="repo.content.help.grade">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:186</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:181</note>
       </notes>
       <segment>
         <source>The grade of the latest version in this repository, from S (no known vulnerabilities) to E (more than 5 Critical); N/A when it is not scanned.</source>
@@ -15681,7 +15708,7 @@
     </unit>
     <unit id="repo.content.col.updated">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:191</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:186</note>
       </notes>
       <segment>
         <source>Updated</source>
@@ -15689,7 +15716,7 @@
     </unit>
     <unit id="repo.content.col.downloads">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:192</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:187</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -15697,7 +15724,7 @@
     </unit>
     <unit id="repo.content.open-versions">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:245</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:240</note>
       </notes>
       <segment>
         <source>Show the versions of <ph id="0" equiv="name" disp="p.name"/></source>
@@ -16145,7 +16172,7 @@
     </unit>
     <unit id="deb.key.state.primary">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:23</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:24</note>
       </notes>
       <segment>
         <source>Primary</source>
@@ -16153,7 +16180,7 @@
     </unit>
     <unit id="deb.key.state.next">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:25</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:26</note>
       </notes>
       <segment>
         <source>Next</source>
@@ -16161,7 +16188,7 @@
     </unit>
     <unit id="deb.key.state.withheld">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:27</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:28</note>
       </notes>
       <segment>
         <source>Withheld</source>
@@ -16169,7 +16196,7 @@
     </unit>
     <unit id="deb.key.state.retired">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:29</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:30</note>
       </notes>
       <segment>
         <source>Retired</source>
@@ -16177,7 +16204,7 @@
     </unit>
     <unit id="deb.key.state.primary.text">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:36</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:37</note>
       </notes>
       <segment>
         <source>Signs every index and is served to clients.</source>
@@ -16185,7 +16212,7 @@
     </unit>
     <unit id="deb.key.state.next.text">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:38</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:39</note>
       </notes>
       <segment>
         <source>Co-signs every index and is served to clients, until it is promoted or removed.</source>
@@ -16193,7 +16220,7 @@
     </unit>
     <unit id="deb.key.state.withheld.text">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:40</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:41</note>
       </notes>
       <segment>
         <source>A restore withheld this key. It neither signs nor is served; its private key is kept until you confirm the retirement or reinstate it.</source>
@@ -16201,7 +16228,7 @@
     </unit>
     <unit id="deb.key.state.retired.text">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:42</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:43</note>
       </notes>
       <segment>
         <source>Neither signs nor is served; its private key is erased. The certificate stays as the record of what signed.</source>
@@ -16209,7 +16236,7 @@
     </unit>
     <unit id="deb.key.err.in-use">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:50</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:51</note>
       </notes>
       <segment>
         <source>This key is already known to Quader, in this or another repository, in some state. A retired or withheld key cannot come back by import.</source>
@@ -16217,7 +16244,7 @@
     </unit>
     <unit id="deb.key.err.unsupported">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:52</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:53</note>
       </notes>
       <segment>
         <source>Quader cannot use this key. It needs an EdDSALegacy (Ed25519) or RSA primary key of at least 3072 bits that can sign, is not revoked, has no expiry, was not created in the future and has no signing subkeys.</source>
@@ -16225,7 +16252,7 @@
     </unit>
     <unit id="deb.key.err.state">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:54</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:55</note>
       </notes>
       <segment>
         <source>The key is not in a state that allows this. Reload the list and try again.</source>
@@ -16233,7 +16260,7 @@
     </unit>
     <unit id="deb.key.err.no-next">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:56</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:57</note>
       </notes>
       <segment>
         <source>There is no next key to promote.</source>
@@ -16241,7 +16268,7 @@
     </unit>
     <unit id="deb.keys.heading">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:74,75</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:75,76</note>
       </notes>
       <segment>
         <source>Signing keys</source>
@@ -16249,7 +16276,7 @@
     </unit>
     <unit id="deb.keys.intro">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:76,79</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:77,80</note>
       </notes>
       <segment>
         <source> Every index of this repository is signed. Clients trust the key through the key file the setup snippet installs. To change the key without breaking clients, create a next key, let the clients replace their key file while both keys sign, then promote the next key. </source>
@@ -16257,7 +16284,7 @@
     </unit>
     <unit id="deb.keys.no-primary">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:88,90</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:89,91</note>
       </notes>
       <segment>
         <source> This repository has no primary key, so its builds publish nothing and the last published indexes stay served. Reinstate a withheld key, or create a next key and promote it. </source>
@@ -16265,7 +16292,7 @@
     </unit>
     <unit id="deb.keys.withheld-note">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:97,99</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:98,100</note>
       </notes>
       <segment>
         <source> A restore withheld a key because the journal records its retirement. Confirm the retirement to erase the private key, or reinstate the key if the entry is wrong. </source>
@@ -16273,7 +16300,7 @@
     </unit>
     <unit id="deb.keys.overlap">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:104</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:105</note>
       </notes>
       <segment>
         <source>Both keys sign since</source>
@@ -16281,7 +16308,7 @@
     </unit>
     <unit id="deb.keys.overlap-hint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:104,108</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:105,109</note>
       </notes>
       <segment>
         <source>Quader cannot know which clients replaced their key file. A client that holds only the old key fails to update after the promotion.</source>
@@ -18136,8 +18163,8 @@
     <unit id="upstream.url">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:365</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:60</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:112,114</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:61</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:113,115</note>
       </notes>
       <segment>
         <source>Upstream URL</source>
@@ -18163,7 +18190,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:582</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:354</note>
-        <note category="location">src/app/features/repositories/repository-fields.ts:44,46</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:46,48</note>
       </notes>
       <segment>
         <source>Include patterns</source>
@@ -18173,7 +18200,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:584</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:356</note>
-        <note category="location">src/app/features/repositories/repository-fields.ts:61,63</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:63,65</note>
       </notes>
       <segment>
         <source>Exclude patterns</source>
@@ -18183,7 +18210,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:586</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:358</note>
-        <note category="location">src/app/features/repositories/repository-fields.ts:104,106</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:105,107</note>
       </notes>
       <segment>
         <source>Hide existence from callers without access</source>
@@ -18200,7 +18227,7 @@
     <unit id="upstream.url.required">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:660</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:136,138</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:137,139</note>
       </notes>
       <segment>
         <source>Enter the address of the registry, such as https://registry.example.com/.</source>
@@ -18620,8 +18647,8 @@
     <unit id="upstream.heading">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:327</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:72</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:88,89</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:73</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:89,90</note>
       </notes>
       <segment>
         <source>Upstream</source>
@@ -18820,7 +18847,7 @@
     </unit>
     <unit id="repo.field.notes-text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:22,24</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:24,26</note>
       </notes>
       <segment>
         <source>Notes (optional)</source>
@@ -18828,7 +18855,7 @@
     </unit>
     <unit id="repo.field.notes.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:35,37</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:37,39</note>
       </notes>
       <segment>
         <source> Shown only to people who may read repository configuration. </source>
@@ -18836,7 +18863,7 @@
     </unit>
     <unit id="repo.field.patterns.hint-short">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:77,80</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:79,82</note>
       </notes>
       <segment>
         <source> One pattern per line. An empty include list admits every path; an exclude pattern wins. </source>
@@ -18844,7 +18871,7 @@
     </unit>
     <unit id="pattern.help.summary">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:81,83</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:82,85</note>
       </notes>
       <segment>
         <source>Pattern syntax</source>
@@ -18852,7 +18879,7 @@
     </unit>
     <unit id="pattern.help.star">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:85,87</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:86,88</note>
       </notes>
       <segment>
         <source>matches any characters within one path segment.</source>
@@ -18860,7 +18887,7 @@
     </unit>
     <unit id="pattern.help.starstar">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:89,91</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:90,92</note>
       </notes>
       <segment>
         <source>as a whole segment matches any number of segments.</source>
@@ -18868,7 +18895,7 @@
     </unit>
     <unit id="pattern.help.question">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:93,95</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:94,96</note>
       </notes>
       <segment>
         <source>matches one character within a segment.</source>
@@ -18876,7 +18903,7 @@
     </unit>
     <unit id="pattern.help.backslash">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:97,99</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:98,100</note>
       </notes>
       <segment>
         <source>makes the next character literal.</source>
@@ -18884,7 +18911,7 @@
     </unit>
     <unit id="repo.hide.inherit">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:113,114</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:114,115</note>
       </notes>
       <segment>
         <source> Use the installation setting </source>
@@ -18892,7 +18919,7 @@
     </unit>
     <unit id="repo.hide.true">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:116,117</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:117,118</note>
       </notes>
       <segment>
         <source> Hide: answer as if it did not exist </source>
@@ -18900,7 +18927,7 @@
     </unit>
     <unit id="repo.hide.false">
       <notes>
-        <note category="location">src/app/features/repositories/repository-fields.ts:119,120</note>
+        <note category="location">src/app/features/repositories/repository-fields.ts:120,121</note>
       </notes>
       <segment>
         <source> Do not hide: answer 403 </source>
@@ -19168,8 +19195,8 @@
     </unit>
     <unit id="upstream.auth">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:61</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:144,146</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:62</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:145,147</note>
       </notes>
       <segment>
         <source>Authentication</source>
@@ -19177,8 +19204,8 @@
     </unit>
     <unit id="upstream.username">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:62</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:162,164</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:63</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:163,165</note>
       </notes>
       <segment>
         <source>Username</source>
@@ -19186,8 +19213,8 @@
     </unit>
     <unit id="upstream.password">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:63</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:181,183</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:64</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:182,184</note>
       </notes>
       <segment>
         <source>Password or token</source>
@@ -19195,8 +19222,8 @@
     </unit>
     <unit id="upstream.hosts">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:64</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:311,312</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:65</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:308,309</note>
       </notes>
       <segment>
         <source>Further hosts</source>
@@ -19204,8 +19231,8 @@
     </unit>
     <unit id="upstream.metadata-ttl">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:66</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:360,362</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:67</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:357,359</note>
       </notes>
       <segment>
         <source>Metadata cache period in seconds</source>
@@ -19213,8 +19240,8 @@
     </unit>
     <unit id="upstream.notfound-ttl">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:69</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:385,387</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:70</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:382,384</note>
       </notes>
       <segment>
         <source>Negative cache period in seconds</source>
@@ -19222,8 +19249,8 @@
     </unit>
     <unit id="upstream.offline">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:71</note>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:419,420</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:72</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:416,418</note>
       </notes>
       <segment>
         <source>Offline</source>
@@ -19231,7 +19258,7 @@
     </unit>
     <unit id="upstream.intro.registry">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:89,91</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:90,92</note>
       </notes>
       <segment>
         <source>The registry this repository fetches from.</source>
@@ -19239,7 +19266,7 @@
     </unit>
     <unit id="upstream.presets">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:94,95</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:95,96</note>
       </notes>
       <segment>
         <source>Well-known registries</source>
@@ -19247,7 +19274,7 @@
     </unit>
     <unit id="upstream.url.hint-presets">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:128,130</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:129,131</note>
       </notes>
       <segment>
         <source>Choose a well-known registry or enter the address of another.</source>
@@ -19255,7 +19282,7 @@
     </unit>
     <unit id="upstream.url.hint-required">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:131,133</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:132,134</note>
       </notes>
       <segment>
         <source>This format has no well-known upstream: enter the address of the registry.</source>
@@ -19263,7 +19290,7 @@
     </unit>
     <unit id="upstream.password.stored">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:197,199</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:198,200</note>
       </notes>
       <segment>
         <source>A password is stored and is not shown. Leave the field empty to keep it; type one to replace it.</source>
@@ -19271,7 +19298,7 @@
     </unit>
     <unit id="upstream.password.reference">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:202,204</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:203,205</note>
       </notes>
       <segment>
         <source>A reference to a secret file or variable is stored. Leave the field empty to keep it; type a password to replace it.</source>
@@ -19279,7 +19306,7 @@
     </unit>
     <unit id="upstream.password.hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:207,209</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:208,210</note>
       </notes>
       <segment>
         <source>Sealed when you save, then never shown again. With bearer authentication this is the token.</source>
@@ -19287,7 +19314,7 @@
     </unit>
     <unit id="upstream.password.clear">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:221,223</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:222,224</note>
       </notes>
       <segment>
         <source>Remove the stored password</source>
@@ -19295,7 +19322,7 @@
     </unit>
     <unit id="upstream.test">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:233,234</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:234,235</note>
       </notes>
       <segment>
         <source>Test connection</source>
@@ -19303,7 +19330,7 @@
     </unit>
     <unit id="upstream.test.stored">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:237,240</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:238,241</note>
       </notes>
       <segment>
         <source>The test does not use the stored password; type it to test with it.</source>
@@ -19311,7 +19338,7 @@
     </unit>
     <unit id="upstream.test.running">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:243,245</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:244,246</note>
       </notes>
       <segment>
         <source>Testing the connection.</source>
@@ -19319,7 +19346,7 @@
     </unit>
     <unit id="upstream.test.foreign">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:256,258</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:257,259</note>
       </notes>
       <segment>
         <source> The registry asks for a login at <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ host }}"/></pc>, which this repository may not reach. Allow it as a further host if it is the registry&apos;s own token service. </source>
@@ -19327,7 +19354,7 @@
     </unit>
     <unit id="upstream.test.allow">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:260</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:261</note>
       </notes>
       <segment>
         <source>Allow</source>
@@ -19335,7 +19362,7 @@
     </unit>
     <unit id="upstream.test.status">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:266,267</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:267,268</note>
       </notes>
       <segment>
         <source>HTTP status</source>
@@ -19343,7 +19370,7 @@
     </unit>
     <unit id="upstream.test.credentials">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:270,271</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:271,272</note>
       </notes>
       <segment>
         <source>Credentials</source>
@@ -19351,7 +19378,7 @@
     </unit>
     <unit id="upstream.test.token-service">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:274,276</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:275,277</note>
       </notes>
       <segment>
         <source>Token service</source>
@@ -19359,7 +19386,7 @@
     </unit>
     <unit id="upstream.test.duration">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:279,280</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:280,281</note>
       </notes>
       <segment>
         <source>Duration</source>
@@ -19367,7 +19394,7 @@
     </unit>
     <unit id="upstream.test.tls">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:282,284</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:283,285</note>
       </notes>
       <segment>
         <source>Certificate</source>
@@ -19375,7 +19402,7 @@
     </unit>
     <unit id="upstream.test.valid-until">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:284</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:285</note>
       </notes>
       <segment>
         <source>valid until</source>
@@ -19383,7 +19410,7 @@
     </unit>
     <unit id="upstream.test.error">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:288,290</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:289,291</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -19391,7 +19418,7 @@
     </unit>
     <unit id="upstream.details">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:305,306</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:302,303</note>
       </notes>
       <segment>
         <source>Upstream details</source>
@@ -19399,7 +19426,7 @@
     </unit>
     <unit id="upstream.hosts.hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:313,314</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:310,312</note>
       </notes>
       <segment>
         <source> Hosts the upstream&apos;s documents and its token service may lead to. Only a host that receives the credential gets it. </source>
@@ -19407,7 +19434,7 @@
     </unit>
     <unit id="upstream.hosts.pattern">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:317,319</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:314,316</note>
       </notes>
       <segment>
         <source>Host pattern</source>
@@ -19415,7 +19442,7 @@
     </unit>
     <unit id="upstream.hosts.send">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:336,337</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:333,335</note>
       </notes>
       <segment>
         <source>Receives the credential</source>
@@ -19423,7 +19450,7 @@
     </unit>
     <unit id="upstream.hosts.remove">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:339</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:336</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -19431,7 +19458,7 @@
     </unit>
     <unit id="upstream.hosts.none">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:346,348</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:343,345</note>
       </notes>
       <segment>
         <source>No further host.</source>
@@ -19439,7 +19466,7 @@
     </unit>
     <unit id="upstream.hosts.add">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:350,351</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:347,348</note>
       </notes>
       <segment>
         <source>Add host</source>
@@ -19447,7 +19474,7 @@
     </unit>
     <unit id="upstream.metadata-ttl.hint-value">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:376,378</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:373,375</note>
       </notes>
       <segment>
         <source> How long fetched metadata is served without asking the upstream again. </source>
@@ -19455,7 +19482,7 @@
     </unit>
     <unit id="upstream.notfound-ttl.hint-value">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:401,403</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:398,400</note>
       </notes>
       <segment>
         <source> How long a &quot;not found&quot; answer of the upstream is remembered. </source>
@@ -19463,7 +19490,7 @@
     </unit>
     <unit id="upstream.offline.hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:422,423</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:419,421</note>
       </notes>
       <segment>
         <source> The upstream is not contacted: clients get what is already stored. </source>
@@ -19471,7 +19498,7 @@
     </unit>
     <unit id="upstream.test.accepted">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:556</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:528</note>
       </notes>
       <segment>
         <source>accepted</source>
@@ -19479,7 +19506,7 @@
     </unit>
     <unit id="upstream.test.refused">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:557</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:529</note>
       </notes>
       <segment>
         <source>refused</source>
@@ -19487,7 +19514,7 @@
     </unit>
     <unit id="upstream.credential-hosts">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:592</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:564</note>
       </notes>
       <segment>
         <source>The credential is sent to <ph id="0" equiv="hosts" disp="list"/>.</source>
@@ -19495,7 +19522,7 @@
     </unit>
     <unit id="upstream.test.unreachable">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:606</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:578</note>
       </notes>
       <segment>
         <source>The upstream could not be reached.</source>
@@ -19503,7 +19530,7 @@
     </unit>
     <unit id="upstream.test.token-foreign">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:608</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:580</note>
       </notes>
       <segment>
         <source>The upstream answered, and its login is on a host this repository may not reach.</source>
@@ -19511,7 +19538,7 @@
     </unit>
     <unit id="upstream.test.denied">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:610</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:582</note>
       </notes>
       <segment>
         <source>The upstream answered and refused the credentials.</source>
@@ -19519,7 +19546,7 @@
     </unit>
     <unit id="upstream.test.ok-credentials">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:612</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:584</note>
       </notes>
       <segment>
         <source>The upstream answered and accepted the credentials.</source>
@@ -19527,7 +19554,7 @@
     </unit>
     <unit id="upstream.test.ok">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:614</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:586</note>
       </notes>
       <segment>
         <source>The upstream answered.</source>
@@ -19535,7 +19562,7 @@
     </unit>
     <unit id="upstream.test.answered-error">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:616</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:588</note>
       </notes>
       <segment>
         <source>The upstream answered with an error.</source>
@@ -19543,7 +19570,7 @@
     </unit>
     <unit id="upstream.test.token-not-allowed">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:645</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:617</note>
       </notes>
       <segment>
         <source>not allowed for this repository</source>
@@ -19551,7 +19578,7 @@
     </unit>
     <unit id="upstream.test.token-credential">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:647</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:619</note>
       </notes>
       <segment>
         <source>allowed, receives the credential</source>
@@ -19559,7 +19586,7 @@
     </unit>
     <unit id="upstream.test.token-no-credential">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:648</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:620</note>
       </notes>
       <segment>
         <source>allowed, receives no credential</source>
@@ -19567,7 +19594,7 @@
     </unit>
     <unit id="upstream.auth.basic">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:654</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:626</note>
       </notes>
       <segment>
         <source>Username and password</source>
@@ -19575,7 +19602,7 @@
     </unit>
     <unit id="upstream.auth.bearer">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:656</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:628</note>
       </notes>
       <segment>
         <source>Bearer token</source>
@@ -19583,7 +19610,7 @@
     </unit>
     <unit id="upstream.auth.none">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-settings.ts:658</note>
+        <note category="location">src/app/features/repositories/upstream-settings.ts:630</note>
       </notes>
       <segment>
         <source>None</source>
@@ -29071,7 +29098,7 @@
     <unit id="address.label">
       <notes>
         <note category="location">src/app/shared/address-field.ts:105</note>
-        <note category="location">src/app/shared/ui/page-header.ts:89</note>
+        <note category="location">src/app/shared/ui/page-header.ts:131</note>
       </notes>
       <segment>
         <source>Client address</source>
@@ -29080,7 +29107,7 @@
     <unit id="address.copy">
       <notes>
         <note category="location">src/app/shared/address-field.ts:107</note>
-        <note category="location">src/app/shared/ui/page-header.ts:90</note>
+        <note category="location">src/app/shared/ui/page-header.ts:132</note>
       </notes>
       <segment>
         <source>Copy client address</source>
@@ -29751,6 +29778,15 @@
         <source>Discard and leave</source>
       </segment>
     </unit>
+    <unit id="vuln.grade.prefix">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:24</note>
+        <note category="location">src/app/shared/vulnerability/grade.ts:24</note>
+      </notes>
+      <segment>
+        <source>Grade</source>
+      </segment>
+    </unit>
     <unit id="vuln.grade.fact.os">
       <notes>
         <note category="location">src/app/shared/vulnerability/grade-card.ts:34</note>
@@ -29842,7 +29878,8 @@
     <unit id="vuln.grade.text.eosl">
       <notes>
         <note category="location">src/app/shared/vulnerability/grade-words.ts:91</note>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:152</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:113</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:181</note>
       </notes>
       <segment>
         <source>OS end of life</source>
@@ -29864,9 +29901,49 @@
         <source>not scanned</source>
       </segment>
     </unit>
+    <unit id="pkg.grade.not-scanned">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:111</note>
+      </notes>
+      <segment>
+        <source>not scanned</source>
+      </segment>
+    </unit>
+    <unit id="pkg.grade.no-findings">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:114</note>
+      </notes>
+      <segment>
+        <source>no findings</source>
+      </segment>
+    </unit>
+    <unit id="pkg.grade.one-finding">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:118</note>
+      </notes>
+      <segment>
+        <source>1 finding</source>
+      </segment>
+    </unit>
+    <unit id="pkg.grade.findings">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:119</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n.format(total)"/> findings</source>
+      </segment>
+    </unit>
+    <unit id="pkg.grade.fixable">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:120</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n.format(g.fixable)"/> fixable</source>
+      </segment>
+    </unit>
     <unit id="vuln.grade.rule.s-image">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:104</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:133</note>
       </notes>
       <segment>
         <source>No known vulnerabilities, and the OS is supported</source>
@@ -29874,7 +29951,7 @@
     </unit>
     <unit id="vuln.grade.rule.s">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:105</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:134</note>
       </notes>
       <segment>
         <source>No known vulnerabilities</source>
@@ -29882,7 +29959,7 @@
     </unit>
     <unit id="vuln.grade.rule.a">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:107</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:136</note>
       </notes>
       <segment>
         <source>Only Low or Unknown, at most <ph id="0" equiv="max" disp="GRADE_A_MAX_LOW"/></source>
@@ -29890,7 +29967,7 @@
     </unit>
     <unit id="vuln.grade.rule.b-medium">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:110</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:139</note>
       </notes>
       <segment>
         <source>Medium found, no High or Critical</source>
@@ -29898,7 +29975,7 @@
     </unit>
     <unit id="vuln.grade.rule.b-low">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:111</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:140</note>
       </notes>
       <segment>
         <source>More than <ph id="0" equiv="max" disp="GRADE_A_MAX_LOW"/> Low or Unknown</source>
@@ -29906,7 +29983,7 @@
     </unit>
     <unit id="vuln.grade.rule.c-eosl">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:114</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:143</note>
       </notes>
       <segment>
         <source>OS end of life: no more security updates, the scan may miss vulnerabilities</source>
@@ -29914,7 +29991,7 @@
     </unit>
     <unit id="vuln.grade.rule.c">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:115</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:144</note>
       </notes>
       <segment>
         <source>High found, no Critical</source>
@@ -29922,7 +29999,7 @@
     </unit>
     <unit id="vuln.grade.rule.d">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:117</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:146</note>
       </notes>
       <segment>
         <source>1 to <ph id="0" equiv="max" disp="GRADE_D_MAX_CRITICAL"/> Critical</source>
@@ -29930,7 +30007,7 @@
     </unit>
     <unit id="vuln.grade.rule.e">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:119</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:148</note>
       </notes>
       <segment>
         <source>More than <ph id="0" equiv="max" disp="GRADE_D_MAX_CRITICAL"/> Critical</source>
@@ -29938,7 +30015,7 @@
     </unit>
     <unit id="vuln.grade.rule.na-pending-data">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:129</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:158</note>
       </notes>
       <segment>
         <source>Waiting for advisory data</source>
@@ -29946,7 +30023,7 @@
     </unit>
     <unit id="vuln.grade.rule.na-pending-scan">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:131</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:160</note>
       </notes>
       <segment>
         <source>Waiting for its scan</source>
@@ -29954,7 +30031,7 @@
     </unit>
     <unit id="vuln.grade.rule.na-scan-failed">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:133</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:162</note>
       </notes>
       <segment>
         <source>The scan did not finish</source>
@@ -29962,7 +30039,7 @@
     </unit>
     <unit id="vuln.grade.rule.na-internal">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:135</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:164</note>
       </notes>
       <segment>
         <source>Internal name, public advisories do not apply</source>
@@ -29970,7 +30047,7 @@
     </unit>
     <unit id="vuln.grade.rule.na-not-covered">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:137</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:166</note>
       </notes>
       <segment>
         <source>Not covered by scanning</source>
@@ -29978,7 +30055,7 @@
     </unit>
     <unit id="vuln.grade.count.critical">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:146</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:175</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:26</note>
       </notes>
       <segment>
@@ -29987,7 +30064,7 @@
     </unit>
     <unit id="vuln.grade.count.high">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:147</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:176</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:28</note>
       </notes>
       <segment>
@@ -29996,7 +30073,7 @@
     </unit>
     <unit id="vuln.grade.count.medium">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:148</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:177</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:30</note>
       </notes>
       <segment>
@@ -30005,7 +30082,7 @@
     </unit>
     <unit id="vuln.grade.count.low">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:149</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:178</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:32</note>
       </notes>
       <segment>
@@ -30014,7 +30091,7 @@
     </unit>
     <unit id="vuln.grade.count.unknown">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:150</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:179</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:34</note>
       </notes>
       <segment>

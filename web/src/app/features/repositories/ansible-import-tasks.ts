@@ -3,6 +3,7 @@ import { Component, effect, inject, input, untracked } from '@angular/core';
 import { AnsibleApi, AnsibleImportTask } from '../../api/ansible-api';
 import { PagedResource } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { Disclosure } from '../../shared/ui/disclosure';
 
 /** The words of a task state; the colour is a second signal, never the only one (R-UI-044). */
 export function importStateText(state: AnsibleImportTask['state']): string {
@@ -18,7 +19,7 @@ export function importStateText(state: AnsibleImportTask['state']): string {
  */
 @Component({
   selector: 'quader-ansible-import-tasks',
-  imports: [DatePipe, DataTable],
+  imports: [DatePipe, DataTable, Disclosure],
   template: `
     <section class="imports" aria-labelledby="ansible-imports-heading">
       <h2 id="ansible-imports-heading" class="visually-hidden" i18n="@@ansible.imports.heading">Import tasks</h2>
@@ -55,14 +56,13 @@ export function importStateText(state: AnsibleImportTask['state']): string {
             <td><time [attr.datetime]="task.createdAt">{{ task.createdAt | date: 'medium' }}</time></td>
             <td>
               @if (task.messages.length > 0) {
-                <details>
-                  <summary>{{ task.messages.length }}</summary>
+                <quader-disclosure [inline]="true" [heading]="messagesOf(task.messages.length)">
                   <ul class="messages">
                     @for (m of task.messages; track $index) {
                       <li><span class="level" translate="no">{{ m.level }}</span> {{ m.message }}</li>
                     }
                   </ul>
-                </details>
+                </quader-disclosure>
               } @else {
                 –
               }
@@ -98,6 +98,10 @@ export class AnsibleImportTasks {
   protected readonly list = new PagedResource<AnsibleImportTask>();
   protected readonly stateText = importStateText;
   protected readonly caption = $localize`:@@ansible.imports.caption:Import tasks of this repository, newest first`;
+  /** The toggle of a row's messages names how many there are: "1 message", "3 messages". */
+  protected messagesOf(count: number): string {
+    return count === 1 ? $localize`:@@ansible.imports.one-message:1 message` : $localize`:@@ansible.imports.messages:${count}:count: messages`;
+  }
   protected readonly emptyText = $localize`:@@ansible.imports.empty:No collection has been published to this repository yet, or the tasks have been deleted.`;
   protected readonly columns: readonly TableColumn[] = [
     { id: 'collection', label: $localize`:@@ansible.imports.col.collection:Collection` },

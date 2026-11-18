@@ -46,7 +46,7 @@ export interface ServiceAccountCreateData {
           [error]="fieldError('/name')"
           [hint]="nameHint"
         />
-        <quader-text-field width="full" i18n-label="@@sa-create.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
+        <quader-text-field width="name" i18n-label="@@sa-create.description" label="Description" name="description" [(value)]="description" [error]="fieldError('/description')" />
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@sa-create.cancel">Cancel</button>

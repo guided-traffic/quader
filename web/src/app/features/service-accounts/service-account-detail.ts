@@ -51,7 +51,7 @@ import { PageHeader } from '../../shared/ui/page-header';
       <div class="settings">
         <form (submit)="save($event)" novalidate>
           <div class="row">
-            <quader-text-field width="full" i18n-label="@@sa.description" label="Description" name="description" [(value)]="description" [readonly]="!canWrite()" [error]="fieldError('/description')" />
+            <quader-text-field width="name" i18n-label="@@sa.description" label="Description" name="description" [(value)]="description" [readonly]="!canWrite()" [error]="fieldError('/description')" />
             <quader-text-field width="name" i18n-label="@@sa.id" label="ID" name="id" [value]="a.id" [readonly]="true" />
           </div>
           @if (canWrite()) {

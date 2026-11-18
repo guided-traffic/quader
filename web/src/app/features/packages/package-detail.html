@@ -73,7 +73,7 @@
           @if (graded()) {
             <td>
               @if (v.grade; as g) {
-                <quader-version-grade [grade]="g" />
+                <quader-grade [grade]="g" />
               } @else {
                 <span class="muted">–</span>
               }

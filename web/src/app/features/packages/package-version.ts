@@ -22,7 +22,7 @@ import { EXTERNAL_REL, packageCommands } from './package-links';
 import { PackageMemory } from './package-memory';
 import { PackageReadmeView } from './package-readme';
 import { distTagsOf } from './package-versions-model';
-import { VersionGrade } from './version-grade';
+import { GradeLabel } from '../../shared/vulnerability/grade';
 import {
   ansibleFacts,
   debFacts,
@@ -73,7 +73,7 @@ interface TabEntry {
     AnsibleDocs,
     AnsibleImportLog,
     PackageVulnerabilities,
-    VersionGrade,
+    GradeLabel,
   ],
   templateUrl: './package-version.html',
   styleUrl: './package-version.scss',

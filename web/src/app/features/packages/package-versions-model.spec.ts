@@ -12,7 +12,7 @@ import {
   versionRows,
   versionSortParam,
 } from './package-versions-model';
-import { gradeSummaryText } from './version-grade';
+import { gradeSummaryText } from '../../shared/vulnerability/grade-words';
 
 const summary = (version: string, over: Partial<PackageVersionSummary> = {}): PackageVersionSummary => ({
   version,

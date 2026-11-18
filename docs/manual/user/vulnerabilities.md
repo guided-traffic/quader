@@ -66,9 +66,10 @@ If someone else changed the finding while you had it open, the change is refused
 
 ## Grades
 
-Lists show a version as a **grade**: a shield with a letter and beside it the count that decides it, for example the shield **E** and **13 Critical**. The
-versions table of a package and the page of a version show the shield with the number of open findings and how many of them have
-a fix, for example the shield **E** and **1,145 findings · 112 fixable**; hover over it for the rule and every count. A finding has a fix when its
+Lists and the page of a version show a version as a **grade**: a shield with a letter and beside it the number of open findings
+and how many of them have a fix, for example the shield **E** and **1,145 findings · 112 fixable**, or **OS end of life** for an
+image whose operating system is no longer supported; hover over it for the rule of the letter and every count. The card on the
+**Vulnerabilities** tab of a version names the count that decides the letter, for example **13 Critical**. A finding has a fix when its
 advisory names a version that is no longer affected. The grade comes from the version's open findings; a dismissed or resolved
 finding does not count.
 
