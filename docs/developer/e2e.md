@@ -1001,6 +1001,14 @@ profile after the fixes (`SET=push` and `SET=failover`, above): the measurements
    [m1_env_test.go](../../test/e2e/m1_env_test.go), [Q-HA-301](../spec/ha-and-helm.md#q-ha-301--the-harness-clients-close-their-tls-connections-without-close_notify-so-a-closing-connection-does-not-end-a-kubectl-port-forward)).
    It is not a request Quader dropped: a client of the edge gets its answer in full whatever the teardown does, and the cut
    request never reached the pod.
+17. **Explained in the setup: `make dev-up` failed on a runner that was slow in every step** (nightly 44067104691, `e2e (ci-ha)`:
+   `quader-db has 1 ready instances, want 2`, then Keycloak `exceeded its progress deadline`). The steps without network were slow too
+   (freeing disk space 368 s against 85 to 155 s on the other hosted legs, `make image` 847 s against 111 to 173 s, `make dev-down` 116 s
+   against 2 to 29 s); image pulls took up to 156 s each, and no pull failed. The machine, not the profile or a registry. `up.sh` now
+   prints what the cluster says when a dependency fails (pull failures as a cause outside the repository, the slowest pulls, the probe
+   restarts, the pods that are not ready, the machine's pressure), and Keycloak's startup probe no longer restarts a slow start inside
+   up.sh's 10-minute wait ([Q-HA-302](../spec/ha-and-helm.md#q-ha-302--a-setup-that-fails-says-whether-a-registry-or-the-machine-was-the-cause-and-the-test-idp-is-not-restarted-inside-the-wait)).
+   A runner this slow still fails the leg; re-run it.
 
 ## TLS in the suite
 

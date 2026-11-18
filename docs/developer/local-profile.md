@@ -157,8 +157,11 @@ NetworkPolicy admits the scrape from the namespace `monitoring`. Its interface i
    internal-secrets-operator, then [secrets.yaml](../../deploy/dev/secrets.yaml), then waits until the fields are
    filled); `vko` (the Valkey operator); `postgres` (the CloudNativePG operator, `postgres.yaml`, two ready
    instances); `valkey` (waits for `pki`, `secrets` and `vko`, applies the `Valkey` resource and waits for the pods);
-   `s3` (waits for `pki` and `secrets`, applies `s3.yaml`, runs the bucket Job). A task another one needs leaves a
-   marker file in `.dev/logs/`, so Valkey and S3 do not wait for PostgreSQL, the longest task.
+   `s3` (waits for `pki` and `secrets`, applies `s3.yaml`, runs the bucket Job); `keycloak` (waits for `pki` and `secrets`,
+   applies [keycloak.yaml](../../deploy/dev/keycloak.yaml) and waits up to 10 minutes for the rollout; the startup probe allows
+   the same 10 minutes, so a slow start is not restarted inside the wait). A task another one needs leaves a
+   marker file in `.dev/logs/`, so Valkey and S3 do not wait for PostgreSQL, the longest task. When a task fails, `up.sh`
+   prints what the cluster says about it before it ends ([Troubleshooting](#troubleshooting)).
 5. Writes the dev CA to `.dev/pki/ca.crt`, asks the Sentinels over TLS for the primary and prints it, prints the
    PostgreSQL primary.
 6. Unless `QUADER_SKIP_RELEASE=1`: `kind load docker-image`, then
@@ -422,7 +425,7 @@ as bash 5.
 |---|---|
 | `port 8080 on localhost is in use` | another process holds the port. `QUADER_DEV_HTTP_PORT=18080 make dev-up`; `base_url` follows. The port is fixed per cluster: `make dev-down` first to change it |
 | `kind create cluster failed` | see `.dev/logs/kind.log`; usually Docker is out of memory or a stale `quader-*` container exists (`docker ps -a --filter name=quader-`) |
-| a dependency FAILED | the last lines of its log are printed; the full log is `.dev/logs/<haproxy\|pki\|secrets\|vko\|postgres\|valkey\|s3>.log`. Re-run `make dev-up`, it is idempotent |
+| a dependency FAILED | the last lines of its log are printed; the full log is `.dev/logs/<haproxy\|pki\|secrets\|vko\|postgres\|valkey\|s3\|keycloak>.log`. Below them `up.sh` prints what the cluster says (`explain_setup_failure` in [lib.sh](../../deploy/dev/lib.sh), [Q-HA-302](../spec/ha-and-helm.md#q-ha-302--a-setup-that-fails-says-whether-a-registry-or-the-machine-was-the-cause-and-the-test-idp-is-not-restarted-inside-the-wait)): an image that could not be pulled, said to be a cause outside the repository; the eight slowest image pulls with their seconds; the containers a probe restarted; the pods that are not ready; the CPU, I/O and memory pressure of the machine the nodes share. Pulls of minutes and a high pressure with no failed pull mean a slow machine, not the profile. Re-run `make dev-up`, it is idempotent |
 | `the image … is not in the local Docker` | build it (`make image`), or `QUADER_SKIP_RELEASE=1` for the dependencies only |
 | Quader pods never ready after install | `kubectl logs` of a pod and `kubectl get pod -o yaml`; a replica waits for the schema until the migration Job has run, and refuses a version that is not `major.minor.patch` or `dev`: build with `make image VERSION=dev` |
 | an operator pod `ImagePullBackOff` with `no match for platform` | the image is amd64 only and the node arm64: pin the amd64 manifest digest (already done) and register the emulator (above) |
