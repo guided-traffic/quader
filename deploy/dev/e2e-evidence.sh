@@ -13,7 +13,11 @@
 #
 #   samples.csv       one row per source and sample, sorted by time (columns below): the host, each kind node's cgroup, the edge, and
 #                     the top-level cgroups of the machine (`cg:<name>`: the runner's pods, the Docker daemon's containers, …) with
-#                     the CPU time each used, so that a stall can be told apart: the leg's own nodes or a neighbour (Q-HA-305)
+#                     the CPU time each used, so that a stall can be told apart: the leg's own nodes or a neighbour (Q-HA-305); the
+#                     cgroup parent of the job's Docker daemon and the pod it lies in (`daemon:parent`, `daemon:pod`) where that is
+#                     not a top-level cgroup, and the containers of both that parent and the top-level `docker` (`cgd:<id12>`)
+#   pod-memory.csv    where the daemon's cgroup parent lies inside a pod (the runner class `large`): the pod's memory.current, memory.peak,
+#                     memory.max and OOM counters, every QUADER_E2E_EVIDENCE_POD_INTERVAL seconds; the last values head README.txt
 #   pods.csv          per pod of each kind node, every QUADER_E2E_EVIDENCE_POD_INTERVAL seconds: CPU time, memory by kind (anon,
 #                     file, socket buffers, kernel) and the OOM kills of its cgroup; pod-names.tsv maps the uids to names
 #   containers.tsv    the containers of the job's own Docker daemon (kind nodes, k6, helpers), every 10 s: which `cgd:` rows are the leg's
@@ -24,7 +28,7 @@
 #   pods-final.txt    `kubectl get pods -A -o wide` at the end
 #   kept-pod-logs/    the logs of the pods that were deleted or evicted during the run and of every pod of the secrets operator and
 #                     of cert-manager, gzip, one file per container instance: <namespace>_<pod>_<uid>__<container>__<restarts>.log.gz
-#   README.txt        this list
+#   README.txt        where the daemon put its containers and the pod's memory at the end, then this list
 #
 # Environment: QUADER_E2E_EVIDENCE=0 (e2e.sh: record nothing), QUADER_E2E_EVIDENCE_INTERVAL (seconds between two samples of a node,
 # of the host and of the machine's cgroups, default 1), QUADER_E2E_EVIDENCE_EDGE_INTERVAL (the edge, default 2),
@@ -60,13 +64,24 @@ EDGE_STOP=/tmp/quader-e2e-evidence.stop
 # the helper container that reads the machine's cgroup tree through the job's Docker daemon (one per cluster)
 CG_SAMPLES=/tmp/quader-e2e-evidence-cgroups.csv
 CG_STOP=/tmp/quader-e2e-evidence-cgroups.stop
+CG_PODMEM=/tmp/quader-e2e-evidence-podmem.csv
 CG_NAME="quader-e2e-evidence-cgroups-$CLUSTER"
 
 # The columns of samples.csv; every recorder below writes rows of exactly this width (an empty field where a source has no value).
 SAMPLES_HEADER='ts_ms,source,cpu_some_avg10,cpu_some_total_us,cpu_full_avg10,cpu_full_total_us,mem_some_avg10,mem_some_total_us,mem_full_avg10,mem_full_total_us,load1,load5,load15,edge_curr_conns,edge_curr_ssl_conns,edge_conn_rate,edge_idle_pct,io_some_avg10,io_some_total_us,io_full_avg10,io_full_total_us,cpu_usage_us,cpu_steal_us,cpus,cpu_weight,members'
 PODS_HEADER='ts_ms,node,pod_uid,cpu_usage_us,mem_current,mem_anon,mem_file,mem_sock,mem_kernel,oom_kill'
+PODMEM_HEADER='ts_ms,mem_current,mem_peak,mem_max,oom,oom_kill,oom_local,docker_mem_current'
 
 nodes() { kind get nodes --name "$CLUSTER" 2>/dev/null; }
+
+# gib VALUE: a byte count of a cgroup memory file in GiB with one decimal; `max` is no limit, anything else is not known
+gib() {
+  case "$1" in
+    max) echo "no limit" ;;
+    '' | *[!0-9]*) echo "not known" ;;
+    *) awk -v b="$1" 'BEGIN { printf "%.1f GiB\n", b / 1073741824 }' ;;
+  esac
+}
 
 # ── shared reader functions (prepended to the loops below; bash builtins only) ──────────────────────────────────────────────────
 # psi FILE: R = "some_avg10,some_total,full_avg10,full_total" of a pressure file (`some avg10=0.00 avg60=0.00 avg300=0.00 total=123`
@@ -149,44 +164,111 @@ while [ "$SECONDS" -lt "$max" ] && [ ! -e "$stop" ]; do
 done
 EOF
 
+# ── where the job's Docker daemon puts its containers (runs once, in a helper container like the sampler below) ──────────────────
+# The daemon's cgroup parent is not assumed: the cgroup directory of one of its containers (the first kind node) is looked up in the
+# mounted tree, shallow levels first, down to six levels, and its parent is the daemon's. On a `self-hosted` runner and on Docker
+# Desktop that is the top-level `/docker`; on a `large` runner, whose daemon has a cgroup parent inside its own pod since 2026-11-18,
+# it is `/kubepods/<qos>/pod<uid>/docker` (kubelet cgroup driver cgroupfs; the systemd layout `…-pod<uid>.slice` and a daemon on the
+# systemd cgroup driver, `docker-<id>.scope`, are found the same way). /proc/self/cgroup of a container is no shortcut: on cgroup v2 a
+# container has its own cgroup namespace and reads `0::/`, and a path read there is relative to the daemon's namespace, which need not
+# be the root of the tree the sampler reads.
+# $1 the mounted tree, $2 the full id of the container. Prints `<parent> <pod> <pod memory.max>`, the paths from the tree's root with
+# a leading slash and `-` for no pod (the parent is not below a `kubepods` cgroup) or no memory.max; nothing when the container is
+# not found.
+read -r -d '' CGFIND <<'EOF'
+root=$1; id=$2; pat=""; found=""
+for _ in 1 2 3 4 5 6; do
+  for d in "$root"/$pat"$id" "$root"/$pat"docker-$id.scope"; do
+    if [ -d "$d" ]; then found=$d; break 2; fi
+  done
+  pat="$pat*/"
+done
+[ -n "$found" ] || exit 0
+parent=${found%/*}; parent=${parent#"$root"}
+pod=""; acc=""; kube=0
+IFS=/ read -r -a parts <<< "${parent#/}"
+for c in "${parts[@]}"; do
+  acc="$acc/$c"
+  case $c in kubepods*) kube=1 ;; esac
+  if [ "$kube" = 1 ]; then case $c in pod*|*-pod*.slice) pod=$acc ;; esac; fi
+done
+lim=""
+[ -n "$pod" ] && read -r lim 2>/dev/null < "$root$pod/memory.max"
+printf '%s %s %s\n' "${parent:-/}" "${pod:--}" "${lim:--}"
+EOF
+
 # ── the machine's cgroups (runs in a helper container of the job's Docker daemon, the cgroup tree mounted at /host-cgroup) ────────
-# On the CI runner the job's Docker daemon sees the cgroup root of the whole machine: the kind nodes of every leg on it are children
-# of `docker` there, the runner pods of both classes are under `kubepods` (verified on the runner cluster on 2026-11-18, Q-HA-305). Each
-# second, one row per top-level cgroup with a cpu.stat (`cg:<name>`): its pressure, its CPU time, its cpu.weight and the number of
-# members (pods under kubepods, containers under docker); every $4-th sample one row per container of `docker` (`cgd:<id12>`, CPU
-# time only), so that the leg's own containers (containers.tsv) and a neighbour's can be told apart.
-# $1 interval, $2 stop file, $3 max seconds, $4 a container sample every this many rows.
+# On the CI runner the job's Docker daemon sees the cgroup root of the whole machine; the runner pods of both classes are under
+# `kubepods`, the containers of a `self-hosted` job's daemon under the top-level `docker` beside every other such daemon's, those of a
+# `large` job's daemon under its own pod (Q-HA-305). Each second, one row per top-level cgroup with a cpu.stat (`cg:<name>`): its
+# pressure, its CPU time, its cpu.weight and the number of members (pods under kubepods, containers under docker). Where the daemon's
+# cgroup parent (CGFIND) is not a top-level cgroup, the same row for it (`daemon:parent`), and where it lies in a pod, for the pod
+# (`daemon:pod`). Every $4-th sample one row per container of the top-level `docker` and of the daemon's parent (`cgd:<id12>`, CPU
+# time only), so that the leg's own containers (containers.tsv) and a neighbour's can be told apart, and one row of the pod's memory
+# (memory.current, memory.peak, memory.max, the oom and oom_kill counts of memory.events, which include every OOM kill below the pod,
+# the oom count of memory.events.local, which counts the pod's own limit only, and memory.current of the daemon's parent) into $8,
+# again once at the end.
+# $1 interval, $2 stop file, $3 max seconds, $4 a container sample every this many rows, $5 the mounted tree, $6 the daemon's cgroup
+# parent and $7 its pod as CGFIND prints them (empty or `-`: none), $8 the pod memory file.
 read -r -d '' CGSAMPLER <<'EOF'
-iv=$1; stop=$2; max=$3; every=$4; root=/host-cgroup
+iv=$1; stop=$2; max=$3; every=$4; root=$5; parent=${6#-}; pod=${7#-}; memfile=$8
+[ "$parent" = / ] && parent=""
+row() {
+  local d=$2 x k=0 w=""
+  psi "$d/cpu.pressure"; c=$R
+  psi "$d/memory.pressure"; m=$R
+  psi "$d/io.pressure"; io=$R
+  usage "$d/cpu.stat"
+  read -r w < "$d/cpu.weight" 2>/dev/null
+  for x in "$d"/*/ "$d"/*/*/; do
+    x=${x%/}; x=${x##*/}
+    case $x in pod*|*-pod*) k=$((k + 1)) ;; ????????????????????????????????????????????????????????????????) k=$((k + 1)) ;; esac
+  done
+  printf '%s,%s,%s,%s,,,,,,,,%s,%s,,,%s,%s\n' "$now" "$1" "$c" "$m" "$io" "$U" "$w" "$k"
+}
+ctrs() {
+  local x id
+  for x in "$1"/*/; do
+    x=${x%/}; id=${x##*/}; id=${id#docker-}; id=${id%.scope}
+    [ ${#id} -eq 64 ] || continue
+    usage "$x/cpu.stat"
+    printf '%s,cgd:%s,,,,,,,,,,,,,,,,,,,,%s,,,,\n' "$now" "${id:0:12}" "$U"
+  done
+}
+mem() {
+  local d=$root$pod k v cur="" peak="" lim="" oom="" kill="" loc="" dcur=""
+  read -r cur 2>/dev/null < "$d/memory.current"
+  read -r peak 2>/dev/null < "$d/memory.peak"
+  read -r lim 2>/dev/null < "$d/memory.max"
+  while read -r k v; do case $k in oom) oom=$v ;; oom_kill) kill=$v ;; esac; done 2>/dev/null < "$d/memory.events"
+  while read -r k v; do [ "$k" = oom ] && loc=$v; done 2>/dev/null < "$d/memory.events.local"
+  [ -n "$parent" ] && read -r dcur 2>/dev/null < "$root$parent/memory.current"
+  printf '%s,%s,%s,%s,%s,%s,%s,%s\n' "$now" "$cur" "$peak" "$lim" "$oom" "$kill" "$loc" "$dcur" >> "$memfile"
+}
+# one group to the end: the script appends `>>file` to this program, which applies to its last command only
+{
 n=0
 while [ "$SECONDS" -lt "$max" ] && [ ! -e "$stop" ]; do
   now=$(date +%s%3N)
   for d in "$root"/*/; do
     d=${d%/}; name=${d##*/}
     [ -r "$d/cpu.stat" ] || continue
-    psi "$d/cpu.pressure"; c=$R
-    psi "$d/memory.pressure"; m=$R
-    psi "$d/io.pressure"; io=$R
-    usage "$d/cpu.stat"
-    w=""; read -r w < "$d/cpu.weight" 2>/dev/null
-    k=0
-    for x in "$d"/*/ "$d"/*/*/; do
-      x=${x%/}; x=${x##*/}
-      case $x in pod*|*-pod*) k=$((k + 1)) ;; ????????????????????????????????????????????????????????????????) k=$((k + 1)) ;; esac
-    done
-    printf '%s,cg:%s,%s,%s,,,,,,,,%s,%s,,,%s,%s\n' "$now" "$name" "$c" "$m" "$io" "$U" "$w" "$k"
-    if [ "$name" = docker ] && [ $((n % every)) -eq 0 ]; then
-      for x in "$d"/*/; do
-        x=${x%/}; id=${x##*/}
-        [ ${#id} -eq 64 ] || continue
-        usage "$x/cpu.stat"
-        printf '%s,cgd:%s,,,,,,,,,,,,,,,,,,,,%s,,,,\n' "$now" "${id:0:12}" "$U"
-      done
-    fi
+    row "cg:$name" "$d"
+    if [ "$name" = docker ] && [ $((n % every)) -eq 0 ]; then ctrs "$d"; fi
   done
+  if [ -n "$parent" ]; then
+    case $parent in /*/*) row daemon:parent "$root$parent" ;; esac
+    if [ "$parent" != /docker ] && [ $((n % every)) -eq 0 ]; then ctrs "$root$parent"; fi
+  fi
+  if [ -n "$pod" ]; then
+    row daemon:pod "$root$pod"
+    [ $((n % every)) -eq 0 ] && mem
+  fi
   n=$((n + 1))
   sleep "$iv"
 done
+if [ -n "$pod" ]; then now=$(date +%s%3N); mem; fi
+}
 EOF
 
 # ── the log keeper (runs inside a node container) ────────────────────────────────────────────────────────────────────────────────
@@ -294,12 +376,27 @@ $SAMPLER >>$NODE_HOST_SAMPLES" _ host "$SAMPLE_INTERVAL" /proc/pressure/ "" 1 "$
       || log "evidence: the host sampler did not start in $first"
   fi
   # the machine's cgroups: a helper container of the job's Docker daemon, from the kind nodes' image (bash is in it), with the daemon's
-  # cgroup tree mounted read-only; on the CI runner that is the root of the whole machine (Q-HA-305)
-  node_image="$(docker inspect -f '{{.Config.Image}}' "$first" 2>/dev/null)"
+  # cgroup tree mounted read-only; on the CI runner that is the root of the whole machine (Q-HA-305). A one-off container of the same
+  # kind first finds where the daemon put the first kind node (CGFIND), once per set.
+  first_id=""; node_image=""; cg_parent="-"; cg_pod="-"; cg_max="-"
+  read -r first_id node_image < <(docker inspect -f '{{.Id}} {{.Config.Image}}' "$first" 2>/dev/null)
   docker rm -f "$CG_NAME" >/dev/null 2>&1
+  if [ -n "$node_image" ]; then
+    read -r cg_parent cg_pod cg_max < <(docker run --rm --network none -v /sys/fs/cgroup:/host-cgroup:ro --entrypoint bash "$node_image" \
+      -c "$CGFIND" _ /host-cgroup "$first_id" 2>/dev/null)
+    : "${cg_parent:=-}" "${cg_pod:=-}" "${cg_max:=-}"
+    echo "$cg_parent $cg_pod $cg_max" >"$dir/.cgparent"
+    if [ "$cg_parent" = - ]; then
+      log "evidence: the cgroup of $first was not found in its Docker daemon's cgroup tree (six levels): cgd: rows of the top-level docker only, no pod memory"
+    elif [ "$cg_pod" = - ]; then
+      log "evidence: the job's Docker daemon puts its containers under $cg_parent of the machine's cgroups, not inside a pod"
+    else
+      log "evidence: the job's Docker daemon puts its containers under $cg_parent of the machine's cgroups, inside the pod $cg_pod (memory.max $(gib "$cg_max")): daemon:parent and daemon:pod rows, the pod's memory in pod-memory.csv"
+    fi
+  fi
   if [ -n "$node_image" ] && docker run -d --name "$CG_NAME" --network none -v /sys/fs/cgroup:/host-cgroup:ro --entrypoint bash "$node_image" \
       -c "$READERS
-$CGSAMPLER >>$CG_SAMPLES" _ "$SAMPLE_INTERVAL" "$CG_STOP" "$MAX_SECONDS" "$pod_every" >/dev/null 2>&1; then :
+$CGSAMPLER >>$CG_SAMPLES" _ "$SAMPLE_INTERVAL" "$CG_STOP" "$MAX_SECONDS" "$pod_every" /host-cgroup "$cg_parent" "$cg_pod" "$CG_PODMEM" >/dev/null 2>&1; then :
   else log "evidence: the cgroup sampler did not start: the machine's cgroups are not recorded"; fi
   secrets_snapshot start >"$dir/.secrets-start.tsv"
   # a fifo between the watch and the stamping loop, so that the watch's own pid is the one to stop (a pipeline gives the last stage's)
@@ -354,6 +451,8 @@ stop)
       cat "$dir"/.edge/*.csv 2>/dev/null
     } | grep -E '^[0-9]{13},' | sort -t, -k1,1n -k2,2
   } >"$dir/samples.csv"
+  docker cp "$CG_NAME:$CG_PODMEM" - 2>/dev/null | tar -xOf - 2>/dev/null | grep -E '^[0-9]{13},' | sort -t, -k1,1n >"$dir/.podmem.csv"
+  if [ -s "$dir/.podmem.csv" ]; then { echo "$PODMEM_HEADER"; cat "$dir/.podmem.csv"; } >"$dir/pod-memory.csv"; fi
   docker rm -f "$CG_NAME" >/dev/null 2>&1
   # pods.csv and the names of the pods it counts by uid (the pods there at the end, and every pod the events name)
   {
@@ -402,8 +501,27 @@ stop)
   for pod in $(kubectl --context "$CTX" -n "$EDGE_NS" get pods -o name 2>/dev/null); do
     kubectl --context "$CTX" -n "$EDGE_NS" exec "${pod#pod/}" -- rm -f "$EDGE_STOP" >/dev/null 2>&1
   done
-  cat >"$dir/README.txt" <<'README'
-samples.csv        pressure (PSI cpu, memory and io: some/full avg10 and total microseconds) and CPU time of the host (source host: also the load average, the steal time and the number of CPUs), of the cgroup of each kind node (node:<name>) and of the machine's top-level cgroups (cg:<name>: also cpu.weight and the number of pods or containers in it), the CPU time of every container of the machine's Docker cgroup (cgd:<id12>), HAProxy's connection counters of each edge pod (edge:<pod>), every 1 to 5 s, by time
+  # README.txt: first where the daemon put its containers and the pod's memory at the end, then the list of files
+  cg_parent=""; cg_pod=""; cg_max=""
+  [ -f "$dir/.cgparent" ] && read -r cg_parent cg_pod cg_max <"$dir/.cgparent"
+  {
+    if [ -z "$cg_parent" ]; then
+      echo "Docker daemon      its cgroup tree was not read: no cg:, cgd: or daemon: rows"
+    elif [ "$cg_parent" = - ]; then
+      echo "Docker daemon      the cgroup of the first kind node was not found in the daemon's cgroup tree: the cgd: rows are those of the top-level docker only, no pod memory"
+    elif [ "$cg_pod" = - ]; then
+      echo "Docker daemon      puts its containers under $cg_parent of the machine's cgroups, not inside a pod: their memory counts against no pod's limit, no pod-memory.csv"
+    else
+      echo "Docker daemon      puts its containers under $cg_parent of the machine's cgroups, inside the pod $cg_pod, whose memory limit counts them"
+    fi
+    if [ -s "$dir/pod-memory.csv" ]; then
+      IFS=, read -r _ m_cur m_peak m_max m_oom m_kill m_local m_docker < <(tail -n 1 "$dir/pod-memory.csv")
+      echo "Pod memory         peak $(gib "$m_peak") of a limit of $(gib "$m_max"); at the end $(gib "$m_cur"), of that the daemon's containers $(gib "$m_docker"); OOM at the pod's own limit ${m_local:-not known}, OOM events below the pod ${m_oom:-not known}, OOM kills below the pod ${m_kill:-not known} (pods.csv names a killed kind pod)"
+    fi
+    echo
+    cat <<'README'
+samples.csv        pressure (PSI cpu, memory and io: some/full avg10 and total microseconds) and CPU time of the host (source host: also the load average, the steal time and the number of CPUs), of the cgroup of each kind node (node:<name>) and of the machine's top-level cgroups (cg:<name>: also cpu.weight and the number of pods or containers in it), the same for the cgroup parent of the job's Docker daemon where it is not a top-level cgroup (daemon:parent) and for the pod it lies in (daemon:pod), the CPU time of every container of the machine's top-level docker cgroup and of the daemon's parent (cgd:<id12>), HAProxy's connection counters of each edge pod (edge:<pod>), every 1 to 5 s, by time
+pod-memory.csv     where the daemon's parent lies inside a pod: the pod's memory.current, memory.peak, memory.max, the oom and oom_kill counts of memory.events (every OOM below the pod, the kind pods' own limits included), the oom count of memory.events.local (the pod's own limit only) and memory.current of the daemon's parent, every 5 s and at the end
 pods.csv           per pod of each kind node: CPU time, memory.current, anon, file, socket buffers, kernel memory and the OOM kills of its cgroup, every 5 s
 pod-names.tsv      the namespace and name of each pod uid in pods.csv
 containers.tsv     the containers of the job's own Docker daemon (the kind nodes, k6, helpers) by their 12-character id: every other cgd: row is a neighbour's
@@ -413,7 +531,9 @@ events.tsv         the Kubernetes events of every namespace, by time
 pods-final.txt     kubectl get pods -A -o wide at the end
 kept-pod-logs/     logs of pods deleted or evicted during the run, and of the secrets operator and cert-manager, one file per container instance
 README
-  rm -f "$dir"/.secrets-watch.fifo "$dir"/.stop "$dir"/.started "$dir"/.hostmode "$dir"/.*.pid "$dir"/.host.csv "$dir"/.events.jsonl "$dir"/.secrets-*.tsv "$dir"/.containers.tsv
+  } >"$dir/README.txt"
+  rm -f "$dir"/.secrets-watch.fifo "$dir"/.stop "$dir"/.started "$dir"/.hostmode "$dir"/.*.pid "$dir"/.host.csv "$dir"/.events.jsonl "$dir"/.secrets-*.tsv "$dir"/.containers.tsv \
+    "$dir"/.cgparent "$dir"/.podmem.csv
   rm -rf "$dir/.edge"
   log "evidence written to $dir"
   ;;

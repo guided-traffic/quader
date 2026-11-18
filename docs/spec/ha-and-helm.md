@@ -10364,8 +10364,27 @@ the leg from its neighbours; with the CPU time per cgroup that is one subtractio
 (the runner definitions are not in this repository): what it means for the runner classes is recorded in
 [promt.md](../projektplan/promt.md) section 8 with the measurements above.
 
+**What the recorder reads on each runner class** (since the runner change of 2026-11-18, which gave the Docker daemon of a `large` job a cgroup
+parent inside its own pod). The first leg on the new layout (`e2e (push)` of Test and Release 44384406557) showed the gap: its ten own containers had
+no `cgd:` row, because the recorder read the children of the top-level `docker` only, and the pod's memory limit, which now counts the kind nodes,
+was not recorded at all. The recorder now finds the daemon's cgroup parent instead of assuming it: once per set, a helper container looks up the
+cgroup directory of the first kind node in the daemon's cgroup tree (down to six levels) and takes its parent; the pod is the `pod<uid>` (or
+`…-pod<uid>.slice`) directory below `kubepods` on that path. `/proc/self/cgroup` of a container is not used: on cgroup v2 a container has its own
+cgroup namespace and reads `0::/`.
+
+| Class | Daemon's parent | Rows |
+|---|---|---|
+| `self-hosted` | `/docker` | as before: `cg:<name>` per top-level cgroup, `cgd:<id12>` per container of `/docker` (own and neighbours', told apart by `containers.tsv`) |
+| `large` | `/kubepods/burstable/pod<uid>/docker` | in addition `daemon:parent` (the leg's containers) and `daemon:pod` (the runner pod) with the columns of the `cg:` rows, `cgd:<id12>` also for the containers of the daemon's parent, and `pod-memory.csv` (the pod's `memory.current`, `memory.peak`, `memory.max`, the `oom` and `oom_kill` counts of `memory.events` and the `oom` count of `memory.events.local`) every 5 s; its last row heads the evidence's `README.txt` |
+| not found | — | as `self-hosted`, and the log says so once |
+
+The leg's own and the neighbours' containers keep one row kind, `cgd:`, in both classes, and `containers.tsv` stays the rule for telling them
+apart: on `self-hosted` the parent is shared, so a separate prefix for the daemon's own parent would separate them on `large` only, and the
+readings of the existing rows keep working. The search runs once per set; the per-second work grows by two rows on `large` only.
+
 **Applied:** `deploy/dev/e2e-evidence.sh`, `test/e2e/npm_ha_test.go` (`runLoadFault`), `test/e2e/npm_load_test.go` (`warmUpFailures`),
-`test/e2e/nuget_ha_test.go`; [docs/developer/e2e.md](../developer/e2e.md#reading-a-stall).
+`test/e2e/nuget_ha_test.go`, `internal/tools/e2eevidence` (the search and the sampler against fabricated cgroup trees of both classes);
+[docs/developer/e2e.md](../developer/e2e.md#reading-a-stall).
 
 ### Q-HA-306 · The pooler's own answers to a switchover are retried; a wrong password at connect is not
 

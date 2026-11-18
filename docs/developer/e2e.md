@@ -240,7 +240,7 @@ pod watch and the events of the drain, the logs of the drained pods, and the res
 | `QUADER_E2E_EVIDENCE` | `1` | `0` records no [stall evidence](#reading-a-stall) |
 | `QUADER_E2E_EVIDENCE_INTERVAL` | `1` | seconds between two samples of the host, of each node and of the machine's cgroups |
 | `QUADER_E2E_EVIDENCE_EDGE_INTERVAL` | `2` | seconds between two samples of the edge |
-| `QUADER_E2E_EVIDENCE_POD_INTERVAL` | `5` | seconds between two samples of the pods (`pods.csv`) and of the Docker daemon's containers (`cgd:` rows) |
+| `QUADER_E2E_EVIDENCE_POD_INTERVAL` | `5` | seconds between two samples of the pods (`pods.csv`), of the Docker daemons' containers (`cgd:` rows) and of the runner pod's memory (`pod-memory.csv`) |
 | `QUADER_E2E_EVIDENCE_LOG_CAP_MIB` | `32` | most that is copied of one container's log |
 | `QUADER_E2E_EVIDENCE_MAX_SECONDS` | `21600` | a recorder's own end, should a run be killed before it can stop them |
 
@@ -258,17 +258,33 @@ It exists because five findings (H-795, F-119, F-124, F-127 and the stall of the
 and since [Q-HA-305](../spec/ha-and-helm.md#q-ha-305--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)
 it also records who used the CPU: the leg's own nodes, the runner's other pods or another leg's kind nodes.
 
-On the CI runner the kind node containers are not in the runner pod's cgroup. The job's Docker daemon (the privileged `dind` container) sees the cgroup
-root of the whole machine and puts every container it starts under the top-level cgroup `docker`, which every runner pod's daemon on that machine shares:
-the kind nodes of every leg on the node, their k6 containers, the image builders and the integration jobs' service containers. The runner pods themselves,
-and the steps of the small jobs (compilers, linters, test binaries), are under `kubepods`. Both are siblings at the root, `kubepods` with
-`cpu.weight` 1250 and `docker` with 100 (read on the runner cluster on 2026-11-18): when the machine's 32 CPUs are all asked for, the CPU is
-shared by these weights, so every kind cluster on the machine together keeps a small share while the small jobs run.
+On the CI runner the job's Docker daemon (the privileged `dind` container) sees the cgroup root of the whole machine. The runner pods, and the steps
+of the small jobs (compilers, linters, test binaries), are under `kubepods` (`cpu.weight` 1250). Where the daemon puts the containers it starts (the
+kind nodes, k6, the image builders, the integration jobs' service containers) depends on the runner class:
+
+| Class | The daemon's cgroup parent | What it means for a leg |
+|---|---|---|
+| `self-hosted` | the top-level `/docker` (`cpu.weight` 100), shared by every such daemon on the machine | when the machine's 32 CPUs are all asked for, every kind cluster in `/docker` together keeps a small share beside `kubepods`; no pod's memory limit counts the containers |
+| `large` (since 2026-11-18) | `/kubepods/burstable/pod<uid>/docker` inside the job's own runner pod (kubelet cgroup driver cgroupfs) | the leg's containers share the pod's CPU request and its memory limit (28 GiB): an OOM kill at that limit is possible, and `cg:kubepods` now contains the `large` legs' kind nodes |
+
+The recorder does not assume either: at the start it looks for the cgroup of the first kind node in the daemon's cgroup tree (a one-off helper
+container, down to six levels) and takes its parent, and says in the log what it found:
+
+```text
+evidence: the job's Docker daemon puts its containers under /kubepods/burstable/pod<uid>/docker of the machine's cgroups, inside the pod /kubepods/burstable/pod<uid> (memory.max 28.0 GiB): daemon:parent and daemon:pod rows, the pod's memory in pod-memory.csv
+evidence: the job's Docker daemon puts its containers under /docker of the machine's cgroups, not inside a pod
+evidence: the cgroup of <node> was not found in its Docker daemon's cgroup tree (six levels): cgd: rows of the top-level docker only, no pod memory
+```
+
+The same sentence heads `README.txt` of the evidence, followed on `large` by the pod's memory at the end (peak, limit, OOM counts).
+`/proc/self/cgroup` of a container would not answer it: on cgroup v2 a container has its own cgroup namespace and reads `0::/`. The search and the
+sampler run in the unit tests against fabricated cgroup trees of both classes ([cgroups_test.go](../../internal/tools/e2eevidence/cgroups_test.go)).
 
 | File | What it is |
 |---|---|
-| `samples.csv` | One row per source and sample, by time. `ts_ms` is the epoch in milliseconds (whole seconds for the edge). Sources: `host` (the machine the nodes share: `/proc/pressure`, the load average and `/proc/stat`; on Docker Desktop read inside a node, where it is the VM's), `node:<name>` (the pressure files and `cpu.stat` of that node's cgroup, which differ per node), `cg:<name>` (each top-level cgroup of the machine as the job's Docker daemon sees it: `kubepods`, `docker`, `system.slice`, …), `cgd:<id12>` (each container of the machine's `docker` cgroup, every 5 s; `containers.tsv` says which are the leg's), `edge:<pod>` (HAProxy's counters from its admin socket). Columns: `cpu_`, `mem_` and `io_` `some`/`full` `avg10` (percent) and `total_us` (microseconds stalled since boot), `load1/5/15` (host), `edge_curr_conns`, `edge_curr_ssl_conns`, `edge_conn_rate`, `edge_idle_pct` (edge), `cpu_usage_us` (CPU time since boot: of the whole machine for `host`, of the cgroup otherwise), `cpu_steal_us` (host: time the hypervisor gave to another machine), `cpus` (host), `cpu_weight` and `members` (`cg:`: the cgroup's `cpu.weight`, and the pods under `kubepods` or the containers under `docker`). Empty where a source has no such value. Before 2026-11-18 the edge's four values were one column to the right of their names |
+| `samples.csv` | One row per source and sample, by time. `ts_ms` is the epoch in milliseconds (whole seconds for the edge). Sources: `host` (the machine the nodes share: `/proc/pressure`, the load average and `/proc/stat`; on Docker Desktop read inside a node, where it is the VM's), `node:<name>` (the pressure files and `cpu.stat` of that node's cgroup, which differ per node), `cg:<name>` (each top-level cgroup of the machine as the job's Docker daemon sees it: `kubepods`, `docker`, `system.slice`, …), `daemon:parent` (the same columns for the daemon's cgroup parent where it is not a top-level cgroup: on `large` the pod's `docker`, which holds the leg's containers and nothing else), `daemon:pod` (the same for the pod that parent lies in: the leg's containers, the `runner` and the `dind` container), `cgd:<id12>` (each container of the machine's top-level `docker` cgroup and of the daemon's parent, every 5 s; `containers.tsv` says which are the leg's), `edge:<pod>` (HAProxy's counters from its admin socket). Columns: `cpu_`, `mem_` and `io_` `some`/`full` `avg10` (percent) and `total_us` (microseconds stalled since boot), `load1/5/15` (host), `edge_curr_conns`, `edge_curr_ssl_conns`, `edge_conn_rate`, `edge_idle_pct` (edge), `cpu_usage_us` (CPU time since boot: of the whole machine for `host`, of the cgroup otherwise), `cpu_steal_us` (host: time the hypervisor gave to another machine), `cpus` (host), `cpu_weight` and `members` (`cg:` and `daemon:`: the cgroup's `cpu.weight`, and the pods and containers in it and one level below). Empty where a source has no such value. Before 2026-11-18 the edge's four values were one column to the right of their names |
 | `pods.csv` | One row per pod of each kind node every 5 s: `node`, `pod_uid`, `cpu_usage_us`, `mem_current`, `mem_anon` (the heap and stacks of the process), `mem_file` (page cache), `mem_sock` (the kernel's socket buffers, charged to the pod), `mem_kernel`, `oom_kill` (the OOM kills of the pod's cgroup so far). `pod-names.tsv` gives the namespace and name of each uid |
+| `pod-memory.csv` | Only where the daemon's cgroup parent lies inside a pod (`large`): every 5 s and once at the end, the pod's `mem_current`, `mem_peak` (`memory.peak`, the highest since the pod started), `mem_max` (its limit), `oom` and `oom_kill` (`memory.events`: every OOM event and kill below the pod, so a kind pod killed at its own limit counts here too), `oom_local` (the `oom` count of `memory.events.local`: the pod's own limit was hit), and `docker_mem_current` (the daemon's parent: the leg's containers alone). The last row heads `README.txt` |
 | `containers.tsv` | The containers of the job's own Docker daemon (the kind nodes, k6, the helpers) by their 12-character id, as seen every 10 s: every other `cgd:` row is a neighbour's |
 | `secrets.tsv` | Every Secret of every namespace at the start (`start`) and at the end (`end`): `resourceVersion`, creation time, `uid` and the managers that wrote it. Names and metadata only; no value is read |
 | `secrets-watch.log` | The watch of the Secrets: first the list at the start, then one line per change with the time it was seen |
@@ -286,10 +302,13 @@ How to read one:
    Replace `host` by `node:quader-worker` to see which node carried it (a node's cgroup has pressure of its own: look for the node that is far above the others). `mem_`, `io_` and `cpu_full` are the same arithmetic with columns 8, 19 and 6.
    A node's `cpu_full` (every task of the node waiting at once) far above a tenth of its `some` means the node as a whole got no CPU, which a busy pod inside it does not cause.
 2. **Who used the CPU?** The difference of two `cpu_usage_us` over the time between them is the number of CPUs in use. `host` is the whole machine, the sum of the
-   `node:` rows is the leg's kind cluster, `cg:kubepods` the runner pods (the small jobs' compilers and tests), `cg:docker` every container on the machine, and
-   `cg:docker` minus the leg's containers (the `node:` rows, and the `cgd:` rows that `containers.tsv` names) another leg's kind nodes and builders:
+   `node:` rows is the leg's kind cluster. The rest depends on the class (the first line of `README.txt` says which):
+   - `self-hosted`: `cg:kubepods` is the runner pods (the small jobs' compilers and tests, and the `large` legs), `cg:docker` every `self-hosted` job's container
+     on the machine, and `cg:docker` minus the leg's containers (the `node:` rows, and the `cgd:` rows that `containers.tsv` names) another leg's kind nodes and builders.
+   - `large`: `daemon:parent` is the leg's containers (kind nodes, k6, helpers) and nothing else, `daemon:pod` that plus the `runner` and `dind` containers,
+     `cg:kubepods` minus `daemon:pod` the other runner pods (small jobs and the other `large` legs), `cg:docker` the `self-hosted` jobs' containers and image builds.
    ```shell
-   awk -F, 'NR > 1 && $22 != "" && $2 ~ /^(host|cg:kubepods|cg:docker|node:)/ { k = int($1/10000)*10 " " $2; if (!(k in t0)) { t0[k] = $1; u0[k] = $22 }; t1[k] = $1; u1[k] = $22 }
+   awk -F, 'NR > 1 && $22 != "" && $2 ~ /^(host|cg:kubepods|cg:docker|daemon:|node:)/ { k = int($1/10000)*10 " " $2; if (!(k in t0)) { t0[k] = $1; u0[k] = $22 }; t1[k] = $1; u1[k] = $22 }
      END { for (k in t0) if (t1[k] > t0[k]) printf "%s %5.1f\n", k, (u1[k]-u0[k])/(t1[k]-t0[k])/1000 }' samples.csv | sort -k1,1n -k2,2
    ```
    (per 10 s and source, the epoch second and the CPUs in use; the `node:` rows together are the leg's cluster). A stall in which `cg:kubepods` or the
@@ -297,6 +316,9 @@ How to read one:
    and `cg:docker` counts the neighbours, `cpu_steal_us` of `host` the hypervisor's share.
 3. **Did a pod run out of memory?** `pods.csv`: a rising `oom_kill` names the pod and the 5 s in which it was killed; the columns before it say what filled the
    limit (`mem_anon` the process, `mem_sock` the socket buffers of its connections, `mem_file` page cache, which the kernel reclaims first).
+   On `large` the whole leg also has a limit, its runner pod's: `README.txt` gives the pod's `memory.peak` against its `memory.max`, `pod-memory.csv` the series.
+   `oom_local` above 0 means that limit was hit; `oom_kill` counts every kill below the pod, those at a kind pod's own limit included (which `pods.csv`
+   also shows). `docker_mem_current` against `mem_current` is the leg's containers' part of the pod.
 4. **Did the edge hold connections?** `grep edge: samples.csv`: `edge_curr_conns` is the process's current connections (about 800 per edge pod under the k6 load of the
    npm HA tests, about 50 while k6 runs at 100 requests/s on kind), `edge_idle_pct` falls when HAProxy itself is busy or gets no CPU. About 1,800 connections open as in F-124 reads here as a column, with the minute it began.
 5. **Was a Secret written again?** Compare `start` and `end` in `secrets.tsv`: the same name with another `uid` or a changed `resourceVersion` was written during the run;
@@ -308,7 +330,9 @@ How to read one:
 What it does not show: a stall inside a single pod that the nodes' cgroups do not see (the pods have no CPU limits on kind, so throttling is not part of it), beyond
 its CPU time in `pods.csv`; which runner pods or jobs the neighbours were (the cgroups carry pod uids and container ids only: the job list of the runs in the window, with
 `started_at`, `completed_at` and `runner_name`, names them, and the runner cluster's `Scheduled` events give their node for an hour);
-on Docker Desktop the `cg:` rows are the VM's and have no neighbours; 
+on Docker Desktop the `cg:` rows are the VM's and have no neighbours; on `self-hosted` the daemon's parent is shared, so `containers.tsv` is the only
+way to tell the leg's `cgd:` rows from a neighbour's and there is no pod memory to record; the search for the daemon's parent stops at six levels below
+the root (the `large` layout is five); 
 the edge's timestamps have whole seconds because its image's `date` has no more; the log copy polls every 2 seconds, so a log that the kubelet removes within
 2 seconds of its last write, or past the 32 MiB cap or after a rotation, is incomplete; a node on cgroup v1 or a kernel without pressure information leaves those columns empty;
 a replaced edge pod ends its series and the next one starts a new `edge:<pod>`.

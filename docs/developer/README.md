@@ -207,6 +207,7 @@ quader/
 │   ├── importer/             # the import tooling (import.md): the runner, the clients of the source and of the target, the state file, the npm and NuGet formats of the importer
 │   ├── tools/coverage/       # the requirement coverage generator (docs/coverage)
 │   ├── tools/ciworkflows/    # tests of .github: no bare apt-get, step timeouts of the gating jobs, apt-install.sh against stubs
+│   ├── tools/e2eevidence/    # tests of the stall recorder's cgroup readers (deploy/dev/e2e-evidence.sh) against fabricated cgroup trees of both runner classes
 │   └── webui/                # go:embed of the Angular build; dist/index.html is the committed placeholder
 ├── web/                      # Angular workspace: angular.json, src/, scripts/ (build-embed, check-budget), .nvmrc
 ├── deploy/
