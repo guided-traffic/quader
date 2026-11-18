@@ -106,8 +106,10 @@ Quader's certificate against the profile's CA, which `npm run start:local` hands
 `NODE_EXTRA_CA_CERTS`. The proxy is [web/proxy.conf.mjs](../../web/proxy.conf.mjs) (`^/(?!ui(/|$))` to Quader, and a page of
 the app whose path ends in a file name, such as the file view's `…/browse/<repo>/README.md`, to the app's index: the dev server
 serves the index only for paths without an extension it knows); the
-`local` configuration of the `serve` target in [web/angular.json](../../web/angular.json) sets it, HTTPS and the
-certificate. `QUADER_UI_DEV_BACKEND` points the proxy at another Quader (default `https://localhost:19080`); a sign-in
+`local` configuration of the `serve` target in [web/angular.json](../../web/angular.json) sets it, HTTPS, the
+certificate and the listen address `127.0.0.1`, the one Quader and the sign-in provider listen on. Without it Node.js
+resolves `localhost` to `::1` first and the dev server listens there only, which a browser with IPv6 lookups switched off
+(Firefox, `network.dns.disableIPv6`) cannot reach. `QUADER_UI_DEV_BACKEND` points the proxy at another Quader (default `https://localhost:19080`); a sign-in
 through the dev server works only against a Quader whose base URL is `https://localhost:4200`.
 
 | Piece | Where | Set by |

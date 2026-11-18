@@ -98,6 +98,7 @@
             "local": {
               "buildTarget": "web:build:development",
               "proxyConfig": "proxy.conf.mjs",
+              "host": "127.0.0.1",
               "ssl": true,
               "sslCert": "../.dev/ui-dev/certs/server.crt",
               "sslKey": "../.dev/ui-dev/certs/server.key"
