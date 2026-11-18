@@ -101,6 +101,17 @@ export function pages(): Place[] {
   ];
 }
 
+/**
+ * The entries of the main area's side bar that only some callers have (the security dashboard under **Security audit**, R-UI-158,
+ * Q-UI-626): places of the main area for the caller whose side bar shows them, never an admin page.
+ */
+export function sectionPlaces(home: NavArea | null): Place[] {
+  if (!home) return [];
+  return home.entries
+    .flatMap((e) => (e.kind === 'group' ? e.items : []))
+    .map((i) => ({ route: i.route, icon: i.icon, label: i.label, anonymous: false }));
+}
+
 /** The admin side bar's entries the caller may use, flattened in their order. */
 export function adminItems(admin: NavArea | null): NavItem[] {
   if (!admin) return [];

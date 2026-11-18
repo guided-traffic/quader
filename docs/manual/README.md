@@ -6,7 +6,7 @@ Readers on GitHub can browse the same files here.
 
 | Section | Directory | For |
 |---|---|---|
-| User guide | [user/](user/) | Everyone who reads, installs or publishes packages and files |
+| User guide | [user/](user/) | Everyone who reads, installs or publishes packages and files, and the auditors of the installation |
 | Administrator guide | [admin/](admin/) | Everyone who installs, configures and operates Quader |
 
 ## User guide
@@ -16,14 +16,15 @@ Readers on GitHub can browse the same files here.
 3. [Repositories](user/repositories.md)
 4. [Packages](user/packages.md)
 5. [Vulnerabilities](user/vulnerabilities.md)
-6. [Browsing and transferring files](user/files.md)
-7. [Connecting a package client](user/client-setup.md)
-8. [Container images with Docker and Podman](user/container-images.md)
-9. [Debian packages with APT](user/apt-packages.md)
-10. [Ansible collections and roles with ansible-galaxy](user/ansible-collections.md)
-11. [Personal access tokens](user/access-tokens.md)
-12. [GitLab CI pipelines](user/gitlab-ci-pipelines.md)
-13. [Errors and troubleshooting](user/troubleshooting.md)
+6. [Security dashboard](user/security-dashboard.md)
+7. [Browsing and transferring files](user/files.md)
+8. [Connecting a package client](user/client-setup.md)
+9. [Container images with Docker and Podman](user/container-images.md)
+10. [Debian packages with APT](user/apt-packages.md)
+11. [Ansible collections and roles with ansible-galaxy](user/ansible-collections.md)
+12. [Personal access tokens](user/access-tokens.md)
+13. [GitLab CI pipelines](user/gitlab-ci-pipelines.md)
+14. [Errors and troubleshooting](user/troubleshooting.md)
 
 ## Administrator guide
 
@@ -44,13 +45,12 @@ Readers on GitHub can browse the same files here.
 15. [Ansible Galaxy repositories](admin/ansible-repositories.md)
 16. [Importing from another registry](admin/import.md)
 17. [Advisory sources](admin/vulnerability-sources.md)
-18. [Security dashboard](admin/security-dashboard.md)
-19. [Admin dashboard](admin/dashboard.md)
-20. [Monitoring and operations](admin/operations.md)
-21. [Backup and restore](admin/backup-and-restore.md)
-22. [Runbook](admin/runbook.md)
-23. [Upgrades](admin/upgrades.md)
-24. [Known limitations](admin/limitations.md)
+18. [Admin dashboard](admin/dashboard.md)
+19. [Monitoring and operations](admin/operations.md)
+20. [Backup and restore](admin/backup-and-restore.md)
+21. [Runbook](admin/runbook.md)
+22. [Upgrades](admin/upgrades.md)
+23. [Known limitations](admin/limitations.md)
 
 The order of these two lists is the order of the manual in the UI; a test in
 [internal/manual](../../internal/manual/) fails when this page and the embedded contents disagree.

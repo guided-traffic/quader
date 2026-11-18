@@ -35,8 +35,8 @@
     }
 
     <div class="topbar-actions">
-      @if (session.hasAdminArea()) {
-        <!-- The way into the admin area, for those who have one (Q-UI-127). -->
+      @if (navigation.hasAdminArea()) {
+        <!-- The way into the admin area, for those who may use an entry of it (Q-UI-127, Q-UI-621). -->
         <a class="btn btn-default admin-button" routerLink="/admin" [attr.aria-current]="area() === 'admin' ? 'true' : null">
           <span class="material-icons" aria-hidden="true">build</span>
           <span class="topbar-label" i18n="@@shell.admin">Admin</span>

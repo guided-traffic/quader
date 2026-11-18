@@ -3,10 +3,10 @@ import { advisoryMatcher } from './vulnerabilities.routes';
 import { SECURITY_CONTEXT, VULN_CONTEXT } from './vuln-context';
 
 /**
- * The admin area's security dashboard (Q-UI-130, R-VULN-022): the report over every project, and the finding and advisory
- * screens it links to, mounted below `/admin/security`. The screens are the content area's, so a change to
- * one is a change to both; `VULN_CONTEXT` keeps the links between them inside this area and switches on the project
- * column and the search.
+ * The security dashboard (Q-UI-130, R-VULN-022, R-UI-158): the report over every project, and the finding and advisory screens it
+ * links to, mounted below `/security` in the main area, under the side bar's **Security audit**. The screens are a project's, so a
+ * change to one is a change to both; `VULN_CONTEXT` keeps the links between them below `/security` and switches on the project
+ * filter and the line that says what the counts cover.
  */
 export const SECURITY_ROUTES: Routes = [
   {

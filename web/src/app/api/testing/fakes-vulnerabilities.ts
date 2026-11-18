@@ -266,7 +266,7 @@ export class FakeVulnerabilitiesApi extends VulnerabilitiesApi {
         (f.fixAvailable === undefined || x.fixAvailable === f.fixAvailable) &&
         (f.blocked === undefined || x.blocked === f.blocked) &&
         (!f.blockReason || x.blockReason === f.blockReason) &&
-        (!f.q || `${x.package} ${x.advisory} ${x.summary}`.toLowerCase().includes(f.q.toLowerCase())),
+        (!f.q || `${x.package} ${x.advisory} ${x.aliases.join(' ')} ${x.summary}`.toLowerCase().includes(f.q.toLowerCase())),
     );
     const sort = f.sort ?? '-severity';
     const dir = sort.startsWith('-') ? -1 : 1;

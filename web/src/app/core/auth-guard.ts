@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router, RouterStateSnapshot } from '@angular/router';
+import { CanActivateFn, RedirectCommand, Router, RouterStateSnapshot } from '@angular/router';
 import { LoginApi } from '../api/login-api';
 import { ProjectContext } from './project-context';
 import { SessionStore } from './session-store';
@@ -30,12 +30,24 @@ export const adminHomeGuard: CanActivateFn = async () => {
   await session.load();
   if (session.has('settings:read')) return router.createUrlTree(['/admin', 'dashboard']);
   const projectsOnly = !session.has('repositories:read-config') && session.has('projects:read');
-  if (projectsOnly) return router.createUrlTree(['/admin', 'projects']);
-  // An auditor or a security administrator without the configuration capabilities starts at the security dashboard (Q-UI-130).
-  const securityOnly =
-    !session.has('repositories:read-config') && (session.has('vulnerabilities:triage') || session.has('content:metadata-read'));
-  return router.createUrlTree(['/admin', securityOnly ? 'security' : 'repositories']);
+  return router.createUrlTree(['/admin', projectsOnly ? 'projects' : 'repositories']);
 };
+
+/**
+ * A page of the main area that only the holder of `capability` may open (the security dashboard, R-UI-158, Q-UI-622). It runs
+ * after `authGuard`, so the session is known. A caller without the capability gets **Page not found** at the address it asked
+ * for, as for any address the app does not offer: the page would otherwise claim a scope the API does not give that caller.
+ * A session that could not be read passes, and the screen shows the failure. The API decides what the page reads in any case.
+ */
+export function capabilityGuard(capability: string): CanActivateFn {
+  return async () => {
+    const session = inject(SessionStore);
+    const router = inject(Router);
+    await session.load();
+    if (session.has(capability) || session.state() === 'failed') return true;
+    return new RedirectCommand(router.parseUrl('/not-found'), { skipLocationChange: true });
+  };
+}
 
 /**
  * Shapes navigation only; the API decides (R-UI-005). A signed-in session passes. Without a

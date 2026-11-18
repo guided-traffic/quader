@@ -12,13 +12,18 @@ import { SearchField } from './search-field';
 import { SearchLayout } from './search-layout';
 import { gate } from './search-model';
 
-type Persona = 'ada' | 'priya' | 'sam' | 'security-admin';
+type Persona = 'ada' | 'priya' | 'sam' | 'security-admin' | 'auditor';
 
 const ME: Record<Persona, Partial<Record<'capabilities' | 'roles', string[]>> & { projects?: { key: string; role: 'owner' | 'reader' }[] }> = {
   ada: {},
   priya: { capabilities: [], roles: [], projects: [{ key: 'web', role: 'owner' }] },
   sam: { capabilities: [], roles: [], projects: [{ key: 'web', role: 'reader' }] },
   'security-admin': { capabilities: ['audit:read', 'identities:read', 'settings:read'], roles: ['security-admin'] },
+  // The security dashboard is a place of the main area for the auditor (R-UI-158, Q-UI-626), never an admin page.
+  auditor: {
+    capabilities: ['audit:read', 'identities:read', 'settings:read', 'content:metadata-read', 'vulnerabilities:triage'],
+    roles: ['auditor'],
+  },
 };
 
 interface Opened {
@@ -129,7 +134,7 @@ describe('The one gate of the search (R-UI-099)', () => {
     expect(gate({ url: '/administration', area: 'main', chosen: true }, false)).toBe('/administration');
   });
 
-  for (const persona of ['ada', 'priya', 'sam', 'security-admin'] as const) {
+  for (const persona of ['ada', 'priya', 'sam', 'security-admin', 'auditor'] as const) {
     it(`R-UI-099 every way out of the field as ${persona} reaches /admin ${persona === 'ada' ? 'only by the choice of a marked entry' : 'never'}`, async () => {
       const opened = await walk(persona);
       expect(opened.length).toBeGreaterThan(10);
@@ -143,6 +148,8 @@ describe('The one gate of the search (R-UI-099)', () => {
       } else {
         expect(admin).toEqual([]);
       }
+      // R-UI-158: the security dashboard opens in the main area, for whoever its side bar entry is shown to.
+      expect(opened.some((o) => o.url === '/security')).toBe(persona === 'auditor');
       // Enter without a pick always opens the results page.
       for (const o of opened.filter((x) => x.how.startsWith('Enter without a pick'))) expect(o.url.startsWith('/search')).toBe(true);
     });

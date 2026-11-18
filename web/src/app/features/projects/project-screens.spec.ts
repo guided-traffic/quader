@@ -12,6 +12,7 @@ import { FakeProjectsApi, sampleProject } from '../../api/testing/fakes-projects
 import { TokensApi } from '../../api/tokens-api';
 import { describeProblem } from '../../core/http/problem-messages';
 import { helpFor } from '../../core/help-topics';
+import { Navigation } from '../../core/navigation';
 import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
 import { button, buttonByText, choosePrincipal, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
@@ -248,7 +249,7 @@ describe('Session helpers and messages of the project screens (R-UI-041, R-UI-04
     const { get } = await renderScreen(RepositoryCreate, { capabilities: [], setup: projectOwner() });
     const session = get(SessionStore);
     // An Owner administers the project inside it; the admin area is for the holders of capabilities (Q-UI-129).
-    expect(session.hasAdminArea()).toBe(false);
+    expect(get(Navigation).hasAdminArea()).toBe(false);
     expect(session.isAdministrator()).toBe(false);
     expect(session.projectRole('web')).toBe('owner');
     expect(session.projectRole('data')).toBeNull();
@@ -262,7 +263,7 @@ describe('Session helpers and messages of the project screens (R-UI-041, R-UI-04
   it('R-UI-041 a Maintainer reads and does not administer', async () => {
     const { get } = await renderScreen(RepositoryCreate, { capabilities: [], setup: projectOwner('maintainer') });
     const session = get(SessionStore);
-    expect(session.hasAdminArea()).toBe(false);
+    expect(get(Navigation).hasAdminArea()).toBe(false);
     expect(session.canWriteRepositories('web')).toBe(false);
   });
 

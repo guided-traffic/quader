@@ -6,7 +6,7 @@ import { authFile, edge, outDir, stateDir } from './paths';
 
 /**
  * The global setup of `make ui-renders`: waits for the edge (the dev server of the UI development profile), seeds the data
- * through the API as the break-glass account, signs the three kinds of user in through the profile's sign-in provider and
+ * through the API as the break-glass account, signs the kinds of user in through the profile's sign-in provider and
  * keeps their sessions for the renders, and publishes the packages and files as the power user.
  */
 export default async function setup(): Promise<void> {
@@ -24,7 +24,7 @@ export default async function setup(): Promise<void> {
 
   const browser = await chromium.launch();
   try {
-    for (const kind of ['plain', 'power', 'admin'] as const) await signIn(browser, kind);
+    for (const kind of ['plain', 'power', 'admin', 'auditor'] as const) await signIn(browser, kind);
     await seedGrants(admin);
     await publishAsPowerUser(browser);
     await plainUserToken(browser);

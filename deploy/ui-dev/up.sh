@@ -105,8 +105,8 @@ secrets:
   encryption_key_files: ["$secrets/keys/dev.key"]
   active_key_id: dev
 auth:
-  # The profile's sign-in provider (test/devidp, https://localhost:19090, started by serve.sh): it signs in sam, priya
-  # or ada without a password, the three kinds of user of the renders (docs/developer/web-ui.md#renders-of-every-screen).
+  # The profile's sign-in provider (test/devidp, https://localhost:19090, started by serve.sh): it signs in sam, priya,
+  # ada or noor without a password, the kinds of user of the renders (docs/developer/web-ui.md#renders-of-every-screen).
   oidc:
     providers:
       ui-dev:

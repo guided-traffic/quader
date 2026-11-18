@@ -88,6 +88,24 @@ test('R-UI-126 a link to the removed routes /setup and /browse fails the check, 
   assert.equal(linksToRemovedRoutes('x\n<a routerLink="/setup">')[0].line, 2);
 });
 
+test('R-UI-158 a link to the removed route /admin/security fails the check, the dashboard at /security and the advisory sources pass', () => {
+  const bad = [
+    '<a routerLink="/admin/security">Security</a>',
+    "return ctx.instanceWide ? ['/admin/security', ...rest] : [];",
+    "return router.createUrlTree(['/admin', 'security']);",
+    "const url = `/admin/security?project=${key}`;",
+  ];
+  for (const t of bad) assert.equal(linksToRemovedRoutes(t).length, 1, t);
+  const good = [
+    "return ctx.instanceWide ? ['/security', ...rest] : [];",
+    '<a routerLink="/admin/advisory-sources">Advisory sources</a>',
+    "route: '/admin/settings/auth',",
+    "['/admin', 'repositories']",
+    "path: 'security',",
+  ];
+  for (const t of good) assert.deepEqual(linksToRemovedRoutes(t), [], t);
+});
+
 test('Q-UI-560 an icon directly in a table cell fails the check, an icon inside its badge or its .icon-name passes', () => {
   const bad = [
     '<td>\n  @if (ok) {\n    <span class="material-icons inline ok" aria-hidden="true">check_circle</span>\n  }\n  {{ word }}\n</td>',

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
-import { adminHomeGuard, authGuard, homeGuard } from './core/auth-guard';
+import { adminHomeGuard, authGuard, capabilityGuard, homeGuard } from './core/auth-guard';
+import { SECURITY_DASHBOARD_CAPABILITY } from './core/navigation';
 import { CrumbSpec } from './core/breadcrumbs';
 
 /** The breadcrumb step of a screen area whose routes are loaded lazily and have no title of their own. */
@@ -8,6 +9,7 @@ const wrapper = (label: string): { crumbs: CrumbSpec[] } => ({ crumbs: [{ label,
 /** The named areas of the breadcrumb trail (R-UI-002); they are names, not pages. */
 const area = {
   admin: { label: $localize`:@@nav.context.admin:Admin area`, link: false },
+  securityAudit: { label: $localize`:@@nav.section.security-audit:Security audit`, link: false },
 } satisfies Record<string, CrumbSpec>;
 
 /**
@@ -68,6 +70,17 @@ export const routes: Routes = [
         loadChildren: () => import('./features/help/help.routes').then((m) => m.HELP_ROUTES),
       },
       // <<< M2 manual
+      // >>> T-9 security dashboard
+      // The auditor's page in the main area, under the side bar's Security audit (R-UI-158, Q-UI-620); the admin area has none.
+      {
+        path: 'security',
+        canActivate: [capabilityGuard(SECURITY_DASHBOARD_CAPABILITY)],
+        data: {
+          crumbs: [area.securityAudit, { label: $localize`:@@route.security.title:Security dashboard`, link: true }] satisfies CrumbSpec[],
+        },
+        loadChildren: () => import('./features/vulnerabilities/security.routes').then((m) => m.SECURITY_ROUTES),
+      },
+      // <<< T-9 security dashboard
       {
         path: 'profile',
         data: { crumbs: [{ label: $localize`:@@route.profile.title:Profile`, link: true }] satisfies CrumbSpec[] },
@@ -150,13 +163,6 @@ export const routes: Routes = [
             loadChildren: () =>
               import('./features/endpoints/endpoints.routes').then((m) => m.ENDPOINTS_ROUTES),
           },
-          // >>> T-9 security dashboard
-          {
-            path: 'security',
-            data: wrapper($localize`:@@route.security.title:Security dashboard`),
-            loadChildren: () => import('./features/vulnerabilities/security.routes').then((m) => m.SECURITY_ROUTES),
-          },
-          // <<< T-9 security dashboard
           {
             path: 'audit',
             data: wrapper($localize`:@@route.audit.title:Audit log`),

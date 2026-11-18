@@ -256,17 +256,19 @@
   box-sizing: border-box;
   inline-size: 1.25rem;
   block-size: 1.25rem;
-  margin-block: -0.125rem;
+  // Centred on the line it stands on, whatever that line's height: 16 px in a table's cell, the text line in a filter's row.
+  // `1lh` is the line of the text around it, so the mark keeps that text's size and line height and the letter has its own.
+  margin-block: calc((1lh - 1.25rem) / 2);
   border-radius: var(--quader-radius-s);
   background: var(--quader-mark-stone);
   color: var(--quader-mark-letter);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  line-height: 1;
   transition: background-color var(--quader-motion-duration) var(--quader-motion-easing);
 
   &::before {
     content: attr(data-letter);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1;
   }
 
   &.medium {
@@ -274,6 +276,9 @@
     block-size: 2rem;
     margin-block: 0;
     border-radius: var(--quader-radius-m);
+  }
+
+  &.medium::before {
     font-size: 0.875rem;
   }
 }

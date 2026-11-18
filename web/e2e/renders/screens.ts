@@ -108,6 +108,13 @@ const findingChips = async (drawer: Locator): Promise<void> => {
   await drawer.getByRole('combobox', { name: 'Kind' }).selectOption('vulnerability');
 };
 
+/** The security dashboard's drawer with two projects (one with a long name) and a severity set (R-UI-159, Q-UI-624). */
+const securityChips = async (drawer: Locator): Promise<void> => {
+  await drawer.getByRole('checkbox', { name: 'Web frontend', exact: true }).check();
+  await drawer.getByRole('checkbox', { name: 'Customer portal release engineering and delivery', exact: true }).check();
+  await drawer.getByRole('checkbox', { name: 'Critical', exact: true }).check();
+};
+
 /** The users with two filters set. */
 const userChips = async (drawer: Locator): Promise<void> => {
   await drawer.getByLabel('Status').selectOption('active');
@@ -673,6 +680,8 @@ const all: readonly Kind[] = ['plain', 'power', 'admin'];
 const noSession = [{ match: /^GET \/api\/v1\/auth\/whoami answered 401$/, why: 'an anonymous visitor has no session' }];
 const owners: readonly Kind[] = ['power', 'admin'];
 const admins: readonly Kind[] = ['admin'];
+/** Who opens the security dashboard: the instance's administrator and its auditor (R-UI-158). */
+const auditors: readonly Kind[] = ['admin', 'auditor'];
 const P = `/ui/projects/${mainProject}`;
 const O = `/ui/projects/${otherProject}`;
 
@@ -752,6 +761,11 @@ export const screens: readonly Screen[] = [
   // A filter is a chip beside Filters; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
   { id: 'vulnerabilities-filtered', path: `${P}/vulnerabilities?severity=high`, kinds: admins, walk: sortByDetection },
   { id: 'members', path: `${P}/members`, kinds: all },
+  // The security dashboard under Security audit (R-UI-158, R-UI-159): its title, the line of the scope, the counts, the trend, then
+  // the list with its one search; the drawer with the projects; the chips; a text in the search; a finding opened from it.
+  { id: 'security', path: '/ui/security', kinds: auditors, walk: filtersOpen(securityChips) },
+  { id: 'security-search', path: '/ui/security', kinds: ['auditor'], walk: searched('DEMO-2026-00001') },
+  { id: 'security-project', path: `/ui/security?project=${mainProject}`, kinds: ['auditor'] },
   // Set up client of a repository (R-UI-120): every format and class of the seed, the long keys, and a public repository signed out.
   { id: 'setup-npm-local', path: `${P}/repositories/npm-internal/setup`, kinds: all },
   { id: 'setup-npm-remote', path: `${P}/repositories/npmjs/setup`, kinds: all },
@@ -844,7 +858,6 @@ export const screens: readonly Screen[] = [
   ...createStates,
   // The upstream of a remote where it is entered: the presets, the credentials, Test connection, the details (R-UI-082).
   ...upstreams,
-  { id: 'admin-security', path: '/ui/admin/security', kinds: admins },
   { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen() },
   { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins },
   { id: 'admin-system', path: '/ui/admin/system', kinds: admins },

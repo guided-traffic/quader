@@ -75,6 +75,8 @@ func TestR_VULN_020_List(t *testing.T) {
 			{q("fixAvailable", "true"), []string{"p-high"}},
 			{q("knownExploited", "true"), []string{"p-high"}},
 			{q("q", "COMMAND injection"), []string{"p-high"}},
+			// R-UI-159: the text search of the security dashboard finds a finding by an alias of its advisory, in any case.
+			{q("q", "cve-2021-23337"), []string{"p-high"}},
 			{q("q", "p-lo"), []string{"p-low"}},
 			{q("packagePrefix", "p-nu"), []string{"p-nuget"}},
 			{q("version", "2.0.0"), nil},

@@ -5609,7 +5609,7 @@ Outside the roles (owner, the same day): an administrator of Quader (`admin`) an
 both hold `projects:read` today; an administrator of Quader creates projects and adds members with their roles, the first
 Owner among them. The auditor
 gets an instance-wide view of vulnerabilities to search and triage
-([Q-UI-130](api-and-ui.md#q-ui-130--the-auditor-has-an-instance-wide-vulnerability-dashboard-in-the-admin-area)).
+([Q-UI-130](api-and-ui.md#q-ui-130--the-auditor-has-an-instance-wide-vulnerability-dashboard-under-your-work)).
 
 **Applied in the spec:** R-AUTHZ-026 (the role table, the Owner's table, what others see, the declaration),
 R-AUTHZ-031 (member changes in the journal); [api-and-ui.md](api-and-ui.md) R-API-008 (`projectRole`), R-API-047,
@@ -6936,6 +6936,35 @@ Status: **Decided by the development agent** — selected from the options below
 statement. The development agent records no revisit condition.
 
 **Applied in the spec:** R-AUTHZ-037 (data model); [api-and-ui.md](api-and-ui.md) R-API-075.
+
+### Q-AUTHZ-295 · The security dashboard opens for the holder of `content:metadata-read`
+
+Status: **Decided by the owner, 2026-11-18** (W-17: "Sichtbar nur für Instanz-Auditoren und Instanz-Administratoren"); the
+capability that carries the rule **decided by the development agent** — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: the dashboard's operations (`GET /api/v1/vulnerabilities/findings`, `…/summary`, `…/trend`, `…/findings/export`, the
+finding and the advisory) need an authenticated caller and answer with the findings it may read (R-VULN-019); a triage needs
+`vulnerabilities:triage` and read on the finding. What reads every project is `content:metadata-read` (Q-AUTHZ-172), held by
+`admin` (every capability) and `auditor` ([roles.go](../../internal/authz/roles.go), `roleCaps`). `vulnerabilities:triage` is held by
+`admin`, `auditor` and `security-admin`; `security-admin` has no `content:metadata-read`, so it triages only what it reads through
+grants. The admin area's entry *Security* was shown for either capability.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `content:metadata-read` (chosen) | The section, the entry, the route and the search's suggestion ask for it | The capability that makes the page what it is, a view over every project; exactly the owner's two roles; a capability, not a role name, so a token's scope narrows it like every other system item | A holder of `vulnerabilities:triage` alone (`security-admin`) loses the entry it had in the admin area |
+| (b) `vulnerabilities:triage` or `content:metadata-read`, as before | No change of who | `security-admin` keeps an entry | The page is shown to a role the owner did not name, and for it the dashboard lists only the findings of the projects it reads, under a heading that claims every project |
+| (c) The role names `admin` and `auditor` | A check of `roles` | Literally the owner's words | Roles in the UI where everything else asks for capabilities (R-UI-005); a role that gains the capability later would not see it |
+
+**Choice:** (a). No capability is taken from a role and none is added. **Point for the owner:** `security-admin` holds
+`vulnerabilities:triage` and saw the admin area's *Security* entry; it now has no dashboard and triages on the screens of the
+projects whose repositories it may read. Giving it the dashboard means giving it `content:metadata-read`, read on the metadata of
+every repository, which this change does not do. **Rationale:** the rule is "who may see every project's findings", and that is
+what the capability says. The development agent revisits it when the owner decides on `security-admin`.
+
+**Applied in the spec:** [api-and-ui.md](api-and-ui.md) R-UI-158, Q-UI-622. Code:
+[navigation.ts](../../web/src/app/core/navigation.ts) (`SECURITY_DASHBOARD_CAPABILITY`),
+[auth-guard.ts](../../web/src/app/core/auth-guard.ts) (`capabilityGuard`).
 
 ## What this does not cover
 

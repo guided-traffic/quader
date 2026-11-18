@@ -53,12 +53,10 @@ export class SessionStore {
 
   readonly authenticated = computed(() => this._state() === 'authenticated');
   readonly capabilities = computed(() => this._me()?.capabilities ?? []);
-  /** Any capability at all: the Administration area is shown (R-UI-002). */
+  /** Any capability at all: the caller is no plain user of a project (R-UI-067). Whether the admin area is shown is `Navigation.hasAdminArea`. */
   readonly isAdministrator = computed(() => this.capabilities().length > 0);
   /** The projects the caller is a member of through this credential, with the role in force (`authz/me` `projects`, Q-AUTHZ-207). */
   readonly projects = computed<readonly Membership[]>(() => this._me()?.projects ?? []);
-  /** The admin area is shown: any capability. A project's Owner manages the project inside it (Q-UI-129). */
-  readonly hasAdminArea = computed(() => this.isAdministrator());
   /**
    * An instance administrator: the holder of the system role `admin`, directly or through a group (Q-UI-412). Only it is offered
    * the search's admin suggestions (R-UI-099); the other system roles reach their screens through the Admin button.

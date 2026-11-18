@@ -2,12 +2,12 @@ import { InjectionToken } from '@angular/core';
 
 /**
  * Where the vulnerability screens are mounted. The same screens (report, finding, advisory) serve the project's
- * vulnerabilities (`/projects/:project/vulnerabilities`, Q-UI-163) and the admin area's security dashboard over every
- * project (`/admin/security`, Q-UI-130); a route that mounts them provides this token, so that the links between them
- * stay inside the place they were opened in.
+ * vulnerabilities (`/projects/:project/vulnerabilities`, Q-UI-163) and the security dashboard over every project (`/security`,
+ * Q-UI-130, R-UI-158); a route that mounts them provides this token, so that the links between them stay inside the place they
+ * were opened in.
  */
 export interface VulnContext {
-  /** The report reads every project and shows the project as a column and a search (the admin area's dashboard). */
+  /** The report reads every project: the project is a filter of the drawer and the link of each row's repository (the dashboard). */
   readonly instanceWide: boolean;
 }
 
@@ -16,7 +16,7 @@ export const VULN_CONTEXT = new InjectionToken<VulnContext>('VULN_CONTEXT', {
   factory: () => ({ instanceWide: false }),
 });
 
-/** The context of the admin area's security dashboard (Q-UI-130). */
+/** The context of the security dashboard (Q-UI-130). */
 export const SECURITY_CONTEXT: VulnContext = { instanceWide: true };
 
 /**
@@ -24,17 +24,20 @@ export const SECURITY_CONTEXT: VulnContext = { instanceWide: true };
  * when the screens are instance-wide. `project` is the route parameter of `/projects/:project/vulnerabilities`.
  */
 export function vulnCommands(ctx: VulnContext, project: string | undefined, ...rest: string[]): string[] {
-  return ctx.instanceWide ? ['/admin/security', ...rest] : ['/projects', project ?? '', 'vulnerabilities', ...rest];
+  return ctx.instanceWide ? ['/security', ...rest] : ['/projects', project ?? '', 'vulnerabilities', ...rest];
 }
 
 /**
- * The canonical spelling of an advisory identifier typed by hand: the API compares identifiers exactly, and the
- * prefix of every family is upper case (`CVE-2021-23337`, `MAL-2026-1234`, `OSV-2026-12`) except that a GitHub
- * advisory carries its three groups in lower case (`GHSA-35jh-r3h4-6jhm`). Anything else is left as typed.
+ * A whole advisory identifier as it is typed or pasted into the dashboard's search (Q-UI-623), in its canonical spelling, or
+ * null for any other text. The API compares identifiers and aliases exactly, the prefix of every family is upper case
+ * (`CVE-2021-23337`, `MAL-2026-1234`, `OSV-2026-12`, `PYSEC-2021-1`, `GO-2022-0001`, `RUSTSEC-2021-0001`) and a GitHub
+ * advisory carries its three groups of four in lower case (`GHSA-35jh-r3h4-6jhm`). A part of one (`CVE-2021`) is no
+ * identifier: it stays a text that the search finds inside identifiers, aliases, names and summaries.
  */
-export function canonicalAdvisoryId(input: string): string {
+export function advisoryIdOf(input: string): string | null {
   const text = input.trim();
-  if (/^ghsa-/i.test(text)) return `GHSA-${text.slice(5).toLowerCase()}`;
-  if (/^(cve|mal|osv|pysec|go|rustsec)-/i.test(text)) return text.toUpperCase();
-  return text;
+  if (/^ghsa(-[0-9a-z]{4}){3}$/i.test(text)) return `GHSA-${text.slice(5).toLowerCase()}`;
+  if (/^cve-\d{4}-\d{4,}$/i.test(text)) return text.toUpperCase();
+  if (/^(mal|osv|pysec|go|rustsec)-\d{4}-\d+$/i.test(text)) return text.toUpperCase();
+  return null;
 }

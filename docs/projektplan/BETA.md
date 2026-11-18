@@ -1144,8 +1144,8 @@ Details: [roadmap: owner walkthrough](../coverage/roadmap.md#owner-walkthrough)
     ([Q-UI-129](../spec/api-and-ui.md#q-ui-129--the-project-is-the-context-of-the-content-chosen-from-your-projects),
     [Q-UI-163](../spec/api-and-ui.md#q-ui-163--the-url-is-the-project-what-stays-outside-a-project-and-where-the-packages-of-a-project-come-from))
   - 🟢 The auditor's instance-wide vulnerability dashboard in the admin area, `/admin/security`
-    ([Q-UI-130](../spec/api-and-ui.md#q-ui-130--the-auditor-has-an-instance-wide-vulnerability-dashboard-in-the-admin-area),
-    [Q-UI-165](../spec/api-and-ui.md#q-ui-165--the-security-dashboard-is-the-content-report-mounted-in-the-admin-area-with-its-own-links-project-column-and-search))
+    ([Q-UI-130](../spec/api-and-ui.md#q-ui-130--the-auditor-has-an-instance-wide-vulnerability-dashboard-under-your-work),
+    [Q-UI-165](../spec/api-and-ui.md#q-ui-165--the-security-dashboard-is-a-projects-report-mounted-a-second-time-with-its-own-links-and-the-project-as-a-filter))
 - ⚪ All exit checks green again
 - 🟡 Beta documentation: installation guide, configuration reference, known limitations. The first edition of the
   [manual](../manual/README.md) (7 user and 12 administrator pages, among them installation, configuration and known

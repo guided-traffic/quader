@@ -104,6 +104,37 @@ describe('App shell', () => {
     expect(plain.root.querySelector('header a.admin-button')).toBeNull();
   });
 
+  it('R-UI-158 the side bar of Your work has the section Security audit with Security dashboard for an auditor, and nobody else', async () => {
+    const auditor = ['content:metadata-read', 'vulnerabilities:triage', 'settings:read', 'audit:read', 'projects:read', 'identities:read'];
+    const { root } = await render('/security', (api) => (api.meResult = { capabilities: auditor }));
+    const sidebar = root.querySelector('aside.sidebar')!;
+    expect(sidebar.querySelector('.context-title')?.textContent?.trim()).toBe('Your work');
+    const group = sidebar.querySelector<HTMLButtonElement>('button.group-toggle')!;
+    expect(group.textContent).toContain('Security audit');
+    expect(group.classList).toContain('has-active');
+    const entry = sidebar.querySelector<HTMLAnchorElement>('a[href="/security"]')!;
+    expect(entry.textContent).toContain('Security dashboard');
+    expect(entry.getAttribute('aria-current')).toBe('page');
+    expect([...sidebar.querySelectorAll('nav a .nav-label')].map((a) => a.textContent?.trim())).toEqual(['Projects', 'Guides', 'Security dashboard']);
+    // The auditor holds pages of the admin area (the audit log, the users): the Admin button stays, not current here.
+    const button = root.querySelector<HTMLAnchorElement>('header a.admin-button')!;
+    expect(button.getAttribute('aria-current')).toBeNull();
+    expect(await seriousViolations(root)).toEqual([]);
+    TestBed.resetTestingModule();
+
+    // The dashboard's capabilities alone give no page of the admin area: no Admin button.
+    const only = await render('/security', (api) => (api.meResult = { capabilities: ['content:metadata-read', 'vulnerabilities:triage'] }));
+    expect(only.root.querySelector('aside.sidebar')?.textContent).toContain('Security audit');
+    expect(only.root.querySelector('header a.admin-button')).toBeNull();
+    TestBed.resetTestingModule();
+
+    for (const capabilities of [[], ['vulnerabilities:triage', 'settings:read', 'audit:read']]) {
+      const other = await render('/projects', (api) => (api.meResult = { capabilities }));
+      expect(other.root.querySelector('aside.sidebar')?.textContent ?? '', capabilities.join()).not.toContain('Security audit');
+      TestBed.resetTestingModule();
+    }
+  });
+
   it('R-UI-002 shows only the entries whose capability the caller holds, in each area', async () => {
     const { fixture, root } = await render('/', (api) => (api.meResult = { capabilities: ['audit:read'] }));
     const links = () => [...root.querySelectorAll('nav a .nav-label')].map((a) => a.textContent?.trim());

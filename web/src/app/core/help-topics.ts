@@ -29,6 +29,7 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   // <<< M4 ci
   ['/projects', { section: 'admin', page: 'projects' }],
   ['/search', { section: 'user', page: 'search' }],
+  ['/security', { section: 'user', page: 'security-dashboard' }],
   ['/guides', { section: 'user', page: 'client-setup' }],
   ['/profile/tokens', { section: 'user', page: 'access-tokens' }],
   ['/admin/projects', { section: 'admin', page: 'projects' }],
@@ -49,7 +50,6 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   ['/admin/permissions', { section: 'admin', page: 'permissions' }],
   ['/admin/roles', { section: 'admin', page: 'permissions' }],
   ['/admin/dashboard', { section: 'admin', page: 'dashboard' }],
-  ['/admin/security', { section: 'admin', page: 'security-dashboard' }],
   ['/admin/system', { section: 'admin', page: 'operations' }],
   ['/admin/system/backups', { section: 'admin', page: 'backup-and-restore' }],
   ['/admin/audit', { section: 'admin', page: 'operations' }],

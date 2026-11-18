@@ -12368,15 +12368,6 @@
         <target>Erzeugt</target>
       </segment>
     </unit>
-    <unit id="nav.security">
-      <notes>
-        <note category="location">src/app/core/navigation.ts:57</note>
-      </notes>
-      <segment>
-        <source>Security</source>
-        <target>Sicherheit</target>
-      </segment>
-    </unit>
     <unit id="dashboard.role.ready">
       <notes>
         <note category="location">src/app/features/system/dashboard.html:80,81</note>
@@ -15687,15 +15678,6 @@
         <target>Dokumentation</target>
       </segment>
     </unit>
-    <unit id="security.search.advisory">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:23,24</note>
-      </notes>
-      <segment>
-        <source>Advisory ID</source>
-        <target>Advisory-Kennung</target>
-      </segment>
-    </unit>
     <unit id="audit.detail.endpoint">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:238,240</note>
@@ -17112,15 +17094,6 @@
       <segment>
         <source>Projects</source>
         <target>Projekte</target>
-      </segment>
-    </unit>
-    <unit id="security.search.package">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:27,28</note>
-      </notes>
-      <segment>
-        <source>Package starts with</source>
-        <target>Paket beginnt mit</target>
       </segment>
     </unit>
     <unit id="policy.try-repository">
@@ -18911,15 +18884,6 @@
       <segment>
         <source>The display name is required, 1 to 128 characters.</source>
         <target>Der Anzeigename ist erforderlich, 1 bis 128 Zeichen.</target>
-      </segment>
-    </unit>
-    <unit id="security.search.project">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:31,32</note>
-      </notes>
-      <segment>
-        <source>Project key</source>
-        <target>Projektschlüssel</target>
       </segment>
     </unit>
     <unit id="pkg.views.all">
@@ -21427,15 +21391,6 @@
         <target>Version</target>
       </segment>
     </unit>
-    <unit id="security.intro">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:19,21</note>
-      </notes>
-      <segment>
-        <source> The findings of every project, with the counts and the trend over all of them. Search by advisory identifier (a CVE or GHSA number finds the finding by any of its aliases), by package or by project. </source>
-        <target>Die Befunde aller Projekte mit den Zahlen und dem Verlauf über alle. Suche nach Advisory-Kennung (eine CVE- oder GHSA-Nummer findet den Befund über jeden seiner Aliase), nach Paket oder nach Projekt.</target>
-      </segment>
-    </unit>
     <unit id="problem.vuln.too-many-invalid">
       <notes>
         <note category="location">src/app/core/http/problem-messages-vulnerability.ts:25</note>
@@ -22134,15 +22089,6 @@
         <target>Aktiv</target>
       </segment>
     </unit>
-    <unit id="security.search.label">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:21</note>
-      </notes>
-      <segment>
-        <source>Search findings</source>
-        <target>Befunde suchen</target>
-      </segment>
-    </unit>
     <unit id="vuln.history.caption">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-finding.html:114,116</note>
@@ -22703,15 +22649,6 @@
       <segment>
         <source>30 days</source>
         <target>30 Tage</target>
-      </segment>
-    </unit>
-    <unit id="security.search.submit">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:34,36</note>
-      </notes>
-      <segment>
-        <source>Search</source>
-        <target>Suchen</target>
       </segment>
     </unit>
     <unit id="profile.sessions.agent">
@@ -26872,15 +26809,6 @@
       <segment>
         <source>Replicas disagree about the primary</source>
         <target>Die Replikate sind sich über den Primary uneinig</target>
-      </segment>
-    </unit>
-    <unit id="vuln.filter.package-prefix">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:344</note>
-      </notes>
-      <segment>
-        <source>Package starts with</source>
-        <target>Paket beginnt mit</target>
       </segment>
     </unit>
     <unit id="user.session.agent">
@@ -34240,6 +34168,52 @@
       <segment>
         <source>Service account</source>
         <target>Servicekonto</target>
+      </segment>
+    </unit>
+    <unit id="nav.section.security-audit">
+      <notes>
+        <note category="location">src/app/app.routes.ts:12</note>
+        <note category="location">src/app/core/navigation.ts:59</note>
+      </notes>
+      <segment>
+        <source>Security audit</source>
+        <target>Sicherheitsaudit</target>
+      </segment>
+    </unit>
+    <unit id="nav.security-dashboard">
+      <notes>
+        <note category="location">src/app/core/navigation.ts:64</note>
+      </notes>
+      <segment>
+        <source>Security dashboard</source>
+        <target>Sicherheits-Dashboard</target>
+      </segment>
+    </unit>
+    <unit id="security.search">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:243</note>
+      </notes>
+      <segment>
+        <source>Search by advisory, alias, package or summary</source>
+        <target>Nach Advisory, Alias, Paket oder Zusammenfassung suchen</target>
+      </segment>
+    </unit>
+    <unit id="security.scope.all">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:272</note>
+      </notes>
+      <segment>
+        <source>The counts and the trend cover every project. A project, repository or format filter narrows them too; the search and the other filters narrow the list of findings only.</source>
+        <target>Die Zahlen und der Verlauf umfassen alle Projekte. Ein Filter nach Projekt, Repository oder Format schränkt auch sie ein; die Suche und die anderen Filter schränken nur die Liste der Befunde ein.</target>
+      </segment>
+    </unit>
+    <unit id="security.scope.filtered">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:271</note>
+      </notes>
+      <segment>
+        <source>The counts and the trend cover the projects, repositories and formats of the filters. The search and the other filters narrow the list of findings only.</source>
+        <target>Die Zahlen und der Verlauf umfassen die Projekte, Repositorys und Formate der Filter. Die Suche und die anderen Filter schränken nur die Liste der Befunde ein.</target>
       </segment>
     </unit>
   </file>

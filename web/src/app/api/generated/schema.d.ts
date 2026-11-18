@@ -19258,7 +19258,7 @@ export interface operations {
                 detectedFrom?: string;
                 /** @description Detected before (RFC 3339). */
                 detectedTo?: string;
-                /** @description A text that occurs in the package name, the advisory identifier or the summary. */
+                /** @description A text that occurs, in any case, in the package name, the advisory identifier, one of its aliases or the summary. */
                 q?: string;
                 /** @description The sort order of R-VULN-020. */
                 sort?: "-severity" | "severity" | "-detectedAt" | "detectedAt" | "package" | "-package" | "advisory" | "-advisory" | "status" | "-status";
@@ -19325,7 +19325,7 @@ export interface operations {
                 detectedFrom?: string;
                 /** @description Detected before (RFC 3339). */
                 detectedTo?: string;
-                /** @description A text that occurs in the package name, the advisory identifier or the summary. */
+                /** @description A text that occurs, in any case, in the package name, the advisory identifier, one of its aliases or the summary. */
                 q?: string;
                 /** @description The sort order of R-VULN-020. */
                 sort?: "-severity" | "severity" | "-detectedAt" | "detectedAt" | "package" | "-package" | "advisory" | "-advisory" | "status" | "-status";

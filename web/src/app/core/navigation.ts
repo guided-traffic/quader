@@ -2,6 +2,12 @@ import { Injectable, computed, inject } from '@angular/core';
 import { ProjectContext, projectKeyOf } from './project-context';
 import { SessionStore } from './session-store';
 
+/**
+ * The capability that opens the security dashboard (R-UI-158, Q-AUTHZ-295): read on the metadata of every repository, which is
+ * what makes the findings API answer for every project (R-VULN-019). `admin` and `auditor` hold it.
+ */
+export const SECURITY_DASHBOARD_CAPABILITY = 'content:metadata-read';
+
 export interface NavItem {
   readonly route: string;
   readonly label: string;
@@ -9,8 +15,6 @@ export interface NavItem {
   readonly icon: string;
   /** Capability from `authz/me` that shows the entry (R-UI-002); none means always shown. */
   readonly capability?: string;
-  /** Instead of `capability`: the entry is shown to a caller who holds any one of these. */
-  readonly anyCapability?: readonly string[];
 }
 
 /** A section of the sidebar with nested entries that can be folded. */
@@ -32,11 +36,13 @@ export interface NavArea {
 
 /**
  * The information architecture of R-UI-002 (Q-UI-68, Q-UI-127, Q-UI-129): three sidebars. The **home** sidebar belongs to
- * every screen outside a project (the start page of your projects, the guides, the profile); the **project** sidebar
- * belongs to `/projects/<key>/…` and is built for that key (see {@link projectEntries}); the **admin** sidebar belongs to
- * `/admin/…` behind the top bar's Admin button. In the admin area, single entries (repositories, endpoints) and folding
- * groups (identity, access, system). Only the screens that exist in the current milestone are listed; the capabilities
- * are those of R-AUTHZ-010. The router and the API decide access, this only hides entries (R-UI-005).
+ * every screen outside a project and outside the admin area (the start page of your projects, the guides, the profile, the
+ * security dashboard); the **project** sidebar belongs to `/projects/<key>/…` and is built for that key (see
+ * {@link projectEntries}); the **admin** sidebar belongs to `/admin/…` behind the top bar's Admin button. In the home sidebar,
+ * Projects and Guides, then the folding group **Security audit** of the instance's auditors and administrators (R-UI-158). In
+ * the admin area, single entries (repositories, endpoints) and folding groups (identity, access, system). Only the screens that
+ * exist in the current milestone are listed; the capabilities are those of R-AUTHZ-010. The router and the API decide access,
+ * this only hides entries (R-UI-005).
  */
 export const NAV_AREAS: readonly NavArea[] = [
   {
@@ -45,6 +51,21 @@ export const NAV_AREAS: readonly NavArea[] = [
     entries: [
       { kind: 'item', route: '/projects', icon: 'folder_shared', label: $localize`:@@nav.projects:Projects` },
       { kind: 'item', route: '/guides', icon: 'menu_book', label: $localize`:@@nav.guides:Guides` },
+      // The auditor's page, not the administrator's (R-UI-158, Q-UI-620): shown to whoever reads the findings of every project.
+      {
+        kind: 'group',
+        id: 'security-audit',
+        icon: 'verified_user',
+        label: $localize`:@@nav.section.security-audit:Security audit`,
+        items: [
+          {
+            route: '/security',
+            icon: 'security',
+            label: $localize`:@@nav.security-dashboard:Security dashboard`,
+            capability: SECURITY_DASHBOARD_CAPABILITY,
+          },
+        ],
+      },
     ],
   },
   {
@@ -53,9 +74,6 @@ export const NAV_AREAS: readonly NavArea[] = [
     entries: [
       { kind: 'item', route: '/admin/dashboard', icon: 'dashboard', label: $localize`:@@nav.dashboard:Dashboard`, capability: 'settings:read' },
       { kind: 'item', route: '/admin/projects', icon: 'folder_shared', label: $localize`:@@nav.projects:Projects`, capability: 'projects:read' },
-      // >>> T-9 security dashboard
-      { kind: 'item', route: '/admin/security', icon: 'security', label: $localize`:@@nav.security:Security`, anyCapability: ['vulnerabilities:triage', 'content:metadata-read'] },
-      // <<< T-9 security dashboard
       { kind: 'item', route: '/admin/repositories', icon: 'inventory_2', label: $localize`:@@nav.repositories:Repositories`, capability: 'repositories:read-config' },
       { kind: 'item', route: '/admin/endpoints', icon: 'router', label: $localize`:@@nav.endpoints:Endpoints`, capability: 'endpoints:read' },
       // >>> M5b bastion
@@ -165,25 +183,31 @@ export class Navigation {
   private readonly session = inject(SessionStore);
   private readonly context = inject(ProjectContext);
 
-  /** The fixed areas: the home sidebar, and the admin sidebar for a caller with capabilities. */
+  /**
+   * The fixed areas: the home sidebar, and the admin sidebar for a caller who may use one of its entries. Every entry of the
+   * admin area names its capability, so a caller without one of them has no admin area.
+   */
   readonly areas = computed<readonly NavArea[]>(() => {
     const capabilities = this.session.capabilities();
-    const administrator = this.session.hasAdminArea();
-    const allowed = (i: Pick<NavItem, 'capability' | 'anyCapability'>) =>
-      (!i.capability && !i.anyCapability) ||
-      (!!i.capability && capabilities.includes(i.capability)) ||
-      (!!i.anyCapability && i.anyCapability.some((c) => capabilities.includes(c)));
-    return NAV_AREAS.filter((a) => a.id === 'home' || administrator)
-      .map((a): NavArea => ({
+    const allowed = (i: Pick<NavItem, 'capability'>) => !i.capability || capabilities.includes(i.capability);
+    return NAV_AREAS.map(
+      (a): NavArea => ({
         ...a,
         entries: a.entries.flatMap((e): NavEntry[] => {
           if (e.kind === 'item') return allowed(e) ? [e] : [];
           const items = e.items.filter(allowed);
           return items.length > 0 ? [{ ...e, items }] : [];
         }),
-      }))
-      .filter((a) => a.entries.length > 0);
+      }),
+    ).filter((a) => a.entries.length > 0);
   });
+
+  /**
+   * The top bar's **Admin** button is shown (R-UI-002, Q-UI-621): the admin area has an entry the caller may use. An auditor
+   * holds several (the audit log, the users, the dashboard of the installation); a caller whose only capabilities are those of
+   * the security dashboard has none and is not led into an empty admin area.
+   */
+  readonly hasAdminArea = computed(() => this.areas().some((a) => a.id === 'admin'));
 
   /** The sidebar of the project the URL is in, or null outside a project. */
   readonly projectArea = computed<NavArea | null>(() => {

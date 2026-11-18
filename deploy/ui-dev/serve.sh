@@ -29,7 +29,7 @@ trap 'kill "$idp_pid" 2>/dev/null || true' EXIT
 cat <<EOF
 
   UI:        https://localhost:4200/ui/   (make ui-dev-web; the certificate is signed by $state/certs/ca.crt)
-  sign in:   admin / $(cat "$state/secrets/break-glass-password"), or as sam, priya or ada through "UI development users"
+  sign in:   admin / $(cat "$state/secrets/break-glass-password"), or as sam, priya, ada or noor (auditor) through "UI development users"
   backend:   https://127.0.0.1:19080, ops https://127.0.0.1:19081
 
 EOF

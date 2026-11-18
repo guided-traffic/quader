@@ -11411,7 +11411,7 @@ paths:
         - {name: blockReason, in: query, description: "malicious or triage.", schema: {$ref: "#/components/schemas/VulnerabilityBlockReason"}}
         - {name: detectedFrom, in: query, description: "Detected at or after (RFC 3339).", schema: {type: string, format: date-time}}
         - {name: detectedTo, in: query, description: "Detected before (RFC 3339).", schema: {type: string, format: date-time}}
-        - {name: q, in: query, description: "A text that occurs in the package name, the advisory identifier or the summary.", schema: {type: string}}
+        - {name: q, in: query, description: "A text that occurs, in any case, in the package name, the advisory identifier, one of its aliases or the summary.", schema: {type: string}}
         - name: sort
           in: query
           description: The sort order of R-VULN-020.
@@ -11471,7 +11471,7 @@ paths:
         - {name: blockReason, in: query, description: "malicious or triage.", schema: {$ref: "#/components/schemas/VulnerabilityBlockReason"}}
         - {name: detectedFrom, in: query, description: "Detected at or after (RFC 3339).", schema: {type: string, format: date-time}}
         - {name: detectedTo, in: query, description: "Detected before (RFC 3339).", schema: {type: string, format: date-time}}
-        - {name: q, in: query, description: "A text that occurs in the package name, the advisory identifier or the summary.", schema: {type: string}}
+        - {name: q, in: query, description: "A text that occurs, in any case, in the package name, the advisory identifier, one of its aliases or the summary.", schema: {type: string}}
         - name: sort
           in: query
           description: The sort order of R-VULN-020.

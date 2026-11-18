@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 620 of 911 spec requirements are implemented: a passing test names them and no
+**Status.** 620 of 913 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 788 specified (513 of them implemented), 1,451 open.
-911 spec requirements: 647 cover catalog features, 264 cover none (`quader-only`, [listed at the
+913 spec requirements: 647 cover catalog features, 266 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>264 requirements</summary>
+<summary>266 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3060,6 +3060,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-150 | A principal is chosen from a search that shows the people it found | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-151 | A member of a group shows its avatar, its name and its username | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-152 | Every place that names a principal uses the field | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-158 | The security dashboard is the auditor's page, under Your work | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-159 | The security dashboard has one filter: the head of its list | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 (implemented) | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-007 (implemented) | One origin for UI and package content | MVP | [architecture.md](../spec/architecture.md) |

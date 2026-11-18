@@ -45,6 +45,7 @@ import {
   places,
   projectEntry,
   repositoryEntry,
+  sectionPlaces,
 } from './search-model';
 import { SearchLayout } from './search-layout';
 
@@ -167,8 +168,10 @@ export class SearchField {
   protected readonly filterButtonLabel = computed(() => $localize`:@@search.filter.button:Filter: ${this.filterLabel()}:kind:`);
   protected readonly removeFilterLabel = computed(() => $localize`:@@search.filter.remove:Remove the filter ${this.filterLabel()}:kind:`);
 
+  /** The side bar's sections of the main area the caller has (the security dashboard, Q-UI-626). */
+  private readonly sections = computed(() => sectionPlaces(this.navigation.area('home')));
   /** The pages of the main area the caller may open (R-UI-097). */
-  private readonly pageList = computed(() => pages().filter((p) => !this.anonymous() || p.anonymous));
+  private readonly pageList = computed(() => [...pages(), ...this.sections()].filter((p) => !this.anonymous() || p.anonymous));
 
   /** The list before anything is typed (R-UI-096, Q-UI-404). */
   private readonly emptyGroups = computed<SearchGroup[]>(() => {
@@ -178,7 +181,7 @@ export class SearchField {
       id: 'places',
       heading: this.heading['places']!,
       area: 'main',
-      entries: places()
+      entries: [...places(), ...this.sections()]
         .filter((p) => !anonymous || p.anonymous)
         .map((p) => placeEntry(p, 'main', 'place')),
     });

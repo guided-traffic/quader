@@ -17,7 +17,7 @@ Ctrl+K and ⌘K.
 
 The opened field lists, in this order:
 
-1. **Places**: Projects, Guides, Profile and Personal tokens.
+1. **Places**: Projects, Guides, Profile and Personal tokens, and for an auditor or an administrator of the installation the [Security dashboard](security-dashboard.md).
 2. **Frequently visited repositories**: the repositories you opened most often lately, up to five.
 3. **View all my projects**.
 4. **Frequently visited projects**: up to five.

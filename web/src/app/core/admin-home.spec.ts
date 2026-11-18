@@ -12,14 +12,14 @@ async function startOf(capabilities: string[]): Promise<string> {
   return TestBed.inject(Router).serializeUrl(tree);
 }
 
-describe('The start of the admin area (R-UI-002, Q-OPS-175, Q-UI-130)', () => {
-  it('Q-OPS-175 starts at the dashboard for a holder of settings:read', async () => {
+describe('The start of the admin area (R-UI-002, Q-OPS-175, R-UI-158)', () => {
+  it('Q-OPS-175 starts at the dashboard for a holder of settings:read, the auditor among them', async () => {
     expect(await startOf(['settings:read', 'content:metadata-read'])).toBe('/admin/dashboard');
   });
 
-  it('Q-UI-130 starts an auditor or a security administrator without the configuration capabilities at the security dashboard', async () => {
-    expect(await startOf(['content:metadata-read'])).toBe('/admin/security');
-    expect(await startOf(['vulnerabilities:triage'])).toBe('/admin/security');
+  it('R-UI-158 never starts at the security dashboard, which is no page of the admin area', async () => {
+    expect(await startOf(['content:metadata-read'])).toBe('/admin/repositories');
+    expect(await startOf(['vulnerabilities:triage'])).toBe('/admin/repositories');
   });
 
   it('R-UI-041 keeps the projects as the start of a caller who reads projects but not repositories', async () => {

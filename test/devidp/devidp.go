@@ -37,12 +37,14 @@ type User struct {
 	Kind     string // what the profile's seed makes of the user, shown on the sign-in page
 }
 
-// Users are the three kinds of user of R-UI-067: the seed of make ui-renders makes sam a reader, priya the Owner of a
-// project and ada an administrator. The usernames are what the seed and the renders refer to.
+// Users are the three kinds of user of R-UI-067 and the auditor of R-UI-158: the seed of make ui-renders makes sam a
+// reader, priya the Owner of a project, ada an administrator and noor an auditor. The usernames are what the seed and the
+// renders refer to.
 var Users = []User{
 	{Username: "sam", Name: "Sam Taylor", Email: "sam@ui-dev.invalid", Kind: "Plain user: reads and installs"},
 	{Username: "priya", Name: "Priya Raman", Email: "priya@ui-dev.invalid", Kind: "Power user: publishes and maintains a project"},
 	{Username: "ada", Name: "Ada Brooks", Email: "ada@ui-dev.invalid", Kind: "Administrator"},
+	{Username: "noor", Name: "Noor Haddad", Email: "noor@ui-dev.invalid", Kind: "Auditor: reads every project's findings, member of none"},
 }
 
 // Config configures a Provider.

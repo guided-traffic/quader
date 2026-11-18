@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, TitleStrategy, provideRouter, withComponentInputBinding } from '@angular/router';
 import { App } from './app';
 import { routes } from './app.routes';
-import { provideFakeApis } from './api/testing/fakes';
+import { FakeSessionApi, provideFakeApis } from './api/testing/fakes';
+import { SessionApi } from './api/session-api';
 import { Breadcrumbs } from './core/breadcrumbs';
 import { QuaderTitleStrategy } from './core/title-strategy';
 import { seriousViolations } from './testing/axe';
@@ -78,7 +79,8 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   ['/no/such/page', 'Page not found'],
 ];
 
-async function open(url: string) {
+/** Opens `url` in the whole app; `capabilities` replace the administrator's of the fake session. */
+async function open(url: string, capabilities?: readonly string[]) {
   TestBed.resetTestingModule();
   await TestBed.configureTestingModule({
     imports: [App],
@@ -89,6 +91,7 @@ async function open(url: string) {
       ...provideFakeApis(),
     ],
   }).compileComponents();
+  if (capabilities) (TestBed.inject(SessionApi) as FakeSessionApi).meResult = { capabilities: [...capabilities] };
   const fixture = TestBed.createComponent(App);
   await TestBed.inject(Router).navigateByUrl(url);
   await fixture.whenStable();
@@ -125,8 +128,8 @@ describe('route map', () => {
     expect(root.querySelector('main h1')?.textContent?.trim()).toBe('Repositories');
   });
 
-  it('Q-UI-129 ADR-203 R-UI-126 the old content routes are gone: /packages, /browse, the /browse of a project, /vulnerabilities, /setup and /admin/repositories/{project}/{key} are not found', async () => {
-    for (const url of ['/packages', '/browse', '/projects/web/browse', '/projects/web/browse/generic-local/releases', '/vulnerabilities', '/admin/repositories/web/npm-local', '/admin/projects/web', '/setup']) {
+  it('Q-UI-129 ADR-203 R-UI-126 R-UI-158 the old routes are gone: /packages, /browse, the /browse of a project, /vulnerabilities, /setup, /admin/repositories/{project}/{key} and /admin/security are not found', async () => {
+    for (const url of ['/packages', '/browse', '/projects/web/browse', '/projects/web/browse/generic-local/releases', '/vulnerabilities', '/admin/repositories/web/npm-local', '/admin/projects/web', '/setup', '/admin/security', '/admin/security/findings/0193a000-0000-7000-8000-000000000001']) {
       const root = await open(url);
       expect(root.querySelector('main h1')?.textContent?.trim(), url).toBe('Page not found');
     }
@@ -154,6 +157,29 @@ describe('route map', () => {
     const root = await open('/projects/web/vulnerabilities/findings/0193a000-0000-7000-8000-000000000001');
     expect(root.querySelector('main')?.textContent).toContain('quader-test-vuln@1.0.0');
     expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Projects', 'web', 'Vulnerabilities', '0193a000-0000-7000-8000-000000000001']);
+  });
+
+  it('R-UI-158 /security is the security dashboard of the main area: its trail is Security audit, Security dashboard, never the admin area', async () => {
+    const auditor = ['content:metadata-read', 'vulnerabilities:triage', 'settings:read', 'audit:read', 'projects:read'];
+    const root = await open('/security', auditor);
+    expect(root.querySelector('main h1')?.textContent?.trim()).toBe('Security dashboard');
+    expect(document.title).toBe('Security dashboard – Quader');
+    const trail = TestBed.inject(Breadcrumbs).trail();
+    expect(trail.map((c) => c.label)).toEqual(['Security audit', 'Security dashboard']);
+    expect(trail[0]?.commands).toBeNull();
+    expect(trail.some((c) => c.label === 'Admin area')).toBe(false);
+    expect(await seriousViolations(root)).toEqual([]);
+
+    const finding = await open('/security/findings/0193a000-0000-7000-8000-000000000001', auditor);
+    expect(finding.querySelector('main h1')?.textContent?.trim()).toBe('Finding');
+    expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Security audit', 'Security dashboard', '0193a000-0000-7000-8000-000000000001']);
+  });
+
+  it('R-UI-158 Q-UI-622 /security is Page not found for a caller without content:metadata-read, a security administrator included', async () => {
+    for (const capabilities of [[], ['vulnerabilities:triage', 'settings:read', 'audit:read']]) {
+      const root = await open('/security', capabilities);
+      expect(root.querySelector('main h1')?.textContent?.trim(), capabilities.join()).toBe('Page not found');
+    }
   });
 
   it('R-UI-003 /admin/settings opens the general settings, the first page of the group Settings', async () => {

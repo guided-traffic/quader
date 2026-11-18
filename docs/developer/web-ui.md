@@ -92,10 +92,11 @@ make ui-dev-down       # stops the containers, keeps the data; PURGE=1 removes t
 ```
 
 Sign in with `admin` and the password `make ui-dev-backend` prints (`.dev/ui-dev/secrets/break-glass-password`,
-random per checkout), or as one of the three kinds of user of R-UI-067 through **UI development users**: the profile's
-sign-in provider ([test/devidp](../../test/devidp/devidp.go)) lists `sam`, `priya` and `ada` and signs the one you choose in
-without a password; Quader creates the user at its first sign-in, and what each may do is granted in Quader (the seed of
-[`make ui-renders`](#renders-of-every-screen) makes them a reader, an Owner and an administrator). A change under `web/src`
+random per checkout), or as one of the three kinds of user of R-UI-067 or the auditor through **UI development users**: the
+profile's sign-in provider ([test/devidp](../../test/devidp/devidp.go)) lists `sam`, `priya`, `ada` and `noor` and signs the one
+you choose in without a password; Quader creates the user at its first sign-in, and what each may do is granted in Quader (the
+seed of [`make ui-renders`](#renders-of-every-screen) makes them a reader, an Owner, an administrator and an auditor; until a seed
+has run, bind `noor` to the role `auditor` under **Admin area › System roles** as `ada`). A change under `web/src`
 reaches the open page at once; a change of the Go code needs Ctrl-C and `make ui-dev-backend` again, which rebuilds the
 binaries and applies new migrations. Repositories, packages and users created in the UI stay in the volumes across restarts.
 
@@ -185,7 +186,7 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    `platform/collections`, `https://localhost:4200/api/ansible/platform/collections/` (56 characters), is as long as an
    installation's with a real host name (`https://quader.k8s-main.wds18.net/api/ansible/test/galaxy/`, 57), and the long keys give
    addresses of 89 and 96; the memberships, the role `admin`
-   of `ada`, a group and two service accounts. Through the formats' own routes, with a token of the power user that is revoked
+   of `ada`, the role `auditor` of `noor`, a group and two service accounts. Through the formats' own routes, with a token of the power user that is revoked
    afterwards: npm packages with versions and a README (the longest name with three versions), generic files in folders, two OCI
    images (`portal/web` with six tags), the NuGet package `Acme.Logging.Abstractions` (three versions, built as a `.nupkg` in
    `seed.ts`), the Debian package `acme-agent` (two versions, an `ar` archive of `control.tar.gz` and `data.tar.gz`) and the
@@ -204,13 +205,15 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    packages are N/A (claimed names), and the images are N/A (the profile cannot scan an image: no analyser on the host, so an
    image's end of life, the C at best, is shown by the unit tests only).
 2. **The three kinds of user** of [R-UI-067](../spec/api-and-ui.md#r-ui-067--three-kinds-of-user-the-plain-user-the-power-user-and-the-administrator)
-   sign in through the provider; their sessions are kept in `.out/ui-renders/.auth/` for the run:
+   and the auditor of the security dashboard (R-UI-158) sign in through the provider; their sessions are kept in
+   `.out/ui-renders/.auth/` for the run:
 
    | Kind | User | Grants |
    |---|---|---|
    | `plain` | `sam` | `reader` of `web-frontend` and `platform`; no system role; holds one personal token `laptop`, so the token pages show a list and **Revoke all tokens** |
    | `power` | `priya` | `owner` of `web-frontend`, `developer` of `platform`; publishes the seed's packages |
    | `admin` | `ada` | the system role `admin`; member of no project |
+   | `auditor` | `noor` | the system role `auditor`; member of no project; the security dashboard's screens (`security…`) |
    | `anonymous` | nobody | the sign-in and signed-out screens |
 
    The break-glass account itself is not rendered: it signs in only through the local form and seeds the data.
@@ -742,8 +745,8 @@ Decision [Q-UI-68](../spec/api-and-ui.md#q-ui-68--layout-of-the-application-shel
 
 | Piece | Where | What it does |
 |---|---|---|
-| Top bar | [app.html](../../web/src/app/app.html), `header.topbar` | A grid of three columns ([Q-UI-127](../spec/api-and-ui.md#q-ui-127--the-admin-area-has-a-sidebar-of-its-own-behind-an-admin-button-and-the-shell-takes-the-references-frame)): "Open navigation" (only while the sidebar is collapsed or the drawer closed) and the mark with the name ([shared/brand/quader-mark.ts](../../web/src/app/shared/brand/quader-mark.ts), drawn inline from the generated geometry so it follows the theme, 32 px high; below 360 px the name is visually hidden and stays the link's accessible name); the search field in the middle, up to 40 rem (`<quader-search-field>`, [The search](#the-search); every signed-in caller and the anonymous UI, R-UI-095); then `.topbar-actions`: the **Admin** button (a link to `/admin` as `btn-default` at full height, shown when `SessionStore.hasAdminArea()`; inside the admin area only `aria-current` changes, the look stays), the **Documentation** link (`btn-tertiary` with icon and text; below 768 CSS px both labels, `.topbar-label`, are visually hidden and stay the accessible names; target from `helpFor(url)` of [core/help-topics.ts](../../web/src/app/core/help-topics.ts)), the theme button (a CDK menu of three `menuitemradio` entries, R-API-021) and the user button: a round `.avatar` (the user's generated robot, `<quader-avatar>`, R-UI-002), the name (`.user-name`) in its accessible name and on top of its menu (Profile and tokens, Guides, Language with its submenu, Sign out). The menus are `@angular/cdk/menu`; their items are buttons, because a CDK menu item handles Enter itself and a link would not navigate. The CDK opens a submenu on hover and toggles it on click, so the Language item carries `quaderOpenSubmenuOnClick` ([shared/ui/open-submenu-on-click.ts](../../web/src/app/shared/ui/open-submenu-on-click.ts)): a click opens the submenu and never closes it (Q-UI-148). |
-| Navigation model | [core/navigation.ts](../../web/src/app/core/navigation.ts) | Three sidebars ([Q-UI-129](../spec/api-and-ui.md#q-ui-129--the-project-is-the-context-of-the-content-chosen-from-your-projects)): `NAV_AREAS` holds the fixed ones, `home` ("Your work": Projects, Guides) and `admin` ("Admin area"), each with items and folding groups; an item has `route`, `label`, `icon` (a ligature of the icon font, decoration only) and the `capability` that shows it. The project's sidebar is built for a key by `projectEntries(key, session)`: repositories, packages, vulnerabilities, the group **Access** (members; permission policies, service accounts and CI identity for the holder of `policies:read`, `identities:read`, `ci:read` or the Owner of the project) and settings. `Navigation.areas()` keeps the admin area when `SessionStore.hasAdminArea()` (any capability; an Owner without one has none, the project's administration is inside the project) and drops entries the caller lacks and groups left empty; `Navigation.areaOf(url)` says which sidebar a route belongs to (`/admin…`, `/projects/<key>…`, else home), `area(id)` gives its entries, `projectArea` the project's |
+| Top bar | [app.html](../../web/src/app/app.html), `header.topbar` | A grid of three columns ([Q-UI-127](../spec/api-and-ui.md#q-ui-127--the-admin-area-has-a-sidebar-of-its-own-behind-an-admin-button-and-the-shell-takes-the-references-frame)): "Open navigation" (only while the sidebar is collapsed or the drawer closed) and the mark with the name ([shared/brand/quader-mark.ts](../../web/src/app/shared/brand/quader-mark.ts), drawn inline from the generated geometry so it follows the theme, 32 px high; below 360 px the name is visually hidden and stays the link's accessible name); the search field in the middle, up to 40 rem (`<quader-search-field>`, [The search](#the-search); every signed-in caller and the anonymous UI, R-UI-095); then `.topbar-actions`: the **Admin** button (a link to `/admin` as `btn-default` at full height, shown when `Navigation.hasAdminArea()`: the admin side bar has an entry for the caller, Q-UI-621; inside the admin area only `aria-current` changes, the look stays), the **Documentation** link (`btn-tertiary` with icon and text; below 768 CSS px both labels, `.topbar-label`, are visually hidden and stay the accessible names; target from `helpFor(url)` of [core/help-topics.ts](../../web/src/app/core/help-topics.ts)), the theme button (a CDK menu of three `menuitemradio` entries, R-API-021) and the user button: a round `.avatar` (the user's generated robot, `<quader-avatar>`, R-UI-002), the name (`.user-name`) in its accessible name and on top of its menu (Profile and tokens, Guides, Language with its submenu, Sign out). The menus are `@angular/cdk/menu`; their items are buttons, because a CDK menu item handles Enter itself and a link would not navigate. The CDK opens a submenu on hover and toggles it on click, so the Language item carries `quaderOpenSubmenuOnClick` ([shared/ui/open-submenu-on-click.ts](../../web/src/app/shared/ui/open-submenu-on-click.ts)): a click opens the submenu and never closes it (Q-UI-148). |
+| Navigation model | [core/navigation.ts](../../web/src/app/core/navigation.ts) | Three sidebars ([Q-UI-129](../spec/api-and-ui.md#q-ui-129--the-project-is-the-context-of-the-content-chosen-from-your-projects)): `NAV_AREAS` holds the fixed ones, `home` ("Your work": Projects, Guides, and the folding group **Security audit** with **Security dashboard** for `content:metadata-read`, R-UI-158) and `admin` ("Admin area"), each with items and folding groups; an item has `route`, `label`, `icon` (a ligature of the icon font, decoration only) and the `capability` that shows it. The project's sidebar is built for a key by `projectEntries(key, session)`: repositories, packages, vulnerabilities, the group **Access** (members; permission policies, service accounts and CI identity for the holder of `policies:read`, `identities:read`, `ci:read` or the Owner of the project) and settings. `Navigation.areas()` drops entries the caller lacks, groups left empty and an area left empty, so the admin area is there when the caller may use one of its entries (`hasAdminArea`, Q-UI-621; an Owner without a capability has none, the project's administration is inside the project); `Navigation.areaOf(url)` says which sidebar a route belongs to (`/admin…`, `/projects/<key>…`, else home), `area(id)` gives its entries, `projectArea` the project's |
 | Project context | [core/project-context.ts](../../web/src/app/core/project-context.ts) | `ProjectContext`: `key()` is the project of the URL (`/projects/<key>…`), read at `RoutesRecognized` so a screen's constructor already sees the new project, and reset by a cancelled or failed navigation; `projects()` are the projects of `GET /api/v1/projects` (read once, `refresh()` after a create, a change or a delete, `ready()` for the start guard); `recent()` are the five last visited keys of the search's store ([core/frequent-places.ts](../../web/src/app/core/frequent-places.ts), ordered by the last visit), and a project's screen records its visit there. `homeGuard` ([core/auth-guard.ts](../../web/src/app/core/auth-guard.ts)) sends `/` to the only project of the caller, else to `/projects`. [core/project-links.ts](../../web/src/app/core/project-links.ts) builds the links to a repository and its files from a qualified name |
 | Search field | [features/search/search-field.ts](../../web/src/app/features/search/search-field.ts), `.html`; styles in [_search.scss](../../web/src/styles/_search.scss) | See [The search](#the-search) |
 | Project switcher | [features/projects/project-switcher.ts](../../web/src/app/features/projects/project-switcher.ts) | On top of the project sidebar, instead of the area title: a button with the project's mark (its initial, decoration) and name, and a panel with a search field, the recently visited projects and the matches (at most 20). A disclosure, not a menu, because the panel holds a text field: `aria-expanded`, `aria-controls`, Escape closes it and returns the focus to the button, a click outside closes it, a choice is a link to `/projects/<key>` (which answers with the packages). Styles in `_shell.scss` (`.project-switcher`, `.switcher-*`) |
@@ -1000,8 +1003,8 @@ How the pieces fit:
   ([project-roles.ts](../../web/src/app/features/projects/project-roles.ts): Reader, Developer, Maintainer, Owner), adds a user or group chosen in the principal field over the project's lookup with a role, changes
   a role with a select and removes a member (`PUT`/`DELETE /projects/{key}/members/{principalRef}`, no `ETag`). The Owner and `projects:write` write; every other member reads. The
   server refuses to remove or demote the last Owner (409 `last_owner`, Q-AUTHZ-217); the component says so in a notice of its own, because the same code means the last owner of a package elsewhere.
-- **Navigation rule.** `SessionStore` reads `authz/me` `projects` (`{key, role}`): `hasAdminArea()` (any capability; an Owner without one has no admin area),
-  `projectRole(key)`, `isOwnerOf(key)`, `canWritePolicies(project)` and `canWriteRepositories(project)` (the capability, or the Owner role of the project). The project sidebar lists policies, service accounts and CI
+- **Navigation rule.** `SessionStore` reads `authz/me` `projects` (`{key, role}`): `isAdministrator()` (any capability; the admin area itself is
+  `Navigation.hasAdminArea()`, an entry the caller may use), `projectRole(key)`, `isOwnerOf(key)`, `canWritePolicies(project)` and `canWriteRepositories(project)` (the capability, or the Owner role of the project). The project sidebar lists policies, service accounts and CI
   identity for the capability or the Owner role; the admin sidebar lists **Projects** for `projects:read` and every other entry only with its capability. `/admin` itself runs `adminHomeGuard` ([auth-guard.ts](../../web/src/app/core/auth-guard.ts)).
   The API still decides every call (R-UI-005). There are no switches (`managePolicies`, `manageRepositories` are gone): what an Owner may do is fixed by the role.
 - **One component for the project's screen and the admin's list.** The repository list, the format chooser and the creation form, and the policy and service account lists, serve both: the screen reads whether the route carries `:project`
@@ -1159,20 +1162,27 @@ user who sees the project; what a caller may read is narrowed by the API, so a c
 | the grade pieces | [shared/vulnerability](../../web/src/app/shared/vulnerability/) | none | `<quader-grade-shield>`, `<quader-grade>`, `<quader-severity-bar>` (the report's header uses it with a filter link per segment) and `<quader-grade-card>`; `grade-words.ts` words a grade and orders it (R-UI-090 to R-UI-094, [ui-style-guide.md](ui-style-guide.md#vulnerability-grade)) |
 | repository list and form | `repository-list.html`, `repository-detail.html` | none | A **Vulnerabilities** link to `/projects/<project>/vulnerabilities?repository=<project>/<key>` for a local or remote repository of a format other than generic (the per-repository view) |
 
-- *The security dashboard (Q-UI-130, [Q-UI-165](../spec/api-and-ui.md#q-ui-165--the-security-dashboard-is-the-content-report-mounted-in-the-admin-area-with-its-own-links-project-column-and-search)).*
-  `/admin/security` is the same three screens (report, finding, advisory) routed a second time by
-  [security.routes.ts](../../web/src/app/features/vulnerabilities/security.routes.ts), appended to the admin routes in
-  [app.routes.ts](../../web/src/app/app.routes.ts) (block `T-9 security dashboard`). The route provides `VULN_CONTEXT`
-  ([vuln-context.ts](../../web/src/app/features/vulnerabilities/vuln-context.ts)): `instanceWide` (false in a project, where the screens live at
-  `/projects/:project/vulnerabilities`) switches on the heading *Security dashboard*, the **Project** column
-  with its filter link, the search row (Advisory ID, Package starts with, Project key) and the note for a reader without `vulnerabilities:triage`. A
-  screen that links to another one builds the link with `vulnCommands(ctx, project, …)`; a link to a package uses the project of the finding. The advisory sources are the one page
-  `/admin/advisory-sources` in both places. The `project` input of the report is the route parameter in a project and, in the dashboard, the query parameter like the others;
-  it is checked against the project-key pattern before it is sent, becomes a chip (dashboard only), and
-  narrows the list, the counts (`ReportSummary`, whose count links keep it) and the trend (`ReportTrend`) through the `project` filter of
-  R-VULN-020 and R-VULN-021. `canonicalAdvisoryId` writes a typed identifier the way the API compares it. The sidebar entry uses
-  `NavItem.anyCapability` (`vulnerabilities:triage` or `content:metadata-read`); `adminHomeGuard` starts a caller who holds one of the two and none of the
-  configuration capabilities there. A change to the report is a change to both areas.
+- *The security dashboard (Q-UI-130, [Q-UI-165](../spec/api-and-ui.md#q-ui-165--the-security-dashboard-is-a-projects-report-mounted-a-second-time-with-its-own-links-and-the-project-as-a-filter), R-UI-158, R-UI-159).*
+  `/security` is the same three screens (report, finding, advisory) routed a second time by
+  [security.routes.ts](../../web/src/app/features/vulnerabilities/security.routes.ts), a route of the main area in
+  [app.routes.ts](../../web/src/app/app.routes.ts) (block `T-9 security dashboard`) behind `capabilityGuard(SECURITY_DASHBOARD_CAPABILITY)`
+  ([auth-guard.ts](../../web/src/app/core/auth-guard.ts): without `content:metadata-read` the not-found page at the same address,
+  Q-UI-622), with the trail "Security audit / Security dashboard" from its `data.crumbs`. The entry is the folding group
+  `security-audit` of the start side bar in [navigation.ts](../../web/src/app/core/navigation.ts); the search offers it as a place and
+  a page of the main area (`sectionPlaces` of [search-model.ts](../../web/src/app/features/search/search-model.ts), Q-UI-626). The route
+  provides `VULN_CONTEXT` ([vuln-context.ts](../../web/src/app/features/vulnerabilities/vuln-context.ts)): `instanceWide` (false in a
+  project, where the screens live at `/projects/:project/vulnerabilities`) switches on the heading *Security dashboard*, the line that
+  says what the counts cover (`scopeLine`, Q-UI-625), the project link of each row's repository, the drawer's **Project** (the
+  projects of `ProjectContext` as check boxes with their mark, Q-UI-624) without **Advisory**, the search of the list's head
+  (`searchFor`: a whole identifier, `advisoryIdOf`, is `advisory` in its canonical spelling, any other text `q`, Q-UI-623; the field
+  shows `searchText`, the advisory or `q`, and no chip repeats the advisory), and the note for a reader without
+  `vulnerabilities:triage`. A screen that links to another one builds the link with `vulnCommands(ctx, project, …)`; a link to a
+  package uses the project of the finding. The advisory sources are the one page `/admin/advisory-sources` in both places, linked for
+  `settings:read`. The `project` input of the report is the route parameter in a project and, in the dashboard, the query parameter
+  like the others; it is checked against the project-key pattern before it is sent, becomes a chip with the project's name, and
+  narrows the list, the counts (`ReportSummary`, whose count links keep it) and the trend (`ReportTrend`) through the `project` filter
+  of R-VULN-020 and R-VULN-021. The lint rule [removed-routes-rule.mjs](../../web/scripts/removed-routes-rule.mjs) refuses a link to
+  `/admin/security`. A change to the report is a change to both places.
 - *Absent controls (R-UI-005).* The selection column, "Select all loaded findings", "Change status" and the finding's actions need `vulnerabilities:triage`; the sources link needs
   `settings:read`, "run now" `settings:write`. They are not rendered without the capability; the API refuses the request in any case.
 - *The counts are links.* A count of the header opens the list with its filter (`severity=…` with the three open statuses, `kind=malicious`, `status=needs_triage`, `blocked=true`) and keeps
@@ -1193,11 +1203,15 @@ user who sees the project; what a caller may read is narrowed by the API, so a c
   bulk, export, navigation), [vulnerability-finding.spec.ts](../../web/src/app/features/vulnerabilities/vulnerability-finding.spec.ts) (the facts, the plain-text advisory, the references,
   block, lift, dismiss, a stale tag, the absent controls), [vulnerability-pages.spec.ts](../../web/src/app/features/vulnerabilities/vulnerability-pages.spec.ts) (advisory, sources, the package
   tab, the badges, the header), [vulnerabilities-api.spec.ts](../../web/src/app/api/vulnerabilities-api.spec.ts) (the requests), and the screens in `app.routes.spec.ts`.
-- *Dashboard specs.* [security-dashboard.spec.ts](../../web/src/app/features/vulnerabilities/security-dashboard.spec.ts) (the project column, the
-  project filter through the list, the counts and the trend, the search's canonical identifier, links inside the admin area, the triage controls with and
-  without the capability, the entry in the navigation, the help topic and the routes), [admin-home.spec.ts](../../web/src/app/core/admin-home.spec.ts) (where the admin area starts),
-  [16-security-dashboard.spec.ts](../../web/e2e/vuln/16-security-dashboard.spec.ts) (two projects, a search by alias in lower case, the project filter, the counts, a finding
-  opened inside the admin area, and an auditor who is a member of no project triaging; axe in both schemes). Like journey 15 it needs `QUADER_E2E_VULN=1` and the scatter profile; it has not run
+- *Dashboard specs.* [security-dashboard.spec.ts](../../web/src/app/features/vulnerabilities/security-dashboard.spec.ts) (the project link, the
+  project filter through the list, the counts and the trend and the line that says what they cover, no form above the list, the search's
+  identifier and text, the drawer's projects, links below `/security`, the triage controls with and without the capability, the section
+  in the navigation, the Admin button, the guard, the help topic and the routes), [app.spec.ts](../../web/src/app/app.spec.ts) and
+  [app.routes.spec.ts](../../web/src/app/app.routes.spec.ts) (the side bar, the trail, the not-found page),
+  [admin-home.spec.ts](../../web/src/app/core/admin-home.spec.ts) (where the admin area starts),
+  [16-security-dashboard.spec.ts](../../web/e2e/vuln/16-security-dashboard.spec.ts) (two projects, an alias pasted in lower case, the project ticked
+  in the drawer, the counts, a finding opened below `/security`, the old address gone, and an auditor who is a member of no project
+  reaching it from the side bar and triaging; axe in both schemes). Like journey 15 it needs `QUADER_E2E_VULN=1` and the scatter profile; it has not run
   against a backend yet.
 - *Browser journeys.* [15-vulnerabilities.spec.ts](../../web/e2e/vuln/15-vulnerabilities.spec.ts) (own config [playwright.vuln.config.ts](../../web/e2e/playwright.vuln.config.ts), because it needs the
   scanning against the test advisory source) writes the journeys of R-VULN-022 and R-VULN-023; the e2e wave runs them ([e2e.md](e2e.md#browser-journeys)). They have not run against a backend

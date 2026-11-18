@@ -5,7 +5,7 @@
 //    files client in src/app/api/ and generated code.
 //  - R-UI-050: every manual page that src/app/core/help-topics.ts names is a file of docs/manual/.
 //  - Q-UI-335: every number field of a template names its width (field-width-rule.mjs).
-//  - R-UI-126: no link to the removed routes /setup and /browse (removed-routes-rule.mjs).
+//  - R-UI-126, R-UI-158: no link to the removed routes /setup, /browse and /admin/security (removed-routes-rule.mjs).
 //  - Q-UI-552: no bare <details> in a template: every fold is <quader-disclosure>, with the app's one chevron.
 //  - Q-UI-560: no icon stands directly in a table cell: it is one element with its word (status-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -78,7 +78,7 @@ for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('
 for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts'))) {
   for (const { line, text } of linksToRemovedRoutes(readFileSync(file, 'utf8'))) {
     failed = true;
-    console.error(`R-UI-126: ${relative(root, file)}:${line}: a link to a removed route (/setup, /browse): ${text}`);
+    console.error(`R-UI-126: ${relative(root, file)}:${line}: a link to a removed route (/setup, /browse, /admin/security): ${text}`);
   }
 }
 

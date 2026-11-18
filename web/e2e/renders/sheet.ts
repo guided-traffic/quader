@@ -12,7 +12,7 @@ interface Entry {
   readonly failures: readonly string[];
 }
 
-const kindOrder = ['anonymous', 'plain', 'power', 'admin'];
+const kindOrder = ['anonymous', 'plain', 'power', 'admin', 'auditor'];
 
 /**
  * The global teardown of `make ui-renders`: the contact sheet `.out/ui-renders/index.html`, grouped by screen, and

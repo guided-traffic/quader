@@ -169,6 +169,29 @@ describe('What the opened field offers (R-UI-096)', () => {
     await expectAccessible(root);
   });
 
+  it('R-UI-158 Q-UI-626 an auditor gets the security dashboard among the places and the pages of the main area, unmarked; a plain user does not', async () => {
+    const auditor = (get: Get): void => {
+      (get(SessionApi) as FakeSessionApi).meResult = {
+        capabilities: ['audit:read', 'settings:read', 'content:metadata-read', 'vulnerabilities:triage'],
+        roles: ['auditor'],
+      };
+    };
+    const { root, fixture } = await render('sam', { setup: auditor });
+    await open(fixture, root);
+    expect(said(options(root))).toEqual(['Projects', 'Guides', 'Profile', 'Personal tokens', 'Security dashboard', 'View all my projects']);
+    typeText(root, 'security');
+    await sleep(fixture, 300);
+    expect(groupNames(root)).toEqual(['Pages']);
+    expect(said(options(root))).toEqual(['Security dashboard']);
+    document.body.replaceChildren();
+
+    const plain = await render('sam');
+    await open(plain.fixture, plain.root);
+    typeText(plain.root, 'security');
+    await sleep(plain.fixture, 300);
+    expect(said(options(plain.root))).not.toContain('Security dashboard');
+  });
+
   it('R-UI-096 an anonymous visitor gets Projects and Guides only', async () => {
     const { root, fixture } = await render('anonymous');
     await open(fixture, root);

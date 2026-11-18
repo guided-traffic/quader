@@ -108,7 +108,7 @@ func TestTheChooserListsTheUsersAndCarriesTheFlow(t *testing.T) {
 	}
 	defer resp.Body.Close()
 	page, _ := io.ReadAll(resp.Body)
-	for _, want := range []string{`value="sam"`, `value="priya"`, `value="ada"`, `name="nonce" value="nn"`, `name="state" value="st"`} {
+	for _, want := range []string{`value="sam"`, `value="priya"`, `value="ada"`, `value="noor"`, `name="nonce" value="nn"`, `name="state" value="st"`} {
 		if !strings.Contains(string(page), want) {
 			t.Errorf("the page lacks %s", want)
 		}

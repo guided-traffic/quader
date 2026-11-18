@@ -1132,7 +1132,24 @@ agent** is not decided until the owner has said so.
   goes; the project becomes a filter of the drawer beside the advisory and the package that are there already. And: "beim
   Security dashboard handelt es sich nicht um ein Admin Feature, sondern um ein Auditor-Feature. Für Auditoren oder
   Administratoren gehört es unter Your Work als zweite Kategorie "Security Audit", darunter dann Security Dashboard.
-  Sichtbar nur für Instanz-Auditoren und Instanz-Administratoren." Status: a builder is briefed.
+  Sichtbar nur für Instanz-Auditoren und Instanz-Administratoren."
+  - **Built** (on `main`; R-UI-158, R-UI-159, Q-UI-620 to Q-UI-626, Q-AUTHZ-295; Q-UI-130 and Q-UI-165 rewritten): the page is
+    `/security` of the main area, in a folding section **Security audit** of the side bar under **Your work**;
+    `/admin/security` is gone, **Advisory sources** stays in the admin area. The form above the counts is gone; the list's one
+    search finds by advisory, alias, package or summary (a whole identifier is sent as the indexed advisory filter); the
+    project is the drawer's first filter, check boxes with mark and name. A line says what the counts cover: they follow the
+    project, repository and format filters only, as before. The UI development profile has an auditor, `noor`.
+  - **Who sees it:** the page asks for `content:metadata-read`, which `admin` and `auditor` hold
+    ([roles.go](../../internal/authz/roles.go)). **For the owner:** `security-admin` holds `vulnerabilities:triage` but not
+    `content:metadata-read`, so that role has no dashboard since the admin area's entry is gone; no capability was taken from
+    or given to a role.
+  - **Looked at** in the running UI: as `noor` (bound to `auditor` through the new person field) the section and the page,
+    dark at 1440 px and light at 390 px, and the drawer; as `priya` no section and "Page not found" at `/ui/security`, inside
+    the shell. Fixed by the development agent before the landing: a project's mark stood 5 px above its name in the drawer's
+    rows (measured), because the mark centred itself on its own letter's line; it now centres on the line of the text around
+    it, everywhere.
+  - **Open:** the journey of the dashboard and the alias case of the integration test were rewritten and not run; the
+    triage controls as `noor` and a finding's page under `/ui/security/findings/…` were not looked at.
 - **W-18 · A row with one action names it, a row with several has a menu** (owner, 2026-11-18, "Option A" from three: write
   the practice down as the rule / a menu everywhere / icons everywhere). Verified in the code: the lists with a menu
   (repositories, a project's members, files, exposure rules) have several actions per row; the lists with a word (**Edit** on

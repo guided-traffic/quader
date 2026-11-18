@@ -11588,7 +11588,7 @@ type ListVulnerabilityFindingsParams struct {
 	// DetectedTo Detected before (RFC 3339).
 	DetectedTo *time.Time `form:"detectedTo,omitempty" json:"detectedTo,omitempty"`
 
-	// Q A text that occurs in the package name, the advisory identifier or the summary.
+	// Q A text that occurs, in any case, in the package name, the advisory identifier, one of its aliases or the summary.
 	Q *string `form:"q,omitempty" json:"q,omitempty"`
 
 	// Sort The sort order of R-VULN-020.
@@ -11654,7 +11654,7 @@ type ExportVulnerabilityFindingsParams struct {
 	// DetectedTo Detected before (RFC 3339).
 	DetectedTo *time.Time `form:"detectedTo,omitempty" json:"detectedTo,omitempty"`
 
-	// Q A text that occurs in the package name, the advisory identifier or the summary.
+	// Q A text that occurs, in any case, in the package name, the advisory identifier, one of its aliases or the summary.
 	Q *string `form:"q,omitempty" json:"q,omitempty"`
 
 	// Sort The sort order of R-VULN-020.

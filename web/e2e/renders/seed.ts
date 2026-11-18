@@ -14,13 +14,16 @@ import {
 
 /**
  * The data of `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): four projects (one with a long name and key), repositories of every
- * format and class with short and long keys, a few published packages and files, the three kinds of user of R-UI-067 and
- * an empty project and repository for the empty states. Everything is created through Quader's public API and is
+ * format and class with short and long keys, a few published packages and files, the three kinds of user of R-UI-067, an
+ * auditor (R-UI-158) and an empty project and repository for the empty states. Everything is created through Quader's public API and is
  * idempotent: a second run finds what the first made and adds nothing.
  */
 
-/** The kinds of user the renders sign in as (R-UI-067), and the usernames of the profile's sign-in provider (test/devidp). */
-export const kinds = { plain: 'sam', power: 'priya', admin: 'ada' } as const;
+/**
+ * The kinds of user the renders sign in as (R-UI-067), and the usernames of the profile's sign-in provider (test/devidp). The
+ * auditor holds the system role `auditor` and is a member of no project: the security dashboard's user (R-UI-158).
+ */
+export const kinds = { plain: 'sam', power: 'priya', admin: 'ada', auditor: 'noor' } as const;
 export type Kind = keyof typeof kinds | 'anonymous';
 
 export interface RepoSeed {
@@ -282,6 +285,8 @@ export async function seedGrants(admin: Api): Promise<void> {
   }
   const bound = await admin.put(`/api/v1/role-bindings/admin/${encodeURIComponent(`user:${kinds.admin}`)}`, {});
   await expectStatus(bound, [200, 201], `role admin of ${kinds.admin}`);
+  const auditor = await admin.put(`/api/v1/role-bindings/auditor/${encodeURIComponent(`user:${kinds.auditor}`)}`, {});
+  await expectStatus(auditor, [200, 201], `role auditor of ${kinds.auditor}`);
 
   // A group and service accounts, so that the lists and pages of identities have content.
   await expectStatus(await admin.post('/api/v1/groups', { name: group, description: 'Everyone who builds the customer portal.' }), [201, 409], `group ${group}`);

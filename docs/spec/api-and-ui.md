@@ -3249,17 +3249,18 @@ Priority: **MVP** · Covers: UI-001, UI-004
   [operations-and-observability.md](operations-and-observability.md).
 - Navigation with three side bars, each shown while one of its routes is open (Q-UI-127, Q-UI-129): the **project**
   (`/projects/{project}/…`), the **start** (everything else outside the admin area: the list of your projects, the guides,
-  the profile, the help) and the **Admin area** (`/admin/…`, reached through the Admin button; shown when
-  `/api/v1/authz/me` reports any administrative capability). The project's side bar starts with the **project switcher**
+  the profile, the help, the security dashboard) and the **Admin area** (`/admin/…`, reached through the Admin button; shown
+  when the caller may use one of its entries,
+  [Q-UI-621](#q-ui-621--the-admin-button-is-shown-when-the-admin-area-has-an-entry-for-the-caller)). The project's side bar starts with the **project switcher**
   (the project's mark and name as a button; a panel with a search field, the recently visited projects and the matches,
   opened and closed like a disclosure, closed by Escape with the focus back on the button) and lists the project's
   screens: repositories, packages, vulnerabilities
   ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022), a folding group **Access** (members, permission
   policies, service accounts and CI identity, the last three for the holder of their capability and for the Owner of the
-  project) and settings. The start side bar lists Projects and Guides (R-UI-124); the guides also open from the user menu,
+  project) and settings. The start side bar lists Projects and Guides (R-UI-124), and for the holder of `content:metadata-read`
+  the folding section **Security audit** with **Security dashboard** (R-UI-158); the guides also open from the user menu,
   and the client setup opens from its repository (R-UI-120). The sections are the routes of R-UI-003. Inside the admin area, the single entries
-  (repositories, endpoints, and *Security*, the auditor's dashboard of Q-UI-130 for `vulnerabilities:triage` or
-  `content:metadata-read`) come first and related screens are grouped under folding headings: identity (users, groups,
+  (repositories, endpoints) come first and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
   log, advisory sources) and, last, settings (General, then Authentication; Q-UI-326). Every entry has an icon, which is decoration: the label is the accessible name.
   Entries the caller may not use are hidden (R-UI-005); a group without a visible entry disappears.
@@ -3327,7 +3328,7 @@ Every screen and every object has a bookmarkable URL under `/ui/{locale}`. Filte
 selected tab live in query parameters; a version of a package is an object with a path of its own (R-UI-111).
 
 <details>
-<summary>Route table (41)</summary>
+<summary>Route table (42)</summary>
 
 | Route | Screen | Requirement |
 |---|---|---|
@@ -3349,6 +3350,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/service-accounts`, `/projects/{project}/service-accounts/{name}` | Service accounts of the project | R-UI-026 |
 | `/projects/{project}/ci`, `/projects/{project}/ci/test`, `/projects/{project}/ci/mappings/{mapping}` | CI identity of the project | R-UI-035, R-UI-036 |
 | `/search` (`?q=&kind=`) | Search results of the main area | R-UI-098 |
+| `/security` (`?q=&advisory=&project=&severity=&…`), `/security/findings/{id}`, `/security/advisories/{ecosystem}/{id}` | The security dashboard over every project, its finding and advisory; for the holder of `content:metadata-read`, else not found | R-UI-158, R-UI-159, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/admin/trash` | Trash can of the installation, for administrators (P1, not built) | R-UI-014 |
 | `/builds`, `/builds/{build}`, `/builds/{build}/{number}` | Builds (P1) | R-UI-040 |
 | `/guides`, `/guides/{format}` | Guides: the formats as tiles, the repositories of one format | R-UI-124 |
@@ -3385,7 +3387,8 @@ selected tab live in query parameters; a version of a package is an object with 
   ([Q-UI-129](#q-ui-129--the-project-is-the-context-of-the-content-chosen-from-your-projects)); `/projects/{project}`
   answers with the repositories (Q-UI-216), so that the step of the project in the breadcrumb links to a route that exists. A route
   that existed before the project was the context (`/packages`, `/browse`, `/vulnerabilities`, and since [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page) a project's `…/browse`,
-  `/admin/repositories/{project}/{key}`, `/admin/projects/{project}`) is not found.
+  `/admin/repositories/{project}/{key}`, `/admin/projects/{project}`) is not found, and so is the admin area's `/admin/security`, since
+  the security dashboard is the auditor's page `/security` (R-UI-158).
 - Route guards only shape navigation; the API decides (R-UI-005). When a screen's first API call
   answers 403, the screen shows a "no access" state with the missing permission and, for callers
   with `policies:read`, a link to the explainer.
@@ -6102,7 +6105,7 @@ their severity (R-VULN-022). The list shows the grade; the bar and the facts are
 | Package page (R-UI-007), the versions table (R-UI-110) | The column **Vulnerabilities** | `<quader-grade>` of each version: the grade, the total of its open findings and how many have a fix (R-UI-112) |
 | Version page (R-UI-111) | The line of facts | `<quader-grade>` of the version (the worst of its repositories), a link to the tab **Vulnerabilities** ([Q-UI-375](#q-ui-375--the-package-page-shows-the-versions-grade-in-its-header-and-a-card-per-repository-on-its-tab), Q-UI-454) |
 | Version page, tab **Vulnerabilities** (R-VULN-023) | Each repository's section | `<quader-grade-card>` above the block banner, its bar's segments the severity filter of the findings below (`severity` in the URL); then the open findings, 25 at a time from the findings API, worst first, with their number from the grade's counts ([Q-UI-379](#q-ui-379--the-vulnerabilities-tab-pages-the-open-findings-of-a-version-from-the-findings-api-filtered-by-the-cards-bar)) |
-| Vulnerability report (R-VULN-022), a project's and the admin area's security dashboard | The header | `<quader-severity-bar [links]>` of the open findings in scope in place of the five severity counts; the counts **Malicious**, **Needs triage** and **Blocked versions** stay ([Q-UI-376](#q-ui-376--the-reports-header-shows-the-severity-bar-whose-segments-are-its-filter-links)) |
+| Vulnerability report (R-VULN-022), a project's and the security dashboard | The header | `<quader-severity-bar [links]>` of the open findings in scope in place of the five severity counts; the counts **Malicious**, **Needs triage** and **Blocked versions** stay ([Q-UI-376](#q-ui-376--the-reports-header-shows-the-severity-bar-whose-segments-are-its-filter-links)) |
 
 - A caller who gets no grades (signed out, an installation that does not scan, Q-VULN-158) sees no grade column, no card and no
   header grade, not a column of dashes ([Q-UI-377](#q-ui-377--a-list-without-grades-has-no-grade-column)).
@@ -6161,7 +6164,9 @@ Priority: **MVP** · Covers: quader-only
 When the field gets the focus without a text, a list opens under it, in this order
 ([Q-UI-404](#q-ui-404--the-empty-field-offers-the-references-parts-in-its-order-and-the-admin-pages-last)):
 
-1. **Places**: Projects (`/projects`), Guides (`/guides`), Profile (`/profile`), Personal tokens (`/profile/tokens`), each with its
+1. **Places**: Projects (`/projects`), Guides (`/guides`), Profile (`/profile`), Personal tokens (`/profile/tokens`), and the entries
+   of the start side bar's sections the caller has (Security dashboard, `/security`, for the holder of `content:metadata-read`,
+   R-UI-158, [Q-UI-626](#q-ui-626--the-security-dashboard-is-a-place-and-a-page-of-the-main-area-in-the-search)), each with its
    side-bar icon; an anonymous caller gets Projects and Guides.
 2. **Frequently visited repositories**: up to five, each with its format's icon, the key, and "· <project key>" muted.
 3. **View all my projects** (`/projects`).
@@ -6814,8 +6819,8 @@ The same walk found one thing in two forms on screens of one kind. One form each
   ([Q-UI-566](#q-ui-566--the-jobs-and-the-backup-runs-take-the-head-of-every-list)).
 - **A setting's name in running text** is code ([Q-UI-571](#q-ui-571--a-settings-name-in-running-text-is-code)).
 
-Not unified, open for the owner: the row actions (**Edit**, **Revoke**, **Unbind**, an icon and a menu), and the two filter
-mechanisms of the security dashboard.
+Not unified, open for the owner: the row actions (**Edit**, **Revoke**, **Unbind**, an icon and a menu). The two filter mechanisms
+of the security dashboard became one (R-UI-159).
 
 Acceptance criteria:
 
@@ -6914,6 +6919,84 @@ project's service accounts and the profile (they create or show one principal, t
 
 Acceptance criteria: the unit tests of R-UI-150 per place; no template of `web/src/app` holds a hint or a placeholder with
 `user:`, `group:` or `sa:`.
+
+### R-UI-158 · The security dashboard is the auditor's page, under Your work
+Priority: **MVP** · Covers: quader-only
+
+The owner's walk of 2026-11-18 (W-17, [promt.md](../projektplan/promt.md#owner-walk-of-2026-11-18-the-frontend)): "beim Security
+dashboard handelt es sich nicht um ein Admin Feature, sondern um ein Auditor-Feature. Für Auditoren oder Administratoren gehört es
+unter Your Work als zweite Kategorie "Security Audit", darunter dann Security Dashboard. Sichtbar nur für Instanz-Auditoren und
+Instanz-Administratoren."
+
+- **Place** ([Q-UI-620](#q-ui-620--the-security-dashboard-is-security-of-the-main-area-in-a-folding-section-security-audit)). The
+  dashboard is `/security` of the main area, its finding `/security/findings/{id}` and its advisory
+  `/security/advisories/{ecosystem}/{id}`. The start side bar (**Your work**) has, after Projects and Guides, the folding section
+  **Security audit** with the one entry **Security dashboard**, built as every folding group of a side bar (R-UI-002). The trail reads
+  "Security audit / Security dashboard" (the section a name without a link, R-UI-002's breadcrumbs), the page's title "Security
+  dashboard". The admin area has no entry and no route for it: `/admin/security` is not found (R-UI-003). **Advisory sources** stays
+  in the admin area's group System, because the sources are the installation's configuration.
+- **Who** ([Q-AUTHZ-295](authorization.md#q-authz-295--the-security-dashboard-opens-for-the-holder-of-contentmetadata-read)). The
+  section, the entry and the page are the holder's of `content:metadata-read`, the capability that lets the findings API read every
+  project (R-VULN-019): the system roles `admin` and `auditor`. Everyone else sees neither the section nor the entry, and the address
+  answers **Page not found** ([Q-UI-622](#q-ui-622--a-caller-without-the-capability-gets-page-not-found-at-security)). The role
+  `security-admin` holds `vulnerabilities:triage` without `content:metadata-read` and has no dashboard: it triages on the screens of
+  the projects whose repositories it may read.
+- **On the page** (R-UI-005): the selection, **Change status** and the finding's status buttons for the holder of
+  `vulnerabilities:triage`; **Advisory sources** for the holder of `settings:read`; nothing else leads into the admin area; a
+  package opens in its project.
+- **The Admin button** is shown to a caller who may use an entry of the admin area
+  ([Q-UI-621](#q-ui-621--the-admin-button-is-shown-when-the-admin-area-has-an-entry-for-the-caller)). An auditor may (the admin
+  dashboard through `settings:read`, the audit log, the users), so it keeps the button; a caller whose only capabilities are the
+  dashboard's has none and is not led into an empty admin area.
+- **The search** offers **Security dashboard** to the holder as a place before anything is typed (R-UI-096) and as a page while
+  typing (R-UI-097), unmarked: it is a page of the main area, so R-UI-099 does not apply to it
+  ([Q-UI-626](#q-ui-626--the-security-dashboard-is-a-place-and-a-page-of-the-main-area-in-the-search)).
+- The manual's page is in the user guide (`docs/manual/user/security-dashboard.md`), and the "?" of the top bar opens it.
+
+Acceptance criteria:
+
+- As `auditor` (a member of no project): the side bar of `/projects` shows **Security audit** with **Security dashboard**; it opens
+  `/security`, the trail is "Security audit / Security dashboard", the Admin button is shown and not current; a finding opens below
+  `/security`. As `admin` the same. As a reader, an Owner and the holder of `security-admin`: no section, no suggestion, and
+  `/security` shows **Page not found**. `/admin/security` is not found for everyone.
+- A lint rule refuses a link to `/admin/security` in the UI's sources (`web/scripts/removed-routes-rule.mjs`).
+- Unit tests: `app.spec.ts`, `app.routes.spec.ts`, `security-dashboard.spec.ts`, `admin-home.spec.ts`, `search-field.spec.ts`,
+  `search-gate.spec.ts`; the journey `web/e2e/vuln/16-security-dashboard.spec.ts`.
+
+### R-UI-159 · The security dashboard has one filter: the head of its list
+Priority: **MVP** · Covers: quader-only
+
+The owner's walk of 2026-11-18 (W-17): above the counts the page had a form of its own (**Advisory ID**, **Package starts with**,
+**Project key**, **Search**, with example texts in the fields) that set filters of the list far below it, which has its own head.
+The owner chose, from three options (one filter at the list's head; the form as the scope of the whole page; the form moved down to
+the list), the first ("Option A").
+
+- **The page** starts with its title, one line that says what the counts and the trend cover, the counts and the trend; then the
+  list with the head of R-UI-100. There is no form above the counts and no field with an example as its text.
+- **The search** of the list's head, "Search by advisory, alias, package or summary", takes the question "do I have CVE-X?" in
+  one step ([Q-UI-623](#q-ui-623--a-whole-advisory-identifier-in-the-search-is-the-advisory-filter-any-other-text-the-text-search)):
+  a whole advisory identifier is the `advisory` filter in its canonical spelling (the findings of that advisory and of every
+  advisory that names it as an alias, through the index of Q-VULN-111), any other text is `q` (a part of the package name, the
+  identifier, an alias or the summary, in any case; R-VULN-020). The field shows the identifier, and no chip repeats it. The
+  advisory page's link to all of its findings lands there too.
+- **The drawer** holds **Project** first, the projects the caller sees as a list to tick, each with its mark and name
+  ([Q-UI-624](#q-ui-624--the-project-of-the-dashboards-drawer-is-ticked-from-the-projects-by-mark-and-name)), then the categories
+  of a project's report but **Advisory**, which the search takes. A chip names the project by its name. `packagePrefix` is no filter
+  of the UI any more; the API keeps it.
+- **What the counts cover** ([Q-UI-625](#q-ui-625--the-counts-and-the-trend-follow-the-scope-filters-and-a-line-says-so)): the
+  counts and the trend follow the project, repository and format filters, never the search or the other filters, and the line
+  says which: "The counts and the trend cover every project." while none of the three is set, "… cover the projects,
+  repositories and formats of the filters." while one is.
+
+Acceptance criteria:
+
+- Unit tests (`security-dashboard.spec.ts`): no form and no example text above the list; the order title, line, counts, trend,
+  list; `cve-2021-44906` sends `advisory=CVE-2021-44906`, `ghsa-XVCH-…` the GHSA identifier in its spelling, `minimist` and
+  `CVE-2021` send `q`; the alias finds the finding; the drawer's projects by mark and name, ticked into `project=`; the project chip
+  by name; the line with and without a scope filter; a reader sees no triage control.
+- The journey `16-security-dashboard.spec.ts`: an alias pasted in lower case finds the finding of two projects, the project ticked in
+  the drawer narrows the list and the counts, a text search narrows the list while the counts stay the project's.
+- The integration test `TestR_VULN_020_List` finds a finding by an alias of its advisory through `q`.
 
 ## Deferred
 
@@ -10622,10 +10705,12 @@ R-UI-041 (the start page, no project filter); the preference `projectFilter` of 
 below `/projects/:project`, `GET /api/v1/packages?project=`. Tests: `app.projects.spec.ts`, `app.routes.spec.ts`,
 `core/breadcrumbs.spec.ts`; journeys 02, 03, 08, 09, 10, 12, 13 and 15 of `web/e2e`.
 
-### Q-UI-130 · The auditor has an instance-wide vulnerability dashboard in the admin area
+### Q-UI-130 · The auditor has an instance-wide vulnerability dashboard, under Your work
 
-Status: **Decided by the owner on 2026-11-06** (what), **placed by the development agent** (where). **Built**: the entry
-*Security* of the admin area, `/admin/security` ([Q-UI-165](#q-ui-165--the-security-dashboard-is-the-content-report-mounted-in-the-admin-area-with-its-own-links-project-column-and-search)).
+Status: **Decided by the owner on 2026-11-06** (what) and **on 2026-11-18** (where and for whom, W-17: under **Your work** as the
+section **Security audit**, for the instance's auditors and administrators). **Built**: `/security`, the entry **Security
+dashboard** of the section **Security audit** (R-UI-158, [Q-UI-165](#q-ui-165--the-security-dashboard-is-a-projects-report-mounted-a-second-time-with-its-own-links-and-the-project-as-a-filter)). The development agent had placed it
+in the admin area as the entry *Security*, for `vulnerabilities:triage` or `content:metadata-read`; the owner moved it.
 
 Context: the owner: "Ein Instanz-Auditor bekommt ein Dashboard, mit dem er instanzweit CVEs suchen und flagen kann." Before Q-UI-129 the Vulnerabilities screen of the content area listed the findings of every repository the caller may read; the `auditor`
 reads the metadata of every repository and holds `vulnerabilities:triage` (Q-AUTHZ-172, R-VULN-013), so for an auditor that
@@ -10634,14 +10719,16 @@ screen is already instance-wide and the triage (confirm, dismiss, block) already
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A security dashboard in the admin area (chosen) | For holders of `vulnerabilities:triage` or `content:metadata-read` (auditor, security administrator, administrator): the counts and trend over all projects, a search by advisory (CVE or GHSA ID), package and project, and the triage of each finding | The instance-wide view sits with the other instance-wide screens; the project's own Vulnerabilities screen stays per project | A second report beside the project's |
+| (a) A security dashboard of its own (chosen; the owner placed it under Your work on 2026-11-18) | For the instance's auditors and administrators (`content:metadata-read`): the counts and trend over all projects, a search by advisory (CVE or GHSA ID, any alias), package and project, and the triage of each finding | The instance-wide view is one page; the project's own Vulnerabilities screen stays per project | A second report beside the project's |
 | (b) The project's Vulnerabilities screen with an "all projects" choice | One screen | Fewer screens | Mixes the project context with the instance; an auditor is no project member |
 
-**Choice:** (a). The project's Vulnerabilities screen shows that project's findings; the admin area's dashboard all of
-them, with the project as a column and a filter.
+**Choice:** (a). The project's Vulnerabilities screen shows that project's findings; the dashboard all of them, with the project
+as the link of each row's repository and a filter. It is the auditor's page, not an administrator's: the owner, 2026-11-18, "nicht
+um ein Admin Feature, sondern um ein Auditor-Feature".
 
-**Applied in the spec:** R-VULN-022 (the instance-wide bullet) and, for the form of the screen, [Q-UI-165](#q-ui-165--the-security-dashboard-is-the-content-report-mounted-in-the-admin-area-with-its-own-links-project-column-and-search). R-UI-002's
-list of admin entries gains *Security* (`vulnerabilities:triage` or `content:metadata-read`).
+**Applied in the spec:** R-VULN-022 (the instance-wide bullet), R-UI-158 (the place and who sees it), R-UI-159 (its one filter),
+R-UI-002 (the start side bar's section **Security audit**) and, for the form of the screen,
+[Q-UI-165](#q-ui-165--the-security-dashboard-is-a-projects-report-mounted-a-second-time-with-its-own-links-and-the-project-as-a-filter).
 
 ### Q-UI-140 · Which file names of the UI build are hashed
 
@@ -10958,7 +11045,7 @@ listed, and what becomes of the administration an Owner had in the admin area.
   caller may read, as the lookup returns it; its repositories tab names the project of each repository.
 - **The vulnerability report** is the project's (`project=` of the findings, summary and trend); the advisory page lists the
   findings of the advisory the caller may read in any project, each linking to its finding in that finding's project. The
-  instance-wide search is [Q-UI-130](#q-ui-130--the-auditor-has-an-instance-wide-vulnerability-dashboard-in-the-admin-area).
+  instance-wide search is [Q-UI-130](#q-ui-130--the-auditor-has-an-instance-wide-vulnerability-dashboard-under-your-work).
 - **The Owner's administration moves into the project** (members, policies, service accounts, CI identity, settings), so the
   admin area is shown to a caller with a capability only and `isProjectOwner` is gone from the session store.
 - **A project's setup of a page that serves both** (the repository list and wizard, the policy list) is one component that reads
@@ -10974,31 +11061,28 @@ closed and its block removed; [vulnerability-scanning.md](vulnerability-scanning
 gained `project` (`api/openapi.yaml`, `internal/api/v1/packages_api.go`, `internal/packages/view/topology.go`; tests
 `TestR_API_029_ProjectNarrowsToThePhysicalRepositoriesOfTheProject`, `TestR_API_029_FilterParsing`).
 
-### Q-UI-165 · The security dashboard is the content report mounted in the admin area, with its own links, project column and search
+### Q-UI-165 · The security dashboard is a project's report mounted a second time, with its own links and the project as a filter
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Its place
+and its search were changed by the owner on 2026-11-18 (W-17): `/security` instead of `/admin/security` (R-UI-158), the list's head as
+its one filter instead of a search row (R-UI-159).
 
-Context: [Q-UI-130](#q-ui-130--the-auditor-has-an-instance-wide-vulnerability-dashboard-in-the-admin-area) asks for counts, a
-trend, a search by advisory, package and project, a list with the project as a column and the triage of each finding in the
-admin area. The Vulnerabilities screen of a project (`/projects/:project/vulnerabilities`, Q-UI-163) already has the counts, the trend (`--quader-chart-*`), the list with
+Context: [Q-UI-130](#q-ui-130--the-auditor-has-an-instance-wide-vulnerability-dashboard-under-your-work) asks for counts, a
+trend, a search by advisory, package and project, a list with the project of each finding and the triage of each finding. The Vulnerabilities screen of a project (`/projects/:project/vulnerabilities`, Q-UI-163) already has the counts, the trend (`--quader-chart-*`), the list with
 its filters, the bulk triage, and the finding and advisory screens behind it; only the `project` filter and the search
 were missing in the UI for the whole instance.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The same screens, mounted a second time below `/admin/security` (chosen) | The report, the finding and the advisory screens are routed in the project and below `/admin/security`; a route-level provider (`VULN_CONTEXT`) says whether a screen reads every project (`instanceWide`), which switches on the project column, the search and the heading, and `vulnCommands` builds every link to a sibling screen inside the place the screen was opened in (the advisory sources are the installation's single page `/admin/advisory-sources`, Q-UI-163) | One implementation of the counts, the trend, the filters, the triage and the export; the project's own screen and the dashboard cannot drift apart; the `project` input of the report is the route parameter in a project and the query parameter in the dashboard | A change to the report is a change to both screens; the report component carries two small conditions |
+| (a) The same screens, mounted a second time below `/security` (chosen) | The report, the finding and the advisory screens are routed in the project and below `/security`; a route-level provider (`VULN_CONTEXT`) says whether a screen reads every project (`instanceWide`), which switches on the heading, the project filter of the drawer, the project link of each row's repository, the search of Q-UI-623 and the line of Q-UI-625, and `vulnCommands` builds every link to a sibling screen inside the place the screen was opened in (the advisory sources are the installation's single page `/admin/advisory-sources`, Q-UI-163) | One implementation of the counts, the trend, the filters, the triage and the export; the project's own screen and the dashboard cannot drift apart; the `project` input of the report is the route parameter in a project and the query parameter in the dashboard | A change to the report is a change to both screens; the report component carries a few small conditions |
 | (b) A second report component for the dashboard | A copy with the project column and the search | The project screen stays untouched | Two lists, two sets of filters and chips and two triage flows to keep equal; a fix lands in one of them |
-| (c) The project filter and a project column on the content screen, no admin screen | One screen for both | No new route | Q-UI-130 (b), which the owner rejected: it mixes the project context with the instance |
+| (c) The project filter and a project column on the project's screen, no screen of its own | One screen for both | No new route | Q-UI-130 (b), which the owner rejected: it mixes the project context with the instance |
 
-**Choice:** (a). The entry *Security* of the admin area is shown to a holder of `vulnerabilities:triage` or
-`content:metadata-read` (`NavItem.anyCapability`); the admin area's start page is the dashboard for a caller who holds one of
-the two and none of `settings:read`, `repositories:read-config` and `projects:read`. A holder of
-`content:metadata-read` alone reads; the selection column, the bulk action and the status buttons of the finding appear only
-with `vulnerabilities:triage` (R-UI-005), as in a project, and the dashboard says so. The advisory field of the search
-writes the identifier in its canonical spelling (`cve-2021-23337` becomes `CVE-2021-23337`, a GHSA identifier keeps its
-lower-case groups), because the API compares identifiers exactly and finds a finding by any alias of its advisory (R-VULN-006).
-The package field is a prefix search (`packagePrefix`), the project field a project key (`project`); the exact package name,
-the version and every other filter stay in the filter panel.
+**Choice:** (a). The entry **Security dashboard** of the section **Security audit** is shown to the holder of
+`content:metadata-read` (R-UI-158). A caller who reads but does not hold `vulnerabilities:triage` sees no selection column, no bulk
+action and no status buttons of the finding (R-UI-005), as in a project, and the dashboard says so. The search is the list's
+head (R-UI-159): a whole advisory identifier in its canonical spelling is the `advisory` filter, any other text `q` (Q-UI-623); the
+project is a filter of the drawer (Q-UI-624).
 
 **Rationale:** the dashboard is the report with a wider scope, and the API already scopes by `project`; what differs is where
 the links go and which columns show. The development agent would revisit this when the dashboard needs a layout of its own
@@ -11006,11 +11090,12 @@ the links go and which columns show. The development agent would revisit this wh
 screen needs more than `VULN_CONTEXT` to tell the two apart; then the dashboard becomes its own component over the same
 services.
 
-**Applied in the spec:** Q-UI-130 (status: built), R-VULN-022 (instance-wide bullet), H-551 closed. Code:
+**Applied in the spec:** Q-UI-130 (status: built), R-VULN-022 (instance-wide bullet), R-UI-158, R-UI-159, H-551 closed. Code:
 `web/src/app/features/vulnerabilities/` (`vuln-context.ts`, `security.routes.ts`, `vulnerability-report.ts` and `.html`),
-`web/src/app/core/navigation.ts`, `auth-guard.ts`, `help-topics.ts`, `web/src/app/app.routes.ts`. Tests: `security-dashboard.spec.ts`,
-`admin-home.spec.ts`, `vulnerabilities-api.spec.ts`; the browser journey `web/e2e/vuln/16-security-dashboard.spec.ts` (axe in both
-schemes). Documented in [web-ui.md](../developer/web-ui.md) and [vulnerabilities.md](../developer/vulnerabilities.md).
+`web/src/app/core/navigation.ts`, `auth-guard.ts` (`capabilityGuard`), `help-topics.ts`, `web/src/app/app.routes.ts`. Tests:
+`security-dashboard.spec.ts`, `app.spec.ts`, `app.routes.spec.ts`, `vulnerabilities-api.spec.ts`; the browser journey
+`web/e2e/vuln/16-security-dashboard.spec.ts` (axe in both schemes). Documented in [web-ui.md](../developer/web-ui.md) and
+[vulnerabilities.md](../developer/vulnerabilities.md).
 
 ### Q-UI-166 · The avatar is seeded with the ID of the principal
 
@@ -13627,7 +13712,7 @@ The development agent records no revisit condition. **Applied in the spec:** R-V
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: once the render seed had findings, the list scrolled sideways for a triager at 1440 px: 4 px in a project's report, 87 px
-on `/admin/security`. Its cells that cannot wrap (the qualified repository name, the time, the headers, a status with its reason)
+on the security dashboard. Its cells that cannot wrap (the qualified repository name, the time, the headers, a status with its reason)
 added up to more than the list's 1,128 px; the dashboard had a column **Project** beside **Repository**, whose qualified name names the
 project already.
 
@@ -13639,7 +13724,7 @@ project already.
 
 **Choice:** (a). **Rationale:** the qualified name `<project>/<repository>` is how Quader names a repository outside its project ([Q-REPO-212](repositories-and-proxy.md#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared)), so a
 column that repeats its first part costs the room without adding a fact. The development agent revisits the column if the owner wants
-the project as a column of its own. **Applied in the spec:** R-VULN-022 (List, Instance-wide); [Q-UI-165](#q-ui-165--the-security-dashboard-is-the-content-report-mounted-in-the-admin-area-with-its-own-links-project-column-and-search)'s column is replaced by the link.
+the project as a column of its own. **Applied in the spec:** R-VULN-022 (List, Instance-wide); [Q-UI-165](#q-ui-165--the-security-dashboard-is-a-projects-report-mounted-a-second-time-with-its-own-links-and-the-project-as-a-filter)'s column is replaced by the link.
 
 **Revised by [Q-UI-428](#q-ui-428--the-reports-cells-keep-a-qualified-name-a-fixed-version-and-a-time-on-one-line)
 (2026-11-18):** the qualified name no longer breaks after its slash, and the time of detection no longer wraps: every row was three
@@ -15643,8 +15728,8 @@ Context: `system/jobs` filtered with a form of its own (a text field "Kind (comm
 | (a) `<quader-list-head>` and `<quader-filter-panel>`: the jobs' **Kind** (several, separated by commas) and **State** (check boxes), the runs' **Operation** and **State** (selects), each set filter a chip; the filters stay in the address (chosen) | ADR-200's pieces | One way to filter; the list keeps its width | A filter is two clicks instead of one |
 | (b) Keep the forms | As before | Visible filters | Two ways to filter |
 
-**Choice:** (a). Neither list has a search by name. The security dashboard keeps its two mechanisms: its construction is open for
-the owner. **Rationale:** the owner chose the drawer for every list (W-6). The development agent revisits nothing here.
+**Choice:** (a). Neither list has a search by name. The security dashboard kept its two mechanisms then; the owner chose one
+on 2026-11-18 (R-UI-159). **Rationale:** the owner chose the drawer for every list (W-6). The development agent revisits nothing here.
 
 **Applied in the spec:** R-UI-146, R-UI-038, R-UI-048. Code: [jobs-page.ts](../../web/src/app/features/system/jobs-page.ts),
 [backups-page.ts](../../web/src/app/features/system/backups/backups-page.ts).
@@ -16109,6 +16194,178 @@ administrator ([identity-and-authentication.md](identity-and-authentication.md) 
 admin task with its own screen. Open: an invitation of a person who has never signed in (not built).
 
 **Applied in the spec:** R-UI-150.
+
+### Q-UI-620 · The security dashboard is `/security` of the main area, in a folding section Security audit
+
+Status: **Decided by the owner, 2026-11-18** (W-17: under **Your work** as a second category **Security audit**, with **Security
+dashboard** under it, for instance auditors and administrators); the address and the form of the section **decided by the
+development agent** — selected from the options below; the owner reviews them at the walkthrough.
+
+Context: the dashboard was the admin area's entry *Security* at `/admin/security`. The start side bar (**Your work**) has two
+single entries, Projects and Guides; the shell's means for a section with entries is the folding group of `NAV_AREAS`
+([navigation.ts](../../web/src/app/core/navigation.ts)), which the admin and the project side bars use.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `/security`, a folding group **Security audit** of the start side bar with the entry **Security dashboard** (chosen) | The routes `/security`, `/security/findings/{id}`, `/security/advisories/{ecosystem}/{id}`; the group is a `NavGroup` with the capability on its entry, so it disappears with its last entry | One short address that names the page; the section is built and folded as every other section; no new kind of side-bar entry | A section with one entry folds |
+| (b) `/audit/security` | The section's name in the address | Room for more pages of the section | `/admin/audit` is the audit log; two "audit" addresses for two things; longer |
+| (c) A heading without folding above the entry | A new kind of side-bar entry | No fold for one entry | A second way to build a section, for one case |
+
+**Choice:** (a). The section's heading is a name, not a page, so the trail reads "Security audit / Security dashboard" with the
+section unlinked, as "Admin area" is. **Advisory sources** stays in the admin area's group System: it is the installation's
+configuration, and its link on the dashboard is shown to the holder of `settings:read` only. **Rationale:** the owner placed the
+page; the address follows the side bar's other places (`/projects`, `/guides`, `/search`), which are one word below the root. The
+development agent revisits the address when the section gets a second page.
+
+**Applied in the spec:** R-UI-158, R-UI-002, R-UI-003; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022. Code:
+[navigation.ts](../../web/src/app/core/navigation.ts), [app.routes.ts](../../web/src/app/app.routes.ts),
+[security.routes.ts](../../web/src/app/features/vulnerabilities/security.routes.ts),
+[vuln-context.ts](../../web/src/app/features/vulnerabilities/vuln-context.ts), the lint rule
+[removed-routes-rule.mjs](../../web/scripts/removed-routes-rule.mjs).
+
+### Q-UI-621 · The Admin button is shown when the admin area has an entry for the caller
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner (W-17) wants the dashboard to be no admin feature, and an auditor who is no administrator must not be led into
+the admin area by the page. The Admin button was shown for any capability (`SessionStore.hasAdminArea`). The auditor holds
+`settings:read`, `audit:read`, `identities:read` and more, so the admin area has pages for it; a caller whose capabilities are
+only those of the dashboard (`content:metadata-read`, `vulnerabilities:triage`) would have had a button into an admin area with no
+entry since the dashboard left it. No system role is such a caller today; `webhook-admin` (`webhooks:read`, `webhooks:write`), for
+whose screens the admin area has no entry yet, is one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The button follows the admin side bar: shown when the caller may use one of its entries (chosen) | `Navigation.hasAdminArea`, computed from the entries the caller may use | The button never leads into an empty area; one source of truth, the side bar | An entry added to the admin area must name its capability, as every entry does |
+| (b) Any capability, as before | No change | Nothing moves | A button into an empty area for a caller with the dashboard's capabilities alone |
+| (c) Hide the button for the role `auditor` | A role name in the UI | Simple | The UI decides by role names, not by capabilities (R-UI-005); an auditor uses the audit log and the users of the admin area |
+
+**Choice:** (a). The auditor keeps the button, because it may use the admin dashboard, the audit log, the identities and more;
+on the security dashboard the button is not current, and nothing else on the page but **Advisory sources** (for `settings:read`)
+leads into the admin area. **Rationale:** the button is the way into the area, so it exists when the area has something for the
+caller. The development agent records no revisit condition.
+
+**Applied in the spec:** R-UI-158, R-UI-002. Code: [navigation.ts](../../web/src/app/core/navigation.ts) (`hasAdminArea`),
+[app.html](../../web/src/app/app.html); `SessionStore.hasAdminArea` is gone.
+
+### Q-UI-622 · A caller without the capability gets Page not found at `/security`
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner wants the page visible only to instance auditors and administrators. The findings API answers every
+authenticated caller with what that caller may read (R-VULN-019), so without a guard a reader who types `/security` would see the
+findings of its own projects under the heading "Security dashboard" and a line that claims every project. The app's routes had no
+guard by capability: the API decides and a screen shows its 403 (R-UI-003).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A guard by capability that shows **Page not found** at the address asked for (chosen) | `capabilityGuard('content:metadata-read')` in [auth-guard.ts](../../web/src/app/core/auth-guard.ts) answers a `RedirectCommand` to the not-found route with `skipLocationChange`; a session that could not be read passes, so the screen shows the failure | The page never claims a scope the caller does not have; a caller without the right learns nothing about a page it cannot use, as with any address the app does not offer it | A route guard that does more than shape navigation, for one route |
+| (b) No guard; the screen shows a "no access" notice when the caller lacks the capability | The notice of R-UI-003 | No guard | The screen asks the session instead of the API; the notice names a page the caller is not meant to know |
+| (c) Redirect to the start page | The router's way of a guard | The caller lands somewhere useful | A link that silently goes elsewhere; nothing says why |
+
+**Choice:** (a). The API decides what is read in any case; the guard only keeps the page from describing a scope the caller does
+not have. Inside the app the address bar keeps the page the caller came from, because a navigation that is redirected without a
+location change does not write its own address; a link opened from outside shows its address with **Page not found** (the
+router's documented behaviour; not looked at in a browser).
+**Rationale:** the owner's rule is a rule of visibility, and the findings API cannot refuse a page it serves to everyone. The
+development agent revisits the guard if a second route needs one, to make it a route's data instead of a function.
+
+**Applied in the spec:** R-UI-158, R-UI-003. Code: [auth-guard.ts](../../web/src/app/core/auth-guard.ts),
+[app.routes.ts](../../web/src/app/app.routes.ts).
+
+### Q-UI-623 · A whole advisory identifier in the search is the advisory filter, any other text the text search
+
+Status: **Decided by the owner, 2026-11-18** (one filter, at the list's head: the form above the counts goes); how the one field
+answers "do I have CVE-X?" **decided by the development agent** — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the form's **Advisory ID** sent `advisory`, which finds the findings of an advisory by its identifier or any alias, exactly,
+and starts at the advisory rows (Q-VULN-111: 23 to 54 ms at 100,000 findings, where the walk over the sort index took 1.47 s). The
+list's search sends `q`, which matches a part of the package name, the identifier, the summary and, in the statement since before this
+change, every alias of the advisory, in any case (`VulnFindingsList` in
+[vuln_api.sql](../../internal/meta/postgres/queries/vuln_api.sql); the API's description said only "the package name, the advisory
+identifier or the summary"). `q` reads the caller's whole scope when it matches few findings.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The field sends a whole identifier as `advisory` in its canonical spelling, any other text as `q` (chosen) | `advisoryIdOf` ([vuln-context.ts](../../web/src/app/features/vulnerabilities/vuln-context.ts)): `CVE-yyyy-n…`, `GHSA-xxxx-xxxx-xxxx`, `MAL-`, `OSV-`, `PYSEC-`, `GO-`, `RUSTSEC-` with a year and a number; the field shows the identifier, no chip repeats it | Pasting a CVE finds the finding by its alias through the index, as fast as the form's field; a part of an identifier still finds by text; one field | The field writes the identifier's case anew (`cve-…` becomes `CVE-…`) after it is applied |
+| (b) Everything as `q` | The list's search as in a project | No rule in the client | The question the dashboard exists for reads every finding at scale (Q-VULN-111's 1.47 s) |
+| (c) Keep **Advisory** as a field of the drawer | The drawer's exact filter | The exact filter stays visible | Three steps for the page's main question; two places to type an identifier |
+
+**Choice:** (a). The drawer of the dashboard has no **Advisory**; a project's report keeps its **Advisory** in the drawer and its
+search as `q`, because its screens are outside this change (W-17). The API's description of `q` and R-VULN-020 now name the aliases,
+and `TestR_VULN_020_List` finds a finding by an alias through `q`. The form's **Package starts with** goes without a successor in
+the UI: `q` finds a part of a package name and the drawer's **Package** the exact name; the API keeps `packagePrefix`. **Rationale:**
+one field for the owner's question, at the speed the form had. The development agent revisits the project's report, to give it the
+same field, when the owner walks the vulnerability screens of a project.
+
+**Applied in the spec:** R-UI-159; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-020, R-VULN-022. Code:
+[vulnerability-report.ts](../../web/src/app/features/vulnerabilities/vulnerability-report.ts) (`searchFor`),
+[vuln-context.ts](../../web/src/app/features/vulnerabilities/vuln-context.ts), [openapi.yaml](../../api/openapi.yaml) (`q`).
+
+### Q-UI-624 · The project of the dashboard's drawer is ticked from the projects, by mark and name
+
+Status: **Decided by the owner, 2026-11-18** (the project becomes a filter of the drawer, chosen, not typed as a key); the control
+**decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the admin area's repository list offers its project as a text field for a key, as the policy list and the CI issuances do;
+no list chose a project from a list yet. The same drawer offers the repositories as a list of check boxes. The caller of the dashboard
+holds `projects:read` with `content:metadata-read` in every system role that has the latter, so `ProjectContext.projects()` lists
+every project.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A list of check boxes, each project with its mark and its name, sorted by name (chosen) | The drawer's way for the repositories and formats; several projects at once, as the API takes them | Chosen, not typed; the project as every list shows it (Q-UI-424); a project of the URL that the list does not know is offered too, so the drawer can take it off | A long list on an installation with very many projects |
+| (b) The admin repository list's text field for a key | The same control as there | One control for both | Typed, which the owner ruled out; a key, where the screens show names |
+| (c) A select of one project | One choice | Short | One project only, where the API takes several |
+
+**Choice:** (a). A chip names the project by its display name. **Rationale:** the owner's "chosen, not typed" and the drawer's own
+pattern. The development agent revisits the control when an installation's projects make the list too long to scan, with a filter
+field above the boxes, and would carry it to the admin area's repository list then.
+
+**Applied in the spec:** R-UI-159. Code: [vulnerability-report.html](../../web/src/app/features/vulnerabilities/vulnerability-report.html).
+
+### Q-UI-625 · The counts and the trend follow the scope filters, and a line says so
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner asked to check whether the counts and the trend follow the filters, so that nobody reads filtered counts as the
+installation's. Verified in the code: the header (`ReportSummary`) and the trend (`ReportTrend`) are given the `project`,
+`repository` and `format` filters and nothing else; the summary and trend operations take only these (and the trend `kind`, which
+the screen does not send). The search, the severity, the status, the package and the other filters narrow the list alone.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the behaviour, and one line above the counts says which (chosen) | "The counts and the trend cover every project. A project, repository or format filter narrows them too; the search and the other filters narrow the list of findings only." while no scope filter is set; "… cover the projects, repositories and formats of the filters. …" while one is | Nothing changes that does not need to; the reader knows what a number means | One more line on the page |
+| (b) Make the counts follow every filter | The summary would take every filter | The numbers match the list | API changes; a count link that applies its own filter would then count inside another filter |
+| (c) Say nothing | As before | Nothing to read | A count of the installation beside a list of one package reads as a contradiction |
+
+**Choice:** (a), on the dashboard; a project's report counts its project and says so in its coverage line. **Rationale:** the
+behaviour is right for a dashboard (the counts are the scope's state, the list what one looks for), only unsaid. The development
+agent records no revisit condition.
+
+**Applied in the spec:** R-UI-159. Code: [vulnerability-report.ts](../../web/src/app/features/vulnerabilities/vulnerability-report.ts)
+(`scopeLine`).
+
+### Q-UI-626 · The security dashboard is a place and a page of the main area in the search
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the dashboard was one of the admin pages of the search (R-UI-097), shown to an instance administrator and marked **Admin
+area**. It is now a page of the main area (R-UI-158), so CLAUDE.md's rule that a search never leads into the admin area does not
+touch it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The entries of the start side bar's sections are places (R-UI-096) and pages (R-UI-097) of the main area, for the caller whose side bar shows them (chosen) | `sectionPlaces` of [search-model.ts](../../web/src/app/features/search/search-model.ts) reads them from `Navigation`'s start area | The auditor reaches the page from the search as from the side bar; unmarked, because it is no admin page; no second list of who may see it | The empty list grows by one place for an auditor |
+| (b) A page only while typing | Not among the places | The empty list stays as it was | The side bar's places and the search's places differ |
+| (c) Not in the search | — | Nothing to build | The page was in the search before, for an administrator |
+
+**Choice:** (a). **Rationale:** the places of the empty list are the side bar's places of the main area (R-UI-096). The
+development agent records no revisit condition.
+
+**Applied in the spec:** R-UI-096, R-UI-158. Code: [search-model.ts](../../web/src/app/features/search/search-model.ts),
+[search-field.ts](../../web/src/app/features/search/search-field.ts).
 
 ## What this does not cover
 
