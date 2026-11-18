@@ -1086,8 +1086,19 @@ agent** is not decided until the owner has said so.
   `Failure` at every such sign-in, also when no membership was removed; the spec calls the event's severity "warning"; the
   last state of the claim is stored with the identity (`groupClaimMissing`). Wanted: one entry when the claim is missing
   for an identity for the first time, and one when it is back; shown as a warning, not as a failure; the metric
-  `quader_auth_group_claim_missing_total` counts every sign-in as before, for alerting. Not verified: whether a user's page
-  shows the stored state. Status: a builder is briefed.
+  `quader_auth_group_claim_missing_total` counts every sign-in as before, for alerting.
+  - **Built** (ad2e3ac2 on `main`, Q-AUTH-400 to Q-AUTH-403, Q-UI-610): one entry when the claim goes missing for an identity or
+    its reason changes, a new entry "Group claim back at sign-in" (`user.groups.claim_returned`) when it returns; `warning` is
+    a fourth outcome beside success, failure and denied (migration 00078), also in the filter; a user's page showed the stored
+    state already, under **Groups**, and now says since when and what the policy does. Looked at on the owner's stack: three
+    sign-ins of `sam` after the restart wrote one entry, shown as a yellow **Warning**; the user's page reads "Since Nov 18,
+    2026, 5:28:05 PM, sign-ins through ui-dev carry no group claim. The groups synchronized from it are removed at each of
+    them." Not looked at: the claim's return (the stack's provider never sends groups; the integration tests cover it).
+    Entries written before the change stay as they are, red.
+  - **Open, from the builder's report:** the spec calls two more events warnings that are not written as one: a result of a
+    group rule that violates the group-name rule is "skipped with a warning event" (R-AUTH-008), but only logged
+    ([claims.go](../../internal/auth/oidc/claims.go)); `system.backup.completed` with `completed_with_warnings` is written as
+    success. R-AUTH-041 calls the break-glass events' severity "high", which the model cannot say.
 - **W-15 · The admin area's projects list has no column "Your role"** (owner, 2026-11-18, "Option A" from three: remove it
   there / keep it with an en dash / replace it by **Created**). The list exists only in the admin area; the caller's role is
   empty in every row for an administrator who is no member, and the main area's list of projects shows it where it matters.
