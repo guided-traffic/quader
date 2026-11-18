@@ -349,7 +349,8 @@ stop)
         local) cat "$dir/.host.csv" 2>/dev/null ;;
         node:*) mode="$(cat "$dir/.hostmode")"; docker exec "${mode#node:}" cat "$NODE_HOST_SAMPLES" 2>/dev/null ;;
       esac
-      docker exec "$CG_NAME" cat "$CG_SAMPLES" 2>/dev/null
+      # the helper's loop ends at its stop file and the container with it: a stopped container takes no exec, its file is copied out
+      docker cp "$CG_NAME:$CG_SAMPLES" - 2>/dev/null | tar -xOf - 2>/dev/null
       cat "$dir"/.edge/*.csv 2>/dev/null
     } | grep -E '^[0-9]{13},' | sort -t, -k1,1n -k2,2
   } >"$dir/samples.csv"

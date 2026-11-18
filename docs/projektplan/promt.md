@@ -277,12 +277,18 @@ Found on 2026-11-18 by reading the stall evidence of the baseline nightly 441869
   (`stab/vuln-legs`: build, generate, chart, S3 conformance, malware scan, SBOM, actionlint, integration shards a and b) were scheduled on the
   same machine; from 00:50:20, in the warm-up of the `control` test and before its fault, the `blob` tarballs hit 45 s (1,521 status 0 of
   15,067), the nodes' `full` stall rose from 27 to 147 ms/s to 107 to 371, load 150, edge idle 0 %, 733 dropped iterations; it cleared when that
-  test's load stopped.
+  test's load stopped. A third case, the first with the CPU time recorded: the verification run 44211950522 of `ha-faults` on `k8s-runner-omega`
+  passed its first five tests (`ValkeySlow` included), then at 02:05:52 seven small jobs of Test and Release 44220539577 (unit tests, lint, release
+  tooling, an image build, Trivy, actionlint, integration shard a) and at 02:07:33 the kind leg `e2e (npm)` were scheduled beside it. From 02:07:30,
+  in the warm-up of `ValkeyCredentialMismatch`, k6's p99 rose from 0.8 to 45 s; from 02:08 to 02:09:30 the machine had 27 to 31 of its 32 CPUs busy
+  (`host` `cpu_usage_us`) while the leg's four nodes together got 3 to 7 CPUs, down from 16 to 20 in the tests before; two `packages` pods were
+  OOM-killed (F-134). The machine was full and the leg was not what filled it.
   (3) The overlap, from the job lists of every run since 2026-11-08 (cluster-wide; a node is known only for tonight): `ValkeySlow` red on 11-12 and
   11-18 with 22 and 25 small jobs and 3.5 and 4.2 other large legs beside it, green on 11-13 to 11-17 with 0 small jobs and 0.8 large legs; over
   every leg of at least 10 minutes, `ha-faults`, `npm-ha` and `drain-roles` green ran beside a median of 0 small jobs (job-equivalents), red beside
   3.2 to 4.2. The nightly's legs meet the small jobs because GitHub starts the `17 2 * * *` schedule between 09:20 and 10:41 UTC.
-  **Not verified:** the CPU time of the leg against the small jobs in the window (the recorder had pressure, not use; it has both since Q-HA-305);
+  **Not verified:** the split of the machine's CPU between `kubepods` and the other legs in a red window (the third case lost its `cg:` rows to a
+  collection bug, fixed: the helper's file is copied out of the stopped container; the host and the leg's nodes were recorded);
   the node of every earlier case. **Does not explain:** F-119 (1) (no job of either class beside the dispatch at 07:50 on 11-09), and for the legs of
   Test and Release (`push`, `access-long`) overlap does not separate red from green: they always run beside their own run's small jobs (median 6 for
   green and red alike).
@@ -298,15 +304,22 @@ Found on 2026-11-18 by reading the stall evidence of the baseline nightly 441869
   room for three legs and Test and Release's kind legs wait behind the nightly's lanes, which the owner's rule forbids). The nightly at night would need a
   trigger outside GitHub's schedule (a CronJob that dispatches it); after (a) and (b) it matters less. In this repository: the recorder and the
   warm-up check of Q-HA-305; `concurrency` across the two workflows is ruled out there (it cancels pending runs and holds the release).
-- **F-134 · A `packages` pod is OOM-killed while the kind nodes are starved, and its memory guard sheds nothing** (product; read, not reproduced).
+- **F-134 · A `packages` pod is OOM-killed by its connections' socket buffers while the kind nodes are starved, and its memory guard sheds
+  nothing** (product; cause verified on 2026-11-18 from `pods.csv`, not reproduced locally). **Verified** in the verification run 44211950522
+  (`ha-faults`, `ValkeyCredentialMismatch`, stall of F-133): `quader-packages-…-tslqg` and `…-z2bmt` were OOM-killed at 02:08:59 and 02:09:47
+  (`z2bmt` twice). In the 30 s before each kill the pod's cgroup held 385 to 390 MB `anon` (the process) and 495 to 622 MB `sock` (the kernel's
+  buffers of its TCP connections, charged to the pod), together the 1 GiB limit; `sock` had been 0 to 35 MB before the stall and stayed at 470 to
+  600 MB after the kill, while the process had used about half a CPU. The guard reads the Go heap and stacks (high-water mark 0.8 × 0.85 GiB ≈
+  700 MB), which never came near it: what killed the pod is outside what the guard can see. Which connections hold the buffers (the
+  answers to an edge that reads nothing, or object store bodies not yet read) is not measured. Next step (product, a decision of its own): the
+  guard counts the cgroup's memory (`memory.current`, or its `sock`) and not only the heap, or the client listeners bound what a connection may
+  queue (`SO_SNDBUF`); then a test that holds the edge's reads and shows the pod sheds instead of dying. Earlier history:
   `quader-packages-…-xb2w2` of 44186978088 at 00:13:34 and `trove-packages-…-x4pnj` of 43194646678 (11-12), both in `TestHAFaults_ValkeySlow` under
   the stall of F-133: `Last State: Terminated, Reason: OOMKilled, Exit Code 137`, limit 1 GiB, `GOMAXPROCS` 1 (dev profile: request 250m), Go limit
   0.85 GiB. Its log has no shedding line of the memory guard (R-ARCH-005, Q-ARCH-240), whose high-water mark is 80 % of the Go limit, and its last
-  minute shows object store GETs of 2.6 MB taking 38 s while about 1,000 connections were open at each edge pod. What filled the limit is not known:
-  the guard sees the Go heap and stacks, not the kernel's socket buffers of the pod's connections (charged to its cgroup), nor a heap the starved GC
-  let grow past the soft limit. No `ha-faults` leg of the green nights 11-13 to 11-17 had a restart. Next step: `pods.csv` (Q-HA-305) records `anon`, `sock` and `oom_kill` per pod every 5 s;
-  read it at the next OOM kill, then fix the guard or the accounting. A product defect whatever filled it: a stall of the CPU must not end in an
-  OOM kill of a replica whose guard exists to refuse work instead.
+  minute shows object store GETs of 2.6 MB taking 38 s while about 1,000 connections were open at each edge pod (those two runs had no
+  `pods.csv`). No `ha-faults` leg of the green nights 11-13 to 11-17 had a restart. A stall of the CPU must not end in an OOM kill of a replica
+  whose guard exists to refuse work instead.
 
 Found on 2026-11-08 during the run of T-16, by the penetration test of the F-82 fix and the code reviews of WP4b and WP12:
 
