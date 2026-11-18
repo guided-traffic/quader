@@ -151,6 +151,12 @@ api:
     read:
       requests_per_second: 200
       burst: 800
+    # Every anonymous request of the renders comes from 127.0.0.1, one client address for the visitors of all three workers;
+    # the default (5 a second, burst 20) answered 429 to whoami, the banner and the projects when three anonymous screens opened
+    # at once. Here an address gets the default budget of one signed-in reader (Q-UI-686).
+    anonymous:
+      requests_per_second: 50
+      burst: 200
 YAML
 mv "$state/quader.yaml.tmp" "$state/quader.yaml"
 

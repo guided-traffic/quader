@@ -38,6 +38,11 @@ export interface Screen {
    * walk the screen is rendered as it opens and with each of its tabs.
    */
   readonly walk?: (page: Page) => AsyncGenerator<string>;
+  /**
+   * Widths beyond the run's three, for this screen only: where a list changes its form between them (R-UI-173, R-UI-174). The
+   * start page's list was wider than the page at 1,100 px, which neither 1,024 nor 1,440 showed.
+   */
+  readonly widths?: readonly number[];
 }
 
 /**
@@ -380,8 +385,14 @@ async function* allSections(page: Page): AsyncGenerator<string> {
   yield '';
   const closed = page.locator('main quader-disclosure .toggle[aria-expanded="false"]');
   if ((await closed.count()) === 0) return;
-  while ((await closed.count()) > 0) await closed.first().click();
-  await expect(page.locator('main quader-disclosure .collapse-region:not(.open)')).toHaveCount(0);
+  while ((await closed.count()) > 0) {
+    await closed.first().click();
+    // A section that opens moves the toggles under it while it grows: the next click waits until it stands still, or it hits
+    // the toggle that moved into its place and closes a section again.
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  }
+  // The sections; a fold inside one (`inline`, the pattern syntax) stays as the page has it.
+  await expect(page.locator('main quader-disclosure:not(.inline) > .disclosure > .collapse-region:not(.open)')).toHaveCount(0);
   yield 'sections';
 }
 
@@ -416,7 +427,12 @@ async function restrictInternal(page: Page): Promise<void> {
     const body = { ...((await res.json()) as Record<string, unknown>), restrictedLevels: ['internal'] };
     await route.fulfill({ response: res, body: JSON.stringify(body) });
   });
+  // The reloaded form is used once its calls are answered: a project chosen while the page was still loading stood on "Choose a
+  // project" again afterwards, and the walk waited for a key in vain.
+  const answered = page.waitForResponse('**/api/v1/visibility-choices');
   await page.reload();
+  await answered;
+  await page.waitForLoadState('networkidle');
 }
 
 /** A repository's settings with Internal restricted: the Owner keeps the internal levels with a note, an administrator sees notes. */
@@ -716,7 +732,7 @@ export const screens: readonly Screen[] = [
 
   // The start and the project's content (Q-UI-129): the plain user's main path.
   { id: 'home', path: '/ui/', kinds: all },
-  { id: 'projects', path: '/ui/projects', kinds: all },
+  { id: 'projects', path: '/ui/projects', kinds: all, widths: [1100] },
   // The search field and its list on the start page; anonymous while the seed makes a project public (R-UI-095).
   { id: 'search-field', path: '/ui/projects', kinds: ['anonymous', ...all], walk: searchField, expected: tooMany },
   // The side bar's Recently opened and the project switcher read the search's store (R-UI-096, R-UI-167); an anonymous visitor's
@@ -729,7 +745,7 @@ export const screens: readonly Screen[] = [
   { id: 'search-results', path: '/ui/search?q=web', kinds: all },
   { id: 'search-results-none', path: '/ui/search?q=zzqx', kinds: ['plain'] },
   { id: 'search-results-kind-package', path: '/ui/search?q=acme&kind=package', kinds: all },
-  { id: 'repositories', path: `${P}/repositories`, kinds: all, walk: filtersOpen(repositoryChips) },
+  { id: 'repositories', path: `${P}/repositories`, kinds: all, walk: filtersOpen(repositoryChips), widths: [1100] },
   { id: 'repositories-long-keys', path: `${O}/repositories`, kinds: all, walk: filtersOpen() },
   { id: 'repositories-empty-project', path: `/ui/projects/${emptyProject}/repositories`, kinds: admins },
   { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all },
@@ -850,7 +866,7 @@ export const screens: readonly Screen[] = [
   { id: 'help-admin-page', path: '/ui/help/admin/repositories', kinds: admins },
   { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins },
   { id: 'admin-projects', path: '/ui/admin/projects', kinds: admins, walk: searched('web') },
-  { id: 'admin-repositories', path: '/ui/admin/repositories', kinds: admins, walk: filtersOpen() },
+  { id: 'admin-repositories', path: '/ui/admin/repositories', kinds: admins, walk: filtersOpen(), widths: [1100, 1280] },
   { id: 'admin-repository-new', path: '/ui/admin/repositories/new', kinds: admins, walk: chooser },
   { id: 'admin-users', path: '/ui/admin/users', kinds: admins, walk: filtersOpen(userChips) },
   { id: 'admin-user', path: '/ui/admin/users/sam', kinds: admins },

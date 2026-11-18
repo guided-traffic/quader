@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Page, expect, test } from '@playwright/test';
+import { LayoutFinding, emptyScroll, findingLine, judge, layoutFindings } from './layout';
 import { manifestDir, outDir } from './paths';
 import { Kind } from './seed';
 import { Screen, screens } from './screens';
@@ -39,6 +40,10 @@ export interface Shot {
    * closed section keeps its box), as a path of tags and classes, and by how far.
    */
   readonly offender: { readonly what: string; readonly overflowX: number } | null;
+  /** The layout checks' defects in this picture (layout.ts, R-UI-170 to R-UI-174); measured in the light scheme only. */
+  readonly findings: readonly LayoutFinding[];
+  /** The findings that `allowed` of layout.ts names, with its reason. */
+  readonly allowedFindings: readonly (LayoutFinding & { readonly why: string })[];
 }
 
 for (const screen of screens) {
@@ -48,47 +53,57 @@ for (const screen of screens) {
       const failures = watch(page, screen);
       trackRequests(page);
       const shots: Shot[] = [];
-      for (const width of widths) {
-        await page.setViewportSize({ width, height: heightOf(width) });
-        await page.emulateMedia({ colorScheme: 'light' });
-        const t0 = Date.now();
-        await page.goto(screen.path);
-        // A phone's scrollbars lie over the content and take no room: so they do in the phone's pictures. A page that is not
-        // the app (the dev server's own answer) refuses the style and keeps its scrollbars.
-        if (width < 600 && (await page.locator('quader-root').count()) > 0) {
-          await page.addStyleTag({ content: '* { scrollbar-width: none; }' });
-        }
-        if (process.env['UI_RENDERS_DEBUG']) console.log(`goto: ${Date.now() - t0} ms`);
-        await settle(page);
-        if (screen.walk) {
-          // A flow: one picture of each state it names; an empty name is the screen as it opens.
-          for await (const state of screen.walk(page)) {
-            await settle(page);
+      // A walk or a tab that throws stops the screen: what it took so far is recorded with the reason, so failures.txt names it.
+      let width = 0;
+      try {
+        for (width of [...widths, ...(screen.widths ?? [])]) {
+          await page.setViewportSize({ width, height: heightOf(width) });
+          await page.emulateMedia({ colorScheme: 'light' });
+          const t0 = Date.now();
+          await page.goto(screen.path);
+          // A phone's scrollbars lie over the content and take no room: so they do in the phone's pictures. A page that is not
+          // the app (the dev server's own answer) refuses the style and keeps its scrollbars.
+          if (width < 600 && (await page.locator('quader-root').count()) > 0) {
+            await page.addStyleTag({ content: '* { scrollbar-width: none; }' });
+          }
+          if (process.env['UI_RENDERS_DEBUG']) console.log(`goto: ${Date.now() - t0} ms`);
+          await settle(page);
+          if (screen.walk) {
+            // A flow: one picture of each state it names; an empty name is the screen as it opens.
+            for await (const state of screen.walk(page)) {
+              await settle(page);
+              for (const scheme of schemes) {
+                await page.emulateMedia({ colorScheme: scheme });
+                shots.push(await shoot(page, kind, screen, state || null, scheme, width));
+              }
+              await page.emulateMedia({ colorScheme: 'light' });
+              failures.notices.push(...(await errorNotices(page, width, state || null)));
+            }
+            continue;
+          }
+          // The screen as it opens is the picture without a tab in its name; then every other tab.
+          // allTextContents does not wait: most screens have no tab.
+          const opened = (await page.locator('main [role=tab][aria-selected=true]').allTextContents())[0]?.replace(/\s+/g, ' ').trim();
+          const tabs = (await tabNames(page)).filter((t) => t !== opened);
+          for (const tab of [null, ...tabs]) {
+            if (tab !== null) {
+              await page.locator('main [role=tab]').filter({ hasText: tab }).first().click();
+              await settle(page);
+            }
             for (const scheme of schemes) {
               await page.emulateMedia({ colorScheme: scheme });
-              shots.push(await shoot(page, kind, screen, state || null, scheme, width));
+              shots.push(await shoot(page, kind, screen, tab, scheme, width));
             }
             await page.emulateMedia({ colorScheme: 'light' });
-            failures.notices.push(...(await errorNotices(page, width, state || null)));
+            failures.notices.push(...(await errorNotices(page, width, tab)));
           }
-          continue;
         }
-        // The screen as it opens is the picture without a tab in its name; then every other tab.
-        // allTextContents does not wait: most screens have no tab.
-        const opened = (await page.locator('main [role=tab][aria-selected=true]').allTextContents())[0]?.replace(/\s+/g, ' ').trim();
-        const tabs = (await tabNames(page)).filter((t) => t !== opened);
-        for (const tab of [null, ...tabs]) {
-          if (tab !== null) {
-            await page.locator('main [role=tab]').filter({ hasText: tab }).first().click();
-            await settle(page);
-          }
-          for (const scheme of schemes) {
-            await page.emulateMedia({ colorScheme: scheme });
-            shots.push(await shoot(page, kind, screen, tab, scheme, width));
-          }
-          await page.emulateMedia({ colorScheme: 'light' });
-          failures.notices.push(...(await errorNotices(page, width, tab)));
-        }
+      } catch (e) {
+        failures.notices.push(`stopped at ${width} px: ${String(e instanceof Error ? e.message : e).split('\n')[0]?.slice(0, 300)}`);
+      }
+      for (const shot of shots) {
+        const where = `${shot.width} px, ${shot.scheme}${shot.tab ? `, ${shot.tab}` : ''}`;
+        failures.notices.push(...shot.findings.map((f) => findingLine(f, where)));
       }
       record(kind, screen, shots, failures.list());
       expect(failures.list(), `${screen.id} as ${kind}: ${screen.path}`).toEqual([]);
@@ -110,6 +125,10 @@ function trackRequests(page: Page): void {
   open.set(page, pending);
   const api = (url: string): boolean => /^\/(api|auth)\//.test(new URL(url).pathname);
   page.on('request', (r) => {
+    // A new document: the calls of the one before it are no longer the screen's. Chromium cancels them, but a call it cancels
+    // while the server still works on it got no "failed" here, and kept `settle` waiting its 15 s on every later state of a walk
+    // that passed through a slow page.
+    if (r.isNavigationRequest() && r.frame() === page.mainFrame()) pending.clear();
     if (api(r.url())) pending.add(r);
   });
   page.on('requestfinished', (r) => pending.delete(r));
@@ -135,7 +154,7 @@ async function settle(page: Page): Promise<void> {
     else if (Date.now() - quietSince >= 400) break;
   }
   if (pending && pending.size > 0 && Date.now() >= deadline) {
-    console.log(`settle: still open after 15 s: ${[...pending].map((r) => (r as { url(): string }).url()).join(', ')}`);
+    console.log(`settle: on ${new URL(page.url()).pathname}, still open after 15 s: ${[...pending].map((r) => (r as { url(): string }).url()).join(', ')}`);
   }
   const t0 = Date.now();
   await page.evaluate(async () => {
@@ -160,16 +179,28 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
   // Before the window grows to the page's length: a table that scrolls inside its region has its scrollbar now.
   const first = view.height <= heightOf(width) ? await page.evaluate(sidewaysRegions) : [];
   let height = view.height;
+  // In the app's shell the panel scrolls and the window does not; neither scrolls past the content (R-UI-173). Measured in the
+  // window's first height, as the user has it.
+  const empty = view.height <= heightOf(width) ? await page.evaluate(emptyScroll) : { window: 0, panel: 0 };
   for (let round = 0; round < 4; round++) {
-    const hidden = await page.evaluate(() => {
+    const { hidden, by } = await page.evaluate(() => {
       const vertical = (el: Element | null): number => (el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0);
       const main = document.querySelector('main');
       let inner = 0;
+      let by = '';
       for (const el of Array.from(document.querySelectorAll<HTMLElement>('main *'))) {
-        if (['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) inner = Math.max(inner, vertical(el));
+        if (!['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) continue;
+        const v = vertical(el);
+        if (v > inner) {
+          inner = v;
+          by = `${el.tagName.toLowerCase()}.${Array.from(el.classList).join('.')} ${v}`;
+        }
       }
-      return Math.max(vertical(main), vertical(document.scrollingElement)) + inner;
+      // The shell's panel holds the content; the window's own overflow is a defect, reported, and not a part of the picture.
+      const outer = main?.classList.contains('content') ? vertical(main) : Math.max(vertical(main), vertical(document.scrollingElement));
+      return { hidden: outer + inner, by: `main ${vertical(main)}, inner ${by}` };
     });
+    if (process.env['UI_RENDERS_DEBUG']) console.log(`grow: ${hidden} px (${by})`);
     if (hidden <= 1 || height >= 16_000) break;
     height = Math.min(height + hidden, 16_000);
     await page.setViewportSize({ width: view.width, height });
@@ -206,6 +237,32 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
     if (!same) regions.push({ ...r, what: `${r.what} (window's first height)` });
     else if (r.overflowX > same.overflowX) regions.splice(regions.indexOf(same), 1, r);
   }
+  // The layout checks, in the grown window the picture shows. The two schemes have one layout, so the light one is measured.
+  let findings: LayoutFinding[] = [];
+  if (scheme === 'light') {
+    findings = await page.evaluate(layoutFindings);
+    // The page scrolls sideways at any width; a region inside it from 1024 px (at a phone's width a code block or a table that
+    // cannot stack scrolls in its region by design).
+    if (measured.overflowX > 1) {
+      findings.push({
+        check: 'sideways',
+        what: measured.offender?.what ?? 'main',
+        text: '',
+        detail: `the content is ${measured.overflowX} px wider than the panel${measured.offender ? `; its widest element reaches ${measured.offender.overflowX} px past the edge` : ''}`,
+        count: 1,
+      });
+    }
+    if (empty.window > 1) {
+      findings.push({ check: 'empty-scroll', what: 'html', text: '', detail: `the window scrolls ${empty.window} px past the app, into an empty page`, count: 1 });
+    }
+    if (empty.panel > 24) {
+      findings.push({ check: 'empty-scroll', what: 'main.content', text: '', detail: `the panel scrolls ${empty.panel} px past its last content`, count: 1 });
+    }
+    if (width >= 1024) {
+      for (const r of regions) findings.push({ check: 'sideways', what: r.what, text: '', detail: `the region scrolls ${r.overflowX} px sideways`, count: 1 });
+    }
+  }
+  const judged = judge(screen.id, findings);
   const name = `${screen.id}${tab ? `-${slug(tab)}` : ''}-${scheme}-${width}.png`;
   const file = join(kind, name);
   mkdirSync(join(outDir, kind), { recursive: true });
@@ -216,7 +273,19 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
     await page.setViewportSize(view);
     await settle(page);
   }
-  return { kind, screen: screen.id, tab, scheme, width, file, url: new URL(page.url()).pathname + new URL(page.url()).search, regions, ...measured };
+  return {
+    kind,
+    screen: screen.id,
+    tab,
+    scheme,
+    width,
+    file,
+    url: new URL(page.url()).pathname + new URL(page.url()).search,
+    regions,
+    ...measured,
+    findings: judged.defects,
+    allowedFindings: judged.allowed,
+  };
 }
 
 /** The regions inside the content panel that scroll sideways, with how far (run in the page). */

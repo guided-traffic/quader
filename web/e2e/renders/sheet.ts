@@ -32,7 +32,13 @@ export default function sheet(): void {
   const sideways = entries.flatMap((e) =>
     e.shots.filter((s) => s.scheme === 'light' && (s.overflowX > 1 || (s.width >= 1024 && s.regions.length > 0))),
   );
-  writeFileSync(join(outDir, 'report.json'), JSON.stringify({ entries, failed: failed.length, sideways: sideways.length }, null, 1));
+  // The layout checks' defects and the allowed findings with their reasons (layout.ts), one line per picture and element.
+  const layout = entries.flatMap((e) => e.shots.flatMap((s) => (s.findings ?? []).map((f) => ({ s, f }))));
+  const allowedFindings = entries.flatMap((e) => e.shots.flatMap((s) => (s.allowedFindings ?? []).map((f) => ({ s, f }))));
+  writeFileSync(
+    join(outDir, 'report.json'),
+    JSON.stringify({ entries, failed: failed.length, sideways: sideways.length, layout: layout.length, allowed: allowedFindings.length }, null, 1),
+  );
   writeFileSync(join(outDir, 'failures.txt'), failed.map((e) => `${e.kind} ${e.screen} ${e.path}\n${e.failures.map((f) => `  ${f}`).join('\n')}\n`).join(''));
 
   const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -78,6 +84,10 @@ figure { margin: 0; } figure img { width: 220px; border: 1px solid #ccc; display
 <p>${entries.reduce((n, e) => n + e.shots.length, 0)} pictures of ${groups.size} screens, generated ${new Date().toISOString()} by <code>make ui-renders</code>. Each row: light, then dark, at 1440, 1024 and 390 px. Judge them against the <a href="../../docs/developer/ui-style-guide.md#checklist">checklist</a>.</p>
 <h2>Failures (${failed.length})</h2>
 <ul class="findings">${failed.map((e) => `<li><a href="#${esc(e.screen)}">${esc(e.screen)}</a> as ${esc(e.kind)}: ${e.failures.map(esc).join('; ')}</li>`).join('') || '<li>None.</li>'}</ul>
+<h2>Layout findings (${layout.length})</h2>
+<ul class="findings">${layout.map(({ s, f }) => `<li><a href="${esc(s.file)}">${esc(s.file)}</a> <b>${esc(f.check)}</b> ${esc(f.what)}${f.text ? ` "${esc(f.text)}"` : ''}: ${esc(f.detail)}${f.count > 1 ? ` (${f.count}×)` : ''}</li>`).join('') || '<li>None.</li>'}</ul>
+<h2>Allowed layout findings (${allowedFindings.length})</h2>
+<ul class="findings">${allowedFindings.map(({ s, f }) => `<li><a href="${esc(s.file)}">${esc(s.file)}</a> <b>${esc(f.check)}</b> ${esc(f.what)}: ${esc(f.why)}</li>`).join('') || '<li>None.</li>'}</ul>
 <h2>Sideways scroll at 1024 px and wider (${sideways.length})</h2>
 <ul class="findings">${sideways.map(shotLine).join('') || '<li>None.</li>'}</ul>
 <h2>Screens</h2>
@@ -86,5 +96,5 @@ ${sections.join('\n')}
 </body></html>
 `;
   writeFileSync(join(outDir, 'index.html'), html);
-  console.log(`ui-renders: ${join(outDir, 'index.html')}; ${failed.length} failed, ${sideways.length} sideways`);
+  console.log(`ui-renders: ${join(outDir, 'index.html')}; ${failed.length} failed, ${sideways.length} sideways, ${layout.length} layout findings`);
 }
