@@ -27,7 +27,10 @@ func TestR_AUTHZ_026_PrincipalLookupBounds(t *testing.T) {
 	f.e.Group("al-everyone")
 	f.e.Exec("UPDATE user_group SET auto_join = true WHERE principal_id = (SELECT id FROM principal WHERE kind = 'group' AND name = 'al-everyone')")
 	f.e.ServiceAccount("al-bot")
-	wantStatus(t, f.do(f.admin, "POST", base+"/web/service-accounts", map[string]any{"name": "al-deploy"}), 201, "")
+	// The project's own service account, by its rows: the replicas of this package do not serve the identity API, which
+	// creates one (503 "unavailable").
+	f.e.Exec(`WITH p AS (INSERT INTO principal (id, kind, name) VALUES (gen_random_uuid(), 'service_account', 'web/al-deploy') RETURNING id)
+		INSERT INTO service_account (principal_id, project_id) SELECT p.id, (SELECT id FROM project WHERE key = 'web') FROM p`)
 	lookup := func(query string) []map[string]any {
 		t.Helper()
 		r := f.do(f.admin, "GET", base+"/web/principals?"+query, nil)
