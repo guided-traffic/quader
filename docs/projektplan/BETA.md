@@ -844,7 +844,7 @@ applies to the npm and NuGet parts of this phase.
 
 Details: [roadmap phase 6a](../coverage/roadmap.md#phase-6a--task-areas) · spec: [architecture.md R-ARCH-001](../spec/architecture.md#r-arch-001--one-binary-identical-replicas-process-roles),
 [ha-and-helm.md R-HA-002](../spec/ha-and-helm.md#r-ha-002--role-split-into-api-packages-and-worker-deployments) to
-[R-HA-064](../spec/ha-and-helm.md#r-ha-064--upgrade-across-the-cut-into-roles)
+R-HA-064 (the upgrade across the cut into roles; removed with the bridge, Q-HA-315)
 
 Decided by the owner on 2026-11-04: Quader is cut into task areas, as roles of one binary that run as Deployments of
 their own, with network seams only at trust or load boundaries
