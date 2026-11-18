@@ -984,7 +984,7 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journeys and their browser
-        timeout-minutes: 10
+        timeout-minutes: 25
         if: matrix.browser
         working-directory: web
         run: |
@@ -1951,7 +1951,7 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journeys and their browser
-        timeout-minutes: 10
+        timeout-minutes: 25
         if: steps.scope.outputs.run == 'true'
         working-directory: web
         run: |
@@ -2302,7 +2302,7 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journey and its browser
-        timeout-minutes: 10
+        timeout-minutes: 25
         if: steps.scope.outputs.run == 'true'
         working-directory: web
         run: |
@@ -2539,7 +2539,7 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journeys and their browser
-        timeout-minutes: 10
+        timeout-minutes: 25
         if: steps.scope.outputs.run == 'true'
         working-directory: web
         run: |

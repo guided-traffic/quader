@@ -178,7 +178,7 @@ of run 42465102401 where a row says so):
 | Trivy action, Docker Scout | the actions | not checked | action's own download |
 | kind, golangci-lint, govulncheck, gocyclo, oasdiff, osv-scanner | `go install` in the workflows and the Makefile | the Go module proxy | not a release asset |
 | OS packages (`build-essential`, `libatomic1`, `jq`, `file`, `unzip`, `docker-compose-v2`, ClamAV) | [apt-install.sh](../../.github/scripts/apt-install.sh), directly or through build-tools | the Ubuntu archive (`archive.ubuntu.com`, `security.ubuntu.com`) | skipped when installed, bounded in time ([OS packages in the jobs](#os-packages-in-the-jobs)) |
-| The browser libraries of Playwright | `npx playwright install --with-deps chromium` (kind legs with browser journeys) | the Ubuntu archive, through Playwright's own apt call | the step's `timeout-minutes: 10` only |
+| The browser libraries of Playwright | `npx playwright install --with-deps chromium` (kind legs with browser journeys) | the Ubuntu archive, through Playwright's own apt call | the step's `timeout-minutes: 25` only |
 
 `make dev-up` downloads no tool: `deploy/dev/lib.sh` `check_tools` checks kind, kubectl and Helm against their pins and prints the
 install command when one is missing. The charts of its releases go into `.dev/charts`: `make dev-charts` ([deploy/dev/charts.sh](../../deploy/dev/charts.sh))
@@ -257,7 +257,10 @@ the npm cache, 92 s). `TestTheGatingJobsBoundTheirDownloads` holds this, and tha
 script's worst case and the job's limit. Left to the job's limit: `actions/checkout`, the artifact and cache actions,
 `npx semantic-release`, and the make targets themselves (module downloads, image builds, the scans).
 Outside the gating jobs the script bounds itself; the Playwright steps of the kind legs, whose `--with-deps` runs apt itself,
-have `timeout-minutes: 10` (101 s in the green run, `npm ci` included), and the reachability check of the chart repositories
+have `timeout-minutes: 25`: the step took 101 s in a green run (`npm ci` included), and over 10 minutes on the night of
+2026-11-18, when the archive's mirror delivered the fonts at about 50 kB/s without ever stalling; a bound of 10 minutes failed
+two legs of the nightly there that had 90 minutes and more to spare. The bound is against a hang, not against a slow night.
+The reachability check of the chart repositories
 runs `curl` with `--connect-timeout 20 --max-time 60`.
 
 #### When a gating job failed on the network

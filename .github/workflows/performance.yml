@@ -570,7 +570,7 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journeys and their browser
-        timeout-minutes: 10
+        timeout-minutes: 25
         if: matrix.browser && steps.leg.outputs.run == 'true'
         working-directory: web
         run: |
@@ -1719,7 +1719,7 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journey and its browser
-        timeout-minutes: 10
+        timeout-minutes: 25
         if: steps.leg.outputs.run == 'true'
         working-directory: web
         run: |
@@ -1936,7 +1936,7 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journeys and their browser
-        timeout-minutes: 10
+        timeout-minutes: 25
         if: matrix.journeys == true && steps.leg.outputs.run == 'true'
         working-directory: web
         run: |
@@ -2701,7 +2701,7 @@ jobs:
 
       - name: Install the Playwright journey and its browser
         if: steps.leg.outputs.run == 'true'
-        timeout-minutes: 10
+        timeout-minutes: 25
         working-directory: web
         run: |
           set -euo pipefail
