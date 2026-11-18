@@ -182,12 +182,23 @@ type npmFaultRun = loadFaultRun[npmLoadResult]
 
 // runLoadFault starts the load on a settled release, lets it run for before, injects the fault (the fault waits for its own
 // recovery), lets the load run for after and stops it. start begins the load and returns the function that ends it and
-// returns its result; note adds the load's numbers to the JSON record next to the fault's.
-func runLoadFault[R any](t *testing.T, record, name string, before, after time.Duration, start func() func(*testing.T) R, fault func(), note func(R) map[string]any) loadFaultRun[R] {
+// returns its result, and the check of the warm-up (nil: none); note adds the load's numbers to the JSON record next to the fault's.
+//
+// The warm-up is the baseline the fault is measured against, and the load's own condition (only2xx304) covers it. When a request of
+// the warm-up has already broken that condition, the cluster was not healthy before the fault (Q-HA-302: on the CI runners a
+// neighbour starved the kind nodes): the test fails there, with that cause, and the fault is not injected, so that its failure is
+// not read as the fault's and its conditions are not judged against a baseline that is itself the failure.
+func runLoadFault[R any](t *testing.T, record, name string, before, after time.Duration, start func() (func(*testing.T) R, func() error), fault func(), note func(R) map[string]any) loadFaultRun[R] {
 	t.Helper()
 	quaderSettled(t, 3, 3, 4)
-	stop := start()
+	stop, warm := start()
 	time.Sleep(before)
+	if warm != nil {
+		if err := warm(); err != nil {
+			stop(t) // the next test starts on a cluster without this load
+			t.Fatalf("%s: the cluster was not healthy before the fault, which was not injected: %v. Read the window in evidence/samples.csv of the artifact (docs/developer/e2e.md#reading-a-stall)", name, err)
+		}
+	}
 	r := loadFaultRun[R]{initial: map[string]bool{}}
 	for _, p := range livePods(t, selQuader) {
 		r.initial[p.Name] = true
@@ -215,8 +226,9 @@ func runLoadFault[R any](t *testing.T, record, name string, before, after time.D
 // runNPMFault is runLoadFault under the npm load.
 func runNPMFault(t *testing.T, h *npmHAFixture, name string, o npmLoadOpts, before, after time.Duration, fault func()) npmFaultRun {
 	t.Helper()
-	return runLoadFault(t, "npm-ha-"+name, name, before, after, func() func(*testing.T) npmLoadResult {
-		return startNPMLoad(t, h, name, o).stop
+	return runLoadFault(t, "npm-ha-"+name, name, before, after, func() (func(*testing.T) npmLoadResult, func() error) {
+		l := startNPMLoad(t, h, name, o)
+		return l.stop, l.warmUpFailures
 	}, fault, func(res npmLoadResult) map[string]any {
 		return map[string]any{"commands": len(res.Commands), "published": len(res.Published), "k6": k6Summary(res.K6)}
 	})
