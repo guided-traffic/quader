@@ -1365,6 +1365,17 @@ agent** is not decided until the owner has said so.
 - **F-142 · A push whose last commit says `[skip ci]` starts no run for the commits before it** (2026-11-18): ad2e3ac2 (W-14)
   was pushed together with the plan's commit behind it and got no run of its own; the next push's run covered it. Since
   then a commit that changes code is pushed alone, and the plan's commit after it.
+- **F-143 · Two more journeys were red for what the day's packages changed** (2026-11-18, `e2e (access-long)` of Test and
+  Release 44352485630, the run of 7c5bd389; 43 of 45 journeys passed, journey 09 of F-140 among them). Journey 12 found a
+  service account's row in the admin area by a link named with the project's key; the list names a project by its mark and
+  its display name since the lists' package. Journey 14 expected the heading "Jobs" behind a mirror's link to its jobs;
+  Jobs is a tab of **System status** since W-19, and the builder of W-19 had not found that journey. Fixed in bdbe37c5; not
+  run locally.
+- **F-144 · Two legs did not get their cluster: the database was not ready after ten minutes** (2026-11-18, `e2e (npm)` and
+  `e2e (push)` of Test and Release 44358371450, the run of bdbe37c5): `deploy/dev/up.sh` installed the dependencies in
+  parallel, HAProxy, the PKI, the secrets and the Valkey operator were ready after 1m 43s, and at 10 minutes "postgres
+  FAILED … timed out waiting for the condition on clusters/quader-db" in both legs at the same second; no test ran. The kind
+  of F-124's runner stalls (several kind legs at once on the runner); the failed jobs are run again once the run has ended.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
