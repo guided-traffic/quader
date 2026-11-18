@@ -108,10 +108,11 @@
 #                       bullets (the issuer double, QUADER_E2E_OIDCSTUB=1) (nightly, dispatch, locally)
 #   e2e.sh backup-pitr  the point-in-time restore drill (R-HA-025, E5.1): the platform layer of R-HA-023 (QUADER_PITR=1) recovered into a new PostgreSQL
 #                       cluster up to a time t, the post-restore Job with the journal replay, the object versions rolled back (nightly, dispatch, locally)
-#   e2e.sh upgrade      the upgrade tests (E6a.7 and R-HA-020): the cut into roles in the two steps of R-HA-064 from v0.16.0, the rolling
-#                       upgrade and rollback from the latest release, and the rolling upgrade of the working tree from its second UI
-#                       bundle (make image-marked) to the image under test, each under npm, NuGet and browser loops; it replaces the
-#                       installation and returns the cluster to the current dev release (nightly, dispatch, locally)
+#   e2e.sh upgrade      the rolling upgrade of the commit (R-HA-020): the working tree from its second UI bundle (make image-marked)
+#                       to the image under test under npm, NuGet and browser loops; it replaces the installation and returns the
+#                       cluster to the current dev release (nightly, dispatch, locally)
+#   e2e.sh upgrade-release  the upgrade and rollback from the newest published release before the commit (R-HA-020, R-HA-052) under the
+#                       same loops; it replaces the installation the same way (dispatch and locally until the first stable release)
 #   e2e.sh edge         R-HA-039 through the chart's Ingress and through an HTTPRoute on a platform Gateway (Envoy Gateway, profile `edge`): a 6 GiB upload, a
 #                       download of 17 minutes at 2 MiB/s, a 1 GiB NuGet push and the scoped npm package, and R-HA-038's criteria (E5.5); nightly, dispatch, locally
 #   e2e.sh alerts       the alerts of R-HA-045 in their R-HA-052 scenarios against the Prometheus of the profile `alerts` (R-OPS-045, R-OPS-046, E5.5): Valkey
@@ -269,17 +270,20 @@ case "$set_name" in
   ansible-closing) run='^TestAnsibleClosing'; ANSIBLE_CLIENTS=1; export QUADER_E2E_ANSIBLESTUB=1 QUADER_E2E_ANSIBLE_CLOSING=1 ;;
   # <<< F0 ansible
   # >>> M6a upgrade
-  # The upgrade tests (R-HA-020, R-HA-064, E6a.7, docs/developer/e2e.md#the-upgrade-tests): the release is removed, the database
-  # and Valkey are emptied, an older release is installed from the published chart and image (v0.16.0 for the cut into roles, the
-  # latest release before the working tree for the rolling upgrade), upgraded to the chart of the working tree and the image under
-  # test (and rolled back) under npm ci, npm publish and dotnet restore loops through a virtual repository over a remote and a local
-  # repository, and a browser journey; the cluster ends with the current dev release again. The test across two bundles installs
-  # the working tree with the image of `make image-marked` (QUADER_IMAGE_MARKED) instead of a release and upgrades it to the image
-  # under test (Q-HA-124). Two client pods of each kind, the two counting test upstreams, and the browser tier on the host (npm ci
-  # in web/, npx playwright install chromium). The release tags
-  # must be in the checkout (git fetch --tags) and the cluster needs access to Docker Hub and https://guided-traffic.github.io/quader/.
-  # A long leg: nightly, on dispatch, locally (a red long leg is a finding, not a blocker, owner 2026-11-01).
-  upgrade) run='^TestUpgrade_'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=2; NUGET_CLIENTS=1; NUGET_CLIENTS_DEFAULT_PODS=2; export QUADER_E2E_NPMSTUB=1 QUADER_E2E_NUGETSTUB=1 ;;
+  # The upgrade tests (R-HA-020, docs/developer/e2e.md#the-upgrade-tests): the release is removed, the database and Valkey are
+  # emptied, a release is installed, upgraded to the chart of the working tree and the image under test under npm ci, npm publish
+  # and dotnet restore loops through a virtual repository over a remote and a local repository, and a browser journey; the cluster
+  # ends with the current dev release again. Two client pods of each kind, the two counting test upstreams, and the browser tier on
+  # the host (npm ci in web/, npx playwright install chromium). The sets are cut by what they test (Q-HA-314):
+  # - upgrade: the rolling upgrade of the commit, from the image of `make image-marked` (QUADER_IMAGE_MARKED, the working tree with
+  #   its second UI bundle) to the image under test (Q-HA-124). No published artifact; nightly, on dispatch, locally.
+  # - upgrade-release: the upgrade and rollback from the newest published release before the commit (Q-HA-311), which a commit that
+  #   needs a new database skips before the first stable release (Q-HA-312). The release tags must be in the checkout (git fetch
+  #   --tags) and the cluster needs access to Docker Hub and https://guided-traffic.github.io/quader/. On dispatch and locally until
+  #   the first stable release (Q-ARCH-340).
+  # Long legs: a red one is a finding, not a blocker (owner, 2026-11-01).
+  upgrade) run='^TestUpgrade_R_HA_020_AcrossTwoBundles$'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=2; NUGET_CLIENTS=1; NUGET_CLIENTS_DEFAULT_PODS=2; export QUADER_E2E_NPMSTUB=1 QUADER_E2E_NUGETSTUB=1 ;;
+  upgrade-release) run='^TestUpgrade_R_HA_020_RollingFromThePreviousRelease$'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=2; NUGET_CLIENTS=1; NUGET_CLIENTS_DEFAULT_PODS=2; export QUADER_E2E_NPMSTUB=1 QUADER_E2E_NUGETSTUB=1 ;;
   # <<< M6a upgrade
   # >>> M5 backup
   # The backup and restore suite (R-BAK-029, R-HA-052 "Restore drill, quader backup", docs/developer/e2e.md#the-backup-tests): the `backup`

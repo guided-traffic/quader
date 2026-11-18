@@ -2,43 +2,51 @@
 
 package e2e
 
-// The harness of the upgrade tests (R-HA-020, R-HA-064, R-HA-052 "Rolling upgrade" and "Rollback"): an older release of the
-// chart and the image is installed from where releases are published, the release is replaced by the chart of the working
-// tree and the image under test, and the installation is returned to the current dev release at the end. The loops that run
-// under the upgrade are in upgrade_loops_test.go, the scenarios in upgrade_test.go. docs/developer/e2e.md#the-upgrade-tests
+// The harness of the upgrade tests (R-HA-020, R-HA-052 "Rolling upgrade" and "Rollback"): a release is installed (a published
+// one, or the working tree with its second UI bundle), replaced by the chart of the working tree and the image under test,
+// and the installation is returned to the current dev release at the end. The loops that run under the upgrade are in
+// upgrade_loops_test.go, the scenarios in upgrade_test.go and upgrade_bundles_test.go. docs/developer/e2e.md#the-upgrade-tests
 // describes the whole.
 //
-// Where the old release comes from: the chart from the Helm repository the release pipeline publishes to
-// (https://guided-traffic.github.io/quader/, the version of the tag), the image guidedtraffic/quader:<version> from Docker
-// Hub, which the kind nodes pull themselves, and the dev values of that release from git (`git show <tag>:deploy/dev/...`),
-// so the old release is installed with exactly the values its own repository used. The tags must be in the checkout
-// (`git fetch --tags`); a missing tag fails the test and says so.
+// Where the previous release comes from (Q-HA-311): the newest release tag merged into HEAD, not at HEAD, whose chart the Helm
+// repository the release pipeline publishes to lists (https://guided-traffic.github.io/quader/index.yaml). The repository
+// gets a chart only after its image (`Release Docker & Helm`), so the image guidedtraffic/quader:<version> on Docker Hub,
+// which the kind nodes pull themselves, exists for every listed chart. The dev values of that release come from git
+// (`git show <tag>:deploy/dev/...`), so the release is installed with exactly the values its own repository used. The tags
+// must be in the checkout (`git fetch --tags`); a checkout without a release tag fails the test and says so.
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/test/e2e/priorrelease"
 )
 
 const (
 	upgradeChartRepo     = "https://guided-traffic.github.io/quader/"
 	upgradeMigrationsDir = "internal/meta/postgres/migrations"
-	// upgradeRolesSelector selects the Deployments and pods of the release's roles, the old shape's `web` included, and
-	// not the dev profile's dependencies or the driver pod.
-	upgradeRolesSelector = "app.kubernetes.io/instance=quader,app.kubernetes.io/component in (web,api,packages,worker)"
+	// upgradeRolesSelector selects the Deployments and pods of the release's roles, and not the dev profile's dependencies or
+	// the driver pod.
+	upgradeRolesSelector = "app.kubernetes.io/instance=quader,app.kubernetes.io/component in (api,packages,worker)"
 )
 
-var upgradeReleaseTag = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
+// upgradeContractHeader is the header of a step that R-HA-021 allows only one release at a time or with downtime.
+var upgradeContractHeader = regexp.MustCompile(`(?m)^-- quader:phase contract\b`)
 
 func gitOut(t testing.TB, args ...string) string {
 	t.Helper()
@@ -59,7 +67,7 @@ type priorRelease struct {
 // releaseOf resolves a tag of the checkout and writes the dev values files of that tag into a directory of the test.
 func releaseOf(t testing.TB, tag string) priorRelease {
 	t.Helper()
-	if !upgradeReleaseTag.MatchString(tag) {
+	if !priorrelease.IsReleaseTag(tag) {
 		t.Fatalf("%q is not a release tag (vX.Y.Z)", tag)
 	}
 	if _, err := exec.Command("git", "-C", cfg.repo, "rev-parse", "--verify", "--quiet", tag+"^{commit}").Output(); err != nil {
@@ -74,38 +82,85 @@ func releaseOf(t testing.TB, tag string) priorRelease {
 	return priorRelease{tag: tag, version: strings.TrimPrefix(tag, "v"), valuesDir: dir}
 }
 
-// previousReleaseTag is the latest release before the working tree: the highest vX.Y.Z tag that is an ancestor of HEAD and
-// does not point at HEAD itself (a checkout of a release tag upgrades from the release before it).
-func previousReleaseTag(t testing.TB) string {
+// previousRelease is the release the rolling upgrade starts from (Q-HA-311): the newest release tag merged into HEAD that does
+// not point at HEAD (a checkout of a release tag upgrades from the release before it) and whose chart the repository lists.
+// A newer tag the repository does not list yet (its release workflow is still running) or no longer offers (a release of the
+// product's former name) is passed over and logged. A repository that does not answer, or a checkout without release tags,
+// fails the test: the leg could not do its job. A repository that lists none of the release tags before HEAD skips it: there
+// is no published release to upgrade from, which only the first release under a new name meets.
+func previousRelease(t testing.TB) priorRelease {
 	t.Helper()
-	atHead := map[string]bool{}
-	for _, tag := range strings.Fields(gitOut(t, "tag", "--points-at", "HEAD")) {
-		atHead[tag] = true
+	tags := strings.Fields(gitOut(t, "tag", "--merged", "HEAD"))
+	if !slices.ContainsFunc(tags, priorrelease.IsReleaseTag) {
+		t.Fatal("no release tag is merged into HEAD in the checkout: run `git fetch --tags` (a shallow clone needs fetch-depth 0)")
 	}
-	for _, tag := range strings.Fields(gitOut(t, "tag", "--merged", "HEAD", "--sort=-v:refname")) {
-		if upgradeReleaseTag.MatchString(tag) && !atHead[tag] {
-			return tag
-		}
+	listed, err := priorrelease.Listed(fetchChartIndex(t), "quader")
+	if err != nil {
+		t.Fatalf("%sindex.yaml: %v", upgradeChartRepo, err)
 	}
-	t.Fatal("no release tag before HEAD in the checkout: run `git fetch --tags` (a shallow clone needs fetch-depth 0)")
-	return ""
+	tag, passed := priorrelease.Pick(tags, strings.Fields(gitOut(t, "tag", "--points-at", "HEAD")), listed)
+	if len(passed) > 0 {
+		t.Logf("newer release tags passed over: %s", strings.Join(passed, ", "))
+	}
+	if tag == "" {
+		t.Skipf("no published release to upgrade from: %sindex.yaml lists %d versions of the chart quader and none of the release tags merged into HEAD", upgradeChartRepo, len(listed))
+	}
+	return releaseOf(t, tag)
 }
 
-// contractStepsSince lists the migration files added since the tag whose header says `-- quader:phase contract`: the steps
-// that R-HA-021 allows only with downtime or one release at a time.
-func contractStepsSince(t testing.TB, tag string) (added, contract []string) {
+// fetchChartIndex reads the chart repository's index.yaml, three tries at most.
+func fetchChartIndex(t testing.TB) []byte {
 	t.Helper()
-	for _, f := range strings.Fields(gitOut(t, "diff", "--name-only", "--diff-filter=A", tag, "HEAD", "--", upgradeMigrationsDir)) {
-		added = append(added, filepath.Base(f))
-		raw, err := os.ReadFile(filepath.Join(cfg.repo, f))
-		if err != nil {
-			t.Fatal(err)
+	client := &http.Client{Timeout: 60 * time.Second}
+	var last error
+	for try := 1; try <= 3; try++ {
+		resp, err := client.Get(upgradeChartRepo + "index.yaml")
+		if err == nil {
+			body, rerr := io.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+			switch {
+			case rerr != nil:
+				err = fmt.Errorf("status %d, reading the body: %w", resp.StatusCode, rerr)
+			case resp.StatusCode != http.StatusOK:
+				err = fmt.Errorf("status %d", resp.StatusCode)
+			default:
+				return body
+			}
 		}
-		if regexp.MustCompile(`(?m)^-- quader:phase contract\b`).Match(raw) {
-			contract = append(contract, filepath.Base(f))
-		}
+		last = err
+		time.Sleep(time.Duration(try) * 5 * time.Second)
 	}
-	return added, contract
+	t.Fatalf("GET %sindex.yaml: %v", upgradeChartRepo, last)
+	return nil
+}
+
+// requireUpgradable ends the test when HEAD cannot be upgraded to from the release without downtime or a new database
+// (Q-HA-312): a migration the release applied that HEAD changed, removed or renamed (the runner refuses the database), or a
+// contract step added since (R-HA-021). Before the first stable release such a change is allowed (Q-ARCH-340,
+// EnforceMigrationPhases off), and the test skips and names it; from then on it fails, because a release that needs it must
+// name the release to start from or the downtime path.
+func requireUpgradable(t testing.TB, rel priorRelease) {
+	t.Helper()
+	diff := gitOut(t, "diff", "--name-status", rel.tag, "HEAD", "--", upgradeMigrationsDir)
+	t.Logf("the migrations changed since %s: %q", rel.tag, strings.Fields(diff))
+	breaks, err := priorrelease.Breaks(diff, func(path string) (bool, error) {
+		raw, err := os.ReadFile(filepath.Join(cfg.repo, path))
+		if err != nil {
+			return false, err
+		}
+		return upgradeContractHeader.Match(raw), nil
+	})
+	if err != nil {
+		t.Fatalf("the migrations changed since %s: %v", rel.tag, err)
+	}
+	if len(breaks) == 0 {
+		return
+	}
+	msg := fmt.Sprintf("the upgrade from %s to HEAD cannot run without downtime or a new database: %s", rel.tag, strings.Join(breaks, "; "))
+	if !postgres.EnforceMigrationPhases {
+		t.Skipf("%s. Before the first stable release such a change is allowed (Q-ARCH-340), so there is no zero-downtime upgrade to show", msg)
+	}
+	t.Fatalf("%s. R-HA-021 allows it one release at a time or with downtime: start the test from the release that precedes the step or name the downtime path in it", msg)
 }
 
 // ── helm, kind, scripts ──────────────────────────────────────────────────────
@@ -318,10 +373,11 @@ func waitReplicas(t testing.TB, what string, within time.Duration, cond func(rs 
 	return last
 }
 
-func upRoles(rs []upReplica) []string {
+// upStates is the set of states the replicas are in: a replica of the old release turns `draining` when it is asked to stop.
+func upStates(rs []upReplica) []string {
 	seen := map[string]bool{}
 	for _, r := range rs {
-		seen[r.role()] = true
+		seen[r.State] = true
 	}
 	var out []string
 	for k := range seen {
@@ -345,8 +401,8 @@ func upVersions(rs []upReplica) []string {
 }
 
 // migrateStatus is the report of `quader migrate status` in a worker pod. The upgrade verification reads GET
-// /api/v1/system/migrations (upMigrations); the command stays for the rollback, whose release has no such route, and as the
-// cross-check of the endpoint, which answers from the same code (Q-HA-116).
+// /api/v1/system/migrations (upMigrations); the command reads the rollback's release in its own worker, which the edge cannot
+// pick, and is the cross-check of the endpoint, which answers from the same code (Q-HA-116).
 type migrateStatus struct {
 	Schema struct {
 		Applied     int    `json:"applied"`
@@ -414,12 +470,12 @@ func (r migrationReport) unfinished() []string {
 }
 
 // upMigrations reads GET /api/v1/system/migrations with the administrator's token through the edge, from a replica of the
-// release version (Q-HA-116). The release before the upgrade has no such route: an answer from one of its pods that the edge
-// still reaches while it drains (404), or from a replica of another version, is not the report of the release under test
-// and is read again; the first answer of a replica of version is returned. Any other status fails the test.
+// release version (Q-HA-116). An answer from a pod of the release before that the edge still reaches while it drains, or a
+// 404 of a release without the route, is not the report of the release under test and is read again; the first answer of a
+// replica of version is returned. Any other status fails the test.
 func upMigrations(t testing.TB, version string) migrationReport {
 	t.Helper()
-	// Not adminAPI: the release before the upgrade has no projects, so the suite's project cannot be created yet.
+	// The token alone: the route needs no project, so the read does not depend on ensureE2EProject (adminAPI).
 	a := newAPI(t).withToken(adminToken(t))
 	deadline := time.Now().Add(90 * time.Second)
 	var others []string
@@ -555,8 +611,7 @@ func rolloutComplete(t testing.TB, names []string) {
 
 // ── the administrator of a reset installation ───────────────────────────────
 
-// bootstrapAdmin is the bootstrap of adminToken for an installation of either shape: `quader admin` in a worker pod (every
-// release has a worker Deployment), then a wait until the binding of the new administrator is in force on the replicas
+// bootstrapAdmin is the bootstrap of adminToken for a reset installation: `quader admin` in a worker pod, then a wait until the binding of the new administrator is in force on the replicas
 // that answer, which a count of consecutive answers from at least two replicas shows (the edge scatters per request). The
 // token is stored where adminAPI reads it, so the fixtures of the other suites build on it unchanged.
 func bootstrapAdmin(t testing.TB) {
@@ -605,14 +660,12 @@ func markScatterProfile() {
 }
 
 // restoreCurrentRelease leaves the cluster with the current dev release installed, in the default profile, so that the
-// sets that run after this one find what they expect. A release of the old shape or one that helm does not know is
-// replaced from scratch; one of the current shape is upgraded in place, which is an ordinary upgrade.
+// sets that run after this one find what they expect. A release that helm does not know is replaced from scratch; one it
+// knows is upgraded in place, which is an ordinary upgrade.
 func restoreCurrentRelease(t testing.TB) {
 	t.Helper()
-	cur := upDeployments(t)
-	_, hasWeb := cur["quader-web"]
-	if _, err := upHelm(t, "status", time.Minute, "status", "quader", "-n", cfg.namespace); err != nil || hasWeb {
-		t.Logf("the installation is not of the current shape (release known: %v, quader-web present: %v): replacing it", err == nil, hasWeb)
+	if _, err := upHelm(t, "status", time.Minute, "status", "quader", "-n", cfg.namespace); err != nil {
+		t.Logf("helm does not know the release quader (%v): replacing the installation", err)
 		resetInstallation(t)
 	}
 	if err := runUp("default"); err != nil {

@@ -2428,20 +2428,29 @@ Priority: **MVP** · Covers: HA-069, OPS-073
 `CLAUDE.md`, [Q-ARCH-340](architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)): N and N−1 need not serve side by side, and an upgrade may need
 downtime or a new database. The chart still rolls the Deployments as described below; the rules of
 the mixed-version window are promised from the first stable release on, and the status names the
-test that exists today. The nightly run skips its set `upgrade` until then; a dispatch with
-`sets=upgrade` runs it ([the switches](../developer/releasing.md#switched-off-until-the-first-stable-release)).
+test that exists today. Until then the nightly run runs only the rolling upgrade of one commit (the set `upgrade`), and the
+upgrade from the published release (the set `upgrade-release`) runs on a dispatch that names it
+([Q-HA-314](#q-ha-314--the-nightly-run-runs-the-rolling-upgrade-of-the-commit-the-upgrade-from-the-published-release-stays-on-dispatch),
+[the switches](../developer/releasing.md#switched-off-until-the-first-stable-release)).
 
 **Status.** The rolling upgrade and its rollback are tested by `TestUpgrade_R_HA_020_RollingFromThePreviousRelease`
-([upgrade_test.go](../../test/e2e/upgrade_test.go), the set `upgrade`): the latest release before the working tree is installed
-from the published chart and image and upgraded with `helm upgrade --wait` under `npm ci`, `npm publish`, `dotnet restore` and
+([upgrade_test.go](../../test/e2e/upgrade_test.go), the set `upgrade-release`): the newest release before the working tree that
+the chart repository lists ([Q-HA-311](#q-ha-311--the-rolling-upgrade-starts-from-the-newest-release-before-the-commit-that-the-chart-repository-lists))
+is installed from the published chart and image and upgraded with `helm upgrade --wait` under `npm ci`, `npm publish`, `dotnet restore` and
 browser loops ([Q-HA-95](#q-ha-95--how-the-upgrade-tests-get-and-install-the-older-release),
-[Q-HA-97](#q-ha-97--the-loops-of-the-upgrade-tests)). The verification reads `GET /api/v1/system/migrations` from a replica of the
+[Q-HA-97](#q-ha-97--the-loops-of-the-upgrade-tests)); a commit that changed a migration the release applied, or added a contract
+step, skips it with the files named until the first stable release
+([Q-HA-312](#q-ha-312--a-commit-that-cannot-be-upgraded-to-without-a-new-database-skips-the-upgrade-from-the-release-until-the-first-stable-release)).
+The verification reads `GET /api/v1/system/migrations` from a replica of the
 release under test, waits for the background migrations to succeed and checks it against `quader migrate status`
-([Q-HA-116](#q-ha-116--the-upgrade-tests-read-get-apiv1systemmigrations-from-the-release-under-test), which supersedes Q-HA-96); the
-cut test runs the same check after its step 2. Both upgrade tests passed with that read in the dispatched nightly run 42230022283. The gate on the cluster minimum version
+([Q-HA-116](#q-ha-116--the-upgrade-tests-read-get-apiv1systemmigrations-from-the-release-under-test), which supersedes Q-HA-96).
+The test passed with that read in the dispatched nightly run 42230022283 (from v0.20.1 of the former name) and has not run
+since the rename to Quader ([ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark)):
+on 2026-11-18 it starts from `v0.62.0`, which already holds the schema steps 00077 and 00078, so the upgrade runs no schema step.
+The gate on the cluster minimum version
 (the second acceptance criterion) has no feature to gate yet and is not tested. The UI's hashed files across the window are
 tested by `TestUpgrade_R_HA_020_AcrossTwoBundles` ([upgrade_bundles_test.go](../../test/e2e/upgrade_bundles_test.go), the set
-`upgrade`): the working tree with its second UI bundle is upgraded to the image under test under the same loops, strict
+`upgrade`, nightly): the working tree with its second UI bundle is upgraded to the image under test under the same loops, strict
 ([Q-HA-124](#q-ha-124--how-the-upgrade-tests-prove-an-upgrade-between-two-bundles)); and by `TestR_HA_020_SharedUIAssets` and
 `TestR_HA_020_SharedUIAssetsWithoutTheObjectStore` ([test/integration/uiassets](../../test/integration/uiassets/uiassets_test.go)):
 two replicas with different builds on one database and object store, each file of one's `index.html` loaded from the other, an
@@ -2468,9 +2477,9 @@ the object store is away.
     ([Q-HA-120](#q-ha-120--how-a-replica-serves-a-hashed-ui-file-of-the-other-release) to
     [Q-HA-123](#q-ha-123--when-a-replica-publishes-its-build)): a page whose `index.html` came from either release loads on the
     replicas of both, and so do the lazy chunks of a tab that stays open after the upgrade, for 7 days after the last replica of
-    its release stopped. This holds between two releases that both have the store; an upgrade from a release before it can
-    still meet a `404` for a hashed file once ([Q-HA-125](#q-ha-125--the-rolling-upgrade-from-a-release-without-the-store-stays-strict)),
-    and the cut from v0.16.0 counts it as a finding ([Q-HA-99](#q-ha-99--the-uis-hashed-assets-across-an-upgrade)).
+    its release stopped. This holds between two releases that both have the store, which every release named Quader has; an
+    upgrade from a release before it could meet a `404` for a hashed file once
+    ([Q-HA-125](#q-ha-125--the-rolling-upgrade-from-a-release-without-the-store-stays-strict)).
   - Job payloads and change-log payloads are versioned. Older workers skip unknown job kinds
     (R-HA-005), and older replicas flush the area on an unknown change-log payload (R-HA-004).
   - Valkey keys and channels are versioned the same way: an incompatible change of an encoding
@@ -2564,14 +2573,19 @@ Priority: **MVP** · Covers: HA-069, OPS-073
 **Before the first stable release its promise of no downtime does not apply** (owner, 2026-11-06,
 `CLAUDE.md`, [Q-ARCH-340](architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)): it rests on the mixed-version operation of R-HA-020.
 
+**No Quader release precedes the cut.** The releases before it were published under the former name, which
+[ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark) left
+without a migration path, and every release named Quader (from `v0.56.0`) has the roles. No installation can take this path,
+and its end-to-end test is removed; the bridge stays in the chart until the change that removes it
+([Q-HA-313](#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)).
+
 **Status.** Built (phase 6a, WP6a.3; the third step since F-64, Q-HA-130): the bridge, its edge, step 2's value `web.routed`
 and the guard ([_validate_roles.tpl](../../deploy/helm/quader/templates/_validate_roles.tpl)). The guard reads the cluster
 (`quader.bridgeFacts`) and decides on what it read (`quader.bridgeGuard`); the chart test `TestRolesBridge` checks the decision
-with given facts (Q-HA-132), and the reads are verified by the upgrade e2e test (Q-HA-86): `TestUpgrade_R_HA_064_AcrossTheCut`
-([upgrade_test.go](../../test/e2e/upgrade_test.go), the set `upgrade`, [Q-HA-95](#q-ha-95--how-the-upgrade-tests-get-and-install-the-older-release))
-installs v0.16.0, checks both refusals and that `helm template` renders, and runs the three steps under client and browser
-loops, with the edge's access lines read for answers without a backend (Q-HA-131). The chart test `TestRolesBridge` checks
-that each step changes either the edge or the backends. While the bridge runs, its `web` pods hold the secrets of both
+with given facts (Q-HA-132) and that each step changes either the edge or the backends. The reads were verified by the upgrade
+e2e test from v0.16.0 (Q-HA-86), last in the dispatched nightly run 42258656348 of 2026-11-06; since that release is no longer
+published, no test verifies them ([Q-HA-313](#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)).
+While the bridge runs, its `web` pods hold the secrets of both
 roles ([H-518](../security/roles-and-trust-boundaries.md#h-518--the-bridge-and-the-development-role-hold-both-halves-of-the-cut)).
 
 The releases before the cut run `<fullname>-web` behind the Service `<fullname>` and route every host whole to it. A
@@ -2660,17 +2674,13 @@ values `web.enabled` and `web.routed` (Q-ARCH-295, Q-HA-73, Q-HA-130).
 - A fresh installation never renders `web`: `web.enabled` defaults to `false`, `web.routed` has no effect without it, and the
   chart's `ci/` value sets render the bridge only in the value set that tests it.
 
-Acceptance criteria:
+Acceptance criteria (the end-to-end criterion from the release before the cut is removed, Q-HA-313; the guard is held with the
+facts a cluster would give it):
 
-- The upgrade e2e test installs the release before the cut, runs `npm ci` and `dotnet restore` loops and a browser journey of
-  the UI against it, runs steps 1, 2 and 3 with `helm upgrade --wait`, and no iteration fails and the edge answers no request
-  with `503` for want of a backend (Q-HA-131); between steps 1 and 3, `GET /api/v1/system/replicas` lists the roles `web`,
-  `api`, `packages` and `worker`, after step 2 the Ingress `quader` routes no path to the Service `quader` while `quader-web` and
-  the Service `quader` still exist, and after step 3 the registry lists no `web`.
-- `helm upgrade` with `web.enabled: false` against a namespace that holds `quader-web` and no ready `quader-api` fails before
-  anything changes, names `web.enabled` and the three steps; the same values under `helm template` render.
-- `helm upgrade` with `web.enabled: false` after step 1, while the Ingress `quader` routes `/` to the Service `quader`, fails
-  before anything changes and names step 2.
+- With the facts of a namespace that holds `quader-web` and no ready `quader-api`, `web.enabled: false` is refused with a message
+  that names `web.enabled` and the three steps; the same values under `helm template` render.
+- With the facts of step 1 (the Ingress `quader` routes `/` to the Service `quader`), `web.enabled: false` is refused with a
+  message that names step 2.
 - After step 2, `helm upgrade` with the values of step 2 or 3 renders while a Deployment of the target shape is not ready
   (Q-HA-132).
 - `helm template … --set web.enabled=true` renders `quader-web` with `--role web`, the Service `quader` selecting its pods, an
@@ -7640,6 +7650,11 @@ k6's NuGet share then join the drain per role.
 ### Q-HA-95 · How the upgrade tests get and install the older release
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Amended** on 2026-11-18: which release is installed is
+[Q-HA-311](#q-ha-311--the-rolling-upgrade-starts-from-the-newest-release-before-the-commit-that-the-chart-repository-lists), and the
+test across the cut, which installed v0.16.0, is removed
+([Q-HA-313](#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)); the revisit
+condition below met the rename to Quader, after which no release before the cut is published at all.
 
 Context: R-HA-020's and R-HA-064's acceptance criteria upgrade from a release that was published, not from a build of the working
 tree, so the test needs that release's chart, its image and the dev values it was installed with. Releases publish the chart to
@@ -7747,6 +7762,9 @@ Revisited when the sizing of a role or `database.pool.max_conns` of the profile 
 ### Q-HA-99 · The UI's hashed assets across an upgrade
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Ended** on 2026-11-18 by [Q-HA-313](#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion):
+the test across the cut from v0.16.0 is removed, so no test counts the skew any more, and `requireClean` takes no release; option (a)
+holds for every upgrade test, as it did for the rolling upgrade.
 
 Context: the first complete run of `TestUpgrade_R_HA_064_AcrossTheCut` (E6a.7) failed two iterations of the browser journey, both
 inside step 1: the login page stayed blank. The trace shows why: `index.html` came from a pod of one release and the requests for
@@ -8423,7 +8441,8 @@ criteria), R-HA-020 (order), R-HA-021 (the row of the upgrade path), R-HA-029 (t
 [endpoint-services.yaml](../../deploy/helm/quader/templates/endpoint-services.yaml),
 [_validate_roles.tpl](../../deploy/helm/quader/templates/_validate_roles.tpl), [_notes.tpl](../../deploy/helm/quader/templates/_notes.tpl),
 [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) (`QuaderBridgeLeftOn`), the upgrade guide
-([docs/manual/admin/upgrades.md](../manual/admin/upgrades.md)), `TestRolesBridge` and `TestUpgrade_R_HA_064_AcrossTheCut`.
+([docs/manual/admin/upgrades.md](../manual/admin/upgrades.md)), `TestRolesBridge`, and `TestUpgrade_R_HA_064_AcrossTheCut` until
+its removal ([Q-HA-313](#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)).
 
 ### Q-HA-131 · The upgrade tests read the edge's access lines for answers without a backend
 
@@ -10524,6 +10543,136 @@ not this case), or if the registry gets a second store for another reason.
 
 **Applied in the spec:** R-OPS-003. Test: `checkRegistryAfterDrain` of `TestE14Drain` ([e14_drain_test.go](../../test/e2e/e14_drain_test.go))
 names this case apart.
+
+### Q-HA-311 · The rolling upgrade starts from the newest release before the commit that the chart repository lists
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: finding F-130. `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` started from the newest `vX.Y.Z` tag merged into HEAD.
+Since the rename ([ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark))
+the tags of the former name stay in git while the chart repository no longer lists their charts and Docker Hub no longer has their
+images (`guidedtraffic/trove:0.16.0` and `guidedtraffic/quader:0.16.0` both answer `404` on 2026-11-18); `v0.56.0` to `v0.62.0`
+are published under the new name. A tag is also there minutes before its release is: Semantic Release creates it, then
+`Release Docker & Helm` pushes the image and only after that the chart (its job `release-helm-gh` needs `build`), and GitHub Pages
+serves the new index a little later. A nightly run on a commit after a fresh release could thus pick a tag without a chart and fail
+at the install for a reason that is not the product's. [Q-HA-281](#q-ha-281--tests-run-before-a-release-not-after-it) forbids a test
+of a published release as a check after the release; a leg that starts from the previous published release to test the commit
+gates nothing and is not such a test.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The newest release tag merged into HEAD (as before) | git alone | No read before the install | Picks a tag whose chart is not published yet or no longer offered |
+| (b) The GitHub release list | `gh release list` in the test | The releases as GitHub shows them | A token in the test; a GitHub release exists before its image and chart, so the race of (a) stays; the list does not know which releases are ancestors of the commit |
+| (c) A pin in `tools/versions.env` | One value read by the test and the job | Never races | Stale from the next release on: raised by hand with every release, or the test starts from an older one without saying so; Renovate does not know the value |
+| (d) The newest release tag merged into HEAD and not at HEAD whose chart the repository's `index.yaml` lists (chosen) | `priorrelease.Pick` over `git tag --merged HEAD` and the index of `https://guided-traffic.github.io/quader/` | The input is exactly what the install fetches; a chart is published only after its image, so a listed chart has its image; a newer tag that is not listed is passed over and logged with the reason | One read of the index before the install; a release published minutes ago is the start of the next run, not of this one |
+
+**Choice:** (d). Without a start the test does what the leg needs: a checkout without a release tag (a shallow clone) and an index
+that does not answer after three tries fail it, because the leg could not do its job and a skip would hide that; an index that lists
+none of the release tags before the commit skips it with that reason, because there is no published release to upgrade from, which
+only the first release under a new name meets.
+
+**Rationale:** the test starts from what an operator would upgrade from, and reads it where the install reads it, so the start and
+the install cannot disagree. The release a run missed by minutes is the start of the next run. The development agent would revisit
+it when the chart moves to an OCI registry (the list of the chart's tags there replaces the index), or when the release notes name
+an oldest release to upgrade from (from the first stable release, R-HA-021): the test then also starts from that one.
+
+**Applied in the spec:** R-HA-020 (the status). Code: [test/e2e/priorrelease](../../test/e2e/priorrelease/priorrelease.go) (`Listed`,
+`Pick`, unit-tested without a cluster), `previousRelease` in [upgrade_env_test.go](../../test/e2e/upgrade_env_test.go);
+[e2e.md](../developer/e2e.md#the-upgrade-tests).
+
+### Q-HA-312 · A commit that cannot be upgraded to without a new database skips the upgrade from the release until the first stable release
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: before the first stable release a migration file may be edited, renamed or removed, and any step may contract
+([Q-ARCH-340](architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)). The runner then refuses a
+database that applied the earlier file (the checksum check stays on), so the upgrade from a release that applied it needs a new
+database. The rolling test failed on an added step headed `-- quader:phase contract` and did not look at changed files, which would
+fail the migration Job fifteen minutes into the leg and read like a defect of the product.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) As before | Fail on an added contract step only | Nothing to build | A red dispatch for a change the rule allows; an edited file is found by the Job, not by the test |
+| (b) Install and upgrade anyway | The migration Job decides | The test shows what an operator would meet | A red leg for an allowed change, after a full install |
+| (c) Read the migration directory's changes since the release first (chosen) | `git diff --name-status <release> HEAD` on `internal/meta/postgres/migrations` (`priorrelease.Breaks`): a step the release applied that was changed, removed or renamed, or an added contract step, skips the test with the files named while `EnforceMigrationPhases` is `false`, and fails it once it is `true` | The answer comes before any install, with its cause; switching the phases on at the first stable release makes the test strict with no further edit | A skipped dispatch is green: the reader has to look at the skip and its reason in the test report |
+
+**Choice:** (c).
+
+**Rationale:** the leg exists to show a zero-downtime upgrade; where the rule allows the commit to need a new database there is
+none to show, and saying so in seconds is worth more than a red leg after a full install. The same switch that brings the expand and
+contract rules back turns the skip into a failure, so the test cannot stay lenient by being forgotten. What it does not see: a change
+that breaks the old pods without touching a migration (an API or a stored format the old release cannot read during the window);
+that still fails the test, as it should once the promise holds. The development agent would revisit it at the first stable release
+with the other switches of Q-ARCH-340.
+
+**Applied in the spec:** R-HA-020 (the status). Code: `Breaks` in [test/e2e/priorrelease](../../test/e2e/priorrelease/priorrelease.go),
+`requireUpgradable` in [upgrade_env_test.go](../../test/e2e/upgrade_env_test.go).
+
+### Q-HA-313 · The upgrade across the cut is no longer tested, and R-HA-064 loses its end-to-end criterion
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: finding F-130. `TestUpgrade_R_HA_064_AcrossTheCut` installed `v0.16.0`, the last release before the cut into roles, and
+ran the three steps of R-HA-064 under the loops (exit criterion E6a.7 of the roadmap). That release was published under the former
+name, which [ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark)
+left without a migration path; the chart repository no longer lists it, and Docker Hub has neither `guidedtraffic/trove:0.16.0` nor
+`guidedtraffic/quader:0.16.0`. Every release named Quader (from `v0.56.0`) has the roles, so no Quader installation can be on the shape
+before the cut, now or later.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Rebuild the start from source | Build the image and the chart of `v0.16.0` from its tag under the new names, then run the test as before | The steps and the guard's reads stay verified | Tests an artifact no user has and a path no Quader installation can take; a tree 40 releases old built with today's pins is a project of its own |
+| (b) Remove the test and E6a.7; keep R-HA-064 and the bridge, the guard held by its chart test (chosen) | `TestUpgrade_R_HA_064_AcrossTheCut`, its constant and its part of the harness go; the guard's decisions stay tested by `TestRolesBridge` with given facts | The change of this finding stays a change of the tests; nothing in the product moves | The bridge stays in the chart for an upgrade that cannot happen, and its reads of the cluster (`lookup`) are verified by no test |
+| (c) Remove R-HA-064 with everything that serves it | The chart's bridge (`web.enabled`, `web.routed`, the guard and its reads, the alert `QuaderBridgeLeftOn`, `ci/bridge.yaml`), the chart's rendering of the role `web`, the UI's fallback of [Q-UI-111](api-and-ui.md#q-ui-111--during-the-upgrade-across-the-cut-the-ui-falls-back-to-files-against-a-replica-of-the-old-shape), H-518's half for `web` | The owner's rule: no migration path for installations that do not exist | Spans the chart, the binary, the API's role enums and the UI; it is a change of the product with its own renders and checks, not part of a test finding |
+
+**Choice:** (b) here; (c) is the next change, an open item for the plan. What the cut test held beside the steps stays held: the
+edge's access lines ([Q-HA-131](#q-ha-131--the-upgrade-tests-read-the-edges-access-lines-for-answers-without-a-backend)), the loops
+and the migration report run in the rolling test; the guard's two refusals and the render under `helm template` are held by
+`TestRolesBridge`. The asset skew that [Q-HA-99](#q-ha-99--the-uis-hashed-assets-across-an-upgrade) let the cut count ends with it:
+`requireClean` takes no release any more and fails every failed iteration.
+
+**Rationale:** the requirement served installations of the former name, which by ADR-199 are set up again rather than upgraded; a
+test of it could only be built on an artifact no one runs. Keeping the bridge one change longer costs nothing an installation can
+meet, because a fresh installation never renders it. The development agent would revisit it with the removal of the bridge. At the
+first stable release the upgrade guarantees return (R-ARCH-025, R-HA-020, R-HA-021), and an upgrade test must then cover, from the
+published N−1: the rolling upgrade under the client and browser loops with no failed iteration and no answer of the edge without a
+backend, the rollback, and every change of the chart's shape between N−1 and N (a renamed or removed Deployment or Service, a moved
+route) through the stepwise path its release notes give, as this test did for the cut.
+
+**Applied in the spec:** R-HA-064 (the note, the status, the acceptance criteria), Q-HA-95, Q-HA-99, the roadmap's E6a.7. Code:
+[upgrade_test.go](../../test/e2e/upgrade_test.go), [upgrade_loops_test.go](../../test/e2e/upgrade_loops_test.go) (`requireClean`),
+[upgrade_env_test.go](../../test/e2e/upgrade_env_test.go); [e2e.md](../developer/e2e.md#the-upgrade-tests),
+[upgrades.md](../manual/admin/upgrades.md#what-is-not-verified-yet).
+
+### Q-HA-314 · The nightly run runs the rolling upgrade of the commit; the upgrade from the published release stays on dispatch
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It narrows
+how [Q-ARCH-340](architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release) (owner, 2026-11-06) is applied
+to the nightly run, not its rule.
+
+Context: Q-ARCH-340 took the set `upgrade` out of the nightly run because the upgrade from the latest release fails once a commit
+changes a migration the release applied. The set also held `TestUpgrade_R_HA_020_AcrossTwoBundles`, which installs the commit itself
+with its second UI bundle and rolls it to the image under test: it needs no published artifact and no compatibility between
+releases, and it tests what every rolling upgrade of an installation goes through on one schema (the window with two builds, the
+drain, an edge without gaps, the shared asset store of Q-HA-120). The set had not run since 2026-11-06; that day the job took 30 to
+48 minutes on a GitHub-hosted runner, the test across two bundles 5 of them and the bring-up about 25.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The whole set on dispatch only (as before) | No nightly leg | No nightly cost | The rolling of the product is watched by nobody; the set had not run for twelve days |
+| (b) The whole set nightly | One leg, as before the switch | Every upgrade test every night | Before the first stable release the commit need not serve beside the release (Q-ARCH-340): the leg turns red for changes the rule allows, which Q-HA-312 catches only where they touch a migration |
+| (c) Cut the set by what it tests (chosen) | The set `upgrade` is the rolling upgrade of the commit and runs nightly; the set `upgrade-release` is the upgrade from the published release and runs on a dispatch that names it or the job (`select-leg` with `nightly: "false"`) | What can only fail for a defect of the commit runs every night, on a runner of its own (GitHub-hosted, no lane of the large class); what rests on compatibility stays where Q-ARCH-340 put it | Two legs, each with a bring-up of its own when both are dispatched |
+
+**Choice:** (c).
+
+**Rationale:** a set is cut by what it tests (`CLAUDE.md`), and the two tests test different things: one the rolling of a build,
+the other the compatibility of two releases, which is a promise only from the first stable release on. The nightly leg costs one
+GitHub-hosted runner for about half an hour. The development agent would revisit it at the first stable release, when the leg
+`upgrade-release` runs nightly as well (its matrix entry's `nightly` becomes `"true"`, one of the switches of Q-ARCH-340).
+
+**Applied in the spec:** R-HA-020 (the note), Q-ARCH-340 (a note). Code: `.github/workflows/performance.yml` (job `e2e-upgrade`, two
+legs), `.github/actions/select-leg` (the input `nightly`), [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (the sets `upgrade` and
+`upgrade-release`); [releasing.md](../developer/releasing.md#ha-and-performance-nightly).
 
 ## What this does not cover
 

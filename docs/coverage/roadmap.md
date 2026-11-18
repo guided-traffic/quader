@@ -1058,11 +1058,11 @@ autoscaler and ingress policy; an installation of the previous shape upgrades wi
   `dotnet` loops, the long-transfer probes, the browser journey loop and the advisory sync per pod are not part of it; the sync's
   resume from its checkpoint stays with the node drain of `TestVulnLong_R_VULN_004_FullSyncDrainedMidRun` (owner, 2026-11-05,
   [Q-HA-94](../spec/ha-and-helm.md#q-ha-94--the-load-of-the-drain-per-role)).
-- **E6a.7** The upgrade across the cut (R-HA-064): from the latest release before the cut through its three steps (Q-HA-130) with no failed
-  iteration of the client loops and the UI journey and no answer of the edge without a backend; the guard refuses a one-step upgrade and a skipped second step. The one failure of the journey that the
-  test counts instead of failing on is a `404` for a hashed asset of the other release
-  ([Q-HA-99](../spec/ha-and-helm.md#q-ha-99--the-uis-hashed-assets-across-an-upgrade)). Test:
-  `TestUpgrade_R_HA_064_AcrossTheCut` ([e2e.md](../developer/e2e.md#the-upgrade-tests)).
+- **E6a.7** *Removed on 2026-11-18* ([Q-HA-313](../spec/ha-and-helm.md#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)):
+  the upgrade across the cut (R-HA-064) from the latest release before the cut through its three steps under the client loops and the
+  UI journey. It was met by `TestUpgrade_R_HA_064_AcrossTheCut` until 2026-11-06; since the rename to Quader no release before the cut
+  is published and no Quader installation can be on that shape, so the test and the criterion are gone. The guard's decisions stay
+  under E6a.4 (`TestRolesBridge`).
 - **E6a.8** Every requirement of the scope table has a passing test that names it (Q-ROAD-4); BETA.md's phase 6a items are 🟢.
 
 **Work packages** ([architecture.md](../spec/architecture.md) Q-ARCH-299). The packages meet at names the specification fixes:

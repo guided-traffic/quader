@@ -4,8 +4,9 @@
 # (make e2e SET=npm-ha-crash), and job npm-ha-soak runs the same test with ten. On kind clusters: job e2e runs the failover set (E0.13,
 # E1.8) and the drain per role (set drain-roles, E6a.6, under the npm load of npm-ha too, Q-HA-94); job e2e-npm runs the sets npm-ha
 # (drain variant A, the PostgreSQL switchover and the Valkey failover under the npm load, E2.11, and the HA of the mirror's worker pool, R-REPO-058, Q-REPO-306) and ha-suite (the failure suite under the
-# npm load); job e2e-upgrade runs the set upgrade (published releases upgraded to the commit's image under the npm and NuGet loads, with a
-# browser journey; switched off in the nightly run until the first stable release, Q-ARCH-340, and run by a dispatch with sets=upgrade); job npm-ha-soak runs the 20-minute pod crash of R-HA-052 under the npm load, the npm load scripts of R-ARCH-027
+# npm load); job e2e-upgrade runs the sets upgrade (the commit's second UI bundle rolled to the commit's image under the npm and NuGet loads,
+# with a browser journey) and upgrade-release (the newest published release upgraded to the commit's image and rolled back under the same
+# loads; run only by a dispatch that names it until the first stable release, Q-ARCH-340, Q-HA-314); job npm-ha-soak runs the 20-minute pod crash of R-HA-052 under the npm load, the npm load scripts of R-ARCH-027
 # (Q-HA-67) and the mirror's clients-first measurement of R-REPO-055 with its install-time ratio enforced; job e2e-nuget runs nuget-ha (TestNuGetHA: the drain and failover under the NuGet load and the npm load, on the large class,
 # Q-HA-102), drain-load-b, -c and -e (TestDrainLoad: drain variants B, C and E of R-HA-059 under that load, one cluster each, E5.9, Q-HA-242)
 # and cold-crash (TestColdCrash, E5.2: a replica force-deleted during a cold npm ci and dotnet restore, then quader admin storage verify,
@@ -21,13 +22,13 @@
 # the integration stack (R-ARCH-027, Q-ARCH-220), and job vuln-perf, after latency, runs the performance run of the vulnerability scanning
 # (R-VULN-028, V-1 to V-9, perf/vuln) and opens an issue on a miss.
 #
-# A dispatch can run a part of the nightly (Q-ARCH-324): `gh workflow run "HA and Performance (nightly)" --ref main -f sets=upgrade,ha-suite`.
-# The input sets is a comma-separated list of set names or job keys; empty runs every leg, as the schedule does. A leg the list does not
+# A dispatch can run a part of the nightly (Q-ARCH-324): `gh workflow run "HA and Performance (nightly)" --ref main -f sets=upgrade-release,ha-suite`.
+# The input sets is a comma-separated list of set names or job keys; empty runs every leg the schedule runs (all but upgrade-release). A leg the list does not
 # name shows as a job with skipped steps, and its job summary says so. What the jobs run and how to reproduce them:
 # docs/developer/releasing.md#ha-and-performance-nightly.
 #
 # Runners (owner, 2026-11-05; the assignment and its measured basis, Q-ARCH-326): the jobs run on the organisation's large runners (runs-on:
-# large), the class for kind, e2e and load tests, except e2e-ci, e2e-bastion, e2e-upgrade and the legs vuln and vuln-long of e2e-vuln, which run on
+# large), the class for kind, e2e and load tests, except e2e-ci, e2e-bastion, both legs of e2e-upgrade and the legs vuln and vuln-long of e2e-vuln, which run on
 # GitHub-hosted runners (runs-on: ubuntu-24.04); the leg vuln-pooler of e2e-vuln runs on large, as it loads no clients image.
 # The leg with a CPU-bound condition that loads the NuGet clients image moved to large once that image went into the
 # control-plane node only: nuget-ha (Q-HA-102). The mirror's install-time ratio (Q-REPO-211) is enforced in npm-ha-soak, a large leg without that image.
@@ -46,8 +47,8 @@ on:
     inputs:
       sets:
         description: >-
-          Comma-separated set names or job keys to run, without spaces, for example upgrade,ha-suite. Empty runs every leg, as the
-          schedule does. A job key (for example e2e-npm) runs every leg of that job.
+          Comma-separated set names or job keys to run, without spaces, for example upgrade-release,ha-suite. Empty runs every leg the
+          schedule runs, which leaves out upgrade-release. A job key (for example e2e-npm) runs every leg of that job.
         type: string
         required: false
         default: ""
@@ -2617,60 +2618,89 @@ jobs:
         run: make dev-down
 
 
-  # The upgrade leg (set upgrade, deploy/dev/e2e.sh; docs/developer/e2e.md): published releases of the chart (https://guided-traffic.github.io/quader/)
-  # and their images (guidedtraffic/quader:<x.y.z> on Docker Hub), and the commit with its second UI bundle, are installed on a kind cluster
-  # and upgraded to the image built from the commit, under the npm and the NuGet client loops and with a browser journey. Both clients images are needed, so the job runs on a
-  # GitHub-hosted runner with the disk space freed, as e2e-vuln does (Q-ARCH-326). Edge port 8101 is the first free one after ha-suite's 8100.
+  # The upgrade legs (deploy/dev/e2e.sh; docs/developer/e2e.md#the-upgrade-tests), cut by what they test (Q-HA-314), each on a kind
+  # cluster under the npm and the NuGet client loops and with a browser journey:
+  # - upgrade: the commit with its second UI bundle (make image-marked) rolled to the image built from the commit. It needs no
+  #   published artifact and runs nightly.
+  # - upgrade-release: the newest published release before the commit (the chart from https://guided-traffic.github.io/quader/, its
+  #   image guidedtraffic/quader:<x.y.z> from Docker Hub; Q-HA-311) upgraded to the image built from the commit and rolled back.
+  #   Until the first stable release it runs only on a dispatch that names it or the job (-f sets=upgrade-release, Q-ARCH-340):
+  #   a commit may then need a new database, which the test skips with its reason (Q-HA-312). To run it nightly, set its
+  #   matrix entry's nightly to true.
+  # Both clients images are needed, so the legs run on GitHub-hosted runners with the disk space freed, as e2e-vuln does
+  # (Q-ARCH-326); each leg has a runner of its own, and the edge ports 8101 and 8107 are free on the large class as well.
   # A red leg is a finding and holds nothing (owner, 2026-11-01).
-  # Switched off in the nightly run until the first stable release (Q-ARCH-340): it runs only on a dispatch that names it
-  # (-f sets=upgrade). To switch it on, put `!inputs.sets || ` back in front of the contains() of the condition.
   e2e-upgrade:
-    name: e2e (upgrade)
-    if: ${{ contains(format(',{0},', inputs.sets), ',upgrade,') }}
+    name: e2e (${{ matrix.set }})
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - set: upgrade
+            port: "8101"
+            nightly: "true"
+          - set: upgrade-release
+            port: "8107"
+            nightly: "false"
     env:
       QUADER_IMAGE: guidedtraffic/quader:dev
-      QUADER_DEV_CLUSTER: quader-upgrade-${{ github.run_id }}
-      QUADER_DEV_HTTP_PORT: "8101"
+      QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
+      QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
       # Both clients images are built once by the steps make npm-clients-image and make nuget-clients-image; deploy/dev/e2e.sh loads them
       # and does not build them again.
       QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
       QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
-      # The rolling upgrade resolves the latest release from the tags, and the cut installs v0.16.0: the checkout needs every tag.
+      # The upgrade from the published release finds the release to start from among the tags: the checkout needs every tag.
       - name: Checkout
         uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Select the leg (the dispatch input sets)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: ${{ matrix.set }}
+          job: e2e-upgrade
+          sets: ${{ inputs.sets }}
+          nightly: ${{ matrix.nightly }}
+
       # The GitHub-hosted runner's preinstalled SDKs (Android, .NET, Haskell, CodeQL) take the disk space that the kind
       # nodes, the images and the build caches need; no job here uses them.
       - name: Free disk space (GitHub-hosted runner)
+        if: steps.leg.outputs.run == 'true'
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           df -h /
 
       - name: Load the tool pins
+        if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
       - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
       - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/build-tools
         with:
           commands: jq
 
       - name: Set up Node.js (the browser journey of the upgrade)
+        if: steps.leg.outputs.run == 'true'
         uses: actions/setup-node@v7
         with:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journey and its browser
+        if: steps.leg.outputs.run == 'true'
         timeout-minutes: 10
         working-directory: web
         run: |
@@ -2679,16 +2709,19 @@ jobs:
           npx playwright install --with-deps chromium
 
       - name: Install the pinned helm
+        if: steps.leg.outputs.run == 'true'
         uses: azure/setup-helm@v5
         with:
           version: ${{ env.HELM_VERSION }}
 
       - name: Install the pinned kubectl
+        if: steps.leg.outputs.run == 'true'
         uses: azure/setup-kubectl@v5
         with:
           version: ${{ env.KUBECTL_VERSION }}
 
       - name: Install the pinned kind
+        if: steps.leg.outputs.run == 'true'
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/bin"
@@ -2696,29 +2729,35 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Install the pinned Docker Buildx
+        if: steps.leg.outputs.run == 'true'
         timeout-minutes: 16
         uses: ./.github/actions/install-buildx
         with:
           version: ${{ env.BUILDX_VERSION }}
 
       - name: Set up Docker Buildx
+        if: steps.leg.outputs.run == 'true'
         uses: docker/setup-buildx-action@v4
         with:
           cache-binary: false
 
       - name: Log in to Docker Hub (the dev profile's images and the published releases)
+        if: steps.leg.outputs.run == 'true'
         uses: docker/login-action@v4
         with:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
       - name: make npm-clients-image
+        if: steps.leg.outputs.run == 'true'
         run: make npm-clients-image
 
       - name: make nuget-clients-image
+        if: steps.leg.outputs.run == 'true'
         run: make nuget-clients-image
 
       - name: The dev profile's dependency pins and the runner architecture
+        if: steps.leg.outputs.run == 'true'
         run: |
           set -euo pipefail
           [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
@@ -2732,13 +2771,16 @@ jobs:
           done
 
       - name: make image
+        if: steps.leg.outputs.run == 'true'
         run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
 
       # TestUpgrade_R_HA_020_AcrossTwoBundles installs the commit with its second UI bundle and upgrades to the image above (Q-HA-124).
       - name: make image-marked
+        if: matrix.set == 'upgrade' && steps.leg.outputs.run == 'true'
         run: make image-marked VERSION=dev
 
       - name: Fetch the dev charts that are GitHub release assets
+        if: steps.leg.outputs.run == 'true'
         timeout-minutes: 16
         env:
           # Read by tools/github-download.sh: sent to github.com only (Q-ARCH-356).
@@ -2746,42 +2788,44 @@ jobs:
         run: make dev-charts
 
       - name: make dev-up
+        if: steps.leg.outputs.run == 'true'
         timeout-minutes: 25
         run: make dev-up
 
-      - name: make e2e SET=upgrade
+      - name: make e2e SET=${{ matrix.set }}
+        if: steps.leg.outputs.run == 'true'
         timeout-minutes: 90
-        run: make e2e SET=upgrade
+        run: make e2e SET=${{ matrix.set }}
 
       - name: Upload the go test -json report
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-upgrade-report-upgrade
+          name: e2e-upgrade-report-${{ matrix.set }}
           path: .out/test-e2e.json
           if-no-files-found: warn
           retention-days: 30
 
       - name: Upload the job logs (ci-job-*.log), the clients image logs, the upgrade's records and the test output
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-upgrade-artifacts-upgrade
+          name: e2e-upgrade-artifacts-${{ matrix.set }}
           path: .out/e2e/
           if-no-files-found: warn
           retention-days: 14
 
       - name: Upload the Playwright report, traces and screenshots
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-upgrade-playwright-upgrade
+          name: e2e-upgrade-playwright-${{ matrix.set }}
           path: .out/playwright/
           if-no-files-found: ignore
           retention-days: 14
 
       - name: Cluster state (failure only)
-        if: failure()
+        if: failure() && steps.leg.outputs.run == 'true'
         run: |
           set -u
           ctx="kind-${QUADER_DEV_CLUSTER}"
@@ -2799,14 +2843,14 @@ jobs:
           cp -r .dev/logs .out/cluster-state/dev-logs 2>/dev/null || true
 
       - name: Upload the cluster state (failure only)
-        if: failure()
+        if: failure() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-upgrade-cluster-state-upgrade
+          name: e2e-upgrade-cluster-state-${{ matrix.set }}
           path: .out/cluster-state/
           if-no-files-found: warn
           retention-days: 14
 
       - name: make dev-down
-        if: always()
+        if: always() && steps.leg.outputs.run == 'true'
         run: make dev-down

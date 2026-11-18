@@ -208,6 +208,9 @@ Stage: the role table of R-ARCH-001, the roles `web` and `all` ([roles.go](../..
 
 Live as long as `web.enabled` stays true: the bridge Deployment of the upgrade across the cut (Q-ARCH-295, R-HA-064) runs until the
 operator takes the third step, and nothing in the chart ends it; dormant on an installation that runs `api` and `packages` only.
+Since the rename to Quader no published release precedes the cut, so no upgrade leads onto the bridge: it is live only where an
+operator sets `web.enabled: true` by hand, and the change that removes the bridge from the chart ends this half
+([Q-HA-313](../spec/ha-and-helm.md#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)).
 `all` is live on a developer's machine. Subject: the session store, the OIDC client secrets and the break-glass password, together
 with the package protocols and the fill path.
 

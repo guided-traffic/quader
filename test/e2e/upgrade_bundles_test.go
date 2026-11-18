@@ -2,11 +2,12 @@
 
 package e2e
 
-// TestUpgrade_R_HA_020_AcrossTwoBundles is the rolling upgrade between two releases with different UI bundles (R-HA-020,
-// Q-HA-120, Q-HA-124, finding F-58): the working tree is installed with the image of `make image-marked`, whose UI has the
-// same code under other hashed names (UI_BUNDLE_MARK), and upgraded to the image under test, both with the shared asset
-// store. Every loop is strict: a journey that meets a 404 for a hashed asset fails the test as any other failure does
-// (requireClean with no release named). A sampler of its own reads the index.html through the edge while the upgrade runs
+// TestUpgrade_R_HA_020_AcrossTwoBundles is the rolling upgrade between two builds of the commit with different UI bundles
+// (R-HA-020, Q-HA-120, Q-HA-124, finding F-58; the set `upgrade`, which the nightly run runs, Q-HA-314): the working tree is
+// installed with the image of `make image-marked`, whose UI has the same code under other hashed names (UI_BUNDLE_MARK), and
+// upgraded to the image under test, both with the shared asset store. It needs no published artifact and no compatibility
+// between releases, only the rolling of one commit. Every loop is strict: a journey that meets a 404 for a hashed asset
+// fails the test as any other failure does (requireClean). A sampler of its own reads the index.html through the edge while the upgrade runs
 // and asks the edge for the main script it names, which lands on a replica of either release; the two bundles must both be
 // seen in the window and every such script must load.
 
@@ -238,6 +239,6 @@ func TestUpgrade_R_HA_020_AcrossTwoBundles(t *testing.T) {
 	time.Sleep(upgradeHold)
 
 	res := loops.stop(t)
-	res.requireClean(t, "", upWindow{"the upgrade across two bundles", start, end})
+	res.requireClean(t, upWindow{"the upgrade across two bundles", start, end})
 	res.publishedAreReadable(t, fx)
 }

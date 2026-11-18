@@ -9804,6 +9804,10 @@ like every other area. Revisit if another role starts serving the UI.
 
 Status: **Decided by the owner on 2026-11-06.** Option (a). Supersedes [Q-ARCH-273](#q-arch-273--how-is-the-openapi-breaking-change-checker-pinned-and-run), [Q-ARCH-274](#q-arch-274--what-is-the-baseline-and-what-do-the-checks-accept) and
 [Q-ARCH-283](#q-arch-283--is-a-migration-on-main-immutable-and-what-does-the-check-hold-to) until the first stable release.
+On 2026-11-18 the development agent cut the set `upgrade` in two
+([Q-HA-314](ha-and-helm.md#q-ha-314--the-nightly-run-runs-the-rolling-upgrade-of-the-commit-the-upgrade-from-the-published-release-stays-on-dispatch),
+for the owner's walkthrough): the nightly run skips only the upgrade from the published release, now the set `upgrade-release`, and
+runs the rolling upgrade of the commit, the set `upgrade`, which does not rest on compatibility between releases.
 
 Context: Quader is pre-alpha: it has no users and no running installations. The owner's rule (`CLAUDE.md`) is that until the
 first stable release there is no backward compatibility: an API, a URL, a configuration key, the database schema or a stored

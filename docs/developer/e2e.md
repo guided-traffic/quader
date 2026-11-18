@@ -35,8 +35,8 @@ failovers under npm load, in [Drain and failover under npm load](#drain-and-fail
   `POST /api/v1/projects/e2e/repositories`, addressed as `/api/<format>/e2e/<key>/` and `/files/e2e/<key>/`, and named in
   instance-wide policies, exposure rules, findings filters and authorization checks by its qualified name `e2e/<key>`
   (`qn`, `ensurePolicy` qualifies bare keys). The partner project tests below use projects of their own. The upgrade tests
-  start on the release before the upgrade, which has no projects: until a release with projects exists their fixtures
-  (`buildUpgradeFixture`) cannot be created there.
+  build their fixtures (`buildUpgradeFixture`) on the release the upgrade starts from, which has projects (every release
+  named Quader has them).
 - **A failing test here is a finding.** When a criterion fails because of the product, the test stays red
   and [Findings of the suite](#findings-of-the-suite) says what was measured. No threshold is moved to make it pass.
 
@@ -199,7 +199,8 @@ make e2e SET=oci-long        # TestOCILong: the drain of the pod that receives a
 make oci-clients-image       # only build the two OCI clients images into the local Docker
 make e2e SET=bastion         # the short scenarios of R-BAS-049 with npm, pnpm, Yarn 4 and dotnet restore (CI job e2e-bastion, when the change touches the Bastion; nightly)
 make e2e SET=bastion-long    # the drain, the failure suite under client load (replica lost, main installation failing over, rolling upgrade of either side) and the anonymous miss flood (CI: nightly and on dispatch; a red long leg is a finding, not a blocker)
-make e2e SET=upgrade         # the upgrade across the cut from v0.16.0 (E6a.7) and the rolling upgrade with its rollback from the latest release (R-HA-020), under npm, NuGet and browser loops; replaces the installation and puts the current dev release back (CI: nightly and on dispatch; a red long leg is a finding, not a blocker)
+make e2e SET=upgrade         # the rolling upgrade of the commit from its second UI bundle to the image under test (R-HA-020), under npm, NuGet and browser loops; replaces the installation and puts the current dev release back (CI: nightly and on dispatch; a red long leg is a finding, not a blocker)
+make e2e SET=upgrade-release # the upgrade and rollback from the newest published release before the commit (R-HA-020, R-HA-052), under the same loops (CI: on dispatch until the first stable release)
 make e2e SET=vuln-pooler     # E5.13: the block through drain variant D on the cluster without the poolerss of R-HA-058 (QUADER_POOLER=1, set by the set); no client pods; about 6 minutes of `make e2e` (the variant takes 2.5 to 3.5 minutes: the pooler pod stops after its 90 s `preStop` sleep); the cluster stays in the pooler overlay until the next `make dev-up` (CI: job e2e-vuln, nightly)
 make e2e SET=backup-pitr      # the point-in-time restore drill of R-HA-025 (QUADER_PITR=1: the Barman Cloud plugin; CI: a step of the job e2e-backup; about 15 minutes)
 make e2e SET=backup          # the backup and restore suite (R-BAK-029): the drill into the namespace quader-restore, the drain and the kill -9 of a backup and a restore, the journal across a restore with E5.12's CI bullets (starts the issuer double); the profile backup, one npm client pod (CI: job e2e-backup of the nightly workflow, on dispatch; about 25 minutes)
@@ -570,7 +571,7 @@ nightly run is its first.
 The dev profile runs every role ([values-dev.yaml](../../deploy/dev/values-dev.yaml)): `api` 2 replicas, `packages` 3, `worker` 2 and a
 worker pool `vuln` of 2 (the Deployments `quader-api`, `quader-packages`, `quader-worker`, `quader-worker-vuln`; the Services `quader-api` and
 `quader-packages`; the endpoint `customers` has `quader-ep-customers` for the packages pods and `quader-api-ep-customers` for the api pods). The scatter
-profile makes `api` 3 as well. There is no Deployment `quader-web` and no Service `quader` (the bridge `web.enabled` of R-HA-064 is used only by the [upgrade tests](#the-upgrade-tests), which install the old shape themselves and put the dev release back)
+profile makes `api` 3 as well. There is no Deployment `quader-web` and no Service `quader` (the bridge `web.enabled` of R-HA-064 is rendered by the chart tests only; no e2e test installs the shape before the cut, [Q-HA-313](../spec/ha-and-helm.md#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion))
 The sizing and the PostgreSQL `max_connections` of 450 (the chart's budget is 303, 383 with the bridge, 403 with the bridge in the scatter profile) are
 [Q-HA-87](../spec/ha-and-helm.md#q-ha-87--the-dev-profiles-sizing-of-the-roles-and-its-postgresql-connection-budget).
 
@@ -3724,11 +3725,22 @@ CI: the sets `npm`, `nuget`, `oci` and `access-long` (the journey) of Test and R
 
 ## The upgrade tests
 
-Exit criterion E6a.7 of the [roadmap](../coverage/roadmap.md#phase-6a--task-areas) (the upgrade across the cut), the acceptance criterion of
-[R-HA-020](../spec/ha-and-helm.md#r-ha-020--rolling-upgrade-and-mixed-version-operation) and the rows "Rolling upgrade" and "Rollback" of
-[R-HA-052](../spec/ha-and-helm.md#r-ha-052--failure-injection-test-suite) (E5.4), and the UI's hashed files across the window (F-58). The set is `upgrade` (`make e2e SET=upgrade`), a long leg: on dispatch (`-f sets=upgrade`) and locally; the nightly run skips it until the first stable release ([releasing.md](releasing.md#switched-off-until-the-first-stable-release), [Q-ARCH-340](../spec/architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)), because it fails once the commit changes a migration that the release applied. Decisions:
-Q-HA-95 to Q-HA-99, Q-HA-130 and Q-HA-131 in the [specification](../spec/ha-and-helm.md#q-ha-95--how-the-upgrade-tests-get-and-install-the-older-release), and
+The acceptance criterion of [R-HA-020](../spec/ha-and-helm.md#r-ha-020--rolling-upgrade-and-mixed-version-operation), the rows
+"Rolling upgrade" and "Rollback" of [R-HA-052](../spec/ha-and-helm.md#r-ha-052--failure-injection-test-suite) (E5.4), and the UI's
+hashed files across the window (F-58). Two sets, cut by what they test
+([Q-HA-314](../spec/ha-and-helm.md#q-ha-314--the-nightly-run-runs-the-rolling-upgrade-of-the-commit-the-upgrade-from-the-published-release-stays-on-dispatch)):
+
+| Set | Test | What it tests | When it runs |
+|---|---|---|---|
+| `upgrade` | `TestUpgrade_R_HA_020_AcrossTwoBundles` | the rolling upgrade of one commit, from its second UI bundle to the image under test: the window with two builds, the drain, the edge, the shared asset store. No published artifact | nightly, on dispatch (`-f sets=upgrade`), locally |
+| `upgrade-release` | `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` | the upgrade from the newest published release before the commit and the rollback to it: the compatibility of two releases | on a dispatch that names it (`-f sets=upgrade-release`) and locally; the nightly run skips it until the first stable release ([releasing.md](releasing.md#switched-off-until-the-first-stable-release), [Q-ARCH-340](../spec/architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)) |
+
+Decisions: Q-HA-95 to Q-HA-97, Q-HA-131 and Q-HA-311 to Q-HA-314 in the
+[specification](../spec/ha-and-helm.md#q-ha-95--how-the-upgrade-tests-get-and-install-the-older-release), and
 [Q-HA-124](../spec/ha-and-helm.md#q-ha-124--how-the-upgrade-tests-prove-an-upgrade-between-two-bundles) for the upgrade across two bundles.
+The upgrade across the cut into roles from `v0.16.0` (E6a.7, `TestUpgrade_R_HA_064_AcrossTheCut`) is removed: since the rename to
+Quader no release before the cut is published, and none can be upgraded from
+([Q-HA-313](../spec/ha-and-helm.md#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)).
 
 ```mermaid
 flowchart LR
@@ -3738,7 +3750,7 @@ flowchart LR
   end
   subgraph quader["namespace quader"]
     c["client pods x2 per kind<br/>npm ci / npm publish<br/>dotnet restore loops"]
-    r["release: old, then new<br/>web | api, packages, worker"]
+    r["release: old, then new<br/>api, packages, worker"]
     pg[("PostgreSQL<br/>dropped and created")]
     s["npmstub, nugetstub<br/>the remote members"]
   end
@@ -3748,25 +3760,36 @@ flowchart LR
   h --> r
   r --> pg
   r --> s
-  repo[("guided-traffic.github.io/quader<br/>docker.io/guidedtraffic/quader")] -. "old chart, old image" .-> r
+  repo[("guided-traffic.github.io/quader<br/>docker.io/guidedtraffic/quader")] -. "upgrade-release: old chart, old image" .-> r
+  m["make image-marked"] -. "upgrade: the commit's second bundle" .-> r
 ```
 
 ### What it does
 
-The tests replace the installation, so they are a set of their own and end by putting the current dev release back.
+The tests replace the installation, so they are sets of their own and end by putting the current dev release back.
 
 1. **Reset** ([upgrade_env_test.go](../../test/e2e/upgrade_env_test.go) `resetInstallation`): `helm uninstall quader`, `DROP DATABASE quader WITH (FORCE)` and
    `CREATE DATABASE quader OWNER quader` on the primary of `quader-db`, and `FLUSHALL` on Valkey (`valkey-cli.sh`). There are no down migrations, and the upgrade is to run the
    migration Job on the schema of the older release, so the older release gets an empty database and migrates it itself. The object store keeps its blobs; they are addressed by content and nothing
    references them. PostgreSQL, Valkey, S3, the IdP, the test upstreams and the Secrets of the dev profile stay.
-2. **The old release** (`installPrior`): the chart `quader` at the version of the tag from the Helm repository the release pipeline publishes to
-   (`https://guided-traffic.github.io/quader/`), the image `guidedtraffic/quader:<version>` (the kind nodes pull it from Docker Hub themselves), and the dev values of that
+2. **The release to start from.** `upgrade` installs the chart of the working tree with the image of `make image-marked`
+   (`guidedtraffic/quader:dev-marked`, `QUADER_IMAGE_MARKED`). `upgrade-release` installs a published release (`installPrior`): the chart `quader` at the version of the tag from the Helm
+   repository the release pipeline publishes to (`https://guided-traffic.github.io/quader/`), the image `guidedtraffic/quader:<version>` (the kind nodes pull it from Docker Hub themselves), and the dev values of that
    tag's own checkout (`git show <tag>:deploy/dev/values-dev.yaml` and `values-scatter.yaml`), with the node ranges and the edge port that
-   [release-values.sh](../../deploy/dev/release-values.sh) adds. The tags must be in the checkout (`git fetch --tags`; a shallow clone needs `fetch-depth: 0`); a missing
-   tag fails the test with that hint. `TestUpgrade_R_HA_064_AcrossTheCut` starts from `v0.16.0`, the last release before the cut (its chart has no `packages:` key and renders one
-   `web` Deployment); `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` starts from the highest `vX.Y.Z` tag that is an ancestor of `HEAD` and does not point at it, resolved at run time.
-3. **The fixtures** (`buildUpgradeFixture`) are made through the API of the old release and are served by the new one: the administrator `e2e-admin` (`quader admin` in
-   the worker pod, which every release has), the npm repositories `npm-local`, `npm-remote` (over the counting npm test upstream) and `npm-all` (virtual, deploy target `npm-local`) with the
+   [release-values.sh](../../deploy/dev/release-values.sh) adds. **Which release** (`previousRelease`,
+   [Q-HA-311](../spec/ha-and-helm.md#q-ha-311--the-rolling-upgrade-starts-from-the-newest-release-before-the-commit-that-the-chart-repository-lists)):
+   the newest `vX.Y.Z` tag merged into `HEAD` that does not point at `HEAD` and whose chart version the repository's `index.yaml` lists. A newer tag the index does not list
+   (a release whose workflow has not published its chart yet, a release of the former name) is passed over and logged; the repository publishes a chart only after its
+   image, so a listed chart has its image. The tags must be in the checkout (`git fetch --tags`; a shallow clone needs `fetch-depth: 0`): a checkout without a release tag,
+   or an index that does not answer after three tries, fails the test; an index that lists none of the release tags before `HEAD` skips it with that reason. The rule is
+   [test/e2e/priorrelease](../../test/e2e/priorrelease/priorrelease.go), without the build tag, so `go test ./test/e2e/priorrelease/` checks it without a cluster.
+   **Whether the upgrade can run** (`requireUpgradable`,
+   [Q-HA-312](../spec/ha-and-helm.md#q-ha-312--a-commit-that-cannot-be-upgraded-to-without-a-new-database-skips-the-upgrade-from-the-release-until-the-first-stable-release)):
+   before anything is installed, `git diff --name-status <tag> HEAD` on the migrations directory is read; a step the release applied that `HEAD` changed, removed or renamed
+   (the runner refuses such a database), or an added step headed `-- quader:phase contract` (R-HA-021), skips the test with the files named while `EnforceMigrationPhases`
+   is `false` (until the first stable release, Q-ARCH-340), and fails it once the switch is on.
+3. **The fixtures** (`buildUpgradeFixture`) are made through the API of the installed release and are served by the new one: the administrator `e2e-admin` (`quader admin` in
+   the worker pod), the npm repositories `npm-local`, `npm-remote` (over the counting npm test upstream) and `npm-all` (virtual, deploy target `npm-local`) with the
    400-package lockfile of the HA load ([npm_load_test.go](../../test/e2e/npm_load_test.go) `buildNPMHAFixture`), the NuGet repositories `nuget-e2e` (local), a remote over the counting NuGet
    test upstream and a virtual repository over both, and one NuGet package pushed through the virtual repository into the local one.
 4. **The loops** ([upgrade_loops_test.go](../../test/e2e/upgrade_loops_test.go)) start and run through the whole upgrade, each iteration recorded in a file of its pod (or, for the browser, in the
@@ -3777,92 +3800,91 @@ The tests replace the installation, so they are a set of their own and end by pu
    Playwright run per iteration, [playwright.upgrade.config.ts](../../web/e2e/playwright.upgrade.config.ts): the break-glass sign-in, the repository list, the status screen, a reload, sign-out, with the CSP watch of `support.ts`).
    The clients run with their default retries; a record is written per iteration, so a `kubectl exec` that breaks never counts as a failed iteration.
 5. **The steps** (`upgradeToTree`): `helm upgrade --wait --timeout 15m` of the chart of the working tree with the image `guidedtraffic/quader:dev` (loaded into the nodes first) and the values of
-   `release-values.sh scatter` (the dev values, the scatter profile and the image ID annotation of up.sh), plus the step's own arguments. A sampler reads `GET /api/v1/system/replicas` every 2 s during
-   a step: the distinct version sets are the proof that the step ran in the mixed-version window, and its request outcomes are logged (not gated; the clients' iterations are the pass condition).
-6. **The end** (`restoreCurrentRelease`, a `t.Cleanup` that runs also after a failure): a release of the old shape (`quader-web` present) or one that helm does not know is reset; then
+   `release-values.sh scatter` (the dev values, the scatter profile and the image ID annotation of up.sh). A sampler reads `GET /api/v1/system/replicas` every 2 s during
+   a step: the distinct version sets are the proof that the step ran in the mixed-version window, the replica states are logged (a replica of the old release is `draining`
+   while it stops, which is part of the window and no error), and its request outcomes are logged (not gated; the clients' iterations are the pass condition).
+6. **The end** (`restoreCurrentRelease`, a `t.Cleanup` that runs also after a failure): a release that helm does not know is reset; then
    `up.sh` in the default profile upgrades or installs the current dev release, which later sets expect.
 
 ### The tests
 
 | Test | Criterion | What it does |
 |---|---|---|
-| `TestUpgrade_R_HA_064_AcrossTheCut` | E6a.7, R-HA-064, R-HA-020 | `v0.16.0` installed. Guard (subtest): `helm upgrade` with the defaults (`web.enabled: false`) fails, its output names `web.enabled`, `--set web.enabled=true` and "three upgrades", the Deployments' UIDs and generations and the release revision are unchanged, the registry still lists only the old replicas; `helm template` with the same values renders `quader-api` and no `quader-web`. Then the fixtures and the loops, 45 s of the old release, step 1 (`--set web.enabled=true`): the registry lists the roles `api`, `packages`, `web`, `worker` of the version under test only. Guard after step 1 (subtest, Q-HA-130): `helm upgrade` with `web.enabled: false` fails because the Ingress `quader` still routes to the Service `quader`, names `--set web.enabled=true --set web.routed=false` and "three upgrades", and changes nothing; 45 s; step 2 (`--set web.enabled=true --set web.routed=false`): the Ingress `quader` routes to the role Services and no path to `quader`, `quader-web` and the Service `quader` still exist; 45 s; step 3 (`web.enabled: false`): the roles `api`, `packages`, `worker`, no `quader-web` Deployment, no Service `quader`; 45 s. After step 2 (subtest): `GET /api/v1/system/migrations` as for the rolling test below. No iteration of any loop failed (a journey iteration that met a `404` for a hashed asset of the other release and no answer of 500 or above is counted as a finding, Q-HA-99), every loop ran an iteration during each step, the edge answered no request with `503` for want of a backend while the loops ran (`requireEdgeServed`, Q-HA-131), every acknowledged publish installs and every listed tarball matches its integrity |
-| `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` | R-HA-020, R-HA-052 "Rolling upgrade" and "Rollback", E5.4 | the previous release installed, the fixtures and loops, `helm upgrade --wait` to the working tree (migration Job first). R-HA-020's verification (subtest): `kubectl rollout status` of every Deployment, the registry lists only the version under test, and `GET /api/v1/system/migrations` (`requireMigrationsDone`) answered by a replica of the version under test shows no pending step, the schema the binary requires, and every background migration the binary declares `succeeded` within 3 minutes (a `failed` one fails at once); `quader migrate status` in the worker must agree with it. Then `helm rollback` to the revision the upgrade started from under the same loops: the registry lists only the previous release, which serves the migrated schema (R-HA-019: no down migrations), read with `quader migrate status` in its worker, because the previous release has no such route. Both windows: zero failed iterations; the edge answered no request with `503` for want of a backend while the loops ran (Q-HA-131) |
-| `TestUpgrade_R_HA_020_AcrossTwoBundles` ([upgrade_bundles_test.go](../../test/e2e/upgrade_bundles_test.go)) | R-HA-020 (the UI's hashed files, Q-HA-120), F-58 | instead of a release, the chart of the working tree with the image of `make image-marked` (`guidedtraffic/quader:dev-marked`, `QUADER_IMAGE_MARKED`): the same code with the second UI bundle, nearly every hashed name different (Q-HA-124). The fixtures and loops, 45 s, `helm upgrade --wait` to the image under test, 45 s. A sampler reads `/ui/en/` through the edge twice a second during the upgrade and asks the edge three times for the `main-<hash>.js` that index names. Subtest: the rollout is complete, the index names another main script after the upgrade than before (two bundles, read until twelve answers in a row agree, so a draining old replica is not counted), the sampler saw both, every index and every main script it asked for answered `200`, and at least one main script was answered by a replica whose own index names the other one, which only the shared asset store can do. Then zero failed iterations of every loop, strict (`requireClean` with no release named): a journey that meets a `404` for a hashed asset fails the test |
+| `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` (set `upgrade-release`) | R-HA-020, R-HA-052 "Rolling upgrade" and "Rollback", E5.4 | the previous release installed, the fixtures and loops, `helm upgrade --wait` to the working tree (migration Job first). R-HA-020's verification (subtest): `kubectl rollout status` of every Deployment, the registry lists only the version under test (a `draining` row of the old release is waited out: it is deleted when its replica stops, or no longer listed `system.heartbeat_stale_after` after its last heartbeat; the wait is 3 minutes), and `GET /api/v1/system/migrations` (`requireMigrationsDone`) answered by a replica of the version under test shows no pending step, the schema the binary requires, and every background migration the binary declares `succeeded` within 3 minutes (a `failed` one fails at once); `quader migrate status` in the worker must agree with it. Then `helm rollback` to the revision the upgrade started from under the same loops: the registry lists only the previous release, which serves the migrated schema (R-HA-019: no down migrations), read with `quader migrate status` in its worker. Both windows: zero failed iterations; the edge answered no request with `503` for want of a backend while the loops ran (Q-HA-131); every acknowledged publish installs and every listed tarball matches its integrity |
+| `TestUpgrade_R_HA_020_AcrossTwoBundles` ([upgrade_bundles_test.go](../../test/e2e/upgrade_bundles_test.go), set `upgrade`) | R-HA-020 (the UI's hashed files, Q-HA-120), F-58 | instead of a release, the chart of the working tree with the image of `make image-marked` (`guidedtraffic/quader:dev-marked`, `QUADER_IMAGE_MARKED`): the same code with the second UI bundle, nearly every hashed name different (Q-HA-124). The fixtures and loops, 45 s, `helm upgrade --wait` to the image under test, 45 s. A sampler reads `/ui/en/` through the edge twice a second during the upgrade and asks the edge three times for the `main-<hash>.js` that index names. Subtest: the rollout is complete, the index names another main script after the upgrade than before (two bundles, read until twelve answers in a row agree, so a draining old replica is not counted), the sampler saw both, every index and every main script it asked for answered `200`, and at least one main script was answered by a replica whose own index names the other one, which only the shared asset store can do. Then zero failed iterations of every loop: a journey that meets a `404` for a hashed asset fails the test |
 
 **The UI's hashed files.** Between two releases that both have the shared asset store a page loads on the replicas of both
-([web-ui.md](web-ui.md#the-shared-asset-store)); the rolling test from the previous release stays strict also while that release
-has no store, which makes it red when the bundle changes before a release with the store is published
-([Q-HA-125](../spec/ha-and-helm.md#q-ha-125--the-rolling-upgrade-from-a-release-without-the-store-stays-strict)); the cut from
-v0.16.0 counts the skew as Q-HA-99 says. Both images of the test across two bundles report the version `dev`, so that test sees
+([web-ui.md](web-ui.md#the-shared-asset-store)); every published release named Quader has it, and both tests are strict
+([Q-HA-125](../spec/ha-and-helm.md#q-ha-125--the-rolling-upgrade-from-a-release-without-the-store-stays-strict)): a journey iteration that met a `404` for a
+hashed asset fails like any other, and its record says so (`skew`). Both images of the test across two bundles report the version `dev`, so that test sees
 the window in the bundles the index names, not in the registry's versions.
 
-**A contract step.** R-HA-021 allows a contract step only one release at a time or with downtime. The rolling test reads the migrations added since the previous release (`git diff --diff-filter=A <tag> HEAD` on
-the migrations directory) and, when one carries `-- quader:phase contract`, fails with a message that names the step and the policy: the upgrade is not zero-downtime then, and a test that
-cannot assert it says so instead of skipping. Today none is added.
-
 **`GET /api/v1/system/migrations`.** R-HA-020's verification reads it with the administrator's token through the edge (`upMigrations`), after the upgrade and only from a replica of the version under
-test: the releases before this one have no such route, so an answer of a pod of the release before that the edge still reaches while it drains (`404`, or another `binary.version`) is read again, for
-up to 90 s. `quader migrate status` in the worker runs the same code (`postgres.Report`) and is the cross-check; it alone reads the rollback's release
+test: an answer of a pod of the release before that the edge still reaches while it drains (another `binary.version`, or a `404` from a release without the route) is read again, for
+up to 90 s. `quader migrate status` in the worker runs the same code (`postgres.Report`) and is the cross-check; it also reads the rollback's release in its own worker
 ([Q-HA-116](../spec/ha-and-helm.md#q-ha-116--the-upgrade-tests-read-get-apiv1systemmigrations-from-the-release-under-test), which supersedes Q-HA-96).
 
 ### Running it
 
 ```shell
 make image && make dev-up                  # the dev profile must be up; make image tags guidedtraffic/quader:dev
-make image-marked                          # guidedtraffic/quader:dev-marked, the second UI bundle of the test across two bundles
-git fetch --tags                           # the release tags are the test's input
+make image-marked                          # guidedtraffic/quader:dev-marked, the second UI bundle of the set upgrade
+git fetch --tags                           # the release tags are the input of the set upgrade-release
 (cd web && npm ci && npx playwright install chromium)
-make e2e SET=upgrade                       # the three tests
-QUADER_E2E_RUN='^TestUpgrade_R_HA_020' make e2e SET=upgrade     # one of them
+make e2e SET=upgrade                       # the rolling upgrade of the commit
+make e2e SET=upgrade-release               # the upgrade and rollback from the newest published release
+go test ./test/e2e/priorrelease/           # the rules of the start and of the skip, without a cluster
 ```
 
-The set builds the client images and starts two npm and two NuGet client pods and both counting test upstreams, as the other sets do. It needs the cluster to reach `docker.io` and
+The sets build the client images and start two npm and two NuGet client pods and both counting test upstreams, as the other sets do. `upgrade-release` needs the cluster to reach `docker.io` and
 `guided-traffic.github.io`. Artifacts in `.out/e2e/`: `upgrade-<label>.log` (the helm output of every step), `upgrade-loops-<name>.json` (every iteration of every loop with the tail of a failed one),
-`npm-load-<name>.json`, `profile-default.log` (the return to the dev release); the traces of a failed browser iteration are in `.out/playwright/upgrade/<test>/<n>/` (`cut` or `rolling`; a passed iteration's directory is removed, and each test removes only its own, so the rolling test no longer removes the cut test's traces before the upload, F-64). A journey iteration prints `SERVER-ERROR <status> <method> <url> <replica>` for every answer of 500 or above and `ASSET-SKEW <url> <replica>` for a `404` of a hashed asset; the test copies those lines in front of a failed iteration's log, so the cause stays in the job log when the trace is not at hand.
+`npm-load-<name>.json`, `profile-default.log` (the return to the dev release); the traces of a failed browser iteration are in `.out/playwright/upgrade/<test>/<n>/` (`rolling` or `bundles`; a passed iteration's directory is removed, and each test removes only its own, F-64). A journey iteration prints `SERVER-ERROR <status> <method> <url> <replica>` for every answer of 500 or above and `ASSET-SKEW <url> <replica>` for a `404` of a hashed asset; the test copies those lines in front of a failed iteration's log, so the cause stays in the job log when the trace is not at hand.
 
-### What the CI leg provides
+### What the CI legs provide
 
-The CI leg of the set (HA and Performance, nightly and on dispatch; [performance.yml](../../.github/workflows/performance.yml)) must provide: a checkout with all tags (`fetch-depth: 0`); `make image` before the set (the
-tag `guidedtraffic/quader:dev`) and `make image-marked` (the tag `guidedtraffic/quader:dev-marked`); Node from `web/.nvmrc`, `npm ci` in `web/` and `npx playwright install --with-deps chromium`; network access to Docker Hub and to `guided-traffic.github.io`; the dev profile
+The CI legs of the sets (HA and Performance, job `e2e-upgrade`, [performance.yml](../../.github/workflows/performance.yml)) must provide: a checkout with all tags (`fetch-depth: 0`); `make image` before the set (the
+tag `guidedtraffic/quader:dev`) and, for `upgrade`, `make image-marked` (the tag `guidedtraffic/quader:dev-marked`); Node from `web/.nvmrc`, `npm ci` in `web/` and `npx playwright install --with-deps chromium`; for `upgrade-release`, network access to Docker Hub and to `guided-traffic.github.io`; the dev profile
 (`make dev-up`) as for every e2e leg; a step timeout above the measured duration of the set.
 
 ### Measured on the dev cluster
 
-2026-11-06, linux/arm64 kind on a 20-CPU developer machine (3 workers; the scatter profile with the bridge: 3 `web`, 3 `api`, 3 `packages`, 2 `worker`, 2 `worker-vuln`), with the cut in the two steps of then: its step 2 is steps 2 and 3 of today (Q-HA-130), not measured again.
+2026-11-06, linux/arm64 kind on a 20-CPU developer machine (3 workers; the scatter profile: 3 `api`, 3 `packages`, 2 `worker`, 2 `worker-vuln`), before the rename to Quader.
 
-| What | `TestUpgrade_R_HA_064_AcrossTheCut` (v0.16.0) | `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` (v0.19.0) |
-|---|---|---|
-| install of the old release (`--wait`) | 20 s | 29 s |
-| the fixture (400-package lockfile, 475 locked, 22 documents; 20 tokens) | 19 s | 20 s |
-| step 1 / the upgrade (`--wait`, migration Job included) | 1 min 24 s | 56 s |
-| step 2 / the rollback (`--wait`) | 7 s | 39 s |
-| registry samples while the step ran | 16 old only, 21 both versions; the roles `web, worker` before, `api, packages, web, worker` after the bridge came up | 4 old only, 22 both; 19 both and 1 new only while rolling back |
-| `npm ci` iterations, failed | 141, 0 | 447, 0 |
-| `npm publish` iterations, failed (every one installs with its content, every tarball matches its integrity) | 27, 0 | 47, 0 |
-| `dotnet restore` iterations (two loops), failed | 186, 0 | 545, 0 |
-| browser journey iterations, failed | 25, 2 (the asset skew, below) | 71, 0 |
-| slowest iteration | 23.3 s (a blank page that waited out the journey's 15 s) | 14.4 s (an `npm ci`) |
-| test duration | 515 s | 721 s |
+| What | `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` (v0.19.0) |
+|---|---|
+| install of the old release (`--wait`) | 29 s |
+| the fixture (400-package lockfile, 475 locked, 22 documents; 20 tokens) | 20 s |
+| the upgrade (`--wait`, migration Job included) | 56 s |
+| the rollback (`--wait`) | 39 s |
+| registry samples while the step ran | 4 old only, 22 both; 19 both and 1 new only while rolling back |
+| `npm ci` iterations, failed | 447, 0 |
+| `npm publish` iterations, failed (every one installs with its content, every tarball matches its integrity) | 47, 0 |
+| `dotnet restore` iterations (two loops), failed | 545, 0 |
+| browser journey iterations, failed | 71, 0 |
+| slowest iteration | 14.4 s (an `npm ci`) |
+| test duration | 721 s |
 
-The set took 20 min 36 s with both tests, the return to the dev release after each included.
+`TestUpgrade_R_HA_020_AcrossTwoBundles`, the same machine, 2026-11-06 (`guidedtraffic/quader:dev-marked` to `guidedtraffic/quader:dev`, both of the working tree): the upgrade took 42 s; during it the index named the main script of the first bundle 42 times and of the second 29 times, and the 213 requests for the main scripts the indexes named all answered `200`, 81 of them by a replica whose own index names the other bundle; 180 `npm ci`, 14 publishes, 204 `dotnet restore` and 25 browser journeys, none failed and none met the asset skew (8 journeys ran during the upgrade). The first `api` replica of the second bundle published 244 new files of 270 in 1.2 s, the next one found them all in 7 ms. The test took 257 s, the return to the dev release included. With the store in the image under test, the rolling test from v0.19.5 passed in the same session (the migration 00043 applied, the rollback to v0.19.5 on it) with 271 `npm ci`, 29 publishes, 333 `dotnet restore` and 44 journeys, none failed and none met the skew, since the bundle did not change.
 
-`TestUpgrade_R_HA_020_AcrossTwoBundles`, the same machine, 2026-11-06 (`guidedtraffic/quader:dev-marked` to `guidedtraffic/quader:dev`, both of the working tree): the upgrade took 42 s; during it the index named the main script of the first bundle 42 times and of the second 29 times, and the 213 requests for the main scripts the indexes named all answered `200`, 81 of them by a replica whose own index names the other bundle; 180 `npm ci`, 14 publishes, 204 `dotnet restore` and 25 browser journeys, none failed and none met the asset skew (8 journeys ran during the upgrade). The first `api` replica of the second bundle published 244 new files of 270 in 1.2 s, the next one found them all in 7 ms. The test took 257 s, the return to the dev release included. With the store in the image under test, the other two tests passed in the same session: the rolling test from v0.19.5 (the migration 00043 applied, the rollback to v0.19.5 on it) with 271 `npm ci`, 29 publishes, 333 `dotnet restore` and 44 journeys, none failed and none met the skew, since the bundle did not change; the cut test with 2 of 24 journeys counted against v0.16.0 (Q-HA-99), whose files the store cannot have. Before the fix of Q-HA-98 the first run ended at step 1 after 5 minutes; the guard
-subtest passed in 0.9 s in every run.
+In CI (GitHub-hosted runner, dispatched nightly run 42258656348 of 2026-11-06, then with the test across the cut): the job took 48 minutes, of which the test across two bundles 300 s and the rolling test 452 s; the rest is the bring-up (images, clients images, `make dev-up`). Neither set has run since the rename.
 
 ### Findings of the upgrade tests
+
+The first five rows are of the runs up to 2026-11-06, the cut test among them.
 
 | Finding | Cause | Fix |
 |---|---|---|
 | Step 1 failed: the migration Job refused `the connection budget needs 403 connections but the server allows 400 (max_connections)` | the scatter profile has `api` 3, and the bridge in it holds 18 pods at their surge (20 connections each) beside `web`; the dev PostgreSQL was sized for `api` 2 (383) | `max_connections` 450 in [postgres.yaml](../../deploy/dev/postgres.yaml) ([Q-HA-98](../spec/ha-and-helm.md#q-ha-98--the-connection-budget-of-the-bridge-in-the-scatter-profile)); an existing cluster restarts its instances once when `make dev-up` applies it |
-| The journey stayed on a blank login page in 2 of 25 iterations during step 1 | The UI's assets are named after their content: of the requests for `main-*.js`, `polyfills-*.js` and `chunk-*.js` that one page load makes, the ones that reach a pod of the other release answer `404` (`quader-web-5bb78c9659-*` of the image under test against `quader-web-59876cdf84-*` of v0.16.0 in the trace). The pods of v0.16.0 cannot be changed. The rolling upgrade from v0.19.0 meets no skew because the bundle did not change | the shared asset store (F-58, [Q-HA-120](../spec/ha-and-helm.md#q-ha-120--how-a-replica-serves-a-hashed-ui-file-of-the-other-release)) between releases that both have it, proved by `TestUpgrade_R_HA_020_AcrossTwoBundles`. The cut test still counts the skew against v0.16.0 as a finding and gates every other failure ([Q-HA-99](../spec/ha-and-helm.md#q-ha-99--the-uis-hashed-assets-across-an-upgrade)) |
+| The journey stayed on a blank login page in 2 of 25 iterations during step 1 | The UI's assets are named after their content: of the requests for `main-*.js`, `polyfills-*.js` and `chunk-*.js` that one page load makes, the ones that reach a pod of the other release answer `404` (`quader-web-5bb78c9659-*` of the image under test against `quader-web-59876cdf84-*` of v0.16.0 in the trace). The pods of v0.16.0 cannot be changed. The rolling upgrade from v0.19.0 meets no skew because the bundle did not change | the shared asset store (F-58, [Q-HA-120](../spec/ha-and-helm.md#q-ha-120--how-a-replica-serves-a-hashed-ui-file-of-the-other-release)) between releases that both have it, proved by `TestUpgrade_R_HA_020_AcrossTwoBundles`. The cut test counted the skew against v0.16.0 as a finding until it was removed ([Q-HA-99](../spec/ha-and-helm.md#q-ha-99--the-uis-hashed-assets-across-an-upgrade), Q-HA-313) |
 | `GET /api/v1/system/migrations` answered `404` (finding F-59) | the endpoint was specified (R-HA-018) and not built | built (`getMigrationStatus`, [Q-HA-114](../spec/ha-and-helm.md#q-ha-114--which-background-migrations-the-migration-report-lists-before-r-ha-022s-table-exists), [Q-HA-115](../spec/ha-and-helm.md#q-ha-115--how-a-contract-step-declares-the-background-migration-it-depends-on-and-what-the-guard-does-with-it)); the tests read it ([Q-HA-116](../spec/ha-and-helm.md#q-ha-116--the-upgrade-tests-read-get-apiv1systemmigrations-from-the-release-under-test)). The read of the endpoint has not run on kind yet |
 | One journey iteration of 14 failed in step 2 of the then two-step cut (nightly run 42194413882, F-64): `TimeoutError` waiting for the sign-in form, no `ASSET-SKEW` line | the edge answered `GET /ui/en/login?local=1` with `503` (`quader_quader_http/<NOSRV>`, `SC--`): Helm deleted the Service `quader` and moved the Ingress in one apply, HAProxy Ingress emptied the backend at once and took the new routes with its next reload, 1.4 s later; 509 requests met the gap, the npm clients repeated theirs | the cut takes three steps, each changing either the edge or the backends ([Q-HA-130](../spec/ha-and-helm.md#q-ha-130--the-cut-moves-the-edge-and-removes-the-bridge-in-two-separate-upgrades)); both tests read the edge's access lines for answers without a backend ([Q-HA-131](../spec/ha-and-helm.md#q-ha-131--the-upgrade-tests-read-the-edges-access-lines-for-answers-without-a-backend)); the trace of a failed iteration is kept per test |
 | The guard, the steps, the registry's roles and the rollback of a release (R-HA-064, R-HA-020, R-HA-052) | none: they behave as specified | |
+| F-130: since the rename to Quader the set had no release to start from: the cut test installed `v0.16.0` and the rolling test the newest tag, while the chart repository and Docker Hub offer only the releases from `v0.56.0` under the new name | the releases of the former name are no longer published ([ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark)); a tag also exists minutes before its chart | the rolling test starts from the newest release the chart repository lists (Q-HA-311) and skips a commit that needs a new database (Q-HA-312); the cut test is removed (Q-HA-313); the set is cut in two, and the rolling upgrade of the commit runs nightly (Q-HA-314). Not run yet after the change |
 
 ### Not covered by the upgrade tests
 
-- A downgrade across the cut: the rollback of each of R-HA-064's steps is not run under the loops.
+- The upgrade across the cut into roles (R-HA-064): no published release precedes the cut any more, so the three steps and the guard's reads of the cluster are tested by no e2e test; `TestRolesBridge` holds the guard's decisions with given facts ([Q-HA-313](../spec/ha-and-helm.md#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)).
+- An upgrade across several published releases: the test starts from the newest one only.
 - A rolling restart of the Deployments (R-HA-052's first row) is the drain tests'; the upgrade of the dependencies (PostgreSQL, Valkey) is not part of Quader's release.
 - The cluster-minimum-version gate of R-HA-020 (a feature answers `503 cluster_upgrade_in_progress` while an older replica lives) has no feature to gate yet.
 - The k6 load of the drain tests and the 1 GiB transfers do not run under the upgrade; the loops are the clients' (Q-HA-97).

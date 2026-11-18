@@ -44,7 +44,7 @@ share the pod's budget, without `make` or a C compiler.
 |---|---|---|---|---|---|---|
 | wds18-small | `runs-on: self-hosted` | 0–24 | 1 / none | 4 GiB / 10 GiB | no limit | every job of Test and Release except the kind legs, Release Docker & Helm, Renovate |
 | wds18-large | `runs-on: large` | 0–6 | 10 / none | 8 GiB / 28 GiB (the kind nodes included) | no limit | the kind legs `e2e` (push, access-long) and `e2e-npm` of Test and Release; `e2e` (failover, drain-roles), `e2e-npm` (npm-ha, ha-suite), `npm-ha-soak`, `e2e-drain-pooler` (drain-load-pooler), `e2e-oci` (oci, oci-closing, oci-long), `e2e-nuget` (nuget-ha, drain-load-b, -c, -e, [Q-HA-102](../spec/ha-and-helm.md#q-ha-102--the-cpu-of-the-nuget-drain-and-where-its-leg-runs)) and, after all of them, `latency` and `vuln-perf` ([Q-ARCH-325](../spec/architecture.md#q-arch-325--where-do-the-perf-jobs-run-relative-to-the-kind-legs)) of HA and Performance. The nightly bounds its own large legs to three in three lanes ([Q-ARCH-431](../spec/architecture.md#q-arch-431--how-many-large-legs-of-the-nightly-run-start-at-once-and-in-what-order)); Test and Release starts up to five large legs on a push, unbounded, and is not bounded yet ([Q-ARCH-432](../spec/architecture.md#q-arch-432--does-test-and-release-bound-its-large-legs-the-same-way)) |
-| GitHub-hosted | `runs-on: ubuntu-24.04` | GitHub's | 4 vCPU | 16 GB | 108 GB free on `/` after the job deletes the preinstalled SDKs | the kind legs that load the NuGet clients image: `e2e-nuget` of Test and Release, `e2e-ci`, `e2e-bastion`, `e2e-vuln`, in both workflows; `e2e-upgrade` (HA and Performance only, set `upgrade`, which loads both clients images) |
+| GitHub-hosted | `runs-on: ubuntu-24.04` | GitHub's | 4 vCPU | 16 GB | 108 GB free on `/` after the job deletes the preinstalled SDKs | the kind legs that load the NuGet clients image: `e2e-nuget` of Test and Release, `e2e-ci`, `e2e-bastion`, `e2e-vuln`, in both workflows; `e2e-upgrade` (HA and Performance only, the sets `upgrade` and `upgrade-release`, which load both clients images) |
 
 The measured basis of the nightly assignment ([Q-ARCH-326](../spec/architecture.md#q-arch-326--which-runner-class-runs-which-leg-the-runner-review-of-the-nightly-run)):
 the six nightly runs of 2026-11-03 to 2026-11-05 (`gh run view <id> --json jobs`, the `runner_name` and the labels of each job), per leg the class that ran it and the
@@ -353,8 +353,9 @@ There is no waiver. R-ARCH-025 promises additive changes only within `/api/v1`, 
 version, not a flag in CI. The checker's own `--version` reports `main` for a module install, so the test reads the module
 version with `go version -m` and compares it with the pin: a binary of another version fails the test.
 
-Not covered by this job: the other surfaces of R-ARCH-025 (configuration keys, Helm values, metric names, error codes) and
-its acceptance test of a `helm upgrade` from N-1 to N and a `helm rollback`. Nothing in CI checks those.
+Not covered by this job: the other surfaces of R-ARCH-025 (configuration keys, Helm values, metric names, error codes), which
+nothing in CI checks, and its acceptance test of a `helm upgrade` from N-1 to N and a `helm rollback`, which is the set
+`upgrade-release` of the nightly workflow, run on dispatch until the first stable release ([below](#ha-and-performance-nightly)).
 
 ### Switched off until the first stable release
 
@@ -368,7 +369,8 @@ linted and run: `test/compat` under the tag `compat`, the strict migration rules
 | `compat` among the needs of the release | [release.yml](../../.github/workflows/release.yml), job `semantic-release` | `compat` is missing from `needs:`, because a skipped need would skip the release | Put `compat` back into `needs:` after `workflows`, and delete the comment above the job that names Q-ARCH-340 |
 | actionlint's acceptance of `if: false` | [.github/actionlint.yaml](../../.github/actionlint.yaml) | the message `constant expression "false" in condition` is ignored in `release.yml` | Delete that ignore line and its comment paragraph |
 | The expand/contract rules of the migration files (R-HA-018) | [steps.go](../../internal/meta/postgres/steps.go), `EnforceMigrationPhases` | `false`: every header optional, no statement check by phase, `RequiredSchema()` the highest step | Set it to `true`. Every embedded file must then carry one `-- quader:phase` header and no `DROP`, `RENAME` or `SET NOT NULL` in an expand step, or `TestEmbeddedSteps` fails and `RequiredSchema()` panics; `RequiredSchema()` becomes the newest expand step |
-| The nightly upgrade set (R-HA-020, R-HA-064) | [performance.yml](../../.github/workflows/performance.yml), job `e2e-upgrade` | runs only on a dispatch with `-f sets=upgrade` | Put `!inputs.sets \|\| ` back in front of the `contains(...)` of its `if:`, and delete the comment that names Q-ARCH-340 here and in the header of the file |
+| The nightly upgrade from the published release (R-HA-020, [Q-HA-314](../spec/ha-and-helm.md#q-ha-314--the-nightly-run-runs-the-rolling-upgrade-of-the-commit-the-upgrade-from-the-published-release-stays-on-dispatch)) | [performance.yml](../../.github/workflows/performance.yml), job `e2e-upgrade`, the matrix entry `upgrade-release` | `nightly: "false"`: runs only on a dispatch with `-f sets=upgrade-release` or `-f sets=e2e-upgrade` | Set its `nightly` to `"true"`, and delete the sentences that name Q-ARCH-340 in the job's comment and in the header of the file |
+| The skip of a commit that needs a new database (R-HA-020, [Q-HA-312](../spec/ha-and-helm.md#q-ha-312--a-commit-that-cannot-be-upgraded-to-without-a-new-database-skips-the-upgrade-from-the-release-until-the-first-stable-release)) | [upgrade_env_test.go](../../test/e2e/upgrade_env_test.go), `requireUpgradable` | skips while `EnforceMigrationPhases` is `false` | Nothing of its own: it fails once the switch of the migration rules above is on |
 
 Before the job `compat` is switched on, three things need a decision, because the checks read what happened while they were off:
 
@@ -434,11 +436,11 @@ Test and Release runs `push` and `access-long` (job `e2e`), `npm` (job `e2e-npm`
 `failover` set (job `e2e`, E0.13 and E1.8), the drain per role (job `e2e`, set `drain-roles`, E6a.6, edge port 8097: the evictions run
 under the npm load of `npm-ha` too, so the set starts the npm client pods and the counting test upstream,
 [Q-HA-94](../spec/ha-and-helm.md#q-ha-94--the-load-of-the-drain-per-role)), the `npm-ha` leg (job `e2e-npm`, E2.11), `npm-ha-soak` and
-the `ha-suite`, `ha-faults` and `ha-pooler` legs (job `e2e-npm`, the failure suite under the npm load and its additions of E5.10), the `upgrade` leg (job `e2e-upgrade`, below; switched off in the nightly run until the first stable release, [the switches](#switched-off-until-the-first-stable-release)), the `nuget-ha` leg (job `e2e-nuget`,
+the `ha-suite`, `ha-faults` and `ha-pooler` legs (job `e2e-npm`, the failure suite under the npm load and its additions of E5.10), the `upgrade` leg (job `e2e-upgrade`, below; its second leg `upgrade-release` is switched off in the nightly run until the first stable release, [the switches](#switched-off-until-the-first-stable-release)), the `nuget-ha` leg (job `e2e-nuget`,
 Q-ARCH-277, which starts the npm client pods too), and last the perf jobs `latency` and `vuln-perf`, which start after every kind leg
 ([Q-ARCH-325](../spec/architecture.md#q-arch-325--where-do-the-perf-jobs-run-relative-to-the-kind-legs)). Dispatch it with `gh workflow run "HA and Performance (nightly)" --ref main`, or one leg of it with `-f sets=` ([below](#dispatching-one-leg)).
 Locally, from the repository root, after `make image VERSION=dev` and `make dev-up`: `make e2e SET=failover`, `make e2e SET=drain-roles`, `make e2e SET=npm-ha`,
-`make e2e SET=npm-ha-crash` (the three-force-delete crash, which has no CI job), `make e2e SET=npm-ha-soak`, `make e2e SET=nuget-ha`, `make e2e SET=ha-suite`, `make e2e SET=ha-faults`, `make e2e SET=ha-pooler` or `make e2e SET=upgrade`,
+`make e2e SET=npm-ha-crash` (the three-force-delete crash, which has no CI job), `make e2e SET=npm-ha-soak`, `make e2e SET=nuget-ha`, `make e2e SET=ha-suite`, `make e2e SET=ha-faults`, `make e2e SET=ha-pooler`, `make e2e SET=upgrade` or `make e2e SET=upgrade-release`,
 then `make dev-down`; the latency tests need `make integration-up && make test-performance`.
 A red long leg does not hold the release: it is recorded as an open finding instead (owner, 2026-11-01).
 
@@ -452,10 +454,10 @@ that a branch run starts beside a run on main.
 
 #### Dispatching one leg
 
-The input `sets` of a dispatch is a comma-separated list of set names or job keys, without spaces: `gh workflow run "HA and Performance (nightly)" --ref main -f sets=upgrade,ha-suite`
-runs the leg `upgrade` and the leg `ha-suite` and no other. A job key selects every leg of its job (`-f sets=e2e-npm` runs `npm-ha` and `ha-suite`), and the perf jobs are
-selected by their keys `latency` and `vuln-perf`. An empty list runs everything, as the schedule does, except the leg `upgrade`, which runs only when the
-list names it until the first stable release ([the switches](#switched-off-until-the-first-stable-release)); the perf jobs, which need it, run all the same,
+The input `sets` of a dispatch is a comma-separated list of set names or job keys, without spaces: `gh workflow run "HA and Performance (nightly)" --ref main -f sets=upgrade-release,ha-suite`
+runs the leg `upgrade-release` and the leg `ha-suite` and no other. A job key selects every leg of its job (`-f sets=e2e-npm` runs `npm-ha` and `ha-suite`), and the perf jobs are
+selected by their keys `latency` and `vuln-perf`. An empty list runs everything, as the schedule does, except the leg `upgrade-release`, which runs only when the
+list names it or its job `e2e-upgrade` until the first stable release (the input `nightly` of select-leg, [the switches](#switched-off-until-the-first-stable-release)); the perf jobs, which need the job, run all the same,
 because their condition starts with `!cancelled()`. A matrix leg that the list does not name shows as green with its
 steps skipped, and its job summary says so; a job without a matrix that the list does not name is skipped. A list with a space fails every matrix leg with an error.
 The composite action [select-leg](../../.github/actions/select-leg/action.yml) decides for a matrix leg ([Q-ARCH-324](../spec/architecture.md#q-arch-324--how-is-one-leg-of-the-nightly-run-dispatched)).
@@ -510,13 +512,19 @@ The job builds both clients images in its own steps, `make npm-clients-image` an
 client pods too ([Q-ARCH-327](../spec/architecture.md#q-arch-327--how-do-the-legs-that-load-both-client-images-get-them-and-who-builds-them)). The nightly run therefore
 costs a cluster bring-up and proves no NuGet behavior under load until the drain and failover tests land.
 
-Job `e2e-upgrade` runs only on a dispatch with `-f sets=upgrade` until the first stable release ([Q-ARCH-340](../spec/architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)):
-the set upgrades the latest release to the commit, which fails once the commit changes a migration the release applied. It runs `make e2e SET=upgrade` on a kind cluster (edge port 8101, cluster `quader-upgrade-<run id>`, reports and artifacts `e2e-upgrade-report-upgrade`,
-`e2e-upgrade-artifacts-upgrade` and `e2e-upgrade-playwright-upgrade`, kept 14 days; on failure `e2e-upgrade-cluster-state-upgrade`). The set installs published releases
-of the chart from <https://guided-traffic.github.io/quader/> and their images from Docker Hub, loads them into the cluster, upgrades to the image built from the commit, and
-runs the npm and NuGet client loops and a browser journey. The job runs on a GitHub-hosted runner with the disk space freed, because it loads both clients images; its
-budgets are 120 minutes for the job and 90 for the set. Not verified on this commit: the set is not in [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) yet, so the leg fails at
-`make e2e` until the change that defines it lands.
+Job `e2e-upgrade` has two legs, cut by what they test ([Q-HA-314](../spec/ha-and-helm.md#q-ha-314--the-nightly-run-runs-the-rolling-upgrade-of-the-commit-the-upgrade-from-the-published-release-stays-on-dispatch)),
+each running `make e2e SET=<set>` on a kind cluster of its own (cluster `quader-<set>-<run id>`, reports and artifacts `e2e-upgrade-report-<set>`,
+`e2e-upgrade-artifacts-<set>` and `e2e-upgrade-playwright-<set>`, kept 14 days; on failure `e2e-upgrade-cluster-state-<set>`) under the npm and NuGet client loops
+and a browser journey ([the upgrade tests](e2e.md#the-upgrade-tests)):
+
+- `upgrade` (edge port 8101, nightly): the commit with its second UI bundle (`make image-marked`) rolled to the image built from the commit. It needs no published artifact.
+- `upgrade-release` (edge port 8107): the newest release before the commit that <https://guided-traffic.github.io/quader/> lists, with its image from Docker Hub,
+  upgraded to the image built from the commit and rolled back. It runs only on a dispatch that names it or the job until the first stable release
+  ([Q-ARCH-340](../spec/architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)); a commit that changed a migration the release applied,
+  or added a contract step, skips the test with the files named (Q-HA-312).
+
+The legs run on GitHub-hosted runners with the disk space freed, because they load both clients images; their budgets are 120 minutes for the job and 90 for the set.
+On 2026-11-06 the job took 30 to 48 minutes, most of it the bring-up.
 
 Set `ha-suite` (job `e2e-npm`, edge port 8100, the budgets of `npm-ha`: 120 minutes for the job, 80 for the set) runs the failure suite under the npm load: the S3 outage,
 the loss of a kind worker node with `docker stop`, the loss of the PostgreSQL and of the Valkey primary, and the npm-audit drain. Not verified on this commit: the set is not

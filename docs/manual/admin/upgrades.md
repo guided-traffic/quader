@@ -50,6 +50,8 @@ This ends with the first stable release.
 
 ## Upgrade from a release before the split into roles
 
+Every published release of Quader already runs `api` and `packages`, so an installation of Quader does not take this path; the chart keeps its values until they are removed, and no test runs the path any more (see [What is not verified yet](#what-is-not-verified-yet)).
+
 The releases before the split into `api` and `packages` ran one Deployment, `quader-web`, behind the Service `quader`. A Deployment cannot be renamed, and Helm applies a release in one pass, so one `helm upgrade` from that shape would leave the edge without a ready backend while the new pods start. An ingress controller also applies a removed backend sooner than a moved route, so an upgrade that moves the routes and removes the old Service at once answers `503` for a second or two. The upgrade therefore takes three steps, each of which either moves the edge or adds or removes backends, joined by the values `web.enabled` and `web.routed`:
 
 Before step 1, check what your installation admits by the pods' labels outside the chart: a NetworkPolicy of your PostgreSQL, Valkey and Sentinels, or of anything else Quader calls, that selects `app.kubernetes.io/component: web` (and `worker`) must also select `api` and `packages`, or the new pods cannot reach the database and stay not ready. Keep `web` in it until step 3 is done. The same holds for labels your cluster-wide policies key on (`web.podLabels`): give `api.podLabels` and `packages.podLabels` the ones each role needs (`api` signs users in through the identity provider and reaches the object store for the UI's transfers; `packages` reaches the object store and the upstreams of remote repositories). Size the connection budget for steps 1 and 2 as well: `web`, `api` and `packages` run side by side, and the migration Job of step 1 refuses a PostgreSQL whose `max_connections` is below the budget the chart's NOTES print.
@@ -151,6 +153,8 @@ kubectl -n quader rollout restart deploy/quader-worker
 
 - **Mixed versions during the rollout.** For the length of a rolling update, replicas of the old and the new version serve requests side by side. Before the first stable release this is not supported (see above); if an interruption matters to you, upgrade in a maintenance window.
 - **Skipping releases.** The runner applies every pending migration in order, so an upgrade across several releases is a single migration run. An upgrade path across several published releases is not covered by a test, and before the first stable release it may require a fresh database like any other upgrade.
+- **The upgrade from the previous release.** A test upgrades the newest published release to each new version and rolls it back while clients work, but before the first stable release it runs only on request, not for every release, and it is left out for a version that changed a database migration the previous release had applied: such a version needs a fresh database.
+- **The upgrade from a release before the split into roles.** No test runs the three steps, and the chart's reading of the cluster that refuses a skipped step is not verified.
 - **Rollback**, which is not supported before the first stable release, as described above.
 
 [Known limitations](limitations.md) lists the other gaps of this version.

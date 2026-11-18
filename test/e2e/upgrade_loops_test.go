@@ -42,8 +42,9 @@ type upCmd struct {
 	Code  int       `json:"code"`
 	N     int       `json:"n"`
 	Log   string    `json:"log,omitempty"`
-	// Skew marks a browser iteration whose page load met a 404 for a hashed asset of the other release (Q-HA-99) and no
-	// answer of 500 or above: an iteration that met a server error fails whatever else it met.
+	// Skew marks a browser iteration whose page load met a 404 for a hashed asset of the other release and no answer of 500
+	// or above, the failure the shared asset store prevents (Q-HA-120). It names the cause in the record; the iteration fails
+	// like any other.
 	Skew bool `json:"skew,omitempty"`
 }
 
@@ -243,10 +244,9 @@ type upBrowserLoop struct {
 	cmds []upCmd
 }
 
-// startBrowserLoop starts the loop of one test (name: cut, rolling). A failed iteration keeps its trace, screenshot and
+// startBrowserLoop starts the loop of one test (name: rolling, bundles). A failed iteration keeps its trace, screenshot and
 // error context in .out/playwright/upgrade/<name>/<n>, which the job uploads; a passed one leaves nothing. Each test owns its
-// directory, so a later test does not remove the traces of an earlier one (F-64: the rolling test's start removed the
-// cut test's trace of its failed iteration before the upload).
+// directory, so a later test of a local run does not remove the traces of an earlier one (F-64).
 func startBrowserLoop(t *testing.T, name string) *upBrowserLoop {
 	t.Helper()
 	dir := filepath.Join(cfg.repo, "web", "e2e")
@@ -389,11 +389,9 @@ func (l *upLoops) stop(t *testing.T) upResult {
 
 // requireClean is the pass condition of both tests: no iteration of any loop failed after the client's own retries, and
 // every loop ran an iteration during every window of the upgrade, so the upgrade met each of them. The publish loop runs one
-// short command every 10 s and is not required to overlap a window; its overlap is reported. skewFrom names a release whose
-// pods cannot serve the hashed UI assets of the release under test and cannot be changed any more (Q-HA-99): a journey
-// iteration that failed on that 404 only is a finding of that release, counted and shown; with skewFrom empty it fails the
-// test like any other failure (F-58).
-func (r upResult) requireClean(t *testing.T, skewFrom string, windows ...upWindow) {
+// short command every 10 s and is not required to overlap a window; its overlap is reported. A journey iteration that met a
+// 404 for a hashed asset of the other release fails the test like any other failure (F-58, Q-HA-125); its record names it.
+func (r upResult) requireClean(t *testing.T, windows ...upWindow) {
 	t.Helper()
 	type tally struct{ n, failed int }
 	byKind := map[string]*tally{}
@@ -409,16 +407,11 @@ func (r upResult) requireClean(t *testing.T, skewFrom string, windows ...upWindo
 		k.n++
 		loops[c.Loop] = c.Kind
 		slowest = max(slowest, c.End.Sub(c.Start))
-		if c.Code != 0 && c.Skew && skewFrom != "" {
-			// Q-HA-99: the asset skew of the UI against the pods of skewFrom is a finding that is counted and shown, and no other
-			// failure is let through
-			skewed++
-			t.Logf("FINDING (Q-HA-99): journey iteration %d met a 404 for a hashed asset between the release under test and %s and failed after %s, started %s:\n%s",
-				c.N, skewFrom, c.End.Sub(c.Start).Round(100*time.Millisecond), c.Start.Format("15:04:05.000"), grepLines(c.Log, "ASSET-SKEW"))
-			continue
-		}
 		if c.Code != 0 {
 			k.failed++
+			if c.Skew {
+				skewed++
+			}
 			t.Errorf("%s iteration %d of the %s loop exited %d after %s, started %s:\n%s", c.Kind, c.N, c.Loop, c.Code,
 				c.End.Sub(c.Start).Round(100*time.Millisecond), c.Start.Format("15:04:05.000"), c.Log)
 		}
@@ -433,7 +426,7 @@ func (r upResult) requireClean(t *testing.T, skewFrom string, windows ...upWindo
 		names = append(names, fmt.Sprintf("%s %d (failed %d)", k, v.n, v.failed))
 	}
 	sort.Strings(names)
-	t.Logf("loops %s: iterations %s, slowest %s, journey iterations that met the asset skew of the UI (Q-HA-99) %d", r.Name, strings.Join(names, ", "), slowest.Round(100*time.Millisecond), skewed)
+	t.Logf("loops %s: iterations %s, slowest %s, failed journey iterations that met a 404 for a hashed asset %d", r.Name, strings.Join(names, ", "), slowest.Round(100*time.Millisecond), skewed)
 	for _, w := range windows {
 		overlap := map[string]int{}
 		for _, c := range r.Cmds {
@@ -460,10 +453,10 @@ const edgeNamespace = "ingress-controller"
 var edgeGapLine = regexp.MustCompile(`\S+/<NOSRV> \S+ 503 `)
 
 // requireEdgeServed is the edge's side of the pass condition: while the loops ran, the edge answered no request with 503 for
-// want of a backend, because an upgrade without downtime never leaves a route without a ready server (R-HA-020, R-HA-064).
+// want of a backend, because an upgrade without downtime never leaves a route without a ready server (R-HA-020, Q-HA-131).
 // The loops alone cannot tell: npm repeats an answer of 503 and passes, and a browser iteration meets a gap of a second or
-// two only by chance (F-64: in step 2 of the cut the edge answered 509 requests with 503 within 1.4 s, every npm ci passed,
-// and one journey iteration out of 14 met it).
+// two only by chance (F-64: in one upgrade the edge answered 509 requests with 503 within 1.4 s, every npm ci passed, and one
+// journey iteration out of 14 met it).
 func (r upResult) requireEdgeServed(t *testing.T) {
 	t.Helper()
 	pods, err := kubectl("-n", edgeNamespace, "get", "pods", "-o", "name")
@@ -492,7 +485,7 @@ func (r upResult) requireEdgeServed(t *testing.T) {
 		}
 	}
 	if len(gaps) > 0 {
-		t.Errorf("the edge answered %d requests with 503 for want of a backend while the loops %s ran (%s to %s; R-HA-020, R-HA-064), the first:\n%s",
+		t.Errorf("the edge answered %d requests with 503 for want of a backend while the loops %s ran (%s to %s; R-HA-020), the first:\n%s",
 			len(gaps), r.Name, r.started.Format("15:04:05"), r.stopped.Format("15:04:05"), strings.Join(gaps[:min(len(gaps), 10)], "\n"))
 		return
 	}
