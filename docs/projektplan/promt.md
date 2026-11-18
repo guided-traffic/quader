@@ -873,7 +873,21 @@ entry. The walk is part of [phase 8](BETA.md#phase-8--walkthrough-and-beta-relea
 it, one per package, each under rule 11. An entry marked **owner** is the owner's word; an entry marked **seen by the development
 agent** is not decided until the owner has said so.
 
-- **Status:** recording; nothing built.
+- **Status (2026-11-18):** the walk paused after the plain user's screens (start page, repository list, repository page,
+  packages, vulnerabilities, browse, search, profile); the power user's and the administrator's screens are not walked yet. The
+  owner: "implement the findings first; I cannot review it as it is". Four builders build on base 3addcae4, each a whole package
+  with its spec, tests, documentation and renders; nothing of it has landed yet:
+  - **Lists:** W-1, W-3, W-4, W-6 and the list defects the development agent saw (the tables' right edge, broken cells in the
+    vulnerability report and the token list, the search results' repository list, one way to write a time);
+  - **Package page:** W-7 with the two API additions (last fetched and findings with a fix, per version) and a seed with many
+    versions;
+  - **Guides:** W-2, the guide and the client setup as one page, one label and style for **Set up client**;
+  - **Files:** W-8, and the defects of the repository's page (the long package name's row, the filter field's width, the file
+    row's icon, the address beside **Set up client**).
+  After the four have landed: W-5's check in the render report, the two red render screens, and a render of every screen looked
+  at again. Not built, because the owner has not decided them: what is listed under "Seen by the development agent" and assigned
+  to no package above (the sign-in page, the vulnerability report by package and version, **Needs triage** for a reader, the
+  chart above the findings, the tabs of the package list, the breadcrumb's key).
 - **W-1 · A project has its icon wherever it is listed** (owner; screens `projects`, `search-field`). The search's suggestions show
   a project with its letter icon (`quader-avatar` in [search-field.html](../../web/src/app/features/search/search-field.html)), and so
   does the project switcher of the side bar. The project table of the start page shows the name alone. Wanted: the same icon before
