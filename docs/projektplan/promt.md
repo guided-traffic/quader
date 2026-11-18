@@ -1178,6 +1178,18 @@ agent** is not decided until the owner has said so.
     not catch the eye there. A project's Owner who follows a repository screen's link to the jobs lands on a page titled
     "System status" with an empty side bar and the breadcrumb "Admin area", and sees only the jobs of the project (Q-UI-652;
     it was so before the tabs). The journeys 06 and 16 were changed and not run.
+- **W-20 · "Recently opened" leaves the start page and goes to the side bar; no address field outside Set up client** (owner,
+  2026-11-18, with a picture of the start page as the auditor): "Unter projects macht "recently opened" irgendwie keinen Sinn,
+  sieht nicht aus. Lass uns lieber "recently opened" im side-menu zentral anbieten, falls jemand das tatsächlich nochmal
+  nachschlagen will. Unter projects will der Nutzer eher "neues" finden oder Artefakte erkunden. Vor allem diese langen
+  Adressfelder sind außerhalb von Set up client irgendwie sinnlos." Verified in the code: the list is the newest of up to 20
+  repositories kept in the browser's storage per person ([frequent-places.ts](../../web/src/app/core/frequent-places.ts)),
+  shown on the start page with each repository's address in a field, a copy button and **Set up client**
+  ([projects-home.ts](../../web/src/app/features/projects/projects-home.ts)); the search field of the top bar offers the
+  frequently opened repositories from the same store when it opens. Wanted: the start page is the list of projects alone
+  (one heading, not "Projects" twice); the recently opened repositories are offered from the side bar; the address of a
+  repository stands in a field only on **Set up client**. Open for the owner: the form in the side bar (a folding section
+  with the last repositories as links, or an entry that opens a page). Status: not built.
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
