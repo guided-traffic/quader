@@ -331,24 +331,6 @@ Found on 2026-11-08 during the run of T-16, by the penetration test of the F-82 
 
 ### Tests and tools
 
-- **F-131 · The search field keeps its active index when a newer answer replaces the list of suggestions** (read on 2026-11-17
-  while the search journey of `e2e (access-long)` was fixed, not reproduced as a user): the highlight can then sit on another
-  entry than the one the reader walked to; Enter opens the highlighted entry, so nothing opens unseen. The spec (R-UI-095 to
-  R-UI-098) does not say what the active entry is after the list changed. Done when the spec says it and the field holds it.
-- **F-132 · The suggested key of the repository creation form can land in a key the user has begun** (seen on 2026-11-17 in the
-  trace of a browser journey: the answer with the class's defaults arrived 5 ms into the journey's fill and the key became the
-  suggestion followed by the typed text). The form writes its suggestion until the key is edited (Q-UI-342), so the window is
-  the time between the focus and the first character; a person will hardly hit it, a script does. The journeys now wait for the
-  suggestion before they type. Done when the form no longer writes a suggestion into a field that has the focus, or the spec
-  says why it may.
-- **F-130 · The upgrade set has no release to start from since the rename to Quader** (2026-11-17,
-  [ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark)).
-  `TestUpgrade_R_HA_064_AcrossTheCut` installs `v0.16.0` and `TestUpgrade_R_HA_020_RollingFromThePreviousRelease` the latest
-  release, both by the chart `quader` and the image `guidedtraffic/quader`; these exist from `v0.56.0` on, and the chart repository
-  no longer offers the packages of the former name. The set runs on dispatch only and was not run after the rename. The upgrade
-  across the cut can no longer be shown with published artifacts; the rolling upgrade works again with the second release under
-  the new name. Done when the set names what it starts from and the test across the cut is either rebuilt from two bundles or
-  removed with its exit criterion.
 - **F-121 · The nightly performance run misses V-7b on a loaded runner** (runs 42571414393 with p99 314.7 ms and 42595813923 with
   610.957 ms against 300 ms; V-7a 17 to 60 ms in the same runs; both shared the nodes with other kind legs). Not reproduced as a
   regression, looked at on 2026-11-09: the path is the one [Q-VULN-81](../spec/vulnerability-scanning.md) decided and no commit since
@@ -1446,6 +1428,25 @@ agent** is not decided until the owner has said so.
   bound of Q-ARCH-500) and `v0.62.1` at 21:35 UTC (the registry's sign-off through a database switchover and the handing
   over of waiting jobs, the package installs of CI). The owner's installation followed to `0.62.0` by itself within the
   hour, two ready replicas of each Deployment.
+- **Closed in the night of 2026-11-18, each by a builder:**
+  - **F-130** (the upgrade set had no release to start from): the test of the rolling upgrade from the previous release takes
+    the newest release tag in the commit's history whose chart the chart repository lists (Q-HA-311; `v0.62.0` that night),
+    and reads the migrations changed since that release before it installs anything: a changed or removed migration or a
+    contract step skips it with the files named until the first stable release, and fails it after (Q-HA-312). The test
+    across the cut of the rename is removed with its exit criterion (Q-HA-313): no Quader release precedes the cut, so no
+    installation can take that path; revisit at the first stable release. The set is split by what it tests (Q-HA-314, a
+    note at the owner's Q-ARCH-340): `upgrade`, the rolling upgrade of the commit across its two UI bundles, runs every
+    night; `upgrade-release`, upgrade and rollback from the published release, on a dispatch that names it. **Not run on a
+    cluster**: dispatch `-f sets=e2e-upgrade` after the night's full run; green shows "the upgrade starts from v0.62.0",
+    "the migrations changed since v0.62.0: []", both subtests PASS and every loop "failed 0". **For the owner:** the bridge
+    of the roles (`web.enabled`, `web.routed`, the role `web`) serves only the removed path and can go in a change of its own.
+  - **F-131** (the search field kept its position when a newer answer replaced the list): the highlighted entry follows its
+    identity, and nothing is highlighted when the new list no longer holds it (Q-UI-700); a pointer that does not move does
+    not move the highlight, a held Enter acts once (Q-UI-701). One helper for the search field and the principal field.
+  - **F-132** (a suggested key could land in a key the user had begun): a default that arrives while its field has the focus
+    waits until the field is left and is written only if nothing was typed (Q-UI-702); the same for the cache periods and
+    the mirror's numbers. The journeys 08, 11, 14 and 17 no longer wait for the suggestion before they type; changed, not
+    run locally. Not looked at in a browser by anyone: the render stack was the W-5 builder's that night.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
@@ -1617,7 +1618,7 @@ v0.56.1 to v0.56.4).
      44233617621: the `cg:` rows of the stall evidence after 2a161226, `TestHAPooler_Switchover` on `main`, `vuln-long` and `alerts`
      with the changed drain helpers (all four legs were green).
   3. ~~Land `stab/oom-2` (b1d9b7d6) with the full gates~~ — landed in the night of 2026-11-18, see above.
-  4. The remaining findings of section 8: F-136, F-135, F-126, F-119 (the case of 11-09), F-130, F-131, F-132; `ci-ha` on a
+  4. The remaining findings of section 8: F-136, F-135, F-126, F-119 (the case of 11-09); F-130, F-131 and F-132 are closed (night of 2026-11-18); `ci-ha` on a
      degraded hosted runner; the stalled `drain-load-pooler` of 11-11.
   5. A partial dispatch (`-f sets=…`) takes a large pod for every leg of a lane it does not run; in a full pool one leg waited 40 minutes.
 - The runner change of F-133 was applied after the run, on the owner's word (see there): the next run reads the first legs on the new
