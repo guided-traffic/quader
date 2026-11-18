@@ -47,8 +47,8 @@ async function render(setup: (h: Host) => void = () => undefined) {
   const root = fixture.nativeElement as HTMLElement;
   const input = (): HTMLInputElement => root.querySelector('input[role="combobox"]') as HTMLInputElement;
   const options = (): HTMLElement[] => [...root.querySelectorAll<HTMLElement>('[role="option"]')];
-  const key = async (k: string): Promise<KeyboardEvent> => {
-    const event = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true });
+  const key = async (k: string, init: KeyboardEventInit = {}): Promise<KeyboardEvent> => {
+    const event = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...init });
     input().dispatchEvent(event);
     await settle(fixture);
     return event;
@@ -196,6 +196,75 @@ describe('The principal field (R-UI-150)', () => {
     typeInto(root, 'Bind to', 'sa');
     await sleep(fixture, 320);
     expect(options()).toHaveLength(0);
+  });
+
+  describe('the active match when a newer answer replaces the list (Q-UI-700, Q-UI-701)', () => {
+    const PEOPLE = [
+      { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a30', username: 'sam', displayName: 'Sam Reader', disabled: false, avatarUrl: null },
+      { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a31', username: 'sara', displayName: null, disabled: false, avatarUrl: null },
+      { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a32', username: 'sasha', displayName: null, disabled: false, avatarUrl: null },
+    ];
+
+    /** The matches of `sa`; then `sas` is typed and its answer held, so the person walks the list of `sa` meanwhile. */
+    async function walking() {
+      const r = await render();
+      r.search.users = PEOPLE;
+      typeInto(r.root, 'Bind to', 'sa');
+      await sleep(r.fixture, 320);
+      expect(r.options().map((o) => text(o))).toEqual([
+        expect.stringContaining('@sam'),
+        expect.stringContaining('@sara'),
+        expect.stringContaining('@sasha'),
+      ]);
+      r.search.hold = true;
+      typeInto(r.root, 'Bind to', 'sas');
+      await sleep(r.fixture, 320);
+      const answer = async (): Promise<void> => {
+        r.search.hold = false;
+        r.search.release();
+        await settle(r.fixture);
+      };
+      const active = (): string | null => {
+        const id = r.input().getAttribute('aria-activedescendant');
+        return id === null ? null : text(r.root.querySelector(`[id="${id}"]`)!);
+      };
+      return { ...r, answer, active };
+    }
+
+    it('R-UI-150 Q-UI-700 Q-UI-701 the match walked to stays active under the same id; the pointer resting over the moved list takes nothing', async () => {
+      const r = await walking();
+      r.options()[2]!.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, screenX: 20, screenY: 90 }));
+      await settle(r.fixture);
+      expect(r.active()).toContain('@sasha');
+      const before = r.input().getAttribute('aria-activedescendant');
+      await r.answer();
+      expect(r.options()).toHaveLength(1);
+      // The browser reports the list moving under the resting pointer as a move at the same place.
+      r.options()[0]!.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, screenX: 20, screenY: 90 }));
+      await settle(r.fixture);
+      expect(r.input().getAttribute('aria-activedescendant')).toBe(before);
+      expect(r.active()).toContain('@sasha');
+      // A held Enter acts once: its repeat takes nothing and submits nothing; the press takes the active match.
+      const repeat = await r.key('Enter', { repeat: true });
+      expect(repeat.defaultPrevented).toBe(true);
+      expect(r.host.value()).toEqual([]);
+      await r.key('Enter');
+      expect(r.host.value()).toEqual(['user:sasha']);
+    });
+
+    it('R-UI-150 Q-UI-700 a new list without the match leaves none active; Enter then does what it does without one', async () => {
+      const r = await walking();
+      await r.key('ArrowDown');
+      await r.key('ArrowDown');
+      expect(r.active()).toContain('@sara');
+      await r.answer();
+      expect(r.options().map((o) => text(o))).toEqual([expect.stringContaining('@sasha')]);
+      expect(r.input().getAttribute('aria-activedescendant')).toBeNull();
+      expect(r.options()[0]!.getAttribute('aria-selected')).toBe('false');
+      // Without an active match, Enter takes the only match the list shows (R-UI-150).
+      await r.key('Enter');
+      expect(r.host.value()).toEqual(['user:sasha']);
+    });
   });
 
   it('R-UI-150 a stored reference reads as its kind and name', () => {

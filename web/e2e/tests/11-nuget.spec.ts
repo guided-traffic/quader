@@ -1,4 +1,4 @@
-import { e2eProject, expect, expectAccessible, fillKey, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
+import { e2eProject, expect, expectAccessible, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
 // R-UI-047 journey "nuget" (WP3.7; R-UI-007, R-UI-018, R-UI-019, R-UI-021): the creation form creates a local NuGet
 // repository and writes the one setting that differs from the default; the edit form reads it back; the repository's page
@@ -108,7 +108,7 @@ test('R-UI-021 R-ARCH-004 R-UI-083 the NuGet settings in Advanced settings and o
     await page.goto('/ui/en/admin/repositories/new/nuget');
     await expect(page.getByRole('heading', { name: 'New NuGet repository', level: 1 })).toBeVisible();
     await page.getByLabel('Project', { exact: true }).selectOption(e2eProject);
-    await fillKey(page, 'nuget-local', wizardKey);
+    await page.locator('#f-key').fill(wizardKey);
     await page.getByRole('button', { name: 'Advanced settings' }).click();
     await expect(page.getByRole('heading', { name: 'NuGet settings', level: 3 })).toBeVisible();
     await expect(page.getByRole('checkbox', { name: 'Forward search' })).toHaveCount(0);

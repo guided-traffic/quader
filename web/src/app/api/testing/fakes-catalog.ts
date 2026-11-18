@@ -688,9 +688,12 @@ export class FakeRepositoriesApi extends RepositoriesApi {
   defaultsCalls: { project: string; format: string; cls: RepositoryClass }[] = [];
   defaultsError: ApiError | null = null;
   defaultsFor: ((project: string, format: string, cls: RepositoryClass) => RepositoryDefaults) | null = null;
+  /** While set, an answer of `defaults` waits for it: a late answer, as it reaches a form the person is already filling. */
+  defaultsHold: Promise<void> | null = null;
 
   override async defaults(project: string, format: string, cls: RepositoryClass): Promise<RepositoryDefaults> {
     this.defaultsCalls.push({ project, format, cls });
+    if (this.defaultsHold) await this.defaultsHold;
     if (this.defaultsError) throw this.defaultsError;
     if (this.defaultsFor) return structuredClone(this.defaultsFor(project, format, cls));
     const descriptor = this.formatsResult.find((f) => f.name === format);

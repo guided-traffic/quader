@@ -82,14 +82,14 @@
   <div
     role="option"
     class="search-option"
-    [id]="optionId(index)"
-    [class.active]="active() === index"
-    [attr.aria-selected]="active() === index"
+    [id]="optionId(e)"
+    [class.active]="active.index() === index"
+    [attr.aria-selected]="active.index() === index"
     [attr.aria-label]="optionName(e)"
     tabindex="-1"
     (click)="pick(e)"
     (keydown.enter)="pick(e)"
-    (mousemove)="hover(index)"
+    (mousemove)="hover(index, $event)"
   >
     <span class="search-option-icon" aria-hidden="true">
       @if (e.format) {

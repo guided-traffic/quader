@@ -21,6 +21,7 @@ import { DraftStore } from '../../shared/drafts';
 import { ErrorNotice } from '../../shared/error-notice';
 import { ErrorSummary, SummaryItem, fieldMessage, problemsAt } from '../../shared/field-errors';
 import { asApiError, valueOf } from '../../shared/paged-resource';
+import { heldWhileFocused } from '../../shared/held-while-focused';
 import { HasUnsavedChanges } from '../../shared/unsaved-guard';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -258,6 +259,13 @@ export class RepositoryCreate implements HasUnsavedChanges {
   private readonly pristine = signal<RepositoryForm>(EMPTY_FORM);
   private readonly keyEdited = signal(false);
   protected readonly keyTouched = signal(false);
+  /** The key field has the focus. */
+  protected readonly keyFocused = signal(false);
+  /**
+   * The class's defaults as the key takes them: an answer that arrives while the key has the focus waits until it is left
+   * (Q-UI-702), so the suggestion never lands in a key the person has begun.
+   */
+  private readonly keyDefaults = heldWhileFocused(() => valueOf(this.defaults), this.keyFocused);
   protected readonly keyCheck = signal<KeyCheck>('idle');
   private keyTimer: ReturnType<typeof setTimeout> | undefined;
   /** **Create repository** was pressed: every field shows its error (R-UI-086). */
@@ -429,9 +437,10 @@ export class RepositoryCreate implements HasUnsavedChanges {
       if (!this.session.reauthRequired()) return;
       untracked(() => this.keepDraft());
     });
-    // The class's defaults arrive: the key follows the suggestion until it is edited (Q-UI-342).
+    // The class's defaults arrive: the key follows the suggestion until it is edited (Q-UI-342), and not while it has the focus
+    // (Q-UI-702).
     effect(() => {
-      const d = valueOf(this.defaults);
+      const d = this.keyDefaults();
       if (d === undefined) return;
       untracked(() => {
         if (this.keyEdited()) return;
@@ -455,7 +464,7 @@ export class RepositoryCreate implements HasUnsavedChanges {
     effect(() => {
       const key = this.form().key;
       const project = this.chosenProject();
-      const suggested = valueOf(this.defaults)?.suggestedKey ?? null;
+      const suggested = this.keyDefaults()?.suggestedKey ?? null;
       const check = this.keyValid() && project !== '' && key !== suggested;
       untracked(() => this.scheduleKeyCheck(key, project, check));
     });

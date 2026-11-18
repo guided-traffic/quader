@@ -5865,6 +5865,11 @@ Priority: **MVP** · Covers: UI-031
   text and number fields included. The values come from `getRepositoryDefaults` (R-REPO-063) for the document's members and from
   `settingsSchema` for the format's member ([Q-UI-348](#q-ui-348--a-default-is-the-value-of-its-field)).
 - A value equal to its default is not written (Q-UI-80). A field the user empties shows its default again when it is left.
+- A field the person is in never changes under their hands
+  ([Q-UI-702](#q-ui-702--a-default-that-arrives-while-its-field-has-the-focus-waits-until-the-field-is-left)): a default that
+  `getRepositoryDefaults` answers while the key, a cache period or a number of the mirror group has the focus is shown when the
+  field is left, and only if it still takes a default then (the key until it is edited, Q-UI-342; a period or a number while it
+  holds no value of its own).
 - A setting whose default is derived from other settings has no static value: a choice offers **Automatic** first (npm
   `audit.mode`, NuGet `vulnerabilityInfo`), a text stays empty with its description (Debian `label`, which is the key while unset).
 - No "Default: …" hint line remains.
@@ -5874,6 +5879,9 @@ Acceptance criteria:
 - An OCI remote shows 300 in both cache periods; in mode mirror, 3600 as the pass interval and 4 as the concurrent fetches; a
   local Debian repository shows the architectures `amd64` and `arm64` and the origin `quader`. A create that changes none of them
   writes none of them.
+- The class Remote chosen and the key entered before the class's defaults are answered: the key keeps what it showed, a key typed
+  there is created as typed, and a key left untouched shows `npm-remote` once it is left; the same for a cache period and the pass
+  interval (`repository-create.spec.ts`).
 
 ### R-UI-085 · A field is as wide as its expected input
 Priority: **MVP** · Covers: UI-031
@@ -6197,7 +6205,8 @@ Groups 2 to 4 are not shown to an anonymous caller.
   are shown after one `GET /api/v1/repositories?name=…` (R-API-063) has returned them, and only those it returned; the stored projects
   when the project list the UI reads once (Q-UI-129) holds them. An entry that is not returned is left out and stays stored. The
   request runs when the list first opens after sign-in, and again after the stored repositories or the caller's authorization epoch
-  changed.
+  changed. The group joins the open list when the answer comes; an entry the reader already walked to stays active
+  ([Q-UI-700](#q-ui-700--the-active-entry-follows-its-identity-when-the-list-changes)).
 
 Acceptance criteria:
 
@@ -6245,6 +6254,15 @@ Priority: **MVP** · Covers: quader-only
   from the first entry returns to the text, nothing wraps. Enter opens the active entry; Escape closes the list and, with the list
   closed, empties the field; Tab leaves the field and closes the list; Alt+Down opens the list without moving. After each answer a
   polite live region says how many suggestions are shown, or that none matches.
+- **The active entry when the list changes**
+  ([Q-UI-700](#q-ui-700--the-active-entry-follows-its-identity-when-the-list-changes)). Typing makes the text active. A list that
+  changes without a key (a newer answer, the frequently visited repositories confirmed by the server) keeps the entry the reader
+  walked to active wherever it now stands, under the same option id; where the new list does not hold it, or holds nothing, no entry
+  is active and Enter does what it does without one (R-UI-098). An entry is the same when it opens the same target. A list never
+  makes an entry active by itself.
+- **Pointer and held keys** ([Q-UI-701](#q-ui-701--the-pointer-activates-an-entry-only-when-it-moves-and-a-held-enter-acts-once)).
+  The pointer makes the entry under it active when it moves; a list that changes or scrolls under a resting pointer does not. A
+  held Down goes on from where its entry stands in the newest list. A held Enter acts once: its repeats open nothing.
 
 Acceptance criteria:
 
@@ -6252,6 +6270,10 @@ Acceptance criteria:
   the list shows `npm-vendor · web-frontend` under Repositories with `vend` in bold.
 - `ven`, `vend` and `vendo` typed within 200 ms send one request, for `vendo`.
 - With the keyboard only: Down, Down, Enter opens the second entry; Escape closes the list and a second Escape empties the field.
+- `sam` types `npm`, then `npm-`, and walks to `npm-all` before the answer of `npm-` comes: an answer that puts `npm-cache` first
+  keeps `npm-all` active under the same `aria-activedescendant`, and Enter opens it; an answer without `npm-all`, or without any
+  suggestion, leaves none active, and Enter opens `/search?q=npm-`. A `mousemove` at the pointer's old position over the moved
+  list changes nothing (`search-field.spec.ts`).
 - A `429` with `Retry-After: 3` shows the notice, and no request is sent for 3 s.
 - axe reports no serious or critical violation with the list open, in both schemes.
 
@@ -6260,7 +6282,10 @@ Priority: **MVP** · Covers: quader-only
 
 Enter in the field with no active entry opens `/search?q=<text>&kind=<kind>`
 ([Q-UI-411](#q-ui-411--enter-without-a-picked-suggestion-opens-search-whose-tabs-read-the-three-lists)), a page of the main area with
-the start side bar (R-UI-002); it never opens a route under `/admin` (R-UI-099).
+the start side bar (R-UI-002); it never opens a route under `/admin` (R-UI-099). No entry is active as long as the reader has not
+walked to one, and after a newer list dropped the one they walked to
+([Q-UI-700](#q-ui-700--the-active-entry-follows-its-identity-when-the-list-changes)): Enter then opens this page, never an entry
+the reader did not choose.
 
 - **Header**: the `<h1>` **Search** and the description "What you may read that matches "<text>"." The top bar's field keeps the text
   while the page is open; the page has no field of its own.
@@ -6864,7 +6889,12 @@ the match ([Q-UI-580](#q-ui-580--one-shared-field-names-a-principal-everywhere-a
 - **Keyboard and assistive technology**, by the combobox pattern of WAI-ARIA with a listbox: the focus stays in the input,
   `aria-activedescendant` names the active row; ↓ and ↑ move it, Enter takes it (and never submits the form around the field while
   there is text), Escape closes the list and then empties the text, Backspace on an empty text removes the last chip of a field of
-  many. A polite live region says how many matches there are, or the state below.
+  many. A polite live region says how many matches there are, or the state below. The active match follows the rules of the search
+  field ([Q-UI-700](#q-ui-700--the-active-entry-follows-its-identity-when-the-list-changes),
+  [Q-UI-701](#q-ui-701--the-pointer-activates-an-entry-only-when-it-moves-and-a-held-enter-acts-once)): a newer answer keeps it
+  where it still lists it and leaves none active where it does not; Enter without an active match takes the only match the list
+  shows, and does nothing with several; the pointer activates a row when it moves; a held Enter acts once and never submits the
+  form.
 - **States** under the matches: "Searching…" until the first answer; "Nobody matches “Swa”. A person can be found after their first
   sign-in." when no user matches (for a field without users, "Nothing matches “…”."); "More match. Type more of the name." when the
   search left matches out; "The search failed. Change the text to try again." when it was refused or failed, with no stale row
@@ -13556,7 +13586,9 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) `<format>-<class>`, or the first free of `-2` to `-9`, from the server (chosen) | `suggestedKey` of R-REPO-063 | A value in the field; the manual's own naming (`npm-local`, `npm-remote`); never red on arrival | A suggestion the user may not want |
 | (c) The same, computed in the browser | GETs per candidate | No server change | Several requests; the server already answers the defaults |
 
-**Choice:** (b). The suggestion follows the class until the key is edited.
+**Choice:** (b). The suggestion follows the class until the key is edited. A suggestion that arrives while the key has the focus is
+written when the key is left, if it was not edited meanwhile; it is never written into a key the person is in
+([Q-UI-702](#q-ui-702--a-default-that-arrives-while-its-field-has-the-focus-waits-until-the-field-is-left), F-132).
 
 **Rationale:** the plain user gets a working key without thinking about the pattern. The development agent would revisit it when
 installations name repositories by another rule (then the rule is a setting).
@@ -13668,6 +13700,43 @@ emptied field shows its default again when it is left.
 setting needs "empty" as a value of its own.
 
 **Applied in the spec:** R-UI-084.
+
+### Q-UI-702 · A default that arrives while its field has the focus waits until the field is left
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: finding F-132. The creation form wrote the class's suggested key (Q-UI-342) whenever the answer of
+`getRepositoryDefaults` (R-REPO-063) came and the key was not edited, also into a key field the person was in. An answer that came
+between the focus and the first character made the key the suggestion followed by the typed text (`nuget-localui-nuget-wizard-…`,
+seen in a browser journey that filled the key right after choosing the project). The same answer feeds the two cache periods of the
+upstream (R-UI-082) and the numbers of the mirror group, which show it while they hold nothing; a period typed into while it arrived
+would have become the default followed by the typed digits. The project's rule: a default is a value in the field, editable
+([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details-on-demand)); a field the person is in must not change under their
+hands.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Write it at once, as built | — | The value is there as soon as it is known | The finding: typed text joins the arrived value; the field changes under the person's hands |
+| (b) Write it as selected text, so the next key replaces it | The suggestion appears selected | The default is in the field at once and typing replaces it | The field still changes under the hands; a person who placed the caret or is about to press Tab gets a value they did not see arrive; a screen reader announces a selection nobody made |
+| (c) Hold it while the field has the focus, and write it when the field is left, if the person did not edit it (chosen) | The field keeps what it showed while the person is in it | Nothing changes under the person's hands; a person who types gets exactly what they typed; one who leaves the field untouched leaves it holding the default, as one who never entered it | While the person is in an empty field, the default is not shown yet |
+| (d) Drop it | A field entered before the answer stays as it was | Simplest | An untouched key stays empty although a free suggestion exists: the default is no longer a value in the field |
+
+**Choice:** (c), for every text field of the creation and settings forms that shows a default the server answers late: the key, the
+two cache periods and the numeric fields of the mirror group. One helper, `heldWhileFocused`
+([held-while-focused.ts](../../web/src/app/shared/held-while-focused.ts)), keeps the default each of them shows while its field has
+the focus. Whether an edited field takes a default at all stays each field's rule: the key never after it was edited (Q-UI-342), a
+period or a mirror number shows its default only while it holds no value of its own (R-UI-084). The other defaults of the forms are
+known before their fields exist and need no rule: the class, the URL and the further hosts come from the format's descriptor, the
+format's schema defaults likewise, and the **Visibility** group appears only with the answer that sets it.
+
+**Rationale:** a person filling the form top to bottom tabs into the key long after the answer came and sees the suggestion; a
+person who clicks straight into the key before it came types their own key undisturbed, and one who leaves it untouched finds the
+suggestion there. The development agent revisits (b) if people of the walk wait in the empty key for a suggestion.
+
+**Applied in the spec:** R-UI-084, Q-UI-342. Code: [held-while-focused.ts](../../web/src/app/shared/held-while-focused.ts),
+[repository-create.ts](../../web/src/app/features/repositories/repository-create.ts),
+[upstream-settings.ts](../../web/src/app/features/repositories/upstream-settings.ts),
+[mirror-settings.ts](../../web/src/app/features/repositories/mirror-settings.ts).
 
 ### Q-UI-349 · A field of the repository forms takes the width of its kind of input, and a schema member the width of its type
 
@@ -14417,6 +14486,59 @@ Status: **Decided by the development agent** — selected from the options below
 the first stable release). **Rationale:** both pages answer the same Enter. The development agent revisits nothing here.
 
 **Applied in the spec:** R-UI-098; a revisit line in each of Q-UI-390 to Q-UI-399 that R-UI-098 changes.
+
+### Q-UI-700 · The active entry follows its identity when the list changes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: finding F-131. The search field kept the active entry as a position. A newer answer that replaced the list while the
+reader walked the old one (the text typed, its answer still on its way, Down pressed meanwhile) or the frequently visited
+repositories that join the empty list once the server confirmed them (Q-UI-406) left the highlight on another entry than the one
+the reader walked to. Enter opens the highlighted entry, so nothing opened unseen, but it was not the entry the reader chose. The
+principal field (R-UI-150) dropped the active match with every answer, also where the answer still listed it. The WAI-ARIA
+Authoring Practices name no rule for a list that changes without a key; their examples reset the active option when the text
+changes, which both fields already do.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the position | As built in the search field | Nothing to build | The highlight moves to an entry nobody walked to; Enter opens it |
+| (b) No entry is active after every new list | As built in the principal field | Simple; nothing is active that was not walked to | A list that only gains entries (the frequently visited group, a match added) throws the reader back to the text |
+| (c) The same entry stays active wherever the new list holds it; where it does not, no entry is active and the text is (chosen) | The entry's identity: what it opens (a repository by project and key, a package by ID, a page by route, an **All … for** line by kind and text, a principal by reference) | The reader stays where they were; nothing is active that they did not walk to; Enter does what it does without an active entry (the results page in the search, R-UI-098; the only match in the principal field, R-UI-150) | An entry that vanished leaves the reader at the text, one Down from the first entry |
+| (d) As (c), and the neighbour of a vanished entry becomes active | The nearest entry | The reader stays in the list | The neighbour is an entry nobody walked to, and Enter opens it |
+
+**Choice:** (c), in both comboboxes through one helper, `ActiveOption`
+([active-option.ts](../../web/src/app/shared/ui/active-option.ts)). An option's DOM id is derived from the entry's identity, not
+its position, so `aria-activedescendant` keeps naming the entry when it moves and a screen reader does not announce a move as a new
+entry; the polite live region says the new count (R-UI-097). A list that becomes empty leaves nothing active, and Down does
+nothing in it. A held Down that meets a new list goes on from where its entry now stands.
+
+**Rationale:** the active entry is the reader's choice in progress; only the reader moves it. The development agent revisits (d)
+if readers of the walk lose their place where an answer drops the entry they stood on.
+
+**Applied in the spec:** R-UI-097, R-UI-098, R-UI-150. Code: [active-option.ts](../../web/src/app/shared/ui/active-option.ts),
+[search-field.ts](../../web/src/app/features/search/search-field.ts),
+[principal-field.ts](../../web/src/app/shared/ui/principal-field.ts).
+
+### Q-UI-701 · The pointer activates an entry only when it moves, and a held Enter acts once
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-131 has two more ways to an entry nobody walked to. A browser sends `mousemove` at the old position when the content
+under a resting pointer changes or scrolls, so a new list, or the list scrolled to the keyboard's entry, gave the active entry to
+whatever came to lie under the pointer. A held Enter repeats: after the first press opened an entry and emptied the field, a repeat
+opened the results page of an empty text, and in the principal field a repeat could submit the form around it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) As built: every `mousemove` activates, every Enter acts | — | Nothing to build | The two ways above |
+| (b) A `mousemove` at the position of the one before is ignored; a repeated `keydown` of Enter (`repeat`) does nothing but prevent its default (chosen) | Movement is the pointer's intent; a repeat is no new press | The keyboard's entry stays until the pointer really moves; one press, one action | A pointer that moves by less than a pixel does not count |
+| (c) The pointer never activates; it only clicks | Keyboard alone moves the highlight | No conflict at all | The row under the pointer and the highlight disagree, and the pointer's hover is what a person expects to see |
+
+**Choice:** (b), in `ActiveOption.pointer` and `heldEnter` of [active-option.ts](../../web/src/app/shared/ui/active-option.ts),
+for both comboboxes. **Rationale:** what the person did is what moves the highlight; what the page did is not. The development agent
+revisits it if a pointer device reports the same position for a real move.
+
+**Applied in the spec:** R-UI-097, R-UI-150.
 
 ### Q-UI-420 · The filters of a list open in a drawer from the right over the page
 

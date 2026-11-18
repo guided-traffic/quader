@@ -1,4 +1,4 @@
-import { e2eProject, expect, expectAccessible, fillKey, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
+import { e2eProject, expect, expectAccessible, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
 // R-UI-047 journey "deb" (T-17 WP11; R-DEB-014, R-DEB-015, R-DEB-017, R-DEB-029, R-DEB-030, R-UI-021): the repository
 // creation form offers Debian (APT) and the settings page shows its settings; the signing key panel lists the generated primary key,
@@ -113,7 +113,7 @@ test('R-UI-021 R-DEB-008 R-UI-084 the creation form offers Debian and the settin
     await page.goto('/ui/en/admin/repositories/new/deb');
     await expect(page.getByRole('heading', { name: 'New Debian (APT) repository', level: 1 })).toBeVisible();
     await page.getByLabel('Project', { exact: true }).selectOption(e2eProject);
-    await fillKey(page, 'deb-local', wizardKey);
+    await page.locator('#f-key').fill(wizardKey);
     await page.getByRole('button', { name: 'Advanced settings' }).click();
     await expect(page.getByRole('heading', { name: 'Debian (APT) settings', level: 3 })).toBeVisible();
     await expect(page.getByLabel('Suites', { exact: true })).toHaveCount(0); // virtual repositories only

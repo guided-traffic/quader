@@ -1,8 +1,9 @@
-import { Component, computed, input, model } from '@angular/core';
+import { Component, computed, input, model, signal } from '@angular/core';
 import { FieldProblem } from '../../api/problem';
 import { FieldWidth } from '../../shared/access/fields';
 import { FormatDescriptor } from '../../api/repositories-api';
 import { fieldMessage, problemsAt } from '../../shared/field-errors';
+import { heldWhileFocused } from '../../shared/held-while-focused';
 import { JsonObject } from '../../shared/merge-patch';
 import { MirrorDefaults, RemoteMode, RepositoryForm, lines } from './repository-model';
 import { defaultPreset, normalizedUrl } from './upstream-model';
@@ -226,7 +227,8 @@ interface NumberMember {
                 [attr.aria-invalid]="invalid(n.name)"
                 [attr.aria-describedby]="'d-' + idOf(n.name)"
                 (input)="setNumber(n.name, $any($event.target).value)"
-                (blur)="showDefaultAgain(n.name, $event)"
+                (focus)="numberFocused.set(true)"
+                (blur)="numberFocused.set(false); showDefaultAgain(n.name, $event)"
               />
               <p class="hint" [id]="'d-' + idOf(n.name)">{{ n.hint }}</p>
               @for (e of problems('/remote/mirror/' + n.name); track $index) {
@@ -343,6 +345,10 @@ export class MirrorSettings {
   readonly restricted = input(false);
   /** The server's defaults of `remote.mirror` (R-REPO-063): the values of the fields that are not set. */
   readonly defaults = input<MirrorDefaults>(null);
+  /** A numeric field has the focus. */
+  protected readonly numberFocused = signal(false);
+  /** The defaults the numeric fields show: one that arrives while the person is in one of them waits until it is left (Q-UI-702). */
+  private readonly numberDefaults = heldWhileFocused(this.defaults, this.numberFocused);
   /** Server field problems by pointer (`ApiError.fieldErrors`). */
   readonly fieldErrors = input<ReadonlyMap<string, FieldProblem>>(new Map());
 
@@ -437,10 +443,12 @@ export class MirrorSettings {
 
   /**
    * The value in the field: the one set, else the server's default (R-UI-084, R-REPO-063); `maxBytes` has none and stays empty, and
-   * so does every member while the defaults are not known.
+   * so does every member while the defaults are not known. A default that arrives while a numeric field has the focus is shown
+   * once it is left (Q-UI-702).
    */
   protected shown(name: string): string {
-    const v = this.valueOf(name);
+    const set = this.form().mirror[name];
+    const v = set === undefined || set === null ? this.numberDefaults()?.[name] : set;
     return v === undefined || v === null ? '' : String(v);
   }
 

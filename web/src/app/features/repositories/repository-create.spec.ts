@@ -422,4 +422,140 @@ describe('The creation form of a repository', () => {
     expect($<HTMLSelectElement>(r, '#f-project').value).toBe('web');
     expect($(r, '#f-key').value).toBe('npm-local');
   });
+
+  describe('a default that arrives while the person is in its field (Q-UI-702)', () => {
+    /**
+     * Renders and lets every answer but the held one arrive. `settle` waits for the app to be stable, which a held answer of
+     * `getRepositoryDefaults` (a resource) keeps it from being.
+     */
+    async function step(r: Form): Promise<void> {
+      for (let i = 0; i < 4; i++) {
+        await new Promise((go) => setTimeout(go, 0));
+        r.fixture.detectChanges();
+      }
+    }
+
+    /** Holds the next answers of the class's defaults until the returned function is called. */
+    function holdDefaults(fake: FakeRepositoriesApi): () => void {
+      let release!: () => void;
+      fake.defaultsHold = new Promise((go) => (release = go));
+      return () => {
+        fake.defaultsHold = null;
+        release();
+      };
+    }
+
+    const focus = (el: HTMLElement): boolean => el.dispatchEvent(new Event('focus'));
+    const leave = (el: HTMLElement): boolean => el.dispatchEvent(new Event('blur'));
+
+    it('R-UI-084 Q-UI-342 Q-UI-702 a person who clicks straight into the empty key gets no suggestion under their hands; it is written when they leave the key untouched', async () => {
+      const r = await renderScreen(RepositoryCreate, {
+        inputs: { format: 'npm' },
+        setup: (get) => ((get(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [PACKAGE_FORMAT]),
+      });
+      const fake = r.get(RepositoriesApi) as FakeRepositoriesApi;
+      const release = holdDefaults(fake);
+      type($<HTMLSelectElement>(r, '#f-project'), 'web');
+      await step(r);
+      const key = $(r, '#f-key');
+      expect(key.value).toBe('');
+      focus(key);
+      await step(r);
+      release();
+      await settle(r.fixture);
+      expect(key.value).toBe('');
+      leave(key);
+      await settle(r.fixture);
+      expect(key.value).toBe('npm-local');
+      expect(r.fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+    });
+
+    it('R-UI-084 Q-UI-342 Q-UI-702 a suggestion that arrives between the focus and the first character never joins the typed key', async () => {
+      const r = await openForm('npm', { formats: [PACKAGE_FORMAT] });
+      const key = $(r, '#f-key');
+      expect(key.value).toBe('npm-local');
+      const release = holdDefaults(r.fake);
+      $(r, 'input[name="class"][value="remote"]').click();
+      await step(r);
+      focus(key);
+      await step(r);
+      release();
+      await settle(r.fixture);
+      // The field the person is in keeps what it showed; before Q-UI-702 it became npm-remote here, and the typing went after it.
+      expect(key.value).toBe('npm-local');
+      type(key, 'npm-mine');
+      await settle(r.fixture);
+      leave(key);
+      await settle(r.fixture);
+      expect(key.value).toBe('npm-mine');
+      stayOnPage();
+      await create(r);
+      expect(created(r.fake, 'npm-mine')).toBeDefined();
+    });
+
+    it('R-UI-084 Q-UI-342 Q-UI-702 a key left untouched takes the class’s suggestion when it is left', async () => {
+      const r = await openForm('npm', { formats: [PACKAGE_FORMAT] });
+      const key = $(r, '#f-key');
+      const release = holdDefaults(r.fake);
+      $(r, 'input[name="class"][value="remote"]').click();
+      await step(r);
+      focus(key);
+      await step(r);
+      release();
+      await settle(r.fixture);
+      expect(key.value).toBe('npm-local');
+      leave(key);
+      await settle(r.fixture);
+      expect(key.value).toBe('npm-remote');
+      expect(r.fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+    });
+
+    it('R-UI-084 Q-UI-702 a cache period that arrives while its field has the focus is shown once the field is left', async () => {
+      const r = await openForm('npm', {
+        formats: [PACKAGE_FORMAT],
+        setup: (fake) =>
+          (fake.defaultsFor = (_p, _f, cls) => {
+            const d = sampleRepositoryDefaults(PACKAGE_FORMAT, cls);
+            const remote = (d.repository as Record<string, unknown>)['remote'] as { cache: { metadataTtlSeconds: number } } | undefined;
+            if (remote) remote.cache.metadataTtlSeconds = 600;
+            return d;
+          }),
+      });
+      const release = holdDefaults(r.fake);
+      $(r, 'input[name="class"][value="remote"]').click();
+      await step(r);
+      const period = $(r, '#f-remote-cache-metadataTtlSeconds');
+      expect(period.value).toBe('');
+      focus(period);
+      await step(r);
+      release();
+      await settle(r.fixture);
+      expect(period.value).toBe('');
+      leave(period);
+      await settle(r.fixture);
+      expect(period.value).toBe('600');
+    });
+
+    it('R-UI-084 Q-UI-702 a mirror interval that arrives while its field has the focus is shown once the field is left', async () => {
+      const r = await openForm('npm', { formats: [PACKAGE_FORMAT] });
+      await openAdvanced(r);
+      const release = holdDefaults(r.fake);
+      $(r, 'input[name="class"][value="remote"]').click();
+      await step(r);
+      const mirror = $(r, 'input[name="remote-mode"][value="mirror"]');
+      mirror.checked = true;
+      mirror.dispatchEvent(new Event('change', { bubbles: true }));
+      await step(r);
+      const interval = $(r, '#f-remote-mirror-intervalSeconds');
+      expect(interval.value).toBe('');
+      focus(interval);
+      await step(r);
+      release();
+      await settle(r.fixture);
+      expect(interval.value).toBe('');
+      leave(interval);
+      await settle(r.fixture);
+      expect(interval.value).toBe('3600');
+    });
+  });
 });

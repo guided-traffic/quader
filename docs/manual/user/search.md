@@ -33,7 +33,8 @@ example `npm-vendor · web-frontend`, and the text you typed is bold. A group wi
 "…"** (packages, projects), which opens the results page on that tab.
 
 Use the arrow keys to move through the entries and Enter to open one, or click it. Escape closes the list; a second Escape empties
-the field.
+the field. When newer suggestions arrive while you move through the list, the entry you moved to stays highlighted wherever it now
+stands; if it is no longer suggested, no entry is highlighted, and Enter opens the results page.
 
 If you search very quickly, Quader may ask you to wait: the list says **Too many searches** and when suggestions return.
 

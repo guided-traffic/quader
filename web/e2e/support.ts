@@ -213,19 +213,6 @@ export async function signInLocal(page: Page, ui = '/ui/en'): Promise<void> {
   await expect(page.locator('.user-name')).toHaveText('admin');
 }
 
-/**
- * Types the key of the repository creation form once the form shows its suggestion `<format>-<class>` (or `-2` to `-9` after
- * it) for the chosen project and class (Q-UI-342). The suggestion arrives with the class's defaults after the project or the
- * class is chosen and is written into the field until the key is edited; a fill before it raced the answer, which landed
- * between the fill's select-all and its typing, and the key became the suggestion followed by the typed text
- * (`nuget-localui-nuget-wizard-…`).
- */
-export async function fillKey(page: Page, suggested: string, key: string): Promise<void> {
-  const field = page.locator('#f-key');
-  await expect(field).toHaveValue(new RegExp(`^${suggested}(-[2-9])?$`));
-  await field.fill(key);
-}
-
 /** Signs out through the user menu; the IdP ends its session and sends the browser back to the signed-out page. */
 export async function signOut(page: Page): Promise<void> {
   await page.getByRole('button', { name: /User menu|Benutzermenü/ }).click();

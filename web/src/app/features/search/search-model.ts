@@ -12,7 +12,10 @@ export type Area = 'main' | 'admin';
 
 /** One entry of the list. `commands` and `queryParams` are the router's; the one gate decides whether it opens (`gate`). */
 export interface SearchEntry {
-  /** Unique within the list: the option's DOM id is derived from it. */
+  /**
+   * The entry's identity, unique within the list: what it opens. The option's DOM id is derived from it, and the active entry
+   * follows it when a newer answer replaces the list (Q-UI-700).
+   */
   readonly id: string;
   readonly area: Area;
   readonly kind: 'place' | 'repository' | 'package' | 'project' | 'page' | 'user' | 'group' | 'more' | 'all-projects';
@@ -213,7 +216,7 @@ function moreEntry(kind: 'repository' | 'package' | 'project', q: string): Searc
       : kind === 'package'
         ? $localize`:@@search.more.packages:All packages for “${q}:text:”`
         : $localize`:@@search.more.projects:All projects for “${q}:text:”`;
-  return { id: `more-${kind}`, area: 'main', kind: 'more', label, icon: 'arrow_forward', literal: false, commands: ['/search'], queryParams: { q, kind } };
+  return { id: `more-${kind}-${q}`, area: 'main', kind: 'more', label, icon: 'arrow_forward', literal: false, commands: ['/search'], queryParams: { q, kind } };
 }
 
 /** The input of the typed list. */

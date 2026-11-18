@@ -8,6 +8,7 @@ import {
   UpstreamTestResult,
 } from '../../api/repositories-api';
 import { ErrorNotice } from '../../shared/error-notice';
+import { heldWhileFocused } from '../../shared/held-while-focused';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { fieldMessage, problemsAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
@@ -363,11 +364,12 @@ export function upstreamPointerLabel(pointer: string): string | null {
               inputmode="numeric"
               autocomplete="off"
               spellcheck="false"
-              [value]="shown(upstream().metadataTtl, proposed().metadataTtlSeconds)"
+              [value]="shown(upstream().metadataTtl, periodDefaults().metadataTtlSeconds)"
               [attr.aria-invalid]="invalid('/remote/cache/metadataTtlSeconds')"
               aria-describedby="d-remote-metadata-ttl"
               (input)="set({ metadataTtl: number($any($event.target).value) })"
-              (blur)="leavePeriod('metadataTtl')"
+              (focus)="periodFocused.set(true)"
+              (blur)="periodFocused.set(false); leavePeriod('metadataTtl')"
             />
             <p id="d-remote-metadata-ttl" class="hint" i18n="@@upstream.metadata-ttl.hint-value">
               How long fetched metadata is served without asking the upstream again.
@@ -388,11 +390,12 @@ export function upstreamPointerLabel(pointer: string): string | null {
               inputmode="numeric"
               autocomplete="off"
               spellcheck="false"
-              [value]="shown(upstream().notFoundTtl, proposed().notFoundTtlSeconds)"
+              [value]="shown(upstream().notFoundTtl, periodDefaults().notFoundTtlSeconds)"
               [attr.aria-invalid]="invalid('/remote/cache/notFoundTtlSeconds')"
               aria-describedby="d-remote-notfound-ttl"
               (input)="set({ notFoundTtl: number($any($event.target).value) })"
-              (blur)="leavePeriod('notFoundTtl')"
+              (focus)="periodFocused.set(true)"
+              (blur)="periodFocused.set(false); leavePeriod('notFoundTtl')"
             />
             <p id="d-remote-notfound-ttl" class="hint" i18n="@@upstream.notfound-ttl.hint-value">
               How long a "not found" answer of the upstream is remembered.
@@ -537,6 +540,10 @@ export class UpstreamSettings {
 
   protected readonly upstream = computed(() => this.form().upstream);
   protected readonly proposed = computed(() => upstreamDefaultsOf(this.format(), this.remoteDefaults()));
+  /** A cache period's field has the focus. */
+  protected readonly periodFocused = signal(false);
+  /** The defaults the period fields show: one that arrives while the person is in one of them waits until it is left (Q-UI-702). */
+  protected readonly periodDefaults = heldWhileFocused(this.proposed, this.periodFocused);
   protected readonly presets = computed<readonly UpstreamPreset[]>(() => this.format().upstreamPresets);
   protected readonly hosts = computed(() => shownHosts(this.upstream(), this.proposed()));
 

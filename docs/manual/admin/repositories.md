@@ -36,7 +36,8 @@ The page of a repository shows its **Project**. A repository is created in its p
 3. **Class**: **Local** (preset), **Remote** or **Virtual**. A class the format does not implement is shown unavailable, with the
    reason. Another class keeps the key you typed, the description and the visibility, and starts its own fields from their
    defaults.
-4. **Key** starts with a free suggestion, such as `npm-local` or `npm-local-2`; change it if you like. It is part of every
+4. **Key** starts with a free suggestion, such as `npm-local` or `npm-local-2`; change it if you like. While you are in the
+   field it does not change: a suggestion that comes later appears when you leave it without typing. It is part of every
    address of the repository and cannot be changed later. **Description (optional)** is shown to everyone who can read the
    repository. **Visibility** starts at the level a new repository of the project gets (see [Visibility](#visibility)).
 5. A remote repository adds its **Upstream**: the buttons of the well-known registries, the address, the authentication and

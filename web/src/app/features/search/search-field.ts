@@ -27,6 +27,7 @@ import { PreferencesStore } from '../../core/preferences-store';
 import { ProjectContext } from '../../core/project-context';
 import { SessionStore } from '../../core/session-store';
 import { FormatIconView } from '../../shared/format-icon';
+import { ActiveOption, heldEnter, optionDomId } from '../../shared/ui/active-option';
 import { QuaderAvatar } from '../../shared/ui/avatar';
 import { Segment, highlight } from './highlight';
 import {
@@ -64,7 +65,7 @@ interface Answer {
   readonly answer: SearchSuggestions;
 }
 
-/** A row of the list with its position among all entries (the option's ID and the active entry). */
+/** A row of the list with its position among all entries (whether it is the active entry, where the pointer is). */
 interface IndexedGroup {
   readonly group: SearchGroup;
   readonly first: boolean;
@@ -77,6 +78,8 @@ interface IndexedGroup {
  * typing, and below 36 rem a button that opens it as a sheet. The field is an APG combobox with a grouped listbox, written on
  * its own (Q-UI-410 (b)): the focus stays in the field, `aria-activedescendant` names the active entry, Up from the first entry
  * returns to the text and nothing wraps, and a second Escape empties the field, which the library's combobox does not do.
+ * The active entry is held by its identity (`ActiveOption`, Q-UI-700): a newer list keeps it where it still holds it and leaves
+ * none active where it does not; the pointer takes it only when it moves, and a held Enter acts once (Q-UI-701).
  * Every way out of the field passes `gate`: only an instance administrator's explicit choice of a marked suggestion opens a route
  * under `/admin`.
  */
@@ -107,8 +110,6 @@ export class SearchField {
   protected readonly filter = signal<SearchFilter>('all');
   /** The list under the field is open. */
   protected readonly open = signal(false);
-  /** The index of the active entry among all entries, or -1 while the text is active. */
-  protected readonly active = signal(-1);
   protected readonly sheetOpen = signal(false);
   /** The polite live region's text: how many suggestions, or a hint. */
   protected readonly announcement = signal('');
@@ -257,7 +258,12 @@ export class SearchField {
     });
   });
   private readonly entries = computed(() => this.groups().flatMap((g) => g.entries));
-  protected readonly activeId = computed(() => (this.active() >= 0 && this.open() ? this.optionId(this.active()) : null));
+  /** The active entry, held by its identity across a new list (Q-UI-700). */
+  protected readonly active = new ActiveOption(computed(() => this.entries().map((e) => e.id)));
+  protected readonly activeId = computed(() => {
+    const id = this.active.current();
+    return id !== null && this.open() ? optionDomId('search-option', id) : null;
+  });
 
   /** The quiet line above the list: searching, the 429, an error, or no match (R-UI-097). */
   protected readonly status = computed<string | null>(() => {
@@ -331,8 +337,8 @@ export class SearchField {
     return group.area === 'admin' && group.id !== 'admin-area' ? `${heading}, ${this.adminText}` : heading;
   }
 
-  protected optionId(index: number): string {
-    return `search-option-${index}`;
+  protected optionId(entry: SearchEntry): string {
+    return optionDomId('search-option', entry.id);
   }
 
   protected segments(entry: SearchEntry): Segment[] {
@@ -345,25 +351,24 @@ export class SearchField {
 
   protected onFocus(): void {
     this.open.set(true);
-    this.active.set(-1);
+    this.active.clear();
     if (this.live()) this.schedule();
   }
 
   protected onBlur(): void {
     this.open.set(false);
-    this.active.set(-1);
+    this.active.clear();
     this.cache.clear();
   }
 
   protected onInput(value: string): void {
     this.text.set(value);
-    this.active.set(-1);
+    this.active.clear();
     this.open.set(true);
     this.schedule();
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    const count = this.entries().length;
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
@@ -372,18 +377,19 @@ export class SearchField {
           if (event.altKey) return;
         }
         if (event.altKey) return;
-        if (count > 0) this.active.update((i) => Math.min(i + 1, count - 1));
+        this.active.next();
         this.scrollActive();
         return;
       case 'ArrowUp':
         if (!this.open()) return;
         event.preventDefault();
-        this.active.update((i) => (i <= 0 ? -1 : i - 1));
+        this.active.previous();
         this.scrollActive();
         return;
       case 'Enter': {
         event.preventDefault();
-        const entry = this.open() ? this.entries()[this.active()] : undefined;
+        if (heldEnter(event)) return;
+        const entry = this.open() ? this.entries()[this.active.index()] : undefined;
         if (entry) this.pick(entry);
         else this.submit();
         return;
@@ -393,7 +399,7 @@ export class SearchField {
           event.preventDefault();
           event.stopPropagation();
           this.open.set(false);
-          this.active.set(-1);
+          this.active.clear();
         } else if (this.sheetOpen()) {
           event.preventDefault();
           event.stopPropagation();
@@ -406,7 +412,7 @@ export class SearchField {
         return;
       case 'Tab':
         this.open.set(false);
-        this.active.set(-1);
+        this.active.clear();
         return;
       case 'Backspace':
         if (this.text() === '' && this.filter() !== 'all') {
@@ -417,8 +423,8 @@ export class SearchField {
     }
   }
 
-  protected hover(index: number): void {
-    this.active.set(index);
+  protected hover(index: number, event: MouseEvent): void {
+    this.active.pointer(index, event);
   }
 
   private scrollActive(): void {
@@ -431,7 +437,7 @@ export class SearchField {
 
   protected setFilter(value: SearchFilter): void {
     this.filter.set(value);
-    this.active.set(-1);
+    this.active.clear();
     this.answered.set(null);
     this.field()?.nativeElement.focus();
     this.open.set(true);
@@ -584,7 +590,7 @@ export class SearchField {
     const url = gate({ url: this.router.serializeUrl(tree), area, chosen }, this.instanceAdmin());
     if (url === null) return false;
     this.open.set(false);
-    this.active.set(-1);
+    this.active.clear();
     this.closeSheet(false);
     void this.router.navigateByUrl(tree, state ? { state } : undefined);
     return true;

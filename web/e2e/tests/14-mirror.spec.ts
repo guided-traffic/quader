@@ -1,4 +1,4 @@
-import { e2eProject, expect, expectAccessible, fillKey, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
+import { e2eProject, expect, expectAccessible, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
 // R-UI-047 journeys "mirror" (R-REPO-059, R-UI-021, Q-UI-104, Q-UI-105, Q-UI-119 to Q-UI-124) and "upstream settings" (F-54,
 // R-UI-021, R-REPO-024, R-REPO-033). Both use the counting npm test upstream of the end-to-end tests (test/npmstub): Quader
@@ -43,7 +43,7 @@ async function remoteForm(page: import('@playwright/test').Page, key: string): P
   await page.goto('/ui/en/admin/repositories/new/npm');
   await page.getByLabel('Project', { exact: true }).selectOption(e2eProject);
   await page.getByRole('radio', { name: /^Remote/ }).check();
-  await fillKey(page, 'npm-remote', key);
+  await page.locator('#f-key').fill(key);
   await expect(page.getByRole('heading', { name: 'Upstream', level: 2 })).toBeVisible();
 }
 

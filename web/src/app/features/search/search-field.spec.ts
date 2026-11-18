@@ -404,3 +404,137 @@ describe('Live suggestions (R-UI-097)', () => {
     expect(TestBed.inject(Router).url).toBe('/search?q=test');
   });
 });
+
+describe('The active entry when a newer answer replaces the list (R-UI-097, Q-UI-700, Q-UI-701)', () => {
+  const NPM_CACHE = { project: 'web', key: 'npm-cache', format: 'npm', class: 'remote' as const };
+  const activeName = (root: HTMLElement): string | null => {
+    const id = input(root).getAttribute('aria-activedescendant');
+    return id === null ? null : spokenText(document.getElementById(id)!);
+  };
+  const live = (root: HTMLElement): string => text(root.querySelector('[aria-live="polite"]')!);
+  const move = (option: HTMLElement, x: number, y: number): void => {
+    option.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, screenX: x, screenY: y }));
+  };
+
+  /**
+   * sam's list for `npm` (npm-local, npm-all, npm-vendor); then `npm-` is typed and its answer held, so the reader walks the list
+   * of `npm` while the newer answer is on its way.
+   */
+  async function walking() {
+    const r = await render('sam');
+    await open(r.fixture, r.root);
+    typeText(r.root, 'npm');
+    await sleep(r.fixture, 300);
+    expect(said(options(r.root))).toEqual(['npm-local · web', 'npm-all · web', 'npm-vendor · web-frontend']);
+    r.search.hold = true;
+    typeText(r.root, 'npm-');
+    await sleep(r.fixture, 300);
+    expect(status(r.root)).toBe('Searching…');
+    return r;
+  }
+
+  async function answer(r: Awaited<ReturnType<typeof walking>>): Promise<void> {
+    r.search.hold = false;
+    r.search.release();
+    await settle(r.fixture);
+  }
+
+  it('R-UI-097 Q-UI-700 the entry the reader walked to stays active where the new list holds it, under the same name, and Enter opens it', async () => {
+    const r = await walking();
+    press(r.root, 'ArrowDown');
+    press(r.root, 'ArrowDown');
+    await settle(r.fixture);
+    const before = input(r.root).getAttribute('aria-activedescendant');
+    expect(activeName(r.root)).toBe('npm-all · web');
+    r.search.repositories = [NPM_CACHE, ...r.search.repositories];
+    await answer(r);
+    expect(said(options(r.root))).toEqual(['npm-cache · web', 'npm-local · web', 'npm-all · web', 'npm-vendor · web-frontend']);
+    // The same entry under the same id: a screen reader is not told of a new entry, and the live region says the new count.
+    expect(input(r.root).getAttribute('aria-activedescendant')).toBe(before);
+    expect(activeName(r.root)).toBe('npm-all · web');
+    expect(options(r.root).filter((o) => o.getAttribute('aria-selected') === 'true').map((o) => spokenText(o))).toEqual(['npm-all · web']);
+    expect(live(r.root)).toBe('4 suggestions.');
+    press(r.root, 'Enter');
+    await settle(r.fixture);
+    expect(TestBed.inject(Router).url).toBe('/projects/web/repositories/npm-all');
+  });
+
+  it('R-UI-097 R-UI-098 Q-UI-700 a new list without the entry leaves none active, and Enter opens the results page', async () => {
+    const r = await walking();
+    press(r.root, 'ArrowDown');
+    press(r.root, 'ArrowDown');
+    await settle(r.fixture);
+    expect(activeName(r.root)).toBe('npm-all · web');
+    r.search.repositories = r.search.repositories.filter((x) => x.key !== 'npm-all');
+    await answer(r);
+    expect(said(options(r.root))).toEqual(['npm-local · web', 'npm-vendor · web-frontend']);
+    expect(input(r.root).getAttribute('aria-activedescendant')).toBeNull();
+    expect(options(r.root).some((o) => o.getAttribute('aria-selected') === 'true')).toBe(false);
+    expect(live(r.root)).toBe('2 suggestions.');
+    press(r.root, 'Enter');
+    await settle(r.fixture);
+    expect(TestBed.inject(Router).url).toBe('/search?q=npm-');
+  });
+
+  it('R-UI-097 R-UI-098 Q-UI-700 a new list that is empty leaves none active, says so, and Enter opens the results page', async () => {
+    const r = await walking();
+    press(r.root, 'ArrowDown');
+    await settle(r.fixture);
+    expect(activeName(r.root)).toBe('npm-local · web');
+    r.search.repositories = [];
+    await answer(r);
+    expect(options(r.root)).toHaveLength(0);
+    expect(input(r.root).getAttribute('aria-activedescendant')).toBeNull();
+    expect(live(r.root)).toBe('No suggestions.');
+    press(r.root, 'ArrowDown');
+    await settle(r.fixture);
+    expect(input(r.root).getAttribute('aria-activedescendant')).toBeNull();
+    press(r.root, 'Enter');
+    await settle(r.fixture);
+    expect(TestBed.inject(Router).url).toBe('/search?q=npm-');
+  });
+
+  it('R-UI-097 Q-UI-701 a list that changes under a resting pointer keeps the keyboard’s entry; the pointer takes one when it moves', async () => {
+    const r = await walking();
+    move(options(r.root)[0]!, 10, 10);
+    await settle(r.fixture);
+    expect(activeName(r.root)).toBe('npm-local · web');
+    press(r.root, 'ArrowDown');
+    await settle(r.fixture);
+    expect(activeName(r.root)).toBe('npm-all · web');
+    r.search.repositories = [NPM_CACHE, ...r.search.repositories];
+    await answer(r);
+    // The browser reports the content moving under the pointer as a move at the same place, now over npm-cache.
+    move(options(r.root)[0]!, 10, 10);
+    await settle(r.fixture);
+    expect(activeName(r.root)).toBe('npm-all · web');
+    move(options(r.root)[1]!, 10, 40);
+    await settle(r.fixture);
+    expect(activeName(r.root)).toBe('npm-local · web');
+  });
+
+  it('R-UI-097 Q-UI-700 Q-UI-701 a held Down that meets a new list goes on from where its entry now stands; a held Enter acts once', async () => {
+    const r = await walking();
+    press(r.root, 'ArrowDown');
+    press(r.root, 'ArrowDown', { repeat: true });
+    await settle(r.fixture);
+    expect(activeName(r.root)).toBe('npm-all · web');
+    r.search.repositories = [NPM_CACHE, ...r.search.repositories];
+    await answer(r);
+    press(r.root, 'ArrowDown', { repeat: true });
+    await settle(r.fixture);
+    expect(activeName(r.root)).toBe('npm-vendor · web-frontend');
+    // A repeat of an Enter held since before opens nothing; the press opens the entry, and its repeats open nothing more.
+    const url = TestBed.inject(Router).url;
+    const repeat = press(r.root, 'Enter', { repeat: true });
+    await settle(r.fixture);
+    expect(repeat.defaultPrevented).toBe(true);
+    expect(TestBed.inject(Router).url).toBe(url);
+    press(r.root, 'Enter');
+    await settle(r.fixture);
+    expect(TestBed.inject(Router).url).toBe('/projects/web-frontend/repositories/npm-vendor');
+    press(r.root, 'Enter', { repeat: true });
+    await settle(r.fixture);
+    expect(TestBed.inject(Router).url).toBe('/projects/web-frontend/repositories/npm-vendor');
+  });
+});

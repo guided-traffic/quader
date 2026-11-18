@@ -80,7 +80,8 @@
         [attr.aria-invalid]="keyError() ? 'true' : null"
         [attr.aria-describedby]="keyError() ? 'd-key e-key' : 'd-key'"
         (input)="setKey($any($event.target).value)"
-        (blur)="keyTouched.set(true)"
+        (focus)="keyFocused.set(true)"
+        (blur)="keyFocused.set(false); keyTouched.set(true)"
       />
       <p id="d-key" class="hint" i18n="@@repo.field.key.help">Part of the repository's address. It cannot be changed later.</p>
       @if (keyError(); as text) {

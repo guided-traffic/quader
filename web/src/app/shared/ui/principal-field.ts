@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { ProjectsApi } from '../../api/projects-api';
 import { SearchApi, SuggestionKind } from '../../api/search-api';
+import { ActiveOption, heldEnter, optionDomId } from './active-option';
 import { QuaderAvatar } from './avatar';
 
 /** The kinds of principal a field names. */
@@ -79,7 +80,8 @@ let nextId = 1;
  *
  * A combobox with a listbox (the ARIA pattern): the focus stays in the input, `aria-activedescendant` names the active match,
  * the arrows move it, Enter takes it, Escape closes the list and then empties the text, Backspace on an empty text removes the
- * last chip. Enter never submits the form around the field while there is text to search. The text searches after
+ * last chip. A newer answer keeps the active match where it still lists it and leaves none active where it does not
+ * (`ActiveOption`, Q-UI-700). Enter never submits the form around the field while there is text to search. The text searches after
  * `PRINCIPAL_MIN_CHARS` characters and a pause of `PRINCIPAL_DEBOUNCE_MS`; a late answer of an older text is dropped.
  */
 @Component({
@@ -146,13 +148,13 @@ let nextId = 1;
                 <div
                   role="option"
                   class="option"
-                  [id]="optionId(i)"
-                  [class.active]="active() === i"
-                  [attr.aria-selected]="active() === i"
+                  [id]="optionId(m)"
+                  [class.active]="active.index() === i"
+                  [attr.aria-selected]="active.index() === i"
                   tabindex="-1"
                   (click)="pick(m)"
                   (keydown.enter)="pick(m)"
-                  (mousemove)="active.set(i)"
+                  (mousemove)="active.pointer(i, $event)"
                 >
                   <span class="mark" aria-hidden="true">
                     @if (m.kind === 'user') {
@@ -406,7 +408,6 @@ export class PrincipalField {
   protected readonly listId = `${this.inputId}-list`;
   protected readonly text = signal('');
   protected readonly open = signal(false);
-  protected readonly active = signal(-1);
   private readonly found = signal<readonly PrincipalChoice[]>([]);
   private readonly more = signal(false);
   private readonly phase = signal<'idle' | 'searching' | 'done' | 'failed'>('idle');
@@ -420,7 +421,12 @@ export class PrincipalField {
     const skip = new Set([...this.exclude(), ...this.value()]);
     return this.found().filter((m) => !skip.has(m.ref));
   });
-  protected readonly activeId = computed(() => (this.open() && this.active() >= 0 ? this.optionId(this.active()) : null));
+  /** The active match, held by its reference across a new answer (Q-UI-700). */
+  protected readonly active = new ActiveOption(computed(() => this.matches().map((m) => m.ref)));
+  protected readonly activeId = computed(() => {
+    const ref = this.active.current();
+    return this.open() && ref !== null ? optionDomId(`${this.inputId}-option`, ref) : null;
+  });
   protected readonly describedBy = computed(() => {
     const ids = [this.hint() ? `${this.inputId}-hint` : '', this.error() ? `${this.inputId}-error` : ''].filter(Boolean);
     return ids.length ? ids.join(' ') : null;
@@ -465,7 +471,7 @@ export class PrincipalField {
           this.more.set(false);
           this.phase.set('idle');
           this.open.set(false);
-          this.active.set(-1);
+          this.active.clear();
         });
         return;
       }
@@ -478,8 +484,8 @@ export class PrincipalField {
     });
   }
 
-  protected optionId(index: number): string {
-    return `${this.inputId}-option-${index}`;
+  protected optionId(match: PrincipalChoice): string {
+    return optionDomId(`${this.inputId}-option`, match.ref);
   }
 
   protected listLabel(): string {
@@ -519,7 +525,7 @@ export class PrincipalField {
 
   protected onInput(value: string): void {
     this.text.set(value);
-    this.active.set(-1);
+    this.active.clear();
   }
 
   protected onFocus(): void {
@@ -528,7 +534,7 @@ export class PrincipalField {
 
   protected onBlur(): void {
     this.open.set(false);
-    this.active.set(-1);
+    this.active.clear();
   }
 
   protected onKeydown(event: KeyboardEvent): void {
@@ -537,16 +543,22 @@ export class PrincipalField {
       case 'ArrowDown':
         event.preventDefault();
         if (this.text().trim().length >= PRINCIPAL_MIN_CHARS) this.open.set(true);
-        if (count > 0) this.active.update((i) => Math.min(i + 1, count - 1));
+        this.active.next();
         return;
       case 'ArrowUp':
         if (!this.open()) return;
         event.preventDefault();
-        this.active.update((i) => (i <= 0 ? -1 : i - 1));
+        this.active.previous();
         return;
       case 'Enter': {
+        // A held Enter acts once (Q-UI-701): its repeats neither take a match nor submit the form around the field.
+        if (heldEnter(event)) {
+          event.preventDefault();
+          return;
+        }
         // Enter takes the active match; while there is text it never submits the form around the field.
-        const match = this.open() ? this.matches()[this.active() < 0 && count === 1 ? 0 : this.active()] : undefined;
+        const active = this.active.index();
+        const match = this.open() ? this.matches()[active < 0 && count === 1 ? 0 : active] : undefined;
         if (match || this.text().trim() !== '') event.preventDefault();
         if (match) this.pick(match);
         return;
@@ -556,7 +568,7 @@ export class PrincipalField {
           event.preventDefault();
           event.stopPropagation();
           this.open.set(false);
-          this.active.set(-1);
+          this.active.clear();
         } else if (this.text() !== '') {
           event.preventDefault();
           event.stopPropagation();
@@ -570,7 +582,7 @@ export class PrincipalField {
         return;
       case 'Tab':
         this.open.set(false);
-        this.active.set(-1);
+        this.active.clear();
         return;
     }
   }
@@ -581,7 +593,7 @@ export class PrincipalField {
     this.picked.emit(match);
     this.text.set('');
     this.open.set(false);
-    this.active.set(-1);
+    this.active.clear();
     // After a single choice the input gives way to the chip; the focus stays in the field on its remove button.
     queueMicrotask(() => {
       const target = this.input()?.nativeElement ?? this.host.nativeElement.querySelector<HTMLElement>('.chip-remove');
@@ -604,7 +616,6 @@ export class PrincipalField {
       this.found.set(items);
       this.more.set(more);
       this.phase.set('done');
-      this.active.set(-1);
     } catch {
       if (generation !== this.generation || abort.signal.aborted) return;
       this.found.set([]);
