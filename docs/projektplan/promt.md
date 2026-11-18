@@ -254,6 +254,29 @@ is, what was seen and how far it is confirmed: **confirmed** means checked in th
 development agent, **read** means found by reading the code and not reproduced. Add new findings
 here; remove a finding in the commit that fixes it.
 
+Found on 2026-11-18 in the acceptance nightly 44233617621 (`main` at dd97187a, the only run on the runners):
+
+### Tests and tools
+
+- **F-137 · The evicted worker of drain variant B finished its `gc-full` job itself instead of releasing it** (`e2e (drain-load-b)`, job
+  134618485678; product or test, not decided: the analysis was stopped). The only failed assertion of the leg: "R-STOR-046: the gc-full job
+  finished on "fe3594f5-370d-be57-17be-b7b0d4f13888", want a worker other than the evicted quader-worker-5b8d5dcc54-z44r5". **Verified:**
+  the job's `replica` was an instance UID because `jobs.ran_by` no longer joined a row of the replicas (the API then answers the raw UID,
+  `toJob` in `internal/api/v1/jobs_api.go`); the job ended `succeeded`, attempt 1, with `candidates:6 deleted:6`, at 07:16:25.10, 28.8 s after
+  the worker logged "shutting down" (07:15:56.34); the worker's batch delete at the object store is at 07:15:55.08, before the eviction; at
+  07:16:25.34 it logged "a database connection came back closed and is discarded" for `SaveJobProgress` (the line of Q-ARCH-498) and it
+  stopped after 35.0 s. In the green legs of 11-13 to 11-17 the job ended on the other worker with `candidates:0`, about 30 s after the
+  eviction (runs 44067104691 and 43841333499 read): there the release came at once and the second worker ran its own settle time. The rest
+  of the leg held: every npm and dotnet command exited 0, k6 p99 643 ms, no SIGKILL, the six probe jobs resumed. **Not verified:** the
+  cause. Two leads: (1) a regression of this night, the nearest being 5cd1e824 (the control pool's discard and the stop within the budget),
+  since the leg was green five nights before it and the new log line sits at the job's end; no code path is named yet. The closed connection 29 s into the stop is also what F-136 asks about (a control statement cut at the end of the drain step); whether the two are one event is not read. (2) a race the test
+  always had: the job was claimed about 1.3 s before the SIGTERM and had deleted its candidates already, so only its settle wait was left,
+  and whether the release reaches a handler in that wait is not read. That the UID is the evicted worker's is inferred (its replica row is
+  the only one that left), not read from a log: the worker logs neither the job's start nor its end nor a release. Next step: read
+  `Quiesce`, `Stop` and the release write in `internal/jobs/worker.go` against the settle wait of `internal/blob/gc.go`, compare the
+  evicted worker's log of a green leg, and run `-f sets=drain-load-b` on dd97187a and on ebeb567d (the commit before the two changes of the connection pools, 55a6688c and 5cd1e824) to tell (1) from (2). The
+  artifacts are `e2e-nuget-artifacts-drain-load-b` and `e2e-nuget-cluster-state-drain-load-b` of the run.
+
 Found on 2026-11-18 by reading the stall evidence of the baseline nightly 44186978088 (`e2e (ha-faults)`) and the runner cluster:
 
 ### Tests and tools
@@ -949,3 +972,46 @@ What a run did, in short, so the next run starts where it stopped. The plan item
 - Where the time went: rebasing T-18 (written on an old base) onto a main whose UI the fix waves had changed, and pushes that cancelled
   the CI run before them, so its e2e evidence came late. From the middle of the run, a push waited for the run before it.
 - Next run: the open points of section 8, the owner's questions there, then FULL.md block B, F1 (generic files: remote and virtual).
+
+**Run of 2026-11-17/18** (the owner's order: "HA and Performance (nightly)" and "Test and Release" run stable on every execution; releases
+v0.56.1 to v0.56.4).
+
+- Way of working: the red legs of the last twelve nights and of Test and Release were sorted into clusters, one builder per cluster on a
+  branch `stab/<topic>`, each fix shown by a dispatched leg on its branch, then cherry-picked onto `main`.
+- On `main`, by cluster. `drain-load-e` (red eight nights in a row, a test defect): the backup Job's second pod copied the first one's
+  files (Q-HA-301). Bastion: three product defects, a feed entry applied again after its ID was pruned, a credential another replica had
+  confirmed refused during the failed-authentication timeout, and routing by path that sent HTTP/1.1 and HTTP/2 requests for one artifact
+  to different replicas (Q-BAS-152 to 154). Pooler: PgBouncer's `server_login_retry` held every replica out of service for half a minute
+  after a switchover (Q-HA-302, with a test that switches PostgreSQL over in every pooler run), and a request that met the switchover
+  answered 500 (Q-HA-306). `access-long`: four journeys acted on a page that had not settled. Integration: the rate-limit bound, the Debian
+  large index, the collapse test (Q-ARCH-496, 497). `vuln`, `vuln-long`: the e2e clients' TLS close ended the kubectl port-forward
+  (Q-HA-303), and a dev stack that does not come up says why (Q-HA-304). The control pool: a closed connection kept the pool's only place
+  for up to 15 s; H-822 is closed, its trigger stays open as F-136 (Q-ARCH-498, 499). The stall family: cause measured, F-133, with the
+  recorder and the warm-up check of Q-HA-305.
+- Not on `main`: the branch `stab/oom-2`, commit b1d9b7d6 (Q-ARCH-500, H-988; closes F-134): a response is charged against the kernel's
+  send buffers before its first byte and waits for a free one, `server.send_buffer` 128 KiB. Its gates and its leg (run 44232726523) are
+  green; it was held back so that the acceptance nightly ran on one commit.
+- The acceptance nightly 44233617621 on dd97187a, alone on the runners: 26 legs green, `e2e (drain-load-b)` red (F-137, new, not
+  explained). The owner had the run cancelled at 07:46 UTC to free the runners: `drain-load-c` was cut in its run, `drain-load-e`,
+  `Latency` and the vulnerability scanning performance did not start.
+  Test and Release 44220539577 and 44229094138 were green in every job.
+- Broke: the push of 510abd2b turned the gating `unit tests` job red for 12 minutes (`TestMarkOutage`, a caller outside the changed
+  package; fixed by dd97187a). Since then the whole unit tier runs before every push, not only the touched packages.
+- Leads that were wrong: a shutdown ordering behind H-822 (twelve stops did not reproduce it; the cleanup waited for the close of a
+  connection). The first version of the send-buffer bound charged at admission, which halved the capacity and answered `server_busy`
+  during a database outage; it was sent back.
+- Where the time went: the development agent's own dispatches and pushes stalled the baseline nightly twice and one builder's leg once, before
+  F-133 named the cause. A push to `main` or a dispatch beside a running kind leg makes that leg worthless as evidence.
+- Open for the next run, in this order:
+  1. F-137: tell the regression from the race, as its entry says; it is the only red leg of the acceptance run.
+  2. `drain-load-c`, `drain-load-e`, `Latency` and the vulnerability scanning performance have no result on `main` after this night's
+     changes (`drain-load-e` was green on its branch only): read them in the next scheduled nightly. Not read yet in the artifacts of
+     44233617621: the `cg:` rows of the stall evidence after 2a161226, `TestHAPooler_Switchover` on `main`, `vuln-long` and `alerts`
+     with the changed drain helpers (all four legs were green).
+  3. Land `stab/oom-2` (b1d9b7d6) with the full gates, then watch Test and Release.
+  4. The remaining findings of section 8: F-136, F-135, F-126, F-119 (the case of 11-09), F-130, F-131, F-132; `ci-ha` on a
+     degraded hosted runner; the stalled `drain-load-pooler` of 11-11.
+  5. A partial dispatch (`-f sets=…`) takes a large pod for every leg of a lane it does not run; in a full pool one leg waited 40 minutes.
+- For the owner, one at a time: the runner change of F-133 (the cgroup parent of the `dind` daemon and the CPU request of `large`); the
+  schedule that GitHub starts 5.5 to 8.5 hours late; the decision Q-ARCH-500; the branches `stab/*` on the remote, which can go once
+  `stab/oom-2` has landed.
