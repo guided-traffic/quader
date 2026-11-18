@@ -1398,6 +1398,11 @@ agent** is not decided until the owner has said so.
   second attempt `e2e (npm)`, `e2e (push)` (F-144) and `e2e (access-long)` with the journeys of F-143 were green. What it
   shows: a builder that changes an integration test runs that package on the stack before it hands over; the stack exists
   per worktree and costs a minute.
+- **The evening's pipeline window, closed** (2026-11-18, 20:20 CET): Test and Release 44372205911 of 924276b6 is green in
+  every job. The release with the day's packages (the admin lists, W-12 to W-19) was cut from bdbe37c5 by the run before it,
+  whose release jobs do not wait for the integration and e2e legs; the commit after it changes a test only. The owner's
+  installation on `wds18-k8s-main` follows the newest chart by itself (the HelmRelease asks for `*`) and runs that release,
+  two ready replicas of each of `quader-api`, `quader-packages` and `quader-worker`; read, nothing changed there.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
