@@ -1067,7 +1067,7 @@ agent** is not decided until the owner has said so.
     Decided by the owner on 2026-11-18 ("Option A", from three: a warning / red as before / not in the header at all): a
     replica that was lost without draining, while its role still has ready replicas, is a **warning**, not an error; its row
     stays in the table as lost until the prune; red is for a role without a ready replica.
-  - **Built** (82f65196 on `main`, Q-OPS-210, Q-UI-600 to Q-UI-604): a replica that drains or starts informs ("Replicas are
+  - **Built** (1785aff2 on `main`, Q-OPS-210, Q-UI-600 to Q-UI-604): a replica that drains or starts informs ("Replicas are
     being replaced"); a row that went stale while `draining` has signed off (the list leaves it out, the prune deletes it);
     a replica lost without draining is a warning with the time of its last heartbeat; "Not drain-safe" informs; red is "No
     ready replica of the role …" or a ready replica that fails a gating check. Looked at on the owner's stack after a restart
