@@ -271,7 +271,14 @@ func TestR_DEB_035_CodenamesAreTheSameRelease(t *testing.T) {
 
 func TestR_DEB_035_LargeIndex(t *testing.T) {
 	f := newFixture(t, Config{BulkParagraphs: DefaultBulkParagraphs})
+	// The index is built before the request, through the stub's own call: the build is CPU work that a run under -race and
+	// coverage on a loaded runner stretched past the 30 s the fixture's client gives one exchange (F-123), and how long it takes
+	// is no subject of this test. The request then bounds the serving of the built index only.
 	start := time.Now()
+	if _, err := f.stub.Release("bulk"); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("the large index was built in %s", time.Since(start))
 	gz := f.must200("/debian/dists/bulk/main/binary-amd64/Packages.gz")
 	plain := gunzipBytes(t, gz)
 	if n := strings.Count(string(plain), "\n\n"); n != DefaultBulkParagraphs {
@@ -281,10 +288,13 @@ func TestR_DEB_035_LargeIndex(t *testing.T) {
 		t.Errorf("the index is %d bytes", len(plain))
 	}
 	t.Logf("70,000 paragraphs, %d bytes plain, %d gzip, built and fetched in %s", len(plain), len(gz), time.Since(start))
-	// It is built on first use, not at start.
+	// It is built on first use, not at start, and a request is a use (shown on a small one).
 	g := newFixture(t, Config{BulkParagraphs: 10})
 	if g.stub.archiveByID("bulk").built {
 		t.Error("the large index was built at start")
+	}
+	if small := gunzipBytes(t, g.must200("/debian/dists/bulk/main/binary-amd64/Packages.gz")); strings.Count(string(small), "\n\n") != 10 {
+		t.Errorf("the index built by its first request has %d paragraphs, want 10", strings.Count(string(small), "\n\n"))
 	}
 }
 
