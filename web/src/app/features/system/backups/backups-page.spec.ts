@@ -14,7 +14,8 @@ import {
 import { problemInterceptor } from '../../../core/http/interceptors';
 import { describeBackupProblem } from '../../../core/http/problem-messages-backup';
 import { SessionStore } from '../../../core/session-store';
-import { button, expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
+import { Router } from '@angular/router';
+import { applyFilters, button, chipTexts, expectAccessible, openFilters, renderScreen, settle, text, type } from '../../../testing/screen';
 import { REFRESH_INTERVAL_MS } from '../system-status';
 import { BackupsPage } from './backups-page';
 import { JOB_NAME_MAX, durationText, manualRunCommand, stateView } from './backups-model';
@@ -179,13 +180,37 @@ describe('The backups screen: runs (R-UI-048)', () => {
     expect(stateView('copying', true).tone).toBe('warn');
   });
 
-  it('R-UI-048 filters by operation and state through the query parameters', async () => {
-    const { root, get } = await renderScreen(BackupsPage, { inputs: { operation: 'create', state: 'interrupted' } });
+  it('R-UI-048 R-UI-146 Q-UI-566 filters by operation and state through the query parameters, shown as chips beside Filters', async () => {
+    const { root, get, fixture } = await renderScreen(BackupsPage, { inputs: { operation: 'create', state: 'interrupted' } });
     const api = fake(get);
     expect(api.filterCalls.at(-1)).toEqual({ operation: 'create', state: 'interrupted' });
-    expect(root.querySelectorAll('section[aria-labelledby="bk-runs"] tbody tr')).toHaveLength(1);
-    expect((root.querySelector('#bk-op') as HTMLSelectElement).value).toBe('create');
-    expect((root.querySelector('#bk-state') as HTMLSelectElement).value).toBe('interrupted');
+    const runs = root.querySelector('section[aria-labelledby="bk-runs"]')!;
+    expect(runs.querySelectorAll('tbody tr')).toHaveLength(1);
+    // The head of every list: no form of its own and no Search button, the filters that are set as chips (Q-UI-420).
+    expect(runs.querySelector('quader-list-head')).toBeTruthy();
+    expect(runs.querySelector('form')).toBeNull();
+    expect(chipTexts(runs)).toHaveLength(2);
+    expect(chipTexts(runs)[0]).toContain('Operation');
+    expect(chipTexts(runs)[1]).toContain('State');
+    const drawer = await openFilters(fixture, runs);
+    const selects = [...drawer.querySelectorAll<HTMLSelectElement>('select')];
+    expect(selects.map((s) => s.value)).toEqual(['create', 'interrupted']);
+  });
+
+  it('R-UI-048 R-UI-146 Q-UI-566 Apply filters puts the drawer\'s values into the address, and a chip removes its filter alone', async () => {
+    const { root, get, fixture } = await renderScreen(BackupsPage, {
+      inputs: { operation: 'create' },
+      setup: (g) => vi.spyOn(g(Router), 'navigate').mockResolvedValue(true),
+    });
+    const navigate = get(Router).navigate as ReturnType<typeof vi.fn>;
+    const drawer = await openFilters(fixture, root);
+    type(drawer.querySelectorAll<HTMLSelectElement>('select')[1]!, 'failed');
+    await settle(fixture);
+    await applyFilters(fixture);
+    expect(navigate.mock.calls.at(-1)![1]).toMatchObject({ queryParams: { operation: 'create', state: 'failed' }, queryParamsHandling: 'merge' });
+    root.querySelector<HTMLButtonElement>('.list-filters .chip button')!.click();
+    await settle(fixture);
+    expect(navigate.mock.calls.at(-1)![1]).toMatchObject({ queryParams: { operation: null } });
   });
 
   it('R-UI-048 ignores a filter value that is not a state of the API', async () => {
@@ -202,7 +227,9 @@ describe('The backups screen: runs (R-UI-048)', () => {
     expect(root.querySelectorAll('section[aria-labelledby="bk-runs"] tbody tr')).toHaveLength(30);
 
     const empty = await renderScreen(BackupsPage, { setup: (get) => (fake(get).runList = []) });
-    expect(text(empty.root)).toContain('No backup run matches the filters.');
+    expect(text(empty.root)).toContain('There is no backup run yet.');
+    const none = await renderScreen(BackupsPage, { inputs: { state: 'failed' }, setup: (get) => (fake(get).runList = []) });
+    expect(text(none.root)).toContain('No backup run matches.');
   });
 
   it('R-UI-048 R-UI-042 the detail panel shows the translated error code and the result', async () => {

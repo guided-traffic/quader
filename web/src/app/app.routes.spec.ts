@@ -60,7 +60,7 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   ['/admin/permissions/new', 'New permission policy'],
   ['/admin/permissions/team-a', 'Permission policy', 'team-a'],
   ['/admin/roles', 'System roles'],
-  ['/admin/tokens', 'Token administration'],
+  ['/admin/tokens', 'Tokens'],
   ['/admin/endpoints', 'Endpoints'],
   ['/admin/bastions', 'Bastions'],
   // >>> M4b vulnerabilities

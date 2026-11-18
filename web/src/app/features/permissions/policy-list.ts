@@ -1,3 +1,4 @@
+import { NoValue } from '../../shared/ui/no-value';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PermissionPolicy, PolicyApi, PolicyFilters } from '../../api/authz-api';
@@ -40,7 +41,7 @@ export function actionSummary(policy: Pick<PermissionPolicy, 'entries'>): string
  */
 @Component({
   selector: 'quader-policy-list',
-  imports: [PageHeader, RouterLink, DataTable, FilterPanel, ListHead, Needs, ProjectLink, TextField],
+  imports: [PageHeader, RouterLink, DataTable, FilterPanel, ListHead, Needs, NoValue, ProjectLink, TextField],
   templateUrl: './policy-list.html',
   styleUrl: '../../shared/access/access.scss',
 })
@@ -63,6 +64,9 @@ export class PolicyList {
   /** The list is a project's (`/projects/<key>/policies`): the project is the route's and no filter. */
   protected readonly inProject = (): boolean => this.route.snapshot.paramMap.has('project');
   /** The filters the list shows now; the drawer's fields stage the next ones. */
+  /** An empty list says there is no policy yet; a filter that finds none says so (Q-UI-565). */
+  protected readonly noPolicy = $localize`:@@policies.empty-none:There is no policy yet.`;
+  protected readonly noMatch = $localize`:@@policies.empty:No policy matches.`;
   protected readonly applied = signal<PolicyFilters>({});
   protected readonly chips = computed<readonly ListChip[]>(() => {
     const f = this.applied();

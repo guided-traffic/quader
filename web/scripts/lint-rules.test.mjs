@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 import { numberFieldsWithoutWidth } from './field-width-rule.mjs';
 import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
+import { bareIconsInCells } from './status-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -85,4 +86,23 @@ test('R-UI-126 a link to the removed routes /setup and /browse fails the check, 
   ];
   for (const t of good) assert.deepEqual(linksToRemovedRoutes(t), [], t);
   assert.equal(linksToRemovedRoutes('x\n<a routerLink="/setup">')[0].line, 2);
+});
+
+test('Q-UI-560 an icon directly in a table cell fails the check, an icon inside its badge or its .icon-name passes', () => {
+  const bad = [
+    '<td>\n  @if (ok) {\n    <span class="material-icons inline ok" aria-hidden="true">check_circle</span>\n  }\n  {{ word }}\n</td>',
+    '<td><span class="material-icons bad" aria-hidden="true">error</span><span>lost</span></td>',
+    '<th scope="row"><span class="material-icons" aria-hidden="true">schedule</span> Waiting</th>',
+  ];
+  for (const t of bad) assert.equal(bareIconsInCells(t).length, 1, t);
+  const good = [
+    '<td><span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span>Succeeded</span></td>',
+    '<td><span class="badge"><span class="material-icons" aria-hidden="true">cancel</span>Cancelled</span></td>',
+    '<td><span class="icon-name"><span class="material-icons inline ok" aria-hidden="true">check_circle</span><span class="icon-name-text">{{ reason }}</span></span></td>',
+    '<td><span class="material-icons warn" role="img" aria-label="Not served">warning</span></td>',
+    '<p><span class="material-icons ok" aria-hidden="true">check_circle</span> Ready</p>',
+    '<td>\n  <quader-format-icon [format]="f" />\n  <br />\n  <span class="class-name"><span class="material-icons" aria-hidden="true">cloud</span>Remote</span>\n</td>',
+  ];
+  for (const t of good) assert.deepEqual(bareIconsInCells(t), [], t);
+  assert.equal(bareIconsInCells('<table>\n<tr>\n<td><span class="material-icons">x</span></td>')[0].line, 3);
 });

@@ -3,8 +3,7 @@ import { QuaderDialog } from '../../shared/ui/dialog';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../../api/problem';
-import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
-import { projectRoleLabel } from './project-roles';
+import { Project, ProjectsApi } from '../../api/projects-api';
 import { ProjectContext } from '../../core/project-context';
 import { SessionStore } from '../../core/session-store';
 import { Needs } from '../../shared/access/needs';
@@ -12,6 +11,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { ListHead } from '../../shared/ui/list-head';
+import { NoValue } from '../../shared/ui/no-value';
 import { ProjectMark } from '../../shared/ui/project-mark';
 import { formatSize } from '../packages/format-size';
 import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
@@ -19,14 +19,17 @@ import { ProjectDialog } from './project-dialog';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /**
- * Projects (R-UI-041): the project (its mark, display name and key), visibility, Owners, members, number of repositories, storage
- * and the caller's own role; the search by key or name above the list (Q-UI-421), without a drawer: the list has no other filter.
- * A holder of `projects:read` sees every project; a member without that capability sees the projects it is a
- * member of (Q-AUTHZ-207). Creating needs `projects:write`; editing through the row also the Owner of the project.
+ * Projects of the admin area (R-UI-041): the project (its mark, display name and key), visibility, Owners, members, number of
+ * repositories and storage; the search by key or name above the list (Q-UI-421), without a drawer: the list has no other filter.
+ * The caller's own role is no column here (owner, 2026-11-18, Q-UI-577): the admin area manages projects, and the role decides
+ * nothing there; the main area's list keeps it. The columns take their widths from their content (Q-UI-563), so the project's
+ * name, the one column with much text, has the room a long display name needs. A holder of `projects:read` sees every project;
+ * a member without that capability sees the projects it is a member of (Q-AUTHZ-207). Creating needs `projects:write`; editing
+ * through the row also the Owner of the project.
  */
 @Component({
   selector: 'quader-project-list',
-  imports: [PageHeader, RouterLink, DataTable, ErrorNotice, ListHead, Needs, ProjectMark, VisibilityIcon],
+  imports: [PageHeader, RouterLink, DataTable, ErrorNotice, ListHead, Needs, NoValue, ProjectMark, VisibilityIcon],
   template: `
     <quader-page-header heading="Projects" i18n-heading="@@projects.heading">
       <button actions class="btn btn-confirm"
@@ -59,8 +62,7 @@ import { PageHeader } from '../../shared/ui/page-header';
       [loading]="list.loading()"
       [error]="list.error()"
       [empty]="list.items().length === 0"
-      i18n-emptyText="@@projects.empty"
-      emptyText="There is no project yet."
+      [emptyText]="q() ? noMatch : noProject"
       [hasMore]="list.hasMore()"
       (more)="list.more()"
       (retry)="list.reload()"
@@ -78,11 +80,17 @@ import { PageHeader } from '../../shared/ui/page-header';
             </span>
           </th>
           <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
-          <td class="wrap" translate="no">{{ ownerSummary(p) }}</td>
-          <td>{{ p.members }}</td>
-          <td>{{ p.repositories }}</td>
-          <td [attr.title]="p.logicalBytes + ' B'">{{ size(p.logicalBytes) }}</td>
-          <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
+          <td class="wrap" translate="no">
+            @if (ownerSummary(p); as owners) {
+              {{ owners }}
+            } @else {
+              <quader-no-value />
+            }
+          </td>
+          <!-- A count is a figure, at the column's end (Q-UI-574). -->
+          <td class="num">{{ p.members }}</td>
+          <td class="num">{{ p.repositories }}</td>
+          <td class="num" [attr.title]="p.logicalBytes + ' B'">{{ size(p.logicalBytes) }}</td>
           <td class="actions">
             @if (canEdit(p)) {
               <button class="btn btn-tertiary" type="button" (click)="edit(p)">
@@ -113,21 +121,20 @@ export class ProjectList {
   protected readonly canWrite = computed(() => this.session.has('projects:write'));
   protected readonly caption = $localize`:@@projects.caption:Projects`;
   protected readonly searchLabel = $localize`:@@projects.search:Filter projects`;
+  /** An empty list says there is no project yet; a search that finds none says so (Q-UI-565). */
+  protected readonly noProject = $localize`:@@projects.empty:There is no project yet.`;
+  protected readonly noMatch = $localize`:@@projects.empty-filtered:No project matches.`;
   protected readonly columns: readonly TableColumn[] = [
     { id: 'key', label: $localize`:@@projects.col.project:Project`, sortable: true, width: '14rem' },
     { id: 'visibility', label: $localize`:@@projects.col.visibility:Visibility` },
     { id: 'owners', label: $localize`:@@projects.col.owners:Owners` },
-    { id: 'members', label: $localize`:@@projects.col.members:Members` },
-    { id: 'repositories', label: $localize`:@@projects.col.repositories:Repositories` },
+    { id: 'members', label: $localize`:@@projects.col.members:Members`, numeric: true },
+    { id: 'repositories', label: $localize`:@@projects.col.repositories:Repositories`, numeric: true },
     {
       id: 'storage',
       label: $localize`:@@projects.col.storage:Storage`,
+      numeric: true,
       help: $localize`:@@projects.help.storage:The logical size the project is charged: the full size of every file in its repositories, also where another project holds the same content.`,
-    },
-    {
-      id: 'role',
-      label: $localize`:@@projects.col.role:Your role`,
-      help: $localize`:@@projects.help.role:Your role in the project; empty when you see it through a system role and are no member.`,
     },
     { id: 'actions', label: $localize`:@@projects.col.actions:Actions`, hideLabel: true },
   ];
@@ -139,10 +146,6 @@ export class ProjectList {
   /** "web-leads, alice": the Owners by name, as the API orders them; the `user:` and `group:` of a reference is not shown. */
   protected ownerSummary(p: Project): string {
     return p.owners.map((o) => o.replace(/^(user|group):/, '')).join(', ');
-  }
-
-  protected roleLabel(role: ProjectRole): string {
-    return projectRoleLabel(role);
   }
 
   /** `projects:write`, or the Owner role of the project (Q-AUTHZ-208). */

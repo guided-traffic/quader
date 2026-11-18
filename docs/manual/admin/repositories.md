@@ -20,7 +20,7 @@ Every repository belongs to exactly one [project](projects.md), and its key is u
 
 **Admin area › Repositories** lists, in columns, **Repository** (the key, with its description under it), **Project** (the project's mark and name), **Format** (icon and name), **Class**, **Visibility** and **Last activity** (how long ago, "3 days ago"; point at it for the time; in a narrower window the column is left out). At the end of each row the copy button copies the repository's client address; point at it to read the address. In a narrow window each repository is a block of its own. Badges mark repositories that are **disabled** or **being deleted**. **Filter repositories** above the list keeps the repositories whose key or description contains what you type; **Filters** opens a panel from the right with **Project**, **Format**, **Class** and **State** (**Disabled only**), and each filter that is set stands as a chip beside the button. The repositories you opened last are on the start page.
 
-The menu at the end of each row (**Actions for** the key) offers **Copy client address**, **Settings**, **Files**, **Vulnerabilities** where the format is scanned and, with `repositories:write-config` or as the project's Owner, **Delete**. **Create repository** opens the choice of the format.
+The menu at the end of each row (**Actions for** the key) offers **Copy client address**, **Settings**, **Files**, **Vulnerabilities** where the format is scanned and, with `repositories:write-config` or as the project's Owner, **Delete**. **New repository** opens the choice of the format.
 
 A project's **Repositories** shows the same repositories of one project with **Repository** (the visibility icon before the key), **Format**, **Class**, and **Set up client** at the end of each row, which opens the client setup for that repository. The client address is not in this list: it is on the repository's page and in the client setup, with the snippets that use it.
 
@@ -28,7 +28,7 @@ The page of a repository shows its **Project**. A repository is created in its p
 
 ## Create a repository
 
-1. Select **Create repository**. The page **New repository** shows one tile per installed format, for example **Generic**,
+1. Select **New repository**. The page **New repository** shows one tile per installed format, for example **Generic**,
    **npm**, **NuGet**, **OCI (Docker)** or **Debian (APT)**. **Search by package type** narrows the tiles by name, and Enter opens
    the one that is left. The format comes first because it decides what the form can offer.
 2. The form is named after the format, for example **New OCI (Docker) repository**. **Change format** goes back to the tiles.

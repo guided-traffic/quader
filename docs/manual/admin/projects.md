@@ -161,7 +161,7 @@ Only an administrator of Quader deletes a project, and only when no repository, 
 
 ## The Projects screen
 
-The start page lists the projects you are a member of first, with your role, then the other projects your level admits, with none; **Your projects** shows the first group alone. A visitor without an account sees the public ones. **Admin area › Projects** lists the projects you can see, with the admin area's other lists, each with the number of repositories and the **Storage** it is charged. An administrator of Quader and the holders of the permission to read projects see every project, the `auditor` read-only; a member without any system role finds the projects it is a member of on the start page and has no admin area. Select a project's key to open it.
+The start page lists the projects you are a member of first, with your role, then the other projects your level admits, with none; **Your projects** shows the first group alone. A visitor without an account sees the public ones. **Admin area › Projects** lists the projects you can see, each with its **Visibility**, **Owners**, **Members**, the number of **Repositories** and the **Storage** it is charged; your own role in a project is on the start page, not here. An administrator of Quader and the holders of the permission to read projects see every project, the `auditor` read-only; a member without any system role finds the projects it is a member of on the start page and has no admin area. Select a project's key to open it.
 
 ## Where the project's screens are
 

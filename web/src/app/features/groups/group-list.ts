@@ -10,6 +10,7 @@ import { PagedResource } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
+import { NoValue } from '../../shared/ui/no-value';
 import { GroupCreateDialog } from './group-create-dialog';
 import { PageHeader } from '../../shared/ui/page-header';
 
@@ -34,6 +35,7 @@ export function groupOriginLabel(origin: Group['origin']): string {
     FilterPanel,
     ListHead,
     Needs,
+    NoValue,
     SelectField,
   ],
   template: `
@@ -64,8 +66,7 @@ export function groupOriginLabel(origin: Group['origin']): string {
       [loading]="list.loading()"
       [error]="list.error()"
       [empty]="list.items().length === 0"
-      i18n-emptyText="@@groups.empty"
-      emptyText="No group matches."
+      [emptyText]="applied().q || chips().length > 0 ? noMatch : noGroup"
       [hasMore]="list.hasMore()"
       (more)="list.more()"
       (retry)="list.reload()"
@@ -73,7 +74,13 @@ export function groupOriginLabel(origin: Group['origin']): string {
       @for (g of list.items(); track g.id) {
         <tr>
           <th scope="row"><a [routerLink]="['/admin/groups', g.name]" translate="no">{{ g.name }}</a></th>
-          <td>{{ g.description }}</td>
+          <td>
+            @if (g.description) {
+              {{ g.description }}
+            } @else {
+              <quader-no-value />
+            }
+          </td>
           <td>{{ originLabel(g.origin) }}</td>
           <td class="num">{{ g.memberCount }}</td>
         </tr>
@@ -95,6 +102,9 @@ export class GroupList {
   /** The filters the list shows now; the drawer's field stages the next one. */
   protected readonly applied = signal<GroupFilters>({});
   protected readonly searchLabel = $localize`:@@groups.search:Filter groups`;
+  /** An empty list says there is no group yet; a search or a filter that finds none says so (Q-UI-565). */
+  protected readonly noGroup = $localize`:@@groups.empty-none:There is no group yet.`;
+  protected readonly noMatch = $localize`:@@groups.empty:No group matches.`;
   protected readonly chips = computed<readonly ListChip[]>(() => {
     const origin = this.applied().origin;
     return origin ? [{ key: 'origin', label: $localize`:@@groups.origin:Origin`, value: groupOriginLabel(origin) }] : [];

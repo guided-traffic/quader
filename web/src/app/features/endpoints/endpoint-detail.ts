@@ -1,3 +1,4 @@
+import { NoValue } from '../../shared/ui/no-value';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { repositoryCommands } from '../../core/project-links';
 import { Component, computed, inject, input, resource, signal } from '@angular/core';
@@ -40,6 +41,7 @@ import { EmptyState } from '../../shared/ui/empty-state';
     Disclosure,
     TextField,
     Tooltip,
+    NoValue,
   ],
   templateUrl: './endpoint-detail.html',
   styleUrl: './endpoint-detail.scss',

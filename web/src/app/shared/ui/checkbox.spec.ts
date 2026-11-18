@@ -36,6 +36,11 @@ describe('Quader checkbox (Q-UI-126)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
+  it('R-UI-145 Q-UI-575 the box is a direct child of its .check-row, which keeps it at its size beside a long label', async () => {
+    const { boxes } = await render();
+    for (const box of boxes) expect(box.parentElement!.matches('label.check-row')).toBe(true);
+  });
+
   it('a click toggles it and reports the new state', async () => {
     const { fixture, boxes } = await render();
     boxes[0]!.click();

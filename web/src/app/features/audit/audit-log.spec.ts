@@ -28,10 +28,51 @@ describe('Audit log', () => {
     expect(t).toContain('authz.policy.updated');
     expect(t).toContain('File downloaded');
     expect(t).toContain('generic-local/releases/1.0/app.zip');
-    expect(t).toContain('denied');
+    expect(t).toContain('Denied');
     expect(t).toContain('10.12.4.7');
     expect(root.querySelector('table th[scope="col"]')).toBeTruthy();
     await expectAccessible(root);
+  });
+
+  it('R-UI-037 R-UI-145 Q-UI-560 Q-UI-564 the outcome is a badge, its icon and its word with a capital in one element', async () => {
+    const { root } = await open();
+    const outcomes = [...root.querySelectorAll('tbody tr')].map((r) => r.querySelector('td :is(.ok, .bad, .warn)'));
+    expect(outcomes.map((o) => o?.className)).toEqual(['ok', 'warn']);
+    expect(outcomes.map((o) => o!.textContent!.replace(o!.firstElementChild!.textContent!, '').trim())).toEqual(['Success', 'Denied']);
+    for (const o of outcomes) expect(o!.firstElementChild!.classList).toContain('material-icons');
+  });
+
+  it('R-UI-037 R-UI-145 Q-UI-567 an action\'s key breaks after its dots only, never inside a word', async () => {
+    const { root } = await open({}, (audit) => (audit.eventList = [sampleEvent({ action: 'user.groups.claim_missing' })]));
+    const key = root.querySelector('tbody th .action-key')!;
+    expect(key.textContent).toBe('user.groups.claim_missing');
+    expect(key.querySelectorAll('wbr')).toHaveLength(3);
+    expect([...key.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE).map((n) => n.textContent)).toEqual([
+      'user.',
+      'groups.',
+      'claim_missing',
+    ]);
+  });
+
+  it('R-UI-037 R-UI-145 Q-UI-568 a target the entry knows by name shows the name, its kind and identifier under it; another its identifier on one line', async () => {
+    const own = sampleEvent({
+      id: 'own',
+      action: 'user.groups.claim_missing',
+      outcome: 'failure',
+      actor: { type: 'user', id: '0199f1c4-7e2b-7a10-9c3d-1b2e3f4a5b6c', name: 'ada', tokenId: null, authMethod: 'session' },
+      resource: { type: 'user', id: '0199f1c4-7e2b-7a10-9c3d-1b2e3f4a5b6c' },
+    });
+    const other = sampleEvent({ id: 'other', resource: { type: 'user', id: '0199f1c4-0000-7000-8000-000000000001' } });
+    const { root } = await open({}, (audit) => (audit.eventList = [own, other]));
+    const [first, second] = [...root.querySelectorAll<HTMLElement>('tbody tr td.target')];
+    expect(first!.querySelector('.read-text')!.textContent!.trim()).toBe('ada');
+    const kind = first!.querySelector('.target-id')!;
+    expect(kind.textContent!.trim()).toBe('user');
+    expect(kind.getAttribute('title')).toBe('0199f1c4-7e2b-7a10-9c3d-1b2e3f4a5b6c');
+    expect(text(second!)).not.toContain('alice');
+    const id = second!.querySelector('.target-id')!;
+    expect(id.textContent!.trim()).toBe('0199f1c4-0000-7000-8000-000000000001');
+    expect(id.getAttribute('title')).toBe('0199f1c4-0000-7000-8000-000000000001');
   });
 
   it('R-UI-037 an unknown action is shown as the name the server sent', async () => {
@@ -166,8 +207,10 @@ describe('Audit log', () => {
 
   it('R-UI-037 an empty range, a failing query and the loading state are announced and pass the accessibility check', async () => {
     const empty = await open({}, (audit) => (audit.eventList = []));
-    expect(text(empty.root)).toContain('No event matches the filters in this time range.');
+    expect(text(empty.root)).toContain('There is no event in the last 24 hours.');
     await expectAccessible(empty.root);
+    const none = await open({ actor: 'nobody' }, (audit) => (audit.eventList = []));
+    expect(text(none.root)).toContain('No event matches.');
 
     const failing = await open({}, (audit) => {
       audit.events = () => () =>

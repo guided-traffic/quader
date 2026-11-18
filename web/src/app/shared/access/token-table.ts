@@ -38,7 +38,8 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
 /**
  * A table of tokens (R-UI-029, R-UI-030, R-UI-026), its columns from the job of who reads it (Q-UI-332, Q-UI-429): the token (its
  * description, and its hint, which also names its type: `qdr_pat_…`), the owner in the administrator's list of everyone's
- * tokens, the scope, which takes the room the others leave, when it expires and when it was last used, and at the row's end
+ * tokens, the scope, the token and the scope sharing the room the others leave by their content (Q-UI-563), when it expires and
+ * when it was last used, and at the row's end
  * **Rotate** and **Revoke**, two quiet buttons with their words, or the state of a token that is no longer active. When it was
  * created is a `narrow` column of an owner's list, shown from 64 rem of the list; through what it was created is no column. Status and expiry warnings carry text and icon, never colour
  * alone. Neither the value nor its hash is part of a listed token, only the `hint` that helps to recognise one.
@@ -156,7 +157,7 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
 export class TokenTable {
   readonly tokens = input.required<readonly Token[]>();
   /** What the empty list says; the default fits a filtered list (the administrator's token list). */
-  readonly emptyText = input($localize`:@@token-table.empty:No tokens match.`);
+  readonly emptyText = input($localize`:@@token-table.empty:No token matches.`);
   /** The administrator's list of everyone's tokens: the owner is a column, and the list stacks below 64 rem (Q-UI-332). */
   readonly showOwner = input(false);
   readonly selectable = input(false);
@@ -174,9 +175,11 @@ export class TokenTable {
   protected readonly caption = $localize`:@@token-table.caption:Tokens`;
   protected readonly rotateText = $localize`:@@token-table.rotate-tip:Rotate: a new value now, the old one ends after the overlap you choose`;
   /**
-   * Each width is its column's least (Q-UI-308); the scope takes what they leave, so its words break into as few lines as the list
-   * allows (Q-UI-429). An owner's list sums to 46 rem, and with the `narrow` column to 52.5 rem; the administrator's list, with
-   * selection and owner and without it, to 57 rem and stacks below 64 rem (`stackWide`).
+   * The token, the owner and the scope wrap and declare their least widths (Q-UI-308); the times and the actions never break and
+   * are as wide as their content (Q-UI-563). No column `prefer`s: the token's description and the scope share what the others
+   * leave in proportion to their content, so neither is pinned to its least while the other has room. A scope that took all the
+   * room left the administrator's **Client setup: npm, web-frontend/npm-vendor, 2026-11-18** three lines in 10 rem beside
+   * "Repository grants: 1" in 280 px (2026-11-18). The administrator's list stacks below 64 rem (`stackWide`, Q-UI-332).
    */
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     ...(this.selectable()
@@ -189,21 +192,19 @@ export class TokenTable {
       label: $localize`:@@token-table.scope:Scope`,
       help: $localize`:@@token-table.help.scope:What the token may do: all permissions of its owner, or only the listed repository grants.`,
       width: '9rem',
-      prefer: true,
     },
-    { id: 'expires', label: $localize`:@@token-table.expires:Expires`, width: '6.5rem' },
+    { id: 'expires', label: $localize`:@@token-table.expires:Expires` },
     {
       id: 'lastUsed',
       label: $localize`:@@token-table.last-used:Last used`,
       help: $localize`:@@token-table.help.last-used:The last time the token authenticated a request. Not every use is recorded immediately.`,
-      width: '6.5rem',
     },
     ...(this.showOwner()
       ? []
       : [
-          { id: 'created', label: $localize`:@@token-table.created:Created`, width: '6.5rem', narrow: true },
+          { id: 'created', label: $localize`:@@token-table.created:Created`, narrow: true },
         ]),
-    { id: 'actions', label: $localize`:@@token-table.actions:Actions`, hideLabel: true, width: '9rem' },
+    { id: 'actions', label: $localize`:@@token-table.actions:Actions`, hideLabel: true },
   ]);
 
   private readonly now = computed(() => {

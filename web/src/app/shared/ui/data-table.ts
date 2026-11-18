@@ -34,6 +34,12 @@ export interface TableColumn {
 
 export type SortDirection = 'asc' | 'desc';
 
+/** A cell without a value: empty, a bare "–", or only `<quader-no-value>` (Q-UI-561). */
+function emptyCell(cell: HTMLTableCellElement, text: string): boolean {
+  if (cell.children.length === 0) return text === '' || text === '–';
+  return cell.children.length === 1 && cell.firstElementChild?.tagName === 'QUADER-NO-VALUE';
+}
+
 /** The active sort: one column and a direction. */
 export interface TableSort {
   readonly column: string;
@@ -186,7 +192,7 @@ export class DataTable {
             const named = c && cell.colSpan === 1 && cell.tagName === 'TD' && !c.hideLabel && c.stackLabel !== false;
             if (named) cell.setAttribute('data-label', c.label);
             else cell.removeAttribute('data-label');
-            cell.toggleAttribute('data-empty', cell.tagName === 'TD' && (text === '' || text === '–') && cell.children.length === 0);
+            cell.toggleAttribute('data-empty', cell.tagName === 'TD' && emptyCell(cell, text));
           });
         }
       };

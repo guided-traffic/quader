@@ -7,11 +7,13 @@
 //  - Q-UI-335: every number field of a template names its width (field-width-rule.mjs).
 //  - R-UI-126: no link to the removed routes /setup and /browse (removed-routes-rule.mjs).
 //  - Q-UI-552: no bare <details> in a template: every fold is <quader-disclosure>, with the app's one chevron.
+//  - Q-UI-560: no icon stands directly in a table cell: it is one element with its word (status-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { numberFieldsWithoutWidth } from './field-width-rule.mjs';
 import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
+import { bareIconsInCells } from './status-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -77,6 +79,14 @@ for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('
   for (const { line, text } of linksToRemovedRoutes(readFileSync(file, 'utf8'))) {
     failed = true;
     console.error(`R-UI-126: ${relative(root, file)}:${line}: a link to a removed route (/setup, /browse): ${text}`);
+  }
+}
+
+// A status in a cell is one element, so its icon never stands on another line than its word (Q-UI-560).
+for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts'))) {
+  for (const { line, tag } of bareIconsInCells(readFileSync(file, 'utf8'))) {
+    failed = true;
+    console.error(`Q-UI-560: ${relative(root, file)}:${line}: an icon directly in a table cell; put it and its word into the badge or .icon-name: ${tag.split('\n')[0].trim()}`);
   }
 }
 

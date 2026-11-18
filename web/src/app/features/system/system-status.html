@@ -42,7 +42,9 @@
       <h2 id="card-install" i18n="@@system.install.heading">Installation</h2>
       <dl>
         <dt i18n="@@system.install.version">Version</dt>
-        <dd translate="no">{{ i.version.version }} ({{ i.version.revision }})</dd>
+        <dd translate="no">
+          {{ i.version.version }}&ngsp;<code class="revision" [attr.title]="i.version.revision">{{ shortRevision(i.version.revision) }}</code>
+        </dd>
         <dt i18n="@@system.install.base-url">Base URL</dt>
         <dd translate="no">{{ i.baseUrl }}</dd>
         <dt i18n="@@system.install.base-url-source">Base URL source</dt>
@@ -79,13 +81,17 @@
           <dd translate="no">{{ db.serverVersion }}</dd>
           <dt i18n="@@system.db.schema">Schema version</dt>
           <dd>
-            <span translate="no">{{ db.schemaVersion }}</span>
+            <span translate="no">{{ db.schemaVersion }}</span>&ngsp;
             @if (schemaSupported()) {
-              <span class="material-icons ok" aria-hidden="true">check_circle</span>
-              <span i18n="@@system.db.schema.supported">supported</span>
+              <span class="ok"
+                ><span class="material-icons" aria-hidden="true">check_circle</span
+                ><ng-container i18n="@@system.db.schema.supported">Supported</ng-container></span
+              >
             } @else {
-              <span class="material-icons bad" aria-hidden="true">error</span>
-              <span i18n="@@system.db.schema.unsupported">not supported by this build</span>
+              <span class="bad"
+                ><span class="material-icons" aria-hidden="true">error</span
+                ><ng-container i18n="@@system.db.schema.unsupported">Not supported by this build</ng-container></span
+              >
             }
           </dd>
         </dl>
@@ -183,29 +189,45 @@
                   @for (r of p.replicas; track r.instanceUid) {
                     <tr>
                       <th scope="row" translate="no">{{ r.name }}</th>
-                      <td translate="no">{{ r.node ?? '–' }}</td>
+                      <td translate="no">
+                        @if (r.node; as v) {
+                          {{ v }}
+                        } @else {
+                          <quader-no-value />
+                        }
+                      </td>
                       <td translate="no">{{ r.version }}</td>
                       <td>
                         @if (r.lost) {
-                          <span class="material-icons bad" aria-hidden="true">error</span>
-                          <span i18n="@@system.state.lost">lost</span>
+                          <span class="bad"
+                            ><span class="material-icons" aria-hidden="true">error</span
+                            ><ng-container i18n="@@system.state.lost">Lost</ng-container></span
+                          >
                         } @else {
                           @switch (r.state) {
                             @case ('ready') {
-                              <span class="material-icons ok" aria-hidden="true">check_circle</span>
-                              <span i18n="@@system.state.ready">ready</span>
+                              <span class="ok"
+                                ><span class="material-icons" aria-hidden="true">check_circle</span
+                                ><ng-container i18n="@@system.state.ready">Ready</ng-container></span
+                              >
                             }
                             @case ('starting') {
-                              <span class="material-icons" aria-hidden="true">hourglass_empty</span>
-                              <span i18n="@@system.state.starting">starting</span>
+                              <span class="badge"
+                                ><span class="material-icons" aria-hidden="true">hourglass_empty</span
+                                ><ng-container i18n="@@system.state.starting">Starting</ng-container></span
+                              >
                             }
                             @case ('draining') {
-                              <span class="material-icons" aria-hidden="true">hourglass_empty</span>
-                              <span i18n="@@system.state.draining">draining</span>
+                              <span class="badge"
+                                ><span class="material-icons" aria-hidden="true">hourglass_empty</span
+                                ><ng-container i18n="@@system.state.draining">Draining</ng-container></span
+                              >
                             }
                             @case ('unready') {
-                              <span class="material-icons bad" aria-hidden="true">error</span>
-                              <span i18n="@@system.state.unready">unready</span>
+                              <span class="bad"
+                                ><span class="material-icons" aria-hidden="true">error</span
+                                ><ng-container i18n="@@system.state.unready">Unready</ng-container></span
+                              >
                             }
                           }
                         }
@@ -230,11 +252,15 @@
                       <td>
                         @if (r.valkey; as v) {
                           @if (v.state === 'available') {
-                            <span class="material-icons ok" aria-hidden="true">check_circle</span>
-                            <span i18n="@@system.valkey.available">available</span>
+                            <span class="ok"
+                              ><span class="material-icons" aria-hidden="true">check_circle</span
+                              ><ng-container i18n="@@system.valkey.available">Available</ng-container></span
+                            >
                           } @else {
-                            <span class="material-icons warn" aria-hidden="true">warning</span>
-                            <span i18n="@@system.valkey.degraded">degraded</span>
+                            <span class="warn"
+                              ><span class="material-icons" aria-hidden="true">warning</span
+                              ><ng-container i18n="@@system.valkey.degraded">Degraded</ng-container></span
+                            >
                             @if (v.reason) {
                               <span translate="no"> ({{ v.reason }})</span>
                             }
@@ -243,7 +269,7 @@
                             <span i18n="@@system.valkey.circuit-open">, circuit open</span>
                           }
                         } @else {
-                          –
+                          <quader-no-value />
                         }
                       </td>
                     </tr>
@@ -352,28 +378,38 @@
           <td>
             @switch (k.canary) {
               @case ('ok') {
-                <span class="material-icons ok" aria-hidden="true">check_circle</span>
-                <span i18n="@@system.keys.canary.ok">ok</span>
+                <span class="ok"
+                  ><span class="material-icons" aria-hidden="true">check_circle</span
+                  ><ng-container i18n="@@system.keys.canary.ok">OK</ng-container></span
+                >
               }
               @case ('failed') {
-                <span class="material-icons bad" aria-hidden="true">error</span>
-                <span i18n="@@system.keys.canary.failed">failed</span>
+                <span class="bad"
+                  ><span class="material-icons" aria-hidden="true">error</span
+                  ><ng-container i18n="@@system.keys.canary.failed">Failed</ng-container></span
+                >
               }
               @case ('absent') {
-                <span class="material-icons warn" aria-hidden="true">warning</span>
-                <span i18n="@@system.keys.canary.absent">absent</span>
+                <span class="warn"
+                  ><span class="material-icons" aria-hidden="true">warning</span
+                  ><ng-container i18n="@@system.keys.canary.absent">Absent</ng-container></span
+                >
               }
             }
           </td>
           <td>
             @switch (keyStatus(k)) {
               @case ('active') {
-                <span class="material-icons ok" aria-hidden="true">check_circle</span>
-                <span i18n="@@system.keys.status.active">active</span>
+                <span class="ok"
+                  ><span class="material-icons" aria-hidden="true">check_circle</span
+                  ><ng-container i18n="@@system.keys.status.active">Active</ng-container></span
+                >
               }
               @case ('re-encryption-pending') {
-                <span class="material-icons warn" aria-hidden="true">warning</span>
-                <span i18n="@@system.keys.status.pending">re-encryption pending</span>
+                <span class="warn"
+                  ><span class="material-icons" aria-hidden="true">warning</span
+                  ><ng-container i18n="@@system.keys.status.pending">Re-encryption pending</ng-container></span
+                >
               }
               @case ('unused') {
                 <span i18n="@@system.keys.status.unused"
@@ -396,12 +432,17 @@
           <td translate="no">{{ r.keyIds.join(', ') }}</td>
           <td>
             @if (gapOf(r.name); as gap) {
-              <span class="material-icons bad" aria-hidden="true">error</span>
-              <span i18n="@@system.keys.replicas.missing">lacks</span>
-              <span translate="no"> {{ gap.missing.join(', ') }}</span>
+              <span class="bad"
+                ><span class="material-icons" aria-hidden="true">error</span
+                ><ng-container i18n="@@system.keys.replicas.missing">Lacks</ng-container>&ngsp;<span translate="no">{{
+                  gap.missing.join(', ')
+                }}</span></span
+              >
             } @else {
-              <span class="material-icons ok" aria-hidden="true">check_circle</span>
-              <span i18n="@@system.keys.replicas.complete">complete</span>
+              <span class="ok"
+                ><span class="material-icons" aria-hidden="true">check_circle</span
+                ><ng-container i18n="@@system.keys.replicas.complete">Complete</ng-container></span
+              >
             }
           </td>
         </tr>

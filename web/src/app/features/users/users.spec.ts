@@ -20,9 +20,9 @@ describe('Users list (R-UI-024)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-UI-005 without identities:write "Add user" is disabled and the reason is next to it', async () => {
+  it('R-UI-005 without identities:write "New user" is disabled and the reason is next to it', async () => {
     const { root } = await renderScreen(UserList, { capabilities: ['identities:read'] });
-    const add = buttonByText(root, 'Add user') as HTMLButtonElement;
+    const add = buttonByText(root, 'New user') as HTMLButtonElement;
     expect(add.disabled).toBe(true);
     expect(add.getAttribute('aria-describedby')).toBe('needs-users');
     expect(text(root.querySelector('#needs-users')!)).toContain('needs the permission identities:write');
@@ -48,15 +48,15 @@ describe('Users list (R-UI-024)', () => {
     expect(text(rows[0]!)).toContain('bob');
   });
 
-  it('R-UI-024 "Add user" pre-provisions a user with an idempotency key and has no password field', async () => {
+  it('R-UI-024 "New user" pre-provisions a user with an idempotency key and has no password field', async () => {
     const { fixture, root, get } = await renderScreen(UserList);
-    buttonByText(root, 'Add user').click();
+    buttonByText(root, 'New user').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-user-create-dialog') as HTMLElement;
     expect(dialog.querySelector('input[type="password"]')).toBeNull();
     typeInto(dialog, 'User name', 'carol');
     typeInto(dialog, 'Email', 'carol@example.com');
-    buttonByText(dialog, 'Add user').click();
+    buttonByText(dialog, 'Create user').click();
     await settle(fixture);
     const api = get(IdentityApi) as FakeIdentityApi;
     expect(api.calls).toContain('createUser carol');
@@ -68,11 +68,11 @@ describe('Users list (R-UI-024)', () => {
     (get(IdentityApi) as FakeIdentityApi).failure = problem(422, 'validation_failed', {
       errors: [{ pointer: '/username', code: 'username_invalid' }],
     });
-    buttonByText(root, 'Add user').click();
+    buttonByText(root, 'New user').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-user-create-dialog') as HTMLElement;
     typeInto(dialog, 'User name', 'Bad Name');
-    buttonByText(dialog, 'Add user').click();
+    buttonByText(dialog, 'Create user').click();
     await settle(fixture);
     expect(text(dialog.querySelector('.field-error')!)).toContain('lower-case letters');
     expect(await seriousViolations(overlay())).toEqual([]);

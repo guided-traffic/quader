@@ -3,11 +3,11 @@
 <quader-page-header [heading]="heading" [description]="headerLine()">
   @if (inProject() && canCreateHere()) {
     <a actions class="btn btn-confirm" [routerLink]="['/projects', projectKey(), 'repositories', 'new']" i18n="@@repo.list.create"
-      >Create repository</a
+      >New repository</a
     >
   } @else if (!inProject() && canCreate()) {
     <a actions class="btn btn-confirm" routerLink="/admin/repositories/new" i18n="@@repo.list.create"
-      >Create repository</a
+      >New repository</a
     >
   }
 </quader-page-header>
@@ -92,7 +92,7 @@
   [loading]="list.loading()"
   [error]="list.error()"
   [empty]="list.items().length === 0"
-  [emptyText]="filtered() || projectKey() ? emptyFilteredText : emptyText"
+  [emptyText]="filtered() ? emptyFilteredText : emptyText"
   [hasMore]="list.hasMore()"
   (more)="list.more()"
   (retry)="list.more()"
@@ -149,7 +149,7 @@
           @if (row.lastActivityAt; as at) {
             <quader-time-ago [at]="at" absolute="title" />
           } @else {
-            –
+            <quader-no-value />
           }
         </td>
       }

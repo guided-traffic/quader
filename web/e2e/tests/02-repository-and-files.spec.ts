@@ -20,7 +20,7 @@ test('R-UI-010 R-UI-011 R-UI-012 R-UI-080 create, upload on the repository page,
     await expect(page.getByRole('heading', { name: 'Repositories', level: 1 })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toContainText(e2eProject);
     await expectAccessible(page, 'repository list of the project');
-    await page.getByRole('link', { name: 'Create repository' }).click();
+    await page.getByRole('link', { name: 'New repository' }).click();
     // The format first, as a page of tiles under a search field, each a link to its form (R-UI-080).
     await expect(page.getByRole('heading', { name: 'New repository', level: 1 })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Next' })).toHaveCount(0);

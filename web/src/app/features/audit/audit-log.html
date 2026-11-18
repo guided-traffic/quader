@@ -102,8 +102,7 @@
       [loaded]="list.loaded()"
       [loading]="list.loading()"
       [empty]="list.items().length === 0"
-      i18n-emptyText="@@audit.empty"
-      emptyText="No event matches the filters in this time range."
+      [emptyText]="chips().length > 0 ? noMatch : noEvent"
       [hasMore]="list.hasMore()"
       (more)="list.more()"
     >
@@ -122,33 +121,60 @@
             >
               {{ actionLabel(e.action) }}
             </button>
-            <span class="secondary" translate="no">{{ e.action }}</span>
+            <!-- The action's key breaks only after a dot, never inside a word (Q-UI-567). -->
+            <span class="secondary action-key" translate="no"
+              >@for (part of keyParts(e.action); track $index) {<ng-container>{{ part }}</ng-container><wbr />}</span
+            >
           </th>
-          <!-- A target is read: it wraps in its column, never cut (UI-A-46). -->
-          <td translate="no" class="wrap read-text target">{{ targetText(e) }}</td>
+          <!-- The target: a repository and its path are read and wrap in their column (UI-A-46); a resource the entry knows by name
+               shows the name, as the actor does, with its kind and identifier under it; otherwise its kind and its identifier, which
+               stays on one line and is cut, its full value the title (Q-UI-568). -->
+          <td class="target">
+            @if (e.repository) {
+              <span class="read-text" translate="no">{{ targetText(e) }}</span>
+            } @else if (e.resource.type; as kind) {
+              @if (targetName(e); as name) {
+                <span class="read-text" translate="no">{{ name }}</span>
+                <span class="secondary target-id" translate="no" [attr.title]="e.resource.id">{{ kind }}</span>
+              } @else {
+                <span translate="no">{{ kind }}</span>
+                @if (e.resource.id; as id) {
+                  <span class="secondary target-id" translate="no" [attr.title]="id">{{ id }}</span>
+                }
+              }
+            } @else {
+              <quader-no-value />
+            }
+          </td>
           <!-- A row names its project by its mark and its name (Q-UI-424). -->
           <td>
             @if (projectOf(e); as project) {
               <quader-project-link [key]="project" />
             } @else {
-              –
+              <quader-no-value />
             }
           </td>
+          <!-- The outcome is a status: its badge, the word with a capital (Q-UI-560, Q-UI-564). -->
           <td>
             @switch (e.outcome) {
               @case ('success') {
-                <span class="material-icons inline ok" aria-hidden="true">check_circle</span>
+                <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span>{{ outcomeText(e.outcome) }}</span>
               }
               @case ('failure') {
-                <span class="material-icons inline bad" aria-hidden="true">error</span>
+                <span class="bad"><span class="material-icons" aria-hidden="true">error</span>{{ outcomeText(e.outcome) }}</span>
               }
-              @case ('denied') {
-                <span class="material-icons inline warn" aria-hidden="true">block</span>
+              @default {
+                <span class="warn"><span class="material-icons" aria-hidden="true">block</span>{{ outcomeText(e.outcome) }}</span>
               }
             }
-            {{ outcomeText(e.outcome) }}
           </td>
-          <td translate="no">{{ e.source.ip ?? '–' }}</td>
+          <td translate="no">
+            @if (e.source.ip; as ip) {
+              {{ ip }}
+            } @else {
+              <quader-no-value />
+            }
+          </td>
         </tr>
       }
     </quader-data-table>

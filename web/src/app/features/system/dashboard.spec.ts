@@ -45,6 +45,29 @@ describe('Admin dashboard (Q-OPS-175)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
+  it('R-UI-145 Q-UI-572 every row of a component\'s card is built one way: CPU and Memory are rows of its list with their bar inside', async () => {
+    const { root } = await render((s) => {
+      s.replicasResult = [sampleReplica({ runtime: sampleRuntime({ requests: 200, windowSeconds: 10 }) })];
+    });
+    const card = root.querySelector('section.card[aria-labelledby^="dash-role-"]')!;
+    const rows = [...card.querySelectorAll(':scope > dl.kv > div')];
+    expect(rows.map((r) => r.querySelector('dt')!.textContent!.trim())).toEqual([
+      'Nodes',
+      'Requests',
+      'Latency p95',
+      'Server errors',
+      'In flight',
+      'CPU',
+      'Memory',
+    ]);
+    expect(card.querySelector(':scope > .meter')).toBeNull();
+    for (const row of rows.slice(5)) {
+      expect(row.classList).toContain('meter-row');
+      expect(row.querySelector('dd .bar')?.getAttribute('aria-hidden') ?? 'true').toBe('true');
+    }
+    expect(await seriousViolations(root)).toEqual([]);
+  });
+
   it('R-UI-038 a failing overview leaves the rest of the screen readable and offers a retry', async () => {
     const { root } = await render((s) => (s.overviewResult = new ApiError(503, { code: 'database_unavailable' }, null)));
     const t = text(root);

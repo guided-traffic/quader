@@ -33,6 +33,7 @@ import {
 import { valueOf } from '../../shared/paged-resource';
 import { PageHeader } from '../../shared/ui/page-header';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { NoValue } from '../../shared/ui/no-value';
 
 /** Automatic refresh interval with a pause control (R-UI-038, WCAG 2.2.2). */
 export const REFRESH_INTERVAL_MS = 15_000;
@@ -52,11 +53,16 @@ export const PRIMARY_DISAGREEMENT_GRACE_MS = 30_000;
 /** System status (R-UI-038): installation facts, replicas per role, Valkey, stored-secret keys. */
 @Component({
   selector: 'quader-system-status',
-  imports: [DataTable, PageHeader, DatePipe, RouterLink, ErrorNotice, JobProgress, JobTable, TasksCard],
+  imports: [DataTable, PageHeader, DatePipe, RouterLink, ErrorNotice, JobProgress, JobTable, NoValue, TasksCard],
   templateUrl: './system-status.html',
   styleUrl: './system-status.scss',
 })
 export class SystemStatus {
+  /** The first twelve characters of a source revision; the full hash is its title (Q-UI-570). */
+  protected shortRevision(revision: string): string {
+    return /^[0-9a-f]{13,}$/.test(revision) ? revision.slice(0, 12) : revision;
+  }
+
   /** The replicas of a role or pool in the shared data table, which stacks below 48 rem (no sideways scroll at 390 px). */
   protected readonly replicaColumns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@system.col.name:Name`, width: '10rem' },

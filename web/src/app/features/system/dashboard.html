@@ -118,11 +118,11 @@
             <dt i18n="@@dashboard.role.in-flight">In flight</dt>
             <dd>{{ l.inFlight }}</dd>
           </div>
-        </dl>
-        <div class="meter">
-          <span class="meter-label"
-            ><ng-container i18n="@@dashboard.cpu">CPU</ng-container>
-            <span class="muted">
+          <!-- A measure with a limit is a row like the others, its label and its value on the row's line and the bar of its share
+               under them, so every row of the card has the same spacing and the same hairline (Q-UI-572). -->
+          <div class="meter-row">
+            <dt i18n="@@dashboard.cpu">CPU</dt>
+            <dd>
               @if (l.cpuLimitCores !== null) {
                 <ng-container i18n="@@dashboard.cpu.of"
                   >{{ l.cpuCores | number: '1.1-2' }} of {{ l.cpuLimitCores }} cores</ng-container
@@ -132,16 +132,14 @@
                   >{{ l.cpuCores | number: '1.1-2' }} cores</ng-container
                 >
               }
-            </span></span
-          >
-          @if (percent(l.cpuCores, l.cpuLimitCores); as p) {
-            <span class="bar" aria-hidden="true"><span [style.inline-size.%]="p"></span></span>
-          }
-        </div>
-        <div class="meter">
-          <span class="meter-label"
-            ><ng-container i18n="@@dashboard.memory">Memory</ng-container>
-            <span class="muted">
+              @if (percent(l.cpuCores, l.cpuLimitCores); as p) {
+                <span class="bar" aria-hidden="true"><span [style.inline-size.%]="p"></span></span>
+              }
+            </dd>
+          </div>
+          <div class="meter-row">
+            <dt i18n="@@dashboard.memory">Memory</dt>
+            <dd>
               @if (l.memoryLimitBytes !== null) {
                 <ng-container i18n="@@dashboard.memory.of"
                   >{{ size(l.memoryBytes) }} of {{ size(l.memoryLimitBytes) }}</ng-container
@@ -149,12 +147,12 @@
               } @else {
                 {{ size(l.memoryBytes) }}
               }
-            </span></span
-          >
-          @if (percent(l.memoryBytes, l.memoryLimitBytes); as p) {
-            <span class="bar" aria-hidden="true"><span [style.inline-size.%]="p"></span></span>
-          }
-        </div>
+              @if (percent(l.memoryBytes, l.memoryLimitBytes); as p) {
+                <span class="bar" aria-hidden="true"><span [style.inline-size.%]="p"></span></span>
+              }
+            </dd>
+          </div>
+        </dl>
         @if (l.reporting < l.live) {
           <p class="note" i18n="@@dashboard.role.reporting">
             {{ l.reporting }} of {{ l.live }} replicas reported measurements.
@@ -187,16 +185,16 @@
             <dt i18n="@@dashboard.pooler">Pooler</dt>
             <dd translate="no">{{ db.poolerMode }}</dd>
           </div>
+          <div class="meter-row">
+            <dt i18n="@@dashboard.pool">Connections of the answering replica</dt>
+            <dd>
+              <ng-container i18n="@@dashboard.pool.of">{{ pool().inUse }} of {{ pool().max }}</ng-container>
+              @if (percent(pool().inUse, pool().max); as p) {
+                <span class="bar" aria-hidden="true"><span [style.inline-size.%]="p"></span></span>
+              }
+            </dd>
+          </div>
         </dl>
-        <div class="meter">
-          <span class="meter-label"
-            ><ng-container i18n="@@dashboard.pool">Connections of the answering replica</ng-container>
-            <span class="muted" i18n="@@dashboard.pool.of">{{ pool().inUse }} of {{ pool().max }}</span></span
-          >
-          @if (percent(pool().inUse, pool().max); as p) {
-            <span class="bar" aria-hidden="true"><span [style.inline-size.%]="p"></span></span>
-          }
-        </div>
       } @else {
         <p class="muted" i18n="@@dashboard.database.unknown">
           The answering replica has not read the database facts yet.

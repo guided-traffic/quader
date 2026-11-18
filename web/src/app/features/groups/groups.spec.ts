@@ -52,6 +52,8 @@ describe('Groups (R-UI-025)', () => {
     const mixed = rows.find((r) => text(r).startsWith('sa:ci-bot'))!;
     expect(provider.querySelector('button')).toBeNull();
     expect(mixed.querySelector('button')).toBeTruthy();
+    // Remove is a direct child of its cell in a table.data, which the shared rule centres on the row's first line (R-UI-145, Q-UI-562).
+    expect(mixed.querySelector('table.data tbody td.actions > button.btn') ?? mixed.closest('table.data')!.querySelector('tbody td.actions > button.btn')).toBeTruthy();
   });
 
   it('R-UI-025 a SCIM group is read-only and says why', async () => {

@@ -15,7 +15,7 @@ import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /**
- * Token administration (R-UI-030): every token with filters (type, owner, state, expiring before,
+ * Tokens, the token administration (R-UI-030): every token with filters (type, owner, state, expiring before,
  * unused for N days), revoke one or the selected ones with confirmation, and "Revoke by value" for
  * a leaked token. The pasted value is sent once and cleared; it lives in this component's signal
  * and in no store (R-UI-043). Issuances of CI pipelines (`/api/v1/ci/issuances`) belong to the CI
@@ -66,9 +66,9 @@ export class TokenAdmin {
     if (Number.isFinite(days) && days > 0) out.push({ key: 'unusedDays', label: $localize`:@@tokens-admin.unused:Not used for (days)`, value: String(days) });
     return out;
   });
-  /** An unfiltered list says that no active token exists; "No tokens match." is for a filter (UI-A-25). */
-  protected readonly noActive = $localize`:@@tokens-admin.empty:No active tokens.`;
-  protected readonly noMatch = $localize`:@@token-table.empty:No tokens match.`;
+  /** An unfiltered list says that no active token exists yet; "No token matches." is for a filter (UI-A-25, Q-UI-565). */
+  protected readonly noActive = $localize`:@@tokens-admin.empty:There is no active token yet.`;
+  protected readonly noMatch = $localize`:@@token-table.empty:No token matches.`;
   protected readonly actionError = signal<ApiError | null>(null);
 
   protected readonly pasted = signal('');

@@ -14,6 +14,8 @@ import { PagedResource, asApiError } from '../../shared/paged-resource';
 import { ErrorNotice } from '../../shared/error-notice';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { ListHead } from '../../shared/ui/list-head';
+import { NoValue } from '../../shared/ui/no-value';
+import { ProjectLink } from '../../shared/ui/project-mark';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /** What the dialog is opened with: the project key to create a project service account, named within it (R-AUTHZ-026). */
@@ -102,7 +104,7 @@ export class ServiceAccountCreateDialog {
  */
 @Component({
   selector: 'quader-service-account-list',
-  imports: [PageHeader, RouterLink, DataTable, ListHead, Needs],
+  imports: [PageHeader, RouterLink, DataTable, ListHead, Needs, NoValue, ProjectLink],
   template: `
     <quader-page-header heading="Service accounts" i18n-heading="@@sas.heading">
       <button actions class="btn btn-confirm" type="button" [disabled]="!session.has('identities:write')" aria-describedby="needs-sas" (click)="add()" i18n="@@sas.add">New service account</button>
@@ -123,8 +125,7 @@ export class ServiceAccountCreateDialog {
       [loading]="list.loading()"
       [error]="list.error()"
       [empty]="list.items().length === 0"
-      i18n-emptyText="@@sas.empty"
-      emptyText="No service account matches."
+      [emptyText]="q() ? noMatch : noAccount"
       [hasMore]="list.hasMore()"
       (more)="list.more()"
       (retry)="list.reload()"
@@ -132,12 +133,19 @@ export class ServiceAccountCreateDialog {
       @for (a of list.items(); track a.id) {
         <tr>
           <th scope="row"><a [routerLink]="saLink(a)" translate="no">{{ a.name }}</a></th>
-          <td>{{ a.description }}</td>
+          <td>
+            @if (a.description) {
+              {{ a.description }}
+            } @else {
+              <quader-no-value />
+            }
+          </td>
+          <!-- A row names its project by its mark and its name (Q-UI-424). -->
           <td>
             @if (a.project) {
-              <a [routerLink]="['/projects', a.project]" translate="no">{{ a.project }}</a>
+              <quader-project-link [key]="a.project" />
             } @else {
-              –
+              <quader-no-value />
             }
           </td>
           <td>
@@ -164,6 +172,9 @@ export class ServiceAccountList {
   protected readonly sort = signal<TableSort>({ column: 'name', direction: 'asc' });
   protected readonly caption = $localize`:@@sas.caption:Service accounts`;
   protected readonly searchLabel = $localize`:@@sas.search:Filter service accounts`;
+  /** An empty list says there is no service account yet; a search that finds none says so (Q-UI-565). */
+  protected readonly noAccount = $localize`:@@sas.empty-none:There is no service account yet.`;
+  protected readonly noMatch = $localize`:@@sas.empty:No service account matches.`;
   protected readonly columns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@sas.col.name:Name`, sortable: true },
     { id: 'description', label: $localize`:@@sas.col.description:Description` },

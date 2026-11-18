@@ -115,7 +115,7 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     const nav = bob.getByRole('navigation', { name: 'Main navigation' });
     // An Owner creates repositories, edits the display name and description, and cannot delete the project.
     await nav.getByRole('link', { name: 'Repositories', exact: true }).click();
-    await expect(bob.getByRole('link', { name: 'Create repository' })).toBeVisible();
+    await expect(bob.getByRole('link', { name: 'New repository' })).toBeVisible();
     await nav.getByRole('link', { name: 'Settings', exact: true }).click();
     await expect(bob.getByRole('button', { name: 'Save changes' })).toBeVisible();
     await expect(bob.getByRole('button', { name: 'Delete project' })).toHaveCount(0);

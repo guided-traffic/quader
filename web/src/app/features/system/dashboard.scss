@@ -35,11 +35,15 @@ h2 {
 }
 
 // The cards share the row; with fewer cards than columns they grow into it (auto-fit), so one component's card is no third of
-// an empty row (UI-A-44).
+// an empty row (UI-A-44), up to 30 rem: a card as wide as the page set a label 1,100 px from its value (Q-UI-572).
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
   gap: var(--quader-space-4);
+
+  > .card {
+    max-inline-size: 30rem;
+  }
 }
 
 // A card as the reference draws it: a strong fill 12 px round with 4 px inside, the title on it, the content on the
@@ -113,18 +117,19 @@ h2 {
     margin: 0;
     text-align: end;
   }
-}
 
-.meter {
-  display: flex;
-  flex-direction: column;
-  gap: var(--quader-space-1);
-  padding: var(--quader-space-1) var(--quader-space-2) var(--quader-space-2);
-}
+  // A measure's row: the label and the value on the row's line as in every row, the bar of its share across the row under them,
+  // inside the row's spacing and above its hairline (Q-UI-572).
+  > div.meter-row {
+    position: relative;
+    padding-block-end: calc(var(--quader-space-3) + 6px + var(--quader-space-2));
 
-.meter-label {
-  display: flex;
-  justify-content: space-between;
+    .bar {
+      position: absolute;
+      inset-inline: 0;
+      inset-block-end: var(--quader-space-3);
+    }
+  }
 }
 
 .bar {

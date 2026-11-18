@@ -278,12 +278,26 @@
 }
 
 // A format is its icon and its name on one line (UI-A-24), a class its icon and its name (Q-UI-330): each a column of its own
-// in the repository lists and the search results, never broken.
+// in the repository lists and the search results, never broken. The icon is 20 px on a cell's line of 16 px: the pair is centred
+// on that line and adds nothing to its height, as a badge does (Q-UI-562). Without it the pair was a box of 20 px whose name stood
+// 2 px lower than the key, the project and the time of the same row (the admin area's repositories, 2026-11-18).
 td.format-cell .format-name,
 td.class-cell .class-name {
   display: inline-flex;
   align-items: center;
   gap: var(--quader-space-2);
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.quader-data-table table.data tbody td :is(.format-name, .class-name, .type-cell) {
+  margin-block: calc((1rem - 1.25rem) / 2);
+}
+
+// A visibility level in a cell of its own is its icon and its word on one line, never broken (Q-UI-563): the column declares no
+// width, and without this the word went under its icon as soon as a neighbour wanted the room (the admin area's repositories,
+// 2026-11-18).
+td:is(.level, .level-cell) {
   white-space: nowrap;
 }
 
@@ -419,6 +433,7 @@ td.class-cell .material-icons {
     // the name of its first column wrap after a hyphen (`th.wrap-name`, Q-UI-303); a name beside its icon breaks inside itself
     // (`.icon-name`, Q-UI-425).
     th[scope='row']:not(.wrap-name) a,
+    th[scope='row'][translate='no']:not(.wrap-name),
     td[translate='no']:not(.wrap),
     td time,
     td > .ok,
@@ -690,6 +705,10 @@ td.class-cell .material-icons {
       display: flex;
       align-items: center;
       gap: var(--quader-space-2);
+    }
+
+    tbody td :is(.format-name, .class-name, .type-cell) {
+      margin-block: 0;
     }
 
     td[data-empty] {

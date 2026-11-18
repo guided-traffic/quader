@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { ApiError } from '../../api/problem';
 import { seriousViolations } from '../../testing/axe';
 import { DataTable, TableColumn, TableSort } from './data-table';
+import { NoValue } from './no-value';
 
 @Component({
   imports: [DataTable],
@@ -181,6 +182,40 @@ describe('Data table', () => {
     expect(cells[0]!.hasAttribute('data-empty')).toBe(false);
     // Without a column that prefers the room, the headers carry their widths as their least only.
     expect(heads.map((h) => h.style.inlineSize)).toEqual(['', '', '', '']);
+  });
+
+  it('R-UI-146 Q-UI-561 a cell without a value is the dash with the accessible name None, and a stacked row leaves its line out', async () => {
+    @Component({
+      imports: [DataTable, NoValue],
+      template: `
+        <quader-data-table caption="Things" [columns]="columns">
+          <tr>
+            <th scope="row">one</th>
+            <td><quader-no-value /></td>
+            <td>value</td>
+          </tr>
+        </quader-data-table>
+      `,
+    })
+    class Empty {
+      readonly columns: readonly TableColumn[] = [
+        { id: 'name', label: 'Name' },
+        { id: 'email', label: 'Email' },
+        { id: 'origin', label: 'Origin' },
+      ];
+    }
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [Empty] }).compileComponents();
+    const fixture = TestBed.createComponent(Empty);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const [none, value] = [...root.querySelectorAll<HTMLElement>('tbody td')];
+    expect(none!.querySelector('[aria-hidden="true"]')!.textContent).toBe('–');
+    expect(none!.querySelector('.visually-hidden')!.textContent).toBe('None');
+    expect(none!.hasAttribute('data-empty')).toBe(true);
+    expect(value!.hasAttribute('data-empty')).toBe(false);
   });
 
   it('Q-UI-330 a column that prefers the room takes what the others leave, and the other columns keep their widths', async () => {

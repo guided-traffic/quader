@@ -508,16 +508,22 @@
                   <tr>
                     <th scope="row" translate="no">{{ x.path }}</th>
                     <td>
-                      @if (x.exposed) {
-                        <span class="material-icons inline ok" aria-hidden="true"
-                          >check_circle</span
-                        >
-                      } @else {
-                        <span class="material-icons inline bad" aria-hidden="true">block</span>
-                      }
-                      {{ reasonText(x.reason) }}
+                      <span class="icon-name">
+                        @if (x.exposed) {
+                          <span class="material-icons inline ok" aria-hidden="true">check_circle</span>
+                        } @else {
+                          <span class="material-icons inline bad" aria-hidden="true">block</span>
+                        }
+                        <span class="icon-name-text">{{ reasonText(x.reason) }}</span>
+                      </span>
                     </td>
-                    <td translate="no">{{ x.rule ?? '–' }}</td>
+                    <td translate="no">
+                      @if (x.rule; as v) {
+                        {{ v }}
+                      } @else {
+                        <quader-no-value />
+                      }
+                    </td>
                   </tr>
                 }
               </tbody>
@@ -540,16 +546,22 @@
                   <tr>
                     <th scope="row" translate="no">{{ x.version }}</th>
                     <td>
-                      @if (x.exposed) {
-                        <span class="material-icons inline ok" aria-hidden="true"
-                          >check_circle</span
-                        >
-                      } @else {
-                        <span class="material-icons inline bad" aria-hidden="true">block</span>
-                      }
-                      {{ reasonText(x.reason) }}
+                      <span class="icon-name">
+                        @if (x.exposed) {
+                          <span class="material-icons inline ok" aria-hidden="true">check_circle</span>
+                        } @else {
+                          <span class="material-icons inline bad" aria-hidden="true">block</span>
+                        }
+                        <span class="icon-name-text">{{ reasonText(x.reason) }}</span>
+                      </span>
                     </td>
-                    <td translate="no">{{ x.rule ?? '–' }}</td>
+                    <td translate="no">
+                      @if (x.rule; as v) {
+                        {{ v }}
+                      } @else {
+                        <quader-no-value />
+                      }
+                    </td>
                   </tr>
                 }
               </tbody>
@@ -574,13 +586,15 @@
                     <td translate="no">{{ x.version }}</td>
                     <td>
                       @if (x.visible) {
-                        <span class="material-icons inline ok" aria-hidden="true"
-                          >check_circle</span
+                        <span class="ok"
+                          ><span class="material-icons" aria-hidden="true">check_circle</span
+                          ><ng-container i18n="@@ep.yes">Yes</ng-container></span
                         >
-                        <span i18n="@@ep.yes">yes</span>
                       } @else {
-                        <span class="material-icons inline bad" aria-hidden="true">block</span>
-                        <span i18n="@@ep.no">no</span>
+                        <span class="bad"
+                          ><span class="material-icons" aria-hidden="true">block</span
+                          ><ng-container i18n="@@ep.no">No</ng-container></span
+                        >
                       }
                     </td>
                   </tr>

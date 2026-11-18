@@ -4,7 +4,7 @@ import { EncryptionApi, EncryptionStatus } from '../../api/system-api';
 import { JobsApi } from '../../api/jobs-api';
 import { FakeEncryptionApi } from '../../api/testing/fakes';
 import { FakeJobsApi, sampleJob } from '../../api/testing/fakes-catalog';
-import { button, expectAccessible, renderScreen, settle, text } from '../../testing/screen';
+import { applyFilters, button, chipTexts, expectAccessible, openFilters, renderScreen, settle, text, type } from '../../testing/screen';
 import { JobProgress } from '../../shared/job-progress';
 import { JobsPage } from './jobs-page';
 import { SystemStatus } from './system-status';
@@ -51,11 +51,11 @@ describe('Stored-secret keys card (E1.9)', () => {
     expect(t).toContain('Key rings are not compatible');
     expect(t).toContain('Canary (reported by quader-api-0)');
     expect(t).toContain('quader-packages-0');
-    expect(t).toContain('lacks 2026-10');
+    expect(t).toContain('Lacks 2026-10');
     expect(t).toContain('Next step: give every replica the key files it lacks');
     expect(t).toContain('Last re-encryption');
     const rows = [...card.querySelectorAll('tbody tr')].map((r) => text(r));
-    expect(rows.find((r) => r.startsWith('quader-worker-0'))).toContain('complete');
+    expect(rows.find((r) => r.startsWith('quader-worker-0'))).toContain('Complete');
     await expectAccessible(root);
   });
 
@@ -260,6 +260,41 @@ describe('Jobs screen', () => {
     expect(text(root)).toContain('ecosystems: 2');
   });
 
+  it('R-UI-038 R-UI-145 Q-UI-560 a state is a badge, its icon and its word with a capital in one element, and the kind and the replica are not let break', async () => {
+    const { root } = await open({}, (jobs) => {
+      jobs.jobList = [sampleJob({ kind: 'gc-full', state: 'succeeded', replica: 'ms2022.local-39645' })];
+    });
+    const row = root.querySelector('tbody tr')!;
+    const state = row.querySelector('td:nth-child(2) > span.ok')!;
+    expect(state.firstElementChild!.classList).toContain('material-icons');
+    expect(state.textContent!.replace(state.firstElementChild!.textContent!, '').trim()).toBe('Succeeded');
+    // The row's header is an identifier (translate="no"), which the shared table keeps on one line; the replica is a td with
+    // translate="no" and without .wrap, which it keeps whole too (_list-screens.scss).
+    expect(row.querySelector('th[scope="row"]')!.getAttribute('translate')).toBe('no');
+    const replica = row.querySelector<HTMLElement>('td:nth-child(5)')!;
+    expect(replica.getAttribute('translate')).toBe('no');
+    expect(replica.classList.contains('wrap')).toBe(false);
+    expect(text(replica)).toBe('ms2022.local-39645');
+  });
+
+  it('R-UI-038 R-UI-146 Q-UI-566 the filters are the head of every list: Filters, the drawer and the chips; no form of its own', async () => {
+    const { root, fixture, router } = await open({ kind: 'gc,gc-full', state: ['failed'] });
+    expect(root.querySelector('quader-list-head')).toBeTruthy();
+    expect(root.querySelector('form.toolbar')).toBeNull();
+    expect(chipTexts(root)).toEqual(['Kind: gc, gc-full', 'State: Failed']);
+    const drawer = await openFilters(fixture, root);
+    const kind = drawer.querySelector<HTMLInputElement>('#j-kind')!;
+    expect(kind.value).toBe('gc, gc-full');
+    type(kind, 'gc');
+    await settle(fixture);
+    await applyFilters(fixture);
+    const [, extras] = (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1)!;
+    expect(extras.queryParams).toEqual({ kind: 'gc', state: ['failed'] });
+    root.querySelector<HTMLButtonElement>('.list-filters .chip button')!.click();
+    await settle(fixture);
+    expect((router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1)![1].queryParams).toEqual({ kind: null });
+  });
+
   it('R-UI-038 filters by kind and state reach the API', async () => {
     const { jobs, root } = await open({ kind: 'gc,gc-full', state: ['running', 'cancelling'] });
     expect(jobs.filterCalls.at(-1)).toEqual({
@@ -278,7 +313,7 @@ describe('Jobs screen', () => {
     cancel.click();
     await settle(fixture);
     expect(jobs.cancelled).toHaveLength(1);
-    expect(text(root)).toContain('cancelling');
+    expect(text(root)).toContain('Cancelling');
     expect(root.querySelectorAll('tbody button')).toHaveLength(0);
 
     const filtered = await open(
@@ -286,13 +321,15 @@ describe('Jobs screen', () => {
       (j) => (j.jobList[1] = { ...j.jobList[1]!, state: 'cancelling' }),
     );
     expect(filtered.root.querySelectorAll('tbody tr')).toHaveLength(1);
-    expect(text(filtered.root)).toContain('cancelling');
+    expect(text(filtered.root.querySelector('tbody')!)).toContain('Cancelling');
   });
 
   it('R-UI-038 the empty result and a failing list are explained and pass the accessibility check', async () => {
     const empty = await open({ kind: 'nothing' });
-    expect(text(empty.root)).toContain('No job matches the filters.');
+    expect(text(empty.root)).toContain('No job matches.');
     await expectAccessible(empty.root);
+    const none = await open({}, (j) => (j.jobList = []));
+    expect(text(none.root)).toContain('There is no job yet.');
 
     const failing = await open(
       {},

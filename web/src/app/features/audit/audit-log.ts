@@ -17,6 +17,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
+import { NoValue } from '../../shared/ui/no-value';
 import { ProjectLink } from '../../shared/ui/project-mark';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
 import { actionSuggestions, auditActionLabel, categoryLabel, outcomeLabel } from './audit-labels';
@@ -51,6 +52,7 @@ const PRESETS: Readonly<Record<string, number>> = {
     ErrorNotice,
     FilterPanel,
     ListHead,
+    NoValue,
     ProjectLink,
   ],
   templateUrl: './audit-log.html',
@@ -83,6 +85,9 @@ export class AuditLog {
   protected readonly presetDraft = signal('24h');
   protected readonly panelOpen = signal(false);
   protected readonly caption = $localize`:@@audit.caption:Audit events, newest first`;
+  /** The log of the default 24 hours without a filter says there is none; a filtered one that nothing matches (Q-UI-565). */
+  protected readonly noEvent = $localize`:@@audit.empty-none:There is no event in the last 24 hours.`;
+  protected readonly noMatch = $localize`:@@audit.empty:No event matches.`;
   /** No sort control: the log is always newest first, and the API takes no sort parameter. */
   protected readonly columns: readonly TableColumn[] = [
     {
@@ -324,11 +329,25 @@ export class AuditLog {
     return filesCommands(repository, path.split('/'));
   }
 
+  /** A repository's target: the repository and, where the event names one, the path in it. */
   protected targetText(e: AuditEvent): string {
-    if (e.repository) return e.path ? `${e.repository}/${e.path}` : e.repository;
-    if (e.resource.type)
-      return e.resource.id ? `${e.resource.type} ${e.resource.id}` : e.resource.type;
-    return '–';
+    return e.path ? `${e.repository}/${e.path}` : (e.repository ?? '');
+  }
+
+  /**
+   * The name of the resource an event is about, where the entry knows it (Q-UI-568). The API delivers a resource's kind and
+   * identifier, not its name (`AuditResource`); the entry names a principal only as its actor. So a user or a service account
+   * that is the event's own actor (a sign-in, a claim missing at it, a token of one's own) is named as the Actor column names it.
+   */
+  protected targetName(e: AuditEvent): string | null {
+    const { type, id } = e.resource;
+    if (!id || !e.actor.name || id !== e.actor.id) return null;
+    return type === e.actor.type || (type === 'user' && e.actor.type === 'breakglass') ? e.actor.name : null;
+  }
+
+  /** An action's key in its parts, each with its dot, so it breaks after a dot and never inside a word (Q-UI-567). */
+  protected keyParts(action: string): string[] {
+    return action.split(/(?<=\.)/);
   }
 
   protected readonly copyId = $localize`:@@audit.copy-id:Copy the event ID`;

@@ -107,17 +107,30 @@
   }
 }
 
+// The bar closes the page down to the panel's lower edge (Q-UI-576): it takes the content's bottom padding into itself, so
+// neither the end of the form nor the padding under it shows below the bar, whether the bar sticks to the bottom while the form
+// scrolls (then the extra padding lies below the panel's edge) or stands at the form's end. The padding is the content's of
+// _shell.scss, 24 px from 1024 px of the window and 16 px below.
 .save-bar {
+  --page-end: var(--quader-space-6);
+
   position: sticky;
-  inset-block-end: 0;
+  inset-block-end: calc(-1 * var(--page-end));
   z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--quader-space-3);
-  padding: var(--quader-space-3);
+  margin-block-end: calc(-1 * var(--page-end));
+  padding: var(--quader-space-3) var(--quader-space-3) calc(var(--quader-space-3) + var(--page-end));
   background: var(--quader-surface);
   border-block-start: 1px solid var(--quader-border);
+}
+
+@media (max-width: 1023.98px) {
+  .save-bar {
+    --page-end: var(--quader-space-4);
+  }
 }
 
 @media (min-width: 60rem) {

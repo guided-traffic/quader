@@ -1,3 +1,4 @@
+import { NoValue } from '../../shared/ui/no-value';
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, resource, signal } from '@angular/core';
 import { newIdempotencyKey } from '../../api/client';
@@ -19,7 +20,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
  */
 @Component({
   selector: 'quader-tasks-card',
-  imports: [DataTable, DatePipe, ErrorNotice, JobProgress],
+  imports: [DataTable, DatePipe, ErrorNotice, JobProgress, NoValue],
   template: `
     <section class="card" aria-labelledby="card-tasks">
       <div class="head">
@@ -38,14 +39,20 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
             @for (t of list; track t.name) {
               <tr>
                 <th scope="row" translate="no">{{ t.name }}</th>
-                <td translate="no">{{ t.schedule ?? '–' }}</td>
+                <td translate="no">
+                  @if (t.schedule; as v) {
+                    {{ v }}
+                  } @else {
+                    <quader-no-value />
+                  }
+                </td>
                 <td>
                   @if (t.nextRunAt; as at) {
                     <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
                   } @else if (t.schedule === null) {
                     <span i18n="@@tasks.manual">manual only</span>
                   } @else {
-                    –
+                    <quader-no-value />
                   }
                 </td>
                 <td>
@@ -55,7 +62,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
                       <time [attr.datetime]="at"> {{ at | date: 'medium' }}</time>
                     }
                   } @else {
-                    –
+                    <quader-no-value />
                   }
                 </td>
                 <td>

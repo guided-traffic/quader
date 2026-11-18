@@ -23,6 +23,26 @@ describe('Repository list', () => {
     await expectAccessible(root);
   });
 
+  it('R-UI-145 Q-UI-563 the admin area\'s columns take their widths from their content: the repository and the project wrap and share the room, the rest is as wide as its values', async () => {
+    const { root } = await renderScreen(RepositoryList);
+    const heads = [...root.querySelectorAll<HTMLElement>('thead th')];
+    // No column is pinned to its least while another takes every pixel (the project broke into three lines beside an empty column).
+    expect(heads.map((h) => h.style.inlineSize).every((w) => w === '')).toBe(true);
+    expect(heads.map((h) => h.style.minInlineSize)).toEqual(['13rem', '11rem', ...heads.slice(2).map(() => '')]);
+    const empty = [...root.querySelectorAll('tbody td.narrow-drop quader-no-value')];
+    for (const cell of empty) expect(cell.parentElement!.hasAttribute('data-empty')).toBe(true);
+  });
+
+  it('R-UI-145 Q-UI-562 a format and a class are each one element, the icon and the name, centred on the line of the cell by the shared table', async () => {
+    const { root } = await renderScreen(RepositoryList);
+    const row = root.querySelector('tbody tr')!;
+    // _list-screens.scss gives `.format-name` and `.class-name` in a data table's cell the negative margin that keeps a 20 px icon
+    // on the cell's 16 px line; the test holds the structure the rule selects.
+    expect(row.querySelector('td.format-cell > .format-name > quader-format-icon')).toBeTruthy();
+    expect(row.querySelector('td.class-cell > .class-name > .material-icons')).toBeTruthy();
+    expect(row.closest('quader-data-table table.data tbody')).toBeTruthy();
+  });
+
   it('R-UI-066 Q-UI-330 in the admin area the address is a quiet copy button beside the menu, its name and tooltip carrying the address, and an item of the menu', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
@@ -103,7 +123,7 @@ describe('Repository list', () => {
     await expectAccessible(empty.root);
 
     const filtered = await renderScreen(RepositoryList, { inputs: { q: 'nothing-like-this' } });
-    expect(text(filtered.root)).toContain('No repository matches the filters.');
+    expect(text(filtered.root)).toContain('No repository matches.');
     await expectAccessible(filtered.root);
   });
 
@@ -119,13 +139,13 @@ describe('Repository list', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-020 "Create repository" is offered only to a caller who may write repository configuration', async () => {
+  it('R-UI-020 R-UI-146 Q-UI-573 "New repository" is offered only to a caller who may write repository configuration', async () => {
     const admin = await renderScreen(RepositoryList);
-    expect(text(admin.root)).toContain('Create repository');
+    expect(text(admin.root)).toContain('New repository');
     const reader = await renderScreen(RepositoryList, {
       capabilities: ['repositories:read-config'],
     });
-    expect(text(reader.root)).not.toContain('Create repository');
+    expect(text(reader.root)).not.toContain('New repository');
   });
 
   it('R-UI-020 "Load more" continues the cursor walk', async () => {

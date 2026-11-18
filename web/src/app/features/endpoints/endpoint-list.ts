@@ -2,6 +2,7 @@ import { Component, computed, inject, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Endpoint, EndpointsApi } from '../../api/endpoints-api';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
+import { NoValue } from '../../shared/ui/no-value';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { PageHeader } from '../../shared/ui/page-header';
 
@@ -13,13 +14,10 @@ import { PageHeader } from '../../shared/ui/page-header';
  */
 @Component({
   selector: 'quader-endpoint-list',
-  imports: [PageHeader, RouterLink, DataTable],
+  imports: [PageHeader, RouterLink, DataTable, NoValue],
   template: `
-    <quader-page-header heading="Endpoints" i18n-heading="@@ep.list.heading" />
-    <p class="hint" i18n="@@ep.list.hint">
-      Endpoints come from the configuration file. Exposure rules decide what an endpoint in mode
-      "rules" makes retrievable.
-    </p>
+    <!-- The sentence under the title is the header's, as on every page (Q-UI-569). -->
+    <quader-page-header heading="Endpoints" i18n-heading="@@ep.list.heading" [description]="hint" />
 
     <quader-data-table
       [caption]="caption"
@@ -31,7 +29,7 @@ import { PageHeader } from '../../shared/ui/page-header';
       [error]="failure()"
       [empty]="rows().length === 0"
       i18n-emptyText="@@ep.list.empty"
-      emptyText="No endpoint is configured."
+      emptyText="There is no endpoint yet."
       (retry)="endpoints.reload()"
     >
       @for (e of rows(); track e.name) {
@@ -48,14 +46,22 @@ import { PageHeader } from '../../shared/ui/page-header';
             <td translate="no">{{ c.surface.join(', ') }}</td>
             <td>
               @if (c.exposure === 'all') {
-                <span class="material-icons inline warn" aria-hidden="true">warning</span>
-                <span i18n="@@ep.mode.all">all (rules have no effect)</span>
+                <span class="warn"
+                  ><span class="material-icons" aria-hidden="true">warning</span
+                  ><ng-container i18n="@@ep.mode.all">all (rules have no effect)</ng-container></span
+                >
               } @else {
                 <span i18n="@@ep.mode.rules">rules</span>
               }
             </td>
             <td class="num">{{ e.ruleCount }} ({{ e.enabledRuleCount }})</td>
-            <td translate="no">{{ c.pool ?? '–' }}</td>
+            <td translate="no">
+              @if (c.pool; as pool) {
+                {{ pool }}
+              } @else {
+                <quader-no-value />
+              }
+            </td>
           } @else {
             <td colspan="4">
               <span i18n="@@ep.inert.text"
@@ -63,7 +69,7 @@ import { PageHeader } from '../../shared/ui/page-header';
               >
             </td>
             <td class="num">{{ e.ruleCount }} ({{ e.enabledRuleCount }})</td>
-            <td></td>
+            <td><quader-no-value /></td>
           }
         </tr>
       }
@@ -87,6 +93,7 @@ export class EndpointList {
 
   protected readonly sort = signal<TableSort>({ column: 'name', direction: 'asc' });
   protected readonly caption = $localize`:@@ep.list.caption:Endpoints`;
+  protected readonly hint = $localize`:@@ep.list.hint:Endpoints come from the configuration file. Exposure rules decide what an endpoint in mode "rules" makes retrievable.`;
   protected readonly columns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@ep.col.name:Name`, sortable: true },
     { id: 'baseUrl', label: $localize`:@@ep.col.base-url:Base URL` },

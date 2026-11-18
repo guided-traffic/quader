@@ -7,6 +7,13 @@ const names = (root: HTMLElement): (string | undefined)[] =>
   [...root.querySelectorAll('tbody tr th a')].map((a) => a.textContent?.trim());
 
 describe('Endpoint list table (R-EP-017)', () => {
+  it('R-UI-145 Q-UI-569 the sentence under the title is the header\'s description, as on every page', async () => {
+    const { root } = await renderScreen(EndpointList);
+    const description = root.querySelector('quader-page-header .page-header-description')!;
+    expect(description.textContent).toContain('Endpoints come from the configuration file.');
+    expect(root.querySelector(':scope > p.hint, quader-endpoint-list > p.hint')).toBeNull();
+  });
+
   it('R-EP-017 the name and rule-count headers sort the complete list in the browser', async () => {
     const { fixture, root } = await renderScreen(EndpointList, {
       setup: (get) => {

@@ -1,3 +1,4 @@
+import { NoValue } from '../../shared/ui/no-value';
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, LOCALE_ID, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { QuaderDialog } from '../../shared/ui/dialog';
@@ -35,7 +36,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
  */
 @Component({
   selector: 'quader-bastion-card',
-  imports: [DatePipe, DataTable, ErrorNotice, TokenSecret],
+  imports: [DatePipe, DataTable, ErrorNotice, NoValue, TokenSecret],
   template: `
     <section class="card" [attr.aria-labelledby]="headingId()">
       <h2 [id]="headingId()" translate="no">{{ bastion().name }}</h2>
@@ -99,10 +100,22 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
           <tr>
             <th scope="row" translate="no">{{ c.replica }}</th>
             <td>{{ c.contactAt | date: 'medium' }}</td>
-            <td translate="no">{{ c.clientAddress || '–' }}</td>
+            <td translate="no">
+              @if (c.clientAddress; as v) {
+                {{ v }}
+              } @else {
+                <quader-no-value />
+              }
+            </td>
             <td translate="no">{{ c.release }}</td>
             <td translate="no">{{ c.interfaceVersion }}</td>
-            <td translate="no">{{ c.baseUrl || '–' }}</td>
+            <td translate="no">
+              @if (c.baseUrl; as v) {
+                {{ v }}
+              } @else {
+                <quader-no-value />
+              }
+            </td>
           </tr>
         }
       </quader-data-table>

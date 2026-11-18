@@ -24,8 +24,8 @@
         <note category="location">src/app/features/system/system-status.html:364,367</note>
       </notes>
       <segment>
-        <source>absent</source>
-        <target>fehlt</target>
+        <source>Absent</source>
+        <target>Fehlt</target>
       </segment>
     </unit>
     <unit id="project.saved">
@@ -380,18 +380,6 @@
       <segment>
         <source> (visibility)</source>
         <target> (Sichtbarkeit)</target>
-      </segment>
-    </unit>
-    <unit id="repo.filter.apply">
-      <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:82</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:173</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:150,153</note>
-        <note category="location">src/app/features/system/jobs-page.ts:77,80</note>
-      </notes>
-      <segment>
-        <source>Search</source>
-        <target>Suchen</target>
       </segment>
     </unit>
     <unit id="profile.preferences-hint">
@@ -1070,8 +1058,8 @@
         <note category="location">src/app/features/system/system-status.html:404,407</note>
       </notes>
       <segment>
-        <source>complete</source>
-        <target>vollständig</target>
+        <source>Complete</source>
+        <target>Vollständig</target>
       </segment>
     </unit>
     <unit id="user.advanced-hint">
@@ -1297,7 +1285,7 @@
         <note category="location">src/app/shared/access/token-table.ts:161</note>
       </notes>
       <segment>
-        <source>No tokens match.</source>
+        <source>No token matches.</source>
         <target>Kein Token passt.</target>
       </segment>
     </unit>
@@ -1844,8 +1832,8 @@
         <note category="location">src/app/features/system/backups/backups-page.html:158,160</note>
       </notes>
       <segment>
-        <source>No backup run matches the filters.</source>
-        <target>Kein Backup-Lauf passt zu den Filtern.</target>
+        <source>No backup run matches.</source>
+        <target>Kein Backup-Lauf passt.</target>
       </segment>
     </unit>
     <unit id="problem.not_applicable">
@@ -1889,7 +1877,7 @@
         <note category="location">src/app/features/endpoints/endpoint-list.ts:20,24</note>
       </notes>
       <segment>
-        <source> Endpoints come from the configuration file. Exposure rules decide what an endpoint in mode &quot;rules&quot; makes retrievable. </source>
+        <source>Endpoints come from the configuration file. Exposure rules decide what an endpoint in mode &quot;rules&quot; makes retrievable.</source>
         <target>Endpunkte kommen aus der Konfigurationsdatei. Freigaberegeln bestimmen, was ein Endpunkt im Modus „rules“ abrufbar macht.</target>
       </segment>
     </unit>
@@ -2532,8 +2520,8 @@
         <note category="location">src/app/features/endpoints/endpoint-list.ts:34,35</note>
       </notes>
       <segment>
-        <source>No endpoint is configured.</source>
-        <target>Es ist kein Endpunkt konfiguriert.</target>
+        <source>There is no endpoint yet.</source>
+        <target>Es gibt noch keinen Endpunkt.</target>
       </segment>
     </unit>
     <unit id="route.groups.title">
@@ -2689,8 +2677,8 @@
         <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:205</note>
       </notes>
       <segment>
-        <source>No advisory source is configured.</source>
-        <target>Es ist keine Advisory-Quelle konfiguriert.</target>
+        <source>There is no advisory source yet.</source>
+        <target>Es gibt noch keine Advisory-Quelle.</target>
       </segment>
     </unit>
     <unit id="confirm.cancel">
@@ -2989,8 +2977,8 @@
         <note category="location">src/app/features/bastions/bastion-list.ts:43</note>
       </notes>
       <segment>
-        <source>No Bastion is registered.</source>
-        <target>Es ist keine Bastion registriert.</target>
+        <source>There is no Bastion yet.</source>
+        <target>Es gibt noch keine Bastion.</target>
       </segment>
     </unit>
     <unit id="sa-create.submit">
@@ -6785,8 +6773,8 @@
         <note category="location">src/app/features/users/user-create-dialog.ts:24,25</note>
       </notes>
       <segment>
-        <source>Add user</source>
-        <target>Benutzer hinzufügen</target>
+        <source>New user</source>
+        <target>Neuer Benutzer</target>
       </segment>
     </unit>
     <unit id="backups.phase.pruning">
@@ -7285,8 +7273,8 @@
         <note category="location">src/app/features/system/system-status.html:372,374</note>
       </notes>
       <segment>
-        <source>active</source>
-        <target>aktiv</target>
+        <source>Active</source>
+        <target>Aktiv</target>
       </segment>
     </unit>
     <unit id="sa.enable-note">
@@ -7586,8 +7574,8 @@
         <note category="location">src/app/features/users/user-list.html:2,3</note>
       </notes>
       <segment>
-        <source>Add user</source>
-        <target>Benutzer hinzufügen</target>
+        <source>New user</source>
+        <target>Neuer Benutzer</target>
       </segment>
     </unit>
     <unit id="pkg.tab.details">
@@ -7768,8 +7756,8 @@
         <note category="location">src/app/features/system/system-status.html:360,362</note>
       </notes>
       <segment>
-        <source>failed</source>
-        <target>fehlgeschlagen</target>
+        <source>Failed</source>
+        <target>Fehlgeschlagen</target>
       </segment>
     </unit>
     <unit id="ep.field.prereleases">
@@ -9881,8 +9869,8 @@
         <note category="location">src/app/features/system/system-status.html:196,197</note>
       </notes>
       <segment>
-        <source>ready</source>
-        <target>bereit</target>
+        <source>Ready</source>
+        <target>Bereit</target>
       </segment>
     </unit>
     <unit id="ep.field.tags">
@@ -10148,8 +10136,8 @@
         <note category="location">src/app/features/system/system-status.html:208,209</note>
       </notes>
       <segment>
-        <source>unready</source>
-        <target>nicht bereit</target>
+        <source>Unready</source>
+        <target>Nicht bereit</target>
       </segment>
     </unit>
     <unit id="system.loading">
@@ -12182,8 +12170,8 @@
         <note category="location">src/app/features/tokens/token-admin.ts:57</note>
       </notes>
       <segment>
-        <source>No active tokens.</source>
-        <target>Keine aktiven Tokens.</target>
+        <source>There is no active token yet.</source>
+        <target>Es gibt noch kein aktives Token.</target>
       </segment>
     </unit>
     <unit id="project-sas.caption">
@@ -12348,8 +12336,8 @@
         <note category="location">src/app/features/system/system-status.html:85,87</note>
       </notes>
       <segment>
-        <source>supported</source>
-        <target>unterstützt</target>
+        <source>Supported</source>
+        <target>Unterstützt</target>
       </segment>
     </unit>
     <unit id="system.role.no-packages">
@@ -13615,8 +13603,8 @@
         <note category="location">src/app/features/system/system-status.html:400,401</note>
       </notes>
       <segment>
-        <source>lacks</source>
-        <target>es fehlt</target>
+        <source>Lacks</source>
+        <target>Es fehlt</target>
       </segment>
     </unit>
     <unit id="backups.detail.warnings">
@@ -14520,8 +14508,8 @@
         <note category="location">src/app/features/tokens/token-admin.html:1</note>
       </notes>
       <segment>
-        <source>Token administration</source>
-        <target>Token-Verwaltung</target>
+        <source>Tokens</source>
+        <target>Tokens</target>
       </segment>
     </unit>
     <unit id="ep.syntax.starstar">
@@ -15214,8 +15202,8 @@
         <note category="location">src/app/features/repositories/repository-list.ts:172</note>
       </notes>
       <segment>
-        <source>No repository matches the filters.</source>
-        <target>Kein Repository passt zu den Filtern.</target>
+        <source>No repository matches.</source>
+        <target>Kein Repository passt.</target>
       </segment>
     </unit>
     <unit id="auth-settings.pat">
@@ -17068,8 +17056,8 @@
         <note category="location">src/app/features/ci/issuer-list.ts:44,46</note>
       </notes>
       <segment>
-        <source>No CI issuer is registered yet.</source>
-        <target>Es ist noch kein CI-Aussteller registriert.</target>
+        <source>There is no CI issuer yet.</source>
+        <target>Es gibt noch keinen CI-Aussteller.</target>
       </segment>
     </unit>
     <unit id="jobs.caption">
@@ -17461,8 +17449,8 @@
         <note category="location">src/app/features/tokens/tokens.routes.ts:7</note>
       </notes>
       <segment>
-        <source>Token administration</source>
-        <target>Token-Verwaltung</target>
+        <source>Tokens</source>
+        <target>Tokens</target>
       </segment>
     </unit>
     <unit id="vuln.filter.project">
@@ -17733,9 +17721,9 @@
       </notes>
       <segment>
         <source>
-          A source in the mode repository reads its files from a generic local repository, with no network access. Download each file on a machine that is connected, then upload it with any client that writes to the file API. Upload each file to the mirror repository named in the command (the setting vulnerabilities.sources.osv.repository, and vulnerabilities.sources.kev.repository for the catalog). Whoever may deploy to that repository decides the advisory data of this installation.
+          A source in the mode <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">repository</pc> reads its files from a generic local repository, with no network access. Download each file on a machine that is connected, then upload it with any client that writes to the file API. Upload each file to the mirror repository named in the command (the setting <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.osv.repository</pc>, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.kev.repository</pc> for the catalog). Whoever may deploy to that repository decides the advisory data of this installation.
         </source>
-        <target>Eine Quelle im Modus repository liest ihre Dateien aus einem lokalen generischen Repository, ohne Netzzugriff. Laden Sie jede Datei auf einem Rechner mit Verbindung herunter und laden Sie sie dann mit einem beliebigen Client hoch, der in die Datei-API schreibt. Laden Sie jede Datei in das Spiegel-Repository hoch, das der Befehl nennt (die Einstellung vulnerabilities.sources.osv.repository, für den Katalog vulnerabilities.sources.kev.repository). Wer in dieses Repository veröffentlichen darf, bestimmt die Advisory-Daten dieser Installation.</target>
+        <target>Eine Quelle im Modus <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">repository</pc> liest ihre Dateien aus einem lokalen generischen Repository, ohne Netzzugriff. Laden Sie jede Datei auf einem Rechner mit Verbindung herunter und laden Sie sie dann mit einem beliebigen Client hoch, der in die Datei-API schreibt. Laden Sie jede Datei in das Spiegel-Repository hoch, das der Befehl nennt (die Einstellung <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.osv.repository</pc>, für den Katalog <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.kev.repository</pc>). Wer in dieses Repository veröffentlichen darf, bestimmt die Advisory-Daten dieser Installation.</target>
       </segment>
     </unit>
     <unit id="policy.general">
@@ -17807,7 +17795,7 @@
         <note category="location">src/app/features/audit/audit-labels.ts:384</note>
       </notes>
       <segment>
-        <source>success</source>
+        <source>Success</source>
         <target>Erfolg</target>
       </segment>
     </unit>
@@ -18390,8 +18378,8 @@
         <note category="location">src/app/features/repositories/repository-list.html:10,13</note>
       </notes>
       <segment>
-        <source>Create repository</source>
-        <target>Repository anlegen</target>
+        <source>New repository</source>
+        <target>Neues Repository</target>
       </segment>
     </unit>
     <unit id="repo.tab.ansible-imports">
@@ -20208,8 +20196,8 @@
         <note category="location">src/app/features/system/jobs-page.ts:85,87</note>
       </notes>
       <segment>
-        <source>No job matches the filters.</source>
-        <target>Kein Job passt zu den Filtern.</target>
+        <source>No job matches.</source>
+        <target>Kein Job passt.</target>
       </segment>
     </unit>
     <unit id="token-secret.show">
@@ -20480,8 +20468,8 @@
         <note category="location">src/app/features/system/system-status.html:191,192</note>
       </notes>
       <segment>
-        <source>lost</source>
-        <target>verloren</target>
+        <source>Lost</source>
+        <target>Verloren</target>
       </segment>
     </unit>
     <unit id="repo.content.items">
@@ -21993,8 +21981,8 @@
         <note category="location">src/app/features/system/system-status.html:234,235</note>
       </notes>
       <segment>
-        <source>available</source>
-        <target>verfügbar</target>
+        <source>Available</source>
+        <target>Verfügbar</target>
       </segment>
     </unit>
     <unit id="dashboard.projects">
@@ -24444,8 +24432,8 @@
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:582,583</note>
       </notes>
       <segment>
-        <source>yes</source>
-        <target>ja</target>
+        <source>Yes</source>
+        <target>Ja</target>
       </segment>
     </unit>
     <unit id="ci.form.issuer-hint">
@@ -24471,8 +24459,8 @@
         <note category="location">src/app/features/audit/audit-log.html:111,112</note>
       </notes>
       <segment>
-        <source>No event matches the filters in this time range.</source>
-        <target>Kein Ereignis passt zu den Filtern in diesem Zeitraum.</target>
+        <source>No event matches.</source>
+        <target>Kein Ereignis passt.</target>
       </segment>
     </unit>
     <unit id="problem.format_not_exposable">
@@ -24859,8 +24847,8 @@
         <note category="location">src/app/features/system/system-status.html:88,91</note>
       </notes>
       <segment>
-        <source>not supported by this build</source>
-        <target>von diesem Build nicht unterstützt</target>
+        <source>Not supported by this build</source>
+        <target>Von diesem Build nicht unterstützt</target>
       </segment>
     </unit>
     <unit id="repo.field.notes-text">
@@ -26235,8 +26223,8 @@
         <note category="location">src/app/features/system/system-status.html:200,201</note>
       </notes>
       <segment>
-        <source>starting</source>
-        <target>startet</target>
+        <source>Starting</source>
+        <target>Startet</target>
       </segment>
     </unit>
     <unit id="ansible.imports.col.state">
@@ -26908,8 +26896,8 @@
         <note category="location">src/app/features/system/system-status.html:204,205</note>
       </notes>
       <segment>
-        <source>draining</source>
-        <target>wird geleert</target>
+        <source>Draining</source>
+        <target>Wird geleert</target>
       </segment>
     </unit>
     <unit id="ci.editor.reads-as">
@@ -28080,8 +28068,8 @@
         <note category="location">src/app/features/system/jobs-page.ts:53,55</note>
       </notes>
       <segment>
-        <source>Kind (comma separated)</source>
-        <target>Art (kommagetrennt)</target>
+        <source>Kind</source>
+        <target>Art</target>
       </segment>
     </unit>
     <unit id="upload.caption">
@@ -29150,8 +29138,8 @@
         <note category="location">src/app/features/audit/audit-labels.ts:388</note>
       </notes>
       <segment>
-        <source>denied</source>
-        <target>abgelehnt</target>
+        <source>Denied</source>
+        <target>Abgelehnt</target>
       </segment>
     </unit>
     <unit id="ep.dim.tags">
@@ -29515,7 +29503,7 @@
         <note category="location">src/app/features/audit/audit-labels.ts:386</note>
       </notes>
       <segment>
-        <source>failure</source>
+        <source>Failure</source>
         <target>Fehler</target>
       </segment>
     </unit>
@@ -29734,8 +29722,8 @@
         <note category="location">src/app/features/users/user-create-dialog.ts:62,64</note>
       </notes>
       <segment>
-        <source>Add user</source>
-        <target>Benutzer hinzufügen</target>
+        <source>Create user</source>
+        <target>Benutzer anlegen</target>
       </segment>
     </unit>
     <unit id="ep.syntax.backslash">
@@ -30478,8 +30466,8 @@
         <note category="location">src/app/features/system/system-status.html:356,358</note>
       </notes>
       <segment>
-        <source>ok</source>
-        <target>ok</target>
+        <source>OK</source>
+        <target>OK</target>
       </segment>
     </unit>
     <unit id="ci.editor.grants-hint">
@@ -31540,7 +31528,7 @@
         <note category="location">src/app/features/system/system-status.html:376,378</note>
       </notes>
       <segment>
-        <source>re-encryption pending</source>
+        <source>Re-encryption pending</source>
         <target>Neuverschlüsselung ausstehend</target>
       </segment>
     </unit>
@@ -32951,8 +32939,8 @@
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:585,586</note>
       </notes>
       <segment>
-        <source>no</source>
-        <target>nein</target>
+        <source>No</source>
+        <target>Nein</target>
       </segment>
     </unit>
     <unit id="mirror.last.no">
@@ -33232,8 +33220,8 @@
         <note category="location">src/app/features/system/system-status.html:237,238</note>
       </notes>
       <segment>
-        <source>degraded</source>
-        <target>eingeschränkt</target>
+        <source>Degraded</source>
+        <target>Eingeschränkt</target>
       </segment>
     </unit>
     <unit id="ci.issuer.keys">
@@ -33946,6 +33934,159 @@
       <segment>
         <source>Only an administrator can make a project or a repository public.</source>
         <target>Nur ein Administrator kann ein Projekt oder ein Repository öffentlich machen.</target>
+      </segment>
+    </unit>
+    <unit id="audit.empty-none">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.ts:89</note>
+      </notes>
+      <segment>
+        <source>There is no event in the last 24 hours.</source>
+        <target>Es gibt kein Ereignis in den letzten 24 Stunden.</target>
+      </segment>
+    </unit>
+    <unit id="ci.issuances.empty-none">
+      <notes>
+        <note category="location">src/app/features/ci/issuance-list.ts:289</note>
+      </notes>
+      <segment>
+        <source>There is no CI token yet.</source>
+        <target>Es gibt noch kein CI-Token.</target>
+      </segment>
+    </unit>
+    <unit id="groups.empty-none">
+      <notes>
+        <note category="location">src/app/features/groups/group-list.ts:106</note>
+      </notes>
+      <segment>
+        <source>There is no group yet.</source>
+        <target>Es gibt noch keine Gruppe.</target>
+      </segment>
+    </unit>
+    <unit id="policies.empty-none">
+      <notes>
+        <note category="location">src/app/features/permissions/policy-list.ts:68</note>
+      </notes>
+      <segment>
+        <source>There is no policy yet.</source>
+        <target>Es gibt noch keine Richtlinie.</target>
+      </segment>
+    </unit>
+    <unit id="projects.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/projects/project-list.ts:131</note>
+      </notes>
+      <segment>
+        <source>No project matches.</source>
+        <target>Kein Projekt passt.</target>
+      </segment>
+    </unit>
+    <unit id="sas.empty-none">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:176</note>
+      </notes>
+      <segment>
+        <source>There is no service account yet.</source>
+        <target>Es gibt noch kein Dienstkonto.</target>
+      </segment>
+    </unit>
+    <unit id="backups.runs.empty-none">
+      <notes>
+        <note category="location">src/app/features/system/backups/backups-page.ts:78</note>
+      </notes>
+      <segment>
+        <source>There is no backup run yet.</source>
+        <target>Es gibt noch keinen Backup-Lauf.</target>
+      </segment>
+    </unit>
+    <unit id="job.status.queued">
+      <notes>
+        <note category="location">src/app/features/system/job-table.ts:15</note>
+      </notes>
+      <segment>
+        <source>Queued</source>
+        <target>Wartend</target>
+      </segment>
+    </unit>
+    <unit id="job.status.running">
+      <notes>
+        <note category="location">src/app/features/system/job-table.ts:17</note>
+      </notes>
+      <segment>
+        <source>Running</source>
+        <target>Läuft</target>
+      </segment>
+    </unit>
+    <unit id="job.status.cancelling">
+      <notes>
+        <note category="location">src/app/features/system/job-table.ts:19</note>
+      </notes>
+      <segment>
+        <source>Cancelling</source>
+        <target>Wird abgebrochen</target>
+      </segment>
+    </unit>
+    <unit id="job.status.succeeded">
+      <notes>
+        <note category="location">src/app/features/system/job-table.ts:21</note>
+      </notes>
+      <segment>
+        <source>Succeeded</source>
+        <target>Erfolgreich</target>
+      </segment>
+    </unit>
+    <unit id="job.status.failed">
+      <notes>
+        <note category="location">src/app/features/system/job-table.ts:23</note>
+      </notes>
+      <segment>
+        <source>Failed</source>
+        <target>Fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="job.status.cancelled">
+      <notes>
+        <note category="location">src/app/features/system/job-table.ts:25</note>
+      </notes>
+      <segment>
+        <source>Cancelled</source>
+        <target>Abgebrochen</target>
+      </segment>
+    </unit>
+    <unit id="jobs.filter.kind-hint">
+      <notes>
+        <note category="location">src/app/features/system/jobs-page.ts:82,84</note>
+      </notes>
+      <segment>
+        <source>Several kinds separated by commas: gc, gc-full</source>
+        <target>Mehrere Arten durch Kommas getrennt: gc, gc-full</target>
+      </segment>
+    </unit>
+    <unit id="jobs.empty-none">
+      <notes>
+        <note category="location">src/app/features/system/jobs-page.ts:145</note>
+      </notes>
+      <segment>
+        <source>There is no job yet.</source>
+        <target>Es gibt noch keinen Job.</target>
+      </segment>
+    </unit>
+    <unit id="users.empty-none">
+      <notes>
+        <note category="location">src/app/features/users/user-list.ts:63</note>
+      </notes>
+      <segment>
+        <source>There is no user yet.</source>
+        <target>Es gibt noch keinen Benutzer.</target>
+      </segment>
+    </unit>
+    <unit id="no-value">
+      <notes>
+        <note category="location">src/app/shared/ui/no-value.ts:10,11</note>
+      </notes>
+      <segment>
+        <source>None</source>
+        <target>Keine Angabe</target>
       </segment>
     </unit>
   </file>

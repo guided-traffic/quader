@@ -118,44 +118,32 @@
 
   <section class="block" aria-labelledby="bk-runs">
     <h2 id="bk-runs" i18n="@@backups.runs.heading">Runs</h2>
-    <form class="toolbar" role="search" (submit)="apply($event)">
-      <div class="field">
-        <label class="field-label" for="bk-op" i18n="@@backups.filter.operation">Operation</label>
-        <select
-          id="bk-op"
-          class="select-input"
-          [value]="operationDraft()"
-          (change)="operationDraft.set($any($event.target).value)"
-        >
-          <option value="" [selected]="operationDraft() === ''" i18n="@@backups.filter.any">Any</option>
-          @for (o of operations; track o) {
-            <option [value]="o" [selected]="operationDraft() === o">{{ operationText(o) }}</option>
-          }
-        </select>
-      </div>
-      <div class="field">
-        <label class="field-label" for="bk-state" i18n="@@backups.filter.state">State</label>
-        <select
-          id="bk-state"
-          class="select-input"
-          [value]="stateDraft()"
-          (change)="stateDraft.set($any($event.target).value)"
-        >
-          <option value="" [selected]="stateDraft() === ''" i18n="@@backups.filter.any">Any</option>
-          @for (st of states; track st) {
-            <option [value]="st" [selected]="stateDraft() === st">{{ stateName(st) }}</option>
-          }
-        </select>
-      </div>
-      <button class="btn btn-confirm" type="submit" i18n="@@repo.filter.apply">Search</button>
-    </form>
+    <!-- The runs have no search by name; the head is Filters and the filters that are set (Q-UI-420, Q-UI-566). -->
+    <quader-list-head [chips]="chips()" (removeChip)="removeChip($event)" [(filtersOpen)]="panelOpen" [controls]="panel.panelId" />
+    <quader-filter-panel
+      #panel
+      [(open)]="panelOpen"
+      [activeCount]="chips().length"
+      (apply)="apply()"
+      (clearAll)="clear()"
+      (dismissed)="restage()"
+    >
+      <quader-select-field
+        i18n-label="@@backups.filter.operation"
+        label="Operation"
+        name="operation"
+        [options]="operationOptions"
+        [(value)]="operationDraft"
+      />
+      <quader-select-field i18n-label="@@backups.filter.state" label="State" name="state" [options]="stateOptions" [(value)]="stateDraft" />
+    </quader-filter-panel>
 
     @if (runs.error(); as f) {
       <quader-error-notice [error]="f" (retry)="refresh()" />
     }
     @if (runs.loaded()) {
       @if (runs.items().length === 0) {
-        <p class="empty" i18n="@@backups.runs.empty">No backup run matches the filters.</p>
+        <quader-empty-state [text]="chips().length > 0 ? noMatch : noRun" />
       } @else {
         <div class="scroll" tabindex="0" role="region" [attr.aria-label]="caption">
           <table class="data">
@@ -171,9 +159,9 @@
                 <th scope="col" i18n="@@backups.col.backup-id">Backup ID</th>
                 <th scope="col" i18n="@@backups.col.snapshot">Snapshot</th>
                 <th scope="col" i18n="@@backups.col.duration">Duration</th>
-                <th scope="col" i18n="@@backups.col.database">Database</th>
-                <th scope="col" i18n="@@backups.col.blobs-copied">Blobs copied</th>
-                <th scope="col" i18n="@@backups.col.warnings">Warnings</th>
+                <th scope="col" class="num" i18n="@@backups.col.database">Database</th>
+                <th scope="col" class="num" i18n="@@backups.col.blobs-copied">Blobs copied</th>
+                <th scope="col" class="num" i18n="@@backups.col.warnings">Warnings</th>
                 <th scope="col" i18n="@@repo.col.actions">Actions</th>
               </tr>
             </thead>
@@ -186,18 +174,42 @@
                   <td>{{ operationText(r.operation) }}</td>
                   <td translate="no">{{ r.pod }}</td>
                   <td><quader-backup-state [state]="r.state" [leaseExpired]="r.leaseExpired" [showHint]="true" /></td>
-                  <td translate="no">{{ r.backupId ?? '–' }}</td>
+                  <td translate="no">
+                    @if (r.backupId; as v) {
+                      {{ v }}
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </td>
                   <td>
                     @if (r.snapshotAt) {
                       <time [attr.datetime]="r.snapshotAt">{{ r.snapshotAt | date: 'medium' }}</time>
                     } @else {
-                      –
+                      <quader-no-value />
                     }
                   </td>
-                  <td translate="no">{{ duration(r) }}</td>
-                  <td translate="no">{{ databaseBytes(r) }}</td>
-                  <td translate="no">{{ blobsCopied(r) }}</td>
-                  <td translate="no">{{ resultWarnings(r).length }}</td>
+                  <td translate="no">
+                    @if (duration(r); as v) {
+                      {{ v }}
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </td>
+                  <td class="num" translate="no">
+                    @if (databaseBytes(r); as v) {
+                      {{ v }}
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </td>
+                  <td class="num" translate="no">
+                    @if (blobsCopied(r); as v) {
+                      {{ v }}
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </td>
+                  <td class="num" translate="no">{{ resultWarnings(r).length }}</td>
                   <td>
                     <button
                       class="btn btn-tertiary"
@@ -320,9 +332,9 @@
                 <th scope="col" i18n="@@backups.col.snapshot">Snapshot</th>
                 <th scope="col" i18n="@@backups.stored.version">Quader version</th>
                 <th scope="col" i18n="@@backups.stored.schema">Schema step</th>
-                <th scope="col" i18n="@@backups.col.database">Database</th>
-                <th scope="col" i18n="@@backups.stored.blobs">Blobs</th>
-                <th scope="col" i18n="@@backups.stored.blob-size">Blob size</th>
+                <th scope="col" class="num" i18n="@@backups.col.database">Database</th>
+                <th scope="col" class="num" i18n="@@backups.stored.blobs">Blobs</th>
+                <th scope="col" class="num" i18n="@@backups.stored.blob-size">Blob size</th>
                 <th scope="col" i18n="@@backups.stored.damaged">Damaged</th>
               </tr>
             </thead>
@@ -333,9 +345,9 @@
                   <td><time [attr.datetime]="b.snapshotAt">{{ b.snapshotAt | date: 'medium' }}</time></td>
                   <td translate="no">{{ b.quaderVersion }}</td>
                   <td translate="no">{{ b.schemaStep }}</td>
-                  <td translate="no">{{ formatSize(b.databaseBytes) }}</td>
-                  <td translate="no">{{ b.blobCount }}</td>
-                  <td translate="no">{{ formatSize(b.blobBytes) }}</td>
+                  <td class="num" translate="no">{{ formatSize(b.databaseBytes) }}</td>
+                  <td class="num" translate="no">{{ b.blobCount }}</td>
+                  <td class="num" translate="no">{{ formatSize(b.blobBytes) }}</td>
                   <td>
                     @if (b.damaged) {
                       <span class="badge bad">
@@ -343,7 +355,7 @@
                         <ng-container i18n="@@backups.stored.damaged-mark">Damaged</ng-container>
                       </span>
                     } @else {
-                      –
+                      <quader-no-value />
                     }
                   </td>
                 </tr>

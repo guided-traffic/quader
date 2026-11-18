@@ -21,6 +21,22 @@ describe('Service accounts (R-UI-026)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
+  it('Q-UI-424 Q-UI-561 a project\'s account names its project by its mark and its name; an account of no project has the dash', async () => {
+    const { root } = await renderScreen(ServiceAccountList, {
+      setup: (get) => {
+        const identity = get(IdentityApi) as FakeIdentityApi;
+        identity.accounts = [
+          { ...identity.accounts[0]!, project: 'web-frontend', description: '' },
+          { ...identity.accounts[0]!, id: 'sa-2', name: 'ops', principal: 'sa:ops', project: null },
+        ];
+      },
+    });
+    const [first, second] = [...root.querySelectorAll('tbody tr')];
+    expect(first!.querySelector('td quader-project-link quader-project-mark')).toBeTruthy();
+    expect(first!.querySelectorAll('td quader-no-value')).toHaveLength(1);
+    expect(second!.querySelectorAll('td quader-no-value')).toHaveLength(1);
+  });
+
   it('R-UI-026 creates a service account with an idempotency key', async () => {
     const { fixture, root, get } = await renderScreen(ServiceAccountList);
     buttonByText(root, 'New service account').click();

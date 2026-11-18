@@ -381,11 +381,11 @@ export function categoryLabel(category: string): string {
 export function outcomeLabel(outcome: string): string {
   switch (outcome) {
     case 'success':
-      return $localize`:@@audit.outcome.success:success`;
+      return $localize`:@@audit.outcome.success:Success`;
     case 'failure':
-      return $localize`:@@audit.outcome.failure:failure`;
+      return $localize`:@@audit.outcome.failure:Failure`;
     case 'denied':
-      return $localize`:@@audit.outcome.denied:denied`;
+      return $localize`:@@audit.outcome.denied:Denied`;
     default:
       return outcome;
   }

@@ -87,13 +87,25 @@
               <td class="wrap">
                 <a [routerLink]="repositoryLink(rule.repository)" translate="no">{{ rule.repository }}</a>
               </td>
-              <td class="wrap" translate="no">{{ summary(rule) || '–' }}</td>
-              <td class="wrap narrow-drop" translate="no">{{ versions(rule) || '–' }}</td>
+              <td class="wrap" translate="no">
+                @if (summary(rule); as v) {
+                  {{ v }}
+                } @else {
+                  <quader-no-value />
+                }
+              </td>
+              <td class="wrap narrow-drop" translate="no">
+                @if (versions(rule); as v) {
+                  {{ v }}
+                } @else {
+                  <quader-no-value />
+                }
+              </td>
               <td class="narrow-drop">
                 @if (rule.prereleases) {
-                  <ng-container i18n="@@ep.yes">yes</ng-container>
+                  <ng-container i18n="@@ep.yes">Yes</ng-container>
                 } @else {
-                  <ng-container i18n="@@ep.no">no</ng-container>
+                  <ng-container i18n="@@ep.no">No</ng-container>
                 }
               </td>
               <td>

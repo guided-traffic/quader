@@ -23,7 +23,7 @@ function asProjectAdministrator() {
 }
 
 describe('Projects overview (R-UI-041)', () => {
-  it('R-UI-041 lists key, display name, Owners, members, repositories and the own role, and passes axe', async () => {
+  it('R-UI-041 R-UI-146 Q-UI-577 lists key, display name, Owners, members, repositories and storage, not the own role, and passes axe', async () => {
     const { root } = await renderScreen(ProjectList, {
       setup: (get) => {
         (get(ProjectsApi) as FakeProjectsApi).projects = [
@@ -40,9 +40,25 @@ describe('Projects overview (R-UI-041)', () => {
     // The Owners are named, not referenced (UI-A-27).
     expect(text(rows[1]!)).toContain('web-leads');
     expect(text(rows[1]!)).not.toContain('group:web-leads');
-    expect(text(rows[1]!)).toContain('Owner');
+    // The caller's role is no column of the admin area's list (owner, 2026-11-18).
+    const heads = [...root.querySelectorAll('thead th')].map((h) => text(h).replace('help_outline', '').trim());
+    expect(heads).not.toContain('Your role');
+    expect(text(rows[1]!)).not.toContain('Owner');
     expect(text(rows[1]!)).not.toContain('Policies: on');
     expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-UI-146 Q-UI-574 Q-UI-561 the counts and the size stand at their column\'s end; no Owners is the dash', async () => {
+    const { root } = await renderScreen(ProjectList, {
+      setup: (get) => {
+        (get(ProjectsApi) as FakeProjectsApi).projects = [sampleProject({ key: 'data', displayName: 'Data', owners: [], members: 0 })];
+      },
+    });
+    const heads = [...root.querySelectorAll('thead th')].map((h) => [text(h).replace('help_outline', '').trim(), h.classList.contains('num')]);
+    expect(heads.filter(([, num]) => num).map(([label]) => label)).toEqual(['Members', 'Repositories', 'Storage']);
+    const row = root.querySelector('tbody tr')!;
+    expect(row.querySelectorAll('td.num')).toHaveLength(3);
+    expect(row.querySelectorAll('td quader-no-value')).toHaveLength(1);
   });
 
   it('R-STOR-049 shows the logical size each project is charged in a column of its own', async () => {

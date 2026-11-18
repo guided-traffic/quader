@@ -70,6 +70,12 @@
   display: flex;
   align-items: flex-start;
   gap: var(--quader-space-2);
+
+  // The box keeps its 16 px beside a label of several lines: as a flex item it shrank, so a long label made a smaller box than
+  // its neighbours' (the CI issuer's **Public issuer**, 2026-11-18, Q-UI-575).
+  > input {
+    flex: none;
+  }
 }
 
 .card {
@@ -111,6 +117,15 @@ table.data {
     border-block-end: 1px solid var(--quader-border);
   }
 
+  // A control in a cell (a row's **Remove**, **Details**, a copy button) is centred on the cell's first line of text, as in the
+  // data table (Q-UI-308, Q-UI-562): top-aligned, its 32 px stood 5 px below the name beside it (a group's members, 2026-11-18).
+  // The data table's own rule, for its line of 16 px, is more specific and wins there.
+  tbody :is(th, td) > :is(.btn, quader-copy-button, .row-actions) {
+    margin-block: calc((var(--quader-text-line) * var(--quader-text-size) - var(--quader-control-height)) / 2);
+  }
+
+  // A count or a size stands at its column's end, its header too (Q-UI-574).
+  th.num,
   td.num {
     text-align: end;
     font-variant-numeric: tabular-nums;

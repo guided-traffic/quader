@@ -10,6 +10,7 @@ import { SelectField, SelectOption, TextField } from '../../shared/access/fields
 import { Confirm } from '../../shared/confirm-dialog';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { NoValue } from '../../shared/ui/no-value';
 import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -151,7 +152,7 @@ function dayStart(value: string, plusDays = 0): string | undefined {
  */
 @Component({
   selector: 'quader-ci-issuance-list',
-  imports: [DatePipe, ErrorNotice, DataTable, FilterPanel, ListHead, SelectField, TextField],
+  imports: [DatePipe, ErrorNotice, DataTable, FilterPanel, ListHead, NoValue, SelectField, TextField],
   template: `
     <!-- The issued tokens have no search by name; the head is Filters, the filters that are set and the bulk revoke (Q-UI-420). -->
     <quader-list-head [chips]="chips()" (removeChip)="removeChip($event)" [(filtersOpen)]="panelOpen" [controls]="panel.panelId">
@@ -206,8 +207,7 @@ function dayStart(value: string, plusDays = 0): string | undefined {
         [loaded]="list.loaded()"
         [loading]="list.loading()"
         [empty]="list.items().length === 0"
-        i18n-emptyText="@@ci.issuances.empty"
-        emptyText="No CI token matches."
+        [emptyText]="chips().length > 0 ? noMatch : noToken"
         [hasMore]="list.hasMore()"
         (more)="list.more()"
       >
@@ -221,16 +221,22 @@ function dayStart(value: string, plusDays = 0): string | undefined {
             <td translate="no">{{ i.mappingNames.join(', ') }}</td>
             <td translate="no" class="wrap">{{ i.projectPath ?? i.projectId }}</td>
             <td translate="no">{{ i.pipelineId ?? '–' }} / {{ i.jobId }}</td>
-            <td translate="no">{{ i.ref ?? '–' }}</td>
+            <td translate="no">
+              @if (i.ref; as ref) {
+                {{ ref }}
+              } @else {
+                <quader-no-value />
+              }
+            </td>
             <td>
               @if (i.revokedAt) {
-                <span class="bad"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@ci.issuance.revoked-short">Revoked</ng-container></span>
+                <span class="bad"><span class="material-icons" aria-hidden="true">block</span><ng-container i18n="@@ci.issuance.revoked-short">Revoked</ng-container></span>
               } @else if (i.active) {
-                <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span> <ng-container i18n="@@ci.issuance.active">Active</ng-container></span>
+                <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span><ng-container i18n="@@ci.issuance.active">Active</ng-container></span>
               } @else if (i.state === 'removed') {
-                <span class="bad"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@ci.issuance.removed-short">Removed</ng-container></span>
+                <span class="bad"><span class="material-icons" aria-hidden="true">block</span><ng-container i18n="@@ci.issuance.removed-short">Removed</ng-container></span>
               } @else {
-                <span class="muted"><span class="material-icons" aria-hidden="true">schedule</span> <ng-container i18n="@@ci.issuance.expired">Expired</ng-container></span>
+                <span class="badge"><span class="material-icons" aria-hidden="true">schedule</span><ng-container i18n="@@ci.issuance.expired">Expired</ng-container></span>
               }
             </td>
             <td class="actions">
@@ -279,6 +285,9 @@ export class IssuanceList {
   /** The drawer's values the list shows now, as they stood when they were applied. */
   private readonly staged = signal<Readonly<Record<string, string>>>({});
   /** The filters that are set, as the head's chips (Q-UI-422); a fixed issuer is the screen's, no filter. */
+  /** An empty list says there is no CI token yet; a filter that finds none says so (Q-UI-565). */
+  protected readonly noToken = $localize`:@@ci.issuances.empty-none:There is no CI token yet.`;
+  protected readonly noMatch = $localize`:@@ci.issuances.empty:No CI token matches.`;
   protected readonly chips = computed<readonly ListChip[]>(() => {
     const v = this.staged();
     const named: readonly [string, string][] = [

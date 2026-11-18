@@ -10,6 +10,7 @@ import { PagedResource } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
+import { NoValue } from '../../shared/ui/no-value';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { UserCreateDialog } from './user-create-dialog';
 import { originLabel } from './user-labels';
@@ -35,6 +36,7 @@ import { QuaderAvatar } from '../../shared/ui/avatar';
     Needs,
     SelectField,
     TextField,
+    NoValue,
     TimeAgo,
   ],
   templateUrl: './user-list.html',
@@ -57,6 +59,10 @@ export class UserList {
   /** The filters the list shows now; the drawer's fields stage the next ones. */
   protected readonly applied = signal<UserFilters>({});
   protected readonly searchLabel = $localize`:@@users.search:Filter users`;
+  /** An empty list says there is no user yet; a search or a filter that finds none says so (Q-UI-565). */
+  protected readonly noUser = $localize`:@@users.empty-none:There is no user yet.`;
+  protected readonly noMatch = $localize`:@@users.empty:No user matches.`;
+  protected readonly filtered = computed(() => !!this.applied().q || this.chips().length > 0);
   /** The filters of the drawer that are set, as the head's chips (Q-UI-422). */
   protected readonly chips = computed<readonly ListChip[]>(() => {
     const f = this.applied();

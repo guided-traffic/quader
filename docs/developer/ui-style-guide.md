@@ -62,14 +62,16 @@ Every page inside the shell has this order:
 |---|---|
 | Breadcrumb | Set by the route; a page does not draw its own |
 | Header | `<quader-page-header heading description>` ([page-header.ts](../../web/src/app/shared/ui/page-header.ts), [Q-UI-307](../spec/api-and-ui.md#q-ui-307--a-pages-own-actions-are-buttons-at-the-right-end-of-its-header-views-of-the-same-thing-are-tabs)): the `<h1 tabindex="-1">` names the object on its page (`[name]="true"` for a key or a package name) or the list's noun, with the list's number of entries as a badge after it where the page is one list (`[count]`, **Members 2**, [Q-UI-550](../spec/api-and-ui.md#q-ui-550--the-members-list-takes-the-head-and-the-table-of-every-list-and-its-count-moves-to-the-heading)); one muted sentence under it; the facts that name the object projected with `meta`; its client address where it has one (`[addresses]`). Below 36 rem of content a header with a client row (the address and **Set up client**) is one flow, and the page's actions share the line of **Set up client**, so no button stands alone on a line ([Q-UI-554](../spec/api-and-ui.md#q-ui-554--where-the-header-is-narrow-the-pages-actions-share-the-line-of-set-up-client)). A detail page names its object in the `<h1>` and its kind as a badge projected with `meta` (the user `alice` with the badge **User**), and has no link up to its list: that is the breadcrumb. The vulnerability pages still have `<header class="page-header">` |
-| Primary action | At the right end of the header (projected with `actions`), one `btn btn-confirm` (**Add member**, **Create token**). A second action of the page is a `btn btn-default` to its left; more go into a `more_vert` menu |
+| Primary action | At the right end of the header (projected with `actions`), one `btn btn-confirm`. The button that makes a new thing says **New** and the thing (**New repository**, **New user**), its dialog is titled the same and confirms with **Create** and the thing; a button that adds an existing thing to another says **Add** (**Add member**) ([Q-UI-573](../spec/api-and-ui.md#q-ui-573--the-button-that-makes-a-new-thing-says-new-thing-and-a-new-user-is-made-not-added)). **Create token** of the profile, **Create policy** and **Create service account** of a project follow when they are next changed. A second action of the page is a `btn btn-default` to its left; more go into a `more_vert` menu |
 | Tabs | Directly under the header, `tab-nav`, the count of a list as a neutral `badge` in the tab. Another view of the same object (its files, its vulnerabilities) is a tab or an entry of the header's menu, never a quiet link in the header. A job has one way to it: the client setup is the header's **Set up client**, which opens the setup page for the object, not also a tab ([Q-UI-321](../spec/api-and-ui.md#q-ui-321--a-repositorys-client-setup-is-reached-one-way-the-headers-set-up-client-opens-the-setup-for-the-repository)) |
 | Head of a list | Under the tabs, one row, `<quader-list-head>` ([R-UI-100](../spec/api-and-ui.md#r-ui-100--the-head-of-every-list-the-search-by-name-filters-and-the-filters-that-are-set)): the search by name (**Filter repositories**, as wide as a name), **Filters**, the filters that are set as chips, and the list's own controls at the row's end. **Filters** opens the list's drawer ([Q-UI-420](../spec/api-and-ui.md#q-ui-420--the-filters-of-a-list-open-in-a-drawer-from-the-right-over-the-page)); the list keeps its width |
 | Content | A table, a form or sections, as below |
 | Details | What only a power user or an administrator needs, last, in one closed `<quader-disclosure>` **Details** (see [Opening and closing](#opening-and-closing)) |
 
-One `<h1>` per page. Page titles are nouns (**Members**, **Settings**), in sentence case. The description is one sentence;
-what would need a second one belongs in the [manual](manual.md).
+One `<h1>` per page. Page titles are nouns (**Members**, **Settings**), in sentence case, and the same as the page's entry in the
+side bar (**Tokens**). The description is one sentence, the header's `description`, never a paragraph of its own after the header
+([Q-UI-569](../spec/api-and-ui.md#q-ui-569--the-sentence-under-a-title-is-the-headers-description)); what would need a second one belongs in the
+[manual](manual.md).
 
 ## Lists
 
@@ -78,7 +80,15 @@ what would need a second one belongs in the [manual](manual.md).
 - A table without a frame, hairlines between rows, the head at weight 600. `<quader-data-table>` where the list is paged.
 - **The first column names the thing.** It is a `<th scope="row">`. A person or group is an avatar of 48 px, the name at weight
   600 on the first line and the `@username` or its kind muted on the second.
-- **A status is a badge** with an icon and a word, never colour alone. `ok` is green and means a positive status only.
+- **A status is a badge** with an icon and a word, never colour alone: `<span class="ok|warn|bad|badge"><span class="material-icons">…</span>Word</span>`,
+  one element that never breaks, its word with a capital (**Succeeded**, **Denied**). `ok` is green and means a positive status only.
+  An icon never stands directly in a table cell: a status is the badge, an icon before a text that may wrap is `.icon-name`
+  (`status-rule.mjs` fails the lint otherwise; [Q-UI-560](../spec/api-and-ui.md#q-ui-560--an-icon-in-a-table-cell-is-one-element-with-its-word),
+  [Q-UI-564](../spec/api-and-ui.md#q-ui-564--a-status-word-starts-with-a-capital)).
+- **A cell without a value** is `<quader-no-value />`: the en dash, heard as "None", never an empty cell and never a bare "–"
+  ([Q-UI-561](../spec/api-and-ui.md#q-ui-561--a-cell-without-a-value-is-the-en-dash-heard-as-none)).
+- **A count or a size** stands at its column's end: `numeric: true` in a data table, `num` on a raw table's header and cells
+  ([Q-UI-574](../spec/api-and-ui.md#q-ui-574--a-count-or-a-size-stands-at-its-columns-end)).
 - **A package format is its icon and its name**, never the icon alone: `<quader-format-icon [format]>` beside the display name,
   sized by the place's `font-size` (20 px in a list, 16 px in a badge, 32 px on a tile). The icon is the format owner's logo
   where the owner's terms allow it, else the neutral `inventory_2`
@@ -98,6 +108,13 @@ what would need a second one belongs in the [manual](manual.md).
   format, class, and **Set up client** at the row's end; in the admin area (manage) repository, project, format, class,
   visibility, last activity, and the address as a copy button. No list has an address column: an address means nothing without
   its client ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)). Judge a render by that first, and only then by widths and scrolling.
+- **A column is as wide as its content** ([Q-UI-563](../spec/api-and-ui.md#q-ui-563--a-column-is-as-wide-as-its-content-what-never-breaks-declares-no-width-and-the-columns-that-wrap-share-the-room)):
+  a column whose values never break (a format, a class, a level, a time, a status, an identifier, the actions) declares no `width`;
+  a column whose values wrap (a name, a description, a project, a scope) declares its least, and those share the rest by their
+  content. Only a list with one wrapping column lets it `prefer`. A row's header that is an identifier carries `translate="no"`
+  and stays on one line; a value longer than any column (a UUID) is cut on one line with its whole value as its `title`, a hash
+  is its first twelve characters in `<code>` with the whole as its title. The rest of this item holds where it does not
+  contradict this.
 - **The list's budget is its columns' widths** ([Q-UI-308](../spec/api-and-ui.md#q-ui-308--every-list-takes-its-layout-from-the-data-table-a-column-budget-a-least-width-for-its-name-one-alignment-stacked-rows)). A column of `<quader-data-table>` declares its least width
   (`width`, which must hold its header and its longest value on one line: a format with its icon 8 rem, a class 5 rem, a project
   with its mark 11 rem); the name column takes 12 to 16 rem and what the others leave. A column that `prefer`s takes every pixel
@@ -115,8 +132,11 @@ what would need a second one belongs in the [manual](manual.md).
   The head of a stacked list is one row of its sort buttons above the blocks; a header that sorts nothing is for assistive
   technology only ([Q-UI-391](../spec/api-and-ui.md#q-ui-391--a-stacked-list-keeps-its-sort-buttons-in-a-row-above-its-blocks)).
   `[stack]="false"` keeps the table for a list that cannot be read as blocks.
-- **An empty list** is `<quader-empty-state text>` with the action that fills it as its content; the data table shows it with its
-  `emptyText` and the content marked `emptyAction` ([Q-UI-309](../spec/api-and-ui.md#q-ui-309--an-empty-list-or-region-is-a-sentence-and-the-action-that-fills-it-without-a-frame)).
+- **An empty list** is `<quader-empty-state text>`: "There is no <thing> yet." while no search and no filter is set, "No <thing>
+  matches." when one is; the action that fills the list is the header's **New <thing>**, once, never repeated under the sentence
+  ([Q-UI-565](../spec/api-and-ui.md#q-ui-565--an-empty-list-says-there-is-none-yet-a-filtered-one-that-nothing-matches-and-its-action-stands-once-in-the-header),
+  revising [Q-UI-309](../spec/api-and-ui.md#q-ui-309--an-empty-list-or-region-is-a-sentence-and-the-action-that-fills-it-without-a-frame)).
+  The data table shows it with its `emptyText`.
 - **A line of facts** (a source line; never the properties of a list's row, which are columns) separates them with one middle dot, the same space
   on both sides, in the muted colour: `.dot-separated` around its parts, `.dot-before` on one part ([_controls.scss](../../web/src/styles/_controls.scss)).
   Where such a line wraps, no line starts with a dot.
@@ -221,6 +241,8 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
 - The selects of a panel (the install panel's client and repository) stack and take the panel's width, so they line up whatever
   their options say ([Q-UI-320](../spec/api-and-ui.md#q-ui-320--every-value-to-copy-of-one-line-is-a-field-with-its-joined-copy-button-a-page-shows-one-client-address-and-a-panels-selects-share-one-width)).
 - A choice among the values of a list (the version of a package) is a select, so it looks like the choice it is.
+- A check box is `<quader-checkbox>`, its box a direct child of `.check-row`, which keeps it at 16 px beside a label of several
+  lines ([Q-UI-575](../spec/api-and-ui.md#q-ui-575--a-check-box-keeps-its-size-beside-a-long-label)).
 - A choice among three or fewer exclusive things, where the reader should see them all, is a radio group, each option with a
   muted sentence under its label. Four or more is a select. A disabled option stays visible, muted, and says why.
 - A visibility level is chosen with `<quader-visibility-level>` ([visibility-level.ts](../../web/src/app/shared/ui/visibility-level.ts), [Q-UI-228](../spec/api-and-ui.md#q-ui-228--a-level-is-chosen-in-a-radio-group-of-three-each-with-its-icon-and-a-sentence)): a native radio group of Private, Internal and Public, each with its icon (`lock`, `shield`, `public`, as the owner's GitLab has them) and one muted sentence that names what the level admits for the `subject` (new projects, a project, artifacts, wiki). An option that cannot be chosen is disabled, stays visible and shows its reason under the sentence (`reasons`), which is also part of the option's description. A restricted level an administrator may still choose, or the level an object keeps, is enabled with a muted note under it (`notes`); a reason wins over a note, and the reasons come in the order of R-AUTHZ-038 (`firstReasons`). The levels an administrator restricts are chosen with `<quader-restricted-levels>`, checkboxes laid out as the same options ([Q-UI-541](../spec/api-and-ui.md#q-ui-541--a-restricted-level-is-a-checkbox-laid-out-as-a-level-option-and-the-default-and-the-restricted-levels-exclude-each-other-in-the-form)). The same level shown before a name in a list or a header is `<quader-visibility-icon>`: the icon with the level's name as its accessible label and tooltip ([Q-UI-230](../spec/api-and-ui.md#q-ui-230--a-level-is-shown-as-an-icon-before-a-name-as-gitlab-shows-it)). The icon is not a status colour.
@@ -239,6 +261,10 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
 
 Labels are a verb and its object in sentence case (**Add member**, **Save changes**). All controls are 32 px high; `btn-sm` is not
 for general use. In a dialog, the buttons are at the end, **Cancel** first and the action last.
+
+A bar that sticks to the foot of a long form (the policy editor's) closes the page down to the panel's edge: it takes the
+content's bottom padding into itself, so nothing shows below it
+([Q-UI-576](../spec/api-and-ui.md#q-ui-576--the-policy-editors-save-bar-closes-the-page-down-to-the-panels-edge)).
 
 Use a dialog for a short, self-contained step that leaves the page behind it in place (adding a member, confirming a deletion). A
 long or repeated form is a page. Open it with `QuaderDialog`: focus, Escape and the return of focus come with it.
@@ -333,6 +359,8 @@ screen draws its own, and no screen shows a version's highest severity instead.
 
 - Sentence case everywhere; upper-case is not used for labels.
 - 14 px on 21 px for text and controls, 12 px for small text. Headings use `--quader-heading-1` to `-3`.
+- A setting's name or value of the configuration in running text is `<code translate="no">`
+  ([Q-UI-571](../spec/api-and-ui.md#q-ui-571--a-settings-name-in-running-text-is-code)).
 - Say what happens, in plain words: **Filter members**, not **Search criteria**. Do not name internal terms where the reader
   needs none: **All repository permissions of the owner, without administration**, not `inherit`.
 - A label promises exactly what the thing does. If it does less than it says, the label is a bug.

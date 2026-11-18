@@ -25,6 +25,7 @@ import { JobProgress } from '../../shared/job-progress';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
+import { NoValue } from '../../shared/ui/no-value';
 import { ProjectLink } from '../../shared/ui/project-mark';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
@@ -59,6 +60,7 @@ import { classIcon, classLabel } from './repository-class';
     FilterPanel,
     JobProgress,
     ListHead,
+    NoValue,
     PageHeader,
     ProjectLink,
     TimeAgo,
@@ -177,11 +179,11 @@ export class RepositoryList {
   protected classText = classLabel;
   protected readonly tableCaption = $localize`:@@repo.list.caption:Repositories`;
   protected readonly emptyText = $localize`:@@repo.list.empty:There is no repository yet.`;
-  protected readonly emptyFilteredText = $localize`:@@repo.list.empty-filtered:No repository matches the filters.`;
+  protected readonly emptyFilteredText = $localize`:@@repo.list.empty-filtered:No repository matches.`;
   /** No sort control: the repository list is ordered by key and the API takes no sort parameter. */
   protected readonly columns = computed<readonly TableColumn[]>(() => {
     const admin = !this.inProject();
-    return this.allColumns.filter((c) => {
+    return this.allColumns().filter((c) => {
       if (c.id === 'project' || c.id === 'activity') return admin && (c.id === 'project' || this.showActivity());
       if (c.id === 'visibility') return admin;
       if (c.id === 'actions-admin') return admin;
@@ -197,35 +199,36 @@ export class RepositoryList {
     () => !this.inProject() && this.canCreate() && this.list.items().some((r) => !!r.lastActivityAt),
   );
   /**
-   * The widths are each column's least (Q-UI-308); the repository takes what they leave, so the most important property gets the
-   * most room (Q-UI-330); at 48 rem, where the rows stack, every column still has its least width. The project is its mark and its
-   * name (Q-UI-424): 11 rem hold **Platform engineering** beside its mark on one line.
+   * The columns take their widths from their content (Q-UI-563): a format, a class, a level, a time and the actions never break,
+   * so each is as wide as its longest value and declares no width; the repository and the project wrap and declare their least
+   * (Q-UI-308). Inside a project the repository is the one column that wraps, and it takes what the others leave (`prefer`,
+   * Q-UI-330). In the admin area the repository and the project share that room in proportion to their content: a pinned project
+   * of 11 rem broke **Customer portal release engineering and delivery** into three lines beside a Last activity of 7.5 rem that
+   * held "4 minutes ago" (2026-11-18). The project is its mark and its name (Q-UI-424).
    */
-  private readonly allColumns: readonly TableColumn[] = [
-    { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '13rem', prefer: true },
+  private readonly allColumns = computed<readonly TableColumn[]>(() => [
+    { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '13rem', prefer: this.inProject() },
     { id: 'project', label: $localize`:@@repo.col.project:Project`, width: '11rem' },
-    { id: 'format', label: $localize`:@@repo.col.format:Format`, width: '8rem' },
+    { id: 'format', label: $localize`:@@repo.col.format:Format` },
     {
       id: 'class',
       label: $localize`:@@repo.col.class:Class`,
       help: $localize`:@@repo.help.class:Local repositories hold what you upload, remote repositories fetch and cache from another registry, virtual repositories combine other repositories behind one address.`,
-      width: '5rem',
     },
     // The admin area's column: who reads the artifacts, an icon and a word (Q-UI-330); inside a project the icon stands before the name.
-    { id: 'visibility', label: $localize`:@@repo.col.visibility:Visibility`, width: '6rem' },
+    { id: 'visibility', label: $localize`:@@repo.col.visibility:Visibility` },
     {
       id: 'activity',
       label: $localize`:@@repo.col.activity:Last activity`,
       help: $localize`:@@repo.help.activity:The last time a client read from or wrote to the repository. A dash means nothing has been recorded yet.`,
-      width: '7.5rem',
       // Below 64 rem of the list's width the other columns take this room: the admin area's list at 1280 px.
       narrow: true,
     },
     // Inside a project: **Set up client** and the menu.
-    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true, width: '9rem' },
+    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true },
     // The admin area's row has the copy button beside the menu.
-    { id: 'actions-admin', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true, width: '4.5rem' },
-  ];
+    { id: 'actions-admin', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true },
+  ]);
 
   protected readonly levelText = levelName;
 

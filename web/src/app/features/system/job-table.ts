@@ -1,20 +1,42 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, input, output } from '@angular/core';
-import { Job, jobActive, jobCancellable } from '../../api/jobs-api';
+import { Job, JobState, jobActive, jobCancellable } from '../../api/jobs-api';
 import { SessionStore } from '../../core/session-store';
-import { jobStateText } from '../../shared/job-progress';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { NoValue } from '../../shared/ui/no-value';
 
 /**
- * A table of jobs (R-UI-038): kind, state with icon and text, start, progress, replica and result.
+ * A job's state as a status, the word of its badge (Q-UI-560, Q-UI-564): with a capital, as every status of the app. A sentence
+ * that names the state ("Deleting succeeded") takes `jobStateText` of job-progress.ts, in lower case.
+ */
+export function jobStatusText(state: JobState): string {
+  switch (state) {
+    case 'queued':
+      return $localize`:@@job.status.queued:Queued`;
+    case 'running':
+      return $localize`:@@job.status.running:Running`;
+    case 'cancelling':
+      return $localize`:@@job.status.cancelling:Cancelling`;
+    case 'succeeded':
+      return $localize`:@@job.status.succeeded:Succeeded`;
+    case 'failed':
+      return $localize`:@@job.status.failed:Failed`;
+    case 'cancelled':
+      return $localize`:@@job.status.cancelled:Cancelled`;
+  }
+}
+
+/**
+ * A table of jobs (R-UI-038): kind, state as a badge (its icon and its word, never broken, Q-UI-560), start, progress, replica and
+ * result. The kind and the replica are names that stay on one line; the result is read and wraps.
  * "Cancel" is offered only for `queued` and `running` jobs, and only to a holder of
  * `settings:write` or the principal that started the job (R-API-015).
  */
 @Component({
   selector: 'quader-job-table',
-  imports: [DataTable, DatePipe],
+  imports: [DataTable, DatePipe, NoValue],
   styles: `
-    /* A replica name and a result are read in full: they wrap in their column, at any character where they must. */
+    /* A result is read in full: it wraps in its column, at any character where it must. */
     .long {
       overflow-wrap: anywhere;
     }
@@ -28,27 +50,36 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
           <td>
             @switch (j.state) {
               @case ('succeeded') {
-                <span class="material-icons inline ok" aria-hidden="true">check_circle</span>
+                <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span>{{ stateText(j) }}</span>
               }
               @case ('failed') {
-                <span class="material-icons inline bad" aria-hidden="true">error</span>
+                <span class="bad"><span class="material-icons" aria-hidden="true">error</span>{{ stateText(j) }}</span>
               }
               @case ('cancelled') {
-                <span class="material-icons inline" aria-hidden="true">cancel</span>
+                <span class="badge"><span class="material-icons" aria-hidden="true">cancel</span>{{ stateText(j) }}</span>
               }
               @default {
-                <span class="material-icons inline" aria-hidden="true">hourglass_empty</span>
+                <span class="badge"><span class="material-icons" aria-hidden="true">hourglass_empty</span>{{ stateText(j) }}</span>
               }
             }
-            {{ stateText(j) }}
           </td>
           <td>
             <time [attr.datetime]="j.enqueuedAt">{{ j.enqueuedAt | date: 'medium' }}</time>
           </td>
           <td translate="no">
-            {{ progressText(j) }}
+            @if (progressText(j); as p) {
+              {{ p }}
+            } @else {
+              <quader-no-value />
+            }
           </td>
-          <td translate="no" class="wrap long">{{ j.replica ?? '–' }}</td>
+          <td translate="no">
+            @if (j.replica) {
+              {{ j.replica }}
+            } @else {
+              <quader-no-value />
+            }
+          </td>
           <td class="long">
             @if (j.error; as err) {
               <span translate="no">{{ err.code }}</span>
@@ -56,8 +87,10 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
                 <span class="error-detail" translate="no">{{ err.detail }}</span>
                 <span class="error-detail" i18n="@@jobs.attempt">Attempt {{ attemptOf(j) }} of {{ j.maxAttempts }}</span>
               }
-            } @else {
-              <span translate="no">{{ summary(j) }}</span>
+            } @else if (summary(j); as text) {
+              <span translate="no">{{ text }}</span>
+            } @else if (!active(j)) {
+              <quader-no-value />
             }
           </td>
           <td>
@@ -84,25 +117,35 @@ export class JobTable {
   readonly caption = input.required<string>();
   readonly cancelRequested = output<Job>();
 
+  /**
+   * The kind, the state, the time, the progress, the replica and the action never break and are as wide as their content
+   * (Q-UI-563); the result is the one column that wraps and takes what they leave. A replica of 7 rem broke "ms2022.local-39645"
+   * at its hyphen beside a result column of half the page (2026-11-18).
+   */
   protected readonly columns: readonly TableColumn[] = [
-    { id: 'kind', label: $localize`:@@jobs.col.kind:Kind`, width: '8rem' },
-    { id: 'state', label: $localize`:@@jobs.col.state:State`, width: '6rem' },
-    { id: 'enqueued', label: $localize`:@@jobs.col.enqueued:Enqueued`, width: '8rem' },
-    { id: 'progress', label: $localize`:@@jobs.col.progress:Progress`, width: '4rem' },
-    { id: 'replica', label: $localize`:@@jobs.col.replica:Replica`, width: '7rem' },
-    { id: 'result', label: $localize`:@@jobs.col.result:Result` },
-    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true, width: '5rem' },
+    { id: 'kind', label: $localize`:@@jobs.col.kind:Kind` },
+    { id: 'state', label: $localize`:@@jobs.col.state:State` },
+    { id: 'enqueued', label: $localize`:@@jobs.col.enqueued:Enqueued` },
+    { id: 'progress', label: $localize`:@@jobs.col.progress:Progress` },
+    { id: 'replica', label: $localize`:@@jobs.col.replica:Replica` },
+    { id: 'result', label: $localize`:@@jobs.col.result:Result`, width: '10rem', prefer: true },
+    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true },
   ];
 
   private readonly self = computed(() => this.session.whoami()?.principal.id ?? null);
 
   protected stateText(job: Job): string {
-    return jobStateText(job.state);
+    return jobStatusText(job.state);
   }
 
+  protected active(job: Job): boolean {
+    return jobActive(job.state);
+  }
+
+  /** The progress as "3/10 items", or empty for a job that reports none. */
   protected progressText(job: Job): string {
     const p = job.progress;
-    if (!p) return '–';
+    if (!p) return '';
     return `${p.done}${p.total === null ? '' : `/${p.total}`} ${p.unit ?? ''}`.trim();
   }
 
@@ -123,13 +166,12 @@ export class JobTable {
     return job.error?.attempt ?? job.attempt;
   }
 
-  /** A compact summary of a result; the full object is in the API. A list shows its length, an object its JSON. */
+  /** A compact summary of a result, or empty for none; the full object is in the API. A list shows its length, an object its JSON. */
   protected summary(job: Job): string {
-    if (job.result)
-      return Object.entries(job.result)
-        .map(([k, v]) => `${k}: ${resultValue(v)}`)
-        .join(', ');
-    return jobActive(job.state) ? '' : '–';
+    if (!job.result) return '';
+    return Object.entries(job.result)
+      .map(([k, v]) => `${k}: ${resultValue(v)}`)
+      .join(', ');
   }
 }
 

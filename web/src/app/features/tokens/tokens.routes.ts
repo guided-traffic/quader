@@ -4,7 +4,7 @@ import { Routes } from '@angular/router';
 export const TOKENS_ROUTES: Routes = [
   {
     path: '',
-    title: $localize`:@@route.tokens.title:Token administration`,
+    title: $localize`:@@route.tokens.title:Tokens`,
     loadComponent: () => import('./token-admin').then((m) => m.TokenAdmin),
   },
 ];

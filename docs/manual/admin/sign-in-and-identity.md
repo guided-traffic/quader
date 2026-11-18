@@ -237,7 +237,7 @@ The level **Internal** admits every internal user. A user is internal when it ac
 
 - **Flag a user as external** with **External user** on the user's page (**Admin area › Identity › Users**), then **Save changes**; it needs `identities:write` and a recent sign-in. The break-glass account is never external. The users list shows the badge **External** and has the filter **External**; the API filter is `external=true`.
 - **What an external user reads.** The projects it is a member of, what a policy grants it, and what is **Public**. Internal projects and repositories stay hidden: they are not listed and answer `404`. The change reaches every replica within `auth.revocation_bound`.
-- **Users created later.** **New users are external** in **Authentication settings** sets the flag for every user created from then on, whatever created it (first sign-in, SCIM or **Add user**); existing users keep theirs, and **Add user** has the same checkbox, preset to it. No claim of the identity provider, no group and no SCIM attribute sets the flag. It is off on a fresh installation, so a person who signs in for the first time reads every **Internal** repository until an administrator flags them; switch it on if your identity provider also signs in people from outside the organization, and flag the employees by hand.
+- **Users created later.** **New users are external** in **Authentication settings** sets the flag for every user created from then on, whatever created it (first sign-in, SCIM or **New user**); existing users keep theirs, and **New user** has the same checkbox, preset to it. No claim of the identity provider, no group and no SCIM attribute sets the flag. It is off on a fresh installation, so a person who signs in for the first time reads every **Internal** repository until an administrator flags them; switch it on if your identity provider also signs in people from outside the organization, and flag the employees by hand.
 
 ## Brute-force protection
 
@@ -255,7 +255,7 @@ An IPv6 address counts per `/64`. The break-glass lockout applies on top of thes
 
 **Admin area › Identity › Users** lists every user with **User** (the avatar, the display name and the `@username` under it), **Email**, **Origin**, **Status** and **Last sign-in**. **Filter users** above the list searches the name and the email; **Filters** opens a panel from the right with **Status** (**Active**, **Disabled**, **Locked**), **Origin**, **Group**, **Administrator** and **External**, and each filter that is set stands as a chip beside the button. **Origin** is **Identity provider** for users created at first sign-in, **Created by an administrator**, or **Break-glass**. Reading needs `identities:read`, changing needs `identities:write`.
 
-To pre-provision a user, select **Add user** and fill in:
+To pre-provision a user, select **New user**, fill in the form below and select **Create user**:
 
 | Field | Meaning |
 |---|---|

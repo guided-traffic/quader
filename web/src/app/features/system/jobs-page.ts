@@ -4,9 +4,11 @@ import { Job, JobState, JobsApi, jobActive } from '../../api/jobs-api';
 import { describeProblem } from '../../core/http/problem-messages';
 import { Notifier } from '../../core/notifier';
 import { ErrorNotice } from '../../shared/error-notice';
-import { jobStateText } from '../../shared/job-progress';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
-import { JobTable } from './job-table';
+import { EmptyState } from '../../shared/ui/empty-state';
+import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
+import { ListChip, ListHead } from '../../shared/ui/list-head';
+import { JobTable, jobStatusText } from './job-table';
 import { PageHeader } from '../../shared/ui/page-header';
 
 const STATES: readonly JobState[] = [
@@ -21,16 +23,25 @@ const STATES: readonly JobState[] = [
 /** Refresh interval of the job list while it shows an active job (WCAG 2.2.2: with a pause control). */
 export const JOBS_REFRESH_MS = 5_000;
 
+/** The kinds of a comma-separated text, trimmed, without empty entries. */
+function kindsOf(text: string | undefined): string[] {
+  return (text ?? '')
+    .split(',')
+    .map((k) => k.trim())
+    .filter((k) => k !== '');
+}
+
 /**
  * Jobs (R-UI-038, R-API-015): every job the caller may see, newest first, filterable by kind and
  * state (query parameters `kind` and repeated `state`), with "Cancel" for queued and running jobs.
- * A cancelled running job shows as `cancelling` until it stops at its next checkpoint, then as
- * `cancelled`; the list refreshes itself while an active job is shown, and the refresh can be
- * paused.
+ * The filters are the head of every list (Q-UI-420, Q-UI-566): **Filters** opens the drawer, the
+ * filters that are set stand beside it as chips. A cancelled running job shows as `cancelling` until
+ * it stops at its next checkpoint, then as `cancelled`; the list refreshes itself while an active job
+ * is shown, and the refresh can be paused.
  */
 @Component({
   selector: 'quader-jobs-page',
-  imports: [PageHeader, ErrorNotice, JobTable],
+  imports: [PageHeader, EmptyState, ErrorNotice, FilterCategory, FilterPanel, JobTable, ListHead],
   template: `
     <quader-page-header heading="Jobs" i18n-heading="@@jobs.heading">
       <button actions class="btn btn-default"
@@ -47,22 +58,30 @@ export const JOBS_REFRESH_MS = 5_000;
       <button actions class="btn btn-default" type="button" (click)="load()" i18n="@@system.refresh">Refresh now</button>
     </quader-page-header>
 
-    <form class="toolbar" role="search" (submit)="apply($event)">
+    <!-- The jobs have no search by name; the head is Filters and the filters that are set (Q-UI-420, Q-UI-566). -->
+    <quader-list-head [chips]="chips()" (removeChip)="removeChip($event)" [(filtersOpen)]="panelOpen" [controls]="panel.panelId" />
+    <quader-filter-panel
+      #panel
+      [(open)]="panelOpen"
+      [activeCount]="chips().length"
+      (apply)="apply()"
+      (clearAll)="clear()"
+      (dismissed)="restage()"
+    >
       <div class="field">
-        <label class="field-label" for="j-kind" i18n="@@jobs.filter.kind"
-          >Kind (comma separated)</label
-        >
+        <label class="field-label" for="j-kind" i18n="@@jobs.filter.kind">Kind</label>
         <input
           id="j-kind"
           class="text-input"
           autocomplete="off"
           spellcheck="false"
+          aria-describedby="j-kind-hint"
           [value]="kindDraft()"
           (input)="kindDraft.set($any($event.target).value)"
         />
+        <p id="j-kind-hint" class="hint" i18n="@@jobs.filter.kind-hint">Several kinds separated by commas: gc, gc-full</p>
       </div>
-      <fieldset class="states">
-        <legend class="field-label" i18n="@@jobs.filter.state">State</legend>
+      <quader-filter-category i18n-label="@@jobs.filter.state" label="State">
         @for (s of states; track s) {
           <label class="check-row">
             <input
@@ -73,16 +92,15 @@ export const JOBS_REFRESH_MS = 5_000;
             <span>{{ stateText(s) }}</span>
           </label>
         }
-      </fieldset>
-      <button class="btn btn-confirm" type="submit" i18n="@@repo.filter.apply">Search</button>
-    </form>
+      </quader-filter-category>
+    </quader-filter-panel>
 
     @if (list.error(); as f) {
       <quader-error-notice [error]="f" (retry)="load()" />
     }
     @if (list.loaded()) {
       @if (list.items().length === 0) {
-        <p class="empty" i18n="@@jobs.empty">No job matches the filters.</p>
+        <quader-empty-state [text]="chips().length > 0 ? noMatch : noJob" />
       } @else {
         <quader-job-table
           [jobs]="list.items()"
@@ -106,16 +124,6 @@ export const JOBS_REFRESH_MS = 5_000;
       <p role="status" i18n="@@system.loading">Loading.</p>
     }
   `,
-  styles: `
-    .states {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--quader-space-3);
-      margin: 0;
-      padding: 0;
-      border: 0;
-    }
-  `,
 })
 export class JobsPage {
   private readonly api = inject(JobsApi);
@@ -128,17 +136,16 @@ export class JobsPage {
 
   protected readonly list = new PagedResource<Job>();
   protected readonly paused = signal(false);
+  protected readonly panelOpen = signal(false);
   protected readonly states = STATES;
+  /** The drawer's values; they reach the address with **Apply filters** and go back to it when the drawer closes without. */
   protected readonly kindDraft = signal('');
   protected readonly stateDraft = signal<readonly JobState[]>([]);
   protected readonly caption = $localize`:@@jobs.caption:Jobs, newest first`;
+  protected readonly noJob = $localize`:@@jobs.empty-none:There is no job yet.`;
+  protected readonly noMatch = $localize`:@@jobs.empty:No job matches.`;
 
-  private readonly kinds = computed(() =>
-    (this.kind() ?? '')
-      .split(',')
-      .map((k) => k.trim())
-      .filter((k) => k !== ''),
-  );
+  private readonly kinds = computed(() => kindsOf(this.kind()));
   private readonly stateFilter = computed<readonly JobState[]>(() => {
     const raw = this.state();
     const values = raw === undefined ? [] : typeof raw === 'string' ? [raw] : raw;
@@ -146,11 +153,26 @@ export class JobsPage {
   });
   private readonly hasActive = computed(() => this.list.items().some((j) => jobActive(j.state)));
 
+  /** The filters in the address as the head's chips (Q-UI-422): the kinds as one chip, the states as one. */
+  protected readonly chips = computed<readonly ListChip[]>(() => {
+    const out: ListChip[] = [];
+    const kinds = this.kinds();
+    if (kinds.length > 0) out.push({ key: 'kind', label: $localize`:@@jobs.filter.kind:Kind`, value: kinds.join(', ') });
+    const states = this.stateFilter();
+    if (states.length > 0) {
+      out.push({ key: 'state', label: $localize`:@@jobs.filter.state:State`, value: states.map((s) => jobStatusText(s)).join(', ') });
+    }
+    return out;
+  });
+
   constructor() {
     effect(() => {
-      this.kindDraft.set(this.kind() ?? '');
-      this.stateDraft.set(this.stateFilter());
-      untracked(() => this.load());
+      this.kinds();
+      this.stateFilter();
+      untracked(() => {
+        this.restage();
+        this.load();
+      });
     });
     effect((onCleanup) => {
       if (this.paused() || !this.hasActive()) return;
@@ -159,10 +181,16 @@ export class JobsPage {
     });
   }
 
-  protected stateText = jobStateText;
+  protected stateText = jobStatusText;
 
   protected load(): void {
     void this.list.start(this.api.jobs({ kind: this.kinds(), state: this.stateFilter() }));
+  }
+
+  /** The drawer's fields back to the filters the list shows. */
+  protected restage(): void {
+    this.kindDraft.set(this.kinds().join(', '));
+    this.stateDraft.set(this.stateFilter());
   }
 
   protected toggleState(state: JobState, checked: boolean): void {
@@ -171,19 +199,24 @@ export class JobsPage {
     );
   }
 
-  protected apply(event: Event): void {
-    event.preventDefault();
-    const kinds = this.kindDraft()
-      .split(',')
-      .map((k) => k.trim())
-      .filter((k) => k !== '');
-    void this.router.navigate([], {
-      queryParams: {
-        kind: kinds.length > 0 ? kinds.join(',') : null,
-        state: this.stateDraft().length > 0 ? [...this.stateDraft()] : null,
-      },
-      queryParamsHandling: 'merge',
+  protected apply(): void {
+    const kinds = kindsOf(this.kindDraft());
+    this.navigate({
+      kind: kinds.length > 0 ? kinds.join(',') : null,
+      state: this.stateDraft().length > 0 ? [...this.stateDraft()] : null,
     });
+  }
+
+  protected removeChip(chip: ListChip): void {
+    this.navigate({ [chip.key]: null });
+  }
+
+  protected clear(): void {
+    this.navigate({ kind: null, state: null });
+  }
+
+  private navigate(queryParams: Record<string, string | string[] | null>): void {
+    void this.router.navigate([], { queryParams, queryParamsHandling: 'merge' });
   }
 
   protected async cancel(job: Job): Promise<void> {

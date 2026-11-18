@@ -40,11 +40,8 @@ import { EmptyState } from '../../shared/ui/empty-state';
         <p role="status" i18n="@@bastions.loading">Loading Bastions.</p>
       }
     } @else if (items().length === 0) {
-      <quader-empty-state text="No Bastion is registered." i18n-text="@@bastions.empty">
-        @if (canWrite()) {
-          <button class="btn btn-default" type="button" (click)="add()" i18n="@@bastions.add">New Bastion</button>
-        }
-      </quader-empty-state>
+      <!-- The action that fills the list is the header's New Bastion, once (Q-UI-565). -->
+      <quader-empty-state text="There is no Bastion yet." i18n-text="@@bastions.empty" />
     } @else {
       @for (b of items(); track b.name) {
         <quader-bastion-card [bastion]="b" [draft]="restored()" (changed)="load()" />

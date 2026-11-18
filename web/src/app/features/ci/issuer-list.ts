@@ -41,7 +41,7 @@ import { PageHeader } from '../../shared/ui/page-header';
       [loading]="loading()"
       [empty]="issuers().length === 0"
       i18n-emptyText="@@ci.issuers.empty"
-      emptyText="No CI issuer is registered yet."
+      emptyText="There is no CI issuer yet."
     >
       @for (i of issuers(); track i.name) {
         <tr>
@@ -61,13 +61,13 @@ import { PageHeader } from '../../shared/ui/page-header';
           <td class="num">{{ i.mappingCount ?? 0 }}</td>
           <td>
             @if (i.keys?.lastError) {
-              <div class="bad"><span class="material-icons" aria-hidden="true">error</span> <ng-container i18n="@@ci.keys.failed">Fetch failed</ng-container></div>
+              <span class="bad"><span class="material-icons" aria-hidden="true">error</span><ng-container i18n="@@ci.keys.failed">Fetch failed</ng-container></span>
               <div class="muted detail">{{ i.keys!.lastError }}</div>
             } @else if (i.keys?.fetchedAt) {
-              <div class="ok"><span class="material-icons" aria-hidden="true">check_circle</span> <ng-container i18n="@@ci.keys.usable">{{ i.keys!.usable }} usable</ng-container></div>
+              <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span><ng-container i18n="@@ci.keys.usable">{{ i.keys!.usable }} usable</ng-container></span>
               <div class="muted detail"><ng-container i18n="@@ci.keys.fetched">fetched</ng-container> {{ i.keys!.fetchedAt | date: 'short' }}</div>
             } @else {
-              <div class="muted"><span class="material-icons" aria-hidden="true">schedule</span> <ng-container i18n="@@ci.keys.none">Not fetched yet</ng-container></div>
+              <span class="badge"><span class="material-icons" aria-hidden="true">schedule</span><ng-container i18n="@@ci.keys.none">Not fetched yet</ng-container></span>
             }
           </td>
           <td>

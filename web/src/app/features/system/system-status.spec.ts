@@ -33,6 +33,27 @@ async function render(setup?: (system: FakeSystemApi, enc: FakeEncryptionApi, se
 const text = (root: HTMLElement): string => root.textContent?.replace(/\s+/g, ' ') ?? '';
 
 describe('System status screen', () => {
+  it('R-UI-145 Q-UI-570 Q-UI-560 the version names the revision by its short form with the full hash as its title, and the schema version and its badge stand apart', async () => {
+    const revision = '3897aa47708f8a0c1b2d3e4f5a6b7c8d9e0f1a2b';
+    const { root } = await render((system) => (system.infoResult = sampleInfo({ version: { version: 'dev', revision, goVersion: 'go1.27.4' } })));
+    const code = root.querySelector('section[aria-labelledby="card-install"] code.revision')!;
+    expect(code.textContent!.trim()).toBe('3897aa47708f');
+    expect(code.getAttribute('title')).toBe(revision);
+    const schema = [...root.querySelectorAll('section[aria-labelledby="card-db"] dd')][1]!;
+    const badge = schema.querySelector('span.ok')!;
+    expect(badge.firstElementChild!.classList).toContain('material-icons');
+    expect(badge.textContent!.replace(badge.firstElementChild!.textContent!, '').trim()).toBe('Supported');
+    // The number and the badge are separated by a space, not set against each other.
+    expect(schema.textContent!.replace(/\s+/g, ' ')).toMatch(/^ ?12 check_circle/);
+  });
+
+  it('R-UI-145 Q-UI-560 a replica\'s state is a badge, its icon and its word with a capital in one element', async () => {
+    const { root } = await render();
+    const state = root.querySelector('section.role tbody tr td:nth-child(4) > :is(.ok, .bad, .badge)')!;
+    expect(state.firstElementChild!.classList).toContain('material-icons');
+    expect(state.textContent!.replace(state.firstElementChild!.textContent!, '').trim()).toMatch(/^[A-Z]/);
+  });
+
   it('R-UI-038 shows the summary, the installation facts and the replicas per role', async () => {
     const { root } = await render();
     const t = text(root);
@@ -144,7 +165,7 @@ describe('System status screen', () => {
     const { root, fixture } = await render((_s, _e, session) => {
       session.meResult = { capabilities: ['content:bypass', 'settings:read'] };
     });
-    expect(text(root)).toContain('re-encryption pending');
+    expect(text(root)).toContain('Re-encryption pending');
     const button = [...root.querySelectorAll('button')].find((b) => b.textContent?.includes('Re-encrypt now'));
     expect(button).toBeTruthy();
     button?.click();

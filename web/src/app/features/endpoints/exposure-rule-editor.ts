@@ -1,3 +1,4 @@
+import { NoValue } from '../../shared/ui/no-value';
 import {
   Component,
   DestroyRef,
@@ -111,7 +112,7 @@ const FIELD_LABELS: readonly (readonly [prefix: string, label: () => string])[] 
  */
 @Component({
   selector: 'quader-exposure-rule-editor',
-  imports: [PageHeader, AddressField, Disclosure, ErrorNotice, ErrorSummary],
+  imports: [PageHeader, AddressField, Disclosure, ErrorNotice, ErrorSummary, NoValue],
   templateUrl: './exposure-rule-editor.html',
   styleUrl: './exposure-rule-editor.scss',
 })

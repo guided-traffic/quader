@@ -1,3 +1,4 @@
+import { NoValue } from '../../shared/ui/no-value';
 import { DatePipe } from '@angular/common';
 import { Component, effect, inject, input, signal, untracked } from '@angular/core';
 import { CiApi, CiKeyStatus } from '../../api/ci-api';
@@ -17,7 +18,7 @@ import { ErrorNotice } from '../../shared/error-notice';
  */
 @Component({
   selector: 'quader-ci-issuer-keys',
-  imports: [DatePipe, ErrorNotice, DataTable, Needs],
+  imports: [DatePipe, ErrorNotice, DataTable, Needs, NoValue],
   template: `
     <div class="toolbar">
       <button class="btn btn-confirm" type="button" [disabled]="busy() || !session.has('ci:write')" aria-describedby="needs-ci-keys" (click)="refresh()" i18n="@@ci.keys.refresh">
@@ -60,7 +61,13 @@ import { ErrorNotice } from '../../shared/error-notice';
           <tr>
             <th scope="row" translate="no">{{ k.kid }}</th>
             <td translate="no">{{ k.kty }}</td>
-            <td translate="no">{{ k.alg ?? '–' }}</td>
+            <td translate="no">
+              @if (k.alg; as v) {
+                {{ v }}
+              } @else {
+                <quader-no-value />
+              }
+            </td>
             <td>
               @if (k.ignored) {
                 <span class="warn"><span class="material-icons" aria-hidden="true">warning</span> <ng-container i18n="@@ci.keys.ignored">Ignored</ng-container></span>

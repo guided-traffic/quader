@@ -37,7 +37,7 @@ test('R-UI-025 R-UI-026 a group, a policy with its preview, and the effect for b
     await bob.goto(`/ui/en/projects/${e2eProject}/repositories?q=${repoKey}`);
   };
   await bobSearch();
-  await expect(bob.getByText('No repository matches the filters.')).toBeVisible();
+  await expect(bob.getByText('No repository matches.')).toBeVisible();
 
   await signInLocal(page);
 
@@ -113,7 +113,7 @@ test('R-UI-025 R-UI-026 a group, a policy with its preview, and the effect for b
     await page.getByRole('row', { name: /bob/ }).getByRole('button', { name: /Remove/ }).click();
     await expect(page.getByRole('heading', { name: 'Members (0)' })).toBeVisible();
     await bobSearch();
-    await expect(bob.getByText('No repository matches the filters.')).toBeVisible();
+    await expect(bob.getByText('No repository matches.')).toBeVisible();
   });
 
   await signOut(bob);

@@ -9,7 +9,12 @@ import {
 } from '../../../api/backups-api';
 import { ApiError } from '../../../api/problem';
 import { describeBackupProblem } from '../../../core/http/problem-messages-backup';
+import { SelectField, SelectOption } from '../../../shared/access/fields';
 import { ErrorNotice } from '../../../shared/error-notice';
+import { EmptyState } from '../../../shared/ui/empty-state';
+import { FilterPanel } from '../../../shared/ui/filter-panel';
+import { ListChip, ListHead } from '../../../shared/ui/list-head';
+import { NoValue } from '../../../shared/ui/no-value';
 import { PagedResource, asApiError, valueOf } from '../../../shared/paged-resource';
 import { formatSize } from '../../packages/format-size';
 import { REFRESH_INTERVAL_MS } from '../system-status';
@@ -33,11 +38,12 @@ export const RUNS_PAGE_SIZE = 25;
 /**
  * Backups (R-UI-048, R-API-050): the status of the backup job, the run in progress, the runs, the stored backups the newest
  * listing run found, the command for a manual run and, after a restore, where this installation came from. The screen only
- * reads: every request it sends is a GET. It refreshes with the status screen's interval and pause control (R-UI-038).
+ * reads: every request it sends is a GET. It refreshes with the status screen's interval and pause control (R-UI-038). The runs'
+ * filters are the head of every list: **Filters** opens the drawer, the filters that are set stand beside it as chips (Q-UI-566).
  */
 @Component({
   selector: 'quader-backups-page',
-  imports: [PageHeader, DatePipe, RouterLink, ErrorNotice, BackupState, ManualRunPanel],
+  imports: [PageHeader, DatePipe, RouterLink, EmptyState, ErrorNotice, FilterPanel, ListHead, NoValue, SelectField, BackupState, ManualRunPanel],
   templateUrl: './backups-page.html',
   styleUrl: './backups-page.scss',
 })
@@ -65,8 +71,20 @@ export class BackupsPage {
 
   protected readonly paused = signal(false);
   protected readonly now = signal(Date.now());
+  /** The drawer's values; they reach the address with **Apply filters** and go back to it when the drawer closes without. */
   protected readonly operationDraft = signal('');
   protected readonly stateDraft = signal('');
+  protected readonly panelOpen = signal(false);
+  protected readonly noRun = $localize`:@@backups.runs.empty-none:There is no backup run yet.`;
+  protected readonly noMatch = $localize`:@@backups.runs.empty:No backup run matches.`;
+  protected readonly operationOptions: readonly SelectOption[] = [
+    { value: '', label: $localize`:@@backups.filter.any:Any` },
+    ...BACKUP_OPERATIONS.map((o) => ({ value: o, label: operationText(o) })),
+  ];
+  protected readonly stateOptions: readonly SelectOption[] = [
+    { value: '', label: $localize`:@@backups.filter.any:Any` },
+    ...BACKUP_STATES.map((st) => ({ value: st, label: stateView(st, false).text })),
+  ];
   protected readonly selectedId = signal<string | null>(null);
 
   protected readonly runs = new PagedResource<BackupRun>(RUNS_PAGE_SIZE);
@@ -105,11 +123,24 @@ export class BackupsPage {
   private readonly appliedOperation = computed(() => (this.operations as readonly string[]).includes(this.operation() ?? '') ? this.operation()! : '');
   private readonly appliedState = computed(() => (this.states as readonly string[]).includes(this.state() ?? '') ? this.state()! : '');
 
+  /** The filters in the address as the head's chips (Q-UI-422). */
+  protected readonly chips = computed<readonly ListChip[]>(() => {
+    const out: ListChip[] = [];
+    const operation = this.appliedOperation();
+    if (operation) out.push({ key: 'operation', label: $localize`:@@backups.filter.operation:Operation`, value: operationText(operation) });
+    const state = this.appliedState();
+    if (state) out.push({ key: 'state', label: $localize`:@@backups.filter.state:State`, value: this.stateName(state) });
+    return out;
+  });
+
   constructor() {
     effect(() => {
-      this.operationDraft.set(this.appliedOperation());
-      this.stateDraft.set(this.appliedState());
-      untracked(() => this.loadRuns());
+      this.appliedOperation();
+      this.appliedState();
+      untracked(() => {
+        this.restage();
+        this.loadRuns();
+      });
     });
     effect((onCleanup) => {
       if (this.paused()) return;
@@ -132,12 +163,26 @@ export class BackupsPage {
     if (this.runs.items().length <= RUNS_PAGE_SIZE) this.loadRuns();
   }
 
-  protected apply(event: Event): void {
-    event.preventDefault();
-    void this.router.navigate([], {
-      queryParams: { operation: this.operationDraft() || null, state: this.stateDraft() || null },
-      queryParamsHandling: 'merge',
-    });
+  /** The drawer's fields back to the filters the list shows. */
+  protected restage(): void {
+    this.operationDraft.set(this.appliedOperation());
+    this.stateDraft.set(this.appliedState());
+  }
+
+  protected apply(): void {
+    this.navigate({ operation: this.operationDraft() || null, state: this.stateDraft() || null });
+  }
+
+  protected removeChip(chip: ListChip): void {
+    this.navigate({ [chip.key]: null });
+  }
+
+  protected clear(): void {
+    this.navigate({ operation: null, state: null });
+  }
+
+  private navigate(queryParams: Record<string, string | null>): void {
+    void this.router.navigate([], { queryParams, queryParamsHandling: 'merge' });
   }
 
   protected open(run: BackupRun): void {
@@ -150,17 +195,17 @@ export class BackupsPage {
 
   protected duration(run: BackupRun): string {
     const seconds = runSeconds(run, this.now());
-    return seconds === null ? '–' : durationText(seconds);
+    return seconds === null ? '' : durationText(seconds);
   }
 
   protected databaseBytes(run: BackupRun): string {
     const bytes = resultNumber(run, 'databaseBytes');
-    return bytes === null ? '–' : formatSize(bytes);
+    return bytes === null ? '' : formatSize(bytes);
   }
 
   protected blobsCopied(run: BackupRun): string {
     const copied = run.progress.blobsCopied;
-    return copied === undefined ? '–' : String(copied);
+    return copied === undefined ? '' : String(copied);
   }
 
   /** The pretty-printed result of an open run. */

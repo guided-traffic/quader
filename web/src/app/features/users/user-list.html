@@ -1,5 +1,5 @@
 <quader-page-header heading="Users" i18n-heading="@@users.heading">
-  <button actions class="btn btn-confirm" type="button" [disabled]="!session.has('identities:write')" aria-describedby="needs-users" (click)="add()" i18n="@@users.add">Add user</button>
+  <button actions class="btn btn-confirm" type="button" [disabled]="!session.has('identities:write')" aria-describedby="needs-users" (click)="add()" i18n="@@users.add">New user</button>
 </quader-page-header>
 <quader-needs id="needs-users" capability="identities:write" />
 
@@ -29,8 +29,7 @@
   [loading]="list.loading()"
   [error]="list.error()"
   [empty]="list.items().length === 0"
-  i18n-emptyText="@@users.empty"
-  emptyText="No user matches."
+  [emptyText]="filtered() ? noMatch : noUser"
   [hasMore]="list.hasMore()"
   (more)="list.more()"
   (retry)="list.reload()"
@@ -47,7 +46,13 @@
           <span class="badge" i18n="@@users.external-badge">External</span>
         }
       </th>
-      <td>{{ u.email ?? '' }}</td>
+      <td>
+        @if (u.email) {
+          {{ u.email }}
+        } @else {
+          <quader-no-value />
+        }
+      </td>
       <td>{{ originLabel(u.origin) }}</td>
       <td>
         @if (u.status === 'active') {
@@ -59,6 +64,8 @@
       <td>
         @if (u.lastLoginAt; as at) {
           <quader-time-ago [at]="at" absolute="title" />
+        } @else {
+          <quader-no-value />
         }
       </td>
     </tr>

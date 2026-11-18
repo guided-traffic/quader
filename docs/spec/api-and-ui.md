@@ -3296,7 +3296,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/admin/permissions`, `/admin/permissions/new`, `/admin/permissions/{name}` (a policy of no project) | Permission policies of every project, with a project column | R-UI-027 |
 | `/admin/permissions/explain` (`?principal=&action=&repository=&path=&package=`) | Explainer (P1) | R-UI-028 |
 | `/admin/roles` | System role bindings | R-UI-024 |
-| `/admin/tokens` | Token administration | R-UI-030 |
+| `/admin/tokens` | Tokens | R-UI-030 |
 | `/admin/ci`, `/admin/ci/{issuer}`, `/admin/ci/{issuer}/mappings/{mapping}`, `/admin/ci/{issuer}/test` | CI identity, claim tester | R-UI-035, R-UI-036 |
 | `/admin/audit` | Audit log, with a project column | R-UI-037 |
 | `/admin/advisory-sources` | Advisory sources of the vulnerability data | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
@@ -4112,8 +4112,8 @@ Priority: **MVP** · Covers: UI-030, REPO-007
   delete. Delete requires typing the key, offers the `detach` choice of
   [repositories-and-proxy.md](repositories-and-proxy.md) when other repositories reference it, and
   shows that deletion runs as a job.
-- "Create repository" (when the caller may create repositories in a project: `repositories:write-config`, or the role
-  `owner`) opens the wizard.
+- **New repository** (when the caller may create repositories in a project: `repositories:write-config`, or the role
+  `owner`) opens the wizard ([Q-UI-573](#q-ui-573--the-button-that-makes-a-new-thing-says-new-thing-and-a-new-user-is-made-not-added)).
 
 Acceptance criteria:
 
@@ -4296,7 +4296,8 @@ Priority: **MVP** · Covers: UI-035, UI-036
   user's tokens (a quiet section **Tokens** like the page's others, opened when the user holds a token and never closed by itself, [Q-UI-333](#q-ui-333--a-pages-sections-are-quiet-disclosures-tokens-too-open-while-there-is-a-token-the-profile-follows); **Revoke all
   tokens** a danger button in the page's section **Advanced**, last on the page) and sessions (list, end all); "Explain permissions" (P1); "Audit"
   (audit log filtered on this actor). The break-glass account shows its lock state and "Unlock".
-- "Add user" pre-provisions a user linked to an identity-provider identity (R-API-031). No password
+- **New user** pre-provisions a user linked to an identity-provider identity (R-API-031): the dialog **New user** creates the
+  user's record in Quader with **Create user** ([Q-UI-573](#q-ui-573--the-button-that-makes-a-new-thing-says-new-thing-and-a-new-user-is-made-not-added)). No password
   fields exist.
 - `/admin/roles` lists the fixed roles of `GET /api/v1/roles` with their bindings and offers bind
   and unbind.
@@ -4444,8 +4445,9 @@ Priority: **MVP** · Covers: UI-053, AUTHN-039, AUTHN-040
 - The profile's three pages (Profile, Personal tokens, Sessions) have the shared page header and are the tab strip of links
   under it; **Create token** and **End all other sessions** are the header's actions (Q-UI-307, UI-A-20). An empty token list
   says what is missing: "No active tokens." while the revoked and expired ones are hidden, "No tokens yet." with them (the
-  administrator's filtered list keeps "No tokens match.").
-- Personal tokens: list with the token (description and hint), the scope summary, which takes the room the others leave, expires
+  administrator's list says "There is no active token yet." unfiltered and "No token matches." filtered, Q-UI-565).
+- Personal tokens: list with the token (description and hint), the scope summary, the two sharing the room the others leave by
+  their content ([Q-UI-563](#q-ui-563--a-column-is-as-wide-as-its-content-what-never-breaks-declares-no-width-and-the-columns-that-wrap-share-the-room)), expires
   and last used, and, from 64 rem of the list, created, each time relative (R-UI-103); the row ends with **Rotate** and
   **Revoke**, two quiet buttons with their words, or the state of a token that is no longer active
   ([Q-UI-332](#q-ui-332--a-token-list-shows-token-scope-expiry-last-use-and-its-action-created-and-created-via-give-way-first),
@@ -4475,6 +4477,7 @@ Acceptance criteria:
 ### R-UI-030 · Token administration
 Priority: **MVP** · Covers: UI-041, TOK-026
 
+- The page is titled **Tokens**, as its entry in the side bar (R-UI-145).
 - All tokens (`tokens:read`): the token (description and hint, which names its type), owner, scope, expires, last used, and
   **Revoke** or the state of a token that is no longer active; below 64 rem of the list the rows stack ([Q-UI-332](#q-ui-332--a-token-list-shows-token-scope-expiry-last-use-and-its-action-created-and-created-via-give-way-first)); filters type,
   owner, state, expiring before, unused since; revoke single and selected
@@ -4627,8 +4630,10 @@ Acceptance criteria:
 Priority: **MVP** · Covers: OPS-023
 
 - Table from `GET /api/v1/audit/events`: time, actor, action (a short plain name of its own for every event type of the audit
-  registry, in English and German, with the event name under it; an unknown name is shown as sent), target (actor and target wrap in their
-  column and are never cut, UI-A-46), outcome,
+  registry, in English and German, with the event name under it, which breaks after its dots only, [Q-UI-567](#q-ui-567--an-audit-actions-key-breaks-after-its-dots-only)); an unknown name is shown as sent), target (the actor and a
+  repository's target wrap in their column and are never cut, UI-A-46; a resource the entry knows by name shows the name, any
+  other its kind and its identifier on one line, [Q-UI-568](#q-ui-568--an-audit-target-the-entry-knows-by-name-shows-the-name-another-its-identifier-on-one-line)), outcome (a badge, **Success**, **Failure**, **Denied**,
+  [Q-UI-564](#q-ui-564--a-status-word-starts-with-a-capital)),
   source address; filters time range (presets and custom), actor, action, category, project, repository,
   outcome (the list's drawer, R-UI-101; the head has no search by name, its end the time zone and the exports); "Load more". The log is always newest first and has no sort control. The action filter suggests every
   prefix of the registry's event types at every level (`ci.*`, `ci.issuer.*`) and every type with its name, from the registry.
@@ -4666,13 +4671,16 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
   their screens and "New repository" for `repositories:write-config`; and the job queue with the
   active key. It refreshes every 15 seconds with a pause control (WCAG 2.2.2), like the status screen,
   and a failing overview leaves the rest readable with a retry.
-- Cards from `GET /api/v1/system/info` and `/system/replicas`: version and revision, with a link to the notices of the
+- Cards from `GET /api/v1/system/info` and `/system/replicas`: version and revision (its first twelve characters, the full hash
+  their title, [Q-UI-570](#q-ui-570--a-hash-in-running-text-is-its-short-form-with-the-whole-as-its-title)), with a link to the notices of the
   bundled software of the same build (Q-UI-144); base URL and
   source; the maintenance mode, as a row only while it is not `normal` (Q-OPS-156); database (server version, schema version against the supported ones);
   scheduled tasks (`/system/tasks`: next run, last outcome) with "Run now", which runs on a
   `worker` replica; recent jobs (`/system/jobs`) with cancel.
-- **Jobs** (`/admin/system/jobs`, and the recent jobs of the status screen, one table for both): kind, state, enqueued,
-  progress, replica, result and cancel. The result cell of a job whose `error` is set shows its `code`, under it the `detail`
+- **Jobs** (`/admin/system/jobs`, and the recent jobs of the status screen, one table for both): kind, state (a badge,
+  Q-UI-560), enqueued, progress, replica, result and cancel; the kind and the replica stay on one line, the result takes the
+  room (Q-UI-563). The filters kind and state are the head of every list, **Filters** and its drawer with the chips of the set
+  ones ([Q-UI-566](#q-ui-566--the-jobs-and-the-backup-runs-take-the-head-of-every-list)). The result cell of a job whose `error` is set shows its `code`, under it the `detail`
   as the server wrote it, untranslated and wrapping at any character, and "Attempt *n* of *m*" with *n* the error's `attempt`
   (the job's `attempt` when the error has none) and *m* the job's `maxAttempts`; an error without a detail shows its code
   alone. The result of a succeeded job is summarised as before (Q-UI-172).
@@ -4960,7 +4968,7 @@ Priority: **MVP** · Covers: quader-only
   disabled with "The break-glass account is never external."
 - The users list shows a badge **External** next to the name of an external user and has the filter External (yes, no) in its
   filter drawer (`external=`).
-- "Add user" has the same checkbox, preset to the installation's `newUsersExternal` (R-UI-031).
+- **New user** has the same checkbox, preset to the installation's `newUsersExternal` (R-UI-031).
 
 Acceptance criteria:
 
@@ -5016,8 +5024,11 @@ the model gives the screens:
   bar, and no list of a project's content is narrowed by a stored choice.
 - Start page: the project (its mark, its display name and its key under it, R-UI-102), description, the caller's role (for a
   member), the number of repositories and of members; the head's search by key or name and **Your projects** (R-UI-100).
-  The admin area's list of projects (`/admin/projects`, `projects:read`) keeps the owners, has a column with the logical size the project is
-  charged (`logicalBytes`, [R-STOR-049](storage.md#r-stor-049--the-storage-of-a-project)) and creates and edits projects.
+  The admin area's list of projects (`/admin/projects`, `projects:read`) has the project (mark, display name, key), the
+  visibility, the Owners, the members, the repositories and a column with the logical size the project is charged
+  (`logicalBytes`, [R-STOR-049](storage.md#r-stor-049--the-storage-of-a-project)), not the caller's role
+  ([Q-UI-577](#q-ui-577--the-admin-areas-list-of-projects-has-no-column-your-role), owner 2026-11-18), and creates and edits
+  projects.
 - Create dialog (administrators, `projects:write`): key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$`, immutable), display name,
   description, the visibility level (R-UI-054), and the first Owner; repositories are created in the project afterwards. Edit dialog: display name and
   description, for administrators and the project's Owners. Delete is offered to administrators only, and only for
@@ -5310,7 +5321,8 @@ configured through the chart and the configuration file, and restored by a Helm 
   exported, blobs and bytes copied against the totals, its pod and its start time, refreshed with
   the status screen's interval and pause control (R-UI-038). A run whose lease has expired is
   shown as "stopped without finishing; the next run marks it abandoned".
-- **Runs.** The list of `GET /api/v1/system/backups` with filters for operation and state and
+- **Runs.** The list of `GET /api/v1/system/backups` with filters for operation and state (the head of every list, **Filters**
+  and its drawer with the chips of the set ones, [Q-UI-566](#q-ui-566--the-jobs-and-the-backup-runs-take-the-head-of-every-list)) and
   "Load more": start, operation, pod, state, backup ID, snapshot time, duration, database bytes,
   blobs copied and warnings. State labels carry icon and text. `interrupted` reads "interrupted by
   a drain or eviction; the Job retries it" and is not shown as a failure (R-BAK-012). A detail panel
@@ -5657,7 +5669,7 @@ Priority: **MVP** · Covers: UI-031
 
 Acceptance criteria:
 
-- **Create repository** on the repository list opens the chooser; typing `nu` leaves the NuGet tile; Enter opens a page whose
+- **New repository** on the repository list opens the chooser; typing `nu` leaves the NuGet tile; Enter opens a page whose
   `<h1>` is "New NuGet repository", with no step list and no Next button.
 - With a test format whose classes lack `virtual`, the class Virtual is disabled with "<Format> does not implement the class
   Virtual." and Local is chosen.
@@ -6632,6 +6644,86 @@ Acceptance criteria:
   no link or button; an empty OCI remote says that it fills as clients pull through it; a disabled repository says only that it is
   empty.
 - Rendered (rule 11): `repository-empty` as plain user, power user and administrator, light and dark, at 1440 and 390 px.
+
+### R-UI-145 · Nothing in a list breaks where it must not
+Priority: **MVP** · Covers: quader-only
+
+What the development agent saw on the 19 screens of the admin area before the owner's walk (2026-11-18,
+[promt.md](../projektplan/promt.md#owner-walk-of-2026-11-18-the-frontend), "Station of the administrator"): a status whose icon
+stood on one line and its word on the next in every row of the jobs; a replica's name, an action's key and a token's description
+broken while the column beside them was half empty; a UUID broken across two lines where the row named the same person by name;
+**Format** and **Class** 2 px below the other cells of their row; a dashboard card as wide as the page with a label 1,100 px from
+its value; a version broken into three lines in a card whose right half was empty; a schema version touching its check mark; the
+sentence under the endpoints' title smaller than on every other page; a page titled **Token administration** under the menu entry
+**Tokens**. The rules, for every list of the app:
+
+- **A status is one element** ([Q-UI-560](#q-ui-560--an-icon-in-a-table-cell-is-one-element-with-its-word)): its icon and its word
+  in the badge (`.ok`, `.warn`, `.bad`, `.badge`), which never breaks; an icon before a text that may wrap is `.icon-name`. A lint
+  rule refuses an icon that stands directly in a table cell. Its word starts with a capital
+  ([Q-UI-564](#q-ui-564--a-status-word-starts-with-a-capital)).
+- **An identifier stays whole** and **a column is as wide as its content**
+  ([Q-UI-563](#q-ui-563--a-column-is-as-wide-as-its-content-what-never-breaks-declares-no-width-and-the-columns-that-wrap-share-the-room)):
+  a row's header that is an identifier (`translate="no"`) and a cell of one stay on one line; a column whose values never break
+  declares no width and is as wide as its longest value; the columns that wrap share what is left in proportion to their content,
+  and only a list with one such column lets it `prefer` the room. An audit action's key breaks after its dots only
+  ([Q-UI-567](#q-ui-567--an-audit-actions-key-breaks-after-its-dots-only)); a resource's identifier is cut on one line with its
+  whole value as the title ([Q-UI-568](#q-ui-568--an-audit-target-the-entry-knows-by-name-shows-the-name-another-its-identifier-on-one-line));
+  a hash in running text is its short form ([Q-UI-570](#q-ui-570--a-hash-in-running-text-is-its-short-form-with-the-whole-as-its-title)).
+- **A format and a class stand on the line of their row**, and so does a row's control in every table
+  ([Q-UI-562](#q-ui-562--a-format-and-a-class-are-centred-on-the-line-of-their-cell)): a group's **Remove** stood 5 px below the
+  member's name.
+- **A check box keeps its size** beside a label of several lines
+  ([Q-UI-575](#q-ui-575--a-check-box-keeps-its-size-beside-a-long-label)): the CI issuer's **Public issuer** was smaller than the
+  form's two other boxes.
+- **A save bar closes the page** down to the panel's edge
+  ([Q-UI-576](#q-ui-576--the-policy-editors-save-bar-closes-the-page-down-to-the-panels-edge)): a line of the policy form showed
+  below **Create policy**.
+- **A card's rows are built one way and a card is no wider than 30 rem**
+  ([Q-UI-572](#q-ui-572--a-cards-rows-are-one-construction-and-a-card-is-at-most-30-rem-wide)).
+- **The sentence under a title is the header's** ([Q-UI-569](#q-ui-569--the-sentence-under-a-title-is-the-headers-description)),
+  and **a page's title is its entry's in the side bar** (**Tokens**, R-UI-030).
+
+Acceptance criteria:
+
+- `check-rules.mjs` fails on a template whose table cell holds an icon directly (`status-rule.mjs`, tested by
+  `lint-rules.test.mjs`); the app passes it.
+- Unit tests: the jobs' state, the audit outcome and a replica's state are badges whose word starts with a capital; the replica
+  cell has no `.wrap`; the admin area's repository list and the token lists pin no column; the audit key holds `<wbr>` after each
+  dot only; a target known by name shows it with the identifier as the title; the system status shows the revision's twelve
+  characters with the hash as the title and the schema version apart from its badge; the dashboard's CPU and Memory are rows of
+  the card's list; the endpoints' sentence is the header's; a check box is a direct child of its `.check-row`.
+- `layout-rules.spec.ts` reads the shared stylesheets and holds the rules of Q-UI-562, Q-UI-563, Q-UI-575 and Q-UI-576.
+- Looked at in the running UI (not rendered by the builder, who had no render stack): the screens of the list in the report of
+  the change.
+
+### R-UI-146 · One thing is written and built one way in the admin area
+Priority: **MVP** · Covers: quader-only
+
+The same walk found one thing in two forms on screens of one kind. One form each, for every list of the app:
+
+- **New thing**: the button that makes a new thing says **New** and the thing (**New repository**, **New user**)
+  ([Q-UI-573](#q-ui-573--the-button-that-makes-a-new-thing-says-new-thing-and-a-new-user-is-made-not-added)).
+- **A cell without a value** is the en dash, heard as "None" ([Q-UI-561](#q-ui-561--a-cell-without-a-value-is-the-en-dash-heard-as-none)).
+- **A project in a cell** is its mark and its name (`<quader-project-link>`, Q-UI-424), also in the service accounts.
+- **A count or a size** stands at its column's end ([Q-UI-574](#q-ui-574--a-count-or-a-size-stands-at-its-columns-end)).
+- **An empty list** says there is none yet ("There is no group yet."); a search or a filter that finds nothing says so ("No group
+  matches."); the action that fills the list is the header's, once
+  ([Q-UI-565](#q-ui-565--an-empty-list-says-there-is-none-yet-a-filtered-one-that-nothing-matches-and-its-action-stands-once-in-the-header)).
+- **A filter** is the head of every list: **Filters**, the drawer and the chips, also for the jobs and the backup runs
+  ([Q-UI-566](#q-ui-566--the-jobs-and-the-backup-runs-take-the-head-of-every-list)).
+- **A setting's name in running text** is code ([Q-UI-571](#q-ui-571--a-settings-name-in-running-text-is-code)).
+
+Not unified, open for the owner: the row actions (**Edit**, **Revoke**, **Unbind**, an icon and a menu), and the two filter
+mechanisms of the security dashboard.
+
+Acceptance criteria:
+
+- Unit tests: the users' header offers **New user** and its dialog **Create user**; the repository list **New repository**; an
+  empty cell holds `<quader-no-value>`, is marked `data-empty`, and is heard as "None"; the service accounts name their project by
+  its mark; the projects' counts and size are `num`; the empty texts of the lists say "There is no … yet." unfiltered and
+  "No … matches." filtered, and the Bastions' empty state has no button; the jobs and the backups have the list head, chips and
+  the drawer, and no form of their own.
+- The journeys that name a changed text use the new one (02, 03, 12, 16).
 
 ## Deferred
 
@@ -12260,6 +12352,10 @@ revisits an illustration if the owner wants the reference's.
 what fills it and for whom.
 Code: [empty-state.ts](../../web/src/app/shared/ui/empty-state.ts).
 
+**Revised by [Q-UI-565](#q-ui-565--an-empty-list-says-there-is-none-yet-a-filtered-one-that-nothing-matches-and-its-action-stands-once-in-the-header)
+(2026-11-18):** the action that fills an empty list is the header's, once, in every list; the empty state is the sentence, "There
+is no … yet." unfiltered and "No … matches." filtered.
+
 ### Q-UI-310 · The kind of user is read from the roles in force, per project, and is no role of its own
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -12776,6 +12872,10 @@ menu; the repository takes what the others leave. The search results lose their 
 repository list ([Q-UI-430](#q-ui-430--the-searchs-repository-rows-are-built-from-the-parts-of-the-repository-list)). The admin area's
 list keeps its columns and its copy button; its project is the project's mark and name in 11 rem (Q-UI-424). `prefer` is a flag
 now: the column takes what the others leave, and they keep their widths.
+
+**Revised by [Q-UI-563](#q-ui-563--a-column-is-as-wide-as-its-content-what-never-breaks-declares-no-width-and-the-columns-that-wrap-share-the-room)
+(2026-11-18):** a column that never breaks declares no width; in the admin area's repository list the repository and the project
+share the room, and only a list with one wrapping column lets it prefer.
 
 ### Q-UI-331 · An endpoint's rules are the shared data table, and a rule's client address is the row's copy button
 
@@ -14002,6 +14102,10 @@ view; the row's actions were an icon without a label (rotate) and a word (**Revo
 
 **Applied in the spec:** R-UI-029; Q-UI-332 revised. Code: [token-table.ts](../../web/src/app/shared/access/token-table.ts).
 
+**Revised by [Q-UI-563](#q-ui-563--a-column-is-as-wide-as-its-content-what-never-breaks-declares-no-width-and-the-columns-that-wrap-share-the-room)
+(2026-11-18):** the scope no longer takes all the room: the token and the scope share it by their content, so the administrator's
+long token descriptions no longer break into three lines beside a short scope.
+
 ### Q-UI-430 · The search's repository rows are built from the parts of the repository list
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -15149,6 +15253,355 @@ if readers ask why a row is C without hovering.
 **Applied in the spec:** R-UI-143, R-UI-091, R-UI-094, R-UI-112; Q-UI-374 and Q-UI-454 revised. Code:
 [grade.ts](../../web/src/app/shared/vulnerability/grade.ts), `gradeSummaryParts` in
 [grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts).
+
+### Q-UI-560 · An icon in a table cell is one element with its word
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on `system/jobs` the state's icon stood on one line and its word ("succeeded") on the next, in every row; the audit log's
+outcome, the advisory sources' state, the system status's replica, key and Valkey states and the rule editor's verdicts were
+built the same way: an icon with a status class, then the word as a text node or a sibling span, directly in the cell. The lists
+that used the badge (`<span class="ok"><icon/>Active</span>`) never broke.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every status in a cell is the badge; an icon before a text that may wrap is `.icon-name`; a lint rule refuses an icon that stands directly in a cell (chosen) | One construction, held by the lint | It cannot recur on a new screen; the badge is the reference's status | The badge is a pill, so a status that was plain coloured text gains a fill |
+| (b) A shared table rule that keeps a cell with an icon on one line | CSS only | No template changes | A cell with an icon and a sentence never wraps; the cause stays in the templates |
+| (c) Fix the jobs screen | Local | Small | The other screens keep the defect |
+
+**Choice:** (a). `status-rule.mjs` (run by `check-rules.mjs`, tested in `lint-rules.test.mjs`) refuses a `material-icons` element
+that is a direct child of a `<td>` or a `<th>`, unless it is an image of its own (`role="img"` with its name). **Rationale:** the
+defect was a construction, so the construction is what is ruled out. The development agent revisits the rule if it refuses a
+construction that cannot break.
+
+**Applied in the spec:** R-UI-145, R-UI-037, R-UI-038. Code: [status-rule.mjs](../../web/scripts/status-rule.mjs), the jobs, the
+audit log, the advisory sources, the system status, the endpoints and their rule editor, the triage dialog, the CI issuers and
+issuances.
+
+### Q-UI-561 · A cell without a value is the en dash, heard as None
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `repositories`, `service-accounts`, `endpoints` and `jobs` wrote an en dash where a cell had no value; `projects` (Owners,
+Your role, a column that is gone since, Q-UI-577) and `users` (Email, Last sign-in) left the cell empty. A screen reader read the dash as "en dash" or nothing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<quader-no-value>`: the dash, hidden from assistive technology, and "None" for it; the data table marks such a cell empty, so a stacked row leaves its line out (chosen) | One component | One look and one name; the stacked rows keep working | A template writes an `@else` where it wrote `?? '–'` |
+| (b) The bare dash everywhere | A character | Short | Heard as "en dash" |
+| (c) An empty cell everywhere | Nothing | The reference leaves cells empty | An empty cell reads as not loaded |
+
+**Choice:** (a), in every table of the admin area. **Rationale:** a reader sees and hears that there is no value. The development
+agent revisits the word if a list needs to say why ("Never").
+
+**Applied in the spec:** R-UI-146. Code: [no-value.ts](../../web/src/app/shared/ui/no-value.ts), `emptyCell` in
+[data-table.ts](../../web/src/app/shared/ui/data-table.ts).
+
+### Q-UI-562 · A format and a class are centred on the line of their cell
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: in the admin area's repositories the labels of **Format** and **Class** stood 2 px lower than the name, the project, the
+level and the time of their row (measured 607.5 against 605.5). The cause: the format's and the class's icon is 20 px on a cell
+line of 16 px, and the pair, an inline flex box centred on its icon, made the line 20 px and put its label in its middle. The
+badge and the grade shield had the same cause and its fix (W-9). On 2026-11-18 the development agent saw the same in a group's
+members: **Remove** stood 5 px below the member's name, a button of 32 px at the top of a cell whose line is 21 px.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The pair `.format-name`, `.class-name`, `.type-cell` in a data table's cell takes a negative margin of half the difference, as the badge does; a control in a cell of every other `table.data` is centred on its line of 21 px, as the data table centres it on 16 px (chosen) | Two shared rules | Every list that shows a format, a class or a row's action gets it | The margins are computed from the line heights; a cell with another line height needs its own |
+| (b) Icons of 16 px in a cell | Smaller | No margin | The icon is the format's logo; 16 px is the badge's |
+| (c) Middle alignment for the row | Centred | One rule | Against Q-UI-308's top alignment, where a cell has several lines |
+
+**Choice:** (a), in [_list-screens.scss](../../web/src/styles/_list-screens.scss) and
+[_catalog-screens.scss](../../web/src/styles/_catalog-screens.scss); a stacked row resets the margin. **Rationale:** the cause is
+one and so is the fix, where every list gets it. The development agent revisits it if a cell's line height changes.
+
+**Applied in the spec:** R-UI-145.
+
+### Q-UI-563 · A column is as wide as its content; what never breaks declares no width, and the columns that wrap share the room
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a column that `prefer`s takes every pixel the others leave, and every other column is pinned to its least width
+(Q-UI-330). That broke a value in a pinned column while the preferred one was half empty: the administrator's token
+**Client setup: npm, web-frontend/npm-vendor, 2026-11-18** in three lines of 10 rem beside a scope of 280 px for "Repository grants:
+1"; the project **Customer portal release engineering and delivery** in three lines of 11 rem; a job's replica "ms2022.local-" /
+"39645" in 7 rem beside a result of half the page. A least width declared for a column whose values never break was a guess for
+one screen: wider than its values, it took room the wrapping columns needed.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A column whose values never break (a format, a class, a level, a time, a status, an identifier, the actions) declares no width and is as wide as its longest value; a column whose values wrap declares its least; only a list with one wrapping column lets it `prefer`; a row's header that is an identifier (`translate="no"`) stays on one line like a cell of one (chosen) | The table's own layout by content | No value is broken while room is free; no width is a guess | Where the wrapping columns need more than there is, the room is shared, so both break into two lines rather than one into three |
+| (b) Bigger least widths for the broken columns | Numbers | Small change | A number for one screen's data; the next long name breaks again |
+| (c) Ellipsis for every long value | One line | Even rows | A name cut where it was readable |
+
+**Choice:** (a). The admin area's repositories: the repository and the project wrap (13 and 11 rem least) and share the room,
+the rest is as wide as its values; inside a project the repository is the one that wraps and prefers. The token lists: the
+token and the scope share the room (Q-UI-429 revised), the times and the actions as wide as their values. The jobs: the result is
+the one that wraps and prefers; the kind and the replica stay whole. Where a value can be longer than any column, it is cut on one
+line with its whole value as its title (Q-UI-568) or shortened (Q-UI-570). The sum of the least widths that the stacking of
+Q-UI-306 is reasoned on counts a column without a width at its longest value. **Rationale:** the browser divides a table by its
+content when nothing pins it, which is what the defects asked for. The development agent revisits a list whose wrapping columns
+still break into three lines at 1440 px.
+
+**Applied in the spec:** R-UI-145, R-UI-029, R-UI-038; Q-UI-330 and Q-UI-429 revised. Code: `columns` of
+[repository-list.ts](../../web/src/app/features/repositories/repository-list.ts),
+[token-table.ts](../../web/src/app/shared/access/token-table.ts), [job-table.ts](../../web/src/app/features/system/job-table.ts);
+the identifier rule in [_list-screens.scss](../../web/src/styles/_list-screens.scss).
+
+### Q-UI-564 · A status word starts with a capital
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the audit log wrote its outcome "success", "failure", "denied", the jobs "succeeded", the system status "ready", "lost",
+"supported", where every other status of the app (**Active**, **Disabled**, **Revoked**, **Expired**) starts with a capital.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The word of a badge starts with a capital: **Success**, **Failure**, **Denied**, **Succeeded**, **Ready**, **Lost**, **Supported**; a sentence that names a state keeps it in lower case ("Deleting succeeded") (chosen) | Badge words own units | One way to write a status | A job's state has two units: the badge's and the sentence's |
+| (b) Lower case everywhere | One unit | Fewer units | Against the badges the app already has |
+
+**Choice:** (a). `jobStatusText` ([job-table.ts](../../web/src/app/features/system/job-table.ts)) is a job's badge word,
+`jobStateText` the word in a sentence. **Rationale:** a badge is a label, and labels are sentence case. The development agent
+revisits nothing here.
+
+**Applied in the spec:** R-UI-145, R-UI-037.
+
+### Q-UI-565 · An empty list says there is none yet, a filtered one that nothing matches, and its action stands once, in the header
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `permissions` said "No policy matches." with no filter set and nothing else; `bastions` repeated **New Bastion** under its
+sentence; `ci` had only the sentence; the jobs and the backup runs said "… matches the filters." unfiltered; the lists' filtered
+wordings were "No group matches." and "No repository matches the filters.".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Unfiltered: "There is no <thing> yet." (the audit log: "There is no event in the last 24 hours."); filtered by a search or a filter: "No <thing> matches."; the action that fills the list is the header's, once, never repeated under the sentence (chosen) | One sentence each, the action in the header | The sentence says which of the two it is; one primary action per page (the style guide); as Q-UI-555 decided for an empty repository | The reader of an empty list looks up for the action |
+| (b) The action repeated under the sentence | Q-UI-309 as it was | The action beside the sentence | Two identical primary buttons on one page |
+| (c) Each list as it is | No change | None | The objection |
+
+**Choice:** (a), for the projects, repositories, users, groups, service accounts, policies, tokens, CI issuers and issued tokens,
+Bastions, endpoints, advisory sources, jobs, backup runs and the audit log. A list built from the configuration (the endpoints,
+the advisory sources) says the same; its page's sentence says where they come from. **Rationale:** the wording "matches" is for a
+filter; the header holds the page's action on every page. The development agent revisits (b) if readers miss the action at an
+empty list.
+
+**Applied in the spec:** R-UI-146, R-UI-029; Q-UI-309 revised.
+
+### Q-UI-566 · The jobs and the backup runs take the head of every list
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `system/jobs` filtered with a form of its own (a text field "Kind (comma separated)", six check boxes, **Search**),
+`system/backups` with two selects and **Search**, where every other list has **Filters**, its drawer and the chips (ADR-200).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<quader-list-head>` and `<quader-filter-panel>`: the jobs' **Kind** (several, separated by commas) and **State** (check boxes), the runs' **Operation** and **State** (selects), each set filter a chip; the filters stay in the address (chosen) | ADR-200's pieces | One way to filter; the list keeps its width | A filter is two clicks instead of one |
+| (b) Keep the forms | As before | Visible filters | Two ways to filter |
+
+**Choice:** (a). Neither list has a search by name. The security dashboard keeps its two mechanisms: its construction is open for
+the owner. **Rationale:** the owner chose the drawer for every list (W-6). The development agent revisits nothing here.
+
+**Applied in the spec:** R-UI-146, R-UI-038, R-UI-048. Code: [jobs-page.ts](../../web/src/app/features/system/jobs-page.ts),
+[backups-page.ts](../../web/src/app/features/system/backups/backups-page.ts).
+
+### Q-UI-567 · An audit action's key breaks after its dots only
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the key under an action's name broke inside a word ("user.groups.claim_missin" / "g"): it wrapped at any character so
+that `vulnerability.source.imported` would not push the log sideways at 1440 px.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A break opportunity (`<wbr>`) after each dot, no break inside a part (chosen) | The key breaks between its parts | A part is read whole; the column needs only its longest part | A key of one long part (none is registered) keeps its width |
+| (b) The key on one line | No break | Whole | 36 characters widen the column and the log scrolls |
+
+**Choice:** (a). **Rationale:** the dots are the key's own separators. The development agent revisits nothing here.
+
+**Applied in the spec:** R-UI-145, R-UI-037. Code: `keyParts` in [audit-log.ts](../../web/src/app/features/audit/audit-log.ts).
+
+### Q-UI-568 · An audit target the entry knows by name shows the name, another its identifier on one line
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the target read "user" and a UUID broken across two lines where the row beside it named the same person as "ada". What
+the API delivers: `AuditResource` is a kind and an identifier, no name (the row stores `resource_type` and `resource_id`); the
+entry names a principal only as its actor (`AuditActor.name`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A user or service account that is the event's own actor is named as the Actor column names it, its kind under it with the identifier as the title; any other resource is its kind and, under it, its identifier on one line cut at 12 rem, its whole value the title; a repository and its path wrap as before (chosen) | What the entry knows | No API change; the person of a sign-in reads as a name | A target that is not the actor stays an identifier |
+| (b) A name in `AuditResource` | API and store | Every target named | An expand step of the audit store and every producer; not asked for |
+| (c) The identifier wrapping | As before | Whole | The broken UUID |
+
+**Choice:** (a). **Rationale:** the name the row already holds is shown; the name it does not hold is not invented. The
+development agent revisits (b) if administrators need the names of other targets in the list; the event's panel shows and
+copies the identifier.
+
+**Applied in the spec:** R-UI-145, R-UI-037. Code: `targetName` in [audit-log.ts](../../web/src/app/features/audit/audit-log.ts).
+
+### Q-UI-569 · The sentence under a title is the header's description
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on `endpoints` the sentence under the title was a `p.hint` after the header, smaller and tighter than the same sentence
+on every other page, and the table followed it without the gap of the other lists.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The page header's `description` (chosen) | The shared piece | One size, one gap | None found |
+| (b) Restyle the hint | Local | Small | Two constructions |
+
+**Choice:** (a). **Rationale:** the header owns the sentence on every page (the style guide's anatomy). The development agent
+revisits nothing here.
+
+**Applied in the spec:** R-UI-145. Code: [endpoint-list.ts](../../web/src/app/features/endpoints/endpoint-list.ts).
+
+### Q-UI-570 · A hash in running text is its short form, with the whole as its title
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on `system` the version "dev (3897aa…708f8a)" broke into three lines in a card whose right half was empty: the revision is
+a commit hash of 40 characters.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The version, then the revision's first twelve characters in `<code>`, its whole value the title (chosen) | As the style guide writes a digest | One line; the hash is still there | Twelve characters of 40 |
+| (b) The whole hash, wrapping | As before | Complete | The objection |
+
+**Choice:** (a). A revision that is no hash (`unknown`) is shown as it is. **Rationale:** a hash is not read but compared, and
+twelve characters identify a commit. The development agent revisits nothing here.
+
+**Applied in the spec:** R-UI-145, R-UI-038. Code: `shortRevision` in [system-status.ts](../../web/src/app/features/system/system-status.ts).
+
+### Q-UI-571 · A setting's name in running text is code
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `advisory-sources` wrote a setting's name in code type in the sentence under its buttons and in plain type in the
+paragraph below.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<code translate="no">` around every setting's name and value of the configuration in running text (chosen) | As the manual writes them | One type; not translated | None found |
+| (b) Plain type | Quieter | Fewer elements | A name of the configuration reads like prose |
+
+**Choice:** (a). **Rationale:** a setting's name is typed into a file as it stands. The development agent revisits nothing here.
+
+**Applied in the spec:** R-UI-146. Code: [vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts).
+
+### Q-UI-572 · A card's rows are one construction, and a card is at most 30 rem wide
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: in a component's card of the dashboard, **In flight**, **CPU** and **Memory** stood closer together and without the line
+that separates **Nodes** to **Server errors**: CPU and Memory were meters of their own after the card's list. With one component
+the card was as wide as the page, so a label and its value were 1,100 px apart.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) CPU, Memory and the database's connections are rows of the card's list, the bar of their share inside the row under the label and the value; a card is at most 30 rem wide (chosen) | One list per card | One spacing and one hairline; the value beside its label | A single card leaves the rest of the row empty |
+| (b) The definition-list form of the status page's cards | A grid of label and value | Close together | The dashboard's cards are the reference's list cards |
+| (c) Cards in fixed thirds | `auto-fill` | Even | Against UI-A-44: one card a third of an empty row |
+
+**Choice:** (a). **Rationale:** the rows of one card are read as one list. The development agent revisits the width if the
+owner wants a single card to fill the row.
+
+**Applied in the spec:** R-UI-145, R-UI-038. Code: [dashboard.html](../../web/src/app/features/system/dashboard.html),
+[dashboard.scss](../../web/src/app/features/system/dashboard.scss).
+
+### Q-UI-573 · The button that makes a new thing says New thing, and a new user is made, not added
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the admin area's lists said **New project**, **New group**, **New service account**, **New policy**, **New issuer**,
+**New Bastion**, but **Create repository** and **Add user**. **Add user** pre-provisions a user (R-AUTH-016): it creates the user's
+record in Quader before the first sign-in, which links the provider's identity; it does not add an existing identity to
+something, as **Add member** does.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The header's button is **New** and the thing (**New repository**, **New user**); its dialog is titled the same, its confirm button **Create** and the thing (**Create user**); a button that adds an existing thing to another says **Add** (**Add member**) (chosen) | One word for making | As the reference says it; "a title names the thing" | Three buttons of the main area (**Create token**, **Create policy**, **Create service account** of a project) follow when they are next changed |
+| (b) **Create** everywhere | The verb | Says the act | Six buttons change instead of two |
+
+**Choice:** (a). **Rationale:** the user is made, so it is new; a member is added. The development agent revisits nothing here.
+
+**Applied in the spec:** R-UI-146, R-UI-020, R-UI-024.
+
+### Q-UI-574 · A count or a size stands at its column's end
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `projects` set **Members** and **Repositories** at the start of their columns, `groups` and `advisory-sources` their
+counts at the end.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A count or a size is a figure at its column's end, its header too, in tabular figures: the data table's `numeric` column, `num` on a raw table's cells (chosen) | The data table's own means | Figures of one column line up | A narrow column's figure stands far from the name |
+| (b) At the start | As text | Close to the name | Figures of different lengths do not line up |
+
+**Choice:** (a): the projects' members, repositories and storage, the backup runs' sizes and counts. A cell that holds a count
+and a sentence (the advisory sources' failures) stays at the start. **Rationale:** figures are compared down a column. The
+development agent revisits nothing here.
+
+**Applied in the spec:** R-UI-146.
+
+### Q-UI-575 · A check box keeps its size beside a long label
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on the new CI issuer the box of "Public issuer (anyone can obtain tokens from it …)" was smaller than the form's two
+other boxes and its label wrapped differently. All three are `<quader-checkbox>`; the box is a flex item of `.check-row`, and a
+label of several lines shrank it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The box of `.check-row` does not shrink (`flex: none`) (chosen) | The shared row | Every check box of the app with a long label | None found |
+| (b) A shorter label | Words | No CSS | The next long label shrinks again |
+
+**Choice:** (a). **Rationale:** the cause is the shared row's. The development agent revisits nothing here.
+
+**Applied in the spec:** R-UI-145. Code: `.check-row` in [_catalog-screens.scss](../../web/src/styles/_catalog-screens.scss).
+
+### Q-UI-576 · The policy editor's save bar closes the page down to the panel's edge
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: under the bar with **Create policy**, which sticks to the bottom while the form scrolls, a line of the form showed: the
+bar did not cover the page down to its lower edge. The content has a bottom padding (24 px, 16 px below 1024 px of the window)
+that the bar did not reach.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The bar takes the content's bottom padding into itself: a negative bottom margin and inset of that padding, and the padding added to its own, so its fill reaches the panel's edge stuck or at the form's end (chosen) | The bar's own rule | Nothing shows below it; the page keeps its padding elsewhere | The padding is the shell's and repeated here as a custom property |
+| (b) A fixed bar at the window's bottom | `position: fixed` | Always at the edge | It leaves the panel and covers the side bar's foot |
+
+**Choice:** (a). **Rationale:** a bar that closes the page is the page's last thing. Not looked at in the running UI by the
+builder: the development agent confirms the cause there, and revisits (b) if a line still shows.
+
+**Applied in the spec:** R-UI-145. Code: `.save-bar` in [policy-editor.scss](../../web/src/app/features/permissions/policy-editor.scss).
+
+### Q-UI-577 · The admin area's list of projects has no column Your role
+
+Status: **Decided by the owner, 2026-11-18** (on the development agent's list of the administrator's station, where it stood under
+"For the owner to decide": the column **Your role** was empty in every row for an administrator).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Remove the column in the admin area (chosen) | The list without it | The admin area manages projects; the caller's own role decides nothing there; its room goes to the project's name | An administrator who is also a member reads the role on the start page |
+| (b) Keep it with an en dash | Q-UI-561's dash | No column moves | A column of dashes for an administrator |
+| (c) Replace it by **Created** | A date | A fact of management | Not asked for; a column the API would have to fill |
+
+**Choice:** (a). The main area's list of projects (the start page) keeps its column. The room goes to the project, the list's
+one column with much text: its columns take their widths from their content (Q-UI-563), so at 1440 px the long display name
+**Customer portal release engineering and delivery** stands on one line beside its mark (computed from the columns' contents,
+not looked at by the builder). **Rationale:** the owner's: the role decides nothing in the admin area.
+
+**Applied in the spec:** R-UI-041. Code: [project-list.ts](../../web/src/app/features/projects/project-list.ts).
 
 ## What this does not cover
 

@@ -1,4 +1,4 @@
-import { expect, expectAccessible, signInLocal, signOut, test } from '../support';
+import { applyFilters, expect, expectAccessible, openFilters, signInLocal, signOut, test } from '../support';
 
 // R-UI-047 journey "backups" (R-UI-048, R-API-050). The screen reads the backup job and changes nothing: the journey opens
 // it as the administrator, checks the sections that exist whether or not a run has happened yet (the CronJob of the chart
@@ -28,20 +28,23 @@ test('R-UI-048 the backups screen shows the status, the runs, the stored backups
     await expect(status.getByText(/ago|No backup yet/).first()).toBeVisible();
   });
 
-  await test.step('the runs are filtered by operation and state', async () => {
+  await test.step('the runs are filtered by operation and state in the drawer, and a set filter is a chip', async () => {
     const runs = page.getByRole('region', { name: 'Runs', exact: true });
-    await expect(runs.getByRole('combobox', { name: 'Operation' })).toBeVisible();
-    await runs.getByRole('combobox', { name: 'State' }).selectOption('failed');
+    let drawer = await openFilters(page);
+    await expect(drawer.getByRole('combobox', { name: 'Operation' })).toBeVisible();
+    await drawer.getByRole('combobox', { name: 'State' }).selectOption('failed');
     // After the navigation the page takes the filter over from the address: it sets the fields from it and then asks for the
-    // runs. A field changed before that request is set back by the take-over, and the next Search sends the old filter again.
+    // runs. A field changed before that request is set back by the take-over, and the next apply sends the old filter again.
     const filtered = page.waitForRequest((r) => /\/api\/v1\/system\/backups\?(.*&)?state=failed(&|$)/.test(r.url()));
-    await runs.getByRole('button', { name: 'Search' }).click();
+    await applyFilters(page);
     await expect(page).toHaveURL(/state=failed/);
     await filtered;
-    await runs.getByRole('combobox', { name: 'State' }).selectOption('');
-    await runs.getByRole('button', { name: 'Search' }).click();
+    await expect(runs.getByRole('button', { name: /^Remove the filter State/ })).toBeVisible();
+    drawer = await openFilters(page);
+    await drawer.getByRole('combobox', { name: 'State' }).selectOption('');
+    await applyFilters(page);
     await expect(page).not.toHaveURL(/state=/);
-    await expect(runs.getByRole('table', { name: 'Backup runs, newest first' }).or(runs.getByText('No backup run matches the filters.'))).toBeVisible();
+    await expect(runs.getByRole('table', { name: 'Backup runs, newest first' }).or(runs.getByText('There is no backup run yet.'))).toBeVisible();
   });
 
   await test.step('the stored backups say which run recorded them, or that no run has listed the target', async () => {

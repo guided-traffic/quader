@@ -34,8 +34,7 @@
   [loading]="list.loading()"
   [error]="list.error()"
   [empty]="list.items().length === 0"
-  i18n-emptyText="@@policies.empty"
-  emptyText="No policy matches."
+  [emptyText]="chips().length > 0 ? noMatch : noPolicy"
   [hasMore]="list.hasMore()"
   (more)="list.more()"
   (retry)="list.reload()"
@@ -53,10 +52,16 @@
         @if (p.project) {
           <quader-project-link [key]="p.project" />
         } @else {
-          –
+          <quader-no-value />
         }
       </td>
-      <td>{{ p.description }}</td>
+      <td>
+        @if (p.description) {
+          {{ p.description }}
+        } @else {
+          <quader-no-value />
+        }
+      </td>
       <td>{{ principalSummary(p) }}</td>
       <td class="wrap" translate="no">{{ repositorySummary(p) }}</td>
       <td class="wrap" translate="no">{{ actionSummary(p) }}</td>

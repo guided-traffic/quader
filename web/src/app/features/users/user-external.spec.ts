@@ -74,7 +74,7 @@ describe('The external flag of a user (R-UI-056)', () => {
     expect([...root.querySelectorAll('tbody tr th a')].map((a) => text(a))).toEqual(['Bob Example']);
   });
 
-  it('R-UI-056 Add user has the checkbox, preset to newUsersExternal, and sends the flag', async () => {
+  it('R-UI-056 New user has the checkbox, preset to newUsersExternal, and sends the flag', async () => {
     const r = await renderScreen(UserList, {
       setup: (get) => {
         const api = get(AuthSettingsApi) as FakeAuthSettingsApi;
@@ -87,7 +87,7 @@ describe('The external flag of a user (R-UI-056)', () => {
     expect(externalBox(dialog).checked).toBe(true);
     typeInto(dialog, 'User name', 'erin');
     await settle(r.fixture);
-    buttonByText(dialog, 'Add user').click();
+    buttonByText(dialog, 'Create user').click();
     await settle(r.fixture);
     const api = r.get(IdentityApi) as FakeIdentityApi;
     expect(api.userList.find((u) => u.username === 'erin')?.external).toBe(true);

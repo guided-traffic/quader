@@ -313,7 +313,10 @@ describe('Bastions screen (R-BAS-007)', () => {
         (get(BastionsApi) as FakeBastionsApi).bastions = [];
       },
     });
-    expect(text(root)).toContain('No Bastion is registered');
+    expect(text(root)).toContain('There is no Bastion yet.');
+    // The action that fills the list stands once, in the header (Q-UI-565).
+    expect([...root.querySelectorAll('button')].filter((b) => b.textContent?.trim() === 'New Bastion')).toHaveLength(1);
+    expect(root.querySelector('quader-empty-state button')).toBeNull();
     const api = get(BastionsApi) as FakeBastionsApi;
     api.listFailure = new ApiError(503, { code: 'unavailable' }, 'req-1');
     api.bastions = [sampleBastion()];

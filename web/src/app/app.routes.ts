@@ -127,7 +127,7 @@ export const routes: Routes = [
           },
           {
             path: 'tokens',
-            data: wrapper($localize`:@@route.tokens.title:Token administration`),
+            data: wrapper($localize`:@@route.tokens.title:Tokens`),
             loadChildren: () => import('./features/tokens/tokens.routes').then((m) => m.TOKENS_ROUTES),
           },
           // >>> M4 ci

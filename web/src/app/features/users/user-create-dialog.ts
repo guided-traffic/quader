@@ -13,7 +13,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { ErrorNotice } from '../../shared/error-notice';
 
 /**
- * "Add user" (R-UI-024, R-AUTH-016): pre-provisions a user and optionally links the identity of a
+ * "New user" (R-UI-024, R-AUTH-016, Q-UI-573): creates the user's record in Quader before its first sign-in, so pre-provisions a user and optionally links the identity of a
  * configured provider; the first login at that provider completes the link. No password exists.
  * The idempotency key is generated when the dialog opens and kept until it closes (R-UI-042).
  */
@@ -21,7 +21,7 @@ import { ErrorNotice } from '../../shared/error-notice';
   selector: 'quader-user-create-dialog',
   imports: [DialogTitle, DialogClose, Checkbox, ErrorNotice, SelectField, TextField],
   template: `
-    <h2 quaderDialogTitle i18n="@@user-create.title">Add user</h2>
+    <h2 quaderDialogTitle i18n="@@user-create.title">New user</h2>
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
         @if (error(); as e) {
@@ -59,7 +59,7 @@ import { ErrorNotice } from '../../shared/error-notice';
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@user-create.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@user-create.submit">Add user</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" i18n="@@user-create.submit">Create user</button>
       </div>
     </form>
   `,

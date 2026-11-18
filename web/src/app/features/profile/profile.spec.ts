@@ -327,8 +327,10 @@ describe('Personal tokens (R-UI-029)', () => {
     const heads = [...table.querySelectorAll<HTMLElement>('thead th')];
     expect(heads.map((th) => text(th).replace(/help_outline/g, ''))).toEqual(['Token', 'Scope', 'Expires', 'Last used', 'Created', 'Actions']);
     expect(heads.map((th) => th.classList.contains('narrow-drop'))).toEqual([false, false, false, false, true, false]);
-    // The scope takes the room the others leave, so its words break as little as the list allows (Q-UI-429).
-    expect(heads[1]!.style.inlineSize).toBe('100%');
+    // No column is pinned: the token and the scope wrap and share the room the others leave by their content; the times and the
+    // actions are as wide as their values (Q-UI-563).
+    expect(heads.map((th) => th.style.inlineSize)).toEqual(['', '', '', '', '', '']);
+    expect(heads.map((th) => th.style.minInlineSize)).toEqual(['10rem', '9rem', '', '', '', '']);
     expect(table.classList.contains('stack-wide')).toBe(false);
     // Rotate and Revoke are one pattern: quiet buttons with their words, named for the row; a time is relative, its title the time.
     const row = table.querySelector('tbody tr')!;

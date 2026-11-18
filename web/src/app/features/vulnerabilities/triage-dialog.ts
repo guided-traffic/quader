@@ -73,11 +73,15 @@ export interface TriageDialogResult {
                 <th scope="row" translate="no">{{ labelOf(row.id) }}</th>
                 <td>
                   @if (row.outcome === 'failed') {
-                    <span class="material-icons inline bad" aria-hidden="true">error</span>
-                    {{ failure(row.code, row.status) }}
+                    <span class="icon-name"
+                      ><span class="material-icons inline bad" aria-hidden="true">error</span
+                      ><span class="icon-name-text">{{ failure(row.code, row.status) }}</span></span
+                    >
                   } @else if (row.outcome === 'changed') {
-                    <span class="material-icons inline ok" aria-hidden="true">check_circle</span>
-                    <ng-container i18n="@@vuln.triage.changed">Changed</ng-container>
+                    <span class="ok"
+                      ><span class="material-icons" aria-hidden="true">check_circle</span
+                      ><ng-container i18n="@@vuln.triage.changed">Changed</ng-container></span
+                    >
                   } @else {
                     <ng-container i18n="@@vuln.triage.unchanged">Unchanged, it had this status</ng-container>
                   }
