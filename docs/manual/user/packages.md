@@ -59,7 +59,7 @@ To find a package in any of your projects, type a part of its name into the sear
 When you are signed in, two more tabs appear next to **All packages**:
 
 - **Recently opened** lists the last 10 packages you opened.
-- **Saved views** keeps up to 8 combinations of filters and sort. To save one, set the filters and the sort, open **Saved views**, enter a **Name of the view** and select **Save the current filters and sort**. Each saved view can be opened, renamed with **Rename**, removed with **Delete**, and made the default with **Make default**: the list then opens with that view whenever you open **Packages** without filters. **Remove default** undoes that.
+- **Saved views** keeps up to 8 combinations of filters and sort. To save one, set the filters and the sort, open **Saved views**, enter a **Name of the view** and select **Save the current filters and sort**. Each saved view opens with its name; the menu at the end of its row offers **Rename**, **Delete** and **Make default**: the list then opens with that view whenever you open **Packages** without filters. **Remove default** undoes that.
 
 Both are kept in this browser only, separately for each user. They are not available where the browser blocks site storage, and they do not follow you to another browser.
 

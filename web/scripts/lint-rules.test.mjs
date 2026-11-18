@@ -7,6 +7,7 @@ import { ESLint } from 'eslint';
 import { numberFieldsWithoutWidth } from './field-width-rule.mjs';
 import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 import { bareIconsInCells } from './status-rule.mjs';
+import { wordActionsSideBySide } from './row-actions-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -123,4 +124,23 @@ test('Q-UI-560 an icon directly in a table cell fails the check, an icon inside 
   ];
   for (const t of good) assert.deepEqual(bareIconsInCells(t), [], t);
   assert.equal(bareIconsInCells('<table>\n<tr>\n<td><span class="material-icons">x</span></td>')[0].line, 3);
+});
+
+test('R-UI-163 two word actions in one row fail the check, one word, a menu with the copy beside it and words of other branches pass', () => {
+  const bad = [
+    '<td class="actions">\n  <a class="btn btn-tertiary" routerLink="x">Edit</a>\n  <a class="btn btn-tertiary" routerLink="y">Test</a>\n</td>',
+    '<td>\n  @switch (k.state) {\n    @case (\'next\') {\n      <button class="btn btn-default btn-sm">Promote</button>\n      <button class="btn btn-tertiary btn-sm">Remove</button>\n    }\n  }\n</td>',
+    '<li><a href="v">View</a><button class="btn btn-tertiary">Rename</button>@if (d) {<button class="btn btn-tertiary">Delete</button>}</li>',
+  ];
+  for (const t of bad) assert.equal(wordActionsSideBySide(t).length, 1, t);
+  const good = [
+    '<td class="actions"><button class="btn btn-tertiary" type="button">Revoke<span class="visually-hidden"> ci</span></button></td>',
+    '<td class="actions"><quader-copy-button [value]="a" /><button class="btn btn-tertiary btn-icon" [cdkMenuTriggerFor]="m"><span class="material-icons">more_vert</span></button>'
+      + '<ng-template #m><div class="menu" cdkMenu><button class="menu-item" cdkMenuItem>Edit</button><button class="menu-item" cdkMenuItem>Delete</button></div></ng-template></td>',
+    '<td class="actions with-setup"><a class="btn btn-tertiary row-setup">Set up client</a><button class="btn btn-tertiary btn-icon" aria-label="Actions for x">…</button></td>',
+    '<td>@if (a) {<button class="btn btn-tertiary">Reinstate</button>} @else {<button class="btn btn-tertiary">Clear</button>}</td>',
+    '<div class="toolbar"><a class="btn btn-confirm">New mapping</a><a class="btn btn-default">Test with claims</a></div>',
+  ];
+  for (const t of good) assert.deepEqual(wordActionsSideBySide(t), [], t);
+  assert.equal(wordActionsSideBySide('<table>\n<tr><td>\n<a class="btn">A</a>\n<a class="btn">B</a></td>')[0].line, 4);
 });

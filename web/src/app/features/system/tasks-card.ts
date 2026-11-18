@@ -76,7 +76,8 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
                       (finished)="completed(t)"
                     />
                   } @else if (canRun() && !t.running) {
-                    <button class="btn btn-default"
+                    <!-- The row's one action is its quiet word (R-UI-163); its name says the task. -->
+                    <button class="btn btn-tertiary"
                       type="button"
                       [disabled]="busy() === t.name"
                       [attr.aria-label]="runLabel(t.name)"

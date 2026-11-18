@@ -13,6 +13,7 @@ import { ClaimTester } from './claim-tester';
 import { IssuancesPage } from './issuances-page';
 import { IssuerCreate, IssuerDetail } from './issuer-detail';
 import { IssuerList } from './issuer-list';
+import { MappingList } from './mapping-list';
 
 type Get = <A>(token: abstract new (...args: never[]) => A) => A;
 const ci = (get: Get): FakeCiApi => get(CiApi) as FakeCiApi;
@@ -62,6 +63,38 @@ describe('The CI issuer list (R-UI-035)', () => {
     expect(helpFor('/projects/web/ci')).toEqual(['/help', 'admin', 'gitlab-ci']);
     expect(helpFor('/projects/web/ci/mappings/new?issuer=a')).toEqual(['/help', 'admin', 'gitlab-ci']);
     expect(helpFor('/projects/web/settings')).toEqual(['/help', 'admin', 'projects']);
+  });
+});
+
+describe('The rows of the mappings (R-UI-163, Q-UI-643)', () => {
+  it('R-UI-163 a writer finds Edit, Test and Delete in the menu Actions for the mapping, and its name opens it', async () => {
+    const { root, fixture, get } = await renderScreen(MappingList, { inputs: { issuer: 'gitlab-com' } });
+    const row = [...root.querySelectorAll('tbody tr')].find((r) => text(r).includes('team-a-release'))!;
+    expect(row.querySelector('th a')!.getAttribute('href')).toBe('/admin/ci/gitlab-com/mappings/team-a-release');
+    expect(row.querySelector('td.actions .btn:not(.btn-icon)')).toBeNull();
+    row.querySelector<HTMLButtonElement>('button[aria-label="Actions for team-a-release"]')!.click();
+    await settle(fixture);
+    const items = [...overlay().querySelectorAll('.menu-item')];
+    expect(items.map((i) => text(i))).toEqual(['Edit', 'Test', 'Delete']);
+    expect(items[0]!.getAttribute('href')).toBe('/admin/ci/gitlab-com/mappings/team-a-release');
+    expect(items[1]!.getAttribute('href')).toBe('/admin/ci/gitlab-com/test?mapping=team-a-release');
+    (items[2] as HTMLButtonElement).click();
+    await sleep(fixture, 50);
+    expect(text(document.querySelector('[role="dialog"]')!)).toContain('Delete mapping team-a-release?');
+    expect(ci(get).calls.some((c) => c.startsWith('deleteMapping'))).toBe(false);
+    await expectAccessible(root);
+  });
+
+  it('R-UI-163 a reader\'s one action is the word Test, named for the mapping; the name opens the mapping', async () => {
+    const { root } = await renderScreen(MappingList, { inputs: { issuer: 'gitlab-com' }, capabilities: ['ci:read'] });
+    const row = [...root.querySelectorAll('tbody tr')].find((r) => text(r).includes('team-a-release'))!;
+    expect(row.querySelector('button[aria-label^="Actions for"]')).toBeNull();
+    const words = [...row.querySelectorAll<HTMLAnchorElement>('td.actions .btn')];
+    expect(words.map((w) => text(w))).toEqual(['Test team-a-release']);
+    expect(words[0]!.classList).toContain('btn-tertiary');
+    expect(words[0]!.getAttribute('href')).toBe('/admin/ci/gitlab-com/test?mapping=team-a-release');
+    expect(text(row)).not.toContain('View');
+    await expectAccessible(root);
   });
 });
 

@@ -1,3 +1,4 @@
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { Component, LOCALE_ID, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CiApi, CiMapping } from '../../api/ci-api';
@@ -22,7 +23,7 @@ import { ErrorNotice } from '../../shared/error-notice';
  */
 @Component({
   selector: 'quader-ci-mapping-list',
-  imports: [RouterLink, ErrorNotice, DataTable, Needs, ProjectNeeds],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, ErrorNotice, DataTable, Needs, ProjectNeeds],
   template: `
     <div class="toolbar">
       @if (writable()) {
@@ -78,13 +79,27 @@ import { ErrorNotice } from '../../shared/error-notice';
               }
             </td>
             <td class="num">{{ lifetime(m) }}</td>
+            <!-- The name opens the mapping; a writer's actions are the row's menu, a reader's one action is its word (R-UI-163,
+                 Q-UI-643). -->
             <td class="actions">
-              <a class="btn btn-tertiary" [routerLink]="mappingLink(m)" [queryParams]="linkQuery(m)">{{ writable() ? edit : view }}</a>
-              @if (testable()) {
-                <a class="btn btn-tertiary" [routerLink]="testLink()" [queryParams]="testQuery(m)" i18n="@@ci.mappings.test">Test</a>
-              }
               @if (writable()) {
-                <button class="btn btn-tertiary" type="button" (click)="remove(m)" i18n="@@ci.mappings.delete">Delete</button>
+                <button class="btn btn-tertiary btn-icon" type="button" [attr.aria-label]="actionsLabel(m)" [cdkMenuTriggerFor]="rowMenu">
+                  <span class="material-icons" aria-hidden="true">more_vert</span>
+                </button>
+                <ng-template #rowMenu>
+                  <div class="menu" cdkMenu>
+                    <a class="menu-item" cdkMenuItem [routerLink]="mappingLink(m)" [queryParams]="linkQuery(m)" i18n="@@ci.mappings.edit">Edit</a>
+                    @if (testable()) {
+                      <a class="menu-item" cdkMenuItem [routerLink]="testLink()" [queryParams]="testQuery(m)" i18n="@@ci.mappings.test">Test</a>
+                    }
+                    <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="remove(m)" i18n="@@ci.mappings.delete">Delete</button>
+                  </div>
+                </ng-template>
+              } @else if (testable()) {
+                <a class="btn btn-tertiary" [routerLink]="testLink()" [queryParams]="testQuery(m)"
+                  ><ng-container i18n="@@ci.mappings.test">Test</ng-container
+                  ><span class="visually-hidden" translate="no">&ngsp;{{ m.name }}</span></a
+                >
               }
             </td>
           </tr>
@@ -124,8 +139,6 @@ export class MappingList {
   protected readonly testable = computed(() => this.issuer() !== '' || this.project() !== null);
 
   protected readonly caption = $localize`:@@ci.mappings.caption:Mappings in evaluation order`;
-  protected readonly edit = $localize`:@@ci.mappings.edit:Edit`;
-  protected readonly view = $localize`:@@ci.mappings.view:View`;
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'order', label: $localize`:@@ci.mappings.col.order:Order`, numeric: true },
     { id: 'name', label: $localize`:@@ci.mappings.col.name:Name` },
@@ -145,6 +158,10 @@ export class MappingList {
       this.project();
       untracked(() => void this.load());
     });
+  }
+
+  protected actionsLabel(m: CiMapping): string {
+    return $localize`:@@ci.mappings.actions-of:Actions for ${m.name}:name:`;
   }
 
   protected tier = tierLabel;

@@ -65,7 +65,10 @@ test('R-DEB-015 R-DEB-017 the signing key panel lists the generated key, rotates
   });
 
   await test.step('the promotion asks first, retires the old key and keeps its certificate as a record', async () => {
-    await page.getByRole('button', { name: 'Promote', exact: true }).click();
+    // A next key's actions are its row's menu, named by its fingerprint in groups of four (R-UI-163).
+    const next = (await keys()).find((k) => k.state === 'next')!.fingerprint;
+    await page.getByRole('button', { name: `Actions for ${next.replace(/(.{4})(?=.)/g, '$1 ')}`, exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Promote', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText('its private key is erased');
     await dialog.getByRole('button', { name: 'Promote', exact: true }).click();

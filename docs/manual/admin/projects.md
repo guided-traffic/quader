@@ -46,7 +46,7 @@ members** above the list keeps the members whose name contains what you type; se
 by it, **Role** with the Owners first. An Owner adds a member with **Add member**: type part of the person's name or username, or of a
 group's name, choose the match (each shows the avatar, the full name and the username) and its role ([Choosing a person, a group or a
 service account](permissions.md#choosing-a-person-a-group-or-a-service-account)). A person who has never signed in cannot be found
-yet. The Owner changes a role in the member's row and removes a member through the row's menu.
+yet. The Owner changes a role in the member's row and removes a member with **Remove** at the end of the row.
 
 The members are read with `GET /api/v1/projects/<projectKey>/members` and written with one request per member:
 

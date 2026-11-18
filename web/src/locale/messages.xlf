@@ -3715,7 +3715,7 @@
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:293,295</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:15,16</note>
-        <note category="location">src/app/features/endpoints/endpoint-detail.html:168,172</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.html:172,176</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:187,190</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:117,119</note>
         <note category="location">src/app/features/repositories/repository-create.html:238,240</note>
@@ -7157,7 +7157,7 @@
     </unit>
     <unit id="ci.mappings.add">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:29,31</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:30,32</note>
       </notes>
       <segment>
         <source>New mapping</source>
@@ -7165,7 +7165,7 @@
     </unit>
     <unit id="ci.mappings.add-disabled">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:31,33</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:32,34</note>
       </notes>
       <segment>
         <source>New mapping</source>
@@ -7173,7 +7173,7 @@
     </unit>
     <unit id="ci.mappings.test-all">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:34,37</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:35,38</note>
       </notes>
       <segment>
         <source>Test with claims</source>
@@ -7181,7 +7181,7 @@
     </unit>
     <unit id="ci.mappings.order">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:43,46</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:44,47</note>
       </notes>
       <segment>
         <source> Evaluated in this order. In a tier the first mapping that matches wins and later ones are not looked at; the matches of the tiers are combined. </source>
@@ -7189,7 +7189,7 @@
     </unit>
     <unit id="ci.mappings.empty">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:57,59</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:58,60</note>
       </notes>
       <segment>
         <source>No mapping yet. Without a mapping no job receives a token.</source>
@@ -7197,15 +7197,24 @@
     </unit>
     <unit id="ci.mappings.disabled">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:65,66</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:66,67</note>
       </notes>
       <segment>
         <source>Disabled</source>
       </segment>
     </unit>
+    <unit id="ci.mappings.edit">
+      <notes>
+        <note category="location">src/app/features/ci/mapping-list.ts:92</note>
+      </notes>
+      <segment>
+        <source>Edit</source>
+      </segment>
+    </unit>
     <unit id="ci.mappings.test">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:85,86</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:94,95</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:100,101</note>
       </notes>
       <segment>
         <source>Test</source>
@@ -7213,7 +7222,7 @@
     </unit>
     <unit id="ci.mappings.delete">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:87,89</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:95,96</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -7221,31 +7230,15 @@
     </unit>
     <unit id="ci.mappings.caption">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:126</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:141</note>
       </notes>
       <segment>
         <source>Mappings in evaluation order</source>
       </segment>
     </unit>
-    <unit id="ci.mappings.edit">
-      <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:127</note>
-      </notes>
-      <segment>
-        <source>Edit</source>
-      </segment>
-    </unit>
-    <unit id="ci.mappings.view">
-      <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:128</note>
-      </notes>
-      <segment>
-        <source>View</source>
-      </segment>
-    </unit>
     <unit id="ci.mappings.col.order">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:130</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:143</note>
       </notes>
       <segment>
         <source>Order</source>
@@ -7253,7 +7246,7 @@
     </unit>
     <unit id="ci.mappings.col.name">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:131</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:144</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -7261,7 +7254,7 @@
     </unit>
     <unit id="ci.mappings.col.issuer">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:133</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:146</note>
       </notes>
       <segment>
         <source>Issuer</source>
@@ -7269,7 +7262,7 @@
     </unit>
     <unit id="ci.mappings.col.tier">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:134</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:147</note>
       </notes>
       <segment>
         <source>Tier</source>
@@ -7277,7 +7270,7 @@
     </unit>
     <unit id="ci.mappings.col.tier-help">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:134</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:147</note>
       </notes>
       <segment>
         <source>The system tier is the administrators&apos;. A project&apos;s administrators manage the tier of their project. The tiers are evaluated separately and their matches combined.</source>
@@ -7285,7 +7278,7 @@
     </unit>
     <unit id="ci.mappings.col.priority">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:135</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:148</note>
       </notes>
       <segment>
         <source>Priority</source>
@@ -7293,7 +7286,7 @@
     </unit>
     <unit id="ci.mappings.col.condition">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:136</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:149</note>
       </notes>
       <segment>
         <source>Condition</source>
@@ -7301,7 +7294,7 @@
     </unit>
     <unit id="ci.mappings.col.grants">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:137</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:150</note>
       </notes>
       <segment>
         <source>Grants</source>
@@ -7309,7 +7302,7 @@
     </unit>
     <unit id="ci.mappings.col.ttl">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:138</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:151</note>
       </notes>
       <segment>
         <source>Maximum lifetime</source>
@@ -7317,15 +7310,23 @@
     </unit>
     <unit id="ci.mappings.col.actions">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:139</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:152</note>
       </notes>
       <segment>
         <source>Actions</source>
       </segment>
     </unit>
+    <unit id="ci.mappings.actions-of">
+      <notes>
+        <note category="location">src/app/features/ci/mapping-list.ts:164</note>
+      </notes>
+      <segment>
+        <source>Actions for <ph id="0" equiv="name" disp="m.name"/></source>
+      </segment>
+    </unit>
     <unit id="ci.mappings.delete-title">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:192</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:209</note>
       </notes>
       <segment>
         <source>Delete mapping <ph id="0" equiv="name" disp="m.name"/>?</source>
@@ -7333,7 +7334,7 @@
     </unit>
     <unit id="ci.mappings.delete-text">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:194</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:211</note>
       </notes>
       <segment>
         <source>The tokens issued through this mapping are revoked at once, and its principal is deleted with the grants that policies gave it. A mapping created later under the same name inherits nothing.</source>
@@ -7341,7 +7342,7 @@
     </unit>
     <unit id="ci.mappings.delete-confirm">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:196</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:213</note>
       </notes>
       <segment>
         <source>Delete mapping</source>
@@ -7349,7 +7350,7 @@
     </unit>
     <unit id="ci.mappings.deleted">
       <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:202</note>
+        <note category="location">src/app/features/ci/mapping-list.ts:219</note>
       </notes>
       <segment>
         <source>Mapping deleted.</source>
@@ -7661,7 +7662,7 @@
     </unit>
     <unit id="repo.action.edit">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.html:147,148</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.html:151,152</note>
       </notes>
       <segment>
         <source>Edit</source>
@@ -7669,7 +7670,7 @@
     </unit>
     <unit id="repo.action.copy-address">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.html:151,153</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.html:155,157</note>
         <note category="location">src/app/features/repositories/repository-list.html:193,196</note>
       </notes>
       <segment>
@@ -7678,7 +7679,7 @@
     </unit>
     <unit id="repo.action.delete">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.html:157,158</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.html:161,162</note>
         <note category="location">src/app/features/repositories/repository-list.html:209,210</note>
       </notes>
       <segment>
@@ -7751,7 +7752,7 @@
         <note category="location">src/app/features/repositories/repository-list.ts:230</note>
         <note category="location">src/app/features/system/backups/backups-page.html:165,167</note>
         <note category="location">src/app/features/system/job-table.ts:132</note>
-        <note category="location">src/app/features/system/tasks-card.ts:120</note>
+        <note category="location">src/app/features/system/tasks-card.ts:121</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -10661,7 +10662,7 @@
     </unit>
     <unit id="pkg.views.rename">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:99,100</note>
+        <note category="location">src/app/features/packages/package-list.html:110,111</note>
       </notes>
       <segment>
         <source>Rename</source>
@@ -10669,7 +10670,7 @@
     </unit>
     <unit id="pkg.views.unset-default">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:102,103</note>
+        <note category="location">src/app/features/packages/package-list.html:113,114</note>
       </notes>
       <segment>
         <source> Remove default </source>
@@ -10677,7 +10678,7 @@
     </unit>
     <unit id="pkg.views.make-default">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:106,107</note>
+        <note category="location">src/app/features/packages/package-list.html:117,118</note>
       </notes>
       <segment>
         <source> Make default </source>
@@ -10685,7 +10686,7 @@
     </unit>
     <unit id="pkg.views.delete">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:109,111</note>
+        <note category="location">src/app/features/packages/package-list.html:120,121</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -10693,8 +10694,8 @@
     </unit>
     <unit id="pkg.filter.type">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:136,137</note>
-        <note category="location">src/app/features/packages/package-list.ts:135</note>
+        <note category="location">src/app/features/packages/package-list.html:149,150</note>
+        <note category="location">src/app/features/packages/package-list.ts:139</note>
       </notes>
       <segment>
         <source>Package type</source>
@@ -10702,8 +10703,8 @@
     </unit>
     <unit id="pkg.filter.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:148,150</note>
-        <note category="location">src/app/features/packages/package-list.ts:144</note>
+        <note category="location">src/app/features/packages/package-list.html:161,163</note>
+        <note category="location">src/app/features/packages/package-list.ts:148</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -10711,9 +10712,9 @@
     </unit>
     <unit id="pkg.filter.keyword">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:162,164</note>
-        <note category="location">src/app/features/packages/package-list.html:168</note>
-        <note category="location">src/app/features/packages/package-list.ts:156</note>
+        <note category="location">src/app/features/packages/package-list.html:175,177</note>
+        <note category="location">src/app/features/packages/package-list.html:181</note>
+        <note category="location">src/app/features/packages/package-list.ts:160</note>
       </notes>
       <segment>
         <source>Keyword</source>
@@ -10721,9 +10722,9 @@
     </unit>
     <unit id="pkg.filter.created">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:173,175</note>
-        <note category="location">src/app/features/packages/package-list.html:177</note>
-        <note category="location">src/app/features/packages/package-list.ts:165</note>
+        <note category="location">src/app/features/packages/package-list.html:186,188</note>
+        <note category="location">src/app/features/packages/package-list.html:190</note>
+        <note category="location">src/app/features/packages/package-list.ts:169</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -10731,7 +10732,7 @@
     </unit>
     <unit id="pkg.filter.any">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:180,181</note>
+        <note category="location">src/app/features/packages/package-list.html:193,194</note>
       </notes>
       <segment>
         <source>Any time</source>
@@ -10739,7 +10740,7 @@
     </unit>
     <unit id="pkg.filter.from">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:187,189</note>
+        <note category="location">src/app/features/packages/package-list.html:200,202</note>
       </notes>
       <segment>
         <source>From</source>
@@ -10747,7 +10748,7 @@
     </unit>
     <unit id="pkg.filter.to">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:196,198</note>
+        <note category="location">src/app/features/packages/package-list.html:209,211</note>
       </notes>
       <segment>
         <source>To (included)</source>
@@ -10755,7 +10756,7 @@
     </unit>
     <unit id="pkg.list.clear">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:247,248</note>
+        <note category="location">src/app/features/packages/package-list.html:260,261</note>
       </notes>
       <segment>
         <source> Clear all filters </source>
@@ -10763,7 +10764,7 @@
     </unit>
     <unit id="pkg.list.empty-setup">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:252,256</note>
+        <note category="location">src/app/features/packages/package-list.html:265,269</note>
       </notes>
       <segment>
         <source>Set up a client to publish the first package</source>
@@ -10771,7 +10772,7 @@
     </unit>
     <unit id="pkg.list.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:181</note>
+        <note category="location">src/app/features/packages/package-list.ts:185</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -10779,7 +10780,7 @@
     </unit>
     <unit id="pkg.list.empty">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:182</note>
+        <note category="location">src/app/features/packages/package-list.ts:186</note>
       </notes>
       <segment>
         <source>No package has been published yet.</source>
@@ -10787,7 +10788,7 @@
     </unit>
     <unit id="pkg.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:183</note>
+        <note category="location">src/app/features/packages/package-list.ts:187</note>
       </notes>
       <segment>
         <source>No package matches the filters.</source>
@@ -10795,7 +10796,7 @@
     </unit>
     <unit id="pkg.list.search">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:184</note>
+        <note category="location">src/app/features/packages/package-list.ts:188</note>
       </notes>
       <segment>
         <source>Filter packages</source>
@@ -10803,7 +10804,7 @@
     </unit>
     <unit id="pkg.col.package">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:187</note>
+        <note category="location">src/app/features/packages/package-list.ts:191</note>
         <note category="location">src/app/features/search/search-results.ts:226</note>
       </notes>
       <segment>
@@ -10812,7 +10813,7 @@
     </unit>
     <unit id="pkg.col.format">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:188</note>
+        <note category="location">src/app/features/packages/package-list.ts:192</note>
         <note category="location">src/app/features/search/search-results.ts:229</note>
       </notes>
       <segment>
@@ -10821,7 +10822,7 @@
     </unit>
     <unit id="pkg.col.latest">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:192</note>
+        <note category="location">src/app/features/packages/package-list.ts:196</note>
         <note category="location">src/app/features/search/search-results.ts:232</note>
       </notes>
       <segment>
@@ -10830,7 +10831,7 @@
     </unit>
     <unit id="pkg.help.latest">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:193</note>
+        <note category="location">src/app/features/packages/package-list.ts:197</note>
         <note category="location">src/app/features/search/search-results.ts:233</note>
       </notes>
       <segment>
@@ -10839,7 +10840,7 @@
     </unit>
     <unit id="pkg.col.updated">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:198</note>
+        <note category="location">src/app/features/packages/package-list.ts:202</note>
         <note category="location">src/app/features/search/search-results.ts:238</note>
       </notes>
       <segment>
@@ -10848,7 +10849,7 @@
     </unit>
     <unit id="pkg.help.updated">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:200</note>
+        <note category="location">src/app/features/packages/package-list.ts:204</note>
         <note category="location">src/app/features/search/search-results.ts:239</note>
       </notes>
       <segment>
@@ -10857,7 +10858,7 @@
     </unit>
     <unit id="pkg.period.7">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:206</note>
+        <note category="location">src/app/features/packages/package-list.ts:210</note>
       </notes>
       <segment>
         <source>Last 7 days</source>
@@ -10865,7 +10866,7 @@
     </unit>
     <unit id="pkg.period.30">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:207</note>
+        <note category="location">src/app/features/packages/package-list.ts:211</note>
       </notes>
       <segment>
         <source>Last 30 days</source>
@@ -10873,7 +10874,7 @@
     </unit>
     <unit id="pkg.period.90">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:208</note>
+        <note category="location">src/app/features/packages/package-list.ts:212</note>
       </notes>
       <segment>
         <source>Last 90 days</source>
@@ -10881,10 +10882,18 @@
     </unit>
     <unit id="pkg.period.custom">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:209</note>
+        <note category="location">src/app/features/packages/package-list.ts:213</note>
       </notes>
       <segment>
         <source>Custom period</source>
+      </segment>
+    </unit>
+    <unit id="pkg.views.actions-of">
+      <notes>
+        <note category="location">src/app/features/packages/package-list.ts:330</note>
+      </notes>
+      <segment>
+        <source>Actions for <ph id="0" equiv="name" disp="name"/></source>
       </segment>
     </unit>
     <unit id="pkg.readme.truncated">
@@ -13719,7 +13728,7 @@
     </unit>
     <unit id="project-members.last-owner">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:38,41</note>
+        <note category="location">src/app/features/projects/project-members.ts:37,40</note>
       </notes>
       <segment>
         <source>A project keeps at least one Owner. Make another member an Owner first.</source>
@@ -13727,7 +13736,7 @@
     </unit>
     <unit id="project-members.me">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:71,73</note>
+        <note category="location">src/app/features/projects/project-members.ts:70,72</note>
       </notes>
       <segment>
         <source>It&apos;s you</source>
@@ -13735,7 +13744,7 @@
     </unit>
     <unit id="project-members.kind-group">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:75,77</note>
+        <note category="location">src/app/features/projects/project-members.ts:74,76</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -13743,7 +13752,7 @@
     </unit>
     <unit id="project-members.direct">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:81,83</note>
+        <note category="location">src/app/features/projects/project-members.ts:80,82</note>
       </notes>
       <segment>
         <source>Direct member</source>
@@ -13751,15 +13760,15 @@
     </unit>
     <unit id="project-members.remove">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:113,114</note>
+        <note category="location">src/app/features/projects/project-members.ts:102,103</note>
       </notes>
       <segment>
-        <source> Remove member </source>
+        <source>Remove</source>
       </segment>
     </unit>
     <unit id="project-members.filter">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:189</note>
+        <note category="location">src/app/features/projects/project-members.ts:177</note>
       </notes>
       <segment>
         <source>Filter members</source>
@@ -13767,7 +13776,7 @@
     </unit>
     <unit id="project-members.col.account">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:191</note>
+        <note category="location">src/app/features/projects/project-members.ts:179</note>
       </notes>
       <segment>
         <source>Account</source>
@@ -13775,7 +13784,7 @@
     </unit>
     <unit id="project-members.col.source">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:192</note>
+        <note category="location">src/app/features/projects/project-members.ts:180</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -13783,7 +13792,7 @@
     </unit>
     <unit id="project-members.col.role">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:193</note>
+        <note category="location">src/app/features/projects/project-members.ts:181</note>
       </notes>
       <segment>
         <source>Role</source>
@@ -13791,7 +13800,7 @@
     </unit>
     <unit id="project-members.col.actions">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:194</note>
+        <note category="location">src/app/features/projects/project-members.ts:182</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -13799,7 +13808,7 @@
     </unit>
     <unit id="project-members.empty">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:210</note>
+        <note category="location">src/app/features/projects/project-members.ts:198</note>
       </notes>
       <segment>
         <source>The project has no member yet.</source>
@@ -13807,7 +13816,7 @@
     </unit>
     <unit id="project-members.no-match">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:211</note>
+        <note category="location">src/app/features/projects/project-members.ts:199</note>
       </notes>
       <segment>
         <source>No member matches.</source>
@@ -13815,23 +13824,15 @@
     </unit>
     <unit id="project-members.caption">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:216</note>
+        <note category="location">src/app/features/projects/project-members.ts:204</note>
       </notes>
       <segment>
         <source>Members of the project</source>
       </segment>
     </unit>
-    <unit id="project-members.actions-of">
-      <notes>
-        <note category="location">src/app/features/projects/project-members.ts:234</note>
-      </notes>
-      <segment>
-        <source>Actions for <ph id="0" equiv="member" disp="m.principal"/></source>
-      </segment>
-    </unit>
     <unit id="project-members.role-of">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:246</note>
+        <note category="location">src/app/features/projects/project-members.ts:230</note>
       </notes>
       <segment>
         <source>Role of <ph id="0" equiv="member" disp="m.principal"/></source>
@@ -13839,7 +13840,7 @@
     </unit>
     <unit id="project-members.added">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:268</note>
+        <note category="location">src/app/features/projects/project-members.ts:252</note>
       </notes>
       <segment>
         <source>Member added.</source>
@@ -13847,7 +13848,7 @@
     </unit>
     <unit id="project-members.changed">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:276</note>
+        <note category="location">src/app/features/projects/project-members.ts:260</note>
       </notes>
       <segment>
         <source>Role changed.</source>
@@ -13855,7 +13856,7 @@
     </unit>
     <unit id="project-members.removed">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:283</note>
+        <note category="location">src/app/features/projects/project-members.ts:267</note>
       </notes>
       <segment>
         <source>Member removed.</source>
@@ -14660,15 +14661,15 @@
     </unit>
     <unit id="ansible.tombstones.clear">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:49,50</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:50,51</note>
       </notes>
       <segment>
-        <source> Clear </source>
+        <source>Clear</source>
       </segment>
     </unit>
     <unit id="ansible.tombstones.caption">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:80</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:82</note>
       </notes>
       <segment>
         <source>Tombstones of this repository</source>
@@ -14676,7 +14677,7 @@
     </unit>
     <unit id="ansible.tombstones.empty">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:81</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:83</note>
       </notes>
       <segment>
         <source>No version has been deleted, so no number is blocked.</source>
@@ -14684,7 +14685,7 @@
     </unit>
     <unit id="ansible.tombstones.col.collection">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:83</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:85</note>
       </notes>
       <segment>
         <source>Collection</source>
@@ -14692,7 +14693,7 @@
     </unit>
     <unit id="ansible.tombstones.col.version">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:84</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:86</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -14700,7 +14701,7 @@
     </unit>
     <unit id="ansible.tombstones.col.sha256">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:87</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:89</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -14708,7 +14709,7 @@
     </unit>
     <unit id="ansible.tombstones.help.sha256">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:88</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:90</note>
       </notes>
       <segment>
         <source>The first digits of the SHA-256 of the archive that was deleted. Hover to read all of it.</source>
@@ -14716,7 +14717,7 @@
     </unit>
     <unit id="ansible.tombstones.col.deleted">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:90</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:92</note>
       </notes>
       <segment>
         <source>Deleted</source>
@@ -14724,7 +14725,7 @@
     </unit>
     <unit id="ansible.tombstones.col.by">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:91</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:93</note>
       </notes>
       <segment>
         <source>Deleted by</source>
@@ -14732,7 +14733,7 @@
     </unit>
     <unit id="ansible.tombstones.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:92</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:94</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -14740,7 +14741,7 @@
     </unit>
     <unit id="ansible.tombstones.clear.title">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:109</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:111</note>
       </notes>
       <segment>
         <source>Clear the tombstone of <ph id="0" equiv="collection" disp="t.name"/> <ph id="1" equiv="version" disp="t.version"/></source>
@@ -14748,7 +14749,7 @@
     </unit>
     <unit id="ansible.tombstones.clear.line">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:111</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:113</note>
       </notes>
       <segment>
         <source>The number can then be published again with other bytes. Clients and caches that have seen the deleted version may still hold the old archive.</source>
@@ -14756,7 +14757,7 @@
     </unit>
     <unit id="ansible.tombstones.clear.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:113</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:115</note>
       </notes>
       <segment>
         <source>Clear tombstone</source>
@@ -14764,7 +14765,7 @@
     </unit>
     <unit id="ansible.tombstones.cleared">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:120</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:122</note>
       </notes>
       <segment>
         <source>The tombstone was cleared.</source>
@@ -16178,7 +16179,7 @@
     </unit>
     <unit id="deb.key.state.primary">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:24</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:25</note>
       </notes>
       <segment>
         <source>Primary</source>
@@ -16186,7 +16187,7 @@
     </unit>
     <unit id="deb.key.state.next">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:26</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:27</note>
       </notes>
       <segment>
         <source>Next</source>
@@ -16194,7 +16195,7 @@
     </unit>
     <unit id="deb.key.state.withheld">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:28</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:29</note>
       </notes>
       <segment>
         <source>Withheld</source>
@@ -16202,7 +16203,7 @@
     </unit>
     <unit id="deb.key.state.retired">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:30</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:31</note>
       </notes>
       <segment>
         <source>Retired</source>
@@ -16210,7 +16211,7 @@
     </unit>
     <unit id="deb.key.state.primary.text">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:37</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:38</note>
       </notes>
       <segment>
         <source>Signs every index and is served to clients.</source>
@@ -16218,7 +16219,7 @@
     </unit>
     <unit id="deb.key.state.next.text">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:39</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:40</note>
       </notes>
       <segment>
         <source>Co-signs every index and is served to clients, until it is promoted or removed.</source>
@@ -16226,7 +16227,7 @@
     </unit>
     <unit id="deb.key.state.withheld.text">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:41</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:42</note>
       </notes>
       <segment>
         <source>A restore withheld this key. It neither signs nor is served; its private key is kept until you confirm the retirement or reinstate it.</source>
@@ -16234,7 +16235,7 @@
     </unit>
     <unit id="deb.key.state.retired.text">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:43</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:44</note>
       </notes>
       <segment>
         <source>Neither signs nor is served; its private key is erased. The certificate stays as the record of what signed.</source>
@@ -16242,7 +16243,7 @@
     </unit>
     <unit id="deb.key.err.in-use">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:51</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:52</note>
       </notes>
       <segment>
         <source>This key is already known to Quader, in this or another repository, in some state. A retired or withheld key cannot come back by import.</source>
@@ -16250,7 +16251,7 @@
     </unit>
     <unit id="deb.key.err.unsupported">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:53</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:54</note>
       </notes>
       <segment>
         <source>Quader cannot use this key. It needs an EdDSALegacy (Ed25519) or RSA primary key of at least 3072 bits that can sign, is not revoked, has no expiry, was not created in the future and has no signing subkeys.</source>
@@ -16258,7 +16259,7 @@
     </unit>
     <unit id="deb.key.err.state">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:55</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:56</note>
       </notes>
       <segment>
         <source>The key is not in a state that allows this. Reload the list and try again.</source>
@@ -16266,7 +16267,7 @@
     </unit>
     <unit id="deb.key.err.no-next">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:57</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:58</note>
       </notes>
       <segment>
         <source>There is no next key to promote.</source>
@@ -16274,7 +16275,7 @@
     </unit>
     <unit id="deb.keys.heading">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:75,76</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:76,77</note>
       </notes>
       <segment>
         <source>Signing keys</source>
@@ -16282,7 +16283,7 @@
     </unit>
     <unit id="deb.keys.intro">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:77,80</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:78,81</note>
       </notes>
       <segment>
         <source> Every index of this repository is signed. Clients trust the key through the key file the setup snippet installs. To change the key without breaking clients, create a next key, let the clients replace their key file while both keys sign, then promote the next key. </source>
@@ -16290,7 +16291,7 @@
     </unit>
     <unit id="deb.keys.no-primary">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:89,91</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:90,92</note>
       </notes>
       <segment>
         <source> This repository has no primary key, so its builds publish nothing and the last published indexes stay served. Reinstate a withheld key, or create a next key and promote it. </source>
@@ -16298,7 +16299,7 @@
     </unit>
     <unit id="deb.keys.withheld-note">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:98,100</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:99,101</note>
       </notes>
       <segment>
         <source> A restore withheld a key because the journal records its retirement. Confirm the retirement to erase the private key, or reinstate the key if the entry is wrong. </source>
@@ -16306,7 +16307,7 @@
     </unit>
     <unit id="deb.keys.overlap">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:105</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:106</note>
       </notes>
       <segment>
         <source>Both keys sign since</source>
@@ -16314,7 +16315,7 @@
     </unit>
     <unit id="deb.keys.overlap-hint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:105,109</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:106,110</note>
       </notes>
       <segment>
         <source>Quader cannot know which clients replaced their key file. A client that holds only the old key fails to update after the promotion.</source>
@@ -16322,7 +16323,7 @@
     </unit>
     <unit id="deb.keys.certificate">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:116,117</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:117,118</note>
       </notes>
       <segment>
         <source>Public certificate</source>
@@ -16330,7 +16331,7 @@
     </unit>
     <unit id="deb.keys.promote">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:138,139</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:152,153</note>
       </notes>
       <segment>
         <source>Promote</source>
@@ -16338,7 +16339,7 @@
     </unit>
     <unit id="deb.keys.remove">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:139,140</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:153,154</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -16346,7 +16347,7 @@
     </unit>
     <unit id="deb.keys.reinstate">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:142,143</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:155,156</note>
       </notes>
       <segment>
         <source>Reinstate</source>
@@ -16354,7 +16355,7 @@
     </unit>
     <unit id="deb.keys.confirm-retirement">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:143,145</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:156,158</note>
       </notes>
       <segment>
         <source>Confirm retirement</source>
@@ -16362,7 +16363,7 @@
     </unit>
     <unit id="deb.keys.next.heading">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:161,163</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:176,178</note>
       </notes>
       <segment>
         <source>Next key</source>
@@ -16370,7 +16371,7 @@
     </unit>
     <unit id="deb.keys.next.exists">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:164,166</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:179,181</note>
       </notes>
       <segment>
         <source> A next key exists. Promote it or remove it before you create another. </source>
@@ -16378,7 +16379,7 @@
     </unit>
     <unit id="deb.keys.next.intro">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:168,170</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:183,185</note>
       </notes>
       <segment>
         <source> Creating a next key starts the overlap: from the next build both keys sign every index. </source>
@@ -16386,7 +16387,7 @@
     </unit>
     <unit id="deb.keys.generate">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:172,173</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:187,188</note>
       </notes>
       <segment>
         <source> Generate a next key </source>
@@ -16394,7 +16395,7 @@
     </unit>
     <unit id="deb.keys.import">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:175,176</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:190,191</note>
       </notes>
       <segment>
         <source> Import a key </source>
@@ -16402,7 +16403,7 @@
     </unit>
     <unit id="deb.keys.import.key">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:182,183</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:197,198</note>
       </notes>
       <segment>
         <source>Armored secret key</source>
@@ -16410,7 +16411,7 @@
     </unit>
     <unit id="deb.keys.import.hint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:194,195</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:209,210</note>
       </notes>
       <segment>
         <source> For an archive whose clients already trust a key. It is sent once over this connection and sealed on the server; it is never shown again. </source>
@@ -16418,7 +16419,7 @@
     </unit>
     <unit id="deb.keys.import.pass">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:199,201</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:214,216</note>
       </notes>
       <segment>
         <source>Passphrase</source>
@@ -16426,7 +16427,7 @@
     </unit>
     <unit id="deb.keys.import.pass-hint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:210,211</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:225,226</note>
       </notes>
       <segment>
         <source> Only if the key is protected. It is used once and never stored. </source>
@@ -16434,7 +16435,7 @@
     </unit>
     <unit id="deb.keys.import.submit">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:214,215</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:229,230</note>
       </notes>
       <segment>
         <source> Import as next key </source>
@@ -16442,7 +16443,7 @@
     </unit>
     <unit id="deb.keys.loading">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:222,225</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:237,240</note>
       </notes>
       <segment>
         <source>Loading the keys.</source>
@@ -16450,7 +16451,7 @@
     </unit>
     <unit id="deb.keys.copy-fingerprint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:273</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:288</note>
       </notes>
       <segment>
         <source>Copy fingerprint</source>
@@ -16458,7 +16459,7 @@
     </unit>
     <unit id="deb.keys.origin.imported">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:274</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:289</note>
       </notes>
       <segment>
         <source>Imported</source>
@@ -16466,7 +16467,7 @@
     </unit>
     <unit id="deb.keys.origin.generated">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:275</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:290</note>
       </notes>
       <segment>
         <source>Generated</source>
@@ -16474,7 +16475,7 @@
     </unit>
     <unit id="deb.keys.caption">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:276</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:291</note>
       </notes>
       <segment>
         <source>Signing keys of this repository</source>
@@ -16482,7 +16483,7 @@
     </unit>
     <unit id="deb.keys.col.fingerprint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:278</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:293</note>
       </notes>
       <segment>
         <source>Fingerprint</source>
@@ -16490,7 +16491,7 @@
     </unit>
     <unit id="deb.keys.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:279</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:294</note>
       </notes>
       <segment>
         <source>State</source>
@@ -16498,7 +16499,7 @@
     </unit>
     <unit id="deb.keys.col.type">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:280</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:295</note>
       </notes>
       <segment>
         <source>Type</source>
@@ -16506,7 +16507,7 @@
     </unit>
     <unit id="deb.keys.col.origin">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:281</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:296</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -16514,7 +16515,7 @@
     </unit>
     <unit id="deb.keys.col.created">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:282</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:297</note>
       </notes>
       <segment>
         <source>Key created</source>
@@ -16522,7 +16523,7 @@
     </unit>
     <unit id="deb.keys.col.since">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:283</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:298</note>
       </notes>
       <segment>
         <source>In this state since</source>
@@ -16530,15 +16531,23 @@
     </unit>
     <unit id="deb.keys.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:285</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:300</note>
       </notes>
       <segment>
         <source>Actions</source>
       </segment>
     </unit>
+    <unit id="deb.keys.actions-of">
+      <notes>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:317</note>
+      </notes>
+      <segment>
+        <source>Actions for <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/></source>
+      </segment>
+    </unit>
     <unit id="deb.keys.done.created">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:349</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:369</note>
       </notes>
       <segment>
         <source>The next key was created. Both keys sign from the next build.</source>
@@ -16546,7 +16555,7 @@
     </unit>
     <unit id="deb.keys.done.imported">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:359</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:379</note>
       </notes>
       <segment>
         <source>The key was imported as the next key. Both keys sign from the next build.</source>
@@ -16554,7 +16563,7 @@
     </unit>
     <unit id="deb.keys.promote.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:369</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:389</note>
       </notes>
       <segment>
         <source>Promote the next key</source>
@@ -16562,7 +16571,7 @@
     </unit>
     <unit id="deb.keys.promote.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:371</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:391</note>
       </notes>
       <segment>
         <source>The next key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> becomes the primary key. The old primary key is retired: it stops signing, leaves the key file clients fetch and its private key is erased.</source>
@@ -16570,7 +16579,7 @@
     </unit>
     <unit id="deb.keys.promote.line2">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:372</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:392</note>
       </notes>
       <segment>
         <source>A client that never replaced its key file fails to update from then on.</source>
@@ -16578,7 +16587,7 @@
     </unit>
     <unit id="deb.keys.promote.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:374</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:394</note>
       </notes>
       <segment>
         <source>Promote</source>
@@ -16586,7 +16595,7 @@
     </unit>
     <unit id="deb.keys.done.promoted">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:379</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:399</note>
       </notes>
       <segment>
         <source>The key was promoted.</source>
@@ -16594,7 +16603,7 @@
     </unit>
     <unit id="deb.keys.confirm.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:388</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:408</note>
       </notes>
       <segment>
         <source>Confirm the retirement of the key</source>
@@ -16602,7 +16611,7 @@
     </unit>
     <unit id="deb.keys.remove.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:389</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:409</note>
       </notes>
       <segment>
         <source>Remove the next key</source>
@@ -16610,7 +16619,7 @@
     </unit>
     <unit id="deb.keys.confirm.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:392</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:412</note>
       </notes>
       <segment>
         <source>The key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> is retired and its private key is erased. This cannot be undone.</source>
@@ -16618,7 +16627,7 @@
     </unit>
     <unit id="deb.keys.remove.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:393</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:413</note>
       </notes>
       <segment>
         <source>The next key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> stops signing and leaves the key file clients fetch. Its private key is erased and the key cannot be imported again.</source>
@@ -16626,7 +16635,7 @@
     </unit>
     <unit id="deb.keys.confirm.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:396</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:416</note>
       </notes>
       <segment>
         <source>Retire the key</source>
@@ -16634,7 +16643,7 @@
     </unit>
     <unit id="deb.keys.remove.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:397</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:417</note>
       </notes>
       <segment>
         <source>Remove the key</source>
@@ -16642,7 +16651,7 @@
     </unit>
     <unit id="deb.keys.done.retired">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:402</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:422</note>
       </notes>
       <segment>
         <source>The key was retired.</source>
@@ -16650,7 +16659,7 @@
     </unit>
     <unit id="deb.keys.done.reinstated">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:410</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:430</note>
       </notes>
       <segment>
         <source>The key was reinstated.</source>
@@ -22922,7 +22931,7 @@
         <note category="location">src/app/features/system/jobs-page.ts:124,128</note>
         <note category="location">src/app/features/system/system-status.html:552,556</note>
         <note category="location">src/app/features/system/system-status.html:573,575</note>
-        <note category="location">src/app/features/system/tasks-card.ts:98,101</note>
+        <note category="location">src/app/features/system/tasks-card.ts:99,102</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -24957,7 +24966,7 @@
     </unit>
     <unit id="tasks.run">
       <notes>
-        <note category="location">src/app/features/system/tasks-card.ts:86,87</note>
+        <note category="location">src/app/features/system/tasks-card.ts:87,88</note>
       </notes>
       <segment>
         <source> Run now </source>
@@ -24965,7 +24974,7 @@
     </unit>
     <unit id="tasks.caption">
       <notes>
-        <note category="location">src/app/features/system/tasks-card.ts:114</note>
+        <note category="location">src/app/features/system/tasks-card.ts:115</note>
       </notes>
       <segment>
         <source>Maintenance tasks</source>
@@ -24973,7 +24982,7 @@
     </unit>
     <unit id="tasks.col.name">
       <notes>
-        <note category="location">src/app/features/system/tasks-card.ts:116</note>
+        <note category="location">src/app/features/system/tasks-card.ts:117</note>
       </notes>
       <segment>
         <source>Task</source>
@@ -24981,7 +24990,7 @@
     </unit>
     <unit id="tasks.col.schedule">
       <notes>
-        <note category="location">src/app/features/system/tasks-card.ts:117</note>
+        <note category="location">src/app/features/system/tasks-card.ts:118</note>
       </notes>
       <segment>
         <source>Schedule (UTC)</source>
@@ -24989,7 +24998,7 @@
     </unit>
     <unit id="tasks.col.next">
       <notes>
-        <note category="location">src/app/features/system/tasks-card.ts:118</note>
+        <note category="location">src/app/features/system/tasks-card.ts:119</note>
       </notes>
       <segment>
         <source>Next run</source>
@@ -24997,7 +25006,7 @@
     </unit>
     <unit id="tasks.col.last">
       <notes>
-        <note category="location">src/app/features/system/tasks-card.ts:119</note>
+        <note category="location">src/app/features/system/tasks-card.ts:120</note>
       </notes>
       <segment>
         <source>Last run</source>
@@ -25005,7 +25014,7 @@
     </unit>
     <unit id="tasks.run.label">
       <notes>
-        <note category="location">src/app/features/system/tasks-card.ts:148</note>
+        <note category="location">src/app/features/system/tasks-card.ts:149</note>
       </notes>
       <segment>
         <source>Run task <ph id="0" equiv="name" disp="name"/> now</source>
@@ -25013,7 +25022,7 @@
     </unit>
     <unit id="tasks.started">
       <notes>
-        <note category="location">src/app/features/system/tasks-card.ts:162</note>
+        <note category="location">src/app/features/system/tasks-card.ts:163</note>
       </notes>
       <segment>
         <source>Task <ph id="0" equiv="name" disp="task.name"/> queued. A worker replica runs it.</source>

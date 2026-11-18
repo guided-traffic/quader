@@ -1592,11 +1592,11 @@
     </unit>
     <unit id="project-members.remove">
       <notes>
-        <note category="location">src/app/features/projects/project-members.ts:156,157</note>
+        <note category="location">src/app/features/projects/project-members.ts:103,104</note>
       </notes>
       <segment>
-        <source> Remove member </source>
-        <target> Mitglied entfernen </target>
+        <source>Remove</source>
+        <target>Entfernen</target>
       </segment>
     </unit>
     <unit id="audit.action.system.deletions_paused">
@@ -12750,11 +12750,11 @@
     </unit>
     <unit id="ansible.tombstones.clear">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-tombstones.ts:49,50</note>
+        <note category="location">src/app/features/repositories/ansible-tombstones.ts:50,51</note>
       </notes>
       <segment>
-        <source> Clear </source>
-        <target> Entfernen </target>
+        <source>Clear</source>
+        <target>Entfernen</target>
       </segment>
     </unit>
     <unit id="ci.mappings.edit">
@@ -19874,15 +19874,6 @@
         <target>Paketeigentümer hinzugefügt</target>
       </segment>
     </unit>
-    <unit id="project-members.actions-of">
-      <notes>
-        <note category="location">src/app/features/projects/project-members.ts:376</note>
-      </notes>
-      <segment>
-        <source>Actions for <ph id="0" equiv="member" disp="m.principal"/></source>
-        <target>Aktionen für <ph id="0" equiv="member" disp="m.principal"/></target>
-      </segment>
-    </unit>
     <unit id="sa.admin.yes">
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-detail.ts:81,82</note>
@@ -23940,15 +23931,6 @@
       <segment>
         <source>Last downloader</source>
         <target>Zuletzt heruntergeladen von</target>
-      </segment>
-    </unit>
-    <unit id="ci.mappings.view">
-      <notes>
-        <note category="location">src/app/features/ci/mapping-list.ts:128</note>
-      </notes>
-      <segment>
-        <source>View</source>
-        <target>Ansehen</target>
       </segment>
     </unit>
     <unit id="ci.issuance.revoked">
@@ -34214,6 +34196,33 @@
       <segment>
         <source>The counts and the trend cover the projects, repositories and formats of the filters. The search and the other filters narrow the list of findings only.</source>
         <target>Die Zahlen und der Verlauf umfassen die Projekte, Repositorys und Formate der Filter. Die Suche und die anderen Filter schränken nur die Liste der Befunde ein.</target>
+      </segment>
+    </unit>
+    <unit id="ci.mappings.actions-of">
+      <notes>
+        <note category="location">src/app/features/ci/mapping-list.ts:164</note>
+      </notes>
+      <segment>
+        <source>Actions for <ph id="0" equiv="name" disp="m.name"/></source>
+        <target>Aktionen für <ph id="0" equiv="name" disp="m.name"/></target>
+      </segment>
+    </unit>
+    <unit id="pkg.views.actions-of">
+      <notes>
+        <note category="location">src/app/features/packages/package-list.ts:330</note>
+      </notes>
+      <segment>
+        <source>Actions for <ph id="0" equiv="name" disp="name"/></source>
+        <target>Aktionen für <ph id="0" equiv="name" disp="name"/></target>
+      </segment>
+    </unit>
+    <unit id="deb.keys.actions-of">
+      <notes>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:317</note>
+      </notes>
+      <segment>
+        <source>Actions for <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/></source>
+        <target>Aktionen für <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/></target>
       </segment>
     </unit>
   </file>

@@ -137,9 +137,13 @@
                     >
                   }
                 }
-                <button class="btn btn-tertiary btn-icon" type="button" [attr.aria-label]="actionsLabel(rule.name)" [cdkMenuTriggerFor]="ruleMenu">
-                  <span class="material-icons" aria-hidden="true">more_vert</span>
-                </button>
+                <!-- The name opens the rule; a reader whose rule is not served would get a menu of the one entry Edit, which the
+                     name already is: no menu then (R-UI-163, Q-UI-643). -->
+                @if (canWrite() || addressOf(rule)?.served) {
+                  <button class="btn btn-tertiary btn-icon" type="button" [attr.aria-label]="actionsLabel(rule.name)" [cdkMenuTriggerFor]="ruleMenu">
+                    <span class="material-icons" aria-hidden="true">more_vert</span>
+                  </button>
+                }
                 <ng-template #ruleMenu>
                   <div class="menu" cdkMenu>
                     <a class="menu-item" cdkMenuItem [routerLink]="['/admin/endpoints', endpoint(), 'rules', rule.name]" i18n="@@repo.action.edit"

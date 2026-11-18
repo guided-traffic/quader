@@ -115,7 +115,7 @@ describe('Scheduled tasks and recent jobs on the status screen', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-038 and R-UI-042 "Run now" sends one run with an Idempotency-Key and follows the job', async () => {
+  it('R-UI-038 R-UI-042 R-UI-163 "Run now", the row\'s quiet word, sends one run with an Idempotency-Key and follows the job', async () => {
     const { root, fixture, get } = await renderScreen(SystemStatus, {
       setup: (get) =>
         (get(JobsApi) as FakeJobsApi).jobList.push(
@@ -124,6 +124,7 @@ describe('Scheduled tasks and recent jobs on the status screen', () => {
     });
     const jobs = get(JobsApi) as FakeJobsApi;
     const run = button(root.querySelector('section[aria-labelledby="card-tasks"]')!, 'Run now');
+    expect(run.classList).toContain('btn-tertiary');
     run.click();
     run.click();
     await settle(fixture, 10);

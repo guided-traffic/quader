@@ -47,6 +47,16 @@ async function open(
 
 const rows = (r: Opened) => [...r.root.querySelectorAll('tbody tr')];
 const names = (r: Opened) => rows(r).map((row) => text(row.querySelector('th a')!));
+/** Opens the menu of a saved view and chooses an entry (R-UI-163). */
+async function chooseFor(r: Opened, view: string, entry: string): Promise<void> {
+  r.root.querySelector<HTMLButtonElement>(`.plain-list button[aria-label="Actions for ${view}"]`)!.click();
+  await settle(r.fixture);
+  const item = [...document.querySelectorAll<HTMLButtonElement>('.cdk-overlay-container .menu-item')].find((b) => text(b) === entry);
+  if (!item) throw new Error(`no menu entry ${entry}`);
+  item.click();
+  await settle(r.fixture);
+}
+
 const navigateSpy = () => vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
 function many(n: number): PackageSummary[] {
@@ -311,7 +321,7 @@ describe('Packages list', () => {
       await expectAccessible(r.root);
     });
 
-    it('R-UI-006 saves the current filters and sort under a name, renames, sets a default and deletes a view', async () => {
+    it('R-UI-006 R-UI-163 saves the current filters and sort under a name, renames, sets a default and deletes a view from its menu', async () => {
       const r = await open({ tab: 'views', format: 'npm', sort: '-updatedAt' });
       const memory = r.get((await import('./package-memory')).PackageMemory);
       type(r.root.querySelector<HTMLInputElement>('.save-view input')!, 'Recent npm');
@@ -323,8 +333,9 @@ describe('Packages list', () => {
       const view = r.root.querySelector('.plain-list a')!;
       expect(view.getAttribute('href')).toBe('/projects/web/packages?format=npm&sort=-updatedAt');
 
-      button(r.root, 'Rename').click();
-      await settle(r.fixture);
+      // The view's three actions are its menu (R-UI-163).
+      expect(r.root.querySelectorAll('.plain-list li .btn:not(.btn-icon)')).toHaveLength(0);
+      await chooseFor(r, 'Recent npm', 'Rename');
       const field = r.root.querySelector<HTMLInputElement>('.plain-list input')!;
       type(field, 'Newest npm');
       await settle(r.fixture);
@@ -332,16 +343,13 @@ describe('Packages list', () => {
       await settle(r.fixture);
       expect(memory.views()[0]?.name).toBe('Newest npm');
 
-      button(r.root, 'Make default').click();
-      await settle(r.fixture);
+      await chooseFor(r, 'Newest npm', 'Make default');
       expect(memory.defaultView()?.name).toBe('Newest npm');
       expect(text(r.root)).toContain('default');
-      button(r.root, 'Remove default').click();
-      await settle(r.fixture);
+      await chooseFor(r, 'Newest npm', 'Remove default');
       expect(memory.defaultView()).toBeNull();
 
-      button(r.root, 'Delete').click();
-      await settle(r.fixture);
+      await chooseFor(r, 'Newest npm', 'Delete');
       expect(memory.views()).toEqual([]);
       expect(text(r.root)).toContain('You have no saved views.');
     });

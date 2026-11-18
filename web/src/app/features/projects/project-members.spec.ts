@@ -9,9 +9,12 @@ import { ProjectMembersPage } from './project-members-page';
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
 
 async function removeMember(fixture: ComponentFixture<unknown>, members: HTMLElement, principal: string): Promise<void> {
-  members.querySelector<HTMLButtonElement>(`button[aria-label="Actions for ${principal}"]`)!.click();
+  // The row's one action is its word, named for the member (R-UI-163).
+  const remove = [...members.querySelectorAll<HTMLButtonElement>('td.actions button')].find((b) => text(b) === `Remove ${principal}`);
+  if (!remove) throw new Error(`no Remove for ${principal}`);
+  expect(remove.classList).toContain('btn-tertiary');
+  remove.click();
   await settle(fixture);
-  buttonByText(overlay(), 'Remove member').click();
   await sleep(fixture, 100);
 }
 
@@ -30,7 +33,7 @@ function asMember(role: 'reader' | 'developer' | 'maintainer' | 'owner') {
 }
 
 describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
-  it('Q-AUTHZ-207 R-UI-150 an Owner adds a member found by the lookup with a role, changes it and removes it', async () => {
+  it('Q-AUTHZ-207 R-UI-150 R-UI-163 an Owner adds a member found by the lookup with a role, changes it and removes it with the row\'s word Remove', async () => {
     const { fixture, root, get } = await renderScreen(ProjectMembersPage, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -168,6 +171,7 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
     expect(text(members)).toContain('Owner');
     expect(members.querySelector('select')).toBeNull();
     expect(members.querySelector('button[aria-label^="Actions for"]')).toBeNull();
+    expect(members.querySelector('td.actions button')).toBeNull();
     expect(root.textContent).not.toContain('Add member');
   });
 

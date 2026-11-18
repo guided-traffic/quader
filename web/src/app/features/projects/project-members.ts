@@ -1,4 +1,3 @@
-import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../../api/problem';
@@ -29,7 +28,7 @@ import { projectRoleLabel } from './project-roles';
  */
 @Component({
   selector: 'quader-project-members',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, ErrorNotice, ListHead, ProjectNeeds, QuaderAvatar],
+  imports: [DataTable, ErrorNotice, ListHead, ProjectNeeds, QuaderAvatar],
   template: `
     @if (writeError(); as e) {
       @if (e.code === 'last_owner') {
@@ -96,24 +95,13 @@ import { projectRoleLabel } from './project-roles';
               {{ roleText(m.role) }}
             }
           </td>
+          <!-- The row's one action is its word, as a group's member has it; a menu of one entry is not made (R-UI-163). -->
           <td class="actions">
             @if (canWrite()) {
-              <button
-                class="btn btn-tertiary btn-icon"
-                type="button"
-                [attr.aria-label]="actionsOf(m)"
-                [disabled]="busy()"
-                [cdkMenuTriggerFor]="rowMenu"
-              >
-                <span class="material-icons" aria-hidden="true">more_vert</span>
+              <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="remove(m)">
+                <ng-container i18n="@@project-members.remove">Remove</ng-container>
+                <span class="visually-hidden" translate="no"> {{ m.principal }}</span>
               </button>
-              <ng-template #rowMenu>
-                <div class="menu" cdkMenu>
-                  <button type="button" class="menu-item" cdkMenuItem (cdkMenuItemTriggered)="remove(m)" i18n="@@project-members.remove">
-                    Remove member
-                  </button>
-                </div>
-              </ng-template>
             }
           </td>
         </tr>
@@ -228,10 +216,6 @@ export class ProjectMembers {
 
   protected isMe(m: ProjectMember): boolean {
     return m.kind === 'user' && m.name === this.session.whoami()?.principal?.name;
-  }
-
-  protected actionsOf(m: ProjectMember): string {
-    return $localize`:@@project-members.actions-of:Actions for ${m.principal}:member:`;
   }
 
   /** Opens the dialog that adds a member. */

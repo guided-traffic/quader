@@ -6819,8 +6819,9 @@ The same walk found one thing in two forms on screens of one kind. One form each
   ([Q-UI-566](#q-ui-566--the-jobs-and-the-backup-runs-take-the-head-of-every-list)).
 - **A setting's name in running text** is code ([Q-UI-571](#q-ui-571--a-settings-name-in-running-text-is-code)).
 
-Not unified, open for the owner: the row actions (**Edit**, **Revoke**, **Unbind**, an icon and a menu). The two filter mechanisms
-of the security dashboard became one (R-UI-159).
+The two filter mechanisms of the security dashboard became one (R-UI-159), and the row actions (**Edit**, **Revoke**, **Unbind**, an
+icon and a menu) follow one rule since the owner's decision of 2026-11-18
+([R-UI-163](#r-ui-163--a-row-with-one-action-names-it-a-row-with-several-has-a-menu)).
 
 Acceptance criteria:
 
@@ -6997,6 +6998,46 @@ Acceptance criteria:
 - The journey `16-security-dashboard.spec.ts`: an alias pasted in lower case finds the finding of two projects, the project ticked in
   the drawer narrows the list and the counts, a text search narrows the list while the counts stay the project's.
 - The integration test `TestR_VULN_020_List` finds a finding by an alias of its advisory through `q`.
+
+### R-UI-163 · A row with one action names it, a row with several has a menu
+Priority: **MVP** · Covers: quader-only
+
+The owner's decision of 2026-11-18 (W-18, [Q-UI-640](#q-ui-640--a-row-with-one-action-names-it-a-row-with-several-has-a-menu)):
+the practice of most lists is the rule of every list and every table of the app, in the main area and the admin area.
+
+- **One action** of a row is its word as a quiet button (`btn btn-tertiary`), with the row's name for assistive technology
+  after the word (**Revoke**, heard as "Revoke ci-deploy"). A destructive word has the same quiet form as every other row
+  action; its confirmation dialog says what it destroys. Where the one action differs by permission, it is one word either way.
+- **Two or more actions** are the row's menu: the `more_vert` button (`btn btn-tertiary btn-icon`) named **Actions for
+  &lt;name&gt;**, its entries the actions in words. A menu never has one entry.
+- **Beside the menu** at most one frequent action stands on its own: the copy button of a value (its icon, with its name and
+  tooltip, [Q-UI-642](#q-ui-642--a-copy-button-stays-the-copy-icon-also-where-it-is-a-rows-one-action)), or **Set up client**
+  in its quiet word form in a project's repository list ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)).
+  The menu may offer the same action again.
+- **Opening the thing is its name**: the name in the first column is the link to the thing's page, and a row whose only action
+  would open it has no action cell.
+- **A credential's Revoke is never in a menu** ([Q-UI-641](#q-ui-641--a-credentials-revoke-is-never-in-a-menu-a-token-row-keeps-its-two-words)):
+  a leaked token is revoked with one click. A row that offers it with one other action shows both words (a personal token's
+  **Rotate** and **Revoke**), because a menu of one entry is not made.
+
+Brought to the rule on 2026-11-18 ([Q-UI-643](#q-ui-643--how-the-lists-that-did-not-follow-the-rule-follow-it)): the CI
+mappings (**Edit** or **View**, **Test** and **Delete** as words), the Debian signing keys (two buttons per key), the saved
+views of the package list (three words), a project's members (a menu of one entry), an endpoint's rules (a menu of one entry for
+a reader whose rule is not served), and the two rows whose one action was a default button (**Clear** of an Ansible tombstone,
+**Run now** of a scheduled task).
+
+Acceptance criteria:
+
+- `check-rules.mjs` fails on a template whose table cell or list item shows two word actions at once
+  (`row-actions-rule.mjs`, tested by `lint-rules.test.mjs`); the app passes it with one allowed file, the token table of
+  Q-UI-641.
+- Unit tests: a CI mapping's row offers **Edit**, **Test** and **Delete** in the menu **Actions for &lt;name&gt;** to a writer and
+  **Test** as its word to a reader, and the name opens the mapping; a next Debian key offers **Promote** and **Remove** in its
+  menu, a withheld one **Reinstate** and **Confirm retirement**, the primary and a retired key nothing; a saved view's menu offers
+  **Rename**, **Make default** or **Remove default**, and **Delete**; a project member's row offers **Remove** as a word; an
+  endpoint's rule offers no menu to a reader whose rule is not served; the tombstone's **Clear** and a task's **Run now** are
+  quiet buttons.
+- The journeys that act on a changed row open its menu (12, 13, 17).
 
 ## Deferred
 
@@ -14390,6 +14431,9 @@ view; the row's actions were an icon without a label (rotate) and a word (**Revo
 (2026-11-18):** the scope no longer takes all the room: the token and the scope share it by their content, so the administrator's
 long token descriptions no longer break into three lines beside a short scope.
 
+**Kept by [Q-UI-641](#q-ui-641--a-credentials-revoke-is-never-in-a-menu-a-token-row-keeps-its-two-words) (2026-11-18):** the two
+words are the one allowed case of two words in a row under the rule of R-UI-163.
+
 ### Q-UI-430 · The search's repository rows are built from the parts of the repository list
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -16366,6 +16410,113 @@ development agent records no revisit condition.
 
 **Applied in the spec:** R-UI-096, R-UI-158. Code: [search-model.ts](../../web/src/app/features/search/search-model.ts),
 [search-field.ts](../../web/src/app/features/search/search-field.ts).
+
+### Q-UI-640 · A row with one action names it, a row with several has a menu
+
+Status: **Decided by the owner, 2026-11-18** (W-18, "Option A" from three).
+
+Context: the lists had two forms. The repositories, a project's members, the files of a repository and an endpoint's rules put
+the row's actions into a menu; the projects of the admin area (**Edit**), the tokens and a Bastion's tokens (**Revoke**), the system
+roles (**Unbind**), a group's members and a user's groups (**Remove**), the CI issuances (**Details**) and the sessions of the
+profile (**End**) showed their one action as a quiet word. Two lists did neither: the CI mappings showed **Edit** (or **View**),
+**Test** and **Delete** as words side by side, and the Debian signing keys two buttons per key.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The practice as the rule: one action is its word as a quiet button, two or more are the row's menu, with at most one frequent action beside the menu as an icon (chosen by the owner) | The two deviating lists move to the menu | A single action named by its word is faster and clearer than a menu with one entry; a leaked token's **Revoke** does not hide behind a menu | Two forms of row action in the app, by the number of actions |
+| (b) A menu everywhere | Every row has `more_vert` | One form | One click more for the only action of a row; **Revoke** of a leaked token behind a menu |
+| (c) Icons everywhere | Every action an icon with a tooltip | Compact | An icon has to be learned; most actions (**Unbind**, **Promote**, **Test**) have no icon a reader knows |
+
+**Choice:** (a), the owner's. **Rationale:** the owner's, in the words above. The rule is
+[R-UI-163](#r-ui-163--a-row-with-one-action-names-it-a-row-with-several-has-a-menu); the development agent filled in what the
+owner did not say: a credential's **Revoke** (Q-UI-641), the copy button (Q-UI-642) and how each deviating list moved
+(Q-UI-643).
+
+**Applied in the spec:** R-UI-163; R-UI-146 (the row actions are no longer open). The style guide's
+[Lists](../developer/ui-style-guide.md#lists).
+
+### Q-UI-641 · A credential's Revoke is never in a menu; a token row keeps its two words
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's reason for Q-UI-640 is that a leaked token's **Revoke** must not hide behind a menu. The personal tokens of
+the profile and a service account's tokens for an administrator offer two actions per token, **Rotate** and **Revoke**
+([Q-UI-429](#q-ui-429--a-token-list-gives-the-scope-the-room-leaves-out-how-a-token-was-made-and-words-both-actions)), which the
+rule's "two or more are a menu" would put behind `more_vert`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Revoke** of a credential is never in a menu; where its row has one other action, both stay words (chosen) | The token rows as they are | The owner's reason holds in every token list; no menu of one entry | The one place where two words stand side by side, named in the rule and allowed in its lint check |
+| (b) Both in the menu | The rule without an exception | One form | **Revoke** of a leaked personal token behind a menu, against the reason of the rule |
+| (c) **Revoke** as a word, **Rotate** as an icon beside it | Both visible | Compact | The icon without a label that Q-UI-429 removed; a rotation icon is not known |
+
+**Choice:** (a). **Rationale:** the rule exists for the reason the owner gave; applying it to the personal tokens would break that
+reason in the list where a leak is most likely. The development agent revisits it if a token row gains a third action, which then
+goes into a menu beside the word **Revoke**.
+
+**Applied in the spec:** R-UI-163; Q-UI-429 stays. Code: [token-table.ts](../../web/src/app/shared/access/token-table.ts), the
+allow-list of [check-rules.mjs](../../web/scripts/check-rules.mjs).
+
+### Q-UI-642 · A copy button stays the copy icon, also where it is a row's one action
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the copy of a value is the shared copy button everywhere in the app: the icon `content_copy` with a name that says what
+it copies and a tooltip. In a repository's files it is the only action of a file's row, where the rule asks for a word.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The copy button is the icon wherever it stands, also as a row's one action (chosen) | The files list as it is | One form of copying in the app, beside a value, in a header and in a row; the tooltip says the word | An icon as a row's one action |
+| (b) A word **Copy address** in the files' rows | The rule to the letter | No exception | Two forms of the same control; a word that pushes the row's other columns |
+
+**Choice:** (a). **Rationale:** the copy button is one control, known by its icon across the app; the rule is about how many actions
+a row shows, not about replacing the app's one copy control. The development agent revisits it if a row needs the copy and a second
+action: then the copy stands beside the menu, as in the repository lists.
+
+**Applied in the spec:** R-UI-163.
+
+### Q-UI-643 · How the lists that did not follow the rule follow it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the survey of every table and list of 2026-11-18 found six that broke the rule. Which actions go where is the question for
+two of them: the CI mappings, whose name already opened the mapping that **Edit** and **View** opened too, and the Debian signing
+keys, whose withheld key offered **Confirm retirement** as a red button.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Opening is the name; the rest by the rule (chosen) | A mapping: the menu **Edit**, **Test**, **Delete** for a writer, the word **Test** for a reader (**View** was the name's link); a next key: the menu **Promote**, **Remove**; a withheld key: the menu **Reinstate**, **Confirm retirement**, each asking first as before | Every list in one form; a reader's row is not a menu of one; the endpoint rules' menu also offers **Edit** beside the name | **Confirm retirement** loses its red: the confirmation dialog carries the warning |
+| (b) **Edit** or **View** stays a word, the other actions in a menu beside it | A word and a menu | Edit one click away | Two forms in one cell; the word repeats the name's link |
+| (c) Keep a red **Confirm retirement** beside the menu | A destructive word in the row | The danger is seen | A second form of a destructive row action; the rule's one frequent action beside the menu is the copy, not a rare erasure |
+
+**Choice:** (a). The other four lists move without a choice: the saved views of the package list put **Rename**, **Make
+default** (or **Remove default**) and **Delete** into the menu; a project's member offers **Remove** as a word, as a group's member
+does; an endpoint's rule has no menu where it would hold only **Edit** (a reader whose rule is not served); **Clear** of an Ansible
+tombstone and **Run now** of a scheduled task are quiet buttons. **Rationale:** the name is the way to the thing in every list,
+so an action that only opens it repeats the name. The development agent revisits (c) if an operator retires a withheld key by
+mistake.
+
+**Applied in the spec:** R-UI-163. Code: [mapping-list.ts](../../web/src/app/features/ci/mapping-list.ts),
+[deb-signing-keys.ts](../../web/src/app/features/repositories/deb-signing-keys.ts),
+[package-list.html](../../web/src/app/features/packages/package-list.html),
+[project-members.ts](../../web/src/app/features/projects/project-members.ts),
+[endpoint-detail.html](../../web/src/app/features/endpoints/endpoint-detail.html),
+[ansible-tombstones.ts](../../web/src/app/features/repositories/ansible-tombstones.ts),
+[tasks-card.ts](../../web/src/app/features/system/tasks-card.ts).
+
+### Q-UI-644 · A lint rule refuses two word actions in one row
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `row-actions-rule.mjs` in `check-rules.mjs`: a table cell or a list item that shows two buttons or links in the form of a word (`btn` without `btn-icon`) at once fails; the branches `@else`, `@case`, `@default` count apart; a file allow-list for Q-UI-641 (chosen) | A text check of the templates, as the icon rule of Q-UI-560 | Catches the two-words case that started W-18, cheaply, and found the saved views' three words | A menu of one entry is not caught: counting menu entries across `@if` blocks is not a text search |
+| (b) No check | The rule in the style guide only | Nothing to maintain | The next list with two words lands unseen |
+
+**Choice:** (a). **Rationale:** it costs one small file like the rules beside it and holds the half of the rule a text search can
+hold. The development agent revisits the menu-of-one case if it comes back.
+
+**Applied in the spec:** R-UI-163. Code: [row-actions-rule.mjs](../../web/scripts/row-actions-rule.mjs).
 
 ## What this does not cover
 

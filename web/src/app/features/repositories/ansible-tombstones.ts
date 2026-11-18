@@ -45,8 +45,10 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
             <td translate="no">{{ t.deletedBy }}</td>
             <td>
               @if (canManage()) {
-                <button class="btn btn-default" type="button" [disabled]="busy()" (click)="clear(t)" data-testid="ansible-tombstone-clear" i18n="@@ansible.tombstones.clear">
-                  Clear
+                <!-- The row's one action is its quiet word (R-UI-163). -->
+                <button class="btn btn-tertiary" type="button" [disabled]="busy()" (click)="clear(t)" data-testid="ansible-tombstone-clear">
+                  <ng-container i18n="@@ansible.tombstones.clear">Clear</ng-container>
+                  <span class="visually-hidden" translate="no"> {{ t.name }} {{ t.version }}</span>
                 </button>
               }
             </td>

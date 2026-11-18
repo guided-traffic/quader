@@ -351,10 +351,9 @@ test('R-UI-035 R-UI-036 R-CI-019 an administrator registers the issuer, creates 
 
     // delete it again
     await bob.goto(`/ui/en/projects/${projectKey}/ci`);
-    await bob
-      .getByRole('row', { name: new RegExp(projectMapping) })
-      .getByRole('button', { name: 'Delete' })
-      .click();
+    // The writer's actions of a mapping are the row's menu (R-UI-163).
+    await bob.getByRole('button', { name: `Actions for ${projectMapping}`, exact: true }).click();
+    await bob.getByRole('menuitem', { name: 'Delete', exact: true }).click();
     const confirm = bob.getByRole('dialog');
     await confirm.locator('#confirm-name').fill(projectMapping);
     await confirm.getByRole('button', { name: 'Delete mapping' }).click();

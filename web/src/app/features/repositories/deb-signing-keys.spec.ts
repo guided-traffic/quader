@@ -1,5 +1,6 @@
-import { DebApi } from '../../api/deb-api';
+import { ComponentFixture } from '@angular/core/testing';
 import { ApiError } from '../../api/problem';
+import { DebApi, DebSigningKey } from '../../api/deb-api';
 import { DEB_PRIMARY, FakeDebApi, debKey } from '../../api/testing/fakes-deb';
 import { buttonByText, expectAccessible, renderScreen, settle, text, type } from '../../testing/screen';
 import { DebSigningKeys, groupedFingerprint, keyErrorText } from './deb-signing-keys';
@@ -22,6 +23,27 @@ async function render(keys = [DEB_PRIMARY], canManage = true, fail?: ApiError) {
 
 const rows = (root: Element) => [...root.querySelectorAll('tbody tr')];
 const states = (root: Element) => rows(root).map((tr) => tr.getAttribute('data-state'));
+
+/** Opens the menu of a key's row and chooses an entry (R-UI-163). */
+async function chooseFor(r: { root: HTMLElement; fixture: ComponentFixture<unknown> }, k: DebSigningKey, label: string): Promise<void> {
+  r.root.querySelector<HTMLButtonElement>(`button[aria-label="Actions for ${groupedFingerprint(k.fingerprint)}"]`)!.click();
+  await settle(r.fixture);
+  const item = [...document.querySelectorAll<HTMLButtonElement>('.cdk-overlay-container .menu-item')].find((b) => text(b) === label);
+  if (!item) throw new Error(`no menu entry ${label}`);
+  item.click();
+  await settle(r.fixture);
+}
+
+/** The entries of a key's menu. */
+async function entriesOf(r: { root: HTMLElement; fixture: ComponentFixture<unknown> }, k: DebSigningKey): Promise<string[]> {
+  const trigger = r.root.querySelector<HTMLButtonElement>(`button[aria-label="Actions for ${groupedFingerprint(k.fingerprint)}"]`)!;
+  trigger.click();
+  await settle(r.fixture);
+  const entries = [...document.querySelectorAll('.cdk-overlay-container .menu-item')].map((b) => text(b));
+  trigger.click();
+  await settle(r.fixture);
+  return entries;
+}
 
 /** The confirm button of the open dialog. */
 function dialogButton(body: HTMLElement, label: string): HTMLButtonElement {
@@ -57,7 +79,18 @@ describe('Debian signing keys panel', () => {
     const { r } = await render([DEB_PRIMARY, NEXT, WITHHELD], false);
     expect(states(r.root)).toEqual(['primary', 'next', 'withheld']);
     expect([...r.root.querySelectorAll('button')].map((b) => text(b)).filter((t) => /Promote|Remove|Reinstate|Confirm|Generate|Import/.test(t))).toEqual([]);
+    expect(r.root.querySelector('button[aria-label^="Actions for"]')).toBeNull();
     expect(r.root.querySelector('textarea')).toBeNull();
+  });
+
+  it('R-UI-163 a next and a withheld key put their two actions into the row\'s menu; the primary and a retired key have none', async () => {
+    const { r } = await render([DEB_PRIMARY, NEXT, WITHHELD, RETIRED]);
+    const menus = [...r.root.querySelectorAll('tbody tr')].map((tr) => tr.querySelector('button[aria-label^="Actions for"]') !== null);
+    expect(menus).toEqual([false, true, true, false]);
+    expect(r.root.querySelectorAll('td.actions .btn:not(.btn-icon)')).toHaveLength(0);
+    expect(await entriesOf(r, NEXT)).toEqual(['Promote', 'Remove']);
+    expect(await entriesOf(r, WITHHELD)).toEqual(['Reinstate', 'Confirm retirement']);
+    await expectAccessible(r.root);
   });
 
   it('R-DEB-017 generating the next key starts the overlap and says since when both keys sign', async () => {
@@ -122,8 +155,7 @@ describe('Debian signing keys panel', () => {
 
   it('R-DEB-017 promoting the next key asks first, names what the promotion does, and retires the old primary', async () => {
     const { r, fake, body } = await render([DEB_PRIMARY, NEXT]);
-    buttonByText(r.root, 'Promote').click();
-    await settle(r.fixture);
+    await chooseFor(r, NEXT, 'Promote');
     expect(text(body)).toContain('its private key is erased');
     expect(text(body)).toContain('fails to update');
     expect(fake.calls).not.toContain('promote');
@@ -136,13 +168,11 @@ describe('Debian signing keys panel', () => {
 
   it('R-DEB-017 cancelling the dialog changes nothing, and removing the next key retires it', async () => {
     const { r, fake, body } = await render([DEB_PRIMARY, NEXT]);
-    buttonByText(r.root, 'Remove').click();
-    await settle(r.fixture);
+    await chooseFor(r, NEXT, 'Remove');
     buttonByText(body, 'Cancel').click();
     await settle(r.fixture);
     expect(fake.calls).not.toContain(`retire:${NEXT.fingerprint}`);
-    buttonByText(r.root, 'Remove').click();
-    await settle(r.fixture);
+    await chooseFor(r, NEXT, 'Remove');
     dialogButton(body, 'Remove the key').click();
     await settle(r.fixture);
     expect(fake.calls).toContain(`retire:${NEXT.fingerprint}`);
@@ -153,8 +183,7 @@ describe('Debian signing keys panel', () => {
     const { r, fake } = await render([WITHHELD]);
     expect(r.root.querySelector('[data-testid="deb-withheld-note"]')).not.toBeNull();
     expect(text(r.root.querySelector('[data-testid="deb-no-primary"]')!)).toContain('builds publish nothing');
-    buttonByText(r.root, 'Reinstate').click();
-    await settle(r.fixture);
+    await chooseFor(r, WITHHELD, 'Reinstate');
     expect(fake.calls).toContain(`reinstate:${WITHHELD.fingerprint}`);
     expect(states(r.root)).toEqual(['primary']);
     expect(r.root.querySelector('[data-testid="deb-no-primary"]')).toBeNull();
@@ -163,8 +192,7 @@ describe('Debian signing keys panel', () => {
 
   it('R-DEB-032 confirming the retirement of a withheld key says it cannot be undone and erases the key only after the answer', async () => {
     const { r, fake, body } = await render([DEB_PRIMARY, WITHHELD]);
-    buttonByText(r.root, 'Confirm retirement').click();
-    await settle(r.fixture);
+    await chooseFor(r, WITHHELD, 'Confirm retirement');
     expect(text(body)).toContain('This cannot be undone');
     expect(fake.calls).not.toContain(`retire:${WITHHELD.fingerprint}`);
     dialogButton(body, 'Retire the key').click();
@@ -176,8 +204,7 @@ describe('Debian signing keys panel', () => {
   it('R-DEB-032 a reinstate the server refuses is shown in words and the list is read again', async () => {
     const { r, fake } = await render([DEB_PRIMARY, NEXT, WITHHELD]);
     fake.failure = new ApiError(409, { code: 'deb_key_state', detail: 'x' }, null);
-    buttonByText(r.root, 'Reinstate').click();
-    await settle(r.fixture);
+    await chooseFor(r, WITHHELD, 'Reinstate');
     expect(text(r.root.querySelector('[data-testid="deb-key-error"]')!)).toContain('not in a state that allows this');
     expect(fake.calls.filter((c) => c === 'signingKeys').length).toBe(2);
   });

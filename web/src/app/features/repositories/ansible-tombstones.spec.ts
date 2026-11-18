@@ -39,9 +39,12 @@ describe('Ansible tombstones', () => {
     expect(text(r.root)).toContain('no number is blocked');
   });
 
-  it('R-ANS-012 clearing asks first, then clears the one tombstone and reloads the list', async () => {
+  it('R-ANS-012 R-UI-163 clearing is the row\'s quiet word, asks first, then clears the one tombstone and reloads the list', async () => {
     const { r, fake, body } = await render();
-    buttonByText(r.root, 'Clear').click();
+    const clear = buttonByText(r.root, 'Clear');
+    expect(clear.classList).toContain('btn-tertiary');
+    expect(text(clear)).toBe('Clear acme.tools 1.0.0');
+    clear.click();
     await settle(r.fixture);
     expect(text(body)).toContain('can then be published again');
     dialogButton(body, 'Clear tombstone').click();

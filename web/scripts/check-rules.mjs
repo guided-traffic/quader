@@ -8,12 +8,14 @@
 //  - R-UI-126, R-UI-158: no link to the removed routes /setup, /browse and /admin/security (removed-routes-rule.mjs).
 //  - Q-UI-552: no bare <details> in a template: every fold is <quader-disclosure>, with the app's one chevron.
 //  - Q-UI-560: no icon stands directly in a table cell: it is one element with its word (status-rule.mjs).
+//  - R-UI-163: no row shows two word actions at once: several actions are the row's menu (row-actions-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { numberFieldsWithoutWidth } from './field-width-rule.mjs';
 import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 import { bareIconsInCells } from './status-rule.mjs';
+import { wordActionsSideBySide } from './row-actions-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -87,6 +89,18 @@ for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('
   for (const { line, tag } of bareIconsInCells(readFileSync(file, 'utf8'))) {
     failed = true;
     console.error(`Q-UI-560: ${relative(root, file)}:${line}: an icon directly in a table cell; put it and its word into the badge or .icon-name: ${tag.split('\n')[0].trim()}`);
+  }
+}
+
+// A row with one action names it, a row with several has a menu (R-UI-163). The token rows keep Rotate and Revoke as words: a
+// credential's Revoke is never in a menu (Q-UI-641).
+const twoWordsAllowed = new Set(['src/app/shared/access/token-table.ts']);
+for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts'))) {
+  const rel = relative(root, file).split(sep).join('/');
+  if (twoWordsAllowed.has(rel)) continue;
+  for (const { line, tag } of wordActionsSideBySide(readFileSync(file, 'utf8'))) {
+    failed = true;
+    console.error(`R-UI-163: ${rel}:${line}: two word actions in one row; put the row's actions into its menu: ${tag.split('\n')[0].trim()}`);
   }
 }
 

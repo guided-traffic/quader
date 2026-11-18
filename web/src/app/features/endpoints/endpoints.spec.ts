@@ -150,13 +150,17 @@ describe('Endpoint screen', () => {
     expect(fake.deleted).toEqual(['releases']);
   });
 
-  it('R-EP-017 a caller without endpoints:write sees no new-rule button and a disabled switch', async () => {
+  it('R-EP-017 R-UI-163 a caller without endpoints:write sees no new-rule button, a disabled switch, and no menu of the one entry Edit', async () => {
     const { root } = await renderScreen(EndpointDetail, {
       inputs: { endpoint: 'customers' },
       capabilities: ['endpoints:read'],
     });
     expect(text(root)).not.toContain('New rule');
     expect(root.querySelector<HTMLInputElement>('input[role="switch"]')?.disabled).toBe(true);
+    // The rule's address is not served here, so the menu would hold only Edit, which the rule's name already is.
+    expect(root.querySelector('[role="img"][aria-label="This endpoint does not serve this address."]')).toBeTruthy();
+    expect(root.querySelector('button[aria-label="Actions for releases"]')).toBeNull();
+    expect(root.querySelector('th a')?.textContent?.trim()).toBe('releases');
   });
 });
 

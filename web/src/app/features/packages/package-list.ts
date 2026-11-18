@@ -1,3 +1,4 @@
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import {
   Component,
   computed,
@@ -50,6 +51,9 @@ interface Chip extends ListChip {
 @Component({
   selector: 'quader-package-list',
   imports: [
+    CdkMenu,
+    CdkMenuItem,
+    CdkMenuTrigger,
     PageHeader,
     RouterLink,
     DataTable,
@@ -319,6 +323,11 @@ export class PackageList {
     add('to', this.to());
     add('sort', this.sort());
     if (this.memory.saveView(this.viewName(), query)) this.viewName.set('');
+  }
+
+  /** The menu of a saved view, named by the view (R-UI-163). */
+  protected viewActionsLabel(name: string): string {
+    return $localize`:@@pkg.views.actions-of:Actions for ${name}:name:`;
   }
 
   protected startRename(view: SavedView): void {

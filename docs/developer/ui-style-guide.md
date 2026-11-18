@@ -98,10 +98,23 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
   A new logo is the owner's file unchanged under `web/public/formats/<format>/`, a section in
   [NOTICE.txt](../../web/public/formats/NOTICE.txt) and a case in [format-icon.ts](../../web/src/app/shared/format-icon.ts),
   after its owner's terms were read.
-- **Actions on a row go into a menu** behind an `btn btn-tertiary btn-icon` showing `more_vert`, with an `aria-label` that names the row
-  (**Actions for user:bob**). A list that has one frequent action per row may show it as a quiet button instead. The repository
-  list is the example of a thing with a description: the key, the description as the muted second line, the actions in the
-  menu ([Q-UI-302](../spec/api-and-ui.md#q-ui-302--the-repository-list-names-a-repository-by-key-and-description-in-its-first-column-and-puts-the-rows-actions-in-a-menu)).
+- **A row with one action names it, a row with several has a menu** (the owner's rule,
+  [R-UI-163](../spec/api-and-ui.md#r-ui-163--a-row-with-one-action-names-it-a-row-with-several-has-a-menu)):
+  - one action is its word as a quiet button, `btn btn-tertiary`, the row's name after the word in a `visually-hidden` span
+    (**Revoke**, heard as "Revoke ci-deploy"); a destructive word (**Revoke**, **Remove**, **Unbind**) has the same quiet form and
+    its confirmation dialog says what it destroys; an action that differs by permission is one word either way;
+  - two or more actions are the menu: `btn btn-tertiary btn-icon` showing `more_vert`, `[cdkMenuTriggerFor]`, an `aria-label`
+    **Actions for &lt;name&gt;** (**Actions for user:bob**), the entries `.menu-item`s with their words. A menu never has one entry;
+  - beside the menu at most one frequent action stands on its own: the copy button of a value (its icon with name and tooltip, also
+    where it is a row's one action, [Q-UI-642](../spec/api-and-ui.md#q-ui-642--a-copy-button-stays-the-copy-icon-also-where-it-is-a-rows-one-action)),
+    or **Set up client** in a project's repository list. The menu may offer it again;
+  - opening the thing is its name, the link in the first column; a row whose only action would open it has no action cell;
+  - a credential's **Revoke** is never in a menu: a token row keeps **Rotate** and **Revoke** as two words
+    ([Q-UI-641](../spec/api-and-ui.md#q-ui-641--a-credentials-revoke-is-never-in-a-menu-a-token-row-keeps-its-two-words)).
+
+  `row-actions-rule.mjs` fails the lint where a cell or a list item shows two words at once. The repository list is the example of
+  a thing with a description: the key, the description as the muted second line, the actions in the menu
+  ([Q-UI-302](../spec/api-and-ui.md#q-ui-302--the-repository-list-names-a-repository-by-key-and-description-in-its-first-column-and-puts-the-rows-actions-in-a-menu)).
 - **The columns come from the job of the list's kind of user** (R-UI-067, [Q-UI-330](../spec/api-and-ui.md#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)). Ask first what the list is for: the
   properties its user decides on get columns of their own, the column that names the thing gets the most room, and nothing is
   packed under the name but its description. The repository lists are the example: in a project (find and set up) repository,
@@ -387,6 +400,7 @@ Before a screen is committed:
 - [ ] Seen in the dark and the light scheme, and at a narrow window.
 - [ ] Only shared controls, classes of `_controls.scss` and `--quader-*` tokens; no colour literal.
 - [ ] One `<h1>`, one primary action per view, one way to each job (no button and tab for the same thing).
+- [ ] A row's one action is its quiet word, several are its menu **Actions for &lt;name&gt;**; no menu of one entry.
 - [ ] Every value to copy of one line is an address field; a page shows one client address, further ones labelled in Details.
 - [ ] Every control named; the keyboard reaches everything; a spec of the screen calls `seriousViolations` and it passes.
 - [ ] Every string has an `i18n` ID and a German translation.

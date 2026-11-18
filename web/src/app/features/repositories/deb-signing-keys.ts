@@ -1,3 +1,4 @@
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { DebApi, DebSigningKey, DebSigningKeyState } from '../../api/deb-api';
@@ -69,7 +70,7 @@ export function keyErrorText(error: ApiError): string | null {
  */
 @Component({
   selector: 'quader-deb-signing-keys',
-  imports: [DatePipe, CopyButton, DataTable, Disclosure, ErrorNotice],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DatePipe, CopyButton, DataTable, Disclosure, ErrorNotice],
   template: `
     <section class="keys" aria-labelledby="deb-keys-heading">
       <h2 id="deb-keys-heading" class="visually-hidden" i18n="@@deb.keys.heading">Signing keys</h2>
@@ -132,16 +133,30 @@ export function keyErrorText(error: ApiError): string | null {
                 }
               </td>
               @if (canManage()) {
+                <!-- A next and a withheld key have two actions each: the row's menu (R-UI-163, Q-UI-643); the primary and a retired
+                     key have none. Every action that erases a private key asks first. -->
                 <td class="actions">
-                  @switch (k.state) {
-                    @case ('next') {
-                      <button class="btn btn-default btn-sm" type="button" [disabled]="busy()" (click)="promote(k)" i18n="@@deb.keys.promote">Promote</button>
-                      <button class="btn btn-tertiary btn-sm" type="button" [disabled]="busy()" (click)="retire(k)" i18n="@@deb.keys.remove">Remove</button>
-                    }
-                    @case ('withheld') {
-                      <button class="btn btn-default btn-sm" type="button" [disabled]="busy()" (click)="reinstate(k)" i18n="@@deb.keys.reinstate">Reinstate</button>
-                      <button class="btn btn-danger btn-sm" type="button" [disabled]="busy()" (click)="retire(k)" i18n="@@deb.keys.confirm-retirement">Confirm retirement</button>
-                    }
+                  @if (k.state === 'next' || k.state === 'withheld') {
+                    <button
+                      class="btn btn-tertiary btn-icon"
+                      type="button"
+                      [disabled]="busy()"
+                      [attr.aria-label]="actionsLabel(k)"
+                      [cdkMenuTriggerFor]="keyMenu"
+                    >
+                      <span class="material-icons" aria-hidden="true">more_vert</span>
+                    </button>
+                    <ng-template #keyMenu>
+                      <div class="menu" cdkMenu>
+                        @if (k.state === 'next') {
+                          <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="promote(k)" i18n="@@deb.keys.promote">Promote</button>
+                          <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="retire(k)" i18n="@@deb.keys.remove">Remove</button>
+                        } @else {
+                          <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="reinstate(k)" i18n="@@deb.keys.reinstate">Reinstate</button>
+                          <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="retire(k)" i18n="@@deb.keys.confirm-retirement">Confirm retirement</button>
+                        }
+                      </div>
+                    </ng-template>
                   }
                 </td>
               }
@@ -295,6 +310,11 @@ export class DebSigningKeys {
       this.key();
       untracked(() => void this.load());
     });
+  }
+
+  /** The menu of a key's row, named by its fingerprint as the row shows it (R-UI-163). */
+  protected actionsLabel(k: DebSigningKey): string {
+    return $localize`:@@deb.keys.actions-of:Actions for ${groupedFingerprint(k.fingerprint)}:fingerprint:`;
   }
 
   protected typeText(k: DebSigningKey): string {

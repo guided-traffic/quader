@@ -15,6 +15,11 @@
     padding-block: var(--quader-space-2);
     border-block-end: 1px solid var(--quader-border);
   }
+
+  // A saved view's menu stands at the row's end, where every list puts a row's actions.
+  .view-menu {
+    margin-inline-start: auto;
+  }
 }
 
 .type-cell {

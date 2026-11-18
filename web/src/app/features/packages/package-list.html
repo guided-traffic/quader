@@ -96,17 +96,30 @@
               @if (memory.defaultView()?.id === v.id) {
                 <span class="badge" i18n="@@pkg.views.default">default</span>
               }
-              <button class="btn btn-tertiary" type="button" (click)="startRename(v)" i18n="@@pkg.views.rename">Rename</button>
-              @if (memory.defaultView()?.id === v.id) {
-                <button class="btn btn-tertiary" type="button" (click)="memory.makeDefault(null)" i18n="@@pkg.views.unset-default">
-                  Remove default
-                </button>
-              } @else {
-                <button class="btn btn-tertiary" type="button" (click)="memory.makeDefault(v.id)" i18n="@@pkg.views.make-default">
-                  Make default
-                </button>
-              }
-              <button class="btn btn-tertiary" type="button" (click)="memory.deleteView(v.id)" i18n="@@pkg.views.delete">Delete</button>
+              <!-- A view's three actions are its menu at the row's end (R-UI-163, Q-UI-643). -->
+              <button
+                class="btn btn-tertiary btn-icon view-menu"
+                type="button"
+                [attr.aria-label]="viewActionsLabel(v.name)"
+                [cdkMenuTriggerFor]="viewMenu"
+              >
+                <span class="material-icons" aria-hidden="true">more_vert</span>
+              </button>
+              <ng-template #viewMenu>
+                <div class="menu" cdkMenu>
+                  <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="startRename(v)" i18n="@@pkg.views.rename">Rename</button>
+                  @if (memory.defaultView()?.id === v.id) {
+                    <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="memory.makeDefault(null)" i18n="@@pkg.views.unset-default">
+                      Remove default
+                    </button>
+                  } @else {
+                    <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="memory.makeDefault(v.id)" i18n="@@pkg.views.make-default">
+                      Make default
+                    </button>
+                  }
+                  <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="memory.deleteView(v.id)" i18n="@@pkg.views.delete">Delete</button>
+                </div>
+              </ng-template>
             }
           </li>
         }
