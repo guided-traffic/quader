@@ -7,6 +7,9 @@ package e2e
 // values-pooler.yaml, R-HA-058); the harness that picks the node and drains it is drain_variants_test.go.
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -70,9 +73,55 @@ func requirePoolerProfile(t *testing.T) {
 		}
 		major, _ := strconv.Atoi(m[1])
 		minor, _ := strconv.Atoi(m[2])
-		t.Logf("pooler %s: %s on %v", name, strings.TrimSpace(out), nodeNames(nodes))
+		t.Logf("pooler %s: %s on %v, %s", name, strings.TrimSpace(out), nodeNames(nodes), poolerEffectiveConfig(t, ready))
 		if major < 1 || (major == 1 && minor < 23) {
 			t.Fatalf("R-HA-059 rule 5: pooler %s runs PgBouncer %s, want 1.23 or later", name, m[0])
+		}
+	}
+	t.Cleanup(func() { keepPoolerLogs(t) })
+}
+
+// poolerConfigFile is where the CloudNativePG pooler manager writes the PgBouncer configuration it renders from the Pooler.
+const poolerConfigFile = "/controller/configs/pgbouncer.ini"
+
+// poolerEffectiveConfig copies the rendered pgbouncer.ini of every given instance into the artifact directory and says what
+// server_login_retry PgBouncer runs with (Q-HA-302): what the Pooler asks for is not shown to have arrived until it is read here.
+func poolerEffectiveConfig(t *testing.T, pods []pod) string {
+	t.Helper()
+	var says []string
+	for _, p := range pods {
+		ini, err := kubectl("-n", cfg.namespace, "exec", p.Name, "-c", "pgbouncer", "--", "cat", poolerConfigFile)
+		if err != nil {
+			says = append(says, fmt.Sprintf("%s: %s not readable (%v)", p.Name, poolerConfigFile, err))
+			continue
+		}
+		_ = os.WriteFile(filepath.Join(cfg.out, "pooler-config-"+p.Name+".ini"), []byte(ini), 0o644)
+		v := "unset (PgBouncer's default, 15 s)"
+		if m := regexp.MustCompile(`(?m)^\s*server_login_retry\s*=\s*(\S+)`).FindStringSubmatch(ini); m != nil {
+			v = m[1]
+		}
+		says = append(says, fmt.Sprintf("%s: server_login_retry %s", p.Name, v))
+	}
+	return strings.Join(says, "; ")
+}
+
+// keepPoolerLogs writes the log of every live instance of both poolers into the artifact directory, green or red: the switchover
+// and the drain of an instance are read from them (Q-HA-302). The instances that were deleted during the run are in the evidence's
+// kept-pod-logs.
+func keepPoolerLogs(t *testing.T) {
+	for _, name := range []string{poolerRW, poolerControl} {
+		ps, err := kubectl("-n", cfg.namespace, "get", "pods", "-l", poolerSel(name), "-o", "jsonpath={range .items[*]}{.metadata.name}{\"\\n\"}{end}")
+		if err != nil {
+			t.Logf("pooler logs of %s not kept: %v", name, err)
+			continue
+		}
+		for _, p := range strings.Fields(ps) {
+			logs, err := kubectl("-n", cfg.namespace, "logs", p, "-c", "pgbouncer")
+			if err != nil {
+				t.Logf("pooler log of %s not kept: %v", p, err)
+				continue
+			}
+			_ = os.WriteFile(filepath.Join(cfg.out, "pooler-"+p+".log"), []byte(logs), 0o644)
 		}
 	}
 }
