@@ -1060,8 +1060,9 @@ agent** is not decided until the owner has said so.
     was replaced keeps the status red for 24 hours while every role has its ready replicas.
   - **Not verified:** a rolling update on a cluster that day; the drain legs that would show it run nightly and were not read.
   - Wanted: a replica that drains or has drained is no error; a row that went stale while `draining` counts as signed off.
-    Open for the owner: what a replica that was lost without draining does to the status while its role still has ready
-    replicas (the development agent proposes: a warning, not red; red only for a role without a ready replica).
+    Decided by the owner on 2026-11-18 ("Option A", from three: a warning / red as before / not in the header at all): a
+    replica that was lost without draining, while its role still has ready replicas, is a **warning**, not an error; its row
+    stays in the table as lost until the prune; red is for a role without a ready replica. Status: a builder is briefed.
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
