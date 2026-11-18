@@ -5,7 +5,7 @@ import { CiApi } from '../../api/ci-api';
 import { ApiError } from '../../api/problem';
 import { FakeCiApi, sampleIssuance } from '../../api/testing/fakes-ci';
 import { helpFor } from '../../core/help-topics';
-import { Navigation } from '../../core/navigation';
+import { Navigation, areaItems } from '../../core/navigation';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { buttonByText, expectAccessible, filterDrawer, openFilters, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
@@ -53,8 +53,7 @@ describe('The CI issuer list (R-UI-035)', () => {
     await renderScreen(IssuerList, { capabilities: ['ci:read', 'identities:read'] });
     const identity = TestBed.inject(Navigation)
       .areas()
-      .flatMap((a) => a.entries)
-      .flatMap((e) => (e.kind === 'group' ? e.items : [e]))
+      .flatMap((a) => areaItems(a))
       .map((i) => i.route);
     expect(identity).toContain('/admin/ci');
     TestBed.inject(SessionStore);

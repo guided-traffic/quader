@@ -209,12 +209,13 @@ describe('Repository edit form', () => {
     expect(sectionHeadings(r.root)).toEqual(['Access details', 'Administrator notes', 'Details', 'API', 'Advanced']);
   });
 
-  it('R-UI-021 a caller who may use but not configure the repository sees the consumer view without a form', async () => {
+  it('R-UI-021 R-UI-169 a caller who may use but not configure the repository sees the consumer view without a form and without an address field', async () => {
     const r = await open((fake) => (fake.consumerOnly = true));
     expect(text(r.root)).toContain(
       'You may use this repository but not read or change its configuration.',
     );
     expect(r.root.querySelector('textarea')).toBeNull();
+    expect(r.root.querySelector('quader-address-field')).toBeNull();
     await expectAccessible(r.root);
   });
 
@@ -238,10 +239,10 @@ describe('Repository edit form', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-REPO-002 R-UI-021 R-UI-066 the client address and the curl command carry the configured base URL even though the page is served from another origin', async () => {
+  it('R-REPO-002 R-UI-021 R-UI-169 the curl command carries the configured base URL even though the page is served from another origin; the client address is Set up client\'s', async () => {
     const r = await open((fake) => (fake.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT]));
     expect(location.origin).not.toBe('https://quader.example.net');
-    expect(addressValues(r.root)).toEqual(['https://quader.example.net/files/web/generic-local/']);
+    expect(addressValues(r.root)).toEqual([]);
     type(r.root.querySelector<HTMLTextAreaElement>('#f-description')!, 'Api');
     await settle(r.fixture);
     await openSection(r.fixture, r.root, 'API');

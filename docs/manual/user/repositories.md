@@ -53,7 +53,7 @@ Your client reaches a repository at an address built from the installation's add
 | Debian (APT) | `https://quader.example.com/api/deb/<project>/<key>/`, with a suite in the source line | `https://quader.example.com/files/<project>/<key>/` (download and delete; uploads go to `upload/<file>` of the APT address) |
 | Ansible Galaxy | `https://quader.example.com/api/ansible/<project>/<key>/`, the `url` of a server in `ansible.cfg` | none: collections are published with `ansible-galaxy collection publish` |
 
-The page of a repository shows its address for your package manager under its title, with a copy button, and the others under **Details**; **Set up client** shows them in the configuration of your client, so you do not have to build them yourself. A repository that an administrator moves to another project changes its address: the old address answers `404`, and your client configuration needs the new one.
+**Set up client** on the page of a repository shows its address for your package manager, with a copy button, and the configuration of your client that uses it, so you do not have to build it yourself; the address for downloads by path is under **Details** of the repository's page. A repository that an administrator moves to another project changes its address: the old address answers `404`, and your client configuration needs the new one.
 
 ## Formats in this version
 
@@ -89,8 +89,9 @@ Permissions can be narrower than a whole repository: a permission may cover only
 
 Open a project and you land on its **Repositories**. Select a repository to see what it holds, on the level you think in: images and tags, packages and versions, or files. You get there from the project's **Repositories**, from **Admin area › Repositories** (every project, each row naming its project), and with **Find a repository** in the top bar: Enter opens **Search results**, a page of the main area that lists the matching repositories of every project you may read.
 
-The page is titled with the repository's key and says what the repository is. Under the title is its **Client address**, the address your package manager needs, with **Copy client address**, and beside it **Set up client**, which opens the page of this repository that shows how to configure your client, with the commands and their explanation; you only pick your client where its package type has several. A disabled repository has no **Set up client**, because clients cannot use it. [Connecting a package client](client-setup.md) describes the page. At the top right:
+The page is titled with the repository's key and says what the repository is. At the top right:
 
+- **Set up client** opens the page of this repository that shows the address your package manager needs, with its copy button, and how to configure your client, with the commands and their explanation; you only pick your client where its package type has several. A disabled repository has no **Set up client**, because clients cannot use it. [Connecting a package client](client-setup.md) describes the page.
 - **Settings** opens the repository's settings, if you may read them.
 - **More actions** holds **Files**, the raw files of a repository of a package format ([Browsing and transferring files](files.md)), and **Vulnerabilities**.
 

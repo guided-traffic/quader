@@ -306,9 +306,12 @@ No list shows an address field ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-pro
   **Install command**). A configuration file or a snippet of several lines keeps the code block with its copy button
   ([Q-UI-272](../spec/api-and-ui.md#q-ui-272--an-address-field-holds-one-address-multi-line-snippets-stay-code-blocks-and-the-bastion-address-becomes-a-field), Q-UI-320).
   A hash (digest, fingerprint) is not an address either: `<code>` with its short form and the full text as `title`.
-- **One address in the header.** A page header and a line of the start page show the object's client address, the first of its
-  addresses. Its further addresses are in **Details**, each with a visible label that says what it is for (**Address for downloads
-  by path (curl, wget)**); two fields without a label make the user guess (Q-UI-320).
+- **A repository's address on Set up client only** ([R-UI-169](../spec/api-and-ui.md#r-ui-169--a-repositorys-address-stands-in-a-field-on-set-up-client-only),
+  the owner's rule of W-20). The header of the page Set up client shows the client address, beside the snippets that use it. The
+  repository's own page leads there with **Set up client**, first of its header's actions, and has no address field in its header;
+  the start page, the side bar and the repository's settings show no address. The one further address, **Address for downloads by
+  path (curl, wget)**, stays in the repository page's **Details** with its visible label, because Set up client does not show it;
+  two fields without a label make the user guess (Q-UI-320).
 - **Measures.** Height `--quader-control-height` (32 px); text `--quader-font-mono` at 0.875rem; padding `--quader-space-1`
   `--quader-space-3`; border 1 px `--quader-control-border` (hover `--quader-control-border-hover`, focus the ring of the other
   controls); fill `--quader-control-bg`, not the grey of `.text-input[readonly]`

@@ -20,7 +20,6 @@ import { Notifier } from '../../core/notifier';
 import { ServerAddress } from '../../core/server-address';
 import { SessionStore } from '../../core/session-store';
 import { SelectField, SelectOption } from '../../shared/access/fields';
-import { AddressField } from '../../shared/address-field';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ConflictResolver } from '../../shared/conflict-dialog';
 import { DraftStore } from '../../shared/drafts';
@@ -48,7 +47,6 @@ import {
   FormatMemberOf,
   RepositoryForm,
   apiAddress,
-  clientAddress,
   curlOf,
   formOf,
   maskSecrets,
@@ -76,7 +74,6 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
 @Component({
   selector: 'quader-repository-detail',
   imports: [
-    AddressField,
     AnsibleImportTasks,
     AnsibleTombstones,
     DatePipe,
@@ -278,7 +275,6 @@ export class RepositoryDetail implements HasUnsavedChanges {
     return this.opened().has(section);
   }
 
-  protected readonly address = computed(() => clientAddress(valueOf(this.baseUrl), this.format() ?? undefined, this.ref()));
   protected readonly documentJson = computed(() => JSON.stringify(this.stored(), null, 2));
   /** Each section's unsaved change as the request that saves it (R-UI-087). */
   protected readonly requests = computed(() =>

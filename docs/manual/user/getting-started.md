@@ -81,17 +81,20 @@ From left to right:
 
 ### The side bar
 
-Your work happens in projects. The start page shows the repositories you opened last with their client address and **Set up client**, and lists the projects you may see with your role in each; if you have exactly one, Quader opens it for you. To find a repository, a package or a project anywhere, use the search field in the top bar ([Search](search.md)). The side bar shows where you are:
+Your work happens in projects. The start page, **Projects**, lists the projects you may see with your role in each, so you can find one and explore its repositories and packages; if you have exactly one, Quader opens it for you. To find a repository, a package or a project anywhere, use the search field in the top bar ([Search](search.md)). The side bar shows where you are:
 
 | Where | Entries | Who sees it |
 |---|---|---|
 | A project (`/projects/<key>/…`) | The **project switcher** on top, then **Repositories**, **Packages**, **Vulnerabilities**; for who is more than a reader of the project or holds an administrative role also **Access** (**Members**, and for owners and holders of the permission **Permission policies**, **Service accounts**, **CI identity**) and **Settings** | Everyone who sees the project, anonymous readers included. A reader finds whom to ask under the heading of the project's **Repositories**, and a screen it may read but not change says the same: "Read only. Ask priya, an Owner of web, to change this." |
-| Everywhere else | **Projects** and **Guides** | Everyone |
+| Everywhere else, under **Your work** | **Projects**, **Guides**, and **Recently opened**: the last five repositories you opened in this browser, newest first | Everyone; **Recently opened** only to a signed-in user who has opened a repository they may still read |
+| Everywhere else, under **Security audit** | **Security dashboard** ([Security dashboard](security-dashboard.md)) | Auditors and administrators of the installation |
 | **Admin area** | Projects, repositories, endpoints, Bastions, identity, access and system screens | Only people who hold an administrative permission, and only the entries they may use. **Admin** in the top bar leads there, **Quader** leads back |
+
+**Recently opened** is folded the first time you see it; select it to show the repositories. Each entry is the repository's key after the mark of its project; point at it to read the project and the full name. It lists only repositories you may still read: one that was deleted or closed to you is left out. Quader keeps the list in this browser only, and the search field offers the same repositories when you open it. Inside a project, the project switcher lists the projects you opened last.
 
 The project switcher is the button with the project's name at the top of a project's side bar. It opens a panel with a search field, the projects you visited last and the ones that match; select one to open it, press Escape to close the panel without choosing. The address always carries the project, so a bookmark or a pasted link opens the same project.
 
-The side bar is pinned on wide screens. **Collapse sidebar** at its foot hides it, and the menu button in the top bar brings it back; Quader remembers the choice in this browser. On a narrow screen it opens over the content and closes with Escape, a click beside it, or when you pick an entry. Groups such as **Identity** fold and unfold with a click on their heading.
+The side bar is pinned on wide screens. **Collapse sidebar** at its foot hides it, and the menu button in the top bar brings it back; Quader remembers the choice in this browser. On a narrow screen it opens over the content and closes with Escape, a click beside it, or when you pick an entry. Groups such as **Identity** and **Recently opened** fold and unfold with a click on their heading, and Quader remembers that too.
 
 ## Language and theme
 

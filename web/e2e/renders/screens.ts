@@ -299,23 +299,42 @@ async function* searchField(page: Page): AsyncGenerator<string> {
   yield 'search-limited';
 }
 
+/** Below 1024 px the side bar is a drawer behind the top bar's menu button (R-UI-002). */
+async function openSidebar(page: Page): Promise<void> {
+  if ((page.viewportSize()?.width ?? 1440) >= 1024) return;
+  await page.getByRole('button', { name: 'Open navigation' }).click();
+  await expect(page.locator('aside.sidebar')).toBeVisible();
+}
+
+/** The page with its side bar shown: as it is where the side bar is pinned, the drawer opened below 1024 px. */
+async function* sidebarShown(page: Page): AsyncGenerator<string> {
+  await openSidebar(page);
+  await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('group', { name: 'Security audit', exact: true })).toBeVisible();
+  yield '';
+}
+
 /**
- * The search's store of frequently visited places (R-UI-096): three repositories and two projects opened first, then the start
- * page with **Recently opened** from the store, the field opened with its frequently visited groups, and the project switcher's
- * recent list.
+ * The search's store of frequently visited places (R-UI-096): four repositories (one of them with the seed's long key) opened
+ * first, then the side bar's **Recently opened** opened on the start page (R-UI-167; at 390 px in the drawer), the field
+ * opened with its frequently visited groups, and the project switcher's recent list.
  */
 async function* frequentPlaces(page: Page): AsyncGenerator<string> {
   for (const path of [
     `/ui/projects/${mainProject}/repositories/npm-vendor`,
     `/ui/projects/${otherProject}/repositories/collections`,
+    `/ui/projects/${mainProject}/repositories/${longNpmKey}`,
     `/ui/projects/${mainProject}/repositories/npm-internal`,
   ]) {
     await page.goto(path);
     await expect(page.locator('main h1')).toBeVisible();
   }
   await page.goto('/ui/projects');
-  await expect(page.locator('main .recent')).toBeVisible();
+  await openSidebar(page);
+  const group = page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'Recently opened' });
+  if ((await group.getAttribute('aria-expanded')) !== 'true') await group.click();
+  await expect(page.locator('#nav-group-recent a').first()).toBeVisible();
   yield '';
+  await page.keyboard.press('Escape');
   const narrow = (page.viewportSize()?.width ?? 1440) < 576;
   if (narrow) await page.getByRole('button', { name: 'Search', exact: true }).click();
   else await page.locator('#global-search').click();
@@ -700,8 +719,11 @@ export const screens: readonly Screen[] = [
   { id: 'projects', path: '/ui/projects', kinds: all },
   // The search field and its list on the start page; anonymous while the seed makes a project public (R-UI-095).
   { id: 'search-field', path: '/ui/projects', kinds: ['anonymous', ...all], walk: searchField, expected: tooMany },
-  // The start page and the project switcher read the search's store (R-UI-096); an anonymous visitor's start page (R-UI-095).
-  { id: 'start-recent', path: '/ui/projects', kinds: ['plain', 'power'], walk: frequentPlaces },
+  // The side bar's Recently opened and the project switcher read the search's store (R-UI-096, R-UI-167); an anonymous visitor's
+  // start page (R-UI-095).
+  { id: 'sidebar-recent', path: '/ui/projects', kinds: ['plain', 'power'], walk: frequentPlaces },
+  // The auditor's home side bar: the two context titles Your work and Security audit (R-UI-168), at 390 px in the drawer.
+  { id: 'sidebar-auditor', path: '/ui/projects', kinds: ['auditor'], walk: sidebarShown },
   { id: 'projects-anonymous', path: '/ui/projects', kinds: ['anonymous'], expected: tooMany },
   // The results page of the search (R-UI-098): every tab with matches, a text without a match, a tab opened by `kind`.
   { id: 'search-results', path: '/ui/search?q=web', kinds: all },

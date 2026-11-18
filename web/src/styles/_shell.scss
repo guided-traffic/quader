@@ -180,13 +180,20 @@ quader-root {
     background: rgb(0 0 0 / 40%);
   }
 
-  // The area's name on top of its sidebar, in the current entry's colour (the reference's context header).
+  // The title of a block of the sidebar, in the current entry's colour (the reference's context header): the area's name, and in
+  // the home sidebar each of its two blocks, Your work and Security audit (R-UI-168). It stands inside the navigation's 8 px of
+  // padding, so its text starts 16 px from the sidebar's edge, where the area's name always started.
   .context-title {
-    margin: var(--quader-space-1) 0 0;
-    padding: var(--quader-space-2) var(--quader-space-4);
+    margin: 0 0 var(--quader-space-1);
+    padding: var(--quader-space-2);
     color: var(--quader-nav-accent);
     font-size: var(--quader-text-size);
     font-weight: 600;
+  }
+
+  // A further block starts 12 px under the last entry of the one before it.
+  .nav-section + .nav-section {
+    margin-block-start: var(--quader-space-3);
   }
 
   // The project switcher on top of a project's sidebar (Q-UI-129): the project's mark and name as a button, and a panel
@@ -423,6 +430,14 @@ quader-root {
   // A nested entry has no icon; its label lines up with the labels of the entries above.
   .nested .nav-link {
     padding-inline-start: calc(var(--quader-space-1) + 24px + var(--quader-space-2));
+  }
+
+  // An entry of Recently opened (R-UI-167, Q-UI-661): the project's small mark where the label starts, then the repository's key on
+  // one line, cut with an ellipsis where the sidebar's 15 rem do not hold it; its title carries the whole name.
+  .recent-link .recent-key {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .group-toggle {

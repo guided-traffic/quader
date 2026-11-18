@@ -104,14 +104,21 @@ describe('App shell', () => {
     expect(plain.root.querySelector('header a.admin-button')).toBeNull();
   });
 
-  it('R-UI-158 the side bar of Your work has the section Security audit with Security dashboard for an auditor, and nobody else', async () => {
+  it('R-UI-168 R-UI-158 the home side bar has the context titles Your work and Security audit for an auditor, and nobody else the second', async () => {
     const auditor = ['content:metadata-read', 'vulnerabilities:triage', 'settings:read', 'audit:read', 'projects:read', 'identities:read'];
     const { root } = await render('/security', (api) => (api.meResult = { capabilities: auditor }));
     const sidebar = root.querySelector('aside.sidebar')!;
-    expect(sidebar.querySelector('.context-title')?.textContent?.trim()).toBe('Your work');
-    const group = sidebar.querySelector<HTMLButtonElement>('button.group-toggle')!;
-    expect(group.textContent).toContain('Security audit');
-    expect(group.classList).toContain('has-active');
+    const titles = [...sidebar.querySelectorAll<HTMLElement>('nav .context-title')];
+    expect(titles.map((t) => t.textContent?.trim())).toEqual(['Your work', 'Security audit']);
+    // The same element and class for both: one look, one place (Q-UI-620).
+    expect(titles.map((t) => `${t.tagName}.${t.className}`)).toEqual(['P.context-title', 'P.context-title']);
+    // Each block is a group of the navigation, named by its title.
+    const groups = [...sidebar.querySelectorAll<HTMLElement>('nav [role="group"]')];
+    expect(groups.map((g) => root.querySelector(`#${g.getAttribute('aria-labelledby')}`)?.textContent?.trim())).toEqual(['Your work', 'Security audit']);
+    expect([...groups[1]!.querySelectorAll('a .nav-label')].map((a) => a.textContent?.trim())).toEqual(['Security dashboard']);
+    // Security dashboard is a plain entry: no folding group, no chevron, in the home side bar.
+    expect(sidebar.querySelector('button.group-toggle')).toBeNull();
+    expect(sidebar.querySelector('.expand-chevron')).toBeNull();
     const entry = sidebar.querySelector<HTMLAnchorElement>('a[href="/security"]')!;
     expect(entry.textContent).toContain('Security dashboard');
     expect(entry.getAttribute('aria-current')).toBe('page');
@@ -131,6 +138,7 @@ describe('App shell', () => {
     for (const capabilities of [[], ['vulnerabilities:triage', 'settings:read', 'audit:read']]) {
       const other = await render('/projects', (api) => (api.meResult = { capabilities }));
       expect(other.root.querySelector('aside.sidebar')?.textContent ?? '', capabilities.join()).not.toContain('Security audit');
+      expect([...other.root.querySelectorAll('nav .context-title')].map((t) => t.textContent?.trim())).toEqual(['Your work']);
       TestBed.resetTestingModule();
     }
   });
@@ -217,7 +225,7 @@ describe('App shell', () => {
     await first.fixture.whenStable();
     const storage = new BrowserStorage();
     const key = storage.entries('local').find(([k]) => k.startsWith('quader.nav.'))![0];
-    expect(JSON.parse(storage.get('local', key)!)).toEqual({ collapsed: false, closed: ['identity'] });
+    expect(JSON.parse(storage.get('local', key)!)).toEqual({ collapsed: false, closed: ['identity'], opened: [] });
     // Nothing of the layout is a secret (R-UI-043): the key carries the principal's name only.
     expect(key).toMatch(/^quader\.nav\.[^\s]+$/);
 

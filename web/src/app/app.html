@@ -152,62 +152,109 @@
     >
       @if (sidebarArea(); as a) {
         @if (a.id === 'project') {
-          <quader-project-switcher class="project-switcher" [label]="a.label" />
-        } @else {
-          <p class="context-title" [id]="'nav-' + a.id">{{ a.label }}</p>
+          <quader-project-switcher class="project-switcher" [label]="a.sections[0]?.label ?? ''" />
         }
         <nav i18n-aria-label="@@shell.nav" aria-label="Main navigation">
-          <ul class="nav-list" [attr.aria-labelledby]="a.id === 'project' ? null : 'nav-' + a.id" [attr.aria-label]="a.id === 'project' ? a.label : null">
-            @for (entry of a.entries; track entry.kind === 'group' ? entry.id : entry.route) {
-              @if (entry.kind === 'item') {
-                <li>
-                  <a
-                    class="nav-link"
-                    [routerLink]="entry.route"
-                    routerLinkActive="active"
-                    ariaCurrentWhenActive="page"
-                    (click)="closeDrawer()"
-                  >
-                    <span class="material-icons nav-icon" aria-hidden="true">{{ entry.icon }}</span>
-                    <span class="nav-label">{{ entry.label }}</span>
-                  </a>
-                </li>
-              } @else {
-                <li class="nav-group">
-                  <button
-                    type="button"
-                    class="nav-link group-toggle"
-                    [class.has-active]="groupActive(entry)"
-                    [attr.aria-expanded]="navState.isOpen(entry.id)"
-                    [attr.aria-controls]="'nav-group-' + entry.id"
-                    (click)="navState.toggleGroup(entry.id)"
-                  >
-                    <span class="material-icons nav-icon" aria-hidden="true">{{ entry.icon }}</span>
-                    <span class="nav-label">{{ entry.label }}</span>
-                    <span class="material-icons chevron expand-chevron" aria-hidden="true">expand_more</span>
-                  </button>
-                  <div class="collapse-region" [class.open]="navState.isOpen(entry.id)" [id]="'nav-group-' + entry.id">
-                  <ul class="nav-list nested">
-                    @for (item of entry.items; track item.route) {
-                      <li>
-                        <a
-                          class="nav-link"
-                          [routerLink]="item.route"
-                          routerLinkActive="active"
-                          ariaCurrentWhenActive="page"
-                          (click)="closeDrawer()"
-                        >
-                          <span class="material-icons nav-icon" aria-hidden="true">{{ item.icon }}</span>
-                          <span class="nav-label">{{ item.label }}</span>
-                        </a>
-                      </li>
-                    }
-                  </ul>
-                  </div>
-                </li>
+          <!-- One labelled group per titled block (R-UI-168, Q-UI-663): the context title names it; a project's one block is named
+               by the project, whose switcher stands above the navigation. -->
+          @for (s of a.sections; track s.id) {
+            <div
+              class="nav-section"
+              role="group"
+              [attr.aria-labelledby]="a.id === 'project' ? null : 'nav-' + s.id"
+              [attr.aria-label]="a.id === 'project' ? s.label : null"
+            >
+              @if (a.id !== 'project') {
+                <p class="context-title" [id]="'nav-' + s.id">{{ s.label }}</p>
               }
-            }
-          </ul>
+              <ul class="nav-list">
+                @for (entry of s.entries; track entry.kind === 'group' ? entry.id : entry.route) {
+                  @if (entry.kind === 'item') {
+                    <li>
+                      <a
+                        class="nav-link"
+                        [routerLink]="entry.route"
+                        routerLinkActive="active"
+                        ariaCurrentWhenActive="page"
+                        (click)="closeDrawer()"
+                      >
+                        <span class="material-icons nav-icon" aria-hidden="true">{{ entry.icon }}</span>
+                        <span class="nav-label">{{ entry.label }}</span>
+                      </a>
+                    </li>
+                  } @else {
+                    <li class="nav-group">
+                      <button
+                        type="button"
+                        class="nav-link group-toggle"
+                        [class.has-active]="groupActive(entry)"
+                        [attr.aria-expanded]="navState.isOpen(entry.id)"
+                        [attr.aria-controls]="'nav-group-' + entry.id"
+                        (click)="navState.toggleGroup(entry.id)"
+                      >
+                        <span class="material-icons nav-icon" aria-hidden="true">{{ entry.icon }}</span>
+                        <span class="nav-label">{{ entry.label }}</span>
+                        <span class="material-icons chevron expand-chevron" aria-hidden="true">expand_more</span>
+                      </button>
+                      <div class="collapse-region" [class.open]="navState.isOpen(entry.id)" [id]="'nav-group-' + entry.id">
+                      <ul class="nav-list nested">
+                        @for (item of entry.items; track item.route) {
+                          <li>
+                            <a
+                              class="nav-link"
+                              [routerLink]="item.route"
+                              routerLinkActive="active"
+                              ariaCurrentWhenActive="page"
+                              (click)="closeDrawer()"
+                            >
+                              <span class="material-icons nav-icon" aria-hidden="true">{{ item.icon }}</span>
+                              <span class="nav-label">{{ item.label }}</span>
+                            </a>
+                          </li>
+                        }
+                      </ul>
+                      </div>
+                    </li>
+                  }
+                }
+                @if (s.id === yourWork && recent.entries().length > 0) {
+                  <!-- The repositories opened last (R-UI-167, Q-UI-660): folded at first, then as the viewer left it. An entry is the
+                       repository's key after its project's mark; the title and the accessible name carry the project and the full name. -->
+                  <li class="nav-group">
+                    <button
+                      type="button"
+                      class="nav-link group-toggle"
+                      [attr.aria-expanded]="navState.isOpen(recentGroup, false)"
+                      [attr.aria-controls]="'nav-group-' + recentGroup"
+                      (click)="navState.toggleGroup(recentGroup, false)"
+                    >
+                      <span class="material-icons nav-icon" aria-hidden="true">history</span>
+                      <span class="nav-label" i18n="@@nav.recent">Recently opened</span>
+                      <span class="material-icons chevron expand-chevron" aria-hidden="true">expand_more</span>
+                    </button>
+                    <div class="collapse-region" [class.open]="navState.isOpen(recentGroup, false)" [id]="'nav-group-' + recentGroup">
+                      <ul class="nav-list nested">
+                        @for (r of recent.entries(); track r.ref) {
+                          <li>
+                            <a
+                              class="nav-link recent-link"
+                              [routerLink]="['/projects', r.project, 'repositories', r.key]"
+                              [attr.title]="r.name"
+                              [attr.aria-label]="r.name"
+                              (click)="closeDrawer()"
+                            >
+                              <quader-project-mark [key]="r.project" [name]="r.projectName" />
+                              <span class="nav-label recent-key" translate="no">{{ r.key }}</span>
+                            </a>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
         </nav>
       }
       <div class="sidebar-foot">

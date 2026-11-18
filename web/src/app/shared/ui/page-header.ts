@@ -3,11 +3,11 @@ import { AddressField } from '../address-field';
 
 /**
  * The header of a page (Q-UI-307, the style guide's anatomy of a page): the object's name as the `<h1>`, one muted sentence,
- * the facts that name it (projected with `meta`, the format and class badges for example), its client address field where the
- * object has one, and the page's own actions as buttons at the right end (projected with `actions`: at most one
- * `btn btn-confirm`, `btn btn-default` beside it). Views of the same object are the page's tabs, under the header; a way up to a
- * list is the breadcrumb. A list's page may show its number of entries after the heading (`count`). Where the page is narrow, a
- * header with a client row puts the page's actions on the line of Set up client (Q-UI-554).
+ * the facts that name it (projected with `meta`, the format and class badges for example), the client address field on the page
+ * Set up client (`addresses`, R-UI-169), and the page's own actions as buttons at the right end (projected with `actions`: at
+ * most one `btn btn-confirm`, `btn btn-default` beside it), which go under the rest where the page is narrow. Views of the same
+ * object are the page's tabs, under the header; a way up to a list is the breadcrumb. A list's page may show its number of
+ * entries after the heading (`count`).
  */
 @Component({
   selector: 'quader-page-header',
@@ -83,37 +83,6 @@ import { AddressField } from '../address-field';
 
     quader-page-header .page-header-actions:empty {
       display: none;
-    }
-
-    /* A header with a client row (the address field and Set up client, Q-UI-517), where it is narrow (Q-UI-554): the row is one
-       flow instead of two blocks. The heading, the sentence, the facts and the address field each take a line; Set up client and
-       the page's actions share the next, the actions as one unit, so that the menu button never stands alone on a line. At
-       390 px that line is Set up client, Settings and the menu, about 250 px of the 358 px there are. The order of the elements,
-       and so the order of the focus, is the order of the wide layout. */
-    @container content (max-width: 36rem) {
-      quader-page-header:has(.client-row) .page-header-row {
-        align-items: center;
-        gap: var(--quader-space-2);
-      }
-
-      quader-page-header:has(.client-row) :is(.page-header-main, .client-row) {
-        display: contents;
-      }
-
-      quader-page-header:has(.client-row) .page-header-main > :not(.client-row) {
-        flex: 1 1 100%;
-        min-inline-size: 0;
-      }
-
-      quader-page-header:has(.client-row) .client-row quader-address-field {
-        flex: 1 1 100%;
-        max-inline-size: none;
-      }
-
-      quader-page-header:has(.client-row) .page-header-actions {
-        flex: none;
-        flex-wrap: nowrap;
-      }
     }
   `,
 })

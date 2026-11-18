@@ -47,7 +47,8 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
  * images or packages and opens their versions in the row, and shows its raw files on demand (**Files** in the header's menu); a
  * generic repository's content is its files. A folder lists its entries, a file shows its facts and its download; upload, new
  * folder and delete are offered where the caller holds the permission (R-UI-011, R-UI-012). The header (Q-UI-307, Q-UI-313,
- * Q-UI-517) shows the client address with **Set up client** beside it; the settings are a separate route (`…/settings`).
+ * Q-UI-664) leads to **Set up client**, where the client address stands (R-UI-169); the settings are a separate route
+ * (`…/settings`).
  */
 @Component({
   selector: 'quader-repository-content',
@@ -149,8 +150,8 @@ export class RepositoryContent {
   });
 
   /**
-   * The client addresses of the header (Q-UI-313): the consumer view carries them; the full document does not, so the address is
-   * built from the server's base URL and the format, as the settings page does.
+   * The repository's addresses: the consumer view carries them; the full document does not, so the address is built from the
+   * server's base URL and the format, as the settings page does.
    */
   protected readonly addresses = computed<readonly string[]>(() => {
     const r = this.repository();
@@ -160,12 +161,11 @@ export class RepositoryContent {
     return a ? [a] : [];
   });
   /**
-   * The header shows the client address, the first of the repository's addresses (R-UI-066), with **Set up client** beside it
-   * (Q-UI-517). The API lists the address of the format's protocol first and the raw file address after it, once, where the two
-   * differ (R-REPO-002, `ConsumerView` of internal/repository/document.go), so a further address is the one for downloads by path;
-   * Details shows it with that label, so that no field stands without a name (Q-UI-320).
+   * The client address, the first of the repository's addresses, is Set up client's (R-UI-169). The API lists the address of the
+   * format's protocol first and the raw file address after it, once, where the two differ (R-REPO-002, `ConsumerView` of
+   * internal/repository/document.go), so a further address is the one for downloads by path; Details shows it with that label, so
+   * that no field stands without a name (Q-UI-320). Set up client does not show it, so it stays here (R-UI-169).
    */
-  protected readonly headerAddress = computed(() => this.addresses()[0] ?? '');
   protected readonly otherAddresses = computed(() =>
     this.addresses()
       .slice(1)

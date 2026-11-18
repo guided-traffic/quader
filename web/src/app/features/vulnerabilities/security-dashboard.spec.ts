@@ -12,7 +12,7 @@ import { FINDING_VULN, FakeVulnerabilitiesApi, sampleFinding } from '../../api/t
 import { VulnerabilitiesApi } from '../../api/vulnerabilities-api';
 import { capabilityGuard } from '../../core/auth-guard';
 import { helpFor } from '../../core/help-topics';
-import { Navigation, SECURITY_DASHBOARD_CAPABILITY } from '../../core/navigation';
+import { Navigation, SECURITY_DASHBOARD_CAPABILITY, areaItems } from '../../core/navigation';
 import {
   applyFilters,
   buttonByText,
@@ -251,27 +251,27 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
 });
 
 describe('Where the security dashboard lives and who sees it (R-UI-158, Q-AUTHZ-295)', () => {
-  const homeGroup = () => TestBed.inject(Navigation).area('home')?.entries.find((e) => e.kind === 'group' && e.id === 'security-audit');
+  const homeSection = () => TestBed.inject(Navigation).area('home')?.sections.find((s) => s.id === 'security-audit');
 
-  it('R-UI-158 the section Security audit of Your work holds Security dashboard for a holder of content:metadata-read, the auditor and the administrator', async () => {
+  it('R-UI-158 R-UI-168 the block Security audit, a second context title after Your work, holds Security dashboard for a holder of content:metadata-read, the auditor and the administrator', async () => {
     await renderScreen(VulnerabilityReport, { capabilities: AUDITOR });
-    const group = homeGroup();
-    expect(group?.label).toBe('Security audit');
-    expect(group?.kind === 'group' ? group.items.map((i) => [i.label, i.route]) : []).toEqual([['Security dashboard', '/security']]);
+    expect(TestBed.inject(Navigation).area('home')?.sections.map((s) => s.label)).toEqual(['Your work', 'Security audit']);
+    const section = homeSection();
+    expect(section?.entries.map((e) => [e.kind, e.label, e.kind === 'item' ? e.route : ''])).toEqual([['item', 'Security dashboard', '/security']]);
     expect(SECURITY_DASHBOARD_CAPABILITY).toBe('content:metadata-read');
   });
 
-  it('R-UI-158 Q-AUTHZ-295 a caller without content:metadata-read has no section, also a holder of vulnerabilities:triage alone (security-admin)', async () => {
+  it('R-UI-158 Q-AUTHZ-295 a caller without content:metadata-read has no block Security audit, also a holder of vulnerabilities:triage alone (security-admin)', async () => {
     await renderScreen(VulnerabilityReport, { capabilities: [] });
-    expect(homeGroup()).toBeUndefined();
+    expect(homeSection()).toBeUndefined();
     await renderScreen(VulnerabilityReport, { capabilities: ['vulnerabilities:triage', 'settings:read', 'audit:read'] });
-    expect(homeGroup()).toBeUndefined();
+    expect(homeSection()).toBeUndefined();
   });
 
   it('R-UI-158 the admin area has no security entry any more, for anybody', async () => {
     await renderScreen(VulnerabilityReport, { capabilities: [...AUDITOR, 'repositories:read-config'] });
     const admin = TestBed.inject(Navigation).area('admin')!;
-    const routes = admin.entries.flatMap((e) => (e.kind === 'item' ? [e.route] : e.items.map((i) => i.route)));
+    const routes = areaItems(admin).map((i) => i.route);
     expect(routes.some((r) => r.startsWith('/admin/security'))).toBe(false);
     expect(routes).toContain('/admin/advisory-sources');
   });
@@ -281,7 +281,7 @@ describe('Where the security dashboard lives and who sees it (R-UI-158, Q-AUTHZ-
     expect(TestBed.inject(Navigation).hasAdminArea()).toBe(true);
     await renderScreen(VulnerabilityReport, { capabilities: ['content:metadata-read', 'vulnerabilities:triage'] });
     expect(TestBed.inject(Navigation).hasAdminArea()).toBe(false);
-    expect(TestBed.inject(Navigation).area('home')?.entries.some((e) => e.kind === 'group' && e.id === 'security-audit')).toBe(true);
+    expect(homeSection()).toBeDefined();
   });
 
   it('R-UI-158 the "?" opens the manual page of the dashboard in the user guide, and the routes keep the screens below /security', () => {

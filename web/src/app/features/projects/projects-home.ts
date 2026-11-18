@@ -3,36 +3,29 @@ import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { collectAll } from '../../api/pagination';
 import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
-import { RepositoriesApi, RepositorySummary, refOf } from '../../api/repositories-api';
-import { setupCommands } from '../../core/project-links';
-import { FrequentPlaces } from '../../core/frequent-places';
 import { ProjectContext } from '../../core/project-context';
 import { SessionStore } from '../../core/session-store';
-import { AddressField } from '../../shared/address-field';
 import { valueOf } from '../../shared/paged-resource';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ListHead } from '../../shared/ui/list-head';
-import { ProjectLink, ProjectMark } from '../../shared/ui/project-mark';
+import { ProjectMark } from '../../shared/ui/project-mark';
 import { PageHeader } from '../../shared/ui/page-header';
 import { ProjectDialog } from './project-dialog';
 import { projectRoleLabel } from './project-roles';
 
-/** How many recently opened repositories the start page shows. */
-const RECENT_SHOWN = 5;
-
 /**
- * The start page (Q-UI-129, Q-UI-311): what the plain user comes for first. The repositories opened last in this browser with
- * their client address and **Set up client** (the search's store, ordered by the last visit, confirmed by one `GET
- * /repositories?name=…`, R-UI-096), then the projects the caller may see (`GET /api/v1/projects`). The top bar's field is the one
- * search (Q-UI-414). An anonymous visitor sees the public projects, without a role. A caller with exactly one project never
- * sees it: the start route sends them into that project. Creating a project needs `projects:write` (R-UI-041).
+ * The start page (Q-UI-129, R-UI-166): the list of the projects the caller may see (`GET /api/v1/projects`), under its one heading
+ * **Projects**: the place to find a project and explore what it holds. The repositories opened last are the side bar's **Recently
+ * opened** (R-UI-167), and the top bar's field is the one search (Q-UI-414). An anonymous visitor sees the public projects, without
+ * a role. A caller with exactly one project never sees it: the start route sends them into that project. Creating a project needs
+ * `projects:write` (R-UI-041).
  */
 @Component({
   selector: 'quader-projects-home',
-  imports: [RouterLink, AddressField, Checkbox, DataTable, ListHead, PageHeader, ProjectLink, ProjectMark, VisibilityIcon],
+  imports: [RouterLink, Checkbox, DataTable, ListHead, PageHeader, ProjectMark, VisibilityIcon],
   template: `
     <quader-page-header [heading]="heading" [description]="hint()">
       @if (canCreate()) {
@@ -40,34 +33,6 @@ const RECENT_SHOWN = 5;
       }
     </quader-page-header>
 
-    @if (recent().length > 0) {
-      <section class="recent" aria-labelledby="recent-heading">
-        <h2 id="recent-heading" i18n="@@projects-home.recent">Recently opened</h2>
-        <ul>
-          @for (r of recent(); track refOf(r)) {
-            <li>
-              <!-- The repository and its project by its mark and its name, as a row names its project (Q-UI-424). -->
-              <div class="recent-name">
-                <a [routerLink]="['/projects', r.project, 'repositories', r.key]" translate="no">{{ r.key }}</a>
-                <quader-project-link [key]="r.project" />
-              </div>
-              <!-- The client address only (Q-UI-320), and Set up client beside it: one job on one line, as in the repository's
-                   header (Q-UI-517); a further address is on the repository's page. -->
-              <div class="client-row">
-                @if (r.addresses[0]; as a) {
-                  <quader-address-field [value]="a" [label]="addressLabel(r.key)" [copyLabel]="copyLabel(r.key)" />
-                }
-                <a class="btn btn-default" [routerLink]="setupLink(r)" i18n="@@repo.content.tab.setup"
-                  >Set up client</a
-                >
-              </div>
-            </li>
-          }
-        </ul>
-      </section>
-    }
-
-    <h2 class="projects-heading" i18n="@@projects-home.projects">Projects</h2>
     <!-- The head of the list (Q-UI-420): the search by key or name, and the list's one filter beside it; no drawer for one choice. -->
     <quader-list-head class="end-beside" [searchLabel]="searchLabel" [search]="q()" (searchChange)="q.set($event)" [filters]="false">
       @if (session.authenticated() && hasOthers()) {
@@ -108,56 +73,6 @@ const RECENT_SHOWN = 5;
     </quader-data-table>
   `,
   styleUrl: '../../shared/access/access.scss',
-  styles: `
-    .recent ul {
-      display: flex;
-      flex-direction: column;
-      gap: var(--quader-space-3);
-      margin: var(--quader-space-2) 0 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .recent-name {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: var(--quader-space-2);
-    }
-
-    .recent {
-      margin-block-end: var(--quader-space-6);
-    }
-
-    // The project's mark is centred on a line of 1 rem, the line of a list's cell (Q-UI-424); in the page's taller line it stood
-    // above the name.
-    .recent-name quader-project-link {
-      line-height: 1rem;
-    }
-
-    .recent li {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--quader-space-2);
-      padding-block-end: var(--quader-space-3);
-      border-block-end: 1px solid var(--quader-border);
-    }
-
-    .recent li .client-row {
-      align-self: stretch;
-    }
-
-    .muted {
-      color: var(--quader-text-muted);
-    }
-
-    h2 {
-      margin-block: 0 var(--quader-space-2);
-      font-size: var(--quader-heading-3);
-      font-weight: 600;
-    }
-  `,
 })
 export class ProjectsHome {
   protected readonly context = inject(ProjectContext);
@@ -165,41 +80,19 @@ export class ProjectsHome {
   private readonly projectsApi = inject(ProjectsApi);
   private readonly dialog = inject(QuaderDialog);
   private readonly router = inject(Router);
-  private readonly repositories = inject(RepositoriesApi);
-  private readonly frequent = inject(FrequentPlaces);
 
   protected readonly heading = $localize`:@@projects-home.heading:Projects`;
   protected readonly anonymous = computed(() => this.session.state() === 'anonymous');
-  protected readonly hint = computed(() =>
-    this.anonymous()
-      ? $localize`:@@projects-home.hint-anonymous:The projects with public content. Sign in to see your own.`
-      : $localize`:@@projects-home.hint-recent:Take up a repository you opened before, or open a project.`,
-  );
-  protected readonly canCreate = computed(() => this.session.has('projects:write'));
-  protected readonly refOf = refOf;
-  /** Set up client of a recent repository (R-UI-126). */
-  protected setupLink(r: RepositorySummary): string[] {
-    return setupCommands(refOf(r));
-  }
-
   /**
-   * The repositories opened last, newest first, as one `GET /repositories?name=…` returns them (Q-UI-406): an entry the caller may
-   * no longer read is left out, and stays stored.
+   * The sentence under the title says what the page is for (R-UI-166): finding a project and what it holds. A signed-in caller
+   * without a project gets none; the empty list says how to get one.
    */
-  private readonly opened = resource({
-    params: () => this.frequent.recentRepositories().slice(0, RECENT_SHOWN).map((v) => v.id),
-    loader: async ({ params }) => (params.length === 0 ? [] : (await this.repositories.list({ name: params })(null, params.length)).items),
+  protected readonly hint = computed(() => {
+    if (this.anonymous()) return $localize`:@@projects-home.hint-anonymous:The projects with public content. Sign in to see your own.`;
+    if (this.context.loaded() && this.context.projects().length === 0) return '';
+    return $localize`:@@projects-home.hint:Find a project and explore the repositories and packages it holds.`;
   });
-  protected readonly recent = computed<readonly RepositorySummary[]>(() => {
-    const rows = new Map((valueOf(this.opened) ?? []).map((r) => [refOf(r), r]));
-    return this.frequent
-      .recentRepositories()
-      .slice(0, RECENT_SHOWN)
-      .flatMap((v) => {
-        const r = rows.get(v.id);
-        return r ? [r] : [];
-      });
-  });
+  protected readonly canCreate = computed(() => this.session.has('projects:write'));
 
   /** The search of the project list (Q-UI-421). */
   protected readonly q = signal('');
@@ -249,14 +142,6 @@ export class ProjectsHome {
     { id: 'repositories', label: $localize`:@@projects.col.repositories:Repositories`, numeric: true, width: '7rem' },
     { id: 'members', label: $localize`:@@projects.col.members:Members`, numeric: true, width: '5rem' },
   ];
-
-  protected addressLabel(key: string): string {
-    return $localize`:@@repo.address-of:Client address of ${key}:key:`;
-  }
-
-  protected copyLabel(key: string): string {
-    return $localize`:@@repo.copy-address-of:Copy client address of ${key}:key:`;
-  }
 
   protected roleLabel(role: ProjectRole): string {
     return projectRoleLabel(role);

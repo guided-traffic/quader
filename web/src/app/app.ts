@@ -28,8 +28,10 @@ import { Breadcrumbs } from './core/breadcrumbs';
 import { FocusOnNavigation } from './core/focus-on-navigation';
 import { helpFor } from './core/help-topics';
 import { Layout } from './core/layout';
-import { NavGroup, Navigation } from './core/navigation';
+import { NavGroup, Navigation, YOUR_WORK_SECTION } from './core/navigation';
 import { NavState } from './core/nav-state';
+import { RecentRepositories } from './core/recent-repositories';
+import { ProjectMark } from './shared/ui/project-mark';
 import { PreferencesStore, UiTheme } from './core/preferences-store';
 import { SessionStore } from './core/session-store';
 import { Banner } from './shared/banner';
@@ -78,6 +80,7 @@ function isBare(route: ActivatedRouteSnapshot | null): boolean {
     OpenSubmenuOnClick,
     CdkTrapFocus,
     QuaderMark,
+    ProjectMark,
     QuaderAvatar,
     ProjectSwitcher,
     SearchField,
@@ -99,6 +102,10 @@ export class App {
   protected readonly preferences = inject(PreferencesStore);
   protected readonly navState = inject(NavState);
   protected readonly breadcrumbs = inject(Breadcrumbs);
+  protected readonly recent = inject(RecentRepositories);
+  /** The block of the home side bar that ends with **Recently opened**, and the group's id in the stored layout (R-UI-167). */
+  protected readonly yourWork = YOUR_WORK_SECTION;
+  protected readonly recentGroup = 'recent';
   private readonly router = inject(Router);
   private readonly dialog = inject(QuaderDialog);
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
@@ -172,6 +179,13 @@ export class App {
       } else {
         untracked(() => this.avatars.clear());
       }
+    });
+    // Recently opened shows only what the server confirmed (R-UI-167, Q-UI-662): asked while the home side bar is shown, for the
+    // newest stored repositories the session has not asked yet; navigating asks nothing.
+    effect(() => {
+      const names = this.recent.unconfirmed();
+      if (names.length === 0 || !this.shell() || !this.sidebarOpen() || this.area() !== 'home') return;
+      untracked(() => void this.recent.confirm(names));
     });
     effect(() => {
       if (this.session.ended()) {

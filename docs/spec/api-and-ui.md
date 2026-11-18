@@ -2340,8 +2340,8 @@ Priority: **MVP** · Covers: quader-only
 ([Q-API-278](#q-api-278--the-repository-list-takes-name)). The answer holds the named repositories the caller may see, in the list's
 order, by the rules of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-012. A name that does not exist and a name of a
 repository the caller may not see are both absent, so the answer tells them apart for nobody. A malformed name, or more than 50,
-answers `400 malformed_request`. The UI resolves the frequently visited repositories of R-UI-096 and the start page's **Recently
-opened** with one such request.
+answers `400 malformed_request`. The UI resolves the frequently visited repositories of R-UI-096 and the side bar's **Recently
+opened** (R-UI-167) with one such request each.
 
 Acceptance criteria:
 
@@ -3257,8 +3257,11 @@ Priority: **MVP** · Covers: UI-001, UI-004
   screens: repositories, packages, vulnerabilities
   ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022), a folding group **Access** (members, permission
   policies, service accounts and CI identity, the last three for the holder of their capability and for the Owner of the
-  project) and settings. The start side bar lists Projects and Guides (R-UI-124), and for the holder of `content:metadata-read`
-  the folding section **Security audit** with **Security dashboard** (R-UI-158); the guides also open from the user menu,
+  project) and settings. A side bar is made of titled blocks, each a group of the navigation named by its context title (R-UI-168):
+  the start side bar has the block **Your work** with Projects and Guides (R-UI-124) and the folding group **Recently opened**, the
+  last five repositories the person opened (R-UI-167), and for the holder of `content:metadata-read` a second block **Security
+  audit** with **Security dashboard** (R-UI-158); the admin area's one block is titled **Admin area**, a project's one block by
+  its switcher. The guides also open from the user menu,
   and the client setup opens from its repository (R-UI-120). The sections are the routes of R-UI-003. Inside the admin area, the single entries
   (repositories, endpoints) come first and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
@@ -3267,8 +3270,9 @@ Priority: **MVP** · Covers: UI-001, UI-004
 - Layout and density (Q-UI-2, Q-UI-68, Q-UI-127): the navigation is a left side bar below the top bar, on the
   same fill, and the content is a panel set into them; the side bar is visible at viewport widths of 1024 CSS px and
   more, and a drawer opened from a menu button in the top bar below that width. Where it is pinned, "Collapse sidebar"
-  at its foot hides it and the menu button of the top bar brings it back. The collapsed state and the
-  folded groups are kept in browser storage per signed-in principal (non-secret, R-UI-043) and are
+  at its foot hides it and the menu button of the top bar brings it back. A group is open until the viewer folds it, except
+  **Recently opened**, which is folded until the viewer opens it (R-UI-167). The collapsed state and the
+  folded and opened groups are kept in browser storage per signed-in principal (non-secret, R-UI-043) and are
   a convenience only. The active entry is marked by a tinted pill, a bar in the accent colour (blue, Q-UI-96)
   and bold text, never by colour alone. Tables, lists and form fields use compact density (the 32 px
   control height and the 16 px cell padding of Q-UI-128) on every screen; interactive targets stay at least 24 × 24 CSS px
@@ -3663,14 +3667,12 @@ its settings moved to `…/settings`. One shell serves every format; what differ
 not a screen per format ([content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts)).
 
 - Header (the shared page header of R-UI-067): the key (the `h1`), one muted sentence (the repository's description, else what
-  the class means), the format and the class as badges (and **disabled** for a disabled repository), and one line with the
-  repository's client address as an address field (its first address; the others are in Details, Q-UI-320) and **Set up client**
-  beside it (R-UI-126; not for a disabled repository;
-  [Q-UI-517](#q-ui-517--the-client-address-and-set-up-client-stand-on-one-line-of-the-header)). At the right, **Settings** for a
+  the class means), the format and the class as badges (and **disabled** for a disabled repository); no address field: the client
+  address is Set up client's (R-UI-169, [Q-UI-664](#q-ui-664--the-repositorys-header-leads-to-set-up-client-and-holds-no-address)).
+  At the right, the page's actions: **Set up client** (R-UI-126; not for a disabled repository), **Settings** for a
   caller who can read the configuration (`repositories:read-config`, or the Owner of the project) and a `more_vert` menu with
   **Files** (every format but generic, whose content is its files, Q-UI-511) and **Vulnerabilities** (not for generic and virtual).
-- Below 36 rem of content the header is one flow (Q-UI-554): the heading, the sentence, the badges and the address field each on a
-  line, then **Set up client**, **Settings** and the menu on one line; no button stands alone on a line.
+- Where the content is narrow, the actions go under the heading, the sentence and the badges, on one line.
 - No tabs: the content (captioned Images, Packages or Files) follows the header. **Set up client** opens the repository's page
   Set up client (`…/repositories/<key>/setup`, R-UI-120); it is the page's one way to the setup (Q-UI-321).
 - A package format (npm, NuGet, OCI, Debian, every format with a view adapter) lists its items from `GET /api/v1/packages` with
@@ -3709,8 +3711,8 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   through it; where the folder's toolbar offers **Upload files** (R-UI-011) the sentence names the upload, and a disabled
   repository says only that it is empty. Without a description the header's sentence says what the class means; for a
   local repository "Holds what is published to it."
-- Opening the page records it in the recently opened repositories of the browser (R-UI-020), which the start page shows
-  (Q-UI-311, Q-UI-323).
+- Opening the page records it in the recently opened repositories of the browser (R-UI-020), which the side bar's **Recently
+  opened** shows (R-UI-167).
 
 Acceptance criteria:
 
@@ -4170,7 +4172,7 @@ Priority: **MVP** · Covers: UI-030, REPO-007
 - The head of the list (R-UI-100): the search by key or description (`q`, **Filter repositories**); the drawer's filters: project
   (the admin area's list), format, class, disabled only. The list is ordered by key; the API takes
   no `sort` parameter yet, so the table has no sort control (sorting by creation arrives with the
-  API, and the creation time with the summary, Q-UI-18). "Recently opened" (browser storage, 20) is the start page's: neither
+  API, and the creation time with the summary, Q-UI-18). "Recently opened" (browser storage, 20) is the side bar's (R-UI-167): neither
   list shows it ([Q-UI-329](#q-ui-329--recently-opened-is-the-start-pages-only-the-admin-areas-repository-list-leaves-it-out-too)); a project's list says under its heading what the project is and, to a plain user,
   whom to ask (Q-UI-323).
 - The key links to the repository's content page (R-UI-052); the Settings action opens `…/settings`.
@@ -5671,11 +5673,9 @@ Each screen shows its client addresses through `<quader-address-field>` (R-UI-06
 | Screen | Place | Notes |
 |---|---|---|
 | Repository list (R-UI-020), `/projects/{project}/repositories` | No field: the row's **Set up client** opens the repository's page Set up client, where the address stands with the snippets that use it ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)) | The admin area's list (`/admin/repositories`) has a copy button in the row, whose name and tooltip carry the address (Q-UI-330); the search results (`/search`) have neither (Q-UI-430) |
-| Repository page (R-UI-021), settings view | The fact **Client address** | The field fills the fact up to the measure (Q-UI-301) |
-| Repository page, consumer view | The fact **Client address**, one field per address of the repository, stacked | Stacked fields are one width (Q-UI-301) |
-| Repository content page (R-UI-052) | The header: the repository's first address; **Details**: each further address with its label | Q-UI-320 |
-| Start page (Q-UI-311), recently opened repositories | One field per repository: its first address, with **Set up client** beside it on one line as in the repository's header (Q-UI-517) | Q-UI-320 |
-| Repository wizard (R-UI-021), review step | The line **Client address** | |
+| Repository settings (R-UI-087), the settings view and the consumer view | No address ([R-UI-169](#r-ui-169--a-repositorys-address-stands-in-a-field-on-set-up-client-only)) | The address stands on Set up client |
+| Repository content page (R-UI-052) | No field in the header, whose **Set up client** leads to the address (Q-UI-664); **Details**: each further address with its label | Q-UI-320: the address for downloads by path is not on Set up client |
+| Start page (R-UI-166) and the side bar's **Recently opened** (R-UI-167) | No address | The owner's rule of W-20 |
 | Set up client (R-UI-120) | The page header: the repository's address on this installation, or on the Bastion chosen under **More options** | The address has its context: the snippets that use it (W-4 of the owner's walk of 2026-11-18) |
 | Endpoint page, the address of an exposure rule | No field: the row's copy button, whose name and tooltip carry the address ([Q-UI-331](#q-ui-331--an-endpoints-rules-are-the-shared-data-table-and-a-rules-client-address-is-the-rows-copy-button)) | The administrator manages the rules; the address is handed out with the button |
 
@@ -5687,7 +5687,8 @@ address).
 
 Acceptance criteria:
 
-- A unit test per row of the table finds `quader-address-field` with the full address as its value.
+- A unit test per row of the table that shows a field finds `quader-address-field` with the full address as its value; a row with
+  no address finds none.
 - A test that read an address from text content reads the field's value instead (an input's value is not text content).
 
 ### R-UI-067 · Three kinds of user: the plain user, the power user and the administrator
@@ -6188,7 +6189,7 @@ Groups 2 to 4 are not shown to an anonymous caller.
   per project its key, each with the number of visits and the time of the last one, at most 20 per kind. A visit is the opening of a
   repository's page or content page, or of a project's screen; it counts once per entry in 15 minutes, and every visit is the entry's
   last one. The order is the number of visits, halved for every 14 days since the last visit, then the last visit. The same store,
-  ordered by the last visit, is the start page's **Recently opened** (read with the one request below) and the project switcher's
+  ordered by the last visit, is the side bar's **Recently opened** (its newest five, read with one request of its own, R-UI-167) and the project switcher's
   recent list; the two stores of before are no longer read (no migration before the first stable release). A route under `/admin` is
   never recorded. With storage blocked, groups 2 and 4 are left out.
 - **Only what the caller may still read**
@@ -6653,9 +6654,10 @@ Acceptance criteria:
 ### R-UI-126 · Set up client is one action with one target and one look per place
 Priority: **MVP** · Covers: quader-only
 
-- One label, **Set up client**, and one target: the repository's page of R-UI-120. It stands in the repository's header beside its
-  client address (not for a disabled repository; once on the page, also when the repository is empty, R-UI-144), in the rows of a project's
-  list of repositories (W-4), in the recently opened repositories of the start page, in the install panel of a version (with the
+- One label, **Set up client**, and one target: the repository's page of R-UI-120, where the client address stands (R-UI-169). It
+  stands in the repository's header, first of its actions (not for a disabled repository; once on the page, also when the
+  repository is empty, R-UI-144), in the rows of a project's
+  list of repositories (W-4), in the install panel of a version (with the
   panel's client as `?client=`) and in the rows of the repositories behind a format's tile (R-UI-124). The repository's settings
   have no section that points to it (the development agent, 2026-11-18): the repository's own page carries it in its header.
 - One look per place ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)): the default button (`btn-default`) on a page and in a header; in a row of a table the
@@ -6933,16 +6935,16 @@ dashboard handelt es sich nicht um ein Admin Feature, sondern um ein Auditor-Fea
 unter Your Work als zweite Kategorie "Security Audit", darunter dann Security Dashboard. Sichtbar nur für Instanz-Auditoren und
 Instanz-Administratoren."
 
-- **Place** ([Q-UI-620](#q-ui-620--the-security-dashboard-is-security-of-the-main-area-in-a-folding-section-security-audit)). The
+- **Place** ([Q-UI-620](#q-ui-620--the-security-dashboard-is-security-of-the-main-area-under-the-second-context-title-security-audit)). The
   dashboard is `/security` of the main area, its finding `/security/findings/{id}` and its advisory
-  `/security/advisories/{ecosystem}/{id}`. The start side bar (**Your work**) has, after Projects and Guides, the folding section
-  **Security audit** with the one entry **Security dashboard**, built as every folding group of a side bar (R-UI-002). The trail reads
-  "Security audit / Security dashboard" (the section a name without a link, R-UI-002's breadcrumbs), the page's title "Security
-  dashboard". The admin area has no entry and no route for it: `/admin/security` is not found (R-UI-003). **Advisory sources** stays
+  `/security/advisories/{ecosystem}/{id}`. The start side bar has, after the block **Your work**, a second context title **Security
+  audit**, written and placed as **Your work**, with the one plain entry **Security dashboard** (R-UI-168; the owner's correction of
+  the same evening: "Security-Audit hatte ich eigentlich als weiteren context-title erwartet"). The trail reads "Security audit /
+  Security dashboard" (the title a name without a link, R-UI-002's breadcrumbs), the page's title "Security dashboard". The admin area has no entry and no route for it: `/admin/security` is not found (R-UI-003). **Advisory sources** stays
   in the admin area's group System, because the sources are the installation's configuration.
 - **Who** ([Q-AUTHZ-295](authorization.md#q-authz-295--the-security-dashboard-opens-for-the-holder-of-contentmetadata-read)). The
-  section, the entry and the page are the holder's of `content:metadata-read`, the capability that lets the findings API read every
-  project (R-VULN-019): the system roles `admin` and `auditor`. Everyone else sees neither the section nor the entry, and the address
+  title, the entry and the page are the holder's of `content:metadata-read`, the capability that lets the findings API read every
+  project (R-VULN-019): the system roles `admin` and `auditor`. Everyone else sees neither the title nor the entry, and the address
   answers **Page not found** ([Q-UI-622](#q-ui-622--a-caller-without-the-capability-gets-page-not-found-at-security)). The role
   `security-admin` holds `vulnerabilities:triage` without `content:metadata-read` and has no dashboard: it triages on the screens of
   the projects whose repositories it may read.
@@ -6960,9 +6962,9 @@ Instanz-Administratoren."
 
 Acceptance criteria:
 
-- As `auditor` (a member of no project): the side bar of `/projects` shows **Security audit** with **Security dashboard**; it opens
+- As `auditor` (a member of no project): the side bar of `/projects` shows the title **Security audit** with **Security dashboard**; it opens
   `/security`, the trail is "Security audit / Security dashboard", the Admin button is shown and not current; a finding opens below
-  `/security`. As `admin` the same. As a reader, an Owner and the holder of `security-admin`: no section, no suggestion, and
+  `/security`. As `admin` the same. As a reader, an Owner and the holder of `security-admin`: no title, no suggestion, and
   `/security` shows **Page not found**. `/admin/security` is not found for everyone.
 - A lint rule refuses a link to `/admin/security` in the UI's sources (`web/scripts/removed-routes-rule.mjs`).
 - Unit tests: `app.spec.ts`, `app.routes.spec.ts`, `security-dashboard.spec.ts`, `admin-home.spec.ts`, `search-field.spec.ts`,
@@ -7098,6 +7100,125 @@ Acceptance criteria:
 
 - Unit tests: the row shows the time of the last success and links the Backups tab; "Overdue" and "No backup yet" are warning
   badges; a refused summary leaves the row and the link out; the dashboard has no serious axe violation.
+
+### R-UI-166 · The start page is the list of projects
+Priority: **MVP** · Covers: quader-only
+
+The owner's walk of 2026-11-18 (W-20, [promt.md](../projektplan/promt.md#owner-walk-of-2026-11-18-the-frontend)), at the start
+page as the auditor: "Unter projects macht "recently opened" irgendwie keinen Sinn, sieht nicht aus. […] Unter projects will der
+Nutzer eher "neues" finden oder Artefakte erkunden."
+
+- `/projects` (and `/` for a caller with no or several projects, Q-UI-129) shows one heading, the `<h1>` **Projects**, and the list
+  of projects under it: the list's head (**Filter projects**, **Your projects**) and the table of R-UI-041. No second heading, no
+  section of recently opened repositories, no address field and no **Set up client**; the page asks for nothing but the projects.
+- The sentence under the title says what the page is for. A signed-in caller with projects reads "Find a project and explore the
+  repositories and packages it holds."; a signed-in caller without a project reads no sentence, because the empty list says how to
+  get one ("You are not a member of a project yet. An Owner of a project adds you with a role."); an anonymous visitor reads "The
+  projects with public content. Sign in to see your own."
+- The repositories a person opened last are the side bar's (R-UI-167); a repository is also found by the top bar's search
+  (R-UI-095).
+
+Acceptance criteria:
+
+- Unit tests (`projects-home.spec.ts`): with repositories in the store the page has the one heading **Projects**, no "Recently
+  opened", no `quader-address-field`, no **Set up client**, and asks `GET /repositories?name=` for nothing; the sentence for a caller
+  with projects, without one and anonymous.
+- The journey 12 finds **Projects** as the page's `<h1>`.
+
+### R-UI-167 · Recently opened is a folding group of the side bar of Your work
+Priority: **MVP** · Covers: quader-only
+
+The owner's decision of 2026-11-18 (W-20, [Q-UI-660](#q-ui-660--recently-opened-is-a-folding-group-of-your-work-with-the-last-five-repositories)):
+"Lass uns lieber "recently opened" im side-menu zentral anbieten, falls jemand das tatsächlich nochmal nachschlagen will."
+
+- **Place.** The home side bar (the main area outside a project, R-UI-002) ends its block **Your work** with the folding group
+  **Recently opened** (icon `history`), after **Projects** and **Guides**. A project's side bar and the admin area's have no such
+  group: inside a project the project switcher offers the recently opened projects (Q-UI-129).
+- **Entries.** The last five repositories the person opened, newest first, from the search's store (R-UI-096: the newest five of up
+  to 20 by the last visit, in this browser, per principal). An entry is a link to the repository's page
+  (`/projects/<project>/repositories/<key>`) that shows the project's small mark (Q-UI-424) and the repository's key on one line; a
+  key too long for the line is cut with an ellipsis. Its `title` and its accessible name are "<key> in <project's display name>
+  (<project>/<key>)" ([Q-UI-661](#q-ui-661--an-entry-of-recently-opened-is-the-projects-mark-and-the-repositorys-key)). No address,
+  no button.
+- **Folded at first.** The group is folded when the side bar is shown for the first time; afterwards it keeps what the viewer
+  chose, in the side bar's stored layout (`quader.nav.<name>`, `opened`), as every other group keeps its folding (R-UI-002).
+- **Only what the caller may still read**
+  ([Q-UI-662](#q-ui-662--the-side-bar-confirms-the-remembered-repositories-once-per-session)). An entry is shown after one
+  `GET /api/v1/repositories?name=…` (R-API-063) returned it; one it did not return is left out and stays stored. The answer is
+  kept for the session, per principal and authorization epoch: the request runs when the home side bar is shown (pinned, or the
+  drawer opened) and the newest five hold a name the session has not asked yet, and asks for those names alone. Navigating asks
+  nothing; opening a further repository asks for that one name when the home side bar is shown next; a new authorization epoch
+  asks again.
+- **Not shown** while no stored repository is confirmed, to an anonymous visitor, and where the browser's storage is not available
+  (`FrequentPlaces.available()`).
+- **Narrow and collapsed.** In the drawer below 1024 px the group is a group of the drawer as the others are; the collapsed side
+  bar (**Collapse sidebar**, Q-UI-127) is hidden whole, so it hides the group with it.
+- The store, its limit of 20 and the search field's use of it (R-UI-096) are unchanged.
+
+Acceptance criteria:
+
+- Unit tests (`app.recent.spec.ts`): the group is the last entry of **Your work**, folded at first; one request for the newest
+  five, a name it did not return is left out; an entry's link, mark, key, `title` and accessible name, no field, no button; the
+  choice to open it is stored and holds on the next visit; navigating asks nothing again, a newly opened repository is asked alone;
+  no group with nothing readable, nothing stored, storage blocked, or anonymous; none in a project's side bar or the admin area;
+  in the drawer the request runs when the drawer opens; no serious axe violation.
+- Render: `sidebar-recent` as `plain` and `power`, the group open, with the seed's long key.
+
+### R-UI-168 · A side bar is made of titled blocks; Security audit is the second title of Your work's side bar
+Priority: **MVP** · Covers: quader-only
+
+The owner's correction of 2026-11-18 (W-17): "Security-Audit hatte ich eigentlich als weiteren context-title erwartet."
+
+- **The model** ([Q-UI-663](#q-ui-663--a-side-bar-is-a-list-of-titled-blocks)). A side bar (`NavArea`) is a list of titled blocks
+  (`NavSection`: an id, a context title and its entries, items and folding groups). The home side bar has two: **Your work**
+  (Projects, Guides, and the group **Recently opened** of R-UI-167) and **Security audit** (**Security dashboard**). The admin area
+  has one, **Admin area**; a project's side bar has one, whose title is the project switcher. A block without an entry for the
+  caller is left out with its title; an area without a block is left out.
+- **The look.** Every context title is the same element in the same place: a `<p class="context-title">` in the accent colour of the
+  navigation, at the text size and weight 600, with 8 px of padding and 4 px under it, its text 16 px from the side bar's edge, as
+  the area's name always stood. A further block starts
+  12 px under the last entry of the block before it. **Security dashboard** is a plain entry with its icon, no folding group and no
+  chevron.
+- **Accessibility.** Each block is a group of the navigation (`role="group"`) named by its title (`aria-labelledby="nav-<id>"`); a
+  project's one block is named by the project's display name. The same in the drawer.
+- **Who.** The block **Security audit** is shown to the holder of `content:metadata-read` (R-UI-158), the capability the route's
+  guard asks for; without it neither the title nor the entry.
+- The trail of the page stays "Security audit / Security dashboard" (R-UI-158); the search's place **Security dashboard** (Q-UI-626)
+  and the rule of the Admin button (Q-UI-621) are unchanged.
+
+Acceptance criteria:
+
+- Unit tests (`app.spec.ts`): as an auditor at `/security` the side bar's titles are **Your work** and **Security audit**, both
+  `p.context-title`, each the name of its group; no group toggle and no chevron in the home side bar; the entries Projects, Guides,
+  Security dashboard; without the capability one title. `security-dashboard.spec.ts`: the block of the model, and none without
+  the capability. The admin area's and a project's side bars keep their tests.
+- The journey 16 finds **Security dashboard** in the group named **Security audit** and no button of that name.
+- Render: `sidebar-auditor` as `auditor` (the drawer opened at 390 px), and `security` as `admin` and `auditor`.
+
+### R-UI-169 · A repository's address stands in a field on Set up client only
+Priority: **MVP** · Covers: quader-only
+
+The owner's walk of 2026-11-18 (W-20): "Vor allem diese langen Adressfelder sind außerhalb von Set up client irgendwie sinnlos."
+The address a client needs has its context on the page Set up client (R-UI-120): the snippets that use it.
+
+- **Set up client** (`…/repositories/<key>/setup` and the guides of a class) shows the client address in its header's field
+  (R-UI-065), with its copy button.
+- **The repository's page** (R-UI-052) has no address field in its header: **Set up client** is the first of the header's actions,
+  before **Settings** and the menu ([Q-UI-664](#q-ui-664--the-repositorys-header-leads-to-set-up-client-and-holds-no-address)). Its
+  **Details** keep the **Address for downloads by path (curl, wget)**, the raw file address of R-REPO-002 where it differs from the
+  client address, because Set up client does not show it.
+- **The repository's settings** (R-UI-087) show no **Client address**, neither in **Details** nor in the consumer view.
+- **The start page** has no address (R-UI-166); a project's list of repositories has none (Q-UI-426).
+- Not addresses of a repository, and unchanged: the admin area's quiet copy button in a row of repositories (Q-UI-330); the
+  download address of a file on its page (R-UI-010); an install command of one line (Q-UI-320); an exposure rule's address on its
+  editor in the admin area (Q-UI-331); a Bastion's address on its card.
+
+Acceptance criteria:
+
+- Unit tests: the repository's header holds no `quader-address-field` and its actions are **Set up client**, **Settings**, **More
+  actions** in that order (`repository-content.spec.ts`); Details still names the address for downloads by path; the settings
+  page and its consumer view hold no address field (`repository-detail.spec.ts`); the page header ships no rule of a client row
+  (`page-header.spec.ts`).
 
 ## Deferred
 
@@ -12484,6 +12605,9 @@ width (Q-UI-306).
 
 **Narrowed by [Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client) (2026-11-18):** no list holds an address field, so the measure is that of a field alone on its line
 and of a stack of the addresses of one thing (the repository's page, the client setup, the start page's recently opened).
+**Narrowed again by [Q-UI-664](#q-ui-664--the-repositorys-header-leads-to-set-up-client-and-holds-no-address) (2026-11-18):** a
+repository's client address stands in a field on Set up client only (R-UI-169); the repository page's Details keep the address for
+downloads by path, and the start page shows none.
 
 ### Q-UI-302 · The repository list names a repository by key and description in its first column and puts the row's actions in a menu
 
@@ -12750,6 +12874,9 @@ development agent revisits (b) if power users ask for the plain view.
 ### Q-UI-311 · The start page leads the plain user to a repository and its address in two steps
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Superseded in part by [Q-UI-660](#q-ui-660--recently-opened-is-a-folding-group-of-your-work-with-the-last-five-repositories)**
+(the owner, 2026-11-18, W-20): the start page is the list of projects alone (R-UI-166); the recently opened repositories are the
+side bar's folding group, as links without an address (R-UI-167); an address field stands on Set up client only (R-UI-169).
 
 Context: the start page (`/`, Q-UI-129) is the list of the caller's projects with key, display name, description, role and counts
 (R-UI-041); a caller with exactly one project starts in it. The renders show the plain user `sam` (two projects) a project table
@@ -12807,6 +12934,8 @@ page's **Details** (Q-UI-313).
 ### Q-UI-313 · The repository page shows the address and the setup first; its configuration facts are Details, and a reader gets no settings page
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Superseded in part by [Q-UI-664](#q-ui-664--the-repositorys-header-leads-to-set-up-client-and-holds-no-address)** (2026-11-18,
+after the owner's rule of W-20): the header leads to **Set up client** and holds no address field; the setup stays first.
 
 Context: the renders show the plain user the repository page (R-UI-052) without its client address in the main view (it is in the
 tab **Set up client** only), and the action **Settings** of the list opening a read-only "Repository settings" page that says "You
@@ -13020,6 +13149,9 @@ one look.
 ### Q-UI-323 · A project's repository list says in one muted line what the project is and whom to ask; recently opened is the start page's
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Superseded in part by [Q-UI-660](#q-ui-660--recently-opened-is-a-folding-group-of-your-work-with-the-last-five-repositories)**
+(the owner, 2026-11-18): the recently opened repositories are the side bar's (R-UI-167), not the start page's; a project's list
+still leaves them out.
 
 Context: after fix wave 1 a plain user's repository list of a project showed a section "Recently viewed" above the list and a closed
 **About this project** with the description and the Owners; the start page shows the same repositories as "Recently opened", the
@@ -13168,6 +13300,8 @@ the format and the class are not squeezed.
 ### Q-UI-329 · Recently opened is the start page's only: the admin area's repository list leaves it out too
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Superseded in part by [Q-UI-660](#q-ui-660--recently-opened-is-a-folding-group-of-your-work-with-the-last-five-repositories)**
+(the owner, 2026-11-18): the one place is the side bar of the main area (R-UI-167); the admin area's list still leaves it out.
 
 Context: the follow-up of fix wave 4 (the coordinator, 2026-11-12). Above the admin area's repository list "Recently opened" was a
 large heading with loose links, while the start page shows the same repositories as a list with the address and **Set up client**,
@@ -14256,6 +14390,8 @@ administrators ask for a user list in the main area.
 ### Q-UI-414 · The start page's package search goes; the top bar's field is the one search
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Superseded in part by [Q-UI-660](#q-ui-660--recently-opened-is-a-folding-group-of-your-work-with-the-last-five-repositories)**
+(the owner, 2026-11-18): the start page keeps the projects alone; **Recently opened** is the side bar's (R-UI-166, R-UI-167).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -15329,6 +15465,9 @@ menu item only for who may restore. The development agent revisits (b) if a proj
 ### Q-UI-517 · The client address and Set up client stand on one line of the header
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Superseded by [Q-UI-664](#q-ui-664--the-repositorys-header-leads-to-set-up-client-and-holds-no-address)** (2026-11-18, after the
+owner's rule of W-20): the header holds no address field, **Set up client** is the first of its actions, and the shared
+`.client-row` is gone. The text below is the record of the superseded decision.
 
 Context: seen by the development agent in the walk of 2026-11-18 (`repository-npm-local`): the address field stood under the title,
 **Set up client** in the far corner of the header; the two belong to one job.
@@ -15614,6 +15753,9 @@ Context: seen by the builder of the guides on 2026-11-18: the trail read `Guides
 ### Q-UI-554 · Where the header is narrow, the page's actions share the line of Set up client
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Superseded by [Q-UI-664](#q-ui-664--the-repositorys-header-leads-to-set-up-client-and-holds-no-address)** (2026-11-18): without
+the address field, **Set up client** is one of the page's actions, which go under the heading on one line by the page header's
+own wrapping; the rules of the client row are gone. The text below is the record of the superseded decision.
 
 Context: seen by the builder of the guides on 2026-11-18, a repository's page at 390 px: the header's parts wrapped one by one,
 the address field, **Set up client**, then the page's actions on a line of their own; for a reader, whose only action is the menu,
@@ -16299,29 +16441,33 @@ admin task with its own screen. Open: an invitation of a person who has never si
 
 **Applied in the spec:** R-UI-150.
 
-### Q-UI-620 · The security dashboard is `/security` of the main area, in a folding section Security audit
+### Q-UI-620 · The security dashboard is `/security` of the main area, under the second context title Security audit
 
 Status: **Decided by the owner, 2026-11-18** (W-17: under **Your work** as a second category **Security audit**, with **Security
-dashboard** under it, for instance auditors and administrators); the address and the form of the section **decided by the
-development agent** — selected from the options below; the owner reviews them at the walkthrough.
+dashboard** under it, for instance auditors and administrators; corrected the same evening: "Security-Audit hatte ich eigentlich
+als weiteren context-title erwartet"); the address **decided by the development agent** — selected from the options below; the
+owner reviews it at the walkthrough.
 
 Context: the dashboard was the admin area's entry *Security* at `/admin/security`. The start side bar (**Your work**) has two
-single entries, Projects and Guides; the shell's means for a section with entries is the folding group of `NAV_AREAS`
-([navigation.ts](../../web/src/app/core/navigation.ts)), which the admin and the project side bars use.
+single entries, Projects and Guides. The development agent first built **Security audit** as a folding group inside the block of
+**Your work**, because an area of `NAV_AREAS` ([navigation.ts](../../web/src/app/core/navigation.ts)) had one title and the folding
+group was the shell's means for a section; it had briefed "a second section under Your work" where the owner meant a second
+context title. The owner corrected it: **Security audit** is a context title like **Your work**, with **Security dashboard** as a
+plain entry under it (R-UI-168; the model is [Q-UI-663](#q-ui-663--a-side-bar-is-a-list-of-titled-blocks)).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `/security`, a folding group **Security audit** of the start side bar with the entry **Security dashboard** (chosen) | The routes `/security`, `/security/findings/{id}`, `/security/advisories/{ecosystem}/{id}`; the group is a `NavGroup` with the capability on its entry, so it disappears with its last entry | One short address that names the page; the section is built and folded as every other section; no new kind of side-bar entry | A section with one entry folds |
+| (a) `/security`, the entry **Security dashboard** under the context title **Security audit** of the start side bar (chosen) | The routes `/security`, `/security/findings/{id}`, `/security/advisories/{ecosystem}/{id}`; the block carries the capability on its entry, so it disappears with its last entry | One short address that names the page; the title is written and placed as **Your work** | — |
 | (b) `/audit/security` | The section's name in the address | Room for more pages of the section | `/admin/audit` is the audit log; two "audit" addresses for two things; longer |
-| (c) A heading without folding above the entry | A new kind of side-bar entry | No fold for one entry | A second way to build a section, for one case |
+| (c) A folding group **Security audit** inside **Your work** (built first, corrected by the owner) | A `NavGroup` with one entry | No change of the model | Not what the owner asked for: a section with one entry that folds, inside another section |
 
-**Choice:** (a). The section's heading is a name, not a page, so the trail reads "Security audit / Security dashboard" with the
-section unlinked, as "Admin area" is. **Advisory sources** stays in the admin area's group System: it is the installation's
-configuration, and its link on the dashboard is shown to the holder of `settings:read` only. **Rationale:** the owner placed the
-page; the address follows the side bar's other places (`/projects`, `/guides`, `/search`), which are one word below the root. The
-development agent revisits the address when the section gets a second page.
+**Choice:** (a). The title is a name, not a page, so the trail reads "Security audit / Security dashboard" with the title unlinked,
+as "Admin area" is. **Advisory sources** stays in the admin area's group System: it is the installation's configuration, and its
+link on the dashboard is shown to the holder of `settings:read` only. **Rationale:** the owner placed the page and its title; the
+address follows the side bar's other places (`/projects`, `/guides`, `/search`), which are one word below the root. The development
+agent revisits the address when the section gets a second page.
 
-**Applied in the spec:** R-UI-158, R-UI-002, R-UI-003; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022. Code:
+**Applied in the spec:** R-UI-158, R-UI-168, R-UI-002, R-UI-003; [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022. Code:
 [navigation.ts](../../web/src/app/core/navigation.ts), [app.routes.ts](../../web/src/app/app.routes.ts),
 [security.routes.ts](../../web/src/app/features/vulnerabilities/security.routes.ts),
 [vuln-context.ts](../../web/src/app/features/vulnerabilities/vuln-context.ts), the lint rule
@@ -16669,6 +16815,123 @@ the dashboard has it. The development agent revisits (b) if the owner wants the 
 
 **Applied in the spec:** R-UI-165, R-UI-038 (the dashboard). Code: [dashboard.html](../../web/src/app/features/system/dashboard.html),
 [dashboard-model.ts](../../web/src/app/features/system/dashboard-model.ts).
+
+### Q-UI-660 · Recently opened is a folding group of Your work with the last five repositories
+
+Status: **Decided by the owner, 2026-11-18** (W-20, "Option A passt für mich", from the three options below).
+
+Context: the start page showed **Recently opened** above the projects: the newest five repositories of the search's store, each
+with its client address in a field, a copy button and **Set up client** (Q-UI-311, Q-UI-517). The owner, at the start page as the
+auditor: under Projects a user wants to find something new or explore artifacts; the list of what one opened belongs centrally in
+the side menu, for whoever wants to look something up again; and the long address fields make no sense outside Set up client.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A folding group **Recently opened** under **Your work** with the last five repositories as links, not shown while there is none (chosen) | One more group in the home side bar | One click back to a repository from every page of the main area; folded, it takes one line; the start page is the projects alone | The side bar asks the server to confirm the entries (Q-UI-662); a key longer than the side bar is cut |
+| (b) An entry **Recently opened** that opens a page | A page of its own with the list | Room for twenty entries, the format and the project | A page for five links; two clicks back to a repository |
+| (c) The search field alone | No list but the field's frequently visited group | Nothing to build | The list is found only by opening the field; ordered by frequency, not by the last visit |
+
+**Choice:** (a). **Rationale:** the owner's choice. Built by the development agent as a group of the home side bar only: inside a
+project the side bar is the project's, and the project switcher already offers the recently opened projects (Q-UI-129); the admin
+area records no visit (R-UI-096). The development agent revisits the number of entries if five prove too few in the walk.
+
+**Applied in the spec:** R-UI-166, R-UI-167, R-UI-002, R-UI-096, R-API-063; Q-UI-311, Q-UI-323, Q-UI-329 and Q-UI-414 superseded in
+part. Code: [app.html](../../web/src/app/app.html), [recent-repositories.ts](../../web/src/app/core/recent-repositories.ts),
+[nav-state.ts](../../web/src/app/core/nav-state.ts), [projects-home.ts](../../web/src/app/features/projects/projects-home.ts).
+
+### Q-UI-661 · An entry of Recently opened is the project's mark and the repository's key
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the side bar is 15 rem wide (`--quader-nav-width`). A nested entry's label starts 36 px into the entry, inside the
+navigation's 8 px of padding, so an entry has about 184 px for its text at 14 px, and about 156 px beside a mark of 20 px: some 20
+characters of a key. The seed's keys run from `npm` to
+`customer-portal-api-client-generated-from-the-openapi-document`; a project key is up to 32 characters.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The project's small mark (Q-UI-424, 20 px), then the key; the title and the accessible name "<key> in <project name> (<project>/<key>)" (chosen) | 28 px for the project, the rest for the key | The key, which names the repository, gets the room; the project is recognised by the same mark as in every list, and lights up under the pointer | Two projects with the same initial and the same key look alike until the pointer rests on them |
+| (b) `project/key` as the text | The qualified name | Unambiguous at a glance | The project key takes half of the line: `web-frontend/npm-vend…` |
+| (c) The key, and the project's name on a second line | Two lines per entry | Both readable | Twice the height of every other entry of the side bar |
+
+**Choice:** (a). The key is one line with an ellipsis where it does not fit (`.recent-key`); the accessible name starts with the
+visible key, so speech input finds it by what is shown. **Rationale:** the side bar names places by one short word; the mark is the
+project's sign everywhere, and the full name is one hover away. The development agent revisits (b) if keys repeat across projects in
+the walk.
+
+**Applied in the spec:** R-UI-167. Code: `.recent-link` in [_shell.scss](../../web/src/styles/_shell.scss),
+[recent-repositories.ts](../../web/src/app/core/recent-repositories.ts).
+
+### Q-UI-662 · The side bar confirms the remembered repositories once per session
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the store keeps qualified names in the browser (R-UI-096); a repository can be deleted, moved or closed to the caller
+since. The start page asked `GET /api/v1/repositories?name=…` for its five each time it loaded and left out what was not returned
+(Q-UI-406). The side bar is on every page of the main area; a request per navigation would be one request per click.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One request for the names the session has not asked yet, when the home side bar is shown; the answers kept per principal and authorization epoch (chosen) | The first page of the main area asks for five names; afterwards only a repository opened since is asked, alone | No dead link; nearly no traffic; the group is complete when it is opened | A repository deleted in the same session stays listed until the next epoch or reload; its page then says it is not found |
+| (b) One request when the group is opened | Nothing asked while folded | Less traffic for whoever never opens it | The group's existence ("not shown while there is none") cannot be decided folded; a list that changes as it opens |
+| (c) The start page's way: one request per page that shows the side bar | Always current | Simple | One request per navigation |
+| (d) No request: the store as it is | Instant | No traffic | A dead link for a repository the caller lost (Q-UI-406 (b)) |
+
+**Choice:** (a). The request runs in an effect of the shell while the side bar shows the home area (pinned, or the drawer opened) and
+the newest five hold an unasked name; a failed request leaves the names out until the store or the epoch changes. **Rationale:**
+Q-UI-406's guarantee with the least traffic a part of every page deserves. The development agent revisits (b) if the request shows
+in the measurements of the main area.
+
+**Applied in the spec:** R-UI-167, R-UI-096 (Q-UI-406 holds). Code: [recent-repositories.ts](../../web/src/app/core/recent-repositories.ts),
+[app.ts](../../web/src/app/app.ts).
+
+### Q-UI-663 · A side bar is a list of titled blocks
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Follows the
+owner's correction of W-17 (Q-UI-620).
+
+Context: an area of `NAV_AREAS` ([navigation.ts](../../web/src/app/core/navigation.ts)) had one `label`, rendered as the one
+`<p class="context-title">` above the navigation and naming its list. The owner wants **Security audit** as a second context title
+of the home side bar, written and placed like **Your work**.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An area is a list of titled blocks (`NavSection`: id, label, entries); the shell renders a title and a list per block (chosen) | `NavArea.sections`; the admin area and a project have one block each | One way to build every side bar; a block disappears with its last entry, as a group does; each block is a named group of the navigation | Every reader of the model flattens the blocks (`areaEntries`, `areaItems`) |
+| (b) The home side bar made of two areas | `home` and `security-audit` both shown outside a project | No new type | An area is "which side bar a route shows"; two at once break `areaOf` and the Admin button's rule |
+| (c) A new entry kind `heading` | A title among the entries | Small change | A title that is an entry: the list's name and the group's name come apart; the title would sit inside the list it names |
+
+**Choice:** (a). The titles stand inside the navigation, each with its list in a `role="group"` labelled by the title; the first
+title keeps the place the area's name had. **Rationale:** the owner's picture is two titled blocks; the model says it as it is
+drawn. The development agent revisits it if a project's side bar needs a second block.
+
+**Applied in the spec:** R-UI-168, R-UI-002. Code: [navigation.ts](../../web/src/app/core/navigation.ts),
+[app.html](../../web/src/app/app.html), [_shell.scss](../../web/src/styles/_shell.scss),
+[search-model.ts](../../web/src/app/features/search/search-model.ts).
+
+### Q-UI-664 · The repository's header leads to Set up client and holds no address
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Follows
+the owner's rule of W-20: an address field outside Set up client is pointless.
+
+Context: the header of a repository's page showed the client address in a field with **Set up client** beside it on one line
+(Q-UI-517), and below 36 rem a flow of its own (Q-UI-554). The settings page showed the address as a fact, in **Details** and in the
+consumer view. Set up client shows the same address in its header, with the snippets that use it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No field in the header; **Set up client** first of the header's actions, before **Settings** and the menu; the settings show no address (chosen) | One button where a field and a button were | The owner's rule; the header is the title, the facts and the actions, as every page's; the special narrow flow goes | Copying the address is one click further: Set up client, then copy |
+| (b) Keep the header's field | As before | One step to the address | A long address field outside Set up client, which the owner called pointless |
+| (c) A quiet copy button in the header | The address in the button's name and tooltip, as in the admin list | One click to copy | A copy without its context; a second way beside Set up client |
+
+**Choice:** (a). The **Address for downloads by path (curl, wget)** stays in the content page's **Details**: Set up client does not
+show it, and Details is a disclosure, the place of a detail on demand. **Rationale:** the address and the snippets that use it are
+one job, and Set up client is where it is done. The development agent revisits (c) if users of the walk look for the address on the
+repository's page.
+
+**Applied in the spec:** R-UI-169, R-UI-052, R-UI-066, R-UI-126; Q-UI-313, Q-UI-517 and Q-UI-554 superseded in part. Code:
+[repository-content.html](../../web/src/app/features/repositories/content/repository-content.html),
+[repository-detail.html](../../web/src/app/features/repositories/repository-detail.html),
+[page-header.ts](../../web/src/app/shared/ui/page-header.ts).
 
 ## What this does not cover
 

@@ -731,15 +731,6 @@
         <target>Rolle</target>
       </segment>
     </unit>
-    <unit id="projects-home.projects">
-      <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:64,65</note>
-      </notes>
-      <segment>
-        <source>Projects</source>
-        <target>Projekte</target>
-      </segment>
-    </unit>
     <unit id="mirror.kind.incremental">
       <notes>
         <note category="location">src/app/features/repositories/mirror-status.ts:122</note>
@@ -936,11 +927,29 @@
     </unit>
     <unit id="nav.context.home">
       <notes>
-        <note category="location">src/app/core/navigation.ts:44</note>
+        <note category="location">src/app/core/navigation.ts:77</note>
       </notes>
       <segment>
         <source>Your work</source>
         <target>Ihre Arbeit</target>
+      </segment>
+    </unit>
+    <unit id="nav.recent">
+      <notes>
+        <note category="location">src/app/app.html:232,233</note>
+      </notes>
+      <segment>
+        <source>Recently opened</source>
+        <target>Zuletzt geöffnet</target>
+      </segment>
+    </unit>
+    <unit id="nav.recent.entry">
+      <notes>
+        <note category="location">src/app/core/recent-repositories.ts:89</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="key" disp="key"/> in <ph id="1" equiv="project" disp="projectName"/> (<ph id="2" equiv="ref" disp="ref"/>)</source>
+        <target><ph id="0" equiv="key" disp="key"/> in <ph id="1" equiv="project" disp="projectName"/> (<ph id="2" equiv="ref" disp="ref"/>)</target>
       </segment>
     </unit>
     <unit id="search.results.heading">
@@ -10064,8 +10073,8 @@
         <note category="location">src/app/features/repositories/repository-detail.html:333,336</note>
       </notes>
       <segment>
-        <source>The class, the format, the address and the dates of the repository.</source>
-        <target>Klasse, Format, Adresse und Zeitpunkte des Repositorys.</target>
+        <source>The class, the format, the layout and the dates of the repository.</source>
+        <target>Klasse, Format, Layout und Zeitpunkte des Repositorys.</target>
       </segment>
     </unit>
     <unit id="system.state.unready">
@@ -10142,16 +10151,6 @@
       <segment>
         <source>Installs a collection through this repository once the client is configured. Replace the collection name with yours.</source>
         <target>Installiert eine Collection über dieses Repository, sobald der Client eingerichtet ist. Ersetzen Sie den Collection-Namen durch Ihren.</target>
-      </segment>
-    </unit>
-    <unit id="repo.copy-address-of">
-      <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:243</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:242</note>
-      </notes>
-      <segment>
-        <source>Copy client address of <ph id="0" equiv="key" disp="key"/></source>
-        <target>Client-Adresse von <ph id="0" equiv="key" disp="row.key"/> kopieren</target>
       </segment>
     </unit>
     <unit id="ci.issuance.removed">
@@ -23641,17 +23640,6 @@
         <target>Systemstatus</target>
       </segment>
     </unit>
-    <unit id="repo.col.address">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:59,61</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:347,348</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:215</note>
-      </notes>
-      <segment>
-        <source>Client address</source>
-        <target>Client-Adresse</target>
-      </segment>
-    </unit>
     <unit id="mirror.state.waiting">
       <notes>
         <note category="location">src/app/features/repositories/mirror-status.ts:68</note>
@@ -25178,16 +25166,6 @@
       <segment>
         <source>Contents</source>
         <target>Inhalt</target>
-      </segment>
-    </unit>
-    <unit id="repo.address-of">
-      <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:239</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:239</note>
-      </notes>
-      <segment>
-        <source>Client address of <ph id="0" equiv="key" disp="key"/></source>
-        <target>Client-Adresse von <ph id="0" equiv="key" disp="row.key"/></target>
       </segment>
     </unit>
     <unit id="nav.ci">
@@ -27408,13 +27386,13 @@
         <target>Änderungen an der Richtlinie <ph id="0" equiv="INTERPOLATION" disp="{{ data.name }}"/> seit dem Öffnen:</target>
       </segment>
     </unit>
-    <unit id="projects-home.hint-recent">
+    <unit id="projects-home.hint">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:166</note>
+        <note category="location">src/app/features/projects/projects-home.ts:84</note>
       </notes>
       <segment>
-        <source>Take up a repository you opened before, or open a project.</source>
-        <target>Greifen Sie ein zuvor geöffnetes Repository auf oder öffnen Sie ein Projekt.</target>
+        <source>Find a project and explore the repositories and packages it holds.</source>
+        <target>Finden Sie ein Projekt und erkunden Sie die Repositorys und Pakete, die es enthält.</target>
       </segment>
     </unit>
     <unit id="pkg.meta.optional-dependencies">
@@ -30408,15 +30386,6 @@
       <segment>
         <source>Package name</source>
         <target>Paketname</target>
-      </segment>
-    </unit>
-    <unit id="projects-home.recent">
-      <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:43,45</note>
-      </notes>
-      <segment>
-        <source>Recently opened</source>
-        <target>Zuletzt geöffnet</target>
       </segment>
     </unit>
     <unit id="unsaved.discard">

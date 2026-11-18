@@ -1,4 +1,4 @@
-import { NavArea, NavItem } from '../../core/navigation';
+import { NavArea, NavItem, areaEntries, areaItems } from '../../core/navigation';
 import { SearchSuggestions, SuggestionKind } from '../../api/search-api';
 import { packageCommands } from '../packages/package-links';
 import { letterOf } from '../../shared/ui/project-mark';
@@ -106,16 +106,14 @@ export function pages(): Place[] {
  * Q-UI-626): places of the main area for the caller whose side bar shows them, never an admin page.
  */
 export function sectionPlaces(home: NavArea | null): Place[] {
-  if (!home) return [];
-  return home.entries
-    .flatMap((e) => (e.kind === 'group' ? e.items : []))
+  return areaItems(home)
+    .filter((i) => i.capability !== undefined)
     .map((i) => ({ route: i.route, icon: i.icon, label: i.label, anonymous: false }));
 }
 
 /** The admin side bar's entries the caller may use, flattened in their order. */
 export function adminItems(admin: NavArea | null): NavItem[] {
-  if (!admin) return [];
-  return admin.entries.flatMap((e) => (e.kind === 'item' ? [e] : e.items));
+  return [...areaItems(admin)];
 }
 
 /**
@@ -130,7 +128,7 @@ export function adminShortcuts(admin: NavArea | null): Place[] {
     const i = items.find((x) => x.route === route);
     return i ? [{ route: i.route, icon: i.icon, label: i.label, anonymous: false }] : [];
   });
-  const settings = admin.entries.find((e) => e.kind === 'group' && e.id === 'settings');
+  const settings = areaEntries(admin).find((e) => e.kind === 'group' && e.id === 'settings');
   if (settings && settings.kind === 'group' && settings.items[0]) {
     out.push({ route: settings.items[0].route, icon: settings.icon, label: settings.label, anonymous: false });
   }

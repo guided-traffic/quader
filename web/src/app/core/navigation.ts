@@ -27,38 +27,67 @@ export interface NavGroup {
 
 export type NavEntry = ({ readonly kind: 'item' } & NavItem) | ({ readonly kind: 'group' } & NavGroup);
 
-export interface NavArea {
-  readonly id: 'home' | 'project' | 'admin';
-  /** The title at the top of the sidebar while the area is shown. */
+/**
+ * A titled block of a side bar (R-UI-168, Q-UI-663): its context title and the entries under it. The title names the block for
+ * assistive technology (`aria-labelledby="nav-<id>"`). The project's side bar has one block, whose title is the project switcher.
+ */
+export interface NavSection {
+  readonly id: string;
+  /** The context title of the block. */
   readonly label: string;
   readonly entries: readonly NavEntry[];
+}
+
+export interface NavArea {
+  readonly id: 'home' | 'project' | 'admin';
+  /** The titled blocks of the side bar in their order; a block without an entry for the caller is left out. */
+  readonly sections: readonly NavSection[];
+}
+
+/** The block of the home side bar that the shell ends with the folding group **Recently opened** (R-UI-167). */
+export const YOUR_WORK_SECTION = 'your-work';
+
+/** Every entry of an area, its blocks one after the other. */
+export function areaEntries(area: NavArea | null): readonly NavEntry[] {
+  return area ? area.sections.flatMap((s) => s.entries) : [];
+}
+
+/** Every item of an area, a folding group's items in its place. */
+export function areaItems(area: NavArea | null): readonly NavItem[] {
+  return areaEntries(area).flatMap((e) => (e.kind === 'group' ? e.items : [e]));
 }
 
 /**
  * The information architecture of R-UI-002 (Q-UI-68, Q-UI-127, Q-UI-129): three sidebars. The **home** sidebar belongs to
  * every screen outside a project and outside the admin area (the start page of your projects, the guides, the profile, the
  * security dashboard); the **project** sidebar belongs to `/projects/<key>/…` and is built for that key (see
- * {@link projectEntries}); the **admin** sidebar belongs to `/admin/…` behind the top bar's Admin button. In the home sidebar,
- * Projects and Guides, then the folding group **Security audit** of the instance's auditors and administrators (R-UI-158). In
- * the admin area, single entries (repositories, endpoints) and folding groups (identity, access, system). Only the screens that
- * exist in the current milestone are listed; the capabilities are those of R-AUTHZ-010. The router and the API decide access,
- * this only hides entries (R-UI-005).
+ * {@link projectEntries}); the **admin** sidebar belongs to `/admin/…` behind the top bar's Admin button. The home sidebar has two
+ * titled blocks (R-UI-168): **Your work** with Projects and Guides, which the shell ends with the folding group **Recently opened**
+ * (R-UI-167), and **Security audit** with Security dashboard for the instance's auditors and administrators (R-UI-158). In the
+ * admin area, single entries (repositories, endpoints) and folding groups (identity, access, system). Only the screens that exist
+ * in the current milestone are listed; the capabilities are those of R-AUTHZ-010. The router and the API decide access, this only
+ * hides entries (R-UI-005).
  */
 export const NAV_AREAS: readonly NavArea[] = [
   {
     id: 'home',
-    label: $localize`:@@nav.context.home:Your work`,
-    entries: [
-      { kind: 'item', route: '/projects', icon: 'folder_shared', label: $localize`:@@nav.projects:Projects` },
-      { kind: 'item', route: '/guides', icon: 'menu_book', label: $localize`:@@nav.guides:Guides` },
-      // The auditor's page, not the administrator's (R-UI-158, Q-UI-620): shown to whoever reads the findings of every project.
+    sections: [
       {
-        kind: 'group',
+        id: YOUR_WORK_SECTION,
+        label: $localize`:@@nav.context.home:Your work`,
+        entries: [
+          { kind: 'item', route: '/projects', icon: 'folder_shared', label: $localize`:@@nav.projects:Projects` },
+          { kind: 'item', route: '/guides', icon: 'menu_book', label: $localize`:@@nav.guides:Guides` },
+        ],
+      },
+      // The auditor's page, not the administrator's (R-UI-158, Q-UI-620): a second context title, shown to whoever reads the
+      // findings of every project.
+      {
         id: 'security-audit',
-        icon: 'verified_user',
         label: $localize`:@@nav.section.security-audit:Security audit`,
-        items: [
+        entries: [
           {
+            kind: 'item',
             route: '/security',
             icon: 'security',
             label: $localize`:@@nav.security-dashboard:Security dashboard`,
@@ -70,62 +99,67 @@ export const NAV_AREAS: readonly NavArea[] = [
   },
   {
     id: 'admin',
-    label: $localize`:@@nav.context.admin:Admin area`,
-    entries: [
-      { kind: 'item', route: '/admin/dashboard', icon: 'dashboard', label: $localize`:@@nav.dashboard:Dashboard`, capability: 'settings:read' },
-      { kind: 'item', route: '/admin/projects', icon: 'folder_shared', label: $localize`:@@nav.projects:Projects`, capability: 'projects:read' },
-      { kind: 'item', route: '/admin/repositories', icon: 'inventory_2', label: $localize`:@@nav.repositories:Repositories`, capability: 'repositories:read-config' },
-      { kind: 'item', route: '/admin/endpoints', icon: 'router', label: $localize`:@@nav.endpoints:Endpoints`, capability: 'endpoints:read' },
-      // >>> M5b bastion
-      { kind: 'item', route: '/admin/bastions', icon: 'public', label: $localize`:@@nav.bastions:Bastions`, capability: 'endpoints:read' },
-      // <<< M5b bastion
+    sections: [
       {
-        kind: 'group',
-        id: 'identity',
-        icon: 'groups',
-        label: $localize`:@@nav.section.identity:Identity`,
-        items: [
-          { route: '/admin/users', icon: 'person', label: $localize`:@@nav.users:Users`, capability: 'identities:read' },
-          { route: '/admin/groups', icon: 'group', label: $localize`:@@nav.groups:Groups`, capability: 'identities:read' },
-          { route: '/admin/service-accounts', icon: 'smart_toy', label: $localize`:@@nav.service-accounts:Service accounts`, capability: 'identities:read' },
-          { route: '/admin/tokens', icon: 'key', label: $localize`:@@nav.tokens:Tokens`, capability: 'tokens:read' },
-          // >>> M4 ci
-          { route: '/admin/ci', icon: 'rocket_launch', label: $localize`:@@nav.ci:CI identity`, capability: 'ci:read' },
-          // <<< M4 ci
-        ],
-      },
-      {
-        kind: 'group',
-        id: 'access',
-        icon: 'shield',
-        label: $localize`:@@nav.section.access:Access`,
-        items: [
-          { route: '/admin/permissions', icon: 'policy', label: $localize`:@@nav.permissions:Permission policies`, capability: 'policies:read' },
-          { route: '/admin/roles', icon: 'admin_panel_settings', label: $localize`:@@nav.roles:System roles`, capability: 'roles:read' },
-        ],
-      },
-      {
-        kind: 'group',
-        id: 'system',
-        icon: 'dns',
-        label: $localize`:@@nav.section.system:System`,
-        items: [
-          { route: '/admin/system', icon: 'speed', label: $localize`:@@nav.system:System status`, capability: 'settings:read' },
-          { route: '/admin/audit', icon: 'history', label: $localize`:@@nav.audit:Audit log`, capability: 'audit:read' },
-          // >>> M4b vulnerabilities
-          { route: '/admin/advisory-sources', icon: 'rss_feed', label: $localize`:@@nav.advisory-sources:Advisory sources`, capability: 'settings:read' },
-          // <<< M4b vulnerabilities
-        ],
-      },
-      // One group for what the administrator configures at runtime, a page per topic (Q-UI-326).
-      {
-        kind: 'group',
-        id: 'settings',
-        icon: 'settings',
-        label: $localize`:@@nav.section.settings:Settings`,
-        items: [
-          { route: '/admin/settings/general', icon: 'tune', label: $localize`:@@nav.settings.general:General`, capability: 'settings:read' },
-          { route: '/admin/settings/auth', icon: 'lock', label: $localize`:@@nav.settings.auth:Authentication`, capability: 'settings:read' },
+        id: 'admin',
+        label: $localize`:@@nav.context.admin:Admin area`,
+        entries: [
+          { kind: 'item', route: '/admin/dashboard', icon: 'dashboard', label: $localize`:@@nav.dashboard:Dashboard`, capability: 'settings:read' },
+          { kind: 'item', route: '/admin/projects', icon: 'folder_shared', label: $localize`:@@nav.projects:Projects`, capability: 'projects:read' },
+          { kind: 'item', route: '/admin/repositories', icon: 'inventory_2', label: $localize`:@@nav.repositories:Repositories`, capability: 'repositories:read-config' },
+          { kind: 'item', route: '/admin/endpoints', icon: 'router', label: $localize`:@@nav.endpoints:Endpoints`, capability: 'endpoints:read' },
+          // >>> M5b bastion
+          { kind: 'item', route: '/admin/bastions', icon: 'public', label: $localize`:@@nav.bastions:Bastions`, capability: 'endpoints:read' },
+          // <<< M5b bastion
+          {
+            kind: 'group',
+            id: 'identity',
+            icon: 'groups',
+            label: $localize`:@@nav.section.identity:Identity`,
+            items: [
+              { route: '/admin/users', icon: 'person', label: $localize`:@@nav.users:Users`, capability: 'identities:read' },
+              { route: '/admin/groups', icon: 'group', label: $localize`:@@nav.groups:Groups`, capability: 'identities:read' },
+              { route: '/admin/service-accounts', icon: 'smart_toy', label: $localize`:@@nav.service-accounts:Service accounts`, capability: 'identities:read' },
+              { route: '/admin/tokens', icon: 'key', label: $localize`:@@nav.tokens:Tokens`, capability: 'tokens:read' },
+              // >>> M4 ci
+              { route: '/admin/ci', icon: 'rocket_launch', label: $localize`:@@nav.ci:CI identity`, capability: 'ci:read' },
+              // <<< M4 ci
+            ],
+          },
+          {
+            kind: 'group',
+            id: 'access',
+            icon: 'shield',
+            label: $localize`:@@nav.section.access:Access`,
+            items: [
+              { route: '/admin/permissions', icon: 'policy', label: $localize`:@@nav.permissions:Permission policies`, capability: 'policies:read' },
+              { route: '/admin/roles', icon: 'admin_panel_settings', label: $localize`:@@nav.roles:System roles`, capability: 'roles:read' },
+            ],
+          },
+          {
+            kind: 'group',
+            id: 'system',
+            icon: 'dns',
+            label: $localize`:@@nav.section.system:System`,
+            items: [
+              { route: '/admin/system', icon: 'speed', label: $localize`:@@nav.system:System status`, capability: 'settings:read' },
+              { route: '/admin/audit', icon: 'history', label: $localize`:@@nav.audit:Audit log`, capability: 'audit:read' },
+              // >>> M4b vulnerabilities
+              { route: '/admin/advisory-sources', icon: 'rss_feed', label: $localize`:@@nav.advisory-sources:Advisory sources`, capability: 'settings:read' },
+              // <<< M4b vulnerabilities
+            ],
+          },
+          // One group for what the administrator configures at runtime, a page per topic (Q-UI-326).
+          {
+            kind: 'group',
+            id: 'settings',
+            icon: 'settings',
+            label: $localize`:@@nav.section.settings:Settings`,
+            items: [
+              { route: '/admin/settings/general', icon: 'tune', label: $localize`:@@nav.settings.general:General`, capability: 'settings:read' },
+              { route: '/admin/settings/auth', icon: 'lock', label: $localize`:@@nav.settings.auth:Authentication`, capability: 'settings:read' },
+            ],
+          },
         ],
       },
     ],
@@ -177,7 +211,7 @@ export function projectEntries(key: string, session: SessionStore): readonly Nav
   ];
 }
 
-/** The areas and entries the signed-in caller sees; empty groups and areas disappear. */
+/** The areas and entries the signed-in caller sees; empty groups, blocks and areas disappear. */
 @Injectable({ providedIn: 'root' })
 export class Navigation {
   private readonly session = inject(SessionStore);
@@ -185,21 +219,24 @@ export class Navigation {
 
   /**
    * The fixed areas: the home sidebar, and the admin sidebar for a caller who may use one of its entries. Every entry of the
-   * admin area names its capability, so a caller without one of them has no admin area.
+   * admin area names its capability, so a caller without one of them has no admin area. A block of the home sidebar whose entries
+   * the caller lacks goes with its title (R-UI-168: **Security audit** for the holder of `content:metadata-read` alone).
    */
   readonly areas = computed<readonly NavArea[]>(() => {
     const capabilities = this.session.capabilities();
     const allowed = (i: Pick<NavItem, 'capability'>) => !i.capability || capabilities.includes(i.capability);
+    const entries = (list: readonly NavEntry[]): NavEntry[] =>
+      list.flatMap((e): NavEntry[] => {
+        if (e.kind === 'item') return allowed(e) ? [e] : [];
+        const items = e.items.filter(allowed);
+        return items.length > 0 ? [{ ...e, items }] : [];
+      });
     return NAV_AREAS.map(
       (a): NavArea => ({
         ...a,
-        entries: a.entries.flatMap((e): NavEntry[] => {
-          if (e.kind === 'item') return allowed(e) ? [e] : [];
-          const items = e.items.filter(allowed);
-          return items.length > 0 ? [{ ...e, items }] : [];
-        }),
+        sections: a.sections.map((s) => ({ ...s, entries: entries(s.entries) })).filter((s) => s.entries.length > 0),
       }),
-    ).filter((a) => a.entries.length > 0);
+    ).filter((a) => a.sections.length > 0);
   });
 
   /**
@@ -209,14 +246,14 @@ export class Navigation {
    */
   readonly hasAdminArea = computed(() => this.areas().some((a) => a.id === 'admin'));
 
-  /** The sidebar of the project the URL is in, or null outside a project. */
+  /** The sidebar of the project the URL is in, or null outside a project: one block, titled by the project switcher. */
   readonly projectArea = computed<NavArea | null>(() => {
     const key = this.context.key();
     if (key === null) return null;
     const entries = projectEntries(key, this.session).flatMap((e): NavEntry[] =>
       e.kind === 'item' || e.items.length > 0 ? [e] : [],
     );
-    return { id: 'project', label: this.context.current()?.displayName || key, entries };
+    return { id: 'project', sections: [{ id: 'project', label: this.context.current()?.displayName || key, entries }] };
   });
 
   /** The area a route belongs to: `/admin` and below is the admin area, `/projects/<key>` and below a project. */

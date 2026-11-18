@@ -80,8 +80,8 @@ async function signIn(browser: Browser, kind: keyof typeof kinds): Promise<void>
 }
 
 /**
- * Two repositories opened before, so that the start page shows its "Recently opened" (browser storage, kept with the session);
- * after the grants, so that every kind may open them.
+ * Two repositories opened before, so that the side bar of the main area shows its folding group "Recently opened" (R-UI-167;
+ * browser storage, kept with the session); after the grants, so that every kind may open them.
  */
 async function openRecent(browser: Browser, kind: keyof typeof kinds): Promise<void> {
   const context = await browser.newContext({ baseURL: edge, ignoreHTTPSErrors: true, storageState: authFile(kind) });

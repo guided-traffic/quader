@@ -7,15 +7,22 @@ interface StoredNavState {
   readonly collapsed: boolean;
   /** Ids of the groups the viewer folded. */
   readonly closed: readonly string[];
+  /** Ids of the groups that start folded and that the viewer opened (Recently opened, R-UI-167). */
+  readonly opened: readonly string[];
 }
 
-const EMPTY: StoredNavState = { collapsed: false, closed: [] };
+const EMPTY: StoredNavState = { collapsed: false, closed: [], opened: [] };
+
+function strings(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((c): c is string => typeof c === 'string') : [];
+}
 
 /**
  * How the viewer left the navigation sidebar (R-UI-002, Q-UI-68, Q-UI-127): shown or collapsed, and
- * which groups are folded. Non-secret convenience data in browser storage, keyed by the signed-in
- * principal so that two people on one browser keep their own layout (R-UI-043); when storage is
- * blocked the state lasts for the tab only.
+ * which groups are folded. A group is open until the viewer folds it, or, where it is declared folded by default (Recently
+ * opened, R-UI-167), folded until the viewer opens it. Non-secret convenience data in browser storage, keyed by the signed-in
+ * principal so that two people on one browser keep their own layout (R-UI-043); when storage is blocked the state lasts for the
+ * tab only.
  */
 @Injectable({ providedIn: 'root' })
 export class NavState {
@@ -42,16 +49,23 @@ export class NavState {
     this.update({ ...this.state(), collapsed });
   }
 
-  isOpen(groupId: string): boolean {
-    return !this.state().closed.includes(groupId);
+  /** Whether the group is open: what the viewer chose, else `openByDefault`. */
+  isOpen(groupId: string, openByDefault = true): boolean {
+    const s = this.state();
+    if (s.closed.includes(groupId)) return false;
+    if (s.opened.includes(groupId)) return true;
+    return openByDefault;
   }
 
-  toggleGroup(groupId: string): void {
+  toggleGroup(groupId: string, openByDefault = true): void {
     const s = this.state();
-    const closed = s.closed.includes(groupId)
-      ? s.closed.filter((id) => id !== groupId)
-      : [...s.closed, groupId];
-    this.update({ ...s, closed });
+    const open = !this.isOpen(groupId, openByDefault);
+    const closed = s.closed.filter((id) => id !== groupId);
+    const opened = s.opened.filter((id) => id !== groupId);
+    // Only a choice that differs from the default is kept.
+    if (open && !openByDefault) opened.push(groupId);
+    if (!open && openByDefault) closed.push(groupId);
+    this.update({ ...s, closed, opened });
   }
 
   private update(next: StoredNavState): void {
@@ -64,13 +78,8 @@ export class NavState {
     try {
       const parsed: unknown = JSON.parse(this.storage.get('local', key) ?? 'null');
       if (typeof parsed !== 'object' || parsed === null) return EMPTY;
-      const { collapsed, closed } = parsed as Record<string, unknown>;
-      return {
-        collapsed: collapsed === true,
-        closed: Array.isArray(closed)
-          ? closed.filter((c): c is string => typeof c === 'string')
-          : [],
-      };
+      const { collapsed, closed, opened } = parsed as Record<string, unknown>;
+      return { collapsed: collapsed === true, closed: strings(closed), opened: strings(opened) };
     } catch {
       return EMPTY;
     }

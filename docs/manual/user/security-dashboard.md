@@ -6,7 +6,7 @@ A project's **Vulnerabilities** screen is the same report for that project; this
 
 ## Who sees it
 
-In the side bar of **Your work** (the projects, the guides, your profile), the section **Security audit** holds **Security dashboard**, which opens `/ui/<locale>/security`. The section is shown to whoever holds the capability `content:metadata-read`: the roles `auditor` and `admin`. Without it there is no section, and the address answers **Page not found**.
+The side bar outside a project (the projects, the guides, your profile) has, under **Your work**, a second title **Security audit**, and under it **Security dashboard**, which opens `/ui/<locale>/security`. The title and the entry are shown to whoever holds the capability `content:metadata-read`: the roles `auditor` and `admin`. Without it neither is there, and the address answers **Page not found**.
 
 | Capability | Held by | What it allows on the dashboard |
 |---|---|---|

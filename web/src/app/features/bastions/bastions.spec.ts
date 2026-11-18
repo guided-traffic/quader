@@ -9,7 +9,7 @@ import {
   sampleBastionToken,
 } from '../../api/testing/fakes-bastions';
 import { helpFor } from '../../core/help-topics';
-import { Navigation } from '../../core/navigation';
+import { Navigation, areaItems } from '../../core/navigation';
 import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
 import { DraftStore } from '../../shared/drafts';
@@ -341,8 +341,8 @@ describe('Bastions in the navigation and the help (R-BAS-007, R-UI-050)', () => 
     const routes = (): string[] =>
       get(Navigation)
         .areas()
-        .flatMap((a) => a.entries)
-        .flatMap((e) => (e.kind === 'item' ? [e.route] : e.items.map((i) => i.route)));
+        .flatMap((a) => areaItems(a))
+        .map((i) => i.route);
     expect(routes()).toContain('/admin/bastions');
     expect(helpFor('/admin/bastions')).toEqual(['/help', 'admin', 'bastion']);
     TestBed.inject(SessionStore);
@@ -351,8 +351,8 @@ describe('Bastions in the navigation and the help (R-BAS-007, R-UI-050)', () => 
       none
         .get(Navigation)
         .areas()
-        .flatMap((a) => a.entries)
-        .some((e) => e.kind === 'item' && e.route === '/admin/bastions'),
+        .flatMap((a) => areaItems(a))
+        .some((i) => i.route === '/admin/bastions'),
     ).toBe(false);
   });
 });

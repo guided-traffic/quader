@@ -56,14 +56,15 @@ describe('Page header and empty state', () => {
     expect(groups!.querySelector('.badge')).toBeNull();
   });
 
-  it('Q-UI-554 where the content is narrow, a header with a client row is one flow and its actions share the line of Set up client', async () => {
+  it('Q-UI-664 the actions wrap under the name where the header is narrow, as one row of buttons; no rule of a client row is left', async () => {
     await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
     const fixture = TestBed.createComponent(Host);
     await settle(fixture);
-    // The test environment lays nothing out; what it can check is that the rule ships with the component, scoped to a header
-    // with a client row, below 36 rem of content. The renders of the repository pages at 390 px are the look.
+    // The test environment lays nothing out; what it can check is the rules that ship with the component. The renders of the
+    // repository pages at 390 px are the look.
     const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n');
-    expect(css).toMatch(/@container content \(max-width: 36rem\)[^@]*quader-page-header:has\(\.client-row\) :is\(\.page-header-main, \.client-row\)\s*\{\s*display: contents/);
-    expect(css).toMatch(/quader-page-header:has\(\.client-row\) \.page-header-actions\s*\{\s*flex: none;\s*flex-wrap: nowrap/);
+    expect(css).toMatch(/quader-page-header \.page-header-row\s*\{[^}]*flex-wrap: wrap/);
+    expect(css).toMatch(/quader-page-header \.page-header-actions\s*\{[^}]*flex-wrap: wrap/);
+    expect(css).not.toContain('client-row');
   });
 });

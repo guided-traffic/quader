@@ -18,11 +18,11 @@ Every repository belongs to exactly one [project](projects.md), and its key is u
 
 ## The Repositories screen
 
-**Admin area › Repositories** lists, in columns, **Repository** (the key, with its description under it), **Project** (the project's mark and name), **Format** (icon and name), **Class**, **Visibility** and **Last activity** (how long ago, "3 days ago"; point at it for the time; in a narrower window the column is left out). At the end of each row the copy button copies the repository's client address; point at it to read the address. In a narrow window each repository is a block of its own. Badges mark repositories that are **disabled** or **being deleted**. **Filter repositories** above the list keeps the repositories whose key or description contains what you type; **Filters** opens a panel from the right with **Project**, **Format**, **Class** and **State** (**Disabled only**), and each filter that is set stands as a chip beside the button. The repositories you opened last are on the start page.
+**Admin area › Repositories** lists, in columns, **Repository** (the key, with its description under it), **Project** (the project's mark and name), **Format** (icon and name), **Class**, **Visibility** and **Last activity** (how long ago, "3 days ago"; point at it for the time; in a narrower window the column is left out). At the end of each row the copy button copies the repository's client address; point at it to read the address. In a narrow window each repository is a block of its own. Badges mark repositories that are **disabled** or **being deleted**. **Filter repositories** above the list keeps the repositories whose key or description contains what you type; **Filters** opens a panel from the right with **Project**, **Format**, **Class** and **State** (**Disabled only**), and each filter that is set stands as a chip beside the button. The repositories you opened last are under **Recently opened** in the side bar outside the admin area.
 
 The menu at the end of each row (**Actions for** the key) offers **Copy client address**, **Settings**, **Files**, **Vulnerabilities** where the format is scanned and, with `repositories:write-config` or as the project's Owner, **Delete**. **New repository** opens the choice of the format.
 
-A project's **Repositories** shows the same repositories of one project with **Repository** (the visibility icon before the key), **Format**, **Class**, and **Set up client** at the end of each row, which opens the client setup for that repository. The client address is not in this list: it is on the repository's page and in the client setup, with the snippets that use it.
+A project's **Repositories** shows the same repositories of one project with **Repository** (the visibility icon before the key), **Format**, **Class**, and **Set up client** at the end of each row, which opens the client setup for that repository. The client address is not in this list: it is on the repository's **Set up client**, with the snippets that use it.
 
 The page of a repository shows its **Project**. A repository is created in its project (`POST /api/v1/projects/<projectKey>/repositories`), and it changes project only through a move, which changes every address of it ([Move a repository to another project](projects.md#move-a-repository-to-another-project)). The list in the admin area names the project of each repository in a **Project** column, its filter **Project** limits the list to one project, and the project's own **Repositories** screen (`/projects/<key>/repositories`) lists the repositories of that project.
 
@@ -326,7 +326,7 @@ one column. At the top are the **Key** (read-only) and **Description (optional)*
 a remote repository and the **Members** of a virtual one. Every other setting is a closed section: **Mirror**, **<Format> settings**,
 **Access details** (patterns and hiding existence), **Administrator notes**, the format's own sections (**Signing keys** and
 **Indexes** for Debian, **Import tasks** and **Tombstones** for Ansible Galaxy), **Details** (class, format, layout,
-project, client address and dates), **API** and **Advanced**.
+project and dates; the client address is on the repository's **Set up client**), **API** and **Advanced**.
 
 1. Change settings in a section. A closed section that holds an unsaved change says **Unsaved changes** after its title, and
    leaving the page asks first.

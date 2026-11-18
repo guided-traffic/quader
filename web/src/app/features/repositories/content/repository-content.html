@@ -15,19 +15,12 @@
         <span class="badge warn" i18n="@@repo.badge.disabled">disabled</span>
       }
     </div>
-    <!-- The client address and the way to set a client up are one job, so they stand together (Q-UI-517). A disabled repository
-         refuses its clients, so there is nothing to set up; its badge says why. -->
-    @if (headerAddress() || !disabled()) {
-      <div meta class="client-row">
-        @if (headerAddress(); as a) {
-          <quader-address-field [value]="a" />
-        }
-        @if (!disabled()) {
-          <a class="btn btn-default" [routerLink]="setupLink()" i18n="@@repo.content.tab.setup">Set up client</a>
-        }
-      </div>
-    }
     <ng-container actions>
+      <!-- The client address stands on Set up client, with the snippets that use it (R-UI-169, Q-UI-664); the header leads there,
+           first of the page's actions. A disabled repository refuses its clients, so there is nothing to set up; its badge says why. -->
+      @if (!disabled()) {
+        <a class="btn btn-default" [routerLink]="setupLink()" i18n="@@repo.content.tab.setup">Set up client</a>
+      }
       @if (canConfigure()) {
         <a class="btn btn-default" [routerLink]="settingsLink()" i18n="@@repo.content.settings">Settings</a>
       }

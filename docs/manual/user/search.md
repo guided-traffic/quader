@@ -45,8 +45,9 @@ shows as a chip at the start of the field; its × or Backspace in an empty field
 ## The results page
 
 Enter without choosing an entry opens the results page **Search**, in the area you work in. Its tabs **Repositories**, **Packages**
-and **Projects** list everything you may read that matches your text, 25 at a time with **Load more**. A repository's row copies its
-client address with the button at its end; a package shows the project and repository that hold it.
+and **Projects** list everything you may read that matches your text, 25 at a time with **Load more**. A repository's row names its
+project, package type and kind; its address is on the repository's **Set up client**. A package shows the project and repository
+that hold it.
 
 ## For administrators
 

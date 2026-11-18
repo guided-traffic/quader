@@ -227,7 +227,7 @@ describe('Repository content page', () => {
     expect(text(state)).toBe('This repository holds no packages yet. Publish a package with your client; Set up client shows how.');
     expect(state.querySelector(':is(a, button)')).toBeNull();
     expect([...owner.root.querySelectorAll('a, button')].filter((b) => text(b) === 'Set up client')).toHaveLength(1);
-    expect(owner.root.querySelector('quader-page-header .client-row a.btn')?.textContent?.trim()).toBe('Set up client');
+    expect(owner.root.querySelector('quader-page-header .page-header-actions a.btn')?.textContent?.trim()).toBe('Set up client');
     const reader = await open(NPM_REPO, ({ packages, session }) => {
       packages.packages = [];
       session.allow = (c) => c.action !== 'deploy';
@@ -279,12 +279,12 @@ describe('Repository content page', () => {
     const r = await open(NPM_REPO);
     // One way to the setup (Q-UI-321): the header's action, no tab beside the content.
     expect([...r.root.querySelectorAll('[role="tab"]')].map((t) => text(t))).not.toContain('Set up client');
-    const setup = r.root.querySelector('quader-page-header .client-row a.btn');
+    const setup = r.root.querySelector('quader-page-header .page-header-actions a.btn');
     expect(setup?.getAttribute('href')).toBe('/projects/web/repositories/npm-local/setup');
     await expectAccessible(r.root);
   });
 
-  it('R-UI-052 the header shows the client address alone; Details names the address for downloads by path', async () => {
+  it('R-UI-052 R-UI-169 the header holds no address; Details names the address for downloads by path, which Set up client does not show', async () => {
     const npm = 'https://quader.example.net/api/npm/web/npm-local/';
     const files = 'https://quader.example.net/files/web/npm-local/';
     const r = await open(NPM_REPO, ({ catalog }) => {
@@ -294,8 +294,8 @@ describe('Repository content page', () => {
         etag: '"1"',
       });
     });
-    const header = [...r.root.querySelectorAll<HTMLInputElement>('quader-page-header quader-address-field input')].map((i) => i.value);
-    expect(header).toEqual([npm]);
+    expect(r.root.querySelector('quader-page-header quader-address-field')).toBeNull();
+    expect(text(r.root)).not.toContain(npm);
     const details = r.root.querySelector('quader-disclosure')!;
     expect(details.querySelector<HTMLInputElement>('quader-address-field input')?.value).toBe(files);
     expect(text(details)).toContain('Address for downloads by path (curl, wget)');
@@ -318,27 +318,17 @@ describe('Repository content page', () => {
     expect([...reader.root.querySelectorAll('.page-header-actions a')].map((a) => a.textContent?.trim())).not.toContain('Settings');
   });
 
-  it('R-UI-066 R-UI-067 Q-UI-517 R-UI-126 the header shows the client address with Set up client beside it, in the one style of that action', async () => {
-    const r = await open(NPM_REPO);
-    const row = r.root.querySelector('quader-page-header .client-row')!;
-    const field = row.querySelector<HTMLInputElement>('quader-address-field input');
-    expect(field?.value).toContain('web/npm-local/');
-    const primary = row.querySelector('a.btn');
-    expect(primary?.textContent?.trim()).toBe('Set up client');
-    expect(primary?.classList.contains('btn-default')).toBe(true);
-    expect(primary?.getAttribute('href')).toBe('/projects/web/repositories/npm-local/setup');
-    // The other views are in the header's menu, not loose links beside the tabs.
-    expect(r.root.querySelector('.page-header-actions button[aria-label="More actions"]')).toBeTruthy();
-    await expectAccessible(r.root);
-  });
-
-  it('Q-UI-554 in the header the address, Set up client, Settings and the menu follow each other in the order of the narrow line', async () => {
+  it('R-UI-169 Q-UI-664 R-UI-126 the header has no address field: Set up client, where the address stands, is the first of its actions, in the one style of that action', async () => {
     const r = await open(NPM_REPO);
     const header = r.root.querySelector('quader-page-header')!;
-    const order = [...header.querySelectorAll('quader-address-field input, a.btn, button.btn')].map(
-      (e) => (e.tagName === 'INPUT' ? 'address' : e.getAttribute('aria-label') ?? text(e)),
-    );
-    expect(order.filter((o) => o !== 'Copy client address')).toEqual(['address', 'Set up client', 'Settings', 'More actions']);
+    expect(header.querySelector('quader-address-field, input')).toBeNull();
+    const actions = header.querySelector('.page-header-actions')!;
+    const order = [...actions.querySelectorAll('a.btn, button.btn')].map((e) => e.getAttribute('aria-label') ?? text(e));
+    expect(order).toEqual(['Set up client', 'Settings', 'More actions']);
+    const setup = actions.querySelector('a.btn')!;
+    expect(setup.classList.contains('btn-default')).toBe(true);
+    expect(setup.getAttribute('href')).toBe('/projects/web/repositories/npm-local/setup');
+    await expectAccessible(r.root);
   });
 
   it('R-UI-052 the filter of the list is sent to the server and lives in the URL', async () => {

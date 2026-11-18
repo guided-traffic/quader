@@ -1,11 +1,13 @@
 import { afterEach } from 'vitest';
 import { ApiError } from '../../api/problem';
+import { ProjectsApi } from '../../api/projects-api';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeRepositoriesApi } from '../../api/testing/fakes-catalog';
+import { FakeProjectsApi } from '../../api/testing/fakes-projects';
 import { BrowserStorage } from '../../core/storage';
-import { addressValues, expectAccessible, renderScreen, settle, text } from '../../testing/screen';
+import { expectAccessible, renderScreen, settle, text } from '../../testing/screen';
 import { ProjectsHome } from './projects-home';
 
 /** The fakes' signed-in principal (`alice`). */
@@ -31,25 +33,33 @@ describe('Start page', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-067 R-UI-096 Q-UI-517 Q-UI-424 shows the repositories opened before, from the search\'s store, with their project, their client address and Set up client beside it', async () => {
-    const { root, fixture } = await renderScreen(ProjectsHome, { setup: () => visited('web/generic-local') });
+  it('R-UI-166 the start page is the list of projects under one heading: no Recently opened, no address field, no Set up client', async () => {
+    const { root, fixture, get } = await renderScreen(ProjectsHome, { setup: () => visited('web/generic-local', 'web/releases') });
     await settle(fixture);
-    expect(text(root.querySelector('.recent')!)).toContain('generic-local');
-    expect(addressValues(root).some((a) => a.includes('web/generic-local'))).toBe(true);
-    const setup = [...root.querySelectorAll('.recent a.btn')].find((a) => text(a) === 'Set up client');
-    expect(setup?.getAttribute('href')).toBe('/projects/web/repositories/generic-local/setup');
-    // The address and Set up client are one line, as in the repository's header; the project is its mark and its name.
-    expect(setup?.closest('.client-row')?.querySelector('quader-address-field')).not.toBeNull();
-    expect(setup?.classList.contains('btn-default')).toBe(true);
-    expect(root.querySelector('.recent-name quader-project-link a')?.getAttribute('href')).toBe('/projects/web');
+    expect([...root.querySelectorAll('h1, h2')].map((h) => `${h.tagName} ${text(h)}`)).toEqual(['H1 Projects']);
+    expect(text(root)).not.toContain('Recently opened');
+    expect(root.querySelector('quader-address-field')).toBeNull();
+    expect([...root.querySelectorAll('a, button')].some((a) => text(a) === 'Set up client')).toBe(false);
+    // The start page resolves no remembered repository: that is the side bar's (R-UI-167).
+    expect((get(RepositoriesApi) as FakeRepositoriesApi).listFilters.filter((f) => f.name)).toEqual([]);
   });
 
-  it('R-UI-096 Q-UI-406 Recently opened asks one name= request for its entries, newest first, and leaves out one the caller cannot read', async () => {
-    const { root, fixture, get } = await renderScreen(ProjectsHome, { setup: () => visited('web/releases', 'platform/gone', 'web/generic-local') });
-    await settle(fixture);
-    const named = (get(RepositoriesApi) as FakeRepositoriesApi).listFilters.filter((f) => f.name);
-    expect(named).toEqual([{ name: ['web/releases', 'platform/gone', 'web/generic-local'] }]);
-    expect([...root.querySelectorAll('.recent-name > a')].map((a) => text(a))).toEqual(['releases', 'generic-local']);
+  it('R-UI-166 the sentence under the title says what the page is for, for a caller with projects, without one and anonymous', async () => {
+    const description = (root: HTMLElement) => root.querySelector('.page-header-description')?.textContent?.trim() ?? null;
+    const member = await renderScreen(ProjectsHome);
+    expect(description(member.root)).toBe('Find a project and explore the repositories and packages it holds.');
+
+    const none = await renderScreen(ProjectsHome, { setup: (get) => ((get(ProjectsApi) as FakeProjectsApi).projects = []) });
+    await settle(none.fixture);
+    // The empty list says how to get a project; the header adds nothing.
+    expect(description(none.root)).toBeNull();
+    expect(text(none.root)).toContain('You are not a member of a project yet.');
+
+    const anonymous = await renderScreen(ProjectsHome, {
+      setup: (get) => ((get(SessionApi) as FakeSessionApi).whoamiResult = new ApiError(401, null, null)),
+    });
+    await settle(anonymous.fixture);
+    expect(description(anonymous.root)).toBe('The projects with public content. Sign in to see your own.');
   });
 
   it('Q-UI-414 the start page has no package search of its own: the top bar\'s field is the one search', async () => {
@@ -67,7 +77,6 @@ describe('Start page', () => {
     expect(text(root.querySelector('caption')!)).toBe('Public projects');
     const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', ''));
     expect(heads.some((h) => h.startsWith('Your role'))).toBe(false);
-    expect(root.querySelector('.recent')).toBeNull();
     await expectAccessible(root);
   });
 });

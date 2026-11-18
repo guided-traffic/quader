@@ -55,12 +55,6 @@
       <dd translate="no">{{ c.format }}</dd>
       <dt i18n="@@repo.field.description">Description</dt>
       <dd>{{ c.description || '–' }}</dd>
-      <dt i18n="@@repo.col.address">Client address</dt>
-      <dd>
-        @for (a of c.addresses; track a) {
-          <quader-address-field [value]="a" />
-        }
-      </dd>
     </dl>
   </div>
 } @else if (stored(); as repo) {
@@ -309,7 +303,7 @@
           i18n-heading="@@repo.settings.details"
           heading="Details"
           i18n-hint="@@repo.settings.details-hint"
-          hint="The class, the format, the address and the dates of the repository."
+          hint="The class, the format, the layout and the dates of the repository."
         >
           <dl class="facts">
             <dt i18n="@@repo.col.class">Class</dt>
@@ -321,10 +315,6 @@
             @if (repo.project; as projectKey) {
               <dt i18n="@@repo.detail.project">Project</dt>
               <dd><a [routerLink]="['/projects', projectKey]" translate="no">{{ projectKey }}</a></dd>
-            }
-            @if (address()) {
-              <dt i18n="@@repo.col.address">Client address</dt>
-              <dd><quader-address-field [value]="address()" /></dd>
             }
             @if (repo.createdAt; as at) {
               <dt i18n="@@repo.detail.created">Created</dt>
