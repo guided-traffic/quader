@@ -1150,6 +1150,10 @@ agent** is not decided until the owner has said so.
     it, everywhere.
   - **Open:** the journey of the dashboard and the alias case of the integration test were rewritten and not run; the
     triage controls as `noor` and a finding's page under `/ui/security/findings/…` were not looked at.
+  - **Corrected by the owner the same evening:** "Security-Audit hatte ich eigentlich als weiteren context-title erwartet."
+    The development agent had briefed "a second section under Your work" and the builder made a folding group inside the
+    block of **Your work**. Wanted: **Security audit** is a second context title of the side bar, written and placed like
+    **Your work**, with **Security dashboard** as a plain entry under it. Status: with the builder of W-20.
 - **W-18 · A row with one action names it, a row with several has a menu** (owner, 2026-11-18, "Option A" from three: write
   the practice down as the rule / a menu everywhere / icons everywhere). Verified in the code: the lists with a menu
   (repositories, a project's members, files, exposure rules) have several actions per row; the lists with a word (**Edit** on
@@ -1188,8 +1192,10 @@ agent** is not decided until the owner has said so.
   ([projects-home.ts](../../web/src/app/features/projects/projects-home.ts)); the search field of the top bar offers the
   frequently opened repositories from the same store when it opens. Wanted: the start page is the list of projects alone
   (one heading, not "Projects" twice); the recently opened repositories are offered from the side bar; the address of a
-  repository stands in a field only on **Set up client**. Open for the owner: the form in the side bar (a folding section
-  with the last repositories as links, or an entry that opens a page). Status: not built.
+  repository stands in a field only on **Set up client**. Decided by the owner on 2026-11-18 ("Option A passt für mich", from
+  three: a folding section with the last five repositories as links / an entry that opens a page / the search field alone):
+  a folding section **Recently opened** under **Your work** with the last five repositories as links, not shown while there
+  is none. Status: a builder is briefed.
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
