@@ -42,6 +42,10 @@ type ServerConfig struct {
 	ReadHeaderTimeout time.Duration
 	IdleTimeout       time.Duration
 	MaxHeaderBytes    int
+	// SendBuffer is the SO_SNDBUF of every accepted connection
+	// (server.send_buffer); zero leaves the kernel's autotuning. It bounds what
+	// the kernel holds of a response its client does not read (Q-ARCH-500).
+	SendBuffer int
 	// StallTimeout moves the read and write deadlines forward after every
 	// successful chunk (server.transfer_stall_timeout); zero disables it.
 	// http.Server.ReadTimeout and WriteTimeout stay 0, because they would cut long

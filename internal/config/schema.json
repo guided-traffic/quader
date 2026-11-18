@@ -3313,6 +3313,16 @@
           "type": "string",
           "x-quader-env": "QUADER_SERVER_REPLICA_HEADER"
         },
+        "send_buffer": {
+          "default": "128KiB",
+          "description": "SO_SNDBUF of every connection of the client listeners; the kernel doubles it for its bookkeeping, and the memory guard charges the doubled value to each request (Q-ARCH-500). 0 leaves the kernel's autotuning, charged at the most it may grow to (net.ipv4.tcp_wmem).",
+          "type": [
+            "string",
+            "integer"
+          ],
+          "x-quader-env": "QUADER_SERVER_SEND_BUFFER",
+          "x-quader-type": "bytes"
+        },
         "shutdown_timeout": {
           "default": "0s",
           "description": "Bound for in-flight requests and running work at SIGTERM. 0 derives it: runtime.termination_grace_period minus health.shutdown_drain_delay minus 5 s, or 25 s when the grace period is unknown. An explicit value must fit the grace period.",

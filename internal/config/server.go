@@ -16,6 +16,7 @@ type Server struct {
 	TransferStallTimeout time.Duration `yaml:"transfer_stall_timeout" default:"60s"`
 	MaxHeaderBytes       int           `yaml:"max_header_bytes" default:"65536" validate:"min=4096"`
 	MaxInFlight          int           `yaml:"max_in_flight" default:"4096" validate:"min=1" doc:"Concurrent requests per replica."`
+	SendBuffer           ByteSize      `yaml:"send_buffer" default:"128KiB" validate:"min=0,max=64MiB" doc:"SO_SNDBUF of every connection of the client listeners; the kernel doubles it for its bookkeeping, and the memory guard charges the doubled value to each request (Q-ARCH-500). 0 leaves the kernel's autotuning, charged at the most it may grow to (net.ipv4.tcp_wmem)."`
 	ShutdownTimeout      time.Duration `yaml:"shutdown_timeout" default:"0s" validate:"min=0s" doc:"Bound for in-flight requests and running work at SIGTERM. 0 derives it: runtime.termination_grace_period minus health.shutdown_drain_delay minus 5 s, or 25 s when the grace period is unknown. An explicit value must fit the grace period."`
 	TLS                  ServerTLS     `yaml:"tls" doc:"TLS of the client listener (R-ARCH-035)."`
 	OpsTLS               ServerOpsTLS  `yaml:"ops_tls" doc:"TLS of the ops listener (Q-ARCH-33)."`

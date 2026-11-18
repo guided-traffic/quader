@@ -122,7 +122,7 @@ net/http server ── track (stall deadlines, active-request registry for the s
      └─ 2 trace        observability Tracer.Middleware (traceparent, trace ID)   [injected]
         └─ 2 request ID  X-Request-Id = trace ID (minted if no trace stage); X-Quader-Replica for replica_header=always; OnRequest hook names the handler
            └─ 3 request log + metrics   observability.RequestLog               [injected]
-              └─ 4 in-flight limit, then the replica's memory guard (slots, heap gate)   503 server_busy + Retry-After: 1
+              └─ 4 in-flight limit, then the replica's memory guard (slots, heap gate, kernel share)   503 server_busy + Retry-After: 1
                  └─ 5 client address    Resolver: peer, trusted proxies, base URL; Annotate hook; per endpoint: effective host, host check (421), binding
                     └─ preflight  CORS preflight of an allowed origin, answered before authentication (Q-API-138)
                        └─ 6 authentication principal or anonymous (bearer token or session cookie); invalid credential -> 401; X-Quader-Replica for authenticated callers
@@ -172,12 +172,30 @@ in-flight limit and no memory guard, so a probe is never refused because the req
    (`Admit` refuses with `heap`) until the value is below 70 %. Why not the allocated heap: near the Go limit it is high by design.
    A closed gate that sees `/gc/cycles/total:gc-cycles` unchanged for a second calls `runtime.GC` (Q-ARCH-242): an idle replica
    would otherwise keep the last cycle's high value for two minutes.
-4. `Chain.shed` answers every refusal the same way, `503 server_busy` with `Retry-After: 1`, rendered through the path's error
+4. The kernel's share ([Q-ARCH-500](../spec/architecture.md#q-arch-500--the-kernels-share-of-the-container-holds-the-send-buffers-of-the-requests-and-the-guard-charges-and-reads-it)):
+   `kernelGate` asks `httpserver.KernelMemory` ([cgroup.go](../../internal/httpserver/cgroup.go)) for a reader of `sock` + `kernel`
+   of the replica's cgroup v2 (`/proc/self/cgroup`, then `/sys/fs/cgroup/<path>/memory.stat`), which it returns only when the
+   cgroup's `memory.max` is `runtime.memory_limit_bytes`; otherwise the start logs why there is none (on macOS, and in the
+   integration tests, whose processes share the CI job's cgroup). The budget is `runtime.memory_limit_bytes` − the Go limit.
+   `Chain.inflightStage` wraps the response writer of every admitted request in a `kernelWriter`
+   ([kernelwriter.go](../../internal/httpserver/kernelwriter.go)): its first `WriteHeader` (not a 1xx), `Write`, `ReadFrom` or
+   `Flush` calls `Ticket.waitKernel`, which charges `kernelRequestMemory` (twice `server.send_buffer`, the `SO_SNDBUF` that
+   `lingerListener.Accept` sets on every client connection; with `0` the third value of `net.ipv4.tcp_wmem`) against 0.8 × the
+   budget less `kernExtra`, what the kernel held beyond the charges at the last sample. While it does not fit, the response
+   waits on `kernelRoom`, a channel that a released charge or a sample whose `kernExtra` fell closes; the request's context
+   ending stops the wait and the response writes nothing. A request that never writes (one waiting for the database) holds no
+   kernel charge. Each sample also moves the kernel gate: closed at 80 % of the budget, open below 70 %, refusing with
+   `kernel`. `Slots()` is the Go count, `Writers()` the kernel's (logged at start as `kernel_writers`). The forced
+   reproduction that measured why (a container of 1 GiB, clients that stop reading) is described in Q-ARCH-500; it needs Docker
+   and the integration stack and is not part of a test tier.
+5. `Chain.shed` answers every refusal the same way, `503 server_busy` with `Retry-After: 1`, rendered through the path's error
    shape, and calls `OnShed(reason)`, which the composition root counts in `quader_http_requests_shed_total{endpoint,reason}`.
 
 The endpoint's `max_in_flight` is asked first and its slot released if the guard refuses. The charges are what makes a burst safe:
-admission happens before the request allocates, so the heap gate alone would admit a whole burst inside one GC cycle. What they
-do not see is a cache that grows after the admission (H-539): that is the heap gate's.
+admission happens before the request allocates, so the heap gate alone would admit a whole burst inside one GC cycle, and the
+kernel gate alone a burst whose send queues fill after its sample; a response takes its kernel charge before its first byte, so
+no burst of responses passes the kernel's mark either. What they do not see is a cache that grows after the
+admission (H-539): that is the heap gate's; and the queued bytes of responses that have ended, which the next sample subtracts.
 
 Every route of a listener is registered through `httpserver.Router`. The generated API operations, the
 UI and later the format dispatcher all use `Router.Handle`, so `Router.Patterns()` is the whole route

@@ -88,7 +88,7 @@ type Chain struct {
 	// after MaxInFlight; it refuses the same way. Nil admits everything.
 	Memory *MemoryGuard
 	// OnShed is called for every request stage 4 refuses, with the reason
-	// (ShedInFlight, ShedMemorySlots, ShedHeap).
+	// (ShedInFlight, ShedMemorySlots, ShedHeap, ShedKernel).
 	OnShed func(reason string)
 
 	// Resolver is stage 5. Annotate, if set, receives the resolved information so
@@ -280,6 +280,9 @@ func (c Chain) inflightStage(next http.Handler) http.Handler {
 		defer release()
 		if t != nil {
 			r = r.WithContext(context.WithValue(r.Context(), ticketKey{}, t))
+			if t.g.kernPer > 0 {
+				w = &kernelWriter{ResponseWriter: w, ctx: r.Context(), t: t}
+			}
 		}
 		next.ServeHTTP(w, r)
 	})

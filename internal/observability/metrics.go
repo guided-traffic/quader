@@ -116,7 +116,7 @@ func NewMetrics(role string, opts ...MetricsOption) *Metrics {
 	m.epRefused = m.NewCounterVec("quader_endpoint_credentials_refused_total",
 		"Requests the endpoint's credential rules refused, by reason (token_type, token_binding, anonymous).", "endpoint", "reason")
 	m.shed = m.NewCounterVec("quader_http_requests_shed_total",
-		"Requests the in-flight stage answered 503 server_busy, by reason (in_flight, memory_slots, heap).", "endpoint", "reason")
+		"Requests the in-flight stage answered 503 server_busy, by reason (in_flight, memory_slots, heap, kernel).", "endpoint", "reason")
 	m.memSlots = m.NewGaugeVec("quader_http_memory_slots", "Concurrent requests this replica's memory admits; 0 when no memory limit is known.")
 	m.recvBytes = m.NewCounterVec("quader_http_received_bytes_total", "Request body bytes.", "handler")
 	m.sentBytes = m.NewCounterVec("quader_http_sent_bytes_total", "Response body bytes.", "handler")
@@ -341,7 +341,7 @@ func (m *Metrics) EndpointCredentialsRefused(endpoint, reason string) {
 
 // shedReasons are the values of the reason label of
 // quader_http_requests_shed_total (R-ARCH-005 step 4, Q-ARCH-240).
-func shedReasons() []string { return []string{"in_flight", "memory_slots", "heap"} }
+func shedReasons() []string { return []string{"in_flight", "memory_slots", "heap", "kernel"} }
 
 // RequestShed counts a request the in-flight stage refused; a reason outside
 // the closed list is not counted.

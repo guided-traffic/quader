@@ -108,7 +108,7 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 | `authz_stale` | The replica could not confirm that its permission index is current within `authz.cache.max_staleness` (10 s) | [PostgreSQL](#postgresql-unavailable-or-failing-over), or `QuaderControlConnectionWaits`; another replica may answer |
 | `object_store_unavailable` | The object store cannot be reached | [The object store](#the-object-store-unavailable) |
 | `content_unavailable` | The stored object of this file is missing; a remote repository fetches it again and answers this only while it cannot | [When the object store loses objects](operations.md#when-a-dependency-is-unavailable) |
-| `server_busy` | The replica is at `server.max_in_flight`, or at its memory slots or heap limit (`quader_http_requests_shed_total` by `reason`), or too many local logins are being verified | [Scaling](operations.md#scaling-api-packages-and-worker); it can succeed on another replica |
+| `server_busy` | The replica is at `server.max_in_flight`, or at its memory slots, its heap limit or the kernel's share of its memory, the send buffers of clients that read slowly (`quader_http_requests_shed_total` by `reason`), or too many local logins are being verified | [Scaling](operations.md#scaling-api-packages-and-worker); it can succeed on another replica |
 | `shutting_down` | The replica is draining | Retry; expected during drains and rollouts |
 | `unavailable` | The catch-all: the sentence in the body says which | See below |
 | `upstream_assumed_offline` | The circuit of a remote repository's upstream is open and the path is not cached | Retry after `Retry-After`; check the upstream and its repository |

@@ -269,7 +269,7 @@ Found on 2026-11-18 by reading the stall evidence of the baseline nightly 441869
   load 50 to 75. From 00:10:54 to 00:10:57 eight small jobs of Test and Release 44205650371 (`stab/integration`) were scheduled on the same machine
   (Angular build, Trivy with an image build, golangci-lint, unit tests, release tooling, NuGet vectors, integration shards b and c). At 00:12:28,
   when the next test's load started and 66 s before its fault, the leg collapsed: `full` CPU stall of its nodes 200 to 495 ms/s (25 to 165 before),
-  load 247, edge idle 0 % with 813 connections and no accept, k6 p50 2 to 35 s, a `packages` pod `OOMKilled` at 00:13:34 (F-134), both edge pods
+  load 247, edge idle 0 % with 813 connections and no accept, k6 p50 2 to 35 s, a `packages` pod `OOMKilled` at 00:13:34 by its socket buffers (fixed by Q-ARCH-500), both edge pods
   restarted by their liveness probes; over when the load stopped at 00:17:40. The warm-up p99 the fault was then judged against was 46 s.
   A second case the same night, `e2e (ha-pooler)` of the same run (`TestHAPooler_InstanceLoss`, graceful delete of a `quader-db-pooler-control`
   instance), on `k8s-runner-lambda` beside the kind leg `e2e (npm)` of Test and Release 44208024306: its two `rw` tests passed from 00:45 to 00:49
@@ -282,7 +282,7 @@ Found on 2026-11-18 by reading the stall evidence of the baseline nightly 441869
   tooling, an image build, Trivy, actionlint, integration shard a) and at 02:07:33 the kind leg `e2e (npm)` were scheduled beside it. From 02:07:30,
   in the warm-up of `ValkeyCredentialMismatch`, k6's p99 rose from 0.8 to 45 s; from 02:08 to 02:09:30 the machine had 27 to 31 of its 32 CPUs busy
   (`host` `cpu_usage_us`) while the leg's four nodes together got 3 to 7 CPUs, down from 16 to 20 in the tests before; two `packages` pods were
-  OOM-killed (F-134). The machine was full and the leg was not what filled it.
+  OOM-killed by their socket buffers (fixed by Q-ARCH-500). The machine was full and the leg was not what filled it.
   (3) The overlap, from the job lists of every run since 2026-11-08 (cluster-wide; a node is known only for tonight): `ValkeySlow` red on 11-12 and
   11-18 with 22 and 25 small jobs and 3.5 and 4.2 other large legs beside it, green on 11-13 to 11-17 with 0 small jobs and 0.8 large legs; over
   every leg of at least 10 minutes, `ha-faults`, `npm-ha` and `drain-roles` green ran beside a median of 0 small jobs (job-equivalents), red beside
@@ -304,22 +304,6 @@ Found on 2026-11-18 by reading the stall evidence of the baseline nightly 441869
   room for three legs and Test and Release's kind legs wait behind the nightly's lanes, which the owner's rule forbids). The nightly at night would need a
   trigger outside GitHub's schedule (a CronJob that dispatches it); after (a) and (b) it matters less. In this repository: the recorder and the
   warm-up check of Q-HA-305; `concurrency` across the two workflows is ruled out there (it cancels pending runs and holds the release).
-- **F-134 · A `packages` pod is OOM-killed by its connections' socket buffers while the kind nodes are starved, and its memory guard sheds
-  nothing** (product; cause verified on 2026-11-18 from `pods.csv`, not reproduced locally). **Verified** in the verification run 44211950522
-  (`ha-faults`, `ValkeyCredentialMismatch`, stall of F-133): `quader-packages-…-tslqg` and `…-z2bmt` were OOM-killed at 02:08:59 and 02:09:47
-  (`z2bmt` twice). In the 30 s before each kill the pod's cgroup held 385 to 390 MB `anon` (the process) and 495 to 622 MB `sock` (the kernel's
-  buffers of its TCP connections, charged to the pod), together the 1 GiB limit; `sock` had been 0 to 35 MB before the stall and stayed at 470 to
-  600 MB after the kill, while the process had used about half a CPU. The guard reads the Go heap and stacks (high-water mark 0.8 × 0.85 GiB ≈
-  700 MB), which never came near it: what killed the pod is outside what the guard can see. Which connections hold the buffers (the
-  answers to an edge that reads nothing, or object store bodies not yet read) is not measured. Next step (product, a decision of its own): the
-  guard counts the cgroup's memory (`memory.current`, or its `sock`) and not only the heap, or the client listeners bound what a connection may
-  queue (`SO_SNDBUF`); then a test that holds the edge's reads and shows the pod sheds instead of dying. Earlier history:
-  `quader-packages-…-xb2w2` of 44186978088 at 00:13:34 and `trove-packages-…-x4pnj` of 43194646678 (11-12), both in `TestHAFaults_ValkeySlow` under
-  the stall of F-133: `Last State: Terminated, Reason: OOMKilled, Exit Code 137`, limit 1 GiB, `GOMAXPROCS` 1 (dev profile: request 250m), Go limit
-  0.85 GiB. Its log has no shedding line of the memory guard (R-ARCH-005, Q-ARCH-240), whose high-water mark is 80 % of the Go limit, and its last
-  minute shows object store GETs of 2.6 MB taking 38 s while about 1,000 connections were open at each edge pod (those two runs had no
-  `pods.csv`). No `ha-faults` leg of the green nights 11-13 to 11-17 had a restart. A stall of the CPU must not end in an OOM kill of a replica
-  whose guard exists to refuse work instead.
 
 Found on 2026-11-08 during the run of T-16, by the penetration test of the F-82 fix and the code reviews of WP4b and WP12:
 
@@ -494,7 +478,7 @@ by `version: "*"`. Red pipelines are worked on even though they no longer hold a
 - **`ha-faults`** (run 42774548669): `TestHAFaults_PostgresOutage` is green since 732572ba. `ValkeyFlushAll`: 503 from 07:53:20, 70 s before the FLUSHALL, while the run shared the runners with Test and Release; pod logs of the window are not kept. `ValkeyCredentialMismatch`: the `/readyz` 503s were the draining pod and its replacement, as R-HA-007 requires, so readiness is no defect (read on 2026-11-11); 53 tarball requests of the `blob` package hit k6's 45 s timeout, started within 6 s of the pod deletion, pod logs not kept: same shape as F-124. Read on 2026-11-18: the FLUSHALL window (07:52:30 to 07:55)
   had five small jobs of Test and Release 42774543420 beside it and no other kind leg, which fits F-133; their node is not known. The same leg's
   `ValkeySlow` failed in the nightlies of 11-11 (p99 5.2 s against a bound of 2.4 s, no failed request, three small jobs beside it), 11-12 and
-  11-18 (22 and 25 small jobs beside it, a `packages` pod OOM-killed in both, F-134); 11-18 is the verified case of F-133. Open: the 11-11 and 11-10
+  11-18 (22 and 25 small jobs beside it, a `packages` pod OOM-killed in both, fixed by Q-ARCH-500); 11-18 is the verified case of F-133. Open: the 11-11 and 11-10
   windows, read again at a recurrence with the CPU time per cgroup (Q-HA-305).
 - **F-124 · Tarballs of 1 to 5 MB stall at the edge for about 40 s in one window** (nightly 42994478570 `drain-roles`, and `ha-faults` `ValkeyCredentialMismatch` of 42774548669): 53 to 72 requests for the `blob` package's tarballs hit k6's 45 s timeout within about 5 s; HAProxy logs them `CD` with 3.2 to 4.9 MB streamed in 36 to 38 s and about 1,800 connections open. Not the drain (in `drain-roles` it was the warm-up, 3 minutes before the first eviction). Same night, `drain-load-pooler` (variant D): from 11:40:50, 43 s after the first eviction, until 11:44:10 the edge held 1,500 to 1,800 connections, k6 ran into its 45 s timeout and dropped 1,501 iterations, `npm ci` took up to 3m35s and every backend lost its servers at 11:42:50 and 11:43:15; the poolers logged no failed server login in the window, so it is not the switchover of Q-HA-302. The run predates the evidence recorder, and the surviving pods' logs of the window were not kept. Probably a load near the VM's capacity, not verified. Read on 2026-11-18 in its recurrence (nightly 44186978088, `ha-faults` `ValkeySlow`): the `blob` tarballs were again the first requests to reach 45 s (from 00:12:32), the edge held 813 connections per pod at 0 % idle, the `packages` pod's object store GETs of 2.6 MB took 38 s; the cause there is F-133 (verified: eight small jobs on the same machine). The two runs named here predate the recorder and their node is not known. Open until a recurrence is read with the CPU time per cgroup (Q-HA-305); a tarball stall without neighbours would be the leg's own.
 - F-135 · `TestCollapse` "R-REPO-026 a draining replica joins a flight another replica holds as a waiter" failed once (Test and
