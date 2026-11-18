@@ -5,6 +5,7 @@ package proxy
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -83,6 +84,22 @@ func burst(n int, reps []*replica, rem proxy.Remote, path string, mutate ...func
 	}
 	wg.Wait()
 	return out
+}
+
+// bypasses names the fetches each replica ran without the cross-replica lock, by reason (quader_flight_lock_bypass_total).
+func bypasses(reps ...*replica) string {
+	var parts []string
+	for _, r := range reps {
+		for _, reason := range []string{"valkey_unavailable", "wait_timeout", "draining"} {
+			if n := r.metric("quader_flight_lock_bypass_total", "reason", reason); n > 0 {
+				parts = append(parts, fmt.Sprintf("%s bypassed for %s %v times", r.name, reason, n))
+			}
+		}
+	}
+	if len(parts) == 0 {
+		return "no replica fetched without the lock"
+	}
+	return strings.Join(parts, ", ")
 }
 
 func collapsedOrHit(s served) bool {
@@ -271,11 +288,18 @@ func TestCollapse(t *testing.T) {
 		a, b := e.newReplica("a", replicaOpts{}), e.newReplica("b", replicaOpts{})
 		first := make(chan served, 1)
 		go func() { first <- b.artifact(rem, path) }()
+		// A replica that reaches the upstream holds the flight or fetches without it (a Valkey command given up on), so the GET
+		// alone does not make b the holder the subject needs: the lock key does (Test and Release 43179952672 saw a fetch its own
+		// "uri-miss; stored" where a waiter was due, and did not say which replica went without the lock).
+		admin := e.valkeyAdmin(a)
 		waitFor(t, "the holder to reach the upstream", 5*time.Second, func() bool { return up.Count("GET", "/"+path) == 1 })
+		if _, held := getKey(t, admin, e.lockKey(rem, path, "")); !held {
+			t.Fatalf("b reached the upstream without holding the flight (%s)", bypasses(a, b))
+		}
 		a.engine.Drain(context.Background())
 		s := a.artifact(rem, path)
 		if s.status != 200 || !bytes.Equal(s.body, tarball) || !collapsedOrHit(s) {
-			t.Fatalf("%d %q (%v)", s.status, s.cacheStatus(), s.err)
+			t.Fatalf("%d %q (%v); %s", s.status, s.cacheStatus(), s.err, bypasses(a, b))
 		}
 		<-first
 		if n := up.Count("GET", "/"+path); n != 1 {
