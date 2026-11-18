@@ -1,7 +1,7 @@
 {{/*
 The alerts of the PrometheusRule (R-HA-045) as a YAML list, before disabledAlerts is applied. Names are
 stable. Rendered: the alerts of the vulnerability scanning (R-VULN-024), the two of the mirror mode (R-OPS-046,
-Q-OPS-160, Q-OPS-171), the one of a bridge left on (R-HA-064, Q-HA-92), QuaderBlobMissing (R-HA-024, Q-STOR-152) and
+Q-OPS-160, Q-OPS-171), QuaderBlobMissing (R-HA-024, Q-STOR-152) and
 the sixteen rows of R-HA-045's table whose metrics the binary exports, QuaderBackupCheckFailed (the platform check
 task backup-check, R-HA-023), QuaderRevocationJournalBacklog (R-HA-054) and the six QuaderBackup* alerts of the backup runs
 (R-BAK-014): every alert of the table.
@@ -25,7 +25,7 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 */}}
 {{- define "quader.rules.all" -}}
 {{- $ns := printf "namespace=%q" .Release.Namespace -}}
-{{- $roles := printf "%s-(api|packages|worker|web)(-.*)?" (include "quader.fullname" .) -}}
+{{- $roles := printf "%s-(api|packages|worker)(-.*)?" (include "quader.fullname" .) -}}
 {{- $stale := include "quader.seconds" (dig "vulnerabilities" "stale_after" "24h" .Values.config) -}}
 {{- $interval := include "quader.seconds" (dig "backup" "expected_interval" "24h" .Values.config) -}}
 - alert: QuaderReplicasNotReady
@@ -177,14 +177,6 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
   annotations:
     summary: The mirror {{ "{{ $labels.repo }}" }} is more than an hour behind its schedule.
     description: Its next pass was due an hour ago and nothing started it, or the pass in progress has not written for an hour. No process claims the queue mirror, the passes are held back by a rate limit that lasts hours, or the job is lost (R-REPO-053, R-REPO-054). Check the pods that claim the queue, the status of the repository and quader_mirror_pending_packages. A paused mirror is not reported.
-- alert: QuaderBridgeLeftOn
-  expr: count(quader_build_info{ {{ $ns }},role="web" }) > 0
-  for: 24h
-  labels:
-    severity: warning
-  annotations:
-    summary: A web replica of the upgrade bridge has been running for 24 hours.
-    description: web.enabled is still true, so the web pods stay registered and hold the login secrets (R-HA-064, H-518). Finish the cut, once api, packages and their pools are ready; step 2 with web.routed false moves the edge onto them, step 3 with web.enabled false removes the bridge.
 - alert: QuaderBlobMissing
   expr: sum(increase(quader_storage_blobs_damaged_total{ {{ $ns }},status="missing" }[1h])) > 0
   labels:
@@ -311,5 +303,5 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
 
 {{/* The names of every alert the chart can render, for the check of disabledAlerts. */}}
 {{- define "quader.rules.names" -}}
-{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBridgeLeftOn" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
+{{- toJson (list "QuaderReplicasNotReady" "QuaderDatabaseUnreachable" "QuaderObjectStoreUnreachable" "QuaderObjectStoreUnreachableSingleReplica" "QuaderDatabasePoolSaturated" "QuaderControlConnectionWaits" "QuaderJobsStuck" "QuaderLeaseLost" "QuaderMixedVersions" "QuaderSpoolNearlyFull" "QuaderVulnerabilityDataStale" "QuaderVulnerabilitySyncFailing" "QuaderVulnerabilityRecordsRejected" "QuaderVulnerabilityRecordsInvalid" "QuaderVulnerabilityMaliciousRecordRejected" "QuaderVulnerabilityClaimedNameMalicious" "QuaderVulnerabilityImageScansFailing" "QuaderMirrorFailing" "QuaderMirrorStale" "QuaderBlobMissing" "QuaderGCStale" "QuaderBackupCheckFailed" "QuaderRevocationJournalBacklog" "QuaderRevocationJournalQuarantined" "QuaderValkeyUnavailable" "QuaderValkeyUnavailableSingleReplica" "QuaderValkeySentinelsDegraded" "QuaderValkeyFailoverFlapping" "QuaderValkeyPrimaryDisagreement" "QuaderBackupStale" "QuaderBackupFailed" "QuaderBackupRunningLong" "QuaderBackupGlobalHoldLong" "QuaderBackupSourceDamage" "QuaderBackupVerifyFindings") -}}
 {{- end -}}

@@ -4,7 +4,7 @@ The chart lives in [deploy/helm/quader](../../deploy/helm/quader). This page cov
 it renders, how its values reach the pods, how it is validated and tested, and how to extend it.
 The second chart, `quader-bastion`, has its own section at the end: [The Bastion chart](#the-bastion-chart).
 The requirements are in [ha-and-helm.md](../spec/ha-and-helm.md) (R-HA-002, R-HA-011, R-HA-016, R-HA-019,
-R-HA-027 to R-HA-037, R-HA-042, R-HA-056, R-HA-060 to R-HA-064; the Jobs also R-BAK-012) and [endpoints.md](../spec/endpoints.md) (R-EP-008); the dev profile that installs it is described in
+R-HA-027 to R-HA-037, R-HA-042, R-HA-056, R-HA-060 to R-HA-063; the Jobs also R-BAK-012) and [endpoints.md](../spec/endpoints.md) (R-EP-008); the dev profile that installs it is described in
 [local-profile.md](local-profile.md).
 
 ## Scope
@@ -15,11 +15,11 @@ of being silently ignored.
 
 | In the chart | Not in the chart yet |
 |---|---|
-| `api`, `packages` and `worker` Deployments, always (R-HA-002); path pools, worker pools and endpoint pools per role (R-HA-062, R-EP-008); the bridge `web` with `web.enabled` (R-HA-064); see [The cut into roles](#the-cut-into-roles) | the Gateway the chart creates (`gateway.create`, R-HA-053), `contentOrigin` |
+| `api`, `packages` and `worker` Deployments, always (R-HA-002); path pools, worker pools and endpoint pools per role (R-HA-062, R-EP-008); see [The cut into roles](#the-cut-into-roles) | the Gateway the chart creates (`gateway.create`, R-HA-053), `contentOrigin` |
 | role Services `<fullname>-api` and `<fullname>-packages`, pool Services, ops Service `<fullname>-ops`, `sessionAffinity: None` (R-HA-037) | |
 | PodDisruptionBudget and HorizontalPodAutoscaler per Deployment, topology spread with `nodeTaintsPolicy: Honor` (R-HA-032) | |
 | one NetworkPolicy per Deployment and per Job (migration, backup, restore, post-restore), ingress only (R-HA-042, ADR-154) | |
-| PrometheusRule with 32 alerts, every row of the table of R-HA-045: the sixteen rows of R-HA-045 whose metrics the binary exports, `QuaderRevocationJournalBacklog` and the six alerts of the backup runs (R-BAK-014), the three of the vulnerability scanning, `QuaderMirrorFailing` and `QuaderMirrorStale` (R-OPS-046, Q-OPS-160, Q-OPS-171), `QuaderBridgeLeftOn` (R-VULN-024, Q-HA-92) and `QuaderBlobMissing` (R-HA-024, Q-STOR-152), `metrics.prometheusRule.*` | |
+| PrometheusRule with 35 alerts, every row of the table of R-HA-045: the sixteen rows of R-HA-045 whose metrics the binary exports, `QuaderBackupCheckFailed`, the two of the revocation journal and the six alerts of the backup runs (R-BAK-014), the seven of the vulnerability scanning (R-VULN-024), `QuaderMirrorFailing` and `QuaderMirrorStale` (R-OPS-046, Q-OPS-160, Q-OPS-171) and `QuaderBlobMissing` (R-HA-024, Q-STOR-152), `metrics.prometheusRule.*` | |
 | migration Job as `pre-install,pre-upgrade` hook, with hook ConfigMap and ServiceAccount (R-HA-019); not rendered while `restore.enabled` | |
 | post-restore hook Job `<fullname>-post-restore` with its ServiceAccount, policy and credentials file (R-HA-025 step 4), see [The post-restore Job](#the-post-restore-job) | |
 | backup CronJob `<fullname>-backup` and restore Job `<fullname>-restore`, each with its ServiceAccount and a policy that admits nothing (R-HA-060, R-BAK-012), see [The backup and restore Jobs](#the-backup-and-restore-jobs) | |
@@ -43,7 +43,7 @@ Gaps in what is there:
 
 The chart renders the roles of ADR-153 and ADR-155 ([roadmap](../coverage/roadmap.md#phase-6a--task-areas), WP6a.3). Every template that
 renders something per Deployment ranges over one list, `quader.units` ([_units.tpl](../../deploy/helm/quader/templates/_units.tpl)): a
-map per Deployment with its `name`, `role`, `pool`, `kind` (`main`, `pool`, `endpoint`, `bridge`), effective values `r`, and for a worker
+map per Deployment with its `name`, `role`, `pool`, `kind` (`main`, `pool`, `endpoint`), effective values `r`, and for a worker
 pool its `queues`. The Deployment, its PodDisruptionBudget, HorizontalPodAutoscaler and NetworkPolicy therefore cannot disagree on
 name, labels or selector.
 
@@ -54,9 +54,8 @@ name, labels or selector.
 | Edge | per host the `Prefix` rules `/` and `/api/v1` to `api`, `/api`, `/files`, `/v2`, `/.well-known` to `packages`, and the paths of the path pools before them ([_edge.tpl](../../deploy/helm/quader/templates/_edge.tpl), `quader.edgeRules`); a further endpoint over one role is routed whole, one over both by the rows of its families | R-HA-037, Q-HA-71 |
 | PDB, HPA | one per Deployment; the HPA (`autoscaling/v2`, CPU and memory targets, `metrics`, `behavior`) replaces `spec.replicas` | R-HA-032 |
 | NetworkPolicy | one per Deployment, named as it, a rule per port its pods open; none for egress | R-HA-042, Q-HA-76 |
-| Login secrets | `secrets.oidc[]` and `secrets.breakGlass` in `api` pods only (main, pools, endpoint pools) and the bridge's `web` pods | R-HA-030, Q-HA-79 |
+| Login secrets | `secrets.oidc[]` and `secrets.breakGlass` in `api` pods only (main, pools, endpoint pools) | R-HA-030, Q-HA-79 |
 | Environment | `QUADER_POOL_NAME` on every pool, `QUADER_JOBS_QUEUES` (a JSON list) on a worker pool, `QUADER_JOBS_EXCLUDE_QUEUES` on the main worker beside pools; the two preflight counts on the migration Job | R-HA-030, R-HA-016, Q-HA-82 |
-| Upgrade bridge | three steps, each of which changes either the edge or the backends: `web.enabled: true` also renders `<fullname>-web`, the Service `<fullname>` and the edge `/` (step 1); `web.routed: false` beside it renders the edge of the target shape while the bridge keeps running (step 2, `quader.bridgeRouted` in `_edge.tpl`); `web.enabled: false` removes the bridge (step 3). The endpoint pools of the roles and a two-role endpoint's `<fullname>-api-ep-<name>` render beside the bridge, the BackendTLSPolicies cover `<fullname>` and the role Services for the whole bridge (`quader.edgeBackendServices`); a `lookup` guard refuses the upgrade that moves the edge (the Ingress `<fullname>` or an endpoint Service still on the bridge) while a serving Deployment of the target shape (api, packages, path pools, endpoint pools) is not ready, and step 3 while the edge is still on the bridge; `QuaderBridgeLeftOn` reports a bridge left on | R-HA-064, Q-HA-73, Q-HA-90, Q-HA-92, Q-HA-130, Q-HA-132 |
 
 A **pool** is the role's values with the entry's keys on top, key by key (`quader.poolValues`, so `false` and `0` override, and
 `autoscaling` is inherited, Q-HA-84). A path pool opens the ports of the endpoints without a pool, like the main Deployment, but
@@ -65,17 +64,14 @@ with `ep-`; `quader.validatePools` checks names, paths inside the role's familie
 
 The **connection budget** (R-HA-016): `quader.connectionCounts` sums `maxReplicas` (or `replicaCount`) plus `maxSurge` over every
 Deployment, serving roles and worker apart, and passes `QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS` and
-`..._WORKER_REPLICAS` to the migration Job; `NOTES.txt` prints the resulting `max_connections` (231 with the defaults, 311 while the
-bridge runs). The key `expected_serving_replicas` is the binary's (WP6a.1); until it lands, `quader admin config validate` over
+`..._WORKER_REPLICAS` to the migration Job; `NOTES.txt` prints the resulting `max_connections` (231 with the defaults). The key `expected_serving_replicas` is the binary's (WP6a.1); until it lands, `quader admin config validate` over
 the rendered environment names it as unknown.
 
 A path pool takes `routed: false` to render without its route, the first of two applies that add a pool (Q-HA-90). With an autoscaler a Deployment renders the live `spec.replicas` read through `lookup`, so switching the autoscaler on keeps the replicas (Q-HA-91). A provider of `config.auth.oidc.providers` that has a client secret and no entry in `secrets.oidc` fails the render (Q-HA-93).
 
-The **guard** of the bridge ([_validate_roles.tpl](../../deploy/helm/quader/templates/_validate_roles.tpl)) reads Deployments with
-`lookup`, which returns nothing under `helm template` and in these tests. The chart test checks that the rendering does not
-depend on it; the refusal is verified against a cluster (the upgrade e2e test, `helm upgrade --dry-run=server`), see Q-HA-86. While
-the bridge runs, its `web` pods hold the secrets of both roles
-([H-518](../security/roles-and-trust-boundaries.md#h-518--the-bridge-and-the-development-role-hold-both-halves-of-the-cut)).
+The chart renders neither `--role web` nor `--role all`; the bridge of the upgrade from the shape before the cut, with its values
+`web.*`, its guard and its alert, is gone, and the schema refuses the key `web`
+([Q-HA-315](../spec/ha-and-helm.md#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests)).
 
 The HTTPRoute of R-HA-038 loops over the same table, see [The HTTPRoute](#the-httproute).
 
@@ -99,7 +95,7 @@ deploy/helm/quader/
 │   ├── endpoints.yaml          two further endpoints on the main packages pods, own Ingress classes, certificates by SNI
 │   ├── endpoints-pool.yaml     an endpoint with a pool of its own
 │   ├── roles-pools.yaml        a path pool of api and of packages, two worker pools, an autoscaler, a mixed endpoint with pools
-│   ├── bridge.yaml             web.enabled: the first step of the upgrade across the cut
+
 │   └── s3-provisioner.yaml     bucket, region, endpoint and credentials from one provisioner Secret, the backup on with a read-only login
 └── templates/
     ├── _helpers.tpl        names, labels, image, byte and duration parsing, spool budget, config
@@ -108,13 +104,13 @@ deploy/helm/quader/
     ├── _validate.tpl       fail-fast validation (R-HA-029), endpoint validation (R-EP-008)
     ├── _units.tpl          the Deployments as data (quader.units), surface roles, endpoints per pod, replica counts
     ├── _edge.tpl           the edge's path rules (quader.edgeRules), read by the Ingresses and the BackendTLSPolicies
-    ├── _validate_roles.tpl roles, pools, autoscalers, spool and memory budgets, the bridge guard
+    ├── _validate_roles.tpl roles, pools, autoscalers, spool and memory budgets
     ├── _deployment.tpl     one Deployment of a unit
     ├── _endpoints.tpl      endpoint defaults, quader.yaml block, mounts, S3 settings from a Secret
     ├── _notes.tpl          the text of NOTES.txt
     ├── validate.yaml       renders nothing; includes the validation
     ├── deployments.yaml    one Deployment per unit
-    ├── services.yaml       the role and pool Services, <fullname> in the bridge, <fullname>-ops
+    ├── services.yaml       the role and pool Services, <fullname>-ops
     ├── pdb.yaml, hpa.yaml  one PodDisruptionBudget and, with autoscaling.enabled, one HorizontalPodAutoscaler per Deployment
     ├── endpoint-services.yaml, endpoint-ingress.yaml   per further endpoint
     ├── NOTES.txt           endpoints and warnings
@@ -147,9 +143,8 @@ deploy/helm/quader/
 | Deployment | `<fullname>-api`, `<fullname>-packages` | `quader serve --role api` / `--role packages`; ports `http` 8080 and `ops` 8081 (and the ports of the further endpoints they serve) |
 | Deployment | `<fullname>-worker` | `quader serve --role worker`; port `ops` 8081 only |
 | Deployment, Service (path pools only) | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>`, `<fullname>-worker-<pool>` | per entry of `api.pools`, `packages.pools`, `worker.pools` |
-| Deployment, Service | `<fullname>-web`, `<fullname>` | `web.enabled` only: `--role web`, the bridge of R-HA-064 |
 | Service | `<fullname>-api`, `<fullname>-packages` | port `http` 8080, select the main pods of their role only, `sessionAffinity: None` |
-| Service | `<fullname>-ops` | port `ops` 8081, selects every pod labelled `quader/serve: "true"` (`api`, `packages`, `worker`, `web`) |
+| Service | `<fullname>-ops` | port `ops` 8081, selects every pod labelled `quader/serve: "true"` (`api`, `packages`, `worker`) |
 | ConfigMap | `<fullname>-config` | `quader.yaml`, mounted at `/etc/quader/quader.yaml` |
 | ServiceAccount | `<fullname>` | `automountServiceAccountToken: false` |
 | PodDisruptionBudget | one per Deployment, named as it | `maxUnavailable: 1`, `unhealthyPodEvictionPolicy: AlwaysAllow` |
@@ -158,7 +153,7 @@ deploy/helm/quader/
 | ConfigMap, ServiceAccount (hook, weight -10) | `<fullname>-migrate` | same `quader.yaml` as `<fullname>-config` |
 | Job (hook, weight 0) | `<fullname>-migrate` | `quader migrate up`, which also applies `config.authz.role_bindings` (R-AUTHZ-010; `TestR_AUTHZ_010_DeclaredRoleBindingsReachTheMigrationJob`); `backoffLimit` 2, deadline 1800 s, TTL 86400 s |
 | Service, Ingress; pool Deployments, PodDisruptionBudgets, HorizontalPodAutoscalers `<fullname>-<role>-ep-<name>` | `<fullname>-ep-<name>` (and `-api`) | per further endpoint, see [Endpoints](#endpoints) |
-| Ingress | `<fullname>` | `ingress.enabled`; per host the path rules of R-HA-037 (all `Prefix`, port name `http`), `/` to `<fullname>` in the bridge; backend-over-TLS annotations per controller, see [TLS](#tls) |
+| Ingress | `<fullname>` | `ingress.enabled`; per host the path rules of R-HA-037 (all `Prefix`, port name `http`); backend-over-TLS annotations per controller, see [TLS](#tls) |
 | BackendTLSPolicy | one per Service the default Ingress names, named as the Service | `tls.backendTLSPolicy.enabled` only; Gateway API CRD, see [TLS](#tls) |
 | anything | from `extraObjects` | |
 
@@ -166,8 +161,8 @@ The chart renders no Secret, no Role or RoleBinding, no PersistentVolumeClaim, n
 no CRD (R-HA-028, R-HA-033, R-HA-061); the tests check each.
 
 Labels on every object: `app.kubernetes.io/name`, `instance`, `version`, `managed-by`,
-`component` (`api`, `packages`, `worker`, `web`, `migrate`, `ops`, `config`, `ingress`, `serviceaccount`) and `helm.sh/chart`.
-The pods of `api`, `packages`, `worker` and `web` also carry `quader/pool` (selector label: the pool's name, `ep-<name>` for an
+`component` (`api`, `packages`, `worker`, `migrate`, `ops`, `config`, `ingress`, `serviceaccount`) and `helm.sh/chart`.
+The pods of `api`, `packages` and `worker` also carry `quader/pool` (selector label: the pool's name, `ep-<name>` for an
 endpoint pool, the empty value for the main Deployments, so that a pool never overlaps their selectors or a role Service's;
 selector labels are immutable) and `quader/serve: "true"` (what the ops Service selects).
 
@@ -238,12 +233,12 @@ never as an environment variable (the one exception is the non-secret S3 setting
 | `secrets.valkeySentinel` | `username` (default: none), `password` | `/var/run/secrets/quader/valkey-sentinel/` | `valkey.sentinel.username_file`, `valkey.sentinel.password_file` | every Deployment |
 | `secrets.valkeyCA` | `ca.crt` | `/var/run/secrets/quader/valkey-ca/` | `valkey.tls.ca_file` | every Deployment |
 | `secrets.valkeyClientCert` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/valkey-client/` | `valkey.tls.cert_file`, `valkey.tls.key_file` | every Deployment |
-| `secrets.breakGlass` | `password` (the Secret's `key`) | `/var/run/secrets/quader/break-glass/` | `auth.break_glass.password_file` (also refused inside `config`); without the Secret `auth.break_glass.enabled: false` | `api` pods (main, pools, endpoint pools) and the bridge's `web`; never `packages`, `worker`, the Job or backup pods (R-AUTH-014, R-AUTH-042, Q-HA-79) |
-| `secrets.oidc[]` (`providerId`, `existingSecret`, `key`) | `client-secret` (the entry's `key`) | `/var/run/secrets/quader/oidc-<providerId>/` | `auth.oidc.providers.<providerId>.client_secret_file` (refused inside `config` for a listed provider) | `api` pods and the bridge's `web` only (R-AUTH-004, R-AUTH-042, Q-HA-79) |
+| `secrets.breakGlass` | `password` (the Secret's `key`) | `/var/run/secrets/quader/break-glass/` | `auth.break_glass.password_file` (also refused inside `config`); without the Secret `auth.break_glass.enabled: false` | `api` pods (main, pools, endpoint pools); never `packages`, `worker`, the Job or backup pods (R-AUTH-014, R-AUTH-042, Q-HA-79) |
+| `secrets.oidc[]` (`providerId`, `existingSecret`, `key`) | `client-secret` (the entry's `key`) | `/var/run/secrets/quader/oidc-<providerId>/` | `auth.oidc.providers.<providerId>.client_secret_file` (refused inside `config` for a listed provider) | `api` pods only (R-AUTH-004, R-AUTH-042, Q-HA-79) |
 | `secrets.metricsToken` (`config.metrics.auth: static`) | `token` | `/var/run/secrets/quader/metrics/` | `metrics.bearer_token_file` | every Deployment |
 | `trustedCA` (`existingSecret` or `existingConfigMap`, `keys`) | the names in `trustedCA.keys` (default `ca-bundle.crt`) | `/etc/quader/ca/` | appended to `proxy.outbound.tls.ca_files` after the operator's own; with `useForObjectStore` the one file is `storage.s3.ca_file` (refused with `secrets.s3CA`) | every pod of the release: the Deployments and all Jobs ([Q-HA-272](../spec/ha-and-helm.md#q-ha-272--the-trusted-ca-bundle-is-mounted-in-every-pod-of-the-release-its-files-are-appended-to-ca_files-and-one-file-can-be-the-object-stores-ca)); the entry of `quader.secretMounts` named `trusted-ca` has `configMap` instead of `secret` for a ConfigMap source |
 | `tls.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls/` | `server.tls.certificates[0]` | the pods that load the pair, see [Mounts follow the listeners](#mounts-follow-the-listeners); never the Job |
-| `tls.clientCA.secretName` | `ca.crt` | `/var/run/secrets/quader/tls-client-ca/` | `server.tls.client_ca_file`, `server.tls.client_auth` | the pods that open :8080 (`api`, `packages`, their path pools, the bridge's `web`), not an endpoint pool |
+| `tls.clientCA.secretName` | `ca.crt` | `/var/run/secrets/quader/tls-client-ca/` | `server.tls.client_ca_file`, `server.tls.client_auth` | the pods that open :8080 (`api`, `packages`, their path pools), not an endpoint pool |
 | `tls.ops.secretName` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/tls-ops/` | `ops_tls.certificates[0]`, `ops_tls.inherit: false` | every pod that opens the operations listener (every Deployment) |
 | `endpoints.<name>.tls.existingSecret`, each of `extraSecrets` | `tls.crt`, `tls.key` | `/var/run/secrets/quader/endpoints/<name>/<n>/` (`n` = position in `tls.certificates`) | `server.endpoints.<name>.tls.certificates` | the pods that serve the endpoint (the main Deployments of the roles its surface holds, or its pools) |
 | `endpoints.<name>.tls.clientCaSecret` | `ca.crt` | `/var/run/secrets/quader/endpoints/<name>/client-ca/` | `server.endpoints.<name>.tls.client_ca_file` | the pods that serve the endpoint |
@@ -291,11 +286,11 @@ What the chart does with them:
   see the update. Only the pods that load a pair mount it, see below; the migration Job serves no listener (R-HA-030).
 - <a id="mounts-follow-the-listeners"></a>**Mounts follow the listeners.** The private key of `tls.secretName` is mounted
   into a pod only when its process loads that pair (`quader.secretMounts`, `_secrets.tpl`): the pods that open :8080
-  (`api`, `packages`, their path pools and the bridge's `web`: the client listener of the default endpoint), a pod that serves a further endpoint without a pair of its own, and every pod
+  (`api`, `packages` and their path pools: the client listener of the default endpoint), a pod that serves a further endpoint without a pair of its own, and every pod
   whose operations listener inherits it, which is every pod while `tls.ops.secretName` is empty. With `tls.ops`, the
   `worker` and an endpoint pool whose endpoints each bring `tls.existingSecret` hold no copy of the client listener's key;
   **set `tls.ops` when you run endpoint pools** (the residual credentials of a pool are H-57 in
-  [endpoints.md](../spec/endpoints.md)). The client CA (`tls.clientCA`) mounts into the main `web` pods only, because the
+  [endpoints.md](../spec/endpoints.md)). The client CA (`tls.clientCA`) mounts into the main `api` and `packages` pods only, because the
   operations listener never carries it and a further endpoint has its own `clientCaSecret`. (A path pool opens :8080 and mounts it too.)
 - **Config.** `server.tls` (and `ops_tls`) are chart-managed keys: setting `config.server.tls` or
   `config.ops_tls` fails while `tls.enabled` is true. `checksum/config` follows `min_version` and
@@ -343,7 +338,7 @@ The upstream project retired ingress-nginx in March 2026 (see [ha-and-helm.md](.
 R-HA-037); it stays supported here because installations still run it.
 
 Gateway API: `tls.backendTLSPolicy.enabled: true` renders a `BackendTLSPolicy`
-(`gateway.networking.k8s.io/v1`) per Service the default Ingress names (`<fullname>-api`, `<fullname>-packages`, the path pools' Services; `<fullname>` in the bridge), named as the Service and targeting its port `http`, with
+(`gateway.networking.k8s.io/v1`) per Service the default Ingress names (`<fullname>-api`, `<fullname>-packages`, the path pools' Services), named as the Service and targeting its port `http`, with
 `validation.hostname` and a `caCertificateRefs` entry naming a ConfigMap. Gateway API takes a
 ConfigMap there, not a Secret, so the chart cannot reference the Secret's `ca.crt`; you create
 the ConfigMap (a cert-manager `trust-manager` Bundle does it). The chart renders no HTTPRoute yet (Q-HA-81),
@@ -360,7 +355,7 @@ keys, and the keys `default` may not set (`port`, `baseUrl`, `tls`, `pool`, `ing
 |---|---|---|
 | `port`, `baseUrl`, … | `server.endpoints.<name>` in `quader.yaml` | `listen: ":<port>"`; `pool: ep-<name>` when `pool.enabled`; keys that are unset render their defaults (a further endpoint: `surface: [packages]`, `auth` bound SAT only, `exposure: rules`, `cache_fill: false`, `rate_limit_class: external`, `replica_header: never`, `max_in_flight: 1024`) |
 | | Service `<fullname>-ep-<name>` and, for a surface over both roles, `<fullname>-api-ep-<name>` | port `ep-<name>` = `port` (target port numeric), `appProtocol: https` under `tls.enabled`, `sessionAffinity: None`; the first selects the pods of the role of the surface's `packages` and `files` families (`api` when it holds neither), the second the `api` pods, each the main Deployment or the pool; `service.type`, `annotations`, `loadBalancerSourceRanges` (Q-EP-71, `quader.surfaceRoles`) |
-| `pool.enabled` | Deployment, PodDisruptionBudget, HorizontalPodAutoscaler `<fullname>-packages-ep-<name>` and, with `api` families, `<fullname>-api-ep-<name>` | `serve --role packages` / `--role api`, `QUADER_POOL_NAME=ep-<name>`, label `quader/pool: ep-<name>`, the role's values with the keys of `pool` on top (merged key by key, so `false` and `0` do override); only these Deployments open the port, the main pods do not (Q-EP-70). In the bridge: `<fullname>-web-ep-<name>` with `--role web` |
+| `pool.enabled` | Deployment, PodDisruptionBudget, HorizontalPodAutoscaler `<fullname>-packages-ep-<name>` and, with `api` families, `<fullname>-api-ep-<name>` | `serve --role packages` / `--role api`, `QUADER_POOL_NAME=ep-<name>`, label `quader/pool: ep-<name>`, the role's values with the keys of `pool` on top (merged key by key, so `false` and `0` do override); only these Deployments open the port, the main pods do not (Q-EP-70). |
 | `ingress.enabled` | Ingress `<fullname>-ep-<name>` | `className`, per host (the host of `baseUrl`, `hosts`, then `wildcardHost`) `/` to the one Service when the surface lies within one role, else the rows of R-HA-037's table whose families it holds (`/api/v1` and `/` to the `-api` Service), all `Prefix`, backend by port number, `ingress.tls` as given; backend-over-TLS annotations from `ingress.backendTLS`, any key of the endpoint's own `ingress.backendTLS` winning; the HAProxy verified name is the endpoint Service's `<name>.<ns>.svc`, which the endpoint's certificate must cover |
 | `networkPolicy.enabled` (global) | a rule in the policy of every Deployment that opens the port | its port from `networkPolicy.from` (empty = anywhere); an endpoint pool's policy holds that rule and 8081, no 8080 (Q-HA-76) |
 | `tls.existingSecret`, `extraSecrets`, `clientCaSecret` | mounts and `tls.certificates` | position 0 is `existingSecret`; without it and with `extraSecrets`, position 0 is the listener pair of `tls.secretName`; without any, no block is rendered and the endpoint serves `server.tls` |
@@ -395,8 +390,8 @@ exactly one port.
 
 | Policy | Admits |
 |---|---|
-| `<fullname>-api`, `<fullname>-packages`, each path pool, the bridge's `<fullname>-web` | TCP 8080 from `networkPolicy.ingress.http.from` (empty = from anywhere, so any ingress controller works wherever it runs); the port of every further endpoint the pods open, from that endpoint's `networkPolicy.from` (empty = from anywhere); TCP 8081 only from `networkPolicy.ingress.ops.from` (default: namespace `monitoring`) and `networkPolicy.probeCIDRs` |
-| each endpoint pool (`<fullname>-packages-ep-<name>`, `<fullname>-api-ep-<name>`, `<fullname>-web-ep-<name>`) | the endpoint's port as above and 8081; no 8080 |
+| `<fullname>-api`, `<fullname>-packages`, each path pool | TCP 8080 from `networkPolicy.ingress.http.from` (empty = from anywhere, so any ingress controller works wherever it runs); the port of every further endpoint the pods open, from that endpoint's `networkPolicy.from` (empty = from anywhere); TCP 8081 only from `networkPolicy.ingress.ops.from` (default: namespace `monitoring`) and `networkPolicy.probeCIDRs` |
+| each endpoint pool (`<fullname>-packages-ep-<name>`, `<fullname>-api-ep-<name>`) | the endpoint's port as above and 8081; no 8080 |
 | `<fullname>-worker`, each worker pool | TCP 8081 as above; a worker listens on no client port |
 | `<fullname>-migrate` | nothing; `ingress: []` |
 
@@ -430,14 +425,13 @@ tests in `chart_test.go` assert both, row by row.
 | endpoints: a `port` that is missing, 8080, 8081 or another endpoint's; an invalid name or a Service name over 63 characters; a missing or non-origin `baseUrl`; a host in two endpoints, a wildcard host that covers another endpoint's host or is shared; an invalid wildcard host; `ui` in a further endpoint's `surface`; `extraSecrets`, `clientCaSecret`, `existingSecret` without `tls.enabled`; a pool below two replicas or without a budget under `enforce`; `config.server.endpoints` set (managed) | implemented, each naming `endpoints.<name>.<key>` |
 | `credentials.source: static` without `secrets.s3.existingSecret` | implemented |
 | `secrets.encryption.existingSecret` or `.keys` empty (prints the creation command of R-HA-027) | implemented |
-| `highAvailability.enforce` with fewer than 2 replicas (`replicaCount`, or the autoscaler's `minReplicas`), a disabled PDB, a host spread that is not `DoNotSchedule` or lacks `nodeTaintsPolicy: Honor` | implemented, per Deployment (role, pool, endpoint pool, bridge) and for custom constraints |
+| `highAvailability.enforce` with fewer than 2 replicas (`replicaCount`, or the autoscaler's `minReplicas`), a disabled PDB, a host spread that is not `DoNotSchedule` or lacks `nodeTaintsPolicy: Honor` | implemented, per Deployment (role, pool, endpoint pool) and for custom constraints |
 | `api`, `packages` or `worker` below 1 replica | implemented, naming `<role>.replicaCount` (`.autoscaling.minReplicas`) |
 | an autoscaler without a metric, or whose `maxReplicas` is below `minReplicas` | implemented |
 | pools: a repeated name or path prefix or queue, a name starting `ep-` or too long, a path outside the families of the role or equal to the role's own prefixes, a queue that does not exist | implemented, naming `<role>.pools[<name>]` and the value |
-| while `<fullname>-web` exists and the edge is still on the bridge (the Ingress `<fullname>` routes to the Service `<fullname>`, or a `<fullname>-ep-<name>` selects the `web` pods): the edge of the target shape (`web.enabled: false` or `web.routed: false`) while `<fullname>-api`, `-packages` or a pool is missing or not ready, and `web.enabled: false` at all; with no edge to read, the target shape while `<fullname>-api` or `-packages` does not exist | implemented with `lookup` (`quader.bridgeFacts`) and a decision on those facts (`quader.bridgeGuard`, tested with given facts in `TestRolesBridge`, Q-HA-132); inert under `helm template` |
-| `config.storage.upload.max_size` larger than the spool budget of a `packages` (or `web`) Deployment; the UI's upload limit (`config.ui.deploy.max_upload_bytes`, `config.storage.upload.max_size` when 0) larger than that of an `api` Deployment | implemented, naming both values |
+| `config.storage.upload.max_size` larger than the spool budget of a `packages` Deployment; the UI's upload limit (`config.ui.deploy.max_upload_bytes`, `config.storage.upload.max_size` when 0) larger than that of an `api` Deployment | implemented, naming both values |
 | `terminationGracePeriodSeconds` below `config.health.shutdown_drain_delay` + 15 s | implemented, per Deployment |
-| a serving Deployment (`api`, `packages`, `web`, a path pool or an endpoint pool) without `resources.limits.memory`, or with a limit that admits fewer than 64 requests (Q-HA-70); a limit that is not an integer with an optional binary or decimal unit | implemented, naming the limit and the values the request bytes come from |
+| a serving Deployment (`api`, `packages`, a path pool or an endpoint pool) without `resources.limits.memory`, or with a limit that admits fewer than 64 requests (Q-HA-70); a limit that is not an integer with an optional binary or decimal unit | implemented, naming the limit and the values the request bytes come from |
 | Sentinel mode without addresses or `primary_name`; fewer than 3 addresses under `enforce`; standalone under `enforce` | implemented |
 | `secrets.valkey.existingSecret` empty | implemented |
 | `secrets.oidc[]`: an invalid or repeated `providerId`, an empty `existingSecret`, a `providerId` without a provider of that ID in `config.auth.oidc.providers`, `client_secret_file` set in `config` for it; `config.auth.break_glass.password_file` set | implemented, each naming the value |
@@ -455,7 +449,7 @@ tests in `chart_test.go` assert both, row by row.
 | the target on the blob store's bucket and endpoint (the endpoints compared as the binary does, no scheme meaning https) without `allow_same_bucket`, or with one prefix containing the other; for any configured target, the backup on or off, because every replica's configuration check refuses it too | implemented, naming both locations |
 | `config.backup.target.credentials.source: static` without `secrets.backupTarget.existingSecret` while `backup.enabled` or `restore.enabled` renders a Job that mounts it | implemented, naming both |
 | `postRestore.enabled` without an RFC 3339 `postRestore.restoredTo`, together with `restore.enabled`, or with `journalCredentials.source: static` and no `secrets.journalReader.existingSecret`; `skipRevocationJournal` with a credentials source | implemented, naming the values |
-| `restore.enabled` without `restore.backupId` (its form is the command's to check); with a replica count above 0 or an autoscaler on any role, pool, endpoint pool or the bridge | implemented, naming `restore.enabled` and the value; the replica minimums do not apply meanwhile (Q-HA-148) |
+| `restore.enabled` without `restore.backupId` (its form is the command's to check); with a replica count above 0 or an autoscaler on any role, pool or endpoint pool | implemented, naming `restore.enabled` and the value; the replica minimums do not apply meanwhile (Q-HA-148) |
 | a chart-managed key of the backup set inside `config` (`backup.manual_run`, `backup.target.ca_file`, the three credential files) | implemented |
 | pooler (`session_host`, control endpoint), the Gateway the chart creates, `contentOrigin` | with those features |
 | `gateway.enabled` without the Gateway API (`.Capabilities` lacks `gateway.networking.k8s.io/v1/HTTPRoute`; with `helm template` pass `--api-versions gateway.networking.k8s.io/v1/HTTPRoute`), without `gateway.parentRefs`, or with `gateway.timeouts.backendRequest` above `gateway.timeouts.request` (a request timeout of `0s` is no timeout and exceeds nothing); `metrics.serviceMonitor.namespace` other than the release namespace while `tls.enabled` (the CA Secret is read from the ServiceMonitor's namespace) | implemented; a timeout that is no Gateway API duration is the schema's |
@@ -468,7 +462,7 @@ tests in `chart_test.go` assert both, row by row.
 `gateway.enabled` renders one HTTPRoute `<fullname>` ([httproute.yaml](../../deploy/helm/quader/templates/httproute.yaml), R-HA-038) for the
 default endpoint: `gateway.parentRefs` (required), `hostnames` (default the host of `config.server.base_url`), and one rule per row of
 `quader.edgeRules`, the table the Ingress reads, each a `PathPrefix` match to the Service of its role on `service.port`, with
-`gateway.timeouts` and `gateway.filters` on every rule and `gateway.extraRules` appended. In the bridge the one rule is `/` to `<fullname>`.
+`gateway.timeouts` and `gateway.filters` on every rule and `gateway.extraRules` appended.
 The Ingress and the HTTPRoute may run together. The BackendTLSPolicies are `tls.backendTLSPolicy`'s and do not depend on `gateway.enabled`.
 The check for the Gateway API is a capability, so every offline render of a set with `gateway.enabled` passes
 `--api-versions gateway.networking.k8s.io/v1/HTTPRoute`: `templateArgs` in the chart tests and [lint.sh](../../test/chart/lint.sh) do, and
@@ -513,7 +507,7 @@ the database with `verify-full` and `secrets.databaseCA` and `databaseClientCert
 reaches the files; whether a running process re-reads a CA is the binary's, and a Job lives hours at most.
 
 **Restore.** While `restore.enabled` is set the chart renders no migration Job (and its ConfigMap, ServiceAccount; the policy stays, without
-the hook annotations), suspends the CronJob and refuses a replica or an autoscaler on any role, pool, endpoint pool or the bridge, naming
+the hook annotations), suspends the CronJob and refuses a replica or an autoscaler on any role, pool or endpoint pool, naming
 `restore.enabled` and the value. The replica minimums (at least one, at least two under `highAvailability.enforce`) do not apply meanwhile,
 because nothing could satisfy both (Q-HA-148). The operator's sequence is in R-HA-060; the cluster side of it (a drain during the copy, the
 restored installation) is the end-to-end suite's.
@@ -543,7 +537,7 @@ keeps the old keyspace until it restarts.
 | `postRestore.journalCredentials.source` | `runtime`: no file, the replay lists with the blob store's credential. `default`: the chart renders `credentials.yaml` (`source: default`) into the ConfigMap `<fullname>-post-restore` and passes `--credentials-file`, so the identity of the Job's ServiceAccount lists object versions (`postRestore.serviceAccount.annotations`). `static`: the same file names `secrets.journalReader` (`access-key-id`, `secret-access-key`), mounted in this Job only |
 | `postRestore.backoffLimit`, `activeDeadlineSeconds`, `terminationGracePeriodSeconds`, `resources`, `podAnnotations`, `extraEnv`, `serviceAccount.*` | as for the restore Job |
 
-The Job is named `<fullname>-post-restore-<8 hex digits of the sha256 of restoredTo>` and carries the annotation `quader/restored-to`, so the Jobs of two restore points stay visible side by side; a repeat of the same point is a Job of the same name, which Helm replaces and the command answers without running its steps again (Q-HA-161), and NOTES prints a reminder to set `postRestore.enabled` back to false. Every role, pool, endpoint pool and the bridge must be at zero (the rule of `restore.enabled`, H1 of the audit): the hook runs after the Deployments are applied, so a replica would serve the restored database before the journal replay.
+The Job is named `<fullname>-post-restore-<8 hex digits of the sha256 of restoredTo>` and carries the annotation `quader/restored-to`, so the Jobs of two restore points stay visible side by side; a repeat of the same point is a Job of the same name, which Helm replaces and the command answers without running its steps again (Q-HA-161), and NOTES prints a reminder to set `postRestore.enabled` back to false. Every role, pool and endpoint pool must be at zero (the rule of `restore.enabled`, H1 of the audit): the hook runs after the Deployments are applied, so a replica would serve the restored database before the journal replay.
 
 The scope `post-restore` of `quader.secretMounts` mounts the owner login (`secrets.databaseMigration`, else `secrets.database`), the CA and
 client certificate of the database, the blob store's keys and CA, and the journal credential; no Valkey Secret, no key ring, nothing of the
@@ -569,7 +563,7 @@ off. A name of the six stays a valid entry of `disabledAlerts` either way. The o
 `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`,
 `QuaderMixedVersions`, `QuaderSpoolNearlyFull` (rows of R-HA-045's table), `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`,
 `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious` (R-VULN-024, Q-VULN-122), `QuaderMirrorFailing`, `QuaderMirrorStale` (R-OPS-046, Q-OPS-160, Q-OPS-167),
-`QuaderBridgeLeftOn` (a `web` replica registered for 24 hours, Q-HA-92), `QuaderBlobMissing` (a read found the object of a blob missing within the
+`QuaderBlobMissing` (a read found the object of a blob missing within the
 hour, R-HA-024, Q-STOR-152), `QuaderGCStale`, `QuaderBackupCheckFailed` (R-HA-023), `QuaderRevocationJournalBacklog` (R-HA-054), `QuaderRevocationJournalQuarantined` (a row set aside, Q-HA-162), `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`,
 `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement` (rows of the table), `QuaderBackupStale`,
 `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage` and `QuaderBackupVerifyFindings` (R-BAK-014). Severities are in the spec's table (`critical`:
@@ -600,7 +594,7 @@ spool gauges are `quader_spool_used_bytes` and `quader_spool_free_bytes`, the po
 for an expression that reads a `quader_*` name no code under `internal/` registers.
 
 - `QuaderReplicasNotReady` reads kube-state-metrics: `min by (deployment)` of `kube_deployment_status_replicas_available` for the Deployments
-  `<fullname>-(api|packages|worker|web)(-.*)?`, the main Deployments, their pools (`<fullname>-<role>-<pool>`) and the bridge; a Deployment
+  `<fullname>-(api|packages|worker)(-.*)?`, the main Deployments and their pools (`<fullname>-<role>-<pool>`); a Deployment
   that is scaled to one replica by choice fires too.
 - Every selector carries `namespace="<release namespace>"`, so two installations in one Prometheus do not blend (Q-VULN-55). A scrape
   through the Prometheus operator always sets that label.
@@ -645,13 +639,12 @@ is where the coverage generator reads the IDs from.
 | `R-HA-043` (`TestR_HA_043_TrustedCA`) | the bundle of a Secret or a ConfigMap is mounted without `subPath` at `/etc/quader/ca/` in every Deployment and Job, its files follow the operator's `ca_files`, `useForObjectStore` sets `storage.s3.ca_file`, PostgreSQL's CA stays apart, the refusals name the value |
 | `R-HA-050` (`TestR_HA_050_SizingProfiles`) | each file of `profiles/` renders on [operator-minimum.yaml](../../test/chart/testdata/operator-minimum.yaml) and the rendered replicas, autoscalers, resources, spool and `max_conns` equal the row of the table in the specification |
 | `R-HA-028` | lint passes for every set; no Secret, RBAC, CRD or subchart; names follow the fullname rule; standard labels |
-| `R-HA-002` | every Deployment runs the `--role` its name says (`api`, `packages`, `worker`; `web` only with the bridge), never `all`; `api`/`packages`/`worker` replicas below 1 fail naming the key; each role Service selects the main pods of its role; the pool label is in the selectors |
+| `R-HA-002` | every Deployment runs the `--role` its name says (`api`, `packages`, `worker`), never `web` or `all`; `api`/`packages`/`worker` replicas below 1 fail naming the key; each role Service selects the main pods of its role; the pool label is in the selectors |
 | `R-HA-002`, `R-HA-028`, `R-HA-062` (`TestRolesDeployments`) | Deployment, PodDisruptionBudget and NetworkPolicy per role, pool and endpoint pool; component and pool labels; every selector selects the pods of its Deployment and no other; the queue variables (JSON lists) on the right Deployments; pool inheritance; the autoscaler leaves out `spec.replicas`; the connection counts and the budget in the notes |
 | `R-HA-002`, `R-HA-028` (`TestRolesServices`) | each Service selects the pods of exactly its Deployment, sessionAffinity None, ports; the container ports of every Deployment |
 | `R-HA-037`, `R-HA-062`, `R-EP-008` (`TestRolesEdge`) | the six fixed `Prefix` rules per host, the pool paths before them, a further endpoint whole or by the rows of its families, a mixed surface opens its port on both main Deployments |
 | `R-HA-042` (`TestRolesNetworkPolicy`) | in every value set: ingress only, no `egress`, every rule one port, no empty `from`; per Deployment the ports it admits and their peers; the default policies |
 | `R-HA-029`, `R-HA-062` (`TestRolesValidation`) | every pool, autoscaler and spool row fails and names the value |
-| `R-HA-064` (`TestRolesBridge`) | `web.enabled` renders `quader-web` (`--role web`), the Service `quader`, the edge `/`, the web endpoint pool, policies; nothing of it without; step 2 (`web.routed: false`) keeps every Deployment and Service of step 1 and step 3 moves no route; a Service step 2 routes to exists in step 1; the BackendTLSPolicies of the bridge; the notes name the step; the guard's decision for given facts of the cluster (`bridgeGuardOf`: the edge on the bridge or moved, a target not ready or missing, step 3 before step 2, no readable edge); the rendering does not depend on the guard |
 | `R-HA-061` | no `ReadWriteMany`, `ReadOnlyMany`, PVC, StatefulSet, `volumeClaimTemplates`, hostPath; a `ReadWriteMany` spool fails schema validation; only the spool and `/tmp` are writable |
 | `R-HA-029` | one subtest per implemented row fails and names the value; the schema refuses unknown keys and wrong types |
 | `R-HA-029` and `R-HA-027` | without the encryption Secret the error prints the `kubectl create secret` command |
@@ -668,12 +661,12 @@ is where the coverage generator reads the IDs from.
 | `R-VULN-025` (`TestR_VULN_025_SpoolHoldsOneArchive`) | the worker spool must hold one archive: the defaults pass, a larger `max_archive_size` fails naming both values (also in mode `repository`), the headroom counts, mode `off` and a disabled scanning are not checked, the worker's `QUADER_STORAGE_SPOOL_MAX_BYTES` follows its own `sizeLimit` |
 | `Q-VULN-145` (`TestQ_VULN_145_SpoolHoldsTheImageScanning`) | the worker spool budget must hold the image scanning: the defaults pass (8Gi, a budget of 6GiB against 5.5GiB), a smaller `sizeLimit` fails naming `max_image_size` and `worker.spool.sizeLimit`, the sum is exact to the MiB, a larger `max_image_size` and the headroom count, the pool that claims `vuln` is the one checked, images or scanning off is not checked |
 | `R-VULN-025` (`TestR_VULN_025_ConfigurationPassesThrough`) | the `vulnerabilities` section reaches `quader.yaml` as set; `ci/monitoring.yaml` passes `quader admin config validate` with the other sets |
-| `R-VULN-024` (`TestR_VULN_024_PrometheusRuleValues`) | no rule by default; the alerts (the three of the vulnerability scanning, the two of the mirror, `QuaderBridgeLeftOn`, `QuaderBlobMissing`) and their severities; the `labels`; the threshold follows `stale_after`; every selector is scoped to the namespace; `disabledAlerts` and `extraRules`; a misspelt alert name fails; all alerts disabled renders nothing |
+| `R-VULN-024` (`TestR_VULN_024_PrometheusRuleValues`) | no rule by default; the alerts (the three of the vulnerability scanning, the two of the mirror, `QuaderBlobMissing`) and their severities; the `labels`; the threshold follows `stale_after`; every selector is scoped to the namespace; `disabledAlerts` and `extraRules`; a misspelt alert name fails; all alerts disabled renders nothing |
 | `R-HA-045` (`TestR_HA_045_PrometheusRule`) | the rule is rendered with `enabled` and carries the `labels`, none by default or with `enabled: false`; the 32 alerts and their severities, `for` durations, summaries and descriptions; the role regex follows `<fullname>`; the expressions of the three rows with a special shape; every `quader_*` name an expression reads is registered by code under `internal/`; `disabledAlerts` |
 | `R-VULN-024` (`TestR_VULN_024_PromtoolRules`) | `promtool check rules` and `promtool test rules` over the rendered rules, and one firing and one silent test per alert; the backup alerts' tests are `QuaderBackupStale` at 90 minutes after the last success (and for a backup that never ran), `QuaderBackupFailed` for a failure after the last success and for a first failure (silent after an interrupted run), `QuaderRevocationJournalBacklog` and the others |
 | `R-HA-060`, `R-BAK-012` (`TestR_HA_060_BackupCronJob`) | the CronJob's fields, `Forbid`, the pod failure policy (an eviction ignored first, then 2, 3, 4, 6), `restartPolicy: Never`, no `activeDeadlineSeconds` by default, the grace period, the autoscaler annotation, `TMPDIR` and the one `emptyDir`, the memory limit, no port or probe, its own ServiceAccount, the values (rendered with `backupSets`, which turns the backup on); a value set renders the CronJob exactly when it sets `backup.enabled: true` |
 | `R-HA-060`, `R-HA-045` (`TestR_HA_060_BackupOffByDefault`) | the default: `backup.enabled: false` in values.yaml, no CronJob, ServiceAccount, NetworkPolicy or `backup.manual_run` and no target bucket needed; the target's static keys required only while a Job mounts them; a restore with the backup off; the note in `NOTES.txt`; the six alerts of the backup runs only with the backup |
-| `R-HA-060` (`TestR_HA_060_RestoreJob`) | the Job (not a hook), the arguments, the failure handling, the account, no migration Job, the suspended CronJob, the roles at zero, pools and the bridge |
+| `R-HA-060` (`TestR_HA_060_RestoreJob`) | the Job (not a hook), the arguments, the failure handling, the account, no migration Job, the suspended CronJob, the roles and pools at zero |
 | `R-HA-029` (`TestR_HA_029_BackupValidation`) | every backup and restore row of the table fails and names the value; the schedules are checked against `jobs.ParseSchedule` |
 | `R-HA-031` (`TestR_HA_031_BackupValuesSchema`, `TestR_HA_031_ValuesReference`) | the schema refuses typos and a grace period below 30 s; the values of the spec block render; values.yaml and the spec block agree |
 | `R-HA-030`, `R-BAK-011` (`TestR_HA_030_BackupSecrets`) | which Secret reaches which pod: the target's keys and CA only into the backup pods and the restore Job, no replica and not the migration Job, no Valkey Secret in a Job, the key ring only in the restore Job, the login of each Job; no Secret as a variable; the managed config paths |
@@ -688,7 +681,7 @@ is where the coverage generator reads the IDs from.
 | `R-EP-008` (`TestEndpoints`) | two endpoints render two Services (own port, selecting the main packages pods), two Ingresses (class, hosts incl. the wildcard, TLS entry, backend), the port rules in the packages policy, the `server.endpoints` block and the default endpoint's hosts; mounts of the pairs without `subPath`; backend TLS per controller; the pool (Deployment of the role, PDB, Service, spread selector, policy with the operations port, no port on the main pods); NOTES; each validation row |
 | `R-HA-030`, `R-HA-029` (`TestS3ProvisionerSecret`) | bucket, region, endpoint by `secretKeyRef`, credentials as files with only their two keys, the Job reads none, the bucket is required unless the Secret carries it |
 | `R-HA-030` (`TestTLSMountsFollowTheListeners`) | the listener pair is mounted by the pods that load it: everywhere without `tls.ops`; with it, not into the worker, into an endpoint pool only while an endpoint it serves has no pair of its own; the client CA reaches the main `packages` pods and not an endpoint pool |
-| `R-HA-030`, `R-AUTH-014`, `R-AUTH-042` (`TestLoginSecrets`) | `secrets.breakGlass` and `secrets.oidc[]` mount a directory of the Secret read-only without `subPath` into `api` pods only (main, pools, endpoint pools, the bridge's `web`; not `packages`, `worker` or the Job), render the config paths, take a different key, leave `enabled` alone with a Secret and render `auth.break_glass.enabled: false` without; the validation rows; the rendered file passes `quader admin config validate` |
+| `R-HA-030`, `R-AUTH-014`, `R-AUTH-042` (`TestLoginSecrets`) | `secrets.breakGlass` and `secrets.oidc[]` mount a directory of the Secret read-only without `subPath` into `api` pods only (main, pools, endpoint pools; not `packages`, `worker` or the Job), render the config paths, take a different key, leave `enabled` alone with a Secret and render `auth.break_glass.enabled: false` without; the validation rows; the rendered file passes `quader admin config validate` |
 | `R-HA-030` (`TestS3CA`) | `secrets.s3CA` mounts read-only without `subPath` with the one projected key, renders `storage.s3.ca_file`, stays out of the Job; without it nothing is rendered and `config.storage.s3.ca_file` is refused |
 | `R-HA-063`, `R-HA-030` (`TestTLS`) | HTTPS probes, mount without `subPath` of exactly the certificate and key, config paths, `appProtocol`; missing `tls.secretName` fails; opt-out renders no TLS wiring; no TLS mount in the migration Job; client CA and `ops_tls` separation; per-controller Ingress settings (HAProxy Ingress default, verification and client-certificate rules); one `BackendTLSPolicy` per role Service; every value set agrees between config and probe scheme |
 

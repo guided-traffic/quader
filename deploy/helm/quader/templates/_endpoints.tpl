@@ -4,8 +4,7 @@ default endpoint (hosts, surface and the policy keys only), every other entry is
 endpoint with its own listener port, Service, Ingress and, optionally, its own pool of pods per
 role its surface holds (Q-EP-70). Objects are named <fullname>-ep-<name>, and
 <fullname>-api-ep-<name> beside it for a surface with families of both roles (Q-EP-71); the pool
-Deployments are <fullname>-packages-ep-<name> and <fullname>-api-ep-<name> (<fullname>-web-ep-<name>
-in the bridge of R-HA-064) and their pool label is ep-<name>. units.tpl lists them.
+Deployments are <fullname>-packages-ep-<name> and <fullname>-api-ep-<name>, and their pool label is ep-<name>. units.tpl lists them.
 */}}
 
 {{/* The names of the further endpoints, sorted, as a YAML list. Argument: the root context. */}}
@@ -61,7 +60,7 @@ false.
 {{- toYaml $out -}}
 {{- end -}}
 
-{{/* The pool name ("ep-<name>") of an endpoint, empty when it runs on the main web pods. Argument: dict "root" . "name" "customers". */}}
+{{/* The pool name ("ep-<name>") of an endpoint, empty when it runs on the main Deployments of its roles. Argument: dict "root" . "name" "customers". */}}
 {{- define "quader.endpointPool" -}}
 {{- if dig "pool" "enabled" false (index .root.Values.endpoints .name) -}}
 {{- printf "ep-%s" .name -}}
@@ -88,7 +87,7 @@ Returns YAML.
 {{/*
 The values of an endpoint's pool Deployment: the values of the pool's role with the pool's own keys
 on top (every key of the role may be overridden, R-EP-008). Argument: dict "root" . "name"
-"customers" "role" "packages" (web in the bridge of R-HA-064). Returns YAML.
+"customers" "role" "packages". Returns YAML.
 */}}
 {{- define "quader.endpointPoolValues" -}}
 {{- $pool := dig "pool" (dict) (index .root.Values.endpoints .name) -}}

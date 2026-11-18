@@ -5,7 +5,7 @@ pods it does not deploy. templates/_units.tpl lists the Deployments.
 
 Per Deployment the policy admits the ports its pods open:
   8080                  from networkPolicy.ingress.http.from (empty = from anywhere, so any ingress
-                        controller works); only api, packages, their path pools and the bridge web
+                        controller works); only api, packages and their path pools
   a further endpoint's  from that endpoint's networkPolicy.from (empty = from anywhere), for every
   port                  endpoint the pods open (templates/_units.tpl quader.unitEndpoints)
   8081                  only from networkPolicy.ingress.ops.from and networkPolicy.ingress.probeCIDRs; with no

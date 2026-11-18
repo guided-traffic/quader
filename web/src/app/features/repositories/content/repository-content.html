@@ -130,8 +130,8 @@
         </nav>
         @if (view() === 'file' && item(); as it) {
           <div class="file-actions">
-            @if (it.downloadUrl) {
-              <a class="btn btn-default" [href]="it.contentUrl ?? it.downloadUrl" download>
+            @if (it.contentUrl; as content) {
+              <a class="btn btn-default" [href]="content" download>
                 <span class="material-icons" aria-hidden="true">download</span>
                 <ng-container i18n="@@files.download">Download</ng-container>
               </a>

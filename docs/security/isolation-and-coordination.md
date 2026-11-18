@@ -11,7 +11,7 @@ lease, which party can change what other replicas read, and where two installati
 ## Who may hold coordination state
 
 Only the `worker` and `all` roles claim jobs, open the lease pool and hold leases. The role sets are fixed in code, and the
-serving roles `api`, `packages` and the bridge's `web` have neither ([roles.go](../../internal/app/roles.go), `SubsystemsFor`):
+serving roles `api`, `packages` and `web` have neither ([roles.go](../../internal/app/roles.go), `SubsystemsFor`):
 
 | Role | Lease pool | Job loops | Change-log poll | Replica registry |
 |---|---|---|---|---|

@@ -2,17 +2,16 @@
 Every Service renders sessionAffinity: None, fixed and not a value (R-HA-037, R-ARCH-032): any
 replica of a role can answer any request of its families. The client Services select the pods of one
 role (R-HA-002): <fullname>-api the main api pods, <fullname>-packages the main packages pods, one
-Service <fullname>-<role>-<pool> per path pool (R-HA-062) and, with web.enabled, <fullname> the web
-pods of the bridge (R-HA-064). The ops Service selects every quader pod and carries the operations
-port only; worker pods are reached on it alone.
+Service <fullname>-<role>-<pool> per path pool (R-HA-062). The ops Service selects every quader pod
+and carries the operations port only; worker pods are reached on it alone.
 */ -}}
 {{- range $unit := include "quader.units" . | fromYamlArray }}
-{{- if or (eq $unit.kind "bridge") (and (has $unit.kind (list "main" "pool")) (has $unit.role (list "api" "packages"))) }}
+{{- if and (has $unit.kind (list "main" "pool")) (has $unit.role (list "api" "packages")) }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ if eq $unit.kind "bridge" }}{{ include "quader.fullname" $ }}{{ else }}{{ include "quader.fullname" $ }}-{{ $unit.name }}{{ end }}
+  name: {{ include "quader.fullname" $ }}-{{ $unit.name }}
   labels:
     {{- include "quader.labels" (dict "root" $ "component" $unit.role "pool" $unit.pool) | nindent 4 }}
     {{- with $.Values.service.labels }}

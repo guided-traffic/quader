@@ -64,8 +64,8 @@ DELETE FROM replica
 
 -- name: CountFillingReplicas :one
 -- The n of the fetch share of a remote repository (R-REPO-040, Q-ARCH-297): the live replicas that fill client misses,
--- which are the replicas of packages and of the bridge role web, their pools included, and of the development role
--- all. A replica of api, which sends the upstream test and nothing else, and of worker holds no share.
+-- which are the replicas of packages, their pools included, and of the development roles web and all. A replica of
+-- api, which sends the upstream test and nothing else, and of worker holds no share.
 SELECT count(*)::int AS live
   FROM replica
  WHERE heartbeat_at >= now() - make_interval(secs => sqlc.arg(stale_secs)::float8)

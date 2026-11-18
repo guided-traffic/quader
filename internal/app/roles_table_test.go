@@ -20,7 +20,7 @@ func roleTable() map[string][]Area {
 	}
 	listener := []Area{AreaLimits, AreaVirtualEngine, AreaAuth, AreaEndpoints, AreaAPI}
 	filling := []Area{AreaProxyEngine, AreaFormatHost}
-	// The shared asset store of the UI is where the UI is served (R-HA-020, Q-HA-120): api, the bridge web, and all.
+	// The shared asset store of the UI is where the UI is served (R-HA-020, Q-HA-120): api, web and all.
 	management := []Area{AreaPackagesAPI, AreaVulnAPI, AreaSessions, AreaLogin, AreaUIAssets, AreaCIExchange}
 	// The background engine of the mirror's passes runs where jobs are claimed (R-REPO-053, Q-ARCH-316): worker and all.
 	jobs := []Area{AreaMirrorEngine}

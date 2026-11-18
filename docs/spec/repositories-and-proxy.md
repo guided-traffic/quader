@@ -3033,7 +3033,7 @@ Priority: **MVP** · Covers: quader-only
     replicas that fill client misses in the replica registry
     ([operations-and-observability.md](operations-and-observability.md) R-OPS-003), at least 1,
     refreshed with the registry heartbeat: `packages` and its pools after the cut into roles, `web` before it and in the
-    upgrade bridge, or `all` in the local profile ([architecture.md](architecture.md) Q-ARCH-297). `api`
+    integration tests, or `all` in the local profile ([architecture.md](architecture.md) Q-ARCH-297). `api`
     replicas fill nothing and are not counted, and neither are `worker` replicas. The count is `cluster.FillCount`
     ([internal/cluster/replica_roles.go](../../internal/cluster/replica_roles.go)), a count of its own that the proxy's
     slots read (`proxy.Options.Replicas`); the limiters of the client listener count the replicas of their own role and
@@ -3782,7 +3782,7 @@ budget (`limits.maxConcurrentFetches`, R-REPO-040, Q-REPO-8, Q-REPO-97), and cli
   so its commit is not cancelled by it. A discovery document that a background fetch resolves under its slot before the
   item (R-REPO-040, the format's discovery) returns nothing: the slot was taken for the item.
 - **Who runs what** (phase 6a, [architecture.md](architecture.md) R-ARCH-001). A client-serving replica on this page is one
-  that fills client misses: `packages` (and `web` in the upgrade bridge); the process that claims the queue `mirror` is a
+  that fills client misses: `packages` (and the development roles `web` and `all`); the process that claims the queue `mirror` is a
   `worker`, or a worker pool that claims `mirror` alone ([ha-and-helm.md](ha-and-helm.md) R-HA-062). The two meet only
   through PostgreSQL, Valkey and the signal below.
 - **Pre-emption on one replica.** Where client fetches and background fetches run in one process (one that serves clients and claims the queue
@@ -8538,7 +8538,7 @@ public package of the same name. Names leak; contents do not.
 ### H-8 · The stored-secret key sits on every replica
 
 Every replica holds the key that unseals upstream credentials, client-certificate keys and proxy
-passwords: `packages` replicas (and the bridge's `web`) make upstream requests, `worker` replicas run the
+passwords: `packages` replicas make upstream requests, `worker` replicas run the
 mirror passes, and every replica opens the key ring's start-up canary ([architecture.md](architecture.md) R-ARCH-021). Exec access to a Quader pod, or read access
 to the key's Secret, yields all of them. Adding `web` replicas for load adds copies of the key, not
 new holders of a different kind. Valkey never holds a secret or a value derived from one

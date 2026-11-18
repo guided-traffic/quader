@@ -1,6 +1,6 @@
 {{- if .Values.metrics.serviceMonitor.enabled }}
 {{- /*
-Scrapes the ops port of <fullname>-ops, every pod (api, packages, worker and the bridge's web), path
+Scrapes the ops port of <fullname>-ops, every pod (api, packages and worker), path
 /metrics (R-OPS-006, R-HA-045). The endpoint always renders two relabelings that set the target labels
 role (from the pod's component label) and pool (from the pod's quader/pool label, which is empty on the
 main Deployments and which Prometheus drops when empty); metrics.serviceMonitor.relabelings come after them.

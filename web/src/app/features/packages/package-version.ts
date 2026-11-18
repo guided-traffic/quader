@@ -305,13 +305,6 @@ export class PackageVersionPage {
     const i = qualified.indexOf('/');
     return ['/projects', qualified.slice(0, i), 'repositories', qualified.slice(i + 1)];
   }
-  /**
-   * The link of a file: its content route, or the downloadUrl when a `web` replica of the releases before the cut
-   * answered and sent no `contentUrl` (step 1 of R-HA-064, Q-UI-111).
-   */
-  protected fileHref(file: { readonly contentUrl?: string; readonly downloadUrl: string }): string {
-    return file.contentUrl ?? file.downloadUrl;
-  }
 
   protected readonly fileColumns: readonly TableColumn[] = [
     { id: 'path', label: $localize`:@@pkg.file.path:File` },

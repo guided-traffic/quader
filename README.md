@@ -42,8 +42,9 @@ registries on demand (pull-through), and put both behind one URL per ecosystem. 
 provider. Access is denied by default and granted through permission policies that reach down to package-name patterns. GitLab CI
 jobs need no stored secret: a job trades its GitLab-issued ID token for a short-lived Quader token. npm and NuGet come first.
 
-Quader is one Go binary with an embedded Angular UI, deployed with a Helm chart in two roles, `web` and `worker`. `web` replicas
-answer HTTP requests behind a Kubernetes Service that spreads them at random, without session affinity. `worker` replicas run
+Quader is one Go binary with an embedded Angular UI, deployed with a Helm chart in three roles, `api`, `packages` and `worker`.
+`api` replicas answer the UI and the management API, `packages` replicas the package protocols and raw files; the edge splits each
+host by path between their Services, which spread requests at random, without session affinity. `worker` replicas run
 background jobs. No replica keeps state between requests. PostgreSQL is the system of record; Valkey with Sentinel holds shared
 ephemeral state. Every connection can run TLS, Quader's own listeners included, and certificates are reloaded without a
 restart.
@@ -53,8 +54,10 @@ flowchart LR
   cl["Clients<br/>curl, browser, npm, pnpm, Yarn, dotnet, nuget.exe"]
   subgraph k8s["Kubernetes (Helm chart)"]
     edge["Ingress controller<br/>HAProxy Ingress, HTTPS to the backend"]
-    svc["Service quader<br/>web pods"]
-    web["web Deployment<br/>quader serve --role web"]
+    sapi["Service quader-api<br/>api pods"]
+    spkg["Service quader-packages<br/>packages pods"]
+    api["api Deployment<br/>quader serve --role api"]
+    pkg["packages Deployment<br/>quader serve --role packages"]
     wrk["worker Deployment<br/>quader serve --role worker"]
     mig["migrate Job<br/>quader migrate up"]
   end
@@ -62,13 +65,18 @@ flowchart LR
   vk[("Valkey with Sentinel<br/>shared ephemeral state")]
   s3[("S3-compatible storage<br/>blob store: package and file content")]
 
-  cl -->|TLS| edge -->|TLS| svc --> web
-  web -->|TLS| pg
-  web -->|TLS| vk
+  cl -->|TLS| edge
+  edge -->|TLS| sapi --> api
+  edge -->|TLS| spkg --> pkg
+  api -->|TLS| pg
+  pkg -->|TLS| pg
   wrk -->|TLS| pg
+  api -->|TLS| vk
+  pkg -->|TLS| vk
   wrk -->|TLS| vk
   mig -->|TLS| pg
-  web -.->|TLS| s3
+  api -.->|TLS| s3
+  pkg -.->|TLS| s3
   wrk -.->|TLS| s3
 ```
 
@@ -76,7 +84,7 @@ flowchart LR
 
 Built (M0):
 
-- 🧱 **One binary, roles by configuration.** `quader serve --role api|packages|worker|web|all`: `api` serves the UI, the management API and the CI exchange and holds the sessions and login secrets, `packages` the package protocols and raw files with tokens only, `worker` the jobs, `web` both halves in one process (the bridge of the upgrade across the cut, the chart still renders it as the only serving Deployment until phase 6a is complete), `all` for development;, `quader migrate`, `quader admin config validate`. See [R-ARCH-001](docs/spec/architecture.md).
+- 🧱 **One binary, roles by configuration.** `quader serve --role api|packages|worker|web|all`: `api` serves the UI, the management API and the CI exchange and holds the sessions and login secrets, `packages` the package protocols and raw files with tokens only, `worker` the jobs, `web` both halves in one process and `all` every role, both for development and tests and never rendered by the chart, `quader migrate`, `quader admin config validate`. See [R-ARCH-001](docs/spec/architecture.md).
 - ⚙️ **One configuration file, environment overrides, strict validation.** `/etc/quader/quader.yaml`, every key overridable with `QUADER_<SECTION>_<KEY>`, secrets only as files, a redacted effective view. See [R-OPS-028](docs/spec/operations-and-observability.md).
 - 🔒 **TLS on every connection Quader makes or accepts.** Listeners, endpoints, PostgreSQL, Valkey and Sentinels, the object store and outbound HTTP; certificates picked by SNI and reloaded without a restart. Plain HTTP is an explicit chart setting. See [transport encryption](docs/security/transport-encryption.md) and [INV-20](docs/spec/README.md#design-invariants).
 - 🌐 **Endpoints.** One client listener per endpoint, identified by the listener, not by the `Host` header; a foreign host answers `421`. See [endpoints](docs/developer/endpoints.md) and [ADR-128](docs/decisions.md#adr-128--endpoints-one-listener-each-identified-by-the-listener-with-exposure-rules-as-a-ceiling).
@@ -187,7 +195,7 @@ Built names are the ones the code produces. *Planned* marks a name the spec fixe
 | Name | Value | Source |
 |---|---|---|
 | Binary | `quader`, static (`CGO_ENABLED=0`); `make build` writes `bin/quader` | `Makefile`, `cmd/quader` |
-| Roles | `web`, `worker`, `all` (`all` is for local runs outside the chart) | `cmd/quader/serve.go`, `internal/config/process.go` |
+| Roles | `api`, `packages`, `worker`, `web`, `all` (`web` and `all` are for runs outside the chart) | `cmd/quader/serve.go`, `internal/config/process.go` |
 | Default client listener | `:8080` (`server.listen`) | `internal/config/server.go` |
 | Ops listener | `:8081` (`server.ops_listen`) | `internal/config/server.go` |
 | Further endpoint listener | any free port, one per endpoint, name `^[a-z][a-z0-9-]{0,19}$` (`server.endpoints.<name>.listen`) | `internal/config/endpoints.go` |
@@ -619,7 +627,6 @@ The label sets of the M1 families are not restated per family in this pass; read
 | Deployments | `<fullname>-api` (`--role api`), `<fullname>-packages` (`--role packages`), `<fullname>-worker` (`--role worker`) | yes |
 | Pools | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>` (path pools, with a Service of the same name), `<fullname>-worker-<pool>` (label `quader/pool: <pool>`) | yes (`_units.tpl`) |
 | Endpoint pools | `<fullname>-packages-ep-<name>` and `<fullname>-api-ep-<name>`, label `quader/pool: ep-<name>`, for an endpoint with `endpoints.<name>.pool.enabled` (one per role its surface holds) | yes (`_units.tpl`) |
-| Upgrade bridge | `<fullname>-web` (`--role web`) and the Service `<fullname>`, only with `web.enabled` | yes |
 | Endpoint objects | `<fullname>-ep-<name>` (and `<fullname>-api-ep-<name>` for a surface over both roles) for the Services and the Ingress of a further endpoint | yes |
 | Disruption budgets, autoscalers | one per Deployment, named as the Deployment | yes |
 | Migration hook Job | `<fullname>-migrate`; not rendered while `restore.enabled`, because the restore applies the migrations itself | yes |
@@ -627,7 +634,7 @@ The label sets of the M1 families are not restated per family in this pass; read
 | Services | `<fullname>-api`, `<fullname>-packages` (client port), `<fullname>-ops` (ops port) | yes |
 | Network policies | one per Deployment, named as it (ingress only, a rule per port), and `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore`, `<fullname>-post-restore` with their Jobs (no rule: those pods accept nothing) | yes |
 | Edge | per host: `/` and `/api/v1` to `<fullname>-api`; `/api`, `/files`, `/v2`, `/.well-known` to `<fullname>-packages`; the paths of path pools to their Services | yes |
-| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 32 alerts: 26 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBridgeLeftOn`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
+| PrometheusRule | `<fullname>`, group `<fullname>`, with `metrics.prometheusRule.enabled` (needs the Prometheus operator's CRDs); 35 alerts: 29 always (`QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected`, `QuaderVulnerabilityRecordsInvalid`, `QuaderVulnerabilityMaliciousRecordRejected`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderVulnerabilityImageScansFailing`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing`, `QuaderGCStale`, `QuaderBackupCheckFailed`, `QuaderRevocationJournalBacklog`, `QuaderRevocationJournalQuarantined`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`) and the six run alerts of the backup only with `backup.enabled` (`QuaderBackupStale`, `QuaderBackupFailed`, `QuaderBackupRunningLong`, `QuaderBackupGlobalHoldLong`, `QuaderBackupSourceDamage`, `QuaderBackupVerifyFindings`), every selector scoped to the release namespace | yes (R-HA-045; [prometheusrule.yaml](deploy/helm/quader/templates/prometheusrule.yaml), [_rules.tpl](deploy/helm/quader/templates/_rules.tpl)) |
 | Backup CronJob | `<fullname>-backup` with `backup.enabled` (default `false`), `quader backup create --trigger schedule`, `concurrencyPolicy: Forbid`; the controller names its Jobs `<fullname>-backup-<10 digits>`, so the render fails when `<fullname>-backup` exceeds 52 characters; a manual run is `kubectl create job --from=cronjob/<fullname>-backup <name>` | yes ([backup.yaml](deploy/helm/quader/templates/backup.yaml)) |
 | Restore Job | `<fullname>-restore` with `restore.enabled`, `quader backup restore <restore.backupId>`; an ordinary Job, not a Helm hook | yes ([restore.yaml](deploy/helm/quader/templates/restore.yaml)) |
 | Post-restore Job | `<fullname>-post-restore-<the first 8 hex digits of the SHA-256 of postRestore.restoredTo>` with `postRestore.enabled`, annotation `quader/restored-to`, a `post-install,post-upgrade` hook; one Job per restore point | yes ([post-restore.yaml](deploy/helm/quader/templates/post-restore.yaml)) |
@@ -661,7 +668,7 @@ The label sets of the M1 families are not restated per family in this pass; read
 | Registration name | `^[a-z][a-z0-9-]{0,19}$` | unique; immutable; the handle in the API, the audit trail and the `bastion` label of the metrics; at most `bastions.max_registrations` exist |
 | Registration principal | kind `bastion`; API reference `bastion:<name>` | holds no policy entry, role, ownership or membership: every such write answers `422 principal_not_allowed` |
 | Bastion token | `qdr_bst_…` (57 characters) | owner is the registration; always expires; at most `auth.tokens.max_active_per_principal.bst` unrevoked per registration; `created_via` `api`, `ui` or `admin-cli`; hint `qdr_bst_` and four characters |
-| Commands | `quader admin bastion create <name>`, `quader admin bastion token create <name> [--ttl <duration>]`, `quader admin bastion token revoke <name> <token-id>` | from a `web` pod, actor `admin-cli` |
+| Commands | `quader admin bastion create <name>`, `quader admin bastion token create <name> [--ttl <duration>]`, `quader admin bastion token revoke <name> <token-id>` | from an `api` pod, actor `admin-cli` |
 | Tables | `bastion`, `bastion_contact` (transient) | migrations 00032 to 00034 |
 | Limiter of the download intake | `bastion.download_events`, bucket `bastion:<registration ID>`, a batch charged by its events in units of 100 (`bastions.downloads.events_per_second`, `events_burst`) | cluster scope ([R-BAS-016](docs/spec/bastion.md)) |
 
@@ -695,7 +702,7 @@ The label sets of the M1 families are not restated per family in this pass; read
 | Outbound purpose | `vuln_source` | the `kind` label of `quader_outbound_*` and the purpose of the upstream log |
 | Caches | `vuln_source_state` (safety TTL 60 s), `vuln_nuget_page` (the rendered NuGet page, at most four entries, safety TTL 15 min) | per replica; the change area `vuln_data` empties both, `claims` and `repo_config` the page too ([coordination.go](internal/vuln/coordination.go), [audits_pages.go](internal/vuln/store/audits_pages.go)) |
 | NuGet page | `@name` `quader`, at `<feed>/vulnerabilities/quader.json` | the one entry of `<feed>/vulnerabilities/index.json` |
-| Alerts | `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderGCStale`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBridgeLeftOn`, `QuaderBlobMissing` | the names `metrics.prometheusRule.disabledAlerts` accepts |
+| Alerts | `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`, `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`, `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderGCStale`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`, `QuaderValkeySentinelsDegraded`, `QuaderValkeyFailoverFlapping`, `QuaderValkeyPrimaryDisagreement`, `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityClaimedNameMalicious`, `QuaderMirrorFailing`, `QuaderMirrorStale`, `QuaderBlobMissing` | the names `metrics.prometheusRule.disabledAlerts` accepts |
 | Tables | `vuln_source_state`, `vuln_advisory`, `vuln_affected`, `vuln_pending_evaluation`, `vuln_kev`, `vuln_claimed_match`, `vuln_finding`, `vuln_finding_event`, `vuln_sync_touched` | migrations 00035 to 00039; `vuln_finding` and `vuln_finding_event` are data in an export, the others transient ([tables_vuln.go](internal/meta/postgres/tables_vuln.go)) |
 
 ### Audit event types
@@ -872,7 +879,7 @@ helm status quader -n quader                                             # examp
 ```
 
 **1. Start the local profile** (a kind cluster, CloudNativePG PostgreSQL with a standby, Valkey with a replica and three
-Sentinels over TLS, SeaweedFS, the Ingress controller and the chart with `web` and `worker`):
+Sentinels over TLS, SeaweedFS, the Ingress controller and the chart with `api`, `packages` and `worker`):
 
 ```shell
 make dev-up                          # example: QUADER_DEV_HTTP_PORT=18080 make dev-up if 8080 is taken
@@ -2647,9 +2654,6 @@ packages:                               # the package protocols and raw files, t
   podDisruptionBudget: {enabled: true, maxUnavailable: 1, minAvailable: null}   # default
   topologySpread: {enabled: true, nodeTaintsPolicy: Honor}     # default; zone ScheduleAnyway, host DoNotSchedule
   pools: []                             # default; example: [{name: npm, paths: [/api/npm], replicaCount: 4}]; paths below /api (not /api/v1), /files, /v2 or /.well-known; routed: false as for api.pools
-web:
-  enabled: false                        # default; true for steps 1 and 2 of the three upgrade steps across the cut (R-HA-064); the keys of the releases before the cut stay as they were
-  routed: true                          # default; false in step 2: the edge moves to api and packages while the bridge still runs (Q-HA-130)
 worker:
   replicaCount: 2                       # default; at least 1; ignored when autoscaling.enabled
   terminationGracePeriodSeconds: 300    # default
@@ -2885,9 +2889,9 @@ Security notes on the login secrets:
 - `secrets.breakGlass` is the password of an account that holds system administration without a role binding
   ([R-AUTH-014](docs/spec/identity-and-authentication.md)). Whoever can read the Secret, or `get` it through the Kubernetes API,
   is an administrator. Restrict that Secret with RBAC like the database credentials. A hash (Argon2id PHC) keeps the plaintext out of
-  the cluster; a plaintext password is hashed in memory by each `web` replica. Without the value the account is off, not open.
+  the cluster; a plaintext password is hashed in memory by each `api` replica. Without the value the account is off, not open.
 - Both secrets are mounted as a directory of the Secret, read-only, without `subPath`, `defaultMode: 0440`, and only into `api`
-  pods (the main Deployment, its pools and its endpoint pools, and the bridge's `web`): `packages`, `worker`, the migration Job and the backup pods never get them. A rotated Secret
+  pods (the main Deployment, its pools and its endpoint pools): `packages`, `worker`, the migration Job and the backup pods never get them. A rotated Secret
   reaches the pods through the kubelet, Quader notices the new file within `auth.break_glass.check_interval` and refuses the local
   login for `auth.break_glass.rotation_hold` (Q-AUTH-14) and ends the break-glass sessions.
 - `config.auth.break_glass.password_file` and `config.auth.oidc.providers.<id>.client_secret_file` are chart-managed
@@ -3071,7 +3075,7 @@ backup:
   extraVolumes: []                      # default; the backup Job's own (the global extraVolumes reach the Deployments only)
   extraVolumeMounts: []                 # default
 restore:
-  enabled: false                        # default; true renders the Job <fullname>-restore, no migration Job and a suspended CronJob, and refuses any replica or autoscaler of a role, pool or the bridge
+  enabled: false                        # default; true renders the Job <fullname>-restore, no migration Job and a suspended CronJob, and refuses any replica or autoscaler of a role or pool
   backupId: ""                          # default; required with enabled; example: 20261028T020000Z-7f3a
   skipRevocationJournal: false          # default; true only when the source's blob bucket is gone: revocations after the snapshot then come back
   extraArgs: []                         # default; appended to quader backup restore; example: [--check], a run of the preconditions only
@@ -3092,7 +3096,7 @@ restore:
   extraVolumes: []                      # default; the restore Job's own (the global extraVolumes reach the Deployments only)
   extraVolumeMounts: []                 # default
 postRestore:
-  enabled: false                        # default; true renders the post-install, post-upgrade hook Job <fullname>-post-restore-<hash>; every role, pool and the bridge must have no replica
+  enabled: false                        # default; true renders the post-install, post-upgrade hook Job <fullname>-post-restore-<hash>; every role and pool must have no replica
   restoredTo: ""                        # default; required with enabled: the time the platform restore went to, RFC 3339; example: "2026-10-28T09:15:00Z"
   skipRevocationJournal: false          # default; true only when the source's blob bucket is gone; journalCredentials.source must then stay runtime
   journalCredentials:
@@ -3129,7 +3133,7 @@ What the render refuses ([_validate_backup.tpl](deploy/helm/quader/templates/_va
 `allow_same_bucket`, or with prefixes that contain each other (the orphan sweep of the blob store would delete the backups);
 `config.backup.target.credentials.source: static` without `secrets.backupTarget`; `backup.enabled` with static S3 keys and no
 `secrets.backupSource`; `restore.enabled` without `restore.backupId`; `restore.enabled` or `postRestore.enabled` with a replica or an
-autoscaler on any role, pool, endpoint pool or the bridge; a `postRestore.restoredTo` that is not RFC 3339; `postRestore.enabled`
+autoscaler on any role, pool or endpoint pool; a `postRestore.restoredTo` that is not RFC 3339; `postRestore.enabled`
 together with `restore.enabled`; `journalCredentials.source: static` without `secrets.journalReader`; `skipRevocationJournal` with a
 `journalCredentials.source` other than `runtime`.
 
@@ -3190,7 +3194,6 @@ config:
 | `QuaderVulnerabilityClaimedNameMalicious` | `max(quader_vuln_claimed_name_matches{kind="malicious"}) > 0` | critical |
 | `QuaderMirrorFailing` | `max by (repo) (quader_mirror_consecutive_failures) >= 3`: three failed pass attempts in a row, the status's `failing`; a complete pass resets it | warning |
 | `QuaderMirrorStale` | `time() - max by (repo) (quader_mirror_next_pass_timestamp_seconds) > 3600` for 30m: the next pass was due an hour ago and nothing started it (no process claims the queue, a lost job), or the pass in progress has not written for an hour; a mirror that never completed a pass fires too; a paused mirror has no series | warning |
-| `QuaderBridgeLeftOn` | `count(quader_build_info{role="web"}) > 0` for 24h: `web.enabled` stayed true for a day: the third step of the upgrade across the cut has not run | warning |
 | `QuaderBackupCheckFailed` | `min(quader_backup_check_ok) == 0` for 1h: a platform protection that `backup.recovery_window` or `backup.object_versioning` declares does not hold; the label `check` names it, `quader admin backup check` prints the reason; an undeclared or unreadable check has no series | critical |
 | `QuaderRevocationJournalBacklog` | `max(quader_revocation_journal_pending) > 0` for 15m: the shipper does not write `_journal/revocations/` of the blob bucket, so a restore taken now would replay a journal without those entries | warning |
 | `QuaderRevocationJournalQuarantined` | `sum(increase(quader_revocation_journal_quarantined_total[1h])) > 0`: a change could not be written to the journal and was set aside in `system_state` `journal_quarantined`; `quader admin post-restore` prints it | critical |

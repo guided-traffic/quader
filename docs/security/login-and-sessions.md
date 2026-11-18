@@ -46,7 +46,7 @@ lock or a rotation reaches every replica.
 | The provider's ID token | `ui_session.id_token`, the `id_token_hint` of RP-initiated logout (R-AUTH-013) | every API answer; backups (`transient`) |
 | The provider's access and refresh token | the callback's memory until userinfo has answered | anywhere afterwards (INV-8) |
 | OIDC client secret | a mounted file, read again when its modification time or size changes ([provider.go](../../internal/auth/oidc/provider.go), `secretSource`), or one environment variable | PostgreSQL, the configuration file |
-| Break-glass password | a mounted file on `api` replicas (and the bridge's `web`); the replica keeps the Argon2id salt and key and the SHA-256 of the file, never the plaintext ([argon.go](../../internal/auth/oidc/argon.go)) | PostgreSQL, `packages` and `worker` pods, logs and events (an event records whether the presented username was the account's, never the value, so a password typed into the username field stays out; `TestR_AUTH_014_TheBreakGlassEventDoesNotKeepThePresentedUsername`) |
+| Break-glass password | a mounted file on `api` replicas; the replica keeps the Argon2id salt and key and the SHA-256 of the file, never the plaintext ([argon.go](../../internal/auth/oidc/argon.go)) | PostgreSQL, `packages` and `worker` pods, logs and events (an event records whether the presented username was the account's, never the value, so a password typed into the username field stays out; `TestR_AUTH_014_TheBreakGlassEventDoesNotKeepThePresentedUsername`) |
 
 ## Checks a login passes
 
@@ -180,7 +180,7 @@ Quader only with a completed login" (R-AUTH-008) to time a membership change.
 
 ### H-93 · An enabled break-glass account without a password file starts silently
 
-Stage: the start of an `api` replica (or the bridge's `web`) ([breakglass.go](../../internal/auth/oidc/breakglass.go), `newBreakGlass`). Subject: the
+Stage: the start of an `api` replica ([breakglass.go](../../internal/auth/oidc/breakglass.go), `newBreakGlass`). Subject: the
 recovery path. Live whenever `auth.break_glass.enabled` is true (the default) and `password_file` is empty.
 
 R-AUTH-014 asks the replica to refuse to start without a readable password file; it starts instead, logs a warning, and refuses

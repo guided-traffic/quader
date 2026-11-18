@@ -301,8 +301,8 @@ func (a *App) Start(ctx context.Context) error {
 	case config.RoleAll:
 		a.log.Warn("process.role is all: this role exists for local development only", "role", config.RoleAll)
 	case config.RoleWeb:
-		// R-ARCH-001: web is the bridge of the upgrade across the cut, api and packages in one process.
-		a.log.Warn("process.role is web: this role is the bridge of the upgrade to the roles api and packages and is not part of a new installation", "role", config.RoleWeb)
+		// R-ARCH-001: web is api and packages in one process, a development role the chart never renders (Q-HA-315).
+		a.log.Warn("process.role is web: this role exists for development and tests; an installation runs the roles api and packages apart", "role", config.RoleWeb)
 	}
 	a.standingWarnings()
 

@@ -119,7 +119,7 @@ role runs the same ones and is interchangeable with any other replica of that ro
 | `api` | the route families `ui`, `api`, `ci_exchange` of every endpoint whose surface holds them ([endpoints.md](endpoints.md) R-EP-005) | the session store, the OIDC client secrets, the break-glass password | `<fullname>-api`, its pools and the `api` part of endpoint pools ([ha-and-helm.md](ha-and-helm.md) R-HA-002, R-HA-062) |
 | `packages` | the route families `packages`, `files`; tokens only, a session cookie is ignored as absent; the fills of client misses and the shadowing probes | no session store, no login secret | `<fullname>-packages`, its pools and the `packages` part of endpoint pools |
 | `worker` | the job queue, its leases and the scheduler, the mirror's passes, the advisory sync; the queues it claims are configurable (R-ARCH-016) | the lease pool | `<fullname>-worker` and its pools by queue |
-| `web` | `api` and `packages` in one process: every family | everything `api` and `packages` hold | `<fullname>-web` only as the bridge of the upgrade across the cut (Q-ARCH-295, [ha-and-helm.md](ha-and-helm.md) R-HA-064) |
+| `web` | `api` and `packages` in one process: every family | everything `api` and `packages` hold | never; a binary started outside the chart: the replica of the integration tests (Q-ARCH-295, [ha-and-helm.md](ha-and-helm.md) Q-HA-315) |
 | `all` | every role but `bastion` in one process | everything | never; a binary started outside the chart during development |
 | `backup`, `bastion` | unchanged: the `quader backup` subcommand (above), the Bastion's read flow ([bastion.md](bastion.md) R-BAS-001) | their own | the backup CronJob and restore Job; the chart `quader-bastion` |
 
@@ -175,8 +175,7 @@ routes read them. The areas of the client listener are split by route family:
   format host. The `files` area of `api` is given a Host without a remote engine, resolver, dispatcher or route, only for
   the serve check of the item store, which reads a format's stored marks through the data port (Q-ARCH-301). Of the
   operations of the management API, only the explanation of a resolution reaches an engine (Q-ARCH-301).
-- `web` enables the union of the areas of `api` and `packages`, which is the list of the release before the cut; `all`
-  enables every area. A replica started with `web` or `all` logs a warning that names the role.
+- `web` enables the union of the areas of `api` and `packages`; `all` enables every area. A replica started with `web` or `all` logs a warning that names the role.
 - **Two areas take a part of another area as an optional input** (Q-ARCH-300). The `auth` area takes the session store of
   the `sessions` area, and the `virtual-engine` area the remote engine of the `proxy-engine` area. A role that enables the
   other area hands the step its result and `planSteps` insists it is listed before; a role that does not (`packages` has no
@@ -200,7 +199,7 @@ routes read them. The areas of the client listener are split by route family:
   statement applies to the role that serves the route family it concerns (`api` for `ui`, `api` and `ci_exchange`,
   `packages` for `packages` and `files`), and to both where it concerns every request, such as the listener, the
   drain, the readiness checks and the limits of the chain. A statement about the `web` Deployment, its values or its
-  Service names the bridge of R-HA-064 only where it says so.
+  Service describes the releases before the cut; the chart renders no `web` ([ha-and-helm.md](ha-and-helm.md) Q-HA-315).
 - An `api` or `packages` replica MUST NOT:
   - claim or run jobs, or hold a lease;
   - open a session-scoped PostgreSQL connection;
@@ -8883,6 +8882,8 @@ role table); [coverage/roadmap.md](../coverage/roadmap.md#phase-6a--task-areas) 
 ### Q-ARCH-295 · What becomes of the role name `web`
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Revised** on 2026-11-19 by [Q-HA-315](ha-and-helm.md#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): the chart no longer renders `web`, because no Quader release
+precedes the cut; the binary keeps the role for development and as the replica of the integration tests.
 
 Context: every installation before the cut runs `<fullname>-web` with `--role web` behind the Service `<fullname>`, and its
 values files set `web.*`. R-HA-020 promises a zero-downtime rolling upgrade from the previous minor, and R-ARCH-025 keeps a
@@ -10733,7 +10734,7 @@ What makes it real: a burst of requests that fill the metadata caches while many
 
 Stage: the role table of R-ARCH-001 (built in the binary; the chart renders the roles with phase 6a's WP6a.3, and a `web`
 replica holds everything below and the login secrets as well, see
-[H-518](../security/roles-and-trust-boundaries.md#h-518--the-bridge-and-the-development-role-hold-both-halves-of-the-cut)).
+[H-518](../security/roles-and-trust-boundaries.md#h-518--the-development-roles-web-and-all-hold-both-halves-of-the-cut)).
 
 Live for every installation that runs the roles `api` and `packages`. Subject: the database login, the object-store and Valkey credentials, the
 stored-secret key ring, and through it the upstream credentials of every remote repository (R-ARCH-021), all of which a

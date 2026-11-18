@@ -5,8 +5,8 @@ restore Job's pod) or "post-restore" (the hook Job after a platform restore: the
 the keys that are projected and the file name each key gets. Secrets mount read-only with
 defaultMode 0440, with items and without subPath, so a rotated Secret reaches the files.
 Secrets never become environment variables. The login secrets (secrets.oidc, secrets.breakGlass) are
-mounted into the pods of role api (the main Deployment, its pools and its endpoint pools) and, in the bridge of
-R-HA-064, into the web pods; never into packages, worker or a Job. The target of the backup (secrets.backupTarget,
+mounted into the pods of role api (the main Deployment, its pools and its endpoint pools); never into packages,
+worker or a Job. The target of the backup (secrets.backupTarget,
 secrets.backupTargetCA) mounts into the backup and restore pods only (R-HA-060, R-BAK-011); Valkey into none of the Jobs
 (R-BAK-012, R-BAK-022); the key ring into the replicas and the restore Job, which checks that it opens every key ID of the
 backup (R-BAK-020).
@@ -102,8 +102,8 @@ backup (R-BAK-020).
 {{- if $s.valkeyClientCert.existingSecret -}}
 {{- $out = append $out (dict "name" "valkey-client" "secret" $s.valkeyClientCert.existingSecret "path" "/var/run/secrets/quader/valkey-client" "items" (list (dict "key" $s.valkeyClientCert.certKey "path" "tls.crt") (dict "key" $s.valkeyClientCert.keyKey "path" "tls.key"))) -}}
 {{- end -}}
-{{- /* The login secrets belong to the pods of role api (R-HA-030, R-AUTH-014, R-AUTH-042, Q-HA-79): the main Deployment, its pools and its endpoint pools, and the web pods of the bridge; never packages, worker or the migration Job. */ -}}
-{{- if has (.role | default "") (list "api" "web") -}}
+{{- /* The login secrets belong to the pods of role api (R-HA-030, R-AUTH-014, R-AUTH-042, Q-HA-79): the main Deployment, its pools and its endpoint pools; never packages, worker or the migration Job. */ -}}
+{{- if eq (.role | default "") "api" -}}
 {{- range $s.oidc -}}
 {{- $out = append $out (dict "name" (printf "oidc-%s" .providerId) "secret" .existingSecret "path" (printf "/var/run/secrets/quader/oidc-%s" .providerId) "items" (list (dict "key" (.key | default "client-secret") "path" "client-secret"))) -}}
 {{- end -}}
@@ -118,7 +118,7 @@ backup (R-BAK-020).
 TLS material of the listeners (R-HA-063): only the pods whose process loads it; the Job serves no
 listener. The listener pair of tls.secretName is read by the ops listener of every pod unless tls.ops
 gives it its own pair, and by the client listener (the pods that open :8080: api, packages, their path
-pools and the bridge's web pods) and by every further endpoint without a certificate of its own (the
+pools) and by every further endpoint without a certificate of its own (the
 pods that serve it). The client CA belongs to the client listener of the default endpoint only. A pod
 that loads none of them does not get the private key.
 */ -}}

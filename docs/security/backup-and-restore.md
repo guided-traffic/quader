@@ -12,7 +12,7 @@ default). The specification is
 | `backup` pod | the target writer credential, a read-only blob login of its own (`secrets.backupSource`, or the backup ServiceAccount's workload identity), the `backup` database role (`SELECT` everywhere, writes on `backup_run` and `backup_blob_pin`) | Valkey credentials, the key ring, the runtime credential of the blob bucket, any right to write or delete there |
 | restore Job | the target reader, a blob writer (the runtime credential), the journal reader (`restore.journalCredentials`: a credential that lists object versions), the owner database credential, the key ring | Valkey credentials |
 | post-restore Job | the owner database credential, the blob store's keys, the journal reader (`postRestore.journalCredentials`) | Valkey credentials, the key ring, any target credential |
-| `api`, `packages` and `worker` replicas (and the bridge's `web`) | `backup.expected_interval` and `backup.manual_run`, read access to `backup_run` through the API | any target credential |
+| `api`, `packages` and `worker` replicas | `backup.expected_interval` and `backup.manual_run`, read access to `backup_run` through the API | any target credential |
 
 The configuration keeps the split: `backup.target.credentials` is a section the chart renders into backup and restore pods only
 ([internal/config/backup.go](../../internal/config/backup.go)); the API reads rows, never the target

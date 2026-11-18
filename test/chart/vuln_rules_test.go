@@ -102,8 +102,8 @@ func TestR_VULN_024_PrometheusRuleValues(t *testing.T) {
 			"QuaderVulnerabilityImageScansFailing":    "warning",
 			"QuaderMirrorFailing":                     "warning",
 			"QuaderMirrorStale":                       "warning",
-			"QuaderBridgeLeftOn":                      "warning",
-			"QuaderBlobMissing":                       "critical",
+
+			"QuaderBlobMissing": "critical",
 		}
 		for _, r := range list(pr, "spec", "groups", "0", "rules") {
 			name := str(r, "alert")

@@ -237,7 +237,7 @@ Priority: **MVP** · Covers: quader-only
   [internal/app/wire_endpoints.go](../../internal/app/wire_endpoints.go): an `api` process opens no endpoint whose surface is
   `packages` alone, a `packages` process none whose surface is `api` and `ci_exchange` alone. On the endpoint `customers` with
   the surface `[packages, files, api]` both main Deployments open `:8443`, each with its own families only (`api` serves `api`,
-  `packages` serves `packages` and `files`). `web` is the bridge of the upgrade across the cut and serves every family.
+  `packages` serves `packages` and `files`). The development roles `web` and `all`, which the chart never renders, serve every family.
 - **Lifecycle.** A client-serving process binds every listener it opens before it reports ready; a
   listener that cannot bind stops startup and names the endpoint. Shutdown drains every client
   listener with the same readiness flip, drain delay and in-flight completion
@@ -547,9 +547,7 @@ R-HA-037 and R-HA-038 (the role Services `<fullname>-api` and `<fullname>-packag
 roles whose families its surface holds: `packages` for `packages` and `files`, `api` for `api` and `ci_exchange` (`ui` is
 never on a further endpoint). Without a pool, the endpoint's port opens on the main Deployment of each of those roles; with
 `pool.enabled`, on a pool of each of them. An endpoint whose surface holds families of both roles is split by path at its
-edge like the default endpoint (R-HA-037's table, restricted to its families), onto a Service per role. In the bridge of
-R-HA-064 (`web.enabled`, until step 2 moves the edge with `web.routed: false`), the main `web` pods or the pool `<fullname>-web-ep-<name>` serve every family of the surface, as they did
-before the cut.
+edge like the default endpoint (R-HA-037's table, restricted to its families), onto a Service per role.
 
 ```yaml
 endpoints: {}                             # default (proposed): only the default endpoint; example:

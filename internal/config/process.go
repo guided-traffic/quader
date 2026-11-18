@@ -10,7 +10,8 @@ const (
 	RolePackages = "packages"
 	// RoleWorker claims jobs and serves no client listener.
 	RoleWorker = "worker"
-	// RoleWeb is api and packages in one process: the bridge of the upgrade across the cut (Q-ARCH-295).
+	// RoleWeb is api and packages in one process without the job loops: a development role the chart never renders, the
+	// default replica of the integration tests (Q-ARCH-295, Q-HA-315).
 	RoleWeb = "web"
 	// RoleAll is every role but the Bastion in one process, for local development.
 	RoleAll = "all"
@@ -31,7 +32,7 @@ func ValidRole(role string) bool {
 type Process struct {
 	// Role has no default: the chart sets it per Deployment and `quader serve
 	// --role` overrides it.
-	Role string `yaml:"role" validate:"oneof=api|packages|worker|web|all" doc:"Role of this replica: api, packages, worker, web (the bridge of the upgrade across the cut) or all (local development only). No default."`
+	Role string `yaml:"role" validate:"oneof=api|packages|worker|web|all" doc:"Role of this replica: api, packages, worker, web (api and packages in one process, development and tests only) or all (local development only). No default."`
 }
 
 // RoleError is the message `quader serve` prints when no valid role is set.

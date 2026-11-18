@@ -69,7 +69,8 @@ through workload identity). The storage entries themselves belong to [storage.md
 ## Topology
 
 The cut of phase 6a (ADR-153, ADR-155; the chart renders it). The releases before it ran one Deployment `<fullname>-web`
-behind the Service `<fullname>` that served every path, which is the shape the upgrade bridge of R-HA-064 keeps for one step.
+behind the Service `<fullname>` that served every path; no Quader release has that shape, and the chart has no path from it
+([Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests)).
 
 ```text
              clients: npm, pnpm, Yarn, dotnet, nuget.exe, browsers, GitLab jobs
@@ -134,9 +135,9 @@ Priority: **MVP** · Covers: HA-001, HA-002, HA-010
   - `packages` serves the route families `packages` and `files` on the client listener and the operations listener, with
     tokens only, and never claims jobs or leases;
   - `worker` claims jobs and leases, and serves only the operations listener;
-  - `web` is `api` and `packages` in one process, rendered only by the upgrade bridge of R-HA-064;
-  - `all` combines every role. It exists only for the local profile, for a binary started outside the
-    chart during development, and the chart never renders it.
+  - `web` is `api` and `packages` in one process without the job loops, and `all` combines every role. Both exist only
+    for a binary started outside the chart: `all` for the local profile and during development, `web` as the replica of
+    the integration tests (Q-HA-315). The chart renders neither.
 
   The `backup` role is the `quader backup` subcommand. The backup CronJob and the restore Job run it
   (R-HA-060), and it serves no listener.
@@ -178,19 +179,17 @@ The split is no longer optional: it is an owner constraint since 2026-10-28, and
 [ADR-155](../decisions.md#adr-155--three-roles-api-packages-and-worker-variants-are-pools)).
 
 **Status.** Built (phase 6a, WP6a.3): the chart renders `<fullname>-api`, `<fullname>-packages` and `<fullname>-worker`
-from the list of Deployments in [_units.tpl](../../deploy/helm/quader/templates/_units.tpl); `web.enabled: true` renders
-`<fullname>-web` (`--role web`) beside them for the first two steps of R-HA-064.
+from the list of Deployments in [_units.tpl](../../deploy/helm/quader/templates/_units.tpl).
 
 - The chart MUST always render three Deployments: `<fullname>-api`, whose container runs `quader serve --role api`,
   `<fullname>-packages`, whose container runs `quader serve --role packages`, and `<fullname>-worker`, whose container runs
   `quader serve --role worker`. Each has its own replica count, resources, autoscaler, disruption budget, termination grace
   period, spool size, scheduling settings and ingress policy (R-HA-031, R-HA-032, R-HA-042). There is no single-Deployment
-  mode, and no value renders `--role all`. `--role web` is rendered only by the bridge of R-HA-064 (`web.enabled: true`).
+  mode, and no value renders `--role all` or `--role web`.
 - **Services.** `<fullname>-api` (port `http` 8080) selects only the `api` pods of the main Deployment, and
   `<fullname>-packages` (port `http` 8080) only the `packages` pods of the main Deployment; the edge routes each host's paths
   to them by prefix (R-HA-037). `<fullname>-ops` selects every serving pod on 8081. `worker` pods are reached only on the
-  operations port (probes and metrics). The Service `<fullname>` of the releases before the cut is rendered only by the bridge
-  of R-HA-064 (Q-HA-74).
+  operations port (probes and metrics). There is no Service `<fullname>` (Q-HA-74, Q-HA-315).
 - **In-cluster callers** that address Quader without the edge, such as a Bastion calling the main installation by its
   Service name ([bastion.md](bastion.md) R-BAS-008) or CI runners in the cluster, address the Service of the role whose
   families they call: `<fullname>-api` for the UI, the management API and the CI exchange, `<fullname>-packages` for the
@@ -220,7 +219,7 @@ Acceptance criteria:
 - `helm template … --set worker.replicaCount=0` fails and names `worker.replicaCount`; `--set packages.replicaCount=0`
   fails and names `packages.replicaCount`.
 - For every value set in `ci/`, the rendered containers carry the argument `--role api`, `--role packages` or
-  `--role worker`, `--role web` only where the value set enables the bridge, and never `all`.
+  `--role worker`, and never `web` or `all`.
 - The chart test of each role (`test/chart`): a Deployment, a Service where the role serves clients, a PodDisruptionBudget,
   a HorizontalPodAutoscaler with `autoscaling.enabled`, a NetworkPolicy with the ports of R-HA-042, and the edge rules of
   R-HA-037 that point at its Service.
@@ -1554,7 +1553,7 @@ R-ARCH-019 owns the pools; this requirement owns the budget.
 
 | Source | Key | Default (proposed) | Roles | Connects to |
 |---|---|---|---|---|
-| Main pool (class `main`) | `database.pool.max_conns` | 20 | `api`, `packages`, `worker` (and `web` in the bridge of R-HA-064) | `database.host`, the pooler with R-HA-058 |
+| Main pool (class `main`) | `database.pool.max_conns` | 20 | `api`, `packages`, `worker` | `database.host`, the pooler with R-HA-058 |
 | Lease pool (class `lease`, R-HA-006) | `database.lease_pool_size` | 4 | `worker` | session host |
 
 There is no listener session and no fetch-collapse lock pool any more: invalidations travel through
@@ -1577,8 +1576,7 @@ connection reaches the server through the control pool of R-HA-058, whose server
 The PostgreSQL connection limit MUST satisfy:
 
 ```text
-serving_max  = Σ over the Deployments of api and packages, their path pools, the endpoint pools
-               and, with web.enabled (R-HA-064), the web Deployment and its endpoint pools,
+serving_max  = Σ over the Deployments of api and packages, their path pools and the endpoint pools,
                of (autoscaling.enabled ? maxReplicas : replicaCount) + rollingUpdate.maxSurge
 worker_max   = Σ over the worker Deployment and its pools, the same terms
 session      = worker_max × database.lease_pool_size
@@ -1599,9 +1597,6 @@ Examples:
   (`serving_max` 3 + 4 = 7, `worker_max` 3): 10 × 20 + 3 × 4 + 2 + 4 + 10 + 3 = **231**, with no `serving_max × 1`
   term, because `api` and `packages` replicas hold no session connection. Before the cut, with `web` 3 and `worker` 2, it was
   171. The PostgreSQL default of 100 is too small, so the chart's NOTES print the computed budget.
-- During the first two steps of the upgrade across the cut (R-HA-064), the `web` Deployment runs beside `api` and `packages`:
-  with the defaults `serving_max` is 4 + 3 + 4 = 11, and the budget **311**. The migration Job of that step checks it, so a
-  server sized only for the target fails the step before anything changes.
 - Large profile (R-HA-050), `packages` up to 16, `api` up to 4 and `worker` up to 6, `max_conns: 30`: without a pooler
   (17 + 5 + 7) × 30 + 7 × 4 + 19 = **917**; with a transaction-mode pooler declaring 100 server connections,
   100 + 28 + 19 = **147**.
@@ -2464,8 +2459,7 @@ the object store is away.
 - **Order.** Helm runs the migration hook first (R-HA-019) and then applies the Deployments of every role and pool
   together; each rolls on its own.
   No order between them is needed, because every role tolerates the other roles in release N−1
-  (below). The upgrade from a release before the cut into roles takes the three steps of R-HA-064 instead, because a
-  Deployment cannot be renamed. The backup CronJob takes the new image for its next run; a run already in progress
+  (below). The backup CronJob takes the new image for its next run; a run already in progress
   finishes on the old one, which the expand-only window allows.
 - During the mixed-version window, release N and N−1 serve the same clients alternately, and N−1
   workers may run jobs that N web replicas enqueued. Therefore:
@@ -2528,7 +2522,6 @@ fails (on its credential) leaves the replicas serving.
 |---|---|
 | Patch (x.y.z → x.y.z+1) | Rolling, zero downtime; patch releases contain no contract steps |
 | Next minor (x.y → x.y+1) | Rolling, zero downtime (R-HA-020) |
-| From a release before the cut into roles to the first release with `api` and `packages` | Three rolling steps with zero downtime: `web.enabled: true`, then `web.routed: false`, then `web.enabled: false` (R-HA-064); the release notes name them |
 | Skipping minors (x.y → x.y+2 or later) | Stepwise through each minor with zero downtime, or in one step with downtime: scale every role to zero, wait `system.heartbeat_stale_after`, then `helm upgrade`. The contract guard enforces this (R-HA-018, Q-HA-5) |
 | Major | As stated in the release notes; skipping a major is not supported |
 
@@ -2566,126 +2559,6 @@ Acceptance criteria:
 - A `helm upgrade` started while a backup's database phase runs waits for it; with the phase
   artificially held longer than `migrate.advisory_lock_wait`, the migration Job fails with a message
   that names the backup, and the old pods keep serving.
-
-### R-HA-064 · Upgrade across the cut into roles
-Priority: **MVP** · Covers: HA-069, OPS-073
-
-**Before the first stable release its promise of no downtime does not apply** (owner, 2026-11-06,
-`CLAUDE.md`, [Q-ARCH-340](architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)): it rests on the mixed-version operation of R-HA-020.
-
-**No Quader release precedes the cut.** The releases before it were published under the former name, which
-[ADR-199](../decisions.md#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark) left
-without a migration path, and every release named Quader (from `v0.56.0`) has the roles. No installation can take this path,
-and its end-to-end test is removed; the bridge stays in the chart until the change that removes it
-([Q-HA-313](#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)).
-
-**Status.** Built (phase 6a, WP6a.3; the third step since F-64, Q-HA-130): the bridge, its edge, step 2's value `web.routed`
-and the guard ([_validate_roles.tpl](../../deploy/helm/quader/templates/_validate_roles.tpl)). The guard reads the cluster
-(`quader.bridgeFacts`) and decides on what it read (`quader.bridgeGuard`); the chart test `TestRolesBridge` checks the decision
-with given facts (Q-HA-132) and that each step changes either the edge or the backends. The reads were verified by the upgrade
-e2e test from v0.16.0 (Q-HA-86), last in the dispatched nightly run 42258656348 of 2026-11-06; since that release is no longer
-published, no test verifies them ([Q-HA-313](#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)).
-While the bridge runs, its `web` pods hold the secrets of both
-roles ([H-518](../security/roles-and-trust-boundaries.md#h-518--the-bridge-and-the-development-role-hold-both-halves-of-the-cut)).
-
-The releases before the cut run `<fullname>-web` behind the Service `<fullname>` and route every host whole to it. A
-Deployment cannot be renamed, and Helm applies a release in one pass: it creates the new Deployments, repoints the edge and
-deletes `<fullname>-web` before a new pod is ready. One `helm upgrade` from the old shape to the cut would therefore leave the
-edge without a ready backend for the start time of the new pods. An edge also applies a removed backend before a moved route:
-HAProxy Ingress empties the backend of a deleted Service at once and takes a changed Ingress with its next reload, about 1.5 s
-later (F-64), so an apply that both moves a route and removes the backend it pointed at answers `503` in between. The upgrade
-therefore takes three steps, each of which changes either the edge or the set of backends, never both, joined by the bridge
-values `web.enabled` and `web.routed` (Q-ARCH-295, Q-HA-73, Q-HA-130).
-
-- **`web.enabled: true` (the bridge).** The chart renders, besides everything of R-HA-002 and R-HA-062:
-  - `<fullname>-web` with `--role web` from the `web` values, which keep every key of the releases before the cut, its
-    disruption budget, autoscaler and ingress policy, and the endpoint pools of the old shape (`<fullname>-web-ep-<name>`,
-    `--role web`, `QUADER_POOL_NAME=ep-<name>`);
-  - the endpoint pools of the target shape (`<fullname>-packages-ep-<name>`, `<fullname>-api-ep-<name>`) beside them, so that
-    step 2 switches the endpoint's Service onto pods that are ready (Q-HA-90); for a surface with families of both roles the
-    Service `<fullname>-api-ep-<name>` already selects the `api` pods, without a route, so that step 2 routes to a Service
-    whose endpoints exist;
-  - the Service `<fullname>` (port 8080, selecting the `web` pods of the main Deployment);
-  - with `web.routed: true` (the default), the edge of the old shape: every rendered Ingress routes each host whole (`/`,
-    `pathType: Prefix`) to `<fullname>`, and each further endpoint's Service selects the `web` pods that served it before
-    (the main `web` Deployment or `<fullname>-web-ep-<name>`); with `web.routed: false`, the edge of the target shape
-    (R-HA-037, R-EP-008) while everything above keeps running;
-  - one BackendTLSPolicy (R-HA-063) for `<fullname>` and one for each Service of the target shape, for the whole bridge: a
-    route kept outside the chart (a Gateway API HTTPRoute) moves between them at a time the chart does not know.
-
-  The Deployments of `api`, `packages` and `worker`, their path pools and endpoint pools, and their Services run beside it;
-  until step 2, `api` and `packages` receive no edge traffic, so their share of the fetch budget is unused during step 1
-  (below). `NOTES.txt` names the step the release is at and the next one.
-- **Step 1.** `helm upgrade` with `--set web.enabled=true` and the values otherwise unchanged: `<fullname>-web` rolls to the
-  new release by R-HA-020 with no gap, because the edge keeps its Service, and the new Deployments become ready meanwhile.
-  Between steps 1 and 3, in-cluster callers move to `<fullname>-api` and `<fullname>-packages` (R-HA-002), and the values gain
-  the `api.*` and `packages.*` sizing the installation wants. Before step 1, policies outside the chart that admit Quader's pods by
-  `app.kubernetes.io/component` (an ingress policy of PostgreSQL, Valkey or the Sentinels) must admit `api` and `packages` beside
-  `web`, and the labels cluster-wide policies key on move from `web.podLabels` to `api.podLabels` and `packages.podLabels`; otherwise
-  the new pods cannot reach their dependencies and stay not ready, which the guard of step 2 then reports. The upgrade guide
-  ([docs/manual/admin/upgrades.md](../manual/admin/upgrades.md)) lists this as the first check (seen on the owner's cluster on
-  2026-11-06, where the policies of the database and Valkey admitted `web`, `worker` and `migrate` only).
-- **Step 2.** `helm upgrade` with `--set web.enabled=true --set web.routed=false`: the edge switches to the path routing of
-  R-HA-037 onto Services whose pods have been ready since step 1, and each further endpoint's Service onto the pods of its role.
-  Nothing is deleted: `<fullname>-web`, its endpoint pools and the Service `<fullname>` keep running, so a request the edge
-  still sends by the old route until it has applied the new one is served. An edge outside the chart (an HTTPRoute) is moved to
-  the role Services now.
-- **Step 3.** `helm upgrade` with `web.enabled: false` (the default): Helm deletes `<fullname>-web`, its endpoint pools and the
-  Service `<fullname>`, which no route names any more; their pods drain by R-HA-011. No route changes.
-- **Guard.** Where the chart can read the cluster (`helm upgrade`, `helm install --dry-run=server`; Helm's `lookup`), the
-  release's namespace holds a Deployment `<fullname>-web` and the rendered edge is the target shape's (step 2 or step 3), it
-  reads where the edge points: the edge is still on the bridge while the chart's Ingress `<fullname>` routes a path to the
-  Service `<fullname>`, or a further endpoint's Service `<fullname>-ep-<name>` selects the `web` pods. It refuses to render
-  ([_validate_roles.tpl](../../deploy/helm/quader/templates/_validate_roles.tpl): `quader.bridgeFacts` reads, `quader.bridgeGuard`
-  decides):
-  - the upgrade that moves the edge (the edge is still on the bridge) while a serving Deployment of the target shape
-    (`<fullname>-api`, `<fullname>-packages`, their path pools and their endpoint pools) does not exist or has fewer ready
-    replicas than its `spec.replicas`; the message names what still routes to the bridge, the Deployment and the three steps.
-    Once the edge has moved, an upgrade at step 2 or 3 passes whatever the readiness of the target shape: it moves nothing,
-    and a refusal would leave a crash-looping `api` or a rollout in progress only the way back to step 1 (Q-HA-132);
-  - `web.enabled: false` while the edge is still on the bridge, which is step 3 without step 2; the message names what
-    still routes to the bridge and the three steps;
-  - where it reads no edge at all (no Ingress `<fullname>`, no endpoint Service), the target shape while `<fullname>-api` or
-    `<fullname>-packages` does not exist: step 1 has not run.
-
-  Under `helm template` and other renderers without cluster access the guard has nothing to read, and the release notes carry
-  the three steps. An edge outside the chart is not read: an operator who skips step 2 there meets the gap of F-64.
-- **Mixed versions.** During step 1 the replicas of the release before the cut (role `web`) and the new release (roles
-  `web`, `api`, `packages`, `worker`) run side by side, and R-HA-020's rules hold unchanged: the registry and the status
-  screen list the `web` replicas of both releases under the role `web`, and the new `api` and `packages` replicas as new rows
-  with the roles `["api"]` and `["packages"]` (R-OPS-003, R-UI-038); the `web` replicas of the releases before the cut do not
-  list them. An older worker does not claim the queue `vuln` (R-ARCH-016).
-- **Fetch share during step 1.** The fetch share of a remote repository (R-REPO-040) counts the live replicas of `packages`,
-  `web` and `all`. During step 1 it therefore counts the `packages` pods of the main Deployment, which receive no edge traffic,
-  and the `packages` pods of endpoint pools, which fill nothing when the endpoint has `cacheFill: false`. Each pod that serves
-  holds fewer slots than it would without them: the budget is never exceeded, and the throughput of cache fills is lower until
-  step 2.
-- **Left on.** The guard acts on steps 2 and 3 only. An installation that stays at step 1 keeps every host on the `web` pods,
-  and one that stays at step 2 keeps them running beside the roles; both hold the login secrets
-  ([H-518](../security/roles-and-trust-boundaries.md#h-518--the-bridge-and-the-development-role-hold-both-halves-of-the-cut)),
-  and the alert `QuaderBridgeLeftOn` (Q-HA-92) reports a `web` replica registered for 24 hours.
-- **The way back** is a rollback of a release (R-ARCH-025). Each step's rollback is the reverse of a step that changes one
-  kind of thing: rolling back step 3 recreates `<fullname>-web` and the Service `<fullname>` without a route to them, rolling
-  back step 2 moves the edge back onto `<fullname>`, whose pods still run, and rolling back step 1 is a rollback of
-  `<fullname>-web` alone. None of them leaves a route without a ready backend, so a rollback goes one step at a time: from
-  step 3 to step 2, then from step 2 to step 1. `helm rollback` applies a stored release without rendering it, so no guard
-  can refuse a rollback from step 3 straight to a revision of step 1: it recreates `<fullname>-web` and points the Ingress
-  at `<fullname>` in one apply, and the host answers `503` until the restored `web` pods are ready.
-- A fresh installation never renders `web`: `web.enabled` defaults to `false`, `web.routed` has no effect without it, and the
-  chart's `ci/` value sets render the bridge only in the value set that tests it.
-
-Acceptance criteria (the end-to-end criterion from the release before the cut is removed, Q-HA-313; the guard is held with the
-facts a cluster would give it):
-
-- With the facts of a namespace that holds `quader-web` and no ready `quader-api`, `web.enabled: false` is refused with a message
-  that names `web.enabled` and the three steps; the same values under `helm template` render.
-- With the facts of step 1 (the Ingress `quader` routes `/` to the Service `quader`), `web.enabled: false` is refused with a
-  message that names step 2.
-- After step 2, `helm upgrade` with the values of step 2 or 3 renders while a Deployment of the target shape is not ready
-  (Q-HA-132).
-- `helm template … --set web.enabled=true` renders `quader-web` with `--role web`, the Service `quader` selecting its pods, an
-  Ingress whose every rule is `/` to `quader`, and the Deployments and Services of `api`, `packages` and `worker`; with
-  `--set web.routed=false` the same Deployments and Services and the Ingress of the target shape.
 
 ### R-HA-022 · Background data migrations
 Priority: **MVP** · Covers: OPS-074
@@ -3494,7 +3367,6 @@ does not contain `quader`, overridable by `fullnameOverride`):
 | Deployment | `<fullname>-api`, `<fullname>-packages`, `<fullname>-worker` | always (R-HA-002) |
 | Deployment, Service | `<fullname>-api-<pool>`, `<fullname>-packages-<pool>`, `<fullname>-worker-<pool>` (Deployment only) | per entry of `api.pools`, `packages.pools` and `worker.pools` (R-HA-062) |
 | Service (ClusterIP) | `<fullname>-api` and `<fullname>-packages`, port `http` 8080 → the main Deployment's pods of that role, `sessionAffinity: None` | always |
-| Deployment, Service (ClusterIP) | `<fullname>-web` (`--role web`) and `<fullname>`, port `http` 8080 → `web` pods; `<fullname>-web-ep-<name>` for the endpoint pools of the old shape | `web.enabled`, the bridge of the upgrade across the cut (R-HA-064) |
 | Service (ClusterIP) | `<fullname>-ops`, port `ops` 8081, every serving pod (`api`, `packages`, `worker`, `web`) | always (probes from the kubelet do not need it; ServiceMonitor does) |
 | ConfigMap | `<fullname>-config` (`quader.yaml`) | always |
 | ServiceAccount | `<fullname>` | `serviceAccount.create` |
@@ -3510,7 +3382,7 @@ does not contain `quader`, overridable by `fullnameOverride`):
 | Ingress | `<fullname>`: per host the path rules of R-HA-037 to the role Services | `ingress.enabled` |
 | HTTPRoute | `<fullname>`: the same path rules | `gateway.enabled` |
 | Gateway | `<fullname>-gateway` | `gateway.enabled` and `gateway.create.enabled` (P1, R-HA-053) |
-| NetworkPolicy | one per Deployment, named as the Deployment (`<fullname>-api`, `<fullname>-packages`, `<fullname>-worker`, each pool, each endpoint pool, `<fullname>-web` in the bridge), and `<fullname>-migrate`, `<fullname>-restore`, `<fullname>-backup`; ingress rules only, each with its port (R-HA-042) | `networkPolicy.enabled` |
+| NetworkPolicy | one per Deployment, named as the Deployment (`<fullname>-api`, `<fullname>-packages`, `<fullname>-worker`, each pool, each endpoint pool), and `<fullname>-migrate`, `<fullname>-restore`, `<fullname>-backup`; ingress rules only, each with its port (R-HA-042) | `networkPolicy.enabled` |
 | Service, Ingress, HTTPRoute | `<fullname>-ep-<name>` per further endpoint, and `<fullname>-api-ep-<name>` when its surface holds families of both roles: its Services and port, its own Ingress or HTTPRoute with its class, hosts (a wildcard host included), TLS entries and the path rules of its surface ([endpoints.md](endpoints.md) R-EP-008, Q-EP-71) | per entry of `endpoints`; the Ingress with its `ingress.enabled`, the HTTPRoute with its `gateway.enabled` |
 | Deployment, PodDisruptionBudget, HorizontalPodAutoscaler | `<fullname>-packages-ep-<name>` and `<fullname>-api-ep-<name>`, the optional pool of an endpoint, one per role its surface holds ([endpoints.md](endpoints.md) R-EP-008, Q-EP-70) | `endpoints.<name>.pool.enabled` |
 | ServiceMonitor, PrometheusRule | `<fullname>` | `metrics.serviceMonitor.enabled`, `metrics.prometheusRule.enabled` |
@@ -3520,14 +3392,13 @@ does not contain `quader`, overridable by `fullnameOverride`):
   store (R-HA-061).
 - Labels on every object: `app.kubernetes.io/name: quader`, `app.kubernetes.io/instance`,
   `app.kubernetes.io/version`, `app.kubernetes.io/managed-by`, `helm.sh/chart`, and
-  `app.kubernetes.io/component` (`api`, `packages`, `worker`, `web` in the bridge, `migrate`, `restore`, `backup`). The
-  pods of `api`, `packages`, `worker` and `web` also carry `quader/pool` (name proposed): `<name>` for the pods of a pool of
+  `app.kubernetes.io/component` (`api`, `packages`, `worker`, `migrate`, `restore`, `backup`). The
+  pods of `api`, `packages` and `worker` also carry `quader/pool` (name proposed): `<name>` for the pods of a pool of
   R-HA-062 (`ep-<name>` for an endpoint pool), and the empty value for the main Deployments. The ServiceMonitor sets the target label `pool`
   from it, and Prometheus drops an empty label, so the main Deployments' series carry no `pool`
   (R-HA-045). Selectors use name, instance, component and, for the serving roles, `quader/pool`,
   from the MVP on, because selector labels are immutable: adding a pool later then never overlaps
-  the main Deployment's or the role Service's selector and never changes an immutable one. The cut adds Deployments
-  under new names with new component values, so no immutable selector of the releases before it changes (R-HA-064).
+  the main Deployment's or the role Service's selector and never changes an immutable one.
 - **Ports (HA-021).** Containers listen on 8080 (`http`, the default endpoint's client listener),
   8081 (`ops`) and the port of each further endpoint they serve ([endpoints.md](endpoints.md)
   R-EP-002, R-EP-008), and nothing else (INV-6). Every port is unprivileged, so no capability is
@@ -3557,11 +3428,11 @@ The chart MUST refuse to render, naming the offending value, before anything is 
 | `config.storage.s3.bucket` empty | the value |
 | `config.storage.s3.credentials.source: static` without `secrets.s3.existingSecret` | both |
 | `secrets.encryption.existingSecret` or `secrets.encryption.keys` empty | the value, and the key-creation command of R-HA-027 |
-| `highAvailability.enforce` and fewer than 2 replicas (`replicaCount`, or `autoscaling.minReplicas`) for `api`, `packages`, `worker`, `web` with `web.enabled`, or a pool, a disabled PDB, or a missing host spread constraint, one that is not `DoNotSchedule`, or one without `nodeTaintsPolicy: Honor` (R-HA-059 rule 3) | the Deployment and the value |
+| `highAvailability.enforce` and fewer than 2 replicas (`replicaCount`, or `autoscaling.minReplicas`) for `api`, `packages`, `worker` or a pool, a disabled PDB, or a missing host spread constraint, one that is not `DoNotSchedule`, or one without `nodeTaintsPolicy: Honor` (R-HA-059 rule 3) | the Deployment and the value |
 | `worker.replicaCount`, `api.replicaCount` or `packages.replicaCount` (or its `autoscaling.minReplicas`) < 1 | the value |
-| `config.storage.upload.max_size` > the spool budget derived from the `packages` spool size (and the `web` spool size with `web.enabled`); the upload limit of the UI's content route (`config.ui.deploy.max_upload_bytes`, or `config.storage.upload.max_size` when it is 0) > the spool budget of `api` (R-HA-035, Q-UI-106) | both |
+| `config.storage.upload.max_size` > the spool budget derived from the `packages` spool size; the upload limit of the UI's content route (`config.ui.deploy.max_upload_bytes`, or `config.storage.upload.max_size` when it is 0) > the spool budget of `api` (R-HA-035, Q-UI-106) | both |
 | `terminationGracePeriodSeconds` of a role < `config.health.shutdown_drain_delay` + 15 s | both |
-| `api`, `packages`, `web` with `web.enabled`, a path pool or an endpoint pool without `resources.limits.memory`, or with one that admits fewer than 64 requests: ⌊0.8 × `config.runtime.memory_limit_ratio` × the limit ÷ the request bytes of R-ARCH-005⌋, from `config.storage.download.buffer_size`, `hold_back` and `config.storage.s3.http.receive_window` (R-HA-036, Q-HA-70), or whose kernel share holds fewer than 64 send buffers: ⌊0.8 × (1 − the ratio) × the limit ÷ twice `config.server.send_buffer` (4 MiB with `0`)⌋ (Q-ARCH-500) | the limit, the Deployment or the slot count and the values it comes from |
+| `api`, `packages`, a path pool or an endpoint pool without `resources.limits.memory`, or with one that admits fewer than 64 requests: ⌊0.8 × `config.runtime.memory_limit_ratio` × the limit ÷ the request bytes of R-ARCH-005⌋, from `config.storage.download.buffer_size`, `hold_back` and `config.storage.s3.http.receive_window` (R-HA-036, Q-HA-70), or whose kernel share holds fewer than 64 send buffers: ⌊0.8 × (1 − the ratio) × the limit ÷ twice `config.server.send_buffer` (4 MiB with `0`)⌋ (Q-ARCH-500) | the limit, the Deployment or the slot count and the values it comes from |
 | `config.valkey.mode: sentinel` with `config.valkey.sentinel.addresses` or `config.valkey.sentinel.primary_name` empty | the value |
 | `highAvailability.enforce` and `config.valkey.mode` other than `sentinel`, or fewer than 3 Sentinel addresses | `config.valkey.mode` or `config.valkey.sentinel.addresses` |
 | `secrets.valkey.existingSecret` empty | the value |
@@ -3576,9 +3447,6 @@ The chart MUST refuse to render, naming the offending value, before anything is 
 | `restore.enabled` without `restore.backupId` | `restore.backupId` |
 | `restore.enabled` with a replica count above 0 or autoscaling enabled for any role or pool | `restore.enabled` and the value |
 | Two pools of a role with the same name, two pools with the same path prefix or queue, a pool path outside the families of its role or equal to one of the role's own prefixes of R-HA-037, a worker pool queue that does not exist, or a pool whose name starts with `ep-` (R-HA-062) | the pools |
-| The edge of the target shape (`web.enabled: false`, or `web.routed: false`) while the namespace holds `<fullname>-web`, the edge is still on the bridge (the chart's Ingress `<fullname>` routes a path to the Service `<fullname>`, or a `<fullname>-ep-<name>` selects the `web` pods) and a serving Deployment of the target shape (api, packages, path pools, endpoint pools) is missing or not fully ready, read through `lookup` where the chart can read the cluster (R-HA-064, Q-HA-132) | what still routes to the bridge, the Deployment and the three steps |
-| `web.enabled: false` while the namespace holds `<fullname>-web` and the edge is still on the bridge, read through `lookup` (R-HA-064, Q-HA-130) | what still routes to the bridge and the three steps |
-| The edge of the target shape while the namespace holds `<fullname>-web`, the chart reads no edge (no Ingress `<fullname>`, no endpoint Service) and `<fullname>-api` or `<fullname>-packages` does not exist: step 1 has not run (R-HA-064, Q-HA-132) | the Deployment and the three steps |
 | Worker pools that claim every queue; a worker pool without a replica; an `endpoints.default.surface` without a family of a role that no further endpoint is served by (R-HA-062) | the pool or the surface |
 | A provider of `config.auth.oidc.providers` with a `client_auth_method` other than `none` and no entry in `secrets.oidc` (R-HA-030, Q-HA-93) | the provider |
 | An endpoint whose `port` equals 8080, 8081 or another endpoint's port; an invalid endpoint name or one for which `<fullname>-api-ep-<name>` (a surface with families of both roles) or `<fullname>-packages-ep-<name>` (a pool) exceeds 63 characters; a missing `baseUrl`; a host in two endpoints; `extraSecrets` or `clientCaSecret` with `tls.enabled: false`; an endpoint pool below two replicas with `highAvailability.enforce` ([endpoints.md](endpoints.md) R-EP-008) | the endpoint and the value |
@@ -3680,7 +3548,7 @@ changes, that default follows.
 | `secrets.valkeyClientCert` (same pods) | `tls.crt`, `tls.key` | `/var/run/secrets/quader/valkey-client/` | `valkey.tls.cert_file`, `valkey.tls.key_file` |
 | `secrets.backupTarget` (backup and restore pods; only with `source: static`) | `access-key-id`, `secret-access-key`, `session-token` (only with `sessionTokenKey`) | `/var/run/secrets/quader/backup-target/` | `backup.target.credentials.access_key_id_file`, `…secret_access_key_file`, `…session_token_file` |
 | `secrets.backupTargetCA` (backup and restore pods; Q-HA-146) | `ca.crt` | `/var/run/secrets/quader/backup-target-ca/` | `backup.target.ca_file` |
-| `secrets.oidc[]` (one entry per provider ID; only the pods of role `api` (its main Deployment, its pools and its endpoint pools) and `web` with `web.enabled`; never a pod of `packages`, worker, backup, migration or restore pods, R-AUTH-042, Q-HA-79) | `client-secret` | `/var/run/secrets/quader/oidc-<id>/` | `client_secret_file` of the provider with that `id` in `config.auth.oidc.providers` |
+| `secrets.oidc[]` (one entry per provider ID; only the pods of role `api` (its main Deployment, its pools and its endpoint pools); never a pod of `packages`, worker, backup, migration or restore pods, R-AUTH-042, Q-HA-79) | `client-secret` | `/var/run/secrets/quader/oidc-<id>/` | `client_secret_file` of the provider with that `id` in `config.auth.oidc.providers` |
 | `secrets.breakGlass` (the same pods as `secrets.oidc[]`, R-AUTH-014, R-AUTH-042) | `password` | `/var/run/secrets/quader/break-glass/` | `auth.break_glass.password_file`; empty value → `auth.break_glass.enabled: false` |
 | `secrets.encryption` | `secrets.encryption.keys` | `/var/run/secrets/quader/encryption/` | `secrets.encryption_key_files` (ordered) and `secrets.active_key_id` (the first entry) |
 | `secrets.metricsToken` | `token` | `/var/run/secrets/quader/metrics/` | `metrics.bearer_token_file` (R-OPS-006) |
@@ -3720,7 +3588,7 @@ and is commented only where its name does not say its meaning, unit, range or co
 default is empty (owner, 2026-11-04: no content-free comments). Keys under
 `config` belong to the pages named in the comments; this page only fixes how the chart wires them.
 Keys marked P1 (`gateway.create`, `contentOrigin`, `bootstrap`) enter the chart with the release that implements them, and
-the keys of phase 6a (`api`, `packages`, `web.enabled`, the pools of R-HA-062) with phase 6a: the `config` subtree is validated against the
+the keys of phase 6a (`api`, `packages`, the pools of R-HA-062) with phase 6a: the `config` subtree is validated against the
 schema the binary emits (R-HA-029), so a key the binary does not know yet would fail
 `helm install`. The keys under `config.backup` are [backup-and-restore.md](backup-and-restore.md)
 R-BAK-011's, shown here with every key and default.
@@ -3882,76 +3750,6 @@ packages:
   podLabels: {}
   extraEnv: []                          # appended after the shared extraEnv
   pools: []                             # example: [{name: npm, paths: [/api/npm], replicaCount: 4}]
-
-# ── web Deployment: the bridge of the upgrade across the cut ─────
-# Rendered only with web.enabled: quader serve --role web, the Service <fullname> and the edge of the releases
-# before the cut. Every other key keeps its meaning and default of those releases; a fresh installation never sets it.
-web:
-  enabled: false                        # true for steps 1 and 2 of the cut (R-HA-064)
-  routed: true                          # false in step 2: the edge moves to api and packages while the bridge still runs
-  replicaCount: 3                       # ignored when autoscaling.enabled
-  minReadySeconds: 10
-  revisionHistoryLimit: 5
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  terminationGracePeriodSeconds: 120
-  spool:
-    sizeLimit: ""                       # empty = spool.sizeLimit
-  resources:
-    requests:
-      cpu: "1"
-      memory: 1Gi
-      ephemeral-storage: 2Gi
-    limits:
-      memory: 2Gi                       # no CPU limit by default
-  autoscaling:
-    enabled: false
-    minReplicas: 3
-    maxReplicas: 8
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 0  # 0 = no memory metric
-    metrics: []                         # additional autoscaling/v2 metric specs
-    behavior:
-      scaleUp:
-        stabilizationWindowSeconds: 0
-        policies:
-          - type: Pods
-            value: 2
-            periodSeconds: 60
-      scaleDown:
-        stabilizationWindowSeconds: 300
-        policies:
-          - type: Pods
-            value: 1
-            periodSeconds: 120
-  podDisruptionBudget:
-    enabled: true
-    maxUnavailable: 1
-    minAvailable: null                  # mutually exclusive with maxUnavailable
-    unhealthyPodEvictionPolicy: AlwaysAllow
-  topologySpread:
-    enabled: true                       # render the two constraints below
-    nodeTaintsPolicy: Honor             # cordoned nodes do not count as domains
-    zone:
-      maxSkew: 1
-      whenUnsatisfiable: ScheduleAnyway
-    host:
-      maxSkew: 1
-      whenUnsatisfiable: DoNotSchedule  # required with highAvailability.enforce
-  topologySpreadConstraints: []         # non-empty replaces the generated constraints
-  nodeFailureTolerationSeconds: 60      # not-ready/unreachable tolerations
-  affinity: {}
-  nodeSelector: {}                      # example: {kubernetes.io/arch: arm64}
-  tolerations: []
-  priorityClassName: ""                 # example: business-critical
-  schedulerName: ""
-  podAnnotations: {}
-  podLabels: {}
-  extraEnv: []                          # appended after the shared extraEnv
-  pools: []                             # kept for the releases before the cut; ignored, the bridge renders no path pool
 
 # ── worker Deployment: quader serve --role worker ─────────────────
 worker:
@@ -4324,7 +4122,7 @@ securityContext:
 # ── Volumes: nothing ReadWriteMany, nothing persistent ─────────────────────
 spool:
   type: emptyDir                        # emptyDir | ephemeral
-  sizeLimit: 20Gi                       # web.spool and worker.spool override it
+  sizeLimit: 20Gi                       # api.spool, packages.spool and worker.spool override it
   headroom: 2GiB                        # sizeLimit - headroom = storage.spool.max_bytes
   medium: ""                            # node disk; "Memory" counts against the memory limit
   ephemeral:
@@ -4380,7 +4178,7 @@ ingress:
   labels: {}
   hosts: []                             # empty = host of config.server.base_url
   # No path value: every host gets the fixed path rules of R-HA-037 (Prefix rules per route family onto <fullname>-api and
-  # <fullname>-packages; / onto <fullname> with web.enabled).
+  # <fullname>-packages).
   tls: []                               # example: [{secretName: quader-tls, hosts: [quader.example.com]}]
   backendTLS:                           # how the controller reaches Quader when tls.enabled; Quader speaks HTTPS, so the controller must too
     controller: haproxy                 # haproxy (HAProxy Ingress, the primary target) | traefik | ingress-nginx | manual (you set the backend protocol in ingress.annotations / service.annotations)
@@ -4673,7 +4471,7 @@ Priority: **MVP** · Covers: HA-005
 
 - The spool (R-STOR-004) is an `emptyDir` at `/var/lib/quader/spool` with `sizeLimit` from the
   role's or pool's `spool.sizeLimit` (`api.spool.sizeLimit`, `packages.spool.sizeLimit`, `worker.spool.sizeLimit`,
-  `web.spool.sizeLimit` with `web.enabled`, falling back to `spool.sizeLimit`). With `spool.type: ephemeral` it is a generic ephemeral volume (a per-pod
+  falling back to `spool.sizeLimit`). With `spool.type: ephemeral` it is a generic ephemeral volume (a per-pod
   PersistentVolumeClaim deleted with the pod) of `spool.ephemeral.size`
   ([ephemeral volumes](https://kubernetes.io/docs/concepts/storage/ephemeral-volumes/)), for nodes
   whose local disk is too small. Its access mode is `ReadWriteOnce` or `ReadWriteOncePod`, never
@@ -4798,7 +4596,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: HA-012, HA-022, HA-038, HA-039, HA-042
 
 **Status.** Built (phase 6a, WP6a.3) for the Ingress ([ingress.yaml](../../deploy/helm/quader/templates/ingress.yaml) over the table of
-[_edge.tpl](../../deploy/helm/quader/templates/_edge.tpl)); the bridge of R-HA-064 keeps one rule `/` to `<fullname>` for one step.
+[_edge.tpl](../../deploy/helm/quader/templates/_edge.tpl)).
 The HTTPRoute of R-HA-038 reads the same table and is not rendered yet (Q-HA-81).
 
 - **One host, split by path prefix (HA-012, Q-HA-71).** All client traffic of the default endpoint (UI, API, package
@@ -4847,9 +4645,10 @@ The HTTPRoute of R-HA-038 reads the same table and is not rendered yet (Q-HA-81)
   values. `values.schema.json` declares `ingress` and `gateway` with `additionalProperties: false`, so
   `--set ingress.path=/quader` fails schema validation before anything renders (R-HA-029).
 - **Load balancer (HA-022).** An Ingress controller or a Gateway API implementation (R-HA-038) is
-  the load balancer. The Services are `ClusterIP` by default. `service.type: LoadBalancer` is allowed only together with the
-  bridge of R-HA-064 or for a further endpoint whose surface lies within one role, because a cloud load balancer in front of
-  one Service cannot split a host by path; clusters without an Ingress controller or Gateway route through one of the two.
+  the load balancer. The Services are `ClusterIP` by default. `service.type: LoadBalancer` reaches one role per Service, and
+  so serves a whole host only for a further endpoint whose surface lies within one role, because a cloud load balancer in
+  front of one Service cannot split a host by path; clusters without an Ingress controller or Gateway route through one of
+  the two.
   Plain HTTP to the internet is not a supported production setup.
 - **TLS (HA-042).** TLS terminates at the edge: an Ingress TLS Secret, cert-manager through an
   annotation (`cert-manager.io/cluster-issuer`, [cert-manager Ingress](https://cert-manager.io/docs/usage/ingress/)),
@@ -4896,7 +4695,7 @@ example values render the route beside the Ingress (`TestR_HA_038_ProductionExam
 - With `gateway.enabled: true` the chart renders an `HTTPRoute` (`gateway.networking.k8s.io/v1`).
   It attaches to `gateway.parentRefs`, with `hostnames` defaulting to the base URL's host (plus the
   content host of R-HA-055 when set), one rule per row of R-HA-037's prefix table with a `PathPrefix` match to the Service
-  of its role (fixed, not values; one rule `PathPrefix /` to `<fullname>` with the bridge of R-HA-064), the path pools'
+  of its role (fixed, not values), the path pools'
   rules of R-HA-062, and on every rule `timeouts.request` / `timeouts.backendRequest` and `gateway.filters` from the values.
   The Gateway API orders `PathPrefix` matches by length, so the more specific prefix wins as in an Ingress. With
   `tls.backendTLSPolicy.enabled`, one BackendTLSPolicy per Service the HTTPRoute names. HTTPRoute timeouts are part of the Standard channel since Gateway API v1.2
@@ -5062,7 +4861,7 @@ session cookie (Q-ARCH-10). This requirement is the chart side.
     diverge, as for `base_url` (R-HA-040);
   - adds a rule for that host to the Ingress (path `/`, `pathType: Prefix`, R-HA-037) and an HTTPRoute rule for the
     host (R-HA-038), both to `<fullname>-packages:8080`, because the content host serves only the families `packages` and
-    `files` (`<fullname>:8080` with the bridge of R-HA-064). There is no further Service, port or Deployment: the replica
+    `files`. There is no further Service, port or Deployment: the replica
     tells the hosts apart (R-ARCH-029, with the host resolved by R-ARCH-006);
   - with `contentOrigin.tls.secretName`, adds a TLS entry of its own to the Ingress
     (`{secretName: <contentOrigin.tls.secretName>, hosts: [<contentOrigin.host>]}`), so the content
@@ -5150,7 +4949,6 @@ selecting its pods by the selector labels of R-HA-028, with `policyTypes: [Ingre
 | `<fullname>-api`, `<fullname>-packages`, each of their path pools | from `networkPolicy.ingress.http.from` (empty means from anywhere, so the edge works wherever it runs) | from that endpoint's `networkPolicy.from`, for each further endpoint without a pool whose surface holds a family of the role | from `networkPolicy.ingress.ops.from` and `networkPolicy.probeCIDRs` |
 | each endpoint pool (`<fullname>-packages-ep-<name>`, `<fullname>-api-ep-<name>`) | none: an endpoint pool opens no 8080 (R-EP-002) | from the endpoint's `networkPolicy.from` | as above |
 | `<fullname>-worker`, each worker pool | none: a worker listens on no client port (R-HA-001) | none | as above |
-| `<fullname>-web` and `<fullname>-web-ep-<name>` (bridge of R-HA-064) | as `api` and `packages` | as `api` and `packages` | as above |
 | `<fullname>-migrate`, `<fullname>-backup`, `<fullname>-restore` | none | none | none: `ingress: []` |
 
 - Every rule names its port, and every rule with a port carries the `from` of its row. A row whose `from` list is empty
@@ -5275,7 +5073,7 @@ Priority: **MVP** · Covers: HA-055
 ([deploy/helm/quader/tests/rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml), `make chart-test`), one test in which the alert fires and one in
 which it stays silent per alert. It carries the six alerts of the vulnerability scanning ([vulnerability-scanning.md](vulnerability-scanning.md)
 R-VULN-024, Q-VULN-55, Q-VULN-122): `QuaderVulnerabilityDataStale`, `QuaderVulnerabilitySyncFailing`, `QuaderVulnerabilityRecordsRejected` (warning), `QuaderVulnerabilityRecordsInvalid` (warning), `QuaderVulnerabilityMaliciousRecordRejected` (critical) and `QuaderVulnerabilityClaimedNameMalicious`; the two of the
-mirror mode (R-OPS-046); `QuaderBridgeLeftOn` (R-HA-064); `QuaderBlobMissing` (severity `critical`, summed over the replicas, [storage.md](storage.md)
+mirror mode (R-OPS-046); `QuaderBlobMissing` (severity `critical`, summed over the replicas, [storage.md](storage.md)
 Q-STOR-152); and these sixteen rows of the table below: `QuaderReplicasNotReady`, `QuaderDatabaseUnreachable`, `QuaderObjectStoreUnreachable`,
 `QuaderObjectStoreUnreachableSingleReplica`, `QuaderDatabasePoolSaturated`, `QuaderControlConnectionWaits`, `QuaderJobsStuck`, `QuaderLeaseLost`,
 `QuaderMixedVersions`, `QuaderSpoolNearlyFull`, `QuaderGCStale`, `QuaderValkeyUnavailable`, `QuaderValkeyUnavailableSingleReplica`,
@@ -5316,8 +5114,7 @@ templates over metrics the MVP already exports, so the change adds no backend wo
   `secrets.metricsToken`. Its endpoint always renders two relabelings that set the target labels
   `role` and `pool` from the pod's labels
   ([operations-and-observability.md](operations-and-observability.md) R-OPS-006, Q-OPS-13):
-  `role` from `app.kubernetes.io/component` (`api`, `packages` or `worker`, and `web` in the bridge of R-HA-064;
-  Q-OPS-161), and `pool` from the label
+  `role` from `app.kubernetes.io/component` (`api`, `packages` or `worker`; Q-OPS-161), and `pool` from the label
   `quader/pool` (R-HA-028), which carries the pool's name on the pods of each entry of `api.pools`, `packages.pools`
   and `worker.pools` (R-HA-062), `ep-<name>` on the pods of an endpoint pool, and is empty on the main Deployments, so their
   series carry no `pool`. `metrics.serviceMonitor.relabelings` is appended after these two:
@@ -5334,7 +5131,7 @@ templates over metrics the MVP already exports, so the change adds no backend wo
 
 | Alert | Expression (sketch) | For | Severity |
 |---|---|---|---|
-| `QuaderReplicasNotReady` | `min by (deployment) (kube_deployment_status_replicas_available{deployment=~"<fullname>-(api\|packages\|worker\|web)(-.*)?"}) < 2`, per Deployment, so one role or pool without replicas fires while the others are healthy (the Deployments are `<fullname>-<role>` and `<fullname>-<role>-<pool>` for the roles `api`, `packages`, `worker` and the bridge `web`, R-HA-062, R-HA-064; needs kube-state-metrics) | 5m | critical |
+| `QuaderReplicasNotReady` | `min by (deployment) (kube_deployment_status_replicas_available{deployment=~"<fullname>-(api\|packages\|worker)(-.*)?"}) < 2`, per Deployment, so one role or pool without replicas fires while the others are healthy (the Deployments are `<fullname>-<role>` and `<fullname>-<role>-<pool>` for the roles `api`, `packages` and `worker`, R-HA-062; needs kube-state-metrics) | 5m | critical |
 | `QuaderDatabaseUnreachable` | `sum(rate(quader_db_retries_total{kind="connection"}[1m])) > 0 and sum(rate(quader_http_requests_total{code="503"}[1m])) > 0` | 2m | critical |
 | `QuaderObjectStoreUnreachable` | `min(quader_storage_s3_circuit_open) == 1` (all replicas) | 2m | critical |
 | `QuaderObjectStoreUnreachableSingleReplica` | `max(quader_storage_s3_circuit_open) == 1 and min(quader_storage_s3_circuit_open) == 0` | 5m | warning |
@@ -5866,7 +5663,7 @@ management).
   Quader's key and channel prefix and to the commands of R-ARCH-031 keeps a leaked Quader credential
   away from other applications' data. An
   ingress NetworkPolicy on the Valkey data nodes and Sentinels that admits only Quader's `api`, `packages` and
-  `worker` pods (`web` in the bridge), which whoever runs Valkey adds, keeps other workloads from writing under the
+  `worker` pods, which whoever runs Valkey adds, keeps other workloads from writing under the
   prefix ([architecture.md](architecture.md) H-49, R-HA-042); backup, restore and migration pods
   hold no Valkey credential and reach no Valkey port.
 - **Operations listener.** Port 8081 serves unauthenticated probes and, by default,
@@ -7172,6 +6969,8 @@ The development agent would revisit this when R-NPM-022 is built and a supported
 ### Q-HA-73 · How an installation upgrades across the cut into roles
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Ended** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): no Quader release precedes the cut, so the chart has no upgrade
+path across it; `web.enabled`, `web.routed`, the guard and R-HA-064 are removed.
 
 Context: R-HA-020 promises a zero-downtime upgrade from the previous minor; Q-ARCH-295 keeps the role `web` as the bridge.
 Helm applies a release in one pass and does not wait for a new pod before it repoints the edge and deletes a removed
@@ -7200,6 +6999,8 @@ second step left the edge without a backend for about 1.5 s and is split into tw
 ### Q-HA-74 · Which client Services exist after the cut, and how in-cluster callers reach Quader
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Revised** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): the Service `<fullname>` of the bridge is gone with the bridge; the
+Services per role stand.
 
 Context: before the cut one Service `<fullname>` served every family, and callers inside the cluster use it: the dev profile's
 Bastions call `https://quader.quader.svc:8080` for their interface (`/api/v1/bastion/…`, `api`) and their forwards (`packages`,
@@ -7313,6 +7114,8 @@ which case the path pools move to P1 without changing any other part.
 ### Q-HA-79 · Which pods mount the login secrets
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Revised** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): the `web` pods of the bridge are gone; the login secrets mount into the
+pods of role `api` only.
 
 Context: today `secrets.oidc[]` and `secrets.breakGlass` mount into every pod of role `web`, endpoint pools included
 ([_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl)). After the cut, `api` builds the login area on every one of
@@ -7435,6 +7238,8 @@ The development agent would revisit this if the ServiceMonitor selects by Servic
 ### Q-HA-86 · Where the connection budget is computed and what the guard can prove offline
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Revised** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): the guard of R-HA-064 is removed with the bridge; the budget part
+stands.
 
 Context: R-HA-016 asks the chart to pass `serving_max` and `worker_max` to the migration Job and to print the budget in `NOTES.txt`.
 The guard of R-HA-064 reads the cluster through `lookup`, which returns nothing under `helm template` and under the chart tests.
@@ -7521,6 +7326,8 @@ The development agent would revisit this if a third serving role appears.
 ### Q-HA-90 · How a new pool or a new endpoint pool gets its traffic without a gap
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Revised** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): the bridge, which rendered the endpoint pools of the roles beside the
+`web` pools, is removed; the key `routed` of a path pool stands.
 
 Context: Helm applies a release in one pass. A path pool's route and an endpoint pool's Service selector are rendered in the same apply that creates the pool's Deployment, so the prefix or the endpoint answers `503` until the new pods are ready. In the bridge of R-HA-064 the same class showed up for the endpoint pools of the roles, which were first created in step 2 by the apply that repoints the endpoint's Service at them.
 
@@ -7556,8 +7363,9 @@ Context: with `autoscaling.enabled` the chart leaves `spec.replicas` out so that
 ### Q-HA-92 · How an installation that stays on the bridge is reminded
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Ended** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): the bridge is removed, and the alert `QuaderBridgeLeftOn` with it.
 
-Context: the guard of R-HA-064 runs only when `web.enabled` is false. An operator who stops after step 1 keeps every host on the `web` pods, which hold the login secrets ([H-518](../security/roles-and-trust-boundaries.md#h-518--the-bridge-and-the-development-role-hold-both-halves-of-the-cut)); only `NOTES.txt` says so.
+Context: the guard of R-HA-064 runs only when `web.enabled` is false. An operator who stops after step 1 keeps every host on the `web` pods, which hold the login secrets ([H-518](../security/roles-and-trust-boundaries.md#h-518--the-development-roles-web-and-all-hold-both-halves-of-the-cut)); only `NOTES.txt` says so.
 
 | Option | For | Against |
 |---|---|---|
@@ -7569,7 +7377,7 @@ Context: the guard of R-HA-064 runs only when `web.enabled` is false. An operato
 
 **Rationale:** The bridge is meant to last for one rollout; 24 hours is longer than any rollout and shorter than an unnoticed week. The development agent would revisit the time if an installation needs a longer step 1, and make it a value then.
 
-**Applied in the spec:** [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) (`QuaderBridgeLeftOn`), [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml), R-HA-064, [H-518](../security/roles-and-trust-boundaries.md#h-518--the-bridge-and-the-development-role-hold-both-halves-of-the-cut).
+**Applied in the spec:** [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl) (`QuaderBridgeLeftOn`), [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml), R-HA-064, [H-518](../security/roles-and-trust-boundaries.md#h-518--the-development-roles-web-and-all-hold-both-halves-of-the-cut).
 
 ### Q-HA-93 · A provider with a client secret must name its Secret in secrets.oidc
 
@@ -7736,6 +7544,8 @@ loop that stalled outside the window cannot pass the step. Revisited when the up
 ### Q-HA-98 · The connection budget of the bridge in the scatter profile
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Ended** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): without the bridge the scatter profile needs 323 connections, and
+`max_connections` is the 400 of [Q-HA-87](#q-ha-87--the-dev-profiles-sizing-of-the-roles-and-its-postgresql-connection-budget) again.
 
 Context: the first run of the upgrade test failed at step 1: the migration Job of `helm upgrade --set web.enabled=true` refused with
 `the connection budget needs 403 connections but the server allows 400 (max_connections)` (R-HA-016: main pools 360 for the 18
@@ -8193,7 +8003,7 @@ lazy chunk of a route it opens later from the replicas that run then.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A shared, content-addressed asset store (chosen) | Every replica that serves the UI (`api`, `web` in the bridge, `all`) publishes the hashed files of its embedded build at start-up; a request for a hashed file its own build lacks is answered from the store with the headers of its own files | Both directions of the window, any number of releases inside the retention, the lazy chunks of a tab left open, independent of the edge | A table, a data path and a write at every start; a read of the store per foreign file; works only between releases that both have it ([Q-HA-125](#q-ha-125--the-rolling-upgrade-from-a-release-without-the-store-stays-strict)) |
+| (a) A shared, content-addressed asset store (chosen) | Every replica that serves the UI (`api`, `web`, `all`) publishes the hashed files of its embedded build at start-up; a request for a hashed file its own build lacks is answered from the store with the headers of its own files | Both directions of the window, any number of releases inside the retention, the lazy chunks of a tab left open, independent of the edge | A table, a data path and a write at every start; a read of the store per foreign file; works only between releases that both have it ([Q-HA-125](#q-ha-125--the-rolling-upgrade-from-a-release-without-the-store-stays-strict)) |
 | (b) The image carries the previous release's bundle | The release pipeline adds the last release's build next to its own | No shared state | One direction only: the pods of N serve the files of N−1, the pods of N−1 still answer `404` for N's; a skipped release or a rollback is not covered; the pipeline fetches and embeds an older build |
 | (c) The edge keeps a browser on one release | Cookie affinity at the ingress controller | No change in Quader | A feature of some controllers and not of others; a rolling upgrade deletes every pod, so the pinned pod goes away in the middle of a page and the next request lands on the other release anyway |
 | (d) A script that reloads on a failed load | `index.html` reloads once when a module fails to load | Small | A retry, not a fix: the reload can meet the same mix again; an inline script needs its own nonce in `script-src` (R-UI-001 allows `'self'` only); a lazy chunk of an open tab is not covered |
@@ -8404,6 +8214,7 @@ development agent would revisit it if `quader_lease_lost_total` shows live holde
 ### Q-HA-130 · The cut moves the edge and removes the bridge in two separate upgrades
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Ended** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): the steps, the value `web.routed` and the bridge are removed.
 
 Context: F-64. In the scheduled nightly run 42194413882 one browser journey of `TestUpgrade_R_HA_064_AcrossTheCut` failed at
 its first step: `GET /ui/en/login?local=1` at 10:03:15.255 was answered `503` by the edge (`quader_quader_http/<NOSRV>`,
@@ -8447,6 +8258,8 @@ its removal ([Q-HA-313](#q-ha-313--the-upgrade-across-the-cut-is-no-longer-teste
 ### Q-HA-131 · The upgrade tests read the edge's access lines for answers without a backend
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Revised** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): the test across the cut is gone (Q-HA-313) and R-HA-064 with it; the
+access lines are read by the rolling upgrade test.
 
 Context: F-64's gap of 1.4 s answered 509 requests with `503`; the npm loops repeated every one and passed, and the browser
 journey met the gap in one iteration of 14 by chance. The loops alone detect an edge gap only when a client that does not repeat
@@ -8472,6 +8285,7 @@ rollback. The development agent would revisit the format if the dev profile chan
 ### Q-HA-132 · The bridge guard checks readiness only on the upgrade that moves the edge
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Ended** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): the guard and its reads are removed with the bridge.
 
 Context: a review of Q-HA-130 found that the readiness refusal ran on every upgrade with the values of step 2, because
 `<fullname>-web` exists for the whole of step 2. An `api` that crash-loops at step 2, an autoscaler scaling up or a rollout in
@@ -10611,6 +10425,8 @@ with the other switches of Q-ARCH-340.
 ### Q-HA-313 · The upgrade across the cut is no longer tested, and R-HA-064 loses its end-to-end criterion
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Followed** on 2026-11-19 by [Q-HA-315](#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): option (c), the next change this decision named, is built, except that
+the binary keeps the role `web` for development and tests.
 
 Context: finding F-130. `TestUpgrade_R_HA_064_AcrossTheCut` installed `v0.16.0`, the last release before the cut into roles, and
 ran the three steps of R-HA-064 under the loops (exit criterion E6a.7 of the roadmap). That release was published under the former
@@ -10673,6 +10489,71 @@ GitHub-hosted runner for about half an hour. The development agent would revisit
 **Applied in the spec:** R-HA-020 (the note), Q-ARCH-340 (a note). Code: `.github/workflows/performance.yml` (job `e2e-upgrade`, two
 legs), `.github/actions/select-leg` (the input `nightly`), [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) (the sets `upgrade` and
 `upgrade-release`); [releasing.md](../developer/releasing.md#ha-and-performance-nightly).
+
+### Q-HA-315 · The chart's upgrade bridge across the cut is removed; the binary keeps the role `web` for development and tests
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It applies
+the owner's rule of 2026-11-06 (no backward compatibility before the first stable release, `CLAUDE.md`,
+[Q-ARCH-340](architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)) to what
+[Q-HA-313](#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion) left behind.
+
+Context: Q-HA-313 removed the end-to-end test of the upgrade across the cut into roles, because no Quader release precedes the cut
+and so no installation can take that path, and left the bridge in the chart for a change of its own. Everything the bridge consisted
+of served that one path: R-HA-064 with its three steps; the values `web.*` (`web.enabled`, `web.routed` and the sizing of the
+`web` Deployment); the Deployment `<fullname>-web`, its endpoint pools `<fullname>-web-ep-<name>`, the Service `<fullname>`, the
+edge of the old shape (every host whole to `<fullname>`) and a BackendTLSPolicy for it; the guard of steps 2 and 3 with its reads
+of the cluster (`quader.bridgeFacts`, `quader.bridgeGuard`); the notes of steps 1 and 2; the alert `QuaderBridgeLeftOn`
+(Q-HA-92); the value set `ci/bridge.yaml` and the chart tests of it; the UI's download link that fell back to `downloadUrl`
+([Q-UI-111](api-and-ui.md#q-ui-111--during-the-upgrade-across-the-cut-the-ui-falls-back-to-files-against-a-replica-of-the-old-shape));
+the 50 connections that [Q-HA-98](#q-ha-98--the-connection-budget-of-the-bridge-in-the-scatter-profile) added to the dev
+profile's PostgreSQL. The spec names no other use of any of these, and none is a choice an operator has on a fresh installation:
+`web.enabled` defaulted to `false`, and a value set without it never rendered the role `web` (R-HA-002).
+
+The binary's role `web` ([architecture.md](architecture.md) R-ARCH-001, Q-ARCH-295) is used by more than the bridge. It is the
+default role of the integration harness (`Stack.Start` in [test/integration/testenv](../../test/integration/testenv/replica.go),
+a replica that serves every family on one listener and claims no job; 57 integration packages), the role of the replicas of the
+unit tests of `cmd/quader`, `internal/app`, `internal/api/v1`, `internal/authz`, `internal/cluster`, `internal/config` and others,
+and the role the e2e driver's peers and the `quader admin` commands open the database with (`meta.RoleWeb`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the bridge until the first stable release | Nothing changes | No work; the steps stay ready | A chart shape, two values, a guard that reads the cluster, an alert and a UI fallback for a path no installation can take: what the owner's rule forbids |
+| (b) Remove the bridge from the chart, the dev profile and the UI; the binary keeps the role `web` for development and tests (chosen) | R-HA-064, the `web` values, their schema, templates, guard, notes, alert, CI value set and tests, the UI fallback and Q-HA-98's connections go; `web` stays a role of the binary, the API's role enums and the status screen, documented like `all` as a role the chart never renders | The product loses everything only the old shape needed; the integration tests keep testing what they test; the remaining roles render byte for byte as before | The binary keeps a role no deployment runs, and the API's role enums and the status screen keep its name |
+| (c) As (b), and remove the role `web` from the binary, the API's role enums and the status screen | The integration harness and the unit tests start `all` or an `api` and `packages` pair behind a path router instead | The binary knows only the roles a deployment or the local profile runs | `all` claims jobs and holds leases, so what 57 integration packages test changes with it; a pair behind a router is a change of the harness of its own; neither is a change of the product, and done tonight it could not be run on the stack across all packages |
+
+**Choice:** (b). What an operator who had set the values sees now: the chart's schema refuses the key `web` before anything
+renders (`helm` reports `values don't meet the specifications of the schema(s) in the following chart(s): quader: - at '':
+additional properties 'web' not allowed`), so a values file that still carries a `web:` block fails `helm template`,
+`helm install` and `helm upgrade` until the block is deleted; nothing else in the rendering changes. The PrometheusRule loses
+`QuaderBridgeLeftOn`, and `QuaderReplicasNotReady` matches the Deployments of `api`, `packages` and `worker` only.
+
+**Rationale:** a fresh installation never rendered the bridge, and no Quader installation can reach the shape it bridged from, so
+everything that existed for it is a migration path for installations that do not exist. The role `web` in the binary is a different
+matter: its users are the tests, not an upgrade, and removing it would rewrite the integration harness for no change of the
+product; it is described now as what it is, a development role like `all`. The development agent would revisit (c) when the
+integration harness starts `api` and `packages` replicas behind a path router (the shape of the e2e profile `scatter`), from
+which point the role `web` has no use. At the first stable release the upgrade guarantees return (R-ARCH-025, R-HA-020,
+R-HA-021): a change of the chart's shape between N−1 and N (a renamed or removed Deployment or Service, a moved route) then
+needs a stepwise path in the chart and its release notes again, with an upgrade test that runs it, as R-HA-064 gave the cut.
+
+**Applied in the spec:** R-HA-064 (removed), the topology, R-HA-001 (the role list), R-HA-002, R-HA-016 (the budget and its
+example), R-HA-020, R-HA-021 (the row of the cut), R-HA-028, R-HA-029 (the rows of the guard and of `web`), R-HA-030, R-HA-031
+(the values block), R-HA-035, R-HA-037, R-HA-038, R-HA-042, R-HA-045, R-HA-055, the security notes (Valkey); Q-HA-73, Q-HA-74,
+Q-HA-79, Q-HA-86, Q-HA-90, Q-HA-92, Q-HA-98, Q-HA-130, Q-HA-131, Q-HA-132, Q-HA-313 (notes), Q-HA-120 (an option's wording);
+[architecture.md](architecture.md) R-ARCH-001 and Q-ARCH-295; [api-and-ui.md](api-and-ui.md) Q-UI-111, the status screen's
+groups and the example of the encryption status; [endpoints.md](endpoints.md) R-EP-002 and R-EP-008;
+[operations-and-observability.md](operations-and-observability.md) (the registry's roles, the examples, the metrics note);
+[repositories-and-proxy.md](repositories-and-proxy.md), [storage.md](storage.md), [formats/nuget.md](formats/nuget.md) (a
+criterion that named `web.spool`), the [spec README](README.md);
+[H-518](../security/roles-and-trust-boundaries.md#h-518--the-development-roles-web-and-all-hold-both-halves-of-the-cut).
+Code: [values.yaml](../../deploy/helm/quader/values.yaml), [values.schema.json](../../deploy/helm/quader/values.schema.json),
+[_units.tpl](../../deploy/helm/quader/templates/_units.tpl), [_edge.tpl](../../deploy/helm/quader/templates/_edge.tpl),
+[_validate_roles.tpl](../../deploy/helm/quader/templates/_validate_roles.tpl), [_notes.tpl](../../deploy/helm/quader/templates/_notes.tpl),
+[_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl), the Services, endpoint Services, BackendTLSPolicies and secret mounts,
+[test/chart](../../test/chart), [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml),
+[deploy/dev/postgres.yaml](../../deploy/dev/postgres.yaml), the UI's download links (`package-version.html`,
+`repository-content.html`), [internal/config/process.go](../../internal/config/process.go) and the start-up warning of the role
+`web` in [internal/app/app.go](../../internal/app/app.go).
 
 ## What this does not cover
 

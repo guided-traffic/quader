@@ -389,7 +389,7 @@ type AuthBreakGlass struct {
 	Username string `yaml:"username" default:"admin"`
 	// PasswordFile holds an Argon2id PHC hash or a plaintext password; it is read
 	// again when its modification time changes (Q-AUTH-14).
-	PasswordFile    string        `yaml:"password_file" secret:"file" doc:"Argon2id PHC hash or plaintext password; read by the replicas of role api (and web while the bridge runs, all locally) only (R-AUTH-042)."`
+	PasswordFile    string        `yaml:"password_file" secret:"file" doc:"Argon2id PHC hash or plaintext password; read by the replicas of role api (and by the development roles web and all) only (R-AUTH-042)."`
 	ShowOnLoginPage bool          `yaml:"show_on_login_page" default:"false"`
 	IdleTimeout     time.Duration `yaml:"idle_timeout" default:"15m" validate:"min=1m,max=24h"`
 	AbsoluteTimeout time.Duration `yaml:"absolute_timeout" default:"1h" validate:"min=1m,max=168h"`

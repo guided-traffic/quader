@@ -20,8 +20,8 @@ SELECT count(*)::int AS live
 `
 
 // The n of the fetch share of a remote repository (R-REPO-040, Q-ARCH-297): the live replicas that fill client misses,
-// which are the replicas of packages and of the bridge role web, their pools included, and of the development role
-// all. A replica of api, which sends the upstream test and nothing else, and of worker holds no share.
+// which are the replicas of packages, their pools included, and of the development roles web and all. A replica of
+// api, which sends the upstream test and nothing else, and of worker holds no share.
 func (q *Queries) CountFillingReplicas(ctx context.Context, staleSecs float64) (int32, error) {
 	row := q.db.QueryRow(ctx, countFillingReplicas, staleSecs)
 	var live int32

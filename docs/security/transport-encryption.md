@@ -15,7 +15,7 @@ rotation reaches a running process. The configuration keys are listed in the ref
 |---|---|---|---|---|
 | clients to the client listener and each endpoint listener | `server.tls`, `server.endpoints.<name>.tls` | plain HTTP until `certificates` is set | the client, not Quader | every `reload_interval` (`10s`) |
 | kubelet and monitoring to the ops listener | `server.ops_tls` | `inherit: true`: the client listener's pairs, no client certificate | the kubelet does not verify probes | with the listener |
-| every role (`api`, `packages`, `worker`, the bridge's `web`) and the Jobs to PostgreSQL | `database.ssl_mode`, `ssl_root_cert_file`, `ssl_cert_file`, `ssl_key_file` | `verify-full` | chain and host name against the roots | on each new connection |
+| every role (`api`, `packages`, `worker`) and the Jobs to PostgreSQL | `database.ssl_mode`, `ssl_root_cert_file`, `ssl_cert_file`, `ssl_key_file` | `verify-full` | chain and host name against the roots | on each new connection |
 | every role to Valkey data nodes | `valkey.tls.mode`, `ca_file`, `cert_file`, `key_file`, `server_name` | `verify-full`, the system roots when no `ca_file` | chain and host name | on each handshake |
 | every role to Sentinels | `valkey.sentinel.tls` (follows `valkey.tls`) | `true` | as the data nodes | on each handshake |
 | every role and the Jobs of the backup lane to the object store | `storage.s3.endpoint`, `storage.s3.ca_file` | an endpoint without a scheme is `https` ([Q-STOR-15](../spec/storage.md#q-stor-15--object-store-endpoint-without-a-scheme)) | `ca_file` only when it is set; else the outbound factory's trust store (the system roots while `proxy.outbound.tls.use_system_roots`, plus `proxy.outbound.tls.ca_files`) | on each check of the outbound transport |
@@ -139,8 +139,8 @@ The chart is [deploy/helm/quader](../../deploy/helm/quader). The defaults below 
 | `trustedCA.existingSecret` or `existingConfigMap`, `keys`, `useForObjectStore` | `""`, `""`, `[ca-bundle.crt]`, `false` | mounts the listed files of a Secret or ConfigMap at `/etc/quader/ca/` in every pod of the release, appends them to `proxy.outbound.tls.ca_files` (after the operator's own), and with `useForObjectStore` makes the one file `storage.s3.ca_file`; refused together with `secrets.s3CA` |
 
 What the pods get, from [_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl): the Secret is mounted read-only at
-`/var/run/secrets/quader/tls/` with `tls.crt` and `tls.key` only, and only into pods that load that pair: the pods that open the client listener (`api`, `packages`, their path pools and the
-bridge's `web`), a pod that serves a further endpoint without a pair of its own, and every pod whose operations
+`/var/run/secrets/quader/tls/` with `tls.crt` and `tls.key` only, and only into pods that load that pair: the pods that open the client listener (`api`, `packages` and their path
+pools), a pod that serves a further endpoint without a pair of its own, and every pod whose operations
 listener inherits it, which is every pod unless `tls.ops.secretName` is set. With `tls.ops`, workers and endpoint pools
 whose endpoints bring their own pairs hold no copy of the client listener's private key
 ([H-57](../spec/endpoints.md#h-57--a-further-endpoint-runs-with-every-credential-of-a-web-replica) lists what such a pod

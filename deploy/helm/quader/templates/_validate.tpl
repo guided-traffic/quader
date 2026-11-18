@@ -69,7 +69,7 @@ fixes the form, so every term is a number and a unit.
 {{- end -}}
 {{- end -}}
 
-{{- /* A provider with a client secret gets it from secrets.oidc and so only on the api pods (and web in the bridge): the global extraEnv, extraEnvFrom, extraVolumes and extraVolumeMounts reach every Deployment and would spread it to packages and worker pods (R-AUTH-014, Q-HA-79). */ -}}
+{{- /* A provider with a client secret gets it from secrets.oidc and so only on the api pods: the global extraEnv, extraEnvFrom, extraVolumes and extraVolumeMounts reach every Deployment and would spread it to packages and worker pods (R-AUTH-014, Q-HA-79). */ -}}
 {{- range $id, $prov := (dig "auth" "oidc" "providers" (dict) $cfg) -}}
 {{- if and (ne (dig "client_auth_method" "client_secret_basic" $prov) "none") (not (hasKey $oidcSeen $id)) -}}
 {{- fail (printf "quader: config.auth.oidc.providers.%s has client_auth_method %s and no entry in secrets.oidc: its client secret would have to come through extraEnv, extraEnvFrom, extraVolumes or extraVolumeMounts, which every Deployment receives, and the secret would leave the api pods. Add {providerId: %s, existingSecret: <Secret>} to secrets.oidc, or set client_auth_method: none for a public client" $id (dig "client_auth_method" "client_secret_basic" $prov) $id) -}}

@@ -283,7 +283,7 @@ func TestSlots(t *testing.T) {
 		if got := s.repoLimit(64); n != 3 || got != 22 {
 			t.Fatalf("n = %d, share = %d, want 3 and 22", n, got)
 		}
-		// The bridge and the development role fill too: a bridge replica next to the packages replicas shares the budget.
+		// The development roles fill too: a web or all replica next to the packages replicas shares the budget.
 		n = 0
 		for _, role := range append(live, "web", "all") {
 			if cluster.FillsClientMisses(role) {

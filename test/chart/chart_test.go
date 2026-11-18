@@ -365,15 +365,14 @@ func TestChart(t *testing.T) {
 	})
 
 	t.Run("R-HA-002 api, packages and worker Deployments run --role api, --role packages and --role worker, never all", func(t *testing.T) {
-		eachSet(t, func(t *testing.T, f string, out string, docs []doc) {
-			bridge := base(f) == "bridge.yaml"
+		eachSet(t, func(t *testing.T, _ string, out string, docs []doc) {
 			// The three role Deployments, plus the pools of the value set; every Deployment runs the
-			// role its name says, and --role web only where the bridge is enabled.
+			// role its name says, and that role is api, packages or worker.
 			for _, d := range ofKind(docs, "Deployment") {
 				name := strings.TrimPrefix(str(d, "metadata", "name"), "quader-")
 				role, _, _ := strings.Cut(name, "-")
-				if role == "web" && !bridge {
-					t.Errorf("%s runs --role web without web.enabled", name)
+				if role != "api" && role != "packages" && role != "worker" {
+					t.Errorf("Deployment quader-%s runs the role %q, want api, packages or worker", name, role)
 				}
 				want := "serve --role " + role
 				if got := strings.Join(containerArgs(at(d, "spec", "template", "spec")), " "); got != want {
@@ -384,9 +383,6 @@ func TestChart(t *testing.T) {
 				if find(docs, "Deployment", "quader-"+role) == nil {
 					t.Errorf("Deployment quader-%s missing", role)
 				}
-			}
-			if (find(docs, "Deployment", "quader-web") != nil) != bridge {
-				t.Errorf("Deployment quader-web rendered = %v, want %v (only the bridge renders it)", !bridge, bridge)
 			}
 			if strings.Contains(out, "--role\n            - all") || strings.Contains(out, "role=all") {
 				t.Error("a rendered container runs --role all")
@@ -430,7 +426,7 @@ func TestChart(t *testing.T) {
 			}
 		}
 		if find(docs, "Service", "quader") != nil {
-			t.Error("the Service <fullname> is rendered without web.enabled (Q-HA-74)")
+			t.Error("the Service <fullname> is rendered; each role has a Service of its own (Q-HA-74)")
 		}
 		if find(docs, "Service", "quader-worker") != nil {
 			t.Error("a worker Service is rendered, worker pods are reached on the operations port only")
@@ -587,7 +583,7 @@ func TestChart(t *testing.T) {
 			want string
 		}{
 			{"typo at the top", []string{"webb.replicaCount=3"}, "webb"},
-			{"typo in a role", []string{"web.replicas=3"}, "replicas"},
+			{"typo in a role", []string{"packages.replicas=3"}, "replicas"},
 			{"type error", []string{"packages.replicaCount=many"}, "replicaCount"},
 			{"unknown service value", []string{"service.sessionAffinity=ClientIP"}, "sessionAffinity"},
 			{"unknown image pull policy", []string{"image.pullPolicy=Sometimes"}, "pullPolicy"},
@@ -836,7 +832,7 @@ func TestChart(t *testing.T) {
 							"QUADER_RUNTIME_TERMINATION_GRACE_PERIOD", "QUADER_STORAGE_SPOOL_MAX_BYTES",
 							"QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS", "QUADER_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS", "QUADER_LOG_LEVEL":
 						case "QUADER_POOL_NAME": // the pods of a pool (R-HA-062, R-EP-002, R-EP-008)
-							if main := name == "quader-api" || name == "quader-packages" || name == "quader-worker" || name == "quader-web"; main {
+							if main := name == "quader-api" || name == "quader-packages" || name == "quader-worker"; main {
 								t.Errorf("%s sets QUADER_POOL_NAME, which only a pool does", name)
 							}
 						case "QUADER_JOBS_QUEUES", "QUADER_JOBS_EXCLUDE_QUEUES": // worker Deployments only (R-HA-062)
@@ -1500,10 +1496,7 @@ func portsOf(rule any) (ports []int, from []any, hasFrom bool) {
 
 func TestNetworkPolicy(t *testing.T) {
 	t.Run("R-HA-042 api and packages admit 8080 from anywhere and 8081 only from the monitoring namespace, worker admits 8081 only", func(t *testing.T) {
-		eachSet(t, func(t *testing.T, f string, _ string, docs []doc) {
-			if base(f) == "bridge.yaml" {
-				return // the bridge adds web, covered by TestRoles
-			}
+		eachSet(t, func(t *testing.T, _ string, _ string, docs []doc) {
 			for _, role := range []string{"api", "packages"} {
 				pol := find(docs, "NetworkPolicy", "quader-"+role)
 				if pol == nil {

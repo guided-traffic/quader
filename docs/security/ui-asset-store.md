@@ -2,7 +2,7 @@
 
 Status: implemented on 2026-11-06 (R-HA-020, [Q-HA-120](../spec/ha-and-helm.md#q-ha-120--how-a-replica-serves-a-hashed-ui-file-of-the-other-release)
 to [Q-HA-125](../spec/ha-and-helm.md#q-ha-125--the-rolling-upgrade-from-a-release-without-the-store-stays-strict)). Every replica
-that serves the UI (`api`, `web` in the bridge, `all`) writes the hashed files of its embedded build to the blob store and names them
+that serves the UI (`api`, `web`, `all`) writes the hashed files of its embedded build to the blob store and names them
 in the table `ui_assets`; a replica asked for a hashed file its own build lacks reads it from there and serves it to the browser
 under `/ui/<locale>/`, to anyone, as it serves its own build.
 

@@ -46,7 +46,7 @@ describe('files API helpers', () => {
   });
 });
 
-describe('The upload (R-API-025, Q-UI-111)', () => {
+describe('The upload (R-API-025)', () => {
   type Put = (options: object, url: string, body: Blob, headers: Record<string, string>) => Promise<unknown>;
 
   function setup(answer: (url: string) => Promise<unknown>) {

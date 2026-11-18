@@ -8401,7 +8401,7 @@ type Replica struct {
 	Pool     *string `json:"pool,omitempty"`
 	Revision string  `json:"revision"`
 
-	// Roles The role the replica registered with (Q-OPS-161), as the registry names it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role). One entry per replica.
+	// Roles The role the replica registered with (Q-OPS-161), as the registry names it: `api`, `packages`, `worker`, `web` or `all` (the development roles). One entry per replica.
 	Roles []ReplicaRoles `json:"roles"`
 
 	// Runtime The replica's own measurements of its last heartbeat period (Q-OPS-175); `null` until its first heartbeat after the start, and for a replica of a release before them.
@@ -8463,7 +8463,7 @@ type ReplicaSummary struct {
 	Live  int `json:"live"`
 	Ready int `json:"ready"`
 
-	// Roles Per role (`api`, `packages`, `worker`, and during an upgrade across the cut `web`; `all` in the development role), keyed by the role of the replica; the replicas of a role's pools count in the role.
+	// Roles Per role (`api`, `packages`, `worker`; `web` and `all` in the development roles), keyed by the role of the replica; the replicas of a role's pools count in the role.
 	Roles map[string]RoleSummary `json:"roles"`
 
 	// Versions Live replicas per version.
@@ -9027,7 +9027,7 @@ type SystemInfo struct {
 	AnsweredBy struct {
 		Replica string `json:"replica"`
 
-		// Role The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `quader_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role).
+		// Role The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `quader_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` or `all` (the development roles).
 		Role SystemInfoAnsweredByRole `json:"role"`
 	} `json:"answeredBy"`
 
@@ -9076,7 +9076,7 @@ type SystemInfo struct {
 	VulnerabilityData *VulnerabilityDataFacts `json:"vulnerabilityData,omitempty"`
 }
 
-// SystemInfoAnsweredByRole The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `quader_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role).
+// SystemInfoAnsweredByRole The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `quader_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` or `all` (the development roles).
 type SystemInfoAnsweredByRole string
 
 // SystemInfoBaseUrlSource `request` means `server.base_url` is unset and the origin was derived from the request (development only).

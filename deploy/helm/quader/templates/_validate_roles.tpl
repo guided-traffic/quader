@@ -1,6 +1,6 @@
 {{/*
-Fail-fast validation of the roles, the pools and the upgrade bridge (R-HA-002, R-HA-029, R-HA-032,
-R-HA-035, R-HA-036, R-HA-062, R-HA-064). Every failure names the offending value. Argument: the
+Fail-fast validation of the roles and the pools (R-HA-002, R-HA-029, R-HA-032, R-HA-035, R-HA-036,
+R-HA-062). Every failure names the offending value. Argument: the
 root context.
 */}}
 {{- define "quader.validateRoles" -}}
@@ -77,9 +77,9 @@ root context.
 {{- end -}}
 {{- end -}}
 
-{{- /* Spool budgets (R-HA-035): a packages (or web) pod spools the largest upload, an api pod the UI's, and a worker that claims the queue vuln one advisory archive. */ -}}
+{{- /* Spool budgets (R-HA-035): a packages pod spools the largest upload, an api pod the UI's, and a worker that claims the queue vuln one advisory archive. */ -}}
 {{- $budget := include "quader.spoolBudget" (dict "root" $ "role" $u.role "r" $r "key" $u.key) | int64 -}}
-{{- if and (has $u.role (list "packages" "web")) (gt $upload $budget) -}}
+{{- if and (eq $u.role "packages") (gt $upload $budget) -}}
 {{- fail (printf "quader: config.storage.upload.max_size (%v) is larger than the spool budget of %d bytes of Deployment %s (spool size minus spool.headroom); raise spool.sizeLimit or %s.spool.sizeLimit, or lower config.storage.upload.max_size" (dig "storage" "upload" "max_size" "10GiB" $cfg) $budget $dep $u.key) -}}
 {{- end -}}
 {{- if and (eq $u.role "api") (gt $uiUpload $budget) -}}
@@ -131,115 +131,6 @@ than 64 requests cannot serve a handful of clients at once.
 {{- fail (printf "quader: %s.resources.limits.memory (%v) writes %d responses at once, fewer than 64: 0.8 × (1 − config.runtime.memory_limit_ratio (%v)) × the limit, the kernel's share, / %d bytes of send buffer per response (twice config.server.send_buffer, or 4 MiB with autotuning; Q-ARCH-500); raise the limit, lower the ratio or lower config.server.send_buffer" $u.key $mem $kernelSlots $ratio $kernelPerRequest) -}}
 {{- end -}}
 {{- end -}}
-{{- end -}}
-
-{{- with include "quader.bridgeGuard" (dict "root" . "facts" (include "quader.bridgeFacts" . | fromYaml)) -}}
-{{- fail . -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-What the bridge guard reads of the cluster (R-HA-064), as YAML facts, so that the decision (quader.bridgeGuard) is
-a function of them and can be tested without a cluster. lookup reads the cluster under helm upgrade and helm
-install --dry-run=server; under helm template it returns nothing, every fact is empty, and the guard is inert. The
-cluster is read only while the rendered edge is the target shape's (step 2 or 3) and <fullname>-web exists.
-  web               <fullname>-web exists
-  ingress           the chart's Ingress <fullname> exists
-  ingressToBridge   the paths of that Ingress whose backend is the Service <fullname>
-  endpointServices  per further endpoint whose Service <fullname>-ep-<name> exists, the component its selector names
-  deployments       per serving Deployment of the target shape that exists, {replicas, ready}
-Argument: the root context.
-*/}}
-{{- define "quader.bridgeFacts" -}}
-{{- $fullname := include "quader.fullname" . -}}
-{{- $ns := .Release.Namespace -}}
-{{- $f := dict "web" false "ingress" false "ingressToBridge" (list) "endpointServices" (dict) "deployments" (dict) -}}
-{{- if and (not (include "quader.bridgeRouted" .)) (lookup "apps/v1" "Deployment" $ns (printf "%s-web" $fullname)) -}}
-{{- $_ := set $f "web" true -}}
-{{- with lookup "networking.k8s.io/v1" "Ingress" $ns $fullname -}}
-{{- $_ := set $f "ingress" true -}}
-{{- range $rule := dig "spec" "rules" (list) . -}}
-{{- range $p := dig "http" "paths" (list) $rule -}}
-{{- if eq (dig "backend" "service" "name" "" $p) $fullname -}}
-{{- $_ := set $f "ingressToBridge" (append $f.ingressToBridge (dig "path" "/" $p)) -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- range $name := include "quader.endpointNames" . | fromYamlArray -}}
-{{- with lookup "v1" "Service" $ns (printf "%s-ep-%s" $fullname $name) -}}
-{{- $_ := set $f.endpointServices $name (dig "spec" "selector" "app.kubernetes.io/component" "" .) -}}
-{{- end -}}
-{{- end -}}
-{{- range $u := include "quader.units" . | fromYamlArray -}}
-{{- if not (has $u.role (list "worker" "web")) -}}
-{{- $n := printf "%s-%s" $fullname $u.name -}}
-{{- with lookup "apps/v1" "Deployment" $ns $n -}}
-{{- $_ := set $f.deployments $n (dict "replicas" (dig "spec" "replicas" 0 .) "ready" (dig "status" "readyReplicas" 0 .)) -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- toYaml $f -}}
-{{- end -}}
-
-{{/*
-The bridge guard (R-HA-064, Q-HA-73, Q-HA-90, Q-HA-130, Q-HA-132): the message of the refusal, or nothing. The cut takes
-three upgrades, and each changes either the edge or the set of backends, never both: step 1 starts the target shape
-beside the bridge, step 2 (web.routed false) moves the edge onto it while the bridge still runs, step 3 (web.enabled
-false) removes the bridge, which no route names any more. The guard acts while the rendered edge is the target shape's
-and <fullname>-web exists (facts.web); it validates only and never changes what renders. A release that stays at step 1
-or 2 keeps the web pods (H-518), which the alert QuaderBridgeLeftOn reports.
-- The edge still routes to the bridge (the Ingress <fullname> to the Service <fullname>, or a further endpoint's Service
-  to the web pods): this upgrade moves it, so every serving Deployment of the target shape must exist and be fully
-  ready (the main api and packages Deployments, the path pools, the endpoint pools). Once the edge has moved, an upgrade
-  at step 2 or 3 passes whatever their readiness: it moves nothing, and refusing it would leave only the way back to
-  step 1 (Q-HA-132).
-- With web.enabled false the edge must have moved already: step 3 would otherwise delete the backend in the apply that
-  moves the edge, and an edge applies the deletion before the new route (F-64: about 1.5 s of 503 at haproxy-ingress).
-- Where the chart can read no edge (no Ingress <fullname>, no endpoint Service), a missing main api or packages
-  Deployment says that step 1 has not run.
-Argument: dict "root" . "facts" (quader.bridgeFacts as a dict).
-*/}}
-{{- define "quader.bridgeGuard" -}}
-{{- $root := .root -}}
-{{- $f := .facts -}}
-{{- if and $f.web (not (include "quader.bridgeRouted" $root)) -}}
-{{- $fullname := include "quader.fullname" $root -}}
-{{- $steps := printf "The cut takes three upgrades: 1. helm upgrade with --set web.enabled=true, then wait until every Deployment of the target shape (api, packages, their path pools and endpoint pools) is ready; 2. helm upgrade with --set web.enabled=true --set web.routed=false, which moves the edge onto them while %s-web still runs; 3. helm upgrade with web.enabled: false, which removes %s-web and the Service %s (R-HA-064)" $fullname $fullname $fullname -}}
-{{- $on := list -}}
-{{- range $p := $f.ingressToBridge | default list -}}
-{{- $on = append $on (printf "the Ingress %s routes %s to the Service %s" $fullname $p $fullname) -}}
-{{- end -}}
-{{- $eps := $f.endpointServices | default dict -}}
-{{- range $name := keys $eps | sortAlpha -}}
-{{- if eq (index $eps $name) "web" -}}
-{{- $on = append $on (printf "the Service %s-ep-%s selects the web pods" $fullname $name) -}}
-{{- end -}}
-{{- end -}}
-{{- $on = uniq $on -}}
-{{- $read := or $f.ingress (gt (len $eps) 0) -}}
-{{- $deps := $f.deployments | default dict -}}
-{{- $msg := "" -}}
-{{- range $u := include "quader.units" $root | fromYamlArray -}}
-{{- if and (not $msg) (not (has $u.role (list "worker" "web"))) -}}
-{{- $n := printf "%s-%s" $fullname $u.name -}}
-{{- $ready := false -}}
-{{- if hasKey $deps $n -}}
-{{- $d := index $deps $n -}}
-{{- $ready = ge (int (dig "ready" 0 $d)) (int (dig "replicas" 0 $d)) -}}
-{{- end -}}
-{{- if and $on (not $ready) -}}
-{{- $msg = printf "quader: this upgrade moves the edge onto the target shape (web.enabled false, or web.routed false) while %s, and %s is missing or not fully ready. %s" (join "; " $on) $n $steps -}}
-{{- else if and (not $read) (not (hasKey $deps $n)) (eq $u.kind "main") -}}
-{{- $msg = printf "quader: the edge of the target shape is rendered (web.enabled false, or web.routed false) while the namespace holds the Deployment %s-web of the releases before the cut and %s does not exist, so step 1 has not run (the chart reads no edge: no Ingress %s and no Service of a further endpoint). %s" $fullname $n $fullname $steps -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- if and (not $msg) (not $root.Values.web.enabled) $on -}}
-{{- $msg = printf "quader: web.enabled is false while the edge still routes to the bridge (%s): removing the bridge in the upgrade that moves the edge leaves the edge without a backend until it applies the new routes. Run step 2 first. %s" (join "; " $on) $steps -}}
-{{- end -}}
-{{- $msg -}}
 {{- end -}}
 {{- end -}}
 

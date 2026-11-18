@@ -2928,14 +2928,14 @@ share one implementation in `internal/secrets`; this page owns the payload.
 
 ```json
 {
-  "answeredBy": "quader-web-6f9c7d8b5-x2v4q",
+  "answeredBy": "quader-api-6f9c7d8b5-x2v4q",
   "activeKeyId": "2026-10",
   "keys": [
     {"id": "2026-10", "active": true, "sealedValues": 14, "canary": "ok"},
     {"id": "2026-04", "active": false, "sealedValues": 3, "canary": "ok"}
   ],
   "replicas": [
-    {"name": "quader-web-6f9c7d8b5-x2v4q", "role": "web", "activeKeyId": "2026-10", "keyIds": ["2026-04", "2026-10"]},
+    {"name": "quader-api-6f9c7d8b5-x2v4q", "role": "api", "activeKeyId": "2026-10", "keyIds": ["2026-04", "2026-10"]},
     {"name": "quader-worker-7d4b9c6f8-q8n2m", "role": "worker", "activeKeyId": "2026-10", "keyIds": ["2026-04", "2026-10"]}
   ],
   "ringsCompatible": true,
@@ -4771,8 +4771,7 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
   (the job's `attempt` when the error has none) and *m* the job's `maxAttempts`; an error without a detail shows its code
   alone. The result of a succeeded job is summarised as before (Q-UI-172).
 - **Replicas by role** (Q-UI-7, Q-UI-107). One group per role in the order `api`, `packages`, `worker`, taken from the replica's `roles`
-  (Q-ARCH-341); a group `web` while a replica of that role is live, during the
-  upgrade across the cut ([ha-and-helm.md](ha-and-helm.md) R-HA-064); a replica with roles
+  (Q-ARCH-341); a replica of the development role `web` forms a group `web` while it is live; a replica with roles
   `["all"]` of the development role forms a group `all`, and while one is live it serves every role (R-HA-001), so a group
   `api`, `packages` or `worker` without a replica of its own is left out with its warnings (UI-A-45); within a group, one sub-group per pool of R-HA-062 and per
   endpoint pool, each with its own counts and drain safety,
@@ -10467,6 +10466,8 @@ exists.
 ### Q-UI-111 · During the upgrade across the cut the UI falls back to `/files/` against a replica of the old shape
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+**Ended** on 2026-11-19 by [Q-HA-315](ha-and-helm.md#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests): no replica of the old shape can answer a Quader UI, so a
+download link takes `contentUrl` only; the repeat of an upload on `/files/` was gone before.
 
 Context: in the first step of the upgrade across the cut (R-HA-064) a UI bundle from a new pod can reach a `web` replica of the
 previous release, which has no content route (Q-UI-106) and lists no `contentUrl`.

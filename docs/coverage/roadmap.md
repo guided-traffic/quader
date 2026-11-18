@@ -1030,9 +1030,9 @@ autoscaler and ingress policy; an installation of the previous shape upgrades wi
 |---|---|
 | Roles, wiring areas, route families per role | INV-2, R-ARCH-001, R-ARCH-024 step 9, R-EP-002, R-EP-005, R-EP-010 (Q-ARCH-294, Q-ARCH-295, Q-ARCH-298) |
 | Queues and worker pools | R-ARCH-016, R-VULN-004's queue (Q-ARCH-296) |
-| Chart: Deployments, Services, edge, policies, pools, upgrade | R-HA-002, R-HA-016, R-HA-028 to R-HA-032, R-HA-035, R-HA-037, R-HA-038, R-HA-042, R-HA-045, R-HA-062, R-HA-064, R-EP-008 (Q-HA-71 to Q-HA-79, Q-EP-70, Q-EP-71) |
+| Chart: Deployments, Services, edge, policies, pools, upgrade | R-HA-002, R-HA-016, R-HA-028 to R-HA-032, R-HA-035, R-HA-037, R-HA-038, R-HA-042, R-HA-045, R-HA-062, R-EP-008 (Q-HA-71 to Q-HA-79, Q-EP-70, Q-EP-71) |
 | Operations, fetch shares, UI | R-OPS-001, R-OPS-003, R-OPS-004, R-OPS-006, R-REPO-040, R-REPO-055, R-API-025, R-API-029, R-UI-012, R-UI-038, the Bastion's `bastion.main.packages_url` (Q-ARCH-297, Q-OPS-161, Q-UI-106, Q-UI-107, Q-HA-74) |
-| Drains and upgrade | R-HA-059 (a drain per role), R-HA-020, R-HA-021, R-HA-064 |
+| Drains and upgrade | R-HA-059 (a drain per role), R-HA-020, R-HA-021 |
 
 **Exit criteria.**
 
@@ -1047,8 +1047,7 @@ autoscaler and ingress policy; an installation of the previous shape upgrades wi
   not delaying a `gc` job, a row of a moved kind in its old queue claimed and run.
 - **E6a.4** The chart per role (`test/chart`, `make chart-test`): Deployments, Services, PDBs, HPAs, NetworkPolicies with their
   ports and no egress (R-HA-042), the edge's path rules (R-HA-037), the path and worker pools (R-HA-062), the endpoint pools per
-  role and the mixed surface (R-EP-008), the login secrets in `api` pods only (R-HA-030), the bridge and its guard (R-HA-064),
-  the validation rows (R-HA-029); `helm lint` and kubeconform over every `ci/` value set.
+  role and the mixed surface (R-EP-008), the login secrets in `api` pods only (R-HA-030), the validation rows (R-HA-029); `helm lint` and kubeconform over every `ci/` value set.
 - **E6a.5** e2e with every role deployed (dev profile: `api` 2, `packages` 3, `worker` 2 and a worker pool for `vuln`, random
   distribution by the Services): the sets `access`, `npm`, `nuget`, `ci`, `vuln` and `bastion` pass; no `api` pod's access log records
   a package or raw-file request and no `packages` pod's a UI, sign-in or management request (R-HA-037); the UI's download and
@@ -1061,8 +1060,8 @@ autoscaler and ingress policy; an installation of the previous shape upgrades wi
 - **E6a.7** *Removed on 2026-11-18* ([Q-HA-313](../spec/ha-and-helm.md#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)):
   the upgrade across the cut (R-HA-064) from the latest release before the cut through its three steps under the client loops and the
   UI journey. It was met by `TestUpgrade_R_HA_064_AcrossTheCut` until 2026-11-06; since the rename to Quader no release before the cut
-  is published and no Quader installation can be on that shape, so the test and the criterion are gone. The guard's decisions stay
-  under E6a.4 (`TestRolesBridge`).
+  is published and no Quader installation can be on that shape, so the test and the criterion are gone. The bridge, its guard and
+  R-HA-064 followed on 2026-11-19 ([Q-HA-315](../spec/ha-and-helm.md#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests)).
 - **E6a.8** Every requirement of the scope table has a passing test that names it (Q-ROAD-4); BETA.md's phase 6a items are 🟢.
 
 **Work packages** ([architecture.md](../spec/architecture.md) Q-ARCH-299). The packages meet at names the specification fixes:
@@ -1079,7 +1078,7 @@ environment variables and values (R-HA-028, R-HA-030, R-HA-031), the content rou
 
 **Not in phase 6a:** a network seam between roles or an upstream fetch service (dropped by the owner, ADR-153); data access of
 its own for a role (option (c) of ADR-153); an egress policy (ADR-154); the npm exchange's edge rule, which comes with
-R-NPM-022 (P1, Q-HA-72); a gap-free way back from the cut (R-HA-064).
+R-NPM-022 (P1, Q-HA-72).
 
 ## Phase 6b · Remote full mirror
 

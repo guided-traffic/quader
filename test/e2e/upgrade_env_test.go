@@ -274,7 +274,7 @@ func installPrior(t testing.TB, rel priorRelease) time.Duration {
 }
 
 // upgradeToTree runs helm upgrade to the chart of the working tree and the image under test with the dev values of the
-// scatter profile, and the extra arguments (`--set web.enabled=true`). It returns the window the upgrade took.
+// scatter profile, and the extra arguments. It returns the window the upgrade took.
 func upgradeToTree(t testing.TB, label string, extra ...string) (from, to time.Time, out string, err error) {
 	t.Helper()
 	args := []string{"upgrade", "quader", upChart(), "-n", cfg.namespace}

@@ -11026,7 +11026,7 @@
     <unit id="pkg.image.digest">
       <notes>
         <note category="location">src/app/features/packages/package-version.html:143,145</note>
-        <note category="location">src/app/features/packages/package-version.ts:333</note>
+        <note category="location">src/app/features/packages/package-version.ts:326</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -11035,7 +11035,7 @@
     <unit id="pkg.image.media-type">
       <notes>
         <note category="location">src/app/features/packages/package-version.html:149,150</note>
-        <note category="location">src/app/features/packages/package-version.ts:334</note>
+        <note category="location">src/app/features/packages/package-version.ts:327</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -11189,7 +11189,7 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:317</note>
+        <note category="location">src/app/features/packages/package-version.ts:310</note>
       </notes>
       <segment>
         <source>File</source>
@@ -11197,7 +11197,7 @@
     </unit>
     <unit id="pkg.file.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:318</note>
+        <note category="location">src/app/features/packages/package-version.ts:311</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -11205,7 +11205,7 @@
     </unit>
     <unit id="pkg.file.sha256">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:321</note>
+        <note category="location">src/app/features/packages/package-version.ts:314</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -11213,7 +11213,7 @@
     </unit>
     <unit id="pkg.help.sha256">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:322</note>
+        <note category="location">src/app/features/packages/package-version.ts:315</note>
       </notes>
       <segment>
         <source>The checksum of the file&apos;s content. Compare it with the output of sha256sum on the downloaded file.</source>
@@ -11221,7 +11221,7 @@
     </unit>
     <unit id="pkg.file.download">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:324</note>
+        <note category="location">src/app/features/packages/package-version.ts:317</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -11229,7 +11229,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:327</note>
+        <note category="location">src/app/features/packages/package-version.ts:320</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -11237,7 +11237,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:328</note>
+        <note category="location">src/app/features/packages/package-version.ts:321</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -11245,7 +11245,7 @@
     </unit>
     <unit id="pkg.repo.published">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:329</note>
+        <note category="location">src/app/features/packages/package-version.ts:322</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -11253,7 +11253,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:332</note>
+        <note category="location">src/app/features/packages/package-version.ts:325</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -11261,7 +11261,7 @@
     </unit>
     <unit id="pkg.image.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:335</note>
+        <note category="location">src/app/features/packages/package-version.ts:328</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -11269,7 +11269,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:337</note>
+        <note category="location">src/app/features/packages/package-version.ts:330</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -11277,7 +11277,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:338</note>
+        <note category="location">src/app/features/packages/package-version.ts:331</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -11285,7 +11285,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:339</note>
+        <note category="location">src/app/features/packages/package-version.ts:332</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -11293,7 +11293,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:340</note>
+        <note category="location">src/app/features/packages/package-version.ts:333</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -11301,7 +11301,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:341</note>
+        <note category="location">src/app/features/packages/package-version.ts:334</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -11309,7 +11309,7 @@
     </unit>
     <unit id="repo.class.local">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:343</note>
+        <note category="location">src/app/features/packages/package-version.ts:336</note>
         <note category="location">src/app/features/repositories/repository-class.ts:9</note>
       </notes>
       <segment>
@@ -11318,7 +11318,7 @@
     </unit>
     <unit id="repo.class.remote">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:344</note>
+        <note category="location">src/app/features/packages/package-version.ts:337</note>
         <note category="location">src/app/features/repositories/repository-class.ts:11</note>
       </notes>
       <segment>
@@ -11327,7 +11327,7 @@
     </unit>
     <unit id="repo.class.virtual">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:345</note>
+        <note category="location">src/app/features/packages/package-version.ts:338</note>
         <note category="location">src/app/features/repositories/repository-class.ts:13</note>
       </notes>
       <segment>

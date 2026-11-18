@@ -92,16 +92,14 @@ func hasPrefixAny(s string, prefixes []string) bool {
 }
 
 func TestE03Roles(t *testing.T) {
-	t.Run("R-HA-002 R-ARCH-001 R-HA-062 E6a.5 every role is a Deployment of its own with its replicas ready, the registry lists each pod under its role and pool, and no Deployment web exists", func(t *testing.T) {
+	t.Run("R-HA-002 R-ARCH-001 R-HA-062 E6a.5 every role is a Deployment of its own with its replicas ready, the registry lists each pod under its role and pool", func(t *testing.T) {
 		for dep, want := range roleDeployments {
 			got := strings.TrimSpace(kn(t, "get", "deployment", dep, "-o", "jsonpath={.status.readyReplicas}/{.spec.replicas}"))
 			if got != fmt.Sprintf("%d/%d", want, want) {
 				t.Errorf("Deployment %s has %s ready/desired replicas, want %d/%d", dep, got, want, want)
 			}
 		}
-		if out, err := kubectl("-n", cfg.namespace, "get", "deployment", "quader-web"); err == nil {
-			t.Errorf("the Deployment quader-web exists outside the bridge of R-HA-064: %s", out)
-		}
+
 		rs, err := replicas()
 		if err != nil {
 			t.Fatal(err)

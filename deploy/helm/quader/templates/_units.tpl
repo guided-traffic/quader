@@ -1,16 +1,15 @@
 {{/*
-The Deployments of the chart as data (R-HA-002, R-HA-062, R-HA-064, R-EP-008). One "unit" per
+The Deployments of the chart as data (R-HA-002, R-HA-062, R-EP-008). One "unit" per
 Deployment: the main Deployments api, packages and worker, the path pools of api and packages,
-the worker pools, the endpoint pools and, with web.enabled, the bridge Deployment web with its
-endpoint pools. Every template that renders something per Deployment (the Deployment itself, its
-PodDisruptionBudget, HorizontalPodAutoscaler and NetworkPolicy) ranges over the same list, so the
-objects of one Deployment always agree on its name, labels and selector.
+the worker pools and the endpoint pools. Every template that renders something per Deployment (the
+Deployment itself, its PodDisruptionBudget, HorizontalPodAutoscaler and NetworkPolicy) ranges over
+the same list, so the objects of one Deployment always agree on its name, labels and selector.
 
 A unit is a map with:
-  name           the Deployment's suffix: api, packages-npm, worker-vuln, api-ep-customers, web
-  role           the argument of --role: api, packages, worker or web
+  name           the Deployment's suffix: api, packages-npm, worker-vuln, api-ep-customers
+  role           the argument of --role: api, packages or worker
   pool           "" for a main Deployment, the pool's name, or ep-<endpoint> for an endpoint pool
-  kind           main | pool | endpoint | bridge
+  kind           main | pool | endpoint
   key            the values path, for messages
   r              the effective values (the role's values with the pool's overrides on top)
   paths          the path prefixes of a path pool
@@ -47,7 +46,7 @@ Returns a YAML list with one or two entries.
 The names of the further endpoints a pod of this role and pool opens a listener for, as a YAML
 list (R-EP-002): a pod of an endpoint pool opens the endpoints of that pool; any other serving pod
 (a main Deployment or a path pool) opens the endpoints without a pool whose surface holds a family
-of its role; the bridge role web opens every endpoint of its pool; a worker opens none.
+of its role; a worker opens none.
 Argument: dict "root" . "role" "packages" "pool" "".
 */}}
 {{- define "quader.unitEndpoints" -}}
@@ -58,7 +57,7 @@ Argument: dict "root" . "role" "packages" "pool" "".
 {{- $pool := .pool | default "" -}}
 {{- range $name := include "quader.endpointNames" $root | fromYamlArray -}}
 {{- $epool := include "quader.endpointPool" (dict "root" $root "name" $name) -}}
-{{- $fits := or (eq $role "web") (has $role (include "quader.surfaceRoles" (dict "root" $root "name" $name) | fromYamlArray)) -}}
+{{- $fits := has $role (include "quader.surfaceRoles" (dict "root" $root "name" $name) | fromYamlArray) -}}
 {{- if and $fits (eq (ternary $pool "" (hasPrefix "ep-" $pool)) $epool) -}}
 {{- $out = append $out $name -}}
 {{- end -}}
@@ -78,18 +77,17 @@ Argument: dict "root" . "role" "packages" "pool" "".
 {{- end -}}
 
 {{/*
-The values of a pool: the role's values (without its pools and the bridge's two flags) with the entry's
+The values of a pool: the role's values (without its pools) with the entry's
 own keys on top, key by key. Argument: dict "base" <role values> "entry" <pool entry>. Returns YAML.
 */}}
 {{- define "quader.poolValues" -}}
-{{- include "quader.mergeValues" (dict "base" (omit .base "pools" "enabled" "routed") "over" (omit .entry "name" "paths" "queues" "enabled" "routed")) -}}
+{{- include "quader.mergeValues" (dict "base" (omit .base "pools") "over" (omit .entry "name" "paths" "queues" "enabled" "routed")) -}}
 {{- end -}}
 
 {{/* Every Deployment as a YAML list of units. Argument: the root context. */}}
 {{- define "quader.units" -}}
 {{- $ := . -}}
 {{- $v := .Values -}}
-{{- $bridge := $v.web.enabled -}}
 {{- $units := list -}}
 {{- $poolQueues := list -}}
 {{- range $p := $v.worker.pools -}}
@@ -99,7 +97,7 @@ own keys on top, key by key. Argument: dict "base" <role values> "entry" <pool e
 {{- end -}}
 {{- $poolQueues = uniq $poolQueues | sortAlpha -}}
 {{- range $role := list "api" "packages" "worker" -}}
-{{- $unit := dict "name" $role "role" $role "pool" "" "kind" "main" "key" $role "r" (omit (index $v $role) "pools" "enabled") -}}
+{{- $unit := dict "name" $role "role" $role "pool" "" "kind" "main" "key" $role "r" (omit (index $v $role) "pools") -}}
 {{- if and (eq $role "worker") $poolQueues -}}
 {{- $_ := set $unit "excludeQueues" $poolQueues -}}
 {{- end -}}
@@ -113,17 +111,9 @@ own keys on top, key by key. Argument: dict "base" <role values> "entry" <pool e
 {{- range $p := $v.worker.pools -}}
 {{- $units = append $units (dict "name" (printf "worker-%s" $p.name) "role" "worker" "pool" $p.name "kind" "pool" "key" (printf "worker.pools[%s]" $p.name) "r" (include "quader.poolValues" (dict "base" $v.worker "entry" $p) | fromYaml) "queues" $p.queues) -}}
 {{- end -}}
-{{- if $bridge -}}
-{{- $units = append $units (dict "name" "web" "role" "web" "pool" "" "kind" "bridge" "key" "web" "r" (omit $v.web "pools" "enabled" "routed")) -}}
-{{- end -}}
 {{- range $name := include "quader.endpointNames" . | fromYamlArray -}}
 {{- if include "quader.endpointPool" (dict "root" $ "name" $name) -}}
-{{- /* The bridge renders the pools of the roles beside the web pool, so the second step switches onto pods that are ready (R-HA-064); no Service selects them before. */ -}}
-{{- $roles := include "quader.surfaceRoles" (dict "root" $ "name" $name) | fromYamlArray -}}
-{{- if $bridge -}}
-{{- $roles = concat (list "web") $roles -}}
-{{- end -}}
-{{- range $role := $roles -}}
+{{- range $role := include "quader.surfaceRoles" (dict "root" $ "name" $name) | fromYamlArray -}}
 {{- $units = append $units (dict "name" (printf "%s-ep-%s" $role $name) "role" $role "pool" (printf "ep-%s" $name) "kind" "endpoint" "key" (printf "endpoints.%s.pool" $name) "r" (include "quader.endpointPoolValues" (dict "root" $ "name" $name "role" $role) | fromYaml)) -}}
 {{- end -}}
 {{- end -}}

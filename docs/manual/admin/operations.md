@@ -198,7 +198,7 @@ For a node drain, the chart's PodDisruptionBudgets (`maxUnavailable: 1` per role
 | `packages` | package clients see `503 server_busy`, or latency grows | `packages.replicaCount` (default 3), `packages.resources.limits.memory` |
 | `worker` | `quader_jobs_queued` keeps growing | `worker.replicaCount` (default 2), `config.jobs.workers` (concurrent jobs per queue) |
 
-Any `api` replica can answer any request of its routes, any `packages` replica any package request, and any worker can run any job; scheduled tasks run once for the whole installation. Each `api` and `packages` pod admits as many concurrent requests as its memory limit allows (`quader_http_memory_slots`), so the chart requires `resources.limits.memory` for each. A remote repository's `limits.maxConcurrentFetches` is shared by the `packages` replicas (and the `web` replicas of the bridge, and `all`): the other roles hold no share of it. With `highAvailability.enforce: true` (default) the chart requires at least two replicas per role.
+Any `api` replica can answer any request of its routes, any `packages` replica any package request, and any worker can run any job; scheduled tasks run once for the whole installation. Each `api` and `packages` pod admits as many concurrent requests as its memory limit allows (`quader_http_memory_slots`), so the chart requires `resources.limits.memory` for each. A remote repository's `limits.maxConcurrentFetches` is shared by the `packages` replicas (and `web` and `all` outside the chart): the other roles hold no share of it. With `highAvailability.enforce: true` (default) the chart requires at least two replicas per role.
 
 Change replica counts through `helm upgrade` rather than `kubectl scale`: the migration Job then compares the connections all replicas may open with PostgreSQL's `max_connections` (`database.preflight.connection_budget: enforce`) and stops the upgrade if they do not fit.
 
@@ -232,11 +232,11 @@ The caches of remote repositories (fetched packages and their metadata) are a di
 
 ## Alerts
 
-With `metrics.prometheusRule.enabled` the chart renders one PrometheusRule with the alerts below and those of [Vulnerability scanning](#vulnerability-scanning), the mirror mode and the upgrade bridge. It needs the Prometheus operator's custom resource definitions and a scrape of the ops port (the chart's ServiceMonitor, see Metrics above). Every selector is scoped to the release's namespace. Every alert can be left out by name in `metrics.prometheusRule.disabledAlerts`; a name that is no alert of the chart fails the install.
+With `metrics.prometheusRule.enabled` the chart renders one PrometheusRule with the alerts below and those of [Vulnerability scanning](#vulnerability-scanning), and the mirror mode. It needs the Prometheus operator's custom resource definitions and a scrape of the ops port (the chart's ServiceMonitor, see Metrics above). Every selector is scoped to the release's namespace. Every alert can be left out by name in `metrics.prometheusRule.disabledAlerts`; a name that is no alert of the chart fails the install.
 
 | Alert | Fires when | For | Severity |
 |---|---|---|---|
-| `QuaderReplicasNotReady` | a Deployment of the chart (a role, a pool or the bridge) has fewer than two available replicas. Needs kube-state-metrics. A Deployment you scaled to one replica fires too | 5m | critical |
+| `QuaderReplicasNotReady` | a Deployment of the chart (a role or a pool) has fewer than two available replicas. Needs kube-state-metrics. A Deployment you scaled to one replica fires too | 5m | critical |
 | `QuaderDatabaseUnreachable` | replicas retry their connection to PostgreSQL and answer `503` | 2m | critical |
 | `QuaderObjectStoreUnreachable` | every replica has the circuit of the object store open | 2m | critical |
 | `QuaderObjectStoreUnreachableSingleReplica` | some replicas have the circuit open and others do not: the cause is on the path of those pods | 5m | warning |

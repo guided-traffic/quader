@@ -93,15 +93,6 @@ func TestLoginSecrets(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-030 the bridge's web pods mount the login secrets, the packages pods of the same release do not", func(t *testing.T) {
-		_, docs := render(t, []string{filepath.Join(chartDir, "ci", "bridge.yaml")}, "secrets.breakGlass.existingSecret=quader-break-glass")
-		for name, want := range map[string]bool{"quader-web": true, "quader-web-ep-customers": true, "quader-api": true, "quader-packages": false, "quader-worker": false} {
-			if got := secretVolume(at(find(docs, "Deployment", name), "spec", "template", "spec"), "quader-break-glass") != nil; got != want {
-				t.Errorf("%s mounts the break-glass Secret = %v, want %v", name, got, want)
-			}
-		}
-	})
-
 	t.Run("R-HA-030 R-AUTH-014 without secrets.breakGlass nothing is mounted and the account is off", func(t *testing.T) {
 		_, docs := render(t, required())
 		cfg := configOf(t, docs)

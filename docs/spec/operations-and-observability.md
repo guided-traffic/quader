@@ -258,8 +258,8 @@ GET /healthz             → 200 {"status":"alive"} | 503 {"status":"stuck","stu
 ```json
 {
   "status": "ready",
-  "replica": "quader-web-6f9c7d8b5-x2v4q",
-  "role": "web",
+  "replica": "quader-api-6f9c7d8b5-x2v4q",
+  "role": "api",
   "checkedAt": "2026-10-28T12:00:05.120Z",
   "degraded": ["valkey"],
   "checks": {
@@ -510,7 +510,7 @@ CREATE TABLE replica (
   name          text        NOT NULL,             -- pod name (QUADER_POD_NAME), else host name
   version       text        NOT NULL,
   revision      text        NOT NULL,
-  roles         text[]      NOT NULL,             -- {api}, {packages}, {worker}; {web} for the upgrade bridge and the releases before the cut; {all} for the development role (INV-2, Q-OPS-161)
+  roles         text[]      NOT NULL,             -- {api}, {packages}, {worker}; {web} and {all} for the development roles (INV-2, Q-OPS-161)
   state         text        NOT NULL CHECK (state IN ('starting','ready','unready','draining')),
   checks        jsonb       NOT NULL DEFAULT '{}',-- {"<check>":{"status":…,"reason":…}}: last results, gating and reported, sanitised
   leases        jsonb       NOT NULL DEFAULT '[]',-- [{"name":"scheduler","since":"…"}]; worker role only
@@ -576,8 +576,8 @@ API: `GET /api/v1/system/replicas` → `200`. Requires `system.read`.
 }
 ```
 
-`roles` is the role the replica registered with, one entry: `api`, `packages`, `worker`, `web` (the bridge of the upgrade across
-the cut) or `all` (Q-OPS-161). Every replica is listed with its own role; no class stands in for it (Q-ARCH-341). `pool` is the
+`roles` is the role the replica registered with, one entry: `api`, `packages`, `worker`, or one of the development roles `web`
+and `all` (Q-OPS-161). Every replica is listed with its own role; no class stands in for it (Q-ARCH-341). `pool` is the
 replica's pool or `null`.
 
 *(example values)* The UI shows this list as the service status screen
@@ -676,7 +676,7 @@ replica registry (R-OPS-003) holds the per-replica view of every replica.
 }
 ```
 
-`replicas.roles` has one member per role of the live replicas (`api`, `packages`, `worker`, `web` while the bridge runs,
+`replicas.roles` has one member per role of the live replicas (`api`, `packages`, `worker`, `web`,
 `all`), the pools of a role counting in it. `answeredBy.role` is the role of the replica that answered, in the same vocabulary
 (Q-ARCH-341).
 
@@ -723,8 +723,8 @@ presigned URL. `grep -iE 'secret|password|qdr_'` over the response finds only ke
 values and no Sentinel address. With Valkey stopped, the call answers `200` and
 `valkey.degradedReplicas` equals `replicas.live`. With three `packages` replicas on one node,
 `replicas.roles.packages.nodes` is `1`; outside Kubernetes, where no replica names its node, it is `0`. A replica that signed
-off (R-OPS-003) is in no count; a lost one is in none either, and a `draining` one counts as live, not as ready. `replicas.roles` has a key per role with a live replica, `web` included while
-the bridge of [ha-and-helm.md](ha-and-helm.md) R-HA-064 or a replica of a release before the cut is live.
+off (R-OPS-003) is in no count; a lost one is in none either, and a `draining` one counts as live, not as ready. `replicas.roles` has a key per role with a live replica, `web` and `all`
+included.
 
 ### R-OPS-005 · External base URL and forwarded hosts
 Priority: **MVP** · Covers: OPS-051, OPS-052, ADMAPI-071
@@ -1975,7 +1975,7 @@ API (requires `audit:read`, the capability of R-AUTHZ-010; a system administrato
   "actor": {"type": "ci", "id": "5f0e…", "name": "ci:gitlab-internal/acme-publish", "tokenId": "c41d…", "authMethod": "bearer"},
   "source": {"ip": "10.12.4.7", "userAgent": "npm/11.6.0 node/v24.11.0 linux x64 workspaces/false"},
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-  "replica": "quader-web-6f9c7d8b5-x2v4q",
+  "replica": "quader-packages-6f9c7d8b5-x2v4q",
   "resource": {"type": "package", "id": "web/npm-local/@acme/ui@2.4.0"},
   "project": "web",
   "repository": "web/npm-local",
@@ -3483,7 +3483,7 @@ SDK.
   "datacontenttype": "application/json",
   "dataschema": "https://quader.example.com/api/v1/webhooks/event-types/package.published/schema",
   "quadersubscription": "gitlab-trigger-npm",
-  "quaderreplica": "quader-web-6f9c7d8b5-x2v4q",
+  "quaderreplica": "quader-worker-7d4b9c6f8-q8n2m",
   "quadertest": false,
   "data": {
     "repository": {"project": "web", "key": "npm-local", "format": "npm", "class": "local"},
@@ -6297,8 +6297,8 @@ store's proxy is outside it, because no address check applies to the object stor
 
 ### H-41 · Ingress enforcement is verified on one CNI only
 
-With the default `metrics.auth: none`, any pod that can reach port 8081 of a Quader replica (`api`, `packages` and `worker`,
-and `web` while the bridge of the upgrade across the cut runs) reads metrics: repository keys, request and byte volumes, queue depth, backup run state. It
+With the default `metrics.auth: none`, any pod that can reach port 8081 of a Quader replica (`api`, `packages` and `worker`)
+reads metrics: repository keys, request and byte volumes, queue depth, backup run state. It
 also reads verbose readiness: dependency latency, schema version, whether Valkey is reachable. The chart ships an
 ingress NetworkPolicy, enabled by default, that admits port 8081 only from the monitoring namespace and the probe
 CIDRs (R-HA-042). Its enforcement is verified on the kind profile's CNI (kindnet) in the end-to-end suite and on no other

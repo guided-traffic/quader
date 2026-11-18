@@ -1,7 +1,7 @@
 //go:build integration
 
 // Package roles tests the binary roles api and packages (R-ARCH-001, phase 6a, E6a.1 and E6a.2) on the integration stack: one
-// installation with an api replica, a packages replica and, for the contrast, a web replica (the bridge), all in-process
+// installation with an api replica, a packages replica and, for the contrast, a web replica (both families in one process), all in-process
 // through the production composition root. It covers what the unit tests of internal/app cannot: the areas a replica really
 // builds, the 404 of the other role's families on real routes, a session cookie that packages ignores, and the explanation
 // of a virtual repository on api over the read-only view of its remote member, which sends nothing to the upstream.

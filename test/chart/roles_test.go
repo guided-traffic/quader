@@ -4,7 +4,6 @@ package chart_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,11 +12,10 @@ import (
 )
 
 // The cut into the roles api, packages and worker (R-HA-002, R-HA-028, R-HA-032, R-HA-037, R-HA-042, R-HA-062,
-// R-HA-064, R-EP-008, ADR-154, ADR-155): every rendered object per role, kept apart by name, label and
-// selector, the edge's path rules, the pools and the upgrade bridge.
+// R-EP-008, ADR-154, ADR-155): every rendered object per role, kept apart by name, label and selector, the edge's
+// path rules and the pools.
 
-func rolesSet() []string  { return []string{filepath.Join(chartDir, "ci", "roles-pools.yaml")} }
-func bridgeSet() []string { return []string{filepath.Join(chartDir, "ci", "bridge.yaml")} }
+func rolesSet() []string { return []string{filepath.Join(chartDir, "ci", "roles-pools.yaml")} }
 
 // matches reports whether the labels satisfy a matchLabels selector.
 func matches(selector, labels any) bool {
@@ -211,22 +209,12 @@ func TestRolesDeployments(t *testing.T) {
 		if got := str(env["QUADER_DATABASE_PREFLIGHT_EXPECTED_WORKER_REPLICAS"], "value"); got != "9" {
 			t.Errorf("worker replicas = %q, want 9", got)
 		}
-		_, docs = render(t, bridgeSet())
-		env = envByName(at(find(docs, "Job", "quader-migrate"), "spec", "template", "spec"))
-		// the bridge: api 3, packages 4, web 4, web endpoint pool 4 and the packages endpoint pool 4: 19; the budget of the first step counts all of them
-		if got := str(env["QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS"], "value"); got != "19" {
-			t.Errorf("serving replicas in the bridge = %q, want 19", got)
-		}
 	})
 
-	t.Run("R-HA-016 the notes print the connection budget of the defaults (231) and of the bridge (311 with the defaults)", func(t *testing.T) {
+	t.Run("R-HA-016 the notes print the connection budget of the defaults (231)", func(t *testing.T) {
 		got := notesOf(t, required())
 		if !strings.Contains(got, "max_connections of at least 231") {
 			t.Errorf("notes lack the budget 231:\n%s", got)
-		}
-		// the bridge adds the web Deployment (3 + 1): serving_max 11, (11 + 3) x 20 + 12 + 19
-		if got := notesOf(t, required(), "web.enabled=true"); !strings.Contains(got, "max_connections of at least 311") {
-			t.Errorf("notes lack the budget 311 of the bridge:\n%s", got)
 		}
 	})
 }
@@ -603,313 +591,6 @@ func TestRolesValidation(t *testing.T) {
 		render(t, required(), "config.storage.upload.max_size=1GiB", "packages.spool.sizeLimit=4Gi", "api.spool.sizeLimit=4Gi")
 		renderFails(t, required(), []string{"packages.spool.sizeLimit=5Gi"}, "config.storage.upload.max_size", "Deployment quader-packages", "packages.spool.sizeLimit")
 	})
-}
-
-func TestRolesBridge(t *testing.T) {
-	t.Run("R-HA-064 web.enabled renders quader-web with --role web, the Service quader and an edge that routes every host whole to it", func(t *testing.T) {
-		_, docs := render(t, bridgeSet())
-		web := find(docs, "Deployment", "quader-web")
-		if web == nil {
-			t.Fatal("Deployment quader-web not rendered")
-		}
-		if got := strings.Join(containerArgs(at(web, "spec", "template", "spec")), " "); got != "serve --role web" {
-			t.Errorf("quader-web args = %q", got)
-		}
-		svc := find(docs, "Service", "quader")
-		if svc == nil {
-			t.Fatal("Service quader not rendered")
-		}
-		if got := podsSelectedBy(docs, at(svc, "spec", "selector")); !equalStrings(got, []string{"quader-web"}) {
-			t.Errorf("Service quader selects the pods of %v, want quader-web", got)
-		}
-		got := edgeRules(find(docs, "Ingress", "quader"))
-		if len(got) != 1 || got["/"] != "quader" {
-			t.Errorf("Ingress rules = %v, want / to quader", got)
-		}
-		// the Deployments of the cut run beside it
-		for _, n := range []string{"quader-api", "quader-packages", "quader-worker"} {
-			if find(docs, "Deployment", n) == nil {
-				t.Errorf("Deployment %s not rendered next to the bridge", n)
-			}
-		}
-		for _, n := range []string{"quader-api", "quader-packages"} {
-			if find(docs, "Service", n) == nil {
-				t.Errorf("Service %s not rendered next to the bridge", n)
-			}
-		}
-		for _, n := range []string{"quader-web", "quader-api", "quader-packages", "quader-worker", "quader-web-ep-customers"} {
-			if find(docs, "NetworkPolicy", n) == nil || find(docs, "PodDisruptionBudget", n) == nil {
-				t.Errorf("%s has no NetworkPolicy or PodDisruptionBudget", n)
-			}
-		}
-	})
-
-	t.Run("R-HA-064 in the bridge an endpoint pool is a pool of web, and its Service selects it", func(t *testing.T) {
-		_, docs := render(t, bridgeSet())
-		pool := find(docs, "Deployment", "quader-web-ep-customers")
-		if pool == nil {
-			t.Fatal("Deployment quader-web-ep-customers not rendered")
-		}
-		pod := at(pool, "spec", "template", "spec")
-		if got := strings.Join(containerArgs(pod), " "); got != "serve --role web" || str(envByName(pod)["QUADER_POOL_NAME"], "value") != "ep-customers" {
-			t.Errorf("pool args = %q, QUADER_POOL_NAME = %v", got, envByName(pod)["QUADER_POOL_NAME"])
-		}
-		// the pool of the role is rendered beside it, so step 2 switches the Service onto pods that are ready since step 1;
-		// no Service selects it yet (R-HA-064, Q-HA-90)
-		if find(docs, "Deployment", "quader-packages-ep-customers") == nil {
-			t.Error("the endpoint pool of the role packages is not rendered next to the web pool")
-		}
-		for _, s := range ofKind(docs, "Service") {
-			if str(s, "metadata", "name") == "quader-ops" {
-				continue
-			}
-			for _, n := range podsSelectedBy(docs, at(s, "spec", "selector")) {
-				if n == "quader-packages-ep-customers" || n == "quader-api-ep-customers" {
-					t.Errorf("Service %s selects the pool %s during the bridge", str(s, "metadata", "name"), n)
-				}
-			}
-		}
-		if got := podsSelectedBy(docs, at(find(docs, "Service", "quader-ep-customers"), "spec", "selector")); !equalStrings(got, []string{"quader-web-ep-customers"}) {
-			t.Errorf("Service quader-ep-customers selects the pods of %v", got)
-		}
-		if got := edgeRules(find(docs, "Ingress", "quader-ep-customers")); len(got) != 1 || got["/"] != "quader-ep-customers" {
-			t.Errorf("the endpoint Ingress rules = %v", got)
-		}
-		// the web pods keep the policy rules of both roles: 8080, and the policy of the pool 8443
-		for n, ports := range map[string][]int{"quader-web": {8080, 8081}, "quader-web-ep-customers": {8443, 8081}} {
-			var got []int
-			for _, r := range list(find(docs, "NetworkPolicy", n), "spec", "ingress") {
-				p, _, _ := portsOf(r)
-				got = append(got, p...)
-			}
-			if len(got) != len(ports) || !hasInt(got, ports[0]) || !hasInt(got, ports[1]) {
-				t.Errorf("%s admits %v, want %v", n, got, ports)
-			}
-		}
-	})
-
-	t.Run("R-HA-064 without web.enabled nothing of the old shape renders", func(t *testing.T) {
-		_, docs := render(t, rolesSet())
-		for _, k := range []string{"Deployment", "Service", "NetworkPolicy", "PodDisruptionBudget"} {
-			for _, d := range ofKind(docs, k) {
-				if n := str(d, "metadata", "name"); n == "quader" || strings.Contains(n, "-web") {
-					t.Errorf("%s %s rendered without web.enabled", k, n)
-				}
-			}
-		}
-	})
-
-	t.Run("R-HA-064 Q-HA-130 each step of the cut changes either the edge or the backends, never both", func(t *testing.T) {
-		// step 1 (web.enabled), step 2 (web.routed false), step 3 (the target shape): an edge applies the removal of a
-		// backend before a new route (F-64), so the step that moves the edge keeps every backend, and the step that
-		// removes the bridge moves no route.
-		_, s1 := render(t, bridgeSet())
-		_, s2 := render(t, bridgeSet(), "web.routed=false")
-		_, s3 := render(t, bridgeSet(), "web.enabled=false")
-		for _, k := range []string{"Deployment", "Service"} {
-			if a, b := names(s1, k), names(s2, k); !equalStrings(a, b) {
-				t.Errorf("step 2 changes the %ss: %v -> %v", k, a, b)
-			}
-		}
-		for _, n := range []string{"quader", "quader-ep-customers"} {
-			if a, b := edgeRules(find(s2, "Ingress", n)), edgeRules(find(s3, "Ingress", n)); fmt.Sprint(a) != fmt.Sprint(b) {
-				t.Errorf("step 3 moves the routes of Ingress %s: %v -> %v", n, a, b)
-			}
-		}
-		for _, r := range edgeRules(find(s2, "Ingress", "quader")) {
-			if r == "quader" {
-				t.Errorf("step 2 still routes to the Service quader: %v", edgeRules(find(s2, "Ingress", "quader")))
-			}
-		}
-		// every Service the edge names in step 3 already selects the same pods in step 2
-		for _, ing := range ofKind(s3, "Ingress") {
-			for _, n := range edgeRules(ing) {
-				if got, want := podsSelectedBy(s2, at(find(s2, "Service", n), "spec", "selector")), podsSelectedBy(s3, at(find(s3, "Service", n), "spec", "selector")); len(want) == 0 || !equalStrings(got, want) {
-					t.Errorf("Service %s selects %v in step 2 and %v in step 3", n, got, want)
-				}
-			}
-		}
-		// step 2 keeps the bridge running behind its own Service, and the endpoint's Service on the pool of the role
-		if got := podsSelectedBy(s2, at(find(s2, "Service", "quader"), "spec", "selector")); !equalStrings(got, []string{"quader-web"}) {
-			t.Errorf("Service quader selects %v in step 2, want quader-web", got)
-		}
-		if got := podsSelectedBy(s2, at(find(s2, "Service", "quader-ep-customers"), "spec", "selector")); !equalStrings(got, []string{"quader-packages-ep-customers"}) {
-			t.Errorf("Service quader-ep-customers selects %v in step 2", got)
-		}
-		gone := []string{}
-		for _, n := range names(s2, "Deployment") {
-			if find(s3, "Deployment", n) == nil {
-				gone = append(gone, n)
-			}
-		}
-		if !equalStrings(gone, []string{"quader-web", "quader-web-ep-customers"}) {
-			t.Errorf("step 3 removes the Deployments %v, want the bridge's", gone)
-		}
-		// web.routed means nothing without the bridge
-		a, _ := render(t, required())
-		b, _ := render(t, required(), "web.routed=false")
-		if a != b {
-			t.Error("web.routed=false changes the rendering without web.enabled")
-		}
-	})
-
-	t.Run("R-HA-064 Q-HA-130 a Service that step 2 routes to is rendered in step 1, without a route", func(t *testing.T) {
-		// an endpoint whose surface holds families of both roles: step 2 splits its host between quader-ep-customers and
-		// quader-api-ep-customers, so the second exists since step 1 and has its endpoints when the route comes
-		both := "endpoints.customers.surface={packages,files,api}"
-		_, s1 := render(t, bridgeSet(), both)
-		_, s2 := render(t, bridgeSet(), both, "web.routed=false")
-		svc := find(s1, "Service", "quader-api-ep-customers")
-		if svc == nil {
-			t.Fatal("Service quader-api-ep-customers is not rendered in step 1")
-		}
-		if got := podsSelectedBy(s1, at(svc, "spec", "selector")); !equalStrings(got, []string{"quader-api-ep-customers"}) {
-			t.Errorf("Service quader-api-ep-customers selects %v in step 1", got)
-		}
-		if got := edgeRules(find(s1, "Ingress", "quader-ep-customers")); len(got) != 1 || got["/"] != "quader-ep-customers" {
-			t.Errorf("the endpoint Ingress of step 1 = %v, want / to quader-ep-customers", got)
-		}
-		if got := edgeRules(find(s2, "Ingress", "quader-ep-customers")); got["/api/v1"] != "quader-api-ep-customers" || got["/api"] != "quader-ep-customers" {
-			t.Errorf("the endpoint Ingress of step 2 = %v", got)
-		}
-	})
-
-	t.Run("R-HA-063 R-HA-064 the BackendTLSPolicies cover the Service quader and the role Services for the whole bridge", func(t *testing.T) {
-		// a route outside the chart (a Gateway API HTTPRoute) moves at a time the chart does not know
-		policy := []string{"tls.backendTLSPolicy.enabled=true", "tls.backendTLSPolicy.caConfigMapName=quader-tls-ca"}
-		for _, c := range []struct {
-			name string
-			sets []string
-			want []string
-		}{
-			{"step 1", nil, []string{"quader", "quader-api", "quader-packages"}},
-			{"step 2", []string{"web.routed=false"}, []string{"quader", "quader-api", "quader-packages"}},
-			{"step 3", []string{"web.enabled=false"}, []string{"quader-api", "quader-packages"}},
-		} {
-			_, docs := render(t, bridgeSet(), append(append([]string{}, policy...), c.sets...)...)
-			if got := names(docs, "BackendTLSPolicy"); !equalStrings(got, c.want) {
-				t.Errorf("%s: BackendTLSPolicies %v, want %v", c.name, got, c.want)
-			}
-		}
-	})
-
-	t.Run("R-HA-064 the notes name the step and the next one", func(t *testing.T) {
-		if got := notesOf(t, bridgeSet()); !strings.Contains(got, "step 1 of 3") || !strings.Contains(got, "--set web.enabled=true --set web.routed=false") {
-			t.Errorf("notes of step 1:\n%s", got)
-		}
-		if got := notesOf(t, bridgeSet(), "web.routed=false"); !strings.Contains(got, "step 2 of 3") || !strings.Contains(got, "web.enabled: false") {
-			t.Errorf("notes of step 2:\n%s", got)
-		}
-		if got := notesOf(t, bridgeSet(), "web.enabled=false"); strings.Contains(got, "not complete") {
-			t.Errorf("notes of step 3 still name the cut:\n%s", got)
-		}
-	})
-
-	t.Run("R-HA-064 Q-HA-132 the guard refuses only the upgrade that moves the edge onto a target that is not ready, and step 3 before step 2", func(t *testing.T) {
-		// The decision is a function of what quader.bridgeFacts reads with lookup; here the facts are given. The units of
-		// ci/bridge.yaml: quader-api, quader-packages and the endpoint pool quader-packages-ep-customers.
-		const ready = "deployments: {quader-api: {replicas: 3, ready: 3}, quader-packages: {replicas: 4, ready: 4}, quader-packages-ep-customers: {replicas: 3, ready: 3}}\n"
-		const apiDown = "deployments: {quader-api: {replicas: 3, ready: 1}, quader-packages: {replicas: 4, ready: 4}, quader-packages-ep-customers: {replicas: 3, ready: 3}}\n"
-		const noAPI = "deployments: {quader-packages: {replicas: 4, ready: 4}, quader-packages-ep-customers: {replicas: 3, ready: 3}}\n"
-		const onBridge = "web: true\ningress: true\ningressToBridge: [/]\nendpointServices: {customers: web}\n"
-		const moved = "web: true\ningress: true\ningressToBridge: []\nendpointServices: {customers: packages}\n"
-		const unread = "web: true\ningress: false\ningressToBridge: []\nendpointServices: {}\n"
-		step2 := []string{"web.routed=false"}
-		step3 := []string{"web.enabled=false"}
-		for _, c := range []struct {
-			name  string
-			sets  []string
-			facts string
-			want  []string // empty: the guard lets the upgrade through
-		}{
-			{"step 2 at step 2 with api crash-looping (the edge has moved)", step2, moved + apiDown, nil},
-			{"step 3 at step 2 with api crash-looping (the edge has moved)", step3, moved + apiDown, nil},
-			{"step 2 from step 1 with every target ready", step2, onBridge + ready, nil},
-			{
-				"step 2 from step 1 with api not ready", step2, onBridge + apiDown,
-				[]string{"moves the edge", "the Ingress quader routes / to the Service quader", "the Service quader-ep-customers selects the web pods", "quader-api is missing or not fully ready", "three upgrades"},
-			},
-			{"step 2 from the old shape (no quader-api)", step2, onBridge + noAPI, []string{"quader-api is missing or not fully ready", "--set web.enabled=true"}},
-			{
-				"step 3 from step 1 (step 2 skipped)", step3, onBridge + ready,
-				[]string{"web.enabled is false while the edge still routes to the bridge", "Run step 2 first", "--set web.enabled=true --set web.routed=false", "three upgrades"},
-			},
-			{
-				"step 3 from step 1 with only the endpoint Service on the bridge", step3, "web: true\ningress: true\ningressToBridge: []\nendpointServices: {customers: web}\n" + ready,
-				[]string{"still routes to the bridge (the Service quader-ep-customers selects the web pods)"},
-			},
-			{"no readable edge and no quader-api: step 1 has not run", step3, unread + noAPI, []string{"quader-api does not exist, so step 1 has not run", "three upgrades"}},
-			{"no readable edge and quader-api not ready", step2, unread + apiDown, nil},
-			{"no quader-web", step3, "web: false\n" + noAPI, nil},
-			{"step 1 is never refused", nil, onBridge + noAPI, nil},
-		} {
-			got := bridgeGuardOf(t, bridgeSet(), c.sets, c.facts)
-			if len(c.want) == 0 && got != "" {
-				t.Errorf("%s: refused: %s", c.name, got)
-			}
-			if len(c.want) > 0 && got == "" {
-				t.Errorf("%s: let through, want a refusal naming %q", c.name, c.want)
-			}
-			for _, w := range c.want {
-				if got != "" && !strings.Contains(got, w) {
-					t.Errorf("%s: the refusal does not name %q:\n%s", c.name, w, got)
-				}
-			}
-		}
-	})
-
-	t.Run("R-HA-064 the guard reads the cluster only: helm template, which has none, renders web.enabled=false next to a quader-web", func(t *testing.T) {
-		// lookup returns nothing without a cluster, so the two steps are enforced under helm upgrade only
-		// (helm upgrade --dry-run=server, the upgrade e2e test); the rendering must not depend on it.
-		a, _ := render(t, required())
-		b, _ := render(t, required(), "web.enabled=false")
-		if a != b {
-			t.Error("the rendering differs between the default and web.enabled=false")
-		}
-	})
-
-	t.Run("R-HA-064 the web values keep their keys: replicas, a pool and the schema", func(t *testing.T) {
-		_, docs := render(t, bridgeSet(), "web.replicaCount=5", "web.resources.limits.memory=4Gi")
-		if at(find(docs, "Deployment", "quader-web"), "spec", "replicas") != 5 {
-			t.Errorf("quader-web replicas = %v", at(find(docs, "Deployment", "quader-web"), "spec", "replicas"))
-		}
-		renderFails(t, bridgeSet(), []string{"web.replicas=5"}, "replicas")
-	})
-
-	t.Run("R-HA-064 R-HA-032 the bridge's Deployment follows the rules of every role", func(t *testing.T) {
-		renderFails(t, bridgeSet(), []string{"web.replicaCount=1"}, "web.replicaCount", "quader-web")
-		renderFails(t, bridgeSet(), []string{"web.resources.limits=null"}, "web.resources.limits.memory is required")
-	})
-}
-
-// bridgeGuardOf renders the decision of the bridge guard (quader.bridgeGuard) in a copy of the chart for the given facts
-// of the cluster (the YAML quader.bridgeFacts reads with lookup) and returns its refusal, empty when it lets the upgrade
-// through.
-func bridgeGuardOf(t *testing.T, files, sets []string, facts string) string {
-	t.Helper()
-	dir := t.TempDir()
-	copyDir(t, chartDir, filepath.Join(dir, "quader"))
-	probe := "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: guard\ndata:\n  message: {{ include \"quader.bridgeGuard\" (dict \"root\" . \"facts\" (`" +
-		facts + "` | fromYaml)) | quote }}\n"
-	if err := os.WriteFile(filepath.Join(dir, "quader", "templates", "guard-probe.yaml"), []byte(probe), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	args := []string{"template", "quader", filepath.Join(dir, "quader"), "--show-only", "templates/guard-probe.yaml", "--namespace", "default"}
-	for _, f := range files {
-		args = append(args, "-f", f)
-	}
-	for _, s := range sets {
-		args = append(args, "--set", s)
-	}
-	out, stderr, err := helm(t, args...)
-	if err != nil {
-		t.Fatalf("%v\n%s", err, stderr)
-	}
-	docs := parse(t, out)
-	if len(docs) != 1 {
-		t.Fatalf("the probe rendered %d documents", len(docs))
-	}
-	return str(docs[0], "data", "message")
 }
 
 // notesOf renders NOTES.txt through the template quader.notes in a copy of the chart.

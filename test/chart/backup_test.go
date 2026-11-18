@@ -595,7 +595,7 @@ func TestR_HA_060_RestoreJob(t *testing.T) {
 		render(t, required(), restoreSets("highAvailability.enforce=true")...)
 	})
 
-	t.Run("the sequence's other rules still hold while it restores: a pool, an endpoint pool and the bridge at zero", func(t *testing.T) {
+	t.Run("the sequence's other rules still hold while it restores: a pool and an endpoint pool at zero", func(t *testing.T) {
 		render(t, []string{filepath.Join(chartDir, "ci", "roles-pools.yaml")}, restoreSets("packages.autoscaling.enabled=false",
 			"api.pools[0].replicaCount=0", "packages.pools[0].replicaCount=0", "worker.pools[0].replicaCount=0", "worker.pools[1].replicaCount=0",
 			"endpoints.customers.pool.enabled=false")...)
@@ -631,9 +631,6 @@ func TestR_HA_029_BackupValidation(t *testing.T) {
 	})
 	t.Run("restore.enabled with a pool that has replicas names the pool", func(t *testing.T) {
 		renderFails(t, []string{filepath.Join(chartDir, "ci", "roles-pools.yaml")}, restoreSets("packages.autoscaling.enabled=false"), "restore.enabled", ".pools[")
-	})
-	t.Run("restore.enabled with the bridge Deployment running names it", func(t *testing.T) {
-		renderFails(t, required(), restoreSets("web.enabled=true", "web.replicaCount=2"), "restore.enabled", "web.replicaCount")
 	})
 
 	t.Run("the target must not be the blob store's bucket on the same endpoint", func(t *testing.T) {

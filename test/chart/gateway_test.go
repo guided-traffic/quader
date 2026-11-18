@@ -162,17 +162,6 @@ func TestR_HA_038_GatewayAPIExposure(t *testing.T) {
 		}
 	})
 
-	t.Run("in the bridge the host goes whole to <fullname>", func(t *testing.T) {
-		_, d := render(t, required(), "gateway.enabled=true", "gateway.parentRefs[0].name=shared", "web.enabled=true")
-		r := find(d, "HTTPRoute", "quader")
-		if r == nil {
-			t.Fatal("no HTTPRoute")
-		}
-		if got := routeTable(t, r); strings.Join(got, " ") != "/>quader" {
-			t.Errorf("rules = %v, want [/>quader]", got)
-		}
-	})
-
 	t.Run("without the Gateway API in the cluster the render fails before anything is created", func(t *testing.T) {
 		args := []string{"template", "quader", chartDir, "--namespace", "default", "-f", gatewaySet()}
 		_, stderr, err := helm(t, args...)

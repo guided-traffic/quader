@@ -158,76 +158,6 @@ packages:
   extraEnv: []                          # appended after the shared extraEnv
   pools: []                             # example: [{name: npm, paths: [/api/npm], replicaCount: 4}]; routed: false renders the pool without its route until its pods are ready
 
-# ── web Deployment: the bridge of the upgrade across the cut ─────
-# Rendered only with web.enabled: quader serve --role web, the Service <fullname> and the edge of the releases
-# before the cut. Every other key keeps its meaning and default of those releases; a fresh installation never sets it.
-web:
-  enabled: false                        # true for steps 1 and 2 of the cut (R-HA-064)
-  routed: true                          # false in step 2: the edge moves to api and packages while the bridge still runs
-  replicaCount: 3                       # ignored when autoscaling.enabled
-  minReadySeconds: 10
-  revisionHistoryLimit: 5
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  terminationGracePeriodSeconds: 120
-  spool:
-    sizeLimit: ""                       # empty = spool.sizeLimit
-  resources:
-    requests:
-      cpu: "1"
-      memory: 1Gi
-      ephemeral-storage: 2Gi
-    limits:
-      memory: 2Gi                       # no CPU limit by default
-  autoscaling:
-    enabled: false
-    minReplicas: 3
-    maxReplicas: 8
-    targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 0  # 0 = no memory metric
-    metrics: []                         # additional autoscaling/v2 metric specs
-    behavior:
-      scaleUp:
-        stabilizationWindowSeconds: 0
-        policies:
-          - type: Pods
-            value: 2
-            periodSeconds: 60
-      scaleDown:
-        stabilizationWindowSeconds: 300
-        policies:
-          - type: Pods
-            value: 1
-            periodSeconds: 120
-  podDisruptionBudget:
-    enabled: true
-    maxUnavailable: 1
-    minAvailable: null                  # mutually exclusive with maxUnavailable
-    unhealthyPodEvictionPolicy: AlwaysAllow
-  topologySpread:
-    enabled: true                       # render the two constraints below
-    nodeTaintsPolicy: Honor             # cordoned nodes do not count as domains
-    zone:
-      maxSkew: 1
-      whenUnsatisfiable: ScheduleAnyway
-    host:
-      maxSkew: 1
-      whenUnsatisfiable: DoNotSchedule  # required with highAvailability.enforce
-  topologySpreadConstraints: []         # non-empty replaces the generated constraints
-  nodeFailureTolerationSeconds: 60      # not-ready/unreachable tolerations
-  affinity: {}
-  nodeSelector: {}                      # example: {kubernetes.io/arch: arm64}
-  tolerations: []
-  priorityClassName: ""                 # example: business-critical
-  schedulerName: ""
-  podAnnotations: {}
-  podLabels: {}
-  extraEnv: []                          # appended after the shared extraEnv
-  pools: []                             # kept for the releases before the cut; ignored, the bridge renders no path pool
-
 # ── worker Deployment: quader serve --role worker ─────────────────
 worker:
   replicaCount: 2
@@ -519,7 +449,7 @@ trustedCA:
   keys: [ca-bundle.crt]                 # the files of the source that are mounted, each a PEM bundle; they are added to config.proxy.outbound.tls.ca_files
   useForObjectStore: false              # true also sets storage.s3.ca_file to the one file of keys, for an S3-compatible store with a private CA; then it is that store's whole trust store
 
-# ── Monitoring (the alerts of the vulnerability scanning, the mirror and the bridge so far) ─
+# ── Monitoring (the ServiceMonitor and the alerts of the chart) ─
 metrics:
   serviceMonitor:
     enabled: false                      # needs the Prometheus operator's CRDs
@@ -578,7 +508,7 @@ securityContext:
 # ── Volumes (nothing ReadWriteMany, nothing persistent) ─
 spool:
   type: emptyDir                        # emptyDir | ephemeral
-  sizeLimit: 20Gi                       # web.spool and worker.spool override it
+  sizeLimit: 20Gi                       # api.spool, packages.spool and worker.spool override it
   headroom: 2GiB                        # sizeLimit - headroom = storage.spool.max_bytes
   medium: ""                            # node disk; "Memory" counts against the memory limit
   ephemeral:
@@ -619,7 +549,7 @@ service:
   type: ClusterIP                       # ClusterIP | LoadBalancer | NodePort
   port: 8080
   opsPort: 8081
-  # The role Services <fullname>-api and <fullname>-packages, the Services of the path pools and, with web.enabled, <fullname> take type and port from here.
+  # The role Services <fullname>-api and <fullname>-packages and the Services of the path pools take type and port from here.
   # A LoadBalancer or NodePort role Service reaches one role only: a host is split between roles at the Ingress.
   # No sessionAffinity value: every Service renders sessionAffinity: None.
   annotations: {}
@@ -632,7 +562,7 @@ ingress:
   labels: {}
   hosts: []                             # empty = host of config.server.base_url
   # No path value: every host gets the fixed path rules (Prefix rules per route family onto <fullname>-api and
-  # <fullname>-packages, plus the paths of api.pools and packages.pools; / onto <fullname> with web.enabled).
+  # <fullname>-packages, plus the paths of api.pools and packages.pools).
   tls: []                               # example: [{secretName: quader-tls, hosts: [quader.example.com]}]
   backendTLS:                           # how the controller reaches quader when tls.enabled; quader speaks HTTPS, so the controller must too
     controller: haproxy                 # haproxy (HAProxy Ingress, the primary target) | traefik | ingress-nginx | manual (you set the backend protocol in ingress.annotations / service.annotations)
@@ -682,7 +612,7 @@ endpoints: {}                           # only the default endpoint; example:
 #      extraSecrets: []                 # example [quader-packages-wildcard-tls]: further pairs, chosen by SNI
 #      clientCaSecret: ""               # no client certificates; example quader-customer-ca (key ca.crt)
 #    pool:
-#      enabled: false                   # served by the main Deployments of the roles the surface holds; true renders <fullname>-packages-ep-<name> and, with api families, <fullname>-api-ep-<name> (<fullname>-web-ep-<name> with web.enabled)
+#      enabled: false                   # served by the main Deployments of the roles the surface holds; true renders <fullname>-packages-ep-<name> and, with api families, <fullname>-api-ep-<name>
 #      replicaCount: 2                  # every key of the role's values (api or packages) may be overridden here
 #    service:
 #      type: ClusterIP                  # ClusterIP | LoadBalancer | NodePort

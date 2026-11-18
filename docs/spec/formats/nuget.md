@@ -2411,7 +2411,7 @@ Acceptance criteria:
   one `package.published` event for it, and `quader_nuget_push_replayed_total` has risen by 1.
 - `dotnet nuget push` of a 300 MiB package over a link limited to 10 MiB/s runs while the `web` pod
   receiving it is deleted. The command exits 0, and the version restores through another replica.
-- With `web.spool.sizeLimit: 3Gi` and `spool.headroom: 1GiB`, three concurrent pushes of 1 GiB
+- With `packages.spool.sizeLimit: 3Gi` and `spool.headroom: 1GiB`, three concurrent pushes of 1 GiB
   packages: two `dotnet nuget push` commands exit 0. The third exits 0 or reports
   `503 (Service Unavailable)`, and in that case succeeds when run again. `kubectl get events` shows
   no eviction.

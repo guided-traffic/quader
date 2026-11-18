@@ -225,7 +225,6 @@ The chart's PrometheusRule holds the alerts below when `metrics.prometheusRule.e
 | `QuaderMixedVersions` | warning | Two Quader versions have run side by side for two hours | The image of each Deployment; a stuck rollout |
 | `QuaderSpoolNearlyFull` | warning | A replica's spool is over 90 % used | [Disk or spool full](#disk-or-spool-full) |
 | `QuaderGCStale` | warning | No garbage-collection run has succeeded for two days | The `gc` jobs and the object store |
-| `QuaderBridgeLeftOn` | warning | A `web` replica of the upgrade bridge has run for 24 hours | Finish the cut ([Upgrades](upgrades.md)) |
 | `QuaderValkeyUnavailable` | critical | Every replica runs without Valkey | [Valkey](#valkey-unavailable-or-failing-over) |
 | `QuaderValkeyUnavailableSingleReplica` | warning | Some replicas lost Valkey | The path of those pods, on `quader_valkey_available` |
 | `QuaderValkeySentinelsDegraded` | warning | A replica reaches fewer than two Sentinels | The Sentinel pods and the path to them |

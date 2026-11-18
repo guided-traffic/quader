@@ -22,7 +22,7 @@ regenerated.
 | P1 features covered by spec requirements | 66.7% (343 of 514) | measured from `Covers:` lines |
 | In-scope features covered (MVP, P1, P2, Later) | 36.4% (788 of 2,167) | measured from `Covers:` lines |
 | Catalog features | 2,239 on 60 pages | measured from catalog headings |
-| Spec requirements | 920 on 20 pages (625 MVP, 254 P1, 41 P2) | measured from spec headings |
+| Spec requirements | 919 on 20 pages (624 MVP, 254 P1, 41 P2) | measured from spec headings |
 | Requirements covering no catalog feature | 273 (`quader-only`) | measured from `Covers:` lines |
 <!-- coverage-gen:end headline -->
 

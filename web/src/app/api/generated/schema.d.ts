@@ -4913,7 +4913,7 @@ export interface components {
             answeredBy: {
                 replica: string;
                 /**
-                 * @description The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `quader_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role).
+                 * @description The role the replica that answered runs in (`--role`, Q-OPS-161), as the registry, `quader_build_info{role}` and the logs name it: `api`, `packages`, `worker`, `web` or `all` (the development roles).
                  * @example api
                  * @enum {string}
                  */
@@ -5010,7 +5010,7 @@ export interface components {
             versions: {
                 [key: string]: number;
             };
-            /** @description Per role (`api`, `packages`, `worker`, and during an upgrade across the cut `web`; `all` in the development role), keyed by the role of the replica; the replicas of a role's pools count in the role. */
+            /** @description Per role (`api`, `packages`, `worker`; `web` and `all` in the development roles), keyed by the role of the replica; the replicas of a role's pools count in the role. */
             roles: {
                 [key: string]: components["schemas"]["RoleSummary"];
             };
@@ -5210,7 +5210,7 @@ export interface components {
             version: string;
             revision: string;
             /**
-             * @description The role the replica registered with (Q-OPS-161), as the registry names it: `api`, `packages`, `worker`, `web` (the upgrade bridge) or `all` (the development role). One entry per replica.
+             * @description The role the replica registered with (Q-OPS-161), as the registry names it: `api`, `packages`, `worker`, `web` or `all` (the development roles). One entry per replica.
              * @example [
              *       "packages"
              *     ]
@@ -10725,7 +10725,7 @@ export interface operations {
                      *             "userAgent": "curl/8.7.1"
                      *           },
                      *           "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
-                     *           "replica": "quader-web-6f9c7d8b5-x2v4q",
+                     *           "replica": "quader-api-6f9c7d8b5-x2v4q",
                      *           "endpoint": "default",
                      *           "resource": {
                      *             "type": "permission_policy",

@@ -110,10 +110,10 @@ built in phase 6a). Roles:
 A variant of a role by path prefix or by queue is a pool of that role, rendered from chart values without code
 ([ha-and-helm.md](ha-and-helm.md) R-HA-062). The configuration key `process.role` selects the role of `quader serve`:
 `api`, `packages`, `worker`, `bastion`, `web` or `all`, with no default ([architecture.md](architecture.md)
-R-ARCH-001). `web` is `api` and `packages` in one process: the role of the releases before the cut, kept as the
-bridge of the upgrade across it ([ha-and-helm.md](ha-and-helm.md) R-HA-064) and never a shape of a fresh
-installation. `all` is every role but `bastion` in one process, for a binary started outside the chart during
-development; the chart never renders it, and `bastion` keeps a configuration schema of its own. The Helm chart
+R-ARCH-001). `web` is `api` and `packages` in one process, the role of the releases before the cut; the binary keeps it
+for development and as the replica of the integration tests ([ha-and-helm.md](ha-and-helm.md) Q-HA-315). `all` is every
+role but `bastion` in one process, for a binary started outside the chart during development; the chart renders
+neither, and `bastion` keeps a configuration schema of its own. The Helm chart
 deploys `api`, `packages` and `worker` as separate Deployments, each with its own replica count, autoscaler,
 disruption budget and ingress policy; the local development profile runs the chart the same way
 ([ha-and-helm.md](ha-and-helm.md) R-HA-001, R-HA-002, R-HA-051). Where a page says `web` without naming a family,

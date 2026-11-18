@@ -1,7 +1,7 @@
 # Roles and trust boundaries
 
 Status: built. The roles `api` and `packages` are built in the binary (Q-ARCH-294, Q-ARCH-300 to Q-ARCH-303) and tested on the integration stack
-(`test/integration/roles`); the chart renders `web` only in the bridge of the upgrade across the cut (`web.enabled`). The listeners,
+(`test/integration/roles`); the chart renders neither `web` nor `all`. The listeners,
 the client-address rule, the trace trust rule and the Valkey data path date from M0; how a principal is authenticated is on
 [login-and-sessions.md](login-and-sessions.md) and [tokens-and-credentials.md](tokens-and-credentials.md), what it may do on
 [permissions.md](permissions.md).
@@ -15,7 +15,7 @@ value crosses a boundary. The code that implements each rule is linked. Open gap
 |---|---|---|---|---|
 | `api` | `quader serve --role api` | the route families `ui`, `api`, `ci_exchange` on the endpoints whose surface holds them; the ops listener | none: no job loop, no lease pool; holds the session store, the OIDC client secrets and the break-glass password ([roles.go](../../internal/app/roles.go), `SubsystemsFor`) | Deployment `<fullname>-api`, its path pools and endpoint pools |
 | `packages` | `quader serve --role packages` | the route families `packages`, `files`; tokens only, a session cookie counts as absent; the ops listener | none; builds no session store, login or CI exchange and reads no login secret | Deployment `<fullname>-packages`, its path pools and endpoint pools |
-| `web` | `quader serve --role web` | every family: `api` and `packages` in one process, the bridge of the upgrade across the cut | none; holds what `api` and `packages` hold ([H-518](#h-518--the-bridge-and-the-development-role-hold-both-halves-of-the-cut)) | Deployment `<fullname>-web` and the pools of further endpoints |
+| `web` | `quader serve --role web` | every family: `api` and `packages` in one process | none; holds what `api` and `packages` hold ([H-518](#h-518--the-development-roles-web-and-all-hold-both-halves-of-the-cut)) | not rendered by the chart; the replica of the integration tests ([Q-HA-315](../spec/ha-and-helm.md#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests)) |
 | `worker` | `quader serve --role worker` | the ops listener only | the job claim loop, scheduler and reaper; the lease pool | Deployment `<fullname>-worker` |
 | `all` | `quader serve --role all` | both listeners | both sets | not rendered by the chart; for a local run outside the chart ([spec INV-2](../spec/README.md#design-invariants)) |
 | migration | `quader migrate up` | nothing: no listener | none; after the schema steps it applies the role bindings of `authz.role_bindings` under the migration lock ([permissions](permissions.md#role-bindings-from-the-configuration)) | Job `<fullname>-migrate` ([migrate.yaml](../../deploy/helm/quader/templates/migrate.yaml)) |
@@ -202,33 +202,20 @@ identity work of M1; Q-AUTHZ-16 removes it together with `bridgeAccess` once the
 What makes it real: the switch set on an installation that is reachable from clients. The dev profile is not, but its edge
 is on `localhost`.
 
-### H-518 · The bridge and the development role hold both halves of the cut
+### H-518 · The development roles `web` and `all` hold both halves of the cut
 
 Stage: the role table of R-ARCH-001, the roles `web` and `all` ([roles.go](../../internal/app/roles.go)).
 
-Live as long as `web.enabled` stays true: the bridge Deployment of the upgrade across the cut (Q-ARCH-295, R-HA-064) runs until the
-operator takes the third step, and nothing in the chart ends it; dormant on an installation that runs `api` and `packages` only.
-Since the rename to Quader no published release precedes the cut, so no upgrade leads onto the bridge: it is live only where an
-operator sets `web.enabled: true` by hand, and the change that removes the bridge from the chart ends this half
-([Q-HA-313](../spec/ha-and-helm.md#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)).
-`all` is live on a developer's machine. Subject: the session store, the OIDC client secrets and the break-glass password, together
-with the package protocols and the fill path.
+Live wherever a process runs with `--role web` or `--role all`: on a developer's machine, in the local UI stack (`all`) and in the
+integration tests (`web`). Dormant on every installation of the chart, which renders neither role
+([Q-HA-315](../spec/ha-and-helm.md#q-ha-315--the-charts-upgrade-bridge-across-the-cut-is-removed-the-binary-keeps-the-role-web-for-development-and-tests));
+the binary still accepts both, so an operator who starts it by hand outside the chart with one of them makes it live. Subject: the
+session store, the OIDC client secrets and the break-glass password, together with the package protocols and the fill path.
 
 A `web` or `all` process builds every area of both roles, so the property of the cut does not hold in it: a flaw reachable through a package
 protocol sits in the process that holds the session store and the login secrets, and a session cookie is evaluated on the same replica that
 fills caches.
 
-What makes it real: an exploitable flaw in a code path of the `packages` or `files` family while a `web` replica serves, and an
-operator who stops after the first step: with `web.enabled: true` every host stays on the `web` pods, which hold the login secrets and
-accept session cookies on package routes. After the second step (`web.routed: false`) the edge no longer sends requests to them, but
-the pods keep running behind the Service `<fullname>` and stay reachable inside the cluster wherever a NetworkPolicy admits their port,
-until the third step removes them. The mitigation is the duration, and the chart bounds it by a signal, not by a refusal: the
-alert `QuaderBridgeLeftOn` (PrometheusRule, `metrics.prometheusRule.enabled`) fires when a `web` replica has been registered for 24
-hours, and `NOTES.txt` names the next step. The guard of R-HA-064 acts only on the second and third steps: it refuses the upgrade
-that moves the edge while a Deployment of the target shape is not ready, and refuses the third while the edge still routes to the
-bridge (Q-HA-130, Q-HA-132).
-
-In the chart the bridge is `web.enabled: true` ([_secrets.tpl](../../deploy/helm/quader/templates/_secrets.tpl),
-[_units.tpl](../../deploy/helm/quader/templates/_units.tpl)): its pods mount the login secrets (`secrets.oidc[]`,
-`secrets.breakGlass`) while the edge sends every request to them (step 1) or while they run unrouted (step 2). How long an
-installation stays on the first two steps the chart cannot tell; the alert and `NOTES.txt` are the only reminders.
+What makes it real: an exploitable flaw in a code path of the `packages` or `files` family in a `web` or `all` process that clients
+reach. The binary logs a warning at start for either role, and the status screen lists such a replica under its role; nothing
+refuses it.

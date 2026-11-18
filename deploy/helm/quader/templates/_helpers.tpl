@@ -46,8 +46,8 @@ contain the chart name; fullnameOverride wins. Cut at 50 characters so that ever
 {{- end -}}
 
 {{/*
-Selector labels of one component. Argument: dict "root" . "component" "web".
-api, packages, worker and web pods carry quader/pool (R-HA-028): the empty value for the main
+Selector labels of one component. Argument: dict "root" . "component" "api".
+api, packages and worker pods carry quader/pool (R-HA-028): the empty value for the main
 Deployments, so a pool never overlaps their selectors or the role Service's. Selector labels are
 immutable, which is why the label has been there from the first release.
 */}}
@@ -55,13 +55,13 @@ immutable, which is why the label has been there from the first release.
 app.kubernetes.io/name: {{ include "quader.name" .root }}
 app.kubernetes.io/instance: {{ .root.Release.Name }}
 app.kubernetes.io/component: {{ .component }}
-{{- if has .component (list "api" "packages" "worker" "web") }}
+{{- if has .component (list "api" "packages" "worker") }}
 quader/pool: {{ .pool | default "" | quote }}
 {{- end }}
 {{- end -}}
 
 {{/*
-Labels on every object. Argument: dict "root" . "component" "web".
+Labels on every object. Argument: dict "root" . "component" "api".
 */}}
 {{- define "quader.labels" -}}
 {{ include "quader.selectorLabels" . }}
@@ -292,7 +292,7 @@ the whole of what a replica sees of the target's credentials.
 {{- if $bk -}}
 {{- $_ := set $managed "backup" $bk -}}
 {{- end -}}
-{{- /* Login (R-AUTH-004, R-AUTH-014): the paths of the web pods' mounts; without secrets.breakGlass the account is off. */ -}}
+{{- /* Login (R-AUTH-004, R-AUTH-014): the paths of the api pods' mounts; without secrets.breakGlass the account is off. */ -}}
 {{- $bg := dict "enabled" false -}}
 {{- if $s.breakGlass.existingSecret -}}
 {{- $bg = dict "password_file" "/var/run/secrets/quader/break-glass/password" -}}

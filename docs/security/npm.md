@@ -139,7 +139,7 @@ does today:
 
 - Below a registry URL (`/api/npm/<projectKey>/<repoKey>/-/npm/v1/oidc/…`) and at the host root the path belongs to the family
   `ci_exchange` ([surface.go](../../internal/httpserver/surface.go), `familyOfPath`). What answers depends on the role of the process:
-  - **`web` in the bridge and `all`**, which serve `ci_exchange` and `packages`: the authentication stage does not read the
+  - **`web` and `all`**, which serve `ci_exchange` and `packages`: the authentication stage does not read the
     `Authorization` header of the `POST` as a credential, so the caller is anonymous and the ID token is not evaluated
     ([stage.go](../../internal/auth/stage.go) `isExchangeRoute`); below a registry URL the request is decided as an anonymous read of the
     repository and, where that is allowed, answered 501 `npm_not_implemented` by the npm route of unimplemented endpoints (R-NPM-043).
@@ -150,7 +150,7 @@ does today:
     like on any other path (Q-ARCH-302) and an ID token in it is refused with 401; without a credential the dispatcher answers 404. Both
     come in npm's error shape, not as `problem+json`
     ([H-521](../spec/architecture.md#h-521--two-path-rules-outside-the-stages-of-authentication-and-rate-limits-do-not-ask-whether-the-family-is-served)).
-  - **`api`**, which serves `ci_exchange` but not `packages`: the caller is anonymous as on the bridge, but no format prefix is
+  - **`api`**, which serves `ci_exchange` but not `packages`: the caller is anonymous as on `web` and `all`, but no format prefix is
     registered there, so the router's catch-all answers 404 `problem+json` like an unknown path
     ([router.go](../../internal/httpserver/router.go) `fallback`).
 - No route is registered at the host root, so a `POST` there ends in the router's 404 on every role (on `packages`, an `Authorization`

@@ -12,7 +12,7 @@ import (
 type alertSeverity struct{ name, severity string }
 
 // alertSeverities are the alerts the chart renders, in the order of templates/_rules.tpl, with their severity: every row of
-// R-HA-045's table, and the alerts of the vulnerability scanning, the mirror and the bridge.
+// R-HA-045's table, and the alerts of the vulnerability scanning and the mirror.
 func alertSeverities() []alertSeverity {
 	return []alertSeverity{
 		{"QuaderReplicasNotReady", "critical"},
@@ -34,7 +34,7 @@ func alertSeverities() []alertSeverity {
 		{"QuaderVulnerabilityImageScansFailing", "warning"},
 		{"QuaderMirrorFailing", "warning"},
 		{"QuaderMirrorStale", "warning"},
-		{"QuaderBridgeLeftOn", "warning"},
+
 		{"QuaderBlobMissing", "critical"},
 		{"QuaderGCStale", "warning"},
 		{"QuaderBackupCheckFailed", "critical"},
@@ -155,7 +155,7 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 				continue
 			}
 			found = true
-			want := `deployment=~"acme-quader-(api|packages|worker|web)(-.*)?"`
+			want := `deployment=~"acme-quader-(api|packages|worker)(-.*)?"`
 			if !strings.Contains(str(r, "expr"), want) {
 				t.Errorf("expr = %q, want it to contain %s", str(r, "expr"), want)
 			}

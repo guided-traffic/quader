@@ -248,19 +248,6 @@ describe('The files of a repository', () => {
     await expectAccessible(root);
   });
 
-  it('R-HA-064 Q-UI-111 a file described without contentUrl downloads through its /files/ address', async () => {
-    const { root } = await open('generic-local', 'readme.txt', (files) => {
-      const item = files.item.bind(files);
-      files.item = async (repository, path) => {
-        const { contentUrl: _dropped, ...rest } = await item(repository, path);
-        void _dropped;
-        return rest as Awaited<ReturnType<typeof item>>;
-      };
-    });
-    const link = [...root.querySelectorAll('a')].find((a) => a.textContent?.includes('Download'))!;
-    expect(link.getAttribute('href')).toBe('https://quader.example.net/files/web/generic-local/readme.txt');
-  });
-
   it('R-UI-011 a reader of a file may download and copy, and is offered no Delete', async () => {
     const { root } = await open('generic-local', 'readme.txt', undefined, (c) => c.action === 'read');
     expect(text(root.querySelector('.file-actions')!)).toContain('Download');

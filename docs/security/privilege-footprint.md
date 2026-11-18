@@ -121,7 +121,7 @@ another, because replicas never talk to each other:
 
 | Pods | Ingress admitted | Egress |
 |---|---|---|
-| `api`, `packages`, their path pools, and the bridge's `web` | `:8080` from `networkPolicy.ingress.http.from` (empty: from anywhere); the port of each further endpoint the pods open, from that endpoint's `networkPolicy.from` (empty: from anywhere); `:8081` from `networkPolicy.ingress.ops.from` (default: the `monitoring` namespace) and `networkPolicy.ingress.probeCIDRs` | not rendered |
+| `api`, `packages` and their path pools | `:8080` from `networkPolicy.ingress.http.from` (empty: from anywhere); the port of each further endpoint the pods open, from that endpoint's `networkPolicy.from` (empty: from anywhere); `:8081` from `networkPolicy.ingress.ops.from` (default: the `monitoring` namespace) and `networkPolicy.ingress.probeCIDRs` | not rendered |
 | the endpoint pools of further endpoints | the endpoint's port, from its `networkPolicy.from`; `:8081` from the ops sources | not rendered |
 | `worker` and its pools | `:8081` only, from the ops sources | not rendered |
 | migration Job, backup CronJob's pods, restore Job, post-restore Job | nothing (`ingress: []`) | not rendered |

@@ -217,7 +217,7 @@ func TestR_ARCH_001_ListenerRule(t *testing.T) {
 		// A packages pool that no endpoint names serves the endpoints without a pool, like the main Deployment.
 		eq(t, opens("packages", "path-pool"), opens("packages", ""))
 	})
-	t.Run("R-EP-002 the web bridge and the development role open every endpoint with every family of its surface", func(t *testing.T) {
+	t.Run("R-EP-002 the development roles web and all open every endpoint with every family of its surface", func(t *testing.T) {
 		// web is a main Deployment (its pool is the main one); all opens every endpoint of every pool.
 		for role, n := range map[string]int{"web": 4, "all": 5} {
 			got := opens(role, "")

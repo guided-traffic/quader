@@ -51,8 +51,8 @@ and it refuses a forward outside `/api/<format>/` and `/files/` before the authe
 
 `SubsystemsFor` ([roles.go](../../internal/app/roles.go)) encodes the table of R-ARCH-001 for the roles `api`, `packages`, `worker`,
 `web` and `all`. `api`, `packages` and `web` have a client and an ops listener, the main pool, Valkey, the change poll and the registry;
-`worker` has no client listener, plus the lease pool and the job loops; `all` is both and logs a warning, `web` (the bridge of the
-upgrade across the cut) logs one too. A `worker` has no socket on `:8080`; a test proves it (`R-ARCH-001 a worker replica opens no
+`worker` has no client listener, plus the lease pool and the job loops; `all` is both and logs a warning, and `web` (`api` and
+`packages` in one process, the replica of the integration tests, never rendered by the chart) logs one too. A `worker` has no socket on `:8080`; a test proves it (`R-ARCH-001 a worker replica opens no
 client socket`). `Subsystems.Families` is the list of route families the role serves (`config.RoleFamilies`).
 
 A role also has wiring **areas** (`Subsystems.Areas`), which are the steps of the list that run in it; the step list gives each step a

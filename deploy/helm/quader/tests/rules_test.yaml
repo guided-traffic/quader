@@ -293,30 +293,6 @@ tests:
     alert_rule_test:
       - {eval_time: 400m, alertname: QuaderMirrorStale, exp_alerts: []}
 
-  # --- QuaderBridgeLeftOn ---------------------------------------------------------------------------------
-  - name: QuaderBridgeLeftOn fires when a web replica stays registered for 24 hours and not for a role of the cut shape
-    interval: 1m
-    input_series:
-      - {series: 'quader_build_info{namespace="default",role="web",pod="web-1"}', values: '1x1600'}
-      - {series: 'quader_build_info{namespace="default",role="api",pod="api-1"}', values: '1x1600'}
-    alert_rule_test:
-      - {eval_time: 1400m, alertname: QuaderBridgeLeftOn, exp_alerts: []}
-      - eval_time: 1500m
-        alertname: QuaderBridgeLeftOn
-        exp_alerts:
-          - exp_labels: {severity: warning}
-            exp_annotations:
-              summary: A web replica of the upgrade bridge has been running for 24 hours.
-              description: web.enabled is still true, so the web pods stay registered and hold the login secrets (R-HA-064, H-518). Finish the cut, once api, packages and their pools are ready; step 2 with web.routed false moves the edge onto them, step 3 with web.enabled false removes the bridge.
-
-  - name: QuaderBridgeLeftOn stays quiet after the cut
-    interval: 1m
-    input_series:
-      - {series: 'quader_build_info{namespace="default",role="api",pod="api-1"}', values: '1x1600'}
-      - {series: 'quader_build_info{namespace="other",role="web",pod="web-1"}', values: '1x1600'}
-    alert_rule_test:
-      - {eval_time: 1500m, alertname: QuaderBridgeLeftOn, exp_alerts: []}
-
   # --- QuaderBlobMissing -----------------------------------------------------------------------------------
   # A replica counts a blob it found missing once (R-HA-024): the alert fires at once and clears an hour after the last one.
   - name: QuaderBlobMissing fires when a replica found the object of a blob missing within the last hour, and clears after it
@@ -344,8 +320,8 @@ tests:
       - {eval_time: 12m, alertname: QuaderBlobMissing, exp_alerts: []}
 
   # === R-HA-045: the alerts of the table ======================================================================
-  # The Deployments of release quader are quader-api, quader-packages, quader-worker, the pools quader-<role>-<pool> and the bridge
-  # quader-web. The series carry the labels of a scrape through the Prometheus operator (namespace, pod).
+  # The Deployments of release quader are quader-api, quader-packages, quader-worker and the pools quader-<role>-<pool>. The
+  # series carry the labels of a scrape through the Prometheus operator (namespace, pod).
 
   # Healthy input. The retries are of another kind than connection, the Deployments have two or more replicas, the histograms stay in
   # the first bucket.
@@ -394,7 +370,7 @@ tests:
       - {eval_time: 300m, alertname: QuaderValkeyFailoverFlapping, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderValkeyPrimaryDisagreement, exp_alerts: []}
 
-  # A role or pool without redundancy fires on its own Deployment. The regex covers api, packages, worker, their pools and the bridge web;
+  # A role or pool without redundancy fires on its own Deployment. The regex covers api, packages, worker and their pools;
   # quader-bastion-api (another release) and quader-apiary do not match, and the series of another namespace is not read.
   - name: "QuaderReplicasNotReady fires per Deployment of a role or pool below two replicas, and not for other Deployments"
     interval: 1m
@@ -402,7 +378,7 @@ tests:
       - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-api\"}", values: "1x60"}
       - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-packages\"}", values: "2x60"}
       - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-worker-vuln\"}", values: "0x60"}
-      - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-web\"}", values: "2x60"}
+
       - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-bastion-api\"}", values: "0x60"}
       - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-apiary\"}", values: "0x60"}
       - {series: "kube_deployment_status_replicas_available{namespace=\"default\",deployment=\"quader-api-ep-customers\"}", values: "2x60"}

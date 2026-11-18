@@ -386,7 +386,7 @@ Before the job `compat` is switched on, three things need a decision, because th
 - The checksum message of `verifyApplied` in [migrate.go](../../internal/meta/postgres/migrate.go) names the remedy before the
   first stable release, a new database; with the checks on, the remedy is a new step that fixes forward.
 
-The notes that say "before the first stable release" in R-ARCH-025, R-ARCH-026, R-HA-018 to R-HA-021, R-HA-064,
+The notes that say "before the first stable release" in R-ARCH-025, R-ARCH-026, R-HA-018 to R-HA-021,
 [database.md](database.md#migrations), [upgrades.md](../manual/admin/upgrades.md#before-the-first-stable-release) and
 [limitations.md](../manual/admin/limitations.md) change with the switches, in the same change.
 

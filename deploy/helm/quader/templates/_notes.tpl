@@ -1,8 +1,7 @@
-{{/* The text of NOTES.txt (R-EP-008, R-HA-016, R-HA-060, R-HA-064), a template of its own so that a test can render it. Argument: the root context. */}}
+{{/* The text of NOTES.txt (R-EP-008, R-HA-016, R-HA-060), a template of its own so that a test can render it. Argument: the root context. */}}
 {{- define "quader.notes" -}}
 {{- $names := include "quader.endpointNames" . | fromYamlArray -}}
 {{- $fullname := include "quader.fullname" . -}}
-{{- $bridge := include "quader.bridgeRouted" . -}}
 {{- $counts := include "quader.connectionCounts" . | fromYaml -}}
 {{- $db := dig "database" (dict) .Values.config -}}
 {{- $maxConns := int (dig "pool" "max_conns" 20 $db) -}}
@@ -13,13 +12,6 @@
 {{- $session := mul $counts.worker $lease -}}
 {{- $budget := add (ternary (int (dig "pooler" "server_connections" 0 $db)) $clients $pooled) $session 2 4 $reserved 3 -}}
 Quader is installed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
-{{- if $bridge }}
-
-The cut into roles is not complete (step 1 of 3): web.enabled is true, so {{ $fullname }}-web and the Service {{ $fullname }} still carry every path, and {{ $fullname }}-api, {{ $fullname }}-packages and {{ $fullname }}-worker run beside them without edge traffic. Step 2: once they are ready, run helm upgrade with --set web.enabled=true --set web.routed=false, which moves the edge onto them while {{ $fullname }}-web keeps running. Step 3 removes the bridge (R-HA-064).
-{{- else if .Values.web.enabled }}
-
-The cut into roles is not complete (step 2 of 3): the edge routes to {{ $fullname }}-api and {{ $fullname }}-packages, and {{ $fullname }}-web and the Service {{ $fullname }} still run without edge traffic. Move in-cluster callers to the Services {{ $fullname }}-api and {{ $fullname }}-packages, then run step 3: helm upgrade with web.enabled: false (the default), which removes them (R-HA-064).
-{{- end }}
 
 {{- if .Values.postRestore.enabled }}
 
@@ -48,12 +40,12 @@ Endpoints
 {{- $dh := list (include "quader.baseHost" .) -}}
 {{- range (dig "server" "additional_base_urls" (list) .Values.config) }}{{ $dh = append $dh ((urlParse .).hostname | lower) }}{{ end -}}
 {{- range (dig "default" "hosts" (list) .Values.endpoints) }}{{ $dh = append $dh (lower .) }}{{ end }}
-  default   Services {{ if $bridge }}{{ $fullname }}{{ else }}{{ $fullname }}-api, {{ $fullname }}-packages{{ end }}:{{ .Values.service.port }}   hosts: {{ join ", " (uniq $dh) }}
+  default   Services {{ $fullname }}-api, {{ $fullname }}-packages:{{ .Values.service.port }}   hosts: {{ join ", " (uniq $dh) }}
 {{- range $name := $names }}
 {{- $e := include "quader.endpoint" (dict "root" $ "name" $name) | fromYaml }}
 {{- $hosts := include "quader.endpointHosts" $e | fromYamlArray }}
-{{- $roles := ternary (list "web") (include "quader.surfaceRoles" (dict "root" $ "name" $name) | fromYamlArray) (not (empty $bridge)) }}
-  {{ $name }}   Service {{ $fullname }}-ep-{{ $name }}{{ if and (eq (len $roles) 2) (not $bridge) }}, {{ $fullname }}-api-ep-{{ $name }}{{ end }}:{{ $e.port }}   hosts: {{ join ", " $hosts }}{{ with $e.wildcardHost }}, {{ . }}{{ end }}   pods: {{ if $e.pool }}{{ range $i, $role := $roles }}{{ if $i }}, {{ end }}pool {{ $fullname }}-{{ $role }}-ep-{{ $name }}{{ end }}{{ else }}the main {{ join ", " $roles }} Deployment{{ if gt (len $roles) 1 }}s{{ end }}{{ end }}
+{{- $roles := include "quader.surfaceRoles" (dict "root" $ "name" $name) | fromYamlArray }}
+  {{ $name }}   Service {{ $fullname }}-ep-{{ $name }}{{ if eq (len $roles) 2 }}, {{ $fullname }}-api-ep-{{ $name }}{{ end }}:{{ $e.port }}   hosts: {{ join ", " $hosts }}{{ with $e.wildcardHost }}, {{ . }}{{ end }}   pods: {{ if $e.pool }}{{ range $i, $role := $roles }}{{ if $i }}, {{ end }}pool {{ $fullname }}-{{ $role }}-ep-{{ $name }}{{ end }}{{ else }}the main {{ join ", " $roles }} Deployment{{ if gt (len $roles) 1 }}s{{ end }}{{ end }}
 {{- end }}
 {{- range $name := $names }}
 {{- $e := include "quader.endpoint" (dict "root" $ "name" $name) | fromYaml }}
