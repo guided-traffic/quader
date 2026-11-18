@@ -73,9 +73,10 @@ type Service interface {
 	// SetVisibility sets the project's level (R-API-057, R-AUTHZ-033): lowering it takes every repository whose artifacts or wiki
 	// lie above it down to it in the same transaction, each with a new configuration version. expected is the version the client
 	// saw; 422 validation_failed for a value that is no level, 409 public_not_allowed while the default endpoint admits no request
-	// without a credential, 412 for a stale version. It returns the project, the lowered repositories with their levels before,
-	// and the epoch. The level it already has changes nothing.
-	SetVisibility(ctx context.Context, actor authz.Subject, key string, expected int64, level string) (Project, []Lowered, int64, error)
+	// without a credential, 403 visibility_level_restricted for a restricted level when admin is false (R-AUTHZ-037, admin is a
+	// holder of security-settings:write, Q-AUTHZ-283), 412 for a stale version. It returns the project, the lowered repositories
+	// with their levels before, and the epoch. The level it already has changes nothing.
+	SetVisibility(ctx context.Context, actor authz.Subject, key string, expected int64, level string, admin bool) (Project, []Lowered, int64, error)
 	// MoveRepository moves a repository to another project (R-REPO-060, Q-REPO-217): the address
 	// changes, the id and the content do not. It locks both projects and the repository, refuses
 	// with 409 repository_in_use (problem member `references`, [Reference]) while an object of the

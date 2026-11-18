@@ -1264,11 +1264,12 @@ type VirtualPinRule struct {
 }
 
 type VisibilitySetting struct {
-	Singleton    bool
-	DefaultLevel string
-	Version      int64
-	UpdatedAt    pgtype.Timestamptz
-	UpdatedBy    pgtype.UUID
+	Singleton        bool
+	DefaultLevel     string
+	Version          int64
+	UpdatedAt        pgtype.Timestamptz
+	UpdatedBy        pgtype.UUID
+	RestrictedLevels []string
 }
 
 type VulnAdvisory struct {

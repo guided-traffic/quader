@@ -19,7 +19,14 @@ import { asApiError } from '../../shared/paged-resource';
 import { RouterLink } from '@angular/router';
 import { LoadedVisibilitySettings, VisibilityApi } from '../../api/visibility-api';
 import { Checkbox } from '../../shared/ui/checkbox';
-import { VisibilityLevel, VisibilityLevelControl, publicUnavailableReason } from '../../shared/ui/visibility-level';
+import {
+  RestrictedLevelsControl,
+  VisibilityLevel,
+  VisibilityLevelControl,
+  firstReasons,
+  levelName,
+  publicUnavailableReason,
+} from '../../shared/ui/visibility-level';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 
@@ -31,7 +38,8 @@ const MAINTENANCE_MESSAGE_MAX = 500;
 
 /**
  * General settings (R-UI-033): the public base URL and where it comes from (read only, `GET /api/v1/system/info`), the installation's
- * default visibility level and what is public now (R-UI-053, `/api/v1/settings/visibility`), the system banner
+ * default project visibility, its restricted visibility levels and what is public now (R-UI-053, R-UI-140,
+ * `/api/v1/settings/visibility`), the system banner
  * (R-OPS-025) and the read-only maintenance mode (R-OPS-024). The banner and the mode are two documents with a save each, so a
  * change of one never carries an unsaved edit of the other. Switching the mode on asks first, because it refuses every write of every
  * user until it is switched off. After a save the notice shows on this screen at once; on every other screen it appears with the
@@ -39,7 +47,18 @@ const MAINTENANCE_MESSAGE_MAX = 500;
  */
 @Component({
   selector: 'quader-general-settings',
-  imports: [PageHeader, Checkbox, ErrorNotice, Needs, RouterLink, SelectField, Disclosure, TextField, VisibilityLevelControl],
+  imports: [
+    PageHeader,
+    Checkbox,
+    ErrorNotice,
+    Needs,
+    RouterLink,
+    SelectField,
+    Disclosure,
+    TextField,
+    VisibilityLevelControl,
+    RestrictedLevelsControl,
+  ],
   templateUrl: './general-settings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -85,24 +104,50 @@ export class GeneralSettings {
   protected readonly visibilityError = signal<ApiError | null>(null);
   protected readonly savingVisibility = signal(false);
   protected readonly defaultLevel = signal<VisibilityLevel>('private');
-  /** Changing the default needs `security-settings:write` (R-API-056); `settings:write` is the banner's and the mode's. */
+  protected readonly restricted = signal<readonly VisibilityLevel[]>([]);
+  /** Open when the page opens: the two settings an administrator comes here to set (R-UI-140, Q-UI-540). */
+  protected readonly visibilityOpen = signal(true);
+  /** Changing the settings needs `security-settings:write` (R-API-056); `settings:write` is the banner's and the mode's. */
   protected readonly canWriteVisibility = computed(() => this.session.has('security-settings:write'));
+  private readonly restrictedChanged = computed(() => {
+    const stored = this.visibility()?.settings.restrictedLevels ?? [];
+    const now = this.restricted();
+    return stored.length !== now.length || stored.some((l, i) => l !== now[i]);
+  });
   protected readonly visibilityDirty = computed(
-    () => this.visibility() !== null && this.defaultLevel() !== this.visibility()!.settings.defaultLevel,
+    () =>
+      this.visibility() !== null &&
+      (this.defaultLevel() !== this.visibility()!.settings.defaultLevel || this.restrictedChanged()),
   );
-  protected readonly publicReason = computed<Partial<Record<VisibilityLevel, string>>>(() =>
-    this.visibility()?.settings.publicAvailable === false ? publicUnavailableReason() : {},
-  );
-  protected readonly visibilitySummary = computed(() => {
-    const level = this.visibility()?.settings.defaultLevel;
-    switch (level) {
-      case 'internal':
-        return $localize`:@@general.visibility.summary-internal:New projects are internal.`;
-      case 'public':
-        return $localize`:@@general.visibility.summary-public:New projects are public.`;
-      default:
-        return $localize`:@@general.visibility.summary-private:New projects are private.`;
+  /** A default option is off while Public is unavailable, and while its level is restricted (Q-AUTHZ-284). */
+  protected readonly defaultReasons = computed<Partial<Record<VisibilityLevel, string>>>(() => {
+    const restricted: Partial<Record<VisibilityLevel, string>> = {};
+    for (const level of this.restricted()) {
+      restricted[level] = $localize`:@@general.visibility.default-restricted:A restricted level cannot be the default.`;
     }
+    return firstReasons(this.visibility()?.settings.publicAvailable === false ? publicUnavailableReason() : {}, restricted);
+  });
+  /** The default level cannot be restricted: its checkbox is off with the reason (Q-AUTHZ-284). */
+  protected readonly restrictReasons = computed<Partial<Record<VisibilityLevel, string>>>(() => ({
+    [this.defaultLevel()]: $localize`:@@general.visibility.restrict-default:This is the default project visibility, which cannot be restricted.`,
+  }));
+  protected readonly visibilitySummary = computed(() => {
+    const settings = this.visibility()?.settings;
+    let first: string;
+    switch (settings?.defaultLevel) {
+      case 'internal':
+        first = $localize`:@@general.visibility.summary-internal:New projects are internal.`;
+        break;
+      case 'public':
+        first = $localize`:@@general.visibility.summary-public:New projects are public.`;
+        break;
+      default:
+        first = $localize`:@@general.visibility.summary-private:New projects are private.`;
+    }
+    const restricted = settings?.restrictedLevels ?? [];
+    if (restricted.length === 0) return first;
+    const names = restricted.map((l) => levelName(l)).join(', ');
+    return `${first} ${$localize`:@@general.visibility.summary-restricted:Restricted to administrators: ${names}:levels:.`}`;
   });
 
   /** The maintenance section opens by itself while the mode is on, so that a read-only installation is seen at once. */
@@ -187,6 +232,7 @@ export class GeneralSettings {
   private adoptVisibility(v: LoadedVisibilitySettings): void {
     this.visibility.set(v);
     this.defaultLevel.set(v.settings.defaultLevel);
+    this.restricted.set(v.settings.restrictedLevels);
   }
 
   protected async saveVisibility(event: Event): Promise<void> {
@@ -195,9 +241,13 @@ export class GeneralSettings {
     if (!current || !this.visibilityDirty() || this.savingVisibility()) return;
     this.savingVisibility.set(true);
     this.visibilityError.set(null);
+    // Only the members that changed; the server checks the pair against each other (Q-AUTHZ-284).
+    const patch: { defaultLevel?: VisibilityLevel; restrictedLevels?: VisibilityLevel[] } = {};
+    if (this.defaultLevel() !== current.settings.defaultLevel) patch.defaultLevel = this.defaultLevel();
+    if (this.restrictedChanged()) patch.restrictedLevels = [...this.restricted()];
     try {
-      this.adoptVisibility(await this.visibilityApi.patch({ defaultLevel: this.defaultLevel() }, current.etag));
-      this.notifier.status($localize`:@@general.visibility.saved:Default visibility saved.`);
+      this.adoptVisibility(await this.visibilityApi.patch(patch, current.etag));
+      this.notifier.status($localize`:@@general.visibility.saved:Visibility settings saved.`);
     } catch (e) {
       this.visibilityError.set(asApiError(e));
     } finally {

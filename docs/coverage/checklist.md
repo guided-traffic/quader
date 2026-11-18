@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 620 of 898 spec requirements are implemented: a passing test names them and no
+**Status.** 620 of 904 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 788 specified (513 of them implemented), 1,451 open.
-898 spec requirements: 647 cover catalog features, 251 cover none (`quader-only`, [listed at the
+904 spec requirements: 647 cover catalog features, 257 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>251 requirements</summary>
+<summary>257 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -2990,6 +2990,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-API-055 (implemented) | User avatars | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-056 | The installation's visibility settings | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-057 | The visibility of projects and repositories in the API | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-API-075 | The restricted levels in the visibility settings | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-API-076 | The levels a caller may choose | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-058 | Operations that serve wiki content | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-060 | One operation answers the suggestions of the search field | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-061 | A suggestion names only what the caller may read | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
@@ -3005,6 +3007,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-053 | The installation's visibility in the general settings | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-054 | The visibility of a project | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-055 | The visibility of a repository | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-140 | The restricted visibility levels in the general settings | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-141 | A level the caller cannot choose is disabled where a level is chosen | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-056 | The external flag on the user page | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-057 | What the UI shows of the wiki and of public content | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-042 (implemented) | Errors, conflicts and feedback | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
@@ -3061,6 +3065,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-AUTHZ-030 (implemented) | Internal and external users | MVP | [authorization.md](../spec/authorization.md) |
 | R-AUTHZ-034 | The wiki of a repository | MVP | [authorization.md](../spec/authorization.md) |
 | R-AUTHZ-036 | Visibility changes: operations, audit, journal and propagation | MVP | [authorization.md](../spec/authorization.md) |
+| R-AUTHZ-037 | Restricted visibility levels | MVP | [authorization.md](../spec/authorization.md) |
+| R-AUTHZ-038 | The order in which a level is refused | MVP | [authorization.md](../spec/authorization.md) |
 | R-AUTHZ-018 (implemented) | Package ownership | MVP | [authorization.md](../spec/authorization.md) |
 | R-AUTHZ-019 (implemented) | Package ownership API | MVP | [authorization.md](../spec/authorization.md) |
 | R-AUTHZ-020 (implemented) | Shared ownership domains | P1 | [authorization.md](../spec/authorization.md) |

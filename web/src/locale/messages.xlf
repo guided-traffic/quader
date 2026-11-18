@@ -812,9 +812,25 @@
         <source>The installation&apos;s configuration admits no request without a credential, so nothing can be public.</source>
       </segment>
     </unit>
-    <unit id="problem.visibility_above_project">
+    <unit id="problem.visibility_level_restricted">
       <notes>
         <note category="location">src/app/core/http/problem-messages-access.ts:100</note>
+      </notes>
+      <segment>
+        <source>Only an administrator of Quader can choose this visibility level. A level that is already set may be kept or lowered.</source>
+      </segment>
+    </unit>
+    <unit id="problem.default_level_restricted">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-access.ts:102</note>
+      </notes>
+      <segment>
+        <source>A restricted level cannot be the default project visibility.</source>
+      </segment>
+    </unit>
+    <unit id="problem.visibility_above_project">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-access.ts:104</note>
       </notes>
       <segment>
         <source>A repository cannot be more open than its project.</source>
@@ -822,7 +838,7 @@
     </unit>
     <unit id="problem.visibility_wiki_above_artifacts">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-access.ts:102</note>
+        <note category="location">src/app/core/http/problem-messages-access.ts:106</note>
       </notes>
       <segment>
         <source>The wiki cannot be more open than the artifacts.</source>
@@ -830,7 +846,7 @@
     </unit>
     <unit id="problem.principal_not_allowed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-access.ts:104</note>
+        <note category="location">src/app/core/http/problem-messages-access.ts:108</note>
       </notes>
       <segment>
         <source>Only users and groups can be members of a project. A service account, a CI mapping and the principals anonymous and authenticated cannot: a visibility level opens content to everyone instead.</source>
@@ -838,7 +854,7 @@
     </unit>
     <unit id="problem.secret_value_required">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-access.ts:106</note>
+        <note category="location">src/app/core/http/problem-messages-access.ts:110</note>
       </notes>
       <segment>
         <source>Enter the password or token of this upstream again.</source>
@@ -846,7 +862,7 @@
     </unit>
     <unit id="problem.outbound_path_restricted">
       <notes>
-        <note category="location">src/app/core/http/problem-messages-access.ts:108</note>
+        <note category="location">src/app/core/http/problem-messages-access.ts:112</note>
       </notes>
       <segment>
         <source>The outbound path of this repository is set by an administrator of Quader.</source>
@@ -3685,7 +3701,7 @@
         <note category="location">src/app/features/endpoints/endpoint-detail.html:156,160</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:187,190</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:117,119</note>
-        <note category="location">src/app/features/repositories/repository-create.html:237,239</note>
+        <note category="location">src/app/features/repositories/repository-create.html:238,240</note>
         <note category="location">src/app/features/repositories/repository-detail.html:44,45</note>
         <note category="location">src/app/features/repositories/repository-format-chooser.ts:40,42</note>
       </notes>
@@ -13352,7 +13368,7 @@
     </unit>
     <unit id="project-dialog.title-edit">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:38,39</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:44,45</note>
       </notes>
       <segment>
         <source>Edit project <ph id="0" equiv="INTERPOLATION" disp="{{ p.value.key }}"/></source>
@@ -13360,7 +13376,7 @@
     </unit>
     <unit id="project-dialog.title-new">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:40,43</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:46,49</note>
       </notes>
       <segment>
         <source>New project</source>
@@ -13368,7 +13384,7 @@
     </unit>
     <unit id="project-dialog.key">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:52,53</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:58,59</note>
       </notes>
       <segment>
         <source>Key</source>
@@ -13376,7 +13392,7 @@
     </unit>
     <unit id="project-dialog.key-hint">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:58,60</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:64,66</note>
       </notes>
       <segment>
         <source>Lower-case letters, digits and -, two to 32 characters, starting with a letter and ending with a letter or digit. Cannot be changed later.</source>
@@ -13384,8 +13400,8 @@
     </unit>
     <unit id="project-dialog.display-name">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:63,65</note>
-        <note category="location">src/app/features/projects/project-settings.ts:53,55</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:69,71</note>
+        <note category="location">src/app/features/projects/project-settings.ts:60,62</note>
       </notes>
       <segment>
         <source>Display name</source>
@@ -13393,7 +13409,7 @@
     </unit>
     <unit id="project-dialog.description">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:72,74</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:78,80</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -13401,7 +13417,7 @@
     </unit>
     <unit id="project-dialog.visibility">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:82,84</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:88,90</note>
       </notes>
       <segment>
         <source>Visibility level</source>
@@ -13409,7 +13425,7 @@
     </unit>
     <unit id="project-dialog.owners">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:89,90</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:96,97</note>
       </notes>
       <segment>
         <source>First Owners</source>
@@ -13417,7 +13433,7 @@
     </unit>
     <unit id="project-dialog.no-owners">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:92,94</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:99,101</note>
       </notes>
       <segment>
         <source> No Owner yet. Users and groups can own a project; members are added on the project&apos;s screen. </source>
@@ -13425,7 +13441,7 @@
     </unit>
     <unit id="project-dialog.remove-owner">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:101,102</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:108,109</note>
       </notes>
       <segment>
         <source>Remove owner</source>
@@ -13433,7 +13449,7 @@
     </unit>
     <unit id="project-dialog.find-owner">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:109,111</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:116,118</note>
       </notes>
       <segment>
         <source>Find a user or group</source>
@@ -13441,7 +13457,7 @@
     </unit>
     <unit id="project-dialog.cancel">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:119,120</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:126,127</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -13449,7 +13465,7 @@
     </unit>
     <unit id="project-dialog.save">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:122,123</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:129,130</note>
       </notes>
       <segment>
         <source>Save project</source>
@@ -13457,7 +13473,7 @@
     </unit>
     <unit id="project-dialog.create">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:124,126</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:131,133</note>
       </notes>
       <segment>
         <source>Create project</source>
@@ -13465,7 +13481,7 @@
     </unit>
     <unit id="project-dialog.owners-label">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:204</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:210</note>
       </notes>
       <segment>
         <source>First Owners of the project</source>
@@ -13473,7 +13489,7 @@
     </unit>
     <unit id="project-dialog.key-invalid">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:223</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:229</note>
       </notes>
       <segment>
         <source>The key does not match the pattern.</source>
@@ -13481,8 +13497,8 @@
     </unit>
     <unit id="project-dialog.display-name-invalid">
       <notes>
-        <note category="location">src/app/features/projects/project-dialog.ts:231</note>
-        <note category="location">src/app/features/projects/project-settings.ts:357</note>
+        <note category="location">src/app/features/projects/project-dialog.ts:237</note>
+        <note category="location">src/app/features/projects/project-settings.ts:368</note>
       </notes>
       <segment>
         <source>The display name is required, 1 to 128 characters.</source>
@@ -14051,7 +14067,7 @@
     </unit>
     <unit id="project.settings">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:37</note>
+        <note category="location">src/app/features/projects/project-settings.ts:44</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -14059,7 +14075,7 @@
     </unit>
     <unit id="project.key">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:60</note>
+        <note category="location">src/app/features/projects/project-settings.ts:67</note>
       </notes>
       <segment>
         <source>Key</source>
@@ -14067,7 +14083,7 @@
     </unit>
     <unit id="project.description-optional">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:65,67</note>
+        <note category="location">src/app/features/projects/project-settings.ts:72,74</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -14075,8 +14091,8 @@
     </unit>
     <unit id="project.save-changes">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:73,75</note>
-        <note category="location">src/app/features/projects/project-settings.ts:99,100</note>
+        <note category="location">src/app/features/projects/project-settings.ts:80,82</note>
+        <note category="location">src/app/features/projects/project-settings.ts:107,108</note>
       </notes>
       <segment>
         <source>Save changes</source>
@@ -14084,7 +14100,7 @@
     </unit>
     <unit id="project.visibility">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:81,82</note>
+        <note category="location">src/app/features/projects/project-settings.ts:88,89</note>
       </notes>
       <segment>
         <source>Visibility</source>
@@ -14092,7 +14108,7 @@
     </unit>
     <unit id="project.visibility-level">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:90,92</note>
+        <note category="location">src/app/features/projects/project-settings.ts:97,99</note>
       </notes>
       <segment>
         <source>Visibility level</source>
@@ -14100,7 +14116,7 @@
     </unit>
     <unit id="project.save-visibility">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:100,102</note>
+        <note category="location">src/app/features/projects/project-settings.ts:108,110</note>
       </notes>
       <segment>
         <source> (visibility)</source>
@@ -14108,7 +14124,7 @@
     </unit>
     <unit id="project.visibility-read-only">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:103,106</note>
+        <note category="location">src/app/features/projects/project-settings.ts:111,114</note>
       </notes>
       <segment>
         <source>Only an administrator of Quader sets the visibility of a project.</source>
@@ -14116,7 +14132,7 @@
     </unit>
     <unit id="project.details">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:111</note>
+        <note category="location">src/app/features/projects/project-settings.ts:119</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -14124,7 +14140,7 @@
     </unit>
     <unit id="project.details-hint">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:112,114</note>
+        <note category="location">src/app/features/projects/project-settings.ts:120,122</note>
       </notes>
       <segment>
         <source>Who owns the project, your role in it and what it holds.</source>
@@ -14132,7 +14148,7 @@
     </unit>
     <unit id="project.owners">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:116,118</note>
+        <note category="location">src/app/features/projects/project-settings.ts:124,126</note>
       </notes>
       <segment>
         <source>Owners</source>
@@ -14140,7 +14156,7 @@
     </unit>
     <unit id="project.no-owners">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:119,121</note>
+        <note category="location">src/app/features/projects/project-settings.ts:127,129</note>
       </notes>
       <segment>
         <source>None yet.</source>
@@ -14148,7 +14164,7 @@
     </unit>
     <unit id="project.your-role">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:128,129</note>
+        <note category="location">src/app/features/projects/project-settings.ts:136,137</note>
       </notes>
       <segment>
         <source>Your role</source>
@@ -14156,7 +14172,7 @@
     </unit>
     <unit id="project.counts">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:130,132</note>
+        <note category="location">src/app/features/projects/project-settings.ts:138,140</note>
       </notes>
       <segment>
         <source>Contents</source>
@@ -14164,7 +14180,7 @@
     </unit>
     <unit id="project.counts-text">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:132,133</note>
+        <note category="location">src/app/features/projects/project-settings.ts:140,141</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ p.members }}"/> members, <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.repositories }}"/> repositories, <ph id="2" equiv="INTERPOLATION_2" disp="{{ p.policies }}"/> policies, <ph id="3" equiv="INTERPOLATION_3" disp="{{ p.serviceAccounts }}"/> service accounts</source>
@@ -14172,7 +14188,7 @@
     </unit>
     <unit id="project.storage">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:134,135</note>
+        <note category="location">src/app/features/projects/project-settings.ts:142,143</note>
       </notes>
       <segment>
         <source>Storage</source>
@@ -14180,7 +14196,7 @@
     </unit>
     <unit id="project.updated">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:136,137</note>
+        <note category="location">src/app/features/projects/project-settings.ts:144,145</note>
       </notes>
       <segment>
         <source>Last changed</source>
@@ -14188,7 +14204,7 @@
     </unit>
     <unit id="project.advanced">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:144,145</note>
+        <note category="location">src/app/features/projects/project-settings.ts:152,153</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -14196,7 +14212,7 @@
     </unit>
     <unit id="project.advanced-hint">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:146,148</note>
+        <note category="location">src/app/features/projects/project-settings.ts:154,156</note>
       </notes>
       <segment>
         <source>Delete this project.</source>
@@ -14204,7 +14220,7 @@
     </unit>
     <unit id="project.delete-note-empty">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:150,152</note>
+        <note category="location">src/app/features/projects/project-settings.ts:158,160</note>
       </notes>
       <segment>
         <source>The project&apos;s policies are deleted with it.</source>
@@ -14212,7 +14228,7 @@
     </unit>
     <unit id="project.delete-note">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:153,155</note>
+        <note category="location">src/app/features/projects/project-settings.ts:161,163</note>
       </notes>
       <segment>
         <source>A project can be deleted when no repository and no service account belongs to it. Move or delete the repositories and delete the service accounts first.</source>
@@ -14220,7 +14236,7 @@
     </unit>
     <unit id="project.delete">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:165,166</note>
+        <note category="location">src/app/features/projects/project-settings.ts:173,174</note>
       </notes>
       <segment>
         <source> Delete project </source>
@@ -14228,7 +14244,7 @@
     </unit>
     <unit id="project.visibility-summary-internal">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:239</note>
+        <note category="location">src/app/features/projects/project-settings.ts:252</note>
       </notes>
       <segment>
         <source>This project is internal.</source>
@@ -14236,7 +14252,7 @@
     </unit>
     <unit id="project.visibility-summary-public">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:241</note>
+        <note category="location">src/app/features/projects/project-settings.ts:254</note>
       </notes>
       <segment>
         <source>This project is public.</source>
@@ -14244,7 +14260,7 @@
     </unit>
     <unit id="project.visibility-summary-private">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:243</note>
+        <note category="location">src/app/features/projects/project-settings.ts:256</note>
       </notes>
       <segment>
         <source>This project is private.</source>
@@ -14252,7 +14268,7 @@
     </unit>
     <unit id="project.storage-title">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:262</note>
+        <note category="location">src/app/features/projects/project-settings.ts:275</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="bytes" disp="bytes"/> bytes. The full size of every file in the project&apos;s repositories, also where another project holds the same content.</source>
@@ -14260,7 +14276,7 @@
     </unit>
     <unit id="project.visibility-saved">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:316</note>
+        <note category="location">src/app/features/projects/project-settings.ts:327</note>
       </notes>
       <segment>
         <source>Visibility saved.</source>
@@ -14268,7 +14284,7 @@
     </unit>
     <unit id="project.visibility-saved-lowered">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:317</note>
+        <note category="location">src/app/features/projects/project-settings.ts:328</note>
       </notes>
       <segment>
         <source>Visibility saved. <ph id="0" equiv="count" disp="result.lowered.length"/> repositories were lowered with it.</source>
@@ -14276,7 +14292,7 @@
     </unit>
     <unit id="project.lower-title">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:331</note>
+        <note category="location">src/app/features/projects/project-settings.ts:342</note>
       </notes>
       <segment>
         <source>Lower project <ph id="0" equiv="key" disp="project.key"/> to <ph id="1" equiv="level" disp="levelName(level)"/>?</source>
@@ -14284,7 +14300,7 @@
     </unit>
     <unit id="project.lower-none">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:334</note>
+        <note category="location">src/app/features/projects/project-settings.ts:345</note>
       </notes>
       <segment>
         <source>No repository is above the new level. Anyone who reads the project only through its visibility loses access.</source>
@@ -14292,7 +14308,7 @@
     </unit>
     <unit id="project.lower-text">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:335</note>
+        <note category="location">src/app/features/projects/project-settings.ts:346</note>
       </notes>
       <segment>
         <source>These repositories are lowered with the project. Anyone who reads them only through their visibility loses access.</source>
@@ -14300,7 +14316,7 @@
     </unit>
     <unit id="project.lower-confirm">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:343</note>
+        <note category="location">src/app/features/projects/project-settings.ts:354</note>
       </notes>
       <segment>
         <source>Lower the visibility</source>
@@ -14308,7 +14324,7 @@
     </unit>
     <unit id="project.saved">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:391</note>
+        <note category="location">src/app/features/projects/project-settings.ts:402</note>
       </notes>
       <segment>
         <source>Project saved.</source>
@@ -14316,7 +14332,7 @@
     </unit>
     <unit id="project.delete-title">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:405</note>
+        <note category="location">src/app/features/projects/project-settings.ts:416</note>
       </notes>
       <segment>
         <source>Delete project <ph id="0" equiv="key" disp="p.key"/>?</source>
@@ -14324,7 +14340,7 @@
     </unit>
     <unit id="project.delete-text">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:407</note>
+        <note category="location">src/app/features/projects/project-settings.ts:418</note>
       </notes>
       <segment>
         <source>The project, its permission policies and its member entries are deleted. The policies stop granting at once on every replica. This cannot be undone.</source>
@@ -14332,7 +14348,7 @@
     </unit>
     <unit id="project.delete-confirm">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:409</note>
+        <note category="location">src/app/features/projects/project-settings.ts:420</note>
       </notes>
       <segment>
         <source>Delete project</source>
@@ -14340,7 +14356,7 @@
     </unit>
     <unit id="project.deleted">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:417</note>
+        <note category="location">src/app/features/projects/project-settings.ts:428</note>
       </notes>
       <segment>
         <source>Project deleted.</source>
@@ -16848,7 +16864,7 @@
     <unit id="mirror.heading">
       <notes>
         <note category="location">src/app/features/repositories/mirror-settings.ts:43</note>
-        <note category="location">src/app/features/repositories/repository-create.html:188,189</note>
+        <note category="location">src/app/features/repositories/repository-create.html:189,190</note>
         <note category="location">src/app/features/repositories/repository-detail.html:157</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:329</note>
       </notes>
@@ -17816,7 +17832,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repositories.routes.ts:53</note>
         <note category="location">src/app/features/repositories/repositories.routes.ts:71</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:63</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:71</note>
       </notes>
       <segment>
         <source>New repository</source>
@@ -17882,7 +17898,7 @@
     <unit id="repo.create.project">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:23,25</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:359</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:381</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -17899,8 +17915,8 @@
     <unit id="repo.field.key">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:72,74</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:362</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:576</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:384</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:598</note>
         <note category="location">src/app/features/repositories/repository-detail.html:86,87</note>
       </notes>
       <segment>
@@ -17934,7 +17950,7 @@
     <unit id="repo.field.description-optional">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:99,101</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:578</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:600</note>
         <note category="location">src/app/features/repositories/repository-detail.html:91,93</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:325</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:350</note>
@@ -17961,7 +17977,7 @@
     </unit>
     <unit id="repo.create.wiki">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:126,130</note>
+        <note category="location">src/app/features/repositories/repository-create.html:127,131</note>
       </notes>
       <segment>
         <source>The wiki starts at the same level; its own level is in the repository&apos;s settings.</source>
@@ -17969,8 +17985,8 @@
     </unit>
     <unit id="repo.create.members">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:145,146</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:588</note>
+        <note category="location">src/app/features/repositories/repository-create.html:146,147</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:610</note>
         <note category="location">src/app/features/repositories/repository-detail.html:140,141</note>
       </notes>
       <segment>
@@ -17979,7 +17995,7 @@
     </unit>
     <unit id="repo.create.members-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:147,149</note>
+        <note category="location">src/app/features/repositories/repository-create.html:148,150</note>
       </notes>
       <segment>
         <source> The repositories this one serves from, asked in this order. Only local and remote repositories of this project and format are offered. </source>
@@ -17987,7 +18003,7 @@
     </unit>
     <unit id="repo.create.target">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:157,158</note>
+        <note category="location">src/app/features/repositories/repository-create.html:158,159</note>
       </notes>
       <segment>
         <source>Deployment target</source>
@@ -17995,7 +18011,7 @@
     </unit>
     <unit id="repo.create.target-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:164,166</note>
+        <note category="location">src/app/features/repositories/repository-create.html:165,167</note>
       </notes>
       <segment>
         <source> A publish through this repository&apos;s address is stored in this local member. None makes the repository read-only. </source>
@@ -18003,7 +18019,7 @@
     </unit>
     <unit id="repo.create.advanced">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:173,174</note>
+        <note category="location">src/app/features/repositories/repository-create.html:174,175</note>
       </notes>
       <segment>
         <source>Advanced settings</source>
@@ -18011,7 +18027,7 @@
     </unit>
     <unit id="repo.create.advanced-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:175,177</note>
+        <note category="location">src/app/features/repositories/repository-create.html:176,178</note>
       </notes>
       <segment>
         <source>Notes, paths and the settings of the format. The defaults suit most repositories.</source>
@@ -18019,8 +18035,8 @@
     </unit>
     <unit id="repo.field.notes">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:178,179</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:580</note>
+        <note category="location">src/app/features/repositories/repository-create.html:179,180</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:602</note>
         <note category="location">src/app/features/repositories/repository-detail.html:244,245</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:335</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:352</note>
@@ -18031,7 +18047,7 @@
     </unit>
     <unit id="repo.group.paths">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:181,182</note>
+        <note category="location">src/app/features/repositories/repository-create.html:182,183</note>
       </notes>
       <segment>
         <source>Paths</source>
@@ -18039,7 +18055,7 @@
     </unit>
     <unit id="repo.group.access">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:184,185</note>
+        <note category="location">src/app/features/repositories/repository-create.html:185,186</note>
         <note category="location">src/app/features/repositories/repository-detail.html:229,230</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:333</note>
       </notes>
@@ -18049,7 +18065,7 @@
     </unit>
     <unit id="repo.format.heading-plain">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:211,212</note>
+        <note category="location">src/app/features/repositories/repository-create.html:212,213</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ formatLabel() }}"/></pc> settings</source>
@@ -18057,7 +18073,7 @@
     </unit>
     <unit id="repo.review.api">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:224,225</note>
+        <note category="location">src/app/features/repositories/repository-create.html:225,226</note>
       </notes>
       <segment>
         <source>Show as API request</source>
@@ -18065,7 +18081,7 @@
     </unit>
     <unit id="repo.review.api.json">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:225,226</note>
+        <note category="location">src/app/features/repositories/repository-create.html:226,227</note>
       </notes>
       <segment>
         <source>Request body</source>
@@ -18073,7 +18089,7 @@
     </unit>
     <unit id="repo.review.api.curl">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:227,228</note>
+        <note category="location">src/app/features/repositories/repository-create.html:228,229</note>
       </notes>
       <segment>
         <source>The same request with curl</source>
@@ -18081,7 +18097,7 @@
     </unit>
     <unit id="repo.wizard.create">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:232,233</note>
+        <note category="location">src/app/features/repositories/repository-create.html:233,234</note>
       </notes>
       <segment>
         <source>Create repository</source>
@@ -18089,7 +18105,7 @@
     </unit>
     <unit id="repo.wizard.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:233,236</note>
+        <note category="location">src/app/features/repositories/repository-create.html:234,237</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -18097,7 +18113,7 @@
     </unit>
     <unit id="repo.create.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:68</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:76</note>
       </notes>
       <segment>
         <source>New <ph id="0" equiv="format" disp="format.displayName ?? format.name"/> repository</source>
@@ -18105,7 +18121,7 @@
     </unit>
     <unit id="repo.create.in-project">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:159</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:167</note>
       </notes>
       <segment>
         <source>In the project <ph id="0" equiv="project" disp="this.chosenProject()"/>.</source>
@@ -18113,7 +18129,7 @@
     </unit>
     <unit id="repo.create.project-loading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:200</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:208</note>
       </notes>
       <segment>
         <source>Loading projects…</source>
@@ -18121,7 +18137,7 @@
     </unit>
     <unit id="repo.create.project-choose">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:202</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:210</note>
       </notes>
       <segment>
         <source>Choose a project</source>
@@ -18129,7 +18145,7 @@
     </unit>
     <unit id="virtual.target.none">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:297</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:319</note>
         <note category="location">src/app/features/repositories/virtual-members.ts:115</note>
       </notes>
       <segment>
@@ -18138,7 +18154,7 @@
     </unit>
     <unit id="repo.create.members-empty">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:302</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:324</note>
       </notes>
       <segment>
         <source>No member yet. Add the repositories this one serves from.</source>
@@ -18146,7 +18162,7 @@
     </unit>
     <unit id="repo.key.taken">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:342</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:364</note>
       </notes>
       <segment>
         <source>A repository with this key already exists in the project.</source>
@@ -18154,7 +18170,7 @@
     </unit>
     <unit id="repo.create.project-missing">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:346</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:368</note>
       </notes>
       <segment>
         <source>Choose a project.</source>
@@ -18162,7 +18178,7 @@
     </unit>
     <unit id="upstream.url">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:365</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:387</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:61</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:113,115</note>
       </notes>
@@ -18172,7 +18188,7 @@
     </unit>
     <unit id="repo.class.unsupported">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:461</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:483</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="format" disp="this.formatLabel()"/> does not implement the class <ph id="1" equiv="class" disp="classLabel(cls)"/>.</source>
@@ -18180,7 +18196,7 @@
     </unit>
     <unit id="repo.wizard.created">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:548</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:570</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="created.value.key"/> created.</source>
@@ -18188,7 +18204,7 @@
     </unit>
     <unit id="repo.field.include">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:582</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:604</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:354</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:46,48</note>
       </notes>
@@ -18198,7 +18214,7 @@
     </unit>
     <unit id="repo.field.exclude">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:584</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:606</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:356</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:63,65</note>
       </notes>
@@ -18208,7 +18224,7 @@
     </unit>
     <unit id="repo.field.hide">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:586</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:608</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:358</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:105,107</note>
       </notes>
@@ -18218,7 +18234,7 @@
     </unit>
     <unit id="repo.key.shape">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:655</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:677</note>
       </notes>
       <segment>
         <source>Use 2 to 64 lower-case letters and digits, with ., _, __ or - between them.</source>
@@ -18226,7 +18242,7 @@
     </unit>
     <unit id="upstream.url.required">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:660</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:682</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:137,139</note>
       </notes>
       <segment>
@@ -19123,7 +19139,7 @@
     </unit>
     <unit id="repo.visibility.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:24,25</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:33,34</note>
       </notes>
       <segment>
         <source>Visibility</source>
@@ -19131,7 +19147,7 @@
     </unit>
     <unit id="repo.visibility.wiki">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:39,40</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:49,50</note>
       </notes>
       <segment>
         <source>Wiki</source>
@@ -19139,7 +19155,7 @@
     </unit>
     <unit id="repo.visibility.wiki-note">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:49,52</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:60,63</note>
       </notes>
       <segment>
         <source> Artifacts: who can install, download and list the packages. Wiki: who can read the README and the documentation. </source>
@@ -19147,7 +19163,7 @@
     </unit>
     <unit id="repo.visibility.save">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:63,64</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:74,75</note>
       </notes>
       <segment>
         <source>Save changes</source>
@@ -19155,7 +19171,7 @@
     </unit>
     <unit id="repo.visibility.save-for">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:64,66</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:75,77</note>
       </notes>
       <segment>
         <source> (visibility)</source>
@@ -19163,7 +19179,7 @@
     </unit>
     <unit id="repo.visibility.read-only">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:68,71</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:79,82</note>
       </notes>
       <segment>
         <source> Only the project&apos;s Owner and holders of repositories:write-config change the visibility. </source>
@@ -19171,7 +19187,7 @@
     </unit>
     <unit id="repo.visibility.artifacts">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:108</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:119</note>
       </notes>
       <segment>
         <source>Artifacts</source>
@@ -19179,7 +19195,7 @@
     </unit>
     <unit id="repo.visibility.single">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:108</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:119</note>
       </notes>
       <segment>
         <source>Visibility</source>
@@ -19187,7 +19203,7 @@
     </unit>
     <unit id="repo.visibility.wiki-above-artifacts">
       <notes>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:117</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:144</note>
       </notes>
       <segment>
         <source>The wiki cannot be more open than the artifacts.</source>
@@ -21243,73 +21259,49 @@
     </unit>
     <unit id="general.visibility.default">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:33,35</note>
+        <note category="location">src/app/features/settings/general-settings.html:34,36</note>
       </notes>
       <segment>
-        <source>Default visibility level</source>
+        <source>Default project visibility</source>
       </segment>
     </unit>
     <unit id="general.visibility.default-note">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:41,43</note>
+        <note category="location">src/app/features/settings/general-settings.html:42,45</note>
       </notes>
       <segment>
-        <source> The default applies to projects and repositories created later. </source>
+        <source> A new project takes this level. It also bounds new repositories: a new repository takes it, or its project&apos;s level where that is lower. Projects and repositories that exist keep their levels. </source>
+      </segment>
+    </unit>
+    <unit id="general.visibility.restricted">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.html:47,49</note>
+      </notes>
+      <segment>
+        <source>Restricted visibility levels</source>
+      </segment>
+    </unit>
+    <unit id="general.visibility.restricted-note">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.html:54,57</note>
+      </notes>
+      <segment>
+        <source> A project or repository that already has a restricted level keeps it, and its Owner may lower it, but only an administrator chooses it again. </source>
       </segment>
     </unit>
     <unit id="general.visibility.read-only">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:45,48</note>
+        <note category="location">src/app/features/settings/general-settings.html:59,62</note>
       </notes>
       <segment>
-        <source> Changing the default needs the permission security-settings:write. </source>
-      </segment>
-    </unit>
-    <unit id="general.visibility.public-now">
-      <notes>
-        <note category="location">src/app/features/settings/general-settings.html:48,49</note>
-      </notes>
-      <segment>
-        <source>Public now</source>
-      </segment>
-    </unit>
-    <unit id="general.visibility.nothing-public">
-      <notes>
-        <note category="location">src/app/features/settings/general-settings.html:50,52</note>
-      </notes>
-      <segment>
-        <source>Nothing is public.</source>
-      </segment>
-    </unit>
-    <unit id="general.visibility.project">
-      <notes>
-        <note category="location">src/app/features/settings/general-settings.html:55,57</note>
-      </notes>
-      <segment>
-        <source>(project)</source>
-      </segment>
-    </unit>
-    <unit id="general.visibility.repository">
-      <notes>
-        <note category="location">src/app/features/settings/general-settings.html:60,63</note>
-      </notes>
-      <segment>
-        <source>(repository)</source>
-      </segment>
-    </unit>
-    <unit id="general.visibility.truncated">
-      <notes>
-        <note category="location">src/app/features/settings/general-settings.html:65,68</note>
-      </notes>
-      <segment>
-        <source>The lists show the first 100 of each; there are more.</source>
+        <source> Changing these settings needs the permission security-settings:write. </source>
       </segment>
     </unit>
     <unit id="general.save-changes">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:71,72</note>
-        <note category="location">src/app/features/settings/general-settings.html:145,146</note>
-        <note category="location">src/app/features/settings/general-settings.html:223,224</note>
+        <note category="location">src/app/features/settings/general-settings.html:66,67</note>
+        <note category="location">src/app/features/settings/general-settings.html:160,161</note>
+        <note category="location">src/app/features/settings/general-settings.html:238,239</note>
       </notes>
       <segment>
         <source>Save changes</source>
@@ -21317,15 +21309,55 @@
     </unit>
     <unit id="general.visibility.save-for">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:72,74</note>
+        <note category="location">src/app/features/settings/general-settings.html:67,69</note>
       </notes>
       <segment>
         <source> (visibility)</source>
       </segment>
     </unit>
+    <unit id="general.visibility.public-now">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.html:71,72</note>
+      </notes>
+      <segment>
+        <source>Public now</source>
+      </segment>
+    </unit>
+    <unit id="general.visibility.nothing-public">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.html:73,75</note>
+      </notes>
+      <segment>
+        <source>Nothing is public.</source>
+      </segment>
+    </unit>
+    <unit id="general.visibility.project">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.html:78,80</note>
+      </notes>
+      <segment>
+        <source>(project)</source>
+      </segment>
+    </unit>
+    <unit id="general.visibility.repository">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.html:83,86</note>
+      </notes>
+      <segment>
+        <source>(repository)</source>
+      </segment>
+    </unit>
+    <unit id="general.visibility.truncated">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.html:88,92</note>
+      </notes>
+      <segment>
+        <source>The lists show the first 100 of each; there are more.</source>
+      </segment>
+    </unit>
     <unit id="general.banner">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:86</note>
+        <note category="location">src/app/features/settings/general-settings.html:101</note>
       </notes>
       <segment>
         <source>Banner</source>
@@ -21333,7 +21365,7 @@
     </unit>
     <unit id="general.banner.intro">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:87,89</note>
+        <note category="location">src/app/features/settings/general-settings.html:102,104</note>
       </notes>
       <segment>
         <source>Shown at the top of every screen for every user, including the sign-in page, within a minute after you save.</source>
@@ -21341,7 +21373,7 @@
     </unit>
     <unit id="general.banner.legend">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:96,97</note>
+        <note category="location">src/app/features/settings/general-settings.html:111,112</note>
       </notes>
       <segment>
         <source>Banner settings</source>
@@ -21349,7 +21381,7 @@
     </unit>
     <unit id="general.banner.enabled">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:98,99</note>
+        <note category="location">src/app/features/settings/general-settings.html:113,114</note>
       </notes>
       <segment>
         <source>Show the banner</source>
@@ -21357,7 +21389,7 @@
     </unit>
     <unit id="general.banner.severity">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:102,104</note>
+        <note category="location">src/app/features/settings/general-settings.html:117,119</note>
       </notes>
       <segment>
         <source>Severity</source>
@@ -21365,7 +21397,7 @@
     </unit>
     <unit id="general.banner.title">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:112,114</note>
+        <note category="location">src/app/features/settings/general-settings.html:127,129</note>
       </notes>
       <segment>
         <source>Title (optional)</source>
@@ -21373,7 +21405,7 @@
     </unit>
     <unit id="general.banner.message">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:120,122</note>
+        <note category="location">src/app/features/settings/general-settings.html:135,137</note>
       </notes>
       <segment>
         <source>Banner message</source>
@@ -21381,7 +21413,7 @@
     </unit>
     <unit id="general.banner.preview">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:130,132</note>
+        <note category="location">src/app/features/settings/general-settings.html:145,147</note>
       </notes>
       <segment>
         <source>Preview of the message</source>
@@ -21389,7 +21421,7 @@
     </unit>
     <unit id="general.banner.save-for">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:146,148</note>
+        <note category="location">src/app/features/settings/general-settings.html:161,163</note>
       </notes>
       <segment>
         <source> (banner)</source>
@@ -21397,7 +21429,7 @@
     </unit>
     <unit id="general.mode">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:157,158</note>
+        <note category="location">src/app/features/settings/general-settings.html:172,173</note>
       </notes>
       <segment>
         <source>Maintenance mode</source>
@@ -21405,7 +21437,7 @@
     </unit>
     <unit id="general.mode.intro">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:162,165</note>
+        <note category="location">src/app/features/settings/general-settings.html:177,180</note>
       </notes>
       <segment>
         <source> In read-only mode every write is refused with 503 and the message below, for example during a storage migration or an incident. Downloads, sign-in, creating and revoking tokens, and this switch keep working. </source>
@@ -21413,7 +21445,7 @@
     </unit>
     <unit id="general.mode.state-on">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:169,170</note>
+        <note category="location">src/app/features/settings/general-settings.html:184,185</note>
       </notes>
       <segment>
         <source>Read-only mode is on.</source>
@@ -21421,7 +21453,7 @@
     </unit>
     <unit id="general.mode.since">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:172</note>
+        <note category="location">src/app/features/settings/general-settings.html:187</note>
       </notes>
       <segment>
         <source>Since</source>
@@ -21429,7 +21461,7 @@
     </unit>
     <unit id="general.mode.by">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:175</note>
+        <note category="location">src/app/features/settings/general-settings.html:190</note>
       </notes>
       <segment>
         <source>by</source>
@@ -21437,7 +21469,7 @@
     </unit>
     <unit id="general.mode.state-off">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:180,182</note>
+        <note category="location">src/app/features/settings/general-settings.html:195,197</note>
       </notes>
       <segment>
         <source>Normal mode: writes are accepted.</source>
@@ -21445,7 +21477,7 @@
     </unit>
     <unit id="general.mode.legend">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:191,192</note>
+        <note category="location">src/app/features/settings/general-settings.html:206,207</note>
       </notes>
       <segment>
         <source>Maintenance mode settings</source>
@@ -21453,7 +21485,7 @@
     </unit>
     <unit id="general.mode.enabled">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:193,194</note>
+        <note category="location">src/app/features/settings/general-settings.html:208,209</note>
       </notes>
       <segment>
         <source>Read-only maintenance mode</source>
@@ -21461,7 +21493,7 @@
     </unit>
     <unit id="general.mode.message">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:199,200</note>
+        <note category="location">src/app/features/settings/general-settings.html:214,215</note>
       </notes>
       <segment>
         <source>Maintenance message</source>
@@ -21469,7 +21501,7 @@
     </unit>
     <unit id="general.mode.cache-fill">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:207,208</note>
+        <note category="location">src/app/features/settings/general-settings.html:222,223</note>
       </notes>
       <segment>
         <source>Remote repositories keep filling their cache</source>
@@ -21477,7 +21509,7 @@
     </unit>
     <unit id="general.mode.retry-after">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:212,213</note>
+        <note category="location">src/app/features/settings/general-settings.html:227,228</note>
       </notes>
       <segment>
         <source>Retry after (seconds)</source>
@@ -21485,15 +21517,31 @@
     </unit>
     <unit id="general.mode.save-for">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:224,226</note>
+        <note category="location">src/app/features/settings/general-settings.html:239,241</note>
       </notes>
       <segment>
         <source> (maintenance mode)</source>
       </segment>
     </unit>
+    <unit id="general.visibility.default-restricted">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.ts:126</note>
+      </notes>
+      <segment>
+        <source>A restricted level cannot be the default.</source>
+      </segment>
+    </unit>
+    <unit id="general.visibility.restrict-default">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.ts:132</note>
+      </notes>
+      <segment>
+        <source>This is the default project visibility, which cannot be restricted.</source>
+      </segment>
+    </unit>
     <unit id="general.visibility.summary-internal">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:100</note>
+        <note category="location">src/app/features/settings/general-settings.ts:139</note>
       </notes>
       <segment>
         <source>New projects are internal.</source>
@@ -21501,7 +21549,7 @@
     </unit>
     <unit id="general.visibility.summary-public">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:102</note>
+        <note category="location">src/app/features/settings/general-settings.ts:142</note>
       </notes>
       <segment>
         <source>New projects are public.</source>
@@ -21509,15 +21557,23 @@
     </unit>
     <unit id="general.visibility.summary-private">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:104</note>
+        <note category="location">src/app/features/settings/general-settings.ts:145</note>
       </notes>
       <segment>
         <source>New projects are private.</source>
       </segment>
     </unit>
+    <unit id="general.visibility.summary-restricted">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.ts:150</note>
+      </notes>
+      <segment>
+        <source>Restricted to administrators: <ph id="0" equiv="levels" disp="names"/>.</source>
+      </segment>
+    </unit>
     <unit id="general.mode.summary-on">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:112</note>
+        <note category="location">src/app/features/settings/general-settings.ts:157</note>
       </notes>
       <segment>
         <source>Read-only mode is on: every write is refused.</source>
@@ -21525,7 +21581,7 @@
     </unit>
     <unit id="general.mode.summary-off">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:113</note>
+        <note category="location">src/app/features/settings/general-settings.ts:158</note>
       </notes>
       <segment>
         <source>Refuse every write during a migration or an incident.</source>
@@ -21533,7 +21589,7 @@
     </unit>
     <unit id="general.banner.severity.info">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:117</note>
+        <note category="location">src/app/features/settings/general-settings.ts:162</note>
       </notes>
       <segment>
         <source>Notice</source>
@@ -21541,7 +21597,7 @@
     </unit>
     <unit id="general.banner.severity.warning">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:118</note>
+        <note category="location">src/app/features/settings/general-settings.ts:163</note>
       </notes>
       <segment>
         <source>Warning</source>
@@ -21549,7 +21605,7 @@
     </unit>
     <unit id="general.banner.severity.critical">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:119</note>
+        <note category="location">src/app/features/settings/general-settings.ts:164</note>
       </notes>
       <segment>
         <source>Critical</source>
@@ -21557,7 +21613,7 @@
     </unit>
     <unit id="general.base-url.config">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:153</note>
+        <note category="location">src/app/features/settings/general-settings.ts:198</note>
       </notes>
       <segment>
         <source>Set in the configuration file (server.base_url).</source>
@@ -21565,7 +21621,7 @@
     </unit>
     <unit id="general.base-url.request">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:154</note>
+        <note category="location">src/app/features/settings/general-settings.ts:199</note>
       </notes>
       <segment>
         <source>Derived from the request, because server.base_url is not set. This is for development only.</source>
@@ -21573,7 +21629,7 @@
     </unit>
     <unit id="general.banner.message-hint">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:157</note>
+        <note category="location">src/app/features/settings/general-settings.ts:202</note>
       </notes>
       <segment>
         <source>Plain text. A link is written [text](https://example.com). Other links stay text. At most <ph id="0" equiv="max" disp="MESSAGE_MAX"/> characters.</source>
@@ -21581,7 +21637,7 @@
     </unit>
     <unit id="general.mode.message-hint">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:158</note>
+        <note category="location">src/app/features/settings/general-settings.ts:203</note>
       </notes>
       <segment>
         <source>Shown to every user and sent with every refused write. At most <ph id="0" equiv="max" disp="MAINTENANCE_MESSAGE_MAX"/> characters.</source>
@@ -21589,15 +21645,15 @@
     </unit>
     <unit id="general.visibility.saved">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:200</note>
+        <note category="location">src/app/features/settings/general-settings.ts:250</note>
       </notes>
       <segment>
-        <source>Default visibility saved.</source>
+        <source>Visibility settings saved.</source>
       </segment>
     </unit>
     <unit id="general.banner.saved">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:257</note>
+        <note category="location">src/app/features/settings/general-settings.ts:307</note>
       </notes>
       <segment>
         <source>Banner saved.</source>
@@ -21605,7 +21661,7 @@
     </unit>
     <unit id="general.mode.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:286</note>
+        <note category="location">src/app/features/settings/general-settings.ts:336</note>
       </notes>
       <segment>
         <source>Read-only maintenance mode is on.</source>
@@ -21613,7 +21669,7 @@
     </unit>
     <unit id="general.mode.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:287</note>
+        <note category="location">src/app/features/settings/general-settings.ts:337</note>
       </notes>
       <segment>
         <source>Read-only maintenance mode is off.</source>
@@ -21621,7 +21677,7 @@
     </unit>
     <unit id="general.mode.confirm-title">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:298</note>
+        <note category="location">src/app/features/settings/general-settings.ts:348</note>
       </notes>
       <segment>
         <source>Switch to read-only maintenance mode?</source>
@@ -21629,7 +21685,7 @@
     </unit>
     <unit id="general.mode.confirm-1">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:300</note>
+        <note category="location">src/app/features/settings/general-settings.ts:350</note>
       </notes>
       <segment>
         <source>Every user&apos;s writes are refused with 503 until you switch the mode off again: publishing, pushing, deleting and every change of the configuration.</source>
@@ -21637,7 +21693,7 @@
     </unit>
     <unit id="general.mode.confirm-2">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:301</note>
+        <note category="location">src/app/features/settings/general-settings.ts:351</note>
       </notes>
       <segment>
         <source>Downloads, sign-in, creating and revoking tokens, and this switch keep working.</source>
@@ -21645,7 +21701,7 @@
     </unit>
     <unit id="general.mode.confirm">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:303</note>
+        <note category="location">src/app/features/settings/general-settings.ts:353</note>
       </notes>
       <segment>
         <source>Switch on</source>
@@ -29620,7 +29676,7 @@
     </unit>
     <unit id="visibility.private">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:20</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:23</note>
       </notes>
       <segment>
         <source>Private</source>
@@ -29628,7 +29684,7 @@
     </unit>
     <unit id="visibility.internal">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:22</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:25</note>
       </notes>
       <segment>
         <source>Internal</source>
@@ -29636,7 +29692,7 @@
     </unit>
     <unit id="visibility.public">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:24</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:27</note>
       </notes>
       <segment>
         <source>Public</source>
@@ -29644,15 +29700,39 @@
     </unit>
     <unit id="visibility.public-unavailable">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:31</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:34</note>
       </notes>
       <segment>
         <source>The installation&apos;s configuration admits no request without a credential (endpoints.default.auth.anonymous).</source>
       </segment>
     </unit>
+    <unit id="visibility.restricted">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:66</note>
+      </notes>
+      <segment>
+        <source>Only an administrator of Quader can choose this level.</source>
+      </segment>
+    </unit>
+    <unit id="visibility.restricted-admin">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:84</note>
+      </notes>
+      <segment>
+        <source>Restricted: only administrators can choose this level.</source>
+      </segment>
+    </unit>
+    <unit id="visibility.restricted-kept">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:86</note>
+      </notes>
+      <segment>
+        <source>Restricted: kept while it is set; only an administrator can choose it again.</source>
+      </segment>
+    </unit>
     <unit id="visibility.above-project">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:56</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:113</note>
       </notes>
       <segment>
         <source>The project is <ph id="0" equiv="project" disp="p"/>, so this repository cannot be <ph id="1" equiv="level" disp="l"/>.</source>
@@ -29660,7 +29740,7 @@
     </unit>
     <unit id="visibility.new-projects.private">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:67</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:124</note>
       </notes>
       <segment>
         <source>Only members and the principals a policy names read new projects.</source>
@@ -29668,7 +29748,7 @@
     </unit>
     <unit id="visibility.new-projects.internal">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:69</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:126</note>
       </notes>
       <segment>
         <source>Every signed-in user who is not external reads new projects.</source>
@@ -29676,7 +29756,7 @@
     </unit>
     <unit id="visibility.new-projects.public">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:71</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:128</note>
       </notes>
       <segment>
         <source>Anyone, also without signing in, reads new projects.</source>
@@ -29684,7 +29764,7 @@
     </unit>
     <unit id="visibility.project.private">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:77</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:134</note>
       </notes>
       <segment>
         <source>Only members and the principals a policy names read the project&apos;s repositories.</source>
@@ -29692,7 +29772,7 @@
     </unit>
     <unit id="visibility.project.internal">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:79</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:136</note>
       </notes>
       <segment>
         <source>Every signed-in user who is not external can find the project and read what its repositories make internal.</source>
@@ -29700,7 +29780,7 @@
     </unit>
     <unit id="visibility.project.public">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:81</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:138</note>
       </notes>
       <segment>
         <source>Anyone, also without signing in, can find the project and read what its repositories make public.</source>
@@ -29708,7 +29788,7 @@
     </unit>
     <unit id="visibility.artifacts.private">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:87</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:144</note>
       </notes>
       <segment>
         <source>Only members of the project and the principals a policy names.</source>
@@ -29716,7 +29796,7 @@
     </unit>
     <unit id="visibility.artifacts.internal">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:89</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:146</note>
       </notes>
       <segment>
         <source>Every signed-in user who is not external.</source>
@@ -29724,7 +29804,7 @@
     </unit>
     <unit id="visibility.artifacts.public">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:91</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:148</note>
       </notes>
       <segment>
         <source>Anyone, also without signing in.</source>
@@ -29732,7 +29812,7 @@
     </unit>
     <unit id="visibility.wiki.private">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:97</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:154</note>
       </notes>
       <segment>
         <source>Only members of the project and the principals a policy names.</source>
@@ -29740,7 +29820,7 @@
     </unit>
     <unit id="visibility.wiki.internal">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:99</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:156</note>
       </notes>
       <segment>
         <source>Every signed-in user who is not external.</source>
@@ -29748,10 +29828,34 @@
     </unit>
     <unit id="visibility.wiki.public">
       <notes>
-        <note category="location">src/app/shared/ui/visibility-level.ts:101</note>
+        <note category="location">src/app/shared/ui/visibility-level.ts:158</note>
       </notes>
       <segment>
         <source>Anyone, also without signing in.</source>
+      </segment>
+    </unit>
+    <unit id="visibility.restrict.private">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:288</note>
+      </notes>
+      <segment>
+        <source>Only an administrator can make a project or a repository private.</source>
+      </segment>
+    </unit>
+    <unit id="visibility.restrict.internal">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:290</note>
+      </notes>
+      <segment>
+        <source>Only an administrator can make a project or a repository internal.</source>
+      </segment>
+    </unit>
+    <unit id="visibility.restrict.public">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:292</note>
+      </notes>
+      <segment>
+        <source>Only an administrator can make a project or a repository public.</source>
       </segment>
     </unit>
     <unit id="unsaved.title">

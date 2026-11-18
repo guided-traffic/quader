@@ -201,6 +201,7 @@ checked every earlier decision against them:
 | [ADR-200](#adr-200--a-lists-filters-open-in-a-drawer-the-apps-one-pattern-for-content-over-the-page) | A list's filters open in a drawer, the app's one pattern for content over the page | Accepted (owner decision of 2026-11-18) for the drawer; its build decided by the development agent, owner review at the walkthrough |
 | [ADR-202](#adr-202--the-client-setup-and-the-guide-are-one-page-of-a-repository) | The client setup and the guide are one page of a repository | Accepted (owner decision of 2026-11-18); the address, the layout and the API decided by the development agent — owner review at the walkthrough |
 | [ADR-203](#adr-203--browse-goes-a-repositorys-files-live-on-its-page) | Browse goes; a repository's files live on its page | Accepted (owner decision of 2026-11-18); the details decided by the development agent — owner review at the walkthrough |
+| [ADR-204](#adr-204--an-administrator-restricts-visibility-levels-to-administrators) | An administrator restricts visibility levels to administrators | Accepted (owner requirement of 2026-11-18); the rules decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1005,6 +1006,56 @@ built and the picker of Q-UI-515 proves too slow for a deep target.
 
 **Spec:** [R-UI-010 to R-UI-014](spec/api-and-ui.md#r-ui-010--files-of-a-repository),
 [R-UI-052](spec/api-and-ui.md#r-ui-052--repository-content-page), [Q-UI-510 to Q-UI-521](spec/api-and-ui.md#decisions).
+
+### ADR-204 · An administrator restricts visibility levels to administrators
+
+**Status:** Accepted (owner requirement of 2026-11-18, walk objection W-11); the rules decided by the development agent — owner
+review at the walkthrough
+
+**Context.** Since T-18 a project's level is an administrator's and a repository's levels are its Owner's, up to the project's level
+([Q-AUTHZ-267](spec/authorization.md#q-authz-267--an-administrator-sets-the-level-of-a-project-its-owner-sets-the-levels-of-its-repositories-within-it)).
+An administrator could not keep a level from the Owners: an Owner of a public project opened any of its repositories to the
+internet. In his walk of 2026-11-18 the owner asked, with the general settings of his GitLab as the reference, for two settings in
+the administration area: the default project visibility (which existed, in a closed section, as "Default visibility level") and
+restricted visibility levels.
+
+**Decision.**
+- The installation's visibility settings gain `restrictedLevels`, a set of levels only an administrator may choose
+  ([R-AUTHZ-037](spec/authorization.md#r-authz-037--restricted-visibility-levels),
+  [R-API-075](spec/api-and-ui.md#r-api-075--the-restricted-levels-in-the-visibility-settings)). An administrator is whoever holds
+  `security-settings:write` for the request, the permission that changes the restriction
+  ([Q-AUTHZ-283](spec/authorization.md#q-authz-283--an-administrator-is-whoever-holds-security-settingswrite-for-the-request)).
+- Everyone else is refused a restricted level it chooses for a project or a part of a repository, with 403
+  `visibility_level_restricted`, after the rules that bind everyone
+  ([R-AUTHZ-038](spec/authorization.md#r-authz-038--the-order-in-which-a-level-is-refused)). A level an object has is kept and may be
+  lowered, never chosen anew; a create that names no level falls to the highest level the caller may choose; the default is
+  never restricted; a cascade, a move or a replay is no choice (Q-AUTHZ-284 to Q-AUTHZ-288).
+- Every signed-in caller reads the levels it may choose (`GET /api/v1/visibility-choices`,
+  [R-API-076](spec/api-and-ui.md#r-api-076--the-levels-a-caller-may-choose)), and every form that chooses a level shows a level
+  the caller cannot choose disabled with the reason the server would answer
+  ([R-UI-141](spec/api-and-ui.md#r-ui-141--a-level-the-caller-cannot-choose-is-disabled-where-a-level-is-chosen)).
+- **Admin area › Settings › General › Visibility** opens with the page and holds **Default project visibility** and **Restricted
+  visibility levels**, one checkbox per level, with one save
+  ([R-UI-140](spec/api-and-ui.md#r-ui-140--the-restricted-visibility-levels-in-the-general-settings)).
+
+**Consequences.** Opening content to the organization or to the internet can be kept to the administrators without taking the level
+of repositories away from their Owners: they still narrow and open within what is not restricted. Restricting a level closes
+nothing that is open; an administrator who wants that lowers the projects, whose cascade lowers their repositories. The creation
+form keeps its one level group; an Owner whose project's level is restricted gets the next lower level without being asked. Today
+only `admin` holds `projects:write`, so for projects the rule binds only a token of an administrator scoped without
+`security-settings:write`.
+
+**Alternatives considered.** A restriction that lowers the objects that have the level (closes content behind the setting's back);
+an exemption by the object's capability (`repositories:write-config` would bypass a restriction meant for it); refusing a create
+whose project level is restricted (the plain path would fail). Each is a decision block on
+[authorization.md](spec/authorization.md#decisions).
+
+**Revisit condition:** the owner wants a restriction that also closes what is open, or projects are created by their teams and
+`projects:write` reaches callers without `security-settings:write`.
+
+**Spec:** [R-AUTHZ-037, R-AUTHZ-038](spec/authorization.md#r-authz-037--restricted-visibility-levels), Q-AUTHZ-283 to Q-AUTHZ-289;
+[R-API-075, R-API-076](spec/api-and-ui.md#r-api-075--the-restricted-levels-in-the-visibility-settings), Q-API-330 to Q-API-332;
+[R-UI-140, R-UI-141](spec/api-and-ui.md#r-ui-140--the-restricted-visibility-levels-in-the-general-settings), Q-UI-540 to Q-UI-543.
 
 ## Design invariants
 

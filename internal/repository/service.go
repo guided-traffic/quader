@@ -184,6 +184,10 @@ type Caller struct {
 	// write, before anything is stored; it returns the refusal that asks the caller to authenticate again (R-API-007). Nil
 	// asks nothing.
 	RaiseGate func(context.Context) error
+	// MayChooseRestricted is set by the API layer for an administrator, a caller who holds security-settings:write
+	// (Q-AUTHZ-283): it may choose a level the installation restricts (R-AUTHZ-037). Everyone else keeps and lowers such a
+	// level but does not choose it anew.
+	MayChooseRestricted bool
 }
 
 // principalID returns the actor id when it is a uuid and "" otherwise (a break-glass

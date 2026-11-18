@@ -75,6 +75,7 @@ Decisions this page takes:
 | How do "all signed-in people" or everyone get read access? | Through a visibility level, never a policy entry: `internal` reads for every internal user, `public` for every request. The anonymous switch, the principal `authenticated` and `requireAuthentication` are gone (Q-AUTHZ-263, [ADR-192](../decisions.md#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated)). | R-AUTHZ-033, R-AUTHZ-035 |
 | How do the installation, a project and a repository combine? | The installation's default is copied when a project or repository is created; a repository is never more open than its project and its wiki never more open than its artifacts; lowering a project lowers its repositories (Q-AUTHZ-264 to Q-AUTHZ-266). | R-AUTHZ-033 |
 | Who is internal? | A user through a session or a personal token who is not flagged external by an administrator and does not come through a Bastion; never a service account, a CI token or a Bastion registration (Q-AUTHZ-268). | R-AUTHZ-030 |
+| Can an administrator keep a level to administrators? | Yes: the installation's restricted levels. Whoever does not hold `security-settings:write` cannot choose them for a project or a repository; an object that has one keeps it (Q-AUTHZ-283 to Q-AUTHZ-288). | R-AUTHZ-037, R-AUTHZ-038 |
 | What is the wiki, and what does a caller get who reads the artifacts but not the wiki? | The documentation Quader serves or shows apart from the files; a route that serves only wiki content refuses the read, a document that embeds it leaves the members out (Q-AUTHZ-270, Q-AUTHZ-271). | R-AUTHZ-034 |
 | Who may publish the next version of a package? | Its owners, or a holder of `manage` on it. The grants that allowed the first publish decide the owners. Ownership is enforced by default in new npm and NuGet local repositories (Q-AUTHZ-2). | R-AUTHZ-018 |
 | Whom does a writing CI inline grant make the owner? | The job's GitLab project (`bind_project`), unless the grant says `"ownership": "none"` (Q-AUTHZ-6). | R-AUTHZ-014 |
@@ -288,7 +289,7 @@ Where a level is set and who sets it ([Q-AUTHZ-264](#q-authz-264--a-level-is-sto
 
 | Object | Value | Set by | Default when created |
 |---|---|---|---|
-| The installation | `defaultLevel` of `/api/v1/settings/visibility` ([api-and-ui.md](api-and-ui.md) R-API-056) | `security-settings:write` | `private` |
+| The installation | `defaultLevel` of `/api/v1/settings/visibility` ([api-and-ui.md](api-and-ui.md) R-API-056), and the levels only an administrator may choose, `restrictedLevels` (R-AUTHZ-037, R-API-075) | `security-settings:write` | `private`; nothing restricted |
 | A project | `visibility`, read with the project, set through `PUT /api/v1/projects/{projectKey}/visibility` (R-API-057) and in the body of `POST /api/v1/projects` | `projects:write` | the installation's `defaultLevel` |
 | A repository | `visibility.artifacts` and `visibility.wiki` of the repository document ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-004) | the project's Owner, or `repositories:write-config` | both: the lower of the installation's `defaultLevel` and the project's level |
 
@@ -306,7 +307,8 @@ Where a level is set and who sets it ([Q-AUTHZ-264](#q-authz-264--a-level-is-sto
    lowers its levels to the target project's level the same way, in the move's transaction.
 4. **Who opens.** The project's level is the administrator's decision; the Owner chooses its repositories' levels up to it
    and cannot change the project's. A write that raises a level needs recent authentication ([api-and-ui.md](api-and-ui.md)
-   R-API-007).
+   R-API-007). A level the installation restricts is chosen by an administrator only (R-AUTHZ-037), and the refusals of a level
+   come in the order of R-AUTHZ-038.
 5. **`public` needs an anonymous door.** `public` can be set only while the default endpoint admits requests without a
    credential (`endpoints.default.auth.anonymous`, [endpoints.md](endpoints.md) R-EP-010); otherwise every write that sets it
    answers 409 `public_not_allowed`, and `GET /api/v1/settings/visibility` reports `"publicAvailable": false`. A level that
@@ -497,7 +499,7 @@ Priority: **MVP** · Covers: quader-only
 
 | Change | Operation | Audit event | Journal |
 |---|---|---|---|
-| The installation's default | `PATCH /api/v1/settings/visibility` (R-API-056) | `settings.visibility.changed`, before and after | no: it decides only objects created later |
+| The installation's default and its restricted levels | `PATCH /api/v1/settings/visibility` (R-API-056, R-API-075) | `settings.visibility.changed`, `defaultLevel` and `restrictedLevels` before and after | no: it decides only later writes and changes no stored level (R-AUTHZ-037 rule 4) |
 | A project's level | `PUT /api/v1/projects/{projectKey}/visibility` (R-API-057) | `authz.project.visibility_changed`: project ID and key, the level before and after, the lowered repositories | `journal: revocation`, comparator below |
 | A repository's levels | the repository document (R-REPO-004); the cascade of R-AUTHZ-033 rule 3 | `authz.settings.changed` with `visibility.artifacts` and `visibility.wiki` before and after, and `cause` (`request`, `project`, `move`) | `journal: revocation`, the settings comparator of R-AUTHZ-031 |
 | A user's `external` flag | `PATCH /api/v1/users/{username}` ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-044) | `user.external_changed` | `journal: revocation`: setting it narrows |
@@ -512,7 +514,7 @@ Priority: **MVP** · Covers: quader-only
   | A project's level and the cascade | `cluster.Notify("authz", …)` and, for each lowered repository, `cluster.Notify("repo_config", …)`, in the writing transaction | The compiled grant index of every `api`, `packages` and `worker` replica (R-AUTHZ-028) | R-AUTHZ-028: typically 100 ms plus one build, at most `cluster.epoch_poll_interval` plus 1 s, never above `authz.cache.max_staleness` plus one build |
   | A repository's levels | `cluster.Notify("repo_config", …)` with the new configuration version | The grant index; the rendition caches of documents with wiki members, whose keys and ETags carry the caller's wiki answer per contributing repository (R-NPM-013, R-REPO-020) | As above |
   | A user's `external` flag | the change area `auth` (R-AUTH-023) | The principal, session and token caches that hand the flag to the stage | `auth.revocation_bound` |
-  | The installation's default | `visibility_settings`, read in the creating transaction | nothing cached | immediate |
+  | The installation's default and its restricted levels | `visibility_settings`, read in the transaction that creates or changes a project or a repository | nothing cached | immediate |
   | `publicContent` of `login-options` and `anonymousReads` of a Bastion's handshake | computed from the grant index | the next read | as the grant index |
 
   Not inputs: the namespace-claims index (R-REPO-023), because claims and pin rules apply independently of the caller
@@ -530,6 +532,102 @@ Acceptance criteria:
 - A journaled `authz.project.visibility_changed` from `internal` to `public` is reported `skipped`.
 - `PUT /api/v1/projects/web/visibility` to `private` on one replica with Valkey stopped: a request on another replica is
   decided on the new level within `cluster.epoch_poll_interval` plus 1 s.
+
+### R-AUTHZ-037 · Restricted visibility levels
+Priority: **MVP** · Covers: quader-only
+
+The owner's requirement W-11 (2026-11-18), with the general settings of his GitLab as the reference: "in the administration area
+I must be able to set these parameters through a setting: default project visibility, restricted visibility levels". A restricted
+level can be chosen by an administrator only; whoever else sets the level of a project or a repository cannot choose it.
+
+- **The setting.** `restrictedLevels` of `/api/v1/settings/visibility` ([api-and-ui.md](api-and-ui.md) R-API-075), beside
+  `defaultLevel`: a set of levels, empty when Quader is installed, read and changed with the default (`settings:read`,
+  `security-settings:write`, recent authentication). The UI is **Admin area › Settings › General › Visibility** (R-UI-140).
+- **Who is an administrator here** ([Q-AUTHZ-283](#q-authz-283--an-administrator-is-whoever-holds-security-settingswrite-for-the-request)): a subject that
+  holds `security-settings:write` for the request, through its system roles (R-AUTHZ-010: `admin` and `security-admin`, the break-glass
+  administrator included) and within its token's scope (R-AUTHZ-013). A project's Owner, a holder of `repositories:write-config` or
+  `projects:write` without it, and a token whose scope leaves it out are not.
+- **What it restricts.** Whoever is not an administrator cannot *choose* a restricted level for a project (the body of
+  `POST /api/v1/projects`, `PUT /api/v1/projects/{projectKey}/visibility`) or for a part of a repository (`visibility.artifacts` and
+  `visibility.wiki` of a create, a `PUT` or a merge patch of the repository document, R-REPO-004). Such a write answers 403
+  `visibility_level_restricted` with the member in `errors[]` ([Q-AUTHZ-287](#q-authz-287--the-refusal-is-403-visibility_level_restricted-after-the-rules-that-bind-everyone)).
+
+Rules:
+
+1. **The default is never restricted** ([Q-AUTHZ-284](#q-authz-284--the-default-level-is-never-restricted-and-a-restricted-level-never-becomes-the-default)). A settings
+   write whose result would hold the default level among the restricted levels answers 422 `validation_failed` with
+   `default_level_restricted` at the member that makes it so; the database refuses the state as well (a check constraint).
+2. **An object keeps a restricted level** ([Q-AUTHZ-285](#q-authz-285--an-object-keeps-a-restricted-level-and-only-an-administrator-chooses-one-anew)). Restricting a
+   level changes no stored level. A write that names the level a part already has chooses nothing, so the Owner of a public
+   repository edits its description or sends its whole document back while `public` is restricted. Changing a part to another
+   level is a choice: the Owner may lower a restricted level to any level it may choose, but not choose a restricted one, also when
+   that is lower than the level it leaves, and it cannot return to the level it left.
+3. **A create that names no level** ([Q-AUTHZ-286](#q-authz-286--a-create-that-names-no-level-takes-the-highest-level-the-caller-may-choose-and-is-refused-when-there-is-none)). A project created
+   without `visibility` takes the default, which is never restricted. A repository created without a part's level would take the
+   lower of the default and the project's level (R-AUTHZ-033); when that is restricted and the caller is not an administrator, the
+   part takes the highest lower level the caller may choose, and when there is none the create answers 403
+   `visibility_level_restricted` at the part. The creation form reads the result from the repository defaults (R-REPO-063), so the
+   plain path of a create asks for no level.
+4. **No choices** ([Q-AUTHZ-288](#q-authz-288--a-cascade-a-move-and-a-replay-are-no-choices-and-changing-the-restriction-changes-no-stored-level)). The cascade of a lowered project (R-AUTHZ-033
+   rule 3), the lowering of a moved repository, the replay of a journal entry (R-AUTHZ-036) and a restore set levels nobody chose
+   in that write; the restriction does not refuse them. A change of the restricted levels lowers nothing.
+5. **Projects today.** `projects:write` belongs to the system role `admin` alone (R-AUTHZ-010), which holds
+   `security-settings:write` as well, so the rule refuses a project's level only to a token of an administrator whose scope leaves
+   `security-settings:write` out. It binds every holder of `projects:write` that a later role or a delegation gives without it.
+6. **The forms know beforehand.** Every signed-in caller reads the levels it may choose (`GET /api/v1/visibility-choices`,
+   [api-and-ui.md](api-and-ui.md) R-API-076); the forms show a level it cannot choose disabled with the reason, in the order of
+   R-AUTHZ-038 (R-UI-141). The server decides every write on its own.
+
+Data model ([Q-AUTHZ-289](#q-authz-289--the-restricted-levels-are-an-array-column-beside-the-default-held-by-a-check-constraint)), migration
+`00077_visibility_restricted.sql`:
+
+```sql
+ALTER TABLE visibility_settings
+    ADD COLUMN restricted_levels text[] NOT NULL DEFAULT '{}'
+        CONSTRAINT visibility_settings_restricted_levels
+        CHECK (restricted_levels <@ ARRAY['private', 'internal', 'public']::text[]
+               AND NOT (default_level = ANY (restricted_levels)));
+```
+
+Acceptance criteria (`TestR_AUTHZ_037_RestrictedLevels` in the integration area `projects`, `TestR_AUTHZ_037_TheLevelsAWriteStores`
+in `internal/repository`):
+
+- With `restrictedLevels: ["public"]`, the Owner of the public project `web` creates `npm-owner` with `{"artifacts": "public"}` and
+  gets 403 `visibility_level_restricted`; with `internal` it is created. An administrator creates `npm-admin` with `public`.
+- The public repository `npm-open` keeps its level when its Owner patches its description and sends `{"artifacts": "public",
+  "wiki": "internal"}`; its Owner lowers it to internal, and raising it to public again answers 403.
+- With `defaultLevel: public`, `restrictedLevels: ["internal"]` and `web` internal, the Owner's create without a level stores
+  `private/private`, the administrator's `internal/internal`; with `private` restricted as well, the Owner's create answers 403.
+- `PATCH /api/v1/settings/visibility` with `{"restrictedLevels": ["private"]}` while the default is `private` answers 422
+  `default_level_restricted`, and an `UPDATE` of the row to the same state fails.
+
+### R-AUTHZ-038 · The order in which a level is refused
+Priority: **MVP** · Covers: quader-only
+
+A write that sets a level is checked in this order, and the first rule that refuses answers. The forms show the reason of an option
+that cannot be chosen in the same order, so that the UI never names a rule the API would not answer
+([Q-AUTHZ-287](#q-authz-287--the-refusal-is-403-visibility_level_restricted-after-the-rules-that-bind-everyone), R-UI-141):
+
+| # | Rule | Answer | The form's reason under the option |
+|---|---|---|---|
+| 1 | The value is a level | 422 `validation_failed`, `invalid_value` | — (the form offers only levels) |
+| 2 | The container: a repository's artifacts at most its project's level, its wiki at most its artifacts (R-AUTHZ-033 rule 2) | 422 `validation_failed` with `visibility_above_project` or `visibility_wiki_above_artifacts` | "The project is internal, so this repository cannot be public." / "The wiki cannot be more open than the artifacts." |
+| 3 | `public` needs an anonymous door (R-AUTHZ-033 rule 5) | 409 `public_not_allowed` | "The installation's configuration admits no request without a credential (endpoints.default.auth.anonymous)." |
+| 4 | A restricted level, for a caller who is not an administrator (R-AUTHZ-037) | 403 `visibility_level_restricted` | "Only an administrator of Quader can choose this level." |
+| 5 | A raised level needs a recent authentication (R-AUTHZ-033 rule 4) | 401 `reauthentication_required` | — (the UI asks to sign in again) |
+
+- The rules that bind everyone (2, 3) come before the rule about the caller (4): an Owner is not told that an administrator could
+  choose a level nobody can choose. A repository write asks for the recent authentication last, inside the write, only when every
+  other rule passed (Q-AUTHZ-281).
+- The operations of a project's level declare the recent authentication (`x-quader-recent-auth`, R-API-007), and the create of a
+  project asks for it before the write when it names a level above `private`; for a project, rule 5 is therefore asked first.
+  Only an administrator reaches those operations today (R-AUTHZ-037 rule 5).
+- For a repository create whose absent part has no level left to take (R-AUTHZ-037 rule 3) the refusal of rule 4 comes before the
+  container rules: the level it would take is never above the container.
+
+Acceptance criteria: `TestR_AUTHZ_037_TheLevelsAWriteStores` ("the container rule comes first", "public unavailable comes before the
+restriction") and the specs of `visibility-level.ts` (`R-AUTHZ-038 Public unavailable is named before the restriction, and the
+project before both`).
 
 ### R-AUTHZ-004 · Repository selectors
 Priority: **MVP** · Covers: IAM-020
@@ -3445,6 +3543,9 @@ Expected results:
   audit decision reads Valkey (R-AUTHZ-029). By dropping messages they can delay a change by at
   most `cluster.epoch_poll_interval` plus 1 s, because the change log in PostgreSQL still applies
   it (H-49).
+- **Who may open is an installation setting.** The restricted levels (R-AUTHZ-037) keep a level to holders of
+  `security-settings:write`; they decide only later choices and close nothing that is open. Their gaps are on
+  [security/visibility.md](../security/visibility.md).
 - **Levels read, nothing more.** A visibility level gives only `read` (R-AUTHZ-033): it never makes anybody a package owner,
   never covers a write and never reaches a service account or a CI token through `internal`, so a leaked automation token
   carries only what was granted to it by name, and what is `public`. Only an administrator opens a project; its Owner opens
@@ -6405,7 +6506,8 @@ Status: **Decided by the development agent** — selected from the options below
 **Rationale:** GitLab lets an administrator restrict the levels non-administrators may choose; (a) is that restriction made the
 default, and it matches what Quader decided for `authenticated` before (Q-AUTHZ-3: only `policies:write` opened content to
 everyone). The Owner keeps every narrowing and every opening up to the administrator's ceiling. The development agent would
-revisit this if projects are created mostly by their teams, which would call for a setting of restricted levels as in GitLab.
+revisit this if projects are created mostly by their teams, which would call for a setting of restricted levels as in GitLab. The
+owner asked for that setting on 2026-11-18 (W-11): it is R-AUTHZ-037, beside this rule.
 
 **Applied in the spec:** R-AUTHZ-033 (the table, rule 4), R-AUTHZ-026 (the Owner's table); [api-and-ui.md](api-and-ui.md)
 R-API-007, R-API-056, R-API-057.
@@ -6693,6 +6795,137 @@ project of a lower level lowers the moved repository in its own transaction with
 **Rationale:** the database already refuses the end state (Q-AUTHZ-276); the lock order makes the refusal a wait and not an error.
 
 **Applied in the spec:** R-AUTHZ-033 rule 3, R-AUTHZ-036.
+
+### Q-AUTHZ-283 · An administrator is whoever holds `security-settings:write` for the request
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
+restriction itself is the owner's (W-11, 2026-11-18); who counts as an administrator was left to the development agent.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The holder of `security-settings:write`, through its roles and within its token's scope (chosen) | The permission that changes the restriction exempts from it | Whoever could lift the restriction, set the level and restore it is not made to take three steps; one capability decides, the one Q-AUTHZ-267 already names for the installation's default; a narrowly scoped token of an administrator is held like anyone | A security administrator who is also an Owner of a project opens its repositories past the restriction |
+| (b) The system role `admin` only (`content:bypass`) | The one role that holds everything | Narrowest | A security administrator sets the restriction and is bound by it; a role is not a capability, so a token's scope would not narrow it |
+| (c) The capability of the object (`projects:write` for a project, `repositories:write-config` for a repository) | Whoever administers the object | No new question | A `repository-admin` (R-AUTHZ-012) would open every repository to the public past a restriction meant for it; `projects:write` is the `admin`'s alone, so for projects the rule would mean nothing |
+
+**Choice:** (a). The API asks the decision point whether the caller holds `security-settings:write`, without an audit event, as it
+asks for `repositories:write-config` (`writeCaller` in [repositories_api.go](../../internal/api/v1/repositories_api.go)).
+
+**Rationale:** the restriction is a security setting of the installation, and R-AUTHZ-011 gives the authorization settings of this
+page to `admin` and `security-admin`; exempting anyone who can remove the restriction anyway costs nothing, and exempting anyone else
+would defeat it. The development agent would revisit this if the owner wants the security administrator, who holds no content right
+through its role, bound as well.
+
+**Applied in the spec:** R-AUTHZ-037; [api-and-ui.md](api-and-ui.md) R-API-076.
+
+### Q-AUTHZ-284 · The default level is never restricted, and a restricted level never becomes the default
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The rule
+is the owner's reference ("a restricted level must differ from the default"); its enforcement is the development agent's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Both directions refused, 422 at the member that makes it so, and a check constraint (chosen) | Restricting the default and moving the default onto a restricted level are the same state | The default stays a level every creator may take, so the plain path of a create never fails; the database holds the rule for a restore or a direct write too | An administrator who wants to restrict the default changes the default first, in the same patch if it likes |
+| (b) Restricting the default moves the default | The server picks another default | One step | A setting changes that the administrator did not touch |
+| (c) Allowed; a create without a level by a non-administrator is refused | No rule | Flexible | Every Owner's create on the plain path fails |
+
+**Choice:** (a). A patch may change both members at once; the result is checked. The pointer is `/restrictedLevels` when the patch
+names the set, `/defaultLevel` otherwise. The UI disables the default's checkbox and a restricted level's default option (R-UI-140).
+
+**Rationale:** the default exists so that a creator need not choose; a restricted default would make the plain path an
+administrator's. The development agent records no revisit condition.
+
+**Applied in the spec:** R-AUTHZ-037 rule 1, the data model; [api-and-ui.md](api-and-ui.md) R-API-075.
+
+### Q-AUTHZ-285 · An object keeps a restricted level, and only an administrator chooses one anew
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner's
+reference keeps existing objects; the details are the development agent's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Kept; naming the stored level is no choice; changing to a restricted level, lower or higher, is (chosen) | The restriction is about choosing | A repository keeps working and stays editable; the rule is one sentence: a level that differs from the stored one is a choice | An Owner whose public repository is restricted cannot go to a restricted `internal` on the way down; it goes to `private` or asks an administrator |
+| (b) Restricting lowers every object that has the level | A cascade like a lowered project | What the setting says holds everywhere at once | A setting meant for future choices closes existing content without a warning; which level it lowers to is a second question |
+| (c) Kept, and any lowering allowed, a restricted target included | Lowering is always safe | Simpler for Owners | Restricting `private` (keeping content open) would be undone by a lowering; the rule would depend on the direction |
+
+**Choice:** (a). An update compares each part it names with the stored part: the same level passes, another level must be one the
+caller may choose. A part the update does not name stays as stored (Q-AUTHZ-281).
+
+**Rationale:** "only administrators are able to create private, internal or public projects" is a rule about choosing; (a) applies it
+to every choice and to nothing else, whichever level is restricted. The development agent would revisit this if the owner wants a
+restriction to close existing objects too, which would be a cascade with its own confirmation.
+
+**Applied in the spec:** R-AUTHZ-037 rule 2; [api-and-ui.md](api-and-ui.md) R-UI-141.
+
+### Q-AUTHZ-286 · A create that names no level takes the highest level the caller may choose, and is refused when there is none
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
+owner's brief asked to decide between the next lower level and a refusal, with the reason.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The highest level at or below the one it would take that the caller may choose; 403 when none is left (chosen) | A restricted upper bound falls to the next lower free level | The plain path of a create keeps working; the fallback is always more closed, never more open; the repository defaults show the result before the create | A repository may start more closed than its project's level suggests |
+| (b) Refuse the create | The level it would take is restricted | Nothing silent | An Owner's plain create fails in an internal project as soon as `internal` is restricted, against the rule that the plain path needs no level |
+| (c) Take the restricted level, because nobody chose it | The administrator chose the project's level | No fallback | An Owner gets, without choosing, the level the restriction keeps from it; the restriction is bypassed by leaving the field empty |
+
+**Choice:** (a). It applies to each absent part of a repository create, the wiki after the artifacts; a project create without a
+level takes the default, which is never restricted (Q-AUTHZ-284). The refusal names the level the part would have taken.
+
+**Rationale:** the fallback moves only towards `private`, so it never opens what the restriction keeps closed, and it keeps the
+creation form's plain path free of a level (CLAUDE.md, "simple by default"). (c) would make the restriction depend on whether the
+field was sent. The development agent would revisit this if restricting `private` (to keep content open) becomes common, where the
+fallback is often empty and (b) is what happens anyway.
+
+**Applied in the spec:** R-AUTHZ-037 rule 3; [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-063 (the defaults).
+
+### Q-AUTHZ-287 · The refusal is 403 `visibility_level_restricted`, after the rules that bind everyone
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 403 with its own code and the member in `errors[]`, after the container rules and `public_not_allowed` (chosen) | The caller lacks a right an administrator has | The status says "not you"; the code says why; the pointer lets a form mark the field; a rule nobody may break is named first | A form that maps 403 to "no access" must read the code |
+| (b) 422 `validation_failed` with a field code | As the container rules | One shape for every level rule | 422 says the document is wrong; it is right for an administrator |
+| (c) 409 | As `public_not_allowed` | — | 409 is a state of the installation that binds everyone; this binds a caller |
+
+**Choice:** (a), in the order of R-AUTHZ-038.
+
+**Rationale:** each level refusal has the status of what it is about: the document (422), the installation (409), the caller (403),
+the session (401). The development agent records no revisit condition.
+
+**Applied in the spec:** R-AUTHZ-037, R-AUTHZ-038; [api-and-ui.md](api-and-ui.md) R-API-057; the problem catalog
+([codes.go](../../internal/errs/codes.go)).
+
+### Q-AUTHZ-288 · A cascade, a move and a replay are no choices, and changing the restriction changes no stored level
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Only a level a caller names in a write of its project or repository is a choice (chosen) | The cascade, a move, a replay and a restore set levels as they do | A lowering always succeeds, which is what closes content in a hurry (Q-AUTHZ-265); a restore reproduces what was stored | A cascade can leave a repository at a restricted level an Owner could not have chosen |
+| (b) A cascade that would land on a restricted level lands lower | The restriction holds after every write | Every stored level obeys the setting | The administrator's lowering of a project closes repositories further than asked; the result depends on a setting it did not touch |
+
+**Choice:** (a).
+
+**Rationale:** the restriction keeps a caller from opening, and none of these writes opens; R-AUTHZ-037 rule 2 already lets an
+object keep a restricted level. The development agent records no revisit condition.
+
+**Applied in the spec:** R-AUTHZ-037 rule 4.
+
+### Q-AUTHZ-289 · The restricted levels are an array column beside the default, held by a check constraint
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `restricted_levels text[]` on the row of `visibility_settings`, with a check for the levels and against the default (chosen) | Migration `00077_visibility_restricted.sql`, an expand step | One row, one version, one `ETag` for both settings; the database refuses a restricted default on every path | Uniqueness is the service's (it stores a normalized set) |
+| (b) A table of one row per restricted level | Normalized | Uniqueness by a key | A second table and a join for a set of at most two values; the rule against the default needs a trigger |
+
+**Choice:** (a). The service stores the set in the order `private`, `internal`, `public`, each once, and the API answers it so.
+
+**Rationale:** the settings are read in the transaction of every write of a level (R-AUTHZ-033 rule 1); one row keeps that one
+statement. The development agent records no revisit condition.
+
+**Applied in the spec:** R-AUTHZ-037 (data model); [api-and-ui.md](api-and-ui.md) R-API-075.
 
 ## What this does not cover
 

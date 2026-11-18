@@ -3,8 +3,13 @@ import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/u
 import { newIdempotencyKey } from '../../api/client';
 import { IdentityApi } from '../../api/identity-api';
 import { ApiError } from '../../api/problem';
-import { VisibilityApi } from '../../api/visibility-api';
-import { VisibilityLevel, VisibilityLevelControl, publicUnavailableReason } from '../../shared/ui/visibility-level';
+import { VisibilityApi, VisibilityChoices } from '../../api/visibility-api';
+import {
+  VisibilityLevel,
+  VisibilityLevelControl,
+  installationReasons,
+  restrictedNotes,
+} from '../../shared/ui/visibility-level';
 import { PROJECT_KEY_PATTERN, Project, ProjectInput, ProjectsApi } from '../../api/projects-api';
 import { Versioned } from '../../api/repositories-api';
 import { ProjectContext } from '../../core/project-context';
@@ -22,7 +27,8 @@ export interface ProjectDialogData {
 
 /**
  * Create and edit a project (R-UI-041, R-AUTHZ-026). The key is fixed at creation. A new project takes its visibility level from the
- * radio group, preset to the installation's default (R-UI-054); an existing project's level changes on its settings page only. A new project names its first
+ * radio group, preset to the installation's default (R-UI-054), with the levels the caller cannot choose disabled and a restricted level
+ * marked for an administrator (R-UI-141); an existing project's level changes on its settings page only. A new project names its first
  * Owners (`owners`, Q-AUTHZ-229; the caller holds `projects:write`); an edit changes the display name and the
  * description (`PUT` with `If-Match`; a 412 opens the conflict dialog of R-UI-042), by an Owner or an administrator of
  * Quader. The members and their roles are changed on the project's screen, the repositories are created in the
@@ -84,6 +90,7 @@ export interface ProjectDialogData {
             [value]="shownLevel()"
             (valueChange)="chosenLevel.set($event)"
             [reasons]="levelReasons()"
+            [notes]="levelNotes()"
           />
           <fieldset class="group">
             <legend i18n="@@project-dialog.owners">First Owners</legend>
@@ -179,12 +186,14 @@ export class ProjectDialog {
   protected readonly displayName = signal(this.data.project?.value.displayName ?? '');
   protected readonly description = signal(this.data.project?.value.description ?? '');
   protected readonly owners = signal<readonly string[]>([]);
-  /** The installation's default level (R-UI-054); unknown to a caller without `settings:read`, then the server applies it. */
-  private readonly defaultLevel = signal<VisibilityLevel | null>(null);
-  private readonly publicAvailable = signal(true);
+  /** The caller's choices (R-API-076): the installation's default level, the restricted levels, whether Public is available. */
+  private readonly choices = signal<VisibilityChoices | null>(null);
+  /** The installation's default level (R-UI-054); unknown until the choices are read, and then the server applies it. */
+  private readonly defaultLevel = computed<VisibilityLevel | null>(() => this.choices()?.defaultLevel ?? null);
   protected readonly chosenLevel = signal<VisibilityLevel | null>(null);
   protected readonly shownLevel = computed<VisibilityLevel>(() => this.chosenLevel() ?? this.defaultLevel() ?? 'private');
-  protected readonly levelReasons = computed(() => (this.publicAvailable() ? {} : publicUnavailableReason()));
+  protected readonly levelReasons = computed(() => installationReasons(this.choices()));
+  protected readonly levelNotes = computed(() => restrictedNotes(this.choices()));
   protected readonly busy = signal(false);
   protected readonly error = signal<ApiError | null>(null);
   private readonly attempted = signal(false);
@@ -192,11 +201,8 @@ export class ProjectDialog {
   constructor() {
     if (this.data.project === undefined) {
       this.visibilityApi
-        .load()
-        .then((v) => {
-          this.defaultLevel.set(v.settings.defaultLevel);
-          this.publicAvailable.set(v.settings.publicAvailable);
-        })
+        .choices()
+        .then((c) => this.choices.set(c))
         .catch(() => undefined);
     }
   }

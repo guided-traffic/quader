@@ -46,8 +46,11 @@ remote repositories are applied by the repository service to a `Restricted` call
   configuration version, a `repo_config` note and an `authz.settings.changed` with the cause `project`; the project notifies `authz`
   once. It moves neither the version nor the ETag source. A move into a project of a lower level lowers the moved repository the same
   way, cause `move` (`lowerMoved`). `PublicAvailable` (Options) is the default endpoint's `auth.anonymous`: while it is false a write
-  that sets `public` is 409 `public_not_allowed`. The default level itself lives in [internal/visibility](../../internal/visibility/visibility.go),
-  which both services and the settings operations share; it imports neither the engine nor the repository package.
+  that sets `public` is 409 `public_not_allowed`. A level the installation restricts is 403 `visibility_level_restricted` for a caller
+  that is not an administrator (`Input.MayChooseRestricted` on a create, the parameter `admin` of `SetVisibility`, both the handler's
+  `security-settings:write`, R-AUTHZ-037). The default level and the restricted levels live in
+  [internal/visibility](../../internal/visibility/visibility.go) (`ReadRules`, `Rules.Allows`), which both services and the settings
+  operations share; it imports neither the engine nor the repository package.
 - **The projects a caller sees.** `listProjects` and `getProject` are declared `public: true` and decided in the handler
   ([projects_api.go](../../internal/api/v1/projects_api.go), `projectListed`): `projects:read` sees every project, a member its own with
   the role, any caller the projects its level admits without one; `membership=true` keeps the memberships; a project the caller may not

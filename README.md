@@ -101,6 +101,7 @@ Built (M1, access core):
 - 🪪 **Role bindings from the Helm values.** `authz.role_bindings` makes an IdP group the administrator or the auditor from a GitOps repository: `quader migrate` applies the list, the API and the UI show it read-only. See [sign-in and identity](docs/manual/admin/sign-in-and-identity.md#administrators-from-the-helm-values).
 - 🔎 **Auditor.** Reads the configuration, the audit log and the metadata of every repository (package lists, documents, search, package pages) and downloads, publishes and changes nothing. See [permissions](docs/security/permissions.md#the-auditor).
 - 🗂️ **Projects, members and roles.** Every repository belongs to exactly one project and is addressed inside it (`/api/<format>/<projectKey>/<repoKey>/`), its key unique within the project; users and groups are members with the role Reader, Developer, Maintainer or Owner, which grants the project's repositories through the member's session and personal tokens; the Owner administers the project: members, repositories of every class, a move to another project it owns, policies, service accounts of external partners with their tokens and CI mappings, all named within the project (`sa:<projectKey>/<name>`) and never reaching beyond it. An administrator creates projects and names their first Owners. See [projects](docs/developer/projects.md), [delegated administration](docs/security/delegated-administration.md) and the [manual](docs/manual/admin/projects.md).
+- 🔐 **Visibility levels.** A project, and a repository's artifacts and wiki, are Private, Internal or Public; an administrator sets the default project visibility and the levels only administrators may choose, in one open section of the general settings, and every form shows a level its user cannot choose disabled with the reason. See [visibility](docs/security/visibility.md) and the [manual](docs/manual/admin/permissions.md#visibility-levels).
 - 🚪 **Endpoints and exposure rules.** Further endpoints on their own listeners and hosts; exposure rules are a ceiling on what each endpoint serves. See [endpoints](docs/developer/endpoints.md) and [endpoints and exposure](docs/security/endpoints-and-exposure.md).
 - 📦 **Generic repositories.** Local repositories with flat paths; raw transfer under `/files/{projectKey}/{repoKey}/{path}` with `PUT`, `GET` (with `Range`), `HEAD` and `DELETE`; folders and the items API. See [files](docs/developer/files.md) and [repository model](docs/security/repository-model.md).
 - 🧾 **Audit.** An event registry, transactional and asynchronous recording, a PostgreSQL journal with partitions and retention, and the query and export API. See [audit](docs/developer/audit.md) and [audit trail](docs/security/audit.md).
@@ -2312,13 +2313,14 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 | `GET /api/v1/settings/auth` | `getAuthSettings` | `settings:read` |
 | `PATCH /api/v1/settings/auth` | `updateAuthSettings` | `settings:write` · recent sign-in |
 
-**visibility** (R-API-056, R-API-057)
+**visibility** (R-API-056, R-API-057, R-API-075, R-API-076)
 
 | Method and path | Operation | Permission |
 |---|---|---|
 | `GET /api/v1/settings/visibility` | `getVisibilitySettings` | `settings:read` |
-| `PATCH /api/v1/settings/visibility` | `updateVisibilitySettings` | `security-settings:write` · recent sign-in |
-| `PUT /api/v1/projects/{projectKey}/visibility` | `setProjectVisibility` | `projects:write` · recent sign-in |
+| `PATCH /api/v1/settings/visibility` | `updateVisibilitySettings`: `defaultLevel` and `restrictedLevels` | `security-settings:write` · recent sign-in |
+| `GET /api/v1/visibility-choices` | `getVisibilityChoices`: the levels the caller may choose | authenticated |
+| `PUT /api/v1/projects/{projectKey}/visibility` | `setProjectVisibility` | `projects:write` · recent sign-in; a restricted level also `security-settings:write` |
 
 **auth**
 

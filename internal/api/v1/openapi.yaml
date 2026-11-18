@@ -3555,14 +3555,16 @@ paths:
     patch:
       operationId: updateVisibilitySettings
       tags: [visibility]
-      summary: Change the installation's default visibility level
+      summary: Change the installation's default visibility level and its restricted levels
       description: |
         JSON merge patch of `defaultLevel` (R-API-056): the level a project takes when it is created and the upper bound of the
-        levels a repository takes when it is created. While the default endpoint admits no request without a credential, a
-        `defaultLevel` of `public` answers `409 public_not_allowed`. The other members of the answer are read-only and ignored,
-        so a body obtained by `GET` can be sent back. A session needs a recent authentication
-        (`401 reauthentication_required`). Writes `settings.visibility.changed` with the default before and after; the change
-        decides only objects created later and is not journaled.
+        levels a repository takes when it is created; and of `restrictedLevels` (R-API-075): the levels only an administrator
+        may choose, a whole set that replaces the stored one. The default level is never restricted: a patch whose result
+        holds it answers `422 validation_failed` with `default_level_restricted`. While the default endpoint admits no request
+        without a credential, a `defaultLevel` of `public` answers `409 public_not_allowed`. The other members of the answer are
+        read-only and ignored, so a body obtained by `GET` can be sent back. A session needs a recent authentication
+        (`401 reauthentication_required`). Writes `settings.visibility.changed` with both settings before and after; the change
+        is not journaled.
       x-quader-recent-auth: true
       x-quader-permission:
         permission: security-settings:write
@@ -3605,6 +3607,34 @@ paths:
           $ref: "#/components/responses/Unprocessable"
         "428":
           $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/visibility-choices:
+    get:
+      operationId: getVisibilityChoices
+      tags: [visibility]
+      summary: Read the visibility levels the caller may choose
+      description: |
+        The installation's default level, its restricted levels, whether the caller may choose them (an administrator, a holder
+        of `security-settings:write`, Q-AUTHZ-283) and whether `public` can be set at all (R-API-076). Every signed-in caller
+        reads it: the forms that choose the level of a project or a repository show a level the caller cannot choose disabled
+        with its reason. The server decides every write on its own; this read only lets a form say beforehand what it would
+        answer.
+      x-quader-permission:
+        authenticated: true
+      responses:
+        "200":
+          description: The choices of the caller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VisibilityChoices"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -5206,7 +5236,8 @@ paths:
         by `POST /api/v1/projects/{projectKey}/repositories`. Only a holder of
         `projects:write` creates a project. `visibility` takes the installation's default level when the body omits it
         (R-AUTHZ-033); a level above `private` needs recent authentication and, for `public`, an anonymous door
-        (`409 public_not_allowed`). The write notifies the `authz` change area and records `authz.project.created`.
+        (`409 public_not_allowed`). A level the installation restricts answers `403 visibility_level_restricted` to a caller
+        without `security-settings:write` (R-AUTHZ-037). The write notifies the `authz` change area and records `authz.project.created`.
         Optional `Idempotency-Key`.
       x-quader-permission:
         permission: projects:write
@@ -5567,7 +5598,8 @@ paths:
         same transaction, every repository of the project whose artifacts or wiki level lies above it; `lowered` in the answer
         names them with their levels before. Raising it raises nothing. A holder of `projects:write` calls it; a project's
         Owner does not (`403`). `If-Match` carries the project's `ETag`. `409 public_not_allowed` while the default endpoint
-        admits no request without a credential. Records `authz.project.visibility_changed` and, for each lowered repository,
+        admits no request without a credential; `403 visibility_level_restricted` for a level the installation restricts, to a
+        caller without `security-settings:write` (R-AUTHZ-037). Records `authz.project.visibility_changed` and, for each lowered repository,
         `authz.settings.changed`; the answer carries `Quader-Authz-Epoch`.
       x-quader-recent-auth: true
       x-quader-permission:
@@ -16511,7 +16543,9 @@ components:
         The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
         download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
         level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
-        `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
+        `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part. A caller without
+        `security-settings:write` cannot choose a level the installation restricts (`403 visibility_level_restricted`); a level
+        the repository has stays, and an absent part of a create takes the highest level it may choose (R-AUTHZ-037).
       additionalProperties: false
       required: [artifacts, wiki]
       properties:
@@ -16541,13 +16575,21 @@ components:
     VisibilitySettings:
       type: object
       description: |
-        The installation's visibility settings (R-API-056). `publicAvailable` and `publicObjects` are read-only and ignored in a
-        `PATCH` body, so a body obtained by `GET` can be sent back.
+        The installation's visibility settings (R-API-056, R-API-075). `publicAvailable` and `publicObjects` are read-only and
+        ignored in a `PATCH` body, so a body obtained by `GET` can be sent back.
       additionalProperties: false
-      required: [defaultLevel, publicAvailable, publicObjects]
+      required: [defaultLevel, restrictedLevels, publicAvailable, publicObjects]
       properties:
         defaultLevel:
           $ref: "#/components/schemas/VisibilityLevel"
+        restrictedLevels:
+          type: array
+          maxItems: 2
+          description: |
+            The levels only an administrator, a holder of `security-settings:write`, may choose for a project or a part of a
+            repository (R-AUTHZ-037), in the order `private`, `internal`, `public`. Never the default level.
+          items:
+            $ref: "#/components/schemas/VisibilityLevel"
         publicAvailable:
           type: boolean
           description: The default endpoint admits requests without a credential (`endpoints.default.auth.anonymous`, R-EP-010); while `false`, no level can be set to `public`.
@@ -16555,6 +16597,7 @@ components:
           $ref: "#/components/schemas/PublicObjects"
       example:
         defaultLevel: private
+        restrictedLevels: [public]
         publicAvailable: true
         publicObjects: {projects: [web], repositories: ["web/npm-public"], truncated: false}
     VisibilitySettingsPatch:
@@ -16563,12 +16606,46 @@ components:
       properties:
         defaultLevel:
           $ref: "#/components/schemas/VisibilityLevel"
+        restrictedLevels:
+          type: array
+          description: |
+            The whole set of restricted levels; it replaces the stored set. A level named twice counts once. A set that holds the
+            default level answers `422 validation_failed` with `default_level_restricted` (Q-AUTHZ-284).
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/VisibilityLevel"
         publicAvailable:
           type: boolean
           readOnly: true
         publicObjects:
           readOnly: true
           $ref: "#/components/schemas/PublicObjects"
+    VisibilityChoices:
+      type: object
+      description: |
+        The levels the caller may choose for a project or a part of a repository (R-API-076): what the forms read to show an
+        option disabled with its reason. `mayChooseRestricted` is `true` for an administrator, a caller who holds
+        `security-settings:write` (Q-AUTHZ-283); for everyone else a level in `restrictedLevels` cannot be chosen anew.
+      additionalProperties: false
+      required: [defaultLevel, restrictedLevels, mayChooseRestricted, publicAvailable]
+      properties:
+        defaultLevel:
+          $ref: "#/components/schemas/VisibilityLevel"
+        restrictedLevels:
+          type: array
+          maxItems: 2
+          items:
+            $ref: "#/components/schemas/VisibilityLevel"
+        mayChooseRestricted:
+          type: boolean
+        publicAvailable:
+          type: boolean
+          description: The default endpoint admits requests without a credential; while `false`, nobody can set `public`.
+      example:
+        defaultLevel: private
+        restrictedLevels: [public]
+        mayChooseRestricted: false
+        publicAvailable: true
     ProjectVisibilityRequest:
       type: object
       additionalProperties: false

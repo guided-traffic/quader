@@ -271,7 +271,7 @@ read (R-REPO-010) and the object body of configuration as code
 | `adminNotes` | Notes shown only to holders of `repositories:read-config` | `""` (≤ 8000 characters) | this page |
 | `includePatterns`, `excludePatterns` | R-REPO-005 | `[]` (everything), `[]` | this page |
 | `disabled` | Takes no part in resolution, download or deploy. Setting it records `repository.disabled`, journaled, so a restore keeps it set ([authorization.md](authorization.md) R-AUTHZ-031, Q-AUTHZ-238) | `false` | this page |
-| `visibility` | `{"artifacts": "<level>", "wiki": "<level>"}`, each `private`, `internal` or `public`: who reads the repository's artifacts and its wiki besides members and grants; never above the project's level, the wiki never above the artifacts. Stored in two columns, not in `config` ([Q-REPO-307](#q-repo-307--requireauthentication-goes-and-the-repository-document-shows-its-two-levels-as-one-member)) | both the lower of the installation's default and the project's level | [R-AUTHZ-033](authorization.md) |
+| `visibility` | `{"artifacts": "<level>", "wiki": "<level>"}`, each `private`, `internal` or `public`: who reads the repository's artifacts and its wiki besides members and grants; never above the project's level, the wiki never above the artifacts; a level the installation restricts is chosen by an administrator only (R-AUTHZ-037). Stored in two columns, not in `config` ([Q-REPO-307](#q-repo-307--requireauthentication-goes-and-the-repository-document-shows-its-two-levels-as-one-member)) | both the lower of the installation's default and the project's level | [R-AUTHZ-033](authorization.md) |
 | `priorityMember` | R-REPO-022; local and remote only | `false` | this page |
 | `hideExistence` | `inherit`, `true`, `false` | `inherit` | [R-AUTHZ-017](authorization.md) |
 | `layout` | R-REPO-006, read-only | the format's layout | this page |
@@ -570,7 +570,9 @@ Priority: **MVP** · Covers: UI-031, REPO-010
 - `GET /api/v1/projects/{projectKey}/repository-defaults?format=<format>&class=<class>` (`getRepositoryDefaults`) answers
   `{"suggestedKey", "repository"}` ([Q-REPO-324](#q-repo-324--a-new-repositorys-defaults-come-from-one-operation)):
   - `repository` is the document that a create of only `key`, `class` and `format` in that project would store, without `key`:
-    `visibility` (the lower of the installation's default and the project's level, R-REPO-004), the common members at their
+    `visibility` (the lower of the installation's default and the project's level, R-REPO-004; for a caller who is not an
+    administrator the highest level at or below it that the caller may choose, [authorization.md](authorization.md) R-AUTHZ-037
+    rule 3, and 403 `visibility_level_restricted` when there is none), the common members at their
     defaults, the class's section in its stored, canonical form (remote: the default preset's `url` and `extraHosts` and every member
     of R-REPO-024's table; virtual: `members: []`, `deployTarget: null`, `mergedMetadataTtlSeconds`; local: the format's
     `packageOwnership`), and no format member, whose defaults are the `default`s of `settingsSchema`.

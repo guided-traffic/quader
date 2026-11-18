@@ -579,6 +579,24 @@ recursively, are `public` (`Index.publicThroughout`, rule 6). `readShape` follow
 `TestR_AUTHZ_035_AReadShapeAllNeverMeetsARefusedRead` and `TestR_BAS_012_ShapeAgreesWithTheDecisionPoint` hold the shape to the decision;
 `TestR_AUTHZ_035_WorkedRows` are the eight rows of the spec.
 
+### Restricted levels (W-11)
+
+Who may *choose* a level is decided by the writes, not by the decision point: a level is read beside the grants, and the
+restriction of R-AUTHZ-037 binds the services that store a level. The security view is the section "Who may open" of
+[visibility.md](../security/visibility.md).
+
+| What | Where |
+|---|---|
+| The settings row: `default_level` and `restricted_levels` (a check keeps the default out of the set), read in the writing transaction by `visibility.ReadRules`; `Rules.Allows`, `Rules.Highest`, `LevelRestricted` (403 `visibility_level_restricted`) | [visibility.go](../../internal/visibility/visibility.go), [00077_visibility_restricted.sql](../../internal/meta/postgres/migrations/00077_visibility_restricted.sql) |
+| The settings write: `CheckPatch` (each a level, the set normalized), `Apply` (422 `default_level_restricted`), `ChangedEvent` (both settings before and after) | [visibility.go](../../internal/visibility/visibility.go) |
+| Whether the caller is an administrator (Q-AUTHZ-283): `security-settings:write` through `Server.holds`, asked without an audit event, in `writeCaller` (repositories, `Caller.MayChooseRestricted`), `CreateProject` (`project.Input.MayChooseRestricted`), `SetProjectVisibility` and `GetVisibilityChoices` | [repositories_api.go](../../internal/api/v1/repositories_api.go), [projects_api.go](../../internal/api/v1/projects_api.go), [visibility_api.go](../../internal/api/v1/visibility_api.go) |
+| A repository's levels: `levelChoice.decide` runs the order of R-AUTHZ-038 (field errors, `public_not_allowed`, the restriction); `fallBack` lowers an absent part of a create (Q-AUTHZ-286), `chosen` lets a part keep its stored level (Q-AUTHZ-285); `resolveLevels` asks the recent authentication last | [internal/repository/visibility.go](../../internal/repository/visibility.go) |
+| A project's level: `chosenLevel` (create) and `SetVisibility` | [internal/project/visibility.go](../../internal/project/visibility.go) |
+
+The cascade of a lowered project (`ProjectLowerRepositories`) and the lowering of a move (`lowerMoved`) never ask the restriction
+(Q-AUTHZ-288). `TestR_AUTHZ_037_TheLevelsAWriteStores` holds the decision of a repository write, `TestR_AUTHZ_037_RestrictedLevels` in
+the integration area `projects` the whole path over HTTP.
+
 ## How to
 
 **Add a capability.** Add the constant and the entry of `allCapabilities` in [roles.go](../../internal/authz/roles.go) and

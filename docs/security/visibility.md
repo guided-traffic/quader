@@ -1,13 +1,16 @@
 # Visibility levels: who reads what
 
-Status: specified in [authorization.md](../spec/authorization.md) R-AUTHZ-003, R-AUTHZ-030 and R-AUTHZ-033 to R-AUTHZ-036 and
+Status: specified in [authorization.md](../spec/authorization.md) R-AUTHZ-003, R-AUTHZ-030 and R-AUTHZ-033 to R-AUTHZ-038 and
 [identity-and-authentication.md](../spec/identity-and-authentication.md) R-AUTH-037 and R-AUTH-044 (task T-18), and built in
 steps. Built: the schema with the rules of the container in the database ([00073_visibility.sql](../../internal/meta/postgres/migrations/00073_visibility.sql),
 [00074_external_users.sql](../../internal/meta/postgres/migrations/00074_external_users.sql),
 [00075_principal_builtins.sql](../../internal/meta/postgres/migrations/00075_principal_builtins.sql)), the contracts
 ([visibility.go](../../internal/authz/visibility.go): `Level`, `Part`, `Subject.Internal`), the levels in the grant index, and the removal of
 the anonymous switch, the principal `authenticated` and `requireAuthentication`. The decision point reads the levels (`leveledBy` in [decide.go](../../internal/authz/decide.go), the shapes in
-[visible.go](../../internal/authz/visible.go)). The change that builds each remaining part names its code here.
+[visible.go](../../internal/authz/visible.go)). The restricted levels of R-AUTHZ-037 (owner requirement W-11) are built: the column of
+[00077_visibility_restricted.sql](../../internal/meta/postgres/migrations/00077_visibility_restricted.sql), the rules in
+[internal/visibility](../../internal/visibility/visibility.go) and the writes of [projects](../../internal/project/visibility.go) and
+[repositories](../../internal/repository/visibility.go). The change that builds each remaining part names its code here.
 
 This page answers one question: besides the members of a project and the principals a grant names, who reads a repository's
 artifacts and its wiki, who decides that, and what keeps the answer from being wider than intended. The decision point, the grant
@@ -42,13 +45,34 @@ never read as anonymous (R-AUTH-001).
 | Decision | Who | Bound |
 |---|---|---|
 | Whether requests without a credential are admitted at all | The operator: an endpoint's `auth.anonymous` in the configuration file | The default endpoint's value is the ceiling of `public`: while it is `false` no level can be set to `public` (409 `public_not_allowed`, Q-AUTH-232) |
-| The level of a project | An administrator (`projects:write`), with recent authentication | At most `public`, subject to the line above |
-| The levels of a repository | Its project's Owner or `repositories:write-config`, with recent authentication to raise | Artifacts at most the project's level, wiki at most the artifacts' (422; the database refuses the state with `AI008` and a check constraint) |
-| The installation's default | `security-settings:write` | Decides only objects created later |
+| The level of a project | An administrator (`projects:write`), with recent authentication | At most `public`, subject to the line above; a restricted level only with `security-settings:write` |
+| The levels of a repository | Its project's Owner or `repositories:write-config`, with recent authentication to raise | Artifacts at most the project's level, wiki at most the artifacts' (422; the database refuses the state with `AI008` and a check constraint); a restricted level only with `security-settings:write` (403) |
+| The installation's default and its restricted levels | `security-settings:write`, with recent authentication | Decide only later writes; the default is never restricted (a check constraint) |
 | Whether a user is external | `identities:write`, with recent authentication; `newUsersExternal` for users created later | No identity-provider claim, group sync or SCIM attribute writes it |
 
 No policy entry, role binding, project membership or owner record can name `anonymous` or `authenticated` (422
 `principal_not_allowed`, refused by the database with `AI009`, Q-AUTHZ-279), so no grant can open what the levels keep closed.
+
+## Who may open
+
+An administrator restricts levels to administrators (R-AUTHZ-037, ADR-204): a level in `restrictedLevels` of the installation's
+visibility settings is chosen only by a caller that holds `security-settings:write` for the request, within its token's scope
+(Q-AUTHZ-283). Restricting `public` keeps the decision to open content to the internet with the administrators, restricting
+`internal` the decision to open it to the whole organization; restricting `private` keeps content from being closed by its Owner.
+
+| Write | A caller without `security-settings:write` |
+|---|---|
+| Creates a project or a repository and names a restricted level | 403 `visibility_level_restricted` |
+| Creates a repository and names no level, where the level it would take is restricted | Takes the highest lower level it may choose; 403 when there is none (Q-AUTHZ-286) |
+| Changes a part to a restricted level, higher or lower than the stored one | 403 |
+| Names the level a project or part already has, or lowers it to a level it may choose | Allowed: an object keeps a restricted level (Q-AUTHZ-285) |
+| The cascade of a lowered project, the lowering of a move, a journal replay, a restore | Not a choice; never refused (Q-AUTHZ-288) |
+
+The check runs in the transaction of the write, on the settings read in it, after the rules that bind everyone (the container, the
+anonymous door) and before the recent authentication (R-AUTHZ-038), so the answer does not depend on a cache and an Owner is not
+told that an administrator could set a level nobody can. The forms read the same rules from `GET /api/v1/visibility-choices`
+(R-API-076); what they show is a courtesy, the write decides. A refusal writes no audit event of its own; the change of the setting
+writes `settings.visibility.changed` with both sets before and after.
 
 ## The wiki
 
@@ -122,3 +146,19 @@ endpoint reachable from where it leaked.
 Component: `/api/v1/settings/visibility` (R-API-056). Subject: projects and repositories created after a restore. Dormant until a
 restore goes back to a point before the default was lowered: the restored default is the older, more open one, and objects created
 afterwards take it until an administrator lowers it again. Nothing that existed opens: the default decides only creations.
+
+### H-1001 · Restricting a level closes nothing that has it
+
+Component: the restricted levels of R-AUTHZ-037 (rule 2, Q-AUTHZ-285). Subject: projects and repositories that had a level when an
+administrator restricted it. Live on every restriction: a repository an Owner made `public` before `public` was restricted stays
+`public`, and its Owner may keep it so; only a new choice is refused. `GET /api/v1/settings/visibility` lists what is `public`
+(`publicObjects`, the first 100 of each kind), so an administrator finds what is open to the internet; for `internal` there is no such
+list. What closes it: the administrator lowers the projects or the repositories (a project's lowering cascades, R-AUTHZ-033 rule 3).
+What makes it real: content opened by an Owner before the restriction that the administrator meant to close with it.
+
+### H-1002 · The restricted levels are not journaled
+
+Component: `restrictedLevels` of `/api/v1/settings/visibility` (R-API-075). Subject: the choices of levels after a restore. Dormant
+until a restore goes back to a point before a level was restricted: the restored settings restrict less, and until an administrator
+restricts the level again, Owners may choose it. Nothing opens by the restore itself; what an Owner opens in between stays open
+(H-1001).

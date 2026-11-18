@@ -176,18 +176,20 @@ func (q *Queries) ProjectSetVisibility(ctx context.Context, arg ProjectSetVisibi
 
 const visibilityDefaultGet = `-- name: VisibilityDefaultGet :many
 
-SELECT default_level, version FROM visibility_settings WHERE singleton
+SELECT default_level, restricted_levels, version FROM visibility_settings WHERE singleton
 `
 
 type VisibilityDefaultGetRow struct {
-	DefaultLevel string
-	Version      int64
+	DefaultLevel     string
+	RestrictedLevels []string
+	Version          int64
 }
 
 // Queries of the visibility levels (R-AUTHZ-033, R-API-056, R-API-057). The installation's default is read in the transaction
 // that creates a project or a repository and cached nowhere; the cascade of a lowered project level runs under the project row
 // lock the caller holds.
-// The installation's default level; the migration inserts the row, so a read always finds it.
+// The installation's default level and its restricted levels (R-AUTHZ-037); the migration inserts the row, so a read always
+// finds it.
 func (q *Queries) VisibilityDefaultGet(ctx context.Context) ([]VisibilityDefaultGetRow, error) {
 	rows, err := q.db.Query(ctx, visibilityDefaultGet)
 	if err != nil {
@@ -197,7 +199,7 @@ func (q *Queries) VisibilityDefaultGet(ctx context.Context) ([]VisibilityDefault
 	items := []VisibilityDefaultGetRow{}
 	for rows.Next() {
 		var i VisibilityDefaultGetRow
-		if err := rows.Scan(&i.DefaultLevel, &i.Version); err != nil {
+		if err := rows.Scan(&i.DefaultLevel, &i.RestrictedLevels, &i.Version); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -209,15 +211,16 @@ func (q *Queries) VisibilityDefaultGet(ctx context.Context) ([]VisibilityDefault
 }
 
 const visibilityDefaultLock = `-- name: VisibilityDefaultLock :many
-SELECT default_level, version FROM visibility_settings WHERE singleton FOR UPDATE
+SELECT default_level, restricted_levels, version FROM visibility_settings WHERE singleton FOR UPDATE
 `
 
 type VisibilityDefaultLockRow struct {
-	DefaultLevel string
-	Version      int64
+	DefaultLevel     string
+	RestrictedLevels []string
+	Version          int64
 }
 
-// The same row under its lock, for the write of the default (R-API-056).
+// The same row under its lock, for the write of the settings (R-API-056).
 func (q *Queries) VisibilityDefaultLock(ctx context.Context) ([]VisibilityDefaultLockRow, error) {
 	rows, err := q.db.Query(ctx, visibilityDefaultLock)
 	if err != nil {
@@ -227,7 +230,7 @@ func (q *Queries) VisibilityDefaultLock(ctx context.Context) ([]VisibilityDefaul
 	items := []VisibilityDefaultLockRow{}
 	for rows.Next() {
 		var i VisibilityDefaultLockRow
-		if err := rows.Scan(&i.DefaultLevel, &i.Version); err != nil {
+		if err := rows.Scan(&i.DefaultLevel, &i.RestrictedLevels, &i.Version); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -240,18 +243,20 @@ func (q *Queries) VisibilityDefaultLock(ctx context.Context) ([]VisibilityDefaul
 
 const visibilityDefaultSet = `-- name: VisibilityDefaultSet :many
 UPDATE visibility_settings
-   SET default_level = $1::text, version = version + 1, updated_at = now(), updated_by = NULLIF($2::text, '')::uuid
+   SET default_level = $1::text, restricted_levels = $2::text[], version = version + 1,
+       updated_at = now(), updated_by = NULLIF($3::text, '')::uuid
  WHERE singleton
 RETURNING version
 `
 
 type VisibilityDefaultSetParams struct {
-	Level string
-	Actor string
+	Level      string
+	Restricted []string
+	Actor      string
 }
 
 func (q *Queries) VisibilityDefaultSet(ctx context.Context, arg VisibilityDefaultSetParams) ([]int64, error) {
-	rows, err := q.db.Query(ctx, visibilityDefaultSet, arg.Level, arg.Actor)
+	rows, err := q.db.Query(ctx, visibilityDefaultSet, arg.Level, arg.Restricted, arg.Actor)
 	if err != nil {
 		return nil, err
 	}

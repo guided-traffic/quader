@@ -81,6 +81,8 @@ var ownerRightsReads = map[string]string{
 	"getVulnerabilityAdvisory":         "the advisory and the findings of it inside the subject's read scope (report.Scope)",
 	"getPackageVulnerabilities":        "the findings of a package inside the subject's read scope (report.PackageScope)",
 	"getPackageVersionVulnerabilities": "as getPackageVulnerabilities",
+	"getVisibilityChoices": "the installation's default and restricted levels and whether the presenting credential holds " +
+		"security-settings:write through the decision point, scope included (R-API-076); nothing of the owner's account",
 }
 
 func loadDoc(t *testing.T) *Document {

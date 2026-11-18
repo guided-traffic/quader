@@ -346,12 +346,56 @@ async function* allSections(page: Page): AsyncGenerator<string> {
   yield 'sections';
 }
 
-/** The closed Visibility section of a settings page, opened: where the level of the installation or of a project is chosen (R-UI-053, R-UI-054). */
+/** The closed Visibility section of a project's settings page, opened: where the level of a project is chosen (R-UI-054). */
 async function* visibilityOpen(page: Page): AsyncGenerator<string> {
   yield '';
   await page.locator('main quader-disclosure').filter({ hasText: 'Visibility' }).first().getByRole('button').first().click();
   await expect(page.locator('main quader-visibility-level').first()).toBeVisible();
   yield 'visibility';
+}
+
+/**
+ * The visibility settings of the installation (R-UI-140): the section is open as the page opens, with the default project
+ * visibility and the restricted levels; then Public is ticked as restricted, which turns the default's option Public off with its
+ * reason. Nothing is saved.
+ */
+async function* restrictedLevels(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-restricted-levels')).toBeVisible();
+  yield '';
+  await page.locator('main quader-restricted-levels').getByRole('checkbox', { name: /Public/ }).check();
+  await expect(page.locator('main quader-visibility-level').getByRole('radio', { name: /Public/ })).toBeDisabled();
+  yield 'restricted';
+}
+
+/**
+ * The caller's visibility choices with the level Internal restricted, answered in the browser from the real answer, so that whether
+ * the caller is an administrator stays the server's (R-UI-141). The page is loaded again, because the forms read the choices once.
+ */
+async function restrictInternal(page: Page): Promise<void> {
+  await page.route('**/api/v1/visibility-choices', async (route) => {
+    const res = await route.fetch();
+    const body = { ...((await res.json()) as Record<string, unknown>), restrictedLevels: ['internal'] };
+    await route.fulfill({ response: res, body: JSON.stringify(body) });
+  });
+  await page.reload();
+}
+
+/** A repository's settings with Internal restricted: the Owner keeps the internal levels with a note, an administrator sees notes. */
+async function* restrictedSettings(page: Page): AsyncGenerator<string> {
+  await restrictInternal(page);
+  await expect(page.locator('main quader-repository-visibility .note, main quader-repository-visibility .reason').first()).toBeVisible();
+  yield '';
+  await page.unroute('**/api/v1/visibility-choices');
+}
+
+/** The creation form with Internal restricted: the Owner sees it off with the reason, an administrator with a note (R-UI-141). */
+async function* restrictedCreate(page: Page): AsyncGenerator<string> {
+  await restrictInternal(page);
+  await chooseProject(page);
+  await expect(page.locator('#f-key')).not.toHaveValue('');
+  await expect(page.locator('main quader-visibility-level .note, main quader-visibility-level .reason').first()).toBeVisible();
+  yield '';
+  await page.unroute('**/api/v1/visibility-choices');
 }
 
 /**
@@ -515,6 +559,8 @@ const createStates: Screen[] = [
   { id: 'new-npm-errors', path: `/ui/projects/${mainProject}/repositories/new/npm`, kinds: ['power'], walk: createErrors, expected: refused },
   { id: 'admin-new-npm-errors', path: '/ui/admin/repositories/new/npm', kinds: ['admin'], walk: createErrors, expected: refused },
   { id: 'new-npm-eight-members', path: `/ui/projects/${mainProject}/repositories/new/npm`, kinds: ['power'], walk: eightMembers },
+  { id: 'new-npm-restricted', path: `/ui/projects/${mainProject}/repositories/new/npm`, kinds: ['power'], walk: restrictedCreate },
+  { id: 'admin-new-npm-restricted', path: '/ui/admin/repositories/new/npm', kinds: ['admin'], walk: restrictedCreate },
 ];
 
 /** The creation form of every format with settings of its own, in every class: its Advanced settings show them (R-UI-088). */
@@ -742,6 +788,7 @@ export const screens: readonly Screen[] = [
   // A project's mapping editor without an issuer in the address: the issuer select and the policy picker (Q-UI-334).
   { id: 'project-ci-mapping-new', path: `${P}/ci/mappings/new`, kinds: owners },
   { id: 'project-settings', path: `${P}/settings`, kinds: owners, walk: visibilityOpen },
+  { id: 'repository-settings-restricted', path: `${P}/repositories/npm-internal/settings`, kinds: owners, walk: restrictedSettings },
 
   // The administrator's area (Q-UI-127).
   { id: 'repository-settings-oci-remote', path: `${O}/repositories/docker-hub-remote/settings`, kinds: all, walk: allSections },
@@ -791,5 +838,5 @@ export const screens: readonly Screen[] = [
   { id: 'admin-system-jobs', path: '/ui/admin/system/jobs', kinds: admins },
   { id: 'admin-system-backups', path: '/ui/admin/system/backups', kinds: admins },
   { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins },
-  { id: 'admin-settings-general', path: '/ui/admin/settings/general', kinds: admins, walk: visibilityOpen },
+  { id: 'admin-settings-general', path: '/ui/admin/settings/general', kinds: admins, walk: restrictedLevels },
 ];

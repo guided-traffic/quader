@@ -24,9 +24,46 @@ func (s *Server) visibilitySettings() (*visibility.Service, error) {
 
 func toVisibilitySettings(v visibility.Settings) gen.VisibilitySettings {
 	return gen.VisibilitySettings{
-		DefaultLevel: gen.VisibilityLevel(v.DefaultLevel), PublicAvailable: v.PublicAvailable,
+		DefaultLevel: gen.VisibilityLevel(v.DefaultLevel), RestrictedLevels: toLevels(v.RestrictedLevels), PublicAvailable: v.PublicAvailable,
 		PublicObjects: gen.PublicObjects{Projects: v.PublicObjects.Projects, Repositories: v.PublicObjects.Repositories, Truncated: v.PublicObjects.Truncated},
 	}
+}
+
+// toLevels renders a set of levels, empty and never null.
+func toLevels(set []string) []gen.VisibilityLevel {
+	out := make([]gen.VisibilityLevel, 0, len(set))
+	for _, level := range set {
+		out = append(out, gen.VisibilityLevel(level))
+	}
+	return out
+}
+
+// mayChooseRestricted reports whether the caller is an administrator in the sense of Q-AUTHZ-283: it holds
+// security-settings:write, the permission that changes the restriction, through its roles and within its token's scope.
+func (s *Server) mayChooseRestricted(r *http.Request) (bool, error) {
+	return s.holds(r.Context(), string(authz.SecuritySettingsWrite))
+}
+
+// GetVisibilityChoices implements GET /api/v1/visibility-choices (R-API-076): the levels the caller may choose, for the forms of
+// a project and a repository. Every signed-in caller reads it.
+func (s *Server) GetVisibilityChoices(w http.ResponseWriter, r *http.Request) {
+	svc, err := s.visibilitySettings()
+	var admin bool
+	if err == nil {
+		admin, err = s.mayChooseRestricted(r)
+	}
+	var c visibility.Choices
+	if err == nil {
+		c, err = svc.Choices(r.Context(), admin)
+	}
+	if err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "visibility.choices.get"))
+		return
+	}
+	writeJSON(w, r, http.StatusOK, gen.VisibilityChoices{
+		DefaultLevel: gen.VisibilityLevel(c.DefaultLevel), RestrictedLevels: toLevels(c.RestrictedLevels),
+		MayChooseRestricted: c.MayChooseRestricted, PublicAvailable: c.PublicAvailable,
+	})
 }
 
 // GetVisibilitySettings implements GET /api/v1/settings/visibility (R-API-056). It reads PostgreSQL, so a change another replica
@@ -41,8 +78,8 @@ func (s *Server) GetVisibilitySettings(w http.ResponseWriter, r *http.Request, _
 		httpserver.Problem(w, r, errs.Wrap(err, "visibility.settings.get"))
 		return
 	}
-	// The ETag moves with the default level only: the objects that are public change with the projects and repositories, and a
-	// PATCH decides nothing on them.
+	// The ETag moves with the default level and the restricted levels only: the objects that are public change with the projects
+	// and repositories, and a PATCH decides nothing on them.
 	tag := ETag(v.Version, "")
 	if NotModified(w, r, tag) {
 		return
@@ -54,12 +91,14 @@ func (s *Server) GetVisibilitySettings(w http.ResponseWriter, r *http.Request, _
 // visibilityPatchBody is the merge patch of the settings: the two read-only members of a body obtained by GET are accepted and
 // ignored (R-API-056).
 type visibilityPatchBody struct {
-	DefaultLevel    *string         `json:"defaultLevel"`
-	PublicAvailable json.RawMessage `json:"publicAvailable"`
-	PublicObjects   json.RawMessage `json:"publicObjects"`
+	DefaultLevel     *string         `json:"defaultLevel"`
+	RestrictedLevels *[]string       `json:"restrictedLevels"`
+	PublicAvailable  json.RawMessage `json:"publicAvailable"`
+	PublicObjects    json.RawMessage `json:"publicObjects"`
 }
 
-// UpdateVisibilitySettings implements PATCH /api/v1/settings/visibility (R-API-056).
+// UpdateVisibilitySettings implements PATCH /api/v1/settings/visibility (R-API-056, R-API-075). A patch that names neither
+// member changes nothing and still answers under the version check.
 func (s *Server) UpdateVisibilitySettings(w http.ResponseWriter, r *http.Request, _ gen.UpdateVisibilitySettingsParams) {
 	svc, err := s.visibilitySettings()
 	var pre Precondition
@@ -76,16 +115,9 @@ func (s *Server) UpdateVisibilitySettings(w http.ResponseWriter, r *http.Request
 	}
 	var v visibility.Settings
 	if err == nil {
-		level := ""
-		if in.DefaultLevel != nil {
-			level = *in.DefaultLevel
-		} else if v, err = svc.Get(r.Context()); err == nil { // nothing to change: the level it has, under the version check
-			level = v.DefaultLevel
-		}
-		if err == nil {
-			c := s.caller(r)
-			v, err = svc.Update(r.Context(), visibility.Caller{Actor: c.Actor, Source: c.Source}, expectedRevision(pre), level)
-		}
+		c := s.caller(r)
+		patch := visibility.Patch{DefaultLevel: in.DefaultLevel, RestrictedLevels: in.RestrictedLevels}
+		v, err = svc.Update(r.Context(), visibility.Caller{Actor: c.Actor, Source: c.Source}, expectedRevision(pre), patch)
 	}
 	if err != nil {
 		httpserver.Problem(w, r, errs.Wrap(err, "visibility.settings.update"))
@@ -110,11 +142,15 @@ func (s *Server) SetProjectVisibility(w http.ResponseWriter, r *http.Request, pr
 	if err == nil && in.Level == "" {
 		err = errs.E(errs.Invalid, errs.CodeValidation, "The level is required.", errs.WithFields(required("/level")))
 	}
+	var admin bool
+	if err == nil {
+		admin, err = s.mayChooseRestricted(r)
+	}
 	var p project.Project
 	var lowered []project.Lowered
 	var epoch int64
 	if err == nil {
-		p, lowered, epoch, err = svc.SetVisibility(r.Context(), caller(r), projectKey, expectedRevision(pre), string(in.Level))
+		p, lowered, epoch, err = svc.SetVisibility(r.Context(), caller(r), projectKey, expectedRevision(pre), string(in.Level), admin)
 	}
 	if err != nil {
 		httpserver.Problem(w, r, err)

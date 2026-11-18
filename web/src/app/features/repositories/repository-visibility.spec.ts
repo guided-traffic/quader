@@ -6,7 +6,8 @@ import { RepositoriesApi } from '../../api/repositories-api';
 import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeRepositoriesApi, GENERIC_FORMAT, PACKAGE_FORMAT, sampleRepositoryDefaults } from '../../api/testing/fakes-catalog';
-import { FakeProjectsApi, sampleProject } from '../../api/testing/fakes-projects';
+import { FakeProjectsApi, FakeVisibilityApi, sampleProject } from '../../api/testing/fakes-projects';
+import { VisibilityApi } from '../../api/visibility-api';
 import { button, expectAccessible, renderScreen, settle, text, type } from '../../testing/screen';
 import { RepositoryDetail } from './repository-detail';
 import { RepositoryCreate } from './repository-create';
@@ -21,6 +22,7 @@ async function openAccess(options: {
   cls?: 'local' | 'remote';
   capabilities?: readonly string[];
   member?: boolean;
+  restricted?: readonly Level[];
 }) {
   const format = options.format ?? 'npm';
   const r = await renderScreen(RepositoryDetail, {
@@ -48,6 +50,9 @@ async function openAccess(options: {
           projects: [{ key: 'web', role: 'owner' }],
         };
       }
+      const visibility = get(VisibilityApi) as FakeVisibilityApi;
+      visibility.stored.settings.restrictedLevels = [...(options.restricted ?? [])];
+      visibility.mayChooseRestricted = !options.member;
     },
   });
   const group = (label: string) =>
@@ -136,6 +141,29 @@ describe('The visibility block of a repository (R-UI-055)', () => {
     expect(text(r.root.querySelector('quader-repository-visibility')!)).toContain('Only the project\'s Owner');
   });
 
+  it('R-UI-141 an Owner sees a restricted level disabled with the reason, and keeps the level the repository has', async () => {
+    const r = await openAccess({ project: 'public', artifacts: 'public', wiki: 'internal', member: true, capabilities: [], restricted: ['public'] });
+    // The artifacts are public: the level stays selectable and says that it cannot be chosen again once it is left.
+    expect(r.radio('Artifacts', 'Public').disabled).toBe(false);
+    expect(text(r.group('Artifacts')!)).toContain('Restricted: kept while it is set; only an administrator can choose it again.');
+    // The wiki is internal: public is a new choice, which only an administrator makes.
+    expect(r.radio('Wiki', 'Public').disabled).toBe(true);
+    expect(text(r.group('Wiki')!)).toContain('Only an administrator of Quader can choose this level.');
+    await expectAccessible(r.root);
+  });
+
+  it('R-UI-141 the reason of the project comes first: an option above the project names the project, not the restriction', async () => {
+    const r = await openAccess({ project: 'internal', member: true, capabilities: [], restricted: ['public'] });
+    expect(text(r.group('Artifacts')!)).toContain('The project is internal, so this repository cannot be public.');
+    expect(text(r.group('Artifacts')!)).not.toContain('Only an administrator');
+  });
+
+  it('R-UI-141 an administrator sees a restricted level enabled, with a note', async () => {
+    const r = await openAccess({ project: 'public', restricted: ['public'] });
+    expect(r.radio('Artifacts', 'Public').disabled).toBe(false);
+    expect(text(r.group('Artifacts')!)).toContain('Restricted: only administrators can choose this level.');
+  });
+
   it('R-UI-055 the repository header shows the artifacts level as an icon with its name', async () => {
     const r = await openAccess({ artifacts: 'private', wiki: 'private' });
     const icon = r.root.querySelector('.subject quader-visibility-icon [role="img"]')!;
@@ -145,11 +173,14 @@ describe('The visibility block of a repository (R-UI-055)', () => {
 
 describe('The visibility of a repository in the creation form (R-UI-055, R-UI-081, R-REPO-063)', () => {
   /** The form of a local npm repository whose defaults (R-REPO-063) answer `artifacts` as the visibility, or fail. */
-  async function openForm(project: Level, artifacts: Level | 'unavailable', capabilities?: readonly string[]) {
+  async function openForm(project: Level, artifacts: Level | 'unavailable', capabilities?: readonly string[], restricted: readonly Level[] = []) {
     const r = await renderScreen(RepositoryCreate, {
       inputs: { project: 'web', format: 'npm' },
       ...(capabilities ? { capabilities } : {}),
       setup: (get) => {
+        const visibility = get(VisibilityApi) as FakeVisibilityApi;
+        visibility.stored.settings.restrictedLevels = [...restricted];
+        visibility.mayChooseRestricted = capabilities?.length !== 0;
         (get(ProjectsApi) as FakeProjectsApi).projects = [sampleProject({ visibility: project })];
         const fake = get(RepositoriesApi) as FakeRepositoriesApi;
         fake.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT];
@@ -206,6 +237,19 @@ describe('The visibility of a repository in the creation form (R-UI-055, R-UI-08
   it('R-REPO-063 an Owner without settings:read gets the visibility of the defaults, not Private', async () => {
     const r = await openForm('internal', 'internal', []);
     expect(r.radios().map((x) => x.checked)).toEqual([false, true, false]);
+  });
+
+  it('R-UI-141 an Owner sees a restricted level disabled in the creation form, with no step and no field more', async () => {
+    const r = await openForm('public', 'internal', [], ['public']);
+    expect(r.radios().map((x) => x.disabled)).toEqual([false, false, true]);
+    expect(text(r.root.querySelector('quader-visibility-level')!)).toContain('Only an administrator of Quader can choose this level.');
+    expect(r.root.querySelectorAll('quader-visibility-level')).toHaveLength(1);
+  });
+
+  it('R-UI-141 an administrator chooses the restricted level, marked with a note', async () => {
+    const r = await openForm('public', 'internal', undefined, ['public']);
+    expect(r.radios().map((x) => x.disabled)).toEqual([false, false, false]);
+    expect(text(r.root.querySelector('quader-visibility-level')!)).toContain('Restricted: only administrators can choose this level.');
   });
 
   it('R-UI-081 without the defaults the field is left out and the server applies its default', async () => {

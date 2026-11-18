@@ -5,8 +5,15 @@ import { ApiError } from '../../api/problem';
 import { Project, ProjectsApi } from '../../api/projects-api';
 import { RepositoriesApi, Versioned } from '../../api/repositories-api';
 import { collectAll } from '../../api/pagination';
-import { VisibilityApi } from '../../api/visibility-api';
-import { VisibilityLevel, VisibilityLevelControl, isMoreOpen, levelName, publicUnavailableReason } from '../../shared/ui/visibility-level';
+import { VisibilityApi, VisibilityChoices } from '../../api/visibility-api';
+import {
+  VisibilityLevel,
+  VisibilityLevelControl,
+  installationReasons,
+  isMoreOpen,
+  levelName,
+  restrictedNotes,
+} from '../../shared/ui/visibility-level';
 import { Notifier } from '../../core/notifier';
 import { ProjectContext } from '../../core/project-context';
 import { SessionStore } from '../../core/session-store';
@@ -92,6 +99,7 @@ import { PageHeader } from '../../shared/ui/page-header';
               [value]="level()"
               (valueChange)="level.set($event)"
               [reasons]="levelReasons()"
+              [notes]="levelNotes()"
               [disabled]="!canWrite()"
             />
             @if (canWrite()) {
@@ -224,14 +232,19 @@ export class ProjectSettings {
   /** The chosen level; the stored one is `record().visibility`. */
   protected readonly level = signal<VisibilityLevel>('private');
   protected readonly visibilityError = signal<ApiError | null>(null);
-  /** The installation admits no request without a credential: Public is off (R-UI-053); unknown for a caller who cannot read the settings. */
-  private readonly publicAvailable = signal(true);
+  /** The caller's choices (R-API-076): Public is off while unavailable (R-UI-053), a restricted level for whom may not choose it
+   * (R-UI-141), except the level the project has, which it keeps. */
+  private readonly choices = signal<VisibilityChoices | null>(null);
   protected readonly visibilityDirty = computed(() => {
     const p = this.record();
     return p !== null && this.level() !== p.visibility;
   });
-  protected readonly levelReasons = computed<Partial<Record<VisibilityLevel, string>>>(() =>
-    this.publicAvailable() ? {} : publicUnavailableReason(),
+  /** For a reader who cannot change the level the group is read-only with its own sentence; the options carry no reasons. */
+  protected readonly levelReasons = computed(() =>
+    this.canWrite() ? installationReasons(this.choices(), this.record()?.visibility ?? null) : {},
+  );
+  protected readonly levelNotes = computed(() =>
+    this.canWrite() ? restrictedNotes(this.choices(), this.record()?.visibility ?? null) : {},
   );
   protected readonly visibilitySummary = computed(() => {
     switch (this.record()?.visibility) {
@@ -271,12 +284,10 @@ export class ProjectSettings {
 
   protected async load(): Promise<void> {
     this.loadError.set(null);
-    if (this.session.has('settings:read')) {
-      this.visibilityApi
-        .load()
-        .then((v) => this.publicAvailable.set(v.settings.publicAvailable))
-        .catch(() => undefined);
-    }
+    this.visibilityApi
+      .choices()
+      .then((c) => this.choices.set(c))
+      .catch(() => undefined);
     try {
       const keepEdits = this.dirty();
       this.show(await this.api.get(this.project()), keepEdits);

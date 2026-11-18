@@ -113,7 +113,7 @@ func (s *service) CreateIn(ctx context.Context, tx meta.Tx, actor authz.Subject,
 	if err != nil {
 		return Project{}, err
 	}
-	level, err := s.chosenLevel(ctx, qs, in.Visibility)
+	level, err := s.chosenLevel(ctx, qs, in.Visibility, in.MayChooseRestricted)
 	if err != nil {
 		return Project{}, err
 	}

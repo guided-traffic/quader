@@ -121,6 +121,7 @@
         [value]="level"
         (valueChange)="setArtifacts($event)"
         [reasons]="levelReasons()"
+        [notes]="levelNotes()"
       />
       @if (fmt.wiki) {
         <p class="hint wiki-note" i18n="@@repo.create.wiki">The wiki starts at the same level; its own level is in the repository's settings.</p>

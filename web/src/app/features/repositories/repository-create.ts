@@ -24,7 +24,15 @@ import { asApiError, valueOf } from '../../shared/paged-resource';
 import { HasUnsavedChanges } from '../../shared/unsaved-guard';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
-import { VisibilityLevel, VisibilityLevelControl, aboveProjectReasons } from '../../shared/ui/visibility-level';
+import {
+  VisibilityLevel,
+  VisibilityLevelControl,
+  aboveProjectReasons,
+  firstReasons,
+  installationReasons,
+  restrictedNotes,
+} from '../../shared/ui/visibility-level';
+import { VisibilityApi, VisibilityChoices } from '../../api/visibility-api';
 import { FormatSettings, formatPartNodes } from './format-settings';
 import { MemberPicker } from './member-picker';
 import { MirrorSettings, mirrorPointerLabel, mirrorTarget } from './mirror-settings';
@@ -272,7 +280,21 @@ export class RepositoryCreate implements HasUnsavedChanges {
       }
     },
   });
-  protected readonly levelReasons = computed(() => aboveProjectReasons(valueOf(this.projectLevel) ?? null));
+  /** The caller's choices (R-API-076): a restricted level is off for whom may not choose it, and marked for an administrator. */
+  private readonly visibilityApi = inject(VisibilityApi);
+  private readonly choices = resource({
+    loader: async (): Promise<VisibilityChoices | null> => {
+      try {
+        return await this.visibilityApi.choices();
+      } catch {
+        return null;
+      }
+    },
+  });
+  protected readonly levelReasons = computed(() =>
+    firstReasons(aboveProjectReasons(valueOf(this.projectLevel) ?? null), installationReasons(valueOf(this.choices) ?? null)),
+  );
+  protected readonly levelNotes = computed(() => restrictedNotes(valueOf(this.choices) ?? null));
 
   // ---- Members of a virtual repository (R-UI-081, Q-UI-347) ----
 

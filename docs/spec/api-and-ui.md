@@ -351,7 +351,7 @@ operations that require it when called with a session; the OpenAPI document mark
 | Command-line login | Approving or denying an `npm login` or a device-code login (P1; R-AUTH-034, R-AUTH-036) |
 | Permissions | Creating, replacing and deleting permission policies; binding and unbinding system roles (R-API-033) |
 | Projects | Replacing and deleting a project, adding a member, changing a member's role and removing a member ([authorization.md](authorization.md) R-AUTHZ-026); moving a repository to another project ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-060) |
-| Visibility | Setting a project's level, a repository write that raises a level, changing the installation's default ([authorization.md](authorization.md) R-AUTHZ-033, R-API-056, R-API-057); changing a user's `external` flag ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-044) |
+| Visibility | Setting a project's level, a repository write that raises a level, changing the installation's visibility settings ([authorization.md](authorization.md) R-AUTHZ-033, R-AUTHZ-037, R-API-056, R-API-057, R-API-075); changing a user's `external` flag ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-044) |
 | Package ownership | Adding and removing package owners, releasing a name ([authorization.md](authorization.md) R-AUTHZ-019, Q-AUTHZ-157) |
 | CI identity | Creating, replacing and deleting CI issuers, identity mappings and delegations (R-API-035) |
 | Settings | Changing authentication settings (R-API-037) |
@@ -1978,22 +1978,24 @@ Acceptance criteria:
 ### R-API-056 · The installation's visibility settings
 Priority: **MVP** · Covers: quader-only
 
-Owned by [authorization.md](authorization.md) R-AUTHZ-033 (the installation's default level, Q-AUTHZ-264):
+Owned by [authorization.md](authorization.md) R-AUTHZ-033 (the installation's default level, Q-AUTHZ-264) and R-AUTHZ-037 (the
+restricted levels, R-API-075):
 
 | Method | Path | operationId | Purpose | Permission |
 |---|---|---|---|---|
-| GET | `/api/v1/settings/visibility` | `getVisibilitySettings` | The default level, whether `public` is available, and the objects that are `public` | `settings:read` |
-| PATCH | `/api/v1/settings/visibility` | `updateVisibilitySettings` | Change the default level (JSON Merge Patch, R-API-013; `If-Match`, R-API-012) | `security-settings:write`; recent authentication |
+| GET | `/api/v1/settings/visibility` | `getVisibilitySettings` | The default level, the restricted levels, whether `public` is available, and the objects that are `public` | `settings:read` |
+| PATCH | `/api/v1/settings/visibility` | `updateVisibilitySettings` | Change the default level and the restricted levels (JSON Merge Patch, R-API-013; `If-Match`, R-API-012) | `security-settings:write`; recent authentication |
 
 ```json
 {
   "defaultLevel": "private",
+  "restrictedLevels": [],
   "publicAvailable": true,
   "publicObjects": {"projects": ["web"], "repositories": ["web/npm-public"], "truncated": false}
 }
 ```
 
-*(example answer; `defaultLevel` `private` is the default)*
+*(example answer; `defaultLevel` `private` and `restrictedLevels` `[]` are the defaults)*
 
 - `defaultLevel` (`private`, `internal`, `public`) is the level a project takes when it is created and the upper bound of the
   levels a repository takes when it is created (R-AUTHZ-033). A `PATCH` is `{"defaultLevel": "internal"}`; the other two
@@ -2002,9 +2004,11 @@ Owned by [authorization.md](authorization.md) R-AUTHZ-033 (the installation's de
   a `defaultLevel` of `public` answers 409 `public_not_allowed`.
 - `publicObjects` lists the projects and the repositories whose artifacts are `public`, at most 100 of each in key order,
   `truncated` when there are more; the UI shows it as the summary of what anyone can read (R-UI-032, R-UI-053).
-- A change writes `settings.visibility.changed` with the default before and after; it is not journaled, because it decides
-  only objects created later ([authorization.md](authorization.md) R-AUTHZ-036). The value is read in the transaction that
-  creates a project or a repository and is cached nowhere.
+- `restrictedLevels` is R-API-075.
+- A change writes `settings.visibility.changed` with `defaultLevel` and `restrictedLevels` before and after
+  ([Q-API-332](#q-api-332--one-audit-event-carries-both-settings-before-and-after)); it is not journaled, because it decides only later writes
+  ([authorization.md](authorization.md) R-AUTHZ-036). The values are read in the transaction that creates or changes a project or
+  a repository and are cached nowhere. The `ETag` moves with both.
 
 Schemas in `api/openapi.yaml`: `VisibilityLevel` (enum `private`, `internal`, `public`), `VisibilitySettings`,
 `VisibilitySettingsPatch`, `PublicObjects`.
@@ -2032,12 +2036,15 @@ Owned by [authorization.md](authorization.md) R-AUTHZ-033 and R-AUTHZ-035:
 - **The project's answer.** `setProjectVisibility` answers 200 with the project and a member `lowered`: the qualified names of
   the repositories whose levels the change lowered, with their levels before (`[{"repository": "web/npm-public", "before":
   {"artifacts": "public", "wiki": "internal"}}]`), empty when it lowered none. The answer carries `Quader-Authz-Epoch`
-  (R-AUTHZ-032). 409 `public_not_allowed` while the default endpoint admits no request without a credential; 412 for a
-  stale `If-Match`; 403 for an Owner without `projects:write`.
+  (R-AUTHZ-032). 409 `public_not_allowed` while the default endpoint admits no request without a credential; 403
+  `visibility_level_restricted` for a restricted level and a caller without `security-settings:write` ([authorization.md](authorization.md)
+  R-AUTHZ-037); 412 for a stale `If-Match`; 403 for an Owner without `projects:write`.
 - **The repository's member.** `visibility` is `{"artifacts": "<level>", "wiki": "<level>"}` in every view of the document,
   the reduced consumer view of R-REPO-010 included, so every reader sees how open a repository is. A merge patch may name one
   part. The answers are 422 `validation_failed` with `visibility_above_project` or `visibility_wiki_above_artifacts` at
-  `/visibility/artifacts` or `/visibility/wiki`, and 409 `public_not_allowed`; a write that opens a remote repository with
+  `/visibility/artifacts` or `/visibility/wiki`, 409 `public_not_allowed`, and 403 `visibility_level_restricted` with the part
+  in `errors[]` for a restricted level the caller may not choose (R-AUTHZ-037; the order of
+  [R-AUTHZ-038](authorization.md#r-authz-038--the-order-in-which-a-level-is-refused)); a write that opens a remote repository with
   `cacheFillAction: read` to the public carries the warning `public_populates_remote`
   ([authorization.md](authorization.md) R-AUTHZ-008).
 - **Lists.** `GET /api/v1/repositories` and the project's list accept `visibility=` (one or more levels, comma-separated),
@@ -2055,6 +2062,68 @@ Acceptance criteria:
   caller may read.
 - A merge patch `{"visibility": {"wiki": "internal"}}` on a repository whose artifacts are `public` answers 200 and leaves the
   artifacts `public`.
+
+### R-API-075 · The restricted levels in the visibility settings
+Priority: **MVP** · Covers: quader-only
+
+Owned by [authorization.md](authorization.md) [R-AUTHZ-037](authorization.md#r-authz-037--restricted-visibility-levels). The member `restrictedLevels` of
+`GET` and `PATCH /api/v1/settings/visibility` (R-API-056):
+
+```json
+{"restrictedLevels": ["public"]}
+```
+
+*(example patch: only an administrator may make a project or a repository public)*
+
+- **Read.** An array of levels in the order `private`, `internal`, `public`, each once; `[]` when nothing is restricted. It never holds
+  `defaultLevel`.
+- **Write** ([Q-API-331](#q-api-331--restrictedlevels-is-a-set-that-a-merge-patch-replaces-whole)). A merge patch that names `restrictedLevels` replaces the whole
+  set, as RFC 7396 replaces an array; a level named twice counts once. A value that is no level answers 422 `validation_failed`
+  with `invalid_value` at `/restrictedLevels/<index>`. A result whose set holds the default answers 422 `validation_failed` with
+  `default_level_restricted`, at `/restrictedLevels` when the patch names the set and at `/defaultLevel` otherwise
+  ([Q-AUTHZ-284](authorization.md#q-authz-284--the-default-level-is-never-restricted-and-a-restricted-level-never-becomes-the-default)). A patch may change both members at once; the result is checked.
+- **Audit.** `settings.visibility.changed` with `{"before": {"defaultLevel": …, "restrictedLevels": […]}, "after": {…}}`
+  ([Q-API-332](#q-api-332--one-audit-event-carries-both-settings-before-and-after)); a patch that changes nothing records nothing.
+- **What it changes.** Later choices of a level by callers without `security-settings:write`; no stored level of a project or a
+  repository (R-AUTHZ-037 rule 4).
+
+Acceptance criteria (`TestR_AUTHZ_037_RestrictedLevels`, `TestR_API_075_APatchOfTheRestrictedLevels`,
+`TestR_API_075_TheChangeIsAuditedWithBothSettings`):
+
+- `PATCH` with `{"restrictedLevels": ["public", "public"]}` answers 200 with `"restrictedLevels": ["public"]` and records one
+  `settings.visibility.changed` whose `before.restrictedLevels` is `[]` and `after.restrictedLevels` `["public"]`.
+- With the default `private`, `{"restrictedLevels": ["private"]}` answers 422 `default_level_restricted`; with `public` restricted,
+  `{"defaultLevel": "public"}` does too.
+
+### R-API-076 · The levels a caller may choose
+Priority: **MVP** · Covers: quader-only
+
+The forms that choose the level of a project or a repository show a level the caller cannot choose disabled with its reason
+(R-UI-141). They read it from an operation every signed-in caller may call, not from the administrator's settings
+([Q-API-330](#q-api-330--the-forms-read-the-levels-a-caller-may-choose-from-an-operation-every-signed-in-caller-may-call)):
+
+| Method | Path | operationId | Purpose | Permission |
+|---|---|---|---|---|
+| GET | `/api/v1/visibility-choices` | `getVisibilityChoices` | The default level, the restricted levels, whether the caller may choose them, whether `public` is available | any signed-in caller (`authenticated`) |
+
+```json
+{"defaultLevel": "private", "restrictedLevels": ["public"], "mayChooseRestricted": false, "publicAvailable": true}
+```
+
+*(example answer of a project's Owner)*
+
+- `mayChooseRestricted` is `true` for a caller who holds `security-settings:write` for the request, its token's scope included
+  ([Q-AUTHZ-283](authorization.md#q-authz-283--an-administrator-is-whoever-holds-security-settingswrite-for-the-request)). The read writes no audit event.
+- It is read from PostgreSQL on every call and has no `ETag`: a form reads it once when it opens.
+- What it answers is the server's rule beforehand, never the rule itself: a write is decided on its own (R-AUTHZ-038), so a form
+  that read it before a change of the settings is answered with the refusal of the write.
+- An anonymous caller gets 401; nothing an anonymous visitor sees chooses a level.
+
+Schema: `VisibilityChoices`.
+
+Acceptance criteria (`TestR_AUTHZ_037_RestrictedLevels`, "R-API-076 every signed-in caller reads its choices"): with `public`
+restricted, the project's Owner reads `"mayChooseRestricted": false` and the administrator `true`; without a credential the read
+answers 401.
 
 ### R-API-058 · Operations that serve wiki content
 Priority: **MVP** · Covers: quader-only
@@ -2460,7 +2529,7 @@ settings screens (R-UI-031 to R-UI-034) call:
 | Setting | Where | Owner |
 |---|---|---|
 | New users external, token default and maximum lifetimes, expiry notices (ADMAPI-042, ADMAPI-047) | `GET`, `PATCH /api/v1/settings/auth`, bounded by YAML ceilings | R-AUTH-040, R-AUTH-044 |
-| The installation's default visibility level, whether `public` is available, what is `public` | `GET`, `PATCH /api/v1/settings/visibility` | R-API-056, [authorization.md](authorization.md) R-AUTHZ-033 |
+| The installation's default visibility level, its restricted levels, whether `public` is available, what is `public` | `GET`, `PATCH /api/v1/settings/visibility`; the levels a caller may choose in `GET /api/v1/visibility-choices` | R-API-056, R-API-075, R-API-076, [authorization.md](authorization.md) R-AUTHZ-033, R-AUTHZ-037 |
 | Break-glass lockout (ADMAPI-050), client authentication switches including Basic (ADMAPI-055) | YAML; read-only in `GET /api/v1/settings/auth` | R-AUTH-038, R-AUTH-040 |
 | Public base URL (ADMAPI-071) | YAML `server.base_url`; read-only in `GET /api/v1/system/info` | R-OPS-005 |
 | Hiding unauthorized resources | YAML `authz.hide_existence`, per-repository override | R-AUTHZ-017 |
@@ -4750,24 +4819,26 @@ Acceptance criteria:
 ### R-UI-053 · The installation's visibility in the general settings
 Priority: **MVP** · Covers: quader-only
 
-`/admin/settings/general` gains the section **Visibility** (`<quader-disclosure>`, closed by default) below the public base
-URL, with its own **Save changes**, reading and writing `/api/v1/settings/visibility` (R-API-056):
+`/admin/settings/general` gains the section **Visibility** (`<quader-disclosure>`, open when the page opens, R-UI-140) below the
+public base URL, with its own **Save changes**, reading and writing `/api/v1/settings/visibility` (R-API-056, R-API-075):
 
-- **Default visibility level** is a radio group of the three levels, each with its icon and one muted sentence
+- **Default project visibility** is a radio group of the three levels, each with its icon and one muted sentence
   ([Q-UI-228](#q-ui-228--a-level-is-chosen-in-a-radio-group-of-three-each-with-its-icon-and-a-sentence)): Private ("Only
   members and the principals a policy names read new projects."), Internal ("Every signed-in user who is not external reads
-  new projects."), Public ("Anyone, also without signing in, reads new projects."). The help line under the group says that the
-  default applies to projects and repositories created later.
+  new projects."), Public ("Anyone, also without signing in, reads new projects."). The help line under the group says that a new
+  project takes the level, that it also bounds new repositories, and that existing projects and repositories keep their levels.
+- **Restricted visibility levels** follow it (R-UI-140).
 - While `publicAvailable` is false, the option Public is shown disabled, muted, with the sentence "The installation's
   configuration admits no request without a credential (`endpoints.default.auth.anonymous`)."
 - Below the group, read-only: what is public now (`publicObjects`), the projects and repositories each linked to its settings,
   or "Nothing is public."
 - The section is editable for a holder of `security-settings:write`; for a holder of `settings:read` alone it is read-only
-  with the reason. Saving needs recent authentication (R-API-007), and a `409 public_not_allowed` is shown at the group.
+  with the reason. One **Save changes** saves both settings; saving needs recent authentication (R-API-007), and a
+  `409 public_not_allowed` is shown at the group.
 
 Acceptance criteria:
 
-- An administrator opens the section, chooses Internal and saves; a project created afterwards shows the Internal icon in the
+- An administrator chooses Internal in the open section and saves; a project created afterwards shows the Internal icon in the
   project list.
 - With `endpoints.default.auth.anonymous: false` the option Public is disabled and says why.
 
@@ -4784,7 +4855,9 @@ Priority: **MVP** · Covers: quader-only
   (from the project's repository list, `visibility` above the new level) and names the consequence ("Anyone who reads them only
   through their visibility loses access."); the answer's `lowered` is shown in the success message
   ([Q-UI-229](#q-ui-229--lowering-a-project-asks-first-and-names-the-repositories-it-lowers)).
-- The create dialog of a project (R-UI-041) has the same radio group, preset to the installation's `defaultLevel`.
+- The create dialog of a project (R-UI-041) has the same radio group, preset to the installation's `defaultLevel`. A level the
+  caller cannot choose is disabled with its reason, a restricted level is marked for an administrator (R-UI-141); both dialogs read
+  the levels from `GET /api/v1/visibility-choices` (R-API-076).
 - The project list (`/projects`, `/admin/projects`) and the project's header show the level's icon before the project's name,
   with the level's name as its accessible label and tooltip ([Q-UI-230](#q-ui-230--a-level-is-shown-as-an-icon-before-a-name-as-gitlab-shows-it)).
 - The start page lists the caller's projects first with the role, then the other projects it may read with no role; a filter
@@ -4815,7 +4888,8 @@ Priority: **MVP** · Covers: quader-only
 - A warning `public_populates_remote` of the answer is shown as a warning at the block, with its sentence (R-AUTHZ-008).
 - The repository list, the repository's header and the client setup dialog show the artifacts level's icon before the
   repository's name (Q-UI-230).
-- Editable for the project's Owner and for `repositories:write-config`; read-only otherwise.
+- Editable for the project's Owner and for `repositories:write-config`; read-only otherwise. A level the installation restricts is
+  disabled for whoever may not choose it, after the project's reason, and kept where the part has it (R-UI-141).
 
 Acceptance criteria:
 
@@ -4824,6 +4898,57 @@ Acceptance criteria:
 - In an Internal project the option Public of both groups is disabled with the reason.
 
 Built as Q-UI-231, Q-UI-236, Q-UI-237: [repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts), [repository-create.ts](../../web/src/app/features/repositories/repository-create.ts) (the creation form since R-UI-080); test [repository-visibility.spec.ts](../../web/src/app/features/repositories/repository-visibility.spec.ts).
+
+### R-UI-140 · The restricted visibility levels in the general settings
+Priority: **MVP** · Covers: quader-only
+
+The owner's requirement W-11 (2026-11-18): the two settings he named, **default project visibility** and **restricted visibility
+levels**, are set in **Admin area › Settings › General › Visibility** ([authorization.md](authorization.md) R-AUTHZ-037,
+R-API-075).
+
+- The section is open when the page opens ([Q-UI-540](#q-ui-540--the-visibility-section-of-the-general-settings-is-open-and-has-one-save-for-both-settings)), and its closed summary
+  names the default and the restricted levels ("New projects are private. Restricted to administrators: Public.").
+- Under **Default project visibility** (R-UI-053), the group **Restricted visibility levels**: one checkbox per level, each with the
+  level's icon and name and one muted sentence, "Only an administrator can make a project or a repository private." (internal,
+  public), laid out as the options of the level group ([Q-UI-541](#q-ui-541--a-restricted-level-is-a-checkbox-laid-out-as-a-level-option-and-the-default-and-the-restricted-levels-exclude-each-other-in-the-form)). Under it the
+  sentence "A project or repository that already has a restricted level keeps it, and its Owner may lower it, but only an
+  administrator chooses it again."
+- The default's checkbox is disabled with "This is the default project visibility, which cannot be restricted."; a restricted
+  level's default option is disabled with "A restricted level cannot be the default." Both follow the form as it is edited.
+- One **Save changes** for the section sends the members that changed in one merge patch; the notice says "Visibility settings
+  saved."
+
+Acceptance criteria (`visibility-settings.spec.ts`, the journey `19-general-settings`):
+
+- The section is open; the checkbox Private is disabled with the reason while Private is the default.
+- Ticking Public disables the default option Public; **Save changes** sends `{"restrictedLevels": ["public"]}` with the loaded
+  `ETag`. Choosing Internal as the default and ticking Private sends both members in one patch.
+
+### R-UI-141 · A level the caller cannot choose is disabled where a level is chosen
+Priority: **MVP** · Covers: quader-only
+
+Every form that chooses a level, the creation form of a repository (R-UI-081), the visibility block of a repository's settings
+(R-UI-055), a project's settings and the dialog that creates a project (R-UI-054), reads the caller's choices
+(`GET /api/v1/visibility-choices`, R-API-076) and shows ([Q-UI-542](#q-ui-542--every-form-that-chooses-a-level-reads-the-callers-choices-and-gives-the-first-reason-of-r-authz-038),
+[Q-UI-543](#q-ui-543--an-administrator-sees-a-restricted-level-enabled-with-a-note-and-an-owner-sees-the-level-it-keeps-with-a-note)):
+
+- an option the caller cannot choose disabled, with the first reason of [R-AUTHZ-038](authorization.md#r-authz-038--the-order-in-which-a-level-is-refused): the
+  project's or the artifacts' bound, then "The installation's configuration admits no request without a credential
+  (endpoints.default.auth.anonymous).", then "Only an administrator of Quader can choose this level.";
+- for an administrator, a restricted option enabled with the note "Restricted: only administrators can choose this level.";
+- for anyone else, the level a project or a part already has enabled, with the note "Restricted: kept while it is set; only an
+  administrator can choose it again." ([Q-AUTHZ-285](authorization.md#q-authz-285--an-object-keeps-a-restricted-level-and-only-an-administrator-chooses-one-anew)).
+
+Nothing of this adds a step or a field: the creation form keeps its one level group, preset to the level the server's defaults
+give the caller (R-REPO-063). A form whose read of the choices fails shows no installation reasons, and the server answers the write.
+
+Acceptance criteria (`repository-visibility.spec.ts`, `project-visibility.spec.ts`, `visibility-level.spec.ts`, the journey
+`21-visibility`):
+
+- With Public restricted, the Owner of a public project sees its public artifacts kept with the note and the wiki's Public disabled
+  with the reason; an administrator sees both enabled with the note.
+- In an internal project the option Public names the project, not the restriction.
+- The creation form of an Owner has the option Public disabled with the reason and still one level group.
 
 ### R-UI-056 · The external flag on the user page
 Priority: **MVP** · Covers: quader-only
@@ -14455,6 +14580,58 @@ revisits it if a format needs a snippet that only one section explains.
 
 **Applied in the spec:** R-API-053, R-API-070; [architecture.md](architecture.md) R-ARCH-008 (the contract) and kit check 8.
 
+### Q-API-330 · The forms read the levels a caller may choose from an operation every signed-in caller may call
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The brief
+of W-11 ruled out making the forms call an administrator's endpoint.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET /api/v1/visibility-choices` for every signed-in caller (chosen) | The default, the restricted levels, whether the caller may choose them, whether `public` is available | One read that answers exactly what a form needs, also the `publicAvailable` the repository forms never had; the project dialogs stop reading `settings:read` | One more operation |
+| (b) Members of `GET /api/v1/authz/me` | The caller's capabilities already travel there | No new operation; the session store holds it | The session store keeps it for the session, so a change of the settings shows only after a new sign-in; `authz/me` describes the caller, not the installation |
+| (c) Open `GET /api/v1/settings/visibility` to every signed-in caller | One operation | Nothing new | It lists every public object of the installation, an administrator's summary |
+
+**Choice:** (a), with the permission `authenticated` and listed among the reads a token whose scope does not inherit its owner's
+rights may call (`ownerRightsReads` in [owner_rights_test.go](../../internal/api/v1/owner_rights_test.go)).
+
+**Rationale:** a form opens, reads what it may offer and offers it; (a) is that read and nothing else. The development agent would
+revisit this if more per-caller form rules appear, which could join one "form rules" read.
+
+**Applied in the spec:** R-API-076, R-UI-141.
+
+### Q-API-331 · `restrictedLevels` is a set that a merge patch replaces whole
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An array of levels; a merge patch replaces it; duplicates count once; answered in the order of the levels (chosen) | RFC 7396 for arrays | The settings stay one merge-patch document with one `ETag`; a client sends what the checkboxes show | Two administrators who tick different boxes at once: the `If-Match` of R-API-012 refuses the second |
+| (b) An object of three booleans | `{"private": false, "internal": false, "public": true}` | Each member patchable alone | A shape no other level member has |
+| (c) Operations to add and remove one level | `PUT`/`DELETE …/restricted-levels/{level}` | Fine-grained | Two operations for three checkboxes, and the default's rule spans both members |
+
+**Choice:** (a).
+
+**Rationale:** the UI saves the section in one patch (R-UI-140), and the rule against the default needs both members in one write.
+The development agent records no revisit condition.
+
+**Applied in the spec:** R-API-075; `VisibilitySettingsPatch` in `api/openapi.yaml`.
+
+### Q-API-332 · One audit event carries both settings before and after
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `settings.visibility.changed` with `defaultLevel` and `restrictedLevels` in `before` and `after` (chosen) | One event per write | A reader of the audit log sees the whole state on each side; a patch of both members is one event | An event whose default did not change carries it anyway |
+| (b) An event per member | `settings.visibility.restricted_changed` beside the existing one | Narrow events | One write, two events; a filter for "who changed the visibility settings" needs both types |
+
+**Choice:** (a).
+
+**Rationale:** the settings are one document with one version; its audit event describes the document. The development agent records
+no revisit condition.
+
+**Applied in the spec:** R-API-056, R-API-075; [authorization.md](authorization.md) R-AUTHZ-036.
+
 ### Q-UI-510 · A folder and a file are the repository's page at `files` and their path
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
@@ -14735,6 +14912,75 @@ screens.
 (`between`, `here`) and `.files-head`, `.files-trail` in [repository-content.scss](../../web/src/app/features/repositories/content/repository-content.scss).
 Tests: `Q-UI-521` in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts); the render
 `files-deep` with its walk.
+
+### Q-UI-540 · The visibility section of the general settings is open and has one save for both settings
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The open
+section and the names of the two settings are the owner's (W-11, 2026-11-18).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The section opens with the page; one **Save changes** saves the default and the restricted levels (chosen) | One form, one merge patch | The two settings the owner comes for are in view; their mutual rule (Q-AUTHZ-284) is checked in one write | The page is longer than with every section closed, against the rule of Q-UI-215 for settings pages |
+| (b) Closed, as every section of a settings page | Q-UI-215 | One rule for every section | The owner's settings are a click away, which is his objection |
+| (c) A save per setting | Two forms | Independent | Restricting the default's level and moving the default would be two saves that refuse each other in between |
+
+**Choice:** (a). The banner and the maintenance mode stay closed sections.
+
+**Rationale:** the owner named these two settings as the ones he must be able to set. The development agent would revisit this if
+the general settings grow sections an administrator needs more often.
+
+**Applied in the spec:** R-UI-053, R-UI-140. Code: `visibilityOpen` in
+[general-settings.ts](../../web/src/app/features/settings/general-settings.ts).
+
+### Q-UI-541 · A restricted level is a checkbox laid out as a level option, and the default and the restricted levels exclude each other in the form
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
+checkboxes, one per level, are the owner's reference.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A shared control `quader-restricted-levels`: native checkboxes, each with the level's icon, its name and one muted sentence, a reason where it cannot be ticked (chosen) | The layout of `quader-visibility-level` (Q-UI-228) with a checkbox | The two groups of the section look alike; the icons tie a checkbox to its level; one place for the layout | A second control beside the radio group |
+| (b) Three `quader-checkbox` rows with the level's name | The generic checkbox | No new control | No icon and no sentence, unlike the group above it |
+
+**Choice:** (a), in [visibility-level.ts](../../web/src/app/shared/ui/visibility-level.ts) beside the radio group, sharing its styles.
+The default's checkbox is disabled with its reason, and a restricted level's default option too, as the form is edited.
+
+**Rationale:** the owner's reference shows a checkbox per level with its icon and a sentence; laying it out as the level options
+above keeps one look for one subject. The development agent records no revisit condition.
+
+**Applied in the spec:** R-UI-140.
+
+### Q-UI-542 · Every form that chooses a level reads the caller's choices and gives the first reason of R-AUTHZ-038
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each form reads `GET /api/v1/visibility-choices` once and merges its reasons in the order of R-AUTHZ-038 (`firstReasons`, `installationReasons`) (chosen) | The project's bound, then Public unavailable, then the restriction | The form names the rule the server would answer; the repository forms learn Public's unavailability too | A read per form |
+| (b) Show every reason that applies | Two or three sentences under one option | Complete | A disabled option with a list of reasons; the second one is never the one the server answers |
+| (c) Hide a level the caller cannot choose | Fewer options | Short | The caller does not learn that the level exists or why it cannot have it; Q-UI-228 keeps disabled options visible |
+
+**Choice:** (a). A failed read gives no installation reasons; the server's answer of the write is shown as before.
+
+**Rationale:** the brief asks that the API and the UI never contradict each other; one order in both is the way. The development agent
+records no revisit condition.
+
+**Applied in the spec:** R-UI-141; [authorization.md](authorization.md) R-AUTHZ-038.
+
+### Q-UI-543 · An administrator sees a restricted level enabled with a note, and an Owner sees the level it keeps with a note
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A muted note under the enabled option: "Restricted: only administrators can choose this level." for an administrator; "Restricted: kept while it is set; only an administrator can choose it again." for the level an Owner keeps (chosen) | The control's `notes` | The administrator knows that the Owner cannot follow; the Owner knows that leaving the level is one-way | One more line under an option |
+| (b) No note | The option is simply enabled | Quiet | An Owner lowers a restricted level and cannot return, without having been told |
+
+**Choice:** (a). A reason wins over a note: an option that is disabled for another reason shows that reason only.
+
+**Rationale:** a one-way step deserves its sentence where it is taken. The development agent records no revisit condition.
+
+**Applied in the spec:** R-UI-141; [authorization.md](authorization.md) Q-AUTHZ-285.
 
 ### Q-UI-550 · The members list takes the head and the table of every list, and its count moves to the heading
 

@@ -90,6 +90,35 @@ describe('The visibility of a project (R-UI-054)', () => {
     expect(r.api.calls.some((c) => c.startsWith('setVisibility'))).toBe(false);
   });
 
+  it('R-UI-141 an administrator sees a restricted level enabled with a note in the project settings', async () => {
+    const r = await renderScreen(ProjectSettings, {
+      inputs: { project: 'web' },
+      setup: (get) => {
+        (get(ProjectsApi) as FakeProjectsApi).projects = [sampleProject({ visibility: 'internal' })];
+        (get(VisibilityApi) as FakeVisibilityApi).stored.settings.restrictedLevels = ['public'];
+      },
+    });
+    const radios = [...r.root.querySelectorAll<HTMLInputElement>('quader-visibility-level input[type="radio"]')];
+    expect(radios.map((x) => x.disabled)).toEqual([false, false, false]);
+    expect(text(r.root.querySelector('quader-visibility-level')!)).toContain('Restricted: only administrators can choose this level.');
+  });
+
+  it('R-UI-141 the create dialog disables a restricted level for a caller who may not choose it', async () => {
+    const r = await renderScreen(ProjectsHome, {
+      setup: (get) => {
+        const v = get(VisibilityApi) as FakeVisibilityApi;
+        v.stored.settings.restrictedLevels = ['public'];
+        v.mayChooseRestricted = false;
+      },
+    });
+    TestBed.inject(QuaderDialog).open(ProjectDialog, { data: {}, maxWidth: '40rem' });
+    await settle(r.fixture);
+    const dialog = overlay().querySelector('quader-project-dialog') as HTMLElement;
+    const radios = [...dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    expect(radios.map((x) => x.disabled)).toEqual([false, false, true]);
+    expect(text(dialog)).toContain('Only an administrator of Quader can choose this level.');
+  });
+
   it('R-UI-054 an Owner who is no administrator sees the level read-only with the reason', async () => {
     const r = await openSettings('internal', []);
     expect(r.radios().every((x) => x.closest('fieldset')!.disabled)).toBe(true);

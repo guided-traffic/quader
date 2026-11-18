@@ -3835,11 +3835,11 @@
     </unit>
     <unit id="general.visibility.read-only">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:45,48</note>
+        <note category="location">src/app/features/settings/general-settings.html:59,62</note>
       </notes>
       <segment>
-        <source> Changing the default needs the permission security-settings:write. </source>
-        <target>Den Standard zu ändern erfordert die Berechtigung security-settings:write.</target>
+        <source> Changing these settings needs the permission security-settings:write. </source>
+        <target>Diese Einstellungen zu ändern erfordert die Berechtigung security-settings:write.</target>
       </segment>
     </unit>
     <unit id="upstream.url.hint-presets">
@@ -11186,11 +11186,11 @@
     </unit>
     <unit id="general.visibility.default-note">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:41,43</note>
+        <note category="location">src/app/features/settings/general-settings.html:42,45</note>
       </notes>
       <segment>
-        <source> The default applies to projects and repositories created later. </source>
-        <target>Der Standard gilt für Projekte und Repositories, die später angelegt werden.</target>
+        <source> A new project takes this level. It also bounds new repositories: a new repository takes it, or its project&apos;s level where that is lower. Projects and repositories that exist keep their levels. </source>
+        <target>Ein neues Projekt erhält diese Stufe. Sie begrenzt auch neue Repositories: ein neues Repository erhält sie, oder die Stufe seines Projekts, wo diese niedriger ist. Bestehende Projekte und Repositories behalten ihre Stufen.</target>
       </segment>
     </unit>
     <unit id="switcher.button">
@@ -13041,11 +13041,11 @@
     </unit>
     <unit id="general.visibility.default">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.html:33,35</note>
+        <note category="location">src/app/features/settings/general-settings.html:34,36</note>
       </notes>
       <segment>
-        <source>Default visibility level</source>
-        <target>Standard-Sichtbarkeitsstufe</target>
+        <source>Default project visibility</source>
+        <target>Standard-Sichtbarkeit von Projekten</target>
       </segment>
     </unit>
     <unit id="repo.create.advanced-hint">
@@ -20096,11 +20096,11 @@
     </unit>
     <unit id="general.visibility.saved">
       <notes>
-        <note category="location">src/app/features/settings/general-settings.ts:200</note>
+        <note category="location">src/app/features/settings/general-settings.ts:250</note>
       </notes>
       <segment>
-        <source>Default visibility saved.</source>
-        <target>Standard-Sichtbarkeit gespeichert.</target>
+        <source>Visibility settings saved.</source>
+        <target>Sichtbarkeitseinstellungen gespeichert.</target>
       </segment>
     </unit>
     <unit id="ci.editor.view-builder">
@@ -33829,6 +33829,123 @@
       <segment>
         <source>Members who may publish to it fill it with their client.</source>
         <target>Mitglieder, die darin veröffentlichen dürfen, füllen es mit ihrem Client.</target>
+      </segment>
+    </unit>
+    <unit id="problem.visibility_level_restricted">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-access.ts:100</note>
+      </notes>
+      <segment>
+        <source>Only an administrator of Quader can choose this visibility level. A level that is already set may be kept or lowered.</source>
+        <target>Nur ein Administrator von Quader kann diese Sichtbarkeitsstufe wählen. Eine bereits gesetzte Stufe darf beibehalten oder gesenkt werden.</target>
+      </segment>
+    </unit>
+    <unit id="problem.default_level_restricted">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-access.ts:102</note>
+      </notes>
+      <segment>
+        <source>A restricted level cannot be the default project visibility.</source>
+        <target>Eine eingeschränkte Stufe kann nicht die Standard-Sichtbarkeit von Projekten sein.</target>
+      </segment>
+    </unit>
+    <unit id="general.visibility.restricted">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.html:47,49</note>
+      </notes>
+      <segment>
+        <source>Restricted visibility levels</source>
+        <target>Eingeschränkte Sichtbarkeitsstufen</target>
+      </segment>
+    </unit>
+    <unit id="general.visibility.restricted-note">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.html:54,57</note>
+      </notes>
+      <segment>
+        <source> A project or repository that already has a restricted level keeps it, and its Owner may lower it, but only an administrator chooses it again. </source>
+        <target>Ein Projekt oder Repository, das schon eine eingeschränkte Stufe hat, behält sie, und sein Owner darf sie senken; erneut wählen kann sie nur ein Administrator.</target>
+      </segment>
+    </unit>
+    <unit id="general.visibility.default-restricted">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.ts:126</note>
+      </notes>
+      <segment>
+        <source>A restricted level cannot be the default.</source>
+        <target>Eine eingeschränkte Stufe kann nicht der Standard sein.</target>
+      </segment>
+    </unit>
+    <unit id="general.visibility.restrict-default">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.ts:132</note>
+      </notes>
+      <segment>
+        <source>This is the default project visibility, which cannot be restricted.</source>
+        <target>Das ist die Standard-Sichtbarkeit von Projekten; sie kann nicht eingeschränkt werden.</target>
+      </segment>
+    </unit>
+    <unit id="general.visibility.summary-restricted">
+      <notes>
+        <note category="location">src/app/features/settings/general-settings.ts:150</note>
+      </notes>
+      <segment>
+        <source>Restricted to administrators: <ph id="0" equiv="levels" disp="names"/>.</source>
+        <target>Nur für Administratoren: <ph id="0" equiv="levels" disp="names"/>.</target>
+      </segment>
+    </unit>
+    <unit id="visibility.restricted">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:66</note>
+      </notes>
+      <segment>
+        <source>Only an administrator of Quader can choose this level.</source>
+        <target>Nur ein Administrator von Quader kann diese Stufe wählen.</target>
+      </segment>
+    </unit>
+    <unit id="visibility.restricted-admin">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:84</note>
+      </notes>
+      <segment>
+        <source>Restricted: only administrators can choose this level.</source>
+        <target>Eingeschränkt: nur Administratoren können diese Stufe wählen.</target>
+      </segment>
+    </unit>
+    <unit id="visibility.restricted-kept">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:86</note>
+      </notes>
+      <segment>
+        <source>Restricted: kept while it is set; only an administrator can choose it again.</source>
+        <target>Eingeschränkt: bleibt, solange sie gesetzt ist; erneut wählen kann sie nur ein Administrator.</target>
+      </segment>
+    </unit>
+    <unit id="visibility.restrict.private">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:288</note>
+      </notes>
+      <segment>
+        <source>Only an administrator can make a project or a repository private.</source>
+        <target>Nur ein Administrator kann ein Projekt oder ein Repository privat machen.</target>
+      </segment>
+    </unit>
+    <unit id="visibility.restrict.internal">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:290</note>
+      </notes>
+      <segment>
+        <source>Only an administrator can make a project or a repository internal.</source>
+        <target>Nur ein Administrator kann ein Projekt oder ein Repository intern machen.</target>
+      </segment>
+    </unit>
+    <unit id="visibility.restrict.public">
+      <notes>
+        <note category="location">src/app/shared/ui/visibility-level.ts:292</note>
+      </notes>
+      <segment>
+        <source>Only an administrator can make a project or a repository public.</source>
+        <target>Nur ein Administrator kann ein Projekt oder ein Repository öffentlich machen.</target>
       </segment>
     </unit>
   </file>

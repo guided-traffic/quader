@@ -2,6 +2,9 @@ import { Component, computed, input, model } from '@angular/core';
 import { Schema } from '../../api/types';
 import { Tooltip } from './tooltip';
 
+/** What the forms read from `GET /api/v1/visibility-choices` (R-API-076). */
+type Choices = Schema<'VisibilityChoices'>;
+
 /** A visibility level (R-AUTHZ-033), from the most restrictive. */
 export type VisibilityLevel = Schema<'VisibilityLevel'>;
 
@@ -30,6 +33,60 @@ export function publicUnavailableReason(): Partial<Record<VisibilityLevel, strin
   return {
     public: $localize`:@@visibility.public-unavailable:The installation's configuration admits no request without a credential (endpoints.default.auth.anonymous).`,
   };
+}
+
+/** The reasons by level, earlier sets first (R-AUTHZ-038): an option keeps the first reason any set gives it. */
+export function firstReasons(
+  ...sets: readonly Partial<Record<VisibilityLevel, string>>[]
+): Partial<Record<VisibilityLevel, string>> {
+  const out: Partial<Record<VisibilityLevel, string>> = {};
+  for (const set of sets) {
+    for (const level of VISIBILITY_LEVELS) {
+      const reason = set[level];
+      if (reason !== undefined && out[level] === undefined) out[level] = reason;
+    }
+  }
+  return out;
+}
+
+/**
+ * The reasons for the options the caller cannot choose because of the installation (R-UI-141, R-AUTHZ-038): Public while it is
+ * unavailable, and every restricted level for a caller who is not an administrator, except `kept`, the level the object has,
+ * which it may keep (Q-AUTHZ-285). `null` (the choices are not known) restricts nothing; the server decides.
+ */
+export function installationReasons(
+  choices: Choices | null,
+  kept: VisibilityLevel | null = null,
+): Partial<Record<VisibilityLevel, string>> {
+  if (choices === null) return {};
+  const out: Partial<Record<VisibilityLevel, string>> = choices.publicAvailable ? {} : { ...publicUnavailableReason() };
+  if (choices.mayChooseRestricted) return out;
+  for (const level of choices.restrictedLevels) {
+    if (level !== kept && out[level] === undefined) {
+      out[level] = $localize`:@@visibility.restricted:Only an administrator of Quader can choose this level.`;
+    }
+  }
+  return out;
+}
+
+/**
+ * The notes under the restricted options that stay enabled (R-UI-141): for an administrator every restricted level says so, and
+ * for anyone else the level the object keeps says that it cannot be chosen again once it is left (Q-AUTHZ-285).
+ */
+export function restrictedNotes(
+  choices: Choices | null,
+  kept: VisibilityLevel | null = null,
+): Partial<Record<VisibilityLevel, string>> {
+  const out: Partial<Record<VisibilityLevel, string>> = {};
+  if (choices === null) return out;
+  for (const level of choices.restrictedLevels) {
+    if (choices.mayChooseRestricted) {
+      out[level] = $localize`:@@visibility.restricted-admin:Restricted: only administrators can choose this level.`;
+    } else if (level === kept) {
+      out[level] = $localize`:@@visibility.restricted-kept:Restricted: kept while it is set; only an administrator can choose it again.`;
+    }
+  }
+  return out;
 }
 
 /** The lower of two levels. */
@@ -103,47 +160,8 @@ function sentence(subject: VisibilitySubject, level: VisibilityLevel): string {
   }
 }
 
-let nextGroupId = 1;
-
-/**
- * The control that chooses a visibility level (Q-UI-228, docs/developer/ui-style-guide.md#forms): a radio group of Private,
- * Internal and Public, each with its icon and one muted sentence, as the owner's GitLab has it. An option that cannot be
- * chosen stays visible, muted, with its reason under the sentence (`reasons`); the radio is disabled and the reason is
- * part of the option's description. Native radios, so the arrow keys move and select, and Tab enters and leaves the group once.
- *
- *   <quader-visibility-level label="Artifacts" subject="artifacts" [(value)]="artifacts" [reasons]="{ public: 'The project is internal.' }" />
- */
-@Component({
-  selector: 'quader-visibility-level',
-  template: `
-    <fieldset class="levels" [disabled]="disabled()">
-      <legend class="field-label">{{ label() }}</legend>
-      @if (unsetNote(); as note) {
-        <p class="muted unset" role="status">{{ note }}</p>
-      }
-      @for (option of options(); track option.level) {
-        <label class="level" [class.unavailable]="option.reason !== null">
-          <input
-            type="radio"
-            [name]="group"
-            [value]="option.level"
-            [checked]="unsetNote() === null && value() === option.level"
-            [disabled]="option.reason !== null"
-            [attr.aria-describedby]="option.describedBy"
-            (change)="value.set(option.level)"
-          />
-          <span class="text">
-            <span class="name"><span class="material-icons inline" aria-hidden="true">{{ option.icon }}</span>{{ option.name }}</span>
-            <span class="muted" [id]="option.sentenceId">{{ option.sentence }}</span>
-            @if (option.reason; as reason) {
-              <span class="muted reason" [id]="option.reasonId">{{ reason }}</span>
-            }
-          </span>
-        </label>
-      }
-    </fieldset>
-  `,
-  styles: `
+/** The layout of the options of both level controls: icon and name on one line, the sentence and a reason or a note under it. */
+const LEVEL_STYLES = `
     :host {
       display: block;
     }
@@ -181,7 +199,51 @@ let nextGroupId = 1;
     fieldset:disabled .name {
       color: var(--quader-text-muted);
     }
+`;
+
+let nextGroupId = 1;
+
+/**
+ * The control that chooses a visibility level (Q-UI-228, docs/developer/ui-style-guide.md#forms): a radio group of Private,
+ * Internal and Public, each with its icon and one muted sentence, as the owner's GitLab has it. An option that cannot be
+ * chosen stays visible, muted, with its reason under the sentence (`reasons`); the radio is disabled and the reason is
+ * part of the option's description. Native radios, so the arrow keys move and select, and Tab enters and leaves the group once.
+ *
+ *   <quader-visibility-level label="Artifacts" subject="artifacts" [(value)]="artifacts" [reasons]="{ public: 'The project is internal.' }" />
+ */
+@Component({
+  selector: 'quader-visibility-level',
+  template: `
+    <fieldset class="levels" [disabled]="disabled()">
+      <legend class="field-label">{{ label() }}</legend>
+      @if (unsetNote(); as note) {
+        <p class="muted unset" role="status">{{ note }}</p>
+      }
+      @for (option of options(); track option.level) {
+        <label class="level" [class.unavailable]="option.reason !== null">
+          <input
+            type="radio"
+            [name]="group"
+            [value]="option.level"
+            [checked]="unsetNote() === null && value() === option.level"
+            [disabled]="option.reason !== null"
+            [attr.aria-describedby]="option.describedBy"
+            (change)="value.set(option.level)"
+          />
+          <span class="text">
+            <span class="name"><span class="material-icons inline" aria-hidden="true">{{ option.icon }}</span>{{ option.name }}</span>
+            <span class="muted" [id]="option.sentenceId">{{ option.sentence }}</span>
+            @if (option.reason; as reason) {
+              <span class="muted reason" [id]="option.reasonId">{{ reason }}</span>
+            } @else if (option.note; as note) {
+              <span class="muted note" [id]="option.reasonId">{{ note }}</span>
+            }
+          </span>
+        </label>
+      }
+    </fieldset>
   `,
+  styles: LEVEL_STYLES,
 })
 export class VisibilityLevelControl {
   readonly label = input.required<string>();
@@ -191,6 +253,8 @@ export class VisibilityLevelControl {
   readonly unsetNote = input<string | null>(null);
   /** The reason an option cannot be chosen, by level; an option without an entry can. */
   readonly reasons = input<Partial<Record<VisibilityLevel, string>>>({});
+  /** A muted note under an option that can be chosen (a restricted level an administrator sees, R-UI-141); a reason wins. */
+  readonly notes = input<Partial<Record<VisibilityLevel, string>>>({});
   /** The whole group cannot be changed (a reader without the right to write). */
   readonly disabled = input(false);
 
@@ -199,6 +263,7 @@ export class VisibilityLevelControl {
   protected readonly options = computed(() =>
     VISIBILITY_LEVELS.map((level) => {
       const reason = this.reasons()[level] ?? null;
+      const note = reason === null ? (this.notes()[level] ?? null) : null;
       const sentenceId = `${this.group}-${level}`;
       const reasonId = `${this.group}-${level}-reason`;
       return {
@@ -207,12 +272,96 @@ export class VisibilityLevelControl {
         name: levelName(level),
         sentence: sentence(this.subject(), level),
         reason,
+        note,
+        sentenceId,
+        reasonId,
+        describedBy: reason === null && note === null ? sentenceId : `${sentenceId} ${reasonId}`,
+      };
+    }),
+  );
+}
+
+/** What restricting a level means, under its checkbox (R-UI-140). */
+function restrictedSentence(level: VisibilityLevel): string {
+  switch (level) {
+    case 'private':
+      return $localize`:@@visibility.restrict.private:Only an administrator can make a project or a repository private.`;
+    case 'internal':
+      return $localize`:@@visibility.restrict.internal:Only an administrator can make a project or a repository internal.`;
+    case 'public':
+      return $localize`:@@visibility.restrict.public:Only an administrator can make a project or a repository public.`;
+  }
+}
+
+/**
+ * The restricted levels of the installation (R-UI-140, Q-UI-541): one checkbox per level, each with the level's icon and name and
+ * one muted sentence of what restricting it means, laid out as the options of `quader-visibility-level`. An option with a reason
+ * (the default level, which cannot be restricted) is disabled and names the reason in its description.
+ *
+ *   <quader-restricted-levels label="Restricted visibility levels" [(value)]="restricted" [reasons]="{ private: 'The default.' }" />
+ */
+@Component({
+  selector: 'quader-restricted-levels',
+  template: `
+    <fieldset class="levels" [disabled]="disabled()">
+      <legend class="field-label">{{ label() }}</legend>
+      @for (option of options(); track option.level) {
+        <label class="level" [class.unavailable]="option.reason !== null">
+          <input
+            type="checkbox"
+            [checked]="option.checked"
+            [disabled]="option.reason !== null"
+            [attr.aria-describedby]="option.describedBy"
+            (change)="toggle(option.level, $any($event.target).checked)"
+          />
+          <span class="text">
+            <span class="name"><span class="material-icons inline" aria-hidden="true">{{ option.icon }}</span>{{ option.name }}</span>
+            <span class="muted" [id]="option.sentenceId">{{ option.sentence }}</span>
+            @if (option.reason; as reason) {
+              <span class="muted reason" [id]="option.reasonId">{{ reason }}</span>
+            }
+          </span>
+        </label>
+      }
+    </fieldset>
+  `,
+  styles: LEVEL_STYLES,
+})
+export class RestrictedLevelsControl {
+  readonly label = input.required<string>();
+  /** The restricted levels, in the order of the levels. */
+  readonly value = model.required<readonly VisibilityLevel[]>();
+  /** The reason a level cannot be restricted, by level. */
+  readonly reasons = input<Partial<Record<VisibilityLevel, string>>>({});
+  readonly disabled = input(false);
+
+  protected readonly group = `quader-restricted-levels-${nextGroupId++}`;
+
+  protected readonly options = computed(() =>
+    VISIBILITY_LEVELS.map((level) => {
+      const reason = this.reasons()[level] ?? null;
+      const sentenceId = `${this.group}-${level}`;
+      const reasonId = `${this.group}-${level}-reason`;
+      return {
+        level,
+        checked: this.value().includes(level),
+        icon: ICONS[level],
+        name: levelName(level),
+        sentence: restrictedSentence(level),
+        reason,
         sentenceId,
         reasonId,
         describedBy: reason === null ? sentenceId : `${sentenceId} ${reasonId}`,
       };
     }),
   );
+
+  protected toggle(level: VisibilityLevel, on: boolean): void {
+    const set = new Set(this.value());
+    if (on) set.add(level);
+    else set.delete(level);
+    this.value.set(VISIBILITY_LEVELS.filter((l) => set.has(l)));
+  }
 }
 
 /**

@@ -13,7 +13,7 @@ Quader has no password database. People sign in through an OpenID Connect identi
 | Session lifetimes and the recent sign-in window | Configuration file, `auth.sessions` | When a replica starts |
 | Break-glass account | Configuration file, `auth.break_glass` | When a replica starts; the password file is re-read when it changes |
 | Whether requests without a credential are admitted at all (the ceiling of **Public**) | Configuration file, `endpoints.default.auth.anonymous` | When a replica starts |
-| Default visibility level | **Admin area › Settings › General** | Within seconds, on every replica |
+| Default project visibility and restricted visibility levels | **Admin area › Settings › General** | With the next write that sets a level, on every replica |
 | New users are external, token lifetimes | **Admin area › Settings › Authentication** | Within seconds, on every replica |
 | Users, groups, memberships, service accounts | **Admin area › Identity** | Within seconds, on every replica |
 

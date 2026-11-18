@@ -8157,7 +8157,9 @@ type ProjectVisibilityResult struct {
 		// Before The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
 		// download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
 		// level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
-		// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
+		// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part. A caller without
+		// `security-settings:write` cannot choose a level the installation restricts (`403 visibility_level_restricted`); a level
+		// the repository has stays, and an absent part of a create takes the highest level it may choose (R-AUTHZ-037).
 		Before RepositoryVisibility `json:"before"`
 
 		// Repository The qualified name `<project>/<key>`.
@@ -8492,7 +8494,9 @@ type Repository struct {
 	// Visibility The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
 	// download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
 	// level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
-	// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
+	// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part. A caller without
+	// `security-settings:write` cannot choose a level the installation restricts (`403 visibility_level_restricted`); a level
+	// the repository has stays, and an absent part of a create takes the highest level it may choose (R-AUTHZ-037).
 	Visibility *RepositoryVisibility `json:"visibility,omitempty"`
 
 	// Vulnerabilities The `vulnerabilities` member of a repository document (R-VULN-002): local and remote repositories of a format with the
@@ -8567,7 +8571,9 @@ type RepositoryConsumerView struct {
 	// Visibility The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
 	// download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
 	// level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
-	// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
+	// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part. A caller without
+	// `security-settings:write` cannot choose a level the installation restricts (`403 visibility_level_restricted`); a level
+	// the repository has stays, and an absent part of a create takes the highest level it may choose (R-AUTHZ-037).
 	Visibility RepositoryVisibility `json:"visibility"`
 }
 
@@ -8693,7 +8699,9 @@ type RepositorySummary struct {
 	// Visibility The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
 	// download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
 	// level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
-	// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
+	// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part. A caller without
+	// `security-settings:write` cannot choose a level the installation restricts (`403 visibility_level_restricted`); a level
+	// the repository has stays, and an absent part of a create takes the highest level it may choose (R-AUTHZ-037).
 	Visibility RepositoryVisibility `json:"visibility"`
 }
 
@@ -8706,7 +8714,9 @@ type RepositorySummaryLifecycle string
 // RepositoryVisibility The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
 // download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
 // level is at most the project's level and the wiki level at most the artifacts level (`422 validation_failed` with
-// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part.
+// `visibility_above_project` or `visibility_wiki_above_artifacts`). A merge patch may name one part. A caller without
+// `security-settings:write` cannot choose a level the installation restricts (`403 visibility_level_restricted`); a level
+// the repository has stays, and an absent part of a create takes the highest level it may choose (R-AUTHZ-037).
 type RepositoryVisibility struct {
 	// Artifacts A visibility level (R-AUTHZ-033), from the most restrictive: `private` reads for the members of the project and the
 	// principals a grant names; `internal` besides for every internal subject (R-AUTHZ-030); `public` besides for every
@@ -9451,13 +9461,28 @@ type VirtualSettings struct {
 	} `json:"pinning,omitempty"`
 }
 
+// VisibilityChoices The levels the caller may choose for a project or a part of a repository (R-API-076): what the forms read to show an
+// option disabled with its reason. `mayChooseRestricted` is `true` for an administrator, a caller who holds
+// `security-settings:write` (Q-AUTHZ-283); for everyone else a level in `restrictedLevels` cannot be chosen anew.
+type VisibilityChoices struct {
+	// DefaultLevel A visibility level (R-AUTHZ-033), from the most restrictive: `private` reads for the members of the project and the
+	// principals a grant names; `internal` besides for every internal subject (R-AUTHZ-030); `public` besides for every
+	// request, also one without a credential.
+	DefaultLevel        VisibilityLevel `json:"defaultLevel"`
+	MayChooseRestricted bool            `json:"mayChooseRestricted"`
+
+	// PublicAvailable The default endpoint admits requests without a credential; while `false`, nobody can set `public`.
+	PublicAvailable  bool              `json:"publicAvailable"`
+	RestrictedLevels []VisibilityLevel `json:"restrictedLevels"`
+}
+
 // VisibilityLevel A visibility level (R-AUTHZ-033), from the most restrictive: `private` reads for the members of the project and the
 // principals a grant names; `internal` besides for every internal subject (R-AUTHZ-030); `public` besides for every
 // request, also one without a credential.
 type VisibilityLevel string
 
-// VisibilitySettings The installation's visibility settings (R-API-056). `publicAvailable` and `publicObjects` are read-only and ignored in a
-// `PATCH` body, so a body obtained by `GET` can be sent back.
+// VisibilitySettings The installation's visibility settings (R-API-056, R-API-075). `publicAvailable` and `publicObjects` are read-only and
+// ignored in a `PATCH` body, so a body obtained by `GET` can be sent back.
 type VisibilitySettings struct {
 	// DefaultLevel A visibility level (R-AUTHZ-033), from the most restrictive: `private` reads for the members of the project and the
 	// principals a grant names; `internal` besides for every internal subject (R-AUTHZ-030); `public` besides for every
@@ -9469,6 +9494,10 @@ type VisibilitySettings struct {
 
 	// PublicObjects The projects and the repositories whose artifacts are `public`, at most 100 of each in key order (R-API-056).
 	PublicObjects PublicObjects `json:"publicObjects"`
+
+	// RestrictedLevels The levels only an administrator, a holder of `security-settings:write`, may choose for a project or a part of a
+	// repository (R-AUTHZ-037), in the order `private`, `internal`, `public`. Never the default level.
+	RestrictedLevels []VisibilityLevel `json:"restrictedLevels"`
 }
 
 // VisibilitySettingsPatch defines model for VisibilitySettingsPatch.
@@ -9481,6 +9510,10 @@ type VisibilitySettingsPatch struct {
 
 	// PublicObjects The projects and the repositories whose artifacts are `public`, at most 100 of each in key order (R-API-056).
 	PublicObjects *PublicObjects `json:"publicObjects,omitempty"`
+
+	// RestrictedLevels The whole set of restricted levels; it replaces the stored set. A level named twice counts once. A set that holds the
+	// default level answers `422 validation_failed` with `default_level_restricted` (Q-AUTHZ-284).
+	RestrictedLevels *[]VisibilityLevel `json:"restrictedLevels,omitempty"`
 }
 
 // VulnerabilityAdvisory One advisory (R-VULN-020). `details` is Markdown from an untrusted source and has to be rendered through the sanitizer (R-UI-008).
@@ -12507,7 +12540,7 @@ type ServerInterface interface {
 	// GetVisibilitySettings Read the installation's visibility settings
 	// (GET /api/v1/settings/visibility)
 	GetVisibilitySettings(w http.ResponseWriter, r *http.Request, params GetVisibilitySettingsParams)
-	// UpdateVisibilitySettings Change the installation's default visibility level
+	// UpdateVisibilitySettings Change the installation's default visibility level and its restricted levels
 	// (PATCH /api/v1/settings/visibility)
 	UpdateVisibilitySettings(w http.ResponseWriter, r *http.Request, params UpdateVisibilitySettingsParams)
 	// ListBackupRuns List backup runs
@@ -12660,6 +12693,9 @@ type ServerInterface interface {
 	// UnlockBreakGlass Clear the lockout of the break-glass account
 	// (POST /api/v1/users/{username}/unlock)
 	UnlockBreakGlass(w http.ResponseWriter, r *http.Request, username string)
+	// GetVisibilityChoices Read the visibility levels the caller may choose
+	// (GET /api/v1/visibility-choices)
+	GetVisibilityChoices(w http.ResponseWriter, r *http.Request)
 	// GetVulnerabilityAdvisory Read an advisory with its readable findings
 	// (GET /api/v1/vulnerabilities/advisories/{ecosystem}/{id})
 	GetVulnerabilityAdvisory(w http.ResponseWriter, r *http.Request, ecosystem string, id string)
@@ -23167,6 +23203,20 @@ func (siw *ServerInterfaceWrapper) UnlockBreakGlass(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// GetVisibilityChoices operation middleware
+func (siw *ServerInterfaceWrapper) GetVisibilityChoices(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetVisibilityChoices(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetVulnerabilityAdvisory operation middleware
 func (siw *ServerInterfaceWrapper) GetVulnerabilityAdvisory(w http.ResponseWriter, r *http.Request) {
 
@@ -24294,6 +24344,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/settings/auth", wrapper.UpdateAuthSettings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/settings/visibility", wrapper.GetVisibilitySettings)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/settings/visibility", wrapper.UpdateVisibilitySettings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/visibility-choices", wrapper.GetVisibilityChoices)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/auth/login-options", wrapper.GetLoginOptions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/auth/whoami", wrapper.GetWhoami)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/users/me/sessions", wrapper.EndOwnSessions)

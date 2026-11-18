@@ -94,10 +94,13 @@ const (
 	CodeLastAdmin               = "last_admin"
 	// CodePublicNotAllowed: a write sets a visibility level to public while the default endpoint admits no request without a
 	// credential (409, R-AUTHZ-033 rule 5).
-	CodePublicNotAllowed       = "public_not_allowed"
-	CodeAutoJoinAdminConflict  = "auto_join_admin_conflict"
-	CodeAutoJoinMemberConflict = "auto_join_member_conflict"
-	CodeUsernameInvalid        = "username_invalid"
+	CodePublicNotAllowed = "public_not_allowed"
+	// CodeVisibilityLevelRestricted: a caller who is not an administrator chooses a level the installation restricts to
+	// administrators for a project or a part of a repository (403, R-AUTHZ-037).
+	CodeVisibilityLevelRestricted = "visibility_level_restricted"
+	CodeAutoJoinAdminConflict     = "auto_join_admin_conflict"
+	CodeAutoJoinMemberConflict    = "auto_join_member_conflict"
+	CodeUsernameInvalid           = "username_invalid"
 )
 
 // <<< M1 identity
@@ -728,6 +731,7 @@ var registry = []CodeInfo{
 	{CodeManagedBySCIM, Conflict, "Managed by SCIM", "The object is owned by the identity provider and cannot be changed here."},
 	{CodeLastAdmin, Conflict, "Last administrator", "The change would remove the last administrator."},
 	{CodePublicNotAllowed, Conflict, "Public level not allowed", "The default endpoint admits no request without a credential (endpoints.default.auth.anonymous is false), so no visibility level can be set to public."},
+	{CodeVisibilityLevelRestricted, Forbidden, "Visibility level restricted", "The installation restricts this visibility level to administrators (restrictedLevels of the visibility settings). A level an object already has may be kept and lowered; choosing it anew needs security-settings:write. The problem names the level at its member in errors."},
 	{CodeAutoJoinAdminConflict, Conflict, "Auto-join conflicts with an administration role", "A group with an administration role binding cannot be an auto-join group."},
 	{CodeAutoJoinMemberConflict, Conflict, "Auto-join conflicts with a project membership", "A group that is a member of a project cannot be an auto-join group."},
 	{CodeUsernameInvalid, Invalid, "Invalid username", "The username does not match the name rule or is reserved."},

@@ -1,11 +1,16 @@
-import { Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, output, resource, signal, untracked } from '@angular/core';
 import { RepositoryVisibility } from '../../api/repositories-api';
+import { VisibilityApi, VisibilityChoices } from '../../api/visibility-api';
+import { valueOf } from '../../shared/paged-resource';
 import {
   VisibilityLevel,
   VisibilityLevelControl,
   aboveProjectReasons,
+  firstReasons,
+  installationReasons,
   lowerLevel,
   isMoreOpen,
+  restrictedNotes,
 } from '../../shared/ui/visibility-level';
 import { ApiError } from '../../api/problem';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -15,6 +20,10 @@ import { ErrorNotice } from '../../shared/error-notice';
  * wiki content, one for the wiki, with its own Save changes. An option above the project's level is disabled with the reason; a
  * wiki option above the artifacts' level is disabled with the reason, and choosing an artifacts level below the wiki's lowers the
  * wiki's choice with it. The block sends only the parts that changed; the screen applies the answer.
+ *
+ * The installation's reasons follow the project's (R-AUTHZ-038, R-UI-141): Public while it is unavailable, and a restricted level
+ * for a caller who is not an administrator, except the level the part has now, which it keeps; an administrator sees a restricted
+ * level enabled with a note. The choices are read from `GET /api/v1/visibility-choices`.
  */
 @Component({
   selector: 'quader-repository-visibility',
@@ -30,6 +39,7 @@ import { ErrorNotice } from '../../shared/error-notice';
             [value]="artifacts()"
             (valueChange)="setArtifacts($event)"
             [reasons]="artifactReasons()"
+            [notes]="artifactNotes()"
             [disabled]="!canWrite()"
           />
           @if (hasWiki()) {
@@ -40,6 +50,7 @@ import { ErrorNotice } from '../../shared/error-notice';
               [value]="wiki()"
               (valueChange)="wiki.set($event)"
               [reasons]="wikiReasons()"
+              [notes]="wikiNotes()"
               [disabled]="!canWrite()"
             />
           }
@@ -108,17 +119,34 @@ export class RepositoryVisibilityBlock {
     this.hasWiki() ? $localize`:@@repo.visibility.artifacts:Artifacts` : $localize`:@@repo.visibility.single:Visibility`,
   );
 
-  protected readonly artifactReasons = computed(() => aboveProjectReasons(this.projectLevel()));
+  private readonly visibilityApi = inject(VisibilityApi);
+  /** The caller's choices; while unknown, or for a caller who cannot read them, the server decides. */
+  private readonly choices = resource({
+    loader: async (): Promise<VisibilityChoices | null> => {
+      try {
+        return await this.visibilityApi.choices();
+      } catch {
+        return null;
+      }
+    },
+  });
+  private readonly known = computed(() => (this.canWrite() ? (valueOf(this.choices) ?? null) : null));
+
+  protected readonly artifactReasons = computed(() =>
+    firstReasons(aboveProjectReasons(this.projectLevel()), installationReasons(this.known(), this.stored().artifacts)),
+  );
+  protected readonly artifactNotes = computed(() => restrictedNotes(this.known(), this.stored().artifacts));
 
   protected readonly wikiReasons = computed(() => {
-    const out = { ...aboveProjectReasons(this.projectLevel()) };
+    const above: Partial<Record<VisibilityLevel, string>> = {};
     for (const level of ['internal', 'public'] as const) {
       if (isMoreOpen(level, this.artifacts())) {
-        out[level] = $localize`:@@repo.visibility.wiki-above-artifacts:The wiki cannot be more open than the artifacts.`;
+        above[level] = $localize`:@@repo.visibility.wiki-above-artifacts:The wiki cannot be more open than the artifacts.`;
       }
     }
-    return out;
+    return firstReasons(aboveProjectReasons(this.projectLevel()), above, installationReasons(this.known(), this.stored().wiki));
   });
+  protected readonly wikiNotes = computed(() => restrictedNotes(this.known(), this.stored().wiki));
 
   protected readonly dirty = computed(
     () => this.artifacts() !== this.stored().artifacts || this.wikiValue() !== this.stored().wiki,

@@ -1019,8 +1019,17 @@ agent** is not decided until the owner has said so.
   through a setting: default project visibility, restricted visibility levels"). The first exists: **Admin area › Settings ›
   General › Visibility › Default visibility level** (`defaultLevel` of `/api/v1/settings/visibility`, R-AUTHZ-033, R-API-056), in
   a section that is closed when the page opens. The second does not exist. Wanted: the levels an administrator restricts can
-  be chosen by an administrator only; whoever else sets the level of a project or a repository cannot choose them. A builder
-  builds it (API, decision, UI, documentation).
+  be chosen by an administrator only; whoever else sets the level of a project or a repository cannot choose them.
+  **Built on 2026-11-18** (ADR-204, R-AUTHZ-037 and R-AUTHZ-038, Q-AUTHZ-283 to Q-AUTHZ-289, R-API-075 and R-API-076, Q-API-330
+  to Q-API-332, R-UI-140 and R-UI-141, Q-UI-540 to Q-UI-543; gaps H-1001 and H-1002 on the security page of visibility): the
+  section is open and reads **Default project visibility** and **Restricted visibility levels**, one **Save changes** under the
+  two; `restrictedLevels` beside `defaultLevel`, `GET /api/v1/visibility-choices` for the forms, the refusal
+  `403 visibility_level_restricted`, one expand-only schema step. An administrator here is whoever holds
+  `security-settings:write`. The default is never restricted; an object keeps a restricted level and its Owner may lower it; a
+  creation that names no level takes the highest level its caller may choose. Projects are created by administrators only, so
+  the restriction binds the Owners of projects for their repositories. The development agent looked at the settings page in the
+  running UI and moved **Save changes** from under the list **Public now** to under the settings. Not looked at: the forms with
+  a level restricted, as an Owner. Not run locally: the journeys 19 and 21.
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure

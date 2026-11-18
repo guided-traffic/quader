@@ -69,7 +69,7 @@ Quader reads the configuration file and the environment once, at start. A change
 
 ## Settings in the UI versus the configuration file
 
-**Admin area › Settings › General** opens **General settings**, whose section **Visibility** holds the default visibility level of new projects and repositories (**Private** after installation; **Public** is available only while `endpoints.default.auth.anonymous` is `true`) and lists what is public now, and **Authentication settings**. **Admin area › Settings › Authentication** holds the runtime settings, which are stored in PostgreSQL, apply to every replica and survive restarts and upgrades:
+**Admin area › Settings › General** opens **General settings**, whose section **Visibility**, open when the page opens, holds the **Default project visibility** of new projects and repositories (**Private** after installation; **Public** is available only while `endpoints.default.auth.anonymous` is `true`), the **Restricted visibility levels** that only an administrator may choose (none after installation, see [Permissions](permissions.md#restrict-who-opens-content)) and lists what is public now, and **Authentication settings**. **Admin area › Settings › Authentication** holds the runtime settings, which are stored in PostgreSQL, apply to every replica and survive restarts and upgrades:
 
 | Setting in the UI | What it does | Bounded by the file key |
 |---|---|---|

@@ -4,7 +4,8 @@ import { npmPublishBody } from '../npm-publish';
 // R-UI-047 journey "visibility" (R-UI-053 to R-UI-057, R-AUTHZ-030, R-AUTHZ-033, R-AUTHZ-034): an administrator sets the installation's
 // default level and a project's level and confirms a lowering that names the repository it lowers; the Owner of a public project sets the
 // artifacts of a repository to Public and its wiki to Internal; an anonymous visitor finds the public project, opens a package of it and
-// sees no README tab and makes no README request; an external user's start page holds the public project and no internal one.
+// sees no README tab and makes no README request; an external user's start page holds the public project and no internal one. With
+// Public restricted to administrators (R-UI-140, R-UI-141), the Owner keeps a public level and cannot choose it for the wiki.
 //
 // The journey needs the deployed backend of T-18 (the visibility handlers) and an installation whose default endpoint admits anonymous
 // requests (`endpoints.default.auth.anonymous`, R-EP-010); it was written against the generated types and the fakes of the component tier.
@@ -45,7 +46,7 @@ test.beforeAll(async ({ admin }) => {
 
 test.afterAll(async ({ admin }) => {
   await admin.patch('/api/v1/users/bob', { data: { external: false }, headers: merge });
-  await admin.patch('/api/v1/settings/visibility', { data: { defaultLevel: 'private' }, headers: merge });
+  await admin.patch('/api/v1/settings/visibility', { data: { defaultLevel: 'private', restrictedLevels: [] }, headers: merge });
   for (const [project, repos] of [
     [publicProject, [publicRepo, wikiRepo]],
     [internalProject, []],
@@ -61,10 +62,10 @@ test('R-UI-053 R-UI-054 an administrator sets the default level, and lowers a pr
 
   await test.step('the default level is saved and a project created afterwards has the Internal icon', async () => {
     await page.goto('/ui/en/admin/settings/general');
-    await page.getByRole('button', { name: 'Visibility', exact: true }).click();
+    // The section is open when the page opens (Q-UI-540).
     await page.getByRole('radio', { name: /^Internal/ }).check();
     await page.getByRole('button', { name: 'Save changes (visibility)' }).click();
-    await expect(page.getByText('Default visibility saved.')).toBeVisible();
+    await expect(page.getByText('Visibility settings saved.')).toBeVisible();
     await expectAccessible(page, 'general settings, visibility');
     const created = await admin.post('/api/v1/projects', { data: { key: defaultProject, displayName: 'Journey default', description: '' } });
     expect(created.status(), await created.text()).toBe(201);
@@ -75,7 +76,6 @@ test('R-UI-053 R-UI-054 an administrator sets the default level, and lowers a pr
 
   await test.step('the public project is listed as public and lists what is public in the general settings', async () => {
     await page.goto('/ui/en/admin/settings/general');
-    await page.getByRole('button', { name: 'Visibility', exact: true }).click();
     await expect(page.getByTestId('public-objects').getByRole('link', { name: publicProject, exact: true })).toBeVisible();
     await expect(page.getByTestId('public-objects').getByRole('link', { name: `${publicProject}/${publicRepo}` })).toBeVisible();
   });
@@ -151,6 +151,22 @@ test('R-UI-055 the Owner of a public project sets the artifacts of a repository 
     await expect(bob.getByRole('row', { name: new RegExp(wikiRepo) }).getByRole('img', { name: 'Public' })).toBeVisible();
     const stored = await admin.get(`/api/v1/projects/${publicProject}/repositories/${wikiRepo}`);
     expect((await stored.json()).visibility).toEqual({ artifacts: 'public', wiki: 'internal' });
+  });
+
+  await test.step('R-UI-141 with Public restricted, the Owner keeps the public artifacts and cannot open the wiki to the public', async () => {
+    const restricted = await admin.patch('/api/v1/settings/visibility', { data: { restrictedLevels: ['public'] }, headers: merge });
+    expect(restricted.status(), await restricted.text()).toBe(200);
+    await bob.goto(`/ui/en/projects/${publicProject}/repositories/${wikiRepo}/settings`);
+    const artifacts = bob.getByRole('group', { name: 'Artifacts' });
+    const wiki = bob.getByRole('group', { name: 'Wiki' });
+    await expect(artifacts.getByRole('radio', { name: /^Public/ })).toBeChecked();
+    await expect(artifacts.getByRole('radio', { name: /^Public/ })).toBeEnabled();
+    await expect(artifacts).toContainText('only an administrator can choose it again');
+    await expect(wiki.getByRole('radio', { name: /^Public/ })).toBeDisabled();
+    await expect(wiki).toContainText('Only an administrator of Quader can choose this level.');
+    await expectAccessible(bob, 'repository access, a restricted level');
+    const lifted = await admin.patch('/api/v1/settings/visibility', { data: { restrictedLevels: [] }, headers: merge });
+    expect(lifted.status(), await lifted.text()).toBe(200);
   });
 
   expect(await csp(), 'securitypolicyviolation events').toEqual([]);

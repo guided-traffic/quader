@@ -2,7 +2,17 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { seriousViolations } from '../../testing/axe';
 import { settle } from '../../testing/screen';
-import { VisibilityIcon, VisibilityLevel, VisibilityLevelControl, aboveProjectReasons, isMoreOpen, lowerLevel } from './visibility-level';
+import {
+  VisibilityIcon,
+  VisibilityLevel,
+  VisibilityLevelControl,
+  aboveProjectReasons,
+  firstReasons,
+  installationReasons,
+  isMoreOpen,
+  lowerLevel,
+  restrictedNotes,
+} from './visibility-level';
 
 @Component({
   imports: [VisibilityLevelControl, VisibilityIcon],
@@ -99,5 +109,36 @@ describe('The visibility level control (R-UI-053, R-UI-055, Q-UI-228)', () => {
     expect(Object.keys(aboveProjectReasons('private'))).toEqual(['internal', 'public']);
     expect(aboveProjectReasons('public')).toEqual({});
     expect(aboveProjectReasons(null)).toEqual({});
+  });
+});
+
+describe('The reasons of the installation (R-UI-141, R-AUTHZ-038)', () => {
+  const choices = (over: Partial<{ restrictedLevels: VisibilityLevel[]; mayChooseRestricted: boolean; publicAvailable: boolean }> = {}) => ({
+    defaultLevel: 'private' as VisibilityLevel,
+    restrictedLevels: [] as VisibilityLevel[],
+    mayChooseRestricted: false,
+    publicAvailable: true,
+    ...over,
+  });
+
+  it('R-UI-141 a restricted level is off for whom may not choose it, except the level the object keeps', () => {
+    expect(Object.keys(installationReasons(choices({ restrictedLevels: ['internal', 'public'] })))).toEqual(['internal', 'public']);
+    expect(Object.keys(installationReasons(choices({ restrictedLevels: ['internal', 'public'] }), 'public'))).toEqual(['internal']);
+    expect(installationReasons(choices({ restrictedLevels: ['public'], mayChooseRestricted: true }))).toEqual({});
+    expect(installationReasons(null)).toEqual({});
+  });
+
+  it('R-AUTHZ-038 Public unavailable is named before the restriction, and the project before both', () => {
+    const r = installationReasons(choices({ restrictedLevels: ['public'], publicAvailable: false }));
+    expect(r.public).toContain('endpoints.default.auth.anonymous');
+    expect(firstReasons(aboveProjectReasons('internal'), r).public).toContain('The project is internal');
+  });
+
+  it('R-UI-141 an administrator gets a note under every restricted level, anyone else under the level it keeps', () => {
+    expect(Object.keys(restrictedNotes(choices({ restrictedLevels: ['internal', 'public'], mayChooseRestricted: true })))).toEqual([
+      'internal',
+      'public',
+    ]);
+    expect(Object.keys(restrictedNotes(choices({ restrictedLevels: ['internal', 'public'] }), 'public'))).toEqual(['public']);
   });
 });

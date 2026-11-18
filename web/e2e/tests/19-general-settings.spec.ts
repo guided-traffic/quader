@@ -12,23 +12,33 @@ test.afterEach(async ({ admin }) => {
   await admin.put('/api/v1/system/maintenance', { data: { mode: 'normal' } });
   await admin.put('/api/v1/system/banner', { data: { enabled: false } });
   await admin.patch('/api/v1/settings/visibility', {
-    data: { defaultLevel: 'private' },
+    data: { defaultLevel: 'private', restrictedLevels: [] },
     headers: { 'Content-Type': 'application/merge-patch+json', 'If-Match': '*' },
   });
 });
 
-test('R-UI-053 the default visibility level is saved in its own section and read back from the API', async ({ page, admin }) => {
+test('R-UI-053 R-UI-140 the default project visibility and the restricted levels are saved in one open section and read back from the API', async ({
+  page,
+  admin,
+}) => {
   await signInLocal(page);
   await page.goto('/ui/en/admin/settings/general');
-  const section = page.getByRole('button', { name: 'Visibility', exact: true });
-  await expect(section).toHaveAttribute('aria-expanded', 'false');
-  await section.click();
-  await expect(page.getByRole('radio', { name: /^Private/ })).toBeChecked();
-  await page.getByRole('radio', { name: /^Internal/ }).check();
+  // The section is open when the page opens (Q-UI-540).
+  await expect(page.getByRole('button', { name: 'Visibility', exact: true })).toHaveAttribute('aria-expanded', 'true');
+  const defaults = page.getByRole('group', { name: 'Default project visibility' });
+  const restricted = page.getByRole('group', { name: 'Restricted visibility levels' });
+  await expect(defaults.getByRole('radio', { name: /^Private/ })).toBeChecked();
+  // The default cannot be restricted.
+  await expect(restricted.getByRole('checkbox', { name: /^Private/ })).toBeDisabled();
+  await defaults.getByRole('radio', { name: /^Internal/ }).check();
+  await restricted.getByRole('checkbox', { name: /^Public/ }).check();
+  // A restricted level cannot be the default.
+  await expect(defaults.getByRole('radio', { name: /^Public/ })).toBeDisabled();
   await page.getByRole('button', { name: 'Save changes (visibility)' }).click();
-  await expect(page.getByText('Default visibility saved.')).toBeVisible();
-  const stored = await admin.get('/api/v1/settings/visibility');
-  expect((await stored.json()).defaultLevel).toBe('internal');
+  await expect(page.getByText('Visibility settings saved.')).toBeVisible();
+  const stored = await (await admin.get('/api/v1/settings/visibility')).json();
+  expect(stored.defaultLevel).toBe('internal');
+  expect(stored.restrictedLevels).toEqual(['public']);
   await expectAccessible(page, 'general settings, visibility');
 });
 

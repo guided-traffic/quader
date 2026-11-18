@@ -25,11 +25,16 @@ type Lowered struct {
 }
 
 // chosenLevel returns the level a project is created with: the one the client names, else the installation's default
-// (R-AUTHZ-033 rule 1, read in the creating transaction). A level that is no level is 422, and public while the default
-// endpoint admits no request without a credential is 409 (rule 5).
-func (s *service) chosenLevel(ctx context.Context, qs *q.Queries, named string) (string, error) {
+// (R-AUTHZ-033 rule 1, read in the creating transaction), which is never restricted (Q-AUTHZ-284). A level that is no level is
+// 422, public while the default endpoint admits no request without a credential is 409 (rule 5), and a restricted level named by
+// a caller who is not an administrator is 403 (R-AUTHZ-037).
+func (s *service) chosenLevel(ctx context.Context, qs *q.Queries, named string, admin bool) (string, error) {
+	rules, err := visibility.ReadRules(ctx, qs)
+	if err != nil {
+		return "", err
+	}
 	if named == "" {
-		return visibility.Default(ctx, qs)
+		return rules.Default, nil
 	}
 	if !visibility.Valid(named) {
 		return "", errs.E(errs.Invalid, errs.CodeValidation, "The level is one of private, internal and public.",
@@ -37,6 +42,9 @@ func (s *service) chosenLevel(ctx context.Context, qs *q.Queries, named string) 
 	}
 	if named == visibility.Public && !s.publicAvailable() {
 		return "", visibility.PublicNotAllowed()
+	}
+	if !rules.Allows(named, admin) {
+		return "", visibility.LevelRestricted(named, "/visibility")
 	}
 	return named, nil
 }
@@ -47,8 +55,9 @@ func (s *service) publicAvailable() bool { return s.o.PublicAvailable != nil && 
 // version, sets the level and, when it is lowered, takes every repository above it down to it with a new configuration version
 // (R-AUTHZ-033 rule 3). It notifies the area authz, and the area repo_config for each lowered repository, and records
 // authz.project.visibility_changed with the lowered repositories and authz.settings.changed with the cause project for each of
-// them. The level it already has changes nothing and records nothing.
-func (s *service) SetVisibility(ctx context.Context, actor authz.Subject, key string, expected int64, level string) (Project, []Lowered, int64, error) {
+// them. The level it already has changes nothing and records nothing. A restricted level is refused to a caller who is not an
+// administrator (admin false, R-AUTHZ-037), after the refusal of public.
+func (s *service) SetVisibility(ctx context.Context, actor authz.Subject, key string, expected int64, level string, admin bool) (Project, []Lowered, int64, error) {
 	if !visibility.Valid(level) {
 		return Project{}, nil, 0, errs.E(errs.Invalid, errs.CodeValidation, "The level is one of private, internal and public.",
 			errs.WithFields(visibility.InvalidLevel("/level")))
@@ -75,6 +84,15 @@ func (s *service) SetVisibility(ctx context.Context, actor authz.Subject, key st
 		}
 		if level == visibility.Public && !s.publicAvailable() {
 			return visibility.PublicNotAllowed()
+		}
+		if !admin {
+			rules, err := visibility.ReadRules(ctx, qs)
+			if err != nil {
+				return err
+			}
+			if !rules.Allows(level, admin) {
+				return visibility.LevelRestricted(level, "/level")
+			}
 		}
 		if err := qs.ProjectSetVisibility(ctx, q.ProjectSetVisibilityParams{ID: id, Level: level, Actor: actorID(actor)}); err != nil {
 			return err

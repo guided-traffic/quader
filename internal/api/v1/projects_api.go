@@ -226,6 +226,11 @@ func (s *Server) CreateProject(w http.ResponseWriter, r *http.Request, _ gen.Cre
 	if in.Owners != nil {
 		input.Owners = *in.Owners
 	}
+	// An administrator names a level the installation restricts (R-AUTHZ-037, Q-AUTHZ-283).
+	if input.MayChooseRestricted, err = s.holds(r.Context(), string(authz.SecuritySettingsWrite)); err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	actor := caller(r)
 	var epoch int64
 	err = s.idem.Do(w, r, body, IdempotentOp{Run: func(ctx context.Context, tx meta.Tx) (Outcome, error) {

@@ -386,7 +386,7 @@ long reader).
 | `service_account` | The service account record | `principal_id` (PK, kind `service_account`) | data |
 | `api_token` | PAT, SAT and CIT; only `secret_sha256` is stored (R-AUTH-023) | `id`, `type`, `secret_sha256` (unique, 32 bytes), `principal_id`, `scope jsonb`, `expires_at`, `revoked_at`, `revocation_reason`, `rotated_from` and `derived_from` (plain uuid, Q-AUTH-15), `rejection_logged_at`, `expiry_notified_at`, `ci_context` | data |
 | `auth_settings` | The runtime authentication settings, one seeded row (R-AUTH-040); NULL means the YAML value | `new_users_external` (00074), `pat_*_ttl`, `sat_*_ttl`, `expiry_notice` | data |
-| `visibility_settings` | The installation's default visibility level, one seeded row (R-API-056, 00073) | `default_level`, `version` (the ETag of `PATCH /settings/visibility`) | data |
+| `visibility_settings` | The installation's default visibility level and its restricted levels, one seeded row (R-API-056, 00073; R-AUTHZ-037, 00077) | `default_level`, `restricted_levels` (never holding the default: a check constraint), `version` (the ETag of `PATCH /settings/visibility`) | data |
 
 `service_account_owner` (P1) and `scim` columns beyond `scim_external_id` come with their requirements.
 
@@ -559,6 +559,14 @@ Q-API-280), without the extension `pg_trgm` (00017):
 The package statements run after `SET LOCAL plan_cache_mode = force_custom_plan` (`SearchCustomPlans`): a prepared statement's generic
 plan walked every package for a rare word. `TestR_API_064_ThePackageStatementsUseTheirIndexes` in the integration area
 [search](../../test/integration/search) explains both statements as the server runs them.
+
+## The restricted visibility levels (00077)
+
+[00077_visibility_restricted](../../internal/meta/postgres/migrations/00077_visibility_restricted.sql) is an expand step of W-11
+(R-AUTHZ-037, Q-AUTHZ-289): `visibility_settings.restricted_levels`, a `text[]` that is empty by default. Its check constraint admits
+only the three levels and never the row's `default_level`, so neither a write through the API nor a direct `UPDATE` stores a default
+that only an administrator could choose. The service stores the set without duplicates in the order of the levels; the queries of
+[visibility.sql](../../internal/meta/postgres/queries/visibility.sql) read and write it with the default, under one `version`.
 
 ## Debian tables (00060 to 00065)
 

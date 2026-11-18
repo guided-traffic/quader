@@ -12,7 +12,7 @@ import {
   PROJECT_KEY_PATTERN,
 } from '../projects-api';
 import { ApiError } from '../problem';
-import { LoadedVisibilitySettings, VisibilityApi, VisibilitySettingsPatch } from '../visibility-api';
+import { LoadedVisibilitySettings, VisibilityApi, VisibilityChoices, VisibilitySettingsPatch } from '../visibility-api';
 import { Versioned } from '../repositories-api';
 
 /*
@@ -280,12 +280,25 @@ export class FakeVisibilityApi extends VisibilityApi {
     etag: '"1"',
     settings: {
       defaultLevel: 'private',
+      restrictedLevels: [],
       publicAvailable: true,
       publicObjects: { projects: [], repositories: [], truncated: false },
     },
   };
   readonly patches: { patch: VisibilitySettingsPatch; etag: string }[] = [];
   failure: ApiError | null = null;
+  /** Whether the caller of `choices()` is an administrator (`security-settings:write`, Q-AUTHZ-283). */
+  mayChooseRestricted = true;
+
+  override async choices(): Promise<VisibilityChoices> {
+    const s = this.stored.settings;
+    return {
+      defaultLevel: s.defaultLevel,
+      restrictedLevels: [...s.restrictedLevels],
+      mayChooseRestricted: this.mayChooseRestricted,
+      publicAvailable: s.publicAvailable,
+    };
+  }
 
   override async load(): Promise<LoadedVisibilitySettings> {
     if (this.failure) {
@@ -305,10 +318,18 @@ export class FakeVisibilityApi extends VisibilityApi {
     }
     if (etag !== this.stored.etag) throw problem(412, 'precondition_failed', { currentEtag: this.stored.etag });
     const level = patch.defaultLevel ?? this.stored.settings.defaultLevel;
-    if (level === 'public' && !this.stored.settings.publicAvailable) throw problem(409, 'public_not_allowed');
+    const restricted = patch.restrictedLevels ?? this.stored.settings.restrictedLevels;
+    if (restricted.includes(level)) {
+      throw problem(422, 'validation_failed', {
+        errors: [{ pointer: patch.restrictedLevels ? '/restrictedLevels' : '/defaultLevel', code: 'default_level_restricted', detail: 'The default level cannot be restricted.' }],
+      });
+    }
+    if (level !== this.stored.settings.defaultLevel && level === 'public' && !this.stored.settings.publicAvailable) {
+      throw problem(409, 'public_not_allowed');
+    }
     this.stored = {
       etag: `"${Number.parseInt(this.stored.etag.replaceAll('"', ''), 10) + 1}"`,
-      settings: { ...this.stored.settings, defaultLevel: level },
+      settings: { ...this.stored.settings, defaultLevel: level, restrictedLevels: [...restricted] },
     };
     return structuredClone(this.stored);
   }

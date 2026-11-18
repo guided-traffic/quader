@@ -96,6 +96,10 @@ export function describeAccessProblem(code: string | null): string | null {
       return $localize`:@@problem.project_not_empty:The project still has repositories or service accounts. Move or delete the repositories and delete the service accounts first.`;
     case 'public_not_allowed':
       return $localize`:@@problem.public_not_allowed:The installation's configuration admits no request without a credential, so nothing can be public.`;
+    case 'visibility_level_restricted':
+      return $localize`:@@problem.visibility_level_restricted:Only an administrator of Quader can choose this visibility level. A level that is already set may be kept or lowered.`;
+    case 'default_level_restricted':
+      return $localize`:@@problem.default_level_restricted:A restricted level cannot be the default project visibility.`;
     case 'visibility_above_project':
       return $localize`:@@problem.visibility_above_project:A repository cannot be more open than its project.`;
     case 'visibility_wiki_above_artifacts':

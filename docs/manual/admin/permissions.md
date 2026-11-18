@@ -158,7 +158,8 @@ A project has one level; a repository has one for its **artifacts**, what packag
 | **Public** | Every request, also one without a credential, where the endpoint admits requests without a credential |
 
 - **Never more open than the container.** The artifacts of a repository are at most as open as its project, and its wiki at most as open as its artifacts. The screens disable the options above the limit and say why; the API answers 422 `visibility_above_project` or `visibility_wiki_above_artifacts`. Lowering a project lowers the repositories above the new level with it, and lowering never withdraws what a client already downloaded.
-- **Who sets it.** An administrator sets a project's level (**Settings › Visibility** of the project, `projects:write`); the Owner of the project or a holder of `repositories:write-config` sets the levels of a repository (**Access › Visibility** of the repository). The default for projects and repositories created later is the **Visibility** section of **Admin area › Settings › General** (`security-settings:write`). A new repository starts at the lower of that default and its project's level.
+- **Who sets it.** An administrator sets a project's level (**Settings › Visibility** of the project, `projects:write`); the Owner of the project or a holder of `repositories:write-config` sets the levels of a repository (**Visibility** on the repository's settings page). The default for projects and repositories created later is **Default project visibility** in the section **Visibility** of **Admin area › Settings › General** (`security-settings:write`). A new repository starts at the lower of that default and its project's level.
+- **Restricted levels.** In the same section, **Restricted visibility levels** has one checkbox per level. A level you tick can be chosen only by an administrator, a holder of `security-settings:write` (the roles `admin` and `security-admin`): an Owner who chooses it for a repository, or a token without that permission that chooses it for a project, gets 403 `visibility_level_restricted`, and the screens show the option disabled with "Only an administrator of Quader can choose this level.". The default cannot be restricted, so its checkbox is disabled, and a restricted level cannot become the default. What has a restricted level keeps it: its Owner may leave it as it is or lower it to a level that is not restricted, but cannot choose it again. A new repository whose project's level is restricted starts at the next lower level its creator may choose. Restricting a level closes nothing that is open: to close a repository that is public already, lower it or its project. See [Restrict who opens content](#restrict-who-opens-content).
 - **Public needs an endpoint that admits it.** While the default endpoint has `auth.anonymous: false`, no level can be **Public**: the option is disabled with the reason and the API answers 409 `public_not_allowed`. See [Endpoints and exposure rules](endpoints.md).
 - **Internal and external users.** An administrator flags a user **External user** on the user's page; an external user reads what it is a member of, what a policy grants it and what is **Public**. A service account, a CI token and a Bastion registration are never internal: they read what their grants give and what is **Public**. See [Sign-in and identities](sign-in-and-identity.md#internal-and-external-users).
 - **A remote repository that is public** lets anyone fill its cache from the upstream; saving it answers with a warning, and `cacheFillAction: deploy` closes it ([Managing repositories](repositories.md)).
@@ -168,6 +169,18 @@ A project has one level; a repository has one for its **artifacts**, what packag
 The projects start page lists the projects the caller is a member of first, with the role, then the others its level admits, and a visitor without an account sees the **Public** ones.
 
 ## Typical setups
+
+### Restrict who opens content
+
+Only administrators should make anything public, and the teams keep choosing between **Private** and **Internal**:
+
+1. Open **Admin area › Settings › General**. The section **Visibility** is open.
+2. Under **Restricted visibility levels**, tick **Public**. Under **Default project visibility**, the option **Public** turns off.
+3. Select **Save changes** and sign in again if Quader asks for it.
+4. Check **Public now** in the same section: what is listed was opened before and stays public until you lower it.
+
+Through the API: `PATCH /api/v1/settings/visibility` with `{"restrictedLevels": ["public"]}`, `Content-Type:
+application/merge-patch+json` and the `ETag` of the last read in `If-Match`.
 
 ### Everyone signed in reads, and some content is public
 

@@ -102,15 +102,18 @@ It records only the settings that changed, before and after, with a journal entr
 ### The levels of a repository
 
 `visibility.artifacts` and `visibility.wiki` are columns of the row, members of the document (`Document.Visibility`), never part of
-`repositories.config`. [visibility.go](../../internal/repository/visibility.go) decides what a write stores (`resolveLevels`): on a
-create an absent artifacts level is the lower of the installation's default (`visibility.Default`, read in the transaction) and the
-project's level, an absent wiki level the lower of that and the artifacts level; on an update an absent member keeps the stored level,
-also in a `PUT`. The project is locked `FOR SHARE` before the repository (`lockProject` on a create, `lockForUpdate` on an update;
+`repositories.config`. [visibility.go](../../internal/repository/visibility.go) decides what a write stores (`resolveLevels`, the
+decision itself in `levelChoice.decide`): on a create an absent artifacts level is the lower of the installation's default
+(`visibility.ReadRules`, read in the transaction) and the project's level, an absent wiki level the lower of that and the artifacts
+level, each lowered to the highest level the caller may choose (`fallBack`, R-AUTHZ-037); on an update an absent member keeps the
+stored level, also in a `PUT`. The project is locked `FOR SHARE` before the repository (`lockProject` on a create, `lockForUpdate` on an update;
 the lowering of a project locks it `FOR UPDATE`, so a write
 sees the new level or waits). A level above the project is 422 `visibility_above_project` at `/visibility/artifacts`, a wiki above the
 artifacts `visibility_wiki_above_artifacts` at `/visibility/wiki`, a level that is none `invalid_value`, `public` while
-`Options.PublicAvailable` says no is 409 `public_not_allowed`. A level that rises calls `Caller.RaiseGate` (the handler's recent
-authentication) before anything is stored (Q-AUTHZ-281); a remote repository whose artifacts become `public` with `cacheFillAction`
+`Options.PublicAvailable` says no is 409 `public_not_allowed`, and a named level the installation restricts is 403
+`visibility_level_restricted` unless `Caller.MayChooseRestricted` (the handler's `security-settings:write`) or the part has it already
+(`chosen`); the order is R-AUTHZ-038. A level that rises calls `Caller.RaiseGate` (the handler's recent authentication) after every
+other rule passed and before anything is stored (Q-AUTHZ-281); a remote repository whose artifacts become `public` with `cacheFillAction`
 read carries the warning `public_populates_remote`. The update's `changes` list names `visibility` and `authz.SettingsHook` records the
 levels with the other access settings (`visibility.artifacts`, `visibility.wiki`, cause `request`); the replay reads the same flat keys
 (`replaySettings` in [journal_replay.go](../../internal/authz/journal_replay.go)) and sets the columns with `JournalRepositorySetLevels`.

@@ -3,16 +3,18 @@
 -- lock the caller holds.
 
 -- name: VisibilityDefaultGet :many
--- The installation's default level; the migration inserts the row, so a read always finds it.
-SELECT default_level, version FROM visibility_settings WHERE singleton;
+-- The installation's default level and its restricted levels (R-AUTHZ-037); the migration inserts the row, so a read always
+-- finds it.
+SELECT default_level, restricted_levels, version FROM visibility_settings WHERE singleton;
 
 -- name: VisibilityDefaultLock :many
--- The same row under its lock, for the write of the default (R-API-056).
-SELECT default_level, version FROM visibility_settings WHERE singleton FOR UPDATE;
+-- The same row under its lock, for the write of the settings (R-API-056).
+SELECT default_level, restricted_levels, version FROM visibility_settings WHERE singleton FOR UPDATE;
 
 -- name: VisibilityDefaultSet :many
 UPDATE visibility_settings
-   SET default_level = sqlc.arg(level)::text, version = version + 1, updated_at = now(), updated_by = NULLIF(sqlc.arg(actor)::text, '')::uuid
+   SET default_level = sqlc.arg(level)::text, restricted_levels = sqlc.arg(restricted)::text[], version = version + 1,
+       updated_at = now(), updated_by = NULLIF(sqlc.arg(actor)::text, '')::uuid
  WHERE singleton
 RETURNING version;
 

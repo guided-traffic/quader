@@ -5,6 +5,7 @@ package projects
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/authz"
 	_ "github.com/guided-traffic/quader/internal/formats/all"
@@ -339,5 +340,108 @@ func TestR_AUTHZ_035_TheProjectsAnInternalUserSees(t *testing.T) {
 		f.e.Exec("UPDATE app_user SET external = true WHERE principal_id = $1::uuid", f.bob.ID)
 		wantStatus(t, f.do(f.bob, "GET", base+"/inner", nil), 404, "")
 		wantStatus(t, f.do(f.bob, "GET", base+"/open", nil), 200, "")
+	})
+}
+
+// TestR_AUTHZ_037_RestrictedLevels: the restricted levels of the installation over HTTP (R-AUTHZ-037, R-API-075, R-API-076): an
+// Owner of a project is refused a restricted level for a repository and an administrator is not; a repository that has the level
+// keeps it, and its Owner lowers it but cannot choose it again; an absent level of an Owner's create takes the highest level it
+// may choose, and none is refused; the default is never restricted; the change is audited with both sets.
+func TestR_AUTHZ_037_RestrictedLevels(t *testing.T) {
+	f := newFixture(t)
+	f.create("web", map[string]any{"visibility": "public"})
+	wantStatus(t, f.member("web", "user:alice", "owner"), 201, "")
+	// The role reaches both replicas through the change log: wait until each one answers the Owner.
+	deadline := time.Now().Add(15 * time.Second)
+	for streak := 0; streak < 6; {
+		if got := f.do(f.alice, "GET", base+"/web", nil); got.Status == 200 && got.JSON(t)["role"] == "owner" {
+			streak++
+		} else if streak = 0; time.Now().After(deadline) {
+			t.Fatal("the Owner is not known to both replicas")
+		}
+	}
+	patchSettings := func(body map[string]any) stack.Response {
+		return f.do(f.admin, "PATCH", settingsPath, body, "If-Match", "*", "Content-Type", "application/merge-patch+json")
+	}
+	repoPatch := func(who stack.Person, key string, v map[string]any) stack.Response {
+		return f.do(who, "PATCH", base+"/web/repositories/"+key, map[string]any{"visibility": v}, "If-Match", "*", "Content-Type", "application/merge-patch+json")
+	}
+	create := func(who stack.Person, key, artifacts string) stack.Response {
+		doc := map[string]any{"key": key, "class": "local", "format": "npm"}
+		if artifacts != "" {
+			doc["visibility"] = map[string]any{"artifacts": artifacts}
+		}
+		return f.do(who, "POST", base+"/web/repositories", doc)
+	}
+	wantStatus(t, f.repo("web", "npm-open", "public", "public"), 201, "")
+
+	t.Run("R-API-075 the restricted levels are set beside the default, audited with both sets", func(t *testing.T) {
+		r := patchSettings(map[string]any{"restrictedLevels": []string{"public", "public"}})
+		wantStatus(t, r, 200, "")
+		if got := fmt.Sprint(r.JSON(t)["restrictedLevels"]); got != "[public]" {
+			t.Errorf("restrictedLevels = %s", got)
+		}
+		if f.events("settings.visibility.changed") != 1 ||
+			f.e.Text("SELECT details->'after'->>'restrictedLevels' FROM audit_event WHERE action = 'settings.visibility.changed'") != `["public"]` ||
+			f.e.Text("SELECT details->'before'->>'restrictedLevels' FROM audit_event WHERE action = 'settings.visibility.changed'") != `[]` {
+			t.Error("settings.visibility.changed does not carry the set before and after")
+		}
+	})
+	t.Run("Q-AUTHZ-284 the default is never restricted, and a restricted level never becomes the default", func(t *testing.T) {
+		wantStatus(t, patchSettings(map[string]any{"restrictedLevels": []string{"private"}}), 422, "default_level_restricted")
+		wantStatus(t, patchSettings(map[string]any{"defaultLevel": "public"}), 422, "default_level_restricted")
+		if err := f.e.TryExec("UPDATE visibility_settings SET restricted_levels = '{private}'"); err == nil {
+			t.Error("the database stored a restricted default")
+		}
+	})
+	t.Run("R-API-076 every signed-in caller reads its choices", func(t *testing.T) {
+		mine := f.do(f.alice, "GET", "/api/v1/visibility-choices", nil)
+		wantStatus(t, mine, 200, "")
+		if got := fmt.Sprint(mine.JSON(t)); got != "map[defaultLevel:private mayChooseRestricted:false publicAvailable:true restrictedLevels:[public]]" {
+			t.Errorf("alice reads %s", got)
+		}
+		if got := f.do(f.admin, "GET", "/api/v1/visibility-choices", nil).JSON(t)["mayChooseRestricted"]; got != true {
+			t.Errorf("the administrator reads mayChooseRestricted %v", got)
+		}
+		wantStatus(t, f.cl.Do("", "GET", "/api/v1/visibility-choices", nil), 401, "")
+	})
+	t.Run("R-AUTHZ-037 an Owner is refused a restricted level, an administrator is not", func(t *testing.T) {
+		wantProblem(t, create(f.alice, "npm-owner", "public"), 403, "visibility_level_restricted")
+		wantStatus(t, create(f.alice, "npm-owner", "internal"), 201, "")
+		wantProblem(t, repoPatch(f.alice, "npm-owner", map[string]any{"artifacts": "public"}), 403, "visibility_level_restricted")
+		wantStatus(t, create(f.admin, "npm-admin", "public"), 201, "")
+		wantStatus(t, repoPatch(f.admin, "npm-owner", map[string]any{"artifacts": "public"}), 200, "")
+	})
+	t.Run("Q-AUTHZ-285 an existing object keeps a restricted level and is lowered, but not raised to it again", func(t *testing.T) {
+		wantStatus(t, f.do(f.alice, "PATCH", base+"/web/repositories/npm-open", map[string]any{"description": "kept public"}, "If-Match", "*", "Content-Type", "application/merge-patch+json"), 200, "")
+		wantStatus(t, repoPatch(f.alice, "npm-open", map[string]any{"artifacts": "public", "wiki": "internal"}), 200, "")
+		if got := f.levels("web", "npm-open"); got != "public/internal" {
+			t.Errorf("stored %s", got)
+		}
+		wantProblem(t, repoPatch(f.alice, "npm-open", map[string]any{"wiki": "public"}), 403, "visibility_level_restricted")
+		wantStatus(t, repoPatch(f.alice, "npm-open", map[string]any{"artifacts": "internal", "wiki": "internal"}), 200, "")
+		wantProblem(t, repoPatch(f.alice, "npm-open", map[string]any{"artifacts": "public"}), 403, "visibility_level_restricted")
+	})
+	t.Run("Q-AUTHZ-286 an absent level takes the highest level the Owner may choose, and none left is refused", func(t *testing.T) {
+		wantStatus(t, patchSettings(map[string]any{"defaultLevel": "public", "restrictedLevels": []string{"internal"}}), 200, "")
+		wantStatus(t, f.do(f.admin, "PUT", base+"/web/visibility", map[string]any{"level": "internal"}, "If-Match", "*"), 200, "")
+		wantStatus(t, create(f.alice, "npm-absent", ""), 201, "")
+		if got := f.levels("web", "npm-absent"); got != "private/private" {
+			t.Errorf("an Owner's absent level in an internal project with internal restricted: %s", got)
+		}
+		wantStatus(t, create(f.admin, "npm-absent-admin", ""), 201, "")
+		if got := f.levels("web", "npm-absent-admin"); got != "internal/internal" {
+			t.Errorf("an administrator's absent level: %s", got)
+		}
+		wantStatus(t, patchSettings(map[string]any{"restrictedLevels": []string{"private", "internal"}}), 200, "")
+		wantProblem(t, create(f.alice, "npm-none", ""), 403, "visibility_level_restricted")
+	})
+	t.Run("R-AUTHZ-037 an administrator sets a restricted level of a project", func(t *testing.T) {
+		// The default is public since the subtest before: both move in one patch, the result is checked (Q-AUTHZ-284).
+		wantStatus(t, patchSettings(map[string]any{"defaultLevel": "private", "restrictedLevels": []string{"public"}}), 200, "")
+		wantStatus(t, f.do(f.admin, "PUT", base+"/web/visibility", map[string]any{"level": "public"}, "If-Match", "*"), 200, "")
+		if f.level("web") != "public" {
+			t.Errorf("the administrator's project level: %s", f.level("web"))
+		}
 	})
 }
