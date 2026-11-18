@@ -698,13 +698,14 @@ func (a *App) Shutdown(ctx context.Context) error {
 		at = plan.ReleaseAt
 	}
 	quiesced := make(chan struct{})
+	settled := make(chan struct{}) // closed when the listeners and the settlers have returned
 	quiesce := time.AfterFunc(time.Until(at), func() {
 		defer close(quiesced)
 		for _, q := range first {
 			q.Quiesce(sctx)
 		}
 		if len(first) > 0 && len(rest) > 0 {
-			sleep(sctx, time.Until(plan.QuiesceAt))
+			a.waitForTheRest(sctx, plan.QuiesceAt, settled)
 		}
 		for _, q := range rest {
 			q.Quiesce(sctx)
@@ -736,6 +737,7 @@ func (a *App) Shutdown(ctx context.Context) error {
 		}
 	}
 	wg.Wait()
+	close(settled)
 	// A quiesce that is not due yet never starts; one that has started is waited for, so no
 	// handler is being cancelled while the components close, and no more than until the close
 	// deadline.
@@ -814,6 +816,25 @@ func (a *App) drainComponents(ctx context.Context, comps []Component, by time.Ti
 		mu.Unlock()
 		sort.Strings(names)
 		a.log.Warn("components were still draining at the end of the drain step; the shutdown goes on", "components", names)
+	}
+}
+
+// waitForTheRest is the pause between the quiesce of the job worker and that of the other components (the remote engines),
+// until at, the quiesce instant of the plan (Q-ARCH-318). On a replica without client listeners the engines serve the job
+// handlers only, so once the settle step is over, every handler has returned and nothing is left that the pause would let
+// finish: the pause ends then instead of holding the stop to the quiesce instant with nothing running (Q-ARCH-502). A replica
+// with client listeners keeps the pause, because a fetch that a request started may still be finishing in the background.
+func (a *App) waitForTheRest(ctx context.Context, at time.Time, settled <-chan struct{}) {
+	if a.client != nil {
+		sleep(ctx, time.Until(at))
+		return
+	}
+	t := time.NewTimer(time.Until(at))
+	defer t.Stop()
+	select {
+	case <-t.C:
+	case <-settled:
+	case <-ctx.Done():
 	}
 }
 

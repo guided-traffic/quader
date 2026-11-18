@@ -234,6 +234,10 @@ session step: `uploadSessionsAborted, uploadSessionsCleaned, uploadObjectsDelete
    before the earliest claim, with that instant as the call's deadline; records `object_deleted_at`;
 5. waits up to `delete_settle` (plus two polls) to drop the rows it deleted; the wait ends with a pass that started after its deadline
    ([Q-STOR-216](../spec/storage.md#q-stor-216--the-settle-wait-of-a-collection-run-ends-with-a-pass-that-started-after-its-deadline)).
+   When `RunOptions.Draining` closes (the job's `Run.Draining()`, the replica's shutdown), the wait ends with `blob.ErrHandedOver`
+   after its current pass; the job handler in [wire_jobs.go](../../internal/app/wire_jobs.go) turns that into `jobs.ErrReleased`, so
+   the job is released at once and the run that continues on another worker drops the rows
+   ([Q-STOR-217](../spec/storage.md#q-stor-217--a-collection-run-in-its-settle-wait-hands-the-wait-over-when-its-replica-begins-to-stop)).
 
 On cancellation (a drain) the run cancels its S3 calls, waits for them, records the deletes that succeeded and sets
 `state_changed_at = now() − (handover_delay − delete_settle)` on its other claims, so the run that continues finishes

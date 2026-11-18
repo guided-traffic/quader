@@ -100,6 +100,12 @@ func (r *Run) SaveProgress(ctx context.Context, done, total int64, unit string) 
 	return nil
 }
 
+// Draining is closed when the replica starts its shutdown (R-ARCH-024 step 1). A handler that is only waiting at that moment,
+// for time to pass and not for work of its own, selects on it and returns an error that wraps [ErrReleased]: the job is then
+// released at once without counting the attempt and resumes on another worker, instead of being held by a stopping replica until
+// the release of step 4 (Q-ARCH-501). A handler that is doing work ignores it and is released at step 4 as before.
+func (r *Run) Draining() <-chan struct{} { return r.w.drainCh }
+
 // SetResult sets the result stored when the handler returns nil.
 func (r *Run) SetResult(v any) error {
 	b, err := json.Marshal(v)

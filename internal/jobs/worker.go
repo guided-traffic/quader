@@ -99,7 +99,10 @@ type Worker struct {
 	// quiesced is set by Quiesce under mu: a job registered after it is cancelled at once.
 	quiesced bool
 
-	draining  atomic.Bool
+	draining atomic.Bool
+	// drainCh is closed once, by the first of Drain, Quiesce and Stop (Run.Draining).
+	drainCh   chan struct{}
+	drainOnce sync.Once
 	wake      chan struct{}
 	started   atomic.Bool
 	subMu     sync.Mutex
@@ -145,7 +148,7 @@ func NewWorker(o WorkerOptions) (*Worker, error) {
 	w := &Worker{
 		o: o, log: o.Log.With("component", "jobs"), m: m,
 		slots: map[string]int{}, running: map[string]*runningJob{}, perQueue: map[string]int{},
-		wake: make(chan struct{}, 1),
+		wake: make(chan struct{}, 1), drainCh: make(chan struct{}),
 	}
 	w.q = NewQueue(QueueOptions{DB: o.Main, Registry: o.Registry, Signals: o.Signals, Log: o.Log})
 	return w, nil
@@ -238,21 +241,40 @@ func (w *Worker) callTimeout() time.Duration { return cluster.CallTimeout(w.o.Wa
 // worker schedules from its next retry instead of after this drain
 // (R-ARCH-024 step 1). It does not wait for running jobs.
 func (w *Worker) Drain(ctx context.Context) {
-	w.draining.Store(true)
+	w.startDraining()
 	if w.o.Leases != nil && w.started.Load() {
 		w.o.Leases.Release(ctx, cluster.LeaseScheduler)
 	}
 }
 
-// Settle waits for the running jobs to finish (R-ARCH-024 step 3).
+// startDraining stops the claims and tells the handlers that watch Run.Draining.
+func (w *Worker) startDraining() {
+	w.draining.Store(true)
+	w.drainOnce.Do(func() { close(w.drainCh) })
+}
+
+// settleLogAfter is how long the shutdown waits for running jobs before it says in the log which ones it waits for (Q-ARCH-502).
+var settleLogAfter = 5 * time.Second
+
+// Settle waits for the running jobs to finish (R-ARCH-024 step 3). A wait longer than settleLogAfter is logged once with the
+// kind and ID of every job still running, so a stop that takes the whole server phase says what held it.
 func (w *Worker) Settle(ctx context.Context) error {
 	done := make(chan struct{})
 	go func() { w.runWG.Wait(); close(done) }()
-	select {
-	case <-done:
-		return nil
-	case <-ctx.Done():
-		return nil // the jobs are cancelled and released by Quiesce
+	t := time.NewTimer(settleLogAfter)
+	defer t.Stop()
+	for {
+		select {
+		case <-done:
+			return nil
+		case <-ctx.Done():
+			return nil // the jobs are cancelled and released by Quiesce
+		case <-t.C:
+			if names := w.runningNames(); names != "" {
+				w.log.Info("shutdown waits for the running jobs; those still running at the release are released and resume on another worker",
+					"running", names, "waited", settleLogAfter.String())
+			}
+		}
 	}
 }
 
@@ -263,15 +285,21 @@ func (w *Worker) QuiescesFirst() {}
 // R-ARCH-024 step 4). Each persists its checkpoint and returns, and its job is
 // released without counting the attempt (R-ARCH-016).
 func (w *Worker) Quiesce(ctx context.Context) {
-	w.draining.Store(true)
+	w.startDraining()
 	w.mu.Lock()
 	// A claim that was in flight when the drain began returns its rows after this loop; register (below) cancels those at once,
 	// under the same lock, so no handler starts after the quiesce with nothing to stop it before the end of the shutdown.
 	w.quiesced = true
+	released := make([]string, 0, len(w.running))
 	for _, rj := range w.running {
 		rj.cancel(ErrReleased)
+		released = append(released, rj.job.Kind+" "+rj.job.ID)
 	}
 	w.mu.Unlock()
+	if len(released) > 0 {
+		sort.Strings(released)
+		w.log.Info("running jobs released for shutdown", "jobs", strings.Join(released, ", "))
+	}
 	done := make(chan struct{})
 	go func() { w.runWG.Wait(); close(done) }()
 	select {
@@ -285,7 +313,7 @@ func (w *Worker) Stop(ctx context.Context) error {
 	if !w.started.Load() {
 		return nil
 	}
-	w.draining.Store(true)
+	w.startDraining()
 	w.cancel(ErrReleased)
 	w.subMu.Lock()
 	stopSub := w.stopSub
@@ -446,6 +474,10 @@ func (w *Worker) execute(ctx context.Context, rj *runningJob) {
 		err = call(ctx)
 	}
 	cause := context.Cause(ctx)
+	if cause == nil && errors.Is(err, ErrReleased) && w.draining.Load() {
+		// The handler gave its job up at the drain (Run.Draining, Q-ARCH-501). Outside a drain the same error is a failure.
+		cause = ErrReleased
+	}
 	w.settle(rj, err, cause, time.Since(started))
 
 	w.forget(rj)

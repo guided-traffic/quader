@@ -126,6 +126,18 @@ func TestShutdownPlan(t *testing.T) {
 		}
 	})
 
+	t.Run("R-ARCH-024 R-HA-011 F-146 F-137 the worker of the dev profile (grace 60 s, drain delay 15 s) releases its running jobs 29 s after the signal and quiesces the engines at 35 s", func(t *testing.T) {
+		// The 35.0 s of the stops read in F-146 and F-137 are these two instants: the release of the running jobs at 29 s, then the
+		// pause until the engines' quiesce at 35 s, after which the close phase took milliseconds.
+		p := planShutdown(t0, 0, derived(60*time.Second, 15*time.Second), b)
+		if got := p.ReleaseAt.Sub(t0); got != 29*time.Second {
+			t.Errorf("release at %s, want 29s", got)
+		}
+		if got := p.QuiesceAt.Sub(t0); got != 35*time.Second {
+			t.Errorf("quiesce at %s, want 35s", got)
+		}
+	})
+
 	t.Run("R-ARCH-024 a shutdown timeout below the quiesce margin cancels running work at once", func(t *testing.T) {
 		p := planShutdown(t0, 5*time.Second, 2*time.Second, b)
 		if p.QuiesceAt.Before(t0.Add(5 * time.Second)) {
@@ -280,6 +292,63 @@ func TestShutdownReleaseWrites(t *testing.T) {
 		}
 		if took := time.Since(begin); took > 3*time.Second+600*time.Millisecond+400*time.Millisecond {
 			t.Errorf("Shutdown took %s, past the plan", took)
+		}
+	})
+}
+
+// settlingWorker models the job worker with jobs that run until they are released: its Settle returns once its Quiesce has
+// released them.
+type settlingWorker struct {
+	name     string
+	released chan struct{}
+	once     sync.Once
+}
+
+func (c *settlingWorker) Name() string                { return c.name }
+func (c *settlingWorker) Start(context.Context) error { return nil }
+func (c *settlingWorker) Stop(context.Context) error  { return nil }
+func (c *settlingWorker) QuiescesFirst()              {}
+func (c *settlingWorker) Quiesce(context.Context)     { c.once.Do(func() { close(c.released) }) }
+func (c *settlingWorker) Settle(ctx context.Context) error {
+	select {
+	case <-c.released:
+	case <-ctx.Done():
+	}
+	return nil
+}
+
+// quiescedEngine models a remote engine: it quiesces after the job worker and has nothing to settle.
+type quiescedEngine struct{ quiesced atomic.Int64 }
+
+func (c *quiescedEngine) Name() string                { return "engine" }
+func (c *quiescedEngine) Start(context.Context) error { return nil }
+func (c *quiescedEngine) Stop(context.Context) error  { return nil }
+func (c *quiescedEngine) Quiesce(context.Context)     { c.quiesced.Store(time.Now().UnixNano()) }
+
+func TestShutdownWorkerEndsWhenItsJobsAreReleased(t *testing.T) {
+	t.Run("R-ARCH-024 R-HA-011 F-146 a worker whose running jobs are released does not wait for the engines' quiesce instant with nothing running: it stops right after the release", func(t *testing.T) {
+		// grace 9 s, drain 1 s -> derived timeout 3 s; a worker skips the drain. Scaled budget: release at 1.6 s (close deadline
+		// 3.6 s minus the 2 s settle deadline), engines' quiesce at 2.4 s (3 s minus the 0.6 s quiesce margin).
+		h := start(t, "worker", map[string]string{
+			"QUADER_RUNTIME_TERMINATION_GRACE_PERIOD": "9s", "QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "1s", "QUADER_SERVER_SHUTDOWN_TIMEOUT": "0s",
+		})
+		h.app.budget = scaledBudget()
+		jobsComp := &settlingWorker{name: "jobs", released: make(chan struct{})}
+		engine := &quiescedEngine{}
+		h.app.comps = append(h.app.comps, engine, jobsComp)
+
+		begin := time.Now()
+		if err := h.app.Shutdown(context.Background()); err != nil {
+			t.Fatalf("Shutdown: %v", err)
+		}
+		took := time.Since(begin)
+		// The release comes at 1.6 s; before the change the stop waited for 2.4 s. The 0.5 s above the release leave room for a
+		// loaded machine and stay below the old instant.
+		if took > 2100*time.Millisecond {
+			t.Errorf("Shutdown took %s, want it to end shortly after the release at 1.6 s, not at the engines' quiesce instant of 2.4 s", took)
+		}
+		if engine.quiesced.Load() == 0 {
+			t.Error("the engine was not quiesced")
 		}
 	})
 }

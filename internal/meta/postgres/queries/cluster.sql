@@ -25,7 +25,8 @@ DELETE FROM cluster_change c
 -- Registration and heartbeat in one statement: a row deleted by the prune or by
 -- a restore comes back with the next heartbeat. heartbeat_at is the database's
 -- clock; replica clocks are never compared (R-HA-003). runtime is the replica's
--- measurement of the period since its previous heartbeat (Q-OPS-175).
+-- measurement of the period since its previous heartbeat (Q-OPS-175). draining is the last state of an instance: a heartbeat
+-- that was under way when the drain marked the row does not turn it back (Q-HA-308).
 INSERT INTO replica (instance_uid, name, version, revision, roles, state, checks, leases,
                      secret_key_ids, active_secret_key_id, node, valkey, pool, runtime, started_at, heartbeat_at)
 VALUES (sqlc.arg(instance_uid)::text::uuid, sqlc.arg(name)::text, sqlc.arg(version)::text, sqlc.arg(revision)::text,
@@ -34,7 +35,7 @@ VALUES (sqlc.arg(instance_uid)::text::uuid, sqlc.arg(name)::text, sqlc.arg(versi
         NULLIF(sqlc.arg(node)::text, ''), sqlc.arg(valkey)::text::jsonb, NULLIF(sqlc.arg(pool)::text, ''),
         sqlc.arg(runtime)::text::jsonb, sqlc.arg(started_at)::timestamptz, now())
 ON CONFLICT (instance_uid) DO UPDATE
-   SET state = EXCLUDED.state, checks = EXCLUDED.checks, leases = EXCLUDED.leases,
+   SET state = CASE WHEN replica.state = 'draining' THEN replica.state ELSE EXCLUDED.state END, checks = EXCLUDED.checks, leases = EXCLUDED.leases,
        secret_key_ids = EXCLUDED.secret_key_ids, active_secret_key_id = EXCLUDED.active_secret_key_id,
        valkey = EXCLUDED.valkey, runtime = EXCLUDED.runtime, heartbeat_at = now();
 

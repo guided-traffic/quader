@@ -350,7 +350,12 @@ start ──drain──▶ ReleaseAt ─▶ QuiesceAt ─▶ ServerBy ──comm
 4. `ReleaseAt` (`CloseBy - jobs.SettleDeadline`, 15 s, so `ServerBy - 11 s`; not before the drain ends, not after `QuiesceAt`): the components that
    quiesce first (the job worker) are cancelled, and their handlers' jobs get their release writes with the whole settle deadline
    ([Q-ARCH-329](../spec/architecture.md#q-arch-329--the-job-worker-is-cancelled-early-enough-that-the-release-writes-of-its-jobs-get-their-whole-settle-deadline)).
-   `QuiesceAt` (`ServerBy - 5 s`, later when the worker is still returning): `Quiesce` of the others cancels what still runs.
+   `QuiesceAt` (`ServerBy - 5 s`, later when the worker is still returning): `Quiesce` of the others cancels what still runs. On a
+   replica without client listeners (`worker`) the pause between the two ends as soon as step 3 is over, because nothing the engines
+   serve is left running (`waitForTheRest`,
+   [Q-ARCH-502](../spec/architecture.md#q-arch-502--a-worker-stops-when-its-jobs-are-released-and-says-what-it-waits-for)). In the dev
+   profile (worker grace 60 s, drain delay 15 s, timeout 40 s) `ReleaseAt` is 29 s and `QuiesceAt` 35 s after the signal: the 35.0 s
+   stops of F-137 and F-146 were a worker that waited for running jobs until the release and then for the engines' instant.
    When step 3 ends, `Shutdown` stops the timer of this step, or waits for a callback that has started, up to `CloseBy`
    ([Q-ARCH-331](../spec/architecture.md#q-arch-331--the-quiesce-of-the-shutdown-is-stopped-when-the-server-phase-ends-or-waited-for)).
 5. At `ServerBy` the remaining requests are cut by closing their connections and counted in
@@ -370,7 +375,8 @@ start ──drain──▶ ReleaseAt ─▶ QuiesceAt ─▶ ServerBy ──comm
    The log of an overrun also carries `pools`, the counts of the three database pools (`App.poolCounts`)
    ([Q-ARCH-456](../spec/architecture.md#q-arch-456--the-steps-after-the-close-phase-each-wait-at-most-the-ops-reserve-and-log-what-they-abandon-with-the-goroutines)).
    `Registry.Drain` marks the row `draining` in step 1, on the request pool like the deletion in step 6
-   ([Q-HA-283](../spec/ha-and-helm.md#q-ha-283--the-registry-row-is-marked-draining-on-the-request-pool)).
+   ([Q-HA-283](../spec/ha-and-helm.md#q-ha-283--the-registry-row-is-marked-draining-on-the-request-pool)); both retry within their
+   step ([Q-HA-307](../spec/ha-and-helm.md#q-ha-307--the-registry-rows-shutdown-writes-are-retried-within-their-step)).
 
 The budget constants (`defaultBudget`: margin 5 s from `config.ShutdownMargin`, slack 0.5 s, close reserve
 1 s, ops reserve 0.5 s) are a struct on the `App` so tests scale them down

@@ -945,7 +945,15 @@ background work.
   whole settle deadline of the worker, 15 s with its retries, before the process stops waiting for
   it ([architecture.md](architecture.md) R-ARCH-024 step 4, Q-ARCH-329), so a release during a
   PostgreSQL switchover is not left to the lease's expiry and the reaper. The advisory-lock
-  sessions are closed at the end.
+  sessions are closed at the end. A handler that is only waiting when the shutdown begins (for time
+  to pass, not for work of its own) gives its job up at `SIGTERM` and the job is released at once
+  ([architecture.md](architecture.md) Q-ARCH-501); the settle wait of a garbage collection run is
+  one ([storage.md](storage.md) Q-STOR-217).
+- The two writes a stopping replica makes to its registry row, the mark `draining` and the final
+  deletion, are retried within their step instead of tried once: a switchover of the primary ends
+  every connection for some seconds. The deletion retries for at most 15 s and never past the close
+  deadline, so it cannot take the exit deadline either
+  ([Q-HA-307](#q-ha-307--the-registry-rows-shutdown-writes-are-retried-within-their-step)).
 - A fetch that the replica leads for other waiters (R-REPO-026) finishes within the shutdown timeout
   or is abandoned; either way the replica releases its Valkey fetch lock explicitly (delete only if
   the lock still carries this replica's token), so waiters on other replicas take over at once
@@ -10398,6 +10406,105 @@ match when PgBouncer changes the text (the pinned CloudNativePG pooler image is 
 `28P01` on a connection whose statement may have run.
 
 **Applied in the spec:** R-HA-058 (the switchover bullet). Code: [retry.go](../../internal/meta/postgres/retry.go).
+
+### Q-HA-307 · The registry row's shutdown writes are retried within their step
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-146 (`e2e (push)` of Test and Release 44384406557) asked why the row of a drained worker stayed `ready`. Read from its
+evidence: the row the test found was not the drained process's but that of the same pod's earlier process, killed with `SIGKILL` by
+`TestE06Lease` four minutes before and restarted in place by the kubelet under the same name; the drained process signed off (only one
+row of that name was left, and nothing deletes the killed process's row before 24 h). The test is fixed (it now follows instance UIDs,
+R-HA-059). Read from the code while finding that out: the two writes a stopping replica makes to its row were each tried once. The mark
+`draining` (`Registry.Drain`) failed on the first refused or ended connection and only logged it; the final deletion (`Registry.Stop`) had
+one attempt of 5 s and returned its error to the composition root, which printed it as plain text after `stopped`. A switchover of the
+primary ends every connection for some seconds (14 s in F-146's run), so a stop inside that window left a row behind although the
+database answered again well inside the pod's grace period.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One attempt each, as before | Nothing to change | Simplest | A stop during a switchover leaves a row that is listed as lost (not marked) or as signed off (marked) although the database came back in time |
+| (b) Retry each write within its step (chosen) | The mark retries until the end of the drain step (2 s on a worker, the drain delay on a serving replica), then the heartbeat writes `draining` on the control connection until the close phase; the deletion retries for at most 15 s and never past the close deadline. Pause 250 ms, doubling to 2 s; each attempt of the deletion has at most 5 s, of the mark the loops' call timeout | A switchover shorter than the time left is ridden out; the plan's deadlines still bound everything, so the exit deadline holds (R-HA-011); a healthy stop is unchanged (one attempt) | A stop against a database that does not answer waits up to 15 s longer in its close phase than before |
+| (c) Retry until the close deadline | No window of its own | Covers a failover of a lost node as well (30 s and more) | A worker without running jobs, whose close phase starts at once, would sit up to 114 s (grace 120 s) in front of a dead database before its pod goes, which holds a rolling update for that long |
+
+**Choice:** (b). The interval follows `retryFailover` of the job writes (200 ms doubling to 2 s); 15 s is the switchover of F-146 (14 s)
+with room, and the close deadline is the outer bound. The first failure is logged at once with the write's name ("replica row: write
+failed; retrying until its shutdown step ends"), the outcome after a retry or the failure with what the row will be listed as (Q-OPS-210:
+signed off when the mark reached it, lost when neither write did). **Rationale:** the registry is what the status screen shows the
+operator; a row that is left because one statement met the seconds of a switchover is a false warning for 24 h. The development agent
+would revisit the 15 s if a drain run shows a deletion that needed more inside the grace period, or if a rolling update is seen held by
+the window.
+
+**Applied in the spec:** R-HA-011, R-ARCH-024 steps 1 and 6 ([architecture.md](architecture.md)), R-OPS-003
+([operations-and-observability.md](operations-and-observability.md)). Code: `Drain`, `Stop` and `retryShutdownWrite` in
+[replica_registry.go](../../internal/cluster/replica_registry.go). Tests: `TestR_ARCH_024_RegistryDrainRetriesTheMarkWithinTheDrainStep`,
+`TestR_ARCH_024_RegistryDrainRetriesEndWithTheDrainStep`, `TestR_HA_011_RegistryStopRetriesTheDeletion`,
+`TestR_OPS_003_RegistryStopNamesWhatTheRowLeftBehindIsListedAs`, and `TestShutdownThroughASwitchover` in
+[shutdown_failover_test.go](../../test/integration/coordination/shutdown_failover_test.go), which ends the replica's connections and
+refuses new ones for 2 s inside each step.
+
+### Q-HA-308 · A heartbeat does not turn a row back from draining
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the heartbeat reads the replica's state, then writes the whole row with an upsert. A heartbeat that read `ready` just before
+`SIGTERM` and reached the database just after the mark `draining` wrote `ready` over it. Read from the code, not seen in a run: the next
+heartbeat writes `draining` again, but a replica whose next heartbeat does not come (the stop ends it) and whose deletion fails leaves a
+row that is listed as lost instead of signed off (Q-OPS-210).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Order the two writes in the process | The mark waits for a heartbeat under way | No SQL change | The heartbeat runs on the control connection, which a stalled database holds; the drain step would wait on it (Q-HA-283) |
+| (b) The upsert keeps `draining` (chosen) | `state = CASE WHEN replica.state = 'draining' THEN replica.state ELSE EXCLUDED.state END` | `draining` is the last state of an instance (a new process has a new `instance_uid`), so nothing ever needs to leave it; one statement, no ordering | The rule lives in SQL |
+
+**Choice:** (b), in `UpsertReplica` ([cluster.sql](../../internal/meta/postgres/queries/cluster.sql)). **Rationale:** the state an
+instance reaches at `SIGTERM` is final for that instance; the database is the one place that sees both writes in order. The development
+agent would revisit it if an instance ever had to leave `draining` (an aborted shutdown), which R-ARCH-024 does not have.
+
+**Applied in the spec:** R-OPS-003 ([operations-and-observability.md](operations-and-observability.md)).
+
+### Q-HA-309 · A heartbeat that has not reached the row for longer than the stale bound is logged once as what it means
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-146 asked for a heartbeat that cannot write for longer than its bound to be visible in the log and in the replica's own
+health. Each failed heartbeat logged "replica heartbeat failed" every `system.heartbeat_interval`, which says nothing about what it costs:
+once the row is older than `system.heartbeat_stale_after`, the other replicas list this one as lost.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A reported readiness check `registry` | A new check in R-OPS-001's table | Shows in `/readyz?verbose=1` | The heartbeat runs on the control connection, which the `database` check already probes and degrades on after the outage grace; a second check reports the same outage, and the row that would carry it is the one that cannot be written |
+| (b) One error line when the bound is passed, one line when the heartbeat is back (chosen) | "replica heartbeat not written for longer than system.heartbeat_stale_after: the other replicas list this replica as lost …" with the time since the last write, and "replica heartbeat written again" | Says what the outage means at the moment it starts to matter, once; the replica's health already shows the cause through the `database` check | No new probe signal |
+
+**Choice:** (b), `noteHeartbeat` in [replica_registry.go](../../internal/cluster/replica_registry.go). **Rationale:** the health signal
+exists (the `database` check on the same connection); what was missing is the line that ties it to the registry. The development agent
+would revisit it if a heartbeat is seen failing while the `database` check passes, which would mean the two no longer share their
+connection.
+
+**Applied in the spec:** R-OPS-003. Test: `TestR_OPS_003_RegistryLogsAHeartbeatThatWentStale`.
+
+### Q-HA-310 · A replica that reaches the database at no point of its shutdown leaves a lost row, and nothing in the process removes it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-13 left this gap open, and F-146 asked to close it as far as the process can: a replica that could neither mark nor delete its
+row because PostgreSQL was away for its whole shutdown leaves a row in its last state, `ready`, which is listed as lost (a warning for
+24 h, [api-and-ui.md](api-and-ui.md) Q-UI-602). After Q-HA-307 that takes a database that does not answer for the drain step, the server
+phase and up to 15 s of the close phase: 35 s and more on a worker, an outage the operator sees anyway.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The next replica of the same Deployment removes rows of earlier pods it can prove gone | Read the pods from Kubernetes | Exact | Quader holds no Kubernetes permissions and is not given any for this |
+| (b) The stopping process writes its sign-off to Valkey, which survives a PostgreSQL failover; the readers of the registry honour it | A key per instance with the heartbeat's stale bound as its expiry | Covers the case when Valkey answers | Every reader of the registry (the list, `CountFillingReplicas`, the key-ring views, the leases' view, the journal) would read two stores for one fact; Valkey is optional for correctness (INV-3) and may be the thing that is away; a second source of truth for a warning |
+| (c) Nothing; the row is a warning and the log says why (chosen) | The process logs "replica row neither marked draining nor deleted: the database did not answer during the shutdown …" at error level; the drain test tells this case from a sign-off that failed while the database answered | No new mechanism; the row is the truth: the process ended without signing off | The warning stays for 24 h, until the prune |
+
+**Choice:** (c). **Rationale:** the case is a database outage of at least the length of a stop, which is itself the thing the operator
+has to look at; the warning names the replica and its last heartbeat, and the role keeps its ready replicas. The development agent would
+revisit it if such rows are seen after drains in which the database was not away for the whole stop (that would be a defect of Q-HA-307,
+not this case), or if the registry gets a second store for another reason.
+
+**Applied in the spec:** R-OPS-003. Test: `checkRegistryAfterDrain` of `TestE14Drain` ([e14_drain_test.go](../../test/e2e/e14_drain_test.go))
+names this case apart.
 
 ## What this does not cover
 

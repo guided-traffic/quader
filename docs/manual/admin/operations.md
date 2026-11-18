@@ -183,8 +183,8 @@ When a pod receives `SIGTERM`, Quader shuts down in a fixed order within the pod
 1. `/readyz` answers `503` at once and the replica is marked draining.
 2. An `api` or `packages` replica keeps serving for `health.shutdown_drain_delay` (5 s) so the ingress controller can remove it; answers carry `Connection: close`.
 3. The listeners close and requests in flight finish, until the shutdown timeout (`server.shutdown_timeout`, derived as grace period minus drain delay minus 5 s). An upload that is committing gets up to 3 s more; other requests still running then are cut and counted in `quader_http_transfers_cut_total`.
-4. A `worker` stops claiming jobs at once. Shortly before the timeout, running jobs are cancelled and returned to the queue without counting an attempt; another worker continues them from their last checkpoint.
-5. Buffered audit events are written and the connections closed.
+4. A `worker` stops claiming jobs at once, and a job that is only waiting (a garbage collection run waiting for its deleted objects to settle) is returned to the queue at once. Jobs that are working may finish; after 5 s the log names the ones the shutdown waits for (**shutdown waits for the running jobs**). Shortly before the timeout, those still running are cancelled and returned to the queue without counting an attempt (**running jobs released for shutdown**); another worker continues them from their last checkpoint. A worker with long jobs therefore takes most of its grace period to stop: with the chart's 300 s, about 280 s.
+5. Buffered audit events are written, the replica's row is deleted from the replica list, and the connections are closed. While PostgreSQL switches over, the replica retries the mark of step 1 and this deletion for up to 15 s instead of leaving its row behind; the log says when it did.
 
 A second signal ends the process immediately. The chart refuses a grace period shorter than the drain delay plus 15 s. Set the drain delay above the time your ingress controller needs to stop sending to a removed pod; if clients see connection errors during drains, raise it.
 

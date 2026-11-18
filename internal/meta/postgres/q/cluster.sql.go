@@ -240,7 +240,7 @@ VALUES ($1::text::uuid, $2::text, $3::text, $4::text,
         NULLIF($11::text, ''), $12::text::jsonb, NULLIF($13::text, ''),
         $14::text::jsonb, $15::timestamptz, now())
 ON CONFLICT (instance_uid) DO UPDATE
-   SET state = EXCLUDED.state, checks = EXCLUDED.checks, leases = EXCLUDED.leases,
+   SET state = CASE WHEN replica.state = 'draining' THEN replica.state ELSE EXCLUDED.state END, checks = EXCLUDED.checks, leases = EXCLUDED.leases,
        secret_key_ids = EXCLUDED.secret_key_ids, active_secret_key_id = EXCLUDED.active_secret_key_id,
        valkey = EXCLUDED.valkey, runtime = EXCLUDED.runtime, heartbeat_at = now()
 `
@@ -266,7 +266,8 @@ type UpsertReplicaParams struct {
 // Registration and heartbeat in one statement: a row deleted by the prune or by
 // a restore comes back with the next heartbeat. heartbeat_at is the database's
 // clock; replica clocks are never compared (R-HA-003). runtime is the replica's
-// measurement of the period since its previous heartbeat (Q-OPS-175).
+// measurement of the period since its previous heartbeat (Q-OPS-175). draining is the last state of an instance: a heartbeat
+// that was under way when the drain marked the row does not turn it back (Q-HA-308).
 func (q *Queries) UpsertReplica(ctx context.Context, arg UpsertReplicaParams) error {
 	_, err := q.db.Exec(ctx, upsertReplica,
 		arg.InstanceUid,

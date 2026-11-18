@@ -4392,8 +4392,13 @@ learns of the removal with a delay. The steps cover that delay first:
    and are waited for until the end of this step, `health.shutdown_drain_delay` for a `web` replica and 2 s for a `worker`,
    and no longer: a database that does not answer cannot take the time of the later steps
    ([Q-ARCH-460](#q-arch-460--the-drain-step-of-the-shutdown-is-bounded-by-the-plan)). The row is written on the request pool
-   ([Q-HA-283](ha-and-helm.md#q-ha-283--the-registry-row-is-marked-draining-on-the-request-pool)).
-   - A `worker` stops claiming jobs at once. If it holds the `scheduler` lease, it stops its
+   ([Q-HA-283](ha-and-helm.md#q-ha-283--the-registry-row-is-marked-draining-on-the-request-pool)) and the write is retried until
+   the step ends; after it the heartbeat writes `draining` until step 6, and no heartbeat turns the row back
+   ([Q-HA-307](ha-and-helm.md#q-ha-307--the-registry-rows-shutdown-writes-are-retried-within-their-step),
+   [Q-HA-308](ha-and-helm.md#q-ha-308--a-heartbeat-does-not-turn-a-row-back-from-draining)).
+   - A `worker` stops claiming jobs at once. A job handler that is only waiting at this moment, for time to pass and not for
+     work of its own, gives its job up and the job is released at once without counting the attempt
+     ([Q-ARCH-501](#q-arch-501--a-job-handler-that-only-waits-gives-its-job-up-at-the-drain)). If it holds the `scheduler` lease, it stops its
      scheduler tick and releases that lease at once (`pg_advisory_unlock`), so another worker
      schedules from its next retry instead of after this drain
      ([operations-and-observability.md](operations-and-observability.md) R-OPS-001, R-OPS-019).
@@ -4429,7 +4434,10 @@ learns of the removal with a delay. The steps cover that delay first:
    ([Q-ARCH-329](#q-arch-329--the-job-worker-is-cancelled-early-enough-that-the-release-writes-of-its-jobs-get-their-whole-settle-deadline)).
    A shutdown timeout under 11 s cancels the handlers when the drain delay ends. Remote fetches
    still running 5 s before the deadline are cancelled, after the job worker has returned, and
-   their flight locks released with `failed` (R-ARCH-033).
+   their flight locks released with `failed` (R-ARCH-033). On a replica without client listeners (`worker`) the remote engines
+   serve the job handlers only, so they are quiesced as soon as every running job has returned instead of at that instant. A
+   worker that waits for running jobs longer than 5 s logs their kinds and IDs once, and the release logs the jobs it released
+   ([Q-ARCH-502](#q-arch-502--a-worker-stops-when-its-jobs-are-released-and-says-what-it-waits-for)).
 5. At the deadline, the requests still running are cut by closing their connections, with one
    exception. A request whose request body has been read completely is storing and committing an
    upload, and it is never cut between its commit and its status line. It runs on into the 5 s
@@ -4475,7 +4483,9 @@ learns of the removal with a delay. The steps cover that delay first:
    R-OPS-015). Pending signals are published. Then the remaining leases are released (R-ARCH-017),
    the registry row is deleted (on the request pool, which is idle by now: the control connection
    still serves the change-log poll and the database and schema checks until the phase ends,
-   [Q-HA-202](ha-and-helm.md#q-ha-202--the-final-deletion-of-the-registry-row-runs-on-the-request-pool)),
+   [Q-HA-202](ha-and-helm.md#q-ha-202--the-final-deletion-of-the-registry-row-runs-on-the-request-pool); retried for at most
+   15 s and never past the close deadline,
+   [Q-HA-307](ha-and-helm.md#q-ha-307--the-registry-rows-shutdown-writes-are-retried-within-their-step)),
    the change-log poll and the grant-index rebuilds stop, and the Valkey client and the pools
    close. Every one of these steps ends with the close phase: the pools close at once and a
    connection still held by a detached write is named in the error, not waited for
@@ -10402,6 +10412,59 @@ Context: F-119 (2). In the nightly dispatch 42578594755, 7 of 16 early `429` ans
 **Rationale:** The product must be correct behind any proxy, and the only place that sees every response is the listener. The bound keeps a rejected multi-gigabyte upload from costing the pod its bandwidth; the clients that matter (a proxy relaying a few hundred KiB, the 256 KiB PUTs of the drain tests) are far below it. The flush costs the response its `Content-Length` (it is sent chunked) and only for a request that arrived with an unread body. The development agent would revisit the bound if a refused upload above 8 MiB shows up as a `502` in a run, or the discard as a measurable load in the write path.
 
 **Applied in the spec:** none (R-ARCH-005 stays as it is). Code: [unread_body.go](../../internal/httpserver/unread_body.go), `track` in [server.go](../../internal/httpserver/server.go); test `TestUnreadBody` ([unread_body_test.go](../../internal/httpserver/unread_body_test.go)). Elsewhere: [architecture.md](../developer/architecture.md) (the `internal/httpserver` row).
+
+### Q-ARCH-501 · A job handler that only waits gives its job up at the drain
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-137 (`e2e (drain-load-b)` of the nightly 44233617621): the evicted worker finished its `gc-full` job itself instead of
+releasing it, and R-STOR-046's drain criterion wants the job to finish on another worker. Read from that run's artifacts and the code:
+the worker logged "shutting down" at 07:15:56.338, the job ended `succeeded` at 07:16:25.10 and the worker released its other running
+jobs at 07:16:25.339, exactly 29.0 s after the signal; that is the release instant of the plan for the dev profile's worker (grace 60 s,
+drain delay 15 s, so `server.shutdown_timeout` 40 s, close deadline 44 s, release 15 s before it). The job had deleted its objects at
+07:15:55.08, before the eviction, and its settle wait (`storage.gc.delete_settle`, 30 s in the drain profile) ended 0.24 s before the
+release. In the green runs the wait outlasted the release instant and the job moved. So the test met a race it always had; neither
+5cd1e824 nor 55a6688c changes when a job is released (they change how a cut connection is discarded and logged, which is why the line
+"a database connection came back closed" for `SaveJobProgress` now appears at the release instant: a probe job's statement cut by the
+release). The worker held a job that was doing nothing but wait for 29 s while it was leaving.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Leave it; fix the test | The test accepts a `gc-full` that finished on the evicted worker before the release | No product change | A stopping worker keeps holding a job that only waits, and the move of R-STOR-046 is left to timing |
+| (b) Release every running job at the drain | No job runs on a stopping worker | Simple | A job that would finish in seconds is restarted elsewhere; R-ARCH-024 lets running work finish until the release on purpose |
+| (c) The handler sees the drain and gives up a job that only waits (chosen) | `Run.Draining()` is closed at step 1; a handler in a wait selects on it and returns an error wrapping `jobs.ErrReleased`, which the worker treats as a release while it drains (outside a drain it is a failure) | Work in progress still finishes; a wait moves at once to a worker that stays, and the stopping worker stops earlier | Each kind with such a wait opts in |
+
+**Choice:** (c). The first user is the settle wait of a garbage collection run ([storage.md](storage.md) Q-STOR-217). **Rationale:** a
+wait for time to pass is the same on any worker, so holding it on one that is leaving only delays the job and the stop. The development
+agent would revisit it if a kind's wait turns out to carry state that the next attempt cannot pick up from its checkpoint.
+
+**Applied in the spec:** R-ARCH-024 step 1, R-HA-011 ([ha-and-helm.md](ha-and-helm.md)). Code: `Run.Draining` in
+[run.go](../../internal/jobs/run.go), `startDraining` and `execute` in [worker.go](../../internal/jobs/worker.go). Test: the first subtest of
+`TestShutdownThroughASwitchover` ([shutdown_failover_test.go](../../test/integration/coordination/shutdown_failover_test.go)).
+
+### Q-ARCH-502 · A worker stops when its jobs are released, and says what it waits for
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-146 and F-137 both read a worker that logged "shutting down", nothing for 35 s but the object-store probe, and "stopped" after
+35.0 s. Read from the code and the evidence: the job worker waited for its running jobs (two probe jobs of 150 steps in F-146) until
+the release at 29 s ([Q-ARCH-329](#q-arch-329--the-job-worker-is-cancelled-early-enough-that-the-release-writes-of-its-jobs-get-their-whole-settle-deadline)),
+then the shutdown paused until the quiesce instant of the remote engines at 35 s (Q-ARCH-318), and the close phase took a few
+milliseconds. Both waits were the plan, and neither said so.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Only log the waits | A line when the worker waits and at the release | The plan stays as it is | A worker still pauses 6 s with nothing running |
+| (b) Log the waits, and on a replica without client listeners end the pause once the settle step is over (chosen) | The job worker logs the running jobs (kind and ID) once after 5 s of waiting and the jobs it releases; on `worker` the engines are quiesced as soon as the listeners and the settlers have returned | A worker's stop ends at the release when the release is what it waited for; the next finding of this kind is read from the log | One more rule in the plan |
+| (c) End the pause on every role | Also on `all` | One rule | On a replica that serves clients a fetch a request started may still be finishing in the background; the pause is for it |
+
+**Choice:** (b). **Rationale:** on a worker the engines serve the job handlers only; once every handler has returned, nothing is left
+that the pause would let finish. The development agent would revisit it if a worker ever runs engine work that no job handler waits
+for.
+
+**Applied in the spec:** R-ARCH-024 steps 3 and 4. Code: `waitForTheRest` in [app.go](../../internal/app/app.go), `Settle` and `Quiesce`
+in [worker.go](../../internal/jobs/worker.go). Tests: `TestShutdownWorkerEndsWhenItsJobsAreReleased` and the plan subtest for the dev
+profile's worker in [shutdown_test.go](../../internal/app/shutdown_test.go).
 
 ## What this does not cover
 

@@ -34,6 +34,9 @@ var (
 	ErrBlobNotFound = errors.New("blob not found")
 	// ErrFault is returned by Collector.Run when a test fault hook killed it.
 	ErrFault = errors.New("fault injected")
+	// ErrHandedOver is returned by Collector.Run when the replica began its shutdown while the run waited for its deleted rows to
+	// settle: the wait is handed to the next run, which finishes the rows once delete_settle has passed (Q-STOR-217).
+	ErrHandedOver = errors.New("garbage collection run handed over at the shutdown during its settle wait")
 )
 
 const retryAfter = 5 * time.Second

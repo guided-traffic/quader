@@ -289,7 +289,18 @@ A cache with `MaxBytes` needs `Weigh`. Metrics: `quader_cache_requests_total{cac
 
 `cluster.Registry` (one per replica, of the roles `api`, `packages`, `worker`, `web` and `all`, the constants and `ValidRole` of [replica_roles.go](../../internal/cluster/replica_roles.go); `NewRegistry` refuses any other role, Q-OPS-161, Q-OPS-166): `Start` upserts the row (retrying until PostgreSQL answers), a loop on the control connection upserts again every
 `system.heartbeat_interval` with the snapshot from `RegistryOptions.Snapshot` (state, checks, Valkey view, runtime) and `RegistryOptions.Leases`. `Drain` writes `draining` and `Stop` deletes the row, both on `RegistryOptions.ShutdownDB` (the request pool, `DB.Main()`, so they do not queue behind the poll and the checks on the control connection), `Drain` within the drain step of the shutdown plan and `Stop` within the close phase's context;
-`StopHeartbeat` leaves it (fault injection). The heartbeat is an upsert, so a row removed by the prune or a restore comes back.
+`StopHeartbeat` leaves it (fault injection). The heartbeat is an upsert, so a row removed by the prune or a restore comes back; the upsert
+never writes over `draining` (Q-HA-308). Both shutdown writes go through `retryShutdownWrite` (Q-HA-307): 250 ms doubling to 2 s between
+attempts, the mark until the drain step's context ends (the heartbeat writes `draining` after that), the deletion for at most
+`deleteWindow` (15 s) inside the close phase. The first failure is logged with the write's name, the outcome after a retry, and a row left
+behind with what it will be listed as (`marked`: signed off, otherwise lost). `noteHeartbeat` logs once when the row has not been written for
+longer than `system.heartbeat_stale_after` and again when it is (Q-HA-309).
+
+The job worker's shutdown phases: `Drain` stops the claims, releases the `scheduler` lease and closes `Run.Draining()`; a handler that only
+waits returns an error wrapping `jobs.ErrReleased` at it and its job is released at once (Q-ARCH-501; the garbage collection's settle wait
+does, Q-STOR-217). `Settle` logs the running jobs once after 5 s (`settleLogAfter`), `Quiesce` cancels the rest with `ErrReleased` and logs
+them, and `Stop` ends the loops. On a replica without client listeners the composition root quiesces the engines as soon as the settle step
+is over (`waitForTheRest` in [app.go](../../internal/app/app.go), Q-ARCH-502).
 `upsertParams` renders one heartbeat's row; `replicaInfoOf` reads one back.
 
 What a heartbeat writes besides the identity (Q-OPS-175; the snapshot is `App.replicaSnapshot` in
@@ -365,6 +376,7 @@ go test -tags integration -race ./test/integration/coordination/...
 | `registry_test.go` | registration, heartbeat, lost (no leases listed), replacement, draining, prune; `TestReplicaSignOff`: a replica killed while draining (`Drain`, then `StopHeartbeat`) leaves the list and the fetch share's count once stale and is pruned at the next run, one killed while ready stays listed as lost; `TestReplicaRegistryRoles`: every role value stored as given with its pool, the fetch share's count; `TestReplicaLostWithDefaults` waits 30 s with the shipped values |
 | `scheduler_test.go` | one scheduler, no duplicate slot across a hand-over, retention exception, postponed slot, drain releases the lease |
 | `drain_test.go` | E0.14 on two replicas: cursor every 100 ms, graceful shutdown, resume with `attempt` unchanged |
+| `shutdown_failover_test.go` | `TestShutdownThroughASwitchover` (F-146, F-137): a job that only waits is released at the drain and finishes on the other worker; the replica's connections are ended and new ones refused for 2 s (`ALTER DATABASE … ALLOW_CONNECTIONS false`, `pg_terminate_backend`) inside the drain step and inside the close phase, and the row is `draining` when the step returns and gone after `Stop` |
 | `watchdog_test.go` | claim held by `pg_sleep` past the watchdog bound |
 
 ## Not covered here

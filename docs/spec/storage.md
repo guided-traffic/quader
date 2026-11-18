@@ -2018,6 +2018,11 @@ worker to another (R-ARCH-016), so the hand-over has rules of its own:
   continues the job finishes them after `delete_settle` instead of `handover_delay`. A drain therefore delays the re-upload of a digest that was being collected
   by seconds, not minutes. If that statement fails, the rows wait for `handover_delay`, as after a
   crash.
+- A run that is in its wait for `delete_settle` when its replica begins its shutdown ends the wait at
+  once and its job is released ([architecture.md](architecture.md) R-ARCH-024 step 1, Q-ARCH-501):
+  the rows it deleted are removable `delete_settle` after their delete whichever run finishes them,
+  so the run that continues the job on another worker does what the wait would have done, and the
+  stopping worker holds nothing for it (Q-STOR-217).
 
 Without these rules, a collector that was drained, paused or partitioned after (3) could send its
 delete late. By then another run could have finished the row, and an uploader could have written
@@ -5269,6 +5274,30 @@ Context: `TestGarbageCollection` ("the full sweep finds an unreferenced blob..."
 **Rationale:** The wait's promise is that the rows a run deleted are gone when it returns; the deadline bounds the time the run spends, not the passes it makes. The development agent would revisit the choice if a run is seen to end with a row in `deleting` that was not deleted by itself or a predecessor within `delete_settle`.
 
 **Applied in the spec:** none (R-STOR-024 step 5 already says the run waits to drop the rows it deleted). Test: `TestR_STOR_024_TheSettleWaitEndsWithAPassAfterItsDeadline` ([gc_test.go](../../test/integration/blob/gc_test.go)).
+
+### Q-STOR-217 · A collection run in its settle wait hands the wait over when its replica begins to stop
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-137 ([architecture.md](architecture.md) Q-ARCH-501): in the nightly 44233617621 the evicted worker's `gc-full` job had deleted
+its objects before the eviction and spent the drain in its settle wait (R-STOR-024 step 5, `delete_settle` 30 s in the drain profile),
+which ended 0.24 s before the release instant of the worker's plan; the job finished on the stopping worker instead of moving, and
+R-STOR-046's drain criterion failed. The wait does no work: it lets `delete_settle` pass and then drops the rows.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep waiting until the release | As before | Nothing to change | The job moves or not by a race of fractions of a second against the plan; the stopping worker holds it for up to the whole server phase |
+| (b) End the wait at the drain and release the job (chosen) | `RunOptions.Draining` closes the wait with `blob.ErrHandedOver`; the job handler turns it into a release (`jobs.ErrReleased`) | The run that continues on another worker drops the rows at the same moment the wait would have; the job always moves when the drain meets it waiting | The run's result is not stored for the stopping attempt (a released attempt stores none) |
+| (c) End the wait at the drain and finish the job | Return success without waiting | The job ends at once | The rows wait for the next scheduled run, which is what the wait exists to avoid (Q-STOR-216) |
+
+**Choice:** (b), in `settle` ([gc.go](../../internal/blob/gc.go)), `RunJob` ([gcjob.go](../../internal/blob/gcjob.go)) and the
+handler in [wire_jobs.go](../../internal/app/wire_jobs.go). The pass that comes before each wait still runs, so the rows whose
+`delete_settle` has passed are dropped before the hand-over. **Rationale:** the promise of the wait (an upload waiting for a row is not
+left until the next scheduled run) is kept by the job, which continues at once on a worker that stays. The development agent would
+revisit it if the run that continues the job is seen to wait longer than `delete_settle` for rows the handed-over run deleted.
+
+**Applied in the spec:** R-STOR-024 (the hand-over rules). Test: "a run in its settle wait when the replica begins its shutdown hands
+the wait over at once" in `TestGCJobHandler` ([gc_test.go](../../test/integration/blob/gc_test.go)).
 
 ## What this does not cover
 

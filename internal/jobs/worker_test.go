@@ -1,11 +1,14 @@
 package jobs
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
 	"log/slog"
 	"slices"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -110,7 +113,7 @@ func TestQuiesceCancelsAJobClaimedAfterIt(t *testing.T) {
 	t.Run("R-ARCH-016 R-ARCH-024 a job whose claim returned after the quiesce starts with a cancelled context", func(t *testing.T) {
 		root, cancel := context.WithCancelCause(context.Background())
 		defer cancel(nil)
-		w := &Worker{root: root, running: map[string]*runningJob{}, perQueue: map[string]int{}, cancel: cancel}
+		w := &Worker{root: root, running: map[string]*runningJob{}, perQueue: map[string]int{}, cancel: cancel, drainCh: make(chan struct{}), log: slog.New(slog.NewTextHandler(io.Discard, nil))}
 		w.o.Config.LeaseDuration = time.Minute
 
 		early, _ := w.register(Job{ID: "early", Queue: "index"}, time.Now())
@@ -126,6 +129,55 @@ func TestQuiesceCancelsAJobClaimedAfterIt(t *testing.T) {
 		}
 		if !errors.Is(context.Cause(late), ErrReleased) {
 			t.Fatalf("cause = %v, want ErrReleased: the job is released without counting the attempt", context.Cause(late))
+		}
+	})
+}
+
+type lockedBuf struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (l *lockedBuf) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.Write(p)
+}
+func (l *lockedBuf) String() string { l.mu.Lock(); defer l.mu.Unlock(); return l.b.String() }
+
+func TestShutdownSaysWhatItWaitsFor(t *testing.T) {
+	t.Run("R-ARCH-024 F-146 the settle step names the running jobs once it has waited, the release names the jobs it released, and the drain closes Run.Draining", func(t *testing.T) {
+		old := settleLogAfter
+		settleLogAfter = 50 * time.Millisecond
+		t.Cleanup(func() { settleLogAfter = old })
+		var logs lockedBuf
+		root, cancel := context.WithCancelCause(context.Background())
+		defer cancel(nil)
+		w := &Worker{
+			root: root, running: map[string]*runningJob{}, perQueue: map[string]int{}, cancel: cancel, drainCh: make(chan struct{}),
+			log: slog.New(slog.NewTextHandler(&logs, nil)),
+		}
+		w.o.Config.LeaseDuration = time.Minute
+		ctx, rj := w.register(Job{ID: "01a1f040-a79d", Kind: KindSystemProbe, Queue: "default"}, time.Now())
+		w.runWG.Add(1)
+		go func() { <-ctx.Done(); w.forget(rj); w.runWG.Done() }()
+
+		run := &Run{w: w}
+		w.Drain(context.Background())
+		select {
+		case <-run.Draining():
+		default:
+			t.Fatal("Drain did not close Run.Draining")
+		}
+		sctx, scancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		_ = w.Settle(sctx)
+		scancel()
+		if n := strings.Count(logs.String(), "shutdown waits for the running jobs"); n != 1 || !strings.Contains(logs.String(), "system.probe 01a1f040-a79d") {
+			t.Fatalf("the settle step logged its wait %d times, want once with the job's kind and ID:\n%s", n, logs.String())
+		}
+		w.Quiesce(context.Background())
+		if !strings.Contains(logs.String(), "running jobs released for shutdown") {
+			t.Fatalf("the release is not logged:\n%s", logs.String())
 		}
 	})
 }

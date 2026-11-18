@@ -427,13 +427,19 @@ the evidence ([Reading a stall](#reading-a-stall)).
 6. k6: only 200, no connection error, no dropped iteration. No container with exit code 137 or
    `OOMKilled` since the watch started. The kubelet's events for the drained pods hold no SIGKILL, no
    `FailedKillPod`. No Quader pod Pending longer than 60 s.
-7. The registry after the drain (`checkRegistryAfterDrain`, R-OPS-003, R-UI-038, Q-OPS-210): a drained pod's row is deleted or,
-   if left, in the state `draining`; within 60 s no drained pod is listed, no row is lost that was not lost before the drain,
-   and `api`, `packages` and `worker` each have a ready replica, so the status screen's header is not red.
+7. The registry after the drain (`checkRegistryAfterDrain`, R-OPS-003, R-UI-038, Q-OPS-210): the rows are followed by instance UID,
+   taken from the live rows of the drained pods before the drain, because a pod restarted in place keeps its name and the row of
+   its killed process stays lost under it for 24 h (F-146: the `SIGKILL` case of `TestE06Lease` had killed the worker this drain
+   evicted). A drained process's row is deleted or, if left, in the state `draining`; within 60 s no drained process is listed,
+   no row is lost that was not lost before the drain, and `api`, `packages` and `worker` each have a ready replica, so the status
+   screen's header is not red. A row left in another state fails the test with one of two messages: the database answered during
+   the shutdown (a defect), or the drained pod's own log says that the database answered neither the mark nor the deletion during
+   its whole shutdown (Q-HA-310, an outage of the test cluster).
 8. The endpoint-removal time of the edge, measured and held to the drain delay ([below](#the-endpoint-removal-time-of-the-edge)).
 
 The dev profile gives the worker a `terminationGracePeriodSeconds` of 60 (the chart default is 300), so a
-worker whose job outlasts the shutdown budget releases it after about 45 s and the test does not wait 5
+worker whose job outlasts the shutdown budget releases it 29 s after the signal (the drain delay of 15 s makes the shutdown
+timeout 40 s, and the release comes 15 s before the close deadline at 44 s) and stops right after, and the test does not wait 5
 minutes. The edge is not part of the system under test: HAProxy Ingress runs two replicas on the control-plane node, which
 no test drains. With one replica on a worker node, the drain reset the client connections of the evicted
 edge pod (25 connection errors in the first measured run, with the previous controller).

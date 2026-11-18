@@ -66,6 +66,9 @@ type RunOptions struct {
 	Cursor Cursor
 	// Checkpoint receives the cursor after every batch of a full sweep.
 	Checkpoint func(Cursor)
+	// Draining is closed when the replica begins its shutdown; nil never is. The settle wait ends at it with ErrHandedOver
+	// (Q-STOR-217).
+	Draining <-chan struct{}
 }
 
 // Collector deletes blobs that no reference uses (R-STOR-024). It is safe to run
@@ -812,7 +815,8 @@ func (r *run) drop(ctx context.Context, digests []Digest) error {
 // rows handed over to it) are removed before it ends: an upload waiting for such
 // a row is not left until the next scheduled run. The wait ends with a pass that
 // started after its deadline, so a pass delayed past the deadline cannot be the
-// last one (Q-STOR-216).
+// last one (Q-STOR-216). A shutdown of the replica ends the wait with
+// ErrHandedOver (Q-STOR-217).
 func (r *run) settle(ctx context.Context) error {
 	// A row this run deleted is removable delete_settle after its delete, which
 	// lies at most that far before now; two polls of slack cover the last one.
@@ -847,6 +851,11 @@ func (r *run) settle(ctx context.Context) error {
 		case <-ctx.Done():
 			t.Stop()
 			return ctx.Err()
+		case <-r.opts.Draining:
+			// The rows deleted by this run are removable delete_settle after their delete, whichever run finishes them; a
+			// stopping replica has nothing to add by waiting, and its job resumes on another worker at once (Q-STOR-217).
+			t.Stop()
+			return ErrHandedOver
 		case <-t.C:
 		}
 	}

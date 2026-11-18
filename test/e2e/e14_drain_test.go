@@ -267,7 +267,11 @@ func TestE14Drain(t *testing.T) {
 		t.Logf("running probe jobs per worker before the drain: %s", strings.ReplaceAll(owners, "\n", " "))
 		time.Sleep(5 * time.Second)
 
-		lostBefore := lostReplicas(t) // rows an earlier test of the set left; the drain is judged by the rows it leaves
+		// The drain is judged by the rows of the processes it stops, by instance UID: a pod whose container an earlier test killed
+		// and the kubelet restarted in place keeps its name, and the killed process's row stays listed as lost under that name
+		// for 24 h (F-146: TestE06Lease's SIGKILL victim was the worker this drain evicted).
+		lostBefore := lostReplicas(t)
+		drainedRows := liveRowsOf(t, onNode)
 		drainStart := time.Now()
 		t.Logf("drain starts %s", drainStart.Format("15:04:05"))
 		script(t, "drain.sh", node) // the drain alone: drain, wait for the rollouts, uncordon
@@ -352,38 +356,53 @@ func TestE14Drain(t *testing.T) {
 			t.Logf("longest Pending of a quader pod: %s (%s)", d.Round(100*time.Millisecond), name)
 		}
 		checkEvents(t, onNode)
-		checkRegistryAfterDrain(t, onNode, lostBefore)
+		checkRegistryAfterDrain(t, drainedRows, lostBefore, streams)
 		checkEndpointRemoval(t, "e14-drain", streams)
 		checkReleaseServes(t, 2, 3, 4)
 	})
 }
 
 // checkRegistryAfterDrain is what the status screen makes of the registry once the drain is over (R-OPS-003, R-UI-038,
-// Q-OPS-210): every drained pod signed off, so its row is gone (a clean stop deletes it) or, if the deletion did not fit
+// Q-OPS-210): every drained process signed off, so its row is gone (a clean stop deletes it) or, if the deletion did not fit
 // the close phase, left in the state draining, which the list does not show; no listed replica is lost; and every main
-// role has a ready replica, so the header is not red. Rows already lost before the drain (lostBefore) are not the drain's.
-func checkRegistryAfterDrain(t *testing.T, drained []pod, lostBefore map[string]bool) {
+// role has a ready replica, so the header is not red. The drained processes are the rows in drained, by instance UID; rows
+// already lost before the drain (lostBefore, by instance UID) are not the drain's, whatever pod name they carry.
+//
+// A row left in another state is the drain's failure, with one case told apart: the process's own log says that the database
+// answered neither the mark draining nor the deletion during its whole shutdown (Q-HA-310). That row is listed as lost, a
+// warning, and the product cannot avoid it from inside the process; the test names it instead of reporting a sign-off that
+// failed although the database answered.
+func checkRegistryAfterDrain(t *testing.T, drained map[string]string, lostBefore map[string]bool, streams []*podLogStream) {
 	t.Helper()
-	names := make([]string, 0, len(drained))
-	for _, p := range drained {
-		names = append(names, "'"+p.Name+"'")
+	if len(drained) == 0 {
+		t.Error("R-OPS-003 no live registry row of a drained pod was found before the drain")
+		return
 	}
-	if left := sql(t, `SELECT name || '=' || state FROM quader.replica WHERE name IN (`+strings.Join(names, ",")+`)`); left != "" {
+	uids := make([]string, 0, len(drained))
+	for uid := range drained {
+		uids = append(uids, "'"+uid+"'")
+	}
+	sort.Strings(uids)
+	if left := sql(t, `SELECT instance_uid || '=' || state FROM quader.replica WHERE instance_uid IN (`+strings.Join(uids, ",")+`)`); left != "" {
 		rows := strings.Fields(left)
 		for _, r := range rows {
-			if !strings.HasSuffix(r, "=draining") {
-				t.Errorf("R-OPS-003 the drained pod's row %s was left in a state other than draining: it would be listed as lost", r)
+			uid, state, _ := strings.Cut(r, "=")
+			if state == "draining" {
+				continue
 			}
+			name := drained[uid]
+			if dbAwayForTheWholeShutdown(t, streams, name) {
+				t.Errorf("R-OPS-003 Q-HA-310 the drained process %s (%s) left its row in the state %s because the database answered neither the mark draining nor the deletion during its whole shutdown (its log says so): the row is listed as lost; the drain test needs a database that answers",
+					name, uid, state)
+				continue
+			}
+			t.Errorf("R-OPS-003 the drained process %s (%s) left its row in the state %s although the database answered during its shutdown: it is listed as lost", name, uid, state)
 		}
-		t.Logf("rows of drained pods left behind in the state draining (signed off, not listed): %v", rows)
-	}
-	gone := map[string]bool{}
-	for _, p := range drained {
-		gone[p.Name] = true
+		t.Logf("rows of drained processes left behind (draining is signed off, not listed): %v", rows)
 	}
 	// A row left in the state draining is listed until system.heartbeat_stale_after has passed, so the list is read again
 	// until it settles.
-	waitFor(t, "R-OPS-003 R-UI-038 no drained pod listed, no lost row, a ready replica of every main role", 60*time.Second, 2*time.Second, func() bool {
+	waitFor(t, "R-OPS-003 R-UI-038 no drained process listed, no lost row, a ready replica of every main role", 60*time.Second, 2*time.Second, func() bool {
 		reps, err := replicas()
 		if err != nil {
 			t.Logf("listing the replicas: %v", err)
@@ -391,8 +410,8 @@ func checkRegistryAfterDrain(t *testing.T, drained []pod, lostBefore map[string]
 		}
 		ready := map[string]bool{}
 		for _, r := range reps {
-			if (r.Lost && !lostBefore[r.Name]) || gone[r.Name] {
-				t.Logf("still listed: %s (state %s, lost %v)", r.Name, r.State, r.Lost)
+			if _, mine := drained[r.InstanceUID]; mine || (r.Lost && !lostBefore[r.InstanceUID]) {
+				t.Logf("still listed: %s %s (state %s, lost %v)", r.Name, r.InstanceUID, r.State, r.Lost)
 				return false
 			}
 			if r.State == "ready" {
@@ -403,7 +422,47 @@ func checkRegistryAfterDrain(t *testing.T, drained []pod, lostBefore map[string]
 	})
 }
 
-// lostReplicas names the replicas the registry lists as lost.
+// dbAwayForTheWholeShutdown reports whether the streamed log of the pod says that its registry row was neither marked draining
+// nor deleted because the database did not answer (the line of Registry.Stop, Q-HA-307).
+func dbAwayForTheWholeShutdown(t *testing.T, streams []*podLogStream, pod string) bool {
+	t.Helper()
+	for _, s := range streams {
+		if s.Pod != pod {
+			continue
+		}
+		s.finish(10 * time.Second) // the pod is gone by now; its stream ends by itself
+		b, err := os.ReadFile(s.File)
+		if err != nil {
+			t.Logf("reading the log of %s: %v", pod, err)
+			return false
+		}
+		return strings.Contains(string(b), "replica row neither marked draining nor deleted")
+	}
+	return false
+}
+
+// liveRowsOf returns the instance UID and name of the live registry row of each pod: the processes a drain of those pods stops.
+// A pod restarted in place has older rows under its name, which are lost and not returned.
+func liveRowsOf(t *testing.T, pods []pod) map[string]string {
+	t.Helper()
+	reps, err := replicas()
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := map[string]bool{}
+	for _, p := range pods {
+		names[p.Name] = true
+	}
+	out := map[string]string{}
+	for _, r := range reps {
+		if names[r.Name] && !r.Lost {
+			out[r.InstanceUID] = r.Name
+		}
+	}
+	return out
+}
+
+// lostReplicas names the instance UIDs of the replicas the registry lists as lost.
 func lostReplicas(t *testing.T) map[string]bool {
 	t.Helper()
 	reps, err := replicas()
@@ -413,7 +472,7 @@ func lostReplicas(t *testing.T) map[string]bool {
 	out := map[string]bool{}
 	for _, r := range reps {
 		if r.Lost {
-			out[r.Name] = true
+			out[r.InstanceUID] = true
 		}
 	}
 	return out

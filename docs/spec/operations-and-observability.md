@@ -420,7 +420,12 @@ refresh its row every `system.heartbeat_interval` on its control connection
 makes a live replica look lost. On `SIGTERM` the replica marks its row `draining` at once and keeps it so in every later
 heartbeat (Q-HA-283 in [ha-and-helm.md](ha-and-helm.md)); on a clean shutdown it deletes its own row, on the request pool: by
 then the pool is idle, and the control connection is still used by the change-log poll and the readiness checks (Q-HA-202 in
-[ha-and-helm.md](ha-and-helm.md)). Backup pods, the restore Job and the migration Job never register
+[ha-and-helm.md](ha-and-helm.md)). Both writes are retried within their shutdown step, so a switchover of the primary during a stop
+does not leave the row behind; `draining` is the last state of an instance, and a heartbeat never writes another state over it; a
+row that could not be deleted is logged with what it will be listed as (Q-HA-307, Q-HA-308 in [ha-and-helm.md](ha-and-helm.md)). A
+replica whose heartbeat has not reached its row for longer than `system.heartbeat_stale_after` logs once that the others list it as
+lost, and again when a heartbeat reaches the row (Q-HA-309). A replica that reaches PostgreSQL at no point of its shutdown leaves its
+row in its last state, which is listed as lost; nothing in the process can remove it (Q-HA-310). Backup pods, the restore Job and the migration Job never register
 ([ha-and-helm.md](ha-and-helm.md) R-HA-003).
 
 A row whose heartbeat is older than `system.heartbeat_stale_after` is one of two things, by the state it last wrote

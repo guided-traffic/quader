@@ -41,6 +41,8 @@ type JobRun interface {
 	SaveCheckpoint(ctx context.Context, v any) error
 	// SetResult sets the result stored when the handler returns nil.
 	SetResult(v any) error
+	// Draining is closed when the replica begins its shutdown.
+	Draining() <-chan struct{}
 }
 
 // RunJob is the handler body of the kinds gc and gc-full: it reads the job's
@@ -65,7 +67,7 @@ func (c *Collector) RunJob(ctx context.Context, mode GCMode, args json.RawMessag
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
 	res, err := c.Run(ctx, RunOptions{
-		Mode: mode, DryRun: a.DryRun, Cursor: cur,
+		Mode: mode, DryRun: a.DryRun, Cursor: cur, Draining: run.Draining(),
 		Checkpoint: func(next Cursor) {
 			if serr := run.SaveCheckpoint(ctx, next); serr != nil {
 				cancel(fmt.Errorf("save checkpoint: %w", serr))

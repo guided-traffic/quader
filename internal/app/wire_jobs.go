@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/jobs"
@@ -59,7 +61,12 @@ func (a *App) jobRegistry() (*jobs.Registry, error) {
 func (a *App) registerGC(r *jobs.Registry) {
 	handler := func(mode blob.GCMode) jobs.Handler {
 		return a.gc.handler("garbage collector", func(ctx context.Context, c *blob.Collector, run *jobs.Run) error {
-			return c.RunJob(ctx, mode, run.Args, run)
+			err := c.RunJob(ctx, mode, run.Args, run)
+			if errors.Is(err, blob.ErrHandedOver) {
+				// A run in its settle wait at the drain gives its job up: released, not failed (Q-STOR-217, Q-ARCH-501).
+				return fmt.Errorf("%w: %w", jobs.ErrReleased, err)
+			}
+			return err
 		})
 	}
 	for _, k := range []struct {

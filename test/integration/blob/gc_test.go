@@ -395,7 +395,11 @@ type fakeRun struct {
 	saved      []blob.Cursor
 	result     any
 	failSave   error
+	// draining is the replica's shutdown signal; nil never closes.
+	draining chan struct{}
 }
+
+func (f *fakeRun) Draining() <-chan struct{} { return f.draining }
 
 func (f *fakeRun) LoadCheckpoint(v any) (bool, error) {
 	if f.checkpoint == nil {
@@ -418,6 +422,52 @@ func (f *fakeRun) SetResult(v any) error { f.result = v; return nil }
 
 func TestGCJobHandler(t *testing.T) {
 	ctx := context.Background()
+	t.Run("R-STOR-046 R-ARCH-024 F-137 a run in its settle wait when the replica begins its shutdown hands the wait over at once, and the next run finishes the rows", func(t *testing.T) {
+		e := newS3(t, "gcjobdrain")
+		p := newPG(t)
+		// delete_settle of 5 s: a run that waited it out would return after the 1 s bound below.
+		r := newReplica(t, e, p, func(c *config.Storage) { c.GC.DeleteSettle, c.GC.HandoverDelay = 5*time.Second, 10*time.Second })
+		var ds []blob.Digest
+		for i := 0; i < 3; i++ {
+			d, _ := garbage(t, r, "drain/"+string(rune('a'+i)))
+			ds = append(ds, d)
+		}
+		run := &fakeRun{draining: make(chan struct{})}
+		done := make(chan error, 1)
+		go func() { done <- r.coll.RunJob(ctx, blob.GCFull, nil, run) }()
+		waitDeleting := time.Now().Add(30 * time.Second)
+		for p.count(t, "blobs WHERE state = 'deleting'") != int64(len(ds)) {
+			if time.Now().After(waitDeleting) {
+				t.Fatal("the run did not reach its settle wait")
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		close(run.draining)
+		select {
+		case err := <-done:
+			if !errors.Is(err, blob.ErrHandedOver) {
+				t.Fatalf("RunJob = %v, want the hand-over of its settle wait", err)
+			}
+		// The run polls every delete_settle/10, at most 250 ms; 1 s leaves room for a loaded machine and is far below the 5 s wait.
+		case <-time.After(time.Second):
+			t.Fatal("the run kept waiting for its rows to settle after the shutdown began")
+		}
+		for _, d := range ds {
+			if objectExists(t, e, e.prefix, d) {
+				t.Fatalf("%s: the object was not deleted before the hand-over", d)
+			}
+		}
+		time.Sleep(r.cfg.GC.DeleteSettle + 200*time.Millisecond)
+		next := &fakeRun{}
+		if err := r.coll.RunJob(ctx, blob.GCFull, nil, next); err != nil {
+			t.Fatal(err)
+		}
+		for _, d := range ds {
+			if !gone(t, e, p, d) {
+				t.Fatalf("%s: the next run did not finish the row the handed-over run deleted", d)
+			}
+		}
+	})
 	t.Run("R-STOR-025 the job handler runs the sweep, saves its keyset position after every batch and stores the result", func(t *testing.T) {
 		e := newS3(t, "gcjob")
 		p := newPG(t)
