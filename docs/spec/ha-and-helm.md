@@ -1872,6 +1872,10 @@ Acceptance criteria (pooler profile of R-HA-051, a green full run of Test and Re
 - `kubectl delete pod <pooler pod>` during an `npm ci` loop: no failed iteration. With
   `--grace-period=0 --force`, only requests whose `COMMIT` was in flight answer `503` with
   `Retry-After`, and every client iteration succeeds after its own retries.
+- A PostgreSQL switchover behind both poolers (`failover.sh`) under the npm load: every `npm` command exits `0`, k6 records only
+  `2xx` and `304` (none of them the edge's own `503`), every replica answers `/readyz` `200` throughout, and every pooler instance
+  serves again within `health.database_outage_grace` of its first failure line (`TestHAPooler_Switchover`, set `ha-pooler`,
+  [Q-HA-302](#q-ha-302--the-poolers-retry-a-failed-server-login-after-1-s-so-a-switchover-behind-them-stays-inside-the-retry-budget)).
 - A login without the role defaults makes the replica exit with a message naming the login and the
   setting.
 - With `pooler.mode: transaction` and an empty `session_host`, `helm template` fails and names
@@ -9655,6 +9659,7 @@ Context: R-HA-007 rows without an R-HA-052 scenario: Sentinel quorum lost, S3 cr
 | S3 credentials fail | unit `TestGuardBreaker` ("a store that rejects the credential counts as an object-store failure": the circuit, the log line with the credential source and no secret) and `TestErrorMapping` (which codes are credential rejections); no e2e run, see H-793 |
 | Spool volume full | integration `TestR_HA_052_SpoolExhaustionAnswers503AndEvictsNothing` (a replica with a 6 MiB budget: `503` with `Retry-After`, `413`, no eviction, the retry succeeds); the dev profile's budget is 2 GiB per replica, so an e2e run would upload gigabytes to prove the same admission |
 | Pooler instance lost | e2e `TestHAPooler_InstanceLoss` (R-HA-058) |
+| PostgreSQL switchover behind the poolers | e2e `TestHAPooler_Switchover` (R-HA-058, Q-HA-302) |
 | Valkey credential mismatch | e2e `TestHAFaults_ValkeyCredentialMismatch` (running replicas, the replacement pod) and integration `TestValkeyStartup` (the first readiness) |
 | Backup and restore pod evicted or crashed | e2e `TestBackupDrain` (R-BAK-012, R-BAK-010, R-BAK-021: the drain of the node, `kill -9` of the pod), named with R-HA-007 and R-HA-052 as well; "cut off" is a network fault and is not built (H-792) |
 
@@ -10230,7 +10235,14 @@ documentation says a momentarily failing server keeps the pooler away for at lea
 PgBouncer release ties the server login to the verifier it fetched last rather than to a client's keys (then the second failure disappears and only the first
 lockout matters), or if an installation shows the 1 s retries as a load on a PostgreSQL that is down.
 
-**Applied in the spec:** R-HA-058 (the switchover bullet and the example), R-HA-059 rule 5 (the pooler row), the failure table's switchover row;
+**Test.** Variant D's pick switches PostgreSQL over only when the primary sits on the picked node, so the requirement was met by pod
+placement (in 4 of the 8 pooler legs read). `TestHAPooler_Switchover` (set `ha-pooler`) runs the switchover behind both poolers on every
+run, under the npm load, and asserts the stall of the failure table: no `503` of the edge, `/readyz` `200` on every replica, and every pooler's
+failure window shorter than `health.database_outage_grace`, the time after which a replica's failing `database` check takes it out of its
+Service (Q-OPS-31). The bound is the configuration's, not a measured value. Every pooler leg keeps the rendered `pgbouncer.ini` and the log
+of every pooler instance in its artifacts.
+
+**Applied in the spec:** R-HA-058 (the switchover bullet and the example), R-HA-059 rule 5 (the pooler row), the failure table's switchover row; R-HA-058's acceptance criteria;
 [deploy/dev/pooler.yaml](../../deploy/dev/pooler.yaml), [docs/developer/local-profile.md](../developer/local-profile.md), the pooler requirements of the
 [README](../../README.md) and of the manual ([configuration](../manual/admin/configuration.md#behind-a-transaction-mode-pooler), [runbook](../manual/admin/runbook.md)).
 
