@@ -330,6 +330,11 @@ func (db *DB) CloseContext(ctx context.Context) error {
 					holders: func() []string {
 						return db.holds[p.label].describeHeld(time.Now(), p.pool.Stat().ConstructingConns())
 					},
+					// The pool's own count, not the holder table: a connection taken out with Hijack leaves the table without a
+					// release, and the pool no longer counts it.
+					borrowed: func() int {
+						return max(0, int(p.pool.Stat().AcquiredConns())-int(db.holds[p.label].cleaning.Load()))
+					},
 				})
 			}
 		}
@@ -348,6 +353,28 @@ type closingPool struct {
 	// holders names the connections held: the borrowers, longest first, then the closed ones being cleaned up and the ones under
 	// construction; nil names none.
 	holders func() []string
+	// borrowed is the number of connections a borrower still has checked out. When no open pool has one, what the close would still
+	// wait for is the driver's own work, a closed connection's cleanup or a connection being opened, and the close returns without
+	// waiting for it (Q-ARCH-499); nil means unknown, and the close waits for the pool.
+	borrowed func() int
+}
+
+// closeCheckEvery is how often a close that waits looks whether only the driver's own work is left.
+const closeCheckEvery = 10 * time.Millisecond
+
+// onlyDriverWorkLeft reports whether no pool that is still open has a connection checked out by a borrower: what keeps them open is
+// a closed connection's cleanup or a connection being opened, which the exit of the process ends (Q-ARCH-499). A pool whose
+// borrowers are unknown keeps the close waiting.
+func onlyDriverWorkLeft(pools []closingPool, open []atomic.Bool) bool {
+	for i, p := range pools {
+		if !open[i].Load() {
+			continue
+		}
+		if p.borrowed == nil || p.borrowed() > 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // ErrPoolsOpen is the error of a close that reached its deadline while a pool still held connections; the error that wraps it names
@@ -368,10 +395,20 @@ func closePools(ctx context.Context, pools []closingPool) error {
 	}
 	done := make(chan struct{})
 	go func() { wg.Wait(); close(done) }()
-	select {
-	case <-done:
-		return nil
-	case <-ctx.Done():
+	tick := time.NewTicker(closeCheckEvery)
+	defer tick.Stop()
+wait:
+	for {
+		select {
+		case <-done:
+			return nil
+		case <-ctx.Done():
+			break wait
+		case <-tick.C:
+			if onlyDriverWorkLeft(pools, open) {
+				return nil
+			}
+		}
 	}
 	var held []string
 	for i, p := range pools {

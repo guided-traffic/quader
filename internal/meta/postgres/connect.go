@@ -368,7 +368,16 @@ func newPoolConfig(c config.Database, s poolSpec, t *dbTLS) (*pgxpool.Config, er
 	cc.RuntimeParams = runtimeParams(c, s.instance, s.kind)
 	cc.DefaultQueryExecMode = execMode(c, s.kind.pooled)
 	cc.DialFunc = tuneDial(cc.DialFunc, c.Keepalive)
-	pc.BeforeConnect = beforeConnect(c, t)
+	credentials := beforeConnect(c, t)
+	pc.BeforeConnect = func(ctx context.Context, cc *pgx.ConnConfig) error {
+		if err := credentials(ctx, cc); err != nil {
+			return err
+		}
+		withDiscard(cc, c.ConnectTimeout)
+		return nil
+	}
+	// A connection the pool gives up on gives its place back at once, not after the driver's cleanup (Q-ARCH-498).
+	pc.BeforeClose = func(conn *pgx.Conn) { discard(conn) }
 	pc.MaxConns, pc.MinConns = s.maxConns, s.minConns
 	pc.MaxConnLifetime, pc.MaxConnLifetimeJitter = s.lifetime, s.jitter
 	pc.MaxConnIdleTime, pc.HealthCheckPeriod = s.idleTime, s.healthEach
