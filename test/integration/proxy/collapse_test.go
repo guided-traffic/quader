@@ -102,6 +102,29 @@ func bypasses(reps ...*replica) string {
 	return strings.Join(parts, ", ")
 }
 
+// givenUpFlights answers Acquire or Wait as a Valkey call given up on at valkey.command_timeout does: the cluster layer turns the
+// deadline into cluster.ErrUnavailable (F-135).
+type givenUpFlights struct {
+	cluster.FlightLock
+	acquire, wait bool
+}
+
+var errGivenUp = fmt.Errorf("%w: %w", cluster.ErrUnavailable, context.DeadlineExceeded)
+
+func (g givenUpFlights) Acquire(ctx context.Context, f cluster.FlightKey) (*cluster.FlightHold, bool, error) {
+	if g.acquire {
+		return nil, false, errGivenUp
+	}
+	return g.FlightLock.Acquire(ctx, f)
+}
+
+func (g givenUpFlights) Wait(ctx context.Context, f cluster.FlightKey) (cluster.Outcome, error) {
+	if g.wait {
+		return "", errGivenUp
+	}
+	return g.FlightLock.Wait(ctx, f)
+}
+
 func collapsedOrHit(s served) bool {
 	cs := s.cacheStatus()
 	return strings.Contains(cs, "collapsed") || strings.HasPrefix(cs, "quader; hit")
@@ -288,25 +311,89 @@ func TestCollapse(t *testing.T) {
 		a, b := e.newReplica("a", replicaOpts{}), e.newReplica("b", replicaOpts{})
 		first := make(chan served, 1)
 		go func() { first <- b.artifact(rem, path) }()
-		// A replica that reaches the upstream holds the flight or fetches without it (a Valkey command given up on), so the GET
-		// alone does not make b the holder the subject needs: the lock key does (Test and Release 43179952672 saw a fetch its own
-		// "uri-miss; stored" where a waiter was due, and did not say which replica went without the lock).
+		// The subject is a waiter on a flight that Valkey shows held. A Valkey call given up on at valkey.command_timeout (500 ms,
+		// the default this harness keeps) counts as Valkey unavailable for that call: the holder then fetches without the lock,
+		// and a draining replica whose wait is given up on fetches under its own single-flight (R-REPO-026, Valkey unavailable).
+		// Both are allowed and both answer the draining replica's request with a fetch of its own, the "uri-miss; stored" of Test
+		// and Release 43179952672 (F-135); the forced subtests below pin them. When one of them happened here, this run did not
+		// exercise its subject, and it says so instead of failing.
 		admin := e.valkeyAdmin(a)
 		waitFor(t, "the holder to reach the upstream", 5*time.Second, func() bool { return up.Count("GET", "/"+path) == 1 })
 		if _, held := getKey(t, admin, e.lockKey(rem, path, "")); !held {
-			t.Fatalf("b reached the upstream without holding the flight (%s)", bypasses(a, b))
+			if b.metric("quader_flight_lock_bypass_total", "reason", "valkey_unavailable") == 0 {
+				t.Fatalf("b reached the upstream without the flight and without a Valkey call given up on (%s)", bypasses(a, b))
+			}
+			<-first
+			t.Skipf("b's acquire was given up on and b fetched without the lock (%s): the subject needs Valkey to answer within valkey.command_timeout", bypasses(a, b))
 		}
 		a.engine.Drain(context.Background())
 		s := a.artifact(rem, path)
-		if s.status != 200 || !bytes.Equal(s.body, tarball) || !collapsedOrHit(s) {
+		<-first
+		if s.status != 200 || !bytes.Equal(s.body, tarball) {
 			t.Fatalf("%d %q (%v); %s", s.status, s.cacheStatus(), s.err, bypasses(a, b))
 		}
-		<-first
+		if !collapsedOrHit(s) {
+			if a.metric("quader_flight_lock_bypass_total", "reason", "valkey_unavailable") == 0 {
+				t.Fatalf("the draining replica fetched itself while b held the flight and Valkey answered: %q; %s", s.cacheStatus(), bypasses(a, b))
+			}
+			t.Skipf("the draining replica's wait was given up on and it fetched itself (%s): the subject needs Valkey to answer within valkey.command_timeout", bypasses(a, b))
+		}
 		if n := up.Count("GET", "/"+path); n != 1 {
 			t.Fatalf("the upstream saw %d GETs", n)
 		}
 		if got := a.metric("quader_flight_lock_bypass_total", "reason", "draining"); got != 0 {
 			t.Fatalf("the draining replica waited and still counted a bypass: %v", got)
+		}
+	})
+
+	t.Run("R-REPO-026 a draining replica whose wait is given up on fetches under its own single-flight", func(t *testing.T) {
+		e := newEnv(t)
+		up := e.upstream()
+		up.Set("/"+path, slow)
+		rem := e.remote("collapse-drain-wait-lost", up)
+		a := e.newReplica("a", replicaOpts{flights: func(l cluster.FlightLock) cluster.FlightLock { return givenUpFlights{FlightLock: l, wait: true} }})
+		b := e.newReplica("b", replicaOpts{})
+		first := make(chan served, 1)
+		go func() { first <- b.artifact(rem, path) }()
+		waitFor(t, "the holder to reach the upstream", 5*time.Second, func() bool { return up.Count("GET", "/"+path) == 1 })
+		if _, held := getKey(t, e.valkeyAdmin(a), e.lockKey(rem, path, "")); !held {
+			t.Fatalf("b reached the upstream without holding the flight (%s)", bypasses(a, b))
+		}
+		a.engine.Drain(context.Background())
+		s := a.artifact(rem, path)
+		<-first
+		if s.status != 200 || !bytes.Equal(s.body, tarball) || collapsedOrHit(s) {
+			t.Fatalf("%d %q (%v), want the draining replica's own fetch; %s", s.status, s.cacheStatus(), s.err, bypasses(a, b))
+		}
+		if got := a.metric("quader_flight_lock_bypass_total", "reason", "valkey_unavailable"); got != 1 {
+			t.Fatalf("the own fetch was not counted as valkey_unavailable: %s", bypasses(a, b))
+		}
+		if n := up.Count("GET", "/"+path); n != 2 {
+			t.Fatalf("the upstream saw %d GETs, want the holder's and the draining replica's own", n)
+		}
+	})
+
+	t.Run("R-REPO-026 a draining replica fetches under its own single-flight when the holder's acquire was given up on", func(t *testing.T) {
+		e := newEnv(t)
+		up := e.upstream()
+		up.Set("/"+path, slow)
+		rem := e.remote("collapse-drain-nolock", up)
+		a := e.newReplica("a", replicaOpts{})
+		b := e.newReplica("b", replicaOpts{flights: func(l cluster.FlightLock) cluster.FlightLock { return givenUpFlights{FlightLock: l, acquire: true} }})
+		first := make(chan served, 1)
+		go func() { first <- b.artifact(rem, path) }()
+		waitFor(t, "the holder to reach the upstream", 5*time.Second, func() bool { return up.Count("GET", "/"+path) == 1 })
+		a.engine.Drain(context.Background())
+		s := a.artifact(rem, path)
+		<-first
+		if s.status != 200 || !bytes.Equal(s.body, tarball) || collapsedOrHit(s) {
+			t.Fatalf("%d %q (%v), want the draining replica's own fetch; %s", s.status, s.cacheStatus(), s.err, bypasses(a, b))
+		}
+		if b.metric("quader_flight_lock_bypass_total", "reason", "valkey_unavailable") != 1 || a.metric("quader_flight_lock_bypass_total", "reason", "draining") != 1 {
+			t.Fatalf("want b's fetch counted as valkey_unavailable and a's as draining: %s", bypasses(a, b))
+		}
+		if n := up.Count("GET", "/"+path); n != 2 {
+			t.Fatalf("the upstream saw %d GETs, want one per replica", n)
 		}
 	})
 

@@ -2177,6 +2177,14 @@ PostgreSQL advisory lock. The protocol:
   [architecture.md](architecture.md) R-ARCH-031), and the leader fetches under its in-process
   single-flight only (`reason="valkey_unavailable"`): at most one upstream fetch per replica and
   flight. No request fails because Valkey failed (INV-12).
+  - A call given up on at `valkey.command_timeout` counts the same, for that call only: a leader
+    whose `Acquire` is given up on fetches without the lock while other replicas find no flight to
+    wait for, and a waiter whose `Wait` is given up on fetches itself, a draining replica's waiter
+    included. A slow Valkey therefore turns a collapsed miss into one fetch per replica, never into
+    a failed request. A `SET` that the server applied after the client gave up on it leaves a lock
+    nobody extends or releases; waiters keep waiting until it expires after
+    `cluster.flight_lock_ttl` or until `proxy.fetch_wait_timeout_seconds` ends, whichever comes
+    first.
 - **The lock is an optimization, not a correctness condition** (INV-11). A lock lost in a Sentinel
   failover, a bypass and an unavailable Valkey all lead to concurrent fetches of one entry, and
   these are correct: blob commits are idempotent by content address, and the entry upsert keeps the
