@@ -1113,7 +1113,14 @@ agent** is not decided until the owner has said so.
   **Details** on CI issuances) have one. Two lists do neither: the CI mappings show **Edit** and **Test** as two words, the
   Debian signing keys two buttons. Wanted: the rule in the spec and the style guide (one action: its word as a quiet button;
   two or more: the menu, with at most one frequent action as an icon beside it), and the two lists brought to it. Status:
-  not built; waits for a free builder (four are running).
+  a builder is briefed, together with W-19.
+- **W-19 · Jobs and Backups are tabs of System status** (owner, 2026-11-18, "Option A" from three: tabs on the page / two
+  entries of their own in the side bar / leave it and move the links up). Verified in the code: both pages are reached only
+  through two text links at the end of the long **System status** page (jobs also from a card of the dashboard), the side
+  bar keeps **System status** marked on both, and the dashboard shows no state of the backup. Wanted: one entry in the side
+  bar, three tabs at the top of the page, **Status**, **Jobs**, **Backups**, each with its address. Added by the development
+  agent, for the owner to object: the dashboard shows the state of the backup ("No backup yet", the last success), so that a
+  missing backup is seen without two clicks. Status: a builder is briefed, together with W-18.
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
