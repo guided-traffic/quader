@@ -1030,6 +1030,38 @@ agent** is not decided until the owner has said so.
   the restriction binds the Owners of projects for their repositories. The development agent looked at the settings page in the
   running UI and moved **Save changes** from under the list **Public now** to under the settings. Not looked at: the forms with
   a level restricted, as an Owner. Not run locally: the journeys 19 and 21.
+- **W-12 · A person is chosen from a search that shows the people it found, everywhere** (owner, 2026-11-18, at the admin
+  area's **System roles**, with a picture of the member field of his GitLab: the typed letters "Swa", under the field a row
+  with the avatar, the name and the username of the match): "ne, das muss mit Personensuche passieren. Personensuchen immer so
+  mit Anzeige der möglichen Personen. Das will ich überall wo Personensuchen eine Rolle spielen." Today a system role is bound
+  by typing `user:name`, `group:name` or `sa:name` into a text field, and no screen of the app offers a person while one types;
+  `GET /api/v1/users` asks for `identities:read`, which a project's Owner does not hold. Wanted: one shared field for every
+  place where a person, a group or a service account is named (the bindings of a system role, the members of a project, the
+  members of a group, the principals of a permission policy, and whatever else the builder finds): it searches while one
+  types and lists the matches with avatar, name and username. Decided by the development agent, for the owner to object: the
+  search is open to every signed-in user who is not external, as on the owner's GitLab, and gives the avatar, the name and
+  the username, never the email address; the email stays with `identities:read`. Status: a builder is briefed.
+- **W-13 · An update does not turn the status red** (owner, 2026-11-18, at **Dashboard** and **System status**, both red with
+  "A role is not ready" and "Replicas unready" on his stack): "Ich denke, da wurden einfach die Prozesse rotiert. Bitte
+  nachprüfen, dass solche Prozesse sich abmelden und es nicht zu rotem Status kommt, nur weil ein Update eingespielt wurde."
+  Checked by the development agent on 2026-11-18:
+  - **Verified:** a process that is stopped cleanly signs off. `Registry.Stop` deletes its row
+    ([replica_registry.go](../../internal/cluster/replica_registry.go), tests in `replica_registry_stop_test.go`), and on the
+    UI stack a `TERM` to the running process ended it after 5 s (the drain delay) with its row gone from `replica`. The
+    chart gives a pod 120 s (`terminationGracePeriodSeconds`) for that.
+  - **Verified:** the two rows that made the stack red were in the state `draining` with a heartbeat that had stopped: both
+    processes had received the `TERM` and were killed inside the 5 s of the drain delay, before the deletion. That comes from
+    how the backend of the UI stack was restarted that day, not from what an update does. Not read: which command killed them.
+  - **The gap, verified in the code:** `serviceState` in
+    [system-status-model.ts](../../web/src/app/features/system/system-status-model.ts) is red as soon as one row is lost or
+    not `ready`. So (a) every rolling update shows "Replicas unready" while a pod drains, because `draining` is not `ready`;
+    (b) a row whose process was killed while draining, or that could not delete its row in time, stays "lost" and red until
+    the prune after 24 hours (`replicaPruneAfter`), though the process was stopped on purpose; (c) a pod that crashed and
+    was replaced keeps the status red for 24 hours while every role has its ready replicas.
+  - **Not verified:** a rolling update on a cluster that day; the drain legs that would show it run nightly and were not read.
+  - Wanted: a replica that drains or has drained is no error; a row that went stale while `draining` counts as signed off.
+    Open for the owner: what a replica that was lost without draining does to the status while its role still has ready
+    replicas (the development agent proposes: a warning, not red; red only for a role without a ready replica).
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
