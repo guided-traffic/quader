@@ -190,7 +190,8 @@ func (r fullHAResult) note() map[string]any {
 // runFullFault is runLoadFault under the whole load.
 func runFullFault(t *testing.T, h *npmHAFixture, nh *nugetHAFixture, name string, before, after time.Duration, fault func()) loadFaultRun[fullHAResult] {
 	t.Helper()
-	return runLoadFault(t, "nuget-ha-"+name, name, before, after, func() func(*testing.T) fullHAResult {
-		return startFullLoad(t, h, nh, name).stopBoth
+	return runLoadFault(t, "nuget-ha-"+name, name, before, after, func() (func(*testing.T) fullHAResult, func() error) {
+		l := startFullLoad(t, h, nh, name)
+		return l.stopBoth, l.npm.warmUpFailures
 	}, fault, fullHAResult.note)
 }
