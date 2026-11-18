@@ -755,6 +755,11 @@ func (a *App) Shutdown(ctx context.Context) error {
 	select {
 	case e := <-closed:
 		errsOut = append(errsOut, e...)
+		// The pools return at their deadline and close in the background, so the overrun below never sees them; the goroutines
+		// show where a held connection waits (a borrower's statement, a cleanup's cancel request or its wait for the server).
+		if errors.Is(errors.Join(e...), postgres.ErrPoolsOpen) {
+			a.log.Error("database pools were still open at the close deadline", "pools", a.poolCounts(), "goroutines", health.GoroutineDump())
+		}
 	case <-time.After(time.Until(plan.CloseBy.Add(a.budget.Abandon))):
 		a.log.Error("components did not stop before the close deadline; abandoning them to keep the exit deadline", "at", closing.Load(), "pools", a.poolCounts(), "goroutines", health.GoroutineDump())
 		errsOut = append(errsOut, errors.New("close phase overran its deadline"))

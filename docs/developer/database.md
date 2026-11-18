@@ -90,8 +90,15 @@ The connection string carries neither.
   cluster.(*changeLog).poll for 8.7s`, for every pool. The pool's tracer ([holders.go](../../internal/meta/postgres/holders.go),
   `AcquireTracer` and `ReleaseTracer` of `stmtTracer`) records each checked-out connection with the program counters of its acquirer
   (resolved only when the error is built, so an acquire costs one `runtime.Callers`) or the label a borrower gave with
-  `postgres.WithHolder`; the readiness probes label themselves. A connection under construction is named as such.
-  Test: `TestR_HA_011_AHeldConnectionIsNamedByItsBorrower`.
+  `postgres.WithHolder`; the readiness probes label themselves. A connection that came back closed (a statement cut by its
+  context) has no borrower, but pgxpool counts it as acquired and keeps its place until the driver has cleaned it up (the cancel
+  request on a new connection, the terminate message, the wait for the server to close; up to 15 s): the error names it as
+  `1 closed connection still being cleaned up`, and a connection being opened as `1 connection under construction`. A cleanup that
+  takes longer than 1 s is logged when the second passes and when it ends (`a closed database connection is still being cleaned
+  up`, with `db_pool`), and a close that reaches its deadline with a pool still open is logged by the shutdown with the pool counts
+  and the grouped goroutines, which show where the cleanup waits
+  ([Q-ARCH-497](../spec/architecture.md#q-arch-497--a-closed-connection-that-holds-its-pool-is-named-and-logged-and-a-close-that-reaches-its-deadline-logs-the-goroutines)).
+  Tests: `TestR_HA_011_AHeldConnectionIsNamedByItsBorrower`, `TestR_HA_011_AClosedConnectionIsNamedUntilItsCleanupEnds`.
   `Ready` returns `ErrStandby` for a server in recovery and destroys that connection (the control pool holds one, so
   the next check connects again and finds the new primary); `Read` destroys the connection when `fn` panics;
   `classify` treats a failed TLS verification of the server (`x509` and `tls.CertificateVerificationError` inside the
