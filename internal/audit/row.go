@@ -96,7 +96,7 @@ func toRow(t EventType, ev Event, id string, at time.Time, replica string) (row,
 		return r, fmt.Errorf("%w: %s has no actor kind", ErrInvalidEvent, t.Name)
 	}
 	switch o := ev.Outcome; o {
-	case Success, Failure, Denied:
+	case Success, Failure, Denied, Warning:
 		r.Outcome = string(o)
 	case "":
 		r.Outcome = string(Success)

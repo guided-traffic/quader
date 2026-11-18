@@ -1684,7 +1684,7 @@ CREATE TABLE audit_event (
   occurred_at   timestamptz NOT NULL,
   action        text        NOT NULL,          -- registry name, e.g. 'repository.created'
   category      text        NOT NULL,
-  outcome       text        NOT NULL CHECK (outcome IN ('success','denied','failure')),
+  outcome       text        NOT NULL CHECK (outcome IN ('success','denied','failure','warning')),  -- warning: identity Q-AUTH-402
   actor_type    text        NOT NULL,          -- user | service_account | ci | breakglass | system | anonymous
   actor_id      uuid,
   actor_name    text,
@@ -1956,7 +1956,7 @@ API (requires `audit:read`, the capability of R-AUTHZ-010; a system administrato
 
 | Method and path | Parameters | Response |
 |---|---|---|
-| `GET /api/v1/audit/events` | `from`, `to` (default: the last 24 h), `action` (exact, or a prefix ending in `.*`), `category`, `outcome`, `actor` (ID or name), `project`, `repository` (qualified name `<projectKey>/<repoKey>`), `resourceType`, `resourceId`, `traceId`, `limit` (≤ 1000, default 100), `cursor` | `200 {"items":[…],"nextCursor":"…"}`, newest first |
+| `GET /api/v1/audit/events` | `from`, `to` (default: the last 24 h), `action` (exact, or a prefix ending in `.*`), `category`, `outcome` (`success`, `failure`, `denied`, `warning`), `actor` (ID or name), `project`, `repository` (qualified name `<projectKey>/<repoKey>`), `resourceType`, `resourceId`, `traceId`, `limit` (≤ 1000, default 100), `cursor` | `200 {"items":[…],"nextCursor":"…"}`, newest first |
 | `GET /api/v1/audit/events/{id}` | — | `200` one event; `404` |
 | `GET /api/v1/audit/events/export` | `from`, `to` (both required, range ≤ 400 days), the same filters, `format=jsonl` (default) or `csv` | `200` streamed as [JSON Lines](https://jsonlines.org/) (`application/x-ndjson`) or CSV, oldest first; `400` for a missing or oversized range |
 

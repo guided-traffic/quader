@@ -11,12 +11,15 @@ import (
 // Outcome is the result an event reports (R-AUTH-041).
 type Outcome string
 
-// The outcomes. Denied is an authorization refusal (authz.denied); the table
-// accepts these three.
+// The outcomes. Denied is an authorization refusal (authz.denied). Warning is
+// an action that happened and that an administrator should look at, such as a
+// sign-in whose group claim went missing (Q-AUTH-402); it is never a failure.
+// The table accepts these four.
 const (
 	Success Outcome = "success"
 	Failure Outcome = "failure"
 	Denied  Outcome = "denied"
+	Warning Outcome = "warning"
 )
 
 // Actor is who did it. Kind is "user", "service_account", "ci", "break_glass",

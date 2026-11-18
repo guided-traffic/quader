@@ -54,19 +54,22 @@ func (e AppliedMigrationStepClass) Valid() bool {
 
 // Defines values for AuditEventOutcome.
 const (
-	Denied  AuditEventOutcome = "denied"
-	Failure AuditEventOutcome = "failure"
-	Success AuditEventOutcome = "success"
+	AuditEventOutcomeDenied  AuditEventOutcome = "denied"
+	AuditEventOutcomeFailure AuditEventOutcome = "failure"
+	AuditEventOutcomeSuccess AuditEventOutcome = "success"
+	AuditEventOutcomeWarning AuditEventOutcome = "warning"
 )
 
 // Valid indicates whether the value is a known member of the AuditEventOutcome enum.
 func (e AuditEventOutcome) Valid() bool {
 	switch e {
-	case Denied:
+	case AuditEventOutcomeDenied:
 		return true
-	case Failure:
+	case AuditEventOutcomeFailure:
 		return true
-	case Success:
+	case AuditEventOutcomeSuccess:
+		return true
+	case AuditEventOutcomeWarning:
 		return true
 	default:
 		return false
@@ -1240,6 +1243,24 @@ func (e GroupOrigin) Valid() bool {
 	case GroupOriginOidc:
 		return true
 	case GroupOriginScim:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GroupClaimMissingOnMissingClaim.
+const (
+	Clear GroupClaimMissingOnMissingClaim = "clear"
+	Keep  GroupClaimMissingOnMissingClaim = "keep"
+)
+
+// Valid indicates whether the value is a known member of the GroupClaimMissingOnMissingClaim enum.
+func (e GroupClaimMissingOnMissingClaim) Valid() bool {
+	switch e {
+	case Clear:
+		return true
+	case Keep:
 		return true
 	default:
 		return false
@@ -4670,8 +4691,10 @@ type AuditEvent struct {
 	Endpoint *string                `json:"endpoint"`
 
 	// Id A UUIDv7 the producer made; the time it carries is close to `occurredAt`.
-	Id         string            `json:"id"`
-	OccurredAt time.Time         `json:"occurredAt"`
+	Id         string    `json:"id"`
+	OccurredAt time.Time `json:"occurredAt"`
+
+	// Outcome `warning`: the action happened, and an administrator should look at it (Q-AUTH-402).
 	Outcome    AuditEventOutcome `json:"outcome"`
 	Path       *string           `json:"path"`
 	Reason     *string           `json:"reason"`
@@ -4682,7 +4705,7 @@ type AuditEvent struct {
 	TraceId    *string           `json:"traceId"`
 }
 
-// AuditEventOutcome defines model for AuditEvent.Outcome.
+// AuditEventOutcome `warning`: the action happened, and an administrator should look at it (Q-AUTH-402).
 type AuditEventOutcome string
 
 // AuditEventList defines model for AuditEventList.
@@ -6489,11 +6512,19 @@ type Group struct {
 // GroupOrigin defines model for Group.Origin.
 type GroupOrigin string
 
-// GroupClaimMissing Set while the user's last login carried no usable group claim (R-AUTH-008).
+// GroupClaimMissing The stored state of an identity whose group claim is missing (R-AUTH-008), set while its last login carried no usable group claim; with two such identities, the one whose state began last. The audit log records the changes of this state, not every login (Q-AUTH-400).
 type GroupClaimMissing struct {
-	Provider string                  `json:"provider"`
-	Reason   GroupClaimMissingReason `json:"reason"`
+	// OnMissingClaim What the latest login did with the memberships synchronized from the provider.
+	OnMissingClaim GroupClaimMissingOnMissingClaim `json:"onMissingClaim"`
+	Provider       string                          `json:"provider"`
+	Reason         GroupClaimMissingReason         `json:"reason"`
+
+	// Since The time of the login at which the claim went missing for this reason.
+	Since time.Time `json:"since"`
 }
+
+// GroupClaimMissingOnMissingClaim What the latest login did with the memberships synchronized from the provider.
+type GroupClaimMissingOnMissingClaim string
 
 // GroupClaimMissingReason defines model for GroupClaimMissing.Reason.
 type GroupClaimMissingReason string
@@ -10174,7 +10205,7 @@ type ListAuditEventsParams struct {
 	// Category One of auth, token, identity, authz, repository, content, system, config, webhook.
 	Category *string `form:"category,omitempty" json:"category,omitempty"`
 
-	// Outcome success, failure or denied.
+	// Outcome success, failure, denied or warning (Q-AUTH-402).
 	Outcome *string `form:"outcome,omitempty" json:"outcome,omitempty"`
 
 	// Actor A principal ID or a name.
@@ -10207,7 +10238,7 @@ type ExportAuditEventsParams struct {
 	// Category One of auth, token, identity, authz, repository, content, system, config, webhook.
 	Category *string `form:"category,omitempty" json:"category,omitempty"`
 
-	// Outcome success, failure or denied.
+	// Outcome success, failure, denied or warning (Q-AUTH-402).
 	Outcome *string `form:"outcome,omitempty" json:"outcome,omitempty"`
 
 	// Actor A principal ID or a name.

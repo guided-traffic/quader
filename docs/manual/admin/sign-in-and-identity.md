@@ -138,7 +138,16 @@ auth:
               group: "team-$1"                   # example
 ```
 
-At every sign-in, the user's memberships from this provider become exactly the groups the rules produce. Only groups that already exist are joined, unless `create_groups` is true. Memberships added by hand or by auto-join are never touched. A result that is not a valid group name is skipped and logged. When the claim is missing, `clear` removes the provider's memberships, `keep` leaves them, and `deny` refuses the sign-in; the user's detail page then shows a warning that the last sign-in carried no usable group claim.
+At every sign-in, the user's memberships from this provider become exactly the groups the rules produce. Only groups that already exist are joined, unless `create_groups` is true. Memberships added by hand or by auto-join are never touched. A result that is not a valid group name is skipped and logged. When the claim is missing, `clear` removes the provider's memberships, `keep` leaves them, and `deny` refuses the sign-in.
+
+**When a provider stops sending groups.** With `clear` the users of that provider silently lose the memberships it gave them; with `keep` they keep memberships the provider may have taken away. Quader records it once per user and provider, not at every sign-in:
+
+- The audit log shows **Group claim missing at sign-in** (`user.groups.claim_missing`) with the outcome **warning** at the first sign-in without a usable claim, and again when the reason changes (no claim, a claim of the wrong type, too many groups for the token). Further sign-ins in the same state add nothing.
+- It shows **Group claim back at sign-in** (`user.groups.claim_returned`) at the first sign-in that carries the claim again, with the time since which it was missing.
+- The user's page in **Admin area › Users** opens **Groups** with a warning that names the provider, the reason, since when, and whether the memberships are removed or kept; the user sees the same on the profile. It goes away with the next sign-in that carries the claim.
+- The metric `quader_auth_group_claim_missing_total{name,reason}` counts every sign-in without a usable claim. Alert on its rate if you want to hear of every such sign-in; filter the audit log by the outcome **warning** to see when it began.
+- With `deny` every refused sign-in is a failed sign-in (`auth.login.failed`, reason `groups_claim_missing`) in the audit log, each attempt.
+- With `group_sync.enabled: false` nothing is recorded.
 
 A group that a restore marked as **detached** (below) is neither filled nor created by the sync: a rule that produces its name adds no member and, with `create_groups`, creates no second group; the sign-in goes on.
 
@@ -265,7 +274,7 @@ To pre-provision a user, select **New user**, fill in the form below and select 
 
 A user's page shows **Attributes**, **Identities** (**Linked** or **Pending first sign-in**), **Groups** with the **Source** of each membership (**Manual**, **Auto-join**, **Identity provider**), the user's system roles, **Tokens** and **Sessions**. You can:
 
-- correct **Display name** and **Email** in place with **Save changes** (disabled until you change something; the ID and the origin are read-only fields). The identities, groups and sessions are sections you open, and **Disable**, **Unlock** and **Delete** are in the section **Advanced** at the end;
+- correct **Display name** and **Email** in place with **Save changes** (disabled until you change something; the ID and the origin are read-only fields). The identities, groups and sessions are sections you open, and **Disable**, **Unlock** and **Delete** are in the section **Advanced** at the end. **Groups** opens by itself while the user's sign-ins through a provider carry no usable group claim, with a warning that says since when ([Group synchronization](#group-synchronization));
 - remove a pending link by saving the list of links without it. The removal is journaled with the change (`user.updated` lists the provider), so a restore to an earlier point removes the link again and the provider's account of that username cannot take the user over through it. A link that is already **Linked** is never removed this way, and the replay never removes one;
 - add a manual membership with **Add to group**, or **Remove** a manual one; memberships from the provider or auto-join cannot be removed here;
 - **Disable** the user: sessions end, tokens stop working, and **Also revoke all tokens of this user** (checked by default) revokes them for good. **Enable** reverses a disable, but not a revocation;

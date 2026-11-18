@@ -78,7 +78,7 @@ describe('Profile (R-UI-029)', () => {
     const { root } = await renderScreen(Profile, {
       setup: (get) =>
         ((get(IdentityApi) as FakeIdentityApi).meResult = sampleUser({
-          groupClaimMissing: { provider: 'corp', reason: 'absent' },
+          groupClaimMissing: { provider: 'corp', reason: 'absent', since: '2026-11-18T09:12:00Z', onMissingClaim: 'clear' },
         })),
     });
     const notice = root.querySelector('p[role="status"]') as HTMLElement;

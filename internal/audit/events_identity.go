@@ -31,7 +31,10 @@ const (
 	EventUserAvatarSet       = "user.avatar.set"
 	EventUserAvatarRemoved   = "user.avatar.removed"
 	EventUserGroupsSynced    = "user.groups.synced"
+	// EventUserGroupsClaimMiss records that an identity's group claim went missing, or missing for another reason (outcome
+	// warning); EventUserGroupsClaimBack that it is usable again. Neither is written while the state stays (Q-AUTH-400).
 	EventUserGroupsClaimMiss = "user.groups.claim_missing"
+	EventUserGroupsClaimBack = "user.groups.claim_returned"
 	EventGroupCreated        = "group.created"
 	EventGroupUpdated        = "group.updated"
 	EventGroupDeleted        = "group.deleted"
@@ -95,9 +98,17 @@ func init() {
 	ident(EventUserDormancyWarning, NoJournal, `{"type":"object","properties":{"deadline":{"type":"string"}}}`)
 	ident(EventUserGroupsSynced, JournalRevocation, `{"type":"object","properties":{`+
 		`"provider":{"type":"string"},"added":`+eventSchemaNames+`,"removed":`+eventSchemaNames+`}}`)
+	claimReason := `{"type":"string","enum":["absent","wrong_type","overage"]}`
+	onMissing := `"onMissingClaim":{"type":"string","enum":["clear","keep"]}`
 	Register(EventType{
 		Name: EventUserGroupsClaimMiss, Category: CategoryIdentity, Mode: Transactional, Webhook: true,
-		Schema: `{"type":"object","properties":{"provider":{"type":"string"},"reason":{"type":"string","enum":["absent","wrong_type","overage"]}}}`,
+		Schema: `{"type":"object","properties":{"provider":{"type":"string"},"reason":` + claimReason + `,"previousReason":` + claimReason + `,` +
+			onMissing + `}}`,
+	})
+	Register(EventType{
+		Name: EventUserGroupsClaimBack, Category: CategoryIdentity, Mode: Transactional, Webhook: true,
+		Schema: `{"type":"object","properties":{"provider":{"type":"string"},"reason":` + claimReason + `,"missingSince":{"type":"string"},` +
+			onMissing + `}}`,
 	})
 
 	ident(EventGroupCreated, NoJournal, `{"type":"object","properties":{"origin":{"type":"string"},"autoJoin":{"type":"boolean"},"members":`+eventSchemaNames+`}}`)

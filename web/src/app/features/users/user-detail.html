@@ -131,13 +131,26 @@
     }
   </quader-disclosure>
 
-  <quader-disclosure i18n-heading="@@user.groups" heading="Groups" i18n-hint="@@user.groups-hint" hint="Group memberships and where each comes from.">
+  <!-- Open while the group claim is missing: the audit log records only when that began (R-AUTH-008, Q-UI-610). -->
+  <quader-disclosure
+    i18n-heading="@@user.groups"
+    heading="Groups"
+    i18n-hint="@@user.groups-hint"
+    hint="Group memberships and where each comes from."
+    [expanded]="!!u.groupClaimMissing"
+  >
     @if (u.groupClaimMissing; as missing) {
       <p role="status" class="warn">
         <span class="material-icons" aria-hidden="true">warning</span>
-        <ng-container i18n="@@user.claim-missing">
-          The last sign-in through {{ missing.provider }} carried no usable group claim ({{ missing.reason }}), so groups synchronized from it may be missing.
-        </ng-container>
+        @if (missing.onMissingClaim === 'keep') {
+          <ng-container i18n="@@user.claim-missing.keep">
+            Since {{ missing.since | date: 'medium' }}, sign-ins through {{ missing.provider }} carry {{ claimReason(missing.reason) }}. The groups synchronized from it are kept as they were, also any the provider has taken away since.
+          </ng-container>
+        } @else {
+          <ng-container i18n="@@user.claim-missing.clear">
+            Since {{ missing.since | date: 'medium' }}, sign-ins through {{ missing.provider }} carry {{ claimReason(missing.reason) }}. The groups synchronized from it are removed at each of them.
+          </ng-container>
+        }
       </p>
     }
     @if (u.groups.length === 0) {

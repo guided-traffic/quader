@@ -106,6 +106,48 @@ describe('User detail (R-UI-024)', () => {
     expect(headings[headings.length - 1]).toMatch(/Advanced$/);
   });
 
+  it('R-AUTH-008 Q-UI-610 a missing group claim opens Groups with a notice: the provider, the reason in words, since when, and what clear does', async () => {
+    const { root } = await renderScreen(UserDetail, {
+      inputs: { username: 'alice' },
+      setup: (g) => {
+        const api = g(IdentityApi) as FakeIdentityApi;
+        api.userList = api.userList.map((u) =>
+          u.username === 'alice'
+            ? { ...u, groupClaimMissing: { provider: 'corp', reason: 'overage', since: '2026-11-04T08:30:00Z', onMissingClaim: 'clear' } }
+            : u,
+        );
+      },
+    });
+    const groups = [...root.querySelectorAll('quader-disclosure')].find((d) => text(d.querySelector('.heading')!).includes('Groups'))!;
+    expect(groups.querySelector('.toggle')?.getAttribute('aria-expanded')).toBe('true');
+    const notice = text(groups.querySelector('p[role="status"]')!);
+    expect(notice).toContain('Since Nov 4, 2026');
+    expect(notice).toContain('sign-ins through corp carry too many groups for the token');
+    expect(notice).toContain('are removed at each of them');
+    expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-AUTH-008 Q-UI-610 with keep the notice says the synchronized groups are kept; without a missing claim Groups stays closed and silent', async () => {
+    const keep = await renderScreen(UserDetail, {
+      inputs: { username: 'alice' },
+      setup: (g) => {
+        const api = g(IdentityApi) as FakeIdentityApi;
+        api.userList = api.userList.map((u) =>
+          u.username === 'alice'
+            ? { ...u, groupClaimMissing: { provider: 'corp', reason: 'absent', since: '2026-11-04T08:30:00Z', onMissingClaim: 'keep' } }
+            : u,
+        );
+      },
+    });
+    const notice = text(keep.root.querySelector('quader-disclosure p[role="status"].warn')!);
+    expect(notice).toContain('carry no group claim');
+    expect(notice).toContain('are kept as they were');
+    const plain = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
+    const groups = [...plain.root.querySelectorAll('quader-disclosure')].find((d) => text(d.querySelector('.heading')!).includes('Groups'))!;
+    expect(groups.querySelector('p[role="status"]')).toBeNull();
+    expect(groups.querySelector('.toggle')?.getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('R-UI-005 the self-lockout guard disables disable and delete on the own account', async () => {
     const { root } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     expect((buttonByText(root, 'Disable') as HTMLButtonElement).disabled).toBe(true);

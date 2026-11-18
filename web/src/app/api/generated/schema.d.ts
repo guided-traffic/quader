@@ -5331,8 +5331,11 @@ export interface components {
             /** @example authz.policy.created */
             action: string;
             category: string;
-            /** @enum {string} */
-            outcome: "success" | "failure" | "denied";
+            /**
+             * @description `warning`: the action happened, and an administrator should look at it (Q-AUTH-402).
+             * @enum {string}
+             */
+            outcome: "success" | "failure" | "denied" | "warning";
             actor: components["schemas"]["AuditActor"];
             source: components["schemas"]["AuditSource"];
             traceId: string | null;
@@ -5506,11 +5509,21 @@ export interface components {
              */
             source: string;
         };
-        /** @description Set while the user's last login carried no usable group claim (R-AUTH-008). */
+        /** @description The stored state of an identity whose group claim is missing (R-AUTH-008), set while its last login carried no usable group claim; with two such identities, the one whose state began last. The audit log records the changes of this state, not every login (Q-AUTH-400). */
         GroupClaimMissing: {
             provider: string;
             /** @enum {string} */
             reason: "absent" | "wrong_type" | "overage";
+            /**
+             * Format: date-time
+             * @description The time of the login at which the claim went missing for this reason.
+             */
+            since: string;
+            /**
+             * @description What the latest login did with the memberships synchronized from the provider.
+             * @enum {string}
+             */
+            onMissingClaim: "clear" | "keep";
         };
         /**
          * @description A user (R-AUTH-016). `isAdmin`, `adminVia` and `lockedUntil` are derived and read only.
@@ -10622,7 +10635,7 @@ export interface operations {
                 action?: string;
                 /** @description One of auth, token, identity, authz, repository, content, system, config, webhook. */
                 category?: string;
-                /** @description success, failure or denied. */
+                /** @description success, failure, denied or warning (Q-AUTH-402). */
                 outcome?: string;
                 /** @description A principal ID or a name. */
                 actor?: string;
@@ -10711,7 +10724,7 @@ export interface operations {
                 action?: string;
                 /** @description One of auth, token, identity, authz, repository, content, system, config, webhook. */
                 category?: string;
-                /** @description success, failure or denied. */
+                /** @description success, failure, denied or warning (Q-AUTH-402). */
                 outcome?: string;
                 /** @description A principal ID or a name. */
                 actor?: string;

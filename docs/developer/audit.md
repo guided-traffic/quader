@@ -39,7 +39,7 @@ transaction's `now()` for a transactional event and the producer's time for an a
 | Column | From | Note |
 |---|---|---|
 | `action`, `category` | the registry entry of `Event.Type` | the event cannot name another category |
-| `outcome` | `Event.Outcome` | `success` (the default when empty), `failure`, `denied` |
+| `outcome` | `Event.Outcome` | `success` (the default when empty), `failure`, `denied`, `warning` (it happened, and an administrator should look: `audit.Warning`, [Q-AUTH-402](../spec/identity-and-authentication.md#q-auth-402--a-warning-is-an-outcome-of-its-own); migration `00078`) |
 | `actor_type`, `actor_name` | `Actor.Kind`, `Actor.Name` | `break_glass` is stored as `breakglass` |
 | `actor_id`, `token_id` | `Actor.ID`, `Actor.TokenID` | stored only when a UUID |
 | `auth_method` | `Actor.AuthMethod` | |

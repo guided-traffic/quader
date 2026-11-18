@@ -4296,6 +4296,11 @@ Priority: **MVP** · Covers: UI-035, UI-036
   user's tokens (a quiet section **Tokens** like the page's others, opened when the user holds a token and never closed by itself, [Q-UI-333](#q-ui-333--a-pages-sections-are-quiet-disclosures-tokens-too-open-while-there-is-a-token-the-profile-follows); **Revoke all
   tokens** a danger button in the page's section **Advanced**, last on the page) and sessions (list, end all); "Explain permissions" (P1); "Audit"
   (audit log filtered on this actor). The break-glass account shows its lock state and "Unlock".
+- The group claim on the user page ([Q-UI-610](#q-ui-610--the-user-pages-notice-of-a-missing-group-claim-says-since-when-and-what-the-policy-does)): while the record carries `groupClaimMissing`, the
+  section **Groups** opens with a warning that names the provider, the reason in words, the date and time since which its
+  sign-ins carry no usable group claim, and what the policy does at each of them: `clear` removes the memberships synchronized
+  from it, `keep` leaves them as they were. That is the current state, which the audit log records only when it changes
+  (R-AUTH-008).
 - **New user** pre-provisions a user linked to an identity-provider identity (R-API-031): the dialog **New user** creates the
   user's record in Quader with **Create user** ([Q-UI-573](#q-ui-573--the-button-that-makes-a-new-thing-says-new-thing-and-a-new-user-is-made-not-added)). No password
   fields exist.
@@ -4427,7 +4432,7 @@ Priority: **MVP** · Covers: UI-053, AUTHN-039, AUTHN-040
   provider), then the quiet sections **Preferences** (language, theme, keyboard shortcuts; R-API-021; open), **Groups** with
   source (open while the group claim notice stands) and **System roles**.
 - Missing group claim (R-AUTH-008 in [identity-and-authentication.md](identity-and-authentication.md)):
-  while the record carries `groupClaimMissing` (`{"provider", "reason"}`), a notice next to the
+  while the record carries `groupClaimMissing` (`{"provider", "reason", "since", "onMissingClaim"}`), a notice next to the
   groups names the provider and the reason (`absent`, `wrong_type` or `overage`). It says that the
   last login through that provider carried no usable group claim, so the groups synchronized from
   it may be missing (the default `clear` removes them) and the identity provider's group mapping
@@ -4647,6 +4652,9 @@ Acceptance criteria:
   the grants.
 - Every event type the registry holds has a name in the audit log: a unit test walks the registry (the fixture
   `audit-actions.fixture.ts`, which a Go test writes from `internal/audit` and keeps current) and fails on a type without one.
+- An event with the outcome `warning` ([identity-and-authentication.md](identity-and-authentication.md) Q-AUTH-402) shows
+  **warning** with the warning icon in the warning colour, never the red of a failure; the outcome filter offers it. The list
+  decides by the outcome, not by the event type.
 
 ### R-UI-038 · System status
 Priority: **MVP** · Covers: OPS-008
@@ -15759,6 +15767,29 @@ revisits it if an installation outside Kubernetes ever gets a node name.
 
 **Applied in the spec:** R-UI-038 (the dashboard's role card); R-OPS-004 (`nodes` is 0 outside Kubernetes). Code: `roleLoad` in
 [dashboard-model.ts](../../web/src/app/features/system/dashboard-model.ts), [dashboard.html](../../web/src/app/features/system/dashboard.html).
+
+### Q-UI-610 · The user page's notice of a missing group claim says since when and what the policy does
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: since the owner's W-14 (2026-11-18, Q-AUTH-400) the audit log records a missing group claim when it changes, so an
+administrator who reads the entry weeks later needs the current state elsewhere. The user page showed it already, in the section
+**Groups**: "The last sign-in through corp carried no usable group claim (absent), so groups synchronized from it may be
+missing." It said neither since when nor that with `keep` nothing goes missing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The notice stays in **Groups**, which opens while it stands, and names the provider, the reason in words, since when, and what the policy does at each sign-in (chosen) | One sentence more | It sits beside the memberships it concerns; one place | One state per user is shown, the identity whose state began last |
+| (b) A line per identity under **Identities** | The state of each provider | Two providers each show their state | The API would carry the state per identity; the memberships it concerns are a section further down |
+| (c) Both | — | — | Two places for one fact |
+
+**Choice:** (a). The section opens by itself while the notice stands, as on the profile. The reason reads "no group claim",
+"a group claim of the wrong type" or "too many groups for the token"; the time is the date and time of the locale.
+
+**Rationale:** one fact has one place, and the one that existed is beside the groups the state affects. The development agent
+would revisit it when a user with two providers whose claims are both missing is seen in practice.
+
+**Applied in the spec:** R-UI-024. Code: [user-detail.html](../../web/src/app/features/users/user-detail.html).
 
 ## What this does not cover
 

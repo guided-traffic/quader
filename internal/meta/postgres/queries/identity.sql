@@ -70,7 +70,8 @@ SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision,
        u.last_login_at, coalesce(u.scim_external_id, '')::text AS scim_external_id, u.external,
        coalesce((SELECT i.last_claims -> 'groupClaimMissing' FROM user_identity i
                   WHERE i.user_id = u.principal_id AND i.last_claims ? 'groupClaimMissing'
-                  ORDER BY i.id DESC LIMIT 1), 'null'::jsonb)::text AS group_claim_missing
+                  ORDER BY (i.last_claims -> 'groupClaimMissing' ->> 'since')::timestamptz DESC NULLS LAST, i.id DESC
+                  LIMIT 1), 'null'::jsonb)::text AS group_claim_missing
   FROM principal p JOIN app_user u ON u.principal_id = p.id
  WHERE p.kind = 'user' AND p.name = sqlc.arg(name)::text;
 
@@ -81,7 +82,8 @@ SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision,
        u.last_login_at, coalesce(u.scim_external_id, '')::text AS scim_external_id, u.external,
        coalesce((SELECT i.last_claims -> 'groupClaimMissing' FROM user_identity i
                   WHERE i.user_id = u.principal_id AND i.last_claims ? 'groupClaimMissing'
-                  ORDER BY i.id DESC LIMIT 1), 'null'::jsonb)::text AS group_claim_missing
+                  ORDER BY (i.last_claims -> 'groupClaimMissing' ->> 'since')::timestamptz DESC NULLS LAST, i.id DESC
+                  LIMIT 1), 'null'::jsonb)::text AS group_claim_missing
   FROM principal p JOIN app_user u ON u.principal_id = p.id
  WHERE p.kind = 'user' AND p.id = sqlc.arg(id)::text::uuid;
 
@@ -221,6 +223,15 @@ VALUES (sqlc.arg(user_id)::text::uuid, sqlc.arg(provider_id)::text, sqlc.arg(iss
         NULLIF(sqlc.arg(subject)::text, ''), CASE WHEN sqlc.arg(subject)::text <> '' THEN now() END)
 ON CONFLICT DO NOTHING
 RETURNING id;
+
+-- name: IdentityLockGroupClaim :many
+-- The stored state of the group claim of an identity (R-AUTH-008) under the lock of its row, and the transaction's time, which
+-- is the time of the audit event that a change of the state records (Q-AUTH-403). claim_missing is 'null' while the claim was
+-- usable at the identity's last sign-in, and before its first one.
+SELECT coalesce(last_claims -> 'groupClaimMissing', 'null'::jsonb)::text AS claim_missing, now()::timestamptz AS now
+  FROM user_identity
+ WHERE issuer = sqlc.arg(issuer)::text AND subject = sqlc.arg(subject)::text
+   FOR UPDATE;
 
 -- name: IdentitySetLastClaims :exec
 UPDATE user_identity SET last_claims = sqlc.arg(claims)::text::jsonb

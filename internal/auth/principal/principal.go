@@ -120,9 +120,10 @@ type LoginClaims struct {
 	// memberships are not touched.
 	GroupSync bool
 	// ClaimState says whether the group claim was usable. With a missing claim
-	// the memberships are cleared, or kept with KeepOnMissing (on_missing_claim),
-	// and user.groups.claim_missing is recorded. The deny policy is the login
-	// flow's: it never calls the provisioner.
+	// the memberships are cleared, or kept with KeepOnMissing (on_missing_claim);
+	// user.groups.claim_missing and user.groups.claim_returned record a change
+	// of the identity's stored state of the claim, not every sign-in. The deny
+	// policy is the login flow's: it never calls the provisioner.
 	ClaimState    GroupClaimState
 	KeepOnMissing bool
 	// CreateGroups creates a missing target group with origin oidc

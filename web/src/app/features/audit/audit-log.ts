@@ -107,7 +107,7 @@ export class AuditLog {
     {
       id: 'outcome',
       label: $localize`:@@audit.col.outcome:Outcome`,
-      help: $localize`:@@audit.help.outcome:Success: the action was carried out. Failure: it was allowed but did not work. Denied: the caller was not permitted.`,
+      help: $localize`:@@audit.help.outcome:Success: the action was carried out. Failure: it was allowed but did not work. Denied: the caller was not permitted. Warning: it was carried out, and an administrator should look at it.`,
     },
     { id: 'source', label: $localize`:@@audit.col.source:Source address` },
   ];

@@ -136,9 +136,9 @@ func auditFilter(p map[string]string) (audit.Filter, error) {
 		}
 	}
 	switch f.Outcome {
-	case "", audit.Success, audit.Failure, audit.Denied:
+	case "", audit.Success, audit.Failure, audit.Denied, audit.Warning:
 	default:
-		return f, errs.E(errs.Invalid, errs.CodeInvalid, "The query parameter \"outcome\" must be success, failure or denied.")
+		return f, errs.E(errs.Invalid, errs.CodeInvalid, "The query parameter \"outcome\" must be success, failure, denied or warning.")
 	}
 	for _, t := range []struct {
 		name string

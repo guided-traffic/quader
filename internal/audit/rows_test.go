@@ -119,6 +119,10 @@ func TestR_OPS_015_RowMapping(t *testing.T) {
 	if _, err := toRow(typ, Event{Actor: Actor{Kind: "user"}, Outcome: "weird"}, "id", at, ""); !errors.Is(err, ErrInvalidEvent) {
 		t.Errorf("bad outcome: %v", err)
 	}
+	// Q-AUTH-402: a warning is an outcome of its own, stored as written.
+	if r, err := toRow(typ, Event{Actor: Actor{Kind: "user"}, Outcome: Warning}, "id", at, ""); err != nil || r.Outcome != "warning" {
+		t.Errorf("warning: %q %v", r.Outcome, err)
+	}
 	if _, err := toRow(typ, Event{Actor: Actor{Kind: "user"}, Details: json.RawMessage(`"s"`)}, "id", at, ""); !errors.Is(err, ErrInvalidEvent) {
 		t.Errorf("details that are no object: %v", err)
 	}

@@ -3219,9 +3219,17 @@
         <source>Group claim missing at sign-in</source>
       </segment>
     </unit>
-    <unit id="audit.action.user.groups.synced">
+    <unit id="audit.action.user.groups.claim_returned">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:307</note>
+      </notes>
+      <segment>
+        <source>Group claim back at sign-in</source>
+      </segment>
+    </unit>
+    <unit id="audit.action.user.groups.synced">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:309</note>
       </notes>
       <segment>
         <source>Group memberships synchronised</source>
@@ -3229,7 +3237,7 @@
     </unit>
     <unit id="audit.action.user.rename_conflict">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:309</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:311</note>
       </notes>
       <segment>
         <source>User rename conflict</source>
@@ -3237,7 +3245,7 @@
     </unit>
     <unit id="audit.action.user.renamed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:311</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:313</note>
       </notes>
       <segment>
         <source>User renamed</source>
@@ -3245,7 +3253,7 @@
     </unit>
     <unit id="audit.action.user.updated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:313</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:315</note>
       </notes>
       <segment>
         <source>User changed</source>
@@ -3253,7 +3261,7 @@
     </unit>
     <unit id="audit.action.vulnerability.advisory.kind_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:315</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:317</note>
       </notes>
       <segment>
         <source>Advisory kind changed</source>
@@ -3261,7 +3269,7 @@
     </unit>
     <unit id="audit.action.vulnerability.claimed_name_match">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:317</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:319</note>
       </notes>
       <segment>
         <source>Advisory matches a claimed package name</source>
@@ -3269,7 +3277,7 @@
     </unit>
     <unit id="audit.action.vulnerability.download_blocked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:319</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:321</note>
       </notes>
       <segment>
         <source>Download blocked by a finding</source>
@@ -3277,7 +3285,7 @@
     </unit>
     <unit id="audit.action.vulnerability.finding.reopened">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:321</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:323</note>
       </notes>
       <segment>
         <source>Finding reopened</source>
@@ -3285,7 +3293,7 @@
     </unit>
     <unit id="audit.action.vulnerability.finding.status_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:323</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:325</note>
       </notes>
       <segment>
         <source>Finding status changed</source>
@@ -3293,7 +3301,7 @@
     </unit>
     <unit id="audit.action.vulnerability.source.failed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:325</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:327</note>
       </notes>
       <segment>
         <source>Advisory sync failed</source>
@@ -3301,7 +3309,7 @@
     </unit>
     <unit id="audit.action.vulnerability.source.imported">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:327</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:329</note>
       </notes>
       <segment>
         <source>Advisory data imported</source>
@@ -3309,7 +3317,7 @@
     </unit>
     <unit id="audit.category.auth">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:359</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:361</note>
       </notes>
       <segment>
         <source>Authentication</source>
@@ -3317,7 +3325,7 @@
     </unit>
     <unit id="audit.category.token">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:361</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:363</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -3325,7 +3333,7 @@
     </unit>
     <unit id="audit.category.identity">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:363</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:365</note>
       </notes>
       <segment>
         <source>Identities</source>
@@ -3333,7 +3341,7 @@
     </unit>
     <unit id="audit.category.authz">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:365</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:367</note>
       </notes>
       <segment>
         <source>Authorization</source>
@@ -3341,7 +3349,7 @@
     </unit>
     <unit id="audit.category.repository">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:367</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:369</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -3349,7 +3357,7 @@
     </unit>
     <unit id="audit.category.content">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:369</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:371</note>
       </notes>
       <segment>
         <source>Content</source>
@@ -3357,7 +3365,7 @@
     </unit>
     <unit id="audit.category.system">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:371</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:373</note>
       </notes>
       <segment>
         <source>System</source>
@@ -3365,7 +3373,7 @@
     </unit>
     <unit id="audit.category.config">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:373</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:375</note>
       </notes>
       <segment>
         <source>Configuration</source>
@@ -3373,7 +3381,7 @@
     </unit>
     <unit id="audit.category.webhook">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:375</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:377</note>
       </notes>
       <segment>
         <source>Webhooks</source>
@@ -3381,7 +3389,7 @@
     </unit>
     <unit id="audit.outcome.success">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:384</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:386</note>
       </notes>
       <segment>
         <source>Success</source>
@@ -3389,7 +3397,7 @@
     </unit>
     <unit id="audit.outcome.failure">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:386</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:388</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -3397,10 +3405,18 @@
     </unit>
     <unit id="audit.outcome.denied">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:388</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:390</note>
       </notes>
       <segment>
         <source>Denied</source>
+      </segment>
+    </unit>
+    <unit id="audit.outcome.warning">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:392</note>
+      </notes>
+      <segment>
+        <source>Warning</source>
       </segment>
     </unit>
     <unit id="audit.heading">
@@ -3530,7 +3546,7 @@
     <unit id="audit.filter.category">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:74,75</note>
-        <note category="location">src/app/features/audit/audit-log.html:206,207</note>
+        <note category="location">src/app/features/audit/audit-log.html:209,210</note>
         <note category="location">src/app/features/audit/audit-log.ts:162</note>
       </notes>
       <segment>
@@ -3551,7 +3567,7 @@
     <unit id="audit.filter.repository">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:83,84</note>
-        <note category="location">src/app/features/audit/audit-log.html:232,234</note>
+        <note category="location">src/app/features/audit/audit-log.html:235,237</note>
         <note category="location">src/app/features/audit/audit-log.ts:164</note>
       </notes>
       <segment>
@@ -3568,7 +3584,7 @@
     </unit>
     <unit id="audit.detail.heading">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:186,187</note>
+        <note category="location">src/app/features/audit/audit-log.html:189,190</note>
       </notes>
       <segment>
         <source>Event</source>
@@ -3576,7 +3592,7 @@
     </unit>
     <unit id="audit.detail.close">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:188,190</note>
+        <note category="location">src/app/features/audit/audit-log.html:191,193</note>
       </notes>
       <segment>
         <source> Close </source>
@@ -3584,7 +3600,7 @@
     </unit>
     <unit id="audit.col.time">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:195,197</note>
+        <note category="location">src/app/features/audit/audit-log.html:198,200</note>
         <note category="location">src/app/features/audit/audit-log.ts:95</note>
       </notes>
       <segment>
@@ -3593,7 +3609,7 @@
     </unit>
     <unit id="audit.col.action">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:201,203</note>
+        <note category="location">src/app/features/audit/audit-log.html:204,206</note>
         <note category="location">src/app/features/audit/audit-log.ts:100</note>
         <note category="location">src/app/features/audit/audit-log.ts:160</note>
       </notes>
@@ -3603,7 +3619,7 @@
     </unit>
     <unit id="audit.col.outcome">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:208,210</note>
+        <note category="location">src/app/features/audit/audit-log.html:211,213</note>
         <note category="location">src/app/features/audit/audit-log.ts:109</note>
         <note category="location">src/app/features/audit/audit-log.ts:166</note>
       </notes>
@@ -3613,7 +3629,7 @@
     </unit>
     <unit id="audit.col.actor">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:216,218</note>
+        <note category="location">src/app/features/audit/audit-log.html:219,221</note>
         <note category="location">src/app/features/audit/audit-log.ts:98</note>
         <note category="location">src/app/features/audit/audit-log.ts:158</note>
       </notes>
@@ -3623,7 +3639,7 @@
     </unit>
     <unit id="audit.detail.token">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:228,229</note>
+        <note category="location">src/app/features/audit/audit-log.html:231,232</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -3631,7 +3647,7 @@
     </unit>
     <unit id="audit.detail.resource">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:250,251</note>
+        <note category="location">src/app/features/audit/audit-log.html:253,254</note>
       </notes>
       <segment>
         <source>Resource</source>
@@ -3639,7 +3655,7 @@
     </unit>
     <unit id="audit.col.source">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:255,256</note>
+        <note category="location">src/app/features/audit/audit-log.html:258,259</note>
         <note category="location">src/app/features/audit/audit-log.ts:112</note>
       </notes>
       <segment>
@@ -3648,7 +3664,7 @@
     </unit>
     <unit id="audit.detail.endpoint">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:260,262</note>
+        <note category="location">src/app/features/audit/audit-log.html:263,265</note>
       </notes>
       <segment>
         <source>Endpoint</source>
@@ -3656,7 +3672,7 @@
     </unit>
     <unit id="audit.detail.replica">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:266,267</note>
+        <note category="location">src/app/features/audit/audit-log.html:269,270</note>
       </notes>
       <segment>
         <source>Replica</source>
@@ -3664,7 +3680,7 @@
     </unit>
     <unit id="audit.detail.event-id">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:269,271</note>
+        <note category="location">src/app/features/audit/audit-log.html:272,274</note>
       </notes>
       <segment>
         <source>Event ID</source>
@@ -3672,7 +3688,7 @@
     </unit>
     <unit id="audit.detail.trace">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:275,277</note>
+        <note category="location">src/app/features/audit/audit-log.html:278,280</note>
       </notes>
       <segment>
         <source>Trace ID</source>
@@ -3680,7 +3696,7 @@
     </unit>
     <unit id="audit.detail.details">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:282,283</note>
+        <note category="location">src/app/features/audit/audit-log.html:285,286</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -3688,7 +3704,7 @@
     </unit>
     <unit id="repo.loading">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:285,287</note>
+        <note category="location">src/app/features/audit/audit-log.html:288,290</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:15,16</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:168,172</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:187,190</note>
@@ -3762,7 +3778,7 @@
         <note category="location">src/app/features/audit/audit-log.ts:110</note>
       </notes>
       <segment>
-        <source>Success: the action was carried out. Failure: it was allowed but did not work. Denied: the caller was not permitted.</source>
+        <source>Success: the action was carried out. Failure: it was allowed but did not work. Denied: the caller was not permitted. Warning: it was carried out, and an administrator should look at it.</source>
       </segment>
     </unit>
     <unit id="audit.copy-id">
@@ -20619,7 +20635,7 @@
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-detail.ts:118,120</note>
         <note category="location">src/app/features/tokens/token-manager.ts:145,147</note>
-        <note category="location">src/app/features/users/user-detail.html:243,245</note>
+        <note category="location">src/app/features/users/user-detail.html:256,258</note>
       </notes>
       <segment>
         <source>Every token stops working at once, and the tools that use them are refused. This cannot be undone.</source>
@@ -20629,7 +20645,7 @@
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-detail.ts:120,122</note>
         <note category="location">src/app/features/tokens/token-manager.ts:147,149</note>
-        <note category="location">src/app/features/users/user-detail.html:245,248</note>
+        <note category="location">src/app/features/users/user-detail.html:258,261</note>
       </notes>
       <segment>
         <source>Revoke all tokens</source>
@@ -25876,7 +25892,7 @@
     </unit>
     <unit id="user.groups">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:134</note>
+        <note category="location">src/app/features/users/user-detail.html:138</note>
       </notes>
       <segment>
         <source>Groups</source>
@@ -25884,23 +25900,31 @@
     </unit>
     <unit id="user.groups-hint">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:134,135</note>
+        <note category="location">src/app/features/users/user-detail.html:139,140</note>
       </notes>
       <segment>
         <source>Group memberships and where each comes from.</source>
       </segment>
     </unit>
-    <unit id="user.claim-missing">
+    <unit id="user.claim-missing.keep">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:139,140</note>
+        <note category="location">src/app/features/users/user-detail.html:147,148</note>
       </notes>
       <segment>
-        <source> The last sign-in through <ph id="0" equiv="INTERPOLATION" disp="{{ missing.provider }}"/> carried no usable group claim (<ph id="1" equiv="INTERPOLATION_1" disp="{{ missing.reason }}"/>), so groups synchronized from it may be missing. </source>
+        <source> Since <ph id="0" equiv="INTERPOLATION" disp="{{ missing.since | date: &apos;medium&apos; }}"/>, sign-ins through <ph id="1" equiv="INTERPOLATION_1" disp="{{ missing.provider }}"/> carry <ph id="2" equiv="INTERPOLATION_2" disp="{{ claimReason(missing.reason) }}"/>. The groups synchronized from it are kept as they were, also any the provider has taken away since. </source>
+      </segment>
+    </unit>
+    <unit id="user.claim-missing.clear">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.html:151,152</note>
+      </notes>
+      <segment>
+        <source> Since <ph id="0" equiv="INTERPOLATION" disp="{{ missing.since | date: &apos;medium&apos; }}"/>, sign-ins through <ph id="1" equiv="INTERPOLATION_1" disp="{{ missing.provider }}"/> carry <ph id="2" equiv="INTERPOLATION_2" disp="{{ claimReason(missing.reason) }}"/>. The groups synchronized from it are removed at each of them. </source>
       </segment>
     </unit>
     <unit id="user.no-groups">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:144,146</note>
+        <note category="location">src/app/features/users/user-detail.html:157,159</note>
       </notes>
       <segment>
         <source>This user is in no group.</source>
@@ -25908,7 +25932,7 @@
     </unit>
     <unit id="user.groups-caption">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:147,149</note>
+        <note category="location">src/app/features/users/user-detail.html:160,162</note>
       </notes>
       <segment>
         <source>Group memberships and their sources</source>
@@ -25916,7 +25940,7 @@
     </unit>
     <unit id="user.group">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:150,151</note>
+        <note category="location">src/app/features/users/user-detail.html:163,164</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -25924,7 +25948,7 @@
     </unit>
     <unit id="user.source">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:151,152</note>
+        <note category="location">src/app/features/users/user-detail.html:164,165</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -25932,7 +25956,7 @@
     </unit>
     <unit id="user.actions">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:152,153</note>
+        <note category="location">src/app/features/users/user-detail.html:165,166</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -25940,7 +25964,7 @@
     </unit>
     <unit id="user.remove-group">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:163,164</note>
+        <note category="location">src/app/features/users/user-detail.html:176,177</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -25948,7 +25972,7 @@
     </unit>
     <unit id="user.add-group">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:175</note>
+        <note category="location">src/app/features/users/user-detail.html:188</note>
       </notes>
       <segment>
         <source>Add to group</source>
@@ -25956,7 +25980,7 @@
     </unit>
     <unit id="user.add-group-submit">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:176,179</note>
+        <note category="location">src/app/features/users/user-detail.html:189,192</note>
       </notes>
       <segment>
         <source>Add</source>
@@ -25964,7 +25988,7 @@
     </unit>
     <unit id="user.tokens">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:190</note>
+        <note category="location">src/app/features/users/user-detail.html:203</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -25972,7 +25996,7 @@
     </unit>
     <unit id="user.tokens-hint">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:191,192</note>
+        <note category="location">src/app/features/users/user-detail.html:204,205</note>
       </notes>
       <segment>
         <source>The personal tokens of this user.</source>
@@ -25980,7 +26004,7 @@
     </unit>
     <unit id="user.sessions">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:198</note>
+        <note category="location">src/app/features/users/user-detail.html:211</note>
       </notes>
       <segment>
         <source>Sessions</source>
@@ -25988,7 +26012,7 @@
     </unit>
     <unit id="user.sessions-hint">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:198,199</note>
+        <note category="location">src/app/features/users/user-detail.html:211,212</note>
       </notes>
       <segment>
         <source>Open sessions of this user.</source>
@@ -25996,7 +26020,7 @@
     </unit>
     <unit id="user.no-sessions">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:204,206</note>
+        <note category="location">src/app/features/users/user-detail.html:217,219</note>
       </notes>
       <segment>
         <source>No open session.</source>
@@ -26004,7 +26028,7 @@
     </unit>
     <unit id="user.sessions-caption">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:207,209</note>
+        <note category="location">src/app/features/users/user-detail.html:220,222</note>
       </notes>
       <segment>
         <source>Open sessions of this user</source>
@@ -26012,7 +26036,7 @@
     </unit>
     <unit id="user.session.created">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:210,211</note>
+        <note category="location">src/app/features/users/user-detail.html:223,224</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -26020,7 +26044,7 @@
     </unit>
     <unit id="user.session.last-seen">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:211,212</note>
+        <note category="location">src/app/features/users/user-detail.html:224,225</note>
       </notes>
       <segment>
         <source>Last seen</source>
@@ -26028,7 +26052,7 @@
     </unit>
     <unit id="user.session.address">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:212,213</note>
+        <note category="location">src/app/features/users/user-detail.html:225,226</note>
       </notes>
       <segment>
         <source>Address</source>
@@ -26036,7 +26060,7 @@
     </unit>
     <unit id="user.session.agent">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:213,215</note>
+        <note category="location">src/app/features/users/user-detail.html:226,228</note>
       </notes>
       <segment>
         <source>Browser</source>
@@ -26044,7 +26068,7 @@
     </unit>
     <unit id="user.end-sessions">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:229,231</note>
+        <note category="location">src/app/features/users/user-detail.html:242,244</note>
       </notes>
       <segment>
         <source>End all sessions</source>
@@ -26052,7 +26076,7 @@
     </unit>
     <unit id="user.advanced">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:239,240</note>
+        <note category="location">src/app/features/users/user-detail.html:252,253</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -26060,7 +26084,7 @@
     </unit>
     <unit id="user.disable-note">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:249,251</note>
+        <note category="location">src/app/features/users/user-detail.html:262,264</note>
       </notes>
       <segment>
         <source>A disabled user can no longer sign in and their sessions end; you can also revoke their tokens.</source>
@@ -26068,7 +26092,7 @@
     </unit>
     <unit id="user.disable">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:252,253</note>
+        <note category="location">src/app/features/users/user-detail.html:265,266</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -26076,7 +26100,7 @@
     </unit>
     <unit id="user.enable">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:254,256</note>
+        <note category="location">src/app/features/users/user-detail.html:267,269</note>
       </notes>
       <segment>
         <source>Enable</source>
@@ -26084,7 +26108,7 @@
     </unit>
     <unit id="user.unlock-note">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:259,260</note>
+        <note category="location">src/app/features/users/user-detail.html:272,273</note>
       </notes>
       <segment>
         <source>The account is locked after failed sign-ins. Unlocking lets it sign in again at once.</source>
@@ -26092,7 +26116,7 @@
     </unit>
     <unit id="user.unlock">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:260,262</note>
+        <note category="location">src/app/features/users/user-detail.html:273,275</note>
       </notes>
       <segment>
         <source>Unlock</source>
@@ -26100,7 +26124,7 @@
     </unit>
     <unit id="user.delete-note">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:263,264</note>
+        <note category="location">src/app/features/users/user-detail.html:276,277</note>
       </notes>
       <segment>
         <source>Deleting the user removes their tokens and sessions. This cannot be undone.</source>
@@ -26108,7 +26132,7 @@
     </unit>
     <unit id="user.delete">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:264,266</note>
+        <note category="location">src/app/features/users/user-detail.html:277,279</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -26116,7 +26140,7 @@
     </unit>
     <unit id="user.self-guard">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:267,269</note>
+        <note category="location">src/app/features/users/user-detail.html:280,282</note>
       </notes>
       <segment>
         <source>You cannot disable or delete your own account.</source>
@@ -26344,6 +26368,30 @@
       </notes>
       <segment>
         <source>Identity provider</source>
+      </segment>
+    </unit>
+    <unit id="user.claim-reason.wrong-type">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:317</note>
+      </notes>
+      <segment>
+        <source>a group claim of the wrong type</source>
+      </segment>
+    </unit>
+    <unit id="user.claim-reason.overage">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:318</note>
+      </notes>
+      <segment>
+        <source>too many groups for the token</source>
+      </segment>
+    </unit>
+    <unit id="user.claim-reason.absent">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:319</note>
+      </notes>
+      <segment>
+        <source>no group claim</source>
       </segment>
     </unit>
     <unit id="user.origin.jit">

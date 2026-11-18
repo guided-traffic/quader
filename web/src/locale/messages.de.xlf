@@ -23931,15 +23931,6 @@
         <target>Wie jedes Mitglied für den Pfad gefragt wird</target>
       </segment>
     </unit>
-    <unit id="user.claim-missing">
-      <notes>
-        <note category="location">src/app/features/users/user-detail.html:139,140</note>
-      </notes>
-      <segment>
-        <source> The last sign-in through <ph id="0" equiv="INTERPOLATION" disp="{{ missing.provider }}"/> carried no usable group claim (<ph id="1" equiv="INTERPOLATION_1" disp="{{ missing.reason }}"/>), so groups synchronized from it may be missing. </source>
-        <target>Die letzte Anmeldung über <ph id="0" equiv="INTERPOLATION" disp="{{ missing.provider }}"/> enthielt keinen verwertbaren Gruppen-Claim (<ph id="1" equiv="INTERPOLATION_1" disp="{{ missing.reason }}"/>); die daraus synchronisierten Gruppen fehlen deshalb möglicherweise.</target>
-      </segment>
-    </unit>
     <unit id="ci.issuances.f.pipeline">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:177</note>
@@ -32506,11 +32497,11 @@
     </unit>
     <unit id="audit.help.outcome">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:103</note>
+        <note category="location">src/app/features/audit/audit-log.ts:105</note>
       </notes>
       <segment>
-        <source>Success: the action was carried out. Failure: it was allowed but did not work. Denied: the caller was not permitted.</source>
-        <target>Erfolg: Die Aktion wurde ausgeführt. Fehler: Sie war erlaubt, ist aber fehlgeschlagen. Verweigert: Der Aufrufer war nicht berechtigt.</target>
+        <source>Success: the action was carried out. Failure: it was allowed but did not work. Denied: the caller was not permitted. Warning: it was carried out, and an administrator should look at it.</source>
+        <target>Erfolg: Die Aktion wurde ausgeführt. Fehler: Sie war erlaubt, ist aber fehlgeschlagen. Verweigert: Der Aufrufer war nicht berechtigt. Warnung: Sie wurde ausgeführt, und ein Administrator sollte sie sich ansehen.</target>
       </segment>
     </unit>
     <unit id="ci.form.algorithms">
@@ -34141,6 +34132,69 @@
       <segment>
         <source>Replicas are being replaced (<ph id="0" equiv="INTERPOLATION" disp="{{ c.draining }}"/> draining, <ph id="1" equiv="INTERPOLATION_1" disp="{{ c.starting }}"/> starting), as during every update</source>
         <target>Replikate werden ersetzt (<ph id="0" equiv="INTERPOLATION" disp="{{ c.draining }}"/> werden geleert, <ph id="1" equiv="INTERPOLATION_1" disp="{{ c.starting }}"/> starten), wie bei jedem Update</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.user.groups.claim_returned">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:307</note>
+      </notes>
+      <segment>
+        <source>Group claim back at sign-in</source>
+        <target>Gruppen-Claim bei der Anmeldung wieder vorhanden</target>
+      </segment>
+    </unit>
+    <unit id="audit.outcome.warning">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:392</note>
+      </notes>
+      <segment>
+        <source>Warning</source>
+        <target>Warnung</target>
+      </segment>
+    </unit>
+    <unit id="user.claim-missing.keep">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.html:147,148</note>
+      </notes>
+      <segment>
+        <source> Since <ph id="0" equiv="INTERPOLATION" disp="{{ missing.since | date: &apos;medium&apos; }}"/>, sign-ins through <ph id="1" equiv="INTERPOLATION_1" disp="{{ missing.provider }}"/> carry <ph id="2" equiv="INTERPOLATION_2" disp="{{ claimReason(missing.reason) }}"/>. The groups synchronized from it are kept as they were, also any the provider has taken away since. </source>
+        <target>Seit <ph id="0" equiv="INTERPOLATION" disp="{{ missing.since | date: &apos;medium&apos; }}"/> enthalten Anmeldungen über <ph id="1" equiv="INTERPOLATION_1" disp="{{ missing.provider }}"/> <ph id="2" equiv="INTERPOLATION_2" disp="{{ claimReason(missing.reason) }}"/>. Die daraus synchronisierten Gruppen bleiben, wie sie waren, auch solche, die der Anbieter inzwischen entzogen hat.</target>
+      </segment>
+    </unit>
+    <unit id="user.claim-missing.clear">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.html:151,152</note>
+      </notes>
+      <segment>
+        <source> Since <ph id="0" equiv="INTERPOLATION" disp="{{ missing.since | date: &apos;medium&apos; }}"/>, sign-ins through <ph id="1" equiv="INTERPOLATION_1" disp="{{ missing.provider }}"/> carry <ph id="2" equiv="INTERPOLATION_2" disp="{{ claimReason(missing.reason) }}"/>. The groups synchronized from it are removed at each of them. </source>
+        <target>Seit <ph id="0" equiv="INTERPOLATION" disp="{{ missing.since | date: &apos;medium&apos; }}"/> enthalten Anmeldungen über <ph id="1" equiv="INTERPOLATION_1" disp="{{ missing.provider }}"/> <ph id="2" equiv="INTERPOLATION_2" disp="{{ claimReason(missing.reason) }}"/>. Die daraus synchronisierten Gruppen werden bei jeder dieser Anmeldungen entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="user.claim-reason.wrong-type">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:317</note>
+      </notes>
+      <segment>
+        <source>a group claim of the wrong type</source>
+        <target>einen Gruppen-Claim des falschen Typs</target>
+      </segment>
+    </unit>
+    <unit id="user.claim-reason.overage">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:318</note>
+      </notes>
+      <segment>
+        <source>too many groups for the token</source>
+        <target>zu viele Gruppen für das Token</target>
+      </segment>
+    </unit>
+    <unit id="user.claim-reason.absent">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:319</note>
+      </notes>
+      <segment>
+        <source>no group claim</source>
+        <target>keinen Gruppen-Claim</target>
       </segment>
     </unit>
   </file>

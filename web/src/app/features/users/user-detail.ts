@@ -312,6 +312,13 @@ export class UserDetail {
     return $localize`:@@user.source.provider:Identity provider`;
   }
 
+  /** What a sign-in carried instead of a usable group claim, as the end of the notice's sentence (R-AUTH-008, Q-UI-610). */
+  protected claimReason(reason: string): string {
+    if (reason === 'wrong_type') return $localize`:@@user.claim-reason.wrong-type:a group claim of the wrong type`;
+    if (reason === 'overage') return $localize`:@@user.claim-reason.overage:too many groups for the token`;
+    return $localize`:@@user.claim-reason.absent:no group claim`;
+  }
+
   private setGroups(groups: readonly UserGroupMembership[]): void {
     this.user.update((u) => (u ? { ...u, groups: [...groups] } : u));
   }

@@ -581,7 +581,7 @@ it.
 - renames the user to a changed mapped username if `sync_username` is true and the new name is
   free; otherwise it keeps the old name and emits `user.rename_conflict`;
 - records `last_login_at`, `last_interactive_auth_at` and the mapped claim values
-  (`last_claims`). Raw tokens are never stored.
+  (`last_claims`), with the state of the group claim of R-AUTH-008. Raw tokens are never stored.
 
 **Gates.** Gates run before the session is created and fail with the reason shown:
 
@@ -702,14 +702,38 @@ Q-AUTH-4). It applies to all three cases above alike, including the overage mark
 | `keep` | Leave the memberships unchanged. |
 | `deny` | Fail the login with `groups_claim_missing`. |
 
-With `clear` and `keep`, every login with a missing claim writes the warning event
-`user.groups.claim_missing` (R-AUTH-041) with the provider and `details.reason`: `absent`,
-`wrong_type` or `overage`. It also increments
-`quader_auth_group_claim_missing_total{name,reason}` (`name` is the provider ID, Q-AUTH-39). Quader also records the reason with the
-identity's `last_claims` (R-AUTH-007). The user's profile (R-AUTH-017) and
-`GET /api/v1/users/me` show it as `groupClaimMissing: {"provider", "reason"}` until a later
-login delivers the claim. This makes a broken group mapper or an overage visible to administrators and
-to the affected users themselves, who can still log in with their direct grants. An
+**The state of the claim and its events** (owner, 2026-11-18, [Q-AUTH-400](#q-auth-400--a-missing-group-claim-is-recorded-when-it-changes-not-at-every-sign-in)).
+With `clear` and `keep`, Quader stores the state of the claim with the identity, in its
+`last_claims` (R-AUTH-007): `groupClaimMissing: {"provider", "reason", "since", "onMissingClaim"}` while the claim is missing,
+no such member while it is usable. `since` is the time of the sign-in at which the current state began; `onMissingClaim` is
+`clear` or `keep`, the policy the latest sign-in applied. The state is per identity: a user with two linked providers has one
+state for each. The audit log records the changes of that state, not every sign-in
+([Q-AUTH-403](#q-auth-403--the-state-of-the-claim-is-compared-and-written-under-the-lock-of-the-identitys-row)):
+
+| Stored state before the sign-in | Claim at this sign-in | Event | `since` afterwards |
+|---|---|---|---|
+| none (first sign-in of the identity), or usable | missing with reason *r* | `user.groups.claim_missing`, outcome `warning`, `details.reason` *r* | this sign-in |
+| missing with reason *r* | missing with reason *r* | none | unchanged |
+| missing with reason *r* | missing with another reason *s* | `user.groups.claim_missing`, outcome `warning`, `details.reason` *s*, `details.previousReason` *r* | this sign-in |
+| missing with reason *r* | usable | `user.groups.claim_returned`, outcome `success`, `details.reason` *r* and `details.missingSince` ([Q-AUTH-401](#q-auth-401--the-return-of-the-claim-is-an-event-of-its-own)) | no state |
+| none, or usable | usable | none | no state |
+
+Both events name the provider and `details.onMissingClaim`; the reason is `absent`, `wrong_type` or `overage`. The state, the
+events and the change of the memberships are written in the sign-in's one transaction, under a lock of the identity's row, so
+two sign-ins of one identity at the same moment record one change, not two. A provider with `group_sync.enabled: false`
+stores no state and records neither event; a stored state is dropped by its next sign-in, so an identity whose provider
+switches the sync on again starts as at its first sign-in. A stored member without a reason or a `since` is no state.
+
+The metric `quader_auth_group_claim_missing_total{name,reason}` (`name` is the provider ID, Q-AUTH-39) still counts every
+sign-in with a missing claim under `clear` and `keep`, whatever the log records: an alert on its rate sees the same signal as
+before. A sign-in refused by `deny` never reaches the state: it is the failed sign-in `auth.login.failed` with the reason
+`groups_claim_missing`, recorded at every attempt, and the metric does not count it (the login counts it in
+`quader_auth_attempts_total{method="oidc",outcome="failure",reason="groups_claim_missing"}`).
+
+The user's profile (R-AUTH-017), `GET /api/v1/users/me` and the user's page in the admin area show the stored state as
+`groupClaimMissing: {"provider", "reason", "since", "onMissingClaim"}` until a sign-in through that provider delivers the
+claim; with two identities whose claim is missing, the one whose state began last. This makes a broken group mapper or an overage visible
+to administrators and to the affected users themselves, who can still log in with their direct grants. An
 administrator who loses rights this way sees why on the profile and recovers through the
 break-glass account (R-AUTH-014) or by fixing the IdP mapper.
 
@@ -743,12 +767,19 @@ Acceptance criteria:
 - At the next login the IdP sends `groups: []`. The `oidc:corp` membership is removed, and a
   manual membership in `team-web` added by an administrator survives.
 - The IdP omits the claim. With the default, all `oidc:corp` memberships are removed, the
-  login succeeds, one `user.groups.claim_missing` event with `reason=absent` is written, and
-  `GET /api/v1/users/me` returns `groupClaimMissing` with `reason: "absent"`. The next login
-  that carries the claim clears the field. With `deny`, the login fails with
-  `groups_claim_missing`.
+  login succeeds, one `user.groups.claim_missing` event with outcome `warning` and `reason=absent` is written, and
+  `GET /api/v1/users/me` returns `groupClaimMissing` with `reason: "absent"` and `since` the time of that login. A second login
+  without the claim writes no event and keeps `since`; the metric counts both logins. The next login
+  that carries the claim clears the field and writes one `user.groups.claim_returned`; a login without the claim after that
+  writes `user.groups.claim_missing` again. With `deny`, every login fails with `groups_claim_missing` and records
+  `auth.login.failed`.
 - The IdP sends `_claim_names: {"groups": "src1"}` instead of the claim. With the default, the
-  login succeeds without `oidc:corp` memberships, and the event carries `reason=overage`.
+  login succeeds without `oidc:corp` memberships, and the event carries `reason=overage`; a later login whose claim is absent
+  records the change with `reason=absent` and `previousReason=overage`.
+- With `keep`, the memberships stay, and the events and the state are the same as with `clear`, with `onMissingClaim: keep`.
+- With `group_sync.enabled: false`, a login without the claim stores no state and writes neither event.
+- A user linked to two providers whose claim is missing at one of them has the state of that identity only; a login through
+  the other provider neither records nor clears it.
 
 ### R-AUTH-009 · Multiple providers and the login page
 Priority: **MVP** · Covers: AUTHN-007, AUTHN-037
@@ -3431,7 +3462,8 @@ API, retention and log emission (INV-16).
 
 - `actor`: kind, name and ID; `admin-cli` for commands; `anonymous`;
 - `action`: the event type below;
-- `outcome`: `success` or `failure`, plus a `reason` code;
+- `outcome`: `success`, `failure`, `denied` (an authorization refusal) or `warning` (it happened, and an administrator should
+  look: [Q-AUTH-402](#q-auth-402--a-warning-is-an-outcome-of-its-own)), plus a `reason` code;
 - `source`: client address, user agent and the request's trace ID;
 - `subject`: the affected principal or token;
 - `details`: JSON.
@@ -3454,7 +3486,8 @@ or authorization codes.
 | `user.created`, `user.updated`, `user.renamed`, `user.rename_conflict`, `user.disabled`, `user.enabled`, `user.deleted`, `user.dormancy_warning` | R-AUTH-007, R-AUTH-016, R-AUTH-021, R-AUTH-039 | yes; `details.source` is `jit`, `admin`, `scim`, `dormancy` or `admin-cli` |
 | `user.avatar.set`, `user.avatar.removed` | R-API-055 (Q-AUTH-197); `details.source` is `self` or `admin`, with the `sha256` of the image and, for a set, its `size`; never image bytes | yes |
 | `user.groups.synced` | R-AUTH-008, with added and removed lists | yes, only when something changed |
-| `user.groups.claim_missing` | R-AUTH-008, with provider and reason (`absent`, `wrong_type`, `overage`); severity `warning` | yes, once per affected login |
+| `user.groups.claim_missing` | R-AUTH-008, with provider, reason (`absent`, `wrong_type`, `overage`), the previous reason when the reason changed, and `onMissingClaim`; outcome `warning` | yes, once per change of the identity's state to missing or to another reason (Q-AUTH-400), not at every login; the metric counts every login |
+| `user.groups.claim_returned` | R-AUTH-008, with provider, the reason the claim was missing for, `missingSince` and `onMissingClaim`; outcome `success` | yes, once when a login of an identity whose claim was missing delivers it again (Q-AUTH-401) |
 | `group.created`, `group.updated`, `group.deleted`, `group.members.changed` | R-AUTH-018, R-AUTH-039 | yes |
 | `serviceaccount.created`, `serviceaccount.updated`, `serviceaccount.disabled`, `serviceaccount.deleted` | R-AUTH-020 | yes |
 | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted` | R-BAS-004 ([bastion.md](bastion.md)); the token events of a Bastion token (`token.created`, `token.revoked`) carry `resource_type` `bastion` | yes; `bastion.disabled` and `bastion.deleted` carry a journal entry (Q-BAS-145) |
@@ -3545,7 +3578,9 @@ is MVP. `quader admin post-restore` re-applies it after a platform restore (Q-HA
 - `quader_auth_throttle_exempt_total{via}` (`cache`, `marker`; R-AUTH-038)
 - `quader_auth_session_touch_failures_total` (R-AUTH-010)
 - `quader_auth_lastused_flush_failures_total`
-- `quader_auth_group_claim_missing_total{name,reason}` (`name` is the provider ID, Q-AUTH-39)
+- `quader_auth_group_claim_missing_total{name,reason}` (`name` is the provider ID, Q-AUTH-39): every login with a missing
+  group claim under `clear` or `keep`, also those that record no event because the identity's state did not change
+  (R-AUTH-008, Q-AUTH-400)
 - `quader_auth_cli_poll_refused_total`
 
 Acceptance criteria:
@@ -4510,6 +4545,9 @@ decide what it writes (R-AUTH-007, R-AUTH-008).
   other error is a failure of the system (`provisioning_failed`, or 503 when PostgreSQL does not answer).
 - The provisioner records `user.*` and `user.groups.*` events and the metric
   `quader_auth_group_claim_missing_total{name,reason}` (Q-AUTH-39: `name` is the provider ID); the login records `auth.login.*` and does not count the claim.
+  With `GroupSync` it reads the identity's `last_claims` under a row lock with the transaction's `now()`, records
+  `user.groups.claim_missing` or `user.groups.claim_returned` only when the state of the claim changes, and writes the new
+  state with the other claims (R-AUTH-008, Q-AUTH-403).
 
 The provisioner links the identity in `user_identity` (the table of `00008_login`) and completes a pending
 link with a conditional update; two first logins of one identity on different replicas end with one
@@ -5958,6 +5996,88 @@ them (integration area `apikey`, 2026-11-12).
 **Rationale:** the challenge belongs to the route, not to the reason of the refusal. The development agent records no revisit condition.
 
 **Applied in the spec:** R-AUTH-002.
+
+### Q-AUTH-400 · A missing group claim is recorded when it changes, not at every sign-in
+
+Status: **Decided by the owner on 2026-11-18** — selected from the options below at the walk of the frontend (W-14).
+
+Context: every sign-in through a provider that sends no group claim wrote `user.groups.claim_missing` with the outcome
+`failure`; on the owner's installation that was half of the audit log, each entry red, though every one of those sign-ins
+succeeded. What the entry is for: an administrator must notice that a provider stopped sending groups, because with `clear` its
+users silently lose the memberships from it, and with `keep` they keep memberships they may no longer be entitled to.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Only at the change (chosen) | One entry when an identity's claim goes missing (or its reason changes), one when it is back; nothing while the state stays | The log says when the provider changed and when it recovered; the stored state already holds the last state | A reader who wants "is it still missing?" looks at the user's page or the metric, not the log |
+| (b) Only when memberships were removed | An entry only when `clear` removed something | Ties the entry to an effect | With `keep` nothing is ever removed, so the riskier case, rights that outlive the provider's groups, would never be logged |
+| (c) As before, but as a warning | One entry per sign-in, not red | No logic of state | Still half of the log |
+| (d) Group sync off by default without rules | A provider without group rules does not sync | Removes the case for most installations | Changes a default for a logging problem; a provider with rules still floods the log |
+
+**Choice:** (a). The table of R-AUTH-008 says which sign-in records what; the metric keeps counting every sign-in.
+
+**Rationale:** the owner's. (b) was rejected because with `keep` nothing changes and the riskier case would never be logged.
+
+**Applied in the spec:** R-AUTH-008 (the state, its events, the acceptance criteria), R-AUTH-041 (the event table).
+
+### Q-AUTH-401 · The return of the claim is an event of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A new type `user.groups.claim_returned`, outcome `success`, with the provider, the reason the claim was missing for and `missingSince` (chosen) | Two types, one for each direction | The action filter and a webhook subscription tell the two apart; the name says what happened, in the `<domain>.<object>.<event>` form with the past tense last (Q-OPS-37) | One more type in the catalogue |
+| (b) The same type with the outcome `success` and a detail `state: returned` | One type | No new name | "claim missing" with the outcome success reads as a contradiction in the list; a filter on the action finds both directions |
+| (c) No event for the return | The state on the user's page goes away | Nothing to add | The log shows when the provider broke and never when it recovered; a reader cannot tell how long users were without their groups |
+
+**Choice:** (a), registered like its sibling: category `identity`, transactional, webhook on, no journal entry (it removes no
+access; a removal by `clear` is the journaled `user.groups.synced` of the same sign-in).
+
+**Rationale:** the two directions are two facts an administrator filters for. The development agent would revisit it if the
+catalogue gets a general notion of a state that is entered and left, of which this would be one instance.
+
+**Applied in the spec:** R-AUTH-008, R-AUTH-041.
+
+### Q-AUTH-402 · A warning is an outcome of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the event table called the severity of `user.groups.claim_missing` `warning`, the code wrote it with the outcome
+`failure`, and the audit model has an outcome (`success`, `failure`, `denied`) and no severity; the list shows the outcome.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A fourth outcome `warning`: it happened, and an administrator should look (chosen) | The table's check, the writer, the query filter, the API's enum and the list learn one value | The list, the filter and the export show it with no new column; every reader of the outcome sees it; no event type is special in the UI | An outcome is about how the action ended, and a warning is partly a judgement of the producer |
+| (b) A severity per event type in the registry, derived by the API | `info`, `warning`, `high` beside the outcome | Would also carry the `high` of the break-glass events | The claim event's outcome would become `success` and the list would show "success" for it; a new field in the API, the export and the list for one value in use |
+| (c) A stored severity column | Severity per row | Per-event severity | A schema step and a column nobody fills but one producer |
+| (d) Keep the outcome `failure` | Nothing changes | None | The sign-in succeeded; the list shows it red |
+
+**Choice:** (a), migration `00078_audit_outcome_warning.sql`. `user.groups.claim_missing` is the one producer.
+
+**Rationale:** the reader of the log meets the outcome first, so that is where "look at this" belongs; a severity beside an
+outcome of `success` would ask the reader to read two columns to learn one thing. The development agent would revisit it when
+a second axis is needed: the break-glass events, which the table of R-AUTH-041 calls of severity `high`, are recorded with the
+outcome `success` and carry no field for it.
+
+**Applied in the spec:** R-AUTH-041; [operations-and-observability.md](operations-and-observability.md) R-OPS-015 (the
+table), R-OPS-017 (the filter); [api-and-ui.md](api-and-ui.md) R-UI-037 (the list).
+
+### Q-AUTH-403 · The state of the claim is compared and written under the lock of the identity's row
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The state stays in `user_identity.last_claims`; the sign-in reads it with `SELECT … FOR UPDATE` and the transaction's `now()`, decides, and writes the new state, the event and the memberships in the same transaction (chosen) | No schema step; `since` is the time of the event's own row | Two sign-ins of one identity on two replicas see each other's state, so one change is one event; `since` equals the `occurredAt` of the entry that began it | A row lock for the length of a sign-in's transaction, which already updates the user's row |
+| (b) Columns `group_claim_state`, `group_claim_since` on `user_identity` | The state as columns | Queryable without JSON | A schema step for what one JSON member holds; the API reads one member already |
+| (c) Read the last event of the identity from the audit log | No stored state | None | The log is append-only evidence with a retention, not state; a retention cut would turn the next sign-in into a "first" one |
+
+**Choice:** (a). The lock is taken only when group sync is on; the user's row (`app_user`) is updated by every sign-in before,
+so two sign-ins of one user already wait for each other there.
+
+**Rationale:** the stored state was there and was the basis the owner's choice names; it needed a time and a comparison, not a
+new home. The development agent records no revisit condition.
+
+**Applied in the spec:** R-AUTH-007, R-AUTH-008.
 
 ## What this does not cover
 

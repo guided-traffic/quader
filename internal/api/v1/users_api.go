@@ -30,7 +30,11 @@ func toUser(u principal.User) gen.User {
 	}
 	out.Groups = toMemberships(u.Groups)
 	if u.GroupClaimMissing != nil {
-		out.GroupClaimMissing = &gen.GroupClaimMissing{Provider: u.GroupClaimMissing.Provider, Reason: gen.GroupClaimMissingReason(u.GroupClaimMissing.Reason)}
+		m := u.GroupClaimMissing
+		out.GroupClaimMissing = &gen.GroupClaimMissing{
+			Provider: m.Provider, Reason: gen.GroupClaimMissingReason(m.Reason), Since: utc(m.Since),
+			OnMissingClaim: gen.GroupClaimMissingOnMissingClaim(m.OnMissingClaim),
+		}
 	}
 	return out
 }

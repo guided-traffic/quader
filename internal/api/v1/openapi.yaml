@@ -643,7 +643,7 @@ paths:
             type: string
         - name: outcome
           in: query
-          description: "success, failure or denied."
+          description: "success, failure, denied or warning (Q-AUTH-402)."
           schema:
             type: string
         - name: actor
@@ -759,7 +759,7 @@ paths:
             type: string
         - name: outcome
           in: query
-          description: "success, failure or denied."
+          description: "success, failure, denied or warning (Q-AUTH-402)."
           schema:
             type: string
         - name: actor
@@ -14045,7 +14045,8 @@ components:
           type: string
         outcome:
           type: string
-          enum: [success, failure, denied]
+          description: "`warning`: the action happened, and an administrator should look at it (Q-AUTH-402)."
+          enum: [success, failure, denied, warning]
         actor:
           $ref: "#/components/schemas/AuditActor"
         source:
@@ -14352,14 +14353,25 @@ components:
           examples: ["oidc:corp"]
     GroupClaimMissing:
       type: object
-      description: Set while the user's last login carried no usable group claim (R-AUTH-008).
-      required: [provider, reason]
+      description: >-
+        The stored state of an identity whose group claim is missing (R-AUTH-008), set while its last login carried no usable
+        group claim; with two such identities, the one whose state began last. The audit log records the changes of this state,
+        not every login (Q-AUTH-400).
+      required: [provider, reason, since, onMissingClaim]
       properties:
         provider:
           type: string
         reason:
           type: string
           enum: [absent, wrong_type, overage]
+        since:
+          type: string
+          format: date-time
+          description: The time of the login at which the claim went missing for this reason.
+        onMissingClaim:
+          type: string
+          enum: [clear, keep]
+          description: What the latest login did with the memberships synchronized from the provider.
     User:
       type: object
       description: A user (R-AUTH-016). `isAdmin`, `adminVia` and `lockedUntil` are derived and read only.

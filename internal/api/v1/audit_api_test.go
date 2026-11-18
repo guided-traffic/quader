@@ -34,6 +34,12 @@ func TestR_OPS_017_AuditFilter(t *testing.T) {
 			t.Fatalf("%+v", f)
 		}
 	})
+	t.Run("R-OPS-017 Q-AUTH-402 the outcome filter takes warning", func(t *testing.T) {
+		f, err := auditFilter(map[string]string{"outcome": "warning"})
+		if err != nil || f.Outcome != audit.Warning {
+			t.Fatalf("%+v %v", f, err)
+		}
+	})
 	t.Run("R-OPS-017 a parameter that takes one value is refused when it is repeated", func(t *testing.T) {
 		vals, _ := url.ParseQuery("action=a&action=b&actor=x")
 		if _, err := onceEach(vals, "action", "actor"); err == nil {

@@ -617,7 +617,8 @@ SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision,
        u.last_login_at, coalesce(u.scim_external_id, '')::text AS scim_external_id, u.external,
        coalesce((SELECT i.last_claims -> 'groupClaimMissing' FROM user_identity i
                   WHERE i.user_id = u.principal_id AND i.last_claims ? 'groupClaimMissing'
-                  ORDER BY i.id DESC LIMIT 1), 'null'::jsonb)::text AS group_claim_missing
+                  ORDER BY (i.last_claims -> 'groupClaimMissing' ->> 'since')::timestamptz DESC NULLS LAST, i.id DESC
+                  LIMIT 1), 'null'::jsonb)::text AS group_claim_missing
   FROM principal p JOIN app_user u ON u.principal_id = p.id
  WHERE p.kind = 'user' AND p.name = $1::text
 `
@@ -683,7 +684,8 @@ SELECT p.id::text AS id, p.name, p.status, p.created_at, p.revision,
        u.last_login_at, coalesce(u.scim_external_id, '')::text AS scim_external_id, u.external,
        coalesce((SELECT i.last_claims -> 'groupClaimMissing' FROM user_identity i
                   WHERE i.user_id = u.principal_id AND i.last_claims ? 'groupClaimMissing'
-                  ORDER BY i.id DESC LIMIT 1), 'null'::jsonb)::text AS group_claim_missing
+                  ORDER BY (i.last_claims -> 'groupClaimMissing' ->> 'since')::timestamptz DESC NULLS LAST, i.id DESC
+                  LIMIT 1), 'null'::jsonb)::text AS group_claim_missing
   FROM principal p JOIN app_user u ON u.principal_id = p.id
  WHERE p.kind = 'user' AND p.id = $1::text::uuid
 `
@@ -1737,6 +1739,46 @@ func (q *Queries) IdentityLockGroup(ctx context.Context, id string) ([]IdentityL
 	for rows.Next() {
 		var i IdentityLockGroupRow
 		if err := rows.Scan(&i.ID, &i.AutoJoin, &i.SyncDetached); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const identityLockGroupClaim = `-- name: IdentityLockGroupClaim :many
+SELECT coalesce(last_claims -> 'groupClaimMissing', 'null'::jsonb)::text AS claim_missing, now()::timestamptz AS now
+  FROM user_identity
+ WHERE issuer = $1::text AND subject = $2::text
+   FOR UPDATE
+`
+
+type IdentityLockGroupClaimParams struct {
+	Issuer  string
+	Subject string
+}
+
+type IdentityLockGroupClaimRow struct {
+	ClaimMissing string
+	Now          pgtype.Timestamptz
+}
+
+// The stored state of the group claim of an identity (R-AUTH-008) under the lock of its row, and the transaction's time, which
+// is the time of the audit event that a change of the state records (Q-AUTH-403). claim_missing is 'null' while the claim was
+// usable at the identity's last sign-in, and before its first one.
+func (q *Queries) IdentityLockGroupClaim(ctx context.Context, arg IdentityLockGroupClaimParams) ([]IdentityLockGroupClaimRow, error) {
+	rows, err := q.db.Query(ctx, identityLockGroupClaim, arg.Issuer, arg.Subject)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IdentityLockGroupClaimRow{}
+	for rows.Next() {
+		var i IdentityLockGroupClaimRow
+		if err := rows.Scan(&i.ClaimMissing, &i.Now); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

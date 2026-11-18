@@ -118,11 +118,28 @@ type Membership struct {
 	Source string
 }
 
-// ClaimMissing is the record of a login without a usable group claim
-// (R-AUTH-008).
+// ClaimMissing is the stored state of an identity whose group claim is missing
+// (R-AUTH-008): the provider, the reason, the time of the sign-in at which the
+// state began, and the on_missing_claim policy the latest sign-in applied
+// ("clear" or "keep"). It is a member of the identity's last_claims.
 type ClaimMissing struct {
-	Provider string `json:"provider"`
-	Reason   string `json:"reason"`
+	Provider       string    `json:"provider"`
+	Reason         string    `json:"reason"`
+	Since          time.Time `json:"since"`
+	OnMissingClaim string    `json:"onMissingClaim"`
+}
+
+// parseClaimMissing reads a stored state; a value without a reason or a time
+// is no state (R-AUTH-008).
+func parseClaimMissing(raw string) *ClaimMissing {
+	if raw == "" || raw == "null" {
+		return nil
+	}
+	var cm ClaimMissing
+	if json.Unmarshal([]byte(raw), &cm) != nil || cm.Reason == "" || cm.Since.IsZero() {
+		return nil
+	}
+	return &cm
 }
 
 // User is the record of R-AUTH-016. isAdmin and adminVia are derived from the
@@ -144,7 +161,8 @@ type User struct {
 	Revision   int64
 	Identities []Identity
 	Groups     []Membership
-	// GroupClaimMissing is set while the last login carried no usable group claim.
+	// GroupClaimMissing is the state of the identity whose group claim is missing, set while its last login carried no usable
+	// group claim; with two such identities, the one whose state began last.
 	GroupClaimMissing *ClaimMissing
 	// IsAdmin and AdminVia are derived from the role bindings, never stored
 	// (R-AUTH-016): the break-glass account is an administrator without a binding
@@ -313,12 +331,7 @@ func userFrom(id, name, status, email string, emailVerified bool, displayName, o
 		ID:       id, Name: name, Status: Status(status), Email: email, EmailVerified: emailVerified, DisplayName: displayName,
 		Origin: origin, BreakGlass: bg, DisabledReason: reason, SCIMExternalID: scim, LastLoginAt: lastLogin, CreatedAt: created,
 	}
-	if claim != "" && claim != "null" {
-		var cm ClaimMissing
-		if json.Unmarshal([]byte(claim), &cm) == nil && cm.Reason != "" {
-			u.GroupClaimMissing = &cm
-		}
-	}
+	u.GroupClaimMissing = parseClaimMissing(claim)
 	return u
 }
 

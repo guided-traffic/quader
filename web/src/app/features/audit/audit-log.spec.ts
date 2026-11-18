@@ -83,6 +83,20 @@ describe('Audit log', () => {
     expect(text(root)).toContain('future.thing.happened');
   });
 
+  it('R-UI-037 Q-AUTH-402 the outcome warning shows the warning icon and word, never the failure icon; the filter offers it', async () => {
+    const { root, fixture } = await open({}, (audit) => {
+      audit.eventList = [sampleEvent({ action: 'user.groups.claim_missing', category: 'identity', outcome: 'warning', reason: 'absent' })];
+    });
+    const cell = [...root.querySelectorAll('tbody td')].find((td) => text(td).includes('warning'))!;
+    expect(cell.querySelector('.material-icons')?.textContent).toBe('warning');
+    expect(cell.querySelector('.bad')).toBeNull();
+    expect(text(cell)).toContain('Warning');
+    expect(text(root)).toContain('Group claim missing at sign-in');
+    const drawer = await openFilters(fixture, root);
+    const options = [...drawer.querySelectorAll<HTMLOptionElement>('#a-outcome option')].map((o) => o.value);
+    expect(options).toContain('warning');
+  });
+
   it('R-UI-037 R-VULN-024 every vulnerability action has a plain name, also the import of advisory data', async () => {
     const actions = [
       ['vulnerability.source.imported', 'Advisory data imported'],

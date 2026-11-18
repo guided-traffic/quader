@@ -66,7 +66,7 @@ func NewMetrics(reg prometheus.Registerer) (*Metrics, error) {
 		}),
 		groupClaimMissing: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "quader_auth_group_claim_missing_total",
-			Help: "Logins whose group claim was missing, by provider (name) and reason (absent, wrong_type, overage) (R-AUTH-008, Q-AUTH-39).",
+			Help: "Logins whose group claim was missing, every one, by provider (name) and reason (absent, wrong_type, overage); the audit log records only the changes (R-AUTH-008, Q-AUTH-39, Q-AUTH-400).",
 		}, []string{"name", "reason"}),
 		attempts: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "quader_auth_attempts_total",

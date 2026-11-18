@@ -87,7 +87,7 @@
     <label class="field-label" for="a-outcome" i18n="@@audit.filter.outcome">Outcome</label>
     <select id="a-outcome" class="select-input" (change)="setDraft('outcome', $any($event.target).value)">
       <option value="" [selected]="!draft()['outcome']" i18n="@@repo.filter.any">Any</option>
-      @for (o of ['success', 'failure', 'denied']; track o) {
+      @for (o of ['success', 'failure', 'denied', 'warning']; track o) {
         <option [value]="o" [selected]="draft()['outcome'] === o">{{ outcomeText(o) }}</option>
       }
     </select>
@@ -162,6 +162,9 @@
               }
               @case ('failure') {
                 <span class="bad"><span class="material-icons" aria-hidden="true">error</span>{{ outcomeText(e.outcome) }}</span>
+              }
+              @case ('warning') {
+                <span class="warn"><span class="material-icons" aria-hidden="true">warning</span>{{ outcomeText(e.outcome) }}</span>
               }
               @default {
                 <span class="warn"><span class="material-icons" aria-hidden="true">block</span>{{ outcomeText(e.outcome) }}</span>

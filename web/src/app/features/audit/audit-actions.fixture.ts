@@ -153,6 +153,7 @@ export const REGISTERED_AUDIT_ACTIONS: readonly string[] = [
   'user.enabled',
   'user.external_changed',
   'user.groups.claim_missing',
+  'user.groups.claim_returned',
   'user.groups.synced',
   'user.rename_conflict',
   'user.renamed',

@@ -266,20 +266,18 @@ func (p *PGProvisioner) rename(ctx context.Context, tx meta.Tx, qs *q.Queries, c
 
 // syncGroups makes the user's oidc:<provider> memberships exactly the target set
 // of the login (R-AUTH-008). Memberships of the other sources are never touched.
+// A missing claim is counted at every sign-in; the audit log records only a
+// change of the identity's state of the claim (Q-AUTH-400).
 func (p *PGProvisioner) syncGroups(ctx context.Context, tx meta.Tx, qs *q.Queries, c LoginClaims, userID, name string, claims map[string]any) error {
 	actor := audit.Actor{Kind: "user", ID: userID, Name: name}
 	subject := audit.Subject{Kind: "user", ID: userID, Name: name}
 	source := "oidc:" + c.Provider
+	if err := p.recordClaimState(ctx, tx, qs, c, actor, subject, claims); err != nil {
+		return err
+	}
 	missing := c.ClaimState != ClaimPresent
 	if missing {
-		claims["groupClaimMissing"] = ClaimMissing{Provider: c.Provider, Reason: string(c.ClaimState)}
 		p.metrics.claimMissing(c.Provider, string(c.ClaimState))
-		if err := p.rec.RecordTx(ctx, tx, audit.Event{
-			Type: audit.EventUserGroupsClaimMiss, Outcome: audit.Failure, Reason: string(c.ClaimState), Actor: actor, Source: c.Source, Subject: subject,
-			Details: details(map[string]string{"provider": c.Provider, "reason": string(c.ClaimState)}),
-		}); err != nil {
-			return err
-		}
 		if c.KeepOnMissing {
 			return nil
 		}

@@ -265,7 +265,7 @@ func TestR_AUTH_008_GroupSynchronization(t *testing.T) {
 		t.Fatal("the removal has no journal entry")
 	}
 
-	t.Run("a missing claim clears the oidc memberships and records user.groups.claim_missing", func(t *testing.T) {
+	t.Run("a missing claim clears the oidc memberships and records user.groups.claim_missing as a warning", func(t *testing.T) {
 		bob, _ := a.provisioner.SignIn(ctx, claims("bob", "sub-bob", withGroups("team-web")))
 		if got := groupNames(t, a, bob.ID); !slices.Equal(got, []string{"team-web"}) {
 			t.Fatalf("%v", got)
@@ -278,7 +278,7 @@ func TestR_AUTH_008_GroupSynchronization(t *testing.T) {
 			t.Fatalf("the memberships stayed: %v", got)
 		}
 		evs := a.rec.named(audit.EventUserGroupsClaimMiss)
-		if len(evs) != 1 || evs[0].Reason != "overage" {
+		if len(evs) != 1 || evs[0].Reason != "overage" || evs[0].Outcome != audit.Warning {
 			t.Fatalf("%+v", evs)
 		}
 		u, _ := a.manager.GetUser(ctx, "bob")
@@ -290,6 +290,9 @@ func TestR_AUTH_008_GroupSynchronization(t *testing.T) {
 		}
 		if u, _ = a.manager.GetUser(ctx, "bob"); u.GroupClaimMissing != nil {
 			t.Fatalf("the next login that carries the claim clears the field: %+v", u.GroupClaimMissing)
+		}
+		if back := a.rec.named(audit.EventUserGroupsClaimBack); len(back) != 1 || back[0].Subject.Name != "bob" {
+			t.Fatalf("user.groups.claim_returned: %+v", back)
 		}
 	})
 	t.Run("on_missing_claim keep leaves the memberships", func(t *testing.T) {

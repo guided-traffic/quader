@@ -303,6 +303,8 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.user.enabled:User enabled`;
     case 'user.groups.claim_missing':
       return $localize`:@@audit.action.user.groups.claim_missing:Group claim missing at sign-in`;
+    case 'user.groups.claim_returned':
+      return $localize`:@@audit.action.user.groups.claim_returned:Group claim back at sign-in`;
     case 'user.groups.synced':
       return $localize`:@@audit.action.user.groups.synced:Group memberships synchronised`;
     case 'user.rename_conflict':
@@ -386,6 +388,8 @@ export function outcomeLabel(outcome: string): string {
       return $localize`:@@audit.outcome.failure:Failure`;
     case 'denied':
       return $localize`:@@audit.outcome.denied:Denied`;
+    case 'warning':
+      return $localize`:@@audit.outcome.warning:Warning`;
     default:
       return outcome;
   }
