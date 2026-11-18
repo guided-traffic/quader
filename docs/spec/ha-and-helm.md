@@ -10384,6 +10384,14 @@ primary's verifier changes at every promotion.
 **Choice:** (a). PostgreSQL itself sends `28P01` only during authentication, which pgx reports as a `ConnectError`; on an established connection it
 can only come from a pooler that forwards its own failed server login. `TestClassify` has the three cases.
 
+**Readiness** (R-OPS-001). The `database` and `schema` checks read the same classification (`postgres.IsOutage`), so the pooler's
+two answers are an outage the readiness grace applies to, as the switchover is for the requests: without that a replica would leave its
+Service in exactly the window `TestHAPooler_Switchover` requires it to stay in. A credential refused at connect still gates after the usual
+debounce and names the password in the check's error. When the database password is really changed on the server, the check meets the
+pooler-forwarded `28P01` at most once per pooled control connection: PgBouncer closes that client, the next check dials, and Quader's own
+login is then refused at connect (the pooler fetches the new verifier for every client login), which gates with the password named in
+`readiness check failing`. `TestMarkOutage` (`internal/app`) has both shapes, the connect-time one from a backend that refuses the startup.
+
 **Rationale:** both answers mean "no server yet", and the statement was not run, so running it again is safe. The development agent would revisit the
 match when PgBouncer changes the text (the pinned CloudNativePG pooler image is what the test of Q-HA-302 runs), or if a pooler forwards a server's
 `28P01` on a connection whose statement may have run.
