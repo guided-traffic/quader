@@ -1276,6 +1276,13 @@ agent** is not decided until the owner has said so.
   rule for it and showed the page. Fixed: `isFilesRoute` in [webui.go](../../internal/webui/webui.go) with a unit test. Journey 03
   still expected "No repository matches." where the list says "No repository matches the filters.". What it shows: a page whose
   address ends in a name with a dot needs a test against the embedded UI, not only a render.
+- **F-140 · Two journeys were red after the guides package, for a link named twice** (2026-11-18, `e2e (access-long)` of Test
+  and Release 44313192183, the run of c684bfb6; read in the evening window). Since the row action **Set up client** ends its
+  accessible name with the repository's key (Q-UI-487), a row has two links that carry the key. Journey 12 asked for a link by
+  the key without exact matching and met both (strict mode); journey 09 asked for the action by "Set up client" exactly and
+  for the row by "project/key", which a guide's row no longer writes; journey 23 had the selector of journey 12 and was
+  fixed with it. Fixed in 08cb7050; not run locally (the journeys need the cluster), the run of that commit shows it. The
+  failed job's log cut the error of journey 09, so its cause is read from the code, not from the log.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
