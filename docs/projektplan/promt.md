@@ -1034,13 +1034,17 @@ agent** is not decided until the owner has said so.
   area's **System roles**, with a picture of the member field of his GitLab: the typed letters "Swa", under the field a row
   with the avatar, the name and the username of the match): "ne, das muss mit Personensuche passieren. Personensuchen immer so
   mit Anzeige der möglichen Personen. Das will ich überall wo Personensuchen eine Rolle spielen." Today a system role is bound
-  by typing `user:name`, `group:name` or `sa:name` into a text field, and no screen of the app offers a person while one types;
-  `GET /api/v1/users` asks for `identities:read`, which a project's Owner does not hold. Wanted: one shared field for every
-  place where a person, a group or a service account is named (the bindings of a system role, the members of a project, the
-  members of a group, the principals of a permission policy, and whatever else the builder finds): it searches while one
-  types and lists the matches with avatar, name and username. Decided by the development agent, for the owner to object: the
-  search is open to every signed-in user who is not external, as on the owner's GitLab, and gives the avatar, the name and
-  the username, never the email address; the email stays with `identities:read`. Status: a builder is briefed.
+  by typing `user:name`, `group:name` or `sa:name` into a text field, a group's member and the principal of a policy's "Try it"
+  likewise. The members of a project and the principals of a project's policy are already found through a search box
+  (`quader-principal-picker`, with the lookup `GET /api/v1/projects/{projectKey}/principals` of Q-AUTHZ-182), but its matches are
+  buttons with the kind and the name, without avatar and display name, and it is not used in the admin area. Wanted: one
+  shared field for every place where a person, a group or a service account is named: it searches while one types and lists
+  the matches with avatar, name and username. Decided by the development agent: no caller gains a search it does not have
+  today (the admin area's caller holds `identities:read`, a project's Owner has the lookup of Q-AUTHZ-182); the lookup's
+  answer grows by the display name and the avatar, never the email address, and H-392 says so. Corrected the same day: the
+  development agent had first written that no screen offers a person while one types and had decided to open the search to
+  every signed-in user who is not external; it had not read the project dialogs. The builder was redirected before it
+  committed. Status: a builder is briefed.
 - **W-13 · An update does not turn the status red** (owner, 2026-11-18, at **Dashboard** and **System status**, both red with
   "A role is not ready" and "Replicas unready" on his stack): "Ich denke, da wurden einfach die Prozesse rotiert. Bitte
   nachprüfen, dass solche Prozesse sich abmelden und es nicht zu rotem Status kommt, nur weil ein Update eingespielt wurde."
@@ -1063,6 +1067,17 @@ agent** is not decided until the owner has said so.
     Decided by the owner on 2026-11-18 ("Option A", from three: a warning / red as before / not in the header at all): a
     replica that was lost without draining, while its role still has ready replicas, is a **warning**, not an error; its row
     stays in the table as lost until the prune; red is for a role without a ready replica. Status: a builder is briefed.
+- **W-14 · A missing groups claim is written to the audit log when it changes, not at every sign-in** (owner, 2026-11-18,
+  "Option A" from four: only at the change / only when memberships were removed / as before but as a warning / group sync
+  off by default without rules). Seen on his stack: every sign-in of a user whose provider sends no groups wrote a second
+  entry "Group claim missing at sign-in · failure", half of the log. Verified in the code: group sync is on by default with
+  `on_missing_claim: clear` ([login.go](../../internal/config/login.go)); `syncGroups` in
+  [provisioner.go](../../internal/auth/principal/provisioner.go) records `user.groups.claim_missing` with the outcome
+  `Failure` at every such sign-in, also when no membership was removed; the spec calls the event's severity "warning"; the
+  last state of the claim is stored with the identity (`groupClaimMissing`). Wanted: one entry when the claim is missing
+  for an identity for the first time, and one when it is back; shown as a warning, not as a failure; the metric
+  `quader_auth_group_claim_missing_total` counts every sign-in as before, for alerting. Not verified: whether a user's page
+  shows the stored state. Status: a builder is briefed.
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
