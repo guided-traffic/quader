@@ -10234,7 +10234,7 @@ lockout matters), or if an installation shows the 1 s retries as a load on a Pos
 [deploy/dev/pooler.yaml](../../deploy/dev/pooler.yaml), [docs/developer/local-profile.md](../developer/local-profile.md), the pooler requirements of the
 [README](../../README.md) and of the manual ([configuration](../manual/admin/configuration.md#behind-a-transaction-mode-pooler), [runbook](../manual/admin/runbook.md)).
 
-### Q-HA-302 · A stall of the kind nodes is told apart from a neighbour's load, and a fault test does not start on a sick cluster
+### Q-HA-305 · A stall of the kind nodes is told apart from a neighbour's load, and a fault test does not start on a sick cluster
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Extends
 [Q-HA-300](#q-ha-300--every-e2e-set-records-what-starved-the-kind-nodes-inside-the-nodes-whether-it-passes-or-fails).
