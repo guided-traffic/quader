@@ -10261,6 +10261,35 @@ quiet close in place; the cause is then another one and is read from those files
 **Applied in the spec:** none. [docs/developer/e2e.md](../developer/e2e.md#m1-tests) ("The control clients and a broken forward") and item 16 of
 its [findings](../developer/e2e.md#findings-of-the-suite).
 
+### Q-HA-304 · A setup that fails says whether a registry or the machine was the cause, and the test IdP is not restarted inside the wait
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `make dev-up` of `e2e (ci-ha)` in the nightly run 44067104691 ended with `quader-db has 1 ready instances, want 2` and `deployment
+"quader-keycloak" exceeded its progress deadline`; no test ran. The runner was slow in every step, those without network as well: against the 17
+hosted e2e legs of the runs 44067104691 and 44186978088, freeing disk space took 368 s (85 to 155 s), Set up Go 61 s (9 to 18 s), `make image`
+847 s (111 to 173 s), `make dev-up` 839 s until it failed (148 to 203 s for the whole stack), the failure-only cluster state 328 s (4 to 8 s) and
+`make dev-down` 116 s (2 to 29 s). Image pulls took up to 156 s each, and the PostgreSQL image was pulled again on the second instance's node
+(155 s), which completed its join about 40 s after the 10-minute wait had ended. Keycloak's startup probe (60 x 5 s) restarted its first start
+after 300 s, so the second start had 3 minutes 20 s of up.sh's 10 left. No pull failed. up.sh printed only the last lines of the two task logs,
+which named none of this.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The failure names its cause, and the startup probe allows the wait (chosen) | `explain_setup_failure` (deploy/dev/lib.sh): a failed pull is printed as a cause outside the repository; otherwise the slowest pulls, the probe restarts, the pods that are not ready and the machine's pressure; Keycloak's startup probe 120 x 5 s | The next occurrence says whether a registry or the machine failed; a slow start is no longer thrown away and begun again inside the same wait | A runner this slow still fails the leg |
+| (b) Pull the dependency images on the host and load them into kind | One pull per image, `kind load` to the nodes | One pull from the registry instead of one per node | Each node still imports the image, so the disk writes grow on the disk that was slow; the cause here was the machine, not the registry |
+| (c) Longer waits | e.g. 20 minutes for PostgreSQL and Keycloak | PostgreSQL's second instance had finished its join 40 s after the wait | No measurement says when either would have been ready; Keycloak's second start wrote its first log line after 91 s; a slower failure on a broken runner holds the runner longer |
+
+**Choice:** (a). No wait of up.sh changes: the startup probe's budget is raised to the wait that bounds the start anyway, from the
+measurement of that run; a hang still fails at the same 10 minutes.
+
+**Rationale:** The setup can only be as fast as the machine; what it owes the reader is the cause. A failed pull is the case the repository cannot
+help and must say so plainly; a slow machine shows in the pull durations and in the pressure, both read at the moment of the failure. The development agent would revisit
+(b) if a failure names a registry, and (c) if a failure shows a dependency that progressed steadily and needed a little more than its wait.
+
+**Applied in the spec:** none. [docs/developer/local-profile.md](../developer/local-profile.md#troubleshooting),
+[docs/developer/e2e.md](../developer/e2e.md#findings-of-the-suite) (item 17).
+
 ## What this does not cover
 
 ### H-37 · A database restore revives revoked credentials and removed grants

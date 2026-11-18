@@ -370,6 +370,45 @@ sts_wait_ready() {
   done
 }
 
+# explain_setup_failure prints what the cluster says about dependencies that did not come up, so that a failed setup names its
+# cause (Q-HA-304). An image the kubelet could not pull is a cause outside the repository (the registry or the network) and is
+# said so. Otherwise the pulls with their durations, the containers a probe restarted, the pods that are not ready and the
+# pressure of the machine the kind nodes share show whether the machine was too slow: /proc/pressure is not namespaced, so
+# the control-plane node's file is the host's (on Docker Desktop the VM's).
+explain_setup_failure() {
+  local events refused
+  events="$(k get events -A -o jsonpath='{range .items[*]}{.involvedObject.namespace}/{.involvedObject.name}{"\t"}{.reason}{"\t"}{.message}{"\n"}{end}' 2>/dev/null || true)"
+  echo "── what the cluster says about it ──" >&2
+  refused="$(printf '%s\n' "$events" | awk -F'\t' '($2 == "Failed" || $2 == "BackOff") && $3 ~ /[Pp]ull|ErrImage/ { print "  " $1 ": " substr($3, 1, 300) }' | sort -u)"
+  if [ -n "$refused" ]; then
+    echo "an image could not be pulled, a cause outside the repository (the registry or the network):" >&2
+    printf '%s\n' "$refused" >&2
+  else
+    echo "no image pull failed" >&2
+  fi
+  echo "the slowest image pulls (seconds, pod, image):" >&2
+  printf '%s\n' "$events" | awk -F'\t' '
+    function secs(d, t) {
+      if (d ~ /ms$/) return (d + 0) / 1000
+      t = 0
+      if (match(d, /^[0-9]+h/)) { t += substr(d, 1, RLENGTH - 1) * 3600; d = substr(d, RLENGTH + 1) }
+      if (match(d, /^[0-9]+m/)) { t += substr(d, 1, RLENGTH - 1) * 60; d = substr(d, RLENGTH + 1) }
+      if (match(d, /^[0-9.]+s/)) t += substr(d, 1, RLENGTH - 1)
+      return t
+    }
+    $2 == "Pulled" && $3 ~ /^Successfully pulled image/ {
+      split($3, q, "\"")
+      if (match(q[3], / in [0-9.hms]+/)) printf "  %7.1f  %s  %s\n", secs(substr(q[3], RSTART + 4, RLENGTH - 4)), $1, q[2]
+    }' | sort -rn | head -8 >&2
+  echo "containers a probe restarted:" >&2
+  printf '%s\n' "$events" | awk -F'\t' '$2 == "Killing" && $3 ~ /probe/ { print "  " $1 ": " $3 }' | sort -u >&2
+  echo "pods that are not ready:" >&2
+  k get pods -A -o wide --no-headers 2>/dev/null | awk '{ split($3, r, "/"); if ($4 != "Completed" && r[1] != r[2]) print "  " $0 }' >&2 || true
+  echo "pressure of the machine the nodes share (some: share of time a task waited; avg10, avg60, avg300 in percent):" >&2
+  docker exec "${CLUSTER}-control-plane" sh -c 'for f in cpu io memory; do printf "  %-6s " "$f"; head -1 "/proc/pressure/$f" 2>/dev/null || echo "not readable"; done' >&2 2>/dev/null \
+    || echo "  not readable" >&2
+}
+
 # elapsed <start-epoch> prints "Xm Ys".
 elapsed() {
   local s=$(( $(date +%s) - $1 ))
