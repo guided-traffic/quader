@@ -899,6 +899,12 @@ agent** is not decided until the owner has said so.
   at again. Not built, because the owner has not decided them: what is listed under "Seen by the development agent" and assigned
   to no package above (the sign-in page, the vulnerability report by package and version, **Needs triage** for a reader, the
   chart above the findings, the tabs of the package list, the breadcrumb's key).
+- **How the work is paced (owner, 2026-11-18, 12:35):** "Can we not go on locally first, without waiting for endless release
+  pipelines? I would rather go on looking." And: "You may push, but the result is of no interest in that time." The results of
+  the pipeline (watching runs, red jobs, releases) are attended between 17:00 and 20:00 and between 22:00 and 08:00 local time.
+  In the rest of the day the development agent runs the local gates, pushes what has landed without waiting for its run, and
+  keeps the UI development profile up with the newest local state, so that the owner can look and object. A red job of a run of
+  the day is read and fixed in the next window.
 - **W-1 · A project has its icon wherever it is listed** (owner; screens `projects`, `search-field`). The search's suggestions show
   a project with its letter icon (`quader-avatar` in [search-field.html](../../web/src/app/features/search/search-field.html)), and so
   does the project switcher of the side bar. The project table of the start page shows the name alone. Wanted: the same icon before
