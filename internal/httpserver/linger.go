@@ -49,6 +49,11 @@ func (l *lingerListener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 	if tc, ok := c.(*net.TCPConn); ok {
+		if n := l.s.cfg.SendBuffer; n > 0 {
+			if err := tc.SetWriteBuffer(n); err != nil && l.s.cfg.Log != nil {
+				l.s.cfg.Log.Warn("SO_SNDBUF of an accepted connection could not be set: the kernel may hold more of its responses than the memory guard charges", "error", err)
+			}
+		}
 		return &lingerConn{Conn: tc, tcp: tc, s: l.s}, nil
 	}
 	return c, nil

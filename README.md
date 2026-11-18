@@ -516,7 +516,7 @@ Built families, all with the `quader_` prefix:
 | `quader_build_info` | build information, with the role |
 | `quader_http_requests_total`, `quader_http_request_duration_seconds` | `listener`, `endpoint`, `handler`, `method`, `code` (and `le` for the histogram) |
 | `quader_http_requests_in_flight` | `listener`, `endpoint` |
-| `quader_http_requests_shed_total` | `endpoint`, `reason` (`in_flight`, `memory_slots`, `heap`): requests answered `503 server_busy` by the replica's load protection |
+| `quader_http_requests_shed_total` | `endpoint`, `reason` (`in_flight`, `memory_slots`, `heap`, `kernel`): requests answered `503 server_busy` by the replica's load protection |
 | `quader_http_memory_slots` | none; the downloads of a large object the replica's memory admits beside the bytes its caches hold, `0` without a known memory limit |
 | `quader_endpoint_listener_up`, `quader_endpoint_misdirected_total`, `quader_endpoint_forwarded_host_ignored_total` | `endpoint` |
 | `quader_ready` | none; 1 while `/readyz` answers 200 |
@@ -1204,6 +1204,7 @@ server:
   transfer_stall_timeout: 60s           # default
   max_header_bytes: 65536               # default; at least 4096
   max_in_flight: 4096                   # default: concurrent requests per replica; the memory slots of runtime.memory_limit_bytes bound them too
+  send_buffer: 128KiB                   # default: SO_SNDBUF of the client connections; a response is charged twice it against the kernel's share of runtime.memory_limit_bytes when it starts, and waits while the share is taken; 0 = autotuning, charged at net.ipv4.tcp_wmem's maximum
   shutdown_timeout: 0s                  # default: 0 derives it from runtime.termination_grace_period
   tls:                                  # the default endpoint's client listener; empty certificates = plain HTTP
     certificates: []                    # default; example: [{cert_file: /var/run/secrets/quader/tls/tls.crt, key_file: /var/run/secrets/quader/tls/tls.key}]

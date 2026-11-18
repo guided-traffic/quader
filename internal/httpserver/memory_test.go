@@ -1,6 +1,8 @@
 package httpserver
 
 import (
+	"context"
+	"errors"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -71,7 +73,7 @@ func TestMemoryGuard(t *testing.T) {
 		cycles := uint64(0)
 		g := NewMemoryGuard(MemoryGuardConfig{
 			Limit: 1000, RequestBytes: 1, Read: func() (uint64, uint64) { cycles++; return heap.Load(), cycles },
-			OnChange: func(s bool, _ uint64) { changes = append(changes, s) },
+			OnChange: func(_ string, s bool, _ uint64) { changes = append(changes, s) },
 		})
 		steps := []struct {
 			heap   uint64
@@ -218,6 +220,164 @@ func TestMemoryGuard(t *testing.T) {
 		g.Sample()
 		if collected != 1 {
 			t.Fatal("an open gate ran a GC")
+		}
+	})
+
+	t.Run("Q-ARCH-500 the kernel gate closes at 80 % of the kernel's share, stays closed above 70 % and opens below it, whatever the heap and the charges say", func(t *testing.T) {
+		// The forced reproduction of Q-ARCH-500: 860 downloads whose clients stopped reading held 383 MiB of send queues
+		// (sock) beside 619 MiB of Go memory, the container was OOM-killed at 1 GiB, and the heap gate and the slots
+		// never refused: the live heap stayed below its mark and the charges below the slots.
+		var kern atomic.Int64
+		type change struct {
+			gate   string
+			closed bool
+			bytes  uint64
+		}
+		var changes []change
+		var readErr error
+		g := NewMemoryGuard(MemoryGuardConfig{
+			Limit: 1000, RequestBytes: 1, Read: func() (uint64, uint64) { return 100, 1 },
+			Kernel:       func() (int64, error) { return kern.Load(), readErr },
+			KernelBudget: 200,
+			OnChange:     func(gate string, closed bool, n uint64) { changes = append(changes, change{gate, closed, n}) },
+		})
+		steps := []struct {
+			kernel int64
+			err    error
+			reason string
+		}{
+			{0, nil, ""},
+			{159, nil, ""},
+			{160, nil, ShedKernel}, // 80 % of the 200 bytes the Go limit leaves
+			{150, nil, ShedKernel},
+			{999, errors.New("memory.stat vanished"), ShedKernel}, // a failed reading keeps the state
+			{140, nil, ShedKernel},
+			{139, nil, ""}, // below 70 %
+			{0, errors.New("memory.stat vanished"), ""},
+		}
+		for _, s := range steps {
+			kern.Store(s.kernel)
+			readErr = s.err
+			g.Sample()
+			_, release, reason := g.Admit()
+			if reason != s.reason {
+				t.Fatalf("kernel %d (err %v): reason %q, want %q", s.kernel, s.err, reason, s.reason)
+			}
+			if release != nil {
+				release()
+			}
+		}
+		want := []change{{ShedKernel, true, 160}, {ShedKernel, false, 139}}
+		if len(changes) != len(want) || changes[0] != want[0] || changes[1] != want[1] {
+			t.Fatalf("OnChange calls %v, want %v", changes, want)
+		}
+	})
+
+	t.Run("Q-ARCH-500 a response is charged its send buffer against the kernel's share when it starts, beside what the kernel holds beyond the charges, and waits for room: a burst cannot overfill the share and a request that writes nothing holds none of it", func(t *testing.T) {
+		// Without the charge the gate alone let 640 downloads in during the 300 ms after it opened, and their send
+		// queues took the kernel's memory from 112 to 237 MiB against a mark of 123 MiB.
+		var kern atomic.Int64
+		g := NewMemoryGuard(MemoryGuardConfig{
+			Limit: 1000, RequestBytes: 1, Read: func() (uint64, uint64) { return 0, 1 },
+			Kernel: func() (int64, error) { return kern.Load(), nil }, KernelBudget: 1000, KernelRequestBytes: 100,
+		})
+		g.Sample()
+		if g.Writers() != 8 || g.Slots() != 800 {
+			t.Fatalf("writers %d, slots %d: want 0.8 × 1000 / 100 = 8 writers and the Go slots unchanged", g.Writers(), g.Slots())
+		}
+		release := make(chan struct{})
+		wrote := make(chan struct{}, 32)
+		var waits sync.WaitGroup
+		router := NewClientRouter()
+		router.HandleFunc("GET /w", func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = w.Write([]byte("x")) // the first byte takes the charge
+			wrote <- struct{}{}
+			<-release
+		})
+		router.HandleFunc("GET /db", func(http.ResponseWriter, *http.Request) {
+			wrote <- struct{}{} // a request that waits for the database writes nothing
+			<-release
+		})
+		h := Chain{Router: router, Memory: g}.Handler()
+		serve := func(path string) {
+			waits.Add(1)
+			go func() {
+				defer waits.Done()
+				h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", path, nil))
+			}()
+		}
+		for range 8 {
+			serve("/w")
+			<-wrote
+		}
+		for range 20 {
+			serve("/db")
+			<-wrote
+		}
+		if got := g.kernUsed.Load(); got != 800 {
+			t.Fatalf("kernel charges %d with 8 responses and 20 requests that wrote nothing, want 800: only a started response is charged", got)
+		}
+		serve("/w") // the ninth response: admitted, its first byte waits for room
+		select {
+		case <-wrote:
+			t.Fatal("a ninth response wrote although the kernel's share holds eight")
+		case <-time.After(100 * time.Millisecond):
+		}
+		kern.Store(0)
+		g.Sample()
+		close(release) // the eight end and give their charges back: the ninth writes
+		select {
+		case <-wrote:
+		case <-time.After(5 * time.Second):
+			t.Fatal("the waiting response did not write after the charges came back")
+		}
+		waits.Wait()
+		if got := g.kernUsed.Load(); got != 0 {
+			t.Fatalf("kernel charges %d after every request ended", got)
+		}
+		kern.Store(300) // finished responses whose bytes the clients have not read yet: no charge holds them
+		g.Sample()
+		if g.Writers() != 5 {
+			t.Fatalf("writers %d, want (800 - 300 held beyond the charges) / 100 = 5", g.Writers())
+		}
+	})
+
+	t.Run("Q-ARCH-500 a response that waits for kernel room and whose request ends writes nothing and holds no charge", func(t *testing.T) {
+		g := NewMemoryGuard(MemoryGuardConfig{
+			Limit: 1 << 40, RequestBytes: 1, Read: func() (uint64, uint64) { return 0, 1 },
+			Kernel: func() (int64, error) { return 0, nil }, KernelBudget: 125, KernelRequestBytes: 100,
+		})
+		g.Sample()
+		first, _, _ := g.Admit()
+		if err := first.waitKernel(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		second, release, _ := g.Admit()
+		ctx, cancel := context.WithCancel(t.Context())
+		done := make(chan error, 1)
+		go func() { done <- second.waitKernel(ctx) }()
+		cancel()
+		if err := <-done; !errors.Is(err, context.Canceled) {
+			t.Fatalf("err %v, want the request's end", err)
+		}
+		release()
+		if got := g.kernUsed.Load(); got != 100 {
+			t.Fatalf("kernel charges %d, want the first response's 100 only", got)
+		}
+	})
+
+	t.Run("Q-ARCH-500 without a reader or a share for the kernel there is no kernel gate", func(t *testing.T) {
+		for _, c := range []MemoryGuardConfig{
+			{Limit: 1000, RequestBytes: 1, Read: func() (uint64, uint64) { return 0, 1 }},
+			{Limit: 1000, RequestBytes: 1, Read: func() (uint64, uint64) { return 0, 1 }, Kernel: func() (int64, error) { return 1 << 40, nil }},
+		} {
+			g := NewMemoryGuard(c)
+			g.Sample()
+			_, release, reason := g.Admit()
+			if reason != "" {
+				t.Fatalf("refused with %q", reason)
+			}
+			release()
 		}
 	})
 

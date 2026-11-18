@@ -83,7 +83,7 @@ and process collectors (`go_*`, `process_*`, the only families without the `quad
 and counts in the overflow counter); the ops listener's series carry the empty value. The families
 `quader_endpoint_listener_up`, `quader_endpoint_misdirected_total` and `quader_endpoint_forwarded_host_ignored_total` are
 exported at 0 per endpoint (`Metrics.ExportEndpoints`); see [endpoints.md](endpoints.md#observability). So is
-`quader_http_requests_shed_total{endpoint,reason}` for each reason (`in_flight`, `memory_slots`, `heap`; `Metrics.RequestShed`
+`quader_http_requests_shed_total{endpoint,reason}` for each reason (`in_flight`, `memory_slots`, `heap`, `kernel`; `Metrics.RequestShed`
 counts no other), beside the gauges `quader_http_memory_slots` (`Metrics.MemorySlots`) and `quader_http_memory_slots_in_use` (`Metrics.MemorySlotsInUse`, read at each scrape) of the memory guard
 ([architecture.md](architecture.md#stage-4-and-the-memory-guard)).
 
