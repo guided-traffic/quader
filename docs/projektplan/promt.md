@@ -1088,7 +1088,7 @@ agent** is not decided until the owner has said so.
   project's letter, and the mark's coloured stone while the pointer or the keyboard is on its row, link or option (Q-UI-424,
   `--quader-mark-letter`). In the light scheme the stone is the dark stone of the mark (the development agent's choice: a
   white tile on a white page is not seen). Looked at in the running UI, dark and light, in the start page's list and the
-  admin area's repository list.
+  admin area's repository list. Landed with the admin lists' package (76d99201, 5720d3fe).
 - **W-17 · The security dashboard is the auditor's, under "Your work", and has one filter** (owner, 2026-11-18): "Option A"
   for the filter (from three: one filter at the list's head / the upper form as the scope of the whole page / the form moved
   down to the list): the form above the counts with **Advisory ID**, **Package starts with**, **Project key** and **Search**
@@ -1096,6 +1096,14 @@ agent** is not decided until the owner has said so.
   Security dashboard handelt es sich nicht um ein Admin Feature, sondern um ein Auditor-Feature. Für Auditoren oder
   Administratoren gehört es unter Your Work als zweite Kategorie "Security Audit", darunter dann Security Dashboard.
   Sichtbar nur für Instanz-Auditoren und Instanz-Administratoren." Status: a builder is briefed.
+- **W-18 · A row with one action names it, a row with several has a menu** (owner, 2026-11-18, "Option A" from three: write
+  the practice down as the rule / a menu everywhere / icons everywhere). Verified in the code: the lists with a menu
+  (repositories, a project's members, files, exposure rules) have several actions per row; the lists with a word (**Edit** on
+  projects, **Revoke** on tokens and a Bastion's tokens, **Unbind** on system roles, **Remove** on a group's members,
+  **Details** on CI issuances) have one. Two lists do neither: the CI mappings show **Edit** and **Test** as two words, the
+  Debian signing keys two buttons. Wanted: the rule in the spec and the style guide (one action: its word as a quiet button;
+  two or more: the menu, with at most one frequent action as an icon beside it), and the two lists brought to it. Status:
+  not built; waits for a free builder (four are running).
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
