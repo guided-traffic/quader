@@ -112,10 +112,12 @@ if [ "$host" = 1 ]; then
 fi
 pods() {
   local now=$1 d name uid k v cpu cur anon file sock kern oom
-  for d in /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/*pod*.slice /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/*/*pod*.slice \
-           /sys/fs/cgroup/kubepods/pod* /sys/fs/cgroup/kubepods/*/pod*; do
+  # systemd driver (kind: cgroupRoot /kubelet): kubelet-kubepods-pod<uid>.slice, kubelet-kubepods-<qos>-pod<uid>.slice with _ for -;
+  # cgroupfs driver: [kubelet/]kubepods/[<qos>/]pod<uid>
+  for d in /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/*-pod*.slice /sys/fs/cgroup/kubelet.slice/kubelet-kubepods.slice/*/*-pod*.slice \
+           /sys/fs/cgroup/kubelet/kubepods/pod* /sys/fs/cgroup/kubelet/kubepods/*/pod* /sys/fs/cgroup/kubepods/pod* /sys/fs/cgroup/kubepods/*/pod*; do
     [ -d "$d" ] || continue
-    name=${d##*/}; uid=${name##*pod}; uid=${uid%.slice}; uid=${uid//_/-}
+    name=${d##*/}; uid=${name##*-pod}; uid=${uid#pod}; uid=${uid%.slice}; uid=${uid//_/-}
     usage "$d/cpu.stat"; cpu=$U
     cur=""; read -r cur < "$d/memory.current" 2>/dev/null
     anon=""; file=""; sock=""; kern=""; oom=""

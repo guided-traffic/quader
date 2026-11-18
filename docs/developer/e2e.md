@@ -401,7 +401,9 @@ healthy before the fault: the test stops the load and fails there with `the clus
 injected`, the count, the statuses and the warm-up's p99, and the fault is not injected
 ([Q-HA-302](../spec/ha-and-helm.md#q-ha-302--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)).
 The verdict is the one the end of the run would give, since the warm-up is part of the run; what changes is the cause in the
-message, and a fault's conditions are never judged against a baseline that is itself the failure. Then read the window in
+message, and a fault's conditions are never judged against a baseline that is itself the failure. The one exception is the node loss of
+`ha-suite`, which tolerated k6 failures until 10 s after the replacements were ready, the warm-up included: a failure before the node is
+lost now fails it. Then read the window in
 the evidence ([Reading a stall](#reading-a-stall)).
 
 ### E0.14
