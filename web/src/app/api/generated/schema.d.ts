@@ -145,7 +145,8 @@ export interface paths {
         /**
          * The replica registry
          * @description Every replica with its roles, node, state, heartbeat, readiness checks and its own view of
-         *     Valkey. A replica whose heartbeat is older than `system.heartbeat_stale_after` is `lost`.
+         *     Valkey. A replica whose heartbeat is older than `system.heartbeat_stale_after` is `lost`, unless it
+         *     went stale while `draining`: such a replica signed off and is not listed (R-OPS-003, Q-OPS-210).
          */
         get: operations["listReplicas"];
         put?: never;
@@ -5013,7 +5014,7 @@ export interface components {
             live: number;
             ready: number;
             degraded: number;
-            /** @description Distinct nodes the live replicas of the role run on. */
+            /** @description Distinct nodes the live replicas of the role run on; 0 outside Kubernetes, where no replica names its node. */
             nodes: number;
         };
         DatabaseFacts: {
@@ -5214,7 +5215,7 @@ export interface components {
             pool?: string | null;
             /** @enum {string} */
             state: "starting" | "ready" | "unready" | "draining";
-            /** @description The heartbeat is older than `system.heartbeat_stale_after`. */
+            /** @description The heartbeat is older than `system.heartbeat_stale_after` and the replica had not begun to drain (a crash, a kill or the loss of its node). A replica whose heartbeat went stale while `draining` signed off and is not listed (Q-OPS-210). */
             lost: boolean;
             /** Format: date-time */
             startedAt: string;

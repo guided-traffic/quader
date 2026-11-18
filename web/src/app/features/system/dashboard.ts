@@ -9,7 +9,7 @@ import { valueOf } from '../../shared/paged-resource';
 import { formatSize } from '../packages/format-size';
 import { CheckSummary, checkSummary, roleLoad, share } from './dashboard-model';
 import { REFRESH_INTERVAL_MS } from './system-status';
-import { roleGroups, serviceState } from './system-status-model';
+import { alarms, roleGroups, serviceStatus } from './system-status-model';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /**
@@ -44,18 +44,28 @@ export class Dashboard {
     { key: 'virtual', label: $localize`:@@dashboard.class.virtual:Virtual` },
   ] as const;
 
-  protected readonly state = computed(() => {
-    const r = valueOf(this.replicas);
-    return r ? serviceState(r) : null;
+  private readonly groups = computed(() => {
+    const info = valueOf(this.info);
+    const replicas = valueOf(this.replicas);
+    return info && replicas ? roleGroups(info, replicas) : [];
+  });
+  /**
+   * The instance bar's state, from the same rule as the header of the status screen (R-UI-038): the worst condition
+   * that is an error or a warning, else "all roles ready"; and whether replicas drain or start, which only informs
+   * (Q-UI-600 to Q-UI-602).
+   */
+  protected readonly status = computed(() => {
+    const replicas = valueOf(this.replicas);
+    if (!replicas || !valueOf(this.info)) return null;
+    const st = serviceStatus(this.groups(), replicas);
+    return { first: alarms(st)[0] ?? null, replacing: st.conditions.some((c) => c.kind === 'replacing') };
   });
   /**
    * One card per role. A live replica of the development role `all` serves every role, so the main roles it covers
    * are not shown as missing next to it.
    */
   protected readonly loads = computed(() => {
-    const info = valueOf(this.info);
-    const replicas = valueOf(this.replicas);
-    const loads = info && replicas ? roleGroups(info, replicas).map(roleLoad) : [];
+    const loads = this.groups().map(roleLoad);
     const all = loads.some((l) => l.role === 'all' && l.live > 0);
     return all ? loads.filter((l) => l.role === 'all' || l.live > 0) : loads;
   });

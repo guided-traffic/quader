@@ -311,8 +311,8 @@ and `TestR_OPS_003_RowsWithoutRuntime` ([replica_runtime_test.go](../../internal
 (the replica list with and without a runtime against the document, [overview_api_test.go](../../internal/api/v1/overview_api_test.go)); against PostgreSQL
 `TestR_OPS_003_ReplicaRuntimeColumn` ([overview_test.go](../../test/integration/postgres/overview_test.go)).
 
-`cluster.ListReplicas(ctx, db, cfg.System)` reads the table on the request pool (`DB.Main`; there is no `Registry.List`); a lost replica lists no leases, so a lease name appears on one live row only. `Lost` is `heartbeat_at < now() - system.heartbeat_stale_after` on PostgreSQL's clock. `PruneReplicas` and `jobs.KindReplicaRegistryPrune`
-delete rows stale for 24 h. The HTTP layer converts `cluster.ReplicaInfo` to its own type; `internal/cluster` imports no edge package. The role of a row is the exact
+`cluster.ListReplicas(ctx, db, cfg.System)` reads the table on the request pool (`DB.Main`; there is no `Registry.List`); a lost replica lists no leases, so a lease name appears on one live row only. `Lost` is `heartbeat_at < now() - system.heartbeat_stale_after` on PostgreSQL's clock. A row that went stale in the state `draining` has signed off ([Q-OPS-210](../spec/operations-and-observability.md#q-ops-210--a-row-that-went-stale-while-draining-has-signed-off-the-list-leaves-it-out-and-the-prune-deletes-it)): the `WHERE` of the query `ListReplicas` leaves it out, so neither the API, the status screen nor the key-ring view sees it; every other reader of the table (`CountFillingReplicas`, `EndpointsCountServingReplicas`, `LiveReplicas`, `ValkeyPrimaryViews`) counts fresh rows only anyway. `PruneReplicas(ctx, db, staleFor, signedOffAfter)` and `jobs.KindReplicaRegistryPrune`
+delete the rows of lost replicas stale for 24 h and signed-off rows stale for `system.heartbeat_stale_after`. The HTTP layer converts `cluster.ReplicaInfo` to its own type; `internal/cluster` imports no edge package. The role of a row is the exact
 `--role` name; the API reports it in `roles` (Q-ARCH-341, [http-api.md](http-api.md)).
 
 `cluster.FillCount` (same file) is the n of the fetch share of a remote repository (R-REPO-040, Q-ARCH-297, Q-OPS-165): the live replicas whose role fills client misses
@@ -362,7 +362,7 @@ go test -tags integration -race ./test/integration/coordination/...
 | `changes_test.go` | epoch order, regression, reused epoch, gap, unknown payload, prune, `PollNow`, the fill rule against the log |
 | `heartbeat_test.go` | the heartbeat judges and extends only the runs of its worker: a job claimed while a heartbeat is in flight, a row held without a run |
 | `areas_test.go` | every registered change area has its `cluster_epoch` row after the migrations |
-| `registry_test.go` | registration, heartbeat, lost (no leases listed), replacement, draining, prune; `TestReplicaRegistryRoles`: every role value stored as given with its pool, the fetch share's count; `TestReplicaLostWithDefaults` waits 30 s with the shipped values |
+| `registry_test.go` | registration, heartbeat, lost (no leases listed), replacement, draining, prune; `TestReplicaSignOff`: a replica killed while draining (`Drain`, then `StopHeartbeat`) leaves the list and the fetch share's count once stale and is pruned at the next run, one killed while ready stays listed as lost; `TestReplicaRegistryRoles`: every role value stored as given with its pool, the fetch share's count; `TestReplicaLostWithDefaults` waits 30 s with the shipped values |
 | `scheduler_test.go` | one scheduler, no duplicate slot across a hand-over, retention exception, postponed slot, drain releases the lease |
 | `drain_test.go` | E0.14 on two replicas: cursor every 100 ms, graceful shutdown, resume with `attempt` unchanged |
 | `watchdog_test.go` | claim held by `pg_sleep` past the watchdog bound |

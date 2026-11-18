@@ -417,11 +417,22 @@ MVP endpoints and is the only view of the replicas, the scheduled tasks and the 
 Every `api`, `packages`, `worker` and `web` replica MUST register itself in PostgreSQL at startup, with its role, and
 refresh its row every `system.heartbeat_interval` on its control connection
 ([architecture.md](architecture.md) R-ARCH-019), so that a request pool exhausted under load never
-makes a live replica look lost. A row whose heartbeat is older than `system.heartbeat_stale_after`
-is shown as `lost`. The `replica-registry-prune` task (R-OPS-019) deletes rows that have been stale
-for 24 h. On a clean shutdown the replica deletes its own row, on the request pool: by then the pool is idle, and the control
-connection is still used by the change-log poll and the readiness checks (Q-HA-202 in [ha-and-helm.md](ha-and-helm.md)). Backup pods, the restore Job and the
-migration Job never register ([ha-and-helm.md](ha-and-helm.md) R-HA-003).
+makes a live replica look lost. On `SIGTERM` the replica marks its row `draining` at once and keeps it so in every later
+heartbeat (Q-HA-283 in [ha-and-helm.md](ha-and-helm.md)); on a clean shutdown it deletes its own row, on the request pool: by
+then the pool is idle, and the control connection is still used by the change-log poll and the readiness checks (Q-HA-202 in
+[ha-and-helm.md](ha-and-helm.md)). Backup pods, the restore Job and the migration Job never register
+([ha-and-helm.md](ha-and-helm.md) R-HA-003).
+
+A row whose heartbeat is older than `system.heartbeat_stale_after` is one of two things, by the state it last wrote
+([Q-OPS-210](#q-ops-210--a-row-that-went-stale-while-draining-has-signed-off-the-list-leaves-it-out-and-the-prune-deletes-it)):
+
+- **Signed off**, when that state is `draining`: the process was stopped on purpose and ended without deleting its row (killed
+  inside its drain, or the deletion did not fit the close phase). The list does not show it, so no reader of the registry counts
+  it as a live or a lost replica, and the `replica-registry-prune` task (R-OPS-019) deletes it at its first run after
+  `system.heartbeat_stale_after`.
+- **Lost**, in every other state: the process ended without a drain (a crash, a kill, the loss of its node) or is cut off from
+  PostgreSQL. It is listed with `"lost": true` and its last heartbeat, so the administrator sees that it happened, and the prune
+  deletes it 24 h after its last heartbeat.
 
 Besides the HA mechanisms of [ha-and-helm.md](ha-and-helm.md) R-HA-003, four things on other
 pages count the live replicas of a role here: the per-replica fallback of cluster-scoped rate
@@ -582,6 +593,10 @@ system:
   lists a lease; a pod of a pool carries its `pool`. After
   `kubectl delete pod --grace-period=0 --force <replica>`, that entry shows `"lost": true` within
   30 s and is replaced by the new pod's entry.
+- After `kubectl rollout restart deploy/quader-api`, no entry shows `"lost": true` and no entry of an old pod is listed
+  30 s after the rollout returns. A replica killed (`kill -9`) after its `SIGTERM`, inside its drain delay, shows `draining`
+  until its heartbeat is 30 s old and is then not listed; the next run of `replica-registry-prune` deletes its row. One
+  killed while `ready` stays listed as `lost` until the prune's 24 h.
 - With Valkey stopped, every entry stays `ready`, lists `valkey` under `degraded`, and carries
   `checks.valkey` with `"status": "degraded"` and a reason.
 - With three Sentinels configured and two of them stopped, every entry's
@@ -702,7 +717,8 @@ not count again on every request.
 presigned URL. `grep -iE 'secret|password|qdr_'` over the response finds only key names, never
 values and no Sentinel address. With Valkey stopped, the call answers `200` and
 `valkey.degradedReplicas` equals `replicas.live`. With three `packages` replicas on one node,
-`replicas.roles.packages.nodes` is `1`. `replicas.roles` has a key per role with a live replica, `web` included while
+`replicas.roles.packages.nodes` is `1`; outside Kubernetes, where no replica names its node, it is `0`. A replica that signed
+off (R-OPS-003) is in no count; a lost one is in none either, and a `draining` one counts as live, not as ready. `replicas.roles` has a key per role with a live replica, `web` included while
 the bridge of [ha-and-helm.md](ha-and-helm.md) R-HA-064 or a replica of a release before the cut is live.
 
 ### R-OPS-005 · External base URL and forwarded hosts
@@ -6205,6 +6221,44 @@ Context: R-OPS-024 and R-OPS-025 give `PUT` with a body and a `200`. R-API-012 a
 **Rationale:** a precondition on a document with no other writer protects nothing, and the audit event records what changed. The development agent would revisit the exemption if two administrators edit the banner concurrently often enough to need the conflict dialog of R-UI-042.
 
 **Applied in the spec:** Q-OPS-156 (the revisit condition has come: the handler reads the mode), R-OPS-004. Code: [system_state_api.go](../../internal/api/v1/system_state_api.go), [handlers.go](../../internal/api/v1/handlers.go).
+
+### Q-OPS-210 · A row that went stale while draining has signed off: the list leaves it out and the prune deletes it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner saw the system status red on a stack whose one process was healthy and asked that processes that are rotated
+sign off and that an update does not turn the status red (W-13, 2026-11-18). A clean stop deletes its row (R-OPS-003). The two
+rows that made his stack red were in the state `draining` with a stopped heartbeat: their processes had received `SIGTERM` and
+were killed inside the drain delay, before the deletion. The same row is left when the deletion of the close phase is cut by its
+deadline, for example against a stalled database (R-HA-011, Q-HA-202). Such a row was listed as `lost` for 24 h, until the prune,
+though the stop was intended. The readers of the registry: the replica list and the system information (R-OPS-003, R-OPS-004),
+the key-ring view and the precondition of `secrets-reencrypt` (R-API-049), the fetch share (`CountFillingReplicas`, R-REPO-040),
+the per-replica rate-limit count, the contract-migration guard and the minimum version (R-HA-003), and the gauge
+`quader_valkey_primary_views`. Every one of them except the list already counts only rows whose heartbeat is fresh.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The UI hides a stale `draining` row | The server lists it as lost; the screen leaves it out | No server change | The API keeps calling a stopped replica lost, and every other client (a script, the key-ring view) has to know the rule |
+| (b) The list leaves a stale `draining` row out | `ListReplicas` lists a stale row only when its last state is not `draining`; `lost` means a replica that ended without a drain | One place decides it, for the API, the screen and the key-ring view; the row is gone from view the moment it goes stale | The row stays in the table until something deletes it |
+| (c) The prune deletes a stale `draining` row on a short term | `replica-registry-prune` takes rows stale while draining after `system.heartbeat_stale_after` | The table holds no dead row for long | Alone, the row is listed as lost for up to ten minutes (the prune runs every ten), so the screen still turns |
+| (d) (b) and (c) (chosen) | The list leaves the row out at once; the prune deletes it at its first run after it went stale | Nothing ever shows a signed-off row as lost; the table is clean within ten minutes; the jobs' `ran by` name of such a replica goes as it would on a clean stop | Two statements carry the rule |
+| (e) The replica deletes its row when the drain starts | No row to go stale | Nothing left behind | A draining replica still serves for the drain delay and still runs old code for the contract guard (R-HA-003): it must stay live in the registry until it ends |
+
+**Choice:** (d). A row whose heartbeat is older than `system.heartbeat_stale_after` and whose state is `draining` has signed off:
+`ListReplicas` does not return it, and `PruneReplicas` deletes it once it is stale for `system.heartbeat_stale_after`, besides the
+rows of lost replicas stale for 24 h. A draining replica whose heartbeat is fresh is listed as `draining` and counts as live, as
+before. **Rationale:** the state the process wrote last says whether it was stopped on purpose; the server knows it and decides
+it once for every reader. The other readers already count fresh rows only, so a signed-off row is neither live nor lost anywhere.
+A replica cut off from PostgreSQL while it drains looks the same as one killed in its drain; it ends within its grace period either
+way, so treating it as signed off misses nothing that lasts. The development agent revisits this if a replica ever stays alive in
+the state `draining` past its grace period, which the shutdown plan of R-ARCH-024 rules out today.
+
+**Applied in the spec:** R-OPS-003 (signed off and lost, the prune, an acceptance criterion), R-OPS-004 (the counts), R-UI-038 and
+[Q-UI-602](api-and-ui.md#q-ui-602--a-replica-lost-without-draining-is-a-warning-red-is-a-role-without-a-ready-replica) in
+[api-and-ui.md](api-and-ui.md), R-HA-003 and R-HA-012 in [ha-and-helm.md](ha-and-helm.md). Code: `ListReplicas` and `PruneReplicas`
+in [cluster.sql](../../internal/meta/postgres/queries/cluster.sql), [replica_list.go](../../internal/cluster/replica_list.go),
+[builtin.go](../../internal/jobs/builtin.go); tests `TestReplicaSignOff` in
+[registry_test.go](../../test/integration/coordination/registry_test.go).
 
 ## What this does not cover
 

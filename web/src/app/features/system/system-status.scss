@@ -12,9 +12,21 @@
 
 .summary {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2) var(--quader-space-4);
+  font-weight: 600;
+}
+
+// One statement of the header: its icon beside its words. What only informs is in the body's weight (Q-UI-600).
+.condition {
+  display: inline-flex;
   align-items: center;
   gap: var(--quader-space-2);
-  font-weight: 600;
+
+  &.note {
+    font-weight: 400;
+  }
 }
 
 .cards {

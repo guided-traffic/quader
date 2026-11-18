@@ -13,7 +13,11 @@ export interface RoleLoad {
   readonly live: number;
   readonly ready: number;
   readonly degraded: number;
-  readonly nodes: number;
+  /**
+   * Distinct nodes of the ready replicas; null when none of them names its node, as outside Kubernetes, where a count of 0
+   * would read as "on no node" (Q-UI-604).
+   */
+  readonly nodes: number | null;
   /** Replicas of the role whose snapshot is in; the figures below are theirs. */
   readonly reporting: number;
   readonly requestsPerSecond: number;
@@ -40,7 +44,7 @@ export function roleLoad(group: RoleGroup): RoleLoad {
     live: group.live,
     ready: group.ready,
     degraded: group.degraded,
-    nodes: group.readyNodes.length,
+    nodes: group.readyNodes.length > 0 ? group.readyNodes.length : null,
     reporting: snapshots.length,
     requestsPerSecond: sum((s) => (s.windowSeconds > 0 ? s.requests / s.windowSeconds : 0)),
     errorsPerSecond: sum((s) => (s.windowSeconds > 0 ? s.errors / s.windowSeconds : 0)),

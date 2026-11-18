@@ -45,10 +45,12 @@ type ReplicaInfo struct {
 
 // ListReplicas reads the registry. Lost is decided by PostgreSQL's clock:
 // heartbeat_at older than system.heartbeat_stale_after (R-HA-003). Replica
-// clocks are never compared. It is the read side behind the ReplicaLister of
-// the API; it needs no Registry, so every role can serve it, and it reads on
-// the request pool (the caller passes DB.Main). The leases of a lost replica
-// are not listed.
+// clocks are never compared. A row that went stale while draining has signed
+// off and is not listed at all (Q-OPS-210): its process was stopped on purpose,
+// so it is neither live nor lost. It is the read side behind the ReplicaLister
+// of the API and the key-ring view; it needs no Registry, so every role can
+// serve it, and it reads on the request pool (the caller passes DB.Main). The
+// leases of a lost replica are not listed.
 func ListReplicas(ctx context.Context, db q.DBTX, sys config.System) ([]ReplicaInfo, error) {
 	rows, err := q.New(db).ListReplicas(ctx, sys.HeartbeatStaleAfter.Seconds())
 	if err != nil {
@@ -113,7 +115,10 @@ func runtimeOf(raw []byte) *ReplicaRuntime {
 }
 
 // PruneReplicas is the body of the replica-registry-prune task (R-OPS-003): it
-// deletes rows whose heartbeat is older than staleFor (24 h by the spec).
-func PruneReplicas(ctx context.Context, db q.DBTX, staleFor time.Duration) (int64, error) {
-	return q.New(db).PruneReplicas(ctx, staleFor.Seconds())
+// deletes the rows of lost replicas whose heartbeat is older than staleFor (24 h
+// by the spec), and the rows that went stale while draining once their
+// heartbeat is older than signedOffAfter (system.heartbeat_stale_after,
+// Q-OPS-210): those replicas signed off, and the list no longer shows them.
+func PruneReplicas(ctx context.Context, db q.DBTX, staleFor, signedOffAfter time.Duration) (int64, error) {
+	return q.New(db).PruneReplicas(ctx, q.PruneReplicasParams{StaleSecs: staleFor.Seconds(), SignedOffSecs: signedOffAfter.Seconds()})
 }

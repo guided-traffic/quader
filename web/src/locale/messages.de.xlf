@@ -16252,11 +16252,11 @@
     </unit>
     <unit id="system.summary.ready">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:21,23</note>
+        <note category="location">src/app/features/system/system-status.html:51,54</note>
       </notes>
       <segment>
-        <source>All ready</source>
-        <target>Alles bereit</target>
+        <source>All roles ready</source>
+        <target>Alle Rollen bereit</target>
       </segment>
     </unit>
     <unit id="system.replicas.caption">
@@ -18941,11 +18941,11 @@
     </unit>
     <unit id="dashboard.state.unready">
       <notes>
-        <note category="location">src/app/features/system/dashboard.html:50,52</note>
+        <note category="location">src/app/features/system/dashboard.html:48,50</note>
       </notes>
       <segment>
-        <source>A role is not ready</source>
-        <target>Eine Rolle ist nicht bereit</target>
+        <source>Replicas unready</source>
+        <target>Replikate nicht bereit</target>
       </segment>
     </unit>
     <unit id="system.db.unknown">
@@ -34087,6 +34087,60 @@
       <segment>
         <source>None</source>
         <target>Keine Angabe</target>
+      </segment>
+    </unit>
+    <unit id="dashboard.state.no-ready">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:41,42</note>
+      </notes>
+      <segment>
+        <source>No ready replica of the role <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.roles.join(&apos;, &apos;) }}"/></pc></source>
+        <target>Kein bereites Replikat der Rolle <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.roles.join(&apos;, &apos;) }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="dashboard.state.lost">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:55,56</note>
+      </notes>
+      <segment>
+        <source>Replica lost, last heartbeat <ph id="0" equiv="INTERPOLATION" disp="{{ c.lastSeenAt | date: &apos;short&apos; }}"/></source>
+        <target>Replikat verloren, letzter Heartbeat <ph id="0" equiv="INTERPOLATION" disp="{{ c.lastSeenAt | date: &apos;short&apos; }}"/></target>
+      </segment>
+    </unit>
+    <unit id="dashboard.state.replacing">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:75,78</note>
+      </notes>
+      <segment>
+        <source>Replicas are being replaced</source>
+        <target>Replikate werden ersetzt</target>
+      </segment>
+    </unit>
+    <unit id="system.summary.no-ready">
+      <notes>
+        <note category="location">src/app/features/system/system-status.html:26,27</note>
+      </notes>
+      <segment>
+        <source>No ready replica of the role <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.roles.join(&apos;, &apos;) }}"/></pc></source>
+        <target>Kein bereites Replikat der Rolle <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.roles.join(&apos;, &apos;) }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="system.summary.lost">
+      <notes>
+        <note category="location">src/app/features/system/system-status.html:38,40</note>
+      </notes>
+      <segment>
+        <source>Lost without draining: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.replicas.join(&apos;, &apos;) }}"/></pc>, last heartbeat <pc id="2" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;c.lastSeenAt&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ c.lastSeenAt | date: &apos;medium&apos; }}"/></pc></source>
+        <target>Ohne Drain verloren: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.replicas.join(&apos;, &apos;) }}"/></pc>, letzter Heartbeat <pc id="2" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;c.lastSeenAt&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ c.lastSeenAt | date: &apos;medium&apos; }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="system.summary.replacing">
+      <notes>
+        <note category="location">src/app/features/system/system-status.html:60,61</note>
+      </notes>
+      <segment>
+        <source>Replicas are being replaced (<ph id="0" equiv="INTERPOLATION" disp="{{ c.draining }}"/> draining, <ph id="1" equiv="INTERPOLATION_1" disp="{{ c.starting }}"/> starting), as during every update</source>
+        <target>Replikate werden ersetzt (<ph id="0" equiv="INTERPOLATION" disp="{{ c.draining }}"/> werden geleert, <ph id="1" equiv="INTERPOLATION_1" disp="{{ c.starting }}"/> starten), wie bei jedem Update</target>
       </segment>
     </unit>
   </file>

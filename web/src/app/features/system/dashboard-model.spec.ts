@@ -31,6 +31,13 @@ describe('Admin dashboard model (Q-OPS-175)', () => {
     expect(api?.p95Ms).toBeNull();
   });
 
+  it('R-UI-038 Q-UI-604 the nodes of a role are counted where its ready replicas name them, and unknown where none does', () => {
+    const named = [sampleReplica({ name: 'a', instanceUid: 'a', node: 'n1' }), sampleReplica({ name: 'b', instanceUid: 'b', node: 'n2' })];
+    expect(roleGroups(sampleInfo(), named).map(roleLoad)[0]?.nodes).toBe(2);
+    const unnamed = [sampleReplica({ name: 'a', instanceUid: 'a', node: null })];
+    expect(roleGroups(sampleInfo(), unnamed).map(roleLoad)[0]?.nodes).toBeNull();
+  });
+
   it('R-UI-038 a replica without a snapshot counts as live but not as reporting', () => {
     const [api] = roleGroups(sampleInfo(), [sampleReplica({ runtime: null })]).map(roleLoad);
     expect(api?.live).toBeGreaterThan(0);

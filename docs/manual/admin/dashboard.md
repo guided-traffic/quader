@@ -12,14 +12,14 @@ The screen refreshes every 15 seconds; **Pause automatic refresh** stops that an
 
 ## What it shows
 
-**The instance bar**: whether every role has a ready replica (**All roles ready**, **Degraded**, **A role is not ready**), the version, the **Base URL** and how many replicas are ready, with a link to [System status](operations.md#system-status).
+**The instance bar**: the state in the words of the [System status](operations.md#system-status) summary, the worst first: **No ready replica of the role …** or **Replicas unready** in red, **Replica lost, last heartbeat …** or **Degraded** as a warning, otherwise **All roles ready**; beside it **Replicas are being replaced** while pods drain or start, as during every update. Then the version, the **Base URL** and how many replicas are ready, with a link to [System status](operations.md#system-status).
 
 **Components**: one card per role (`api`, `packages`, `worker`, and `all` on a development installation) with:
 
 | Figure | What it is |
 |---|---|
 | **N of M ready** | Ready replicas of the role against the live ones; a role without any replica says **No replica of this role is running** |
-| **Nodes** | Distinct Kubernetes nodes the ready replicas run on |
+| **Nodes** | Distinct Kubernetes nodes the ready replicas run on; the row is left out outside Kubernetes, where no replica knows its node |
 | **Requests**, **Server errors** | Requests per second the role's replicas answered on their client listener, and the share of them answered with a `5xx` status, summed over the replicas |
 | **Latency p95** | The 95th percentile of the request duration, the worst of the role's replicas; **none in the last period** when no request was answered |
 | **In flight** | Requests being answered right now, summed |

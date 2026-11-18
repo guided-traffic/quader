@@ -1,12 +1,16 @@
+import { Replica, SystemInfo } from '../../api/system-api';
 import { sampleInfo, sampleReplica } from '../../api/testing/fakes';
 import {
+  alarms,
   degradedChecks,
   failingChecks,
   keyStatus,
+  LOST_REPLICA_LEVEL,
   mixedVersions,
   roleGroups,
+  roleOf,
   sentinelMajority,
-  serviceState,
+  serviceStatus,
   valkeySummary,
 } from './system-status-model';
 
@@ -16,6 +20,19 @@ const worker = (name: string, node: string | null, over = {}) =>
   sampleReplica({ name, instanceUid: name, node, roles: ['worker'], ...over });
 const packages = (name: string, node: string | null, over = {}) =>
   sampleReplica({ name, instanceUid: name, node, roles: ['packages'], ...over });
+
+/** The summary of /system/info as the server folds the list (Summarise): lost replicas left out. */
+function summary(replicas: readonly Replica[]): SystemInfo['replicas'] {
+  const live = replicas.filter((r) => !r.lost);
+  const roles: SystemInfo['replicas']['roles'] = {};
+  for (const r of live) {
+    const role = roleOf(r);
+    const s = roles[role] ?? { live: 0, ready: 0, degraded: 0, nodes: 0 };
+    roles[role] = { ...s, live: s.live + 1, ready: s.ready + (r.state === 'ready' ? 1 : 0) };
+  }
+  const ready = live.filter((r) => r.state === 'ready').length;
+  return { live: live.length, ready, versions: { '0.1.1': live.length }, roles };
+}
 
 describe('system status model', () => {
   it('R-UI-038 a role with two ready replicas on two nodes is drain-safe', () => {
@@ -130,11 +147,94 @@ describe('system status model', () => {
     expect(degradedChecks(r).sort()).toEqual(['objectStore', 'valkey']);
   });
 
-  it('R-UI-038 the header summary reads ready, degraded or unready', () => {
-    expect(serviceState([web('a', 'n1')])).toBe('ready');
-    expect(serviceState([web('a', 'n1', { degraded: ['valkey'] })])).toBe('degraded');
-    expect(serviceState([web('a', 'n1'), web('b', 'n2', { state: 'unready' })])).toBe('unready');
-    expect(serviceState([web('a', 'n1', { lost: true })])).toBe('unready');
+  it('R-UI-038 the synthetic draining check is not listed among the failing checks: the state says it', () => {
+    const r = sampleReplica({ state: 'draining', checks: { database: { status: 'pass' }, draining: { status: 'fail' } } });
+    expect(failingChecks(r)).toEqual([]);
+  });
+
+  describe('the header (R-UI-038, Q-UI-600 to Q-UI-603)', () => {
+    /** A healthy split installation: two ready replicas of each main role on two nodes. */
+    const healthy = () => [
+      web('a1', 'n1'),
+      web('a2', 'n2'),
+      packages('p1', 'n1'),
+      packages('p2', 'n2'),
+      worker('w1', 'n1'),
+      worker('w2', 'n2'),
+    ];
+    const status = (replicas: Replica[]) =>
+      serviceStatus(roleGroups(sampleInfo({ replicas: summary(replicas) }), replicas), replicas);
+    const kinds = (replicas: Replica[]) => status(replicas).conditions.map((c) => c.kind);
+
+    it('R-UI-038 every role ready on two nodes: no condition, the level is ok', () => {
+      expect(status(healthy())).toEqual({ level: 'ok', conditions: [] });
+    });
+
+    it('R-UI-038 Q-UI-600 a replica that drains during an update informs and is no error', () => {
+      const replicas = [...healthy(), web('a0', 'n1', { state: 'draining', version: '0.1.0' }), web('a3', 'n2', { state: 'starting' })];
+      const st = status(replicas);
+      expect(st.level).toBe('info');
+      expect(st.conditions).toEqual([{ kind: 'replacing', level: 'info', draining: 1, starting: 1 }]);
+      expect(alarms(st)).toEqual([]);
+    });
+
+    it('R-UI-038 Q-UI-602 a replica lost without draining while its role has ready replicas is a warning with its last heartbeat', () => {
+      const lost = web('a0', 'n3', { lost: true, heartbeatAt: '2026-11-18T09:12:00Z' });
+      const st = status([...healthy(), lost, worker('w0', null, { lost: true, heartbeatAt: '2026-11-18T08:00:00Z' })]);
+      expect(st.level).toBe('warning');
+      expect(st.conditions).toEqual([{ kind: 'lost', level: 'warning', replicas: ['a0', 'w0'], lastSeenAt: '2026-11-18T09:12:00Z' }]);
+      expect(LOST_REPLICA_LEVEL).toBe('warning');
+    });
+
+    it('R-UI-038 Q-UI-602 a role without a ready replica is red, also when its only replica was lost', () => {
+      const replicas = healthy().filter((r) => roleOf(r) !== 'worker');
+      replicas.push(worker('w1', 'n1', { lost: true }));
+      const st = status(replicas);
+      expect(st.level).toBe('error');
+      expect(st.conditions[0]).toEqual({ kind: 'no-ready-replica', level: 'error', roles: ['worker'] });
+      expect(kinds(replicas)).toEqual(['no-ready-replica', 'lost', 'not-drain-safe']);
+    });
+
+    it('R-UI-038 Q-UI-602 a role whose replicas only drain or start has no ready replica and is red', () => {
+      const replicas = [...healthy().filter((r) => roleOf(r) !== 'api'), web('a1', 'n1', { state: 'draining' })];
+      expect(status(replicas).conditions[0]).toEqual({ kind: 'no-ready-replica', level: 'error', roles: ['api'] });
+    });
+
+    it('R-UI-038 a live replica that fails a gating check after it was ready stays red', () => {
+      const replicas = [...healthy(), web('a3', 'n3', { state: 'unready', checks: { database: { status: 'fail' } } })];
+      const st = status(replicas);
+      expect(st.level).toBe('error');
+      expect(st.conditions[0]).toEqual({ kind: 'unready', level: 'error', replicas: ['a3'] });
+    });
+
+    it('R-UI-038 a degraded check on a ready replica is a warning', () => {
+      const replicas = healthy().map((r, i) => (i === 0 ? { ...r, degraded: ['valkey'] } : r));
+      expect(status(replicas)).toEqual({ level: 'warning', conditions: [{ kind: 'degraded', level: 'warning' }] });
+    });
+
+    it('R-UI-038 Q-UI-603 one healthy replica of the role all is not a fault: it is not drain-safe, which only informs', () => {
+      const all = [sampleReplica({ name: 'dev', instanceUid: 'dev', node: null, roles: ['all'] })];
+      const st = status(all);
+      expect(st.level).toBe('info');
+      expect(st.conditions).toEqual([{ kind: 'not-drain-safe', level: 'info' }]);
+      expect(alarms(st)).toEqual([]);
+    });
+
+    it('R-UI-038 the bridge role web with only a lost row left is no role the installation needs: a warning, not red', () => {
+      const replicas = [...healthy(), web('w-old', 'n1', { roles: ['web'], lost: true })];
+      const st = status(replicas);
+      expect(st.level).toBe('warning');
+      expect(kinds(replicas)).toEqual(['lost']);
+    });
+
+    it('R-UI-038 conditions are ordered worst first', () => {
+      const replicas = [
+        ...healthy().filter((r) => roleOf(r) !== 'packages'),
+        web('a0', 'n1', { lost: true }),
+        web('a3', 'n1', { state: 'draining' }),
+      ];
+      expect(kinds(replicas)).toEqual(['no-ready-replica', 'lost', 'replacing']);
+    });
   });
 
   it('R-UI-038 the Valkey summary counts degraded replicas, flags primary disagreement and missing Sentinel majority', () => {

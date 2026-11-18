@@ -1066,7 +1066,17 @@ agent** is not decided until the owner has said so.
   - Wanted: a replica that drains or has drained is no error; a row that went stale while `draining` counts as signed off.
     Decided by the owner on 2026-11-18 ("Option A", from three: a warning / red as before / not in the header at all): a
     replica that was lost without draining, while its role still has ready replicas, is a **warning**, not an error; its row
-    stays in the table as lost until the prune; red is for a role without a ready replica. Status: a builder is briefed.
+    stays in the table as lost until the prune; red is for a role without a ready replica.
+  - **Built** (82f65196 on `main`, Q-OPS-210, Q-UI-600 to Q-UI-604): a replica that drains or starts informs ("Replicas are
+    being replaced"); a row that went stale while `draining` has signed off (the list leaves it out, the prune deletes it);
+    a replica lost without draining is a warning with the time of its last heartbeat; "Not drain-safe" informs; red is "No
+    ready replica of the role …" or a ready replica that fails a gating check. Looked at on the owner's stack after a restart
+    with the new build: **System status** reads "All roles ready" with "Not drain-safe" as information, the two stale rows
+    are gone from the list, the **Dashboard** is green and has no "Nodes 0". Read from the code by the builder, not run on
+    a cluster: a normal rolling update leaves no row (120 s of grace, the deletion has 5 s of its own). **Open:** a database
+    that cannot be reached during the whole shutdown keeps even the mark `draining` from being written; that row is shown
+    as lost, a warning, for 24 hours. `TestE14Drain` now asserts that no drained pod is listed and every role has a ready
+    replica; changed, not run.
 - **W-14 · A missing groups claim is written to the audit log when it changes, not at every sign-in** (owner, 2026-11-18,
   "Option A" from four: only at the change / only when memberships were removed / as before but as a warning / group sync
   off by default without rules). Seen on his stack: every sign-in of a user whose provider sends no groups wrote a second

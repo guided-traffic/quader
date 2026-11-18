@@ -4662,7 +4662,10 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
 - **Admin dashboard** (Q-OPS-175, owner 2026-11-06): the first screen of the admin area at
   `/admin/dashboard`, where `/admin` and the Admin button of the top bar lead a holder of
   `settings:read`. One page of cards: the instance bar (overall state, version, base URL, ready
-  replicas, a link to the status screen); one card per role with its ready and live replicas, nodes,
+  replicas, a link to the status screen); the overall state is the worst statement of the status screen's header that is an
+  error or a warning, in its words, else "All roles ready", and while replicas drain or start an informing "Replicas are being
+  replaced" beside it (Q-UI-600 to Q-UI-602); one card per role with its ready and live replicas, the nodes where its ready
+  replicas name them (no row where none does, Q-UI-604),
   requests and server errors per second, the worst p95 latency, requests in flight, CPU and memory
   against the limits, summed from the runtime snapshots of R-OPS-003 (lost replicas left out; a role
   without a replica says so); PostgreSQL, Valkey and the object store with their readiness check over
@@ -4692,10 +4695,13 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
   endpoint pool, each with its own counts and drain safety,
   headed with the role's `live`, `ready` and `degraded` counts from `replicas.roles` of
   `/system/info`, each listing its replicas with name, node, version, state (`starting`, `ready`,
-  `unready`, `draining`, `lost`), heartbeat age and Valkey view. Each group states whether the role
+  `unready`, `draining`, `lost`), heartbeat age and Valkey view. `draining` and `starting` are neutral, `lost` is a warning and
+  `unready` an error; a replica that went stale while draining signed off and is not listed by the server (R-OPS-003,
+  Q-OPS-210 in [operations-and-observability.md](operations-and-observability.md)), and the synthetic check `draining` is not
+  named among the failing checks, because the state says it (Q-UI-600). Each group states whether the role
   is drain-safe right now: its `ready` replicas, not `lost`, run on at least two distinct nodes, so
   draining any one node leaves a ready replica (INV-12, R-HA-059). The group shows, with icon and
-  text:
+  text (the first two informing, as a property of the installation's size, Q-UI-603; the others as warnings):
   - "Fewer than two ready replicas": a node drain or the loss of one pod interrupts this role;
   - "All ready replicas on one node": a drain of that node interrupts this role (shown only when
     every replica reports a node);
@@ -4727,9 +4733,18 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
 
     Each is shown as a warning that names the check and says, in the words above, what it means.
 
-  Both kinds use icon plus text, never colour alone (R-UI-044). The page header summarises the
-  service as "all ready", "degraded" or "replicas unready"; a role that is not drain-safe adds
-  "not drain-safe" to the summary.
+  Both kinds use icon plus text, never colour alone (R-UI-044).
+- **The page header** states the installation in one rule (`serviceStatus` in
+  [system-status-model.ts](../../web/src/app/features/system/system-status-model.ts)), what is wrong first:
+  - as an error: "No ready replica of the role `<roles>`" for a role the installation needs (`api`, `packages` and `worker`
+    unless a live `all` replica serves them; `web`, `all` and an unknown role while one of its replicas is live) that has no
+    ready replica (Q-UI-602); "Replicas unready" while a live replica fails a gating check after it was ready;
+  - as a warning: "Lost without draining: `<names>`, last heartbeat `<time>`" while a replica is listed as lost (owner,
+    2026-11-18, Q-UI-602); "Degraded" while a ready replica's reported check fails;
+  - else "All roles ready";
+  - and after them, informing and neutral: "Replicas are being replaced (`n` draining, `m` starting), as during every update"
+    while replicas drain or start (Q-UI-600), and "Not drain-safe" while a role it needs is not drain-safe (Q-UI-603). The
+    notice of two versions side by side (below) belongs to the same update.
 - **Valkey card**, from the `valkey` block of `/system/info` (installation facts: mode, primary
   name, configured Sentinels, TLS mode, key prefix and keyspace) and each replica's nested `valkey`
   view of `/system/replicas` (R-API-038): per replica its state with the reason in R-OPS-001's
@@ -4789,8 +4804,16 @@ Acceptance criteria:
 - `SENTINEL FAILOVER quader` updates the last primary change on the Valkey card within 40 seconds,
   and every replica reports the new primary.
 - Scaling `worker` to 0 shows "No live worker replica" within `system.heartbeat_stale_after` plus
-  15 seconds. A test that pins both `web` replicas to one node shows "All ready replicas on one
-  node" and "not drain-safe" in the header.
+  15 seconds, and the header reads "No ready replica of the role worker". A test that pins both `api` replicas to one node shows
+  "All ready replicas on one node" and "Not drain-safe" in the header, informing.
+- During `kubectl rollout restart deploy/quader-api` with two `api` replicas, the header never reads an error or a warning: it
+  reads "All roles ready" and, while a pod drains or starts, "Replicas are being replaced"; the draining pod's row says
+  `draining` without failing checks; 30 s after the rollout returns no old pod is listed (R-OPS-003).
+- After `kubectl delete pod --grace-period=0 --force` of one of two `api` replicas, the header reads "Lost without draining:" with
+  the pod's name and its last heartbeat as a warning, not as an error, once the row is 30 s stale; the row stays as `lost`.
+  With both `api` replicas deleted so, the header reads "No ready replica of the role api" as an error until a new one is ready.
+- An installation of one healthy replica of the role `all` reads "All roles ready" and an informing "Not drain-safe"; no
+  warning and no error. The dashboard's card of the role shows no **Nodes** row outside Kubernetes (Q-UI-604).
 - With `backup.expected_interval: 1h` and the last successful backup two hours old (test clock),
   the Backups card shows "Overdue"; at 80 minutes it does not.
 - With two of three Sentinels stopped, the Valkey card shows "Sentinels unreachable" within
@@ -15612,6 +15635,130 @@ one column with much text: its columns take their widths from their content (Q-U
 not looked at by the builder). **Rationale:** the owner's: the role decides nothing in the admin area.
 
 **Applied in the spec:** R-UI-041. Code: [project-list.ts](../../web/src/app/features/projects/project-list.ts).
+
+### Q-UI-600 · A replica that drains or starts informs: the header says that replicas are being replaced
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-13 (owner, 2026-11-18). The header of the status screen read "Replicas unready" and the dashboard "A role is not
+ready" as soon as one replica was not `ready`. During every rolling update a pod is `draining` for the drain delay and longer and
+its successor `starting` for its start-up, so every update turned both red. A draining replica also listed "Failing checks:
+draining", the synthetic check that fails on purpose from `SIGTERM` on.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Draining and starting replicas are left out of the header | The header looks at `ready` and `unready` only | Quiet | An administrator who opens the screen during an update does not learn why the counts move |
+| (b) They inform: "Replicas are being replaced (`n` draining, `m` starting), as during every update", neutral, after the main statement (chosen) | The header still reads "All roles ready" while every role has a ready replica | Says what happens, in the neutral form, with the counts; the version notice below it names the two versions of the update | One more line during an update |
+| (c) A warning while replicas drain | Yellow during every update | Draws the eye | An intended, routine change in the colour of a fault, which the owner objected to |
+
+**Choice:** (b). The states `draining` and `starting` are neutral in the table; the synthetic check `draining` is not listed among a
+replica's failing checks; the dashboard says "Replicas are being replaced" as an informing badge beside "All roles ready". The main
+statement says "All roles ready" rather than "All ready", because it is true while a replica drains. A replica that stays
+`starting` with another ready replica of its role informs too; its failing checks stay in its row. **Rationale:** a replica that
+drains or starts is the normal path of an update, a restart and a change of scale; the header should name it without alarm, and
+the role rule of [Q-UI-602](#q-ui-602--a-replica-lost-without-draining-is-a-warning-red-is-a-role-without-a-ready-replica) still
+turns it red when no replica of a role is ready. The development agent revisits it if a replica that never leaves `starting` goes
+unnoticed; a bound on the time in `starting` would then be an error of its own.
+
+**Applied in the spec:** R-UI-038 (the header, the replica states, the dashboard's overall state, acceptance criteria). Code:
+`serviceStatus` and `failingChecks` in [system-status-model.ts](../../web/src/app/features/system/system-status-model.ts),
+[system-status.html](../../web/src/app/features/system/system-status.html), [dashboard.html](../../web/src/app/features/system/dashboard.html).
+
+### Q-UI-601 · The header says what is wrong first, each statement with its own level, and the dashboard the worst of them
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the header had three states in one colour each, "all ready", "degraded" and "replicas unready", and appended "not
+drain-safe". With W-13 it has to tell an error (a role without a ready replica), a warning (a lost replica, a degraded check) and
+what only informs (an update, the drain safety) apart, and it can hold several at once.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One state, the worst | As before, with more states | Short | Hides the second fault while the first lasts; a lost replica during an update would hide the update |
+| (b) Every statement that holds, worst first, each with its icon and level; "All roles ready" when none is an error or a warning; the dashboard shows the worst and the update (chosen) | One rule, `serviceStatus`, for both screens | The administrator reads every fault at once; both screens agree because they call one function | The header can be two lines at 390 px |
+| (c) A list of statements in a card | Each its own row | Room for detail | A card for a sentence or two, above the cards that hold the detail |
+
+**Choice:** (b). `serviceStatus` returns the conditions with their levels (`error`, `warning`, `info`) and the overall level; the
+status screen renders all of them, the dashboard's instance bar the worst error or warning (or "All roles ready") and the
+informing "Replicas are being replaced". **Rationale:** one function decides what both screens say, so they cannot disagree, and
+the levels follow the design language's icon and colour per state (R-UI-044). The development agent revisits it if the header grows
+past two lines in practice.
+
+**Applied in the spec:** R-UI-038. Code: [system-status-model.ts](../../web/src/app/features/system/system-status-model.ts),
+[system-status.html](../../web/src/app/features/system/system-status.html), [dashboard.ts](../../web/src/app/features/system/dashboard.ts).
+
+### Q-UI-602 · A replica lost without draining is a warning; red is a role without a ready replica
+
+Status: **Decided by the owner on 2026-11-18** — option (a).
+
+Context: W-13. A replica that ends without a drain (a crash, a kill, the loss of its node) leaves its row, which is listed as
+`lost` until the prune 24 h later (R-OPS-003). The header read "Replicas unready" in red for those 24 h, also when the role had been
+replaced long since and every role had its ready replicas. The development agent proposed a warning; the owner chose it from three
+options on 2026-11-18.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A warning (chosen by the owner) | While its role has a ready replica, the header and the dashboard say "Lost without draining", with the name and the last heartbeat, as a warning; the row stays in the table as `lost` until the prune | The administrator sees that it happened and when, without a fault that is no longer one | A replica that crashes every few hours shows as a warning, not as an error |
+| (b) Red, as before | A lost row turns the header red | Hard to miss | Red for 24 h after a crash that Kubernetes repaired in seconds; red stops meaning "act now" |
+| (c) Not in the header at all | Only the row says `lost` | Quiet | A crash is seen only by someone who reads the table |
+
+**Choice:** (a), the owner's. Red is for a role the installation needs that has no ready replica: `api`, `packages` and `worker`
+unless a live `all` replica serves them, and `web`, `all` or an unknown role while one of its replicas is live; a role whose only
+replicas are lost, draining or starting has none. A role that only a lost row names (the bridge `web` after its upgrade, a removed
+pool's Deployment) is not needed, so its lost row is a warning. What was red for other reasons stays red: a live replica that fails a
+gating check after it was ready, an unsupported schema, incompatible key rings, a failing dependency check on the dashboard. The
+rule for a lost replica is the constant `LOST_REPLICA_LEVEL` in
+[system-status-model.ts](../../web/src/app/features/system/system-status-model.ts), one place to change it.
+**Rationale:** the owner's: an update or a repaired crash is no fault. A role without a ready replica is one, and that includes a
+`worker` or `packages` role scaled to zero, which the role group already names ("No live worker replica", Q-UI-107) and which the
+header did not colour before.
+
+**Applied in the spec:** R-UI-038 (the header, the replica states, acceptance criteria); R-OPS-003 and
+[Q-OPS-210](operations-and-observability.md#q-ops-210--a-row-that-went-stale-while-draining-has-signed-off-the-list-leaves-it-out-and-the-prune-deletes-it)
+in [operations-and-observability.md](operations-and-observability.md) say which rows are lost. Code: `serviceStatus` and
+`LOST_REPLICA_LEVEL` in [system-status-model.ts](../../web/src/app/features/system/system-status-model.ts).
+
+### Q-UI-603 · Not being drain-safe informs: it is a property of the installation's size
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-13. An installation with one replica of the role `all`, or of any role, is not drain-safe by its size: the header read
+"Not drain-safe" with the warning icon, and the role group "Fewer than two ready replicas" as a warning, on a healthy installation.
+The incident that makes a large installation lose its drain safety, a lost replica, has its own warning now (Q-UI-602).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A warning, as before | Yellow on every small installation | Draws the eye before a drain | A healthy single-replica installation looks like a fault at first sight |
+| (b) Informing: the header's "Not drain-safe" and the group's "Fewer than two ready replicas" and "All ready replicas on one node" with the information icon, neutral (chosen) | The words stay; the level changes | The administrator who plans a drain still reads it; a small installation is not shown as broken | A large installation that lost a replica shows the loss as a warning and the drain safety only as information |
+| (c) Not in the header | Only the role group says it | Quiet header | The runbook's drain step reads it from the header |
+
+**Choice:** (b). "No live replica in the pool" stays a warning. **Rationale:** a property of the size that the administrator chose
+is information; the faults that change it are warned about where they happen. The development agent revisits it if the chart
+gains a way to say the intended replica count, which would make "fewer than intended" a warning of its own.
+
+**Applied in the spec:** R-UI-038. Code: `serviceStatus` in
+[system-status-model.ts](../../web/src/app/features/system/system-status-model.ts),
+[system-status.html](../../web/src/app/features/system/system-status.html).
+
+### Q-UI-604 · The dashboard leaves the Nodes row out where no replica names its node
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-13. The dashboard's card of the role `all` read "Nodes 0" beside "1 of 1 ready" on the owner's stack. The node is
+`QUADER_NODE_NAME` from the downward API (R-OPS-003); outside Kubernetes no replica names one, so the count of distinct nodes was
+0.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A dash | "Nodes –" | The row is always there | A row that never has a value outside Kubernetes |
+| (b) No row where none of the role's ready replicas names its node (chosen) | `roleLoad` reports `nodes` as null then | Shows only what is known | The card's rows differ between installations |
+| (c) The API reports null | `replicas.roles.<role>.nodes` null outside Kubernetes | The API says it too | The screens do not read it; R-OPS-004 keeps the count, documented as 0 outside Kubernetes |
+
+**Choice:** (b). **Rationale:** a figure that cannot be known is left out rather than shown as a value. The development agent
+revisits it if an installation outside Kubernetes ever gets a node name.
+
+**Applied in the spec:** R-UI-038 (the dashboard's role card); R-OPS-004 (`nodes` is 0 outside Kubernetes). Code: `roleLoad` in
+[dashboard-model.ts](../../web/src/app/features/system/dashboard-model.ts), [dashboard.html](../../web/src/app/features/system/dashboard.html).
 
 ## What this does not cover
 

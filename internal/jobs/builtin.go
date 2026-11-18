@@ -13,12 +13,14 @@ import (
 const (
 	// KindClusterChangePrune deletes change-log rows (R-ARCH-018).
 	KindClusterChangePrune = "cluster-change-prune"
-	// KindReplicaRegistryPrune deletes registry rows stale for 24 h (R-OPS-003).
+	// KindReplicaRegistryPrune deletes the registry rows of lost replicas stale for 24 h and those of replicas that
+	// signed off (R-OPS-003, Q-OPS-210).
 	KindReplicaRegistryPrune = "replica-registry-prune"
 )
 
-// replicaPruneAfter is how long a registry row must be stale before the prune
-// task deletes it (R-OPS-003).
+// replicaPruneAfter is how long the row of a lost replica must be stale before
+// the prune task deletes it (R-OPS-003). A row that went stale while draining
+// goes at the first run after system.heartbeat_stale_after (Q-OPS-210).
 const replicaPruneAfter = 24 * time.Hour
 
 // RegisterCoordinationKinds registers cluster-change-prune and
@@ -26,7 +28,7 @@ const replicaPruneAfter = 24 * time.Hour
 // (`*/10 * * * *`), exclusive, in the maintenance queue. The composition root
 // calls it once, before Freeze, on every role: a web replica must know the
 // kinds to enqueue them (the manual trigger of R-OPS-019).
-func RegisterCoordinationKinds(r *Registry, c config.Cluster) {
+func RegisterCoordinationKinds(r *Registry, c config.Cluster, s config.System) {
 	r.RegisterKind(KindClusterChangePrune, KindSpec{
 		Queue: "maintenance", DedupMode: Exclusive, MaxAttempts: 3,
 		Handler: func(ctx context.Context, run *Run) error {
@@ -42,7 +44,7 @@ func RegisterCoordinationKinds(r *Registry, c config.Cluster) {
 	r.RegisterKind(KindReplicaRegistryPrune, KindSpec{
 		Queue: "maintenance", DedupMode: Exclusive, MaxAttempts: 3,
 		Handler: func(ctx context.Context, run *Run) error {
-			n, err := cluster.PruneReplicas(ctx, run.DB(), replicaPruneAfter)
+			n, err := cluster.PruneReplicas(ctx, run.DB(), replicaPruneAfter, s.HeartbeatStaleAfter)
 			if err == nil {
 				err = run.SetResult(map[string]int64{"deleted": n})
 			}

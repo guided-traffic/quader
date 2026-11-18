@@ -31,23 +31,48 @@
 @if (valueOf(info); as i) {
   <section class="instance-bar" aria-labelledby="dash-instance">
     <h2 id="dash-instance" class="visually-hidden" i18n="@@dashboard.instance">Instance</h2>
-    @switch (state()) {
-      @case ('ready') {
+    @if (status(); as st) {
+      @if (st.first; as c) {
+        @switch (c.kind) {
+          @case ('no-ready-replica') {
+            <span class="state bad"
+              ><span class="material-icons" aria-hidden="true">error</span
+              ><ng-container i18n="@@dashboard.state.no-ready"
+                >No ready replica of the role <span translate="no">{{ c.roles.join(', ') }}</span></ng-container
+              ></span
+            >
+          }
+          @case ('unready') {
+            <span class="state bad"
+              ><span class="material-icons" aria-hidden="true">error</span
+              ><ng-container i18n="@@dashboard.state.unready">Replicas unready</ng-container></span
+            >
+          }
+          @case ('lost') {
+            <span class="state" [class.warn]="c.level === 'warning'" [class.bad]="c.level === 'error'"
+              ><span class="material-icons" aria-hidden="true">{{ c.level === 'error' ? 'error' : 'warning' }}</span
+              ><ng-container i18n="@@dashboard.state.lost"
+                >Replica lost, last heartbeat {{ c.lastSeenAt | date: 'short' }}</ng-container
+              ></span
+            >
+          }
+          @case ('degraded') {
+            <span class="state warn"
+              ><span class="material-icons" aria-hidden="true">warning</span
+              ><ng-container i18n="@@dashboard.state.degraded">Degraded</ng-container></span
+            >
+          }
+        }
+      } @else {
         <span class="state ok"
           ><span class="material-icons" aria-hidden="true">check_circle</span
           ><ng-container i18n="@@dashboard.state.ready">All roles ready</ng-container></span
         >
       }
-      @case ('degraded') {
-        <span class="state warn"
-          ><span class="material-icons" aria-hidden="true">warning</span
-          ><ng-container i18n="@@dashboard.state.degraded">Degraded</ng-container></span
-        >
-      }
-      @case ('unready') {
-        <span class="state bad"
-          ><span class="material-icons" aria-hidden="true">error</span
-          ><ng-container i18n="@@dashboard.state.unready">A role is not ready</ng-container></span
+      @if (st.replacing) {
+        <span class="state badge info"
+          ><span class="material-icons" aria-hidden="true">info</span
+          ><ng-container i18n="@@dashboard.state.replacing">Replicas are being replaced</ng-container></span
         >
       }
     }
@@ -88,10 +113,12 @@
         </p>
       } @else {
         <dl class="kv">
-          <div>
-            <dt i18n="@@dashboard.role.nodes">Nodes</dt>
-            <dd>{{ l.nodes }}</dd>
-          </div>
+          @if (l.nodes !== null) {
+            <div>
+              <dt i18n="@@dashboard.role.nodes">Nodes</dt>
+              <dd>{{ l.nodes }}</dd>
+            </div>
+          }
           <div>
             <dt i18n="@@dashboard.role.requests">Requests</dt>
             <dd i18n="@@dashboard.per-second">

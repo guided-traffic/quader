@@ -101,7 +101,7 @@ func TestReplicaRegistry(t *testing.T) {
 	t.Run("R-OPS-003 the prune deletes rows stale for 24 hours and a live replica re-registers", func(t *testing.T) {
 		e.exec(`UPDATE replica SET heartbeat_at = now() - interval '25 hours' WHERE name = 'reg-worker-2'`)
 		e.exec(`UPDATE replica SET heartbeat_at = now() - interval '23 hours' WHERE name = 'reg-worker-3'`)
-		n, err := cluster.PruneReplicas(context.Background(), web.db.Main(), 24*time.Hour)
+		n, err := cluster.PruneReplicas(context.Background(), web.db.Main(), 24*time.Hour, sys.HeartbeatStaleAfter)
 		if err != nil || n != 1 {
 			t.Fatalf("PruneReplicas = %d, %v, want 1", n, err)
 		}
@@ -112,6 +112,76 @@ func TestReplicaRegistry(t *testing.T) {
 		// A row removed from under a live replica comes back with its next heartbeat.
 		e.exec(`DELETE FROM replica WHERE name = 'reg-web'`)
 		waitFor(t, "reg-web re-registering", 5*time.Second, func() bool { _, ok := e.list(web, sys)["reg-web"]; return ok })
+	})
+}
+
+// TestReplicaSignOff is R-OPS-003's line between a replica that signed off and one that was lost (Q-OPS-210): a process
+// killed while draining was stopped on purpose, so once its row goes stale it is neither live nor lost for any reader of
+// the registry, and the prune deletes it at its next run; a process killed while ready stays listed as lost until the
+// prune's 24 hours.
+func TestReplicaSignOff(t *testing.T) {
+	e := newEnv(t)
+	sys := defaultSystem()
+	host := e.newReplica("so-host", replicaOpts{role: "worker", sys: sys, noWorker: true})
+	drained := e.newReplica("so-drained", replicaOpts{role: "web", sys: sys, noWorker: true})
+	crashed := e.newReplica("so-crashed", replicaOpts{role: "web", sys: sys, noWorker: true})
+	// Two web replicas that stay keep the fetch share above its floor of 1, so each kill shows in the count.
+	e.newReplica("so-live-1", replicaOpts{role: "web", sys: sys, noWorker: true})
+	e.newReplica("so-live-2", replicaOpts{role: "web", sys: sys, noWorker: true})
+	fill, err := cluster.NewFillCount(host.db.ControlPool(), sys.HeartbeatStaleAfter, sys.HeartbeatInterval)
+	if err != nil {
+		t.Fatal(err)
+	}
+	count := func() int {
+		if err := fill.Refresh(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		return fill.Get()
+	}
+	if n := count(); n != 4 {
+		t.Fatalf("the fetch share counts %d web replicas before the kills, want 4", n)
+	}
+
+	t.Run("R-OPS-003 R-HA-003 a replica killed while draining has signed off: it is not listed and not counted once its heartbeat is stale", func(t *testing.T) {
+		drained.registry.Drain(context.Background())
+		drained.registry.StopHeartbeat() // killed inside its drain: the row stays in the state draining
+		if r, ok := e.list(host, sys)["so-drained"]; !ok || r.State != "draining" || r.Lost {
+			t.Fatalf("a replica that drains right now: %+v, listed %v; want listed as draining", r, ok)
+		}
+		waitFor(t, "so-drained leaving the list", 8*time.Second, func() bool { _, ok := e.list(host, sys)["so-drained"]; return !ok })
+		for name, r := range e.list(host, sys) {
+			if r.Lost {
+				t.Errorf("%s is listed as lost", name)
+			}
+		}
+		if n := count(); n != 3 {
+			t.Errorf("the fetch share counts %d web replicas, want 3: the signed-off one counts as live", n)
+		}
+	})
+
+	t.Run("R-OPS-003 R-HA-003 a replica killed while ready is listed as lost and leaves the counts", func(t *testing.T) {
+		crashed.registry.StopHeartbeat() // killed without a drain: a crash, a kill or the loss of its node
+		waitFor(t, "so-crashed turning lost", 8*time.Second, func() bool { return e.list(host, sys)["so-crashed"].Lost })
+		if r := e.list(host, sys)["so-crashed"]; r.State != "ready" {
+			t.Errorf("the lost row keeps its last state: %s, want ready", r.State)
+		}
+		if n := count(); n != 2 {
+			t.Errorf("the fetch share counts %d web replicas, want 2: the lost one counts as live", n)
+		}
+	})
+
+	t.Run("R-OPS-003 the prune deletes the signed-off row at its next run and keeps the lost one for 24 hours", func(t *testing.T) {
+		n, err := cluster.PruneReplicas(context.Background(), host.db.Main(), 24*time.Hour, sys.HeartbeatStaleAfter)
+		if err != nil || n != 1 {
+			t.Fatalf("PruneReplicas = %d, %v, want 1 (the signed-off row)", n, err)
+		}
+		var rows int
+		if err := e.admin.QueryRow(context.Background(), `SELECT count(*) FROM replica WHERE name = 'so-drained'`).Scan(&rows); err != nil || rows != 0 {
+			t.Fatalf("the signed-off row: %d rows, %v", rows, err)
+		}
+		if _, ok := e.list(host, sys)["so-crashed"]; !ok {
+			t.Fatal("the lost row was pruned before its 24 hours")
+		}
 	})
 }
 

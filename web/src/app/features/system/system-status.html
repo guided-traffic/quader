@@ -13,25 +13,59 @@
   <quader-error-notice [error]="f" (retry)="reload()" />
 }
 
-@if (state(); as s) {
+<!-- The header says what is wrong first, in red or as a warning, and else that every role is ready; then, neutral, what
+     only informs: replicas that drain or start, and the drain safety (Q-UI-600 to Q-UI-603). -->
+@if (status(); as st) {
   <p class="summary" role="status">
-    @switch (s) {
-      @case ('ready') {
+    @for (c of alarms(st); track c.kind) {
+      <span class="condition">
+        @switch (c.kind) {
+          @case ('no-ready-replica') {
+            <span class="material-icons bad" aria-hidden="true">error</span>
+            <span i18n="@@system.summary.no-ready"
+              >No ready replica of the role <span translate="no">{{ c.roles.join(', ') }}</span></span
+            >
+          }
+          @case ('unready') {
+            <span class="material-icons bad" aria-hidden="true">error</span>
+            <span i18n="@@system.summary.unready">Replicas unready</span>
+          }
+          @case ('lost') {
+            <span class="material-icons" [class.warn]="c.level === 'warning'" [class.bad]="c.level === 'error'" aria-hidden="true"
+              >{{ c.level === 'error' ? 'error' : 'warning' }}</span
+            >
+            <span i18n="@@system.summary.lost"
+              >Lost without draining: <span translate="no">{{ c.replicas.join(', ') }}</span>, last heartbeat
+              <time [attr.datetime]="c.lastSeenAt">{{ c.lastSeenAt | date: 'medium' }}</time></span
+            >
+          }
+          @case ('degraded') {
+            <span class="material-icons warn" aria-hidden="true">warning</span>
+            <span i18n="@@system.summary.degraded">Degraded</span>
+          }
+        }
+      </span>
+    } @empty {
+      <span class="condition">
         <span class="material-icons ok" aria-hidden="true">check_circle</span>
-        <span i18n="@@system.summary.ready">All ready</span>
-      }
-      @case ('degraded') {
-        <span class="material-icons warn" aria-hidden="true">warning</span>
-        <span i18n="@@system.summary.degraded">Degraded</span>
-      }
-      @case ('unready') {
-        <span class="material-icons bad" aria-hidden="true">error</span>
-        <span i18n="@@system.summary.unready">Replicas unready</span>
-      }
+        <span i18n="@@system.summary.ready">All roles ready</span>
+      </span>
     }
-    @if (notDrainSafe()) {
-      <span class="material-icons warn" aria-hidden="true">warning</span>
-      <span i18n="@@system.summary.not-drain-safe">Not drain-safe</span>
+    @for (c of notes(st); track c.kind) {
+      <span class="condition note">
+        <span class="material-icons" aria-hidden="true">info</span>
+        @switch (c.kind) {
+          @case ('replacing') {
+            <span i18n="@@system.summary.replacing"
+              >Replicas are being replaced ({{ c.draining }} draining, {{ c.starting }} starting), as during every
+              update</span
+            >
+          }
+          @case ('not-drain-safe') {
+            <span i18n="@@system.summary.not-drain-safe">Not drain-safe</span>
+          }
+        }
+      </span>
     }
   </p>
 }
@@ -160,8 +194,13 @@
                 </h4>
               }
               @for (w of p.warnings; track w) {
+                <!-- The drain safety is a property of the size and informs; a pool without a live replica warns (Q-UI-603). -->
                 <p class="warning" role="note">
-                  <span class="material-icons warn" aria-hidden="true">warning</span>
+                  @if (w === 'no-live-pool') {
+                    <span class="material-icons warn" aria-hidden="true">warning</span>
+                  } @else {
+                    <span class="material-icons" aria-hidden="true">info</span>
+                  }
                   @switch (w) {
                     @case ('fewer-than-two-ready') {
                       <span i18n="@@system.role.fewer"
@@ -199,8 +238,8 @@
                       <td translate="no">{{ r.version }}</td>
                       <td>
                         @if (r.lost) {
-                          <span class="bad"
-                            ><span class="material-icons" aria-hidden="true">error</span
+                          <span class="warn"
+                            ><span class="material-icons" aria-hidden="true">warning</span
                             ><ng-container i18n="@@system.state.lost">Lost</ng-container></span
                           >
                         } @else {

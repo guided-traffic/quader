@@ -108,6 +108,7 @@ func (q *Queries) ListClusterEpochs(ctx context.Context, areas []string) ([]Clus
 const listReplicas = `-- name: ListReplicas :many
 SELECT r.instance_uid, r.name, r.version, r.revision, r.roles, r.state, r.checks, r.leases, r.secret_key_ids, r.active_secret_key_id, r.node, r.valkey, r.pool, r.started_at, r.heartbeat_at, r.runtime, (r.heartbeat_at < now() - make_interval(secs => $1::float8))::bool AS lost
   FROM replica r
+ WHERE NOT (r.state = 'draining' AND r.heartbeat_at < now() - make_interval(secs => $1::float8))
  ORDER BY r.roles, r.name
 `
 
@@ -131,6 +132,9 @@ type ListReplicasRow struct {
 	Lost              bool
 }
 
+// A row whose heartbeat went stale while it was draining has signed off (R-OPS-003, Q-OPS-210): its process was stopped on
+// purpose and ended without deleting the row, killed inside its drain or with the deletion cut by the close phase. It is not
+// listed, so no reader counts it as a live or a lost replica; the prune deletes it. Every other stale row is lost.
 func (q *Queries) ListReplicas(ctx context.Context, staleSecs float64) ([]ListReplicasRow, error) {
 	rows, err := q.db.Query(ctx, listReplicas, staleSecs)
 	if err != nil {
@@ -189,12 +193,20 @@ func (q *Queries) PruneClusterChanges(ctx context.Context, retentionSecs float64
 }
 
 const pruneReplicas = `-- name: PruneReplicas :execrows
-DELETE FROM replica WHERE heartbeat_at < now() - make_interval(secs => $1::float8)
+DELETE FROM replica
+ WHERE heartbeat_at < now() - make_interval(secs => $1::float8)
+    OR (state = 'draining' AND heartbeat_at < now() - make_interval(secs => $2::float8))
 `
 
-// replica-registry-prune (R-OPS-003): rows stale for the given time.
-func (q *Queries) PruneReplicas(ctx context.Context, staleSecs float64) (int64, error) {
-	result, err := q.db.Exec(ctx, pruneReplicas, staleSecs)
+type PruneReplicasParams struct {
+	StaleSecs     float64
+	SignedOffSecs float64
+}
+
+// replica-registry-prune (R-OPS-003): rows stale for stale_secs (a lost replica), and rows that went stale for
+// signed_off_secs while draining (a replica that signed off, Q-OPS-210).
+func (q *Queries) PruneReplicas(ctx context.Context, arg PruneReplicasParams) (int64, error) {
+	result, err := q.db.Exec(ctx, pruneReplicas, arg.StaleSecs, arg.SignedOffSecs)
 	if err != nil {
 		return 0, err
 	}

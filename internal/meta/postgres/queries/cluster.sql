@@ -46,13 +46,20 @@ UPDATE replica SET state = sqlc.arg(state)::text, heartbeat_at = now()
 DELETE FROM replica WHERE instance_uid = sqlc.arg(instance_uid)::text::uuid;
 
 -- name: ListReplicas :many
+-- A row whose heartbeat went stale while it was draining has signed off (R-OPS-003, Q-OPS-210): its process was stopped on
+-- purpose and ended without deleting the row, killed inside its drain or with the deletion cut by the close phase. It is not
+-- listed, so no reader counts it as a live or a lost replica; the prune deletes it. Every other stale row is lost.
 SELECT r.*, (r.heartbeat_at < now() - make_interval(secs => sqlc.arg(stale_secs)::float8))::bool AS lost
   FROM replica r
+ WHERE NOT (r.state = 'draining' AND r.heartbeat_at < now() - make_interval(secs => sqlc.arg(stale_secs)::float8))
  ORDER BY r.roles, r.name;
 
 -- name: PruneReplicas :execrows
--- replica-registry-prune (R-OPS-003): rows stale for the given time.
-DELETE FROM replica WHERE heartbeat_at < now() - make_interval(secs => sqlc.arg(stale_secs)::float8);
+-- replica-registry-prune (R-OPS-003): rows stale for stale_secs (a lost replica), and rows that went stale for
+-- signed_off_secs while draining (a replica that signed off, Q-OPS-210).
+DELETE FROM replica
+ WHERE heartbeat_at < now() - make_interval(secs => sqlc.arg(stale_secs)::float8)
+    OR (state = 'draining' AND heartbeat_at < now() - make_interval(secs => sqlc.arg(signed_off_secs)::float8));
 
 -- name: CountFillingReplicas :one
 -- The n of the fetch share of a remote repository (R-REPO-040, Q-ARCH-297): the live replicas that fill client misses,

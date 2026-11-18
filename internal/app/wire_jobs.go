@@ -30,7 +30,7 @@ func (a *App) jobRegistry() (*jobs.Registry, error) {
 	for name, t := range jobs.Default.Tasks() {
 		r.RegisterTask(name, t)
 	}
-	jobs.RegisterCoordinationKinds(r, a.cfg.Cluster)
+	jobs.RegisterCoordinationKinds(r, a.cfg.Cluster, a.cfg.System)
 	jobs.RegisterProbeKind(r)
 	a.registerGC(r)
 	a.registerRepositoryJobs(r)

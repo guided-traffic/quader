@@ -6,8 +6,6 @@ import { EncryptionStatus, Replica, SystemInfo } from '../../api/system-api';
  * component.
  */
 
-export type ServiceState = 'ready' | 'degraded' | 'unready';
-
 export type RoleWarning =
   | 'fewer-than-two-ready'
   | 'one-node'
@@ -117,10 +115,13 @@ export function roleGroups(info: SystemInfo, replicas: readonly Replica[]): Role
   });
 }
 
-/** Gating checks that fail on a replica: it is `unready` (shown as an error). */
+/**
+ * Gating checks that fail on a replica: it is `unready` (shown as an error). The synthetic `draining` check is left out:
+ * it fails on purpose from SIGTERM on, and the state column already says that the replica drains (Q-UI-600).
+ */
 export function failingChecks(replica: Replica): string[] {
   return Object.entries(replica.checks)
-    .filter(([, c]) => c.status === 'fail')
+    .filter(([name, c]) => c.status === 'fail' && name !== 'draining')
     .map(([name]) => name);
 }
 
@@ -132,11 +133,91 @@ export function degradedChecks(replica: Replica): string[] {
   return [...new Set([...replica.degraded, ...named])];
 }
 
-/** The summary in the page header: "all ready", "degraded" or "replicas unready". */
-export function serviceState(replicas: readonly Replica[]): ServiceState {
-  if (replicas.some((r) => r.lost || r.state !== 'ready')) return 'unready';
-  if (replicas.some((r) => degradedChecks(r).length > 0)) return 'degraded';
-  return 'ready';
+/** The level of a statement about the installation, in the design language's order: ok, informing, warning, error. */
+export type StatusLevel = 'ok' | 'info' | 'warning' | 'error';
+
+const LEVEL_ORDER: readonly StatusLevel[] = ['ok', 'info', 'warning', 'error'];
+
+/**
+ * What a replica that was lost without draining (a crash, a kill, the loss of its node) does to the header and the
+ * dashboard while its role still has a ready replica. Decided by the owner on 2026-11-18 (Q-UI-602): a warning. The other
+ * two options were `'error'` (red, as before) and `null` (not in the header at all; the table still says lost). A role
+ * without a ready replica is an error whatever this says.
+ */
+export const LOST_REPLICA_LEVEL: StatusLevel | null = 'warning';
+
+/** One statement of the header (R-UI-038, Q-UI-600 to Q-UI-603). */
+export type StatusCondition =
+  /** Roles the installation needs that have no ready replica (Q-UI-602). */
+  | { readonly kind: 'no-ready-replica'; readonly level: 'error'; readonly roles: readonly string[] }
+  /** Live replicas that were ready and fail a gating check now (`unready`). */
+  | { readonly kind: 'unready'; readonly level: 'error'; readonly replicas: readonly string[] }
+  /** Replicas lost without draining; `lastSeenAt` is the newest last heartbeat among them. */
+  | {
+      readonly kind: 'lost';
+      readonly level: StatusLevel;
+      readonly replicas: readonly string[];
+      readonly lastSeenAt: string;
+    }
+  /** Ready replicas whose reported check fails (`objectStore`, `valkey`). */
+  | { readonly kind: 'degraded'; readonly level: 'warning' }
+  /** Replicas that drain or start: a rolling update, a restart or a change of scale (Q-UI-600). */
+  | { readonly kind: 'replacing'; readonly level: 'info'; readonly draining: number; readonly starting: number }
+  /** A role whose ready replicas would not survive the drain of one node: a property of the size (Q-UI-603). */
+  | { readonly kind: 'not-drain-safe'; readonly level: 'info' };
+
+export interface ServiceStatus {
+  /** The worst level of the conditions; `ok` without any. */
+  readonly level: StatusLevel;
+  /** The conditions that hold, the worst first; empty when every role is ready and nothing changes. */
+  readonly conditions: readonly StatusCondition[];
+}
+
+/** The roles every installation needs; the bridge role, the development role and an unknown role only while one is live. */
+function needed(group: RoleGroup): boolean {
+  return (MAIN_ROLES as readonly string[]).includes(group.role) || group.live > 0;
+}
+
+/**
+ * The state of the installation that the header of the status screen and the dashboard say (R-UI-038). Red is for a
+ * role the installation needs that has no ready replica, and for a live replica that fails a gating check after it was
+ * ready; a replica lost without draining is `LOST_REPLICA_LEVEL`; a degraded check is a warning. A replica that drains
+ * or starts is part of every rolling update and only informs (Q-UI-600); a row that went stale while draining signed
+ * off, and the server no longer lists it (Q-OPS-210). Not being drain-safe informs (Q-UI-603).
+ */
+export function serviceStatus(groups: readonly RoleGroup[], replicas: readonly Replica[]): ServiceStatus {
+  const conditions: StatusCondition[] = [];
+  const noReady = groups.filter((g) => needed(g) && g.ready === 0).map((g) => g.role);
+  if (noReady.length > 0) conditions.push({ kind: 'no-ready-replica', level: 'error', roles: noReady });
+  const live = replicas.filter((r) => !r.lost);
+  const unready = live.filter((r) => r.state === 'unready').map((r) => r.name);
+  if (unready.length > 0) conditions.push({ kind: 'unready', level: 'error', replicas: unready });
+  const lost = replicas.filter((r) => r.lost);
+  if (lost.length > 0 && LOST_REPLICA_LEVEL !== null) {
+    const lastSeenAt = lost.map((r) => r.heartbeatAt).sort().at(-1) ?? '';
+    conditions.push({ kind: 'lost', level: LOST_REPLICA_LEVEL, replicas: lost.map((r) => r.name), lastSeenAt });
+  }
+  if (live.some((r) => r.state === 'ready' && degradedChecks(r).length > 0)) {
+    conditions.push({ kind: 'degraded', level: 'warning' });
+  }
+  const draining = live.filter((r) => r.state === 'draining').length;
+  const starting = live.filter((r) => r.state === 'starting').length;
+  if (draining + starting > 0) conditions.push({ kind: 'replacing', level: 'info', draining, starting });
+  if (groups.some((g) => needed(g) && g.replicas.length > 0 && !g.drainSafe)) {
+    conditions.push({ kind: 'not-drain-safe', level: 'info' });
+  }
+  conditions.sort((a, b) => LEVEL_ORDER.indexOf(b.level) - LEVEL_ORDER.indexOf(a.level));
+  return { level: conditions[0]?.level ?? 'ok', conditions };
+}
+
+/** The conditions that are an error or a warning: what makes the header more than "all roles ready". */
+export function alarms(status: ServiceStatus): StatusCondition[] {
+  return status.conditions.filter((c) => c.level === 'error' || c.level === 'warning');
+}
+
+/** The conditions that only inform: a change in progress, the drain safety. */
+export function notes(status: ServiceStatus): StatusCondition[] {
+  return status.conditions.filter((c) => c.level === 'info');
 }
 
 export interface ValkeySummary {

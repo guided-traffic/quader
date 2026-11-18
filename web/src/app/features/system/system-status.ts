@@ -17,17 +17,19 @@ import { JobTable } from './job-table';
 import { TasksCard } from './tasks-card';
 // <<< M1 ui-a
 import {
+  alarms,
   degradedChecks,
   failingChecks,
   keyStatus,
   mixedVersions,
+  notes,
   PoolGroup,
   RingGap,
   ringGaps,
   RoleGroup,
   roleGroups,
   rotationStep,
-  serviceState,
+  serviceStatus,
   valkeySummary,
 } from './system-status-model';
 import { valueOf } from '../../shared/paged-resource';
@@ -147,13 +149,13 @@ export class SystemStatus {
     const r = valueOf(this.replicas);
     return i && r ? roleGroups(i, r) : [];
   });
-  protected readonly state = computed(() => {
+  /** The header's statements (R-UI-038): what is wrong first, then what only informs (Q-UI-600 to Q-UI-603). */
+  protected readonly status = computed(() => {
     const r = valueOf(this.replicas);
-    return r ? serviceState(r) : null;
+    return r && valueOf(this.info) ? serviceStatus(this.groups(), r) : null;
   });
-  protected readonly notDrainSafe = computed(() =>
-    this.groups().some((g) => g.replicas.length > 0 && !g.drainSafe),
-  );
+  protected readonly alarms = alarms;
+  protected readonly notes = notes;
   protected readonly versions = computed(() => {
     const i = valueOf(this.info);
     return i ? mixedVersions(i) : [];

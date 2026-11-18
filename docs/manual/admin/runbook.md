@@ -68,7 +68,7 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 ## A node drain, and a replica that does not stop in time
 
-**What you see.** `kubectl drain` waits with a message about a PodDisruptionBudget, or a pod stays in `Terminating`. A replica shows **draining** on **System status**; **Not drain-safe** appears when a role has fewer than two ready replicas or all of them on one node. Clients see connection errors during drains, and long transfers are cut (`quader_http_transfers_cut_total`).
+**What you see.** `kubectl drain` waits with a message about a PodDisruptionBudget, or a pod stays in `Terminating`. A replica shows **draining** on **System status**, and the summary says **Replicas are being replaced**, which is no fault; **Not drain-safe** appears when a role has fewer than two ready replicas or all of them on one node. Clients see connection errors during drains, and long transfers are cut (`quader_http_transfers_cut_total`).
 
 **What it means.** On `SIGTERM` a replica shuts down in a fixed order within its grace period ([Shutdown and node drains](operations.md#shutdown-and-node-drains)): `api.terminationGracePeriodSeconds` and `packages.terminationGracePeriodSeconds` 120, `worker.terminationGracePeriodSeconds` 300. Past the grace period the kubelet sends `SIGKILL`: open requests end, and a job's row is released when its lease of `jobs.lease_duration` (60 s) runs out, so another worker starts it again from its last checkpoint. Audit events still in the replica's buffer are lost ([Known limitations](limitations.md#audit-trail)). The PodDisruptionBudgets allow one disruption per role and evict unready pods without waiting. Backup and restore pods hold up no drain.
 
@@ -84,9 +84,9 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 ## Replicas shown as lost
 
-**What you see.** On **System status** a replica is **lost** (in `GET /api/v1/system/replicas`, `"lost": true`), and its leases are no longer listed. The screen has no separate "stale" state: **lost** is what a stale heartbeat is called.
+**What you see.** On **System status** a replica is **lost** (in `GET /api/v1/system/replicas`, `"lost": true`), its leases are no longer listed, and the summary warns **Lost without draining** with its name and last heartbeat. The screen has no separate "stale" state: **lost** is what a stale heartbeat is called. The summary is red only when a role has no ready replica left.
 
-**What it means.** The replica's row was last refreshed longer ago than `system.heartbeat_stale_after` (30 s), judged by PostgreSQL's clock. A clean shutdown deletes the row, so a lost replica either died without one (a crash, an `OOMKilled`, a `SIGKILL` after its grace period, a lost node) or is alive and cannot write its heartbeat, because it is cut off from PostgreSQL or its node is paused. A lost replica holds nothing: its locks ended with its session and its job leases expire. The task `replica-registry-prune`, which runs every ten minutes, removes a row 24 hours after its last heartbeat.
+**What it means.** The replica's row was last refreshed longer ago than `system.heartbeat_stale_after` (30 s), judged by PostgreSQL's clock, and the replica had not begun to drain. A clean shutdown deletes the row, and a replica stopped on purpose whose row was left behind (killed during its drain, or the deletion did not fit its grace period) has signed off: its row is in the state draining, is not shown once it is stale, and is removed by the next run of `replica-registry-prune`. So a lost replica either died without a drain (a crash, an `OOMKilled`, a lost node) or is alive and cannot write its heartbeat, because it is cut off from PostgreSQL or its node is paused. A lost replica holds nothing: its locks ended with its session and its job leases expire. The task `replica-registry-prune`, which runs every ten minutes, removes a lost replica's row 24 hours after its last heartbeat.
 
 **What to do.**
 

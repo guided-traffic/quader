@@ -267,6 +267,7 @@ func TestE14Drain(t *testing.T) {
 		t.Logf("running probe jobs per worker before the drain: %s", strings.ReplaceAll(owners, "\n", " "))
 		time.Sleep(5 * time.Second)
 
+		lostBefore := lostReplicas(t) // rows an earlier test of the set left; the drain is judged by the rows it leaves
 		drainStart := time.Now()
 		t.Logf("drain starts %s", drainStart.Format("15:04:05"))
 		script(t, "drain.sh", node) // the drain alone: drain, wait for the rollouts, uncordon
@@ -351,9 +352,71 @@ func TestE14Drain(t *testing.T) {
 			t.Logf("longest Pending of a quader pod: %s (%s)", d.Round(100*time.Millisecond), name)
 		}
 		checkEvents(t, onNode)
+		checkRegistryAfterDrain(t, onNode, lostBefore)
 		checkEndpointRemoval(t, "e14-drain", streams)
 		checkReleaseServes(t, 2, 3, 4)
 	})
+}
+
+// checkRegistryAfterDrain is what the status screen makes of the registry once the drain is over (R-OPS-003, R-UI-038,
+// Q-OPS-210): every drained pod signed off, so its row is gone (a clean stop deletes it) or, if the deletion did not fit
+// the close phase, left in the state draining, which the list does not show; no listed replica is lost; and every main
+// role has a ready replica, so the header is not red. Rows already lost before the drain (lostBefore) are not the drain's.
+func checkRegistryAfterDrain(t *testing.T, drained []pod, lostBefore map[string]bool) {
+	t.Helper()
+	names := make([]string, 0, len(drained))
+	for _, p := range drained {
+		names = append(names, "'"+p.Name+"'")
+	}
+	if left := sql(t, `SELECT name || '=' || state FROM quader.replica WHERE name IN (`+strings.Join(names, ",")+`)`); left != "" {
+		rows := strings.Fields(left)
+		for _, r := range rows {
+			if !strings.HasSuffix(r, "=draining") {
+				t.Errorf("R-OPS-003 the drained pod's row %s was left in a state other than draining: it would be listed as lost", r)
+			}
+		}
+		t.Logf("rows of drained pods left behind in the state draining (signed off, not listed): %v", rows)
+	}
+	gone := map[string]bool{}
+	for _, p := range drained {
+		gone[p.Name] = true
+	}
+	// A row left in the state draining is listed until system.heartbeat_stale_after has passed, so the list is read again
+	// until it settles.
+	waitFor(t, "R-OPS-003 R-UI-038 no drained pod listed, no lost row, a ready replica of every main role", 60*time.Second, 2*time.Second, func() bool {
+		reps, err := replicas()
+		if err != nil {
+			t.Logf("listing the replicas: %v", err)
+			return false
+		}
+		ready := map[string]bool{}
+		for _, r := range reps {
+			if (r.Lost && !lostBefore[r.Name]) || gone[r.Name] {
+				t.Logf("still listed: %s (state %s, lost %v)", r.Name, r.State, r.Lost)
+				return false
+			}
+			if r.State == "ready" {
+				ready[r.role()] = true
+			}
+		}
+		return ready["api"] && ready["packages"] && ready["worker"]
+	})
+}
+
+// lostReplicas names the replicas the registry lists as lost.
+func lostReplicas(t *testing.T) map[string]bool {
+	t.Helper()
+	reps, err := replicas()
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := map[string]bool{}
+	for _, r := range reps {
+		if r.Lost {
+			out[r.Name] = true
+		}
+	}
+	return out
 }
 
 func podNames(ps []pod) []string {

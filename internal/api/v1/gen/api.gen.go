@@ -8326,7 +8326,7 @@ type Replica struct {
 		Since time.Time `json:"since"`
 	} `json:"leases"`
 
-	// Lost The heartbeat is older than `system.heartbeat_stale_after`.
+	// Lost The heartbeat is older than `system.heartbeat_stale_after` and the replica had not begun to drain (a crash, a kill or the loss of its node). A replica whose heartbeat went stale while `draining` signed off and is not listed (Q-OPS-210).
 	Lost bool `json:"lost"`
 
 	// Name The pod name, else the host name.
@@ -8795,7 +8795,7 @@ type RoleSummary struct {
 	Degraded int `json:"degraded"`
 	Live     int `json:"live"`
 
-	// Nodes Distinct nodes the live replicas of the role run on.
+	// Nodes Distinct nodes the live replicas of the role run on; 0 outside Kubernetes, where no replica names its node.
 	Nodes int `json:"nodes"`
 	Ready int `json:"ready"`
 }

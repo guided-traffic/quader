@@ -377,8 +377,9 @@ tasks and the key ring. R-HA-001 and R-HA-020 verify rollouts through the replic
 
 - "Live" means `heartbeat_at > now() - system.heartbeat_stale_after`, evaluated with PostgreSQL's
   clock. Replica clocks are never compared with each other (R-HA-005).
-- A replica in state `draining` still counts as live for the contract guard: it may still run old
-  code for up to its grace period.
+- A replica in state `draining` still counts as live for the contract guard while its heartbeat is fresh: it may still run old
+  code for up to its grace period. Once its heartbeat is stale it has signed off: it is not listed and counts nowhere
+  ([operations-and-observability.md](operations-and-observability.md) R-OPS-003, Q-OPS-210).
 - The migration Job, the backup CronJob's pods and the restore Job do not insert a `replica` row.
   They are not serving replicas and must not appear in the minimum-version computation.
 
@@ -989,7 +990,7 @@ PostgreSQL (R-STOR-004). What a crash leaves behind, and what removes it:
 | Incomplete multipart uploads | Orphan sweep (`storage.orphans.multipart_max_age`), plus a bucket lifecycle rule `AbortIncompleteMultipartUpload` after 1 day as a second line ([lifecycle rule](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpu-abort-incomplete-mpu-lifecycle-config.html)) |
 | Jobs in `running` with a dead owner | Lease expiry and the reaper (R-HA-005) |
 | Lease locks of a dead `worker` process (the only advisory locks a replica holds; `web` replicas hold none) | Released when its lease session ends; on node loss after the server's TCP keepalive, which Quader sets per session (R-HA-013, R-HA-015) |
-| A `replica` row with a stale heartbeat | Shown as `lost`, pruned after 24 h (R-OPS-003) |
+| A `replica` row with a stale heartbeat | Shown as `lost`, pruned after 24 h; a row that went stale while `draining` signed off: not listed, pruned at the next run (R-OPS-003, Q-OPS-210) |
 | Remote-fetch collapse locks in Valkey | Expire with their Valkey TTL (`cluster.flight_lock_ttl`, 30 s), or are released at graceful shutdown (R-HA-011); waiters fetch themselves after their wait bound ([architecture.md](architecture.md) R-ARCH-033, R-REPO-026) |
 | Negative-cache entries and counters the dead process wrote to Valkey | Nothing to remove: every key carries a TTL, and readers validate what they read (R-ARCH-030) |
 | Partial output of a backup run | Never listed as a backup; removed by the next run or by retention ([backup-and-restore.md](backup-and-restore.md)) |

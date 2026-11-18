@@ -10,7 +10,7 @@ import {
   sampleInfo,
   sampleReplica,
 } from '../../api/testing/fakes';
-import { EncryptionApi, SystemApi } from '../../api/system-api';
+import { EncryptionApi, Replica, SystemApi } from '../../api/system-api';
 import { SessionStore } from '../../core/session-store';
 import { SystemStatus } from './system-status';
 
@@ -57,7 +57,9 @@ describe('System status screen', () => {
   it('R-UI-038 shows the summary, the installation facts and the replicas per role', async () => {
     const { root } = await render();
     const t = text(root);
-    expect(t).toContain('All ready');
+    // The sample runs api only: packages and worker have no ready replica, which is red (Q-UI-602).
+    expect(t).toContain('No ready replica of the role packages, worker');
+    expect(root.querySelector('.summary .material-icons.bad')).toBeTruthy();
     expect(t).toContain('0.1.1');
     expect(t).toContain('https://quader.example.net');
     expect(t).toContain('quader-api-0');
@@ -161,6 +163,92 @@ describe('System status screen', () => {
     expect(text(root)).toContain('Not drain-safe');
   });
 
+  describe('an update, a lost replica and a single replica (R-UI-038, Q-UI-600 to Q-UI-603)', () => {
+    /** Two ready replicas of each main role on two nodes, and the summary the server folds from them. */
+    function installation(system: FakeSystemApi, extra: Replica[] = []) {
+      const one = (name: string, role: 'api' | 'packages' | 'worker', node: string, over: Partial<Replica> = {}) =>
+        sampleReplica({ name, instanceUid: name, roles: [role], node, ...over });
+      const replicas = [
+        one('quader-api-0', 'api', 'n1'),
+        one('quader-api-1', 'api', 'n2'),
+        one('quader-packages-0', 'packages', 'n1'),
+        one('quader-packages-1', 'packages', 'n2'),
+        one('quader-worker-0', 'worker', 'n1'),
+        one('quader-worker-1', 'worker', 'n2'),
+        ...extra,
+      ];
+      system.replicasResult = replicas;
+      const count = (role: string) => {
+        const live = replicas.filter((r) => r.roles[0] === role && !r.lost);
+        return { live: live.length, ready: live.filter((r) => r.state === 'ready').length, degraded: 0, nodes: 2 };
+      };
+      system.infoResult = sampleInfo({
+        replicas: {
+          live: replicas.filter((r) => !r.lost).length,
+          ready: replicas.filter((r) => !r.lost && r.state === 'ready').length,
+          versions: { '0.1.1': 6 },
+          roles: { api: count('api'), packages: count('packages'), worker: count('worker') },
+        },
+      });
+    }
+    const summary = (root: HTMLElement) => root.querySelector<HTMLElement>('p.summary')!;
+
+    it('R-UI-038 Q-UI-600 a replica that drains during an update is shown as draining and leaves the header ready', async () => {
+      const { root } = await render((system) =>
+        installation(system, [
+          sampleReplica({
+            name: 'quader-api-old',
+            instanceUid: 'old',
+            node: 'n1',
+            version: '0.1.0',
+            state: 'draining',
+            checks: { database: { status: 'pass' }, draining: { status: 'fail' } },
+          }),
+        ]),
+      );
+      const head = text(summary(root));
+      expect(head).toContain('All roles ready');
+      expect(head).toContain('Replicas are being replaced (1 draining, 0 starting)');
+      expect(head).not.toContain('Replicas unready');
+      expect(summary(root).querySelector('.material-icons.bad, .material-icons.warn')).toBeNull();
+      const row = [...root.querySelectorAll('tr')].find((tr) => tr.textContent?.includes('quader-api-old'))!;
+      expect(text(row)).toContain('Draining');
+      expect(text(row)).not.toContain('Failing checks');
+    });
+
+    it('R-UI-038 Q-UI-602 a replica lost without draining is a warning with its last heartbeat, and its row stays as lost', async () => {
+      const { root } = await render((system) =>
+        installation(system, [
+          sampleReplica({ name: 'quader-api-crashed', instanceUid: 'crashed', node: 'n3', lost: true, heartbeatAt: '2026-11-18T09:12:00Z' }),
+        ]),
+      );
+      const head = text(summary(root));
+      expect(head).toContain('Lost without draining: quader-api-crashed, last heartbeat');
+      expect(summary(root).querySelector('time')?.getAttribute('datetime')).toBe('2026-11-18T09:12:00Z');
+      expect(summary(root).querySelector('.material-icons.bad')).toBeNull();
+      expect(summary(root).querySelector('.material-icons.warn')).toBeTruthy();
+      expect(head).not.toContain('All roles ready');
+      const row = [...root.querySelectorAll('tr')].find((tr) => tr.textContent?.includes('quader-api-crashed'))!;
+      expect(text(row)).toContain('Lost');
+      expect(row.querySelector('.warn .material-icons')).toBeTruthy();
+    });
+
+    it('R-UI-038 Q-UI-603 one healthy replica of the role all reads all roles ready; not drain-safe only informs', async () => {
+      const { root } = await render((system) => {
+        system.replicasResult = [sampleReplica({ name: 'quader-dev', instanceUid: 'dev', roles: ['all'], node: null })];
+        system.infoResult = sampleInfo({
+          replicas: { live: 1, ready: 1, versions: { dev: 1 }, roles: { all: { live: 1, ready: 1, degraded: 0, nodes: 0 } } },
+        });
+      });
+      const head = text(summary(root));
+      expect(head).toContain('All roles ready');
+      expect(head).toContain('Not drain-safe');
+      expect(summary(root).querySelector('.material-icons.bad, .material-icons.warn')).toBeNull();
+      const note = [...root.querySelectorAll('p.warning')].find((p) => p.textContent?.includes('Fewer than two ready replicas'))!;
+      expect(note.querySelector('.material-icons')?.textContent).toBe('info');
+    });
+  });
+
   it('R-UI-038 the key card marks a key with sealed values as re-encryption pending and offers Re-encrypt now', async () => {
     const { root, fixture } = await render((_s, _e, session) => {
       session.meResult = { capabilities: ['content:bypass', 'settings:read'] };
@@ -193,7 +281,7 @@ describe('System status screen', () => {
     const { root } = await render((_s, enc) => {
       enc.statusResult = new ApiError(404, { code: 'key_ring_unreadable', detail: 'no such endpoint', requestId: 'rid-9' }, 'rid-9');
     });
-    expect(text(root)).toContain('All ready');
+    expect(root.querySelector('p.summary[role="status"]')).toBeTruthy();
     expect(text(root)).toContain('rid-9');
   });
 

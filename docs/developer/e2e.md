@@ -427,7 +427,10 @@ the evidence ([Reading a stall](#reading-a-stall)).
 6. k6: only 200, no connection error, no dropped iteration. No container with exit code 137 or
    `OOMKilled` since the watch started. The kubelet's events for the drained pods hold no SIGKILL, no
    `FailedKillPod`. No Quader pod Pending longer than 60 s.
-7. The endpoint-removal time of the edge, measured and held to the drain delay ([below](#the-endpoint-removal-time-of-the-edge)).
+7. The registry after the drain (`checkRegistryAfterDrain`, R-OPS-003, R-UI-038, Q-OPS-210): a drained pod's row is deleted or,
+   if left, in the state `draining`; within 60 s no drained pod is listed, no row is lost that was not lost before the drain,
+   and `api`, `packages` and `worker` each have a ready replica, so the status screen's header is not red.
+8. The endpoint-removal time of the edge, measured and held to the drain delay ([below](#the-endpoint-removal-time-of-the-edge)).
 
 The dev profile gives the worker a `terminationGracePeriodSeconds` of 60 (the chart default is 300), so a
 worker whose job outlasts the shutdown budget releases it after about 45 s and the test does not wait 5
