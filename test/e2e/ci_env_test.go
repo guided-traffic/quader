@@ -104,15 +104,14 @@ func double(t testing.TB, stub, hostEnv string) *oidcDouble {
 	var dialer net.Dialer
 	pool := caPool(t)
 	transport := func(keepAlive bool) *http.Transport {
-		return &http.Transport{
-			DisableKeepAlives:   !keepAlive,
-			MaxIdleConnsPerHost: mintWorkers,
-			MaxConnsPerHost:     mintWorkers * 2,
-			DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
-				return dialForward(ctx, &dialer, network, addr)
-			},
-			TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12, ServerName: host},
-		}
+		// the TLS of the forward's clients (quietTLS): a closing connection sends no close_notify, which would end the forward
+		tr := quietTLSTransport(func(ctx context.Context, network, _ string) (net.Conn, error) {
+			return dialForward(ctx, &dialer, network, addr)
+		}, &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12, ServerName: host})
+		tr.DisableKeepAlives = !keepAlive
+		tr.MaxIdleConnsPerHost = mintWorkers
+		tr.MaxConnsPerHost = mintWorkers * 2
+		return tr
 	}
 	d := &oidcDouble{
 		stub: stub, host: host, tok: secretValue(t, "quader-"+stub, "control-token"),

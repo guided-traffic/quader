@@ -153,6 +153,8 @@ func breakFirstConnection(t *testing.T, c *http.Client, f *forward) *atomic.Int3
 		}
 		return conn, nil
 	}
+	// the TLS dial (quietTLS) runs over the wrapped dial: the process is killed once the connection was accepted, before the handshake
+	tr.DialTLSContext = quietTLS(tr.DialContext, tr.TLSClientConfig)
 	c.Transport = tr
 	return &n
 }

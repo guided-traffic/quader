@@ -288,15 +288,11 @@ func newAPI(t testing.TB, opts ...apiOption) *api {
 		Timeout: 3 * time.Minute,
 		// A redirect is an answer under test (login, logout, an exposure 404 never is one): follow none.
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
-		Transport: &http.Transport{
-			DisableKeepAlives: true,
-			// the route is looked up per connection: an option may replace it (withRoute) and copies of the client
-			// (withToken) share it, so a round robin goes on where the original stopped
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				return a.rt.dial(t)(ctx, network, addr)
-			},
-			TLSClientConfig: &tls.Config{RootCAs: caPool(t), MinVersion: tls.VersionTLS12},
-		},
+		// the route is looked up per connection: an option may replace it (withRoute) and copies of the client
+		// (withToken) share it, so a round robin goes on where the original stopped
+		Transport: quietTLSTransport(func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return a.rt.dial(t)(ctx, network, addr)
+		}, &tls.Config{RootCAs: caPool(t), MinVersion: tls.VersionTLS12}),
 	}
 	for _, o := range opts {
 		o(a)
@@ -1199,6 +1195,51 @@ func overForward(t testing.TB, f *forward, what string, attempt func() error) er
 		return f.renew(gen)
 	})
 }
+
+// quietTLSTransport is the transport of a harness client: one connection per request, dialed by dial, with the TLS of
+// quietTLS. DialContext and TLSClientConfig stay set so that a test can wrap the dial of a clone (breakFirstConnection).
+func quietTLSTransport(dial func(ctx context.Context, network, addr string) (net.Conn, error), cfg *tls.Config) *http.Transport {
+	return &http.Transport{DisableKeepAlives: true, DialContext: dial, TLSClientConfig: cfg, DialTLSContext: quietTLS(dial, cfg)}
+}
+
+// quietTLS is the TLS dial of every harness client that may go through a `kubectl port-forward`: it dials with dial,
+// runs the handshake with cfg (the server name is the request's host unless cfg names one) and returns a connection whose
+// Close ends the TCP connection without sending the TLS close_notify alert.
+//
+// Why (Q-HA-303): a server that answers a request with `Connection: close` writes the answer and then closes its socket.
+// A client that has read the answer sends its close_notify at once; when those bytes reach the server's socket before the
+// server's close(2), Linux ends the connection with a reset instead of a FIN, because data was left unread. The kubelet's
+// copy of the forwarded connection reads that reset, and kubectl ends the whole forward ("An error occurred forwarding
+// … connection reset by peer", "error: lost connection to pod"), so the next request through it ends in EOF or a reset
+// without reaching the pod. A busy node widens the window from a few in a hundred connections to nearly all of them. A
+// bare FIN carries no data, so the server's close stays a FIN and the forward lives on. The alert ends nothing the
+// client still needs: the answer was read in full before the connection is closed.
+func quietTLS(dial func(ctx context.Context, network, addr string) (net.Conn, error), cfg *tls.Config) func(ctx context.Context, network, addr string) (net.Conn, error) {
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		raw, err := dial(ctx, network, addr)
+		if err != nil {
+			return nil, err
+		}
+		c := cfg.Clone()
+		if c.ServerName == "" {
+			if c.ServerName, _, err = net.SplitHostPort(addr); err != nil {
+				_ = raw.Close()
+				return nil, err
+			}
+		}
+		tc := tls.Client(raw, c)
+		if err := tc.HandshakeContext(ctx); err != nil {
+			_ = raw.Close()
+			return nil, err
+		}
+		return quietConn{tc}, nil
+	}
+}
+
+// quietConn is a TLS connection whose Close sends no close_notify (quietTLS).
+type quietConn struct{ *tls.Conn }
+
+func (c quietConn) Close() error { return c.NetConn().Close() }
 
 // dialForward dials addr. When addr is a forward whose kubectl process has ended, a refused connection waits for the
 // restarted process (nothing of the request was sent, so waiting changes no count); when the forward does not come

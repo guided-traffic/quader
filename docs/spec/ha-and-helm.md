@@ -10234,6 +10234,33 @@ lockout matters), or if an installation shows the 1 s retries as a load on a Pos
 [deploy/dev/pooler.yaml](../../deploy/dev/pooler.yaml), [docs/developer/local-profile.md](../developer/local-profile.md), the pooler requirements of the
 [README](../../README.md) and of the manual ([configuration](../manual/admin/configuration.md#behind-a-transaction-mode-pooler), [runbook](../manual/admin/runbook.md)).
 
+### Q-HA-303 · The harness clients close their TLS connections without close_notify, so a closing connection does not end a kubectl port-forward
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the e2e tests reach single pods and the test upstreams through supervised `kubectl port-forward` processes
+([Q-HA-64](#q-ha-64--how-the-end-to-end-tests-of-the-access-core-hold-valkey-down-reach-a-replica-directly-and-get-the-login-configuration-into-the-dev-profile)).
+Two nightly legs failed on a request that a forward cut (`e2e (vuln)` of run 43698804297, `e2e (vuln-long)` of run 44067104691): kubectl had ended the
+forward on `read: connection reset by peer` from the pod's socket, and the request after it never reached the pod. The reset is the teardown of the
+connection before: the server closes after the answer of a `Connection: close` request, the client's TLS close_notify can arrive before that close, and
+Linux closes a socket with unread data with a reset. kubectl ends a forward on a reset of any of its connections. A setup request through a forward was
+already repeated on a new forward (`overForward`); a request of a test was not, and should not be on the grounds of a harness fault alone.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The harness clients close without close_notify (chosen) | `quietTLS`: the TLS dial of the `api` client, the stub control clients and the CI issuer double returns a connection whose Close ends the TCP connection only | Removes the cause: a FIN carries no data, so the server's close stays a FIN; reproduced on Linux, 0 resets in 400 connections against 3 of 200 (immediate close) and 200 of 200 (close 20 ms late) with close_notify | A client the harness does not own (a package manager in a client pod) still sends it; those run inside the cluster, not through a forward |
+| (b) Repeat every GET and HEAD of a test on a new forward after a transport error | `send` uses `overForward` for safe methods | Covers every cause of a broken forward | A request of an assertion is repeated, and a cut it should report is retried away; it treats the symptom |
+| (c) Keep-alive connections through a forward | Fewer closes | Fewer teardowns | The client's close of an idle connection meets the same race; a reused connection that the server closed adds a failure of its own, and the scatter profile needs a new connection per request at the edge |
+
+**Choice:** (a). A request of a test through a forward is still sent once, and a cut is still reported.
+
+**Rationale:** The alert ends nothing the client still needs: the answer was read in full before the connection is closed, and the server does not wait
+for the alert. The development agent would revisit the choice if a forward still ends on a reset in a run's `portforward-*.log` artifacts with the
+quiet close in place; the cause is then another one and is read from those files.
+
+**Applied in the spec:** none. [docs/developer/e2e.md](../developer/e2e.md#m1-tests) ("The control clients and a broken forward") and item 16 of
+its [findings](../developer/e2e.md#findings-of-the-suite).
+
 ## What this does not cover
 
 ### H-37 · A database restore revives revoked credentials and removed grants
