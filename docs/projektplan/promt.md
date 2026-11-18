@@ -327,6 +327,20 @@ Found on 2026-11-18 by reading the stall evidence of the baseline nightly 441869
   room for three legs and Test and Release's kind legs wait behind the nightly's lanes, which the owner's rule forbids). The nightly at night would need a
   trigger outside GitHub's schedule (a CronJob that dispatches it); after (a) and (b) it matters less. In this repository: the recorder and the
   warm-up check of Q-HA-305; `concurrency` across the two workflows is ruled out there (it cancels pending runs and holds the release).
+  **Applied on 2026-11-18, 08:10 UTC, by the owner's word** (runner definitions, commit 734686d there): (a) and (b) for the class `large`, with
+  three things the test of the change added. The kubelet's cgroup driver on the runner machines is cgroupfs (`/kubepods/burstable/pod<uid>`), so
+  the parent is `<pod cgroup>/docker`. Inside the pod a container without a CPU request has `cpu.weight` 1 beside the Docker containers' 100, so the
+  `runner` and `dind` containers request one CPU each (weight 100) and the Docker containers get weight 800. The memory limit went from 20 to 28 GiB,
+  because it now counts the kind nodes (the pods of the `drain-load-b` leg of 44233617621 held 11 GiB, of that 4.4 GiB page cache; k6, the image
+  builds and the nodes' own daemons are not in that figure). **Verified** with a pod of the same layout on `k8s-runner-lambda`: containers land in
+  the pod's cgroup, a two-node kind cluster of the pinned versions comes up Ready, the top-level `docker` cgroup stays empty, the kubelet removes
+  the pod's cgroup. **Not verified:** a leg on the new layout, above all one with small jobs beside it, which is the proof that the stall is gone;
+  whether 28 GiB holds every leg (an OOM kill inside a leg is now possible where none was before: read the pod's `memory.peak` and `pods.csv`).
+  The class `self-hosted` is unchanged, its image builds stay in the top-level cgroup. **Follows in this repository:** the recorder
+  (`deploy/dev/e2e-evidence.sh`) reads the job's containers as children of the top-level `docker` (`cgd:` rows, `containers.tsv`); on `large` they
+  are now under `kubepods/burstable/pod<uid>/docker`, so those rows are empty for the leg's own containers until the recorder follows the daemon's
+  cgroup parent. The `cg:` rows and the `node:` rows are not affected. F-133 is closed when a nightly with a Test and Release run beside it is green
+  and its evidence shows the nodes kept their CPUs.
 - **F-134 · A `packages` pod is OOM-killed by its connections' socket buffers while the kind nodes are starved, and its memory guard sheds
   nothing** (product; cause verified on 2026-11-18 from `pods.csv`, not reproduced locally). **Verified** in the verification run 44211950522
   (`ha-faults`, `ValkeyCredentialMismatch`, stall of F-133): `quader-packages-…-tslqg` and `…-z2bmt` were OOM-killed at 02:08:59 and 02:09:47
@@ -1012,6 +1026,7 @@ v0.56.1 to v0.56.4).
   4. The remaining findings of section 8: F-136, F-135, F-126, F-119 (the case of 11-09), F-130, F-131, F-132; `ci-ha` on a
      degraded hosted runner; the stalled `drain-load-pooler` of 11-11.
   5. A partial dispatch (`-f sets=…`) takes a large pod for every leg of a lane it does not run; in a full pool one leg waited 40 minutes.
-- For the owner, one at a time: the runner change of F-133 (the cgroup parent of the `dind` daemon and the CPU request of `large`); the
-  schedule that GitHub starts 5.5 to 8.5 hours late; the decision Q-ARCH-500; the branches `stab/*` on the remote, which can go once
+- The runner change of F-133 was applied after the run, on the owner's word (see there): the next run reads the first legs on the new
+  layout before anything else, and makes the recorder follow the daemon's cgroup parent.
+- For the owner, one at a time: the schedule that GitHub starts 5.5 to 8.5 hours late; the decision Q-ARCH-500; the branches `stab/*` on the remote, which can go once
   `stab/oom-2` has landed.
