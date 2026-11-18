@@ -11,8 +11,9 @@ export function totalOf(g: VulnerabilityGrade): number {
 }
 
 /**
- * What a version's row and its page say of its vulnerabilities (R-UI-112, Q-UI-454): the shield and the letter, then the total of
- * its open findings and how many of them have a fix, "E · 1,145 findings · 112 fixable", one statement of one grade. The counts per
+ * What a version's row and its page say of its vulnerabilities (R-UI-112, Q-UI-454): the shield, which carries the letter, then the total of
+ * its open findings and how many of them have a fix, "1,145 findings · 112 fixable", one statement of one grade; a screen reader
+ * hears the letter before it. The counts per
  * severity and the rule of the letter are the tooltip; the card of the version's page has them in full.
  */
 export function gradeSummaryText(g: VulnerabilityGrade, locale: string): string {
@@ -34,10 +35,9 @@ export function gradeSummaryText(g: VulnerabilityGrade, locale: string): string 
     <span class="version-grade" [quaderTooltip]="tooltip()">
       <quader-grade-shield [grade]="grade().grade" />
       <span class="version-grade-text"
-        ><span class="visually-hidden" i18n="@@vuln.grade.prefix">Grade</span>&ngsp;<span class="version-grade-letter">{{
-          grade().grade
-        }}</span>
-        · {{ text() }}</span
+        ><span class="visually-hidden"
+          ><ng-container i18n="@@vuln.grade.prefix">Grade</ng-container>&ngsp;{{ grade().grade }} · </span
+        >{{ text() }}</span
       >
     </span>
   `,
@@ -52,16 +52,15 @@ export function gradeSummaryText(g: VulnerabilityGrade, locale: string): string 
       align-items: flex-start;
       gap: var(--quader-space-2);
     }
+    /* The shield (20 px) is centred on the line it stands in, whatever that line's height (16 px in a table, 21 in a paragraph),
+       and adds nothing to it. */
     quader-grade-shield {
       flex: none;
-      margin-block-start: calc((var(--quader-text-line) * 1em - 1.25rem) / 2);
+      margin-block: calc((1lh - 1.25rem) / 2);
     }
     .version-grade-text {
       min-inline-size: 0;
       white-space: nowrap;
-    }
-    .version-grade-letter {
-      font-weight: 600;
     }
   `,
 })

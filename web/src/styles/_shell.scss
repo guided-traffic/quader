@@ -190,7 +190,8 @@ quader-root {
   }
 
   // The project switcher on top of a project's sidebar (Q-UI-129): the project's mark and name as a button, and a panel
-  // with the search field, the recent projects and the matches over the entries below.
+  // with the search field, the recent projects and the matches over the entries below. The panel has the width a choice of
+  // projects needs, not the side bar's: it starts at the button and reaches over the page (owner, 2026-11-18: "far too squat").
   .project-switcher {
     position: relative;
     display: block;
@@ -241,14 +242,15 @@ quader-root {
 
   .switcher-panel {
     position: absolute;
-    inset-inline: 0;
+    inset-inline-start: 0;
     inset-block-start: calc(100% + 2px);
+    inline-size: min(24rem, calc(100vw - 2 * var(--quader-space-2)));
     z-index: 5;
     display: flex;
     flex-direction: column;
     gap: var(--quader-space-1);
     box-sizing: border-box;
-    max-block-size: 24rem;
+    max-block-size: min(32rem, calc(100vh - 6rem));
     padding: var(--quader-space-2);
     overflow-y: auto;
     border: 1px solid var(--quader-menu-border);
@@ -289,7 +291,7 @@ quader-root {
   .switcher-item,
   .switcher-all {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: var(--quader-space-2);
     min-block-size: 2rem;
     box-sizing: border-box;
@@ -313,10 +315,29 @@ quader-root {
     }
   }
 
+  // An entry is the project's mark, its name, and under the name its key: each on one line, cut with an ellipsis only where
+  // even the panel's width does not hold it.
+  .switcher-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: var(--quader-space-3);
+    row-gap: 0;
+    padding-block: var(--quader-space-2);
+
+    quader-project-mark {
+      grid-row: 1 / span 2;
+      align-self: center;
+    }
+  }
+
   .switcher-key {
-    margin-inline-start: auto;
+    grid-column: 2;
+    overflow: hidden;
     color: var(--quader-nav-fg-muted);
     font-size: 0.75rem;
+    line-height: 1rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .switcher-empty {

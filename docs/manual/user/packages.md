@@ -75,7 +75,7 @@ The page is a table of every version you may see, the highest version first:
 |---|---|
 | **Version** | The version, which opens its page. A distribution tag that points at it, such as `latest` or `next`, stands beside it, and so does **pre-release** for a pre-release. For a container image the version is the tag |
 | **Size** | The size of the version's files; for an image, the size of the image |
-| **Vulnerabilities** | The grade of the version, the number of its open findings and how many of them have a fix, for example **E · 1,145 findings · 112 fixable** (see [Vulnerabilities](vulnerabilities.md#grades)). Only where the versions are checked for vulnerabilities and you are signed in |
+| **Vulnerabilities** | The grade of the version, the number of its open findings and how many of them have a fix, for example the shield **E** and **1,145 findings · 112 fixable** (see [Vulnerabilities](vulnerabilities.md#grades)). Only where the versions are checked for vulnerabilities and you are signed in |
 | **Published** | When the version was published, as a relative time; hover for the exact time |
 | **Last fetched** | When a client last downloaded the version, or **Never** |
 | **Repositories** | Which repositories hold the version. Only when the versions are not all in the same repositories |

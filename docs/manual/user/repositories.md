@@ -106,7 +106,7 @@ Depending on the format, the content shows:
 
 Select a package or image name to open the [package page](packages.md), the table of its versions and the README; a version opens its own page. A virtual repository lists what it resolves through its members, which are named above the list. A remote repository lists what has been fetched through it, marked in a note.
 
-The **Vulnerabilities** column shows a shield with the grade and the count that decides it, for example **E · 13 Critical**; point at it to
+The **Vulnerabilities** column shows a shield with the grade's letter and beside it the count that decides it, for example the shield **E** and **13 Critical**; point at it to
 see every count. Select its heading to sort by grade: once ascending, from N/A and S to E, and again for the worst first. Sorting by
 grade loads up to 1,000 entries first; in a larger repository the list says that it sorted only those. The column is not shown when
 you are signed out, or when the installation does not scan.

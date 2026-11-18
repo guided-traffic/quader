@@ -5769,6 +5769,12 @@ Priority: **P1** · Covers: quader-only
 - **The text** is the grade and the count that decides it, as R-VULN-038 words it: "E · 13 Critical", "C · OS end of life",
   "S · no known vulnerabilities", "N/A · not scanned"; the letter at weight 600. **The rule** is the sentence of R-VULN-038's
   table; for S of an image "No known vulnerabilities, and the OS is supported", for N/A the evaluation state in words.
+  **Revised on 2026-11-18 (owner, walk objection W-9): beside its shield the letter is not written a second time.** The shield
+  carries the letter; the text beside it is the count that decides ("13 Critical", "OS end of life", "no known vulnerabilities",
+  "not scanned"), in a list, on a version's row and facts line, and on the card. A screen reader still hears "Grade E · 13
+  Critical": the letter and its separator are in the text, hidden from sight. Where no shield stands (a tooltip, the order of a
+  sort) the text keeps its letter. The shield is centred on the line it stands in, whatever that line's height, and adds
+  nothing to it; in a table cell a badge is too, so that the text of every cell of a row stands on one line (Q-UI-308).
 - `<quader-grade>` ([grade.ts](../../web/src/app/shared/vulnerability/grade.ts)) is the shield of 20 px and the text on one line,
   for a list cell, a header and a tab. Its tooltip (`[quaderTooltip]`) names every count, "13 Critical · 160 High · 113 Medium ·
   16 Low · 843 Unknown", and "OS end of life" when it is; the text stays the accessible name of the cell.
@@ -6189,7 +6195,8 @@ Acceptance criteria:
 
 - Unit: of 120 versions the table shows 50, then 100 after **Load more**, and 50 again after a new search; `beta` narrows to the
   pre-release, `latest` to the version the tag points at; each column's sort orders the rows and is the address's; the grade cell
-  of `E` with 1,145 findings and 112 with a fix reads "E · 1,145 findings · 112 fixable".
+  of `E` with 1,145 findings and 112 with a fix reads "1,145 findings · 112 fixable" beside its shield (R-UI-091: the letter is
+  the shield's and is not written again).
 - Rendered (rule 11): the package pages of npm (`@acme/ui-kit`, the many-version `chart-render-kit` filtered and sorted by grade,
   `image-convert-tools`, the longest name), the image `portal/web`, the NuGet, Debian and Ansible packages of the seed, as plain
   user, power user and administrator.
@@ -6245,8 +6252,9 @@ numbers whose relation the reader had to know.
 
 Acceptance criteria:
 
-- Unit: the grade E with 13 Critical, 160 High, 113 Medium, 16 Low and 843 Unknown of which 112 have a fix reads "E · 1,145
-  findings · 112 fixable"; S "no findings"; N/A "not scanned"; the tab's label is "Vulnerabilities".
+- Unit: the grade E with 13 Critical, 160 High, 113 Medium, 16 Low and 843 Unknown of which 112 have a fix reads "1,145
+  findings · 112 fixable" beside the shield E, and "Grade E · 1,145 findings · 112 fixable" as text; S "no findings"; N/A "not
+  scanned"; the tab's label is "Vulnerabilities".
 
 ### R-UI-120 · Set up client is one page of a repository
 Priority: **MVP** · Covers: quader-only

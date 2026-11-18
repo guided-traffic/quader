@@ -121,7 +121,7 @@ describe('Repository content page', () => {
     // The server sorts by name; the browser by grade (Q-UI-373).
     expect(packages.listFilters.at(-1)).toMatchObject({ sort: 'name' });
     const order = ['N/A', 'S', 'A', 'B', 'C', 'D', 'E'];
-    const shown = [...r.root.querySelectorAll('tbody > tr > td quader-grade .grade-letter')].map((e) => order.indexOf(e.textContent?.trim() ?? ''));
+    const shown = [...r.root.querySelectorAll('tbody > tr > td quader-grade quader-grade-shield .letter')].map((e) => order.indexOf(e.textContent?.trim() ?? ''));
     expect(shown.length).toBeGreaterThan(1);
     expect(shown[0]).toBe(order.indexOf('E'));
     expect(shown).toEqual([...shown].sort((a, b) => b - a));

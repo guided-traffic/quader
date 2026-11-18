@@ -11274,7 +11274,7 @@
     </unit>
     <unit id="pkg.grade.not-scanned">
       <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:19</note>
+        <note category="location">src/app/features/packages/version-grade.ts:20</note>
       </notes>
       <segment>
         <source>not scanned</source>
@@ -11282,7 +11282,7 @@
     </unit>
     <unit id="pkg.grade.no-findings">
       <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:21</note>
+        <note category="location">src/app/features/packages/version-grade.ts:22</note>
       </notes>
       <segment>
         <source>no findings</source>
@@ -11290,7 +11290,7 @@
     </unit>
     <unit id="pkg.grade.one-finding">
       <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:25</note>
+        <note category="location">src/app/features/packages/version-grade.ts:26</note>
       </notes>
       <segment>
         <source>1 finding</source>
@@ -11298,7 +11298,7 @@
     </unit>
     <unit id="pkg.grade.findings">
       <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:26</note>
+        <note category="location">src/app/features/packages/version-grade.ts:27</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n.format(total)"/> findings</source>
@@ -11306,7 +11306,7 @@
     </unit>
     <unit id="pkg.grade.fixable">
       <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:27</note>
+        <note category="location">src/app/features/packages/version-grade.ts:28</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n.format(g.fixable)"/> fixable</source>
@@ -11314,9 +11314,9 @@
     </unit>
     <unit id="vuln.grade.prefix">
       <notes>
-        <note category="location">src/app/features/packages/version-grade.ts:37</note>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:24,25</note>
-        <note category="location">src/app/shared/vulnerability/grade.ts:19</note>
+        <note category="location">src/app/features/packages/version-grade.ts:39</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:24</note>
+        <note category="location">src/app/shared/vulnerability/grade.ts:20</note>
       </notes>
       <segment>
         <source>Grade</source>
@@ -29753,7 +29753,7 @@
     </unit>
     <unit id="vuln.grade.fact.os">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:33</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:34</note>
       </notes>
       <segment>
         <source>OS</source>
@@ -29761,7 +29761,7 @@
     </unit>
     <unit id="vuln.grade.fact.eosl">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:36,38</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:37,39</note>
       </notes>
       <segment>
         <source>end of life</source>
@@ -29769,7 +29769,7 @@
     </unit>
     <unit id="vuln.grade.fact.findings">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:42</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:43</note>
       </notes>
       <segment>
         <source>Findings in</source>
@@ -29777,7 +29777,7 @@
     </unit>
     <unit id="vuln.grade.fact.scanned">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:106</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:108</note>
       </notes>
       <segment>
         <source>Scanned</source>
@@ -29785,7 +29785,7 @@
     </unit>
     <unit id="vuln.grade.fact.checked">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:106</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:108</note>
       </notes>
       <segment>
         <source>Checked</source>

@@ -295,7 +295,7 @@ No list shows an address field ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-pro
 A version's vulnerabilities are shown as its grade, the way the owner's cogpit grades an image
 ([R-VULN-038](../spec/vulnerability-scanning.md#r-vuln-038--the-grade-of-a-version),
 [R-UI-090 to R-UI-094](../spec/api-and-ui.md#r-ui-090--the-grade-shield)): a shield with the letter S, A, B, C, D, E or N/A, the
-count that decides it ("E · 13 Critical"), the rule it stands for ("More than 5 Critical"), the counts as a severity bar and a
+count that decides it ("13 Critical" beside the shield E; the letter is the shield's and is not written again), the rule it stands for ("More than 5 Critical"), the counts as a severity bar and a
 line of facts. Four shared pieces in [web/src/app/shared/vulnerability/](../../web/src/app/shared/vulnerability/) draw it; no
 screen draws its own, and no screen shows a version's highest severity instead.
 
@@ -308,7 +308,7 @@ screen draws its own, and no screen shows a version's highest severity instead.
 
 | Piece | What it is | Inputs |
 |---|---|---|
-| `<quader-grade>` | The shield of 20 px (a format icon's size in a list) and "E · 13 Critical"; its tooltip names every count | `grade` (`VulnerabilityGrade` of the API) |
+| `<quader-grade>` | The shield of 20 px (a format icon's size in a list), centred on its line, and "13 Critical" beside it; a screen reader hears "Grade E · 13 Critical"; its tooltip names every count | `grade` (`VulnerabilityGrade` of the API) |
 | `<quader-grade-card>` | The shield of 32 px, the text, the rule, the bar and the facts: an image's OS, its end of life (warning colour) and "Scanned 1 h ago (…)", a package's "Checked 3 min ago (…)", and **Findings in** the repository, a link to the report filtered by repository, package and version | `grade`, `packageName`, `findingVersions` (the version, or an image's manifest digests), `image`; `barQueries` and `activeSeverity` make the bar the filter of the page's findings (the package page) |
 | `<quader-severity-bar>` | Critical, High, Medium, Low (with None) and Unknown as five segments, each as wide as its share (at least 7 %) plus the room of its count; Unknown hatched; a severity without findings faint, its 0 readable | `counts`; `queries` turns the segments into filter links (the report's header replaces the query with them, `merge` keeps the page's other parameters); `active` marks the segment of the filter in force |
 | `<quader-grade-shield>` | The crest as inline SVG with its letter | `grade`, `size` (`list` 20 px, `card` 32 px), `label` |

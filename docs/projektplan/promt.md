@@ -1003,6 +1003,17 @@ agent** is not decided until the owner has said so.
     can on the repository's page is decided in the spec for when they are built (Q-UI-515, Q-UI-516). To decide in the spec: where the files of a
   repository that is not generic show (npm, NuGet, OCI, Debian, Ansible), what becomes of the routes under `/browse`, and where
   the trash can of a project lives.
+- **W-9 · The shield carries the letter; it is not written again beside it, and the text stands on the shield's middle**
+  (owner, 2026-11-18, looking at the versions table that W-7 built: "something is not centred"). Measured in the running UI: a
+  table cell's line is 16 px, the shield 20 px, and the shield's place was computed for a line of 21 px, so its middle stood 3 px
+  below the text's; a cell with a badge had a line of 20 px, so the version stood 2.5 px lower than the size and the times
+  beside it. Built at once, locally: the letter and its separator are hidden from sight beside a shield (a screen reader still
+  hears them), in the list grade, the version grade and the card; the shield is centred on the line it stands in by that line's
+  own height, and a badge in a table cell too (R-UI-091 revised).
+- **W-10 · The project switcher has the room a choice of projects needs** (owner, 2026-11-18: "far too squat; it is not
+  necessary"). The panel had the side bar's width: a name was cut to "Customer p…" and its key broke into three lines beside it.
+  Built at once, locally: the panel is 24 rem wide and reaches over the page, and an entry is the mark, the name, and the key
+  under the name, each on one line.
 - **Seen by the development agent, not decided:**
   - `login`: the local form of the break-glass account stands first with the primary button, the sign-in provider below it as a
     secondary button. The owner typed `sam` into the form before he found the provider's button. Every user except the break-glass

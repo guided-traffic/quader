@@ -359,6 +359,12 @@ td.class-cell .material-icons {
       line-height: 1rem;
     }
 
+    // A badge (20 px) in a cell is centred on the first line too and adds nothing to its height: without this a cell with a
+    // badge had a line of 20 px, and its text stood 2 px lower than the text of the cells beside it (owner, 2026-11-18).
+    tbody :is(th, td) .badge {
+      margin-block: calc((1rem - 20px) / 2);
+    }
+
     tbody :is(th, td) > :is(.btn, quader-address-field, select, .select-input, .text-input, quader-copy-button, .row-actions) {
       margin-block: calc((1rem - var(--quader-control-height)) / 2);
     }
