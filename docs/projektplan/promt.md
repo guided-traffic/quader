@@ -1453,6 +1453,13 @@ agent** is not decided until the owner has said so.
   because it runs its journeys only when their files change; W-20 changed one. Fixed in 90896979, not run locally. What it
   shows: a leg that skips by path is green without having looked; a rename in a shared piece needs a search over
   `web/e2e/vuln/` too, which the builders' brief now names.
+- **F-149 · A commit of the plan pushed while a run is in flight costs that run's release** (2026-11-18, Test and Release
+  44393745218 of 90896979): every gating job was green and **Semantic Release** ran, and wrote "The local branch main is behind
+  the remote one, therefore a new version won't be published": the development agent had pushed a commit of this file with
+  `[skip ci]` eleven minutes after the code. That commit starts no run of its own, so W-20 stayed without a release until the
+  next push of code. The same must have cost time on other days and was read as "the release comes with the next push".
+  Since that night: a commit of the plan goes **before** the code commit in the same push, or waits until the run's
+  **Semantic Release** job has ended; nothing is pushed to `main` between a code push and that job.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
@@ -1601,6 +1608,11 @@ v0.56.1 to v0.56.4).
 - Not on `main`: the branch `stab/oom-2`, commit b1d9b7d6 (Q-ARCH-500, H-988; closes F-134): a response is charged against the kernel's
   send buffers before its first byte and waits for a free one, `server.send_buffer` 128 KiB. Its gates and its leg (run 44232726523) are
   green; it was held back so that the acceptance nightly ran on one commit.
+  **Landed in the night of 2026-11-18** on the day's `main`, as one commit with its message unchanged: one conflict, in this
+  file; no code of the day touches the admission guard, the listener's socket options or the chart's validation. Gates on the
+  result: the unit tier, the packages `internal/app`, `internal/httpserver`, `test/integration/overload` and
+  `test/integration/server` on the integration stack, the chart's lint and tests, lint, cyclo, generate-check, the web tier.
+  Not run again: the forced reproduction (1,000 clients in a 1 GiB container) and a kind leg; the next nightly is its leg.
 - The acceptance nightly 44233617621 on dd97187a, alone on the runners: 26 legs green, `e2e (drain-load-b)` red (F-137, new, not
   explained). The owner had the run cancelled at 07:46 UTC to free the runners: `drain-load-c` was cut in its run, `drain-load-e`,
   `Latency` and the vulnerability scanning performance did not start.
@@ -1618,7 +1630,7 @@ v0.56.1 to v0.56.4).
      changes (`drain-load-e` was green on its branch only): read them in the next scheduled nightly. Not read yet in the artifacts of
      44233617621: the `cg:` rows of the stall evidence after 2a161226, `TestHAPooler_Switchover` on `main`, `vuln-long` and `alerts`
      with the changed drain helpers (all four legs were green).
-  3. Land `stab/oom-2` (b1d9b7d6) with the full gates, then watch Test and Release.
+  3. ~~Land `stab/oom-2` (b1d9b7d6) with the full gates~~ — landed in the night of 2026-11-18, see above.
   4. The remaining findings of section 8: F-136, F-135, F-126, F-119 (the case of 11-09), F-130, F-131, F-132; `ci-ha` on a
      degraded hosted runner; the stalled `drain-load-pooler` of 11-11.
   5. A partial dispatch (`-f sets=…`) takes a large pod for every leg of a lane it does not run; in a full pool one leg waited 40 minutes.
