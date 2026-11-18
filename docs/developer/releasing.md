@@ -437,7 +437,7 @@ Set `ha-suite` (job `e2e-npm`, edge port 8100, the budgets of `npm-ha`: 120 minu
 the loss of a kind worker node with `docker stop`, the loss of the PostgreSQL and of the Valkey primary, and the npm-audit drain. Not verified on this commit: the set is not
 in [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) yet, so its scenarios are the ones the plan names, not the ones the code runs.
 
-Sets `ha-faults` (edge port 8112) and `ha-pooler` (edge port 8111, the pooler profile through `QUADER_POOLER=1`) are legs of the same job with the same budgets: the database at 0 instances for 2 minutes, the Sentinel quorum loss, `FLUSHALL` and a slow Valkey and a Valkey credential mismatch; and a pooler instance deleted, gracefully and forced. [The failure suite ha-faults](e2e.md#the-failure-suite-ha-faults) describes them.
+Sets `ha-faults` (edge port 8112) and `ha-pooler` (edge port 8111, the pooler profile through `QUADER_POOLER=1`) are legs of the same job with the same budgets: the database at 0 instances for 2 minutes, the Sentinel quorum loss, `FLUSHALL` and a slow Valkey and a Valkey credential mismatch; and a pooler instance deleted, gracefully and forced, and a PostgreSQL switchover behind the poolers. [The failure suite ha-faults](e2e.md#the-failure-suite-ha-faults) describes them.
 
 Job `e2e-ci` runs `make e2e SET=ci-ha` on a kind cluster
 

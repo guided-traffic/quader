@@ -1761,6 +1761,9 @@ connections stay supported and remain the default.
   `database.retry.max_elapsed`: every replica turns not ready and the edge answers `503` for everything. Each pooler
   therefore sets `server_login_retry` to 1 s (an installation requirement like the ones above), so the pooler serves again
   about a second after the new primary does, and the switchover is the stall of the failure table, not an outage.
+  What the pooler answers a client during the switchover is retried within `database.retry.max_elapsed` like the
+  switchover itself, also the two answers that look final: `invalid server parameter` (`08P01`) and `password authentication
+  failed` (`28P01`) on a connection that is already authenticated ([Q-HA-306](#q-ha-306--the-poolers-own-answers-to-a-switchover-are-retried-a-wrong-password-at-connect-is-not)).
 - **Pooler limits.** Each request-pooler instance accepts `max_client_conn ≥ (web_max + worker_max)
   × database.pool.max_conns`, because one instance may receive every client while the other
   drains; each control-pooler instance accepts `max_client_conn ≥ web_max + worker_max`.
@@ -1872,6 +1875,10 @@ Acceptance criteria (pooler profile of R-HA-051, a green full run of Test and Re
 - `kubectl delete pod <pooler pod>` during an `npm ci` loop: no failed iteration. With
   `--grace-period=0 --force`, only requests whose `COMMIT` was in flight answer `503` with
   `Retry-After`, and every client iteration succeeds after its own retries.
+- A PostgreSQL switchover behind both poolers (`failover.sh`) under the npm load: every `npm` command exits `0`, k6 records only
+  `2xx` and `304` (none of them the edge's own `503`), every replica answers `/readyz` `200` throughout, and every pooler instance
+  serves again within `health.database_outage_grace` of its first failure line (`TestHAPooler_Switchover`, set `ha-pooler`,
+  [Q-HA-302](#q-ha-302--the-poolers-retry-a-failed-server-login-after-1-s-so-a-switchover-behind-them-stays-inside-the-retry-budget)).
 - A login without the role defaults makes the replica exit with a message naming the login and the
   setting.
 - With `pooler.mode: transaction` and an empty `session_host`, `helm template` fails and names
@@ -9655,6 +9662,7 @@ Context: R-HA-007 rows without an R-HA-052 scenario: Sentinel quorum lost, S3 cr
 | S3 credentials fail | unit `TestGuardBreaker` ("a store that rejects the credential counts as an object-store failure": the circuit, the log line with the credential source and no secret) and `TestErrorMapping` (which codes are credential rejections); no e2e run, see H-793 |
 | Spool volume full | integration `TestR_HA_052_SpoolExhaustionAnswers503AndEvictsNothing` (a replica with a 6 MiB budget: `503` with `Retry-After`, `413`, no eviction, the retry succeeds); the dev profile's budget is 2 GiB per replica, so an e2e run would upload gigabytes to prove the same admission |
 | Pooler instance lost | e2e `TestHAPooler_InstanceLoss` (R-HA-058) |
+| PostgreSQL switchover behind the poolers | e2e `TestHAPooler_Switchover` (R-HA-058, Q-HA-302) |
 | Valkey credential mismatch | e2e `TestHAFaults_ValkeyCredentialMismatch` (running replicas, the replacement pod) and integration `TestValkeyStartup` (the first readiness) |
 | Backup and restore pod evicted or crashed | e2e `TestBackupDrain` (R-BAK-012, R-BAK-010, R-BAK-021: the drain of the node, `kill -9` of the pod), named with R-HA-007 and R-HA-052 as well; "cut off" is a network fault and is not built (H-792) |
 
@@ -10211,7 +10219,9 @@ that was just promoted remembers none, so it runs `ALTER ROLE … WITH PASSWORD`
 is run with logging suppressed, so PostgreSQL's log does not show it). PgBouncer logs in to the server with the SCRAM keys of an authenticated client; a
 client that logged in before the change carries keys of the old salt. Reproduced with PostgreSQL 18.6 and PgBouncer 1.26.1 (a restart, the password set
 again, two long-lived client sessions and five loops of new logins): `server_login_retry` 15 gave 26.7 s of failed logins with the password failure after the
-first 15 s; 1 gave 2.1 s and 3.1 s, ending about a second after PostgreSQL accepted connections again.
+first 15 s; 1 gave 2.1 s and 3.1 s, ending about a second after PostgreSQL accepted connections again. On the CI runners `TestHAPooler_Switchover` measured each pooler instance's failure window (run 44206453722 at the
+default: 30.1 s on all four; run 44219132691 at 1 s: 8.2 to 8.9 s, of which the new primary took 8.1 s to accept connections through
+`quader-db-rw`, the failed login on it came 11 ms later and the next login 16 ms after that).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -10221,7 +10231,7 @@ first 15 s; 1 gave 2.1 s and 3.1 s, ending about a second after PostgreSQL accep
 
 **Choice:** (a). The value follows from the measurement: what the pooler adds to a switchover is one `server_login_retry` per failed login, and two logins
 fail; at 1 s the sum stays far below the 20 s of `health.database_outage_grace` and the 30 s of `database.retry.max_elapsed`, whatever the promotion itself
-takes (2.6 to 3.4 s in these runs). (b) is not needed for that and doubles the credential's handling. The test was right to fail (it is the failure table's
+takes (2.6 to 3.4 s in the nightly runs, 8.1 s in run 44219132691). (b) is not needed for that and doubles the credential's handling. The test was right to fail (it is the failure table's
 switchover row, met on the way to variant D), so it is not changed beyond its comments; the pick now logs the clock time of each move, so a later reader can
 put the move beside the edge's and the poolers' logs.
 
@@ -10230,7 +10240,14 @@ documentation says a momentarily failing server keeps the pooler away for at lea
 PgBouncer release ties the server login to the verifier it fetched last rather than to a client's keys (then the second failure disappears and only the first
 lockout matters), or if an installation shows the 1 s retries as a load on a PostgreSQL that is down.
 
-**Applied in the spec:** R-HA-058 (the switchover bullet and the example), R-HA-059 rule 5 (the pooler row), the failure table's switchover row;
+**Test.** Variant D's pick switches PostgreSQL over only when the primary sits on the picked node, so the requirement was met by pod
+placement (in 4 of the 8 pooler legs read). `TestHAPooler_Switchover` (set `ha-pooler`) runs the switchover behind both poolers on every
+run, under the npm load, and asserts the stall of the failure table: no `503` of the edge, `/readyz` `200` on every replica, and every pooler's
+failure window shorter than `health.database_outage_grace`, the time after which a replica's failing `database` check takes it out of its
+Service (Q-OPS-31). The bound is the configuration's, not a measured value. Every pooler leg keeps the rendered `pgbouncer.ini` and the log
+of every pooler instance in its artifacts.
+
+**Applied in the spec:** R-HA-058 (the switchover bullet and the example), R-HA-059 rule 5 (the pooler row), the failure table's switchover row; R-HA-058's acceptance criteria;
 [deploy/dev/pooler.yaml](../../deploy/dev/pooler.yaml), [docs/developer/local-profile.md](../developer/local-profile.md), the pooler requirements of the
 [README](../../README.md) and of the manual ([configuration](../manual/admin/configuration.md#behind-a-transaction-mode-pooler), [runbook](../manual/admin/runbook.md)).
 
@@ -10289,6 +10306,89 @@ help and must say so plainly; a slow machine shows in the pull durations and in 
 
 **Applied in the spec:** none. [docs/developer/local-profile.md](../developer/local-profile.md#troubleshooting),
 [docs/developer/e2e.md](../developer/e2e.md#findings-of-the-suite) (item 17).
+
+### Q-HA-305 · A stall of the kind nodes is told apart from a neighbour's load, and a fault test does not start on a sick cluster
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Extends
+[Q-HA-300](#q-ha-300--every-e2e-set-records-what-starved-the-kind-nodes-inside-the-nodes-whether-it-passes-or-fails).
+
+Context: the evidence of Q-HA-300 was read for the first time in a red run on 2026-11-18 (nightly 44186978088, leg `ha-faults`,
+`TestHAFaults_ValkeySlow`). What it showed, and what it could not:
+
+- From 23:58 to 00:12 the leg's first four fault tests ran under the same npm load with a warm-up p99 of 0.5 to 1 s, the host's CPU pressure
+  at 400 to 480 ms per second and a load of 50 to 75 on 32 CPUs. At 00:12:28, when the load of `ValkeySlow` started and 66 s before Valkey was
+  slowed, the `full` CPU stall of the leg's nodes (every task of the node waiting at once) rose from 25 to 165 ms per second to 200 to 495,
+  the host's load rose to 247, the edge's idle share fell from about 60 % to 0 % with its connections stuck at 813 and its connection rate at 0,
+  k6's p50 rose to 2 to 35 s, a `packages` pod was `OOMKilled` at 00:13:34 (limit 1 GiB) and both edge pods were restarted by their liveness
+  probes at 00:15:03 and 00:16:03. It ended when the load stopped at 00:17:40.
+- The runner cluster's `Scheduled` events put the leg on the node `k8s-runner-omega` with one other kind leg (`edge` of the same run) from
+  23:44, and eight small jobs of "Test and Release" 44205650371 (Angular build, Trivy with an image build, golangci-lint, unit tests, release tooling,
+  NuGet vectors, integration shards b and c) on the same node from 00:10:54 to 00:10:57. Before 00:10:54 that node had the two kind legs and
+  one one-minute job.
+- Read on the runner cluster the same night: the job's Docker daemon (the privileged `dind` container) sees the cgroup root of the machine;
+  the kind nodes of every leg, their k6 containers and the image builders are children of the top-level cgroup `docker` (`cpu.weight` 100),
+  the runner pods and the small jobs' steps are under `kubepods` (`cpu.weight` 1250). When the 32 CPUs are all asked for, every kind cluster on
+  the machine together is guaranteed about 100/1550 of them (two CPUs) while the small jobs ask for the rest. Measured on the same node at 00:41
+  over 20 s: `docker` (two kind legs and their containers) 19.4 CPUs, `kubepods` (five small jobs and the runner processes) 5.7, the machine
+  25.2 of 32, steal 0.5 %.
+- What the evidence could not show: the CPU time of the leg's nodes against the small jobs' in the window (Q-HA-300 recorded pressure, not
+  use), the other runner pods on the machine, and what filled the `packages` pod's 1 GiB (its memory guard, R-ARCH-005, shed nothing).
+
+The test then injected the fault into the stalled cluster and judged the fault's latency condition against a warm-up p99 of 46 s, a baseline
+that was itself the failure.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The recorder reads the machine's cgroups and the pods; the fault tests check their warm-up (chosen) | `e2e-evidence.sh` adds `io` pressure and the CPU time to every row, the host's busy and steal time from `/proc/stat`, one row per top-level cgroup of the machine (`cg:<name>`: pressure, CPU time, `cpu.weight`, members) and per container of `docker` (`cgd:`) from a helper container with the daemon's cgroup tree mounted read-only, the job's own containers (`containers.tsv`), and per pod of each kind node its CPU time, memory by kind and OOM kills (`pods.csv`); `runLoadFault` reads k6's warm-up before it injects the fault and fails with "the cluster was not healthy before the fault" when a request already broke the load's condition | The next stall says whose CPU it was and what filled a killed pod; the failure names its cause instead of the fault; no fault is judged against a sick baseline | One helper container and a wider CSV per leg; a fault test on a sick cluster ends earlier and says less about the fault |
+| (b) Record only, no warm-up check | — | The fault always runs | The fault's verdict mixes in what happened before it, as in run 44186978088 |
+| (c) A latency bound on the warm-up | Fail when the warm-up p99 is above a value | Catches a slow but error-free baseline (run 42994478570: 1.4 s) | A new wall-clock bound without a requirement behind it; the load's own condition already covers errors |
+| (d) Serialize the kind legs of both workflows with `concurrency` | One group for every kind leg | Fewer legs side by side | GitHub keeps one pending run per group and cancels the others, and the release would wait behind the nightly, which the owner's rule forbids; the neighbours of run 44186978088 were small jobs, which a group of kind legs does not hold back |
+
+**Choice:** (a). The warm-up check uses the load's own condition (`only2xx304` and what the NuGet half holds), which the end of the run applies
+to the warm-up anyway: a run is red in exactly the cases it was red before. The one place where this is stricter is the node loss of the set
+`ha-suite`, which tolerated k6 failures up to 10 s after the replacements were ready, warm-up included; a failure before the node is lost is
+not the node loss's. The recorder's helper runs from the kind nodes' image (bash is in it), on no network, and ends at its stop file or after
+`QUADER_E2E_EVIDENCE_MAX_SECONDS` like the other loops.
+
+**Rationale:** the stall family (H-795, F-119, F-124, the stall of the set `push`) kept its cause open because the recordings could not separate
+the leg from its neighbours; with the CPU time per cgroup that is one subtraction. The cgroup layout on the runner is the owner's
+(the runner definitions are not in this repository): what it means for the runner classes is recorded in
+[promt.md](../projektplan/promt.md) section 8 with the measurements above.
+
+**Applied:** `deploy/dev/e2e-evidence.sh`, `test/e2e/npm_ha_test.go` (`runLoadFault`), `test/e2e/npm_load_test.go` (`warmUpFailures`),
+`test/e2e/nuget_ha_test.go`; [docs/developer/e2e.md](../developer/e2e.md#reading-a-stall).
+
+### Q-HA-306 · The pooler's own answers to a switchover are retried; a wrong password at connect is not
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the first runs of `TestHAPooler_Switchover` (Q-HA-302; run 44206453722, the poolers at PgBouncer's default `server_login_retry`) answered 8
+k6 requests with Quader's own `500` besides the edge's `503`s. Verified in the replicas' logs (`npm request failed status=500 code=internal`) and the
+poolers' logs of that run, two answers of PgBouncer that `classify` ([retry.go](../../internal/meta/postgres/retry.go)) took for final:
+
+- `FATAL: invalid server parameter (SQLSTATE 08P01)`, at the moment of the switchover: PgBouncer had linked the client to a server connection of the old
+  primary and was setting the client's parameters on it (`varcache_apply failed: FATAL: terminating connection due to administrator command`). The
+  client's statement was not sent; PgBouncer links a server at the first statement of a transaction, so it never meets a `COMMIT`.
+- `FATAL: password authentication failed for user "quader" (SQLSTATE 28P01)`, 15 s later: the clients that waited for a server connection when the
+  pooler's login on the new primary failed (its verifier had changed, Q-HA-302) get the server's error. Their statement did not run either.
+
+The fix of Q-HA-302 shortens the window but does not remove either answer: the old primary's connections end at every switchover, and the new
+primary's verifier changes at every promotion.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Retry both, `28P01` only on an authenticated connection (chosen) | `08P01` with `invalid server parameter` and a `28P01` that is not inside pgx's `ConnectError` are `retryFailover` | The request waits out the switchover as R-HA-015 says; a wrong password of Quader's own still fails at once (it comes at connect) | Two more PgBouncer texts and one structural rule to keep |
+| (b) Retry every `28P01` | The code decides | No structural rule | A wrong password in `secrets.database` would be retried until `max_elapsed` on every request instead of failing at connect |
+| (c) Leave them final | Nothing changes | | Every switchover behind a pooler answers some requests `500`, which R-HA-007's failure table does not allow |
+
+**Choice:** (a). PostgreSQL itself sends `28P01` only during authentication, which pgx reports as a `ConnectError`; on an established connection it
+can only come from a pooler that forwards its own failed server login. `TestClassify` has the three cases.
+
+**Rationale:** both answers mean "no server yet", and the statement was not run, so running it again is safe. The development agent would revisit the
+match when PgBouncer changes the text (the pinned CloudNativePG pooler image is what the test of Q-HA-302 runs), or if a pooler forwards a server's
+`28P01` on a connection whose statement may have run.
+
+**Applied in the spec:** R-HA-058 (the switchover bullet). Code: [retry.go](../../internal/meta/postgres/retry.go).
 
 ## What this does not cover
 

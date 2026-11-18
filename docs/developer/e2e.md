@@ -102,6 +102,7 @@ test/e2e/                   the Go tests, build tag `e2e`, package e2e
                             the audit forward cut by a pod deletion (TestHASuite_..., set ha-suite)
   ha_faults_test.go         E5.10 under the npm load: the database at 0 instances, Sentinel quorum loss, FLUSHALL, a slow Valkey, a Valkey credential
                             mismatch (TestHAFaults_..., set ha-faults); ha_faults_failover_test.go: the planned failover's 10 s bound
+  ha_pooler_switchover_test.go  R-HA-058 under the npm load: a PostgreSQL switchover behind both poolers (TestHAPooler_Switchover, set ha-pooler)
   ha_pooler_test.go         R-HA-058 under the npm load: a pooler instance deleted, gracefully and forced (TestHAPooler_..., set ha-pooler)
   npm_perf_test.go          R-ARCH-027: perf/k6/npm.js against one web replica from inside the cluster, reported (TestNPMPerf)
   k6/npm.js                 the k6 npm requests of R-HA-059: documents and 1 to 5 MiB tarballs of npm-all, 120 requests/s
@@ -178,7 +179,7 @@ make e2e SET=npm-ha-soak     # the pod crash with ten force-deletes over 20 minu
 make e2e SET=cold-crash      # E5.2: a packages replica force-deleted during a cold npm ci and a cold dotnet restore of three clients each, then quader admin storage verify (nightly, lane 1, job e2e-nuget)
 make e2e SET=npm-ha-closing  # npm-ha, npm-ha-soak and the 5-minute Valkey outage under the npm load (the closing run's leg)
 make e2e SET=ha-faults       # E5.10: the database at 0 instances for 2 minutes, Sentinel quorum loss, FLUSHALL, a slow Valkey, the planned failover with its 10 s bound, a Valkey credential mismatch (about 45 minutes; nightly and by hand)
-make e2e SET=ha-pooler       # E5.10, R-HA-058: a pooler instance deleted, gracefully and forced, in the pooler profile (QUADER_POOLER=1; about 25 minutes; nightly and by hand)
+make e2e SET=ha-pooler       # E5.10, R-HA-058: a pooler instance deleted, gracefully and forced, and a PostgreSQL switchover behind the poolers, in the pooler profile (QUADER_POOLER=1; about 25 minutes; nightly and by hand)
 make e2e SET=ha-suite        # the failure scenarios of R-HA-052 that npm-ha leaves out, under the same npm load: the audit forward cut by a pod deletion, the object-store outage, PostgreSQL and Valkey primary loss, node loss (about 50 minutes; nightly and by hand)
 make npm-clients-image       # only build the image into the local Docker
 make e2e SET=nuget-clients   # build the NuGet clients image, start the client pods, run the smoke test (the pods stay up)
@@ -237,8 +238,9 @@ pod watch and the events of the drain, the logs of the drained pods, and the res
 | `QUADER_E2E_RUN` | unset | replaces the `go test -run` expression of any set (`QUADER_E2E_RUN='TestNPMMatrix/rows/E2.1_npm11' deploy/dev/e2e.sh npm`) |
 | `QUADER_E2E_NPM_CRASH_SOAK` | unset | `1` makes `TestNPMHACrash` force-delete ten pods over 20 minutes instead of three; the sets `npm-ha-soak` and `npm-ha-closing` export it |
 | `QUADER_E2E_EVIDENCE` | `1` | `0` records no [stall evidence](#reading-a-stall) |
-| `QUADER_E2E_EVIDENCE_INTERVAL` | `1` | seconds between two samples of the host and of each node |
+| `QUADER_E2E_EVIDENCE_INTERVAL` | `1` | seconds between two samples of the host, of each node and of the machine's cgroups |
 | `QUADER_E2E_EVIDENCE_EDGE_INTERVAL` | `2` | seconds between two samples of the edge |
+| `QUADER_E2E_EVIDENCE_POD_INTERVAL` | `5` | seconds between two samples of the pods (`pods.csv`) and of the Docker daemon's containers (`cgd:` rows) |
 | `QUADER_E2E_EVIDENCE_LOG_CAP_MIB` | `32` | most that is copied of one container's log |
 | `QUADER_E2E_EVIDENCE_MAX_SECONDS` | `21600` | a recorder's own end, should a run be killed before it can stop them |
 
@@ -252,11 +254,22 @@ Every set, green or red, leaves `evidence/` in its artifact (`.out/e2e/evidence/
 starts [e2e-evidence.sh](../../deploy/dev/e2e-evidence.sh) before the first step of a set and stops it from its `EXIT` trap, so the stub builds, the image
 loads and the client pods are inside the window; the sets whose name ends in `-down` record nothing. A green run is the baseline to hold a red one against.
 It exists because five findings (H-795, F-119, F-124, F-127 and the stall of the set `push`) ended in "we do not know what starved the nodes"
-([Q-HA-300](../spec/ha-and-helm.md#q-ha-300--every-e2e-set-records-what-starved-the-kind-nodes-inside-the-nodes-whether-it-passes-or-fails)).
+([Q-HA-300](../spec/ha-and-helm.md#q-ha-300--every-e2e-set-records-what-starved-the-kind-nodes-inside-the-nodes-whether-it-passes-or-fails)),
+and since [Q-HA-305](../spec/ha-and-helm.md#q-ha-305--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)
+it also records who used the CPU: the leg's own nodes, the runner's other pods or another leg's kind nodes.
+
+On the CI runner the kind node containers are not in the runner pod's cgroup. The job's Docker daemon (the privileged `dind` container) sees the cgroup
+root of the whole machine and puts every container it starts under the top-level cgroup `docker`, which every runner pod's daemon on that machine shares:
+the kind nodes of every leg on the node, their k6 containers, the image builders and the integration jobs' service containers. The runner pods themselves,
+and the steps of the small jobs (compilers, linters, test binaries), are under `kubepods`. Both are siblings at the root, `kubepods` with
+`cpu.weight` 1250 and `docker` with 100 (read on the runner cluster on 2026-11-18): when the machine's 32 CPUs are all asked for, the CPU is
+shared by these weights, so every kind cluster on the machine together keeps a small share while the small jobs run.
 
 | File | What it is |
 |---|---|
-| `samples.csv` | One row per source and sample, by time. `ts_ms` is the epoch in milliseconds (whole seconds for the edge). Sources: `host` (the machine the nodes share: `/proc/pressure` and the load average; on Docker Desktop read inside a node, where it is the VM's), `node:<name>` (the pressure files of that node's cgroup, which differ per node), `edge:<pod>` (HAProxy's counters from its admin socket). Columns: `cpu_` and `mem_` `some`/`full` `avg10` (percent) and `total_us` (microseconds stalled since boot), `load1/5/15`, `edge_curr_conns`, `edge_curr_ssl_conns`, `edge_conn_rate`, `edge_idle_pct`. Empty where a source has no such value |
+| `samples.csv` | One row per source and sample, by time. `ts_ms` is the epoch in milliseconds (whole seconds for the edge). Sources: `host` (the machine the nodes share: `/proc/pressure`, the load average and `/proc/stat`; on Docker Desktop read inside a node, where it is the VM's), `node:<name>` (the pressure files and `cpu.stat` of that node's cgroup, which differ per node), `cg:<name>` (each top-level cgroup of the machine as the job's Docker daemon sees it: `kubepods`, `docker`, `system.slice`, …), `cgd:<id12>` (each container of the machine's `docker` cgroup, every 5 s; `containers.tsv` says which are the leg's), `edge:<pod>` (HAProxy's counters from its admin socket). Columns: `cpu_`, `mem_` and `io_` `some`/`full` `avg10` (percent) and `total_us` (microseconds stalled since boot), `load1/5/15` (host), `edge_curr_conns`, `edge_curr_ssl_conns`, `edge_conn_rate`, `edge_idle_pct` (edge), `cpu_usage_us` (CPU time since boot: of the whole machine for `host`, of the cgroup otherwise), `cpu_steal_us` (host: time the hypervisor gave to another machine), `cpus` (host), `cpu_weight` and `members` (`cg:`: the cgroup's `cpu.weight`, and the pods under `kubepods` or the containers under `docker`). Empty where a source has no such value. Before 2026-11-18 the edge's four values were one column to the right of their names |
+| `pods.csv` | One row per pod of each kind node every 5 s: `node`, `pod_uid`, `cpu_usage_us`, `mem_current`, `mem_anon` (the heap and stacks of the process), `mem_file` (page cache), `mem_sock` (the kernel's socket buffers, charged to the pod), `mem_kernel`, `oom_kill` (the OOM kills of the pod's cgroup so far). `pod-names.tsv` gives the namespace and name of each uid |
+| `containers.tsv` | The containers of the job's own Docker daemon (the kind nodes, k6, the helpers) by their 12-character id, as seen every 10 s: every other `cgd:` row is a neighbour's |
 | `secrets.tsv` | Every Secret of every namespace at the start (`start`) and at the end (`end`): `resourceVersion`, creation time, `uid` and the managers that wrote it. Names and metadata only; no value is read |
 | `secrets-watch.log` | The watch of the Secrets: first the list at the start, then one line per change with the time it was seen |
 | `events.tsv` | The Kubernetes events of every namespace (time, namespace, object, type, reason, count, message), from the watch, so events older than the cluster's hour of retention are in it |
@@ -270,16 +283,32 @@ How to read one:
    ```shell
    awk -F, '$2=="host" { if (p != "") printf "%s cpu some %6.0f ms in %.1f s  load1 %s\n", $1, ($4-p)/1000, ($1-t)/1000, $11; p=$4; t=$1 }' samples.csv
    ```
-   Replace `host` by `node:quader-worker` to see which node carried it (a node's cgroup has pressure of its own: look for the node that is far above the others). `mem_` and `cpu_full` are the same arithmetic with columns 8 and 6.
-2. **Did the edge hold connections?** `grep edge: samples.csv`: `edge_curr_conns` is the process's current connections (about 50 while k6 runs at 100 requests/s
-   on kind), `edge_idle_pct` falls when HAProxy itself is busy. About 1,800 connections open as in F-124 reads here as a column, with the minute it began.
-3. **Was a Secret written again?** Compare `start` and `end` in `secrets.tsv`: the same name with another `uid` or a changed `resourceVersion` was written during the run;
+   Replace `host` by `node:quader-worker` to see which node carried it (a node's cgroup has pressure of its own: look for the node that is far above the others). `mem_`, `io_` and `cpu_full` are the same arithmetic with columns 8, 19 and 6.
+   A node's `cpu_full` (every task of the node waiting at once) far above a tenth of its `some` means the node as a whole got no CPU, which a busy pod inside it does not cause.
+2. **Who used the CPU?** The difference of two `cpu_usage_us` over the time between them is the number of CPUs in use. `host` is the whole machine, the sum of the
+   `node:` rows is the leg's kind cluster, `cg:kubepods` the runner pods (the small jobs' compilers and tests), `cg:docker` every container on the machine, and
+   `cg:docker` minus the leg's containers (the `node:` rows, and the `cgd:` rows that `containers.tsv` names) another leg's kind nodes and builders:
+   ```shell
+   awk -F, 'NR > 1 && $22 != "" && $2 ~ /^(host|cg:kubepods|cg:docker|node:)/ { k = int($1/10000)*10 " " $2; if (!(k in t0)) { t0[k] = $1; u0[k] = $22 }; t1[k] = $1; u1[k] = $22 }
+     END { for (k in t0) if (t1[k] > t0[k]) printf "%s %5.1f\n", k, (u1[k]-u0[k])/(t1[k]-t0[k])/1000 }' samples.csv | sort -k1,1n -k2,2
+   ```
+   (per 10 s and source, the epoch second and the CPUs in use; the `node:` rows together are the leg's cluster). A stall in which `cg:kubepods` or the
+   neighbours' share rose while the leg's own fell is a neighbour's; one in which the leg's own CPU rose to what the machine had is the leg's. `members` of `cg:kubepods`
+   and `cg:docker` counts the neighbours, `cpu_steal_us` of `host` the hypervisor's share.
+3. **Did a pod run out of memory?** `pods.csv`: a rising `oom_kill` names the pod and the 5 s in which it was killed; the columns before it say what filled the
+   limit (`mem_anon` the process, `mem_sock` the socket buffers of its connections, `mem_file` page cache, which the kernel reclaims first).
+4. **Did the edge hold connections?** `grep edge: samples.csv`: `edge_curr_conns` is the process's current connections (about 800 per edge pod under the k6 load of the
+   npm HA tests, about 50 while k6 runs at 100 requests/s on kind), `edge_idle_pct` falls when HAProxy itself is busy or gets no CPU. About 1,800 connections open as in F-124 reads here as a column, with the minute it began.
+5. **Was a Secret written again?** Compare `start` and `end` in `secrets.tsv`: the same name with another `uid` or a changed `resourceVersion` was written during the run;
    `secrets-watch.log` gives the second, and `writtenBy` the manager (the secrets operator or cert-manager). Then read the operator's log in `kept-pod-logs/` for the
    same second, and `events.tsv` for its restarts, leader elections and the Certificate events around it (F-127).
-4. **Which pod was lost and what did it say?** `events.tsv` names the pod (`Killing`, `Evicted`, `Unhealthy`) and its file in `kept-pod-logs/` has the last lines. A pod that is still
+6. **Which pod was lost and what did it say?** `events.tsv` names the pod (`Killing`, `Evicted`, `Unhealthy`) and its file in `kept-pod-logs/` has the last lines. A pod that is still
    there at the end is in the failure step's `e2e-cluster-state-<set>` artifact instead (`deploy/dev/cluster-logs.sh`).
 
-What it does not show: a stall inside a single pod that the nodes' cgroups do not see (the pods have no CPU limits on kind, so throttling is not part of it);
+What it does not show: a stall inside a single pod that the nodes' cgroups do not see (the pods have no CPU limits on kind, so throttling is not part of it), beyond
+its CPU time in `pods.csv`; which runner pods or jobs the neighbours were (the cgroups carry pod uids and container ids only: the job list of the runs in the window, with
+`started_at`, `completed_at` and `runner_name`, names them, and the runner cluster's `Scheduled` events give their node for an hour);
+on Docker Desktop the `cg:` rows are the VM's and have no neighbours; 
 the edge's timestamps have whole seconds because its image's `date` has no more; the log copy polls every 2 seconds, so a log that the kubelet removes within
 2 seconds of its last write, or past the 32 MiB cap or after a rotation, is incomplete; a node on cgroup v1 or a kernel without pressure information leaves those columns empty;
 a replaced edge pod ends its series and the next one starts a new `edge:<pod>`.
@@ -366,6 +395,17 @@ check or the transport error) go to the test log, and `runLoadFault` keeps the p
 minute before the load) on its first failing sample, then every fifteenth, and at the end, with the previous instance of a
 restarted pod, under `.out/e2e/podlogs-<fault>/` ([monitor_test.go](../../test/e2e/monitor_test.go)): a later fault deletes
 or replaces pods, and a container killed by its liveness probe takes its log with it.
+
+Before it injects the fault, `runLoadFault` reads what k6 has written in the warm-up. A request that already broke the load's own
+condition (a status other than `2xx` and `304`, a connection error, other bytes than were published) means the cluster was not
+healthy before the fault: the test stops the load and fails there with `the cluster was not healthy before the fault, which was not
+injected`, the count, the statuses and the warm-up's p99, and the fault is not injected
+([Q-HA-305](../spec/ha-and-helm.md#q-ha-305--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)).
+The verdict is the one the end of the run would give, since the warm-up is part of the run; what changes is the cause in the
+message, and a fault's conditions are never judged against a baseline that is itself the failure. The one exception is the node loss of
+`ha-suite`, which tolerated k6 failures until 10 s after the replacements were ready, the warm-up included: a failure before the node is
+lost now fails it. Then read the window in
+the evidence ([Reading a stall](#reading-a-stall)).
 
 ### E0.14
 
@@ -1618,6 +1658,7 @@ Q-HA-250 to Q-HA-258 on the same page.
 | `TestHAFaults_ValkeyPlannedFailover` | `valkey-failover.sh` | R-HA-057: as `TestNPMHA`'s failover, and `quader_valkey_primary_changes_total` rose by one on every replica within 10 s of the request |
 | `TestHAFaults_ValkeyCredentialMismatch` | [valkey-credential.sh](../../deploy/dev/valkey-credential.sh) `break`: the default user's password changed on the Valkey pods and the Quader pods' connections closed; a `packages` pod deleted; `fix` ([Q-HA-253](../spec/ha-and-helm.md#q-ha-253--the-valkey-credential-mismatch-is-injected-on-the-server-not-by-editing-the-secret)) | R-HA-007: `valkey` degraded on every serving replica, every command exits 0, k6 only `2xx` and `304`, `/readyz` 200 on the running pods; the replacement pod not ready at any of 15 samples 2 s apart; it turns ready and `degraded` clears after the fix |
 | `TestHAPooler_InstanceLoss` (set `ha-pooler`, `QUADER_POOLER=1`) | an instance of `quader-db-pooler-rw` and of `quader-db-pooler-control` deleted, gracefully and with `--grace-period=0 --force`, each time until the pooler has two ready instances on two nodes | R-HA-058: every command exits 0 and no Quader container restarts; graceful: k6 only `2xx` and `304`, `/readyz` 200 throughout; forced: every k6 failure a `503` within `retry.max_elapsed` of the kill |
+| `TestHAPooler_Switchover` (set `ha-pooler`) | [failover.sh](../../deploy/dev/failover.sh): a PostgreSQL switchover behind both poolers, every time ([Q-HA-302](../spec/ha-and-helm.md#q-ha-302--the-poolers-retry-a-failed-server-login-after-1-s-so-a-switchover-behind-them-stays-inside-the-retry-budget)) | R-HA-058, R-HA-007: every command exits 0 and no Quader container restarts; k6 only `2xx` and `304`, none of them the edge's own `503`; `/readyz` 200 on every replica throughout; the failure window each pooler instance logs (the first to the last line of crashed server connections, failed logins and clients refused under `server_login_retry`) shorter than `health.database_outage_grace`, which the driver reads from the configuration. The test log gives each instance's window; the rendered `pgbouncer.ini` of every instance (`pooler-config-<pod>.ini`, with its `server_login_retry` in the log of `requirePoolerProfile`) and the instances' logs (`pooler-<pod>.log`) are in the artifacts of every pooler leg, green or red |
 
 Spool exhaustion (R-HA-007, R-HA-052) is not an e2e run: `TestR_HA_052_SpoolExhaustionAnswers503AndEvictsNothing`
 ([test/integration/files](../../test/integration/files/spool_exhaustion_test.go)) runs a replica with a 6 MiB spool budget against the integration stack: an upload that declares 5 MiB while another holds

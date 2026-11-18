@@ -721,6 +721,51 @@ func parseK6Lines(t *testing.T, k *k6run, pattern *regexp.Regexp) npmK6Result {
 	return r
 }
 
+// warmUpFailures reads the lines k6 has written so far, before a fault is injected, and returns an error that names the requests
+// that already broke the load's own condition (only2xx304: a status other than 2xx and 304, a connection error, other bytes than
+// were published), with the warm-up's p99, or nil when there is none. A request still in flight has no line yet; one cut by its 45 s
+// timeout has. The run keeps going; the caller decides.
+func (l *npmLoad) warmUpFailures() error {
+	if l.k6 == nil {
+		return nil
+	}
+	f, err := os.Open(filepath.Join(l.k6.dir, "console.log"))
+	if err != nil {
+		return nil // no line yet: nothing to judge, and startK6Script has already seen the first requests
+	}
+	defer f.Close()
+	var durs []int
+	var bad []npmK6Line
+	status := map[string]int{}
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 64*1024), 1<<20)
+	for sc.Scan() {
+		m := npmK6Pattern.FindStringSubmatch(sc.Text())
+		if m == nil {
+			continue
+		}
+		ms, _ := strconv.ParseInt(m[1], 10, 64)
+		st, _ := strconv.Atoi(m[2])
+		dur, _ := strconv.Atoi(m[4])
+		line := npmK6Line{At: time.UnixMilli(ms), Status: st, Replica: m[3], MS: dur, Kind: m[5], Note: m[6], Path: m[7]}
+		durs = append(durs, dur)
+		status[fmt.Sprintf("%s %d", line.Kind, st)]++
+		if ok := (st >= 200 && st < 300 || st == 304) && line.Note == "ok"; !ok {
+			bad = append(bad, line)
+		}
+	}
+	if len(bad) == 0 {
+		return nil
+	}
+	sort.Ints(durs)
+	p99 := time.Duration(durs[min(len(durs)-1, len(durs)*99/100)]) * time.Millisecond
+	first := bad
+	if len(first) > 4 {
+		first = first[:4]
+	}
+	return fmt.Errorf("%d of %d k6 requests of the warm-up were not 2xx or 304 with the published bytes (%v), p99 %s; first: %+v", len(bad), len(durs), status, p99, first)
+}
+
 // stopK6 ends a k6 run with SIGINT, which makes it write its summary.
 func stopK6(t *testing.T, k *k6run) {
 	t.Helper()
