@@ -79,6 +79,8 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 			"epoch_poll_interval_ms": cfg.Cluster.EpochPollInterval.Milliseconds(),
 			"jobs_poll_interval_ms":  cfg.Jobs.PollInterval.Milliseconds(),
 			"retry_max_elapsed_ms":   cfg.Database.Retry.MaxElapsed.Milliseconds(),
+			// R-HA-058's switchover behind the poolers: a replica stays ready while PostgreSQL has been unreachable for less than this (Q-HA-302)
+			"database_outage_grace_ms": cfg.Health.DatabaseOutageGrace.Milliseconds(),
 			// R-HA-057's bound for degraded to clear after a Valkey outage
 			"valkey_open_duration_ms":         cfg.Valkey.CircuitBreaker.OpenDuration.Milliseconds(),
 			"valkey_health_check_interval_ms": cfg.Valkey.HealthCheckInterval.Milliseconds(),
