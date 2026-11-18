@@ -1,14 +1,88 @@
-// The credential in one line, then More options with the other ways and the place to install from (Q-UI-316).
-.credential-line {
-  max-inline-size: 48rem;
+// Set up client (R-UI-121): one column of the settings measure; the prose inside it keeps its own measure of 70 characters.
+:host {
+  display: block;
+  max-inline-size: var(--quader-settings-measure);
+}
+
+// The repository, the format and the class of the header, one line of facts.
+.context {
+  color: var(--quader-text-muted);
+
+  .repo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--quader-space-1);
+    overflow-wrap: anywhere;
+  }
+}
+
+// The client: one control with its label on one line, as wide as the longest client's name.
+.client-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2);
   margin-block: 0 var(--quader-space-3);
+
+  .field-label {
+    margin: 0;
+  }
+
+  .select-input {
+    inline-size: auto;
+    min-inline-size: 12rem;
+  }
+}
+
+// The credential in one line, Create a token beside it (R-UI-122).
+.credential-line {
+  max-inline-size: 70ch;
+  margin-block: 0 var(--quader-space-3);
+
+  > p {
+    margin: 0;
+  }
+}
+
+.create-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2) var(--quader-space-3);
+  margin-inline-start: var(--quader-space-2);
+}
+
+.once {
+  margin-block: var(--quader-space-3) 0;
+  padding: var(--quader-space-3);
+  border: 1px solid var(--quader-status-warn);
+  border-radius: var(--quader-radius-m);
+
+  p {
+    margin: 0 0 var(--quader-space-2);
+  }
+
+  p:last-child {
+    margin-block-end: 0;
+  }
+}
+
+.token-line {
+  display: flex;
+  align-items: center;
+  gap: var(--quader-space-2);
+
+  code {
+    overflow-wrap: anywhere;
+  }
 }
 
 .more-options {
-  max-inline-size: 48rem;
-  margin-block-end: var(--quader-space-5);
+  margin-block-end: var(--quader-space-4);
 
+  // A fieldset is as wide as its content by default; here it keeps the column's width, so the token field shrinks at 390 px.
   fieldset {
+    min-inline-size: 0;
     margin: 0 0 var(--quader-space-4);
     padding: 0;
     border: 0;
@@ -19,46 +93,6 @@
     padding: 0;
     font-weight: 600;
   }
-}
-
-.steps {
-  display: grid;
-  gap: var(--quader-space-4);
-  margin: 0 0 var(--quader-space-5);
-  padding: 0;
-  list-style: none;
-  max-inline-size: 48rem;
-
-  fieldset {
-    margin: 0;
-    padding: var(--quader-space-3) var(--quader-space-4);
-    border: 1px solid var(--quader-border);
-    border-radius: var(--quader-radius-m);
-    background: var(--quader-surface-raised);
-  }
-
-  legend,
-  .step-title {
-    padding-inline: var(--quader-space-1);
-    font: var(--quader-type-title-medium);
-  }
-
-  .step-title {
-    margin: 0;
-  }
-}
-
-.step-no {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1.5rem;
-  block-size: 1.5rem;
-  margin-inline-end: var(--quader-space-1);
-  border-radius: var(--quader-radius-full);
-  background: var(--quader-accent);
-  color: var(--quader-on-accent);
-  font-size: 0.8125rem;
 }
 
 .choices {
@@ -87,79 +121,51 @@
   font-size: var(--quader-text-muted-size);
 }
 
-
+// A token has 57 characters of the monospace face: the field holds it and no more.
 .secret-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--quader-space-2);
 
   .text-input {
-    flex: 1 1 auto;
+    flex: 0 1 60ch;
     min-inline-size: 0;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 }
 
-.once {
-  margin-block: var(--quader-space-3);
-  padding: var(--quader-space-3);
-  border: 1px solid var(--quader-status-warn);
-  border-radius: var(--quader-radius-m);
+// The steps of the job: a short heading with its number, then the snippets.
+.step {
+  margin-block: var(--quader-space-5) 0;
 
-  p {
-    margin: 0;
+  > h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--quader-space-2);
+    margin-block: 0 var(--quader-space-3);
+    font: var(--quader-type-title-medium);
+  }
+
+  .why {
+    max-inline-size: 70ch;
   }
 }
 
-.token-line {
-  display: flex;
+.step-no {
+  display: inline-flex;
+  flex: none;
   align-items: center;
-  gap: var(--quader-space-2);
-  margin-block-start: var(--quader-space-2);
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: var(--quader-radius-full);
+  background: var(--quader-accent);
+  color: var(--quader-on-accent);
+  font-size: 0.8125rem;
 }
 
-.token-value {
-  overflow-wrap: anywhere;
-}
-
-.result {
-  max-inline-size: 60rem;
-}
-
-.tab {
-  padding-block: var(--quader-space-4);
-}
-
-.snippet {
-  margin-block-end: var(--quader-space-4);
-
-  .why,
-  .target {
-    margin-block: 0 var(--quader-space-2);
-  }
-}
-
-.command {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--quader-space-2);
-
-  pre {
-    flex: 1 1 auto;
-    min-inline-size: 0;
-  }
-}
-
-.snippet-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-// The repository the setup is for, with Change (Q-UI-316).
-.chosen {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--quader-space-2);
+// The explanation begins after the last step, separated by the space of a section.
+.explanation {
+  margin-block-start: var(--quader-space-6);
 }

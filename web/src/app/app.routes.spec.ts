@@ -36,8 +36,10 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   ['/projects/web/vulnerabilities/findings/0193a000-0000-7000-8000-000000000001', 'Finding'],
   ['/projects/web/vulnerabilities/advisories/npm/GHSA-aaaa-aaaa-0001', 'Advisory'],
   // <<< M4b vulnerabilities
-  ['/setup', 'Client setup'],
+  ['/projects/web/repositories/npm-local/setup', 'Set up client'],
   ['/guides', 'Guides'],
+  ['/guides/generic', 'generic', 'Generic repositories'],
+  ['/guides/generic/local', 'Set up client'],
   ['/help', 'Documentation'],
   ['/help/user/getting-started', 'Getting started'],
   ['/profile', 'Profile'],
@@ -121,8 +123,8 @@ describe('route map', () => {
     expect(root.querySelector('main h1')?.textContent?.trim()).toBe('Repositories');
   });
 
-  it('Q-UI-129 ADR-203 the old content routes are gone: /packages, /browse, the /browse of a project, /vulnerabilities and /admin/repositories/{project}/{key} are not found', async () => {
-    for (const url of ['/packages', '/browse', '/projects/web/browse', '/projects/web/browse/generic-local/releases', '/vulnerabilities', '/admin/repositories/web/npm-local', '/admin/projects/web']) {
+  it('Q-UI-129 ADR-203 R-UI-126 the old content routes are gone: /packages, /browse, the /browse of a project, /vulnerabilities, /setup and /admin/repositories/{project}/{key} are not found', async () => {
+    for (const url of ['/packages', '/browse', '/projects/web/browse', '/projects/web/browse/generic-local/releases', '/vulnerabilities', '/admin/repositories/web/npm-local', '/admin/projects/web', '/setup']) {
       const root = await open(url);
       expect(root.querySelector('main h1')?.textContent?.trim(), url).toBe('Page not found');
     }

@@ -1,6 +1,6 @@
 # Container images with Docker and Podman
 
-How to sign the Docker CLI and Podman in to Quader with a token, push and pull images and multi-platform images, pull through a virtual repository, pin an image by its digest, delete tags and manifests, and let a Kubernetes cluster pull with an image pull secret. The Client setup page and the How to use tab give the same commands with the addresses of your installation.
+How to sign the Docker CLI and Podman in to Quader with a token, push and pull images and multi-platform images, pull through a virtual repository, pin an image by its digest, delete tags and manifests, and let a Kubernetes cluster pull with an image pull secret. The page Set up client of a repository gives the same commands with the addresses of your installation, and the guide that explains them.
 
 ## Image references
 
@@ -105,7 +105,7 @@ A virtual repository gives one address for several repositories, for example you
 
 ## Kubernetes
 
-A cluster pulls with an **image pull secret** whose password is a Quader token, best a service-account token that may read the repository and nothing else. The Client setup page gives the command for the Docker CLI client; it builds the secret from the environment variable, so the token appears on no command line:
+A cluster pulls with an **image pull secret** whose password is a Quader token, best a service-account token that may read the repository and nothing else. The page **Set up client** gives the command for the Docker CLI client; it builds the secret from the environment variable, so the token appears on no command line:
 
 ```shell
 printf '{"auths":{"%s":{"username":"quader","password":"%s"}}}' quader.example.com/web/docker "${QUADER_TOKEN}" | \

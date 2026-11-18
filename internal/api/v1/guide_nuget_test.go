@@ -103,8 +103,8 @@ func TestR_NUGET_026_TheSetupWithoutACredential(t *testing.T) {
 	}
 }
 
-// TestR_UI_049_TheNuGetGuideShowsTheSnippetsOfTheClientSetup: for every client, the snippets the guide of a NuGet
-// repository attaches are the client setup's answer for the same repository with credentials=env, byte for byte,
+// TestR_UI_049_TheNuGetGuideShowsTheSnippetsOfTheClientSetup: for every client, the snippets of the guide of a NuGet
+// repository are the client setup's answer for the same repository with credentials=env, byte for byte,
 // and the guide answers for the three clients and no other.
 func TestR_UI_049_TheNuGetGuideShowsTheSnippetsOfTheClientSetup(t *testing.T) {
 	h := setupServer(t, "https://quader.example.com", true)
@@ -119,9 +119,9 @@ func TestR_UI_049_TheNuGetGuideShowsTheSnippetsOfTheClientSetup(t *testing.T) {
 				}
 			}
 			var got []gen.ClientSnippet
-			for _, s := range g.Sections {
-				if s.Id == "nuget."+tab {
-					got = s.Snippets
+			for _, sn := range g.Snippets {
+				if string(sn.Tab) == tab {
+					got = append(got, sn)
 				}
 			}
 			if !slices.EqualFunc(got, want, snippetsEqual) {

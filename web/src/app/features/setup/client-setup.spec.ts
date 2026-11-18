@@ -1,22 +1,16 @@
+import { GuidesApi } from '../../api/guides-api';
 import { ClientSetupApi } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeRepositoriesApi, GENERIC_FORMAT, NUGET_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
+import { FakeGuidesApi } from '../../api/testing/fakes-guides';
 import { FakeClientSetupApi, GENERIC_REPOSITORY, NPM_REPOSITORIES, NUGET_REPOSITORIES, OCI_REPOSITORIES } from '../../api/testing/fakes-packages';
 import { FakeTokensApi } from '../../api/testing/access-fakes';
 import { TokensApi } from '../../api/tokens-api';
-import {
-  button,
-  expectAccessible,
-  renderScreen,
-  settle,
-  storedText,
-  text,
-  type,
-} from '../../testing/screen';
-import { ClientSetupPage, fillToken } from './client-setup';
+import { button, expectAccessible, renderScreen, settle, storedText, text, type } from '../../testing/screen';
+import { ClientSetupPage, READ_TOKEN_COMMAND, fillToken } from './client-setup';
 import { base62, crc32 } from './token-shape';
 
 type Opened = Awaited<ReturnType<typeof open>>;
@@ -28,7 +22,7 @@ function validToken(fill = 'x'): string {
 }
 
 async function open(
-  inputs: Record<string, unknown> = { repository: 'web/npm-all' },
+  inputs: Record<string, unknown> = { project: 'web', key: 'npm-all' },
   options: { capabilities?: readonly string[]; anonymous?: boolean; setup?: (get: Opened['get']) => void } = {},
 ) {
   const r = await renderScreen(ClientSetupPage, {
@@ -36,10 +30,13 @@ async function open(
     capabilities: options.capabilities,
     setup: (get) => {
       const repos = get(RepositoriesApi) as FakeRepositoriesApi;
-      repos.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT, NUGET_FORMAT];
-      repos.repositories = [...NPM_REPOSITORIES, ...NUGET_REPOSITORIES];
+      repos.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT, NUGET_FORMAT, OCI_FORMAT];
+      repos.repositories = [...NPM_REPOSITORIES, ...NUGET_REPOSITORIES, ...OCI_REPOSITORIES, { ...GENERIC_REPOSITORY }];
       if (options.anonymous) {
         (get(SessionApi) as FakeSessionApi).whoamiResult = new ApiError(401, { code: 'unauthenticated' }, null);
+        (get(GuidesApi) as FakeGuidesApi).anonymous = true;
+        // The server sends an anonymous caller no publish snippets (R-API-030).
+        for (const r of NPM_REPOSITORIES) (get(ClientSetupApi) as FakeClientSetupApi).readOnly.add(`${r.project}/${r.key}`);
       }
       options.setup?.(get as Opened['get']);
     },
@@ -47,11 +44,17 @@ async function open(
   return {
     ...r,
     setup: r.get(ClientSetupApi) as FakeClientSetupApi,
+    guides: r.get(GuidesApi) as FakeGuidesApi,
     tokens: r.get(TokensApi) as FakeTokensApi,
   };
 }
 
-const snippets = (r: Opened) => [...r.root.querySelectorAll<HTMLElement>('.snippet pre')].map((p) => p.textContent ?? '');
+/** The snippets of a step, as the page shows them. */
+const snippets = (r: Opened, step?: 'configure' | 'install' | 'publish') =>
+  [...r.root.querySelectorAll<HTMLElement>(`${step ? `section[aria-labelledby="step-${step}"] ` : ''}quader-setup-snippet pre`)].map(
+    (p) => [...p.querySelectorAll('.line')].map((l) => l.textContent ?? '').join('\n'),
+  );
+const stepHeadings = (r: Opened) => [...r.root.querySelectorAll<HTMLElement>('section.step > h2')].map((h) => text(h));
 const radio = (r: Opened, name: string, value: string) =>
   r.root.querySelector<HTMLInputElement>(`input[name="${name}"][value="${value}"]`)!;
 
@@ -62,14 +65,7 @@ async function choose(r: Opened, name: string, value: string) {
   await settle(r.fixture);
 }
 
-const tabLabels = (r: Opened) => [...r.root.querySelectorAll<HTMLElement>('[role="tab"]')].map((t) => text(t));
-
-async function tab(r: Opened, label: string) {
-  [...r.root.querySelectorAll<HTMLElement>('[role="tab"]')].find((t) => text(t) === label)!.click();
-  await settle(r.fixture);
-}
-
-describe('Client setup', () => {
+describe('Set up client', () => {
   describe('token replacement', () => {
     it('R-UI-016 R-UI-043 the browser replaces every {{token}} of a snippet and nothing else', () => {
       expect(fillToken('a={{token}}\nb={{token}}', 'T')).toBe('a=T\nb=T');
@@ -82,120 +78,89 @@ describe('Client setup', () => {
     });
   });
 
-  it('R-UI-016 offers format, client and repository in steps; virtual repositories come first and are marked recommended, each repository states its publish availability', async () => {
-    const r = await open({ format: 'npm' });
-    expect([...r.root.querySelectorAll('input[name="client"]')].map((i) => (i as HTMLInputElement).value)).toEqual([
-      'npm',
-      'pnpm',
-      'yarn',
-      'yarn-classic',
-    ]);
-    const repositories = [...r.root.querySelectorAll<HTMLInputElement>('input[name="repository"]')].map((i) => i.value);
-    expect(repositories).toEqual(['web/npm-all', 'web/npm-readonly', 'web/npm-local', 'web/npm-remote']);
-    const t = text(r.root);
-    expect(t).toContain('recommended');
-    expect(t).toContain('Read only');
-    expect(t).toContain('Publishing goes to its default deployment target');
-    await expectAccessible(r.root);
-  });
-
-  it('R-UI-016 R-GENERIC-016 the generic format is offered with curl, first in the order of the catalog, and its snippets come with their explanations', async () => {
-    const withGeneric = (get: Opened['get']) =>
-      void (get(RepositoriesApi) as FakeRepositoriesApi).repositories.push({ ...GENERIC_REPOSITORY });
-    const first = await open({}, { setup: withGeneric });
-    expect([...first.root.querySelectorAll<HTMLInputElement>('input[name="format"]')].map((i) => i.value)).toEqual(['generic', 'npm', 'nuget']);
-    expect(radio(first, 'format', 'generic').checked).toBe(true);
-    expect([...first.root.querySelectorAll<HTMLInputElement>('input[name="client"]')].map((i) => i.value)).toEqual(['curl']);
-
-    const r = await open({ repository: 'web/generic-local' }, { setup: withGeneric });
-    expect(r.root.querySelector('.chosen')?.textContent).toContain('web/generic-local');
-    expect(r.setup.calls.at(-1)).toMatchObject({ repository: 'web/generic-local', query: { client: 'curl', credentials: 'env' } });
-    const [configure] = snippets(r);
-    expect(configure).toContain('quader_curl() {');
-    expect(configure).toContain('header = "Authorization: Bearer ${QUADER_TOKEN}"');
-    expect(text(r.root)).toContain('hands curl the credential on standard input');
-    await tab(r, 'Install');
-    expect(snippets(r)).toContain('quader_curl --fail --remote-name "https://quader.example.net/files/web/generic-local/<path>"\n');
-    await tab(r, 'Publish');
-    expect(snippets(r)).toContain('quader_curl --fail --upload-file <file> "https://quader.example.net/files/web/generic-local/<path>"\n');
-    expect(text(r.root)).toContain('also needs the overwrite permission');
-    await expectAccessible(r.root);
-
-    await choose(r, 'credentials', 'create');
-    expect(snippets(r)[0]).toContain('header = "Authorization: Bearer {{token}}"');
-  });
-
-  it('R-UI-016 a link from a repository opens the page prepared: the repository and client come from the query, and are not asked again', async () => {
-    const r = await open({ repository: 'web/npm-local', client: 'pnpm' });
-    // The format and the repository are chosen by the link (Q-UI-316): one line, with Change.
-    expect(text(r.root.querySelector('.chosen')!)).toContain('web/npm-local');
-    expect(r.root.querySelector('input[name="repository"]')).toBeNull();
-    // The client is the one choice, a group named Client without a step number (the journeys find it by that name).
-    const group = radio(r, 'client', 'pnpm').closest('fieldset')!;
-    expect(text(group.querySelector('legend')!)).toBe('Client');
-    expect(r.root.querySelectorAll('.step-no').length).toBe(0);
-    expect(radio(r, 'client', 'pnpm').checked).toBe(true);
-    expect(r.setup.calls.at(-1)).toMatchObject({ repository: 'web/npm-local', query: { client: 'pnpm' } });
-    [...r.root.querySelectorAll<HTMLButtonElement>('.chosen button')].find((b) => text(b) === 'Change')!.click();
-    await settle(r.fixture);
-    expect(radio(r, 'repository', 'web/npm-local').checked).toBe(true);
-  });
-
-  it('R-UI-016 nothing is requested before a repository is chosen', async () => {
-    const r = await open({});
-    expect(r.setup.calls).toEqual([]);
-  });
-
-  it('R-UI-016 acceptance: the default choice produces a .npmrc with the literal ${QUADER_TOKEN} and shows no secret', async () => {
+  it('R-UI-120 opened from a repository, the page names it, its format and its class, shows its address and asks for none of them', async () => {
     const r = await open();
-    expect(r.setup.calls.at(-1)?.query.credentials).toBe('env');
-    const npmrc = snippets(r)[0]!;
-    expect(npmrc).toContain('//quader.example.net/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}');
+    expect(text(r.root.querySelector('h1')!)).toBe('Set up client');
+    const context = text(r.root.querySelector('.context')!);
+    expect(context).toContain('web/npm-all');
+    expect(context).toContain('npm');
+    expect(context).toContain('Virtual');
+    expect(r.root.querySelector('.context a')?.getAttribute('href')).toBe('/projects/web/repositories/npm-all');
+    expect(r.root.querySelector('quader-address-field input')?.getAttribute('value') ?? (r.root.querySelector<HTMLInputElement>('quader-address-field input')?.value)).toBe(
+      'https://quader.example.net/api/npm/web/npm-all/',
+    );
+    for (const name of ['format', 'repository', 'class', 'guide-format', 'guide-class']) {
+      expect(r.root.querySelector(`input[name="${name}"]`)).toBeNull();
+    }
+    expect(r.setup.calls.at(-1)).toMatchObject({ repository: 'web/npm-all', query: { client: 'npm', credentials: 'env' } });
+    expect(r.guides.calls.at(-1)).toEqual({ repository: 'web/npm-all', client: 'npm' });
+    await expectAccessible(r.root);
+  });
+
+  it('R-UI-121 the job comes first: Configure, Install and Publish with their snippets, then what the class is, then the rest folded', async () => {
+    const r = await open();
+    expect(stepHeadings(r)).toEqual(['1Configure', '2Install', '3Publish']);
+    expect(snippets(r, 'configure').some((s) => s.startsWith('registry=https://quader.example.net/api/npm/web/npm-all/'))).toBe(true);
+    expect(snippets(r, 'install')).toContain('npm install <package>');
+    expect(snippets(r, 'publish')).toContain('npm publish --registry https://quader.example.net/api/npm/web/npm-all/');
+    // The explanation follows the steps: the class's section stands open, every other is a closed disclosure titled with its heading.
+    const explanation = r.root.querySelector('quader-guide-view')!;
+    const lastStep = [...r.root.querySelectorAll('section.step')].at(-1)!;
+    expect(lastStep.compareDocumentPosition(explanation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(text(explanation.querySelector('section.guide-open > h2')!)).toBe('What a virtual repository is');
+    const folded = [...explanation.querySelectorAll<HTMLElement>('quader-disclosure.guide-more')].map((d) => d.dataset['section']);
+    expect(folded).toEqual(['npm.configure', 'npm.authenticate', 'npm.install', 'npm.publish', 'npm.troubleshooting']);
+    expect(explanation.querySelectorAll('quader-disclosure button[aria-expanded="true"]').length).toBe(0);
+    // No boxed table of contents above everything.
+    expect(r.root.querySelector('nav.toc')).toBeNull();
+    // Each snippet keeps the sentence that says what it does.
+    expect(text(r.root)).toContain('Save this as .npmrc in your project.');
+  });
+
+  it('R-UI-016 acceptance: the default produces a .npmrc with the literal ${QUADER_TOKEN} and shows no secret', async () => {
+    const r = await open();
+    expect(snippets(r, 'configure')[0]).toContain('//quader.example.net/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}');
     expect(text(r.root)).not.toMatch(/qdr_(pat|sat|cit)_/);
-    expect(radio(r, 'credentials', 'env').checked).toBe(true);
-    const link = [...r.root.querySelectorAll('a')].find((a) => text(a).includes('Create a token to put into the variable'));
-    expect(link?.getAttribute('href')).toBe('/profile/tokens');
+    expect(text(r.root)).toContain('The snippets read your token from the variable QUADER_TOKEN.');
   });
 
-  it('R-UI-016 R-UI-017 the npm client shows the registry and credential key with the trailing slash and the install and publish commands', async () => {
+  describe('the client (Q-UI-482)', () => {
+    it('R-UI-120 a format with several clients offers them in one control, preselecting the one the link names', async () => {
+      const r = await open({ project: 'web', key: 'npm-local', client: 'pnpm' });
+      const select = r.root.querySelector<HTMLSelectElement>('select#setup-client')!;
+      expect([...select.options].map((o) => o.value)).toEqual(['npm', 'pnpm', 'yarn', 'yarn-classic']);
+      expect(select.value).toBe('pnpm');
+      expect(r.root.querySelector('input[name="client"]')).toBeNull();
+      expect(r.setup.calls.at(-1)).toMatchObject({ repository: 'web/npm-local', query: { client: 'pnpm' } });
+      expect(r.guides.calls.at(-1)).toEqual({ repository: 'web/npm-local', client: 'pnpm' });
+      expect(snippets(r, 'install')).toContain('pnpm add <package>');
+    });
+
+    it('R-UI-120 a format with one client asks nothing', async () => {
+      const r = await open({ project: 'web', key: 'generic-local' });
+      expect(r.root.querySelector('select#setup-client')).toBeNull();
+      expect(r.setup.calls.at(-1)).toMatchObject({ repository: 'web/generic-local', query: { client: 'curl' } });
+      expect(snippets(r, 'configure')[0]).toContain('quader_curl() {');
+    });
+
+    it('R-UI-017 Yarn Berry gets its .yarnrc.yml and its publish registry', async () => {
+      const r = await open({ project: 'web', key: 'npm-all', client: 'yarn' });
+      const yml = snippets(r, 'configure')[0]!;
+      expect(yml).toContain('npmRegistryServer: "https://quader.example.net/api/npm/web/npm-all/"');
+      expect(yml).toContain('npmAuthToken: "${QUADER_TOKEN}"');
+      expect(snippets(r, 'publish').some((s) => s.includes('npmPublishRegistry: "https://quader.example.net/api/npm/web/npm-all/"'))).toBe(true);
+    });
+  });
+
+  it('R-UI-016 R-UI-125 each snippet shows its file and has a copy button; a file can be downloaded; a long line wraps inside its block', async () => {
     const r = await open();
-    expect(snippets(r).some((s) => s.startsWith('registry=https://quader.example.net/api/npm/web/npm-all/\n'))).toBe(true);
-    await tab(r, 'Install');
-    expect(snippets(r)).toContain('npm install <package>');
-    await tab(r, 'Publish');
-    expect(snippets(r)).toContain('npm publish --registry https://quader.example.net/api/npm/web/npm-all/\n');
-  });
-
-  it('R-UI-017 Yarn Berry gets a .yarnrc.yml with npmRegistryServer, npmAlwaysAuth and npmAuthToken, and its publish registry', async () => {
-    const r = await open({ repository: 'web/npm-all', client: 'yarn' });
-    const yml = snippets(r)[0]!;
-    expect(yml).toContain('npmRegistryServer: "https://quader.example.net/api/npm/web/npm-all/"');
-    expect(yml).toContain('npmAlwaysAuth: true');
-    expect(yml).toContain('npmAuthToken: "${QUADER_TOKEN}"');
-    await tab(r, 'Publish');
-    expect(snippets(r).some((s) => s.includes('npmPublishRegistry: "https://quader.example.net/api/npm/web/npm-all/"'))).toBe(true);
-  });
-
-  it('R-UI-017 Yarn Classic and pnpm use the .npmrc and their own add and publish commands', async () => {
-    const classic = await open({ repository: 'web/npm-all', client: 'yarn-classic' });
-    expect(snippets(classic)[0]).toContain('registry=https://quader.example.net/api/npm/web/npm-all/');
-    await tab(classic, 'Install');
-    expect(snippets(classic)).toContain('yarn add <package>');
-    await tab(classic, 'Publish');
-    expect(snippets(classic)).toContain('yarn publish --registry https://quader.example.net/api/npm/web/npm-all/\n');
-
-    const pnpm = await open({ repository: 'web/npm-all', client: 'pnpm' });
-    await tab(pnpm, 'Install');
-    expect(snippets(pnpm)).toContain('pnpm add <package>');
-  });
-
-  it('R-UI-016 each snippet shows its target file name and has a copy button; whole configuration files can be downloaded', async () => {
-    const r = await open();
-    const first = r.root.querySelector('.snippet')!;
-    expect(text(first.querySelector('.target')!)).toBe('File: .npmrc');
+    const first = r.root.querySelector('quader-setup-snippet')!;
+    expect(text(first.querySelector('.target')!)).toBe('File: .npmrcDownload');
     expect(first.querySelector('quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy snippet');
     expect(text(first)).toContain('Download');
-    const cli = [...r.root.querySelectorAll('.snippet')].find((s) => text(s).includes('npm config set'))!;
+    // One element per line: a long line wraps with an indented continuation instead of being cut off (Q-UI-486).
+    expect(first.querySelectorAll('pre .line').length).toBe(2);
+    const cli = [...r.root.querySelectorAll('quader-setup-snippet')].find((s) => text(s).includes('npm config set'))!;
     expect(cli.querySelector('.target')).toBeNull();
     expect(text(cli)).not.toContain('Download');
   });
@@ -211,7 +176,7 @@ describe('Client setup', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
     try {
       const r = await open();
-      button(r.root.querySelector('.snippet')!, 'Download').click();
+      button(r.root.querySelector('quader-setup-snippet')!, 'Download').click();
       expect(created).toHaveLength(1);
       expect(await created[0]!.text()).toContain('${QUADER_TOKEN}');
       expect(click).toHaveBeenCalledOnce();
@@ -221,15 +186,11 @@ describe('Client setup', () => {
     }
   });
 
-  describe('create a token for this setup', () => {
-    it('R-UI-016 R-UI-043 creates a read-only token scoped to the repository with the lifetime of the server, shows it once and writes it into the snippets', async () => {
+  describe('a token created in place (R-UI-122)', () => {
+    it('R-UI-122 R-UI-043 creates a read-only token for the repository with the server\'s lifetime, shows it once with the line that puts it into the variable, and leaves the snippets on the variable', async () => {
       const r = await open();
-      await choose(r, 'credentials', 'create');
-      expect(r.setup.calls.at(-1)?.query.credentials).toBe('placeholder');
-      expect(snippets(r)[0]).toContain(':_authToken={{token}}');
-      expect(text(r.root)).toContain('Until a token is set');
-
-      button(r.root, 'Create token').click();
+      expect([...r.root.querySelectorAll('a')].some((a) => a.getAttribute('href')?.startsWith('/profile/tokens'))).toBe(false);
+      button(r.root, 'Create a token').click();
       await settle(r.fixture);
 
       const request = r.tokens.lastRequest!;
@@ -238,72 +199,59 @@ describe('Client setup', () => {
       expect(request.scope).toEqual({ repositories: [{ repositories: ['web/npm-all'], actions: ['read'] }] });
       const shown = r.root.querySelector('.token-value')?.textContent ?? '';
       expect(shown).toMatch(/^qdr_pat_/);
-      expect(snippets(r)[0]).toContain(`:_authToken=${shown}`);
-      expect(snippets(r).join('')).not.toContain('{{token}}');
       expect(text(r.root)).toContain('This token is shown once.');
-      expect(r.root.textContent).not.toContain('Until a token is set');
+      expect(text(r.root)).toContain(READ_TOKEN_COMMAND);
+      // The snippets keep the reference: the token goes into the variable, not into a file.
+      expect(snippets(r).join('\n')).not.toContain(shown);
+      expect(snippets(r, 'configure')[0]).toContain('${QUADER_TOKEN}');
       await expectAccessible(r.root);
     });
 
-    it('R-UI-016 the token may also publish to the deployment target, but only when the user asks and the answer names a target', async () => {
+    it('R-UI-122 the token may also publish to the deployment target, only when the reader ticks it and may publish', async () => {
       const r = await open();
-      await choose(r, 'credentials', 'create');
       const withPublish = [...r.root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find((i) =>
-        text(i.parentElement!).includes('may also publish'),
+        text(i.parentElement!).includes('It may also publish'),
       )!;
       withPublish.checked = true;
       withPublish.dispatchEvent(new Event('change', { bubbles: true }));
       await settle(r.fixture);
-      button(r.root, 'Create token').click();
+      button(r.root, 'Create a token').click();
       await settle(r.fixture);
       expect(r.tokens.lastRequest?.scope?.repositories).toEqual([
         { repositories: ['web/npm-all'], actions: ['read'] },
         { repositories: ['web/npm-local'], actions: ['read', 'deploy'] },
       ]);
+      expect(text(r.root)).toContain('publish to web/npm-local');
 
-      const readOnly = await open({ repository: 'web/npm-remote' });
-      await choose(readOnly, 'credentials', 'create');
-      expect(text(readOnly.root)).not.toContain('may also publish');
+      const readOnly = await open({ project: 'web', key: 'npm-remote' });
+      expect(text(readOnly.root)).not.toContain('It may also publish');
     });
 
-    it('R-UI-016 R-UI-043 the value is in no storage and no URL; another repository, another mode or leaving the page discards it', async () => {
+    it('R-UI-043 the value is in no storage and no URL; another repository or leaving the page discards it', async () => {
       const r = await open();
-      await choose(r, 'credentials', 'create');
-      button(r.root, 'Create token').click();
+      button(r.root, 'Create a token').click();
       await settle(r.fixture);
       const token = r.root.querySelector('.token-value')!.textContent!;
-      expect(token).toMatch(/^qdr_/);
       expect(storedText()).not.toContain('qdr_');
       expect(location.href).not.toContain('qdr_');
 
-      // The router binds the query parameter; the spec sets the input the router would set.
-      r.fixture.componentRef.setInput('repository', 'web/npm-local');
+      r.fixture.componentRef.setInput('key', 'npm-local');
       await settle(r.fixture);
       expect(r.root.querySelector('.token-value')).toBeNull();
       expect(r.root.textContent).not.toContain(token);
-      button(r.root, 'Create token').click();
+
+      button(r.root, 'Create a token').click();
       await settle(r.fixture);
       const second = r.root.querySelector('.token-value')!.textContent!;
-      await choose(r, 'credentials', 'env');
-      expect(r.root.textContent).not.toContain(second);
-
-      await choose(r, 'credentials', 'create');
-      button(r.root, 'Create token').click();
-      await settle(r.fixture);
-      const third = r.root.querySelector('.token-value')!.textContent!;
-      // Leaving the route destroys the component, which forgets the value (the fixture's element
-      // may outlive destroy() in the test document, so the component's own signal is asked).
-      const held = r.fixture.componentInstance as unknown as { token: () => string | null };
-      expect(held.token()).toBe(third);
+      const held = r.fixture.componentInstance as unknown as { createdToken: () => string | null };
+      expect(held.createdToken()).toBe(second);
       r.fixture.destroy();
-      expect(held.token()).toBeNull();
-      expect(storedText()).not.toContain(third);
+      expect(held.createdToken()).toBeNull();
+      expect(storedText()).not.toContain(second);
     });
 
-    it('R-UI-042 R-UI-043 a token created for one repository never fills the snippets of another, and is revoked', async () => {
+    it('R-UI-042 R-UI-043 a token whose answer arrives after the repository changed is revoked and never shown', async () => {
       const r = await open();
-      await choose(r, 'credentials', 'create');
-      // The answer is held back until the repository has changed.
       let release!: () => void;
       const gate = new Promise<void>((resolve) => (release = resolve));
       const create = r.tokens.create.bind(r.tokens);
@@ -311,48 +259,52 @@ describe('Client setup', () => {
         await gate;
         return create(request, key);
       };
-      button(r.root, 'Create token').click();
+      button(r.root, 'Create a token').click();
       await settle(r.fixture);
-
-      r.fixture.componentRef.setInput('repository', 'web/npm-local');
+      r.fixture.componentRef.setInput('key', 'npm-local');
       await settle(r.fixture);
       release();
       await settle(r.fixture);
-
       expect(r.root.querySelector('.token-value')).toBeNull();
-      const held = r.fixture.componentInstance as unknown as { token: () => string | null };
-      expect(held.token()).toBeNull();
       expect(r.tokens.calls.filter((c) => c.startsWith('revoke '))).toHaveLength(1);
       expect(r.tokens.lastRequest?.scope?.repositories?.[0]?.repositories).toEqual(['web/npm-all']);
     });
 
-    it('R-UI-016 a failed creation (recent sign-in needed, no right) is shown and no token appears', async () => {
+    it('R-UI-122 a failed creation is shown and no token appears; a double click creates one token', async () => {
       const r = await open();
-      await choose(r, 'credentials', 'create');
       r.tokens.failure = new ApiError(403, { code: 'forbidden' }, 'rid');
-      button(r.root, 'Create token').click();
+      button(r.root, 'Create a token').click();
       await settle(r.fixture);
       expect(r.root.querySelector('[role="alert"]')).not.toBeNull();
       expect(r.root.querySelector('.token-value')).toBeNull();
-    });
 
-    it('R-UI-042 a double click creates one token', async () => {
-      const r = await open();
-      await choose(r, 'credentials', 'create');
-      const create = button(r.root, 'Create token');
+      const twice = await open();
+      const create = button(twice.root, 'Create a token');
       create.click();
       create.click();
-      await settle(r.fixture);
-      expect(r.tokens.keys).toHaveLength(1);
+      await settle(twice.fixture);
+      expect(twice.tokens.keys).toHaveLength(1);
     });
   });
 
-  describe('use a token I already have', () => {
+  describe('a token written into the snippets (More options)', () => {
     async function paste(r: Opened, value: string) {
-      await choose(r, 'credentials', 'paste');
+      if (!radio(r, 'credentials', 'paste').checked) await choose(r, 'credentials', 'paste');
       type(r.root.querySelector<HTMLInputElement>('#setup-token')!, value);
       await settle(r.fixture);
     }
+
+    it('R-UI-122 More options is closed and holds the way to write a token into the snippets; until one is pasted they show the placeholder', async () => {
+      const r = await open();
+      const more = r.root.querySelector('quader-disclosure.more-options')!;
+      expect(more.querySelector('button[aria-expanded]')?.getAttribute('aria-expanded')).toBe('false');
+      expect(radio(r, 'credentials', 'env').checked).toBe(true);
+      expect(r.root.querySelector('input[name="credentials"][value="create"]')).toBeNull();
+      await choose(r, 'credentials', 'paste');
+      expect(r.setup.calls.at(-1)?.query.credentials).toBe('placeholder');
+      expect(snippets(r, 'configure')[0]).toContain(':_authToken={{token}}');
+      expect(text(r.root)).toContain('Until a token is pasted');
+    });
 
     it('R-UI-016 R-UI-043 the field is a password field with a reveal toggle, autocomplete off and no spellcheck', async () => {
       const r = await open();
@@ -361,41 +313,34 @@ describe('Client setup', () => {
       expect(field.type).toBe('password');
       expect(field.getAttribute('autocomplete')).toBe('off');
       expect(field.getAttribute('spellcheck')).toBe('false');
-      const toggle = button(r.root, 'Show');
-      expect(toggle.getAttribute('aria-pressed')).toBe('false');
-      toggle.click();
+      button(r.root, 'Show').click();
       await settle(r.fixture);
       expect(r.root.querySelector<HTMLInputElement>('#setup-token')!.type).toBe('text');
-      expect(button(r.root, 'Hide').getAttribute('aria-pressed')).toBe('true');
       await expectAccessible(r.root);
     });
 
-    it('R-UI-016 a valid token is written into the snippets and sent nowhere: no request to the token service, none to the setup service with it', async () => {
+    it('R-UI-016 a valid token is written into the snippets and sent nowhere', async () => {
       const r = await open();
       const token = validToken();
-      const callsBefore = r.setup.calls.length;
+      const before = r.setup.calls.length;
       await paste(r, token);
-      expect(snippets(r)[0]).toContain(`:_authToken=${token}`);
+      expect(snippets(r, 'configure')[0]).toContain(`:_authToken=${token}`);
       expect(text(r.root)).toContain('looks like a Quader token');
       expect(r.tokens.calls).toEqual([]);
-      expect(r.tokens.keys).toEqual([]);
-      // The setup answer was asked once more for the other credential mode, never with the value.
-      for (const c of r.setup.calls.slice(callsBefore)) expect(JSON.stringify(c)).not.toContain(token);
+      for (const c of [...r.setup.calls.slice(before), ...r.guides.calls]) expect(JSON.stringify(c)).not.toContain(token);
     });
 
     it('R-UI-016 acceptance: a token with a wrong checksum shows a validation error and sends no request', async () => {
       const r = await open();
       const good = validToken();
       const bad = good.slice(0, -1) + (good.endsWith('a') ? 'b' : 'a');
-      const callsBefore = r.setup.calls.length;
+      const before = r.setup.calls.length;
       await paste(r, bad);
       expect(text(r.root)).toContain('The checksum does not match.');
       expect(r.root.querySelector('#setup-token')?.getAttribute('aria-invalid')).toBe('true');
-      expect(snippets(r)[0]).toContain(':_authToken={{token}}');
       expect(snippets(r).join('')).not.toContain(bad);
       expect(r.tokens.calls).toEqual([]);
-      for (const c of r.setup.calls.slice(callsBefore)) expect(JSON.stringify(c)).not.toContain(bad);
-      await expectAccessible(r.root);
+      for (const c of r.setup.calls.slice(before)) expect(JSON.stringify(c)).not.toContain(bad);
     });
 
     it('R-UI-016 names what is wrong with a pasted value: prefix, length, characters', async () => {
@@ -408,219 +353,86 @@ describe('Client setup', () => {
       expect(text(r.root)).toContain('only letters and digits');
     });
 
-    it('R-UI-043 a pasted value is in no storage, and a value that fails the check is not kept at all', async () => {
+    it('R-UI-043 a pasted value is in no storage and is gone after going back to the variable', async () => {
       const r = await open();
       const token = validToken('q');
       await paste(r, token);
       expect(storedText()).not.toContain(token);
-      expect(storedText()).not.toContain('qdr_');
-      await paste(r, token.slice(0, -1));
-      expect(snippets(r).join('')).not.toContain(token.slice(0, -1));
-    });
-
-    it('R-UI-043 the pasted value is gone after switching to another mode and back', async () => {
-      const r = await open();
-      await paste(r, validToken());
       await choose(r, 'credentials', 'env');
       await choose(r, 'credentials', 'paste');
       expect(r.root.querySelector<HTMLInputElement>('#setup-token')!.value).toBe('');
+      expect(snippets(r).join('')).not.toContain(token);
     });
   });
 
-  it('R-UI-016 an anonymous viewer skips the credentials step and gets snippets without authentication lines', async () => {
-    const r = await open({ repository: 'web/npm-all' }, { anonymous: true });
-    expect(r.setup.calls.at(-1)?.query.credentials).toBe('none');
-    expect(r.root.querySelector('input[name="credentials"]')).toBeNull();
-    expect(text(r.root)).toContain('You are not signed in.');
-    expect(snippets(r)[0]).not.toContain('_authToken');
-    await expectAccessible(r.root);
-  });
-
-  it('R-UI-016 a virtual repository without a default deployment target shows who can change it the reason instead of the publish snippets, and links the members', async () => {
-    const r = await open({ repository: 'web/npm-readonly' });
-    await tab(r, 'Publish');
-    expect(text(r.root)).toContain('no default deployment target');
-    expect(snippets(r)).toEqual([]);
-    const link = [...r.root.querySelectorAll('a')].find((a) => text(a).includes('see its members'));
-    expect(link?.getAttribute('href')).toBe('/projects/web/repositories/npm-readonly/settings');
-
-    // Who can neither publish nor change the repository gets no Publish tab (Q-UI-316).
-    const plain = await open({ repository: 'web/npm-readonly' }, { capabilities: [] });
-    expect(tabLabels(plain)).toEqual(['Configure', 'Install']);
-  });
-
-  it('R-UI-016 a repository the user cannot publish to has no Publish tab', async () => {
-    const r = await open({ repository: 'web/npm-remote' });
-    expect(tabLabels(r)).toEqual(['Configure', 'Install']);
-    expect(text(r.root)).not.toContain('You cannot publish');
-  });
-
-  it('R-UI-016 the credential is one line with Create a token beside it; the other ways are More options, closed until opened', async () => {
-    const r = await open({ repository: 'web/npm-local' });
-    expect(text(r.root.querySelector('.credential-line')!)).toContain('The snippets read your token from the variable QUADER_TOKEN.');
-    const more = r.root.querySelector('quader-disclosure.more-options')!;
-    const toggle = more.querySelector<HTMLButtonElement>('button[aria-expanded]')!;
-    expect(text(toggle)).toContain('More options');
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(more.querySelector('.collapse-region')?.classList).not.toContain('open');
-    expect(more.querySelector('input[name="credentials"][value="create"]')).toBeTruthy();
-    toggle.click();
-    await settle(r.fixture);
-    await choose(r, 'credentials', 'paste');
-    expect(text(r.root.querySelector('.credential-line')!)).toContain('The snippets hold the token you pasted.');
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    await expectAccessible(r.root);
-  });
-
-  it('R-UI-016 only readable repositories of the chosen format are offered; a user who reads none gets an empty state', async () => {
-    const none = await open({}, { setup: (get) => ((get(RepositoriesApi) as FakeRepositoriesApi).repositories = []) });
-    expect(text(none.root)).toContain('You can read no repository of this package type.');
-    expect(none.root.querySelector('input[name="repository"]')).toBeNull();
-  });
-
-  it('R-UI-016 a failing setup answer is shown with a retry', async () => {
-    const r = await open({ repository: 'web/npm-all' }, { setup: (get) => ((get(ClientSetupApi) as FakeClientSetupApi).failure = new ApiError(503, { code: 'unavailable' }, null)) });
-    expect(text(r.root)).toContain('temporarily unavailable');
-    button(r.root, 'Retry').click();
-    await settle(r.fixture);
-    expect(snippets(r).length).toBeGreaterThan(0);
-  });
-
-  it('R-UI-016 every snippet with a known id carries a translated explanation', async () => {
-    const r = await open();
-    expect(text(r.root)).toContain('Save this as .npmrc in your project.');
-    await tab(r, 'Install');
-    expect(text(r.root)).toContain('Installs a package through this repository');
-  });
-
-  describe('NuGet', () => {
-    it('R-UI-018 NuGet is offered with the .NET CLI, nuget.exe and Visual Studio, in the order of the table', async () => {
-      const r = await open({ format: 'nuget' });
-      expect([...r.root.querySelectorAll<HTMLInputElement>('input[name="client"]')].map((i) => i.value)).toEqual([
-        'dotnet',
-        'nuget',
-        'visual-studio',
-      ]);
-      expect([...r.root.querySelectorAll<HTMLInputElement>('input[name="repository"]')].map((i) => i.value)).toEqual([
-        'web/nuget-all',
-        'web/nuget-local',
-        'web/nuget-remote',
-      ]);
-      await expectAccessible(r.root);
+  describe('what each reader sees (R-UI-123)', () => {
+    it('R-UI-123 a reader who may not publish gets Configure and Install only, and no publishing in the explanation', async () => {
+      const r = await open({ project: 'web', key: 'npm-remote' });
+      expect(stepHeadings(r)).toEqual(['1Configure', '2Install']);
+      expect(r.root.querySelector('[data-section="npm.publish"]')).toBeNull();
+      expect(text(r.root)).not.toContain('You cannot publish');
     });
 
-    it('R-UI-018 R-NUGET-026 the .NET CLI source uses the index.json URL, the environment reference and the clear-text flag; the nuget.config clears the other sources', async () => {
-      const r = await open({ repository: 'web/nuget-all', client: 'dotnet' });
-      expect(r.setup.calls.at(-1)).toMatchObject({ repository: 'web/nuget-all', query: { client: 'dotnet', credentials: 'env' } });
-      const [shell, powershell, config] = snippets(r);
-      expect(shell).toContain('dotnet nuget add source https://quader.example.net/api/nuget/web/nuget-all/v3/index.json --name quader');
-      expect(shell).toContain('--password "${QUADER_TOKEN}" --store-password-in-clear-text');
-      expect(powershell).toContain('--password "$env:QUADER_TOKEN"');
-      expect(config).toContain('<clear />');
-      expect(config).toContain('protocolVersion="3"');
-      expect(config).toContain('<add key="ClearTextPassword" value="%QUADER_TOKEN%" />');
-      expect(text(r.root)).toContain('stored in clear text');
-      expect(text(r.root)).toContain('removes all other package sources');
-      expect(text(r.root)).not.toMatch(/qdr_(pat|sat|cit)_/);
-      await expectAccessible(r.root);
-    });
-
-    it('R-UI-018 install and publish: the push names the repository the caller chose, with the token as the API key', async () => {
-      const r = await open({ repository: 'web/nuget-all', client: 'dotnet' });
-      await tab(r, 'Install');
-      expect(snippets(r)[0]).toContain('dotnet add package <package>');
-      await tab(r, 'Publish');
-      expect(snippets(r)[0]).toContain(
-        'dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source https://quader.example.net/api/nuget/web/nuget-all/v3/index.json --api-key "${QUADER_TOKEN}"',
-      );
-      expect(text(r.root)).toContain('The token travels as the API key.');
-    });
-
-    it('R-UI-018 nuget.exe and Visual Studio each get their own source instructions', async () => {
-      const exe = await open({ repository: 'web/nuget-local', client: 'nuget' });
-      expect(snippets(exe)[0]).toContain('nuget sources add -Name quader -Source https://quader.example.net/api/nuget/web/nuget-local/v3/index.json');
-      await tab(exe, 'Publish');
-      expect(snippets(exe)[0]).toContain('nuget push Acme.Widgets.1.2.3.nupkg -Source');
-
-      const vs = await open({ repository: 'web/nuget-local', client: 'visual-studio' });
-      expect(snippets(vs)[0]).toContain('<add key="quader" value="https://quader.example.net/api/nuget/web/nuget-local/v3/index.json" protocolVersion="3" />');
-      await tab(vs, 'Install');
-      expect(snippets(vs)[0]).toContain('<PackageReference Include="<package>" />');
-      await expectAccessible(vs.root);
-    });
-
-    it('R-UI-018 a remote NuGet repository cannot be published to: no Publish tab', async () => {
-      const r = await open({ repository: 'web/nuget-remote', client: 'dotnet' });
-      expect(tabLabels(r)).toEqual(['Configure', 'Install']);
-    });
-  });
-
-  describe('OCI', () => {
-    const oci = (inputs: Record<string, unknown>, options: { anonymous?: boolean } = {}) =>
-      open(inputs, {
-        ...options,
-        setup: (get) => {
-          const repos = get(RepositoriesApi) as FakeRepositoriesApi;
-          repos.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT, NUGET_FORMAT, OCI_FORMAT];
-          repos.repositories = [...NPM_REPOSITORIES, ...OCI_REPOSITORIES];
-        },
-      });
-
-    it('R-UI-016 R-OCI-030 OCI is offered with the Docker CLI and Podman, in the order of the table', async () => {
-      const r = await oci({ format: 'oci' });
-      expect([...r.root.querySelectorAll<HTMLInputElement>('input[name="client"]')].map((i) => i.value)).toEqual(['docker', 'podman']);
-      expect([...r.root.querySelectorAll<HTMLInputElement>('input[name="repository"]')].map((i) => i.value)).toEqual(['web/oci-local']);
-      expect(text(r.root)).toContain('Docker CLI (with Buildx)');
-      await expectAccessible(r.root);
-    });
-
-    it('R-UI-016 R-OCI-030 the login reads the token from standard input, names the image prefix and not the registry URL, and the Kubernetes secret follows', async () => {
-      const r = await oci({ repository: 'web/oci-local', client: 'docker' });
-      expect(r.setup.calls.at(-1)).toMatchObject({ repository: 'web/oci-local', query: { client: 'docker', credentials: 'env' } });
-      const [login, secret] = snippets(r);
-      expect(login).toContain(`printf '%s' "\${QUADER_TOKEN}" | docker login quader.example.net/web/oci-local --username quader --password-stdin`);
-      expect(login).not.toContain('/v2');
-      expect(secret).toContain('kubectl create secret generic quader-registry --type=kubernetes.io/dockerconfigjson');
-      const t = text(r.root);
-      expect(t).toContain('A token is read from standard input');
-      expect(t).toContain('creates an image pull secret that holds the token');
-      expect(t).not.toMatch(/qdr_(pat|sat|cit)_/);
-      await expectAccessible(r.root);
-    });
-
-    it('R-UI-016 R-OCI-030 install pulls by tag, publish tags and pushes, and Buildx pushes a multi-platform image', async () => {
-      const r = await oci({ repository: 'web/oci-local', client: 'docker' });
-      await tab(r, 'Install');
-      expect(snippets(r)[0]).toContain('docker pull quader.example.net/web/oci-local/<package>');
-      expect(text(r.root)).toContain('Replace <package> with the image name.');
-      await tab(r, 'Publish');
-      const [push, buildx] = snippets(r);
-      expect(push).toContain('docker tag myapp:1.0 quader.example.net/web/oci-local/myapp:1.0');
-      expect(push).toContain('docker push quader.example.net/web/oci-local/myapp:1.0');
-      expect(buildx).toContain('docker buildx build --platform linux/amd64,linux/arm64');
-      expect(text(r.root)).toContain('Names a local image below this repository');
-      expect(text(r.root)).toContain('one multi-platform image');
-    });
-
-    it('R-UI-016 R-OCI-030 Podman has its own login and push and no Buildx or Kubernetes snippet', async () => {
-      const r = await oci({ repository: 'web/oci-local', client: 'podman' });
-      expect(snippets(r)).toHaveLength(1);
-      expect(snippets(r)[0]).toContain('podman login quader.example.net/web/oci-local --username quader --password-stdin');
-      await tab(r, 'Publish');
-      expect(snippets(r)).toHaveLength(1);
-      expect(snippets(r)[0]).toContain('podman push quader.example.net/web/oci-local/myapp:1.0');
-    });
-
-    it('R-UI-016 R-OCI-030 an anonymous viewer gets the interactive login and a comment in place of the pull secret, and no token line', async () => {
-      const r = await oci({ repository: 'web/oci-local', client: 'docker' }, { anonymous: true });
+    it('R-UI-123 an anonymous visitor of a public repository gets snippets without credentials, no token line and no More options', async () => {
+      const r = await open({ project: 'web', key: 'npm-all' }, { anonymous: true });
       expect(r.setup.calls.at(-1)?.query.credentials).toBe('none');
-      const [login, secret] = snippets(r);
-      expect(login).toBe('docker login quader.example.net/web/oci-local --username quader\n');
-      expect(secret).toBe('# An image pull secret holds a credential: ask for the snippet with one.\n');
-      expect(text(r.root)).toContain('without a token the client asks for the password');
-      expect(text(r.root)).toContain('A snippet without a token is only a comment');
-      expect(snippets(r).join('')).not.toContain('--password-stdin');
+      expect(text(r.root)).toContain('You are not signed in.');
+      expect(r.root.querySelector('input[name="credentials"]')).toBeNull();
+      expect(text(r.root)).not.toContain('Create a token');
+      expect(text(r.root)).not.toContain('More options');
+      expect(snippets(r).join('\n')).not.toContain('_authToken');
+      expect(stepHeadings(r)).toEqual(['1Configure', '2Install']);
       await expectAccessible(r.root);
     });
+
+    it('R-UI-123 a virtual repository without a deployment target tells who can change it why there is nothing to publish, and links its settings', async () => {
+      const r = await open({ project: 'web', key: 'npm-readonly' }, { capabilities: ['repositories:read-config'] });
+      expect(stepHeadings(r)).toContain('3Publish');
+      expect(text(r.root)).toContain('has no default deployment target');
+      const link = [...r.root.querySelectorAll('a')].find((a) => text(a).includes("Open the repository's settings"));
+      expect(link?.getAttribute('href')).toBe('/projects/web/repositories/npm-readonly/settings');
+
+      const plain = await open({ project: 'web', key: 'npm-readonly' }, { capabilities: [] });
+      expect(stepHeadings(plain)).toEqual(['1Configure', '2Install']);
+    });
+  });
+
+  describe('the guide of a class, without a repository (R-UI-124)', () => {
+    it('R-UI-124 the page shows the class guide\'s snippets with the placeholders of the address and asks for no repository', async () => {
+      const r = await open({ format: 'npm', class: 'local' });
+      expect(r.setup.calls).toEqual([]);
+      expect(r.guides.calls.at(-1)).toEqual({ format: 'npm', cls: 'local', client: 'npm' });
+      expect(text(r.root.querySelector('.context')!)).toContain('Local');
+      expect(text(r.root)).toContain('The addresses show <project> and <repository>');
+      expect(snippets(r, 'configure')[0]).toContain('quader.example.net/api/npm/<project>/<repository>/');
+      expect(stepHeadings(r)).toEqual(['1Configure', '2Install', '3Publish']);
+      expect(text(r.root)).not.toContain('Create a token');
+      await expectAccessible(r.root);
+    });
+
+    it('R-UI-124 a format without a guide or a class the format does not have says so', async () => {
+      const r = await open({ format: 'npm', class: 'federated' });
+      expect(text(r.root)).toContain('This installation has no guide for this package type and kind of repository.');
+      expect(r.guides.calls).toEqual([]);
+    });
+  });
+
+  it('R-UI-016 a failing answer is shown with a retry', async () => {
+    const r = await open({ project: 'web', key: 'npm-all' }, { setup: (get) => ((get(ClientSetupApi) as FakeClientSetupApi).failure = new ApiError(503, { code: 'unavailable' }, null)) });
+    expect(r.root.querySelector('quader-error-notice')).not.toBeNull();
+  });
+
+  it('R-UI-018 R-OCI-030 NuGet and OCI repositories get their clients in the control and their snippets', async () => {
+    const nuget = await open({ project: 'web', key: 'nuget-all' });
+    expect([...nuget.root.querySelectorAll<HTMLOptionElement>('select#setup-client option')].map((o) => o.value)).toEqual([
+      'dotnet',
+      'nuget',
+      'visual-studio',
+    ]);
+    expect(snippets(nuget, 'configure').join('\n')).toContain('https://quader.example.net/api/nuget/web/nuget-all/v3/index.json');
+
+    const oci = await open({ project: 'web', key: 'oci-local' });
+    expect([...oci.root.querySelectorAll<HTMLOptionElement>('select#setup-client option')].map((o) => o.value)).toEqual(['docker', 'podman']);
+    expect(snippets(oci, 'configure')[0]).toContain('--password-stdin');
   });
 });

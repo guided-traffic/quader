@@ -16,11 +16,11 @@ import (
 	"github.com/guided-traffic/quader/internal/packages/readme"
 )
 
-// The guide operations of R-API-053: a format's guide sections (formats.Guide),
-// executed over the data of the repository and the caller, with the setup snippets
-// of R-API-030 attached where a section names them. The snippets go through the
-// renderer of the client setup, so a snippet of the guide is the one the setup page
-// shows for the same repository, client and credential mode.
+// The guide operations of R-API-053 and R-API-070: a format's guide sections
+// (formats.Guide), executed over the data of the repository and the caller, and
+// beside them the setup snippets of R-API-030. The snippets go through the renderer
+// of the client setup, so a snippet of the guide is the one the client setup
+// answers for the same repository, client and credential mode.
 
 // GetRepositoryGuide implements GET /api/v1/projects/{projectKey}/repositories/{repoKey}/guide. The
 // operation's declaration (read on the repository) has been enforced by the time
@@ -116,9 +116,12 @@ func formatGuide(ctx context.Context, ps PackageServices, format string, class f
 		return gen.Guide{}, err
 	}
 	sub := SubjectFrom(ctx)
+	// The guide of a class teaches publishing to a signed-in reader of a class that
+	// takes it, with the placeholders of the address (R-API-070); it names no target.
 	return renderGuide(ps.Guides, guideInput{
 		Format: f, Class: class, Client: client, Anonymous: sub.Anonymous, ExposureRules: exposureRules(ctx), TokenEnvVar: ps.TokenEnvVar,
-		Data: formats.SetupData{RegistryURL: registry, ImagePrefix: imagePrefix(f, registry), Endpoint: sub.Endpoint, RequiresAuth: true},
+		MayPublish: !sub.Anonymous && class != formats.Remote,
+		Data:       formats.SetupData{RegistryURL: registry, ImagePrefix: imagePrefix(f, registry), Endpoint: sub.Endpoint, RequiresAuth: true},
 	})
 }
 
@@ -167,15 +170,17 @@ type guideInput struct {
 	Data formats.SetupData
 	// PublishTarget names the target only when MayPublish.
 	PublishTarget string
+	// MayPublish renders the publish snippets; for a repository it also keeps the
+	// sections of the topics publish and maintain (R-API-070).
 	MayPublish    bool
 	Anonymous     bool
 	ExposureRules bool
 	TokenEnvVar   string
 }
 
-// renderGuide runs the sections that apply to the class and the client in topic
-// order, rewrites the credential reference by the caller's mode, renders the
-// Markdown and attaches the setup snippets.
+// renderGuide renders the setup snippets of the client and runs the sections that
+// apply to the class and the client in topic order, rewrites the credential
+// reference by the caller's mode and renders the Markdown.
 func renderGuide(rd *readme.Renderer, in guideInput) (gen.Guide, error) {
 	creds := credEnv
 	if in.Anonymous {
@@ -200,7 +205,15 @@ func renderGuide(rd *readme.Renderer, in guideInput) (gen.Guide, error) {
 	out := gen.Guide{
 		Format: string(in.Format.Descriptor().ID), Class: gen.GuideClass(in.Class), Client: in.Client,
 		RegistryUrl: in.Data.RegistryURL, Credentials: gen.GuideCredentials(creds), ExposureRules: in.ExposureRules,
-		Sections: []gen.GuideSection{},
+		Snippets: make([]gen.ClientSnippet, 0, len(snippets)), Sections: []gen.GuideSection{},
+	}
+	for _, sn := range snippets {
+		if holdsTokenShape(sn.Content) {
+			// Not reachable with a template over SetupData; a defect that would
+			// otherwise hand a token to a caller.
+			return gen.Guide{}, errs.E(errs.Internal, errs.CodeInternal, "A guide snippet holds a token.")
+		}
+		out.Snippets = append(out.Snippets, clientSnippet(sn))
 	}
 	if in.Data.Repository != "" {
 		key := in.Data.Repository
@@ -211,10 +224,10 @@ func renderGuide(rd *readme.Renderer, in guideInput) (gen.Guide, error) {
 		out.PublishTarget = &t
 	}
 	for _, sec := range orderedSections(in.Format.Guide()) {
-		if !sec.AppliesTo(in.Class, in.Client) {
+		if !sec.AppliesTo(in.Class, in.Client) || !keepsSection(sec, in) {
 			continue
 		}
-		gs, ok, err := guideSection(rd, sec, data, setup, snippets)
+		gs, ok, err := guideSection(rd, sec, data, setup)
 		if err != nil {
 			return gen.Guide{}, err
 		}
@@ -225,32 +238,30 @@ func renderGuide(rd *readme.Renderer, in guideInput) (gen.Guide, error) {
 	return out, nil
 }
 
+// keepsSection reports whether a section belongs in the guide of the reader: the
+// guide of a repository leaves publishing and its upkeep out for a reader who may
+// not publish there (R-API-070), so that the page of a reader holds what the reader
+// can do. The guide of a class keeps them; its templates leave them out for an
+// anonymous reader.
+func keepsSection(sec formats.GuideSection, in guideInput) bool {
+	if in.Data.Repository == "" || in.MayPublish {
+		return true
+	}
+	return sec.Topic != formats.GuidePublish && sec.Topic != formats.GuideMaintain
+}
+
 // guideSection renders one section; ok is false for a section that says nothing.
-func guideSection(rd *readme.Renderer, sec formats.GuideSection, data formats.GuideData, setup setupInput, snippets []snippet) (gen.GuideSection, bool, error) {
+func guideSection(rd *readme.Renderer, sec formats.GuideSection, data formats.GuideData, setup setupInput) (gen.GuideSection, bool, error) {
 	md, err := formats.ExecuteGuide(sec, data)
 	if err != nil {
 		return gen.GuideSection{}, false, errs.Wrap(err, "api.guideSection "+sec.ID)
 	}
 	md = applyCredentials(md, setup)
-	gs := gen.GuideSection{Id: sec.ID, Topic: gen.GuideSectionTopic(sec.Topic), Title: sec.Title, Snippets: []gen.ClientSnippet{}}
-	if sec.Snippets != "" {
-		for _, sn := range snippets {
-			if sn.Tab == sec.Snippets {
-				gs.Snippets = append(gs.Snippets, clientSnippet(sn))
-			}
-		}
-	}
-	if strings.TrimSpace(md) == "" && len(gs.Snippets) == 0 {
+	if strings.TrimSpace(md) == "" {
 		return gen.GuideSection{}, false, nil
 	}
-	if strings.TrimSpace(md) != "" {
-		gs.Html = rd.Render(md).HTML
-	}
-	shown := []string{md, gs.Html}
-	for _, sn := range gs.Snippets {
-		shown = append(shown, sn.Content)
-	}
-	if slices.ContainsFunc(shown, holdsTokenShape) {
+	gs := gen.GuideSection{Id: sec.ID, Topic: gen.GuideSectionTopic(sec.Topic), Title: sec.Title, Html: rd.Render(md).HTML}
+	if slices.ContainsFunc([]string{md, gs.Html}, holdsTokenShape) {
 		// Not reachable with a section over GuideData; a defect that would otherwise
 		// hand a token to a caller.
 		return gen.GuideSection{}, false, errs.E(errs.Internal, errs.CodeInternal, "A guide section holds a token.")

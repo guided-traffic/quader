@@ -18,10 +18,10 @@ func (f *Format) Guide() []formats.GuideSection {
 	local, writable := []formats.Class{formats.Local}, []formats.Class{formats.Local, formats.Virtual}
 	secs := []formats.GuideSection{
 		{ID: "deb.local.what", Topic: formats.GuideWhat, Title: "What a local repository is", Classes: local, Markdown: guideText("what-local")},
-		{ID: "deb.configure", Topic: formats.GuideConfigure, Title: "Add the repository as a source", Snippets: "configure", Markdown: guideText("configure")},
+		{ID: "deb.configure", Topic: formats.GuideConfigure, Title: "Add the repository as a source", Markdown: guideText("configure")},
 		{ID: "deb.authenticate", Topic: formats.GuideAuthenticate, Title: "Which credential APT sends", Markdown: guideText("authenticate")},
-		{ID: "deb.install", Topic: formats.GuideInstall, Title: "Install a package", Snippets: "install", Markdown: guideText("install")},
-		{ID: "deb.publish", Topic: formats.GuidePublish, Title: "Upload a package", Classes: writable, Snippets: "publish", Markdown: guideText("publish")},
+		{ID: "deb.install", Topic: formats.GuideInstall, Title: "Install a package", Markdown: guideText("install")},
+		{ID: "deb.publish", Topic: formats.GuidePublish, Title: "Upload a package", Classes: writable, Markdown: guideText("publish")},
 		{ID: "deb.maintain", Topic: formats.GuideMaintain, Title: "Move, delete and re-sign", Classes: local, Markdown: guideText("maintain")},
 		{ID: "deb.troubleshooting", Topic: formats.GuideTroubleshooting, Title: "Troubleshooting", Markdown: guideText("troubleshooting")},
 	}

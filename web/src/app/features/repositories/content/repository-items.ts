@@ -1,5 +1,6 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { setupCommands } from '../../../core/project-links';
 import { RouterLink } from '@angular/router';
 import { PackageSort, PackageSummary, PackagesApi } from '../../../api/packages-api';
 import { splitRef } from '../../../api/repositories-api';
@@ -63,7 +64,7 @@ export const GRADE_SORT_MAX = 1000;
     >
       @if (offerSetup() && !q()) {
         <!-- The action that fills an empty repository (Q-UI-309): the setup shows how to publish or upload with a client. -->
-        <a emptyAction class="btn btn-default" routerLink="/setup" [queryParams]="{ repository: repository() }" i18n="@@repo.content.tab.setup"
+        <a emptyAction class="btn btn-default" [routerLink]="setupLink()" i18n="@@repo.content.tab.setup"
           >Set up client</a
         >
       }
@@ -129,6 +130,8 @@ export class RepositoryItems {
 
   /** The qualified name of the repository. */
   readonly repository = input.required<string>();
+  /** Set up client of this repository (R-UI-126). */
+  protected readonly setupLink = computed(() => setupCommands(this.repository()));
   readonly format = input.required<string>();
   readonly shape = input.required<ContentShape>();
   /** The format is matched against advisories: the column of findings is shown. */

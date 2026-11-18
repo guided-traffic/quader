@@ -1,6 +1,6 @@
 # Debian packages with APT
 
-How to point apt and apt-get on Debian and Ubuntu at a Quader repository with its signing key and a credential file, upload a package with curl, list it in suites and components, install it, and what a key rotation and a wrong clock look like on the client. The Client setup page and the How to use tab give the same commands with the addresses of your installation.
+How to point apt and apt-get on Debian and Ubuntu at a Quader repository with its signing key and a credential file, upload a package with curl, list it in suites and components, install it, and what a key rotation and a wrong clock look like on the client. The page Set up client of a repository gives the same commands with the addresses of your installation, and the guide that explains them.
 
 ## The address and what APT reads
 
@@ -16,7 +16,7 @@ APT adds `dists/<suite>/InRelease` and the index files for `apt-get update`, and
 
 ## Configure APT
 
-The Client setup page, with **Package type** Debian (APT) and **Client** **APT (apt, apt-get)**, renders this for the repository you choose; the suite is `stable` unless you change it. The files are named after the project and the repository, so two repositories never share a key file:
+The page **Set up client** of a Debian (APT) repository renders this for that repository; the suite is `stable` unless you change it. The files are named after the project and the repository, so two repositories never share a key file:
 
 ```shell
 # example: the repository deb-local of the project web, suite stable
@@ -114,7 +114,7 @@ APT installs the highest version among all of its sources, so a package name tha
 A remote repository is a pull-through cache of an APT archive, such as `https://deb.debian.org/debian/` or Ubuntu's archive. Its release files are the archive's own, byte for byte: Quader signs nothing of a remote. The key your client trusts is therefore the archive's:
 
 - **The repository has upstream keys** (an administrator gave it the archive's public keys): Quader checks every release it stores against them, and `signing-key.asc` of the remote serves those keys. The configure snippet above installs them; compare their fingerprints with the ones the repository's page shows.
-- **The repository has none**: Quader stores what the archive sends without checking it, and your client checks it. The Client setup page then shows the snippet with the archive's own keyring, `/usr/share/keyrings/debian-archive-keyring.gpg` (package `debian-archive-keyring`) or, on Ubuntu, `/usr/share/keyrings/ubuntu-archive-keyring.gpg` (package `ubuntu-keyring`).
+- **The repository has none**: Quader stores what the archive sends without checking it, and your client checks it. The page **Set up client** then shows the snippet with the archive's own keyring, `/usr/share/keyrings/debian-archive-keyring.gpg` (package `debian-archive-keyring`) or, on Ubuntu, `/usr/share/keyrings/ubuntu-archive-keyring.gpg` (package `ubuntu-keyring`).
 
 Any suite the archive has works without configuration: `stable`, `bookworm`, `noble-updates`, a flat directory such as `binary/`, or `./` for a repository whose address is the flat directory itself. Nothing can be uploaded to a remote repository.
 

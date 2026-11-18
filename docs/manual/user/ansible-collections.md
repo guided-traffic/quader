@@ -1,6 +1,6 @@
 # Ansible collections and roles with ansible-galaxy
 
-How to point ansible-galaxy at a Quader repository, give it a token, install collections and roles, publish a collection, and what the messages of the client mean. The Client setup page and the How to use tab of a repository give the same commands with the addresses of your installation.
+How to point ansible-galaxy at a Quader repository, give it a token, install collections and roles, publish a collection, and what the messages of the client mean. The page Set up client of a repository gives the same commands with the addresses of your installation, and the guide that explains them.
 
 ## The address and what ansible-galaxy reads
 
@@ -22,7 +22,7 @@ A collection name is `namespace.name` in lower case; a version is a semantic ver
 
 ## Configure ansible-galaxy
 
-The Client setup page, with **Package type** Ansible Galaxy and **Client** **Ansible Galaxy (ansible-galaxy)**, renders this for the repository you choose:
+The page **Set up client** of an Ansible Galaxy repository renders this for that repository:
 
 ```ini
 # ansible.cfg, next to your playbooks or as ~/.ansible.cfg

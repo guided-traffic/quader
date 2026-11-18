@@ -220,8 +220,9 @@ the declarations are in `api/openapi.yaml` (Q-AUTH-43).
 
 ## Tokens in the browser: the client setup page
 
-The page [client-setup.ts](../../web/src/app/features/setup/client-setup.ts) (R-UI-016, Q-UI-74) turns the placeholder `{{token}}` of a
-setup answer into a token, which is the one place where the UI handles a token value it did not just receive from the creating call.
+The page **Set up client** of a repository, [client-setup.ts](../../web/src/app/features/setup/client-setup.ts) (R-UI-016, R-UI-122, Q-UI-74),
+creates a token in place and turns the placeholder `{{token}}` of a setup answer into a pasted token, which is the one place where the UI handles a
+token value it did not just receive from the creating call.
 
 - **The server never fills a token.** The setup answer carries `{{token}}`, `${<ui.client_setup.token_env_var>}` or no authentication line, by the request's
   `credentials` (R-API-030). The templates have no field a token could come from (`formats.SetupData`), a `package`, `version` or `scope` in the
@@ -229,8 +230,11 @@ setup answer into a token, which is the one place where the UI handles a token v
   ([packages_api.go](../../internal/api/v1/packages_api.go); `TestR_API_030_ClientSetupNeverHoldsAToken`, 144 answers over every client, mode and
   caller). The addresses are built on the configured base URL, never on the `Host` of the request: without a base URL the operation answers `503`. The browser replaces the placeholder in the component (`fillToken`, a literal replacement) and nowhere else.
 - **One owner, no copy.** A created or pasted value is a private signal of the page component. It is in no service, no URL and no
-  `localStorage`, `sessionStorage` or IndexedDB (`client-setup.spec.ts` scans both storage areas); choosing another repository or another
-  way of signing in, and leaving the route, set it to `null`.
+  `localStorage`, `sessionStorage` or IndexedDB (`client-setup.spec.ts` scans both storage areas); another repository or another client,
+  and leaving the route, set it to `null`, and a creation whose answer arrives after such a change is revoked.
+- **A created token goes into the variable, not into a file** (Q-UI-483). The page shows it once with the command
+  `read -rs QUADER_TOKEN && export QUADER_TOKEN`, which reads it without echo and keeps it out of the shell's history, and the snippets
+  keep the reference. A token is written into the snippets only when the reader pastes one under **More options**.
 - **A pasted value is never sent.** It is checked in the browser for prefix, length, alphabet and the CRC-32 of the token format
   ([token-shape.ts](../../web/src/app/features/setup/token-shape.ts), the test vector of R-AUTH-022); a value that fails the check does not
   reach the snippets and no request is made for it. The check is no security measure: it catches a mistyped paste.
@@ -243,7 +247,7 @@ setup answer into a token, which is the one place where the UI handles a token v
   reach means for later membership changes, for cache fills and for the member keys a token learns is [H-326](permissions.md#h-326--a-token-scoped-to-a-virtual-repository-by-its-key-reaches-the-members-the-repository-has-when-it-is-used).
 - **A file with a token leaves through a Blob URL** that is revoked right after the click.
 - **The install command panel (R-UI-009) asks for `credentials=none`**, so a command copied from a package page cannot contain a token.
-- **A guide never holds a token** (R-UI-049, R-API-053, Q-API-176). Its snippets are rendered by the setup's code with `credentials=env`, or
+- **A guide never holds a token** (R-UI-049, R-API-053, R-API-070, Q-API-176). Its snippets are rendered by the setup's code with `credentials=env`, or
   `none` for an anonymous reader, so they hold the variable's reference or no authentication line; the reference in a section's text is
   rewritten the same way, every answer is checked for `qdr_(pat|sat|cit)_` before it is sent (`TestR_API_053_NoGuideHoldsAToken`), and
   kit check 8 refuses a format whose guide spells a credential in a code block. The guide tells readers never to commit a file that holds a
@@ -374,7 +378,7 @@ largest office, are the mitigations; a separate budget for the revocation would 
 ### H-297 · A token on the setup page is readable by anything that runs in the page until the page is left
 
 A created token is shown in the page (once, with a copy button) and a pasted one sits in a password field; both are in the document
-until the user leaves the route or changes the repository. The protection is the document's policy (no inline script, Trusted Types,
+until the user leaves the route or changes the repository or the client. The protection is the document's policy (no inline script, Trusted Types,
 `script-src 'self'`, [internal/webui/csp.go](../../internal/webui/csp.go)) and the component-local handling above. A browser extension,
 a script that the policy lets through, and a shoulder surfer are outside it. Creating the token with the narrow scope and the short
 lifetime of the page limits what such a reader gets.

@@ -1,4 +1,5 @@
 import { Component, computed, effect, input, signal, untracked } from '@angular/core';
+import { setupCommands } from '../../core/project-links';
 import { RouterLink } from '@angular/router';
 import { PackageVersion } from '../../api/packages-api';
 import { ClientChoice, clientsOf } from '../setup/clients';
@@ -35,6 +36,11 @@ export class InstallPanel {
     );
   });
   protected readonly repository = computed(() => this.chosenRepository() ?? this.defaultRepository());
+  /** Set up client of the chosen repository (R-UI-126); the client goes with it. */
+  protected readonly setupLink = computed(() => {
+    const ref = this.repository();
+    return ref ? setupCommands(ref) : null;
+  });
 
   constructor() {
     // Another version or another package starts from the defaults again.

@@ -47,10 +47,6 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/projects/project-context.routes').then((m) => m.PROJECT_CONTEXT_ROUTES),
       },
-      {
-        path: 'setup',
-        loadChildren: () => import('./features/setup/setup.routes').then((m) => m.SETUP_ROUTES),
-      },
       // The results page of the top bar's search: a page of the main area, never of the admin area (R-UI-098, R-UI-099).
       {
         path: 'search',

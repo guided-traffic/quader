@@ -1,38 +1,30 @@
-import { VisibilityIcon } from '../../shared/ui/visibility-level';
-import { repositoryCommands } from '../../core/project-links';
-import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
-import {
-  Component,
-  DestroyRef,
-  computed,
-  effect,
-  inject,
-  input,
-  resource,
-  signal,
-  untracked,
-} from '@angular/core';
-import { TabGroup, TabPage } from '../../shared/ui/tabs';
+import { Component, DestroyRef, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
 import { Bastion, BastionsApi } from '../../api/bastions-api';
+import { Guide, GuidesApi } from '../../api/guides-api';
 import { ClientSetupApi, ClientSnippet } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
-import { RepositoriesApi, RepositorySummary, refOf } from '../../api/repositories-api';
+import { RepositoriesApi, isConsumerView, repoRef } from '../../api/repositories-api';
 import { CreateTokenRequest, TokensApi } from '../../api/tokens-api';
+import { repositoryCommands } from '../../core/project-links';
 import { SessionStore } from '../../core/session-store';
-import { AddressField } from '../../shared/address-field';
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
+import { FormatIconView } from '../../shared/format-icon';
+import { asApiError, valueOf } from '../../shared/paged-resource';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
-import { asApiError, valueOf } from '../../shared/paged-resource';
+import { VisibilityIcon } from '../../shared/ui/visibility-level';
+import { GuideView } from '../guides/guide-view';
+import { classLabel } from '../repositories/repository-class';
 import { reportedBastions } from './bastion-targets';
-import { clientsOf, FORMAT_CLIENTS, snippetExplanation } from './clients';
+import { snippetExplanation } from './clients';
+import { SetupSnippet } from './setup-snippet';
 import { checkTokenShape, TokenShape } from './token-shape';
 
-/** How the snippets get their credentials (R-UI-016 step 4). */
-export type CredentialMode = 'env' | 'create' | 'paste';
+/** How the snippets get their credential (R-UI-122): the variable QUADER_TOKEN, or a token written into them. */
+export type CredentialMode = 'env' | 'paste';
 
 /** The literal the server puts into a snippet where the browser inserts the token (R-API-030). */
 export const TOKEN_PLACEHOLDER = '{{token}}';
@@ -42,137 +34,131 @@ export function fillToken(content: string, token: string | null): string {
   return token === null ? content : content.split(TOKEN_PLACEHOLDER).join(token);
 }
 
+/** The command that puts a token into the variable without the shell's history seeing it (R-UI-122). */
+export const READ_TOKEN_COMMAND = 'read -rs QUADER_TOKEN && export QUADER_TOKEN';
+
+/** The steps of the page, in the order of the job (R-UI-121): the snippets of each are the client setup's tab of that name. */
+type Step = 'configure' | 'install' | 'publish';
+
 /**
- * The client setup page (R-UI-016, R-UI-017): format, client and repository, the credential in one line with the other ways
- * and the place to install from as More options (Q-UI-316), then the snippets of the server (R-API-030) in the tabs Configure,
- * Install and, for who may publish, Publish. The choices live in the query parameters, so a link from a repository or a package
- * opens the page for that repository, with the format and the repository as one line.
+ * Set up client (R-UI-120 to R-UI-123, ADR-202): the client setup and the guide of a repository as one page. It opens from the
+ * repository (`/projects/<project>/repositories/<key>/setup`), so the format, the class and the repository are known and asked
+ * for nowhere; the client is one control where the format has several, and none where it has one. The job comes first: the
+ * address, the token in one line with **Create a token** in place, then the snippets of Configure, Install and, for who may
+ * publish, Publish. The explanation follows them: what a repository of the class is, then the format's sections folded
+ * (R-UI-125). The same page without a repository is the guide of a class (`/guides/<format>/<class>`), whose addresses show
+ * `<project>` and `<repository>`.
  *
- * Secrets (R-UI-043): the server never fills a token. The browser replaces `{{token}}` in this
- * component only. A created or pasted token lives in a component signal, is never put into a
- * service, the URL or browser storage, and is gone when the route is left. A pasted token is checked
- * for its prefix, length and CRC-32 locally and is sent nowhere.
+ * Secrets (R-UI-043): the server never fills a token. A pasted token lives in a component signal, is written into the snippets
+ * here only, is never put into a service, the URL or browser storage, and is gone when the route is left; it is checked for its
+ * prefix, length and CRC-32 locally and sent nowhere. A token created on the page is shown once and kept the same way.
  */
 @Component({
   selector: 'quader-client-setup',
-  imports: [TabGroup, TabPage, NgTemplateOutlet, RouterLink, CopyButton, AddressField, ErrorNotice, PageHeader, Disclosure, VisibilityIcon],
+  imports: [RouterLink, PageHeader, ErrorNotice, Disclosure, VisibilityIcon, FormatIconView, CopyButton, SetupSnippet, GuideView],
   templateUrl: './client-setup.html',
   styleUrl: './client-setup.scss',
 })
 export class ClientSetupPage {
-  protected readonly repositoryLink = repositoryCommands;
   private readonly setupApi = inject(ClientSetupApi);
+  private readonly guidesApi = inject(GuidesApi);
   private readonly repositories = inject(RepositoriesApi);
   private readonly tokens = inject(TokensApi);
   private readonly bastionsApi = inject(BastionsApi);
   private readonly router = inject(Router);
-  private readonly document = inject(DOCUMENT);
   protected readonly session = inject(SessionStore);
 
-  /** Query parameters, bound by the router's component input binding. */
+  /** The route parameters of a repository's page. */
+  readonly project = input<string | undefined>();
+  readonly key = input<string | undefined>();
+  /** The route parameters of the guide of a class (`/guides/<format>/<class>`). */
   readonly format = input<string | undefined>();
+  readonly class = input<string | undefined>();
+  /** Query parameters: the client, and a Bastion to install from (R-BAS-007). */
   readonly client = input<string | undefined>();
-  readonly repository = input<string | undefined>();
-  /** A Bastion registration to render the snippets for (R-BAS-007); a link from the Bastions screen or the guide sets it. */
   readonly bastion = input<string | undefined>();
 
-  protected readonly heading = $localize`:@@setup.heading:Client setup`;
-  protected readonly description = $localize`:@@setup.description:The configuration and the commands that point your package manager at a repository; nothing changes on the server.`;
+  protected readonly heading = $localize`:@@setup.heading:Set up client`;
   protected readonly moreHeading = $localize`:@@setup.more:More options`;
-  /** Whether More options is open; a choice inside it keeps it open while the page lives. */
-  protected readonly moreOpen = signal(false);
+  protected readonly placeholder = TOKEN_PLACEHOLDER;
+  protected readonly readCommand = READ_TOKEN_COMMAND;
+  protected readonly copyTokenLabel = $localize`:@@setup.copy-token:Copy token`;
+  protected readonly copyCommandLabel = $localize`:@@setup.copy-command:Copy command`;
+  protected readonly explanation = snippetExplanation;
+
+  /** The repository of the page, `<project>/<key>`; null for the guide of a class. */
+  protected readonly ref = computed(() => {
+    const project = this.project();
+    const key = this.key();
+    return project && key ? repoRef(project, key) : null;
+  });
+  protected readonly anonymous = computed(() => this.session.state() === 'anonymous');
 
   protected readonly formats = resource({ loader: () => this.repositories.formats() });
-  /** The repositories the caller may read: the choices of the repository step, and the one a link names. */
-  protected readonly allRepositories = resource({ loader: () => this.repositories.listAll() });
-
-  protected readonly anonymous = computed(() => this.session.state() === 'anonymous');
-  protected readonly mode = signal<CredentialMode>('env');
-  /** The token of this setup: created or pasted. Component-local, never shared or stored. */
-  private readonly token = signal<string | null>(null);
-  protected readonly created = signal(false);
-  protected readonly pasted = signal('');
-  protected readonly reveal = signal(false);
-  protected readonly withPublish = signal(false);
-  protected readonly creating = signal(false);
-  protected readonly createFailure = signal<ApiError | null>(null);
-  private idempotencyKey = newIdempotencyKey();
-  private generation = 0;
-
-  protected readonly formatOptions = computed(() =>
-    (valueOf(this.formats) ?? []).filter((f) => f.name in FORMAT_CLIENTS),
-  );
-  protected readonly repositoryOptionsAll = computed(() => valueOf(this.allRepositories) ?? []);
-  protected readonly activeFormat = computed<string | null>(() => {
-    const names = this.formatOptions().map((f) => f.name);
-    const given = this.format();
-    if (given && names.includes(given)) return given;
-    const repoFormat = this.repositoryOptionsAll().find((r) => refOf(r) === this.repository())?.format;
-    if (repoFormat && names.includes(repoFormat)) return repoFormat;
-    return names[0] ?? null;
+  protected readonly loaded = resource({
+    params: () => this.ref() ?? undefined,
+    loader: ({ params }) => this.repositories.get(params),
   });
-  protected readonly clients = computed(() => clientsOf(this.activeFormat() ?? ''));
+  protected readonly repository = computed(() => valueOf(this.loaded)?.value);
+  protected readonly formatName = computed(() => (this.ref() ? this.repository()?.format : this.format()) ?? null);
+  protected readonly descriptor = computed(
+    () => (valueOf(this.formats) ?? []).find((f) => f.name === this.formatName() && f.clients.length > 0) ?? null,
+  );
+  protected readonly activeClass = computed(() => {
+    if (this.ref()) return this.repository()?.class ?? null;
+    const cls = this.class();
+    return cls && (this.descriptor()?.classes as readonly string[] | undefined)?.includes(cls) ? cls : null;
+  });
+  protected readonly classText = computed(() => classLabel(this.activeClass() ?? ''));
+  protected readonly visibility = computed(() => this.repository()?.visibility?.artifacts ?? null);
+  protected readonly disabled = computed(() => {
+    const r = this.repository();
+    return r !== undefined && !isConsumerView(r) && (r.disabled ?? false);
+  });
+  protected readonly repositoryLink = computed(() => {
+    const ref = this.ref();
+    return ref ? repositoryCommands(ref) : null;
+  });
+
+  /** The format's clients (`GET /api/v1/formats`); a format with one client asks nothing (Q-UI-482). */
+  protected readonly clients = computed(() => this.descriptor()?.clients ?? []);
   protected readonly activeClient = computed<string | null>(() => {
     const ids = this.clients().map((c) => c.id);
     const given = this.client();
     return given && ids.includes(given) ? given : (ids[0] ?? null);
   });
-  protected readonly repositoryOptions = computed<readonly RepositorySummary[]>(() =>
-    this.repositoryOptionsAll()
-      .filter((r) => r.format === this.activeFormat() && !r.disabled)
-      // Virtual repositories first: they are the recommended address (R-UI-016).
-      .sort((a, b) => Number(b.class === 'virtual') - Number(a.class === 'virtual') || refOf(a).localeCompare(refOf(b))),
-  );
-  protected readonly activeRepository = computed<string | null>(() => {
-    const given = this.repository();
-    return given && this.repositoryOptions().some((r) => refOf(r) === given) ? given : null;
-  });
-  /** `deploy` per qualified repository name, from one batched permission check. */
-  protected readonly deployable = resource({
-    params: () => this.repositoryOptions().map((r) => refOf(r)),
-    loader: async ({ params }) => {
-      if (params.length === 0 || this.anonymous()) return new Map<string, boolean>();
-      const answers = await this.session.check(params.map((repository) => ({ repository, action: 'deploy' })));
-      return new Map(params.map((key, i) => [key, answers[i] ?? false] as const));
-    },
-  });
 
-  /** The registrations the target step offers (R-BAS-007, Q-BAS-96). */
-  protected readonly bastions = resource({ loader: () => reportedBastions(this.bastionsApi, this.session) });
+  /** The Bastions to install from (R-BAS-007, Q-BAS-96): a repository's page only. */
+  protected readonly bastions = resource({
+    params: () => (this.ref() ? true : undefined),
+    loader: () => reportedBastions(this.bastionsApi, this.session),
+  });
   protected readonly bastionOptions = computed<readonly Bastion[]>(() => valueOf(this.bastions) ?? []);
-  protected readonly activeBastion = computed<string | null>(() => this.bastion()?.trim() || null);
-  /** The target step is shown when there is a Bastion to choose or one is chosen. */
+  protected readonly activeBastion = computed<string | null>(() => (this.ref() ? this.bastion()?.trim() || null : null));
   protected readonly showTarget = computed(() => this.bastionOptions().length > 0 || this.activeBastion() !== null);
-  /** More options says what it holds: the other ways to give the token, and the place to install from where there is one. */
+
+  protected readonly mode = signal<CredentialMode>('env');
+  /** Whether More options is open; a choice inside it keeps it open while the page lives. */
+  protected readonly moreOpen = signal(false);
   protected readonly moreHint = computed(() =>
     this.anonymous()
       ? $localize`:@@setup.more.hint-anonymous:Where to install from.`
       : this.showTarget()
-        ? $localize`:@@setup.more.hint-target:Another way to give the token, and where to install from.`
-        : $localize`:@@setup.more.hint:Another way to give the token.`,
+        ? $localize`:@@setup.more.hint-target:A token written into the snippets, and where to install from.`
+        : $localize`:@@setup.more.hint:A token written into the snippets.`,
   );
-  /**
-   * The setup is opened for one repository by a link that names a repository the caller may read. Then the format and the
-   * repository are not asked again (Q-UI-316); **Change** shows the choices.
-   */
-  private readonly fixed = signal(true);
-  protected readonly focused = computed(
-    () => this.fixed() && !!this.repository() && this.activeRepository() === this.repository(),
-  );
-  protected unfix(): void {
-    this.fixed.set(false);
-  }
+  protected readonly offerMore = computed(() => this.ref() !== null && (!this.anonymous() || this.showTarget()));
 
   protected readonly credentials = computed<'none' | 'env' | 'placeholder'>(() =>
-    this.anonymous() ? 'none' : this.mode() === 'env' ? 'env' : 'placeholder',
+    this.anonymous() ? 'none' : this.mode() === 'paste' ? 'placeholder' : 'env',
   );
-  protected readonly answer = resource({
+  /** The snippets of a repository (R-API-030): the credential mode and the Bastion are the page's. */
+  protected readonly setupAnswer = resource({
     params: () => {
-      const repository = this.activeRepository();
+      const repository = this.ref();
       const client = this.activeClient();
-      return repository && client
-        ? { repository, client, credentials: this.credentials(), bastion: this.activeBastion() }
-        : undefined;
+      if (!repository || !client || !this.repository()) return undefined;
+      return { repository, client, credentials: this.credentials(), bastion: this.activeBastion() };
     },
     loader: ({ params }) =>
       this.setupApi.get(params.repository, {
@@ -181,90 +167,106 @@ export class ClientSetupPage {
         ...(params.bastion ? { bastion: params.bastion } : {}),
       }),
   });
-  protected readonly setup = computed(() => valueOf(this.answer));
+  protected readonly setup = computed(() => valueOf(this.setupAnswer));
+  /** The guide (R-API-053, R-API-070): of the repository, or of the class; it describes this installation, not a Bastion. */
+  protected readonly guideAnswer = resource({
+    params: () => {
+      const client = this.activeClient();
+      if (!client || this.activeBastion()) return undefined;
+      const ref = this.ref();
+      if (ref) return this.repository() ? { ref, format: '', cls: '', client } : undefined;
+      const format = this.descriptor()?.name;
+      const cls = this.activeClass();
+      return format && cls ? { ref: null, format, cls, client } : undefined;
+    },
+    loader: ({ params }): Promise<Guide> =>
+      params.ref !== null ? this.guidesApi.repository(params.ref, params.client) : this.guidesApi.format(params.format, params.cls, params.client),
+  });
+  protected readonly guide = computed(() => valueOf(this.guideAnswer));
   protected readonly loadFailure = computed(() => {
-    const e = this.answer.error() ?? this.formats.error() ?? this.allRepositories.error();
+    const e = this.loaded.error() ?? this.setupAnswer.error() ?? this.guideAnswer.error() ?? this.formats.error();
     return e ? asApiError(e) : null;
   });
+  /**
+   * A repository of a format without clients has nothing to set up; the guide of a class asks for a format with a guide and one of
+   * its classes.
+   */
+  protected readonly unknownGuide = computed(() => {
+    if (!this.formats.hasValue()) return false;
+    if (this.ref() !== null) return this.repository() !== undefined && this.descriptor() === null;
+    return this.descriptor() === null || this.activeClass() === null;
+  });
 
-  /** The state of the pasted value, or null while the field is empty or untouched. */
+  /** The address of the header: the repository's on this installation or the Bastion, `<project>/<repository>` for a class. */
+  protected readonly addresses = computed<readonly string[]>(() => {
+    const url = this.ref() ? this.setup()?.registryUrl : this.guide()?.registryUrl;
+    return url ? [url] : [];
+  });
+
+  // The token of the page: one pasted into More options (written into the snippets), or one created in place (shown once).
+  protected readonly pasted = signal('');
+  protected readonly reveal = signal(false);
   protected readonly pasteShape = computed<TokenShape | null>(() =>
     this.pasted() === '' ? null : checkTokenShape(this.pasted()),
   );
-  protected readonly composed = computed<readonly ClientSnippet[]>(() => {
+  private readonly pastedToken = computed(() => (this.pasteShape() === 'ok' ? this.pasted().trim() : null));
+  protected readonly createdToken = signal<string | null>(null);
+  protected readonly withPublish = signal(false);
+  protected readonly creating = signal(false);
+  protected readonly createFailure = signal<ApiError | null>(null);
+  private idempotencyKey = newIdempotencyKey();
+  private generation = 0;
+
+  /** The snippets the reader copies: the client setup's for a repository, the guide's for a class. */
+  protected readonly snippets = computed<readonly ClientSnippet[]>(() => {
+    if (!this.ref()) return this.guide()?.snippets ?? [];
     const s = this.setup();
     if (!s) return [];
-    const token = this.mode() === 'env' || this.anonymous() ? null : this.token();
+    const token = this.mode() === 'paste' && !this.anonymous() ? this.pastedToken() : null;
     return s.snippets.map((x) => ({ ...x, content: fillToken(x.content, token) }));
   });
-  protected readonly needsToken = computed(
-    () => !this.anonymous() && this.mode() !== 'env' && this.token() === null,
-  );
-  protected readonly createdToken = computed(() => (this.created() ? this.token() : null));
-  protected readonly byTab = computed(() => ({
-    configure: this.composed().filter((s) => s.tab === 'configure'),
-    install: this.composed().filter((s) => s.tab === 'install'),
-    publish: this.composed().filter((s) => s.tab === 'publish'),
+  protected readonly byStep = computed<Record<Step, readonly ClientSnippet[]>>(() => ({
+    configure: this.snippets().filter((s) => s.tab === 'configure'),
+    install: this.snippets().filter((s) => s.tab === 'install'),
+    publish: this.snippets().filter((s) => s.tab === 'publish'),
   }));
-  protected readonly canOfferPublish = computed(() => this.setup()?.publishTarget != null);
-  protected readonly isVirtual = computed(
-    () => this.repositoryOptions().find((r) => refOf(r) === this.activeRepository())?.class === 'virtual',
-  );
+  protected readonly needsToken = computed(() => !this.anonymous() && this.mode() === 'paste' && this.pastedToken() === null);
+  protected readonly publishTarget = computed(() => this.setup()?.publishTarget ?? null);
   protected readonly canReadConfig = computed(() => this.session.has('repositories:read-config'));
   /**
-   * The Publish tab is for who may publish: the answer holds publish snippets only for a repository the caller may deploy to
-   * (R-API-030). A virtual repository without a deployment target keeps the tab, with the reason, for who can read its
-   * configuration and so change it (Q-UI-316). A Bastion is read only, which its banner says.
+   * Publish is a step for who may publish (R-UI-123): the answer holds publish snippets only then (R-API-030). A virtual
+   * repository without a deployment target keeps the step, with the reason, for who can read its configuration and so change it.
    */
   protected readonly offerPublish = computed(
-    () => this.byTab().publish.length > 0 || (this.isVirtual() && this.canReadConfig() && this.activeBastion() === null),
+    () =>
+      this.byStep().publish.length > 0 ||
+      (this.ref() !== null && this.activeClass() === 'virtual' && this.canReadConfig() && this.activeBastion() === null && this.setup() !== undefined),
   );
-  protected readonly explanation = snippetExplanation;
-  protected readonly placeholder = TOKEN_PLACEHOLDER;
-  protected readonly copyLabel = $localize`:@@setup.copy:Copy snippet`;
-  protected readonly copyTokenLabel = $localize`:@@setup.copy-token:Copy token`;
+  protected readonly settingsLink = computed(() => {
+    const link = this.repositoryLink();
+    return link ? [...link, 'settings'] : null;
+  });
 
   constructor() {
-    // A token is scoped to a repository: another repository or another way of signing in drops it.
+    // A token belongs to one repository and one client: another one drops what the page holds.
     effect(() => {
-      this.activeRepository();
-      this.mode();
-      untracked(() => this.forgetToken());
+      this.ref();
+      this.activeClient();
+      untracked(() => this.forgetTokens());
     });
-    // A pasted value that passes the check becomes the token; any other value is not kept.
+    // Going back to the variable drops a pasted token.
     effect(() => {
-      const shape = this.pasteShape();
-      const value = this.pasted().trim();
-      untracked(() => {
-        if (this.mode() !== 'paste') return;
-        this.token.set(shape === 'ok' ? value : null);
-      });
+      if (this.mode() === 'env') untracked(() => this.pasted.set(''));
     });
-    inject(DestroyRef).onDestroy(() => this.forgetToken());
+    inject(DestroyRef).onDestroy(() => this.forgetTokens());
   }
 
-  protected readonly refOf = refOf;
-
-  protected labelOfClass(c: RepositorySummary['class']): string {
-    switch (c) {
-      case 'local':
-        return $localize`:@@repo.class.local:Local`;
-      case 'remote':
-        return $localize`:@@repo.class.remote:Remote`;
-      case 'virtual':
-        return $localize`:@@repo.class.virtual:Virtual`;
-    }
+  protected pickClient(client: string): void {
+    void this.router.navigate([], { queryParams: { client }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
-  /** What the repository list says about publishing to a repository, before the answer decides. */
-  protected publishHint(r: RepositorySummary): string {
-    if (r.class === 'remote') return $localize`:@@setup.publish.read-only:Read only`;
-    if (r.class === 'virtual') {
-      return $localize`:@@setup.publish.by-target:Publishing goes to its default deployment target`;
-    }
-    return valueOf(this.deployable)?.get(refOf(r))
-      ? $localize`:@@setup.publish.yes:You can publish`
-      : $localize`:@@setup.publish.no:You cannot publish`;
+  protected pickBastion(bastion: string | null): void {
+    void this.router.navigate([], { queryParams: { bastion }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   /** The sentence under a snippet that is for a Bastion and holds what only a Bastion needs (R-BAS-007). */
@@ -274,31 +276,13 @@ export class ClientSetupPage {
       : null;
   }
 
-  protected pick(change: {
-    format?: string | null;
-    client?: string | null;
-    repository?: string | null;
-    bastion?: string | null;
-  }): void {
-    void this.router.navigate([], { queryParams: change, queryParamsHandling: 'merge', replaceUrl: true });
-  }
-
-  protected pickFormat(format: string): void {
-    this.pick({ format, client: null, repository: null });
-  }
-
-  protected setMode(mode: CredentialMode): void {
-    this.mode.set(mode);
-  }
-
-  protected onPaste(value: string): void {
-    this.pasted.set(value);
-  }
-
-  /** Creates a personal token for this setup and keeps its value in this component only. */
+  /**
+   * Creates a personal token for this repository in place (R-UI-122): read on the repository, and read and deploy on the
+   * repository that receives a publish when the reader ticks it. Its value is kept in this component only.
+   */
   protected async createToken(): Promise<void> {
     const setup = this.setup();
-    const repository = this.activeRepository();
+    const repository = this.ref();
     if (!setup || !repository || this.creating()) return;
     this.creating.set(true);
     this.createFailure.set(null);
@@ -314,8 +298,8 @@ export class ClientSetupPage {
       scope: { repositories: grants },
       selfRotatable: false,
     };
-    // forgetToken() counts a generation: an answer that arrives after the repository or the way
-    // of signing in changed belongs to a setup the page no longer shows (R-UI-042, R-UI-043).
+    // forgetTokens() counts a generation: an answer that arrives after the repository or the client changed belongs to a
+    // setup the page no longer shows (R-UI-042, R-UI-043).
     const generation = this.generation;
     try {
       const made = await this.createOnce(request);
@@ -324,8 +308,7 @@ export class ClientSetupPage {
         await this.tokens.revoke(made.id).catch(() => undefined);
         return;
       }
-      this.token.set(made.token);
-      this.created.set(true);
+      this.createdToken.set(made.token);
     } catch (e) {
       if (generation === this.generation) this.createFailure.set(asApiError(e));
     } finally {
@@ -337,8 +320,8 @@ export class ClientSetupPage {
     try {
       return await this.tokens.create(request, this.idempotencyKey);
     } catch (e) {
-      // The first attempt created a token whose value was lost with its answer: revoke it and
-      // create again under a new key, so that exactly one working token exists (R-UI-042).
+      // The first attempt created a token whose value was lost with its answer: revoke it and create again under a new key,
+      // so that exactly one working token exists (R-UI-042).
       const lost = e instanceof ApiError && e.code === 'token_already_issued' ? e.problem?.['tokenId'] : null;
       if (typeof lost !== 'string') throw e;
       await this.tokens.revoke(lost);
@@ -347,29 +330,12 @@ export class ClientSetupPage {
     }
   }
 
-  protected forgetToken(): void {
+  protected forgetTokens(): void {
     this.generation++;
-    this.token.set(null);
-    this.created.set(false);
+    this.createdToken.set(null);
+    this.createFailure.set(null);
     this.pasted.set('');
     this.reveal.set(false);
     this.idempotencyKey = newIdempotencyKey();
-  }
-
-  /**
-   * Offers a configuration file for download through a Blob URL that is revoked right after the
-   * click (R-UI-043).
-   */
-  protected download(snippet: ClientSnippet): void {
-    if (!snippet.fileName) return;
-    const url = URL.createObjectURL(new Blob([snippet.content], { type: 'text/plain;charset=utf-8' }));
-    try {
-      const a = this.document.createElement('a');
-      a.href = url;
-      a.download = snippet.fileName;
-      a.click();
-    } finally {
-      URL.revokeObjectURL(url);
-    }
   }
 }

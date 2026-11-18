@@ -64,7 +64,7 @@ config:
 | `bastions.trusted_proxies` | The Bastion sends the address of the real client as the only entry of `X-Forwarded-For` and `Forwarded`, and its own host as the forwarded host. The main installation believes them only for a request that carries a valid Bastion token and comes from an address in this list; then its rate limits, its failed-sign-in throttle and its audit trail apply to the client and not to the Bastion. Any other request from that address - another workload behind the same NAT, for example - cannot choose its address or the host its links are written for. List the address the main installation sees the Bastion connect from, after your own ingress: a host address or a small range, never a whole network. Do **not** put it into `server.trusted_proxies`: an address there is believed for every request, and the main installation logs a warning at start when the two lists overlap |
 | `server.additional_base_urls` | The Bastion sends its own base URL as the forwarded host. With the URL in this list, every address the main installation renders for the Bastion, such as npm's tarball links, is on the Bastion's host. Without it the main installation answers with its own address, the Bastion detects that, treats the main installation as unreachable and serves no client a document with the wrong addresses |
 
-The entry must equal the Bastion's `config.server.base_url`: the same scheme and host, and the port if one is set. The comparison ignores a trailing slash and upper case in the scheme and host. The Client setup page and the guides use the same list: they offer a Bastion as a place to install from only when its reported address is in it.
+The entry must equal the Bastion's `config.server.base_url`: the same scheme and host, and the port if one is set. The comparison ignores a trailing slash and upper case in the scheme and host. The page **Set up client** of a repository uses the same list: they offer a Bastion as a place to install from only when its reported address is in it.
 
 ## Install the Bastion
 
@@ -175,7 +175,7 @@ The chart's `ingress` values carry annotations of HAProxy Ingress (a request lim
 | `quader_bastion_main_token_refused` | `0` | The main installation refuses the token |
 | `quader_bastion_token_remaining_seconds` | a positive number | The seconds left of the token in use |
 
-3. From a machine outside your network, read a package through the Bastion with your own token, for example with the snippets that the Client setup page shows for the Bastion (see [Connecting a package client](../user/client-setup.md#install-through-a-bastion)). The first read of a package is a miss and goes to the main installation; the second is served from the cache.
+3. From a machine outside your network, read a package through the Bastion with your own token, for example with the snippets that the page **Set up client** of a repository shows for the Bastion (see [Connecting a package client](../user/client-setup.md#install-through-a-bastion)). The first read of a package is a miss and goes to the main installation; the second is served from the cache.
 
 ## Renew the token with an overlap
 

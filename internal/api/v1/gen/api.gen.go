@@ -6586,6 +6586,10 @@ type Guide struct {
 	// Repository The repository the guide is for; null for the guide of a format.
 	Repository *string        `json:"repository"`
 	Sections   []GuideSection `json:"sections"`
+
+	// Snippets The snippets of the client setup (R-API-030) for the guide's address and client, in the order of the format's
+	// templates, with the credential mode of `credentials`; the reader copies them before reading the sections (R-UI-121).
+	Snippets []ClientSnippet `json:"snippets"`
 }
 
 // GuideClass defines model for Guide.Class.
@@ -6601,9 +6605,6 @@ type GuideSection struct {
 
 	// Id Stable, `<format>.<name>`, for example `npm.remote.what`.
 	Id string `json:"id"`
-
-	// Snippets The snippets of the client setup the section shows below its text, empty for most sections.
-	Snippets []ClientSnippet `json:"snippets"`
 
 	// Title The heading, plain text.
 	Title string            `json:"title"`

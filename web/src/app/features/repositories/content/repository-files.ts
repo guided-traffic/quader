@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Child, FilesApi } from '../../../api/files-api';
 import { Notifier } from '../../../core/notifier';
-import { filesCommands } from '../../../core/project-links';
+import { filesCommands, setupCommands } from '../../../core/project-links';
 import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
@@ -98,7 +98,7 @@ export const FILES_PAGE = 200;
     >
       <!-- The action that fills an empty repository (Q-UI-309): the client setup, for whoever the toolbar offers no upload. -->
       @if (path() === '' && !filter() && !permissions().deploy && offerSetup()) {
-        <a emptyAction class="btn btn-default" routerLink="/setup" [queryParams]="{ repository: repository() }" i18n="@@repo.content.tab.setup"
+        <a emptyAction class="btn btn-default" [routerLink]="setupLink()" i18n="@@repo.content.tab.setup"
           >Set up client</a
         >
       }
@@ -148,6 +148,8 @@ export class RepositoryFiles {
    * it from the server's addresses or the format catalog; empty while it is not known.
    */
   readonly filesAddress = input<string>('');
+  /** Set up client of this repository (R-UI-126). */
+  protected readonly setupLink = computed(() => setupCommands(this.repository()));
   /** The folder shown; '' is the root. */
   readonly path = input<string>('');
   /** What the caller may do here, as the page decided it (Q-UI-512). */

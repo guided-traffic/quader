@@ -25,10 +25,11 @@
 
     <p class="setup-link">
       <a
-        routerLink="/setup"
-        [queryParams]="{ repository: repository(), client: client() ?? clients()[0]?.id }"
-        i18n="@@pkg.install.setup-link"
-        >Set up your client for this repository</a
+        class="btn btn-default"
+        [routerLink]="setupLink()"
+        [queryParams]="{ client: client() ?? clients()[0]?.id }"
+        i18n="@@repo.content.tab.setup"
+        >Set up client</a
       >
     </p>
   }

@@ -161,11 +161,11 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     // A one-line command is a field with its joined copy button (Q-UI-320).
     await expect(page.locator('quader-repository-item-versions quader-address-field input')).toHaveValue(new RegExp(`install ${pkgName}@${version}`));
     await expectAccessible(page, 'repository content, package and its version');
-    // The header's Set up client opens the setup for this repository (Q-UI-321).
+    // The header's Set up client opens the repository's page Set up client (Q-UI-321, R-UI-120).
     await page.getByRole('link', { name: 'Set up client', exact: true }).click();
-    await expect(page).toHaveURL(/\/setup\?repository=/);
-    await expect(page.locator('quader-client-setup pre').first()).toBeVisible();
-    await expectAccessible(page, 'client setup of the repository');
+    await expect(page).toHaveURL(new RegExp(`/repositories/${repoKey}/setup`));
+    await expect(page.locator('quader-client-setup quader-setup-snippet pre').first()).toBeVisible();
+    await expectAccessible(page, 'set up client of the repository');
   });
 
   await test.step('the README renders, and what the sanitizer must drop is gone', async () => {
@@ -192,24 +192,23 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     await expectAccessible(page, 'package detail with the README');
   });
 
-  await test.step('the client setup page shows the configure snippet of every matrix client verbatim', async () => {
+  await test.step('the page Set up client shows the configure snippet of every matrix client verbatim', async () => {
     // The install panel is the version's (R-UI-111): its page has its own address, with the version after an @.
     await page.locator('.pkg-versions').getByRole('link', { name: version, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/packages/npm/${pkgName}@${version.replaceAll('.', '\\.')}$`));
     await expect(page.getByRole('heading', { name: `${pkgName} ${version}`, level: 1 })).toBeVisible();
-    await page.getByRole('link', { name: 'Set up your client for this repository' }).click();
-    await expect(page.getByRole('heading', { name: 'Client setup', level: 1 })).toBeVisible();
-    // The credential is one line, the environment variable by default (Q-UI-316).
+    await page.getByRole('link', { name: 'Set up client', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Set up client', level: 1 })).toBeVisible();
+    // The credential is one line, the environment variable by default (R-UI-122).
     await expect(page.locator('.credential-line')).toContainText('The snippets read your token from the variable QUADER_TOKEN.');
     const port = new URL(baseURL ?? '').port;
-    const clientStep = page.getByRole('group', { name: 'Client', exact: true });
+    const clientControl = page.getByRole('combobox', { name: 'Client', exact: true });
     for (const client of clients) {
-      await clientStep.getByRole('radio', { name: client.label, exact: true }).check();
+      await clientControl.selectOption({ label: client.label });
       const expected = matrixSnippet(client.id, port);
       const file = new RegExp(`^${expected.file.replace(/[.~/]/g, '\\$&')}$`);
       const snippet = page
-        .getByRole('tabpanel', { name: 'Configure' })
-        .locator('.snippet')
+        .locator('section[aria-labelledby="step-configure"] quader-setup-snippet')
         .filter({ has: page.locator('p.target code', { hasText: file }) });
       await expect(snippet, `${client.id}: the snippet for ${expected.file}`).toHaveCount(1);
       await expect

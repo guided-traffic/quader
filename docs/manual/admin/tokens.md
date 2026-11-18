@@ -96,7 +96,7 @@ auth:
 ui:
   client_setup:
     token_env_var: QUADER_TOKEN          # default; the variable the snippets and guides read the token from
-    token_ttl: 720h                     # default; lifetime of a token created on the Client setup page
+    token_ttl: 720h                     # default; lifetime of a token created on the page Set up client
 ```
 
 What a create request may ask for:

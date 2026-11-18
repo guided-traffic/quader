@@ -1790,19 +1790,19 @@ R-ARCH-008, Q-ARCH-235); this page owns the operations (Q-API-175).
 | GET | `/api/v1/formats/{format}/guide?class=&client=` | The guide of a class of a format, without a repository | as `GET /api/v1/formats`: authenticated; anonymous while `publicContent` is true (R-AUTH-037) |
 
 - The answer holds `format`, `class`, `client`, `repository` (`null` for the guide of a format), `registryUrl`,
-  `publishTarget`, `credentials`, `exposureRules` and `sections` of `{id, topic, title, html, snippets}`. The sections are
-  those of the format's guide that are written for the class and the client, in the topic order `what`, `configure`,
-  `authenticate`, `install`, `publish`, `maintain`, `audit`, `lockfiles`, `endpoint`, `troubleshooting`; a section that
-  renders to nothing is left out.
+  `publishTarget`, `credentials`, `exposureRules`, `snippets` (R-API-070) and `sections` of `{id, topic, title, html}`. The
+  sections are those of the format's guide that are written for the class and the client, in the topic order `what`,
+  `configure`, `authenticate`, `install`, `publish`, `maintain`, `audit`, `lockfiles`, `endpoint`, `troubleshooting`; a section
+  that renders to nothing is left out, and so are the sections R-API-070 leaves out for a reader who may not publish.
 - A section's Markdown is a template over the data of the setup templates plus the class, the client, the publish target
   the caller may deploy to, whether the caller is anonymous, whether the endpoint has exposure rules, and the name of
   `ui.client_setup.token_env_var` (`GuideData`); it has no credential field. The server renders it with the renderer and
   the sanitizer of R-UI-008, with a source bound of its own (256 KiB) instead of `ui.readme.max_source_bytes`, which
   bounds untrusted READMEs (Q-API-178).
-- A section that names a setup section carries the snippets of R-API-030 for the same repository, client and credential
-  mode, rendered by the same code, so the guide's configure and install snippets are the client setup's. The credential
-  mode is `env` for a signed-in caller and `none` for an anonymous one; the guide never carries a token or the placeholder
-  of one, and the reference `${QUADER_TOKEN}` of a section's text is rewritten like a snippet's (Q-API-176).
+- The snippets are those of R-API-030 for the same repository, client and credential mode, rendered by the same code
+  (R-API-070). The credential mode is `env` for a signed-in caller and `none` for an anonymous one; the guide never carries a
+  token or the placeholder of one, and the reference `${QUADER_TOKEN}` of a section's text is rewritten like a snippet's
+  (Q-API-176).
 - The guide of a format writes `<project>` and `<repository>` where the project key and the repository key go and names
   no target. The guide of a virtual repository
   names its deployment target only to a caller who may deploy there and never lists the members, which are configuration
@@ -1812,15 +1812,40 @@ R-ARCH-008, Q-ARCH-235); this page owns the operations (Q-API-175).
 
 Acceptance criteria:
 
-- For each npm client, the snippets of the `configure` and `install` sections of `GET …/repositories/npm-local/guide`
-  equal the snippets of the same tabs of `GET …/repositories/npm-local/client-setup?credentials=env` byte for byte
+- For each npm client, the `snippets` of `GET …/repositories/npm-local/guide` equal the snippets of
+  `GET …/repositories/npm-local/client-setup?credentials=env` byte for byte
   (`TestR_API_053_TheGuideShowsTheSnippetsOfTheClientSetup`, and through the stack
   `TestR_API_053_TheGuideThroughTheStack`).
-- The guide of a remote repository has no `publish` and no `maintain` section; for an anonymous caller the guide of a
-  local repository has neither, and its snippets hold no credential line.
+- The guide of a remote repository has no `publish` and no `maintain` section; for an anonymous caller and for a caller
+  without `deploy` on the target the guide of a local repository has neither, and an anonymous caller's snippets hold no
+  credential line.
 - On an endpoint with exposure rules the guide carries the `endpoint` section and the endpoint's own addresses; on the
   default endpoint it does not (`TestR_API_053_TheGuideOnAnEndpointWithRules`).
 - No answer, for any class, client and caller, matches `qdr_(pat|sat|cit)_`.
+
+### R-API-070 · A guide carries its snippets beside its sections
+Priority: **MVP** · Covers: quader-only
+
+The page **Set up client** shows the snippets first and the explanation below them (R-UI-121, owner, 2026-11-18). The guide's
+answer therefore carries the snippets apart from the sections (Q-API-310):
+
+- `Guide.snippets` holds every snippet of R-API-030 for the guide's address, client and credential mode, in the order of the
+  format's templates, each with its `tab`. A section carries no snippets; the format contract's `GuideSection` has no field that
+  names a setup section ([architecture.md](architecture.md) R-ARCH-008), and kit check 8 requires the `configure` and `install`
+  templates of every client of a format with a guide instead.
+- The guide of a repository holds the publish snippets, and the sections of the topics `publish` and `maintain`, only for a
+  caller who may publish there: who holds `deploy` on the repository that receives the publish (`publishTarget`, R-API-030). A
+  reader's guide holds what the reader can do.
+- The guide of a class (`GET /api/v1/formats/{format}/guide`) holds the publish snippets for a signed-in caller and a class that
+  takes publishing (local, virtual), on the address with `<project>` and `<repository>`; it names no target.
+
+Acceptance criteria:
+
+- `TestR_API_070_AReaderWhoMayNotPublishGetsNoPublishing`: a caller without `deploy` gets no publish snippet and no `publish` or
+  `maintain` section from the guide of a local npm repository; the guide of the class local holds a publish snippet, that of
+  the class remote none.
+- `TestR_API_053_TheGuideShowsTheSnippetsOfTheClientSetup` and `TestR_GENERIC_016_TheGuideShowsTheSnippetsOfTheClientSetup`: the
+  guide's snippets equal the client setup's with `credentials=env`.
 
 ### R-API-054 · The manual
 Priority: **MVP** · Covers: quader-only
@@ -3095,8 +3120,8 @@ Priority: **MVP** · Covers: UI-001, UI-004
   screens: repositories, packages, vulnerabilities
   ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022), a folding group **Access** (members, permission
   policies, service accounts and CI identity, the last three for the holder of their capability and for the Owner of the
-  project) and settings. The start side bar lists Projects and Guides (R-UI-049); the guides and the client setup also
-  open from the user menu. The sections are the routes of R-UI-003. Inside the admin area, the single entries
+  project) and settings. The start side bar lists Projects and Guides (R-UI-124); the guides also open from the user menu,
+  and the client setup opens from its repository (R-UI-120). The sections are the routes of R-UI-003. Inside the admin area, the single entries
   (repositories, endpoints, and *Security*, the auditor's dashboard of Q-UI-130 for `vulnerabilities:triage` or
   `content:metadata-read`) come first and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
@@ -3179,6 +3204,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/vulnerabilities` (`?repository=&severity=&status=&…`), `/projects/{project}/vulnerabilities/findings/{id}`, `/projects/{project}/vulnerabilities/advisories/{ecosystem}/{id}` | Vulnerability report of the project, finding, advisory (from M4b) | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/projects/{project}/repositories`, `/projects/{project}/repositories/new` | Repositories of the project | R-UI-020, R-UI-021 |
 | `/projects/{project}/repositories/{key}` (`?q=&sort=`) | Content of the repository; for a generic repository the root of its files | R-UI-052 |
+| `/projects/{project}/repositories/{key}/setup` (`?client=&bastion=`) | Set up client: the snippets and the guide of the repository | R-UI-120 |
 | `/projects/{project}/repositories/{key}/files/{path…}` | A folder or a file of the repository; `…/files` alone is the root | R-UI-010 |
 | `/projects/{project}/repositories/{key}/trash` | Trash can of the repository (P1, not built) | R-UI-014 |
 | `/projects/{project}/repositories/{key}/settings` | Settings of the repository | R-UI-020 |
@@ -3189,8 +3215,8 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/search` (`?q=&kind=`) | Search results of the main area | R-UI-098 |
 | `/admin/trash` | Trash can of the installation, for administrators (P1, not built) | R-UI-014 |
 | `/builds`, `/builds/{build}`, `/builds/{build}/{number}` | Builds (P1) | R-UI-040 |
-| `/setup` (`?repository=&client=`) | Client setup | R-UI-016 |
-| `/guides` (`?format=&client=&repository=&class=`) | Guides | R-UI-049 |
+| `/guides`, `/guides/{format}` | Guides: the formats as tiles, the repositories of one format | R-UI-124 |
+| `/guides/{format}/{class}` (`?client=`) | The guide of a class without a repository | R-UI-124 |
 | `/profile`, `/profile/tokens`, `/profile/sessions` | Profile, personal tokens, sessions | R-UI-029 |
 | `/integrations/webhooks`, `/integrations/webhooks/{key}` | Webhooks (P1) | R-UI-039 |
 | `/admin/repositories`, `/admin/repositories/new` | Repositories of every project, each row naming its project | R-UI-020, R-UI-021 |
@@ -3475,8 +3501,8 @@ Priority: **MVP** · Covers: UI-010
 - The panel stands on the version's page (R-UI-111) at the page's width, before the tabs. Its selects (client, repository) stand
   side by side, each 16 rem at most, and wrap where the panel is narrow; a one-line command is as wide as its text, up to the
   panel's width, so it is read in full where it is shown (Q-UI-455, revisits Q-UI-320).
-- npm and NuGet install commands carry no credentials; the panel links to client setup for
-  configuring the client once.
+- npm and NuGet install commands carry no credentials; the panel's **Set up client** (R-UI-126) opens the page of the chosen
+  repository with the chosen client for configuring the client once.
 - Commands longer than three lines are collapsed with an expander.
 
 Examples: `npm install @team-a/ui@1.4.0`, `dotnet add package Contoso.Logging --version 2.3.1`,
@@ -3499,14 +3525,13 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
 
 - Header (the shared page header of R-UI-067): the key (the `h1`), one muted sentence (the repository's description, else what
   the class means), the format and the class as badges (and **disabled** for a disabled repository), and one line with the
-  repository's client address as an address field (its first address; the others are in Details, Q-UI-320) and the primary action
-  **Set up client** beside it (not for a disabled repository;
+  repository's client address as an address field (its first address; the others are in Details, Q-UI-320) and **Set up client**
+  beside it (R-UI-126; not for a disabled repository;
   [Q-UI-517](#q-ui-517--the-client-address-and-set-up-client-stand-on-one-line-of-the-header)). At the right, **Settings** for a
   caller who can read the configuration (`repositories:read-config`, or the Owner of the project) and a `more_vert` menu with
   **Files** (every format but generic, whose content is its files, Q-UI-511) and **Vulnerabilities** (not for generic and virtual).
-- No tabs: the content (captioned Images, Packages or Files) follows the header. **Set up client** opens the client setup of
-  R-UI-016 for this repository (`/setup?repository=<project>/<key>`), which shows the format and the repository as one line with
-  **Change** (Q-UI-316); it is the page's one way to the setup (Q-UI-321).
+- No tabs: the content (captioned Images, Packages or Files) follows the header. **Set up client** opens the repository's page
+  Set up client (`…/repositories/<key>/setup`, R-UI-120); it is the page's one way to the setup (Q-UI-321).
 - A package format (npm, NuGet, OCI, Debian, every format with a view adapter) lists its items from `GET /api/v1/packages` with
   `repository=<qualified name>` and `format=<format>`, the filter `q` (query, server-side, name and description; a field as wide as
   a name, Q-UI-520) and the sort `name` or `updatedAt`, paged with "Load more". The column **Vulnerabilities** appears only for a
@@ -3738,57 +3763,29 @@ Acceptance criteria:
   browser" link.
 - With shortcuts off, typing `/` in the page body does not move focus.
 
-### R-UI-016 · Client setup dialog
+### R-UI-016 · Client setup
 Priority: **MVP** · Covers: UI-021, UI-022, UI-023
 
-- Route `/setup` (`?format=&client=&repository=`, so a link opens the page prepared), reachable from the
-  user menu, a repository row, the page of a repository, the package details (the install panel
-  links to it with the repository and client chosen there) and empty states.
-- The shared page header (**Client setup**, one sentence, **Read the guide** as its action). Opened by a link that names a
-  repository the caller may read, the page does not ask the format and the repository again: they are one line with
-  **Change**, and the client is its one choice (Q-UI-316). Otherwise one page with progressive steps:
-  1. format (generic, npm and NuGet in the MVP; further formats appear as they ship, from
-     `GET /api/v1/formats`, in its order, the first preselected);
-  2. client (curl; npm, pnpm, Yarn Berry, Yarn classic; .NET CLI, NuGet CLI, Visual Studio,
-     `nuget.config`; Docker CLI with Buildx, Podman);
-  3. repository: readable repositories of that format, each named with its project (`web/npm-all`), virtual
-     repositories marked as recommended, publish availability shown per repository.
-- The credential is one line under the choices: by default "The snippets read your token from the variable QUADER_TOKEN."
-  with **Create a token to put into the variable**. The ways to give it, and the place to install from where a Bastion can be
-  chosen (R-BAS-007), are a closed **More options** (the disclosure of Q-UI-322). The credentials, one of:
-     - **Reference an environment variable** (default): snippets reference `QUADER_TOKEN`
-       (R-API-030 `credentials=env`); no secret appears on screen; a link leads to creating a token.
-     - **Create a token for this setup**: creates a personal token (R-API-032) described as "Client
-       setup: <client>, <repository>, <date>", scoped to the chosen repository with `read` (plus
-       `read` and `deploy` on the `publishTarget` of the setup answer when the user ticks the publish
-       option, which exists only while the answer names a target), expiring after `tokenTtlSeconds` of
-       the setup answer, which is `ui.client_setup.token_ttl` (bounded by the PAT maximum of R-AUTH-040).
-       Recent authentication applies. The token is shown once and embedded in the snippets; choosing
-       another repository or another way of signing in discards it (Q-UI-74).
-     - **Use a token I already have**: a password-type field with a reveal toggle; pasting is
-       allowed. The value stays in the browser; the UI checks its prefix, its length, its alphabet
-       and its CRC32 checksum (INV-8, R-AUTH-022) locally, says which check failed, writes only a value
-       that passes into the snippets, and never sends it to the server.
-- Tabs Configure, Install and Publish with the snippets; each snippet shows its target file name
-  and has a copy button; whole configuration files (`.npmrc`, `nuget.config`) can be downloaded.
-  For npm, the Publish tab also holds the GitLab CI snippet in its two labelled variants
-  (R-UI-017). The Publish tab is offered to who may publish (the answer holds publish snippets only for a caller with
-  `deploy` on the target, R-API-030); a caller who may not has no Publish tab (Q-UI-316), and a Bastion's banner says that
-  it is read only.
-- Anonymous viewers of anonymously readable repositories get no credential choice and snippets
-  without authentication lines.
-- The browser replaces `{{token}}` in the component only; the composed text is never stored in a
-  service, browser storage or the URL and is discarded when the route is left (R-UI-043).
-- A virtual repository without a default deployment target shows, on the Publish tab of a caller who can read its
-  configuration and so change it, an explanation and a link to its local members.
-- The page links to the guide of R-UI-049 for the chosen format, client and repository, and the guide links back
-  (Q-UI-84).
+- The client setup of a repository is the repository's page **Set up client** (R-UI-120 to R-UI-123): the owner's decision of
+  2026-11-18 merged the setup page and the guide into one page that opens from the repository
+  ([ADR-202](../decisions.md#adr-202--the-client-setup-and-the-guide-are-one-page-of-a-repository)). It asks only for the client,
+  where the format has several.
+- The clients are those of `GET /api/v1/formats`, in its order: curl; npm, pnpm, Yarn Berry, Yarn Classic; .NET CLI, NuGet CLI,
+  Visual Studio; Docker CLI with Buildx, Podman; APT; ansible-galaxy.
+- The credential and the token (R-UI-122): by default the snippets read the token from the variable `QUADER_TOKEN` (R-API-030
+  `credentials=env`) and no secret appears on the page; **Create a token** creates one in place; a token can be written into the
+  snippets under **More options**, checked in the browser and sent nowhere.
+- The browser replaces `{{token}}` in the component only; the composed text is never stored in a service, browser storage or
+  the URL and is discarded when the route is left (R-UI-043).
+- Each snippet shows its target file name and has a copy button; whole configuration files (`.npmrc`, `nuget.config`) can be
+  downloaded through a Blob URL that is revoked right after the click.
+- For npm, the Publish step also holds the GitLab CI snippet in its two labelled variants (R-UI-017), for who may publish.
 
 Acceptance criteria:
 
-- Playwright: choosing npm, `npm-all` and "Create a token for this setup", downloading `.npmrc` and
-  running `npm install @team-a/ui` with it in a `node:24` container succeeds.
-- The default choice produces a `.npmrc` containing the literal `${QUADER_TOKEN}`.
+- Playwright: on the page Set up client of `npm-all`, a token created in place and written into the snippets under More options
+  gives a `.npmrc` with which `npm install @team-a/ui` in a `node:24` container succeeds.
+- The default produces a `.npmrc` containing the literal `${QUADER_TOKEN}`.
 - Pasting a token with a wrong checksum shows a validation error and sends no request.
 
 ### R-UI-017 · npm client instructions
@@ -3953,19 +3950,14 @@ configures, signs in, installs, publishes, changes tags, unpublishes, audits and
 endpoint with exposure rules changes, and what each answer of the protocol means. The text is the format's
 (R-ARCH-008 `Guide()`, kit check 8), rendered by the server (R-API-053); the UI adds no format knowledge.
 
-- **Where.** A side bar entry **Guides** in the area Artifacts, route `/guides`
-  (`?format=&client=&repository=&class=`); the closed section **How to use** of the repository's settings page (R-UI-087, and
-  the same guide below the facts of the consumer view) for the repository's class and the client the reader picks; links between the guide and
-  the client setup page of R-UI-016 in both directions, carrying the choice (Q-UI-84).
-- **Choice.** The guides area offers the formats of `GET /api/v1/formats` that list `clients`, in its order and the
-  first preselected, their clients, the readable repositories of the format (virtual first), and, without a
-  repository, the format's classes (virtual preselected). A repository opens its guide
-  (`GET /api/v1/projects/{projectKey}/repositories/{repoKey}/guide`), a class the guide of the format (`GET /api/v1/formats/{format}/guide`),
-  whose addresses show `<project>` and `<repository>`.
-- **Content.** A contents list (a `nav` landmark) whose links move focus to the section heading without navigating; one
-  region per section with its heading; the section's HTML bound like a README (R-UI-008, the same component and its
-  finishing pass); the setup snippets of the section with a copy button each (Q-UI-85). The guide's text is the format's
-  and English, marked `lang="en"`; the frame of the page is translated (Q-UI-86).
+- **Where** (owner, 2026-11-18: context instead of choices). The guide of a repository is the explanation of its page **Set up
+  client**, below the snippets (R-UI-120, R-UI-121, R-UI-125), for the repository's class and the chosen client. The guide of a class
+  without a repository is the same page at `/guides/{format}/{class}` (R-UI-124). The navigation entry **Guides** shows the formats
+  as tiles and leads to a format's repositories (R-UI-124); nothing is chosen before a guide opens.
+- **Content.** The sections the server sends, laid out by R-UI-125: what a repository of the class is and the endpoint's note open,
+  the others closed under their headings; the section's HTML bound like a README (R-UI-008, the same component and its finishing
+  pass); every code block with a copy button. The guide's text is the format's and English, marked `lang="en"`; the frame of the
+  page is translated (Q-UI-86).
 - **Addresses** are the server's (the base URL of the endpoint the page is served from, R-API-053), never the page's
   location (Q-UI-69).
 - **Anonymous readers** of anonymously readable repositories get the guide without credential steps: snippets without
@@ -3974,12 +3966,10 @@ endpoint with exposure rules changes, and what each answer of the protocol means
 
 Acceptance criteria:
 
-- Playwright (`09-guides.spec.ts`): the side bar opens the guides with generic and curl preselected, and offers npm
-  with its four clients; the How to use section of
-  a virtual npm repository shows the virtual repository's sections and names its deployment target; its configure
-  snippet equals, character for character, the configure snippet the client setup page shows for the same repository
-  and client with "Reference an environment variable"; the setup page links back to the same guide; axe finds no
-  serious or critical violation (E2.13, Q-UI-87).
+- Playwright (`09-guides.spec.ts`): the side bar's Guides shows the formats as tiles; the npm tile lists the npm repositories with
+  their class; **Set up client** of the virtual npm repository opens its page with the four npm clients in one control, the
+  virtual repository's explanation below the snippets, and the configure snippet that the setup answers for "Read it from the
+  variable QUADER_TOKEN"; axe finds no serious or critical violation (E2.13, Q-UI-87).
 - For every class and client of npm the guide has the sections `what`, `configure`, `authenticate`, `install` and
   `troubleshooting` (kit check 8), and every code its troubleshooting table names is a code of the problem catalog,
   under the status Quader answers it with (`TestR_UI_049_TheTroubleshootingCodesAreQuaders`).
@@ -4145,7 +4135,7 @@ Priority: **MVP** · Covers: UI-031
 - Create sends the `Idempotency-Key` generated when the form opened.
 - Settings page (R-UI-087): one column of sections; key, class and format read-only; each section's save sends a PATCH of its
   members with `If-Match`; 412 opens the conflict dialog (R-UI-042) for that section; unsaved changes are guarded on navigation.
-  For a format with clients, the closed section **How to use** shows the repository's guide (R-UI-049).
+  The settings hold no section about setting up a client: the guide is on **Set up client** of the repository's header (R-UI-120).
 - Server field errors (`errors[].pointer`) are shown at their fields and in an error summary.
 
 Acceptance criteria:
@@ -5438,8 +5428,7 @@ Each screen shows its client addresses through `<quader-address-field>` (R-UI-06
 | Repository content page (R-UI-052) | The header: the repository's first address; **Details**: each further address with its label | Q-UI-320 |
 | Start page (Q-UI-311), recently opened repositories | One field per repository: its first address | Q-UI-320 |
 | Repository wizard (R-UI-021), review step | The line **Client address** | |
-| Client setup page (R-UI-016), Bastion banner | The Bastion's repository address | The sentence stays; the address is a field below it (Q-UI-272) |
-| Guides (R-UI-049), Bastion section | **Address of the repository on the Bastion** | As above |
+| Set up client (R-UI-120) | The page header: the repository's address on this installation, or on the Bastion chosen under **More options** | The address has its context: the snippets that use it (W-4 of the owner's walk of 2026-11-18) |
 | Endpoint page, the address of an exposure rule | No field: the row's copy button, whose name and tooltip carry the address ([Q-UI-331](#q-ui-331--an-endpoints-rules-are-the-shared-data-table-and-a-rules-client-address-is-the-rows-copy-button)) | The administrator manages the rules; the address is handed out with the button |
 
 Not in scope: the text of a guide (server-rendered HTML, where an address is prose in `<code>`), the snippets and commands of
@@ -5691,7 +5680,7 @@ The settings page follows the style guide's settings pages: one column of at mos
 4. **Members** (virtual), open: the editor of R-UI-022 with its own save.
 5. Closed: **Mirror** (status above the settings, R-UI-021, and the format's `mirror` member), **<Display name> settings**, **Access
    details** (include and exclude patterns, Hide existence), **Administrator notes**, **Signing keys** and **Indexes** (Debian local
-   and virtual), **Import tasks** and **Tombstones** (Ansible), **How to use** (R-UI-049), **Details** (class, format, layout, project,
+   and virtual), **Import tasks** and **Tombstones** (Ansible), **Details** (class, format, layout, project,
    client address, created, last changed, last activity), **API** (the stored document; each section's unsaved change as a request),
    **Advanced** ([Q-UI-352](#q-ui-352--disable-move-and-delete-are-in-advanced)): **Disable repository** or **Enable repository**,
    **Move to another project**, **Delete repository**.
@@ -5700,7 +5689,7 @@ The settings page follows the style guide's settings pages: one column of at mos
   R-UI-042 for that section; the other sections keep their unsaved edits.
 - A closed section that holds an unsaved change says "Unsaved changes" after its title; leaving the page with one asks first.
 - The open sections (Visibility, Upstream, Members) have a heading and no toggle. A closed section whose content is read from
-  the server (Signing keys, Indexes, Import tasks, Tombstones, How to use) reads it when it is first opened; the mirror's status is
+  the server (Signing keys, Indexes, Import tasks, Tombstones) reads it when it is first opened; the mirror's status is
   read only while the section Mirror is open. The page's header names the repository with the icon of its level, and a disabled
   repository with the badge **Disabled**.
 - The section Mirror shows an unset member of `remote.mirror` with the default of `getRepositoryDefaults` (R-REPO-063) for the
@@ -5977,7 +5966,7 @@ Priority: **MVP** · Covers: quader-only
   repository (`/projects/<project>/packages/<format>/<name>`); a project `/projects/<key>`; a page its route; a user
   `/admin/users/<username>`; a group `/admin/groups/<name>`.
 - **Pages** are matched in the browser, in the UI's language, by the project rule of R-API-062 over the labels of the Places of
-  R-UI-096 and of Client setup (`/setup`), Sessions (`/profile/sessions`) and Documentation (`/help`); **Admin pages** over the labels
+  R-UI-096 and of Sessions (`/profile/sessions`) and Documentation (`/help`); **Admin pages** over the labels
   of the admin side bar's entries the administrator may use.
 - **Highlighting** ([Q-UI-409](#q-ui-409--the-matched-text-is-bold-marked-by-the-client)). Every occurrence of each term of the text
   in the shown name is bold (weight 600), case-insensitively; overlapping marks merge. Nothing else is coloured.
@@ -6255,6 +6244,159 @@ Acceptance criteria:
 
 - Unit: the grade E with 13 Critical, 160 High, 113 Medium, 16 Low and 843 Unknown of which 112 have a fix reads "E · 1,145
   findings · 112 fixable"; S "no findings"; N/A "not scanned"; the tab's label is "Vulnerabilities".
+
+### R-UI-120 · Set up client is one page of a repository
+Priority: **MVP** · Covers: quader-only
+
+The owner's walk of 2026-11-18 (W-2): the guides and the client setup become one page with a context; a guide opens from a
+repository, where the format, the class and the repository are known, and asks for none of them
+([ADR-202](../decisions.md#adr-202--the-client-setup-and-the-guide-are-one-page-of-a-repository)).
+
+- Route `/projects/{project}/repositories/{key}/setup`, with the query parameters `client` (one of the format's clients) and
+  `bastion` (R-BAS-007); the document title and the `h1` are **Set up client**, the breadcrumb is the project's trail with the
+  repository's key and **Set up client** (Q-UI-480).
+- The header names the context and asks for nothing: the repository (`<project>/<key>` with the icon of its level, a link to its
+  page), the format with its icon, the class, and the address the snippets use as an address field (R-UI-065): the repository's
+  on this installation, or its address on the Bastion chosen under **More options**.
+- The client is one select **Client** with the format's clients of `GET /api/v1/formats` in their order, the one of `?client=`
+  or the first chosen; a format with one client shows no control (Q-UI-482). Choosing a client replaces `?client=`.
+- The page is reached from every **Set up client** (R-UI-126). It needs `read` on the repository: the API answers `404`
+  otherwise, which the page shows as the error notice of a missing repository. A disabled repository shows a warning that it
+  refuses every client.
+
+Acceptance criteria:
+
+- Unit tests (`client-setup.spec.ts`): the page opened for `web/npm-all` names the repository, the format and the class, shows the
+  address and has no control for the format, the repository or the class; npm offers its four clients in one select, generic none.
+
+### R-UI-121 · The job first, the explanation after
+Priority: **MVP** · Covers: quader-only
+
+- The page reads from top to bottom: the header (R-UI-120); the client; the credential in one line (R-UI-122); **More options**,
+  closed; the steps **1 Configure**, **2 Install** and, for who may publish, **3 Publish** (R-UI-123), each a short heading with the
+  snippets of the client setup's tab of that name (R-API-030); then the explanation (R-UI-125).
+- Each snippet has the sentence its `id` names (the UI's text, R-UI-045), its file name where it is a file, a copy button and,
+  for a file, **Download**.
+- The snippets are `GET …/client-setup` for the repository and the client (`credentials=env`, `none` for an anonymous caller,
+  `placeholder` while a token is to be written into them, R-UI-122); the explanation is the repository's guide (R-API-053) for the
+  same client. With a Bastion chosen the snippets are the Bastion's and the page shows no explanation: the guide describes this
+  installation, and a sentence says how to read it.
+
+Acceptance criteria:
+
+- Unit tests: the steps are Configure, Install, Publish in that order, each with its snippets; the explanation follows the last
+  step; no contents box stands above the page.
+
+### R-UI-122 · The token without leaving the page
+Priority: **MVP** · Covers: quader-only
+
+- A signed-in reader sees one line: "The snippets read your token from the variable QUADER_TOKEN." with **Create a token** beside
+  it (Q-UI-483). The button creates a personal token (R-API-032) described as "Client setup: <client>, <repository>, <date>",
+  scoped to the repository with `read`, plus `read` and `deploy` on the setup answer's `publishTarget` when the reader ticks
+  **It may also publish**, which is shown only while the answer names a target; it expires after `tokenTtlSeconds` of the setup
+  answer (`ui.client_setup.token_ttl`). Recent authentication applies.
+- The created token is shown once, with what it may do, its copy button, and the command `read -rs QUADER_TOKEN && export
+  QUADER_TOKEN` with its own copy button: run in bash or zsh, it reads the pasted token into the variable without echo and without
+  an entry in the shell's history. A sentence names the CI way: a masked variable of that name. The snippets keep the reference.
+- **More options** holds **Token in the snippets**: **Read it from the variable QUADER_TOKEN** (the default) or **Write a token into
+  the snippets**, a password field with a reveal toggle; the value is checked in the browser for its prefix, length, alphabet and
+  CRC-32 (INV-8, R-AUTH-022), the check that failed is named, only a value that passes is written into the snippets, and it is
+  sent nowhere. Until one passes, the snippets show `{{token}}` and a note says so. **More options** also holds **Install from**
+  where a Bastion can be chosen (R-BAS-007, Q-BAS-96).
+- Secrets (R-UI-043): the created and the pasted token live in signals of the page only; another repository or another client
+  discards both, leaving the page discards both; an answer of the creation that arrives after the repository or the client changed
+  is revoked and never shown; a double click creates one token.
+
+Acceptance criteria:
+
+- Unit tests: the request of **Create a token** has the description, the lifetime and the scope above; the value appears once, the
+  snippets keep `${QUADER_TOKEN}`; the page has no link to the personal tokens; a pasted value with a wrong checksum is named and
+  no request carries it.
+
+### R-UI-123 · What each reader sees
+Priority: **MVP** · Covers: quader-only
+
+| Reader | Steps | Credential | Explanation |
+|---|---|---|---|
+| A reader who may not publish (the plain user `sam`) | Configure, Install | The line with **Create a token**; **More options** | Without publishing and its upkeep (R-API-070) |
+| A member who may publish (`deploy` on the target) | Configure, Install, Publish | As above, and **It may also publish** | With publishing |
+| A caller who can read the configuration of a virtual repository without a deployment target | Configure, Install, and Publish with the reason and a link to the repository's settings | As above | Without publishing |
+| An anonymous visitor of a repository whose artifacts are `public` | Configure, Install | "You are not signed in. This repository can be read without signing in, so the snippets hold no credentials."; no **More options** | Without credential steps and publishing |
+
+A Bastion target has no Publish step; its banner says that a Bastion is read only (R-BAS-007). An anonymous visitor of a
+repository that is not public gets the `404` of R-UI-120.
+
+Acceptance criteria:
+
+- Unit tests: `web/npm-remote` has Configure and Install; an anonymous visitor gets `credentials=none`, no token line and no More
+  options; `web/npm-readonly` shows the reason to a holder of `repositories:read-config` and no Publish step to a reader.
+
+### R-UI-124 · Guides: the formats as tiles, a format's repositories, the guide of a class
+Priority: **MVP** · Covers: quader-only
+
+- **`/guides`** (the navigation entry **Guides**, also the user menu's): the heading **Guides**, one sentence, and the formats of
+  `GET /api/v1/formats` that list clients as the tiles of R-UI-127, in the catalog's order; nothing else to choose (owner,
+  2026-11-18). A signed-out visitor sees it while `publicContent` is true.
+- **`/guides/{format}`** (Q-UI-481): the heading "<display name> repositories", a sentence, the format's badge, and the
+  repositories of that format the reader may read and that are not disabled, virtual first (marked **recommended**), then by
+  name: **Repository** (the icon of its level and `<project>/<key>`, a link to the repository), **Class**, **Description**, and
+  **Set up client** (R-UI-126). An empty list says that the reader can use no repository of the format. Below the list, **Without
+  a repository**: one link per class the format has, to the guide of that class.
+- **`/guides/{format}/{class}`**: the page of R-UI-120 without a repository. The header names the format and the class; the
+  address shows `<project>` and `<repository>`, and the credential line says that they stand for the project and the key of the
+  reader's repository; the snippets and the explanation are the guide of the class (R-API-053, R-API-070). No token is created
+  and there is no **More options**: there is no repository to scope a token to.
+- A format without clients, or a class the format does not have, says that there is no guide and links to `/guides`.
+
+Acceptance criteria:
+
+- Unit tests (`guides.spec.ts`): the tiles are the formats with clients and lead to `/guides/<format>`; the npm page lists the
+  repositories virtual first with **Set up client** to `…/setup`, and links the three class guides.
+
+### R-UI-125 · The explanation reads like a page, not like a reference
+Priority: **MVP** · Covers: quader-only
+
+- Below the steps (Q-UI-485): the sections of the topics `what` and `endpoint` stand open, each under its heading (`h2`), with their
+  introduction, the text before the section's first subheading; the rest of such a section is a closed **More about this**. Every
+  other section is a closed disclosure (Q-UI-322) titled with the section's heading, in the server's topic order. The headings are
+  the contents: no contents box stands above the page.
+- A line of the prose (paragraphs, lists, the prose's own headings) is at most 70 characters wide; a table or a code block may
+  take the page's column, which is the settings measure (56 rem).
+- Every code block of the prose has a copy button (**Copy code**). A line too long for its block wraps instead of being cut off;
+  in a snippet a wrapped line continues indented by two characters, so it does not read as a line of its own (Q-UI-486). The copy
+  buttons copy the text unchanged.
+- The format's text carries `lang="en"`; the frame is translated (Q-UI-86).
+
+Acceptance criteria:
+
+- Unit tests: the open and the folded sections by topic; a code block of the prose has **Copy code**; a snippet's lines are one
+  element each.
+- Renders (rule 11): `setup-long-key` and `setup-deb` (`debian-internal-packages-for-bookworm-and-trixie`) at 390 px show every
+  address of their snippets whole.
+
+### R-UI-126 · Set up client is one action with one look
+Priority: **MVP** · Covers: quader-only
+
+- One label, **Set up client**, one look, the default button (Q-UI-487), and one target: the repository's page of R-UI-120. It
+  stands in the repository's header (not for a disabled repository), in the empty state of a repository, in the rows of the lists
+  of repositories (W-4), in the recently opened repositories of the start page, in the install panel of a package (with the
+  panel's client as `?client=`) and in the rows of a format's guides (R-UI-124). The repository's settings have no section that
+  points to it (the development agent, 2026-11-18): the repository's own page carries it in its header.
+- The packages list of a project names no repository: its **Set up client** leads to the Guides (R-UI-124), where the reader
+  picks the format and the repository.
+- The user menu and the search's pages (R-UI-097) have no entry for a client setup without a repository.
+
+Acceptance criteria:
+
+- Unit tests of the repository page, the start page, the install panel, the packages list and the guides: the label, the class
+  `btn-default` and the target.
+
+### R-UI-127 · The format tiles are one component
+Priority: **MVP** · Covers: quader-only
+
+- `quader-format-tiles` ([format-tiles.ts](../../web/src/app/shared/ui/format-tiles.ts)): each format of the list as a tile with
+  its icon and its display name, each tile a link the screen decides. The first page of a new repository (R-UI-080) and the Guides
+  (R-UI-124) show the same tiles (owner, 2026-11-18: one tile pattern for both).
 
 ## Deferred
 
@@ -7679,6 +7821,10 @@ handling of R-UI-016.
 
 **Applied in the spec:** R-UI-049, R-UI-002 (the side bar), R-UI-003 (the route), R-UI-016 and R-UI-021 (the links and the tab).
 
+**Revisited on 2026-11-18** (owner's walk, W-2): the owner merged the guide and the client setup into one page of a repository,
+the snippets first and the explanation below them (R-UI-120, R-UI-121); Guides shows the formats as tiles (R-UI-124). The token stays
+in that one page's component.
+
 ### Q-UI-85 · A guide section is bound like a README, with the setup snippets below it
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -7696,6 +7842,10 @@ Context: the server renders a section's Markdown with the README renderer (Q-API
 **Rationale:** The guide must show exactly what the setup page shows; structured snippets make that a comparison of values, not of renderings. The development agent revisits this when a section needs an interactive element the sanitizer cannot carry.
 
 **Applied in the spec:** R-UI-049.
+
+**Revisited on 2026-11-18:** the snippets stand above the explanation, not below each section (R-UI-121, Q-API-310), and the
+contents list is gone: the folded sections' headings are the contents (Q-UI-485). The README component and its finishing pass stay,
+and a code block of the prose gets a copy button (R-UI-125).
 
 ### Q-UI-86 · The text of a guide is English
 
@@ -8013,7 +8163,7 @@ a node. The design language is Q-UI-88 and Q-UI-96, the lists are Q-UI-68.
   children, with "Load more" in both.
 - Upload and New folder need `deploy` and a local repository of the raw-files family (taken from the format's
   `protocolBasePath`), where the old screen offered them wherever `deploy` held and let the server refuse; Delete keeps
-  `delete`; Client setup links `/setup?repository=<key>`. No control without a working backend: "Invalidate cache" (R-UI-011,
+  `delete`; **Set up client** links the repository's page Set up client (R-UI-126). No control without a working backend: "Invalidate cache" (R-UI-011,
   MVP) has no client in the UI yet and is left out.
 - Narrow content area (under 48 rem, a container query): one pane at a time, the details with "Back to the tree".
 - The pattern (two panes, toolbar, panel inside a pane) is in [design-language.md](../developer/design-language.md#the-two-pane-browser).
@@ -12018,6 +12168,11 @@ options**; the client of a setup for one repository is its one choice, without a
 offered only to who may publish: for the power user publishing is a main job, not an option, and the plain user gets no tab
 that says "You cannot publish".
 
+**Revisited on 2026-11-18** (owner's walk, W-2): the page opens only from a repository, so there is no **Change** and no choice of
+the format or the repository ([Q-UI-480](#q-ui-480--set-up-client-lives-under-its-repository-setup-is-gone-and-guides-holds-the-tiles));
+the tabs became the steps of R-UI-121, and **Create a token** creates the token in place
+([Q-UI-483](#q-ui-483--the-token-is-created-on-the-page-and-read-into-the-variable-not-written-into-the-files)).
+
 ### Q-UI-317 · The plain user's project sidebar holds the content; the project's members and settings move into its About section
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -12117,6 +12272,9 @@ development agent revisits it if users want the setup and the content side by si
 
 **Applied in the spec:** R-UI-052 and the route table (no `tab` parameter). Built in fix wave 2; a disabled repository offers no
 **Set up client**, as its tab did not.
+
+**Revisited on 2026-11-18:** the button opens the repository's own page `…/repositories/<key>/setup` (R-UI-120) and has the default
+look of every **Set up client** ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-everywhere)).
 
 ### Q-UI-322 · A closed section of details is one quiet disclosure: a small heading with a chevron and one hint line
 
@@ -13985,6 +14143,159 @@ the planner's time.
 
 **Applied in the spec:** R-API-064 (the package row, the bullets on operators and on planning, the statement count);
 [search.sql](../../internal/meta/postgres/queries/search.sql) `SearchCustomPlans`, `SearchPackagesByPrefix`.
+
+### Q-UI-480 · Set up client lives under its repository; `/setup` is gone and `/guides` holds the tiles
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
+owner decided on 2026-11-18 that the guide and the client setup become one page that opens from a repository (W-2).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `/projects/{project}/repositories/{key}/setup`, the client and the Bastion in the query; `/guides`, `/guides/{format}` and `/guides/{format}/{class}` for the guides (chosen) | The address names the repository | The context is the address: a link that is sent opens the same page; the project's side bar and trail stay; the page is a page of the repository, as its settings are | Two routes render the same component, one with a repository and one with a class |
+| (b) `/guides/{project}/{key}` | The page belongs to Guides | The navigation entry stays marked | A second address of a repository outside its project; the project's side bar is gone |
+| (c) `/setup?repository=` (today) | The context is a query parameter | Nothing moves | A link without the parameter lands on choices, which is what the owner rejected |
+
+**Choice:** (a). `/setup` and the query parameters `format`, `repository` and `class` of `/guides` are removed without redirects
+(no backward compatibility before the first stable release). **Rationale:** the owner's direction is context instead of choices,
+and the strongest context is the address itself. The development agent revisits it if a page of Guides needs to name a repository
+of another project.
+
+**Applied in the spec:** R-UI-003 (the routes), R-UI-120, R-UI-124.
+
+### Q-UI-481 · A tile leads to the repositories of its format; a class is chosen only for a guide without a repository
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the guide's content needs the class (what a repository of it is; publishing only for local and virtual) and its addresses
+need the repository. A tile names only the format.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The tile opens the format's repositories the reader may use, each with its class and **Set up client**; below the list one link per class to the guide without a repository (chosen) | The reader picks a repository, not a class | The class comes with the repository; the guide has the reader's own addresses; the class guide stays for who has no repository yet | One page between the tile and the guide |
+| (b) The tile opens a choice of the class (three tiles), then the class guide | A class first | Short | Every reader decides a thing that the repository already decides, and reads placeholders instead of addresses |
+| (c) The tile opens the guide of the virtual class | No choice at all | One click | A reader of a local repository reads the wrong text; no address of the reader's |
+
+**Choice:** (a). **Rationale:** the plain path is the reader's repository; the class is a property of it. The development agent
+revisits it if most readers open Guides without having a repository.
+
+**Applied in the spec:** R-UI-124.
+
+### Q-UI-482 · The client is one select, and a format with one client asks nothing
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A select **Client**, as wide as its longest client, shown only for a format with several clients (chosen) | One control | The owner asked for one control and none for one client; the choice stays in `?client=` | One click more to see the options |
+| (b) A row of toggle buttons | Every client visible | One click | npm's four clients ("Yarn Berry (2 and later)") wrap at 390 px into a block of buttons |
+| (c) A group of radio buttons (today) | Unchanged | Visible | The boxed groups the owner rejected |
+
+**Choice:** (a). **Rationale:** the client is chosen once and then forgotten; a select holds any number of clients in one line.
+The development agent revisits it if a format's clients differ so much that readers need to compare them.
+
+**Applied in the spec:** R-UI-120.
+
+### Q-UI-483 · The token is created on the page and read into the variable, not written into the files
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the line said "The snippets read your token from the variable QUADER_TOKEN." with a link **Create a token to put into the
+variable** to the personal tokens, away from the page in the middle of the task.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Create a token** in the line: a token for this repository, shown once, with the command `read -rs QUADER_TOKEN && export QUADER_TOKEN`; writing a token into the snippets under **More options** (chosen) | The token goes into the variable | The reader stays on the page; the files the reader saves hold no secret; the command keeps the token out of the shell's history | The command is for bash and zsh; PowerShell and cmd readers set the variable their own way |
+| (b) The link to the personal tokens (today) | Unchanged | One place for tokens | The reader leaves the task and has to come back |
+| (c) **Create a token** writes it into the snippets | One click to a working file | Nothing to set | A secret in a file that is easily committed; the default would be the risky way |
+
+**Choice:** (a). The way "create a token for this setup" of More options is replaced by (a); writing a token into the snippets
+takes a pasted token. **Rationale:** the default keeps the configuration free of secrets and the reader on the page. The development
+agent revisits it if readers on Windows ask for the variable's command in PowerShell.
+
+**Applied in the spec:** R-UI-016, R-UI-122.
+
+### Q-UI-484 · A reader sees the steps that reader can do
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Publish is a step only for who may publish (and, with its reason, for who can change a virtual repository without a target); the guide leaves publishing out for the others; an anonymous visitor gets neither the token line nor More options (chosen) | The page follows the reader's rights | The plain user's page is configure and install, nothing that says "You cannot" | A reader does not learn on this page how publishing would work |
+| (b) Every step for everyone, with a note where the reader may not | One page for all | Complete | Notes of refusal in the plain user's main view (Q-UI-316 removed them for the same reason) |
+
+**Choice:** (a). **Rationale:** simple by default: the page holds what the reader can do. The guide of a class (R-UI-124) still
+explains publishing. The development agent revisits it if readers ask for the publishing text before they hold the right.
+
+**Applied in the spec:** R-UI-123, R-API-070.
+
+### Q-UI-485 · The explanation follows the snippets: what the class is stands open, the rest is folded under its headings
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) After the steps: the introduction of the sections `what` and `endpoint` open (the rest of each under **More about this**), every other section a closed disclosure titled with its heading, in topic order (chosen) | The headings are the contents | The owner's order (the job, then what the class is and the troubleshooting); one scan of short headings; headings in order | A section the reader needs is one click away |
+| (b) Each section under its step (configure and authenticate under Configure, …) | Explanation beside its snippets | Close to the snippet it explains | The steps grow long again; a disclosure inside a step breaks the heading order |
+| (c) The whole guide open after the snippets, with a contents list | Today's text, moved | Nothing hidden | The dense prose the owner rejected, only lower |
+
+**Choice:** (a). The first render showed npm's open section "What a virtual repository is" at 25 lines of dense prose below two
+snippets, the largest element of the page; its introduction is three lines. **Rationale:** what only some readers need is behind a
+disclosure (CLAUDE.md), and the class's introduction is what every reader of the explanation came for. The development agent revisits it if readers open the same folded section on most
+visits: that section then stands open.
+
+**Applied in the spec:** R-UI-125, R-UI-049.
+
+### Q-UI-486 · A long line of a snippet wraps, and its continuation is indented
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a key like `release-candidates-for-the-customer-portal-frontend` makes every address line of a snippet longer than the
+block at 1024 px and far longer at 390 px.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Wrap; a wrapped line continues two characters further right; copy copies the text as it is (chosen) | Every character visible | Nothing is cut off, at no width; a wrapped line does not look like a new line of an `.npmrc` | A wrapped URL is broken visually |
+| (b) The block scrolls sideways (today) | Lines stay whole | The text looks like the file | At 390 px the end of an address is hidden and only a scrollbar hints at it |
+| (c) Wrap without indentation | Every character visible | Simple | A wrapped line reads as two lines of the file |
+
+**Choice:** (a). **Rationale:** a command the reader cannot see whole cannot be checked before it is run. The development agent
+revisits it if a format's snippets depend on visible column alignment.
+
+**Applied in the spec:** R-UI-125.
+
+### Q-UI-487 · Set up client is a default button everywhere
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
+owner asked on 2026-11-18 for one label and one look.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Set up client**, `btn-default`, in the header, the rows, the empty states, the install panel and the guides (chosen) | One look | Calm in a list of rows; the same in every place | The repository's header has no confirm button |
+| (b) The confirm button everywhere | One look | Prominent | A column of blue buttons in every list |
+| (c) Blue in the header, grey elsewhere (today) | Two looks | Prominent where it is the page's action | The two looks the owner objected to |
+
+**Choice:** (a). **Rationale:** the action appears in lists, where a confirm button per row competes with the content; one look
+needs the one that works in a row. The development agent revisits it if readers do not find it in the repository's header.
+
+**Applied in the spec:** R-UI-126, R-UI-052.
+
+### Q-API-310 · The guide's snippets travel beside its sections, and a reader's guide holds what the reader can do
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a section of topic `configure` or `install` carried the snippets of its tab, the publish snippets none (npm's publish
+section named no tab). The merged page shows every snippet first and the prose below.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `Guide.snippets` with every tab; sections without snippets; `GuideSection.Snippets` leaves the format contract; the guide of a repository leaves out publishing for a reader who may not publish (chosen) | One list of snippets, one list of sections | The page lays them out as it needs; no snippet twice; the publish snippets are there; the format declares less | A breaking change of the answer and of the contract (no compatibility before the first stable release) |
+| (b) Keep the sections' snippets; the page ignores them | No API change | Nothing moves | The page receives the configure snippets twice and the publish snippets never |
+| (c) Put the guide's sections into the client setup's answer | One request | One answer for the page | The install panel's answer would carry prose; two jobs in one operation |
+
+**Choice:** (a). **Rationale:** the page decides the layout, so the answer carries the parts, not a layout. The development agent
+revisits it if a format needs a snippet that only one section explains.
+
+**Applied in the spec:** R-API-053, R-API-070; [architecture.md](architecture.md) R-ARCH-008 (the contract) and kit check 8.
 
 ### Q-UI-510 · A folder and a file are the repository's page at `files` and their path
 

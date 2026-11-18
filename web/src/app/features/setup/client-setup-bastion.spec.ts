@@ -9,7 +9,6 @@ import { FakeBastionsApi, sampleBastion, sampleBastionContact } from '../../api/
 import { FakeGuidesApi } from '../../api/testing/fakes-guides';
 import { FakeClientSetupApi, NPM_REPOSITORIES } from '../../api/testing/fakes-packages';
 import { addressValues, expectAccessible, renderScreen, settle, text } from '../../testing/screen';
-import { GuidePage } from '../guides/guide-page';
 import { ClientSetupPage } from './client-setup';
 
 type Get = <A>(token: abstract new (...args: never[]) => A) => A;
@@ -25,7 +24,7 @@ function registrations(get: Get): void {
 
 async function openSetup(inputs: Record<string, unknown>, capabilities?: readonly string[]) {
   const r = await renderScreen(ClientSetupPage, {
-    inputs,
+    inputs: { project: 'web', key: 'npm-all', client: 'npm', ...inputs },
     capabilities,
     setup: (get) => {
       const repos = get(RepositoriesApi) as FakeRepositoriesApi;
@@ -34,51 +33,50 @@ async function openSetup(inputs: Record<string, unknown>, capabilities?: readonl
       registrations(get);
     },
   });
-  return { ...r, setup: r.get(ClientSetupApi) as FakeClientSetupApi };
+  return { ...r, setup: r.get(ClientSetupApi) as FakeClientSetupApi, guides: r.get(GuidesApi) as FakeGuidesApi };
 }
 
-const target = (root: HTMLElement, name: string, value: string) =>
-  root.querySelector<HTMLInputElement>(`input[name="${name}"][value="${value}"]`);
+const target = (root: HTMLElement, value: string) => root.querySelector<HTMLInputElement>(`input[name="target"][value="${value}"]`);
+const snippetText = (root: HTMLElement) => [...root.querySelectorAll('quader-setup-snippet pre')].map((p) => p.textContent ?? '').join('\n');
 
-describe('Client setup for a Bastion (R-BAS-007, R-API-030)', () => {
-  it('R-BAS-007 offers the Bastions that have reported a base URL as a target, and only those', async () => {
-    const r = await openSetup({ repository: 'web/npm-all', client: 'npm' });
+describe('Set up client for a Bastion (R-BAS-007, R-API-030)', () => {
+  it('R-BAS-007 offers the Bastions that have reported a base URL as a place to install from, under More options', async () => {
+    const r = await openSetup({});
     const offered = [...r.root.querySelectorAll<HTMLInputElement>('input[name="target"]')].map((i) => i.value);
     expect(offered).toEqual(['', 'partners']);
-    expect(target(r.root, 'target', '')?.checked).toBe(true);
+    expect(target(r.root, '')?.checked).toBe(true);
     expect(r.setup.calls.at(-1)?.query.bastion).toBeUndefined();
-    // The place to install from is one of More options, closed until opened (Q-UI-316).
     const more = r.root.querySelector('quader-disclosure.more-options')!;
     expect(text(more)).toContain('Install from');
     expect(text(more)).toContain('where to install from');
-    expect(more.querySelector('input[name="target"]')).toBeTruthy();
-    // Opened for one repository, the format and repository steps are not asked: no numbered steps at all.
-    expect(r.root.querySelectorAll('.step-no').length).toBe(0);
     await expectAccessible(r.root);
   });
 
-  it('R-BAS-007 R-UI-066 a Bastion target asks for the setup with bastion=<name> and shows its address, replace-registry-host and no publish snippet', async () => {
-    const r = await openSetup({ repository: 'web/npm-all', client: 'npm', bastion: 'partners' });
+  it('R-BAS-007 R-UI-066 a Bastion asks for the setup with bastion=<name>: its address, replace-registry-host, no publish step and no guide of this installation', async () => {
+    const r = await openSetup({ bastion: 'partners' });
     expect(r.setup.calls.at(-1)?.query).toMatchObject({ client: 'npm', bastion: 'partners' });
-    expect(target(r.root, 'target', 'partners')?.checked).toBe(true);
-    const all = [...r.root.querySelectorAll('.snippet pre')].map((p) => p.textContent ?? '').join('\n');
+    expect(target(r.root, 'partners')?.checked).toBe(true);
+    const all = snippetText(r.root);
     expect(all).toContain('registry=https://packages.example.com/api/npm/web/npm-all/');
     expect(all).toContain('replace-registry-host=always');
     expect(all).not.toContain('quader.example.net');
     expect(text(r.root)).toContain('makes npm fetch every package from this address');
     expect(text(r.root)).toContain('These snippets point at the Bastion');
     expect(addressValues(r.root)).toEqual(['https://packages.example.com/api/npm/web/npm-all/']);
-    // A Bastion is read only: no Publish tab, and the banner says why.
-    expect([...r.root.querySelectorAll<HTMLElement>('[role="tab"]')].map((t) => text(t))).not.toContain('Publish');
+    expect([...r.root.querySelectorAll('section.step > h2')].map((h) => text(h))).not.toContain('3Publish');
     expect(text(r.root)).toContain('A Bastion is read only, so there are no publish snippets.');
+    // The guide describes this installation: none is asked for, and the page says how to read it.
+    expect(r.guides.calls).toEqual([]);
+    expect(r.root.querySelector('quader-guide-view')).toBeNull();
+    expect(text(r.root)).toContain('The explanation describes this installation.');
     await expectAccessible(r.root);
   });
 
   it('R-BAS-007 choosing the Bastion, and then this installation, puts the choice into the query', async () => {
-    const r = await openSetup({ repository: 'web/npm-all', client: 'npm' });
+    const r = await openSetup({});
     const navigate = vi.spyOn(r.get(Router), 'navigate');
     const choose = async (value: string) => {
-      const input = target(r.root, 'target', value)!;
+      const input = target(r.root, value)!;
       input.checked = true;
       input.dispatchEvent(new Event('change', { bubbles: true }));
       await settle(r.fixture);
@@ -90,81 +88,23 @@ describe('Client setup for a Bastion (R-BAS-007, R-API-030)', () => {
   });
 
   it('R-BAS-007 a caller without endpoints:read gets no choice, and a Bastion named in the query still works', async () => {
-    const plain = await openSetup({ repository: 'web/npm-all', client: 'npm' }, ['repositories:read-config']);
+    const plain = await openSetup({}, ['repositories:read-config']);
     expect(plain.root.querySelector('input[name="target"]')).toBeNull();
     expect(text(plain.root.querySelector('quader-disclosure.more-options')!)).not.toContain('where to install from');
-    const linked = await openSetup({ repository: 'web/npm-all', client: 'npm', bastion: 'partners' }, ['repositories:read-config']);
-    expect(target(linked.root, 'target', 'partners')?.checked).toBe(true);
+    const linked = await openSetup({ bastion: 'partners' }, ['repositories:read-config']);
+    expect(target(linked.root, 'partners')?.checked).toBe(true);
     expect(linked.setup.calls.at(-1)?.query.bastion).toBe('partners');
   });
 
   it('R-BAS-007 an address the installation does not list is explained, not shown as a bare 409', async () => {
-    const r = await openSetup({ repository: 'web/npm-all', client: 'npm', bastion: 'unlisted' });
+    const r = await openSetup({ bastion: 'unlisted' });
     expect(text(r.root)).toContain('server.additional_base_urls');
-    expect(r.root.querySelector('.snippet')).toBeNull();
+    expect(r.root.querySelector('quader-setup-snippet')).toBeNull();
   });
 
   it('R-BAS-007 a name that is no registration is a not-found notice', async () => {
-    const r = await openSetup({ repository: 'web/npm-all', client: 'npm', bastion: 'nobody' });
+    const r = await openSetup({ bastion: 'nobody' });
     expect(r.root.querySelector('quader-error-notice')).toBeTruthy();
-    expect(r.root.querySelector('.snippet')).toBeNull();
-  });
-
-  it('R-BAS-007 the guide link carries the Bastion', async () => {
-    const r = await openSetup({ repository: 'web/npm-all', client: 'npm', bastion: 'partners' });
-    const link = [...r.root.querySelectorAll<HTMLAnchorElement>('a')].find((a) => text(a).startsWith('Read the guide'));
-    expect(link?.getAttribute('href')).toContain('bastion=partners');
-  });
-});
-
-describe('Guides with a Bastion target (R-BAS-007, R-UI-049)', () => {
-  async function openGuide(inputs: Record<string, unknown>, capabilities?: readonly string[]) {
-    const r = await renderScreen(GuidePage, {
-      inputs,
-      capabilities,
-      setup: (get) => {
-        const repos = get(RepositoriesApi) as FakeRepositoriesApi;
-        repos.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT];
-        repos.repositories = [...repos.repositories, ...NPM_REPOSITORIES];
-        registrations(get);
-      },
-    });
-    return { ...r, guides: r.get(GuidesApi) as FakeGuidesApi, setup: r.get(ClientSetupApi) as FakeClientSetupApi };
-  }
-
-  it('R-UI-049 the guide offers the Bastion as a target when a registration has reported a base URL', async () => {
-    const r = await openGuide({ format: 'npm', client: 'npm', repository: 'web/npm-all' });
-    expect([...r.root.querySelectorAll<HTMLInputElement>('input[name="guide-target"]')].map((i) => i.value)).toEqual(['', 'partners']);
-    expect(r.root.querySelector('[data-section]')).toBeTruthy();
-    const none = await openGuide({ format: 'npm', client: 'npm', repository: 'web/npm-all' }, ['repositories:read-config']);
-    expect(none.root.querySelector('input[name="guide-target"]')).toBeNull();
-  });
-
-  it('R-UI-049 R-UI-066 with the Bastion as the target the page shows the Bastion address and the read-only snippets, not the guide of this installation', async () => {
-    const r = await openGuide({ format: 'npm', client: 'npm', repository: 'web/npm-all', bastion: 'partners' });
-    expect(r.setup.calls.at(-1)?.query).toMatchObject({ bastion: 'partners', credentials: 'env' });
-    expect(r.guides.calls).toEqual([]);
-    expect(r.root.querySelector('[data-section]')).toBeNull();
-    expect(text(r.root)).toContain('Install through the Bastion');
-    expect(addressValues(r.root)).toEqual(['https://packages.example.com/api/npm/web/npm-all/']);
-    const ids = [...r.root.querySelectorAll<HTMLElement>('[data-snippet]')].map((s) => s.dataset['snippet']);
-    expect(ids).toContain('npm.configure.npmrc');
-    expect(ids).toContain('npm.install');
-    expect(ids.some((id) => id?.endsWith('publish'))).toBe(false);
-    expect([...r.root.querySelectorAll('.snippet pre')].map((p) => p.textContent).join('')).toContain('replace-registry-host=always');
-    await expectAccessible(r.root);
-  });
-
-  it('R-UI-049 a Bastion target without a repository asks for one and makes no request', async () => {
-    const r = await openGuide({ format: 'npm', client: 'npm', bastion: 'partners' });
-    expect(text(r.root)).toContain('Choose a repository');
-    expect(r.setup.calls).toEqual([]);
-    expect(r.guides.calls).toEqual([]);
-  });
-
-  it('R-UI-049 the link to the client setup carries the Bastion', async () => {
-    const r = await openGuide({ format: 'npm', client: 'npm', repository: 'web/npm-all', bastion: 'partners' });
-    const link = [...r.root.querySelectorAll<HTMLAnchorElement>('a')].find((a) => text(a).startsWith('Open the client setup'));
-    expect(link?.getAttribute('href')).toContain('bastion=partners');
+    expect(r.root.querySelector('quader-setup-snippet')).toBeNull();
   });
 });

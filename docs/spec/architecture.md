@@ -1772,7 +1772,6 @@ type GuideSection struct {
 	Title    string  // the heading, plain text
 	Classes  []Class // the classes the section is written for; empty is every class
 	Clients  []string // the clients it is written for; empty is every client
-	Snippets string  // the setup section whose snippets the API attaches: "configure", "install", "publish" or ""
 	Markdown string  // text/template over GuideData; the only credential it may spell is a token reference: SetupTokenRef, SetupTokenRefWin or SetupTokenRefPS
 }
 
@@ -2286,8 +2285,9 @@ own tests:
    covers every class of `Classes` for every client with the topics `what`, `configure`,
    `authenticate`, `install` and `troubleshooting`, each saying something for every reader the kit
    tries (a named repository and none, one who may publish and one who may not, signed in and
-   anonymous, an endpoint with and without exposure rules); the `configure` and `install` topics
-   attach the setup snippets of their section; every section has a known topic, a title, a unique ID,
+   anonymous, an endpoint with and without exposure rules); the setup snippets travel beside the
+   sections, not inside one (api-and-ui.md R-API-070), so every client of a format with a guide has its
+   `configure` and `install` snippets; every section has a known topic, a title, a unique ID,
    classes and clients of the descriptor and executes over `GuideData`; and the guide obeys the
    template rule in the code a reader copies: its fenced code blocks spell no credential except the
    option names the fixture lists and the reference `${QUADER_TOKEN}`, and no section holds the shape of

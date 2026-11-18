@@ -1,29 +1,18 @@
 # Connecting a package client
 
-How to point npm, pnpm, Yarn, the .NET CLI, nuget.exe, Visual Studio, the Docker CLI, Podman, APT, ansible-galaxy and curl at a Quader repository, sign them in with a token from an environment variable, and install, publish and maintain packages and files through it. The page explains the concepts and the places in the UI that give you the exact configuration of your installation: the Client setup page, the Guides area and the How to use tab of a repository.
+How to point npm, pnpm, Yarn, the .NET CLI, nuget.exe, Visual Studio, the Docker CLI, Podman, APT, ansible-galaxy and curl at a Quader repository, sign them in with a token from an environment variable, and install, publish and maintain packages and files through it. The page explains the concepts and the place in the UI that gives you the exact configuration of your installation: the page Set up client of a repository.
 
 ## Where the instructions are
 
-Quader gives you the configuration for your installation in four places. All of them use the configured addresses of the endpoint you are using, so you can copy what they show.
+Every repository has a page **Set up client**: the configuration and the commands for your client, and below them the guide that explains them, with the addresses of the endpoint you are using, so you can copy what it shows.
 
-| Place | How to open it | What it gives you |
-|---|---|---|
-| **Client setup** | User menu › **Client setup**, or **Set up your client for this repository** on the page of a version | Configuration snippets in the tabs **Configure**, **Install** and **Publish**, with a choice of credentials |
-| **Guides** | **Artifacts › Guides** | The full guide of a client: what the repository class is, configuring, signing in, installing, publishing, dist-tags or unlisting, security audit, lockfiles, troubleshooting |
-| **How to use** | A tab on the settings of a repository (a section, if you may use the repository but not see its configuration) | The guide of that one repository, with a choice of client and links **Open the client setup** and **Open in the guides** |
-| **Set up client** | The first button at the top of a repository's page, or beside a repository you opened recently on the start page | The client setup for that one repository, with its format and the repository already chosen; see [Repositories](repositories.md#the-content-of-a-repository) |
-| **Install** panel | On the page of a package | The install command of the selected version for the client and repository you choose |
+| How to open it | What you get |
+|---|---|
+| **Set up client** at the top of a repository's page, in its row of a list of repositories, beside a repository you opened recently on the start page, or under an empty repository | The page of that repository |
+| **Set up client** in the **Install** panel of a package | The page of the repository chosen in the panel, with the client chosen there |
+| **Guides** in the side bar or the user menu | The package types as tiles; a tile lists the repositories of that type you may use, each with **Set up client**, and the guide of each kind of repository for when you have none yet |
 
-The two main places differ like this:
-
-| | Client setup | Guides and How to use |
-|---|---|---|
-| Content | Snippets only, grouped by tab | Explanations with the same snippets in context |
-| Credentials | An environment variable, a token created for this setup, or a token you paste | Always the environment variable; a guide never contains a token |
-| Repository | Required | Optional on **Guides**: without one, the guide covers a repository class and the addresses show `<repository>` |
-| Files | **Download** for snippets that are whole configuration files | Copy only |
-
-Each page links to the other with the same package type, client and repository. Choosing anything on these pages changes nothing on the server, except **Create token** on the Client setup page.
+Nothing on the page changes anything on the server, except **Create a token**.
 
 ## Repository addresses
 
@@ -44,35 +33,48 @@ The trailing slash belongs to the address of npm, Debian, Ansible Galaxy and gen
 - **Local** repositories hold what your teams publish and serve nothing else.
 - **Remote** repositories cache an upstream registry and are read-only.
 
-[Repositories](repositories.md) explains the classes. If the Client setup page or a guide answers that the service is unavailable, the installation has no configured base URL for the endpoint you use; tell an administrator.
+[Repositories](repositories.md) explains the classes. If the page **Set up client** answers that the service is unavailable, the installation has no configured base URL for the endpoint you use; tell an administrator.
 
-## Use the Client setup page
+## Use the page Set up client
 
-Opened from a repository (its **Set up client**, or a repository you opened recently on the start page) or from a package, the page has chosen the package type and the repository: it shows **For the repository** with the repository and **Change**, and asks only for the client. **Change** shows all the steps below.
+The page belongs to one repository: its address is `…/projects/<project>/repositories/<repository>/setup`, and its header names the repository, the package type and the class, with the address your client uses and its copy button. It asks for nothing the repository already decides. From top to bottom:
 
-1. Under **Package type**, choose the format.
-2. Under **Client**, choose your client: **npm**, **pnpm**, **Yarn Berry (2 and later)** or **Yarn Classic (1.x)** for npm, **.NET CLI (dotnet)**, **NuGet CLI (nuget.exe)** or **Visual Studio** for NuGet, **Docker CLI (with Buildx)** or **Podman** for OCI (Docker), **APT (apt, apt-get)** for Debian (APT), **curl** for generic repositories.
-3. Under **Repository**, choose one of the repositories you can read. Virtual repositories come first and are marked **recommended**; each entry says **Read only**, **Publishing goes to its default deployment target**, **You can publish** or **You cannot publish**.
-4. Below the choices one line says how the snippets sign in: by default they read your token from the variable `QUADER_TOKEN`, and **Create a token to put into the variable** opens your personal tokens. **More options** holds the other ways (next section) and, where a Bastion can be chosen, **Install from**. Without a session the line says that the snippets contain no authentication.
-5. Copy the snippets from the tabs **Configure**, **Install** and, if you may publish, **Publish** with **Copy snippet**, or save a configuration file with **Download**.
+1. **Client**, only where the package type has several: **npm**, **pnpm**, **Yarn Berry (2 and later)** or **Yarn Classic (1.x)** for npm, **.NET CLI (dotnet)**, **nuget.exe** or **Visual Studio 2022** for NuGet, **Docker CLI (with Buildx)** or **Podman** for OCI (Docker). Debian (APT), Ansible Galaxy and generic repositories have one client each, and the page does not ask.
+2. One line says how the snippets sign in: they read your token from the variable `QUADER_TOKEN`. **Create a token** beside it creates one without leaving the page (next section). Signed out, the line says that the snippets hold no credentials, which works for a repository whose artifacts are public.
+3. **More options**, closed: a token written into the snippets, and, where a Bastion can be chosen, **Install from**.
+4. The steps **1 Configure**, **2 Install** and, if you may publish, **3 Publish**, each with its snippets. Every snippet says in one sentence what it does, names its file, and has **Copy snippet**; a whole configuration file also has **Download**. A line too long for the page continues on the next line, indented, so a long repository key never hides the end of an address; the copy button copies the snippet unchanged.
+5. The guide below the steps (see [What the guide on the page adds](#what-the-guide-on-the-page-adds)).
 
-The **Publish** tab shows how to publish through the repository you chose, once for your client: `npm publish --registry <address>`, `pnpm publish --registry <address>`, `yarn publish --registry <address>` for Yarn Classic, `npmPublishRegistry: "<address>"` in `.yarnrc.yml` for Yarn Berry, `dotnet nuget push` and `nuget push` with the service index of the repository as the source and the token as the API key for NuGet (Visual Studio has no push), `docker push`, `docker buildx build --push` and `podman push` of an image tagged with the repository's address for OCI, or the `curl --upload-file` of a `.deb` to `upload/<file>?distribution=<suite>` for Debian. The address is the one of the repository you chose; for a virtual repository the publish reaches its default deployment target. There is no **Publish** tab when you cannot publish: for a remote repository, for a Bastion, and when you do not hold the deploy permission on the target. For a virtual repository without a default deployment target, people who may change the repository see the tab with the reason and a link to its members. The hint of step 3 tells you which case it is; the guide's section **Publish a package** has the rest of the commands.
+**Publish** shows how to publish through this repository, once for your client: `npm publish --registry <address>`, `pnpm publish --registry <address>`, `yarn publish --registry <address>` for Yarn Classic, `npmPublishRegistry: "<address>"` in `.yarnrc.yml` for Yarn Berry, `dotnet nuget push` and `nuget push` with the service index of the repository as the source and the token as the API key for NuGet (Visual Studio has no push), `docker push`, `docker buildx build --push` and `podman push` of an image tagged with the repository's address for OCI, or the `curl --upload-file` of a `.deb` to `upload/<file>?distribution=<suite>` for Debian. For a virtual repository the publish reaches its default deployment target. There is no **Publish** step when you cannot publish: for a remote repository, for a Bastion, and when you do not hold the deploy permission on the target; the guide then leaves publishing out too. For a virtual repository without a default deployment target, people who may change the repository see the step with the reason and a link to its settings.
 
-### Credentials
+### The token
 
-The options are under **More options**, closed until you open it.
+**Create a token** creates a personal token with the description `Client setup: <client>, <repository>, <date>` that may read this repository. Where you may publish, tick **It may also publish** first to let it publish to the repository that receives your uploads. It lives 30 days unless an administrator configured another period, and it appears under your [personal tokens](access-tokens.md), where you revoke it. Creating it can ask you to [sign in again](troubleshooting.md#session-ended-and-re-authentication).
 
-| Option | What the snippets contain | Notes |
-|---|---|---|
-| **Reference an environment variable** (default) | `${QUADER_TOKEN}`, which the client expands when it runs (`%QUADER_TOKEN%` in a `nuget.config` and in cmd, `$env:QUADER_TOKEN` in PowerShell) | No secret on the page; the file can be committed. The link **Create a token to put into the variable** opens your personal tokens |
-| **Create a token for this setup** | A new personal token, written into the snippets | See below |
-| **Use a token I already have** | The token you paste | The value stays in the browser and is never sent to the server |
+The page shows the token once, with a copy button and the command that puts it into the variable:
 
-**Create a token for this setup** creates a personal token with the description `Client setup: <client>, <repository>, <date>` that may read the chosen repository only. Tick **The token may also publish to the deployment target of this repository** to let it publish as well. It lives 30 days unless an administrator configured another period, and it appears under your [personal tokens](access-tokens.md), where you revoke it. The page shows it once; choosing another repository or credential option, or leaving the page, discards it. Creating it can ask you to [sign in again](troubleshooting.md#session-ended-and-re-authentication).
+```shell
+read -rs QUADER_TOKEN && export QUADER_TOKEN
+```
+
+Run it in bash or zsh, paste the token and press Enter: the shell keeps the value without showing it and without writing it into its history. In a CI job, store the token as a masked variable named `QUADER_TOKEN` instead. The snippets keep reading the variable, so the files you save hold no secret and can be committed. Choosing another client, or leaving the page, discards the token from the page.
 
 For a virtual repository the token also reads the packages of its members when they are read through the virtual repository, so `npm install` against it works. It reads nothing more than you do: a member you cannot read stays invisible to the token, and the token cannot read a member addressed directly. The members of a virtual repository may change after you created the token; the token follows them.
 
-A pasted token is checked in the browser for its prefix, its length of 57 characters, its alphabet and its checksum; a value that fails is not written into the snippets. A file that holds a token belongs in your home directory, never in version control.
+### A token in the snippets
+
+Under **More options**, **Token in the snippets** has two ways:
+
+| Option | What the snippets contain | Notes |
+|---|---|---|
+| **Read it from the variable QUADER_TOKEN** (default) | `${QUADER_TOKEN}`, which the client expands when it runs (`%QUADER_TOKEN%` in a `nuget.config` and in cmd, `$env:QUADER_TOKEN` in PowerShell) | No secret on the page; the file can be committed |
+| **Write a token into the snippets** | The token you paste, for example the one you created above | The value stays in the browser and is never sent to the server |
+
+A pasted token is checked in the browser for its prefix, its length of 57 characters, its alphabet and its checksum; the page says which check failed, and a value that fails is not written into the snippets. Until one passes, the snippets show `{{token}}` where it will go. A file that holds a token belongs in your home directory, never in version control.
+
+## Guides without a repository
+
+**Guides** shows the package types as tiles. A tile lists the repositories of that type you may use, virtual ones first and marked **recommended**, each with its class, its description and **Set up client**. Below the list, **Without a repository** has the guide of each kind of repository (local, remote, virtual) of the type: the same page, whose addresses show `<project>` and `<repository>` where the key of your project and of your repository go. Use it to read about a kind of repository before you have one; it creates no token.
 
 ## Configure an npm client
 
@@ -200,11 +202,11 @@ The integrity and hash values stay valid because a version's bytes never change 
 
 ## Sign in container clients
 
-For an OCI (Docker) repository the **Configure** tab holds the login of the Docker CLI or Podman, which reads the token from `QUADER_TOKEN` on standard input, and, for the Docker CLI client, a `kubectl` command that creates a Kubernetes image pull secret from the same variable. **Install** pulls an image by its tag, **Publish** tags and pushes one, and for the Docker CLI builds and pushes a multi-platform image with Buildx. [Container images with Docker and Podman](container-images.md) explains the login, the permissions, multi-platform images, virtual repositories and Kubernetes.
+For an OCI (Docker) repository the **Configure** step holds the login of the Docker CLI or Podman, which reads the token from `QUADER_TOKEN` on standard input, and, for the Docker CLI client, a `kubectl` command that creates a Kubernetes image pull secret from the same variable. **Install** pulls an image by its tag, **Publish** tags and pushes one, and for the Docker CLI builds and pushes a multi-platform image with Buildx. [Container images with Docker and Podman](container-images.md) explains the login, the permissions, multi-platform images, virtual repositories and Kubernetes.
 
 ## Configure APT
 
-For a Debian (APT) repository the **Configure** tab installs the repository's public key from `signing-key.asc` as `/etc/apt/keyrings/quader-<project>-<repository>.asc`, writes the source as `/etc/apt/sources.list.d/quader-<project>-<repository>.sources` with that key in `Signed-By`, and writes the token into `/etc/apt/auth.conf.d/quader-<project>-<repository>.conf`, a file only root can read, never into the source line. A one-line `.list` form is shown as well, and for a remote repository without upstream keys a source that names the archive's own keyring instead of a key of Quader's. **Install** runs `apt-get update` and `apt-get install`, **Publish** uploads a package with `curl`. [Debian packages with APT](apt-packages.md) explains the suites, the upload, the index wait, key rotation and the client's error messages.
+For a Debian (APT) repository the **Configure** step installs the repository's public key from `signing-key.asc` as `/etc/apt/keyrings/quader-<project>-<repository>.asc`, writes the source as `/etc/apt/sources.list.d/quader-<project>-<repository>.sources` with that key in `Signed-By`, and writes the token into `/etc/apt/auth.conf.d/quader-<project>-<repository>.conf`, a file only root can read, never into the source line. A one-line `.list` form is shown as well, and for a remote repository without upstream keys a source that names the archive's own keyring instead of a key of Quader's. **Install** runs `apt-get update` and `apt-get install`, **Publish** uploads a package with `curl`. [Debian packages with APT](apt-packages.md) explains the suites, the upload, the index wait, key rotation and the client's error messages.
 
 ## Download and upload files with curl
 
@@ -226,26 +228,29 @@ Downloading needs read, uploading to a free path deploy, replacing a file with o
 
 An administrator may run a Bastion for you: a read-only cache of this installation at its own address, for clients outside the network ([The Quader Bastion](../admin/bastion.md) explains what it is). You sign in to it with the same personal, service-account or CI token, and you install the same packages from the same repositories, named by the same project and repository keys; only the address differs.
 
-When an administrator has registered a Bastion and it has reported its address, the Client setup page (under **More options**) and the Guides area offer it under **Install from**, next to **This installation**. Choose it and the snippets use the Bastion's address, for example `https://packages.example.com/api/npm/web/npm-all/`. Without that permission the choice is not shown; an administrator can send you a link to the Client setup page that already names the Bastion.
+When an administrator has registered a Bastion and it has reported its address, the page **Set up client** offers it under **More options**, **Install from**, next to **This installation**. Choose it and the snippets and the address in the header use the Bastion's address, for example `https://packages.example.com/api/npm/web/npm-all/`. Without that permission the choice is not shown; an administrator can send you a link to the page that already names the Bastion (`…/setup?bastion=<name>`).
 
-- **Read only.** The page has no **Publish** tab for a Bastion, and its banner says why. Publish, change dist-tags and unpublish on this installation.
+- **Read only.** The page has no **Publish** step for a Bastion, and its banner says why. Publish, change dist-tags and unpublish on this installation.
 - **npm** gets one more line in the configure snippet, `replace-registry-host=always`. It makes npm fetch every package from the address in `registry=`, also when a lockfile written against another host names that host, so one lockfile works through this installation and through the Bastion.
-- **The Guides area** shows the address and the configure and install snippets for the Bastion; the full guide describes this installation, so choose **This installation** to read it.
+- **The guide** describes this installation, so the page shows none for a Bastion; choose **This installation** to read it.
 - **A Bastion answers `409` on the page** (`bastion_base_url_unknown`) while it has not reported an address yet or the address is not listed in `server.additional_base_urls` of this installation; tell your administrator.
 
 A Bastion decides what you may read by asking this installation with your token, so permissions, revocations and exposure follow the main installation. A revoked token can keep reading cached content for a short time, and an installation that the Bastion cannot reach is served from its cache for a limited period only.
 
-## What the in-app guide adds
+## What the guide on the page adds
 
-This page explains the concepts; the guide of your installation gives the exact text for your choice:
+This manual page explains the concepts; the guide below the steps of **Set up client** gives the exact text for your repository and client:
 
-- the addresses of the endpoint you are using, and for a chosen repository its project, its key and its deployment target;
-- sections that depend on the class and the client, and only the steps that apply to you: an anonymous reader gets no sign-in steps, a repository you cannot publish to says so;
-- the section **On this endpoint**, shown only on an endpoint with exposure rules, which says what such an endpoint hides and refuses;
+- what a repository of its class is: its introduction open below the steps, the rest under **More about this**;
+- the addresses of the endpoint you are using, the repository's project and key, and its deployment target where you may publish there;
+- sections that depend on the class and the client, each closed under its heading until you open it, and only the ones that apply to you: an anonymous reader gets no sign-in steps, and a reader who may not publish gets no publishing;
+- the section **On this endpoint**, open and shown only on an endpoint with exposure rules, which says what such an endpoint hides and refuses;
 - a **Troubleshooting** table with the error codes of the protocol and what to do about each.
+
+Every code block of the guide has a copy button.
 
 When something goes wrong, start with [Errors and troubleshooting](troubleshooting.md).
 
 ## Configure ansible-galaxy
 
-For an Ansible Galaxy repository the **Configure** tab renders an `ansible.cfg` with the repository as the server `quader`, the token as the environment variable `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN` (also for PowerShell and cmd), and a `~/.netrc` line that roles need. The **Install** tab renders `ansible-galaxy collection install` and a `requirements.yml`, and **Publish** renders `ansible-galaxy collection publish`. See [Ansible collections and roles with ansible-galaxy](ansible-collections.md).
+For an Ansible Galaxy repository the **Configure** step renders an `ansible.cfg` with the repository as the server `quader`, the token as the environment variable `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN` (also for PowerShell and cmd), and a `~/.netrc` line that roles need. The **Install** step renders `ansible-galaxy collection install` and a `requirements.yml`, and **Publish** renders `ansible-galaxy collection publish`. See [Ansible collections and roles with ansible-galaxy](ansible-collections.md).

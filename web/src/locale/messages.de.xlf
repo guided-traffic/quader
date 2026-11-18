@@ -74,15 +74,6 @@
         <target>Projekt suchen</target>
       </segment>
     </unit>
-    <unit id="guides.step.class">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:86,87</note>
-      </notes>
-      <segment>
-        <source>Repository class</source>
-        <target>Repository-Klasse</target>
-      </segment>
-    </unit>
     <unit id="system.valkey.last-change">
       <notes>
         <note category="location">src/app/features/system/system-status.html:309,311</note>
@@ -380,15 +371,6 @@
       <segment>
         <source>The schema step of the backup is newer than this version supports.</source>
         <target>Der Schemaschritt des Backups ist neuer, als diese Version unterstützt.</target>
-      </segment>
-    </unit>
-    <unit id="repo.guide.loading">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-guide.ts:38,42</note>
-      </notes>
-      <segment>
-        <source>Loading the guide.</source>
-        <target>Die Anleitung wird geladen.</target>
       </segment>
     </unit>
     <unit id="project.save-visibility">
@@ -754,11 +736,11 @@
     </unit>
     <unit id="setup.pending-token">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:302</note>
+        <note category="location">src/app/features/setup/client-setup.html:230</note>
       </notes>
       <segment>
-        <source>Until a token is set, the snippets show this placeholder where it will go:</source>
-        <target>Solange kein Token gesetzt ist, zeigen die Snippets diesen Platzhalter an der Stelle, an die er kommt:</target>
+        <source>Until a token is pasted, the snippets show this placeholder where it will go:</source>
+        <target>Bis ein Token eingefügt ist, zeigen die Snippets diesen Platzhalter an der Stelle, an die er kommt:</target>
       </segment>
     </unit>
     <unit id="project-members.role">
@@ -908,11 +890,11 @@
     </unit>
     <unit id="setup.cred.paste-hint">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:153,154</note>
+        <note category="location">src/app/features/setup/client-setup.html:127,128</note>
       </notes>
       <segment>
-        <source> The value stays in this browser. It is checked here and never sent to the server. </source>
-        <target> Der Wert bleibt in diesem Browser. Er wird hier geprüft und nie an den Server gesendet. </target>
+        <source> For a file outside version control. The token stays in this browser: it is checked here and never sent to the server. </source>
+        <target> Für eine Datei außerhalb der Versionsverwaltung. Der Token bleibt in diesem Browser: Er wird hier geprüft und nie an den Server gesendet. </target>
       </segment>
     </unit>
     <unit id="ansible.imports.col.version">
@@ -1083,15 +1065,6 @@
         <target>Virtuell</target>
       </segment>
     </unit>
-    <unit id="setup.recommended">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:87,89</note>
-      </notes>
-      <segment>
-        <source>recommended</source>
-        <target>empfohlen</target>
-      </segment>
-    </unit>
     <unit id="system.keys.replicas.complete">
       <notes>
         <note category="location">src/app/features/system/system-status.html:404,407</note>
@@ -1180,17 +1153,6 @@
       <segment>
         <source>This project is public.</source>
         <target>Dieses Projekt ist öffentlich.</target>
-      </segment>
-    </unit>
-    <unit id="guides.intro">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:3,7</note>
-      </notes>
-      <segment>
-        <source> What each kind of repository is, and how your package manager configures, signs in, installs, publishes and troubleshoots through it. The guide uses this installation&apos;s addresses.
-</source>
-        <target> Was jede Art von Repository ist und wie Ihr Paketmanager darüber konfiguriert, sich anmeldet, installiert, veröffentlicht und Fehler eingrenzt. Die Anleitung verwendet die Adressen dieser Installation.
-</target>
       </segment>
     </unit>
     <unit id="pkg.file.size">
@@ -1346,16 +1308,6 @@
       <segment>
         <source>The database or the target was not reachable. The Job retries the run.</source>
         <target>Die Datenbank oder das Ziel war nicht erreichbar. Der Job wiederholt den Lauf.</target>
-      </segment>
-    </unit>
-    <unit id="repo.tab.guide">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:68,69</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:318,319</note>
-      </notes>
-      <segment>
-        <source>How to use</source>
-        <target>Verwendung</target>
       </segment>
     </unit>
     <unit id="ci.issuers.col.mappings">
@@ -2914,15 +2866,6 @@
         <target>(öffnet eine andere Website)</target>
       </segment>
     </unit>
-    <unit id="repo.guide.none">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-guide.ts:18,20</note>
-      </notes>
-      <segment>
-        <source>There is no guide for this package type.</source>
-        <target>Für diesen Pakettyp gibt es keine Anleitung.</target>
-      </segment>
-    </unit>
     <unit id="problem.bastion.base-url-unknown">
       <notes>
         <note category="location">src/app/core/http/problem-messages-bastion.ts:10</note>
@@ -3863,16 +3806,6 @@
         <target>Externer Benutzer</target>
       </segment>
     </unit>
-    <unit id="guide.target-file">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:125</note>
-        <note category="location">src/app/features/guides/guide-view.ts:38</note>
-      </notes>
-      <segment>
-        <source>File</source>
-        <target>Datei</target>
-      </segment>
-    </unit>
     <unit id="pkg.ansible-docs-link">
       <notes>
         <note category="location">src/app/features/packages/package-detail.html:107,109</note>
@@ -4275,15 +4208,6 @@
         <target>Repository</target>
       </segment>
     </unit>
-    <unit id="guides.placeholder">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:147,150</note>
-      </notes>
-      <segment>
-        <source> The addresses show &lt;repository&gt; where the key of your repository goes. </source>
-        <target> Die Adressen zeigen &lt;repository&gt; dort, wo der Schlüssel Ihres Repositorys steht. </target>
-      </segment>
-    </unit>
     <unit id="ci.issuances.revoke-confirm">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:408</note>
@@ -4655,15 +4579,6 @@
       <segment>
         <source>Your group memberships and where each comes from.</source>
         <target>Ihre Gruppenmitgliedschaften und woher jede stammt.</target>
-      </segment>
-    </unit>
-    <unit id="guides.step.format">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:13,14</note>
-      </notes>
-      <segment>
-        <source>Package type</source>
-        <target>Pakettyp</target>
       </segment>
     </unit>
     <unit id="setup.bastion.replace-host">
@@ -5222,15 +5137,6 @@
         <target>Kopieren</target>
       </segment>
     </unit>
-    <unit id="setup.publish.yes">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:266</note>
-      </notes>
-      <segment>
-        <source>You can publish</source>
-        <target>Sie können veröffentlichen</target>
-      </segment>
-    </unit>
     <unit id="backups.detail.target">
       <notes>
         <note category="location">src/app/features/system/backups/backups-page.html:259,260</note>
@@ -5673,15 +5579,6 @@
       <segment>
         <source> Sign in again </source>
         <target>Erneut anmelden</target>
-      </segment>
-    </unit>
-    <unit id="guides.result.repository">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:140</note>
-      </notes>
-      <segment>
-        <source>Guide for</source>
-        <target>Anleitung für</target>
       </segment>
     </unit>
     <unit id="problem.vuln.archive-too-large">
@@ -7430,11 +7327,11 @@
     </unit>
     <unit id="setup.cred.env">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:133,134</note>
+        <note category="location">src/app/features/setup/client-setup.html:118,119</note>
       </notes>
       <segment>
-        <source>Reference an environment variable</source>
-        <target>Auf eine Umgebungsvariable verweisen</target>
+        <source>Read it from the variable QUADER_TOKEN</source>
+        <target>Aus der Variable QUADER_TOKEN lesen</target>
       </segment>
     </unit>
     <unit id="upstream.test.valid-until">
@@ -8600,15 +8497,6 @@
         <target>Rollen</target>
       </segment>
     </unit>
-    <unit id="pkg.install.setup-link">
-      <notes>
-        <note category="location">src/app/features/packages/install-panel.html:31,36</note>
-      </notes>
-      <segment>
-        <source>Set up your client for this repository</source>
-        <target>Client für dieses Repository einrichten</target>
-      </segment>
-    </unit>
     <unit id="pkg.blocked-in">
       <notes>
         <note category="location">src/app/features/packages/package-detail.html:55</note>
@@ -9636,11 +9524,11 @@
     </unit>
     <unit id="setup.more.hint">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:152</note>
+        <note category="location">src/app/features/setup/client-setup.ts:148</note>
       </notes>
       <segment>
-        <source>Another way to give the token.</source>
-        <target>Eine andere Art, den Token anzugeben.</target>
+        <source>A token written into the snippets.</source>
+        <target>Ein Token in den Snippets.</target>
       </segment>
     </unit>
     <unit id="project.owners">
@@ -10218,15 +10106,6 @@
         <target>Medientyp</target>
       </segment>
     </unit>
-    <unit id="setup.publish.by-target">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:263</note>
-      </notes>
-      <segment>
-        <source>Publishing goes to its default deployment target</source>
-        <target>Veröffentlichen geht an das Standard-Veröffentlichungsziel</target>
-      </segment>
-    </unit>
     <unit id="vuln.triage.close">
       <notes>
         <note category="location">src/app/features/vulnerabilities/triage-dialog.ts:91,93</note>
@@ -10480,15 +10359,6 @@
         <target>Die Änderung ist gespeichert.</target>
       </segment>
     </unit>
-    <unit id="repo.guide.open">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-guide.ts:31,33</note>
-      </notes>
-      <segment>
-        <source>Open in the guides</source>
-        <target>In den Anleitungen öffnen</target>
-      </segment>
-    </unit>
     <unit id="search.place.sessions">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:99</note>
@@ -10541,15 +10411,6 @@
       <segment>
         <source>Not: this must be false</source>
         <target>Nicht: Das muss falsch sein</target>
-      </segment>
-    </unit>
-    <unit id="setup.cred.with-publish">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:163,165</note>
-      </notes>
-      <segment>
-        <source>The token may also publish to the deployment target of this repository</source>
-        <target>Der Token darf auch am Veröffentlichungsziel dieses Repositorys veröffentlichen</target>
       </segment>
     </unit>
     <unit id="backups.manual.placeholders">
@@ -11177,15 +11038,6 @@
       <segment>
         <source>Configuration</source>
         <target>Konfiguration</target>
-      </segment>
-    </unit>
-    <unit id="guides.target.main">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:64,66</note>
-      </notes>
-      <segment>
-        <source>This installation</source>
-        <target>Diese Installation</target>
       </segment>
     </unit>
     <unit id="vuln.sources.copy">
@@ -11824,15 +11676,6 @@
         <target>fehlt</target>
       </segment>
     </unit>
-    <unit id="guides.step.client">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:28,29</note>
-      </notes>
-      <segment>
-        <source>Client</source>
-        <target>Client</target>
-      </segment>
-    </unit>
     <unit id="tokens-admin.loading">
       <notes>
         <note category="location">src/app/features/tokens/token-admin.html:82,87</note>
@@ -11896,15 +11739,6 @@
         <target>Die Advisory-Daten sind auf diesem Replikat nicht verfügbar. Versuchen Sie es gleich noch einmal.</target>
       </segment>
     </unit>
-    <unit id="setup.chosen">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:39</note>
-      </notes>
-      <segment>
-        <source>For the repository</source>
-        <target>Für das Repository</target>
-      </segment>
-    </unit>
     <unit id="repo.action.copy-address">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:139,141</note>
@@ -11950,24 +11784,6 @@
       <segment>
         <source>New <ph id="0" equiv="format" disp="format.displayName ?? format.name"/> repository</source>
         <target>Neues <ph id="0" equiv="format" disp="format.displayName ?? format.name"/>-Repository</target>
-      </segment>
-    </unit>
-    <unit id="guides.setup-link">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:100,103</note>
-      </notes>
-      <segment>
-        <source>Open the client setup for this choice</source>
-        <target>Client-Einrichtung für diese Auswahl öffnen</target>
-      </segment>
-    </unit>
-    <unit id="guides.bastion.title">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:106</note>
-      </notes>
-      <segment>
-        <source>Install through the Bastion</source>
-        <target>Über die Bastion installieren</target>
       </segment>
     </unit>
     <unit id="ci.issuances.col.job">
@@ -12441,15 +12257,6 @@
       <segment>
         <source>This action needs a recent sign-in.</source>
         <target>Diese Aktion erfordert eine aktuelle Anmeldung.</target>
-      </segment>
-    </unit>
-    <unit id="guides.bastion.registry">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:117,119</note>
-      </notes>
-      <segment>
-        <source>Address of the repository on the Bastion:</source>
-        <target>Adresse des Repositorys auf der Bastion:</target>
       </segment>
     </unit>
     <unit id="ci.issuance.client">
@@ -14068,22 +13875,13 @@
         <target>Ausgestellter Token</target>
       </segment>
     </unit>
-    <unit id="setup.cred.create-hint">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:144,145</note>
-      </notes>
-      <segment>
-        <source> A personal token that may read this repository only. It is shown once and written into the snippets. </source>
-        <target> Ein persönlicher Token, der nur dieses Repository lesen darf. Er wird einmal angezeigt und in die Snippets geschrieben. </target>
-      </segment>
-    </unit>
     <unit id="setup.cred.paste">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:151,152</note>
+        <note category="location">src/app/features/setup/client-setup.html:125,126</note>
       </notes>
       <segment>
-        <source>Use a token I already have</source>
-        <target>Einen vorhandenen Token verwenden</target>
+        <source>Write a token into the snippets</source>
+        <target>Einen Token in die Snippets schreiben</target>
       </segment>
     </unit>
     <unit id="dashboard.pending-deletion">
@@ -14134,11 +13932,11 @@
     </unit>
     <unit id="setup.cred.line-paste">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:118,124</note>
+        <note category="location">src/app/features/setup/client-setup.html:60,62</note>
       </notes>
       <segment>
-        <source>The snippets hold the token you pasted.</source>
-        <target>Die Snippets enthalten den Token, den Sie eingefügt haben.</target>
+        <source>The snippets hold the token you paste under More options.</source>
+        <target>Die Snippets enthalten den Token, den Sie unter „Weitere Optionen“ einfügen.</target>
       </segment>
     </unit>
     <unit id="ci.cond.any">
@@ -14175,15 +13973,6 @@
       <segment>
         <source>Collection</source>
         <target>Collection</target>
-      </segment>
-    </unit>
-    <unit id="setup.guide">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:8,10</note>
-      </notes>
-      <segment>
-        <source>Read the guide</source>
-        <target>Anleitung lesen</target>
       </segment>
     </unit>
     <unit id="backups.phase.finalizing">
@@ -14988,15 +14777,6 @@
         <target>Nicht verbergen: mit 403 antworten</target>
       </segment>
     </unit>
-    <unit id="setup.publish.no">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:267</note>
-      </notes>
-      <segment>
-        <source>You cannot publish</source>
-        <target>Sie können nicht veröffentlichen</target>
-      </segment>
-    </unit>
     <unit id="user.status">
       <notes>
         <note category="location">src/app/features/users/user-detail.html:83,85</note>
@@ -15031,15 +14811,6 @@
       <segment>
         <source>The repository is in pull-through mode; there is no mirror to run. Choose mode mirror and save first.</source>
         <target>Das Repository läuft im Pull-through-Modus; es gibt keinen Mirror, der laufen könnte. Wählen Sie zuerst den Modus Mirror und speichern Sie.</target>
-      </segment>
-    </unit>
-    <unit id="guides.repository.none">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:44,46</note>
-      </notes>
-      <segment>
-        <source>None in particular: the guide of a repository class</source>
-        <target>Kein bestimmtes: die Anleitung einer Repository-Klasse</target>
       </segment>
     </unit>
     <unit id="system.valkey.server-version">
@@ -15391,15 +15162,6 @@
       <segment>
         <source>Public now</source>
         <target>Jetzt öffentlich</target>
-      </segment>
-    </unit>
-    <unit id="setup.publish.read-only">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:261</note>
-      </notes>
-      <segment>
-        <source>Read only</source>
-        <target>Nur lesen</target>
       </segment>
     </unit>
     <unit id="vuln.grade.critical">
@@ -16108,15 +15870,6 @@
         <target>Lauf-ID</target>
       </segment>
     </unit>
-    <unit id="setup.no-formats">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:51,53</note>
-      </notes>
-      <segment>
-        <source>No package type with setup instructions is available yet.</source>
-        <target>Es ist noch kein Pakettyp mit Einrichtungsanleitung verfügbar.</target>
-      </segment>
-    </unit>
     <unit id="problem.invalid_scope">
       <notes>
         <note category="location">src/app/core/http/problem-messages-access.ts:60</note>
@@ -16727,15 +16480,6 @@
         <target>Meine Änderungen kopieren</target>
       </segment>
     </unit>
-    <unit id="setup.no-repositories">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:70,72</note>
-      </notes>
-      <segment>
-        <source>You can read no repository of this package type.</source>
-        <target>Sie können kein Repository dieses Pakettyps lesen.</target>
-      </segment>
-    </unit>
     <unit id="token-form.packages">
       <notes>
         <note category="location">src/app/shared/access/token-form.ts:122,124</note>
@@ -16828,11 +16572,11 @@
     </unit>
     <unit id="setup.publish.members">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:330,332</note>
+        <note category="location">src/app/features/setup/client-setup.html:258,261</note>
       </notes>
       <segment>
-        <source>Open the repository to see its members</source>
-        <target>Repository öffnen, um seine Mitglieder zu sehen</target>
+        <source>Open the repository&apos;s settings to see its members</source>
+        <target>Einstellungen des Repositorys öffnen, um seine Mitglieder zu sehen</target>
       </segment>
     </unit>
     <unit id="mirror.rate.seconds">
@@ -17255,15 +16999,6 @@
         <target>{VAR_PLURAL, plural, =1 {1 Download} other {<ph id="0" equiv="INTERPOLATION"/> Downloads}}</target>
       </segment>
     </unit>
-    <unit id="guides.bastion.text">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:109,112</note>
-      </notes>
-      <segment>
-        <source> A Bastion is a read-only cache of this installation for clients outside your network. You configure your client and install through it; publishing, tags and unpublishing are done on this installation. The full guide describes this installation: choose it above to read it. </source>
-        <target>Eine Bastion ist ein schreibgeschützter Cache dieser Installation für Clients außerhalb deines Netzwerks. Du konfigurierst deinen Client und installierst darüber; Veröffentlichen, Tags und Zurückziehen erledigst du auf dieser Installation. Die vollständige Anleitung beschreibt diese Installation: Wähle sie oben aus, um sie zu lesen.</target>
-      </segment>
-    </unit>
     <unit id="mirror.prereleases.hint">
       <notes>
         <note category="location">src/app/features/repositories/mirror-settings.ts:277,279</note>
@@ -17407,15 +17142,6 @@
       <segment>
         <source>The condition is not valid: an empty list, too deep (4 levels), too many conditions (64), too many values (256), or a pattern that does not compile.</source>
         <target>Die Bedingung ist nicht gültig: eine leere Liste, zu tief verschachtelt (4 Ebenen), zu viele Bedingungen (64), zu viele Werte (256) oder ein Muster, das sich nicht übersetzen lässt.</target>
-      </segment>
-    </unit>
-    <unit id="setup.step.repository">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:68,69</note>
-      </notes>
-      <segment>
-        <source>Repository</source>
-        <target>Repository</target>
       </segment>
     </unit>
     <unit id="audit.category.config">
@@ -17596,16 +17322,6 @@
       <segment>
         <source>The groups of <ph id="0" equiv="principal" disp="principal"/> could not be read, so entries for groups are not considered.</source>
         <target>Die Gruppen von <ph id="0" equiv="principal" disp="principal"/> konnten nicht gelesen werden; Einträge für Gruppen werden daher nicht berücksichtigt.</target>
-      </segment>
-    </unit>
-    <unit id="guide.copy">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.ts:113</note>
-        <note category="location">src/app/features/guides/guide-view.ts:59</note>
-      </notes>
-      <segment>
-        <source>Copy snippet</source>
-        <target>Snippet kopieren</target>
       </segment>
     </unit>
     <unit id="virtual.decision.not-admitted">
@@ -18068,15 +17784,6 @@
         <target>Diese Sitzung</target>
       </segment>
     </unit>
-    <unit id="setup.step.client">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:23,25</note>
-      </notes>
-      <segment>
-        <source>Client</source>
-        <target>Client</target>
-      </segment>
-    </unit>
     <unit id="bastion-token.days">
       <notes>
         <note category="location">src/app/features/bastions/bastion-dialogs.ts:147,149</note>
@@ -18177,15 +17884,6 @@
         <target>fehlgeschlagen</target>
       </segment>
     </unit>
-    <unit id="setup.cred.line-create">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:115,117</note>
-      </notes>
-      <segment>
-        <source>The snippets hold a token created for this setup.</source>
-        <target>Die Snippets enthalten einen für diese Einrichtung erstellten Token.</target>
-      </segment>
-    </unit>
     <unit id="problem.unknown_principal">
       <notes>
         <note category="location">src/app/core/http/problem-messages-access.ts:76</note>
@@ -18220,15 +17918,6 @@
       <segment>
         <source>Downloads, sign-in, creating and revoking tokens, and this switch keep working.</source>
         <target>Downloads, Anmeldung, das Anlegen und Widerrufen von Token und dieser Schalter funktionieren weiter.</target>
-      </segment>
-    </unit>
-    <unit id="setup.change">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:40,42</note>
-      </notes>
-      <segment>
-        <source>Change</source>
-        <target>Ändern</target>
       </segment>
     </unit>
     <unit id="policy.name-hint">
@@ -18788,11 +18477,11 @@
     </unit>
     <unit id="setup.anonymous">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:104,108</note>
+        <note category="location">src/app/features/setup/client-setup.html:52,54</note>
       </notes>
       <segment>
-        <source> You are not signed in. A repository that can be read without credentials needs none, so the snippets contain no authentication. </source>
-        <target> Sie sind nicht angemeldet. Ein Repository, das ohne Zugangsdaten lesbar ist, braucht keine; die Snippets enthalten daher keine Authentifizierung. </target>
+        <source> You are not signed in. This repository can be read without signing in, so the snippets hold no credentials. </source>
+        <target> Sie sind nicht angemeldet. Dieses Repository ist ohne Anmeldung lesbar, daher enthalten die Snippets keine Zugangsdaten. </target>
       </segment>
     </unit>
     <unit id="search.place.profile">
@@ -19043,11 +18732,11 @@
     </unit>
     <unit id="setup.more.hint-target">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:151</note>
+        <note category="location">src/app/features/setup/client-setup.ts:147</note>
       </notes>
       <segment>
-        <source>Another way to give the token, and where to install from.</source>
-        <target>Eine andere Art, den Token anzugeben, und woher installiert wird.</target>
+        <source>A token written into the snippets, and where to install from.</source>
+        <target>Ein Token in den Snippets und woher installiert wird.</target>
       </segment>
     </unit>
     <unit id="ci.mappings.col.grants">
@@ -19139,15 +18828,6 @@
       <segment>
         <source>More than <ph id="0" equiv="max" disp="GRADE_A_MAX_LOW"/> Low or Unknown</source>
         <target>Mehr als <ph id="0" equiv="max" disp="GRADE_A_MAX_LOW"/> Niedrig oder Unbekannt</target>
-      </segment>
-    </unit>
-    <unit id="setup.step.format">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:49,50</note>
-      </notes>
-      <segment>
-        <source>Package type</source>
-        <target>Pakettyp</target>
       </segment>
     </unit>
     <unit id="system.install.heading">
@@ -19278,15 +18958,6 @@
       <segment>
         <source>Abandoned</source>
         <target>Abgebrochen</target>
-      </segment>
-    </unit>
-    <unit id="guides.bastion.choose">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:113,114</note>
-      </notes>
-      <segment>
-        <source>Choose a repository to see the addresses and the snippets for the Bastion.</source>
-        <target>Wähle ein Repository, um die Adressen und die Snippets für die Bastion zu sehen.</target>
       </segment>
     </unit>
     <unit id="dashboard.state.unready">
@@ -19920,11 +19591,11 @@
     </unit>
     <unit id="setup.step.credentials">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:128,129</note>
+        <note category="location">src/app/features/setup/client-setup.html:113,114</note>
       </notes>
       <segment>
-        <source>Credentials</source>
-        <target>Zugangsdaten</target>
+        <source>Token in the snippets</source>
+        <target>Token in den Snippets</target>
       </segment>
     </unit>
     <unit id="profile.sessions.end-others-text">
@@ -20199,15 +19870,6 @@
       <segment>
         <source>Too many sign-ins are in progress. Try again in a moment.</source>
         <target>Es laufen zu viele Anmeldungen. Versuchen Sie es in einem Moment erneut.</target>
-      </segment>
-    </unit>
-    <unit id="repo.settings.guide-hint">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:320,321</note>
-      </notes>
-      <segment>
-        <source>How a client is set up for this repository.</source>
-        <target>Wie ein Client für dieses Repository eingerichtet wird.</target>
       </segment>
     </unit>
     <unit id="ci.editor.general">
@@ -20538,15 +20200,6 @@
       <segment>
         <source>a quota of the repository</source>
         <target>eine Quota des Repositorys</target>
-      </segment>
-    </unit>
-    <unit id="setup.cred.env-link">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:112,114</note>
-      </notes>
-      <segment>
-        <source>Create a token to put into the variable</source>
-        <target>Token für die Variable erstellen</target>
       </segment>
     </unit>
     <unit id="upstream.metadata-ttl">
@@ -21566,15 +21219,6 @@
         <target>Dateien hochladen</target>
       </segment>
     </unit>
-    <unit id="repo.guide.setup">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-guide.ts:30,31</note>
-      </notes>
-      <segment>
-        <source>Open the client setup</source>
-        <target>Client-Einrichtung öffnen</target>
-      </segment>
-    </unit>
     <unit id="policy.action.annotate">
       <notes>
         <note category="location">src/app/features/permissions/policy-model.ts:20</note>
@@ -22491,15 +22135,6 @@
         <target>Aktiviert (Deaktivieren widerruft die über diesen Aussteller ausgestellten Token)</target>
       </segment>
     </unit>
-    <unit id="setup.cred.create">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:142,143</note>
-      </notes>
-      <segment>
-        <source>Create a token for this setup</source>
-        <target>Token für diese Einrichtung erstellen</target>
-      </segment>
-    </unit>
     <unit id="auth-settings.recent">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:167,168</note>
@@ -22544,15 +22179,6 @@
       <segment>
         <source>Claims</source>
         <target>Claims</target>
-      </segment>
-    </unit>
-    <unit id="setup.token.once-text">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:174,175</note>
-      </notes>
-      <segment>
-        <source> It is written into the snippets below. Leaving this page discards it; you can create another. </source>
-        <target> Er steht in den Snippets weiter unten. Beim Verlassen dieser Seite wird er verworfen; Sie können einen neuen erstellen. </target>
       </segment>
     </unit>
     <unit id="tasks.col.name">
@@ -22956,11 +22582,11 @@
     </unit>
     <unit id="setup.cred.env-hint">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:135,136</note>
+        <note category="location">src/app/features/setup/client-setup.html:119,121</note>
       </notes>
       <segment>
-        <source> The snippets read the token from the variable QUADER_TOKEN. No secret appears on this page. </source>
-        <target> Die Snippets lesen den Token aus der Variable QUADER_TOKEN. Auf dieser Seite erscheint kein Geheimnis. </target>
+        <source>No secret appears on this page or in the files you save.</source>
+        <target>Kein Geheimnis erscheint auf dieser Seite oder in den Dateien, die Sie speichern.</target>
       </segment>
     </unit>
     <unit id="group-create.name">
@@ -23097,15 +22723,6 @@
       <segment>
         <source>CI token exchange refused</source>
         <target>CI-Token-Austausch abgelehnt</target>
-      </segment>
-    </unit>
-    <unit id="pkg.list.setup">
-      <notes>
-        <note category="location">src/app/features/packages/package-list.html:2,5</note>
-      </notes>
-      <segment>
-        <source>Set up a client</source>
-        <target>Client einrichten</target>
       </segment>
     </unit>
     <unit id="problem.unavailable">
@@ -23554,12 +23171,11 @@
     </unit>
     <unit id="guides.loading">
       <notes>
-        <note category="location">src/app/features/guides/guide-page.html:115,116</note>
-        <note category="location">src/app/features/guides/guide-page.html:153,155</note>
+        <note category="location">src/app/features/guides/guides-home.ts:25,26</note>
       </notes>
       <segment>
-        <source>Loading the guide.</source>
-        <target>Die Anleitung wird geladen.</target>
+        <source>Loading.</source>
+        <target>Wird geladen.</target>
       </segment>
     </unit>
     <unit id="project.save-changes">
@@ -25520,15 +25136,6 @@
         <target>Neue Zuordnung</target>
       </segment>
     </unit>
-    <unit id="guides.step.repository">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:40,41</note>
-      </notes>
-      <segment>
-        <source>Repository</source>
-        <target>Repository</target>
-      </segment>
-    </unit>
     <unit id="deb.keys.heading">
       <notes>
         <note category="location">src/app/features/repositories/deb-signing-keys.ts:74,75</note>
@@ -25794,11 +25401,11 @@
     </unit>
     <unit id="setup.heading">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:79</note>
+        <note category="location">src/app/features/setup/client-setup.ts:81</note>
       </notes>
       <segment>
-        <source>Client setup</source>
-        <target>Client-Einrichtung</target>
+        <source>Set up client</source>
+        <target>Client einrichten</target>
       </segment>
     </unit>
     <unit id="deb.key.err.no-next">
@@ -26085,15 +25692,6 @@
         <target>+<ph id="0" equiv="count" disp="this.hidden()"/> weitere</target>
       </segment>
     </unit>
-    <unit id="guide.toc">
-      <notes>
-        <note category="location">src/app/features/guides/guide-view.ts:19,20</note>
-      </notes>
-      <segment>
-        <source>On this page</source>
-        <target>Auf dieser Seite</target>
-      </segment>
-    </unit>
     <unit id="switcher.none">
       <notes>
         <note category="location">src/app/features/projects/project-switcher.ts:75,77</note>
@@ -26164,15 +25762,6 @@
       <segment>
         <source>Last used</source>
         <target>Zuletzt benutzt</target>
-      </segment>
-    </unit>
-    <unit id="guides.step.target">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:60,61</note>
-      </notes>
-      <segment>
-        <source>Install from</source>
-        <target>Installieren von</target>
       </segment>
     </unit>
     <unit id="banner.maintenance-label">
@@ -26275,16 +25864,6 @@
       <segment>
         <source>Revoke all tokens?</source>
         <target>Alle Token widerrufen?</target>
-      </segment>
-    </unit>
-    <unit id="shell.menu.setup">
-      <notes>
-        <note category="location">src/app/app.html:91,92</note>
-        <note category="location">src/app/features/search/search-model.ts:98</note>
-      </notes>
-      <segment>
-        <source>Client setup</source>
-        <target>Client-Einrichtung</target>
       </segment>
     </unit>
     <unit id="ci.issuance.granted-scope">
@@ -26458,15 +26037,6 @@
       <segment>
         <source>Disabled</source>
         <target>Deaktiviert</target>
-      </segment>
-    </unit>
-    <unit id="setup.result">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:285</note>
-      </notes>
-      <segment>
-        <source>Snippets for</source>
-        <target>Snippets für</target>
       </segment>
     </unit>
     <unit id="group-create.created">
@@ -27299,10 +26869,10 @@
     </unit>
     <unit id="setup.token.create">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:191,192</note>
+        <note category="location">src/app/features/setup/client-setup.html:68,69</note>
       </notes>
       <segment>
-        <source> Create token </source>
+        <source> Create a token </source>
         <target> Token erstellen </target>
       </segment>
     </unit>
@@ -30131,15 +29701,6 @@
         <target>Token widerrufen</target>
       </segment>
     </unit>
-    <unit id="repo.guide.client">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-guide.ts:21,22</note>
-      </notes>
-      <segment>
-        <source>Client</source>
-        <target>Client</target>
-      </segment>
-    </unit>
     <unit id="mirror.turn-off.hint">
       <notes>
         <note category="location">src/app/features/repositories/mirror-settings.ts:166,169</note>
@@ -30702,15 +30263,6 @@
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ u.requests }}"/> requests, last used</source>
         <target><ph id="0" equiv="INTERPOLATION" disp="{{ u.requests }}"/> Anfragen, zuletzt genutzt</target>
-      </segment>
-    </unit>
-    <unit id="setup.description">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:80</note>
-      </notes>
-      <segment>
-        <source>The configuration and the commands that point your package manager at a repository; nothing changes on the server.</source>
-        <target>Die Konfiguration und die Befehle, die Ihren Paketmanager auf ein Repository ausrichten; auf dem Server ändert sich nichts.</target>
       </segment>
     </unit>
     <unit id="principal-roles.caption">
@@ -31872,16 +31424,6 @@
         <target>Tags</target>
       </segment>
     </unit>
-    <unit id="guides.target.bastion">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:69</note>
-        <note category="location">src/app/features/guides/guide-page.html:76</note>
-      </notes>
-      <segment>
-        <source>Bastion</source>
-        <target>Bastion</target>
-      </segment>
-    </unit>
     <unit id="pkg.readme.image-blocked">
       <notes>
         <note category="location">src/app/features/packages/package-readme.ts:68,70</note>
@@ -32177,11 +31719,12 @@
     </unit>
     <unit id="route.setup.title">
       <notes>
-        <note category="location">src/app/features/setup/setup.routes.ts:7</note>
+        <note category="location">src/app/features/guides/guides.routes.ts:26</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:69</note>
       </notes>
       <segment>
-        <source>Client setup</source>
-        <target>Client-Einrichtung</target>
+        <source>Set up client</source>
+        <target>Client einrichten</target>
       </segment>
     </unit>
     <unit id="ci.form.advanced">
@@ -33511,15 +33054,6 @@
         <target>Upstream-Adresse durch die Ausgangsregeln gesperrt</target>
       </segment>
     </unit>
-    <unit id="guides.result.class">
-      <notes>
-        <note category="location">src/app/features/guides/guide-page.html:142</note>
-      </notes>
-      <segment>
-        <source>Guide for a repository of the class</source>
-        <target>Anleitung für ein Repository der Klasse</target>
-      </segment>
-    </unit>
     <unit id="vuln.sources.help-unevaluable">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:216</note>
@@ -33962,6 +33496,285 @@
       <segment>
         <source>General</source>
         <target>Allgemein</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.description">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:28,32</note>
+      </notes>
+      <segment>
+        <source>Choose the repository your package manager uses. Set up client shows its configuration and its commands, with the explanation.</source>
+        <target>Wählen Sie das Repository, das Ihr Paketmanager verwendet. „Client einrichten“ zeigt seine Konfiguration und seine Befehle mit der Erklärung.</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.recommended">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:53,55</note>
+      </notes>
+      <segment>
+        <source>recommended</source>
+        <target>empfohlen</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.classes">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:65,66</note>
+      </notes>
+      <segment>
+        <source>Without a repository</source>
+        <target>Ohne Repository</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.classes-text">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:66,68</note>
+      </notes>
+      <segment>
+        <source>The guide of a kind of repository explains it before you choose one. Its addresses show where the project and the repository go.</source>
+        <target>Die Anleitung einer Art von Repository erklärt sie, bevor Sie eines wählen. Ihre Adressen zeigen, wo das Projekt und das Repository stehen.</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.unknown">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:76,80</note>
+      </notes>
+      <segment>
+        <source>This installation has no guide for this package type.</source>
+        <target>Diese Installation hat keine Anleitung für diesen Pakettyp.</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.heading">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:128</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="format" disp="name"/> repositories</source>
+        <target><ph id="0" equiv="format" disp="name"/>-Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.col.repository">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:146</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.col.class">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:147</note>
+      </notes>
+      <segment>
+        <source>Class</source>
+        <target>Klasse</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.col.description">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:148</note>
+      </notes>
+      <segment>
+        <source>Description</source>
+        <target>Beschreibung</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.col.action">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:149</note>
+      </notes>
+      <segment>
+        <source>Action</source>
+        <target>Aktion</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.empty">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:151</note>
+      </notes>
+      <segment>
+        <source>You can use no repository of this package type. The guides below explain each kind.</source>
+        <target>Sie können kein Repository dieses Pakettyps verwenden. Die Anleitungen unten erklären jede Art.</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.class.local">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:168</note>
+      </notes>
+      <segment>
+        <source>A local repository: what you publish to</source>
+        <target>Ein lokales Repository: wohin Sie veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.class.remote">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:170</note>
+      </notes>
+      <segment>
+        <source>A remote repository: a cache of another registry</source>
+        <target>Ein Remote-Repository: ein Cache einer anderen Registry</target>
+      </segment>
+    </unit>
+    <unit id="guides.format.class.virtual">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:172</note>
+      </notes>
+      <segment>
+        <source>A virtual repository: several repositories behind one address</source>
+        <target>Ein virtuelles Repository: mehrere Repositorys hinter einer Adresse</target>
+      </segment>
+    </unit>
+    <unit id="guide.copy-code">
+      <notes>
+        <note category="location">src/app/features/guides/guide-view.ts:76</note>
+      </notes>
+      <segment>
+        <source>Copy code</source>
+        <target>Code kopieren</target>
+      </segment>
+    </unit>
+    <unit id="guide.more">
+      <notes>
+        <note category="location">src/app/features/guides/guide-view.ts:77</note>
+      </notes>
+      <segment>
+        <source>More about this</source>
+        <target>Mehr dazu</target>
+      </segment>
+    </unit>
+    <unit id="guides.description">
+      <notes>
+        <note category="location">src/app/features/guides/guides-home.ts:20,22</note>
+      </notes>
+      <segment>
+        <source>How a package manager is set up for this installation, with the explanation. Choose the package type.</source>
+        <target>Wie ein Paketmanager für diese Installation eingerichtet wird, mit der Erklärung. Wählen Sie den Pakettyp.</target>
+      </segment>
+    </unit>
+    <unit id="guides.formats">
+      <notes>
+        <note category="location">src/app/features/guides/guides-home.ts:46</note>
+      </notes>
+      <segment>
+        <source>Package types</source>
+        <target>Pakettypen</target>
+      </segment>
+    </unit>
+    <unit id="setup.unknown-guide">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:3,4</note>
+      </notes>
+      <segment>
+        <source>This installation has no guide for this package type and kind of repository.</source>
+        <target>Diese Installation hat keine Anleitung für diesen Pakettyp und diese Art von Repository.</target>
+      </segment>
+    </unit>
+    <unit id="setup.unknown-guide.link">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:4,6</note>
+      </notes>
+      <segment>
+        <source>Choose a package type</source>
+        <target>Pakettyp wählen</target>
+      </segment>
+    </unit>
+    <unit id="setup.disabled">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:33,37</note>
+      </notes>
+      <segment>
+        <source>This repository is disabled: it refuses every client until it is enabled again.</source>
+        <target>Dieses Repository ist deaktiviert: Es weist jeden Client ab, bis es wieder aktiviert wird.</target>
+      </segment>
+    </unit>
+    <unit id="setup.client">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:40,41</note>
+      </notes>
+      <segment>
+        <source>Client</source>
+        <target>Client</target>
+      </segment>
+    </unit>
+    <unit id="setup.cred.line-class">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:56,57</note>
+      </notes>
+      <segment>
+        <source>The snippets read your token from the variable QUADER_TOKEN.</source>
+        <target>Die Snippets lesen Ihren Token aus der Variable QUADER_TOKEN.</target>
+      </segment>
+    </unit>
+    <unit id="setup.class.placeholders">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:57,59</note>
+      </notes>
+      <segment>
+        <source>The addresses show &lt;project&gt; and &lt;repository&gt; where the project and the key of your repository go.</source>
+        <target>Die Adressen zeigen &lt;project&gt; und &lt;repository&gt;, wo das Projekt und der Schlüssel Ihres Repositorys stehen.</target>
+      </segment>
+    </unit>
+    <unit id="setup.token.with-publish">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:73,75</note>
+      </notes>
+      <segment>
+        <source>It may also publish</source>
+        <target>Er darf auch veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="setup.token.scope-publish">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:87,88</note>
+      </notes>
+      <segment>
+        <source>It may read this repository and publish to <ph id="0" equiv="INTERPOLATION" disp="{{ publishTarget() }}"/>.</source>
+        <target>Er darf dieses Repository lesen und in <ph id="0" equiv="INTERPOLATION" disp="{{ publishTarget() }}"/> veröffentlichen.</target>
+      </segment>
+    </unit>
+    <unit id="setup.token.scope-read">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:89,92</note>
+      </notes>
+      <segment>
+        <source>It may read this repository.</source>
+        <target>Er darf dieses Repository lesen.</target>
+      </segment>
+    </unit>
+    <unit id="setup.token.read-text">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:97,99</note>
+      </notes>
+      <segment>
+        <source> To put it into the variable, run this in bash or zsh, paste the token and press Enter. The shell keeps it out of its history. In a CI job, store it as a masked variable named QUADER_TOKEN instead. </source>
+        <target> Um ihn in die Variable zu legen, führen Sie dies in bash oder zsh aus, fügen den Token ein und drücken die Eingabetaste. Die Shell nimmt ihn nicht in ihren Verlauf auf. In einem CI-Job speichern Sie ihn stattdessen als maskierte Variable namens QUADER_TOKEN. </target>
+      </segment>
+    </unit>
+    <unit id="setup.loading">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:267,270</note>
+      </notes>
+      <segment>
+        <source>Loading.</source>
+        <target>Wird geladen.</target>
+      </segment>
+    </unit>
+    <unit id="setup.bastion.no-guide">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.html:272,274</note>
+      </notes>
+      <segment>
+        <source>The explanation describes this installation. Choose This installation under More options to read it.</source>
+        <target>Die Erklärung beschreibt diese Installation. Wählen Sie unter „Weitere Optionen“ „Diese Installation“, um sie zu lesen.</target>
+      </segment>
+    </unit>
+    <unit id="setup.copy-command">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.ts:86</note>
+      </notes>
+      <segment>
+        <source>Copy command</source>
+        <target>Befehl kopieren</target>
       </segment>
     </unit>
   </file>

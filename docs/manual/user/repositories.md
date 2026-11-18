@@ -89,7 +89,7 @@ Permissions can be narrower than a whole repository: a permission may cover only
 
 Open a project and you land on its **Repositories**. Select a repository to see what it holds, on the level you think in: images and tags, packages and versions, or files. You get there from the project's **Repositories**, from **Admin area › Repositories** (every project, each row naming its project), and with **Find a repository** in the top bar: Enter opens **Search results**, a page of the main area that lists the matching repositories of every project you may read.
 
-The page is titled with the repository's key and says what the repository is. Under the title is its **Client address**, the address your package manager needs, with **Copy client address**, and beside it **Set up client**, which opens the client setup for this repository, with its format and the repository already chosen: you pick your client and how to handle the token. A disabled repository has no **Set up client**, because clients cannot use it. At the top right:
+The page is titled with the repository's key and says what the repository is. Under the title is its **Client address**, the address your package manager needs, with **Copy client address**, and beside it **Set up client**, which opens the page of this repository that shows how to configure your client, with the commands and their explanation; you only pick your client where its package type has several. A disabled repository has no **Set up client**, because clients cannot use it. [Connecting a package client](client-setup.md) describes the page. At the top right:
 
 - **Settings** opens the repository's settings, if you may read them.
 - **More actions** holds **Files**, the raw files of a repository of a package format ([Browsing and transferring files](files.md)), and **Vulnerabilities**.
@@ -115,19 +115,12 @@ Debian packages are not scanned for vulnerabilities yet; the page says so and sh
 
 ## Repository settings
 
-**Settings** on the content page opens the settings of the repository at `…/settings`. Editing it needs a further permission and is described in [Managing repositories](../admin/repositories.md). If you may use the repository but not read its configuration, the page says **You may use this repository but not read or change its configuration.** and shows the facts and the **How to use** guide instead of the form.
+**Settings** on the content page opens the settings of the repository at `…/settings`. Editing it needs a further permission and is described in [Managing repositories](../admin/repositories.md). If you may use the repository but not read its configuration, the page says **You may use this repository but not read or change its configuration.** and shows the facts instead of the form.
 
-The settings page is one column: the key and the description at the top, then **Visibility** and, for a remote or virtual repository, its **Upstream** or **Members**, all open; below them closed sections such as **Access details**, the format's settings (for example **npm settings**), **How to use**, **Details** and **API**.
+The settings page is one column: the key and the description at the top, then **Visibility** and, for a remote or virtual repository, its **Upstream** or **Members**, all open; below them closed sections such as **Access details**, the format's settings (for example **npm settings**), **Details** and **API**. How a client is configured is not a setting: it is **Set up client** at the top of the repository's page.
 
-## The How to use guide
+## Set up client and the guides
 
-**How to use** is a guide written for the repository you are looking at: it uses this installation's addresses and the repository's key, and it describes what the repository's class allows. It is a tab on the settings page and a section on the consumer view.
+**Set up client** at the top of a repository's page opens the configuration of your client for this repository, with this installation's addresses, and below it the guide that explains what the repository's class allows, how the client signs in, installs and publishes, and what its errors mean. A guide never contains a token: snippets read it from an environment variable such as `QUADER_TOKEN`, and the page for an anonymous reader uses no credential at all.
 
-1. Under **Client**, choose your package manager or curl. The guide changes to that client.
-2. Read the sections in order, or jump to one from **On this page**.
-3. Copy a snippet with **Copy snippet**. A snippet meant for a file names it, for example **File**: `.npmrc`.
-4. **Open the client setup** prepares the client setup page for the same repository and client, where you can create a token and copy ready-made configuration. **Open in the guides** opens the same guide in the **Guides** area.
-
-The sections cover what the repository is, pointing the client at it, signing the client in, installing, publishing and maintaining (where the class allows writes), and troubleshooting; the npm guide adds security audits and lockfiles. A guide never contains a token: snippets read it from an environment variable such as `QUADER_TOKEN`, and the guide for an anonymous reader uses no credential at all.
-
-**Guides** in the start side bar and in the user menu holds the same guides without opening a repository first: choose a **Package type**, a **Client**, and either a **Repository** or **None in particular: the guide of a repository class** together with a **Repository class**. To configure a client step by step, see [Connecting a package client](client-setup.md).
+**Guides** in the start side bar and in the user menu shows the package types as tiles; a tile lists the repositories of that type you may use, each with **Set up client**, and the guide of each kind of repository for when you have none yet. See [Connecting a package client](client-setup.md).

@@ -53,7 +53,7 @@ const RECENT_SHOWN = 5;
               @if (r.addresses[0]; as a) {
                 <quader-address-field [value]="a" [label]="addressLabel(r.key)" [copyLabel]="copyLabel(r.key)" />
               }
-              <a class="btn btn-default" routerLink="/setup" [queryParams]="{ repository: refOf(r) }" i18n="@@repo.content.tab.setup"
+              <a class="btn btn-default" [routerLink]="['/projects', r.project, 'repositories', r.key, 'setup']" i18n="@@repo.content.tab.setup"
                 >Set up client</a
               >
             </li>

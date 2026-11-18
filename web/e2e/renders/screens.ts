@@ -184,6 +184,45 @@ async function* sortByDetection(page: Page): AsyncGenerator<string> {
   yield 'sorted';
 }
 
+/**
+ * Set up client (R-UI-120, R-UI-125): the page as it opens, then with every folded section of the explanation opened, which is
+ * where long prose and its code blocks are judged.
+ */
+async function* explained(page: Page): AsyncGenerator<string> {
+  yield '';
+  if (await openExplanation(page)) yield 'explained';
+}
+
+/** Opens every folded section of the explanation; false where there is none. */
+async function openExplanation(page: Page): Promise<boolean> {
+  const selector = 'main quader-guide-view quader-disclosure button[aria-expanded="false"]';
+  if ((await page.locator(selector).count()) === 0) return false;
+  // One click each, in the page: a click by position could hit a heading that the previous section's opening moved.
+  await page.$$eval(selector, (buttons) => buttons.forEach((b) => (b as HTMLButtonElement).click()));
+  await expect(page.locator(selector)).toHaveCount(0);
+  return true;
+}
+
+/**
+ * Set up client of the npm virtual repository: as it opens; with another client chosen in the one control (Q-UI-482); with More
+ * options open and a token to be written into the snippets (R-UI-122); with the explanation opened. No token is created: the render
+ * database is shared.
+ */
+async function* setupWalk(page: Page): AsyncGenerator<string> {
+  yield '';
+  const select = page.locator('main select#setup-client');
+  if ((await select.count()) === 0) return;
+  await select.selectOption('yarn');
+  await expect(page).toHaveURL(/client=yarn/);
+  await expect(page.locator('main quader-setup-snippet pre').first()).toContainText('npmRegistryServer');
+  yield 'yarn';
+  await page.locator('main quader-disclosure.more-options').getByRole('button', { name: 'More options' }).click();
+  await page.locator('main input[name="credentials"][value="paste"]').check();
+  await expect(page.locator('main #setup-token')).toBeVisible();
+  yield 'more';
+  if (await openExplanation(page)) yield 'explained';
+}
+
 /** The suggestions' answer of a 429 and its seconds: the notice of R-UI-097 is a state of the field. */
 const tooMany = [
   { match: /^GET \/api\/v1\/search\/suggestions\?\S* answered 429$/, why: 'the 429 notice is rendered on purpose' },
@@ -563,6 +602,8 @@ const upstreams: Screen[] = [
 ];
 
 const all: readonly Kind[] = ['plain', 'power', 'admin'];
+/** A signed-out visitor's page asks who is signed in and is told nobody. */
+const noSession = [{ match: /^GET \/api\/v1\/auth\/whoami answered 401$/, why: 'an anonymous visitor has no session' }];
 const owners: readonly Kind[] = ['power', 'admin'];
 const admins: readonly Kind[] = ['admin'];
 const P = `/ui/projects/${mainProject}`;
@@ -644,13 +685,27 @@ export const screens: readonly Screen[] = [
   // A filter is a chip beside Filters; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
   { id: 'vulnerabilities-filtered', path: `${P}/vulnerabilities?severity=high`, kinds: admins, walk: sortByDetection },
   { id: 'members', path: `${P}/members`, kinds: all },
-  { id: 'setup', path: '/ui/setup', kinds: all },
-  { id: 'setup-repository', path: `/ui/setup?repository=${mainProject}/npm`, kinds: all },
+  // Set up client of a repository (R-UI-120): every format and class of the seed, the long keys, and a public repository signed out.
+  { id: 'setup-npm-local', path: `${P}/repositories/npm-internal/setup`, kinds: all },
+  { id: 'setup-npm-remote', path: `${P}/repositories/npmjs/setup`, kinds: all },
+  { id: 'setup-npm-virtual', path: `${P}/repositories/npm/setup`, kinds: all, walk: setupWalk },
+  { id: 'setup-long-key', path: `${P}/repositories/${longNpmKey}/setup`, kinds: all },
+  { id: 'setup-generic', path: `${P}/repositories/assets/setup`, kinds: all },
+  { id: 'setup-oci-local', path: `${P}/repositories/images/setup`, kinds: all },
+  { id: 'setup-oci-remote', path: `${O}/repositories/docker-hub-remote/setup`, kinds: all },
+  { id: 'setup-nuget', path: `${O}/repositories/nuget/setup`, kinds: all },
+  { id: 'setup-deb', path: `${O}/repositories/${longDebKey}/setup`, kinds: all, walk: explained },
+  { id: 'setup-ansible-local', path: `${O}/repositories/collections/setup`, kinds: ['anonymous', ...all], expected: noSession },
+  { id: 'setup-ansible-remote', path: `${O}/repositories/galaxy/setup`, kinds: all },
+  { id: 'setup-ansible-virtual', path: `${O}/repositories/ansible/setup`, kinds: all },
   // The top bar's search ends on a page of the main area, never in the admin area (Q-UI-390); the field shows the text.
   { id: 'search', path: '/ui/search?q=npm', kinds: all },
   { id: 'search-none', path: '/ui/search?q=no-such-repository', kinds: ['admin'] },
-  { id: 'guides', path: '/ui/guides', kinds: all },
-  { id: 'guides-repository', path: `/ui/guides?repository=${mainProject}/npm`, kinds: all },
+  // Guides (R-UI-124): the formats as tiles, the repositories of a format, the guide of a class without a repository.
+  { id: 'guides', path: '/ui/guides', kinds: ['anonymous', ...all], expected: noSession },
+  { id: 'guides-format', path: '/ui/guides/npm', kinds: all },
+  { id: 'guides-format-anonymous', path: '/ui/guides/ansible', kinds: ['anonymous'], expected: noSession },
+  { id: 'guides-class', path: '/ui/guides/npm/local', kinds: ['plain', 'power'], walk: explained },
   { id: 'help', path: '/ui/help', kinds: all },
   { id: 'help-user-page', path: '/ui/help/user/getting-started', kinds: all },
   { id: 'profile', path: '/ui/profile', kinds: all },

@@ -90,6 +90,12 @@ export const PROJECT_REPOSITORIES_ROUTES: Routes = [
         loadComponent: loadContent,
       },
       {
+        // Set up client (R-UI-120): the snippets and the guide of this repository; the client is a query parameter.
+        path: 'setup',
+        title: $localize`:@@route.setup.title:Set up client`,
+        loadComponent: () => import('../setup/client-setup').then((m) => m.ClientSetupPage),
+      },
+      {
         path: 'settings',
         title: $localize`:@@route.repositories.settings.title:Settings`,
         loadComponent: () => import('./repository-detail').then((m) => m.RepositoryDetail),

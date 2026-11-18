@@ -77,7 +77,7 @@ From left to right:
 | **Admin** | Opens the admin area. Shown only if you hold an administrative permission |
 | **Documentation** | Opens this manual. On a screen that has a matching manual page, it opens that page |
 | **Theme** | **Follow the system**, **Light** or **Dark** |
-| User menu | Your avatar in a circle: the picture you uploaded, or a robot that Quader generates for you alone. Its menu shows your name and holds **Profile and tokens**, **Client setup**, **Guides**, **Language** and **Sign out** |
+| User menu | Your avatar in a circle: the picture you uploaded, or a robot that Quader generates for you alone. Its menu shows your name and holds **Profile and tokens**, **Guides**, **Language** and **Sign out** |
 
 ### The side bar
 

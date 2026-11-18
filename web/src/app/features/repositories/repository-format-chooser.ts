@@ -1,8 +1,8 @@
 import { Component, computed, inject, input, resource, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormatDescriptor, RepositoriesApi } from '../../api/repositories-api';
 import { ErrorNotice } from '../../shared/error-notice';
-import { FormatIconView } from '../../shared/format-icon';
+import { FormatTiles } from '../../shared/ui/format-tiles';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { PageHeader } from '../../shared/ui/page-header';
 
@@ -14,13 +14,13 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
 
 /**
  * The first page of a new repository (R-UI-080, Q-UI-340): the installed formats of `GET /api/v1/formats` as tiles under a search
- * field, each tile a link to the form of its format (`new/{format}`), as the reference's New project is a page of tiles. Enter in
+ * field (the shared tiles of R-UI-127), each tile a link to the form of its format (`new/{format}`). Enter in
  * the search field opens the one format that is left. The admin area passes its `project` query parameter on. The creation form
  * shows this page in its place for a format the installation does not have (`unknownFormat`).
  */
 @Component({
   selector: 'quader-repository-format-chooser',
-  imports: [RouterLink, ErrorNotice, FormatIconView, PageHeader],
+  imports: [ErrorNotice, FormatTiles, PageHeader],
   template: `
     <quader-page-header
       i18n-heading="@@repo.new.heading"
@@ -62,16 +62,7 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
           <ng-container i18n="@@repo.new.count">{{ shown().length }} of {{ all().length }} formats</ng-container>
         }
       </p>
-      <ul class="tiles" i18n-aria-label="@@repo.new.formats" aria-label="Package formats">
-        @for (f of shown(); track f.name) {
-          <li>
-            <a class="tile" [routerLink]="linkOf(f)" [queryParams]="query$()">
-              <quader-format-icon class="tile-icon" [format]="f.name" />
-              <span class="tile-name" translate="no">{{ f.displayName ?? f.name }}</span>
-            </a>
-          </li>
-        }
-      </ul>
+      <quader-format-tiles [formats]="shown()" [linkOf]="linkFn" [queryParams]="query$()" [label]="tilesLabel" />
     }
   `,
   styles: `
@@ -80,44 +71,6 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
       flex-direction: column;
       gap: var(--quader-space-1);
       margin-block-end: var(--quader-space-1);
-    }
-    .tiles {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-      gap: var(--quader-space-3);
-      max-inline-size: 56rem;
-      margin: var(--quader-space-3) 0 0;
-      padding: 0;
-      list-style: none;
-    }
-    .tile {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--quader-space-2);
-      block-size: 100%;
-      box-sizing: border-box;
-      padding: var(--quader-space-4) var(--quader-space-2);
-      border: 1px solid var(--quader-border-strong);
-      border-radius: var(--quader-radius-l);
-      background: var(--quader-surface-raised);
-      color: var(--quader-on-surface);
-      text-align: center;
-      text-decoration: none;
-    }
-    .tile:hover {
-      background: var(--quader-row-hover);
-    }
-    .tile:focus-visible {
-      outline: var(--quader-focus-ring);
-      outline-offset: 2px;
-    }
-    .tile-icon {
-      font-size: 2rem;
-    }
-    .tile-name {
-      font-weight: 600;
-      overflow-wrap: anywhere;
     }
   `,
 })
@@ -142,7 +95,7 @@ export class RepositoryFormatChooser {
     return e ? asApiError(e) : null;
   });
   /** The admin area keeps its project choice from the list to the form; inside a project the path names it. */
-  protected readonly query$ = computed(() => {
+  protected readonly query$ = computed((): Record<string, string> => {
     const project = this.project();
     return project && this.chooserPath().startsWith('/admin/') ? { project } : {};
   });
@@ -158,6 +111,8 @@ export class RepositoryFormatChooser {
   protected linkOf(f: FormatDescriptor): string {
     return `${this.chooserPath()}/${f.name}`;
   }
+  protected readonly linkFn = (f: FormatDescriptor): string => this.linkOf(f);
+  protected readonly tilesLabel = $localize`:@@repo.new.formats:Package formats`;
 
   /** Enter in the search field opens the one format that is left. */
   protected openOnlyMatch(event: Event): void {

@@ -2135,8 +2135,8 @@ after `packageSources`.)
 
 Acceptance criteria:
 
-- NuGet passes kit check 8 with its guide, and the How to use tab of `nuget-all` shows the configure snippet of the
-  setup page for each client.
+- NuGet passes kit check 8 with its guide, and the page Set up client of `nuget-all` shows the configure snippet of each
+  client above the guide (R-UI-120).
 - Each snippet of the UI, with placeholders filled, runs unmodified in the acceptance suite.
 - The `nuget.config` above, with `QUADER_TOKEN` set, restores a project on Linux (dotnet 10 SDK)
   and on Windows (nuget.exe and dotnet).

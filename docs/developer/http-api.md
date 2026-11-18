@@ -162,22 +162,22 @@ decides in the handler; the client setup declares `{action: read, repository: pa
 
 ## The guides of the formats (R-API-053)
 
-The document's block `M2 guides` holds the two operations and the schemas `Guide` and `GuideSection`, and `FormatClient` sits next to `FormatDescriptor`.
-Decisions Q-API-175 to Q-API-179. [guide_api.go](../../internal/api/v1/guide_api.go) implements both on `Options.Packages`:
+The document's block `M2 guides` holds the two operations and the schemas `Guide` (with its `snippets`, R-API-070) and `GuideSection`, and `FormatClient`
+sits next to `FormatDescriptor`. Decisions Q-API-175 to Q-API-179 and Q-API-310. [guide_api.go](../../internal/api/v1/guide_api.go) implements both on `Options.Packages`:
 
 | Step | Repository guide | Format guide |
 |---|---|---|
 | Services | `packageServices()` and `PackageServices.Guides`, else 503 | `PackageServices.Guides`, else 503; the anonymous gate first |
 | Format and client | `guideFormat` and `guideClient`: the repository's format must have a guide and the client must be one of its clients, else `400` | an unknown format is `404`; then as the repository guide, and the class must be one of the format's, else `400` |
 | Addresses | `setupAddress` (shared with the client setup): the endpoint's configured base URL plus the protocol path with the key, else `503` | the same with `formats.GuideRepositoryPlaceholder` for the key |
-| Caller | `requestHolder`, `publishTarget` (the target only with `deploy`), `ReadableAnonymously` for `RequiresAuth` | `SubjectFrom(ctx)`: anonymous or not, its endpoint |
-| Rendering | `renderGuide`: credentials `env`, or `none` for an anonymous caller; the setup snippets of the client through `renderSnippets`; each applicable section in topic order through `formats.ExecuteGuide`, `applyCredentials`, the renderer; a section that says nothing is dropped; every text and snippet is checked for the shape of a token | the same |
+| Caller | `requestHolder`, `publishTarget` (the target and the publish snippets only with `deploy`), `ReadableAnonymously` for `RequiresAuth` | `SubjectFrom(ctx)`: anonymous or not, its endpoint; the publish snippets for a signed-in caller of a class other than remote |
+| Rendering | `renderGuide`: credentials `env`, or `none` for an anonymous caller; the setup snippets of the client through `renderSnippets` into `snippets`; each applicable section in topic order through `formats.ExecuteGuide`, `applyCredentials`, the renderer; a section that says nothing is dropped, and `keepsSection` drops `publish` and `maintain` for a reader who may not publish to the repository; every text and snippet is checked for the shape of a token | the same, without `keepsSection` |
 
 `exposureRules` reads the endpoint the request arrived on (`httpserver.EndpointFrom`, its exposure mode), so the `endpoint` section appears only on an
 endpoint with rules. The guide renderer is a second `readme.Renderer` with a fixed 256 KiB source bound and no image origins
 ([wire_packages.go](../../internal/app/wire_packages.go), Q-API-178): a guide is the format's own text, which `ui.readme.max_source_bytes` must not cut.
 
-Tests: [guide_api_test.go](../../internal/api/v1/guide_api_test.go) (`TestR_API_053_*`: the snippets equal the client setup's for every client, the
+Tests: [guide_api_test.go](../../internal/api/v1/guide_api_test.go) (`TestR_API_053_*`: the snippets equal the client setup's for every client; `TestR_API_070_*`: no publishing for a reader who may not publish, the publish snippets of a class guide; the
 order of the sections per class, the target only with `deploy`, an anonymous caller, the guide of a format and its refusals, `503` without a base URL,
 no token shape, the endpoint section, the clients of the catalog, a format without clients; `TestR_GENERIC_016_*` for generic and curl) and [guide_test.go](../../test/integration/packages/guide_test.go) against the stack
 (the same through the real chain and the endpoint `partners` with exposure rules).

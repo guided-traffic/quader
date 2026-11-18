@@ -1,366 +1,276 @@
-<quader-page-header [heading]="heading" [description]="description">
-  <a
-    actions
-    class="btn btn-default"
-    routerLink="/guides"
-    [queryParams]="{ format: activeFormat(), client: activeClient(), repository: activeRepository(), bastion: activeBastion() }"
-    i18n="@@setup.guide"
-    >Read the guide</a
-  >
-</quader-page-header>
-
-@if (loadFailure(); as f) {
-  <quader-error-notice [error]="f" (retry)="answer.reload()" />
-}
-
-<!-- The choice of the client, numbered among the steps of a full setup and alone in a setup for one repository. -->
-<ng-template #clientChoice let-no>
-  <fieldset>
-    <legend>
-      @if (no) {
-        <span class="step-no">{{ no }}</span>&ngsp;
+@if (unknownGuide()) {
+  <quader-page-header [heading]="heading" />
+  <p i18n="@@setup.unknown-guide">This installation has no guide for this package type and kind of repository.</p>
+  <p><a routerLink="/guides" i18n="@@setup.unknown-guide.link">Choose a package type</a></p>
+} @else {
+  <quader-page-header [heading]="heading" [addresses]="addresses()">
+    <!-- The context of the page (R-UI-120): what it was opened from, never asked again. -->
+    <div meta class="context dot-separated">
+      @if (ref(); as r) {
+        <span class="repo" translate="no">
+          @if (visibility(); as level) {
+            <quader-visibility-icon [level]="level" />
+          }
+          <a [routerLink]="repositoryLink()">{{ r }}</a>
+        </span>
       }
-      <span i18n="@@setup.step.client">Client</span>
-    </legend>
-    <div class="choices">
-      @for (c of clients(); track c.id) {
-        <label class="choice">
-          <input type="radio" name="client" [value]="c.id" [checked]="c.id === activeClient()" (change)="pick({ client: c.id })" />
-          <span translate="no">{{ c.label }}</span>
-        </label>
+      @if (descriptor(); as d) {
+        <span translate="no"><quader-format-icon [format]="d.name" />&ngsp;{{ d.displayName ?? d.name }}</span>
+      }
+      @if (activeClass()) {
+        <span>{{ classText() }}</span>
       }
     </div>
-  </fieldset>
-</ng-template>
+  </quader-page-header>
 
-@if (focused()) {
-  <!-- Opened for one repository (Q-UI-316): its format and the repository are chosen; Change shows the choices. -->
-  <p class="chosen">
-    <ng-container i18n="@@setup.chosen">For the repository</ng-container>&ngsp;<strong translate="no">{{ activeRepository() }}</strong>
-    <button type="button" class="btn btn-tertiary" (click)="unfix()" i18n="@@setup.change">Change</button>
-  </p>
-  <div class="steps single">
-    <ng-container *ngTemplateOutlet="clientChoice; context: { $implicit: null }" />
-  </div>
-} @else {
-  <ol class="steps">
-    <li>
-      <fieldset>
-        <legend><span class="step-no">1</span> <span i18n="@@setup.step.format">Package type</span></legend>
-        @if (formatOptions().length === 0 && formats.hasValue()) {
-          <p class="empty" i18n="@@setup.no-formats">No package type with setup instructions is available yet.</p>
+  @if (loadFailure(); as f) {
+    <quader-error-notice [error]="f" (retry)="setupAnswer.reload(); guideAnswer.reload()" />
+  }
+
+  @if (disabled()) {
+    <p class="banner-warning" role="note">
+      <span class="material-icons inline warn" aria-hidden="true">block</span>
+      <span i18n="@@setup.disabled">This repository is disabled: it refuses every client until it is enabled again.</span>
+    </p>
+  }
+
+  <!-- The client is one control, shown only where the format has more than one (Q-UI-482). -->
+  @if (clients().length > 1) {
+    <p class="client-row">
+      <label class="field-label" for="setup-client" i18n="@@setup.client">Client</label>
+      <select id="setup-client" class="select-input" [value]="activeClient()" (change)="pickClient($any($event.target).value)">
+        @for (c of clients(); track c.id) {
+          <option [value]="c.id" [selected]="c.id === activeClient()" translate="no">{{ c.displayName }}</option>
         }
-        <div class="choices">
-          @for (f of formatOptions(); track f.name) {
-            <label class="choice">
-              <input type="radio" name="format" [value]="f.name" [checked]="f.name === activeFormat()" (change)="pickFormat(f.name)" />
-              <span translate="no">{{ f.displayName }}</span>
-            </label>
-          }
+      </select>
+    </p>
+  }
+
+  <!-- The credential in one line, and a token created in place, without leaving the page (R-UI-122). -->
+  @if (anonymous()) {
+    <p class="credential-line" i18n="@@setup.anonymous">
+      You are not signed in. This repository can be read without signing in, so the snippets hold no credentials.
+    </p>
+  } @else if (!ref()) {
+    <p class="credential-line">
+      <span i18n="@@setup.cred.line-class">The snippets read your token from the variable QUADER_TOKEN.</span>&ngsp;
+      <span i18n="@@setup.class.placeholders">The addresses show &lt;project&gt; and &lt;repository&gt; where the project and the key of your repository go.</span>
+    </p>
+  } @else if (mode() === 'paste') {
+    <p class="credential-line" i18n="@@setup.cred.line-paste">The snippets hold the token you paste under More options.</p>
+  } @else {
+    <div class="credential-line">
+      <p>
+        <span i18n="@@setup.cred.line-env">The snippets read your token from the variable QUADER_TOKEN.</span>
+        @if (!createdToken()) {
+          <span class="create-row">
+            <button class="btn btn-default" type="button" [disabled]="creating() || !setup()" (click)="createToken()" i18n="@@setup.token.create">
+              Create a token
+            </button>
+            @if (publishTarget()) {
+              <label class="check-row">
+                <input type="checkbox" [checked]="withPublish()" (change)="withPublish.set($any($event.target).checked)" />
+                <span i18n="@@setup.token.with-publish">It may also publish</span>
+              </label>
+            }
+          </span>
+        }
+      </p>
+      @if (createFailure(); as f) {
+        <quader-error-notice [error]="f" />
+      }
+      @if (createdToken(); as value) {
+        <div class="once" role="status">
+          <p>
+            <strong i18n="@@setup.token.once">This token is shown once.</strong>&ngsp;
+            @if (publishTarget() && withPublish()) {
+              <span i18n="@@setup.token.scope-publish">It may read this repository and publish to {{ publishTarget() }}.</span>
+            } @else {
+              <span i18n="@@setup.token.scope-read">It may read this repository.</span>
+            }
+          </p>
+          <p class="token-line">
+            <code translate="no" class="token-value">{{ value }}</code>
+            <quader-copy-button [value]="value" [label]="copyTokenLabel" />
+          </p>
+          <p i18n="@@setup.token.read-text">
+            To put it into the variable, run this in bash or zsh, paste the token and press Enter. The shell keeps it out of its
+            history. In a CI job, store it as a masked variable named QUADER_TOKEN instead.
+          </p>
+          <p class="token-line">
+            <code translate="no">{{ readCommand }}</code>
+            <quader-copy-button [value]="readCommand" [label]="copyCommandLabel" />
+          </p>
         </div>
-      </fieldset>
-    </li>
-    <li>
-      <ng-container *ngTemplateOutlet="clientChoice; context: { $implicit: 2 }" />
-    </li>
-    <li>
-      <fieldset>
-        <legend><span class="step-no">3</span> <span i18n="@@setup.step.repository">Repository</span></legend>
-        @if (repositoryOptions().length === 0 && allRepositories.hasValue()) {
-          <p class="empty" i18n="@@setup.no-repositories">You can read no repository of this package type.</p>
-        }
-        <div class="choices vertical">
-          @for (r of repositoryOptions(); track refOf(r)) {
+      }
+    </div>
+  }
+
+  @if (offerMore()) {
+    <quader-disclosure class="more-options" [heading]="moreHeading" [hint]="moreHint()" [(expanded)]="moreOpen">
+      @if (!anonymous()) {
+        <fieldset>
+          <legend i18n="@@setup.step.credentials">Token in the snippets</legend>
+          <div class="choices vertical">
             <label class="choice">
-              <input
-                type="radio"
-                name="repository"
-                [value]="refOf(r)"
-                [checked]="refOf(r) === activeRepository()"
-                (change)="pick({ repository: refOf(r) })"
-              />
+              <input type="radio" name="credentials" value="env" [checked]="mode() === 'env'" (change)="mode.set('env')" />
               <span class="choice-text">
-                <span translate="no"><quader-visibility-icon [level]="r.visibility.artifacts" /><strong>{{ refOf(r) }}</strong></span>
-                <span class="secondary">
-                  {{ labelOfClass(r.class) }}
-                  @if (r.class === 'virtual') {
-                    <span class="badge" i18n="@@setup.recommended">recommended</span>
-                  }
-                  – {{ publishHint(r) }}
+                <span i18n="@@setup.cred.env">Read it from the variable QUADER_TOKEN</span>
+                <span class="secondary" i18n="@@setup.cred.env-hint">No secret appears on this page or in the files you save.</span>
+              </span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="credentials" value="paste" [checked]="mode() === 'paste'" (change)="mode.set('paste')" />
+              <span class="choice-text">
+                <span i18n="@@setup.cred.paste">Write a token into the snippets</span>
+                <span class="secondary" i18n="@@setup.cred.paste-hint">
+                  For a file outside version control. The token stays in this browser: it is checked here and never sent to the server.
                 </span>
               </span>
             </label>
-          }
-        </div>
-      </fieldset>
-    </li>
-  </ol>
-}
-
-<!-- The credential in one line: the environment variable by default, with Create a token beside it (Q-UI-316). The other ways
-     and the place to install from are More options, closed until opened. -->
-@if (anonymous()) {
-  <p class="credential-line" i18n="@@setup.anonymous">
-    You are not signed in. A repository that can be read without credentials needs none, so the snippets
-    contain no authentication.
-  </p>
-} @else {
-  <p class="credential-line">
-    @switch (mode()) {
-      @case ('env') {
-        <span i18n="@@setup.cred.line-env">The snippets read your token from the variable QUADER_TOKEN.</span>&ngsp;
-        <a routerLink="/profile/tokens" i18n="@@setup.cred.env-link">Create a token to put into the variable</a>
-      }
-      @case ('create') {
-        <span i18n="@@setup.cred.line-create">The snippets hold a token created for this setup.</span>
-      }
-      @case ('paste') {
-        <span i18n="@@setup.cred.line-paste">The snippets hold the token you pasted.</span>
-      }
-    }
-  </p>
-}
-
-@if (!anonymous() || showTarget()) {
-  <quader-disclosure class="more-options" [heading]="moreHeading" [hint]="moreHint()" [(expanded)]="moreOpen">
-    @if (!anonymous()) {
-      <fieldset>
-        <legend i18n="@@setup.step.credentials">Credentials</legend>
-        <div class="choices vertical">
-          <label class="choice">
-            <input type="radio" name="credentials" value="env" [checked]="mode() === 'env'" (change)="setMode('env')" />
-            <span class="choice-text">
-              <span i18n="@@setup.cred.env">Reference an environment variable</span>
-              <span class="secondary" i18n="@@setup.cred.env-hint">
-                The snippets read the token from the variable QUADER_TOKEN. No secret appears on this page.
-              </span>
-            </span>
-          </label>
-          <label class="choice">
-            <input type="radio" name="credentials" value="create" [checked]="mode() === 'create'" (change)="setMode('create')" />
-            <span class="choice-text">
-              <span i18n="@@setup.cred.create">Create a token for this setup</span>
-              <span class="secondary" i18n="@@setup.cred.create-hint">
-                A personal token that may read this repository only. It is shown once and written into the snippets.
-              </span>
-            </span>
-          </label>
-          <label class="choice">
-            <input type="radio" name="credentials" value="paste" [checked]="mode() === 'paste'" (change)="setMode('paste')" />
-            <span class="choice-text">
-              <span i18n="@@setup.cred.paste">Use a token I already have</span>
-              <span class="secondary" i18n="@@setup.cred.paste-hint">
-                The value stays in this browser. It is checked here and never sent to the server.
-              </span>
-            </span>
-          </label>
-        </div>
-
-        @if (mode() === 'create') {
-          @if (canOfferPublish()) {
-            <label class="check-row">
-              <input type="checkbox" [checked]="withPublish()" (change)="withPublish.set($any($event.target).checked)" />
-              <span i18n="@@setup.cred.with-publish">The token may also publish to the deployment target of this repository</span>
-            </label>
-          }
-          @if (createFailure(); as f) {
-            <quader-error-notice [error]="f" />
-          }
-          @if (createdToken(); as value) {
-            <div class="once" role="status">
-              <p>
-                <strong i18n="@@setup.token.once">This token is shown once.</strong>
-                <span i18n="@@setup.token.once-text">
-                  It is written into the snippets below. Leaving this page discards it; you can create another.
-                </span>
-              </p>
-              <p class="token-line">
-                <code translate="no" class="token-value">{{ value }}</code>
-                <quader-copy-button [value]="value" [label]="copyTokenLabel" />
-              </p>
-            </div>
-          } @else {
-            <p>
-              <button
-                class="btn btn-confirm"
-                type="button"
-                [disabled]="creating() || !activeRepository() || !setup()"
-                (click)="createToken()"
-                i18n="@@setup.token.create"
-              >
-                Create token
-              </button>
-            </p>
-          }
-        }
-
-        @if (mode() === 'paste') {
-          <div class="field">
-            <label class="field-label" for="setup-token" i18n="@@setup.paste.label">Token</label>
-            <div class="secret-row">
-              <input
-                id="setup-token"
-                class="text-input"
-                [type]="reveal() ? 'text' : 'password'"
-                autocomplete="off"
-                spellcheck="false"
-                [attr.aria-invalid]="pasteShape() !== null && pasteShape() !== 'ok'"
-                aria-describedby="setup-token-state"
-                [value]="pasted()"
-                (input)="onPaste($any($event.target).value)"
-              />
-              <button class="btn btn-tertiary" type="button" [attr.aria-pressed]="reveal()" (click)="reveal.set(!reveal())">
-                @if (reveal()) {
-                  <ng-container i18n="@@setup.paste.hide">Hide</ng-container>
-                } @else {
-                  <ng-container i18n="@@setup.paste.show">Show</ng-container>
-                }
-              </button>
-            </div>
-            <div id="setup-token-state" aria-live="polite">
-              @switch (pasteShape()) {
-                @case ('ok') {
-                  <p class="hint" i18n="@@setup.paste.ok">The value looks like a Quader token. It is written into the snippets.</p>
-                }
-                @case ('prefix') {
-                  <p class="field-error" i18n="@@setup.paste.prefix">A Quader token starts with qdr_pat_, qdr_sat_ or qdr_cit_.</p>
-                }
-                @case ('length') {
-                  <p class="field-error" i18n="@@setup.paste.length">A Quader token has 57 characters. The value is shorter or longer, maybe cut off.</p>
-                }
-                @case ('alphabet') {
-                  <p class="field-error" i18n="@@setup.paste.alphabet">A Quader token holds only letters and digits after its prefix.</p>
-                }
-                @case ('checksum') {
-                  <p class="field-error" i18n="@@setup.paste.checksum">The checksum does not match. A character is probably wrong or missing.</p>
-                }
-              }
-            </div>
           </div>
-        }
-      </fieldset>
-    }
 
-    @if (showTarget()) {
-      <fieldset>
-        <legend i18n="@@setup.step.target">Install from</legend>
-        <div class="choices vertical">
-          <label class="choice">
-            <input type="radio" name="target" value="" [checked]="activeBastion() === null" (change)="pick({ bastion: null })" />
-            <span class="choice-text">
-              <span i18n="@@setup.target.main">This installation</span>
-              <span class="secondary" i18n="@@setup.target.main-hint">The address you are using now.</span>
-            </span>
-          </label>
-          @for (b of bastionOptions(); track b.name) {
+          @if (mode() === 'paste') {
+            <div class="field">
+              <label class="field-label" for="setup-token" i18n="@@setup.paste.label">Token</label>
+              <div class="secret-row">
+                <input
+                  id="setup-token"
+                  class="text-input"
+                  [type]="reveal() ? 'text' : 'password'"
+                  autocomplete="off"
+                  spellcheck="false"
+                  [attr.aria-invalid]="pasteShape() !== null && pasteShape() !== 'ok'"
+                  aria-describedby="setup-token-state"
+                  [value]="pasted()"
+                  (input)="pasted.set($any($event.target).value)"
+                />
+                <button class="btn btn-tertiary" type="button" [attr.aria-pressed]="reveal()" (click)="reveal.set(!reveal())">
+                  @if (reveal()) {
+                    <ng-container i18n="@@setup.paste.hide">Hide</ng-container>
+                  } @else {
+                    <ng-container i18n="@@setup.paste.show">Show</ng-container>
+                  }
+                </button>
+              </div>
+              <div id="setup-token-state" aria-live="polite">
+                @switch (pasteShape()) {
+                  @case ('ok') {
+                    <p class="hint" i18n="@@setup.paste.ok">The value looks like a Quader token. It is written into the snippets.</p>
+                  }
+                  @case ('prefix') {
+                    <p class="field-error" i18n="@@setup.paste.prefix">A Quader token starts with qdr_pat_, qdr_sat_ or qdr_cit_.</p>
+                  }
+                  @case ('length') {
+                    <p class="field-error" i18n="@@setup.paste.length">A Quader token has 57 characters. The value is shorter or longer, maybe cut off.</p>
+                  }
+                  @case ('alphabet') {
+                    <p class="field-error" i18n="@@setup.paste.alphabet">A Quader token holds only letters and digits after its prefix.</p>
+                  }
+                  @case ('checksum') {
+                    <p class="field-error" i18n="@@setup.paste.checksum">The checksum does not match. A character is probably wrong or missing.</p>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </fieldset>
+      }
+
+      @if (showTarget()) {
+        <fieldset>
+          <legend i18n="@@setup.step.target">Install from</legend>
+          <div class="choices vertical">
             <label class="choice">
-              <input type="radio" name="target" [value]="b.name" [checked]="b.name === activeBastion()" (change)="pick({ bastion: b.name })" />
+              <input type="radio" name="target" value="" [checked]="activeBastion() === null" (change)="pickBastion(null)" />
               <span class="choice-text">
-                <span><ng-container i18n="@@setup.target.bastion">Bastion</ng-container>&ngsp;<strong translate="no">{{ b.name }}</strong></span>
-                <span class="secondary" i18n="@@setup.target.bastion-hint">
-                  A read-only cache for clients outside the network. You can install through it; you cannot publish.
-                </span>
+                <span i18n="@@setup.target.main">This installation</span>
+                <span class="secondary" i18n="@@setup.target.main-hint">The address you are using now.</span>
               </span>
             </label>
-          }
-          @if (activeBastion(); as chosen) {
-            @if (!bastionOptions().some((b) => b.name === chosen)) {
+            @for (b of bastionOptions(); track b.name) {
               <label class="choice">
-                <input type="radio" name="target" [value]="chosen" checked />
+                <input type="radio" name="target" [value]="b.name" [checked]="b.name === activeBastion()" (change)="pickBastion(b.name)" />
                 <span class="choice-text">
-                  <span><ng-container i18n="@@setup.target.bastion">Bastion</ng-container>&ngsp;<strong translate="no">{{ chosen }}</strong></span>
+                  <span><ng-container i18n="@@setup.target.bastion">Bastion</ng-container>&ngsp;<strong translate="no">{{ b.name }}</strong></span>
+                  <span class="secondary" i18n="@@setup.target.bastion-hint">
+                    A read-only cache for clients outside the network. You can install through it; you cannot publish.
+                  </span>
                 </span>
               </label>
             }
-          }
-        </div>
-      </fieldset>
-    }
-  </quader-disclosure>
-}
-
-@if (setup(); as s) {
-  <section class="result" aria-labelledby="setup-result">
-    <h2 id="setup-result">
-      <ng-container i18n="@@setup.result">Snippets for</ng-container>&ngsp;<span translate="no">{{ s.repository }}</span>
-    </h2>
-    @if (activeBastion(); as chosen) {
-      <p class="banner-warning" role="note">
-        <span class="material-icons inline" aria-hidden="true">public</span>
-        <span>
-          <ng-container i18n="@@setup.bastion.banner">These snippets point at the Bastion</ng-container>&ngsp;<strong translate="no">{{ chosen }}</strong>.&ngsp;<ng-container i18n="@@setup.bastion.banner-text">A Bastion is read only, so there are no publish snippets. Sign-in works with the same token as for this installation.</ng-container>
-        </span>
-      </p>
-      <p>
-        <quader-address-field [value]="s.registryUrl" />
-      </p>
-    }
-    @if (needsToken()) {
-      <p class="banner-warning" role="note">
-        <span class="material-icons inline warn" aria-hidden="true">info</span>
-        <span>
-          <ng-container i18n="@@setup.pending-token">Until a token is set, the snippets show this placeholder where it will go:</ng-container>&ngsp;<code translate="no">{{ placeholder }}</code>
-        </span>
-      </p>
-    }
-    <quader-tab-group>
-      <quader-tab label="Configure" i18n-label="@@setup.tab.configure">
-        <div class="tab">
-          @for (sn of byTab().configure; track sn.id) {
-            <ng-container *ngTemplateOutlet="snippet; context: { $implicit: sn }" />
-          }
-        </div>
-      </quader-tab>
-      <quader-tab label="Install" i18n-label="@@setup.tab.install">
-        <div class="tab">
-          @for (sn of byTab().install; track sn.id) {
-            <ng-container *ngTemplateOutlet="snippet; context: { $implicit: sn }" />
-          }
-        </div>
-      </quader-tab>
-      @if (offerPublish()) {
-        <quader-tab label="Publish" i18n-label="@@setup.tab.publish">
-          <div class="tab">
-            @if (byTab().publish.length === 0) {
-              <p i18n="@@setup.publish.no-target">
-                This virtual repository has no default deployment target, so there is nothing to publish to through
-                it. Publish to one of its local repositories instead.
-              </p>
-              <p>
-                <a [routerLink]="repositoryLink(s.repository).concat('settings')" i18n="@@setup.publish.members">Open the repository to see its members</a>
-              </p>
-            }
-            @for (sn of byTab().publish; track sn.id) {
-              <ng-container *ngTemplateOutlet="snippet; context: { $implicit: sn }" />
+            @if (activeBastion(); as chosen) {
+              @if (!bastionOptions().some((b) => b.name === chosen)) {
+                <label class="choice">
+                  <input type="radio" name="target" [value]="chosen" checked />
+                  <span class="choice-text">
+                    <span><ng-container i18n="@@setup.target.bastion">Bastion</ng-container>&ngsp;<strong translate="no">{{ chosen }}</strong></span>
+                  </span>
+                </label>
+              }
             }
           </div>
-        </quader-tab>
+        </fieldset>
       }
-    </quader-tab-group>
-  </section>
-}
+    </quader-disclosure>
+  }
 
-<ng-template #snippet let-sn>
-  <div class="snippet">
-    @if (explanation(sn.id); as why) {
-      <p class="why">{{ why }}</p>
-    }
-    @if (bastionNote(sn); as note) {
-      <p class="why">{{ note }}</p>
-    }
-    @if (sn.fileName) {
-      <p class="target">
-        <span i18n="@@setup.target-file">File</span>: <code translate="no">{{ sn.fileName }}</code>
-      </p>
-    }
-    <div class="command">
-      <pre class="code-block" translate="no" tabindex="0">{{ sn.content }}</pre>
-      <div class="snippet-actions">
-        <quader-copy-button [value]="sn.content" [label]="copyLabel" />
-        @if (sn.fileName) {
-          <button class="btn btn-tertiary" type="button" (click)="download(sn)" i18n="@@setup.download">Download</button>
+  @if (activeBastion(); as chosen) {
+    <p class="banner-warning" role="note">
+      <span class="material-icons inline" aria-hidden="true">public</span>
+      <span>
+        <ng-container i18n="@@setup.bastion.banner">These snippets point at the Bastion</ng-container>&ngsp;<strong translate="no">{{ chosen }}</strong>.&ngsp;<ng-container i18n="@@setup.bastion.banner-text">A Bastion is read only, so there are no publish snippets. Sign-in works with the same token as for this installation.</ng-container>
+      </span>
+    </p>
+  }
+  @if (needsToken()) {
+    <p class="banner-warning" role="note">
+      <span class="material-icons inline warn" aria-hidden="true">info</span>
+      <span>
+        <ng-container i18n="@@setup.pending-token">Until a token is pasted, the snippets show this placeholder where it will go:</ng-container>&ngsp;<code translate="no">{{ placeholder }}</code>
+      </span>
+    </p>
+  }
+
+  <!-- The job first (R-UI-121): the snippets of each step, each with the sentence that says what it does. -->
+  @if (snippets().length > 0) {
+    <section class="step" aria-labelledby="step-configure">
+      <h2 id="step-configure"><span class="step-no" aria-hidden="true">1</span><span i18n="@@setup.tab.configure">Configure</span></h2>
+      @for (sn of byStep().configure; track sn.id) {
+        <quader-setup-snippet [snippet]="sn" [explanation]="explanation(sn.id)" [note]="bastionNote(sn)" />
+      }
+    </section>
+    <section class="step" aria-labelledby="step-install">
+      <h2 id="step-install"><span class="step-no" aria-hidden="true">2</span><span i18n="@@setup.tab.install">Install</span></h2>
+      @for (sn of byStep().install; track sn.id) {
+        <quader-setup-snippet [snippet]="sn" [explanation]="explanation(sn.id)" />
+      }
+    </section>
+    @if (offerPublish()) {
+      <section class="step" aria-labelledby="step-publish">
+        <h2 id="step-publish"><span class="step-no" aria-hidden="true">3</span><span i18n="@@setup.tab.publish">Publish</span></h2>
+        @if (byStep().publish.length === 0) {
+          <p class="why" i18n="@@setup.publish.no-target">
+            This virtual repository has no default deployment target, so there is nothing to publish to through it. Publish to
+            one of its local repositories instead.
+          </p>
+          @if (settingsLink(); as link) {
+            <p><a [routerLink]="link" i18n="@@setup.publish.members">Open the repository's settings to see its members</a></p>
+          }
         }
-      </div>
-    </div>
-  </div>
-</ng-template>
+        @for (sn of byStep().publish; track sn.id) {
+          <quader-setup-snippet [snippet]="sn" [explanation]="explanation(sn.id)" />
+        }
+      </section>
+    }
+  } @else if (setupAnswer.isLoading() || guideAnswer.isLoading() || loaded.isLoading()) {
+    <p role="status" i18n="@@setup.loading">Loading.</p>
+  }
+
+  <!-- The explanation below the job (R-UI-125); it describes this installation, so a Bastion shows none. -->
+  @if (activeBastion()) {
+    <p class="hint" i18n="@@setup.bastion.no-guide">The explanation describes this installation. Choose This installation under More options to read it.</p>
+  } @else if (guide(); as g) {
+    <quader-guide-view class="explanation" [sections]="g.sections" />
+  }
+}

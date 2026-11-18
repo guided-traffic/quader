@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 620 of 886 spec requirements are implemented: a passing test names them and no
+**Status.** 620 of 895 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 788 specified (513 of them implemented), 1,451 open.
-886 spec requirements: 647 cover catalog features, 239 cover none (`quader-only`, [listed at the
+895 spec requirements: 647 cover catalog features, 248 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>239 requirements</summary>
+<summary>248 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -2985,6 +2985,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-API-021 (implemented) | Current caller and UI preferences | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-065 | When a version was last fetched | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-053 (implemented) | Guides of the formats | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-API-070 | A guide carries its snippets beside its sections | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-054 (implemented) | The manual | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-055 (implemented) | User avatars | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-056 | The installation's visibility settings | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
@@ -3037,6 +3038,14 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-103 | One way to write a time | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-110 | A package's versions as one table | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-112 | A version's vulnerabilities in one statement | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-120 | Set up client is one page of a repository | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-121 | The job first, the explanation after | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-122 | The token without leaving the page | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-123 | What each reader sees | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-124 | Guides: the formats as tiles, a format's repositories, the guide of a class | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-125 | The explanation reads like a page, not like a reference | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-126 | Set up client is one action with one look | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-127 | The format tiles are one component | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 (implemented) | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-007 (implemented) | One origin for UI and package content | MVP | [architecture.md](../spec/architecture.md) |

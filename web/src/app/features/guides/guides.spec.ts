@@ -1,130 +1,91 @@
-import { GuidesApi } from '../../api/guides-api';
-import { ApiError } from '../../api/problem';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeRepositoriesApi, GENERIC_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
-import { FakeGuidesApi } from '../../api/testing/fakes-guides';
-import { FakeClientSetupApi, NPM_REPOSITORIES } from '../../api/testing/fakes-packages';
-import { expectAccessible, renderScreen, settle, text } from '../../testing/screen';
-import { GuidePage } from './guide-page';
-
-type Opened = Awaited<ReturnType<typeof open>>;
+import { GENERIC_REPOSITORY, NPM_REPOSITORIES } from '../../api/testing/fakes-packages';
+import { expectAccessible, renderScreen, text } from '../../testing/screen';
+import { GuideFormat } from './guide-format';
+import { GuideView } from './guide-view';
+import { GuidesHome } from './guides-home';
 
 /** A format of the catalog without clients, and therefore without a guide. */
 const CLIENTLESS = { ...GENERIC_FORMAT, name: 'raw', displayName: 'Raw', clients: [] };
 
-async function open(inputs: Record<string, unknown> = {}, setup?: (guides: FakeGuidesApi) => void) {
-  const r = await renderScreen(GuidePage, {
-    inputs,
-    setup: (get) => {
-      const repos = get(RepositoriesApi) as FakeRepositoriesApi;
-      repos.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT, CLIENTLESS];
-      repos.repositories = [...repos.repositories, ...NPM_REPOSITORIES];
-      setup?.(get(GuidesApi) as FakeGuidesApi);
-    },
-  });
-  return { ...r, guides: r.get(GuidesApi) as FakeGuidesApi };
+function catalog(get: <A>(token: abstract new (...args: never[]) => A) => A): void {
+  const repos = get(RepositoriesApi) as FakeRepositoriesApi;
+  repos.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT, CLIENTLESS];
+  repos.repositories = [...NPM_REPOSITORIES, { ...GENERIC_REPOSITORY }];
 }
 
-const sections = (r: Opened) =>
-  [...r.root.querySelectorAll<HTMLElement>('section.guide-section')].map((s) => s.dataset['section']);
-const radio = (r: Opened, name: string, value: string) =>
-  r.root.querySelector<HTMLInputElement>(`input[name="${name}"][value="${value}"]`);
-
 describe('Guides', () => {
-  it('R-UI-049 R-UI-019 the page offers every format of the catalog that lists clients, in its order, and opens the first one', async () => {
-    const r = await open();
-    expect(r.root.querySelector('h1')?.textContent?.trim()).toBe('Guides');
-    const offered = [...r.root.querySelectorAll<HTMLInputElement>('input[name="guide-format"]')].map((i) => i.value);
-    expect(offered).toEqual(['generic', 'npm']);
-    expect(radio(r, 'guide-format', 'generic')?.checked).toBe(true);
-    expect([...r.root.querySelectorAll<HTMLInputElement>('input[name="guide-client"]')].map((i) => i.value)).toEqual(['curl']);
-    expect([...r.root.querySelectorAll<HTMLInputElement>('input[name="guide-class"]')].map((i) => i.value)).toEqual(['local']);
-    expect(r.guides.calls.at(-1)).toEqual({ format: 'generic', cls: 'local', client: 'curl' });
-    expect(sections(r)).toEqual([
-      'generic.local.what',
-      'generic.configure',
-      'generic.authenticate',
-      'generic.install',
-      'generic.publish',
-      'generic.troubleshooting',
-    ]);
-    const configure = r.root.querySelector('[data-section="generic.configure"] .snippet pre')?.textContent ?? '';
-    expect(configure).toContain('header = "Authorization: Bearer ${QUADER_TOKEN}"');
+  it('R-UI-124 R-UI-127 the navigation entry shows the formats that have a guide as tiles, and nothing else to choose', async () => {
+    const r = await renderScreen(GuidesHome, { setup: catalog });
+    expect(text(r.root.querySelector('h1')!)).toBe('Guides');
+    const tiles = [...r.root.querySelectorAll<HTMLAnchorElement>('quader-format-tiles a.tile')];
+    expect(tiles.map((a) => text(a.querySelector('.tile-name')!))).toEqual(['Generic', 'npm']);
+    expect(tiles.map((a) => a.getAttribute('href'))).toEqual(['/guides/generic', '/guides/npm']);
+    expect(r.root.querySelector('input, select, fieldset')).toBeNull();
     await expectAccessible(r.root);
   });
 
-  it('R-UI-049 npm opens the guide of the recommended class and passes the accessibility check', async () => {
-    const r = await open({ format: 'npm' });
-    expect(radio(r, 'guide-format', 'npm')?.checked).toBe(true);
-    expect([...r.root.querySelectorAll('input[name="guide-client"]')].map((i) => (i as HTMLInputElement).value)).toEqual([
-      'npm',
-      'pnpm',
-      'yarn',
-      'yarn-classic',
-    ]);
-    expect(radio(r, 'guide-class', 'virtual')?.checked).toBe(true);
-    expect(r.guides.calls.at(-1)).toEqual({ format: 'npm', cls: 'virtual', client: 'npm' });
-    expect(sections(r)).toEqual(['npm.virtual.what', 'npm.configure', 'npm.authenticate', 'npm.install', 'npm.publish', 'npm.troubleshooting']);
-    expect(text(r.root)).toContain('The addresses show <repository>');
+  it('R-UI-124 a tile leads to the repositories of its format: virtual first, the class of each, Set up client per row', async () => {
+    const r = await renderScreen(GuideFormat, { inputs: { format: 'npm' }, setup: catalog });
+    expect(text(r.root.querySelector('h1')!)).toBe('npm repositories');
+    const rows = [...r.root.querySelectorAll('tbody tr')];
+    expect(rows.map((row) => text(row.querySelector('th a')!))).toEqual(['web/npm-all', 'web/npm-readonly', 'web/npm-local', 'web/npm-remote']);
+    expect(text(rows[0]!)).toContain('Virtual');
+    expect(text(rows[0]!)).toContain('recommended');
+    const setup = rows[0]!.querySelector<HTMLAnchorElement>('a.btn');
+    expect(text(setup!)).toBe('Set up client');
+    expect(setup?.classList.contains('btn-default')).toBe(true);
+    expect(setup?.getAttribute('href')).toBe('/projects/web/repositories/npm-all/setup');
+    // The guide without a repository is behind the list, one link per class of the format.
+    const classes = [...r.root.querySelectorAll<HTMLAnchorElement>('section.classes a')].map((a) => a.getAttribute('href'));
+    expect(classes).toEqual(['/guides/npm/local', '/guides/npm/remote', '/guides/npm/virtual']);
     await expectAccessible(r.root);
   });
 
-  it('R-UI-049 a repository in the query opens its guide; the setup link carries the same choice', async () => {
-    const r = await open({ format: 'npm', client: 'yarn', repository: 'web/npm-remote' });
-    expect(r.guides.calls.at(-1)).toEqual({ repository: 'web/npm-remote', client: 'yarn' });
-    expect(r.root.querySelector('input[name="guide-class"]')).toBeNull();
-    expect(sections(r)).not.toContain('npm.publish');
-    const link = [...r.root.querySelectorAll<HTMLAnchorElement>('a')].find((a) => text(a).startsWith('Open the client setup'));
-    expect(link?.getAttribute('href')).toBe('/setup?format=npm&client=yarn&repository=web%2Fnpm-remote');
+  it('R-UI-124 a reader without a repository of the format is told so, and the class guides stay', async () => {
+    const r = await renderScreen(GuideFormat, {
+      inputs: { format: 'npm' },
+      setup: (get) => {
+        catalog(get);
+        (get(RepositoriesApi) as FakeRepositoriesApi).repositories = [];
+      },
+    });
+    expect(text(r.root)).toContain('You can use no repository of this package type.');
+    expect(r.root.querySelectorAll('section.classes a').length).toBe(3);
   });
 
-  it('R-UI-049 a repository in the query without a format opens the guide of that repository, not the first format', async () => {
-    // GENERIC_FORMAT is the first format of the catalog; the repository is an npm one.
-    const r = await open({ repository: 'web/npm-remote' });
-    expect(radio(r, 'guide-format', 'npm')?.checked).toBe(true);
-    expect(r.guides.calls.at(-1)).toMatchObject({ repository: 'web/npm-remote' });
+  it('R-UI-124 a format without a guide is not offered', async () => {
+    const r = await renderScreen(GuideFormat, { inputs: { format: 'raw' }, setup: catalog });
+    expect(text(r.root)).toContain('This installation has no guide for this package type.');
   });
 
-  it('R-UI-049 a class in the query opens the guide of that class', async () => {
-    const r = await open({ format: 'npm', class: 'remote', client: 'pnpm' });
-    expect(r.guides.calls.at(-1)).toEqual({ format: 'npm', cls: 'remote', client: 'pnpm' });
-    expect(sections(r)[0]).toBe('npm.remote.what');
-  });
-
-  it('R-UI-049 R-API-053 the snippets of the guide are the client setup answer with the variable', async () => {
-    const r = await open({ format: 'npm', client: 'npm', repository: 'web/npm-all' });
-    const setup = await new FakeClientSetupApi().get('web/npm-all', { client: 'npm', credentials: 'env' });
-    const configure = [...r.root.querySelectorAll('[data-section="npm.configure"] .snippet pre')].map((p) => p.textContent);
-    expect(configure).toEqual(setup.snippets.filter((s) => s.tab === 'configure').map((s) => s.content));
-    expect(configure.join('')).toContain('${QUADER_TOKEN}');
-  });
-
-  it('R-UI-049 an anonymous reader gets snippets without a credential and no publishing section', async () => {
-    const r = await open({ format: 'npm', client: 'npm', repository: 'web/npm-all' }, (g) => (g.anonymous = true));
-    const all = [...r.root.querySelectorAll('.snippet pre')].map((p) => p.textContent).join('\n');
-    expect(all).not.toContain('TOKEN');
-    expect(all).not.toContain('{{token}}');
-    expect(sections(r)).not.toContain('npm.publish');
-  });
-
-  it('R-UI-049 the contents list moves focus to its section without navigating', async () => {
-    const r = await open();
-    const link = [...r.root.querySelectorAll<HTMLAnchorElement>('nav a')].find((a) => text(a) === 'Troubleshooting')!;
-    link.click();
-    await settle(r.fixture);
-    expect(document.activeElement?.textContent?.trim()).toBe('Troubleshooting');
-    expect(document.activeElement?.getAttribute('lang')).toBe('en');
-  });
-
-  it('R-UI-049 the sections carry the server HTML as a README does', async () => {
-    const r = await open({ format: 'npm' });
-    const what = r.root.querySelector('[data-section="npm.virtual.what"] quader-package-readme .readme');
-    expect(what?.querySelector('h3')?.id).toBe('user-content-details');
-  });
-
-  it('R-UI-042 a failing guide shows the error with a retry', async () => {
-    const r = await open({}, (g) => (g.failure = new ApiError(503, { code: 'unavailable', detail: 'down' }, null)));
-    expect(r.root.querySelector('quader-error-notice')).not.toBeNull();
+  it('R-UI-125 the explanation: what the class is and the endpoint note stand open, the rest are closed disclosures, and code is copyable', async () => {
+    const html = (body: string) => body;
+    const r = await renderScreen(GuideView, {
+      inputs: {
+        sections: [
+          { id: 'npm.local.what', topic: 'what', title: 'What a local repository is', html: html('<p>A local repository holds what you publish.</p><h3>Published versions never change</h3><p>More.</p>') },
+          { id: 'npm.configure', topic: 'configure', title: 'Point the client at the repository', html: html('<pre><code>@your-scope:registry=https://x/\n</code></pre>') },
+          { id: 'npm.endpoint', topic: 'endpoint', title: 'On this endpoint', html: html('<p>Hidden versions answer 404.</p>') },
+          { id: 'npm.troubleshooting', topic: 'troubleshooting', title: 'Troubleshooting', html: html('<table><tr><td>404</td></tr></table>') },
+        ],
+      },
+    });
+    expect([...r.root.querySelectorAll('section.guide-open > h2')].map((h) => text(h))).toEqual(['What a local repository is', 'On this endpoint']);
+    expect([...r.root.querySelectorAll<HTMLElement>('quader-disclosure.guide-more')].map((d) => d.dataset['section'])).toEqual([
+      'npm.configure',
+      'npm.troubleshooting',
+    ]);
+    // An open section shows its introduction; the text from its first subheading folds under More about this.
+    const what = r.root.querySelector('[data-section="npm.local.what"]')!;
+    expect(text(what.querySelector(':scope > quader-package-readme')!)).toBe('A local repository holds what you publish.');
+    expect(text(what.querySelector('quader-disclosure.guide-rest')!)).toContain('More about this');
+    expect(text(what.querySelector('quader-disclosure.guide-rest')!)).toContain('Published versions never change');
+    const code = r.root.querySelector('[data-section="npm.configure"] .prose-code')!;
+    expect(code.querySelector('pre')).toBeTruthy();
+    expect(code.querySelector('quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy code');
+    expect(r.root.querySelector('section.guide-open')?.getAttribute('lang') ?? r.root.querySelector('section.guide-open > h2')?.getAttribute('lang')).toBe('en');
     await expectAccessible(r.root);
   });
 });

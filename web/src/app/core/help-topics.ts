@@ -28,6 +28,7 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   ['/projects', { section: 'admin', page: 'projects' }],
   ['/search', { section: 'user', page: 'search' }],
   ['/guides', { section: 'user', page: 'client-setup' }],
+  // Set up client of a repository (`/projects/<key>/repositories/<repo>/setup`, R-UI-120) is looked up as `/setup`.
   ['/setup', { section: 'user', page: 'client-setup' }],
   ['/profile/tokens', { section: 'user', page: 'access-tokens' }],
   ['/admin/projects', { section: 'admin', page: 'projects' }],
@@ -61,8 +62,9 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
 export function helpFor(url: string): readonly string[] {
   const raw = url.split(/[?#]/, 1)[0] ?? '';
   const inProject = /^\/projects\/[^/]+(\/.*)?$/.exec(raw);
+  const setup = /^\/projects\/[^/]+\/repositories\/[^/]+\/setup$/.test(raw);
   const inner = inProject?.[1]?.replace(/^\/repositories\/[^/]+\/files(?=\/|$)/, '/files') ?? '';
-  const path = inProject ? `/project${inner}` : raw;
+  const path = setup ? '/setup' : inProject ? `/project${inner}` : raw;
   let best: readonly [string, HelpTopic] | undefined;
   for (const entry of HELP_TOPICS) {
     const [route] = entry;

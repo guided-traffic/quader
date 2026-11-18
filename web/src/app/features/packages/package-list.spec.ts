@@ -248,7 +248,7 @@ describe('Packages list', () => {
     const empty = await open({}, (fake) => (fake.packages = []));
     expect(text(empty.root)).toContain('No package has been published yet.');
     const setup = [...empty.root.querySelectorAll('a')].find((a) => text(a).includes('Set up a client to publish the first package'));
-    expect(setup?.getAttribute('href')).toBe('/setup');
+    expect(setup?.getAttribute('href')).toBe('/guides');
 
     const none = await open({ q: 'no-such-package' });
     expect(text(none.root)).toContain('No package matches the filters.');

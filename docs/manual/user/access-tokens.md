@@ -109,7 +109,7 @@ If a token leaked, revoke it at once. Anyone who has the value, signed in or not
 
 ### In package clients
 
-Keep the token in the environment variable `QUADER_TOKEN` (or the name your installation configured; the snippets show it) and let the client read it, so no configuration file holds the secret. [Connecting a package client](client-setup.md) explains the configuration of npm, pnpm, Yarn and curl, and the Client setup page shows it for your installation.
+Keep the token in the environment variable `QUADER_TOKEN` (or the name your installation configured; the snippets show it) and let the client read it, so no configuration file holds the secret. [Connecting a package client](client-setup.md) explains the configuration of npm, pnpm, Yarn and curl, and the page **Set up client** of a repository shows it for your installation.
 
 ### With curl and the management API
 

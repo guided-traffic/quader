@@ -114,10 +114,10 @@ describe('Install command panel', () => {
     expect(r.get(Notifier).notices().map((n) => n.text)).toContain('Copied to the clipboard.');
   });
 
-  it('R-UI-009 links to the client setup of the chosen repository and client', async () => {
+  it('R-UI-009 R-UI-126 links to Set up client of the chosen repository with the chosen client', async () => {
     const r = await open();
-    const link = [...r.root.querySelectorAll('a')].find((a) => a.textContent?.includes('Set up your client'));
-    expect(link?.getAttribute('href')).toBe('/setup?repository=web%2Fnpm-all&client=npm');
+    const link = [...r.root.querySelectorAll('a')].find((a) => a.textContent?.trim() === 'Set up client');
+    expect(link?.getAttribute('href')).toBe('/projects/web/repositories/npm-all/setup?client=npm');
   });
 
   it('R-UI-009 a failing setup answer is shown with a retry, not as an empty panel', async () => {

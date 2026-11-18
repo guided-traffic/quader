@@ -3,7 +3,7 @@ import { e2eProject, expect, expectAccessible, fillKey, qualified, repositories,
 // R-UI-047 journey "deb" (T-17 WP11; R-DEB-014, R-DEB-015, R-DEB-017, R-DEB-029, R-DEB-030, R-UI-021): the repository
 // creation form offers Debian (APT) and the settings page shows its settings; the signing key panel lists the generated primary key,
 // creates a next key, promotes it and shows the old key retired, and never shows a private key; the index state tab lists the
-// suites; the client setup page offers APT and renders the source with the key file named after the project and the
+// suites; the repository's page Set up client renders the source with the key file named after the project and the
 // repository. Every screen passes axe in the light and in the dark colour scheme. The journey creates its own repository and
 // uploads nothing: the package screens of an uploaded package are covered by the component tier (package-detail.spec.ts)
 // and by the APT client matrix of the end-to-end suite.
@@ -139,7 +139,7 @@ test('R-UI-021 R-DEB-008 R-UI-084 the creation form offers Debian and the settin
   expect(replicas.size, `replicas that answered: ${[...replicas]}`).toBeGreaterThanOrEqual(2);
 });
 
-test('R-DEB-029 the client setup page offers APT and renders the source with the key file named after the project and the repository', async ({
+test('R-DEB-029 R-UI-120 Set up client of a Debian repository renders the source with the key file named after the project and the repository', async ({
   page,
   replicas,
   baseURL,
@@ -148,19 +148,20 @@ test('R-DEB-029 the client setup page offers APT and renders the source with the
   const port = new URL(baseURL ?? '').port;
   const name = `quader-${e2eProject}-${localKey}`;
 
-  await page.goto(`/ui/en/setup?repository=${qualified(localKey)}`);
-  await expect(page.getByRole('heading', { name: 'Client setup', level: 1 })).toBeVisible();
-  const clientStep = page.getByRole('group', { name: 'Client', exact: true });
-  await expect(clientStep.getByRole('radio', { name: 'APT (apt, apt-get)', exact: true })).toBeChecked();
-  const configure = page.getByRole('tabpanel', { name: 'Configure' });
-  const source = configure.locator('.snippet pre').first();
+  await page.goto(`/ui/en/projects/${e2eProject}/repositories/${localKey}/setup`);
+  await expect(page.getByRole('heading', { name: 'Set up client', level: 1 })).toBeVisible();
+  // APT is the format's one client: the page asks nothing (Q-UI-482).
+  await expect(page.getByRole('combobox', { name: 'Client' })).toHaveCount(0);
+  await expect(page.locator('.context')).toContainText(qualified(localKey));
+  const configure = page.locator('section[aria-labelledby="step-configure"]');
+  const source = configure.locator('quader-setup-snippet pre').first();
   await expect(source).toContainText(`/etc/apt/keyrings/${name}.asc`);
   await expect(source).toContainText(`URIs: https://localhost:${port}/api/deb/${e2eProject}/${localKey}/`);
   await expect(source).toContainText(`Signed-By: /etc/apt/keyrings/${name}.asc`);
   await expect(configure).not.toContainText('trusted=yes');
   for (const scheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: scheme });
-    await expectAccessible(page, `client setup, APT (${scheme})`);
+    await expectAccessible(page, `set up client, APT (${scheme})`);
   }
 
   await signOut(page);

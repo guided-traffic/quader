@@ -62,12 +62,6 @@
         }
       </dd>
     </dl>
-    @if (clientsOf(c.format).length > 0) {
-      <section class="how-to-use" aria-labelledby="repo-how-to-use">
-        <h2 id="repo-how-to-use" i18n="@@repo.tab.guide">How to use</h2>
-        <quader-repository-guide [key]="ref()" [format]="c.format" [clients]="clientsOf(c.format)" />
-      </section>
-    }
   </div>
 } @else if (stored(); as repo) {
   @if (form(); as current) {
@@ -307,20 +301,6 @@
           >
             @if (isOpened('ansible-tombstones')) {
               <quader-ansible-tombstones [key]="ref()" [canManage]="canChange()" />
-            }
-          </quader-disclosure>
-        }
-
-        @if (clientsOf(repo.format).length > 0) {
-          <quader-disclosure
-            i18n-heading="@@repo.tab.guide"
-            heading="How to use"
-            i18n-hint="@@repo.settings.guide-hint"
-            hint="How a client is set up for this repository."
-            (expandedChange)="open('guide', $event)"
-          >
-            @if (isOpened('guide')) {
-              <quader-repository-guide [key]="ref()" [format]="repo.format" [clients]="clientsOf(repo.format)" />
             }
           </quader-disclosure>
         }

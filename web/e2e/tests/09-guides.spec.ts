@@ -1,10 +1,10 @@
 import { e2eProject, expect, expectAccessible, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
-// R-UI-047 journey "guides" (E2.13; R-UI-049, R-API-053): the side bar opens the guides with every format that has
-// clients; the guide of a virtual npm repository opens from there and from the repository's "How to use" tab, shows the
-// sections of npm's guide for the repository's class, and its configure snippet is, byte for byte, the snippet the
-// client setup page shows for the same repository and client. The journey creates its own local and virtual
-// repository: the journeys do not own the matrix's npm-all.
+// R-UI-047 journey "guides" (E2.13; R-UI-049, R-UI-120 to R-UI-125, R-API-053): the user menu opens Guides with the formats
+// as tiles; the npm tile lists the npm repositories, the journey's virtual one among them with its class; its Set up client
+// opens the repository's page with the four npm clients in one control, the snippets first and the virtual repository's
+// explanation below them; the configure snippet the page shows is, byte for byte, the one the guide's answer carries for the
+// variable (R-API-070). The journey creates its own local and virtual repository: the journeys do not own the matrix's npm-all.
 
 const localKey = unique('ui-guide-local');
 const virtualKey = unique('ui-guide-all');
@@ -23,57 +23,54 @@ test.afterAll(async ({ admin }) => {
   await admin.delete(repositoryApi(localKey));
 });
 
-test('E2.13 R-UI-049 the guide of a virtual repository, and its configure snippet equals the setup page', async ({
+test('E2.13 R-UI-049 R-UI-124 Guides lead from a tile to the page Set up client of a virtual repository, the snippets first and the guide below', async ({
   page,
   replicas,
 }) => {
   await signInLocal(page);
 
-  await test.step('the user menu opens the guides, which offer generic with curl and npm with its four clients', async () => {
+  await test.step('the user menu opens Guides: the formats as tiles, nothing to choose', async () => {
     await page.goto(`/ui/en/projects/${e2eProject}/packages`);
     await page.getByRole('button', { name: /User menu/ }).click();
     await page.getByRole('menuitem', { name: 'Guides', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Guides', level: 1 })).toBeVisible();
-    const formats = page.getByRole('group', { name: 'Package type' });
-    // The catalog is ordered by name, so the first format (Ansible Galaxy, since F0) opens checked; generic is chosen here.
-    await expect(formats.getByRole('radio', { name: 'Ansible Galaxy', exact: true })).toBeChecked();
-    await formats.getByRole('radio', { name: 'Generic', exact: true }).check();
-    await expect(page.getByRole('group', { name: 'Client' }).getByRole('radio', { name: 'curl', exact: true })).toBeVisible();
-    await formats.getByRole('radio', { name: 'npm', exact: true }).check();
-    for (const label of ['npm', 'pnpm', 'Yarn Berry (2 and later)', 'Yarn Classic (1.x)']) {
-      await expect(page.getByRole('group', { name: 'Client' }).getByRole('radio', { name: label, exact: true })).toBeVisible();
-    }
-    await expect(page.getByRole('heading', { name: 'What a virtual repository is', level: 2 })).toBeVisible();
+    const tiles = page.getByRole('list', { name: 'Package types' });
+    for (const name of ['Generic', 'npm']) await expect(tiles.getByRole('link', { name, exact: true })).toBeVisible();
+    await expect(page.locator('main input, main select')).toHaveCount(0);
     await expectAccessible(page, 'guides');
+    await tiles.getByRole('link', { name: 'npm', exact: true }).click();
   });
 
-  let guideSnippet = '';
-  await test.step('the repository settings show the guide of the repository in their section How to use', async () => {
-    await page.goto(`/ui/en/projects/${e2eProject}/repositories/${virtualKey}/settings`);
-    await page.getByRole('button', { name: 'How to use', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'What a virtual repository is', level: 2 })).toBeVisible();
-    await expect(page.getByText(new RegExp(`For (${e2eProject}/)?${virtualKey} that is (${e2eProject}/)?${localKey}\\.`))).toBeVisible();
-    const snippet = page.locator('[data-section="npm.configure"] .snippet pre');
-    await expect(snippet).toHaveCount(1);
-    guideSnippet = (await snippet.textContent()) ?? '';
-    expect(guideSnippet).toContain(`/api/npm/${e2eProject}/${virtualKey}/:_authToken=\${QUADER_TOKEN}`);
-    await expectAccessible(page, 'repository detail, how to use');
+  await test.step('the npm tile lists the npm repositories with their class, and the guide of each class', async () => {
+    await expect(page.getByRole('heading', { name: 'npm repositories', level: 1 })).toBeVisible();
+    const row = page.getByRole('row').filter({ hasText: `${e2eProject}/${virtualKey}` });
+    await expect(row).toContainText('Virtual');
+    await expect(page.getByRole('link', { name: /^A local repository/ })).toBeVisible();
+    await expectAccessible(page, 'guides of npm');
+    await row.getByRole('link', { name: 'Set up client', exact: true }).click();
   });
 
-  await test.step('the client setup page shows the same configure snippet', async () => {
-    await page.getByRole('link', { name: 'Open the client setup' }).click();
-    await expect(page.getByRole('heading', { name: 'Client setup', level: 1 })).toBeVisible();
-    // The credential is one line, the environment variable by default (Q-UI-316).
+  await test.step('Set up client of the virtual repository: the client is one control, the snippets come first, the explanation after', async () => {
+    await expect(page).toHaveURL(new RegExp(`/projects/${e2eProject}/repositories/${virtualKey}/setup`));
+    await expect(page.getByRole('heading', { name: 'Set up client', level: 1 })).toBeVisible();
+    const client = page.getByRole('combobox', { name: 'Client' });
+    for (const label of ['npm', 'pnpm', 'Yarn Berry (2 and later)', 'Yarn Classic (1.x)']) {
+      await expect(client.getByRole('option', { name: label, exact: true })).toBeAttached();
+    }
     await expect(page.locator('.credential-line')).toContainText('The snippets read your token from the variable QUADER_TOKEN.');
-    const setup = page.getByRole('tabpanel', { name: 'Configure' }).locator('.snippet pre');
-    await expect.poll(() => setup.first().textContent()).toBe(guideSnippet);
-  });
+    const configure = page.locator('section[aria-labelledby="step-configure"] quader-setup-snippet pre').first();
+    await expect(configure).toContainText(`/api/npm/${e2eProject}/${virtualKey}/:_authToken=\${QUADER_TOKEN}`);
+    await expect(page.getByRole('heading', { name: 'What a virtual repository is', level: 2 })).toBeVisible();
+    await page.getByRole('button', { name: 'More about this' }).click();
+    await expect(page.getByText(new RegExp(`For (${e2eProject}/)?${virtualKey} that is (${e2eProject}/)?${localKey}\\.`))).toBeVisible();
+    await expectAccessible(page, 'set up client');
 
-  await test.step('the setup page links back to the guide of the same repository and client', async () => {
-    await page.getByRole('link', { name: /^Read the guide/ }).click();
-    await expect(page.getByRole('heading', { name: 'Guides', level: 1 })).toBeVisible();
-    await expect(page.getByRole('radio', { name: virtualKey })).toBeChecked();
-    await expect.poll(() => page.locator('[data-section="npm.configure"] .snippet pre').first().textContent()).toBe(guideSnippet);
+    // The page's configure snippet is the guide's for the variable (R-API-070): the same rendering, one source.
+    const guide = await page.request.get(`/api/v1/projects/${e2eProject}/repositories/${virtualKey}/guide?client=npm`);
+    expect(guide.status()).toBe(200);
+    const fromGuide = ((await guide.json()) as { snippets: { tab: string; content: string }[] }).snippets.find((s) => s.tab === 'configure');
+    const shown = await configure.locator('.line').allTextContents();
+    expect(shown.join('\n')).toBe(fromGuide?.content.replace(/\n$/, ''));
   });
 
   await signOut(page);

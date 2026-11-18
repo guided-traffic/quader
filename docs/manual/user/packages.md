@@ -117,7 +117,7 @@ Links in **Details** open in a new tab and only for `http` and `https` addresses
 npm packages carry distribution tags, names such as `latest` or `next` that point at a version. The versions table shows each tag
 beside the version it points at, and only tags that point at a version you may see.
 
-You change tags with your package manager, not in the UI, for example `npm dist-tag add @team-a/ui@1.4.0 next`. That needs the deploy permission and, where the package has owners, ownership of it. The **How to use** guide of a repository has the commands for each client; see [Repositories](repositories.md#the-how-to-use-guide). The content page of a repository also lists its packages with their install commands; see [Repositories](repositories.md#the-content-of-a-repository).
+You change tags with your package manager, not in the UI, for example `npm dist-tag add @team-a/ui@1.4.0 next`. That needs the deploy permission and, where the package has owners, ownership of it. The guide on the repository's page **Set up client** has the commands for each client; see [Connecting a package client](client-setup.md). The content page of a repository also lists its packages with their install commands; see [Repositories](repositories.md#the-content-of-a-repository).
 
 ## The install panel
 
@@ -127,7 +127,7 @@ The panel **Install** stands on a version's page, under its facts and above its 
 2. Under **Repository**, choose the repository to install from. The picker appears only when several repositories hold the version; Quader preselects a virtual repository, otherwise a local one.
 3. Select **Copy install command** beside the **Install command**. A command of several lines is shown as a block; one longer than three lines is collapsed, **Show the whole command** expands it and **Show less** collapses it again.
 
-The command assumes that your package manager is already configured for the repository; it never contains a token. **Set up your client for this repository** opens the client setup for the chosen repository and client, where you configure that once; see [Connecting a package client](client-setup.md).
+The command assumes that your package manager is already configured for the repository; it never contains a token. **Set up client** opens the page of the chosen repository with the chosen client, where you configure that once; see [Connecting a package client](client-setup.md).
 
 ## The README
 

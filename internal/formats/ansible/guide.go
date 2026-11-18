@@ -30,10 +30,10 @@ func guideSections() []formats.GuideSection {
 		{ID: "ansible.local.what", Topic: formats.GuideWhat, Title: "What a local repository is", Classes: local, Markdown: guideText("what-local")},
 		{ID: "ansible.remote.what", Topic: formats.GuideWhat, Title: "What a remote repository is", Classes: remote, Markdown: guideText("what-remote")},
 		{ID: "ansible.virtual.what", Topic: formats.GuideWhat, Title: "What a virtual repository is", Classes: virtual, Markdown: guideText("what-virtual")},
-		{ID: "ansible.configure", Topic: formats.GuideConfigure, Title: "Point ansible-galaxy at the repository", Snippets: "configure", Markdown: guideText("configure")},
+		{ID: "ansible.configure", Topic: formats.GuideConfigure, Title: "Point ansible-galaxy at the repository", Markdown: guideText("configure")},
 		{ID: "ansible.authenticate", Topic: formats.GuideAuthenticate, Title: "Which credential ansible-galaxy sends", Markdown: guideText("authenticate")},
-		{ID: "ansible.install", Topic: formats.GuideInstall, Title: "Install collections and roles", Snippets: "install", Markdown: guideText("install")},
-		{ID: "ansible.publish", Topic: formats.GuidePublish, Title: "Publish a collection", Classes: writable, Snippets: "publish", Markdown: guideText("publish")},
+		{ID: "ansible.install", Topic: formats.GuideInstall, Title: "Install collections and roles", Markdown: guideText("install")},
+		{ID: "ansible.publish", Topic: formats.GuidePublish, Title: "Publish a collection", Classes: writable, Markdown: guideText("publish")},
 		{ID: "ansible.maintain", Topic: formats.GuideMaintain, Title: "Remove a version, import tasks and tombstones", Classes: local, Markdown: guideText("maintain")},
 		{ID: "ansible.troubleshooting", Topic: formats.GuideTroubleshooting, Title: "Troubleshooting", Markdown: guideText("troubleshooting")},
 	}

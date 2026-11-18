@@ -55,8 +55,9 @@ const GuideProjectPlaceholder = "<project>"
 
 // GuideSection is one section of a format's guide (R-UI-049): what a repository of
 // a class is and how a client uses it. The API renders the Markdown with the
-// README renderer and sanitizer of R-UI-008 and attaches the setup snippets the
-// section names, so the guide shows exactly what the client setup shows.
+// README renderer and sanitizer of R-UI-008; the setup snippets travel beside the
+// sections (api-and-ui.md R-API-070), and the page places each section by its
+// topic below the snippets it explains (R-UI-121).
 type GuideSection struct {
 	// ID is stable: "npm.remote.what".
 	ID string
@@ -68,9 +69,6 @@ type GuideSection struct {
 	Classes []Class
 	// Clients are the client IDs the section is written for; empty is every client.
 	Clients []string
-	// Snippets is a setup section ("configure", "install", "publish") whose snippets
-	// of the reader's client the API attaches below the text; "" attaches none.
-	Snippets string
 	// Markdown is text/template over [GuideData]. Like a setup template it never
 	// receives a token: the one credential it may spell is a reference
 	// ([SetupTokenRef], [SetupTokenRefWin], [SetupTokenRefPS]), which the API rewrites

@@ -9853,15 +9853,16 @@ paths:
       tags: [repositories]
       summary: The guide of a repository for one client
       description: |
-        What the repository is and how the client uses it (R-API-053, R-UI-049): the sections of the format's
-        guide that are written for the repository's class and the client, in topic order, each rendered from
-        Markdown to sanitized HTML by the README renderer of R-UI-008. A section that names a setup section
-        carries the snippets of the client setup (R-API-030) for the same repository and client: `credentials`
-        is `env` for a signed-in caller and `none` for an anonymous one, so the guide never holds a token or a
-        placeholder for one, and a snippet equals the one `client-setup` answers with that mode. A section
-        that renders to nothing is left out, which drops the publishing sections for an anonymous reader and
-        the endpoint note on an endpoint without exposure rules. The guide names the deployment target only
-        when the caller may deploy there, and never the members of a virtual repository. The text is English.
+        What the repository is and how the client uses it (R-API-053, R-API-070, R-UI-049): the sections of the
+        format's guide that are written for the repository's class and the client, in topic order, each rendered
+        from Markdown to sanitized HTML by the README renderer of R-UI-008, and, apart from them, the snippets of
+        the client setup (R-API-030) for the same repository and client: `credentials` is `env` for a signed-in
+        caller and `none` for an anonymous one, so the guide never holds a token or a placeholder for one, and a
+        snippet equals the one `client-setup` answers with that mode. A section that renders to nothing is left
+        out, which drops the endpoint note on an endpoint without exposure rules; the sections of the topics
+        `publish` and `maintain` are left out for a caller who may not publish to the repository, an anonymous
+        one included. The guide names the deployment target only when the caller may deploy there, and never
+        the members of a virtual repository. The text is English.
         Needs `read` on the repository (`404` otherwise, like a missing repository); `503` while no base URL
         is configured for the endpoint. The answer never matches `qdr_(pat|sat|cit)_`.
       x-quader-permission:
@@ -9900,17 +9901,17 @@ paths:
                 publishTarget: web/npm-local
                 credentials: env
                 exposureRules: false
+                snippets:
+                  - id: npm.configure.npmrc
+                    tab: configure
+                    fileName: .npmrc
+                    language: ini
+                    content: "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}\n"
                 sections:
                   - id: npm.configure
                     topic: configure
                     title: Point the client at the repository
                     html: "<p>Save the snippet as <code>.npmrc</code> in your project …</p>"
-                    snippets:
-                      - id: npm.configure.npmrc
-                        tab: configure
-                        fileName: .npmrc
-                        language: ini
-                        content: "registry=https://quader.example.com/api/npm/web/npm-all/\n//quader.example.com/api/npm/web/npm-all/:_authToken=${QUADER_TOKEN}\n"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -9931,10 +9932,11 @@ paths:
       tags: [repositories]
       summary: The guide of a format for one class and client
       description: |
-        The guide of the format for a class and a client without a repository (R-API-053, R-UI-049): the same
-        sections as `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/guide`, with the addresses of the endpoint's base URL
-        and `<repository>` where the repository key goes, no deployment target, and the snippets of the
-        client setup rendered for that address. Any caller; an anonymous caller only while some repository's artifacts are
+        The guide of the format for a class and a client without a repository (R-API-053, R-API-070, R-UI-049): the
+        same sections as `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/guide`, with the addresses of the
+        endpoint's base URL and `<project>` and `<repository>` where the project key and the repository key go, no
+        deployment target, and the snippets of the client setup rendered for that address; the publish snippets for a
+        signed-in caller and a class that takes publishing (local, virtual). Any caller; an anonymous caller only while some repository's artifacts are
         `public` (`publicContent`, R-AUTH-037), else `401`. An unknown format answers `404`; a class or client the format does not have `400`;
         `503` while no base URL is configured for the endpoint.
       x-quader-permission:
@@ -17990,7 +17992,7 @@ components:
     # >>> M2 guides
     Guide:
       type: object
-      required: [format, class, client, repository, registryUrl, publishTarget, credentials, exposureRules, sections]
+      required: [format, class, client, repository, registryUrl, publishTarget, credentials, exposureRules, snippets, sections]
       properties:
         format:
           type: string
@@ -18015,13 +18017,20 @@ components:
         exposureRules:
           type: boolean
           description: The endpoint of the request serves under exposure rules (endpoints.md R-EP-012).
+        snippets:
+          type: array
+          description: |
+            The snippets of the client setup (R-API-030) for the guide's address and client, in the order of the format's
+            templates, with the credential mode of `credentials`; the reader copies them before reading the sections (R-UI-121).
+          items:
+            $ref: "#/components/schemas/ClientSnippet"
         sections:
           type: array
           items:
             $ref: "#/components/schemas/GuideSection"
     GuideSection:
       type: object
-      required: [id, topic, title, html, snippets]
+      required: [id, topic, title, html]
       properties:
         id:
           type: string
@@ -18035,11 +18044,6 @@ components:
         html:
           type: string
           description: The section's text, sanitized by the README renderer of R-UI-008; bind it like a README.
-        snippets:
-          type: array
-          description: The snippets of the client setup the section shows below its text, empty for most sections.
-          items:
-            $ref: "#/components/schemas/ClientSnippet"
     # <<< M2 guides
     #
     # >>> M2 manual

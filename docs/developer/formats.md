@@ -240,16 +240,17 @@ R-UI-049, R-API-053, Q-ARCH-235. `Guide()` returns the sections of the format's 
 configures, signs in, installs, publishes, maintains, audits and keeps lockfiles through it, what an endpoint with exposure rules changes, and a
 troubleshooting table. The API ([guide_api.go](../../internal/api/v1/guide_api.go), [http-api.md](http-api.md#the-guides-of-the-formats-r-api-053))
 filters the sections by the class and the client, orders them by topic, runs each through `formats.ExecuteGuide`, rewrites `${QUADER_TOKEN}` by the
-reader's credential mode, renders the Markdown with the README renderer and attaches the setup snippets a section names. A section that renders to
-white space only is left out, which is how a section speaks to some readers only (`{{if .ExposureRules}}`, `{{if not .Anonymous}}`).
+reader's credential mode and renders the Markdown with the README renderer; the setup snippets of the reader's client travel beside the sections
+(`Guide.snippets`, R-API-070), and the page **Set up client** places them above the sections. A section that renders to white space only is left out,
+which is how a section speaks to some readers only (`{{if .ExposureRules}}`, `{{if not .Anonymous}}`); the guide of a repository also leaves out the
+topics `publish` and `maintain` for a reader who may not publish there (`keepsSection`).
 
 | Field of `GuideSection` | Rule |
 |---|---|
 | `ID` | Stable and unique, `<format>.<name>` |
 | `Topic` | One of `formats.GuideTopics()`; the required ones (`what`, `configure`, `authenticate`, `install`, `troubleshooting`) must cover every class and client |
 | `Classes`, `Clients` | Whom the section is written for; empty is everyone |
-| `Snippets` | `configure`, `install` or `publish`: the API attaches those setup snippets of the reader's client, rendered by the setup's code; the `configure` and `install` topics must attach theirs |
-| `Markdown` | `text/template` over `GuideData` (`SetupData` plus `Class`, `Client`, `PublishTarget`, `Anonymous`, `ExposureRules`, `TokenEnvVar`); `.Repository` is empty in the guide of a format, whose addresses carry `<repository>` |
+| `Markdown` | `text/template` over `GuideData`; the text may speak of "the snippet", which the page shows above it (`SetupData` plus `Class`, `Client`, `PublishTarget`, `Anonymous`, `ExposureRules`, `TokenEnvVar`); `.Repository` is empty in the guide of a format, whose addresses carry `<repository>` |
 
 Rules for the text: describe only what the format does as built and name what a user would try and is not built as not available; put a credential
 only as `${QUADER_TOKEN}` in a fenced code block; keep sub-headings (`###`) unique across the sections, because each section's HTML gets its heading

@@ -1,5 +1,5 @@
 <quader-page-header heading="Packages" i18n-heading="@@pkg.list.heading">
-  <a actions class="btn btn-default" routerLink="/setup" i18n="@@pkg.list.setup">Set up a client</a>
+  <a actions class="btn btn-default" routerLink="/guides" i18n="@@repo.content.tab.setup">Set up client</a>
 </quader-page-header>
 
 @if (memory.available()) {
@@ -249,7 +249,7 @@
         </p>
       } @else {
         <p>
-          <a routerLink="/setup" i18n="@@pkg.list.empty-setup">Set up a client to publish the first package</a>
+          <a routerLink="/guides" i18n="@@pkg.list.empty-setup">Set up a client to publish the first package</a>
         </p>
       }
     }

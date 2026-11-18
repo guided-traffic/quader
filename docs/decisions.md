@@ -199,6 +199,7 @@ checked every earlier decision against them:
 | [ADR-156](#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project) | Projects own their repositories, members hold roles, names are scoped to the project | Accepted (owner decision of 2026-11-06); the details decided by the development agent — owner review at the walkthrough |
 | [ADR-199](#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark) | The product is renamed from trove to Quader, with the token prefix `qdr_` and a new mark | Accepted (owner decision of 2026-11-17); the prefix `qdr_` chosen by the development agent, open to the owner's objection |
 | [ADR-200](#adr-200--a-lists-filters-open-in-a-drawer-the-apps-one-pattern-for-content-over-the-page) | A list's filters open in a drawer, the app's one pattern for content over the page | Accepted (owner decision of 2026-11-18) for the drawer; its build decided by the development agent, owner review at the walkthrough |
+| [ADR-202](#adr-202--the-client-setup-and-the-guide-are-one-page-of-a-repository) | The client setup and the guide are one page of a repository | Accepted (owner decision of 2026-11-18); the address, the layout and the API decided by the development agent — owner review at the walkthrough |
 | [ADR-203](#adr-203--browse-goes-a-repositorys-files-live-on-its-page) | Browse goes; a repository's files live on its page | Accepted (owner decision of 2026-11-18); the details decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
@@ -925,6 +926,40 @@ it and the scroll block written again).
 
 **Spec:** [Q-UI-420](spec/api-and-ui.md#q-ui-420--the-filters-of-a-list-open-in-a-drawer-from-the-right-over-the-page) to
 [Q-UI-423](spec/api-and-ui.md#q-ui-423--the-drawers-filters-stand-open-apply-closes-it-and-closing-without-apply-keeps-what-the-list-shows).
+### ADR-202 · The client setup and the guide are one page of a repository
+
+**Status:** Accepted (owner decision of 2026-11-18, the walk through the frontend, W-2: "context instead of choices"). The address,
+the layout and the change of the API are decided by the development agent — owner review at the walkthrough.
+
+**Context.** Quader had two pages for one job. The guides (`/guides`) asked for four things in boxed groups of radio buttons
+(package type, client, repository, repository class) before a boxed contents list and dense prose; the client setup (`/setup`)
+showed the snippets for a repository named in its query. The owner found the guides "so ugly and overloaded that nobody wants to
+work with them", and took the client address out of the list of repositories because an address without its guide has no context
+(W-4).
+
+**Decision.** One page, **Set up client**, belongs to a repository: `/projects/{project}/repositories/{key}/setup`. It asks for
+nothing the repository decides: the format, the class and the repository are its header, the client is one control where the format
+has several. The job comes first (the address, the token, then the snippets of Configure, Install and, for who may publish,
+Publish) and the explanation after it: what a repository of the class is, then the format's sections folded under their headings.
+The navigation entry **Guides** shows the formats as tiles; a tile leads to the format's repositories, and the guide of a class
+without a repository is the same page at `/guides/{format}/{class}`. `/setup` is removed. The guide's answer carries its snippets
+beside its sections, and the format contract no longer names a setup section per guide section
+([R-API-070](spec/api-and-ui.md#r-api-070--a-guide-carries-its-snippets-beside-its-sections)).
+
+**Consequences.** Every **Set up client** has one target and one look. The address of a repository is shown with the snippets that
+use it. The token is created on the page and read into the variable, so the reader does not leave the task. A guide is reached
+through a repository, so a reader without one takes one more step (the format's page, then a class). The guide of a reader who may
+not publish leaves publishing out. Kit check 8 now requires the configure and install templates of every client of a format with
+a guide instead of a section that attaches them.
+
+**Alternatives considered.** Restyling the guides page and keeping its four choices (the owner: not chosen); moving the guides
+into the manual (the owner: not chosen; the text would lose this installation's addresses); keeping two pages linked to each
+other (the state the owner rejected).
+
+**Spec:** [R-UI-120](spec/api-and-ui.md#r-ui-120--set-up-client-is-one-page-of-a-repository) to
+[R-UI-127](spec/api-and-ui.md#r-ui-127--the-format-tiles-are-one-component), R-UI-016, R-UI-049, R-API-053, R-API-070; decided:
+Q-UI-480 to Q-UI-487, Q-API-310.
+
 ### ADR-203 · Browse goes; a repository's files live on its page
 
 **Status:** Accepted (owner decision of 2026-11-18, walk objection W-8); the details decided by the development agent — owner review

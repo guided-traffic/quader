@@ -154,7 +154,6 @@ formats.GuideSection: field Classes []Class
 formats.GuideSection: field Clients []string
 formats.GuideSection: field ID string
 formats.GuideSection: field Markdown string
-formats.GuideSection: field Snippets string
 formats.GuideSection: field Title string
 formats.GuideSection: field Topic string
 formats.GuideSection: method AppliesTo(Class, string) bool

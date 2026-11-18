@@ -323,7 +323,7 @@ The settings page of a repository (**Settings** in the row's menu, or `/projects
 one column. At the top are the **Key** (read-only) and **Description (optional)**; then, open, **Visibility**, the **Upstream** of
 a remote repository and the **Members** of a virtual one. Every other setting is a closed section: **Mirror**, **<Format> settings**,
 **Access details** (patterns and hiding existence), **Administrator notes**, the format's own sections (**Signing keys** and
-**Indexes** for Debian, **Import tasks** and **Tombstones** for Ansible Galaxy), **How to use**, **Details** (class, format, layout,
+**Indexes** for Debian, **Import tasks** and **Tombstones** for Ansible Galaxy), **Details** (class, format, layout,
 project, client address and dates), **API** and **Advanced**.
 
 1. Change settings in a section. A closed section that holds an unsaved change says **Unsaved changes** after its title, and
@@ -347,10 +347,6 @@ can no longer download from it or publish to it, and virtual repositories skip i
 3. If the repository is a member, deployment target or pin-rule member of a virtual repository, the deletion is refused with **Other repositories still include this one.** In the list, tick **Also remove it from the virtual repositories that include it** to detach it in the same step.
 
 Deleting needs a recent sign-in. A local or remote repository is marked **being deleted** and a background job removes its content and then the repository; the key is free again in its project only when the job has finished. A virtual repository is removed at once. Content is deleted permanently; there is no trash. Exposure rules that name the repository are removed with it.
-
-## How to use
-
-The closed section **How to use** of the settings page shows the setup for this repository, with the **Client** to choose: **npm**, **pnpm**, **Yarn Berry (2 and later)** or **Yarn Classic (1.x)** for npm, **.NET CLI (dotnet)**, **NuGet CLI (nuget.exe)** or **Visual Studio** for NuGet, **Docker CLI (with Buildx)** or **Podman** for OCI, **APT (apt, apt-get)** for Debian, **curl** for generic. It explains the class, how to point the client at the repository and sign in, and how to install, publish, manage dist-tags or transfer files, depending on the class. **Open the client setup** leads to the setup assistant described in [Connecting a package client](../user/client-setup.md).
 
 ## File operations
 

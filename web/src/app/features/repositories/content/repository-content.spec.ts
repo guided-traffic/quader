@@ -244,10 +244,10 @@ describe('Repository content page', () => {
 
   it('R-UI-052 the page has no setup tab: its Set up client opens the setup for this repository', async () => {
     const r = await open(NPM_REPO);
-    // One way to the setup (Q-UI-321): the header's primary action, no tab beside the content.
+    // One way to the setup (Q-UI-321): the header's action, no tab beside the content.
     expect([...r.root.querySelectorAll('[role="tab"]')].map((t) => text(t))).not.toContain('Set up client');
-    const setup = r.root.querySelector('quader-page-header .client-row a.btn-confirm');
-    expect(setup?.getAttribute('href')).toBe('/setup?repository=web%2Fnpm-local');
+    const setup = r.root.querySelector('quader-page-header .client-row a.btn');
+    expect(setup?.getAttribute('href')).toBe('/projects/web/repositories/npm-local/setup');
     await expectAccessible(r.root);
   });
 
@@ -272,7 +272,7 @@ describe('Repository content page', () => {
 
   it('R-UI-052 a disabled repository offers no Set up client and says that it is disabled', async () => {
     const r = await open({ ...NPM_REPO, disabled: true });
-    expect(r.root.querySelector('quader-page-header a.btn-confirm')).toBeNull();
+    expect([...r.root.querySelectorAll('quader-page-header a')].map((a) => text(a))).not.toContain('Set up client');
     expect(text(r.root.querySelector('quader-page-header')!)).toContain('disabled');
     await expectAccessible(r.root);
   });
@@ -285,14 +285,15 @@ describe('Repository content page', () => {
     expect([...reader.root.querySelectorAll('.page-header-actions a')].map((a) => a.textContent?.trim())).not.toContain('Settings');
   });
 
-  it('R-UI-066 R-UI-067 Q-UI-517 the header shows the client address with Set up client, its primary action, beside it', async () => {
+  it('R-UI-066 R-UI-067 Q-UI-517 R-UI-126 the header shows the client address with Set up client beside it, in the one style of that action', async () => {
     const r = await open(NPM_REPO);
     const row = r.root.querySelector('quader-page-header .client-row')!;
     const field = row.querySelector<HTMLInputElement>('quader-address-field input');
     expect(field?.value).toContain('web/npm-local/');
-    const primary = row.querySelector('a.btn-confirm');
+    const primary = row.querySelector('a.btn');
     expect(primary?.textContent?.trim()).toBe('Set up client');
-    expect(primary?.getAttribute('href')).toBe('/setup?repository=web%2Fnpm-local');
+    expect(primary?.classList.contains('btn-default')).toBe(true);
+    expect(primary?.getAttribute('href')).toBe('/projects/web/repositories/npm-local/setup');
     // The other views are in the header's menu, not loose links beside the tabs.
     expect(r.root.querySelector('.page-header-actions button[aria-label="More actions"]')).toBeTruthy();
     await expectAccessible(r.root);

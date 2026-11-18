@@ -117,7 +117,7 @@ Built (M2, npm registry):
 - 🛡️ **npm security audit.** `npm audit`, `pnpm audit` and `yarn npm audit` on every class. While vulnerability scanning is on and the OSV source is not `off`, a repository that does not set `npm.audit.mode` answers from Quader's own advisory data and sends nothing out (`mode: local`, M4b); `npm.audit.mode: forward` keeps the forward of remote and virtual repositories to the provider (the upstream by default), never cached ([Q-ARCH-341](docs/spec/architecture.md#q-arch-341--code-shaped-only-by-the-compatibility-rules-is-cleaned-up-the-cluster-minimum-version-stays). See [npm](docs/developer/npm.md) and [client audits](docs/security/vulnerability-scanning.md#client-audits).
 - 🌐 **npm on customer endpoints.** Package documents and dist-tags list only the versions an endpoint exposes; a hidden version answers `404`. See [endpoints](docs/developer/endpoints.md).
 - 🖼️ **Package screens and client setup.** The package list; a package's page as the table of its versions (grade, total and fixable findings, size, published, last fetched) with search and sort; a page per version with its findings, install command, files and details; client setup snippets, and repository settings rendered from the format's schema. See [packages](docs/developer/packages.md) and [web UI](docs/developer/web-ui.md).
-- 📖 **In-app guides.** A guide for every npm variant (local, remote and virtual) with npm, pnpm, Yarn Berry and Yarn Classic, in the UI's guides area. See [npm](docs/developer/npm.md) and [web UI](docs/developer/web-ui.md).
+- 📖 **Set up client with its guide.** Every repository has a page **Set up client**: the snippets of its client first, then the guide of its class and client (every npm variant with npm, pnpm, Yarn Berry and Yarn Classic); **Guides** shows the formats as tiles. See [npm](docs/developer/npm.md) and [web UI](docs/developer/web-ui.md).
 
 Built (M3, NuGet; the phase is open for its [remaining findings](docs/projektplan/promt.md#8--open-findings)):
 
@@ -1056,7 +1056,7 @@ docker pull quader.example.com/demo/docker/myapp:1.0                            
 docker pull quader.example.com/demo/docker/alpine:3.20                                                      # Docker Hub's library/alpine through the remote member
 ```
 
-Podman takes the same commands (`podman login`, `podman push`, `podman pull`); the Client setup page of the UI gives the snippets
+Podman takes the same commands (`podman login`, `podman push`, `podman pull`); the page **Set up client** of a repository gives the snippets
 of your installation, a Kubernetes image pull secret among them ([container images](docs/manual/user/container-images.md)). A
 Docker Hub remote without credentials shares the anonymous pull allowance of Quader's address; give it an account
 ([container repositories](docs/manual/admin/container-repositories.md#a-remote-repository-for-docker-hub)). Not verified in this
@@ -1099,7 +1099,7 @@ curl -s -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/js
 # on the client: the configure snippet of apt (key file quader-demo-apt.asc); stable merges deb-local's stable with Debian's, trixie is Debian's alone
 ```
 
-The Client setup page gives these snippets for your repository and suite, and for the remote a source whose `Signed-By` is the
+The page **Set up client** of your repository gives these snippets for it and its suite, and for the remote a source whose `Signed-By` is the
 remote's `signing-key.asc`, which serves the archive's keys ([Debian packages with APT](docs/manual/user/apt-packages.md)). Compare the
 fingerprints of `deb.upstreamKeys` with the ones Debian publishes before you trust them
 ([Debian (APT) repositories](docs/manual/admin/apt-repositories.md#upstream-keys)). Not verified in this pass: no stack was started for

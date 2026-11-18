@@ -9,16 +9,13 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 )
 
-// guideSnippetSections are the setup sections a guide section may attach
-// (formats.GuideSection.Snippets).
-func guideSnippetSections() []string { return []string{"configure", "install", "publish"} }
-
 var tokenShape = regexp.MustCompile(`qdr_(pat|sat|cit)_`)
 
 // guide is the guide half of check 8 (R-UI-049): a format with clients ships a
-// guide that covers every class and client with the required topics, attaches the
-// setup snippets to its configure and install topics, and obeys the credential
-// rule of the templates in the code a reader copies.
+// guide that covers every class and client with the required topics, has the
+// configure and install snippets the guide's page shows above its sections
+// (R-API-070), and obeys the credential rule of the templates in the code a reader
+// copies.
 func (r *run) guide(tpls []formats.SetupTemplate) {
 	secs := r.f.Guide()
 	if len(r.d.Clients) == 0 {
@@ -40,18 +37,25 @@ func (r *run) guide(tpls []formats.SetupTemplate) {
 			r.failf("guide section ID %q is used twice", s.ID)
 		}
 		ids[s.ID] = true
-		r.guideSection(s, tabs)
+		r.guideSection(s)
 	}
 	for _, class := range r.d.Classes {
 		for _, c := range r.d.Clients {
 			r.guideCoverage(secs, class, c.ID)
 		}
 	}
+	for _, c := range r.d.Clients {
+		for _, section := range []string{formats.GuideConfigure, formats.GuideInstall} {
+			if !tabs[c.ID][section] {
+				r.failf("client %q has a guide and no %s snippets", c.ID, section)
+			}
+		}
+	}
 }
 
 // guideSection checks one section's declaration and runs it over every variant of
 // the data for each class and client it applies to.
-func (r *run) guideSection(s formats.GuideSection, tabs map[string]map[string]bool) {
+func (r *run) guideSection(s formats.GuideSection) {
 	switch {
 	case s.ID == "":
 		r.failf("a guide section of topic %q has no ID", s.Topic)
@@ -60,8 +64,6 @@ func (r *run) guideSection(s formats.GuideSection, tabs map[string]map[string]bo
 		r.failf("guide section %q has topic %q", s.ID, s.Topic)
 	case strings.TrimSpace(s.Title) == "":
 		r.failf("guide section %q has no title", s.ID)
-	case s.Snippets != "" && !slices.Contains(guideSnippetSections(), s.Snippets):
-		r.failf("guide section %q attaches the snippets of section %q", s.ID, s.Snippets)
 	}
 	for _, c := range s.Classes {
 		if !r.d.Supports(c) {
@@ -74,9 +76,6 @@ func (r *run) guideSection(s formats.GuideSection, tabs map[string]map[string]bo
 		}
 	}
 	for _, c := range r.d.Clients {
-		if s.Snippets != "" && !tabs[c.ID][s.Snippets] && slices.ContainsFunc(r.d.Classes, func(class formats.Class) bool { return s.AppliesTo(class, c.ID) }) {
-			r.failf("guide section %q attaches the %s snippets of client %q, which has none", s.ID, s.Snippets, c.ID)
-		}
 		for _, class := range r.d.Classes {
 			if !s.AppliesTo(class, c.ID) {
 				continue
@@ -119,28 +118,23 @@ func (r *run) guideText(s formats.GuideSection, d formats.GuideData) bool {
 }
 
 // guideCoverage: every required topic has a section for the class and the client
-// that says something in every variant; the configure and install topics attach the
-// setup snippets of their section.
+// that says something in every variant.
 func (r *run) guideCoverage(secs []formats.GuideSection, class formats.Class, client string) {
 	for _, topic := range formats.RequiredGuideTopics() {
-		var found, attached bool
+		var found bool
 		for _, s := range secs {
 			if s.Topic != topic || !s.AppliesTo(class, client) {
 				continue
 			}
 			found = true
-			attached = attached || s.Snippets == topic
 			for _, d := range r.guideVariants(class, client) {
-				if out, err := formats.ExecuteGuide(s, d); err == nil && strings.TrimSpace(out) == "" && s.Snippets == "" {
+				if out, err := formats.ExecuteGuide(s, d); err == nil && strings.TrimSpace(out) == "" {
 					r.failf("guide section %q of the required topic %q says nothing for class %s, client %s (%s)", s.ID, topic, class, client, variantName(d))
 				}
 			}
 		}
-		switch {
-		case !found:
+		if !found {
 			r.failf("class %s, client %q: no guide section of topic %q", class, client, topic)
-		case (topic == formats.GuideConfigure || topic == formats.GuideInstall) && !attached:
-			r.failf("class %s, client %q: no guide section of topic %q attaches the %s snippets", class, client, topic, topic)
 		}
 	}
 }

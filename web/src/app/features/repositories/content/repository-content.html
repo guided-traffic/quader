@@ -23,7 +23,7 @@
           <quader-address-field [value]="a" />
         }
         @if (!disabled()) {
-          <a class="btn btn-confirm" routerLink="/setup" [queryParams]="{ repository: ref() }" i18n="@@repo.content.tab.setup">Set up client</a>
+          <a class="btn btn-default" [routerLink]="setupLink()" i18n="@@repo.content.tab.setup">Set up client</a>
         }
       </div>
     }

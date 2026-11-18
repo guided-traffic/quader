@@ -92,11 +92,10 @@ export function places(): Place[] {
   ];
 }
 
-/** The pages the typed text is matched against: the places and Client setup, Sessions and Documentation (R-UI-097). */
+/** The pages the typed text is matched against: the places, Sessions and Documentation (R-UI-097). */
 export function pages(): Place[] {
   return [
     ...places(),
-    { route: '/setup', icon: 'terminal', label: $localize`:@@shell.menu.setup:Client setup`, anonymous: false },
     { route: '/profile/sessions', icon: 'devices', label: $localize`:@@search.place.sessions:Sessions`, anonymous: false },
     { route: '/help', icon: 'help_outline', label: $localize`:@@shell.documentation:Documentation`, anonymous: true },
   ];

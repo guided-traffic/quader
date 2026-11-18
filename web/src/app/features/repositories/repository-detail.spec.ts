@@ -206,23 +206,7 @@ describe('Repository edit form', () => {
 
   it('R-UI-021 a repository of a format without settings has no section of format settings', async () => {
     const r = await open((fake) => (fake.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT]));
-    expect(sectionHeadings(r.root)).toEqual(['Access details', 'Administrator notes', 'How to use', 'Details', 'API', 'Advanced']);
-  });
-
-  it('R-UI-049 R-GENERIC-016 the section How to use of a generic repository shows the guide for curl', async () => {
-    const r = await open((fake) => (fake.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT]));
-    await openTab(r, 'How to use');
-    const guides = r.get(GuidesApi) as FakeGuidesApi;
-    expect(guides.calls.at(-1)).toEqual({ repository: 'web/generic-local', client: 'curl' });
-    expect(r.root.querySelector('[data-section="generic.local.what"]')).not.toBeNull();
-    const configure = r.root.querySelector('[data-section="generic.configure"] .snippet pre')?.textContent ?? '';
-    expect(configure).toContain('quader_curl() {');
-    const hrefs = [...r.root.querySelectorAll<HTMLAnchorElement>('.links a')].map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual([
-      '/setup?format=generic&client=curl&repository=web%2Fgeneric-local',
-      '/guides?format=generic&client=curl&repository=web%2Fgeneric-local',
-    ]);
-    await expectAccessible(r.root);
+    expect(sectionHeadings(r.root)).toEqual(['Access details', 'Administrator notes', 'Details', 'API', 'Advanced']);
   });
 
   it('R-UI-021 a caller who may use but not configure the repository sees the consumer view without a form', async () => {
@@ -234,35 +218,18 @@ describe('Repository edit form', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-049 a repository of a format with clients has a section How to use with its guide for the chosen client', async () => {
+  it('R-UI-120 the settings have no section about the client: the guide is on Set up client of the repository\'s header', async () => {
     const r = await open(withNpmLocal(), 'npm-local');
-    expect(sectionHeadings(r.root)).toEqual(['npm settings', 'Access details', 'Administrator notes', 'How to use', 'Details', 'API', 'Advanced']);
+    expect(sectionHeadings(r.root)).toEqual(['npm settings', 'Access details', 'Administrator notes', 'Details', 'API', 'Advanced']);
     const guides = r.get(GuidesApi) as FakeGuidesApi;
     expect(guides.calls).toEqual([]);
-    await openTab(r, 'How to use');
-    expect(guides.calls.at(-1)).toEqual({ repository: 'web/npm-local', client: 'npm' });
-    expect(r.root.querySelector('[data-section="npm.local.what"]')).not.toBeNull();
-    const yarn = r.root.querySelector<HTMLInputElement>('input[name="repo-guide-client"][value="yarn"]')!;
-    yarn.checked = true;
-    yarn.dispatchEvent(new Event('change', { bubbles: true }));
-    await settle(r.fixture);
-    expect(guides.calls.at(-1)).toEqual({ repository: 'web/npm-local', client: 'yarn' });
-    const hrefs = [...r.root.querySelectorAll<HTMLAnchorElement>('.links a')].map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual([
-      '/setup?format=npm&client=yarn&repository=web%2Fnpm-local',
-      '/guides?format=npm&client=yarn&repository=web%2Fnpm-local',
-    ]);
-    await expectAccessible(r.root);
-  });
-
-  it('R-UI-049 the consumer view of an npm repository shows the guide under its own heading', async () => {
-    const r = await open((fake) => {
+    const consumer = await open((fake) => {
       withNpmLocal()(fake);
       fake.consumerOnly = true;
     }, 'npm-local');
-    expect(r.root.querySelector('#repo-how-to-use')?.textContent?.trim()).toBe('How to use');
-    expect(r.root.querySelector('[data-section="npm.configure"]')).not.toBeNull();
-    await expectAccessible(r.root);
+    expect(text(consumer.root)).not.toContain('How to use');
+    expect(consumer.root.querySelector('a[href$="/setup"]')).toBeNull();
+    await expectAccessible(consumer.root);
   });
 
   it('R-UI-021 an unknown repository shows the not-found error and passes the accessibility check', async () => {
@@ -331,7 +298,7 @@ describe('Repository edit form', () => {
 
     it('R-DEB-030 R-UI-021 a local repository has the sections of its format settings, signing keys, indexes and the APT guide', async () => {
       const r = await openDeb('local');
-      expect(tabNames(r)).toEqual(['Debian (APT) settings', 'Access details', 'Administrator notes', 'Signing keys', 'Indexes', 'How to use', 'Details', 'API', 'Advanced']);
+      expect(tabNames(r)).toEqual(['Debian (APT) settings', 'Access details', 'Administrator notes', 'Signing keys', 'Indexes', 'Details', 'API', 'Advanced']);
       await openTab(r, 'Signing keys');
       expect(text(r.root)).toContain('3F2A 0000');
       const api = r.get(DebApi) as FakeDebApi;
@@ -415,7 +382,7 @@ describe('Repository edit form', () => {
 
     it('R-ANS-026 a local repository has the tabs for its import tasks, its tombstones and the ansible-galaxy guide, loaded when opened', async () => {
       const r = await openAnsible('local');
-      expect(tabNames(r)).toEqual(expect.arrayContaining(['Import tasks', 'Tombstones', 'How to use']));
+      expect(tabNames(r)).toEqual(expect.arrayContaining(['Import tasks', 'Tombstones']));
       const api = r.get(AnsibleApi) as FakeAnsibleApi;
       expect(api.calls).toEqual([]);
       await openTab(r, 'Import tasks');

@@ -303,6 +303,6 @@ describe('The files of a repository', () => {
       [...all].filter((b) => b.textContent?.includes('Upload files')).length === 1,
     );
     const reader = await open('generic-local', undefined, (f) => f.tree.set('web/generic-local', []), (c) => c.action === 'read');
-    expect(reader.root.querySelector('quader-empty-state a')?.getAttribute('href')).toBe('/setup?repository=web%2Fgeneric-local');
+    expect(reader.root.querySelector('quader-empty-state a')?.getAttribute('href')).toBe('/projects/web/repositories/generic-local/setup');
   });
 });

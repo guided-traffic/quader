@@ -2,7 +2,6 @@ import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
-import { FormatClient } from '../../api/guides-api';
 import { collectAll } from '../../api/pagination';
 import { ApiError, FieldProblem } from '../../api/problem';
 import { ProjectsApi } from '../../api/projects-api';
@@ -45,7 +44,6 @@ import { MirrorStatusPanel } from './mirror-status';
 import { FrequentPlaces } from '../../core/frequent-places';
 import { classLabel } from './repository-class';
 import { RepositoryFields } from './repository-fields';
-import { RepositoryGuide } from './repository-guide';
 import {
   FormatMemberOf,
   RepositoryForm,
@@ -63,14 +61,14 @@ import { upstreamDefaultsOf } from './upstream-model';
 import { UpstreamSettings, upstreamPointerLabel, upstreamTarget } from './upstream-settings';
 import { MemberChange, VirtualMembers } from './virtual-members';
 
-/** The closed sections whose content loads when it is first opened (a list read from the server, a guide). */
-type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones' | 'guide';
+/** The closed sections whose content loads when it is first opened (a list read from the server). */
+type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones';
 
 /**
  * The settings page of a repository (R-UI-087, Q-UI-351, Q-UI-352): one column of sections, as the style guide's settings pages.
  * The key and the description at the top, the visibility, the upstream of a remote and the members of a virtual repository open
  * below, and every detail a closed section: the mirror, the format's settings, the access details, the administrator notes, the
- * format's operations, How to use, the facts and the API. Each section that edits the document saves only its members, a merge
+ * format's operations, the facts and the API. Each section that edits the document saves only its members, a merge
  * patch with the loaded `ETag` (`sectionPatch`); a 412 opens the conflict dialog for that section, and every other section keeps its
  * unsaved edits (`rebaseForm`). **Advanced** disables or enables, moves and deletes. A caller without `repositories:read-config`
  * sees the reduced consumer view.
@@ -95,7 +93,6 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
     NgTemplateOutlet,
     PageHeader,
     RepositoryFields,
-    RepositoryGuide,
     RepositoryVisibilityBlock,
     RouterLink,
     SelectField,
@@ -798,9 +795,4 @@ export class RepositoryDetail implements HasUnsavedChanges {
   }
 
   protected readonly deleteLabel = $localize`:@@repo.delete.progress:Repository deletion`;
-
-  /** The format's clients; a format with clients has a guide (R-UI-049). */
-  protected clientsOf(format: string): readonly FormatClient[] {
-    return (valueOf(this.formats) ?? []).find((f) => f.name === format)?.clients ?? [];
-  }
 }

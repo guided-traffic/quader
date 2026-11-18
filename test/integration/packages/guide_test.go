@@ -25,9 +25,11 @@ func guideSections(t testing.TB, a testenv.Answer) map[string]map[string]any {
 	return out
 }
 
-func sectionSnippets(sec map[string]any) map[string]string {
+// guideSnippets returns the snippets of a guide answer by id (R-API-070).
+func guideSnippets(t testing.TB, a testenv.Answer) map[string]string {
+	t.Helper()
 	out := map[string]string{}
-	for _, s := range sec["snippets"].([]any) {
+	for _, s := range a.JSON(t)["snippets"].([]any) {
 		m := s.(map[string]any)
 		out[m["id"].(string)] = m["content"].(string)
 	}
@@ -41,24 +43,21 @@ func TestR_API_053_TheGuideThroughTheStack(t *testing.T) {
 	e := newEnv(t)
 	shape := regexp.MustCompile(`qdr_(pat|sat|cit)_`)
 
-	t.Run("the configure and install snippets are the client setup's with credentials=env", func(t *testing.T) {
+	t.Run("the snippets are the client setup's with credentials=env", func(t *testing.T) {
 		for _, client := range []string{"npm", "pnpm", "yarn", "yarn-classic"} {
-			g := guideSections(t, e.get(e.tokA, "/api/v1/projects/it/repositories/npm-local/guide?client="+client))
+			got := guideSnippets(t, e.get(e.tokA, "/api/v1/projects/it/repositories/npm-local/guide?client="+client))
 			setup := snippets(t, e.setup(e.tokA, "npm-local", "client="+client+"&credentials=env"))
-			for _, tab := range []string{"configure", "install"} {
-				got := sectionSnippets(g["npm."+tab])
-				if len(got) == 0 {
-					t.Fatalf("%s: no %s snippets", client, tab)
-				}
-				for id, content := range got {
-					if setup[id] != content {
-						t.Errorf("%s %s: guide %q, setup %q", client, id, content, setup[id])
-					}
+			if len(got) == 0 || len(got) != len(setup) {
+				t.Fatalf("%s: guide %v, setup %v", client, got, setup)
+			}
+			for id, content := range got {
+				if setup[id] != content {
+					t.Errorf("%s %s: guide %q, setup %q", client, id, content, setup[id])
 				}
 			}
 		}
 	})
-	t.Run("a caller who may deploy gets the target, one who may not is told", func(t *testing.T) {
+	t.Run("R-API-070 a caller who may deploy gets the target, one who may not gets no publishing", func(t *testing.T) {
 		a := e.get(e.tokA, "/api/v1/projects/it/repositories/npm-local/guide?client=npm")
 		if v := a.JSON(t); v["publishTarget"] != "it/npm-local" || v["credentials"] != "env" || v["registryUrl"] != "http://quader.test/api/npm/it/npm-local/" {
 			t.Fatalf("%v", v)
@@ -67,8 +66,8 @@ func TestR_API_053_TheGuideThroughTheStack(t *testing.T) {
 		if b.JSON(t)["publishTarget"] != nil {
 			t.Fatalf("%s", b.Body)
 		}
-		if html, _ := guideSections(t, b)["npm.publish"]["html"].(string); !strings.Contains(html, "you do not hold the deploy permission") {
-			t.Fatalf("%s", html)
+		if g := guideSections(t, b); g["npm.publish"] != nil || g["npm.maintain"] != nil {
+			t.Fatalf("%s", b.Body)
 		}
 	})
 	t.Run("a caller who may not read the repository gets the 404 of a missing one", func(t *testing.T) {

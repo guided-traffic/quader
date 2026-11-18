@@ -503,10 +503,10 @@ func (f Format) Guide() []formats.GuideSection {
 	}
 	return []formats.GuideSection{
 		{ID: "tf.what", Topic: formats.GuideWhat, Title: "What it is", Classes: all, Markdown: "A {{.Class}} repository of the test format.\n"},
-		{ID: "tf.configure", Topic: formats.GuideConfigure, Title: "Configure", Classes: all, Snippets: "configure", Markdown: configure},
+		{ID: "tf.configure", Topic: formats.GuideConfigure, Title: "Configure", Classes: all, Markdown: configure},
 		{ID: "tf.authenticate", Topic: formats.GuideAuthenticate, Title: "Authenticate", Classes: all, Markdown: "{{if .Anonymous}}No credential is needed.{{else}}Keep the token in `{{.TokenEnvVar}}`.{{end}}\n"},
-		{ID: "tf.install", Topic: formats.GuideInstall, Title: "Install", Classes: all, Snippets: "install", Markdown: "Install a package:\n"},
-		{ID: "tf.publish", Topic: formats.GuidePublish, Title: "Publish", Classes: []formats.Class{formats.Local, formats.Virtual}, Snippets: "publish", Markdown: "{{if not .Anonymous}}Publish with tf.{{end}}\n"},
+		{ID: "tf.install", Topic: formats.GuideInstall, Title: "Install", Classes: all, Markdown: "Install a package:\n"},
+		{ID: "tf.publish", Topic: formats.GuidePublish, Title: "Publish", Classes: []formats.Class{formats.Local, formats.Virtual}, Markdown: "{{if not .Anonymous}}Publish with tf.{{end}}\n"},
 		{ID: "tf.endpoint", Topic: formats.GuideEndpoint, Title: "Endpoint", Markdown: "{{if .ExposureRules}}Hidden versions answer 404.{{end}}\n"},
 		{ID: "tf.troubleshooting", Topic: formats.GuideTroubleshooting, Title: "Troubleshooting", Classes: all, Markdown: "| Status | Code |\n|---|---|\n| 404 | `not_found` |\n"},
 	}

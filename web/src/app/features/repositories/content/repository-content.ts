@@ -15,7 +15,7 @@ import {
   repoRef,
 } from '../../../api/repositories-api';
 import { Notifier } from '../../../core/notifier';
-import { filesCommands } from '../../../core/project-links';
+import { filesCommands, setupCommands } from '../../../core/project-links';
 import { ServerAddress } from '../../../core/server-address';
 import { SessionStore } from '../../../core/session-store';
 import { Confirm } from '../../../shared/confirm-dialog';
@@ -92,6 +92,8 @@ export class RepositoryContent {
   readonly sort = input<string | undefined>();
 
   protected readonly ref = computed(() => repoRef(this.project(), this.key()));
+  /** Set up client of this repository (R-UI-126). */
+  protected readonly setupLink = computed(() => setupCommands(this.ref()));
   protected readonly loaded = resource({
     params: () => this.ref(),
     loader: ({ params }) => this.api.get(params),

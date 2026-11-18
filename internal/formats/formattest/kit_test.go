@@ -257,7 +257,6 @@ func TestR_ARCH_010_KitChecksCatchTheirDefects(t *testing.T) {
 		ts := []formats.SetupTemplate{
 			{ID: "tf.rc.configure", Client: "tf", Section: "configure", Lang: "ini", Template: "legacy_auth_mode=1\n"},
 			{ID: "tf.install", Client: "tf", Section: "install", Lang: "shell", Template: "tf install\n"},
-			// The guide of the test format attaches the publish snippets.
 			{ID: "tf.publish", Client: "tf", Section: "publish", Lang: "shell", Template: "tf publish\n"},
 		}
 		o := override{Format: testformat.New(), templates: ts}
@@ -327,13 +326,7 @@ func TestR_ARCH_010_KitChecksCatchTheirDefects(t *testing.T) {
 			"which the format does not support": extra(formats.GuideSection{
 				ID: "x2", Topic: formats.GuideWhat, Title: "x", Classes: []formats.Class{"federated"}, Markdown: "x",
 			}),
-			`attaches the snippets of section "deploy"`: with(func(s *formats.GuideSection) { s.Snippets = "deploy" }),
-			"holds the shape of a token":                with(func(s *formats.GuideSection) { s.Markdown = "Use qdr_pat_x." }),
-			`no guide section of topic "configure" attaches the configure snippets`: func() []formats.GuideSection {
-				out := append([]formats.GuideSection(nil), testformat.New().Guide()...)
-				out[1].Snippets = ""
-				return out
-			}(),
+			"holds the shape of a token": with(func(s *formats.GuideSection) { s.Markdown = "Use qdr_pat_x." }),
 			`of the required topic "authenticate" says nothing`: func() []formats.GuideSection {
 				out := append([]formats.GuideSection(nil), testformat.New().Guide()...)
 				out[2].Markdown = "{{if .Anonymous}}{{else}}Keep it.{{end}}"
@@ -345,6 +338,18 @@ func TestR_ARCH_010_KitChecksCatchTheirDefects(t *testing.T) {
 			if !strings.Contains(got, want) {
 				t.Errorf("%q does not say %q", got, want)
 			}
+		}
+		// The page of a guide shows the configure and install snippets above the sections (R-API-070): a client of a format
+		// with a guide that has no install template fails.
+		var configureOnly []formats.SetupTemplate
+		for _, tpl := range testformat.New().SetupTemplates() {
+			if tpl.Section != "install" {
+				configureOnly = append(configureOnly, tpl)
+			}
+		}
+		got := messages(formattest.Evaluate(override{Format: testformat.New(), templates: configureOnly}, fx), formattest.CheckSetup)
+		if want := `has a guide and no install snippets`; !strings.Contains(got, want) {
+			t.Errorf("%q does not say %q", got, want)
 		}
 	})
 	t.Run("R-ARCH-010 R-UI-049 check 8: a format with a guide and no clients fails, and its skip is refused", func(t *testing.T) {

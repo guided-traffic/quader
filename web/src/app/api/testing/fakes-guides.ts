@@ -2,13 +2,15 @@ import { Provider } from '@angular/core';
 import { Guide, GuideSection, GuidesApi } from '../guides-api';
 import { ApiError } from '../problem';
 import { refOf } from '../repositories-api';
-import { FakeClientSetupApi, GENERIC_REPOSITORY, NPM_REPOSITORIES } from './fakes-packages';
+import { ANSIBLE_REPOSITORIES, FakeClientSetupApi, GENERIC_REPOSITORY, NPM_REPOSITORIES, NUGET_REPOSITORIES, OCI_REPOSITORIES } from './fakes-packages';
 
 /*
  * The in-memory fake of the guide operations (R-UI-047 component tier). Its sections have the ids,
  * topics and order of npm's guide and of the generic format's guide for curl, and its snippets are
- * the setup fake's answer for the same repository and client, as the server attaches them
- * (R-API-053).
+ * the setup fake's answer for the same repository and client, beside the sections as the server
+ * sends them (R-API-053, R-API-070): a reader who may not publish to the repository gets no
+ * publishing, and the guide of a class carries the publish snippets for a signed-in reader of a
+ * class that takes them.
  */
 
 const BASE = 'https://quader.example.net';
@@ -16,7 +18,7 @@ const BASE = 'https://quader.example.net';
 const CLIENTS = ['npm', 'pnpm', 'yarn', 'yarn-classic'];
 
 function section(id: string, topic: GuideSection['topic'], title: string, html: string): GuideSection {
-  return { id, topic, title, html, snippets: [] };
+  return { id, topic, title, html };
 }
 
 export class FakeGuidesApi extends GuidesApi {
@@ -33,8 +35,32 @@ export class FakeGuidesApi extends GuidesApi {
     this.fail();
     if (key === refOf(GENERIC_REPOSITORY)) return this.buildGeneric(key, client);
     const repo = NPM_REPOSITORIES.find((r) => refOf(r) === key);
-    if (!repo) throw new ApiError(400, { code: 'malformed_request', detail: 'no guide for this repository' }, null);
-    return this.build(key, repo.class, client);
+    if (repo) return this.build(key, repo.class, client);
+    const other = [...NUGET_REPOSITORIES, ...OCI_REPOSITORIES, ...ANSIBLE_REPOSITORIES].find((r) => refOf(r) === key);
+    if (!other) throw new ApiError(400, { code: 'malformed_request', detail: 'no guide for this repository' }, null);
+    return this.buildOther(key, other.format, other.class, client);
+  }
+
+  /** The guide of a NuGet, OCI or Ansible repository: the setup fake's snippets and the sections every guide has. */
+  private async buildOther(key: string, format: string, cls: Guide['class'], client: string): Promise<Guide> {
+    const credentials = this.anonymous ? 'none' : 'env';
+    const setup = await this.setup.get(key, { client, credentials });
+    return {
+      format,
+      class: cls,
+      client,
+      repository: key,
+      registryUrl: setup.registryUrl,
+      publishTarget: this.anonymous ? null : setup.publishTarget,
+      credentials,
+      exposureRules: this.exposureRules,
+      snippets: setup.snippets,
+      sections: [
+        section(`${format}.${cls}.what`, 'what', `What a ${cls} repository is`, `<p>A ${cls} repository.</p>`),
+        section(`${format}.configure`, 'configure', 'Point the client at the repository', '<p>Save the snippet.</p>'),
+        section(`${format}.troubleshooting`, 'troubleshooting', 'Troubleshooting', '<table><tr><td>404</td></tr></table>'),
+      ],
+    };
   }
 
   override async format(format: string, cls: string, client: string): Promise<Guide> {
@@ -58,24 +84,24 @@ export class FakeGuidesApi extends GuidesApi {
       throw new ApiError(400, { code: 'malformed_request', detail: 'unknown client' }, null);
     }
     const credentials = this.anonymous ? 'none' : 'env';
-    const setup = await this.setup.get(key ?? 'web/npm-all', { client, credentials });
-    const registryUrl = `${BASE}/api/npm/${key ?? '<repository>'}/`;
-    const of = (tab: string) =>
-      setup.snippets
-        .filter((s) => s.tab === tab)
-        .map((s) => ({ ...s, content: key ? s.content : s.content.replaceAll('/web/npm-all/', '/<repository>/') }));
+    const setup = await this.setup.get(key ?? (cls === 'remote' ? 'web/npm-remote' : 'web/npm-all'), { client, credentials });
+    const registryUrl = `${BASE}/api/npm/${key ?? '<project>/<repository>'}/`;
+    const mayPublish = !this.anonymous && (key ? setup.publishTarget !== null : cls !== 'remote');
+    const snippets = setup.snippets
+      .filter((s) => s.tab !== 'publish' || mayPublish)
+      .map((s) => ({ ...s, content: key ? s.content : s.content.replace(/\/web\/npm-(all|remote)\//g, '/<project>/<repository>/') }));
     const sections: GuideSection[] = [
-      section(`npm.${cls}.what`, 'what', `What a ${cls} repository is`, `<p>A ${cls} repository.</p><h3>Details</h3><p>More.</p>`),
-      { ...section('npm.configure', 'configure', 'Point the client at the repository', '<p>Save the snippet.</p>'), snippets: of('configure') },
+      section(`npm.${cls}.what`, 'what', `What a ${cls} repository is`, `<p>A ${cls} repository.</p><h3>Details</h3><p>More.</p><pre><code>npm config get registry</code></pre>`),
+      section('npm.configure', 'configure', 'Point the client at the repository', '<p>Save the snippet.</p>'),
       section(
         'npm.authenticate',
         'authenticate',
         'Sign the client in',
         this.anonymous ? '<p>No credential is needed.</p>' : '<p>Keep the token in <code>QUADER_TOKEN</code>.</p>',
       ),
-      { ...section('npm.install', 'install', 'Install packages', '<p>Install a package.</p>'), snippets: of('install') },
+      section('npm.install', 'install', 'Install packages', '<p>Install a package.</p>'),
     ];
-    if (cls !== 'remote' && !this.anonymous) {
+    if (cls !== 'remote' && mayPublish) {
       sections.push(section('npm.publish', 'publish', 'Publish a package', '<p><code>npm publish</code></p>'));
     }
     if (this.exposureRules) {
@@ -93,6 +119,7 @@ export class FakeGuidesApi extends GuidesApi {
       publishTarget: key && setup.publishTarget && !this.anonymous ? setup.publishTarget : null,
       credentials,
       exposureRules: this.exposureRules,
+      snippets,
       sections,
     };
   }
@@ -103,18 +130,18 @@ export class FakeGuidesApi extends GuidesApi {
     }
     const credentials = this.anonymous ? 'none' : 'env';
     const setup = await this.setup.get(refOf(GENERIC_REPOSITORY), { client, credentials });
-    const of = (tab: string) =>
-      setup.snippets
-        .filter((s) => s.tab === tab && (key !== null || tab !== 'publish'))
-        .map((s) => ({ ...s, content: key ? s.content : s.content.replaceAll(`/${refOf(GENERIC_REPOSITORY)}/`, '/<repository>/') }));
+    const mayPublish = !this.anonymous && (key ? setup.publishTarget !== null : true);
+    const snippets = setup.snippets
+      .filter((s) => s.tab !== 'publish' || mayPublish)
+      .map((s) => ({ ...s, content: key ? s.content : s.content.replaceAll(`/${refOf(GENERIC_REPOSITORY)}/`, '/<project>/<repository>/') }));
     const sections: GuideSection[] = [
       section('generic.local.what', 'what', 'What a generic local repository is', '<p>Files at paths you choose.</p>'),
-      { ...section('generic.configure', 'configure', 'Point curl at the repository', '<p>Paste the function.</p>'), snippets: of('configure') },
+      section('generic.configure', 'configure', 'Point curl at the repository', '<p>Paste the function.</p>'),
       section('generic.authenticate', 'authenticate', 'Sign curl in', this.anonymous ? '<p>No credential is needed.</p>' : '<p>Keep the token in <code>QUADER_TOKEN</code>.</p>'),
-      { ...section('generic.install', 'install', 'Download files', '<p>Download a file.</p>'), snippets: of('install') },
+      section('generic.install', 'install', 'Download files', '<p>Download a file.</p>'),
     ];
-    if (!this.anonymous) {
-      sections.push({ ...section('generic.publish', 'publish', 'Upload files', '<p>Upload a file.</p>'), snippets: of('publish') });
+    if (mayPublish) {
+      sections.push(section('generic.publish', 'publish', 'Upload files', '<p>Upload a file.</p>'));
     }
     if (this.exposureRules) {
       sections.push(section('generic.endpoint', 'endpoint', 'On this endpoint', '<p><code>endpoint_read_only</code></p>'));
@@ -125,10 +152,11 @@ export class FakeGuidesApi extends GuidesApi {
       class: 'local',
       client,
       repository: key,
-      registryUrl: `${BASE}/files/${key ?? '<repository>'}/`,
+      registryUrl: `${BASE}/files/${key ?? '<project>/<repository>'}/`,
       publishTarget: key && setup.publishTarget && !this.anonymous ? setup.publishTarget : null,
       credentials,
       exposureRules: this.exposureRules,
+      snippets,
       sections,
     };
   }

@@ -47,8 +47,9 @@ func sectionOf(t *testing.T, g gen.Guide, id string) gen.GuideSection {
 }
 
 // TestR_API_053_TheGuideShowsTheSnippetsOfTheClientSetup: for every client, the
-// snippets the guide attaches are the client setup's answer for the same repository
-// with credentials=env, byte for byte.
+// snippets of the guide are the client setup's answer for the same repository with
+// credentials=env, byte for byte, and no section carries snippets of its own
+// (R-API-070).
 func TestR_API_053_TheGuideShowsTheSnippetsOfTheClientSetup(t *testing.T) {
 	h := setupServer(t, "https://quader.example.com", true)
 	for _, client := range []string{"npm", "pnpm", "yarn", "yarn-classic"} {
@@ -58,17 +59,8 @@ func TestR_API_053_TheGuideShowsTheSnippetsOfTheClientSetup(t *testing.T) {
 		if err := json.Unmarshal(w.Body.Bytes(), &setup); err != nil || w.Code != 200 {
 			t.Fatalf("%d %s", w.Code, w.Body.String())
 		}
-		for _, tab := range []string{"configure", "install"} {
-			var want []gen.ClientSnippet
-			for _, sn := range setup.Snippets {
-				if string(sn.Tab) == tab {
-					want = append(want, sn)
-				}
-			}
-			got := sectionOf(t, g, "npm."+tab).Snippets
-			if len(want) == 0 || !slices.EqualFunc(got, want, snippetsEqual) {
-				t.Errorf("%s %s: guide %+v, setup %+v", client, tab, got, want)
-			}
+		if len(setup.Snippets) == 0 || !slices.EqualFunc(g.Snippets, setup.Snippets, snippetsEqual) {
+			t.Errorf("%s: guide %+v, setup %+v", client, g.Snippets, setup.Snippets)
 		}
 		if g.RegistryUrl != setup.RegistryUrl || g.Credentials != gen.GuideCredentialsEnv || g.Client != client {
 			t.Errorf("%s: %+v", client, g)
@@ -118,15 +110,34 @@ func TestR_API_053_TheSectionsFollowTheClassInTopicOrder(t *testing.T) {
 	}
 }
 
-// TestR_API_053_ACallerWhoMayNotPublishIsTold: without deploy on the target the guide
-// names no target and says why.
-func TestR_API_053_ACallerWhoMayNotPublishIsTold(t *testing.T) {
-	g := guideOf(t, get(setupServer(t, "https://quader.example.com", false), "/api/v1/projects/it/repositories/npm-local/guide?client=npm"))
+// TestR_API_070_AReaderWhoMayNotPublishGetsNoPublishing: without deploy on the target
+// the guide of a repository names no target and holds neither the publish snippets
+// nor the sections of the topics publish and maintain; the guide of the class keeps
+// them for a signed-in reader.
+func TestR_API_070_AReaderWhoMayNotPublishGetsNoPublishing(t *testing.T) {
+	h := setupServer(t, "https://quader.example.com", false)
+	g := guideOf(t, get(h, "/api/v1/projects/it/repositories/npm-local/guide?client=npm"))
 	if g.PublishTarget != nil {
 		t.Fatalf("%v", *g.PublishTarget)
 	}
-	if got := sectionOf(t, g, "npm.publish").Html; !strings.Contains(got, "you do not hold the deploy permission") {
-		t.Errorf("%s", got)
+	for _, id := range sectionIDs(g) {
+		if id == "npm.publish" || id == "npm.maintain" {
+			t.Errorf("a reader who may not publish gets %s", id)
+		}
+	}
+	for _, sn := range g.Snippets {
+		if sn.Tab == gen.ClientSnippetTabPublish {
+			t.Errorf("a reader who may not publish gets %s", sn.Id)
+		}
+	}
+	class := guideOf(t, get(h, "/api/v1/formats/npm/guide?class=local&client=npm"))
+	sectionOf(t, class, "npm.publish")
+	if !slices.ContainsFunc(class.Snippets, func(sn gen.ClientSnippet) bool { return sn.Tab == gen.ClientSnippetTabPublish }) {
+		t.Errorf("the guide of the class has no publish snippet: %+v", class.Snippets)
+	}
+	remote := guideOf(t, get(h, "/api/v1/formats/npm/guide?class=remote&client=npm"))
+	if slices.ContainsFunc(remote.Snippets, func(sn gen.ClientSnippet) bool { return sn.Tab == gen.ClientSnippetTabPublish }) {
+		t.Errorf("the guide of the remote class has a publish snippet: %+v", remote.Snippets)
 	}
 }
 
@@ -147,11 +158,10 @@ func TestR_API_053_AnAnonymousReaderGetsNoCredentialSteps(t *testing.T) {
 	// still says what a 401 asks for.
 	var shown []string
 	for _, id := range []string{"npm.configure", "npm.authenticate", "npm.install"} {
-		s := sectionOf(t, g, id)
-		shown = append(shown, s.Html)
-		for _, sn := range s.Snippets {
-			shown = append(shown, sn.Content)
-		}
+		shown = append(shown, sectionOf(t, g, id).Html)
+	}
+	for _, sn := range g.Snippets {
+		shown = append(shown, sn.Content)
 	}
 	for _, s := range []string{"TOKEN", "npmAuthToken", "npmAlwaysAuth"} {
 		if strings.Contains(strings.Join(shown, "\n"), s) {
@@ -169,7 +179,12 @@ func TestR_API_053_TheGuideOfAFormat(t *testing.T) {
 		g.Class != gen.GuideClassVirtual || sectionIDs(g)[0] != "npm.virtual.what" {
 		t.Fatalf("%+v", g)
 	}
-	conf := sectionOf(t, g, "npm.configure").Snippets
+	var conf []gen.ClientSnippet
+	for _, sn := range g.Snippets {
+		if sn.Tab == gen.ClientSnippetTabConfigure {
+			conf = append(conf, sn)
+		}
+	}
 	if len(conf) != 1 || !strings.Contains(conf[0].Content, "//quader.example.com/api/npm/<project>/<repository>/:_authToken=${MY_TOKEN}") {
 		t.Errorf("%+v", conf)
 	}
@@ -229,17 +244,8 @@ func TestR_GENERIC_016_TheGuideShowsTheSnippetsOfTheClientSetup(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &setup); err != nil || w.Code != 200 {
 		t.Fatalf("%d %s", w.Code, w.Body.String())
 	}
-	for _, tab := range []string{"configure", "install", "publish"} {
-		var want []gen.ClientSnippet
-		for _, sn := range setup.Snippets {
-			if string(sn.Tab) == tab {
-				want = append(want, sn)
-			}
-		}
-		got := sectionOf(t, g, "generic."+tab).Snippets
-		if len(want) != 1 || !slices.EqualFunc(got, want, snippetsEqual) {
-			t.Errorf("%s: guide %+v, setup %+v", tab, got, want)
-		}
+	if len(setup.Snippets) != 3 || !slices.EqualFunc(g.Snippets, setup.Snippets, snippetsEqual) {
+		t.Errorf("guide %+v, setup %+v", g.Snippets, setup.Snippets)
 	}
 	if g.RegistryUrl != "https://quader.example.com/files/it/files/" || g.Format != "generic" || g.Class != gen.GuideClassLocal || g.Credentials != gen.GuideCredentialsEnv {
 		t.Errorf("%+v", g)

@@ -37,7 +37,7 @@ describe('Start page', () => {
     expect(text(root.querySelector('.recent')!)).toContain('generic-local');
     expect(addressValues(root).some((a) => a.includes('web/generic-local'))).toBe(true);
     const setup = [...root.querySelectorAll('.recent a.btn')].find((a) => text(a) === 'Set up client');
-    expect(setup?.getAttribute('href')).toBe('/setup?repository=web%2Fgeneric-local');
+    expect(setup?.getAttribute('href')).toBe('/projects/web/repositories/generic-local/setup');
   });
 
   it('R-UI-096 Q-UI-406 Recently opened asks one name= request for its entries, newest first, and leaves out one the caller cannot read', async () => {
