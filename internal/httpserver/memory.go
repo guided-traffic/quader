@@ -74,6 +74,8 @@ type MemoryGuard struct {
 	kernPer   int64        // what one request may make the kernel hold: its connection's send buffer
 	kernUsed  atomic.Int64 // kernel charges of the admitted requests
 	kernExtra atomic.Int64 // what the kernel held beyond the charges at the last sample
+	roomMu    sync.Mutex
+	room      chan struct{} // closed when kernel room may have come free
 	onSlots   func(slots int)
 	slots     int
 	onChange  func(gate string, closed bool, bytes uint64)
@@ -161,16 +163,22 @@ func (g *MemoryGuard) avail() int64 { return g.budget - g.held.Load() }
 func (g *MemoryGuard) kernAvail() int64 { return g.kernHigh - g.kernExtra.Load() }
 
 // Slots is the number of downloads of a large object the guard admits at once
-// beside what the caches and the kernel hold, at least 1; 0 for a nil guard.
+// beside what the caches hold, at least 1; 0 for a nil guard.
 func (g *MemoryGuard) Slots() int {
 	if g == nil {
 		return 0
 	}
-	n := g.avail() / g.perSlot
-	if g.kernPer > 0 {
-		n = min(n, g.kernAvail()/g.kernPer)
+	return int(max(1, g.avail()/g.perSlot))
+}
+
+// Writers is the number of responses whose send buffers the kernel's share holds
+// at once beside what the kernel holds beyond the charges, at least 1; 0 without
+// a kernel charge (Q-ARCH-500).
+func (g *MemoryGuard) Writers() int {
+	if g == nil || g.kernPer == 0 {
+		return 0
 	}
-	return int(max(1, n))
+	return int(max(1, g.kernAvail()/g.kernPer))
 }
 
 // InUse is what the admitted requests hold, in downloads of a large object,
@@ -197,13 +205,10 @@ func (g *MemoryGuard) charge(n int64) bool {
 	}
 }
 
-// chargeKernel adds a request's kernel charge if it fits beside what the kernel
-// held beyond the charges at the last sample; like charge, a request alone is
-// always admitted.
+// chargeKernel adds a response's kernel charge if it fits beside what the kernel
+// held beyond the charges at the last sample; like charge, a response alone
+// always fits.
 func (g *MemoryGuard) chargeKernel() bool {
-	if g.kernPer == 0 {
-		return true
-	}
 	for {
 		u := g.kernUsed.Load()
 		if u+g.kernPer > g.kernAvail() && u > 0 {
@@ -212,6 +217,28 @@ func (g *MemoryGuard) chargeKernel() bool {
 		if g.kernUsed.CompareAndSwap(u, u+g.kernPer) {
 			return true
 		}
+	}
+}
+
+// kernelRoom returns a channel that is closed when a kernel charge is given back
+// or a sample has moved what the kernel holds beyond the charges.
+func (g *MemoryGuard) kernelRoom() <-chan struct{} {
+	g.roomMu.Lock()
+	defer g.roomMu.Unlock()
+	if g.room == nil {
+		g.room = make(chan struct{})
+	}
+	return g.room
+}
+
+// wakeWriters closes the channel kernelRoom handed out, so the responses that
+// wait for room try again.
+func (g *MemoryGuard) wakeWriters() {
+	g.roomMu.Lock()
+	defer g.roomMu.Unlock()
+	if g.room != nil {
+		close(g.room)
+		g.room = nil
 	}
 }
 
@@ -283,8 +310,44 @@ func (t *Ticket) release() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.g.used.Add(-t.held)
-	t.g.kernUsed.Add(-t.kern)
+	kern := t.kern
+	t.g.kernUsed.Add(-kern)
 	t.held, t.kern, t.released = 0, 0, true
+	if kern > 0 {
+		t.g.wakeWriters()
+	}
+}
+
+// waitKernel charges the send buffer of the request's connection against the
+// kernel's share before the response's first byte (Q-ARCH-500), and waits for
+// room while the share is taken by the responses of other requests: a request
+// that waits for the database, or does other work before it answers, holds
+// nothing of the kernel's share, and none answers more than the share holds at
+// once. It returns ctx's error when the request ends first. A nil ticket, a
+// guard without a kernel charge and a charged or released ticket charge nothing.
+func (t *Ticket) waitKernel(ctx context.Context) error {
+	if t == nil || t.g.kernPer == 0 {
+		return nil
+	}
+	for {
+		room := t.g.kernelRoom()
+		t.mu.Lock()
+		if t.released || t.kern > 0 {
+			t.mu.Unlock()
+			return nil
+		}
+		if t.g.chargeKernel() {
+			t.kern = t.g.kernPer
+			t.mu.Unlock()
+			return nil
+		}
+		t.mu.Unlock()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-room:
+		}
+	}
 }
 
 type ticketKey struct{}
@@ -304,10 +367,10 @@ func WithoutTicket(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ticketKey{}, (*Ticket)(nil))
 }
 
-// Admit charges a request what a download of a large object holds, and the send
-// buffer of its connection against the kernel's share. reason is empty when the
-// request is admitted; release gives back everything it holds and must be
-// called once. The ticket is nil for a nil guard.
+// Admit charges a request what a download of a large object holds; the send
+// buffer of its connection is charged when its response starts (waitKernel).
+// reason is empty when the request is admitted; release gives back everything it
+// holds and must be called once. The ticket is nil for a nil guard.
 func (g *MemoryGuard) Admit() (t *Ticket, release func(), reason string) {
 	if g == nil {
 		return nil, func() {}, ""
@@ -321,11 +384,7 @@ func (g *MemoryGuard) Admit() (t *Ticket, release func(), reason string) {
 	if !g.charge(g.perSlot) {
 		return nil, nil, ShedMemorySlots
 	}
-	if !g.chargeKernel() {
-		g.used.Add(-g.perSlot)
-		return nil, nil, ShedKernel
-	}
-	t = &Ticket{g: g, held: g.perSlot, kern: g.kernPer}
+	t = &Ticket{g: g, held: g.perSlot}
 	return t, t.release, ""
 }
 
@@ -385,7 +444,10 @@ func (g *MemoryGuard) sampleKernel() {
 		}
 		return
 	}
-	g.kernExtra.Store(max(n-g.kernUsed.Load(), 0))
+	extra := max(n-g.kernUsed.Load(), 0)
+	if old := g.kernExtra.Swap(extra); extra < old {
+		g.wakeWriters() // the room grew: the responses waiting for it try again
+	}
 	if n < 0 {
 		n = 0
 	}

@@ -174,7 +174,7 @@ func (a *App) startMemoryGuard(ctx context.Context) *httpserver.MemoryGuard {
 			"cache_budget_bytes", budgets, "go_memory_limit_bytes", limit)
 	}
 	a.log.Info("memory limit", "go_memory_limit_bytes", limit, "source", source, "memory_slots", g.Slots(), "request_bytes", per, "cache_budget_bytes", budgets,
-		"kernel_budget_bytes", kernelBudget, "kernel_request_bytes", kernelPer)
+		"kernel_budget_bytes", kernelBudget, "kernel_request_bytes", kernelPer, "kernel_writers", g.Writers())
 	if kernelOff != "" {
 		a.log.Info("no kernel gate: the socket buffers of the replica's connections are not bounded by the memory guard", "reason", kernelOff)
 	}

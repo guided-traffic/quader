@@ -28,8 +28,8 @@ The rate limits share a budget between callers; stage 4 of the chain protects th
 ([R-ARCH-005](../spec/architecture.md#r-arch-005--http-listeners-routing-and-middleware-chain),
 [Q-ARCH-240](../spec/architecture.md#q-arch-240--a-replica-admits-what-its-memory-holds-memory-slots-and-a-heap-gate-in-step-4)).
 A request beyond the endpoint's `max_in_flight`, beyond the bytes the replica's memory holds for requests (the memory slots, [Q-ARCH-328](../spec/architecture.md#q-arch-328--admission-charges-the-bytes-a-request-holds-and-the-caches-hold-now-not-a-worst-case-per-request-and-the-caches-budgets)), or while the live heap is at 80 % of the Go
-memory limit, or beyond the kernel's share of the container that holds the send buffers of its connections
-([Q-ARCH-500](../spec/architecture.md#q-arch-500--the-kernels-share-of-the-container-holds-the-send-buffers-of-the-requests-and-the-guard-charges-and-reads-it)),
+memory limit, or while the kernel's memory of the replica (the send buffers of its connections) is at 80 % of its share of the container
+([Q-ARCH-500](../spec/architecture.md#q-arch-500--the-kernels-share-of-the-container-holds-the-send-buffers-of-the-requests-and-the-guard-charges-and-reads-it); a response beyond that share waits for a send buffer before it writes),
 gets `503 server_busy` with `Retry-After: 1` and costs nothing more than the answer
 ([memory.go](../../internal/httpserver/memory.go), [chain.go](../../internal/httpserver/chain.go)). A replica under overload
 therefore refuses instead of being OOM-killed, which would cut every transfer it holds. Clients that ask for downloads and stop

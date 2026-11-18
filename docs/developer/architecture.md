@@ -177,10 +177,15 @@ in-flight limit and no memory guard, so a probe is never refused because the req
    of the replica's cgroup v2 (`/proc/self/cgroup`, then `/sys/fs/cgroup/<path>/memory.stat`), which it returns only when the
    cgroup's `memory.max` is `runtime.memory_limit_bytes`; otherwise the start logs why there is none (on macOS, and in the
    integration tests, whose processes share the CI job's cgroup). The budget is `runtime.memory_limit_bytes` − the Go limit.
-   `Admit` also charges `kernelRequestMemory` (twice `server.send_buffer`, the `SO_SNDBUF` that `lingerListener.Accept` sets on
-   every client connection; with `0` the third value of `net.ipv4.tcp_wmem`) against 0.8 × the budget less `kernExtra`, what
-   the kernel held beyond the charges at the last sample, and refuses with `kernel`. Each sample also moves the kernel gate:
-   closed at 80 % of the budget, open below 70 %. `Slots()` is the smaller of the Go and the kernel count. The forced
+   `Chain.inflightStage` wraps the response writer of every admitted request in a `kernelWriter`
+   ([kernelwriter.go](../../internal/httpserver/kernelwriter.go)): its first `WriteHeader` (not a 1xx), `Write`, `ReadFrom` or
+   `Flush` calls `Ticket.waitKernel`, which charges `kernelRequestMemory` (twice `server.send_buffer`, the `SO_SNDBUF` that
+   `lingerListener.Accept` sets on every client connection; with `0` the third value of `net.ipv4.tcp_wmem`) against 0.8 × the
+   budget less `kernExtra`, what the kernel held beyond the charges at the last sample. While it does not fit, the response
+   waits on `kernelRoom`, a channel that a released charge or a sample whose `kernExtra` fell closes; the request's context
+   ending stops the wait and the response writes nothing. A request that never writes (one waiting for the database) holds no
+   kernel charge. Each sample also moves the kernel gate: closed at 80 % of the budget, open below 70 %, refusing with
+   `kernel`. `Slots()` is the Go count, `Writers()` the kernel's (logged at start as `kernel_writers`). The forced
    reproduction that measured why (a container of 1 GiB, clients that stop reading) is described in Q-ARCH-500; it needs Docker
    and the integration stack and is not part of a test tier.
 5. `Chain.shed` answers every refusal the same way, `503 server_busy` with `Retry-After: 1`, rendered through the path's error
@@ -188,7 +193,8 @@ in-flight limit and no memory guard, so a probe is never refused because the req
 
 The endpoint's `max_in_flight` is asked first and its slot released if the guard refuses. The charges are what makes a burst safe:
 admission happens before the request allocates, so the heap gate alone would admit a whole burst inside one GC cycle, and the
-kernel gate alone a burst whose send queues fill after its sample. What they do not see is a cache that grows after the
+kernel gate alone a burst whose send queues fill after its sample; a response takes its kernel charge before its first byte, so
+no burst of responses passes the kernel's mark either. What they do not see is a cache that grows after the
 admission (H-539): that is the heap gate's; and the queued bytes of responses that have ended, which the next sample subtracts.
 
 Every route of a listener is registered through `httpserver.Router`. The generated API operations, the

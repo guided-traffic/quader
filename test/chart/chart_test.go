@@ -1082,8 +1082,8 @@ func TestChart(t *testing.T) {
 			{"a buffer too large for the limit", required(), []string{"api.resources.limits.memory=8Gi", "config.storage.download.buffer_size=32MiB"}, []string{"packages.resources.limits.memory (2Gi) admits 43 concurrent requests"}},
 			{"a buffer too large for a pool's limit", []string{pool}, []string{"api.resources.limits.memory=8Gi", "config.storage.download.buffer_size=16MiB"}, []string{"endpoints.customers.pool.resources.limits.memory (1Gi) admits 42 concurrent requests"}},
 			{"a memory quantity the chart cannot read", required(), []string{"packages.resources.limits.memory=1.5Gi"}, []string{"not a memory quantity"}},
-			{"a kernel share too small for the send buffers (Q-ARCH-500)", required(), []string{"packages.resources.limits.memory=64Mi"}, []string{"packages.resources.limits.memory (64Mi) admits 30 concurrent requests, fewer than 64", "the kernel's share", "262144 bytes of send buffer"}},
-			{"autotuned send buffers charged at 4 MiB (Q-ARCH-500)", required(), []string{"config.server.send_buffer=0"}, []string{"api.resources.limits.memory (1Gi) admits 30 concurrent requests", "4 MiB with autotuning"}},
+			{"a kernel share too small for the send buffers (Q-ARCH-500)", required(), []string{"packages.resources.limits.memory=64Mi"}, []string{"packages.resources.limits.memory (64Mi) writes 30 responses at once, fewer than 64", "the kernel's share", "262144 bytes of send buffer"}},
+			{"autotuned send buffers charged at 4 MiB (Q-ARCH-500)", required(), []string{"config.server.send_buffer=0"}, []string{"api.resources.limits.memory (1Gi) writes 30 responses at once", "4 MiB with autotuning"}},
 			{"caches whose budgets leave too little for requests", required(), []string{"api.resources.limits.memory=8Gi", "config.cache.rendition_bytes=1GiB", "config.proxy.merged_metadata_cache_bytes=256MiB"}, []string{"packages.resources.limits.memory (2Gi) admits", "fewer than 64", "1484783616 bytes of cache budgets"}},
 		} {
 			// the cases about the request bytes turn the caches off, so their counts are the requests' alone (Q-ARCH-243)

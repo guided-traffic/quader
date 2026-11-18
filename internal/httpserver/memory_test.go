@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"context"
 	"errors"
 	"math"
 	"net/http"
@@ -272,47 +273,96 @@ func TestMemoryGuard(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-500 every admitted request is charged its send buffer against the kernel's share, beside what the kernel holds beyond the charges, so a burst between two samples cannot overfill it", func(t *testing.T) {
+	t.Run("Q-ARCH-500 a response is charged its send buffer against the kernel's share when it starts, beside what the kernel holds beyond the charges, and waits for room: a burst cannot overfill the share and a request that writes nothing holds none of it", func(t *testing.T) {
 		// Without the charge the gate alone let 640 downloads in during the 300 ms after it opened, and their send
 		// queues took the kernel's memory from 112 to 237 MiB against a mark of 123 MiB.
 		var kern atomic.Int64
 		g := NewMemoryGuard(MemoryGuardConfig{
-			Limit: 1 << 40, RequestBytes: 1, Read: func() (uint64, uint64) { return 0, 1 },
+			Limit: 1000, RequestBytes: 1, Read: func() (uint64, uint64) { return 0, 1 },
 			Kernel: func() (int64, error) { return kern.Load(), nil }, KernelBudget: 1000, KernelRequestBytes: 100,
 		})
 		g.Sample()
-		if g.Slots() != 8 {
-			t.Fatalf("slots %d, want 0.8 × 1000 / 100 = 8", g.Slots())
+		if g.Writers() != 8 || g.Slots() != 800 {
+			t.Fatalf("writers %d, slots %d: want 0.8 × 1000 / 100 = 8 writers and the Go slots unchanged", g.Writers(), g.Slots())
 		}
-		admit := func(n int) (releases []func(), reason string) {
-			for range n {
-				_, release, r := g.Admit()
-				if r != "" {
-					return releases, r
-				}
-				releases = append(releases, release)
-			}
-			return releases, ""
+		release := make(chan struct{})
+		wrote := make(chan struct{}, 32)
+		var waits sync.WaitGroup
+		router := NewClientRouter()
+		router.HandleFunc("GET /w", func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = w.Write([]byte("x")) // the first byte takes the charge
+			wrote <- struct{}{}
+			<-release
+		})
+		router.HandleFunc("GET /db", func(http.ResponseWriter, *http.Request) {
+			wrote <- struct{}{} // a request that waits for the database writes nothing
+			<-release
+		})
+		h := Chain{Router: router, Memory: g}.Handler()
+		serve := func(path string) {
+			waits.Add(1)
+			go func() {
+				defer waits.Done()
+				h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", path, nil))
+			}()
 		}
-		held, reason := admit(9)
-		if len(held) != 8 || reason != ShedKernel {
-			t.Fatalf("admitted %d before %q, want 8 before %q: the samples saw nothing, the charges alone bound the burst", len(held), reason, ShedKernel)
+		for range 8 {
+			serve("/w")
+			<-wrote
 		}
-		kern.Store(700) // the eight send queues filled: what the kernel holds is what the charges said
+		for range 20 {
+			serve("/db")
+			<-wrote
+		}
+		if got := g.kernUsed.Load(); got != 800 {
+			t.Fatalf("kernel charges %d with 8 responses and 20 requests that wrote nothing, want 800: only a started response is charged", got)
+		}
+		serve("/w") // the ninth response: admitted, its first byte waits for room
+		select {
+		case <-wrote:
+			t.Fatal("a ninth response wrote although the kernel's share holds eight")
+		case <-time.After(100 * time.Millisecond):
+		}
+		kern.Store(0)
 		g.Sample()
-		if _, _, r := g.Admit(); r != ShedKernel {
-			t.Fatalf("reason %q: the charges are not counted twice, but nothing more fits", r)
+		close(release) // the eight end and give their charges back: the ninth writes
+		select {
+		case <-wrote:
+		case <-time.After(5 * time.Second):
+			t.Fatal("the waiting response did not write after the charges came back")
 		}
-		for _, r := range held {
-			r()
+		waits.Wait()
+		if got := g.kernUsed.Load(); got != 0 {
+			t.Fatalf("kernel charges %d after every request ended", got)
 		}
 		kern.Store(300) // finished responses whose bytes the clients have not read yet: no charge holds them
 		g.Sample()
-		if held, reason = admit(6); len(held) != 5 || reason != ShedKernel || g.Slots() != 5 {
-			t.Fatalf("admitted %d before %q with %d slots, want 5: (800 - 300 held beyond the charges) / 100", len(held), reason, g.Slots())
+		if g.Writers() != 5 {
+			t.Fatalf("writers %d, want (800 - 300 held beyond the charges) / 100 = 5", g.Writers())
 		}
-		for _, r := range held {
-			r()
+	})
+
+	t.Run("Q-ARCH-500 a response that waits for kernel room and whose request ends writes nothing and holds no charge", func(t *testing.T) {
+		g := NewMemoryGuard(MemoryGuardConfig{
+			Limit: 1 << 40, RequestBytes: 1, Read: func() (uint64, uint64) { return 0, 1 },
+			Kernel: func() (int64, error) { return 0, nil }, KernelBudget: 125, KernelRequestBytes: 100,
+		})
+		g.Sample()
+		first, _, _ := g.Admit()
+		if err := first.waitKernel(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		second, release, _ := g.Admit()
+		ctx, cancel := context.WithCancel(t.Context())
+		done := make(chan error, 1)
+		go func() { done <- second.waitKernel(ctx) }()
+		cancel()
+		if err := <-done; !errors.Is(err, context.Canceled) {
+			t.Fatalf("err %v, want the request's end", err)
+		}
+		release()
+		if got := g.kernUsed.Load(); got != 100 {
+			t.Fatalf("kernel charges %d, want the first response's 100 only", got)
 		}
 	})
 

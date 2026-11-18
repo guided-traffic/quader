@@ -280,6 +280,9 @@ func (c Chain) inflightStage(next http.Handler) http.Handler {
 		defer release()
 		if t != nil {
 			r = r.WithContext(context.WithValue(r.Context(), ticketKey{}, t))
+			if t.g.kernPer > 0 {
+				w = &kernelWriter{ResponseWriter: w, ctx: r.Context(), t: t}
+			}
 		}
 		next.ServeHTTP(w, r)
 	})

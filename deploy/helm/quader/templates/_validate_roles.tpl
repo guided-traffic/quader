@@ -128,7 +128,7 @@ than 64 requests cannot serve a handful of clients at once.
 {{- /* The kernel's share (Q-ARCH-500): what the Go limit leaves of the container holds the send buffers of the requests. */ -}}
 {{- $kernelSlots := floor (divf (mulf 0.8 (subf 1.0 $ratio) (include "quader.quantityBytes" $mem | float64)) $kernelPerRequest) | int64 -}}
 {{- if lt $kernelSlots 64 -}}
-{{- fail (printf "quader: %s.resources.limits.memory (%v) admits %d concurrent requests, fewer than 64: 0.8 × (1 − config.runtime.memory_limit_ratio (%v)) × the limit, the kernel's share, / %d bytes of send buffer per request (twice config.server.send_buffer, or 4 MiB with autotuning; Q-ARCH-500); raise the limit, lower the ratio or lower config.server.send_buffer" $u.key $mem $kernelSlots $ratio $kernelPerRequest) -}}
+{{- fail (printf "quader: %s.resources.limits.memory (%v) writes %d responses at once, fewer than 64: 0.8 × (1 − config.runtime.memory_limit_ratio (%v)) × the limit, the kernel's share, / %d bytes of send buffer per response (twice config.server.send_buffer, or 4 MiB with autotuning; Q-ARCH-500); raise the limit, lower the ratio or lower config.server.send_buffer" $u.key $mem $kernelSlots $ratio $kernelPerRequest) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
