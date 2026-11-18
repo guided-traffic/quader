@@ -1,6 +1,8 @@
 import { formatSize } from './format-size';
 import { relativeTime } from './format-time';
-import { packageCommands, safeHttpUrl } from './package-links';
+import { Route, UrlMatchResult, UrlSegment, UrlSegmentGroup } from '@angular/router';
+import { packageCommands, safeHttpUrl, splitVersion, versionCommands } from './package-links';
+import { packageMatcher, versionMatcher } from './packages.routes';
 
 describe('package links', () => {
   it('R-UI-007 only http and https values become links; every other scheme stays text', () => {
@@ -32,6 +34,32 @@ describe('package links', () => {
   it('R-UI-003 a package page keeps the slash of a scoped name as a path separator', () => {
     expect(packageCommands('web', 'npm', '@team-a/ui')).toEqual(['/projects', 'web', 'packages', 'npm', '@team-a', 'ui']);
     expect(packageCommands('web', 'nuget', 'Contoso.Logging')).toEqual(['/projects', 'web', 'packages', 'nuget', 'Contoso.Logging']);
+  });
+
+  it('R-UI-111 Q-UI-451 a version page appends @ and the version to the last segment, and the matchers tell the two pages apart', () => {
+    expect(versionCommands('web', 'npm', '@team-a/ui', '1.4.0')).toEqual(['/projects', 'web', 'packages', 'npm', '@team-a', 'ui@1.4.0']);
+    expect(versionCommands('web', 'oci', 'portal/web', 'latest')).toEqual(['/projects', 'web', 'packages', 'oci', 'portal', 'web@latest']);
+    expect(versionCommands('web', 'deb', 'hello', '1:2.10-3+b1')).toEqual(['/projects', 'web', 'packages', 'deb', 'hello@1:2.10-3+b1']);
+    expect(splitVersion('ui@1.4.0')).toEqual({ name: 'ui', version: '1.4.0' });
+    expect(splitVersion('@team-a')).toEqual({ name: '@team-a', version: null });
+    expect(splitVersion('left-pad')).toEqual({ name: 'left-pad', version: null });
+    expect(splitVersion('ui@')).toEqual({ name: 'ui@', version: null });
+
+    const segments = (...paths: string[]) => paths.map((p) => new UrlSegment(p, {}));
+    const params = (m: UrlMatchResult | null) =>
+      m ? Object.fromEntries(Object.entries(m.posParams ?? {}).map(([k, v]) => [k, v.path])) : null;
+    const npm = segments('npm', '@team-a', 'ui@1.5.0-beta.1');
+    expect(params(versionMatcher(npm, new UrlSegmentGroup(npm, {}), {} as Route))).toEqual({
+      format: 'npm',
+      name: '@team-a/ui',
+      version: '1.5.0-beta.1',
+    });
+    expect(packageMatcher(npm, new UrlSegmentGroup(npm, {}), {} as Route)).toBeNull();
+    const page = segments('npm', '@team-a', 'ui');
+    expect(params(packageMatcher(page, new UrlSegmentGroup(page, {}), {} as Route))).toEqual({ format: 'npm', name: '@team-a/ui' });
+    expect(versionMatcher(page, new UrlSegmentGroup(page, {}), {} as Route)).toBeNull();
+    const format = segments('npm');
+    expect(packageMatcher(format, new UrlSegmentGroup(format, {}), {} as Route)).toBeNull();
   });
 
   it('R-UI-006 the updated time is relative in the language of the build; a time within a minute reads "now"', () => {

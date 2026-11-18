@@ -439,12 +439,13 @@ func split(pairs []NameVersion) (names, versions []string) {
 	return names, versions
 }
 
-// GradeCount is the number of open findings of one severity of one version in one repository.
+// GradeCount is the number of open findings of one severity of one version in one repository, and how many of them name a fixed
+// version (R-VULN-040).
 type GradeCount struct {
 	RepoID        int64
 	Name, Version string
 	Severity      advisory.Severity
-	N             int64
+	N, Fixable    int64
 }
 
 // GradeHolders returns the repositories that hold the versions and that the scope may read, narrowed by f's repositories: whose
@@ -480,7 +481,7 @@ func (a *API) GradeCounts(ctx context.Context, sc Scope, format string, pairs []
 	})
 	out := make([]GradeCount, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, GradeCount{RepoID: r.RepoID, Name: r.PackageName, Version: r.Version, Severity: advisory.Severity(r.Severity), N: r.N})
+		out = append(out, GradeCount{RepoID: r.RepoID, Name: r.PackageName, Version: r.Version, Severity: advisory.Severity(r.Severity), N: r.N, Fixable: r.Fixable})
 	}
 	return out, err
 }

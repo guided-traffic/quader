@@ -223,7 +223,7 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 
 // versionCounts counts the open findings of the version per repository for its grade, from the counts and not from the listed
 // findings, which stop at 1,000 per repository: a tag of an image counts the findings of every manifest it stands for, a digest its own.
-func (s *Service) versionCounts(ctx context.Context, sc Scope, format, name, version string, repos []int64) (map[int64]Counts, error) {
+func (s *Service) versionCounts(ctx context.Context, sc Scope, format, name, version string, repos []int64) (map[int64]tally, error) {
 	pair := []store.NameVersion{{Name: name, Version: version}}
 	f := store.Filter{Repos: repos, HasRepos: true}
 	var counts []store.GradeCount
@@ -236,10 +236,10 @@ func (s *Service) versionCounts(ctx context.Context, sc Scope, format, name, ver
 	if err != nil {
 		return nil, err
 	}
-	out := map[int64]Counts{}
+	out := map[int64]tally{}
 	for _, c := range counts {
 		o := out[c.RepoID]
-		o.Add(c.Severity, c.N)
+		o.add(c)
 		out[c.RepoID] = o
 	}
 	return out, nil

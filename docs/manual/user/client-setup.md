@@ -8,7 +8,7 @@ Quader gives you the configuration for your installation in four places. All of 
 
 | Place | How to open it | What it gives you |
 |---|---|---|
-| **Client setup** | User menu › **Client setup**, or **Set up your client for this repository** on a package page | Configuration snippets in the tabs **Configure**, **Install** and **Publish**, with a choice of credentials |
+| **Client setup** | User menu › **Client setup**, or **Set up your client for this repository** on the page of a version | Configuration snippets in the tabs **Configure**, **Install** and **Publish**, with a choice of credentials |
 | **Guides** | **Artifacts › Guides** | The full guide of a client: what the repository class is, configuring, signing in, installing, publishing, dist-tags or unlisting, security audit, lockfiles, troubleshooting |
 | **How to use** | A tab on the settings of a repository (a section, if you may use the repository but not see its configuration) | The guide of that one repository, with a choice of client and links **Open the client setup** and **Open in the guides** |
 | **Set up client** | The first button at the top of a repository's page, or beside a repository you opened recently on the start page | The client setup for that one repository, with its format and the repository already chosen; see [Repositories](repositories.md#the-content-of-a-repository) |
@@ -164,7 +164,7 @@ Visual Studio adds packages through Manage NuGet Packages, with the source chose
 
 A failed `dotnet nuget push` or `nuget push` prints the status and the reason phrase only; the code of the answer is in the body that `curl` shows, and the guide's troubleshooting table lists each code with its status. The guide of your client and repository names the exact limits and client messages (`NU1301`, `NU1101`, `NU1102`).
 
-On the package page a NuGet package shows its ID in the casing of its first publish, its dependencies by target framework on the **Metadata** tab, and the banner **Unlisted.** for a version its publisher unlisted: that version is missing from search and is still downloaded when a project asks for exactly it.
+On the package page a NuGet package shows its ID in the casing of its first publish, its dependencies by target framework on the **Details** tab of a version, and the banner **Unlisted.** for a version its publisher unlisted: that version is missing from search and is still downloaded when a project asks for exactly it.
 
 ## Install, publish and maintain npm packages
 

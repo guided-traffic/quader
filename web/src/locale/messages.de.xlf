@@ -11982,42 +11982,6 @@
         <target>Client für dieses Repository einrichten</target>
       </segment>
     </unit>
-    <unit id="pkg.facts">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.html:13</note>
-      </notes>
-      <segment>
-        <source>Package facts</source>
-        <target>Eckdaten des Pakets</target>
-      </segment>
-    </unit>
-    <unit id="pkg.fact.version">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.html:15,16</note>
-      </notes>
-      <segment>
-        <source>Version</source>
-        <target>Version</target>
-      </segment>
-    </unit>
-    <unit id="pkg.version.picker">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.html:21</note>
-      </notes>
-      <segment>
-        <source>Version</source>
-        <target>Version</target>
-      </segment>
-    </unit>
-    <unit id="pkg.version.prereleases">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.html:31,33</note>
-      </notes>
-      <segment>
-        <source>Include pre-releases</source>
-        <target>Vorabversionen einbeziehen</target>
-      </segment>
-    </unit>
     <unit id="pkg.unlisted">
       <notes>
         <note category="location">src/app/features/packages/package-detail.html:44,45</note>
@@ -12052,15 +12016,6 @@
       <segment>
         <source>Deprecated.</source>
         <target>Veraltet.</target>
-      </segment>
-    </unit>
-    <unit id="pkg.meta.none">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.html:122,124</note>
-      </notes>
-      <segment>
-        <source>This version declares no further metadata.</source>
-        <target>Diese Version enthält keine weiteren Metadaten.</target>
       </segment>
     </unit>
     <unit id="pkg.image.heading">
@@ -12137,15 +12092,6 @@
         <target>Autoren</target>
       </segment>
     </unit>
-    <unit id="pkg.meta.dist-tags">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.html:197,198</note>
-      </notes>
-      <segment>
-        <source>Distribution tags</source>
-        <target>Verteilungs-Tags</target>
-      </segment>
-    </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
         <note category="location">src/app/features/packages/package-detail.html:223,224</note>
@@ -12218,15 +12164,6 @@
       <segment>
         <source>Published</source>
         <target>Veröffentlicht</target>
-      </segment>
-    </unit>
-    <unit id="pkg.fact.licenses">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.html:368,369</note>
-      </notes>
-      <segment>
-        <source>Licenses</source>
-        <target>Lizenzen</target>
       </segment>
     </unit>
     <unit id="pkg.fact.downloads">
@@ -12310,15 +12247,6 @@
         <target>README</target>
       </segment>
     </unit>
-    <unit id="pkg.tab.metadata">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:293</note>
-      </notes>
-      <segment>
-        <source>Metadata</source>
-        <target>Metadaten</target>
-      </segment>
-    </unit>
     <unit id="pkg.tab.files">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:294</note>
@@ -12328,24 +12256,6 @@
         <target>Dateien</target>
       </segment>
     </unit>
-    <unit id="pkg.tab.repositories">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:295</note>
-      </notes>
-      <segment>
-        <source>Repositories</source>
-        <target>Repositories</target>
-      </segment>
-    </unit>
-    <unit id="pkg.tab.versions">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:296</note>
-      </notes>
-      <segment>
-        <source>All versions</source>
-        <target>Alle Versionen</target>
-      </segment>
-    </unit>
     <unit id="pkg.tab.import-log">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:297</note>
@@ -12353,15 +12263,6 @@
       <segment>
         <source>Import log</source>
         <target>Import-Protokoll</target>
-      </segment>
-    </unit>
-    <unit id="pkg.tab.vulnerabilities-count">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:394</note>
-      </notes>
-      <segment>
-        <source>Vulnerabilities (<ph id="0" equiv="count" disp="n"/>)</source>
-        <target>Schwachstellen (<ph id="0" equiv="count" disp="n"/>)</target>
       </segment>
     </unit>
     <unit id="pkg.tab.vulnerabilities">
@@ -12544,15 +12445,6 @@
         <target>Benötigt Ansible</target>
       </segment>
     </unit>
-    <unit id="pkg.meta.ansible-license">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:501</note>
-      </notes>
-      <segment>
-        <source>License</source>
-        <target>Lizenz</target>
-      </segment>
-    </unit>
     <unit id="pkg.meta.ansible-tags">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:502</note>
@@ -12697,24 +12589,6 @@
         <target>Repositories</target>
       </segment>
     </unit>
-    <unit id="pkg.ver.downloads">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:580</note>
-      </notes>
-      <segment>
-        <source>Downloads</source>
-        <target>Downloads</target>
-      </segment>
-    </unit>
-    <unit id="pkg.ver.grade">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:582</note>
-      </notes>
-      <segment>
-        <source>Vulnerabilities</source>
-        <target>Schwachstellen</target>
-      </segment>
-    </unit>
     <unit id="pkg.repo.repository">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:586</note>
@@ -12796,22 +12670,13 @@
         <target>Details</target>
       </segment>
     </unit>
-    <unit id="pkg.details-text">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:602</note>
-      </notes>
-      <segment>
-        <source>When this version was published, its licences, its downloads and the repositories that hold it.</source>
-        <target>Wann diese Version veröffentlicht wurde, ihre Lizenzen, ihre Downloads und die Repositories, die sie enthalten.</target>
-      </segment>
-    </unit>
     <unit id="pkg.ver.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:603</note>
+        <note category="location">src/app/features/packages/package-detail.ts:139</note>
       </notes>
       <segment>
-        <source>All versions</source>
-        <target>Alle Versionen</target>
+        <source>Versions</source>
+        <target>Versionen</target>
       </segment>
     </unit>
     <unit id="pkg.repo.caption">
@@ -33555,24 +33420,6 @@
         <target>Offene Befunde</target>
       </segment>
     </unit>
-    <unit id="pkg.repo.open">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.html:308,309</note>
-      </notes>
-      <segment>
-        <source>Open repository</source>
-        <target>Repository öffnen</target>
-      </segment>
-    </unit>
-    <unit id="pkg.repo.open-column">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:589</note>
-      </notes>
-      <segment>
-        <source>Open</source>
-        <target>Öffnen</target>
-      </segment>
-    </unit>
     <unit id="repo.content.files-menu">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:41,43</note>
@@ -33797,6 +33644,180 @@
     <unit id="files.details">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-file.ts:98</note>
+    <unit id="pkg.version-count">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.html:9,10</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 version} other {<ph id="0" equiv="INTERPOLATION"/> versions}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Version} other {<ph id="0" equiv="INTERPOLATION"/> Versionen}}</target>
+      </segment>
+    </unit>
+    <unit id="pkg.latest">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.html:11</note>
+      </notes>
+      <segment>
+        <source>Latest</source>
+        <target>Neueste</target>
+      </segment>
+    </unit>
+    <unit id="pkg.ver.heading">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.html:27,28</note>
+      </notes>
+      <segment>
+        <source>Versions</source>
+        <target>Versionen</target>
+      </segment>
+    </unit>
+    <unit id="pkg.ver.matching">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.html:43,45</note>
+      </notes>
+      <segment>
+        <source> <ph id="0" equiv="INTERPOLATION" disp="{{ matching().length | number }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ rows().length | number }}"/> versions </source>
+        <target> <ph id="0" equiv="INTERPOLATION" disp="{{ matching().length | number }}"/> von <ph id="1" equiv="INTERPOLATION_1" disp="{{ rows().length | number }}"/> Versionen </target>
+      </segment>
+    </unit>
+    <unit id="pkg.ver.never">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.html:89,91</note>
+      </notes>
+      <segment>
+        <source>Never</source>
+        <target>Nie</target>
+      </segment>
+    </unit>
+    <unit id="pkg.ansible-docs-link">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.html:107,109</note>
+      </notes>
+      <segment>
+        <source>Documentation of <ph id="0" equiv="INTERPOLATION" disp="{{ p.latestVersion }}"/></source>
+        <target>Dokumentation von <ph id="0" equiv="INTERPOLATION" disp="{{ p.latestVersion }}"/></target>
+      </segment>
+    </unit>
+    <unit id="pkg.readme-of">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.html:118</note>
+      </notes>
+      <segment>
+        <source>of</source>
+        <target>von</target>
+      </segment>
+    </unit>
+    <unit id="pkg.fact.keywords">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.html:136,137</note>
+      </notes>
+      <segment>
+        <source>Keywords</source>
+        <target>Schlagwörter</target>
+      </segment>
+    </unit>
+    <unit id="pkg.fact.first-published">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.html:141,142</note>
+      </notes>
+      <segment>
+        <source>First published</source>
+        <target>Erstmals veröffentlicht</target>
+      </segment>
+    </unit>
+    <unit id="pkg.ver.vulnerabilities">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.ts:133</note>
+      </notes>
+      <segment>
+        <source>Vulnerabilities</source>
+        <target>Schwachstellen</target>
+      </segment>
+    </unit>
+    <unit id="pkg.ver.fetched">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.ts:136</note>
+      </notes>
+      <segment>
+        <source>Last fetched</source>
+        <target>Zuletzt abgerufen</target>
+      </segment>
+    </unit>
+    <unit id="pkg.ver.filter">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.ts:140</note>
+      </notes>
+      <segment>
+        <source>Filter versions</source>
+        <target>Versionen filtern</target>
+      </segment>
+    </unit>
+    <unit id="pkg.details-hint">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.ts:142</note>
+      </notes>
+      <segment>
+        <source>The repositories that hold the package, its keywords and its downloads.</source>
+        <target>Die Repositorys, die das Paket enthalten, seine Schlagwörter und seine Downloads.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.ver.none-matching">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.ts:144</note>
+      </notes>
+      <segment>
+        <source>No version matches “<ph id="0" equiv="text" disp="this.draft().trim()"/>”.</source>
+        <target>Keine Version passt zu „<ph id="0" equiv="text" disp="this.draft().trim()"/>“.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.version.facts">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:21</note>
+      </notes>
+      <segment>
+        <source>Facts of this version</source>
+        <target>Fakten dieser Version</target>
+      </segment>
+    </unit>
+    <unit id="pkg.fact.last-fetched">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:38</note>
+      </notes>
+      <segment>
+        <source>Last fetched</source>
+        <target>Zuletzt abgerufen</target>
+      </segment>
+    </unit>
+    <unit id="pkg.fact.never">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:41,42</note>
+      </notes>
+      <segment>
+        <source>never</source>
+        <target>nie</target>
+      </segment>
+    </unit>
+    <unit id="pkg.fact.download-count">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:44,45</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 download} other {<ph id="0" equiv="INTERPOLATION"/> downloads}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Download} other {<ph id="0" equiv="INTERPOLATION"/> Downloads}}</target>
+      </segment>
+    </unit>
+    <unit id="pkg.repo.heading">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:291,292</note>
+      </notes>
+      <segment>
+        <source>Repositories</source>
+        <target>Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="pkg.tab.details">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.ts:185</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -34008,6 +34029,58 @@
       <segment>
         <source>More actions for this folder</source>
         <target>Weitere Aktionen für diesen Ordner</target>
+    <unit id="route.packages.version.title">
+      <notes>
+        <note category="location">src/app/features/packages/packages.routes.ts:41</note>
+      </notes>
+      <segment>
+        <source>Package version</source>
+        <target>Paketversion</target>
+      </segment>
+    </unit>
+    <unit id="pkg.grade.not-scanned">
+      <notes>
+        <note category="location">src/app/features/packages/version-grade.ts:19</note>
+      </notes>
+      <segment>
+        <source>not scanned</source>
+        <target>nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="pkg.grade.no-findings">
+      <notes>
+        <note category="location">src/app/features/packages/version-grade.ts:21</note>
+      </notes>
+      <segment>
+        <source>no findings</source>
+        <target>keine Befunde</target>
+      </segment>
+    </unit>
+    <unit id="pkg.grade.one-finding">
+      <notes>
+        <note category="location">src/app/features/packages/version-grade.ts:25</note>
+      </notes>
+      <segment>
+        <source>1 finding</source>
+        <target>1 Befund</target>
+      </segment>
+    </unit>
+    <unit id="pkg.grade.findings">
+      <notes>
+        <note category="location">src/app/features/packages/version-grade.ts:26</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n.format(total)"/> findings</source>
+        <target><ph id="0" equiv="count" disp="n.format(total)"/> Befunde</target>
+      </segment>
+    </unit>
+    <unit id="pkg.grade.fixable">
+      <notes>
+        <note category="location">src/app/features/packages/version-grade.ts:27</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n.format(g.fixable)"/> fixable</source>
+        <target><ph id="0" equiv="count" disp="n.format(g.fixable)"/> behebbar</target>
       </segment>
     </unit>
   </file>

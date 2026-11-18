@@ -880,7 +880,10 @@ agent** is not decided until the owner has said so.
   - **Lists:** W-1, W-3, W-4, W-6 and the list defects the development agent saw (the tables' right edge, broken cells in the
     vulnerability report and the token list, the search results' repository list, one way to write a time);
   - **Package page:** W-7 with the two API additions (last fetched and findings with a fix, per version) and a seed with many
-    versions;
+    versions. **Landed on 2026-11-18** (R-UI-110 to R-UI-112, R-API-065, R-VULN-040, Q-UI-450 to Q-UI-458, Q-API-295,
+    Q-VULN-160): a package opens on the table of its versions, a version's page is `…/<name>@<version>`. "Last fetched" is read
+    from the stored download statistics of the version's main file, so a remote image tag without a stored file reads "Never".
+    Not run locally: the journeys 08, 21, the vulnerability journey 15 and the two Ansible documentation journeys;
   - **Guides:** W-2, the guide and the client setup as one page, one label and style for **Set up client**;
   - **Files:** W-8, and the defects of the repository's page (the long package name's row, the filter field's width, the file
     row's icon, the address beside **Set up client**). **Landed on 2026-11-18** (ADR-203, R-UI-010 to R-UI-014, R-UI-052,

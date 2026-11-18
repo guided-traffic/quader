@@ -3491,6 +3491,8 @@ revisits this when the screen is reached from an upload (then it knows the `chan
 
 ### Q-DEB-103 · The version's architectures, coordinates and control fields are one block of the Metadata tab
 
+**Revisited on 2026-11-18** (the owner's walk of 2026-11-18, W-7): the block is in the tab **Details** of the version's page ([api-and-ui.md](../api-and-ui.md) R-UI-111, Q-UI-458).
+
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |

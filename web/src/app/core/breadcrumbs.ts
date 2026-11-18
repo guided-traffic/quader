@@ -97,8 +97,18 @@ export function collect(root: ActivatedRouteSnapshot): Crumb[] {
       // that route itself, so the route has to answer there (it redirects to the project's first screen).
       add({ label: route.params[crumbParam] ?? crumbParam, commands: [...before, ...own], literal: true });
     } else if (config && config.path === undefined && config.matcher && crumbParam) {
-      // A matcher route whose parameter names the thing (a package name with its slash): one step.
-      add({ label: route.params[crumbParam] ?? crumbParam, commands: [...before, ...own], literal: true });
+      // A matcher route whose parameter names the thing (a package name with its slash): one step. A version's page
+      // (`data.crumbVersion`, `ui@1.4.0`) adds the package, linked to its page without the version, and then the version.
+      const versionParam = config.data?.['crumbVersion'] as string | undefined;
+      const version = versionParam ? route.params[versionParam] : undefined;
+      if (version) {
+        const last = own.length - 1;
+        const unversioned = own.map((s, i) => (i === last ? s.slice(0, s.length - version.length - 1) : s));
+        add({ label: route.params[crumbParam] ?? crumbParam, commands: [...before, ...unversioned], literal: true });
+        add({ label: version, commands: [...before, ...own], literal: true });
+      } else {
+        add({ label: route.params[crumbParam] ?? crumbParam, commands: [...before, ...own], literal: true });
+      }
     } else if (config && typeof config.title === 'function' && config.path !== undefined && route.title) {
       // A title a resolver gives (the creation form's "New OCI (Docker) repository"): one step that names the page.
       add({ label: route.title, commands: [...before, ...own], literal: false });

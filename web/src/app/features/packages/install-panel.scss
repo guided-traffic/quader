@@ -10,16 +10,18 @@
   }
 }
 
-// The selects of a panel are one width: the panel's (Q-UI-320).
+// The selects of a panel stand side by side, each as wide as a client's or a repository's name, and wrap where the panel is
+// narrow (Q-UI-455; they stacked at the panel's width while it was a column of 24 rem, Q-UI-320).
 .pickers {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--quader-space-3);
   margin-block-end: var(--quader-space-3);
 }
 
 .picker {
   display: flex;
+  flex: 0 1 16rem;
   flex-direction: column;
   gap: var(--quader-space-1);
   min-inline-size: 0;
@@ -29,8 +31,14 @@
   }
 }
 
+// A one-line command is as wide as its text, up to the panel's width (Q-UI-455): read in full where there is room, never a
+// field far wider than its command. The field's font is the input's, so that a character of `--command-chars` is one of the
+// command's; the rest is the input's padding and border and the joined copy button.
 .command-field {
+  inline-size: min(100%, calc((var(--command-chars) + 2) * 1ch + 4.5rem));
   max-inline-size: none;
+  font-family: var(--quader-font-mono);
+  font-size: 0.875rem;
 }
 
 .command {

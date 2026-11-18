@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -210,6 +212,21 @@ func rowsOf(versions ...string) []q.PackageViewVersionsRow {
 		out[i] = q.PackageViewVersionsRow{VersionID: int64(i + 1), Version: v}
 	}
 	return out
+}
+
+// R-API-065: a version held by several repositories was last fetched when the latest of its lead files was; a version none of whose
+// rows was fetched has no time.
+func TestR_API_065_LastDownloadIsTheLatestOfTheRows(t *testing.T) {
+	early, late := time.Date(2026, 11, 1, 8, 0, 0, 0, time.UTC), time.Date(2026, 11, 17, 16, 40, 2, 0, time.UTC)
+	rows := rowsOf("1.0.0", "1.0.0", "1.0.0")
+	rows[0].LastDownloadAt = pgtype.Timestamptz{Time: early, Valid: true}
+	rows[2].LastDownloadAt = pgtype.Timestamptz{Time: late, Valid: true}
+	if got := (versionGroup{version: "1.0.0", rows: rows}).lastDownload(); got == nil || !got.Equal(late) {
+		t.Errorf("three rows: %v, want %v", got, late)
+	}
+	if got := (versionGroup{version: "2.0.0", rows: rowsOf("2.0.0")}).lastDownload(); got != nil {
+		t.Errorf("never fetched: %v", got)
+	}
 }
 
 func TestR_API_029_LatestIsTheHighestStableVersion(t *testing.T) {

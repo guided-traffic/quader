@@ -109,6 +109,9 @@ type VersionSummary struct {
 	Digest        string
 	Repositories  []qname.Repo
 	DownloadCount int64
+	// LastDownloadedAt is the latest download of the version's lead file in any repository that holds it (R-API-065); nil when it
+	// was never fetched.
+	LastDownloadedAt *time.Time
 }
 
 // RepositoryEntry is a repository that holds a version.
@@ -138,10 +141,12 @@ type VersionDetail struct {
 	Licenses      []string
 	SizeBytes     int64
 	DownloadCount int64
-	HasReadme     bool
-	Metadata      map[string]any
-	Repositories  []RepositoryEntry
-	Files         []File
+	// LastDownloadedAt is as in VersionSummary (R-API-065).
+	LastDownloadedAt *time.Time
+	HasReadme        bool
+	Metadata         map[string]any
+	Repositories     []RepositoryEntry
+	Files            []File
 	// Repo is the repository the files and the metadata were read from: the one
 	// that stored the version first.
 	Repo qname.Repo

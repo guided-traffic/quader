@@ -104,7 +104,7 @@ Depending on the format, the content shows:
 | **npm, NuGet, Debian** | Packages, each with its latest version, the number of versions, the [grade](vulnerabilities.md#grades) of its latest version where the format is scanned (npm and NuGet today) and downloads | The versions with size, published time and grade, and the install command for the version you choose |
 | **Generic** | The files of the repository, folder by folder | Selecting a folder opens it, selecting a file opens its page with **Download** and its details; the copy button copies its download address. Uploading, new folders and deleting are on the same pages; see [Browsing and transferring files](files.md) |
 
-Select a package or image name to open the [package page](packages.md) for details, the README and all versions. A virtual repository lists what it resolves through its members, which are named above the list. A remote repository lists what has been fetched through it, marked in a note.
+Select a package or image name to open the [package page](packages.md), the table of its versions and the README; a version opens its own page. A virtual repository lists what it resolves through its members, which are named above the list. A remote repository lists what has been fetched through it, marked in a note.
 
 The **Vulnerabilities** column shows a shield with the grade and the count that decides it, for example **E · 13 Critical**; point at it to
 see every count. Select its heading to sort by grade: once ascending, from N/A and S to E, and again for the worst first. Sorting by

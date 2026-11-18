@@ -43,6 +43,7 @@ describe('Breadcrumbs', () => {
     for (const url of [
       '/projects/web/repositories/generic-local/files/releases/1.0',
       '/projects/web/packages/npm/@team-a/ui',
+      '/projects/web/packages/npm/@team-a/ui@1.4.0',
       '/projects/web/policies/team-a',
       '/projects/web/service-accounts/ci-bot',
       '/projects/web/vulnerabilities/findings/abc',
@@ -99,6 +100,13 @@ describe('Breadcrumbs', () => {
     expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Packages', '@team-a/ui']);
     expect(trail[2]?.link).toBe('//projects/web/packages');
     expect(trail[3]).toEqual({ label: '@team-a/ui', link: '//projects/web/packages/npm/@team-a/ui', literal: true });
+  });
+
+  it('R-UI-002 R-UI-111 a version adds the package, linking its page without the version, and then the version', async () => {
+    const trail = await trailAt('/projects/web/packages/npm/@team-a/ui@1.4.0');
+    expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Packages', '@team-a/ui', '1.4.0']);
+    expect(trail[3]).toEqual({ label: '@team-a/ui', link: '//projects/web/packages/npm/@team-a/ui', literal: true });
+    expect(trail[4]).toEqual({ label: '1.4.0', link: '//projects/web/packages/npm/@team-a/ui@1.4.0', literal: true });
   });
 
   it('R-UI-002 a nested system screen reads area, screen group, screen', async () => {

@@ -267,6 +267,7 @@ type imageGrade struct {
 	Os         *string `json:"os"`
 	CheckedAt  *string `json:"checkedAt"`
 	Evaluation string  `json:"evaluation"`
+	Fixable    int64   `json:"fixable"`
 	Open       struct {
 		Critical int64 `json:"critical"`
 	} `json:"open"`
@@ -327,13 +328,14 @@ func TestR_VULN_034_AnImageIsScannedAfterItsPushAndItsFindingsReachThePackageAPI
 		t.Fatalf("images: %+v", r.Repositories[0].Images)
 	}
 
-	// R-VULN-038: one Critical grades D; the OS and the scan time come from the manifest's scan.
-	if g := r.Repositories[0].Grade; g.Grade != "D" || g.Open.Critical != 1 || g.Eosl || g.Os == nil || *g.Os != "alpine 3.19.1" || g.CheckedAt == nil {
+	// R-VULN-038: one Critical grades D; the OS and the scan time come from the manifest's scan. R-VULN-040: its fixed version
+	// makes it the tag's one fixable finding.
+	if g := r.Repositories[0].Grade; g.Grade != "D" || g.Open.Critical != 1 || g.Fixable != 1 || g.Eosl || g.Os == nil || *g.Os != "alpine 3.19.1" || g.CheckedAt == nil {
 		t.Fatalf("grade: %+v", g)
 	}
 	// The grade per tag of GET /packages/{id}/vulnerabilities, which the repository page shows (R-VULN-039).
 	a := f.do("GET", "/api/v1/packages/"+view.ID("oci", "app")+"/vulnerabilities", nil)
-	if a.Status != http.StatusOK || !strings.Contains(string(a.Body), `"critical":1`) || !strings.Contains(string(a.Body), `"grade":"D"`) {
+	if a.Status != http.StatusOK || !strings.Contains(string(a.Body), `"critical":1`) || !strings.Contains(string(a.Body), `"grade":"D"`) || !strings.Contains(string(a.Body), `"fixable":1`) {
 		t.Fatalf("package grades: %d %s", a.Status, a.Body)
 	}
 }

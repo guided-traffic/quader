@@ -265,7 +265,7 @@ func (a *API) ImageGradeCounts(ctx context.Context, sc Scope, pairs []NameVersio
 	})
 	out := make([]GradeCount, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, GradeCount{RepoID: r.RepoID, Name: r.Name, Version: r.Version, Severity: advisory.Severity(r.Severity), N: r.N})
+		out = append(out, GradeCount{RepoID: r.RepoID, Name: r.Name, Version: r.Version, Severity: advisory.Severity(r.Severity), N: r.N, Fixable: r.Fixable})
 	}
 	return out, err
 }

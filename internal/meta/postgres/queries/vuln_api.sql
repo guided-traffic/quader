@@ -361,8 +361,9 @@ SELECT p.repo_id, p.name, pv.version
 -- name: VulnGradeCounts :many
 -- The open findings of the given (name, version) pairs of one format that the caller can read, per repository, version and severity:
 -- the counts behind the grades of a page of the packages list and of a package's versions (R-VULN-039), one statement however many
--- pairs. has_repos narrows them to the repositories in repos.
-SELECT f.repo_id, f.package_name, f.version, f.severity, count(*)::bigint AS n
+-- pairs, with how many of them have a fixed version (fixable, R-VULN-039). has_repos narrows them to the repositories in repos.
+SELECT f.repo_id, f.package_name, f.version, f.severity, count(*)::bigint AS n,
+       (count(*) FILTER (WHERE f.fix_available))::bigint AS fixable
   FROM (SELECT unnest(sqlc.arg(names)::text[]) AS name, unnest(sqlc.arg(versions)::text[]) AS version) AS w
   JOIN vuln_finding f ON f.package_name = w.name AND f.version = w.version
   JOIN repositories r ON r.id = f.repo_id

@@ -1,0 +1,93 @@
+.pkg-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2);
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quader-space-1);
+  padding: 0 var(--quader-space-2);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-full);
+  font-size: 0.8125rem;
+
+  quader-format-icon {
+    font-size: 1rem;
+  }
+}
+
+// The facts of the version on one line of the style guide's separator: the grade first, then when, how large, when last fetched.
+.version-facts {
+  margin-block-end: var(--quader-space-4);
+}
+
+.facts-line {
+  margin: 0;
+  color: var(--quader-text-muted);
+}
+
+.facts-grade {
+  color: var(--quader-on-surface);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--quader-link);
+  }
+
+  &:focus-visible {
+    outline: var(--quader-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+// The install command at the page's width, so a command is read in full where it is shown (R-UI-009, Q-UI-455).
+.version-install {
+  display: block;
+  margin-block-end: var(--quader-space-4);
+}
+
+.version-tabs {
+  display: block;
+}
+
+.plain {
+  margin: 0;
+  padding-inline-start: var(--quader-space-4);
+}
+
+.tab {
+  padding-block: var(--quader-space-4);
+
+  h2 {
+    margin-block: var(--quader-space-5) var(--quader-space-2);
+    font: var(--quader-type-title-medium);
+
+    &:first-child {
+      margin-block-start: 0;
+    }
+  }
+}
+
+// A file's path has no spaces to break at: it breaks anywhere rather than push the row out of the screen.
+.file-path {
+  overflow-wrap: anywhere;
+}
+
+// A fact with a copy button (an image's digest) keeps its value on the line of its label.
+.tab dl.facts {
+  align-items: baseline;
+
+  dd:has(> quader-copy-button) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--quader-space-1);
+  }
+}

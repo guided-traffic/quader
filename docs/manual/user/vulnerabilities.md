@@ -25,7 +25,7 @@ Select **Vulnerabilities** in the side bar of a project. The report shows the fi
 | **Severity** | The level as a word with an icon, and the score when the advisory has one. The colour only reinforces the word |
 | **Status** | **Needs triage**, **Confirmed**, **Blocked**, **Dismissed** or **Resolved**. A version whose download is refused shows as **Blocked**, with the reason: **malicious package** or **blocked in triage** |
 | **Identifier** | The advisory identifier, which opens the finding. **Malicious** marks a package reported as malicious; **Known exploited** marks an advisory on the CISA list of exploited vulnerabilities |
-| **Package** | The package, with the version under it; opens the package page on its **Vulnerabilities** tab |
+| **Package** | The package, with the version under it; opens the page of that version on its **Vulnerabilities** tab |
 | **Repository** | The repository that holds the version |
 | **Fixed in** | The versions that fix the advisory |
 | **Detected** | When Quader found it |
@@ -66,8 +66,11 @@ If someone else changed the finding while you had it open, the change is refused
 
 ## Grades
 
-Lists and package pages show a version as a **grade**: a shield with a letter and the count that decides it, for example
-**E · 13 Critical**. The grade comes from the version's open findings; a dismissed or resolved finding does not count.
+Lists show a version as a **grade**: a shield with a letter and the count that decides it, for example **E · 13 Critical**. The
+versions table of a package and the page of a version show the letter with the number of open findings and how many of them have
+a fix, for example **E · 1,145 findings · 112 fixable**; hover over it for the rule and every count. A finding has a fix when its
+advisory names a version that is no longer affected. The grade comes from the version's open findings; a dismissed or resolved
+finding does not count.
 
 | Grade | When | The rule under it |
 |---|---|---|
@@ -80,24 +83,26 @@ Lists and package pages show a version as a **grade**: a shield with a letter an
 | **N/A** | Not checked: the advisory data has not arrived, the image waits for its scan or its scan failed, the repository is not covered, or the name is internal | Why it was not checked |
 
 A version held by several repositories you may read shows the worst of their grades. A package in a list shows the grade of its
-latest version: an older version you pin can be worse, so look at **All versions** before you keep an old one. If you are signed
+latest version: an older version you pin can be worse, so look at the versions table of the package before you keep an old one.
+Sorting it by **Vulnerabilities** twice lists the worst versions first. If you are signed
 out, or the installation does not scan, no grades are shown at all.
 
-## On the package page
+## On the page of a version
 
-The header shows the grade of the selected version next to the version picker; select it to open the **Vulnerabilities** tab.
+The line under the version's name shows its grade with the number of findings and how many have a fix; select it to open the
+**Vulnerabilities** tab. A version that is checked opens on that tab.
 
-The **Vulnerabilities** tab of a package version shows, per repository you may read that holds the version, a card: the grade and
+The **Vulnerabilities** tab of a version shows, per repository you may read that holds the version, a card: the grade and
 its rule, the open findings as the severity bar, and a line of facts. For an image the facts are its operating system, **end of
 life** when it has reached it, and **Scanned** with when; for a package, **Checked** with when its advisory data was synchronised.
 A time reads as "3 min ago" with the date and time in brackets. The last fact, **Findings in** and the repository, opens the report
 with the findings of this version in that repository, the dismissed ones too. Below the card come whether the download is blocked
 and why, how many open findings there are, and the open findings with severity, identifier, status and fixed versions, the worst
 first, 25 at a time; **Load more** adds the next 25. Select a segment of the card's bar to see only the findings of that severity;
-**Show all** returns to all of them. The tab label carries the number of open findings.
+**Show all** returns to all of them.
 
-**All versions** shows the grade of each version. The header of the page reads **Blocked in** and the repository when the selected
-version is blocked there.
+The versions table of the package shows the grade of each version. The page of a version reads **Blocked in** and the repository
+when the version is blocked there.
 
 ## Advisory sources
 

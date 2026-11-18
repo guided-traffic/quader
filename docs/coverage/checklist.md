@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 620 of 877 spec requirements are implemented: a passing test names them and no
+**Status.** 620 of 882 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 788 specified (515 of them implemented), 1,451 open.
-877 spec requirements: 646 cover catalog features, 231 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 788 specified (513 of them implemented), 1,451 open.
+882 spec requirements: 647 cover catalog features, 235 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -29,7 +29,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [Repositories](#repositories-repo) | `REPO` | 68 | 24 of 24 | 41 | 27 | 29 |
 | [Remote repositories](#remote-repositories-rmt) | `RMT` | 49 | 18 of 18 | 31 | 18 | 23 |
 | [Replication, federation and multi-site topology](#replication-federation-and-multi-site-topology-repl) | `REPL` | 72 | – | 0 | 72 | 0 |
-| [Artifact management](#artifact-management-art) | `ART` | 53 | 10 of 10 | 32 | 21 | 17 |
+| [Artifact management](#artifact-management-art) | `ART` | 53 | 10 of 10 | 32 | 21 | 16 |
 | [Search and query language](#search-and-query-language-srch) | `SRCH` | 64 | – | 3 | 61 | 1 |
 | [Builds and CI integration](#builds-and-ci-integration-bld) | `BLD` | 49 | – | 0 | 49 | 0 |
 | [Identity and access](#identity-and-access-iam) | `IAM` | 69 | 24 of 24 | 36 | 33 | 30 |
@@ -43,7 +43,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [Events and extensibility](#events-and-extensibility-evt) | `EVT` | 82 | 1 of 1 | 26 | 56 | 3 |
 | [Distribution and release lifecycle](#distribution-and-release-lifecycle-dist) | `DIST` | 70 | 2 of 2 | 2 | 68 | 2 |
 | [Security scanning and curation](#security-scanning-and-curation-sec) | `SEC` | 98 | 18 of 18 | 18 | 80 | 7 |
-| [UI inventory](#ui-inventory-ui) | `UI` | 61 | 33 of 33 | 47 | 14 | 34 |
+| [UI inventory](#ui-inventory-ui) | `UI` | 61 | 33 of 33 | 47 | 14 | 33 |
 | [Content API operation catalog](#content-api-operation-catalog-api) | `API` | 166 | 15 of 15 | 71 | 95 | 28 |
 | [Operation catalog: administration API](#operation-catalog-administration-api-admapi) | `ADMAPI` | 114 | 34 of 34 | 54 | 60 | 41 |
 | [Package formats: matrix and cross-format behavior](#package-formats-matrix-and-cross-format-behavior-fmt) | `FMT` | 14 | 8 of 8 | 9 | 5 | 8 |
@@ -319,7 +319,7 @@ Catalog page: [replication-and-federation.md](../features/replication-and-federa
 Catalog page: [artifacts.md](../features/artifacts.md) · specified by priority: MVP 10 of 10 · P1 20 of 20 · P2 2 of 22 · Out of scope 0 of 1
 
 <details>
-<summary>53 features: 32 specified, 21 open, 17 implemented</summary>
+<summary>53 features: 32 specified, 21 open, 16 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -371,7 +371,7 @@ Catalog page: [artifacts.md](../features/artifacts.md) · specified by priority:
 | ART-046 | Followers (change notifications) | P2 | open | – |
 | ART-047 | WebDAV access | P2 | open | – |
 | ART-048 | Package list | MVP | implemented | [R-API-029](../spec/api-and-ui.md) (implemented), [R-UI-006](../spec/api-and-ui.md) (implemented) |
-| ART-049 | Package details and install commands | MVP | implemented | [R-API-029](../spec/api-and-ui.md) (implemented), [R-UI-007](../spec/api-and-ui.md) (implemented) |
+| ART-049 | Package details and install commands | MVP | specified | [R-API-029](../spec/api-and-ui.md) (implemented), [R-UI-007](../spec/api-and-ui.md) (implemented), [R-UI-111](../spec/api-and-ui.md) |
 | ART-050 | Invalidate cached metadata in a remote repository | P1 | implemented | [R-REPO-045](../spec/repositories-and-proxy.md) (implemented) |
 | ART-051 | List background tasks | P2 | implemented | [R-OPS-019](../spec/operations-and-observability.md) (implemented) |
 | ART-052 | RubyGems version list | P2 | open | – |
@@ -1366,7 +1366,7 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 Catalog page: [ui-inventory.md](../features/ui-inventory.md) · specified by priority: MVP 33 of 33 · P1 14 of 14 · P2 0 of 8 · Later 0 of 3 · Out of scope 0 of 3
 
 <details>
-<summary>61 features: 47 specified, 14 open, 34 implemented</summary>
+<summary>61 features: 47 specified, 14 open, 33 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -1379,7 +1379,7 @@ Catalog page: [ui-inventory.md](../features/ui-inventory.md) · specified by pri
 | UI-007 | First-run onboarding wizard | P2 | open | – |
 | UI-058 | Supported browsers | MVP | implemented | [R-UI-001](../spec/api-and-ui.md) (implemented) |
 | UI-008 | Packages list screen | MVP | implemented | [R-UI-006](../spec/api-and-ui.md) (implemented) |
-| UI-009 | Package details screen | MVP | implemented | [R-UI-007](../spec/api-and-ui.md) (implemented), [R-UI-008](../spec/api-and-ui.md) (implemented) |
+| UI-009 | Package details screen | MVP | specified | [R-UI-007](../spec/api-and-ui.md) (implemented), [R-UI-008](../spec/api-and-ui.md) (implemented), [R-UI-111](../spec/api-and-ui.md) |
 | UI-010 | Install command panel | MVP | implemented | [R-UI-009](../spec/api-and-ui.md) (implemented) |
 | UI-011 | Artifact browser screen | MVP | implemented | [R-UI-010](../spec/api-and-ui.md) (implemented) |
 | UI-012 | Item actions and their required permissions | MVP | implemented | [R-UI-011](../spec/api-and-ui.md) (implemented) |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>231 requirements</summary>
+<summary>235 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -2983,6 +2983,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-API-052 (implemented) | Visibility of a management write on other replicas | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-020 (implemented) | Resource map and routing | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-021 (implemented) | Current caller and UI preferences | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-API-065 | When a version was last fetched | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-053 (implemented) | Guides of the formats | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-054 (implemented) | The manual | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-API-055 (implemented) | User avatars | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
@@ -3030,6 +3031,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-097 | Live suggestions while typing | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-098 | Enter opens the results page of the main area | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-099 | The search leads into the admin area only by an administrator's choice of a marked suggestion | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-110 | A package's versions as one table | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-112 | A version's vulnerabilities in one statement | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 (implemented) | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-007 (implemented) | One origin for UI and package content | MVP | [architecture.md](../spec/architecture.md) |
@@ -3196,6 +3199,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-VULN-014 (implemented) | History and retention | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-038 | The grade of a version | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-039 | The grade in the API | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
+| R-VULN-040 | How many open findings of a version have a fix | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-024 (implemented) | Metrics, audit events, alerts and status | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-026 (implemented) | Vulnerability data in backups and restores | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-027 | Across replicas, without Valkey and during a drain | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |

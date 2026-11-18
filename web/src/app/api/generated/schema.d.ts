@@ -3226,7 +3226,8 @@ export interface paths {
          *     expands to its members. `sort=-version` orders by the format's version precedence, newest
          *     first; the default is `-publishedAt`. `include=digest` also reads each version's `digest` from
          *     the format's metadata (an OCI tag: `sha256:…` of its manifest, R-UI-052); a format without one
-         *     has no `digest`.
+         *     has no `digest`. `lastDownloadedAt` is when the version was last fetched from any of the listed repositories, read
+         *     with the rows in the same statement (R-API-065).
          */
         get: operations["listPackageVersions"];
         put?: never;
@@ -7789,6 +7790,13 @@ export interface components {
             repositories: string[];
             /** Format: int64 */
             downloadCount: number;
+            /**
+             * Format: date-time
+             * @description When the version was last fetched through one of `repositories`: the latest download of its lead file (the tarball, the
+             *     package, the manifest), as the download statistics of R-STOR-015 record it, which a replica flushes with a delay of up to
+             *     its flush interval; `null` when it was never fetched, and for a remote OCI tag, which has no stored file (R-API-065).
+             */
+            lastDownloadedAt: string | null;
         };
         PackageVersionList: {
             items: components["schemas"]["PackageVersionSummary"][];
@@ -7829,6 +7837,11 @@ export interface components {
             sizeBytes: number;
             /** Format: int64 */
             downloadCount: number;
+            /**
+             * Format: date-time
+             * @description When the version was last fetched, as in the version list (R-API-065); `null` when it never was.
+             */
+            lastDownloadedAt: string | null;
             /** @description Whether `readme` answers 200; the UI uses it to choose the default tab without a probing request. */
             hasReadme: boolean;
             /**
@@ -9068,6 +9081,11 @@ export interface components {
             grade: "S" | "A" | "B" | "C" | "D" | "E" | "N/A";
             /** @description The open findings by severity of the repository whose grade it is; zero for N/A. */
             open: components["schemas"]["VulnerabilitySeverityCounts"];
+            /**
+             * Format: int64
+             * @description How many of the open findings of `open` name a fixed version (R-VULN-040, Q-VULN-160): the same findings, counted in the same statement; zero for N/A.
+             */
+            fixable: number;
             /** @description An image whose OS is at its end of life; false for every other format. */
             eosl: boolean;
             /** @description An image's OS as the analyser names it (alpine 3.24.1), the different ones of several platforms joined with ", "; absent for every other format. */
@@ -17477,7 +17495,8 @@ export interface operations {
                      *             "npm-local",
                      *             "npm-all"
                      *           ],
-                     *           "downloadCount": 410
+                     *           "downloadCount": 410,
+                     *           "lastDownloadedAt": "2026-11-17T16:40:02.118Z"
                      *         }
                      *       ],
                      *       "nextCursor": null
@@ -17531,6 +17550,7 @@ export interface operations {
                      *       ],
                      *       "sizeBytes": 48213,
                      *       "downloadCount": 410,
+                     *       "lastDownloadedAt": "2026-11-17T16:40:02.118Z",
                      *       "hasReadme": true,
                      *       "metadata": {
                      *         "distTags": {

@@ -35,7 +35,7 @@ func toSeverityCounts(c report.Counts) gen.VulnerabilitySeverityCounts {
 // toGrade is a version's grade in the answer (R-VULN-039).
 func toGrade(g report.VersionGrade) gen.VulnerabilityGrade {
 	out := gen.VulnerabilityGrade{
-		Grade: gen.VulnerabilityGradeGrade(g.Grade), Open: toSeverityCounts(g.Open), Eosl: g.EOSL, CheckedAt: g.CheckedAt,
+		Grade: gen.VulnerabilityGradeGrade(g.Grade), Open: toSeverityCounts(g.Open), Fixable: g.Fixable, Eosl: g.EOSL, CheckedAt: g.CheckedAt,
 		Evaluation: gen.VulnerabilityEvaluation(g.Evaluation), Repository: g.Repository,
 	}
 	if g.OS != "" {

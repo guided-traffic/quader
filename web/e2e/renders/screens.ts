@@ -1,6 +1,24 @@
 import { Page, expect } from '@playwright/test';
-import { Kind, deepFolder, emptyProject, exposureRule, group, longDebKey, longNpmKey, mainProject, npmPackage, ociPackage, otherProject, projectServiceAccount, serviceAccount } from './seed';
-import { gradedPackage } from './advisories';
+import {
+  Kind,
+  ansiblePackage,
+  debPackage,
+  deepFolder,
+  emptyProject,
+  exposureRule,
+  group,
+  longDebKey,
+  longNamePackage,
+  longNpmKey,
+  mainProject,
+  npmPackage,
+  nugetPackage,
+  ociPackage,
+  otherProject,
+  projectServiceAccount,
+  serviceAccount,
+} from './seed';
+import { gradedPackage, manyVersionsPackage } from './advisories';
 import { routeTooMany } from './suggestions';
 
 /**
@@ -199,6 +217,23 @@ async function* frequentPlaces(page: Page): AsyncGenerator<string> {
   await page.locator('.switcher-button').click();
   await expect(page.locator('#project-switcher-panel')).toBeVisible();
   yield 'switcher';
+}
+
+/**
+ * The versions table of a package of many versions (R-UI-110): as it opens, narrowed by a typed version, sorted by its
+ * vulnerabilities (worst first), and with the second page of rows shown.
+ */
+async function* versionsTable(page: Page): AsyncGenerator<string> {
+  yield '';
+  const table = page.locator('main .pkg-versions');
+  await page.getByRole('searchbox', { name: 'Filter versions' }).fill('3.');
+  await expect(table.locator('tbody tr')).toHaveCount(12);
+  yield 'filtered';
+  await page.getByRole('searchbox', { name: 'Filter versions' }).fill('');
+  await table.locator('th').getByRole('button', { name: 'Vulnerabilities' }).click();
+  await table.locator('th').getByRole('button', { name: 'Vulnerabilities' }).click();
+  await expect(page).toHaveURL(/sort=-vulnerabilities/);
+  yield 'by-grade';
 }
 
 /** The closed Advanced section at the end of a page, opened: where a page keeps its destructive action (the style guide). */
@@ -483,6 +518,11 @@ const admins: readonly Kind[] = ['admin'];
 const P = `/ui/projects/${mainProject}`;
 const O = `/ui/projects/${otherProject}`;
 
+/** The address of a package page (R-UI-007) and of a version page (R-UI-111, `…/<name>@<version>`). */
+const pkg = (base: string, p: { readonly format: string; readonly name: string }): string => `${base}/packages/${p.format}/${p.name}`;
+const ver = (base: string, p: { readonly format: string; readonly name: string }, version: string): string => `${pkg(base, p)}@${version}`;
+const collectionName = `${ansiblePackage.namespace}.${ansiblePackage.name}`;
+
 export const screens: readonly Screen[] = [
   // Without a session (Q-UI-125).
   { id: 'login', path: '/ui/login', kinds: ['anonymous'] },
@@ -519,12 +559,26 @@ export const screens: readonly Screen[] = [
   { id: 'repository-ansible', path: `${O}/repositories/collections`, kinds: all },
   { id: 'packages', path: `${P}/packages`, kinds: all, walk: filtersOpen },
   { id: 'packages-other-project', path: `${O}/packages`, kinds: all, walk: filtersOpen },
-  { id: 'package-npm', path: `${P}/packages/${npmPackage.format}/${npmPackage.name}`, kinds: all },
-  { id: 'package-oci', path: `${P}/packages/${ociPackage.format}/${ociPackage.name}`, kinds: all },
-  { id: 'package-npm-graded', path: `${P}/packages/${gradedPackage.format}/${gradedPackage.name}`, kinds: all },
-  { id: 'package-npm-fixed', path: `${P}/packages/npm/xml-stream-parser?version=0.9.2`, kinds: ['plain'] },
+  // A package's page is its versions (R-UI-110), a version's page its findings, install command, files and details (R-UI-111).
+  { id: 'package-npm', path: pkg(P, npmPackage), kinds: all },
+  { id: 'package-npm-many', path: pkg(P, manyVersionsPackage), kinds: all, walk: versionsTable },
+  { id: 'package-npm-graded', path: pkg(P, gradedPackage), kinds: all },
+  { id: 'package-npm-long-name', path: pkg(P, longNamePackage), kinds: ['plain'] },
+  { id: 'package-oci', path: pkg(P, ociPackage), kinds: all },
+  { id: 'package-nuget', path: pkg(O, nugetPackage), kinds: all },
+  { id: 'package-deb', path: pkg(O, debPackage), kinds: all },
+  { id: 'package-ansible', path: pkg(O, { format: 'ansible', name: collectionName }), kinds: all },
+  { id: 'package-version-npm', path: ver(P, npmPackage, '1.1.0'), kinds: all },
+  { id: 'package-version-npm-graded', path: ver(P, gradedPackage, gradedPackage.version), kinds: all },
+  { id: 'package-version-npm-many', path: ver(P, manyVersionsPackage, '3.7.0'), kinds: ['plain'] },
+  { id: 'package-version-npm-fixed', path: ver(P, { format: 'npm', name: 'xml-stream-parser' }, '0.9.2'), kinds: ['plain'] },
+  { id: 'package-version-npm-long-name', path: ver(P, longNamePackage, '0.4.0'), kinds: ['plain'] },
   // The tab's findings narrowed by a segment of the card's bar (Q-UI-379).
-  { id: 'package-npm-graded-critical', path: `${P}/packages/${gradedPackage.format}/${gradedPackage.name}?tab=vulnerabilities&severity=critical`, kinds: ['plain'] },
+  { id: 'package-version-npm-graded-critical', path: `${ver(P, gradedPackage, gradedPackage.version)}?severity=critical`, kinds: ['plain'] },
+  { id: 'package-version-oci', path: ver(P, ociPackage, '1.4.0'), kinds: all },
+  { id: 'package-version-nuget', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: all },
+  { id: 'package-version-deb', path: ver(O, debPackage, debPackage.versions[1]), kinds: all },
+  { id: 'package-version-ansible', path: ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1]), kinds: all },
   // The folders and files of a repository on its page (R-UI-010 to R-UI-012, ADR-203): a folder with the Owner's operations, a
   // folder deep in a path of long names, a folder of more than a page, an empty folder, a file and a package format's raw files.
   { id: 'files-folder', path: `${P}/repositories/assets/files/releases/design-system/2.5.0`, kinds: all, walk: folderOperations },

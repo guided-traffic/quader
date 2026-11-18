@@ -93,6 +93,53 @@ func TestR_API_029_VersionList(t *testing.T) {
 	})
 }
 
+// TestR_API_065_LastDownloadedAt: the version list and the details say when a version was last fetched, the latest of the
+// repositories that hold it, read from the download statistics in the list's one statement; a version never fetched says null.
+func TestR_API_065_LastDownloadedAt(t *testing.T) {
+	e := newEnv(t)
+	e.seed()
+	id := e.idOf(e.tokE, "@team-a/ui")
+	early, late := "2026-11-01T08:00:00Z", "2026-11-17T16:40:02Z"
+	for repo, at := range map[string]string{"npm-local": early, "npm-team": late} {
+		e.st.Exec(`INSERT INTO item_download_stats (item_id, downloads, last_download_at)
+		           SELECT pv.lead_item_id, 1, $1::timestamptz
+		             FROM package_versions pv JOIN packages p ON p.id = pv.package_id JOIN repositories r ON r.id = p.repo_id
+		            WHERE p.name = '@team-a/ui' AND pv.version = '1.4.0' AND r.key = $2`, at, repo)
+	}
+	byVersion := map[string]map[string]any{}
+	for _, v := range e.all(e.tokE, "/api/v1/packages/"+id+"/versions") {
+		byVersion[v["version"].(string)] = v
+	}
+	if got := byVersion["1.4.0"]["lastDownloadedAt"]; got == nil || !sameInstant(t, got, late) {
+		t.Errorf("1.4.0, fetched through both repositories: %v, want %s", got, late)
+	}
+	if v, ok := byVersion["1.3.0"]["lastDownloadedAt"]; !ok || v != nil {
+		t.Errorf("1.3.0, never fetched: %v (present %v), want null", v, ok)
+	}
+	// A reader of npm-local alone sees npm-local's time.
+	for _, v := range e.all(e.tokB, "/api/v1/packages/"+id+"/versions") {
+		if v["version"] == "1.4.0" && !sameInstant(t, v["lastDownloadedAt"], early) {
+			t.Errorf("1.4.0 for a reader of npm-local: %v, want %s", v["lastDownloadedAt"], early)
+		}
+	}
+	d := e.get(e.tokE, "/api/v1/packages/"+id+"/versions/1.4.0")
+	if d.Status != 200 || !sameInstant(t, d.JSON(t)["lastDownloadedAt"], late) {
+		t.Errorf("details: %d %s", d.Status, d.Body)
+	}
+}
+
+// sameInstant compares a time of an answer with an RFC 3339 instant.
+func sameInstant(t *testing.T, got any, want string) bool {
+	t.Helper()
+	s, ok := got.(string)
+	if !ok {
+		return false
+	}
+	a, err := time.Parse(time.RFC3339Nano, s)
+	b, _ := time.Parse(time.RFC3339, want)
+	return err == nil && a.Equal(b)
+}
+
 // TestR_API_029_VersionDetails: the details of a version carry the members of the
 // contract, the files with their digests and a working download address.
 func TestR_API_029_VersionDetails(t *testing.T) {

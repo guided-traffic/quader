@@ -101,9 +101,11 @@ function version(
     licenses: ['MIT'],
     sizeBytes: 48213,
     downloadCount: 410,
+    lastDownloadedAt: '2026-11-17T16:40:02.118Z',
     hasReadme: true,
     metadata: {
-      distTags: v === '1.4.0' ? { latest: '1.4.0', next: '1.5.0-beta.1' } : {},
+      // The tags are the package's: every version's metadata carries all of them (internal/formats/npm/view.go).
+      distTags: name === '@team-a/ui' ? { latest: '1.4.0', next: '1.5.0-beta.1' } : { latest: v },
       dependencies: { lit: '^3.1.0' },
       devDependencies: { vitest: '^3.0.0' },
       authors: ['Team A <team-a@example.com>'],
@@ -153,6 +155,7 @@ function nugetVersion(v: string, over: Partial<FakeVersion> = {}): FakeVersion {
     licenses: ['MIT'],
     sizeBytes: 20480,
     downloadCount: 12,
+    lastDownloadedAt: null,
     hasReadme: true,
     metadata: {
       id: 'Contoso.Logging',
@@ -241,6 +244,7 @@ function ociVersion(tag: string, metadata: Record<string, unknown>, manifestSize
     licenses: [],
     sizeBytes: manifestSize,
     downloadCount: 0,
+    lastDownloadedAt: null,
     hasReadme: false,
     metadata,
     repositories: [{ key: 'web/oci-local', class: 'local', publishedAt: '2026-11-05T00:00:00.000Z' }],
@@ -333,6 +337,7 @@ function debVersion(v: string, metadata: Record<string, unknown>, over: Partial<
     licenses: [],
     sizeBytes: 112_264,
     downloadCount: 0,
+    lastDownloadedAt: null,
     hasReadme: false,
     metadata,
     repositories: [{ key: 'web/deb-local', class: 'local', publishedAt: '2026-11-08T00:00:00.000Z' }],
@@ -392,6 +397,7 @@ function ansibleVersion(v: string, metadata: Record<string, unknown>, over: Part
     licenses: [],
     sizeBytes: 20_480,
     downloadCount: 0,
+    lastDownloadedAt: null,
     hasReadme: false,
     metadata,
     repositories: [{ key: 'web/ansible-local', class: 'local', publishedAt: '2026-11-08T00:00:00.000Z' }],
@@ -488,11 +494,12 @@ export class FakePackagesApi extends PackagesApi {
     },
   ];
   versionList: FakeVersion[] = [
-    version('pkg_01JBQ6V7S3K9', '@team-a/ui', '1.3.0', { publishedAt: '2026-09-02T08:00:12.201Z', downloadCount: 900 }),
+    version('pkg_01JBQ6V7S3K9', '@team-a/ui', '1.3.0', { publishedAt: '2026-09-02T08:00:12.201Z', downloadCount: 900, lastDownloadedAt: null }),
     version('pkg_01JBQ6V7S3K9', '@team-a/ui', '1.4.0'),
     version('pkg_01JBQ6V7S3K9', '@team-a/ui', '1.5.0-beta.1', {
       publishedAt: '2026-10-24T10:00:00.000Z',
       downloadCount: 3,
+      lastDownloadedAt: '2026-11-02T07:30:00.000Z',
       hasReadme: false,
       readme: null,
     }),
@@ -574,6 +581,7 @@ export class FakePackagesApi extends PackagesApi {
           sizeBytes: v.sizeBytes,
           repositories: v.repositories.map((r) => r.key),
           downloadCount: v.downloadCount,
+          lastDownloadedAt: v.lastDownloadedAt,
           ...(filters.include?.includes('digest') && typeof v.metadata['digest'] === 'string' ? { digest: v.metadata['digest'] } : {}),
         }),
       )

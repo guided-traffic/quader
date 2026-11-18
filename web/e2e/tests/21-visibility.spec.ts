@@ -157,7 +157,7 @@ test('R-UI-055 the Owner of a public project sets the artifacts of a repository 
   await context.close();
 });
 
-test('R-UI-057 an anonymous visitor finds the public project and a package without a README tab, and no README is requested', async ({ browser, baseURL }) => {
+test('R-UI-057 an anonymous visitor finds the public project and a package without a README, and no README is requested', async ({ browser, baseURL }) => {
   const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true, locale: 'en-US' });
   const visitor = await context.newPage();
   const readmeRequests: string[] = [];
@@ -174,10 +174,16 @@ test('R-UI-057 an anonymous visitor finds the public project and a package witho
   await visitor.goto(`/ui/en/projects/${publicProject}/packages`);
   await visitor.getByRole('link', { name: pkgName }).click();
   await expect(visitor.getByRole('heading', { name: pkgName, level: 1 }).first()).toBeVisible();
-  await expect(visitor.getByRole('tab', { name: 'Metadata' })).toBeVisible();
+  // The package page is its versions (R-UI-110); without the wiki there is no README below them.
+  await expect(visitor.locator('.pkg-versions').getByRole('link', { name: version, exact: true })).toBeVisible();
+  await expect(visitor.locator('.pkg-readme')).toHaveCount(0);
+  await expectAccessible(visitor, 'package page of an anonymous visitor');
+  // The version's own page (R-UI-111) has no README tab either.
+  await visitor.locator('.pkg-versions').getByRole('link', { name: version, exact: true }).click();
+  await expect(visitor.getByRole('tab', { name: 'Files' })).toBeVisible();
   await expect(visitor.getByRole('tab', { name: 'README' })).toHaveCount(0);
   expect(readmeRequests, 'README requests of an anonymous visitor').toEqual([]);
-  await expectAccessible(visitor, 'package page of an anonymous visitor');
+  await expectAccessible(visitor, 'version page of an anonymous visitor');
   await context.close();
 });
 

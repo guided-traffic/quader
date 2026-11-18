@@ -93,34 +93,57 @@ func TestR_VULN_039_GradeOfAVersionInARepository(t *testing.T) {
 		{Digest: "sha256:a", Platform: "linux/amd64", State: store.ImageScanScanned, ScannedAt: &recent, OSFamily: "alpine", OSName: "3.24.1"},
 		{Digest: "sha256:b", Platform: "linux/arm64", State: store.ImageScanScanned, ScannedAt: &old, OSFamily: "alpine", OSName: "3.24.1", EOSL: true},
 	}
-	g := gradeIn("web/images", vuln.EvaluationEvaluated, Counts{}, images, nil)
+	g := gradeIn("web/images", vuln.EvaluationEvaluated, tally{open: Counts{}}, images, nil)
 	if g.Grade != GradeC || !g.EOSL || g.OS != "alpine 3.24.1" || g.CheckedAt == nil || !g.CheckedAt.Equal(old) || g.Repository != "web/images" {
 		t.Errorf("an image at its end of life = %+v", g)
 	}
 	two := append([]ImageState{}, images[0], ImageState{Digest: "sha256:c", State: store.ImageScanScanned, ScannedAt: &recent, OSFamily: "debian", OSName: "12.8"})
-	if g := gradeIn("web/images", vuln.EvaluationEvaluated, Counts{Low: 2}, two, nil); g.Grade != GradeA || g.EOSL || g.OS != "alpine 3.24.1, debian 12.8" {
+	if g := gradeIn("web/images", vuln.EvaluationEvaluated, tally{open: Counts{Low: 2}}, two, nil); g.Grade != GradeA || g.EOSL || g.OS != "alpine 3.24.1, debian 12.8" {
 		t.Errorf("two platforms of other OSes = %+v", g)
 	}
 	synced := recent
-	p := gradeIn("web/npm", vuln.EvaluationEvaluated, Counts{Critical: 6, High: 1}, nil, &synced)
-	if p.Grade != GradeE || p.EOSL || p.OS != "" || p.CheckedAt != &synced || p.Open.Critical != 6 {
+	p := gradeIn("web/npm", vuln.EvaluationEvaluated, tally{open: Counts{Critical: 6, High: 1}, fixable: 4}, nil, &synced)
+	if p.Grade != GradeE || p.EOSL || p.OS != "" || p.CheckedAt != &synced || p.Open.Critical != 6 || p.Fixable != 4 {
 		t.Errorf("a package = %+v", p)
 	}
-	na := gradeIn("web/npm-off", vuln.EvaluationNotCovered, Counts{Low: 3}, nil, &synced)
-	if na.Grade != GradeNA || na.Open != (Counts{}) || na.CheckedAt != nil || na.Evaluation != vuln.EvaluationNotCovered {
+	na := gradeIn("web/npm-off", vuln.EvaluationNotCovered, tally{open: Counts{Low: 3}, fixable: 1}, nil, &synced)
+	if na.Grade != GradeNA || na.Open != (Counts{}) || na.Fixable != 0 || na.CheckedAt != nil || na.Evaluation != vuln.EvaluationNotCovered {
 		t.Errorf("a version that is not covered = %+v", na)
 	}
-	pending := gradeIn("web/images", imageEvaluation(vuln.EvaluationEvaluated, []ImageState{{State: store.ImageScanPending}}), Counts{}, []ImageState{{State: store.ImageScanPending}}, nil)
+	pending := gradeIn("web/images", imageEvaluation(vuln.EvaluationEvaluated, []ImageState{{State: store.ImageScanPending}}), tally{open: Counts{}}, []ImageState{{State: store.ImageScanPending}}, nil)
 	if pending.Grade != GradeNA || pending.Evaluation != vuln.EvaluationPendingScan {
 		t.Errorf("a tag still pending = %+v", pending)
 	}
 	if w := worst(na, p); w.Repository != "web/npm" {
 		t.Errorf("an evaluated repository wins over one that is not: %+v", w)
 	}
-	if w := worst(p, gradeIn("web/npm-2", vuln.EvaluationEvaluated, Counts{Critical: 7}, nil, &synced)); w.Repository != "web/npm-2" {
+	if w := worst(p, gradeIn("web/npm-2", vuln.EvaluationEvaluated, tally{open: Counts{Critical: 7}}, nil, &synced)); w.Repository != "web/npm-2" {
 		t.Errorf("7 Critical is worse than 6: %+v", w)
 	}
 	if w := worst(p, p); w.Repository != "web/npm" {
 		t.Errorf("a tie keeps the first: %+v", w)
+	}
+}
+
+// R-VULN-040: the open findings of a version in a repository are counted per severity, and the ones that name a fixed version are
+// summed over the severities; a grade that is N/A carries neither.
+func TestR_VULN_040_GradeCarriesTheFixableFindings(t *testing.T) {
+	var found tally
+	for _, c := range []store.GradeCount{
+		{Severity: "critical", N: 13, Fixable: 4},
+		{Severity: "high", N: 160, Fixable: 100},
+		{Severity: "unknown", N: 843},
+	} {
+		found.add(c)
+	}
+	if found.open.Critical != 13 || found.open.High != 160 || found.open.Unknown != 843 || found.fixable != 104 {
+		t.Fatalf("tally = %+v", found)
+	}
+	synced := time.Date(2026, 11, 18, 9, 0, 0, 0, time.UTC)
+	if g := gradeIn("web/npm-vendor", vuln.EvaluationEvaluated, found, nil, &synced); g.Grade != GradeE || g.Fixable != 104 || g.Open.Total() != 1016 {
+		t.Errorf("evaluated: %+v", g)
+	}
+	if g := gradeIn("web/npm-vendor", vuln.EvaluationPendingData, found, nil, &synced); g.Grade != GradeNA || g.Fixable != 0 {
+		t.Errorf("pending data: %+v", g)
 	}
 }

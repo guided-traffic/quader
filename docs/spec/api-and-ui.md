@@ -1570,7 +1570,7 @@ remain as their owners define them.)
 - A virtual repository in the `repository` filter expands to its members. Remote repositories
   contribute only cached versions; this endpoint never queries an upstream.
 - Version details contain `packageId`, `format`, `name`, `version`, `prerelease`, `publishedAt`, `licenses`
-  (declared SPDX identifiers or expression, `[]` when none), `sizeBytes`, `downloadCount`, `hasReadme` (whether
+  (declared SPDX identifiers or expression, `[]` when none), `sizeBytes`, `downloadCount`, `lastDownloadedAt` (R-API-065), `hasReadme` (whether
   the `readme` answer is 200 for this caller, so the UI chooses its default tab without a probing request; `false` for a caller
   who may read the version but not the wiki of the repository that holds it, [authorization.md](authorization.md) R-AUTHZ-034),
   `metadata` (a
@@ -1588,7 +1588,8 @@ remain as their owners define them.)
   which reports the size of its versions: an OCI tag's file is the manifest document, so its `sizeBytes` is the image's (R-OCI-031,
   Q-OCI-130). The UI shows the value as received.
 - The `versions` list entries hold `version`, `prerelease`, `publishedAt`, `sizeBytes`, `repositories`
-  (the qualified names `<projectKey>/<repoKey>` of the repositories the caller may read) and `downloadCount`; with `include=digest` also
+  (the qualified names `<projectKey>/<repoKey>` of the repositories the caller may read), `downloadCount` and `lastDownloadedAt`
+  (R-API-065); with `include=digest` also
   `digest`, the content digest the format's version metadata names (an OCI tag: `sha256:…` of its manifest, R-UI-052), absent for a format without one.
   With `include=vulnerabilities`, `GET /api/v1/packages` adds `vulnerabilityGrade` to each entry for a signed-in caller of an installation
   that scans: the grade of the entry's `latestVersion` over the repositories the filter names ([vulnerability-scanning.md](vulnerability-scanning.md)
@@ -1754,6 +1755,27 @@ Acceptance criteria:
   `qdr_(pat|sat|cit)_` (R-ARCH-010 kit check 8).
 - The npm install snippet for version `1.0.0` of a legacy remote package named `a(b)` reads
   `npm install 'a(b)@1.0.0'`.
+
+### R-API-065 · When a version was last fetched
+Priority: **P1** · Covers: quader-only
+
+The owner's walk of 2026-11-18 (W-7): a version's row says when it was published and when it was last fetched
+([Q-API-295](#q-api-295--last-fetched-is-the-latest-download-of-the-versions-lead-file-read-with-the-version-rows)).
+
+- `lastDownloadedAt` of an entry of `GET /api/v1/packages/{packageId}/versions` and of the version details is the latest
+  `last_download_at` of the download statistics (`item_download_stats`, [storage.md](storage.md) R-STOR-015) of the version's lead
+  file (the tarball, the package, the manifest of a tag) in the repositories the entry names, the ones the caller may read. `null`
+  when none of them was fetched, and for the tag of a remote OCI repository, which has no lead file.
+- It is read by the statement that reads the version rows (`PackageViewVersions`), one join, so the list costs no statement per
+  version. It follows the download count: what R-STOR-015 counts, and with the delay of the replicas' statistics buffer.
+- No schema change: the column exists since the storage core.
+
+Acceptance criteria:
+
+- Integration (`packages`): `@team-a/ui` 1.4.0 fetched in `npm-local` on 2026-11-01 and in `npm-team` on 2026-11-17 lists
+  `lastDownloadedAt` 2026-11-17 for a reader of both, 2026-11-01 for a reader of `npm-local` alone, and the details say the same;
+  1.3.0, never fetched, lists `null`.
+- Unit (`view`): the latest time of a version's rows wins; a version none of whose rows was fetched has none.
 
 ### R-API-053 · Guides of the formats
 Priority: **MVP** · Covers: quader-only
@@ -3141,8 +3163,8 @@ Acceptance criteria:
 ### R-UI-003 · Route map and deep links
 Priority: **MVP** · Covers: UI-002
 
-Every screen and every object has a bookmarkable URL under `/ui/{locale}`. Filters, sort order,
-selected tab and selected version live in query parameters.
+Every screen and every object has a bookmarkable URL under `/ui/{locale}`. Filters, sort order and
+selected tab live in query parameters; a version of a package is an object with a path of its own (R-UI-111).
 
 <details>
 <summary>Route table (41)</summary>
@@ -3153,7 +3175,8 @@ selected tab and selected version live in query parameters.
 | `/projects` | The projects of the caller (start page) | R-UI-041 |
 | `/projects/{project}` | Answers with the repositories of the project (Q-UI-216) | R-UI-041, R-UI-052 |
 | `/projects/{project}/packages` | Packages list | R-UI-006 |
-| `/projects/{project}/packages/{format}/{name…}` (`?version=`) | Package details | R-UI-007 |
+| `/projects/{project}/packages/{format}/{name…}` (`?q=&sort=`) | A package: its versions | R-UI-007, R-UI-110 |
+| `/projects/{project}/packages/{format}/{name…}@{version}` (`?tab=&severity=&doc=&q=`) | A version | R-UI-111 |
 | `/projects/{project}/vulnerabilities` (`?repository=&severity=&status=&…`), `/projects/{project}/vulnerabilities/findings/{id}`, `/projects/{project}/vulnerabilities/advisories/{ecosystem}/{id}` | Vulnerability report of the project, finding, advisory (from M4b) | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/projects/{project}/repositories`, `/projects/{project}/repositories/new` | Repositories of the project | R-UI-020, R-UI-021 |
 | `/projects/{project}/repositories/{key}` (`?q=&sort=`) | Content of the repository; for a generic repository the root of its files | R-UI-052 |
@@ -3209,7 +3232,7 @@ selected tab and selected version live in query parameters.
 
 Acceptance criteria:
 
-- Opening `/ui/en/projects/web/packages/npm/@team-a/ui?version=1.3.0` in a fresh tab shows that version.
+- Opening `/ui/en/projects/web/packages/npm/@team-a/ui@1.3.0` in a fresh tab shows that version (R-UI-111).
 - Copying the URL of a filtered packages list into another browser reproduces the filters.
 
 ### R-UI-004 · Sign-in, session and sign-out
@@ -3329,50 +3352,36 @@ Acceptance criteria:
   reloading the page keeps the filter.
 - With browser storage disabled, the page works and the two browser-storage tabs are hidden.
 
-### R-UI-007 · Package details and versions
+### R-UI-007 · A package's page
 Priority: **MVP** · Covers: UI-009, ART-049
 
+The owner's walk of 2026-11-18 (W-7): a package's page is its versions. A version has a page of its own (R-UI-111).
+
 - `/packages/{format}/{name…}` resolves through `GET /api/v1/packages/lookup`; the name keeps its slash
-  as a path separator (`/packages/npm/@team-a/ui`) and is one breadcrumb step (Q-UI-73). The selected
-  version is the `version` query parameter, the open tab the `tab` parameter, the pre-release switch
-  `prerelease=true`.
-- Header: name, format (its icon of Q-UI-225 and its name), selected version (default: the latest stable visible version; the latest
-  pre-release when no stable one exists), published time, licenses, download count, the
-  repositories that contain it.
-- Version selector: a select of the versions, newest first (it looks like the choice it is, Q-UI-315), and an "include
-  pre-releases" switch that follows the format's version rules (npm SemVer pre-release tags, NuGet SemVer 2.0 pre-release
-  labels). An "All versions" tab lists versions with published time, size, repositories and downloads.
-- Tabs: README (default when the version has one for the caller, `hasReadme`; a version without one, or whose wiki the
-  caller may not read, has no README tab and the README is not requested, R-UI-008, R-UI-057; for the format `ansible` the tabs **Documentation**, **Contents** and, on a local repository, **Import log** replace and extend it: [Q-UI-240](#q-ui-240--an-ansible-package-has-a-documentation-tab-and-a-contents-tab-the-readme-tab-is-its-first-page) to Q-UI-244, shown by `metadata.docs` of the version details); Metadata (format-specific: npm dist-tags and
-  dependency kinds, NuGet target frameworks and dependency groups, authors, project URL as a text
-  link with an external-link marker; the members the page reads are in Q-UI-93, among them the unlisted state; OCI the digest, media type, artifact type and
-  size of the tag and the platforms of an index, Q-UI-177); Files (files of the version with size, SHA-256 copy button,
-  download); Repositories (each with "show in browser"); Owners (R-API-048, P1); Builds (P1).
-- From M4b ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-023): a Vulnerabilities
-  tab (`tab=vulnerabilities`) with the selected version's grade card (R-UI-093), evaluation state, block and findings per
-  readable repository, its label carrying the count of open findings; in the "All versions" tab the
-  grade of each version (R-UI-094); in the header the selected version's grade and "Blocked in <repository>"
-  when the selected version is blocked in a repository the caller can read.
-- Layout (Q-UI-3): the header spans the full width. When the content area is at least 960 CSS px
-  wide, two columns follow: the tabs on the left, the install panel (R-UI-009) on the right, which
-  stays in view while the README scrolls (`position: sticky`). Narrower, one column: header,
-  install panel, then the tabs, so the install command never sits below a long README.
+  as a path separator (`/packages/npm/@team-a/ui`) and is one breadcrumb step (Q-UI-73).
+- Header: the name, the format (its icon of Q-UI-225 and its name), the package's description (the latest version's) as the muted
+  sentence, the number of versions and the latest version as a link to its page.
+- Then the versions as one table (R-UI-110), then the README of the latest version under the heading "README of <version>"
+  (R-UI-008; not requested when the latest version has none for the caller, R-UI-057). For the format `ansible`, whose README is
+  the first page of its documentation (R-UI-060), a link "Documentation of <version>" to the version page's Documentation tab
+  stands there instead.
+- **Details** at the end of the page, closed (Q-UI-322): the repositories that hold the package (each a link to its page), its
+  keywords, its downloads and when it was first published.
+- No tabs, no version select and no pre-release switch: what the tabs **Metadata**, **Files** and **Repositories** showed belongs
+  to one version and is on its page ([Q-UI-458](#q-ui-458--the-tabs-metadata-files-and-repositories-become-the-version-pages-details-and-files)).
 - Opening the page records it in "recently opened" (Q-UI-323).
 - Links taken from package metadata (npm `homepage`, `repository.url`, `bugs.url`; NuGet
   `projectUrl`, `licenseUrl`, the `repository` URL) MUST be rendered as links only when their
   scheme is `http` or `https`, with `rel="nofollow noopener noreferrer"`; any other value is shown
   as text. Package authors set these values, and Angular's URL sanitizer is a second layer, not
-  the rule.
+  the rule. They are on the version's page.
 
 Acceptance criteria:
 
-- For `@team-a/ui` with versions `1.3.0`, `1.4.0` and `1.5.0-beta.1`, the page opens on `1.4.0`;
-  switching on pre-releases offers `1.5.0-beta.1`.
-- The Files tab's SHA-256 equals `shasum -a 256` of the downloaded tarball.
-- A package whose `homepage` is `javascript:alert(1)` shows the value as text, and no `a` element
-  carries it.
-- At a viewport of 390 CSS px the install command is visible without scrolling past the README; at
-  1440 CSS px it stays visible after scrolling to the end of a long README.
+- For `@team-a/ui` with versions `1.3.0`, `1.4.0` and `1.5.0-beta.1`, the page lists all three, `1.5.0-beta.1` first with the
+  marks `next` and **pre-release**, `1.4.0` with `latest`; the header's latest version is `1.4.0`.
+- The README of `1.4.0` follows the table; `left-pad`, whose version has none, shows none and requests none.
+- A package whose `homepage` is `javascript:alert(1)` shows the value as text on its version's page, and no `a` element carries it.
 
 ### R-UI-008 · Sanitized README rendering
 Priority: **MVP** · Covers: UI-009
@@ -3463,7 +3472,9 @@ Priority: **MVP** · Covers: UI-010
   with its joined copy button; a command of several lines is a code block with its copy button (Q-UI-320); either way a
   live region announces "Copied". The client picker lists the clients of the format that the UI has instructions for
   (Q-UI-70).
-- The panel's selects (client, repository) stack and share the panel's width (Q-UI-320).
+- The panel stands on the version's page (R-UI-111) at the page's width, before the tabs. Its selects (client, repository) stand
+  side by side, each 16 rem at most, and wrap where the panel is narrow; a one-line command is as wide as its text, up to the
+  panel's width, so it is read in full where it is shown (Q-UI-455, revisits Q-UI-320).
 - npm and NuGet install commands carry no credentials; the panel links to client setup for
   configuring the client once.
 - Commands longer than three lines are collapsed with an expander.
@@ -3475,6 +3486,8 @@ Acceptance criteria:
 
 - Copying the npm command for `@team-a/ui@1.4.0` and running it in a project configured by the
   client setup installs that version.
+- Rendered (rule 11): at 1440 px the command `npm install image-convert-tools@4.0.1` is shown whole, and its field ends within a
+  few characters of the command's end.
 
 ### R-UI-052 · Repository content page
 Priority: **MVP** · Covers: quader-only
@@ -3508,7 +3521,7 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   Above the versions, the install command of the version chosen in the list (default: the item's latest version) from the install
   snippet of R-API-030 for this repository and the client picked in the panel (`credentials=none`, so it never holds a token): `docker
   pull`/`podman pull` with this installation's real address for OCI, the install command of the format elsewhere. The item's name links
-  to the package details (R-UI-007), a version's name to the details at that version. A long name wraps inside itself beside its
+  to the package's page (R-UI-007), a version's name to the version's page (R-UI-111). A long name wraps inside itself beside its
   chevron, and its row starts where its neighbours do (Q-UI-520).
 - A generic repository's content is its files: the page is the root folder of R-UI-010, and a folder or a file is the page at
   `…/files/{path…}`. A package format's raw files are a detail on demand: **Files** in the header's menu opens their root (`…/files`)
@@ -5327,10 +5340,10 @@ The other tabs and facts the reference shows are the page's existing ones; nothi
 
 | Reference | Quader | Where |
 |---|---|---|
-| Install: description, license, install command, download, Requires Ansible | The install panel (the command of R-API-030 with the real address), the Metadata tab (description, **Requires Ansible**, licenses, tags), the Files tab (the archive with its SHA-256 and download) | R-UI-007, R-ANS-026 |
-| Dependencies | A **Dependencies** section of the Metadata tab: the collections the version needs with their ranges, each a link to that package's page when the installation holds it (muted text otherwise) | Q-UI-245 |
-| Distributions | The **Repositories** tab (the repositories that hold the version) | R-UI-007 |
-| Docs site, Website, Issue tracker, Repo | The links of the Metadata tab: "Docs site" (`documentationUrl`, so named for this format), "Homepage", "Issue tracker" and "Source repository", shown as text links with the external-link marker and only for `http` and `https` | Q-UI-245 |
+| Install: description, license, install command, download, Requires Ansible | On the version's page (R-UI-111): the install panel (the command of R-API-030 with the real address), the licences in its facts, the Details tab (**Requires Ansible**, tags), the Files tab (the archive with its SHA-256 and download); the description in the header | R-UI-111, R-ANS-026 |
+| Dependencies | A **Dependencies** section of the Details tab: the collections the version needs with their ranges, each a link to that package's page when the installation holds it (muted text otherwise) | Q-UI-245 |
+| Distributions | The **Repositories** of the Details tab (the repositories that hold the version) | R-UI-111 |
+| Docs site, Website, Issue tracker, Repo | The links of the Details tab: "Docs site" (`documentationUrl`, so named for this format), "Homepage", "Issue tracker" and "Source repository", shown as text links with the external-link marker and only for `http` and `https` | Q-UI-245 |
 | Contents, Import log, Documentation | New tabs: R-UI-062, this requirement, R-UI-060 | |
 
 Acceptance criteria:
@@ -5844,9 +5857,9 @@ their severity (R-VULN-022). The list shows the grade; the bar and the facts are
 |---|---|---|
 | Repository content (R-UI-052) | The column **Vulnerabilities** of the items | `<quader-grade>` of the item's latest version (`vulnerabilityGrade`, R-VULN-039); the column sorts by grade ([Q-UI-373](#q-ui-373--the-list-sorts-by-grade-in-the-browser-over-the-whole-list-up-to-1000-entries)) |
 | Repository content, the opened row | The column **Vulnerabilities** of the versions | `<quader-grade>` of each version in this repository |
-| Package page (R-UI-007) | The header's facts | `<quader-grade>` of the selected version (the worst of its repositories), a link to the tab **Vulnerabilities** ([Q-UI-375](#q-ui-375--the-package-page-shows-the-versions-grade-in-its-header-and-a-card-per-repository-on-its-tab)) |
-| Package page, tab **Vulnerabilities** (R-VULN-023) | Each repository's section | `<quader-grade-card>` above the block banner, its bar's segments the severity filter of the findings below (`severity` in the URL); then the open findings, 25 at a time from the findings API, worst first, with their number from the grade's counts ([Q-UI-379](#q-ui-379--the-vulnerabilities-tab-pages-the-open-findings-of-a-version-from-the-findings-api-filtered-by-the-cards-bar)) |
-| Package page, tab **All versions** | The column **Vulnerabilities** | `<quader-grade>` of each version |
+| Package page (R-UI-007), the versions table (R-UI-110) | The column **Vulnerabilities** | `<quader-version-grade>` of each version: the grade, the total of its open findings and how many have a fix (R-UI-112) |
+| Version page (R-UI-111) | The line of facts | `<quader-version-grade>` of the version (the worst of its repositories), a link to the tab **Vulnerabilities** ([Q-UI-375](#q-ui-375--the-package-page-shows-the-versions-grade-in-its-header-and-a-card-per-repository-on-its-tab), Q-UI-454) |
+| Version page, tab **Vulnerabilities** (R-VULN-023) | Each repository's section | `<quader-grade-card>` above the block banner, its bar's segments the severity filter of the findings below (`severity` in the URL); then the open findings, 25 at a time from the findings API, worst first, with their number from the grade's counts ([Q-UI-379](#q-ui-379--the-vulnerabilities-tab-pages-the-open-findings-of-a-version-from-the-findings-api-filtered-by-the-cards-bar)) |
 | Vulnerability report (R-VULN-022), a project's and the admin area's security dashboard | The header | `<quader-severity-bar [links]>` of the open findings in scope in place of the five severity counts; the counts **Malicious**, **Needs triage** and **Blocked versions** stay ([Q-UI-376](#q-ui-376--the-reports-header-shows-the-severity-bar-whose-segments-are-its-filter-links)) |
 
 - A caller who gets no grades (signed out, an installation that does not scan, Q-VULN-158) sees no grade column, no card and no
@@ -5855,12 +5868,12 @@ their severity (R-VULN-022). The list shows the grade; the bar and the facts are
 Acceptance criteria:
 
 - Unit: the repository content list shows `<quader-grade>` for each row and sorts by grade, worst first, on its second click; the
-  opened row grades each version; the package page's header grade links to the tab, the tab shows one card per repository and
-  *All versions* a grade per version; the tab asks the findings API for 25 open findings of the version, worst first, says their
+  opened row grades each version; the version page's grade links to the tab, the tab shows one card per repository and the
+  package page's versions table a grade per version; the tab asks the findings API for 25 open findings of the version, worst first, says their
   number, and a segment of the card's bar narrows them to its severity; the report's header shows the bar with five filter links;
   without grades no column.
-- Rendered (rule 11, `make ui-renders`): the repository content of `npm-internal`, `npm` and `images`, the package pages of the
-  npm package and the image with the tabs **Vulnerabilities** and **All versions**, and the vulnerability report of the project
+- Rendered (rule 11, `make ui-renders`): the repository content of `npm-internal`, `npm` and `images`, the package pages and the
+  version pages of the npm packages and the image with the tab **Vulnerabilities**, and the vulnerability report of the project
   and of the admin area, as plain user, power user and administrator, light and dark, at 1440, 1024 and 390 px; the seed holds
   versions of the grades S, A, B, C, D, E and N/A.
 
@@ -6051,6 +6064,95 @@ Acceptance criteria:
 - A unit test drives every way out of the field (Enter with and without an active entry of each kind, a click on each kind, the
   **All … for** lines, the empty list's entries, the filter) as `ada`, `priya` and `sam` and asserts that only `ada`'s choice of a
   marked entry reaches `/admin`.
+
+### R-UI-110 · A package's versions as one table
+Priority: **MVP** · Covers: quader-only
+
+The owner's walk of 2026-11-18 (W-7): "a click on a package shows its versions as a table", one row per version; the standard
+case is a user who looks for one version of a dependency, or for the vulnerabilities of that version. What a row carries is the
+owner's reference screen's; its look is Quader's own.
+
+- The table holds every version the reader may read (`GET …/versions?sort=-version`, read once, every page), with the grades of
+  the package report (`GET …/vulnerabilities`, R-VULN-039) and the distribution tags of the latest version's details.
+- **Columns, in the owner's order** ([Q-UI-450](#q-ui-450--a-row-of-the-versions-table-is-the-version-its-size-its-vulnerabilities-and-two-times)):
+  **Version** (a link to the version's page, R-UI-111; after it its distribution tags as badges, `latest`, `next`, and the mark
+  **pre-release**), **Size**, **Vulnerabilities** (R-UI-112; only when the answer carries a grade other than N/A: a format that is not scanned and a package of internal names are N/A in every row, Q-UI-377), **Published**,
+  **Last fetched** (R-API-065; "Never" for a version never fetched), and **Repositories** only when the versions differ in the
+  repositories that hold them ([Q-UI-457](#q-ui-457--the-column-repositories-appears-only-when-the-versions-are-held-by-different-repositories)).
+  No digest: an image's row is its tag (Q-UI-453).
+- **Sort**: the highest version first by the format's precedence (the server's order); every column but Repositories sorts both
+  ways in the browser over the whole list; equal keys keep the highest version first. The sort is the address's `sort`
+  (`-published`, `vulnerabilities`, …), the default left out ([Q-UI-452](#q-ui-452--the-versions-are-searched-sorted-and-paged-in-the-browser-over-the-whole-list)).
+- **Search**: a field **Filter versions** above the table, 18 rem wide, narrows the rows to those whose version or one of whose tags
+  holds the typed text, case-insensitive, at once and without a request; the address's `q` follows without a new history entry,
+  and "N of M versions" says how many match.
+- **Pre-releases and tags** stand in the rows with their marks; there is no switch for pre-releases
+  ([Q-UI-453](#q-ui-453--pre-releases-and-distribution-tags-are-marks-in-the-row-no-switch)).
+- 50 rows show at first, **Load more** adds 50; a new search or sort starts at 50 again.
+- A time is the shared helper's relative time with the absolute time as its title.
+
+Acceptance criteria:
+
+- Unit: of 120 versions the table shows 50, then 100 after **Load more**, and 50 again after a new search; `beta` narrows to the
+  pre-release, `latest` to the version the tag points at; each column's sort orders the rows and is the address's; the grade cell
+  of `E` with 1,145 findings and 112 with a fix reads "E · 1,145 findings · 112 fixable".
+- Rendered (rule 11): the package pages of npm (`@acme/ui-kit`, the many-version `chart-render-kit` filtered and sorted by grade,
+  `image-convert-tools`, the longest name), the image `portal/web`, the NuGet, Debian and Ansible packages of the seed, as plain
+  user, power user and administrator.
+
+### R-UI-111 · A version has a page of its own
+Priority: **MVP** · Covers: UI-009, ART-049
+
+The owner's walk of 2026-11-18 (W-7): "a version has a page of its own with an address of its own": the grade card, the findings,
+the install command, the files and the metadata of that one version. It can be linked and sent, and the list of findings has the
+page's width. Not chosen by the owner: a row that opens inside the table, and a drawer.
+
+- **Address**: `/projects/{project}/packages/{format}/{name…}@{version}`, the version after an `@` in the last segment
+  (`/packages/npm/@team-a/ui@1.4.0`, `/packages/oci/portal/web@1.4.0`)
+  ([Q-UI-451](#q-ui-451--a-versions-address-is-the-packages-with--and-the-version)). The breadcrumb reads
+  Packages › the package (a link to its page) › the version. Every link to a version leads here: the versions table, the repository
+  content page (R-UI-052), the finding and the advisory pages and the report (R-VULN-022).
+- **Header**: the package name and the version as the `h1` ("image-convert-tools 4.0.1"), the format, the distribution tags that
+  point at the version and the mark **pre-release**, the package's description.
+- **Facts**, one line with the style guide's separator: the grade with the total and the fixable findings (R-UI-112), a link to
+  the tab Vulnerabilities; when it was published; its size; when it was last fetched (R-API-065, "never"); its downloads; its
+  licences. Below them the banners **Unlisted.**, **Blocked in <repository>** and **Deprecated.**
+- **Install** (R-UI-009) at the page's width, before the tabs.
+- **Tabs** (`tab`): **Vulnerabilities** (R-VULN-023), the first tab of a version whose grade is not N/A; for the format `ansible`
+  **Documentation** and **Contents** (R-UI-060, R-UI-062); **README** (R-UI-008, when `hasReadme`); **Files** (path, size,
+  SHA-256 with its copy button, download); **Details** (the format's metadata of R-API-029: an image's digest, media type, artifact
+  type, size and platforms, the links, the authors, the dependency kinds, NuGet's target frameworks and facts, Debian's control
+  fields, an Ansible collection's Ansible versions and tags, the required runtimes; then the repositories that hold the version,
+  each a link to its page, with its class and when it was published there); **Vulnerabilities** after Details for a version that
+  is N/A; **Import log** of an Ansible collection in a local repository (R-UI-063)
+  ([Q-UI-456](#q-ui-456--the-version-page-opens-on-its-vulnerabilities-when-it-is-graded)).
+- A version the reader may not read, or that does not exist, is the not-found notice.
+
+Acceptance criteria:
+
+- Unit: `@team-a/ui@1.4.0` reads "@team-a/ui 1.4.0" with `latest`, its facts, the command `npm install @team-a/ui@1.4.0`
+  before the tabs, and the tabs README, Files, Details; graded B it opens on Vulnerabilities; the breadcrumb of
+  `/projects/web/packages/npm/@team-a/ui@1.4.0` is Projects, web, Packages, @team-a/ui, 1.4.0.
+- Rendered (rule 11): the version pages of npm (with and without a grade, with fixable findings, the longest name), the image tag,
+  NuGet, Debian and Ansible as plain user, power user and administrator, every tab.
+
+### R-UI-112 · A version's vulnerabilities in one statement
+Priority: **MVP** · Covers: quader-only
+
+The owner's walk of 2026-11-18 (W-7): the row of a version shows its grade, the total of its findings and how many of them have a
+fix. The page that opened before said **Vulnerabilities (1145)** in its tab and **E · 13 Critical** beside the version: two
+numbers whose relation the reader had to know.
+
+- `<quader-version-grade>` shows the shield, the letter and "1,145 findings · 112 fixable" (the sum of `open` and `fixable` of the
+  grade, R-VULN-040), "no findings" for S, "not scanned" for N/A; its tooltip names the rule of the letter and every count. The
+  versions table and the version page's facts show it; the card of each repository on the tab keeps the rule and the bar
+  ([Q-UI-454](#q-ui-454--a-version-says-its-grade-total-and-fixable-findings-once-the-tab-carries-no-count)).
+- The tab **Vulnerabilities** carries no count.
+
+Acceptance criteria:
+
+- Unit: the grade E with 13 Critical, 160 High, 113 Medium, 16 Low and 843 Unknown of which 112 have a fix reads "E · 1,145
+  findings · 112 fixable"; S "no findings"; N/A "not scanned"; the tab's label is "Vulnerabilities".
 
 ## Deferred
 
@@ -6592,6 +6694,8 @@ Status: **Decided by the development agent** — selected from the options below
 **Applied in the spec:** R-UI-002 gains the layout and density bullet and an acceptance criterion for both widths.
 
 ### Q-UI-3 · Layout of the package details page (example screenshot requested)
+
+**Revisited on 2026-11-18** (the owner's walk of 2026-11-18, W-7): the package page is its versions (R-UI-110) and the install panel stands on a version's page before its tabs at the page's width ([Q-UI-455](#q-ui-455--the-install-command-stands-at-the-pages-width-and-is-as-wide-as-its-command)); the sticky right column is gone.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -7630,6 +7734,8 @@ Status: **Decided by the development agent** — selected from the options below
 **Applied in the spec:** R-UI-030.
 
 ### Q-UI-93 · How the package page shows NuGet metadata and the listed state
+
+**Revisited on 2026-11-18** (the owner's walk of 2026-11-18, W-7): the members are read by the tab **Details** of the version's page (R-UI-111, [Q-UI-458](#q-ui-458--the-tabs-metadata-files-and-repositories-become-the-version-pages-details-and-files)); the banner stands under the version's facts.
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -10591,6 +10697,8 @@ Context: the review of Q-UI-173 found two things that the number of scans (`MaxS
 
 ### Q-UI-177 · The facts of an OCI tag and the platforms of an index sit in the Metadata tab of the package page
 
+**Revisited on 2026-11-18** (the owner's walk of 2026-11-18, W-7): the Image block and the Platforms table are in the tab **Details** of the version's page ([Q-UI-458](#q-ui-458--the-tabs-metadata-files-and-repositories-become-the-version-pages-details-and-files)); the row of the versions table leads with the tag and shows no digest (Q-UI-453).
+
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: R-OCI-031 gives an image name as a package and its tags as versions; the version `metadata` holds `digest`, `mediaType`, `size`, `artifactType` and, for an index, `platforms` (one object per child with `platform`, `digest`, `mediaType` and `size`). R-UI-007 names the tabs and says the Metadata tab is format-specific. An OCI tag has no README and no license, and the page's files tab lists the manifest the tag points at.
@@ -11739,6 +11847,8 @@ The development agent revisits a column if the walkthrough shows a fact is used 
 
 ### Q-UI-315 · The package page shows the install command first; the facts and the owners are Details
 
+**Revisited on 2026-11-18** (the owner's walk of 2026-11-18, W-7): the version select, the pre-release switch and the Details of the version are gone from the package page; the version's facts are a line on its own page (R-UI-111), its install command before its tabs ([Q-UI-455](#q-ui-455--the-install-command-stands-at-the-pages-width-and-is-as-wide-as-its-command)).
+
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
@@ -11834,6 +11944,8 @@ power users report the click.
 user opened it is not built yet: it opens closed on every visit.
 
 ### Q-UI-320 · Every value to copy of one line is a field with its joined copy button; a page shows one client address, and a panel's selects share one width
+
+**Revisited on 2026-11-18** (the owner's walk of 2026-11-18, W-7): the install panel's selects stand side by side, 16 rem each, and a one-line command's field is as wide as its command ([Q-UI-455](#q-ui-455--the-install-command-stands-at-the-pages-width-and-is-as-wide-as-its-command)).
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -12587,6 +12699,8 @@ details on demand. The development agent records no revisit condition. **Applied
 
 ### Q-UI-375 · The package page shows the version's grade in its header and a card per repository on its tab
 
+**Revisited on 2026-11-18** (the owner's walk of 2026-11-18, W-7): the grade with its total and fixable findings is in the version page's facts and in each row of the package page's versions table; the tab carries no count ([Q-UI-454](#q-ui-454--a-version-says-its-grade-total-and-fixable-findings-once-the-tab-carries-no-count)).
+
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
@@ -13129,6 +13243,152 @@ Status: **Decided by the development agent** — selected from the options below
 the first stable release). **Rationale:** both pages answer the same Enter. The development agent revisits nothing here.
 
 **Applied in the spec:** R-UI-098; a revisit line in each of Q-UI-390 to Q-UI-399 that R-UI-098 changes.
+
+### Q-UI-450 · A row of the versions table is the version, its size, its vulnerabilities and two times
+
+Status: **Decided by the owner** (2026-11-18, W-7: which facts a row carries); the order and the rest **decided by the development
+agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Version, Size, Vulnerabilities, Published, Last fetched, in the owner's order, Repositories where it differs (chosen) | The owner's list | Every column answers the standard case; the version, the thing searched for, leads | Downloads are not a column |
+| (b) The owner's columns and Downloads | One more number | The old tab had it | A column the owner did not name; the version page's facts carry it |
+| (c) The vulnerabilities first after the version | The security question first | The second standard case leads | Not the owner's order |
+
+**Choice:** (a). **Rationale:** the owner named the facts and their order; Downloads moved to the version's facts and the package's
+Details. The development agent revisits Downloads as a column if the walkthrough asks for it. **Applied in the spec:** R-UI-110.
+
+### Q-UI-451 · A version's address is the package's with `@` and the version
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the
+version has an address of its own is the owner's (2026-11-18).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `…/packages/{format}/{name…}@{version}` (chosen) | `@team-a/ui@1.4.0`, `portal/web@1.4.0` | Reads as an npm install spec; one segment more for nobody; no format's names hold an `@` after their first character and no format's versions hold one, so the last `@` of the last segment separates them | An image is written `name:tag` by its clients, here `name@tag`, where OCI writes a digest |
+| (b) `…/{name…}/-/{version}` | npm's tarball separator | No character of a name can be confused | A segment that means nothing to a reader |
+| (c) `…/{name…}/versions/{version}` | A word | Readable | An image name may have a segment `versions`; the split is ambiguous |
+| (d) Today's `?version=` | A query parameter | No route change | Not an address of the version's own: the owner asked for one |
+
+**Choice:** (a). **Rationale:** readable, sendable, unambiguous for every format Quader has. No redirect from `?version=`
+(pre-alpha, no backward compatibility). The development agent revisits it when a format's names or versions may hold an `@`.
+**Applied in the spec:** R-UI-003, R-UI-111; [package-links.ts](../../web/src/app/features/packages/package-links.ts),
+[packages.routes.ts](../../web/src/app/features/packages/packages.routes.ts).
+
+### Q-UI-452 · The versions are searched, sorted and paged in the browser over the whole list
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The page reads every version once (pages of 500), the grades in one request; search, sort and paging in the browser (chosen) | One list in memory | Every column sorts, including grade and last fetched, which the server does not; the search answers at each key; finding one version among hundreds needs no round trip | A package of thousands of tags reads them all before the table shows |
+| (b) Server-side search and sort | New list parameters | Scales to any count | A sort by grade or last fetched the API does not have; a request per key |
+| (c) Search only, no sort | The field alone | Simple | The second question, "which versions are worst", has no answer |
+
+**Choice:** (a). The table shows 50 rows and **Load more** adds 50. **Rationale:** the server already computes the whole list for
+each page of it (R-API-029), so one sweep costs less than paging it. The development agent revisits it when a package with more
+than 5,000 versions takes longer than a second to show. **Applied in the spec:** R-UI-110.
+
+### Q-UI-453 · Pre-releases and distribution tags are marks in the row; no switch
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every version is a row; a pre-release carries the mark **pre-release**, a version a tag points at the tag as a badge, `latest` first (chosen) | Marks | One list; the search finds `rc` and `latest`; the owner's objection to the checkbox | A package with many nightly pre-releases has many rows |
+| (b) Pre-releases behind a switch, as before | The old checkbox | Shorter list | The control the owner found in the way; a version searched for may be hidden |
+| (c) A column **Tags** | Its own column | Aligned | Empty in most rows of every format but npm |
+
+**Choice:** (a). An image's tag is its version, so the row leads with the tag; the digest is in the version's **Details**
+(the owner: "nobody actually reads them"). **Rationale:** the plain path shows everything and the search narrows it. The
+development agent revisits a switch if a package with hundreds of nightlies makes the table useless. **Applied in the spec:**
+R-UI-110, R-UI-111.
+
+### Q-UI-454 · A version says its grade, total and fixable findings once; the tab carries no count
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. What the
+statement holds is the owner's (2026-11-18, W-7).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The shield and letter, then "1,145 findings · 112 fixable", the rule and the counts in the tooltip; the tab label without a count (chosen) | One statement | The owner's three facts; the total and the letter are read together, so they cannot look unrelated | The count that decides the letter ("13 Critical") is in the tooltip and on the card, not in the row |
+| (b) `<quader-grade>` ("E · 13 Critical") and a column for the total and the fixable | Two cells | The grade text as everywhere else | Two numbers side by side again, the objection |
+| (c) Keep the tab's count | As before | Seen without opening | The objection itself |
+
+**Choice:** (a). **Rationale:** the row answers the question once. The card on the tab keeps the letter's basis, its rule and the
+bar. The development agent revisits it if readers miss the deciding count in the row. **Applied in the spec:** R-UI-112, R-UI-094,
+R-VULN-023; [version-grade.ts](../../web/src/app/features/packages/version-grade.ts).
+
+### Q-UI-455 · The install command stands at the page's width and is as wide as its command
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the command was cut in a panel of 24 rem beside the tabs (`npm install image-convert-tools@4.0…`) while the page beside it
+was empty.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The panel before the tabs at the page's width; the selects side by side, 16 rem each; a one-line command's field as wide as the command (chosen) | One column | The command reads whole; no field far wider than its text; the findings below have the whole width | The panel no longer stays in view beside a long README |
+| (b) A wider side panel | 32 rem | Stays beside the tabs | A long command is still cut, and the findings lose room |
+| (c) The command as a code block | Wraps | Always whole | A wrapped command is copied by hand wrongly; the joined copy button of Q-UI-320 goes |
+
+**Choice:** (a). **Rationale:** the command is the page's main job after the findings, and reading it whole is part of the job.
+Revisits Q-UI-3 (the sticky side panel) and Q-UI-320 (the stacked selects at the panel's width). The development agent records no
+revisit condition. **Applied in the spec:** R-UI-009, R-UI-111; [install-panel.scss](../../web/src/app/features/packages/install-panel.scss).
+
+### Q-UI-456 · The version page opens on its vulnerabilities when it is graded
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Vulnerabilities first when the grade is not N/A; else Documentation or README first and Vulnerabilities after Details (chosen) | By what the version has | The owner's standard case opens on its answer; a version that is not scanned does not open on "not scanned" | The first tab differs between versions |
+| (b) Always README first | As before | Stable | The vulnerabilities are a click away for the case the owner named |
+| (c) Sections without tabs | One long page | Nothing hidden | A thousand findings above the files |
+
+**Choice:** (a). **Rationale:** the standard case first, details on demand. The development agent records no revisit condition.
+**Applied in the spec:** R-UI-111.
+
+### Q-UI-457 · The column Repositories appears only when the versions are held by different repositories
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The column when two rows differ in their repositories; a repository of the project by its key, linked (chosen) | Only where it tells rows apart | A package in one local repository and its virtual one has no column of identical cells | The column comes and goes with the data |
+| (b) Always | A stable layout | Seen | Every row "npm-internal, npm" |
+| (c) Never; on the version page only | One place | Quiet | The case "this version is only in the remote cache" is not seen in the table |
+
+**Choice:** (a). The package's repositories are in its **Details**, each version's on its page. **Rationale:** the style guide's
+rule that a column of one value says nothing. The development agent records no revisit condition. **Applied in the spec:** R-UI-110.
+
+### Q-UI-458 · The tabs Metadata, Files and Repositories become the version page's Details and Files
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) On the version's page: **Files** as a tab, **Metadata** and **Repositories** as one tab **Details**; the package page has no tabs (chosen) | By what they describe | Each belongs to one version; the package page is the table the owner asked for; "Show in browser" goes with the browser (W-8), a repository links to its page | Two tabs merged |
+| (b) Keep the three as tabs of the version page | As before | Familiar | **Repositories** is a table of two rows for most versions |
+| (c) Sections on the package page for the latest version | No click | — | The facts of one version on the page of all of them |
+
+**Choice:** (a). **Rationale:** a page per thing. The description and the README of the latest version are on the package page
+(R-UI-007). The development agent records no revisit condition. **Applied in the spec:** R-UI-007, R-UI-111.
+
+### Q-API-295 · Last fetched is the latest download of the version's lead file, read with the version rows
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That a
+row says when the version was last fetched is the owner's (2026-11-18).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `last_download_at` of the lead item's `item_download_stats`, joined in `PackageViewVersions`, the latest over the readable repositories (chosen) | Read from what is stored | No schema change; one statement for the whole list; the same file the download count counts | A file of a version other than the lead (an extra artifact) does not count |
+| (b) The latest of every file of the version | All files | Every fetch | A subquery per version over its items; differs from the download count |
+| (c) A new column on the version row, written at each download | A field of its own | Cheap to read | A schema step and a write on the download path, which the statistics buffer exists to avoid |
+
+**Choice:** (a). **Rationale:** the statistics of R-STOR-015 already hold the time; the version list reads them as it reads the
+count. The development agent revisits (b) if a format's lead file is not what its clients fetch. **Applied in the spec:**
+R-API-065, R-API-029.
 
 ### Q-API-270 · One operation answers the suggestions, and the results page reads the three lists
 

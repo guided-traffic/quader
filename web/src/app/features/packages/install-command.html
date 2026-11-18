@@ -20,7 +20,13 @@
   } @else if (command()) {
     @if (oneLine()) {
       <!-- A one-line command is one copyable value, as an address is: the field with its joined copy button (Q-UI-320). -->
-      <quader-address-field class="command-field" [value]="command()" [label]="commandLabel" [copyLabel]="copyLabel" />
+      <quader-address-field
+        class="command-field"
+        [style.--command-chars]="command().length"
+        [value]="command()"
+        [label]="commandLabel"
+        [copyLabel]="copyLabel"
+      />
     } @else {
       <div class="command">
         <pre class="code-block folding" translate="no" tabindex="0" [style.--lines]="shownLines()">{{ command() }}</pre>

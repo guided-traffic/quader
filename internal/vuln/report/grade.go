@@ -130,6 +130,8 @@ type VersionGrade struct {
 	Grade Grade
 	// Open are the open findings of the version in the repository; zero for N/A.
 	Open Counts
+	// Fixable is how many of Open name a fixed version (R-VULN-040); zero for N/A.
+	Fixable int64
 	// EOSL says that the OS of the image is at its end of life; OS names it ("alpine 3.24.1"), empty for every other format.
 	EOSL bool
 	OS   string
@@ -152,9 +154,22 @@ func worst(a, b VersionGrade) VersionGrade {
 	return a
 }
 
+// tally is the open findings of a version in a repository: by severity, and how many of them name a fixed version.
+type tally struct {
+	open    Counts
+	fixable int64
+}
+
+// add counts one row of the grade statements.
+func (t *tally) add(c store.GradeCount) {
+	t.open.Add(c.Severity, c.N)
+	t.fixable += c.Fixable
+}
+
 // gradeIn is the grade of a version in a repository from its evaluation, its open findings, the manifests of an image (nil for a
 // package) and the time its advisory data was synchronised.
-func gradeIn(repository string, evaluation vuln.Evaluation, open Counts, images []ImageState, syncedAt *time.Time) VersionGrade {
+func gradeIn(repository string, evaluation vuln.Evaluation, found tally, images []ImageState, syncedAt *time.Time) VersionGrade {
+	open := found.open
 	g := VersionGrade{Evaluation: evaluation, Repository: repository}
 	if images != nil {
 		g.OS = osOf(images)
@@ -167,7 +182,7 @@ func gradeIn(repository string, evaluation vuln.Evaluation, open Counts, images 
 	if !evaluated {
 		return g
 	}
-	g.Open = open
+	g.Open, g.Fixable = open, found.fixable
 	if images == nil {
 		g.CheckedAt = syncedAt
 		return g
@@ -235,11 +250,11 @@ func (s *Service) grades(ctx context.Context, sc Scope, format string, holders [
 	if err != nil {
 		return nil, err
 	}
-	open := map[holderKey]Counts{}
+	open := map[holderKey]tally{}
 	for _, c := range counts {
 		k := holderKey{c.RepoID, gradeKey{Name: c.Name, Version: c.Version}}
 		o := open[k]
-		o.Add(c.Severity, c.N)
+		o.add(c)
 		open[k] = o
 	}
 	var scans map[holderKey][]ImageState

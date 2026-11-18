@@ -188,8 +188,8 @@ SELECT g.repo_id::bigint AS repo_id, ('sha256:' || encode(g.digest, 'hex'))::tex
 
 -- name: VulnImageGradeCounts :many
 -- The open findings of the given (name, tag) pairs of images that the caller can read, per repository, tag and severity: a finding
--- counts for the tag whose manifest it names or whose index names that manifest (R-VULN-037), the counts behind the grades of R-VULN-039.
--- names and tags are parallel arrays.
+-- counts for the tag whose manifest it names or whose index names that manifest (R-VULN-037), the counts behind the grades of R-VULN-039,
+-- with how many of them have a fixed version (fixable). names and tags are parallel arrays.
 WITH wanted AS (
     SELECT unnest(sqlc.arg(names)::text[]) AS name, unnest(sqlc.arg(tags)::text[]) AS tag
 ), tagged AS (
@@ -210,7 +210,8 @@ WITH wanted AS (
     SELECT t.repo_id, t.name, t.tag, r.target
       FROM tagged t JOIN oci_references r ON r.repo_id = t.repo_id AND r.name = t.name AND r.manifest = t.digest AND r.kind = 'manifest'
 )
-SELECT g.repo_id::bigint AS repo_id, g.name::text AS name, g.tag::text AS version, f.severity::text AS severity, count(DISTINCT f.id)::bigint AS n
+SELECT g.repo_id::bigint AS repo_id, g.name::text AS name, g.tag::text AS version, f.severity::text AS severity, count(DISTINCT f.id)::bigint AS n,
+       (count(DISTINCT f.id) FILTER (WHERE f.fix_available))::bigint AS fixable
   FROM images g
   JOIN vuln_finding f ON f.repo_id = g.repo_id AND f.ecosystem = 'OCI' AND f.package_name = g.name AND f.version = ('sha256:' || encode(g.digest, 'hex'))
  WHERE f.status IN ('needs_triage', 'confirmed', 'blocked')

@@ -1,7 +1,16 @@
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { APIRequestContext, APIResponse } from '@playwright/test';
-import { advisoryArchive, advisoryMirror, gradedPackage, vendorPackages } from './advisories';
+import {
+  advisoryArchive,
+  advisoryMirror,
+  fetchedVersions,
+  gradedPackage,
+  manyVersionPackages,
+  manyVersionsPackage,
+  vendorPackages,
+  zipArchive,
+} from './advisories';
 
 /**
  * The data of `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): three projects, repositories of every
@@ -95,7 +104,7 @@ export const memberships: readonly { project: string; username: string; role: 'r
 ];
 
 /** The packages the power user publishes, through the formats' own routes. */
-export const npmPackages: readonly { repo: string; name: string; version: string; readme?: string; dependencies?: Record<string, string> }[] = [
+export const npmPackages: readonly { repo: string; name: string; version: string; readme?: string; dependencies?: Record<string, string>; tag?: string }[] = [
   {
     repo: 'npm-internal',
     name: '@acme/ui-kit',
@@ -110,7 +119,9 @@ export const npmPackages: readonly { repo: string; name: string; version: string
     dependencies: { '@acme/tokens': '^2.0.0', tslib: '^2.8.0' },
   },
   { repo: 'npm-internal', name: '@acme/eslint-config', version: '3.2.1' },
+  { repo: 'npm-internal', name: 'customer-portal-api-client-generated-from-the-openapi-document', version: '0.3.0' },
   { repo: 'npm-internal', name: 'customer-portal-api-client-generated-from-the-openapi-document', version: '0.4.0' },
+  { repo: 'npm-internal', name: 'customer-portal-api-client-generated-from-the-openapi-document', version: '0.5.0-next.20261118.1' },
   { repo: longNpmKey, name: '@acme/portal', version: '5.0.0-rc.3' },
 ];
 
@@ -144,13 +155,28 @@ export const genericFiles: readonly { repo: string; path: string; content: strin
 export const genericFolders: readonly { repo: string; path: string }[] = [{ repo: 'assets', path: 'drafts' }];
 
 export const images: readonly { project: string; repo: string; name: string; tags: readonly string[] }[] = [
-  { project: mainProject, repo: 'images', name: 'portal/web', tags: ['1.4.0', 'latest'] },
+  // Several tags of one image: the page of an image lists its tags, the tag leading (W-7).
+  { project: mainProject, repo: 'images', name: 'portal/web', tags: ['1.2.0', '1.3.0', '1.3.1', '1.4.0', 'latest', 'stable'] },
   { project: mainProject, repo: 'images', name: 'portal/api', tags: ['1.4.0'] },
 ];
 
 /** The first package of the main project: the package page the renders open, with every tab. */
 export const npmPackage = { format: 'npm', name: '@acme/ui-kit' } as const;
 export const ociPackage = { format: 'oci', name: 'portal/web' } as const;
+/** The npm package with the longest name, three versions. */
+export const longNamePackage = { format: 'npm', name: 'customer-portal-api-client-generated-from-the-openapi-document' } as const;
+
+/** A NuGet package of the platform project (W-7): three versions, a pre-release among them, with dependency groups. */
+export const nugetPackage = {
+  format: 'nuget',
+  repo: 'nuget-internal',
+  name: 'Acme.Logging.Abstractions',
+  versions: ['1.0.0', '1.1.0', '2.0.0-preview.1'],
+} as const;
+/** A Debian package of the platform project (W-7): two versions in the suite stable. */
+export const debPackage = { format: 'deb', repo: longDebKey, name: 'acme-agent', versions: ['1.2.0-1', '1.3.0-1'] } as const;
+/** An Ansible collection of the platform project (W-7): two versions. */
+export const ansiblePackage = { format: 'ansible', repo: 'collections', namespace: 'acme', name: 'platform', versions: ['1.0.0', '1.1.0'] } as const;
 
 /** A thin client of the API with the cookie session of the caller, its CSRF token and the UI's origin (R-AUTH-012). */
 export class Api {
@@ -194,15 +220,15 @@ export class Api {
 }
 
 /**
- * Sends a request again after the `Retry-After` of a 429, up to ten times: the folder of many entries is more uploads than the
- * write budget of one principal allows at once (R-API-052).
+ * Sends a request again after the `Retry-After` of a 429, up to ten times: the seed publishes some sixty versions and uploads a
+ * folder of many entries in a row, more than the rate limit of one principal lets through at once (R-API-016, R-API-052).
  */
-async function patiently(send: () => Promise<APIResponse>): Promise<APIResponse> {
-  for (let attempt = 0; ; attempt++) {
+export async function patient(send: () => Promise<APIResponse>): Promise<APIResponse> {
+  for (let i = 0; ; i++) {
     const res = await send();
-    if (res.status() !== 429 || attempt >= 10) return res;
+    if (res.status() !== 429 || i === 10) return res;
     const wait = Number(res.headers()['retry-after'] ?? '1');
-    await new Promise((r) => setTimeout(r, (Number.isFinite(wait) && wait > 0 ? wait : 1) * 1000));
+    await new Promise((r) => setTimeout(r, (Number.isFinite(wait) && wait > 0 ? Math.min(wait, 30) : 1) * 1000));
   }
 }
 
@@ -282,22 +308,28 @@ export const serviceAccount = 'backup-reader';
 export const projectServiceAccount = 'release-pipeline';
 export const exposureRule = 'customer-releases';
 
-/** One ustar entry: a 512-byte header and the content padded to the block size. */
+/** One ustar entry: a 512-byte header and the content padded to the block size; a name ending in `/` is a directory. */
 function tarEntry(name: string, content: Buffer): Buffer {
   const header = Buffer.alloc(512);
   const octal = (value: number, width: number): string => value.toString(8).padStart(width - 1, '0') + '\0';
+  const dir = name.endsWith('/');
   header.write(name, 0, 100, 'utf8');
-  header.write(octal(0o644, 8), 100, 'ascii');
+  header.write(octal(dir ? 0o755 : 0o644, 8), 100, 'ascii');
   header.write(octal(0, 8), 108, 'ascii');
   header.write(octal(0, 8), 116, 'ascii');
   header.write(octal(content.length, 12), 124, 'ascii');
   header.write(octal(0, 12), 136, 'ascii');
   header.write(' '.repeat(8), 148, 'ascii');
-  header.write('0', 156, 'ascii');
+  header.write(dir ? '5' : '0', 156, 'ascii');
   header.write('ustar\0' + '00', 257, 'ascii');
   const sum = header.reduce((a, b) => a + b, 0);
   header.write(sum.toString(8).padStart(6, '0') + '\0 ', 148, 'ascii');
   return Buffer.concat([header, content, Buffer.alloc((512 - (content.length % 512)) % 512)]);
+}
+
+/** A gzip-compressed tar of the entries, with the two empty blocks of its end. */
+function tarGz(entries: readonly (readonly [string, Buffer])[]): Buffer {
+  return gzipSync(Buffer.concat([...entries.map(([name, content]) => tarEntry(name, content)), Buffer.alloc(1024)]));
 }
 
 /** The body of an npm publish, as the npm client sends it: the manifest and the tarball as an attachment. */
@@ -318,7 +350,7 @@ function npmPublishBody(edge: string, project: string, p: (typeof npmPackages)[n
     _id: p.name,
     name: p.name,
     description: manifest.description,
-    'dist-tags': { [p.version.includes('-') ? 'next' : 'latest']: p.version },
+    'dist-tags': { [p.tag ?? (p.version.includes('-') ? 'next' : 'latest')]: p.version },
     ...(p.readme ? { readme: p.readme } : {}),
     versions: {
       [p.version]: {
@@ -343,16 +375,20 @@ function npmPublishBody(edge: string, project: string, p: (typeof npmPackages)[n
  */
 export async function seedContent(ctx: APIRequestContext, edge: string, token: string): Promise<void> {
   const auth = { Authorization: `Bearer ${token}` };
-  for (const p of [...npmPackages, ...vendorPackages]) {
+  for (const p of [...npmPackages, ...vendorPackages, ...manyVersionPackages]) {
     const url = `/api/npm/${mainProject}/${p.repo}/${p.name.replace('/', '%2f')}`;
-    const res = await ctx.put(url, { data: npmPublishBody(edge, mainProject, p), headers: auth });
+    const res = await patient(() => ctx.put(url, { data: npmPublishBody(edge, mainProject, p), headers: auth }));
     await expectStatus(res, [200, 201, 409], `npm publish ${p.name}@${p.version}`);
   }
+  await fetchOnce(ctx, auth);
+  await publishNuget(ctx, auth);
+  await publishDeb(ctx, auth);
+  await publishCollections(ctx, auth);
   for (const f of genericFiles) {
     const url = `/files/${mainProject}/${f.repo}/${f.path.split('/').map(encodeURIComponent).join('/')}`;
-    const head = await patiently(() => ctx.head(url, { headers: auth }));
+    const head = await patient(() => ctx.head(url, { headers: auth }));
     if (head.status() === 200) continue;
-    const res = await patiently(() =>
+    const res = await patient(() =>
       ctx.put(url, { data: Buffer.from(f.content), headers: { ...auth, 'Content-Type': 'application/octet-stream' } }),
     );
     await expectStatus(res, [200, 201], `upload ${f.repo}/${f.path}`);
@@ -363,35 +399,225 @@ export async function seedContent(ctx: APIRequestContext, edge: string, token: s
     await expectStatus(res, [200, 201], `folder ${f.repo}/${f.path}`);
   }
   for (const image of images) await pushImage(ctx, edge, token, image);
-  const archive = `/files/${advisoryMirror.project}/${advisoryMirror.key}/osv/npm/all.zip`;
-  const upload = await ctx.put(archive, { data: advisoryArchive(), headers: { ...auth, 'Content-Type': 'application/zip' } });
-  // The database of the renders is shared: an archive with other bytes is there already when another worktree's seed stored its
-  // own, and the power user may not replace it (no overwrite in that project). The seed only adds, so it keeps what is there.
-  const kept = upload.status() === 403 && (await ctx.head(archive, { headers: auth })).status() === 200;
-  if (!kept) await expectStatus(upload, [200, 201], `upload the advisory archive to ${advisoryMirror.project}/${advisoryMirror.key}`);
 }
 
 /**
- * Runs the sync of the OSV source as the break-glass account and waits until the evaluation has graded the package of grade E,
- * so that the screens show the grades (R-VULN-038). An archive that is already imported is not imported again, and the grade is
- * there already.
+ * Runs the sync of the OSV source as the break-glass account and waits until the evaluation has graded the package of grade E with
+ * its fixable findings and the many-version package, so that the screens show this archive's grades (R-VULN-038, R-VULN-040). An
+ * archive that is already imported is not imported again, and the grades are there already. The database is shared by the
+ * worktrees that render: another seed's archive may have been imported since, and the wait holds until this one's is.
  */
 export async function syncAdvisories(admin: Api): Promise<void> {
+  // The archive replaces the one before it: the power user holds deploy on the mirror repository but not overwrite, the break-glass
+  // account both (R-AUTHZ-005). Through the content route the session authenticates (R-API-025).
+  const archive = `/api/v1/projects/${advisoryMirror.project}/repositories/${advisoryMirror.key}/content/osv/npm/all.zip`;
+  const upload = await admin.put(archive, advisoryArchive(), { 'Content-Type': 'application/zip' });
+  await expectStatus(upload, [200, 201], `upload the advisory archive to ${advisoryMirror.project}/${advisoryMirror.key}`);
   const run = await admin.post('/api/v1/system/tasks/vuln-sync-osv/run', {});
   await expectStatus(run, [202, 409], 'run the advisory sync');
-  const list = await admin.get(`/api/v1/packages?repository=${mainProject}/npm-vendor&format=npm&q=${gradedPackage.name}`);
-  await expectStatus(list, [200], 'find the graded package');
-  const item = ((await list.json()) as { items: { id: string; name: string }[] }).items.find((p) => p.name === gradedPackage.name);
-  if (!item) throw new Error(`${gradedPackage.name} was not published`);
+  const graded = (await idOf(admin, gradedPackage.name)) as string;
+  const many = await idOf(admin, manyVersionsPackage.name);
+  const want = manyVersionPackages.find((v) => v.grade === 'E' && (v.fixable ?? 0) > 0)!;
+  const isGraded = async (id: string, version: string, grade: string, fixable: number): Promise<boolean> => {
+    const res = await admin.get(`/api/v1/packages/${id}/versions/${version}/vulnerabilities`);
+    if (!res.ok()) return false;
+    const report = (await res.json()) as { repositories: { grade?: { grade: string; fixable?: number } }[] };
+    return report.repositories.some((r) => r.grade?.grade === grade && r.grade.fixable === fixable);
+  };
   for (let i = 0; i < 180; i++) {
-    const res = await admin.get(`/api/v1/packages/${item.id}/versions/${gradedPackage.version}/vulnerabilities`);
-    if (res.ok()) {
-      const report = (await res.json()) as { repositories: { grade?: { grade: string } }[] };
-      if (report.repositories.some((r) => r.grade?.grade === 'E')) return;
-    }
+    if ((await isGraded(graded, gradedPackage.version, 'E', 112)) && (await isGraded(many, want.version, 'E', want.fixable ?? 0))) return;
+    if (i % 30 === 29) await expectStatus(await admin.post('/api/v1/system/tasks/vuln-sync-osv/run', {}), [202, 409], 'run the advisory sync again');
     await new Promise((r) => setTimeout(r, 1000));
   }
-  throw new Error(`the advisory archive was not imported and evaluated within three minutes: ${gradedPackage.name} has no grade E`);
+  throw new Error(
+    `the advisory archive was not imported and evaluated within three minutes: ${gradedPackage.name} is not E with 112 fixable, or ${manyVersionsPackage.name}@${want.version} not E`,
+  );
+}
+
+async function idOf(admin: Api, name: string): Promise<string> {
+  const list = await admin.get(`/api/v1/packages?repository=${mainProject}/npm-vendor&format=npm&q=${name}`);
+  await expectStatus(list, [200], `find ${name}`);
+  const item = ((await list.json()) as { items: { id: string; name: string }[] }).items.find((p) => p.name === name);
+  if (!item) throw new Error(`${name} was not published`);
+  return item.id;
+}
+
+/**
+ * Fetches the tarballs of {@link fetchedVersions} once, so that the column **Last fetched** of the versions table has times (R-API-065)
+ * and the other versions read "Never". A version that was fetched before is not fetched again: a second run adds nothing.
+ */
+async function fetchOnce(ctx: APIRequestContext, auth: Record<string, string>): Promise<void> {
+  const lookup = await patient(() => ctx.get(`/api/v1/packages/lookup?format=npm&name=${manyVersionsPackage.name}`, { headers: auth }));
+  await expectStatus(lookup, [200], `look up ${manyVersionsPackage.name}`);
+  const id = ((await lookup.json()) as { id: string }).id;
+  for (const version of fetchedVersions) {
+    const detail = await patient(() => ctx.get(`/api/v1/packages/${id}/versions/${version}`, { headers: auth }));
+    await expectStatus(detail, [200], `${manyVersionsPackage.name}@${version}`);
+    if (((await detail.json()) as { lastDownloadedAt: string | null }).lastDownloadedAt) continue;
+    const tarball = `/api/npm/${mainProject}/${manyVersionsPackage.repo}/${manyVersionsPackage.name}/-/${manyVersionsPackage.name}-${version}.tgz`;
+    await expectStatus(await patient(() => ctx.get(tarball, { headers: auth })), [200], `fetch ${manyVersionsPackage.name}@${version}`);
+  }
+}
+
+/** A `.nupkg`: the nuspec and one library, as `dotnet pack` builds it; the same version gives the same bytes, so a second push replays. */
+function nupkg(id: string, version: string): Buffer {
+  const nuspec = `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>${id}</id>
+    <version>${version}</version>
+    <authors>Platform engineering</authors>
+    <description>Logging abstractions shared by the platform's .NET services.</description>
+    <license type="expression">MIT</license>
+    <projectUrl>https://git.example.invalid/platform/logging</projectUrl>
+    <repository type="git" url="https://git.example.invalid/platform/logging.git" />
+    <tags>logging diagnostics</tags>
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="Microsoft.Extensions.Logging.Abstractions" version="8.0.0" />
+      </group>
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>
+`;
+  return zipArchive([
+    { name: `${id}.nuspec`, data: Buffer.from(nuspec) },
+    { name: `lib/net8.0/${id}.dll`, data: Buffer.from(`MZ ${id} ${version}`) },
+  ]);
+}
+
+/** The NuGet package of {@link nugetPackage}, pushed as `curl` would: the bare package as the body (R-NUGET-006). */
+async function publishNuget(ctx: APIRequestContext, auth: Record<string, string>): Promise<void> {
+  for (const version of nugetPackage.versions) {
+    const res = await patient(() =>
+      ctx.put(`/api/nuget/${otherProject}/${nugetPackage.repo}/v3/package`, {
+      data: nupkg(nugetPackage.name, version),
+      headers: { ...auth, 'Content-Type': 'application/octet-stream' },
+    }),
+    );
+    await expectStatus(res, [200, 201, 202, 409], `nuget push ${nugetPackage.name} ${version}`);
+  }
+}
+
+/** An `ar` archive of dpkg: the global header, then a 60-byte header per member and its data padded to an even length. */
+function ar(members: readonly (readonly [string, Buffer])[]): Buffer {
+  const parts: Buffer[] = [Buffer.from('!<arch>\n')];
+  for (const [name, data] of members) {
+    const header = `${name.padEnd(16)}${'1767225600'.padEnd(12)}${'0'.padEnd(6)}${'0'.padEnd(6)}${'100644'.padEnd(8)}${String(data.length).padEnd(10)}\u0060\n`;
+    parts.push(Buffer.from(header, 'ascii'), data);
+    if (data.length % 2 === 1) parts.push(Buffer.from('\n'));
+  }
+  return Buffer.concat(parts);
+}
+
+/** A `.deb` of one script, as test/debstub/debgen builds it. */
+function deb(name: string, version: string): Buffer {
+  const script = Buffer.from(`#!/bin/sh\necho '${name} ${version}'\n`);
+  const control =
+    `Package: ${name}\nVersion: ${version}\nArchitecture: amd64\nMaintainer: Platform engineering <platform@example.invalid>\n` +
+    'Installed-Size: 1\nDepends: libc6 (>= 2.36), ca-certificates\nSection: admin\nPriority: optional\n' +
+    'Homepage: https://git.example.invalid/platform/acme-agent\n' +
+    'Description: the agent of the platform team\n Collects the host facts the platform dashboards show.\n';
+  return ar([
+    ['debian-binary', Buffer.from('2.0\n')],
+    ['control.tar.gz', tarGz([['./', Buffer.alloc(0)], ['./control', Buffer.from(control)]])],
+    [
+      'data.tar.gz',
+      tarGz([
+        ['./', Buffer.alloc(0)],
+        ['./usr/', Buffer.alloc(0)],
+        ['./usr/bin/', Buffer.alloc(0)],
+        [`./usr/bin/${name}`, script],
+      ]),
+    ],
+  ]);
+}
+
+/** The Debian package of {@link debPackage}, uploaded to the suite stable (R-DEB-006). */
+async function publishDeb(ctx: APIRequestContext, auth: Record<string, string>): Promise<void> {
+  for (const version of debPackage.versions) {
+    const file = `${debPackage.name}_${version}_amd64.deb`;
+    const res = await patient(() =>
+      ctx.put(`/api/deb/${otherProject}/${debPackage.repo}/upload/${file}?distribution=stable&component=main`, {
+      data: deb(debPackage.name, version),
+      headers: { ...auth, 'Content-Type': 'application/vnd.debian.binary-package' },
+    }),
+    );
+    await expectStatus(res, [200, 201, 409], `deb upload ${file}`);
+  }
+}
+
+/** A collection archive with the MANIFEST.json and FILES.json ansible-galaxy builds (test/ansiblestub/ansiblegen). */
+function collection(namespace: string, name: string, version: string): Buffer {
+  const sha = (b: Buffer): string => createHash('sha256').update(b).digest('hex');
+  const files: [string, Buffer][] = [
+    ['README.md', Buffer.from(`# ${namespace}.${name}\n\nRoles and modules of the platform team, version ${version}.\n`)],
+    ['meta/runtime.yml', Buffer.from("requires_ansible: '>=2.15.0'\n")],
+    ['roles/agent/tasks/main.yml', Buffer.from('---\n- name: Install the agent\n  ansible.builtin.package:\n    name: acme-agent\n')],
+    ['roles/agent/meta/main.yml', Buffer.from("---\ngalaxy_info:\n  author: platform\n  description: the agent\n  license: MIT\n  min_ansible_version: '2.15'\n  platforms: []\ndependencies: []\n")],
+  ];
+  const dirs = ['meta', 'roles', 'roles/agent', 'roles/agent/meta', 'roles/agent/tasks'];
+  const list = [
+    { name: '.', ftype: 'dir', chksum_type: null, chksum_sha256: null, format: 1 },
+    ...[...dirs.map((d) => [d, null] as const), ...files]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([n, data]) =>
+        data === null
+          ? { name: n, ftype: 'dir', chksum_type: null, chksum_sha256: null, format: 1 }
+          : { name: n, ftype: 'file', chksum_type: 'sha256', chksum_sha256: sha(data), format: 1 },
+      ),
+  ];
+  const filesJson = Buffer.from(JSON.stringify({ files: list, format: 1 }, null, 4));
+  const manifest = Buffer.from(
+    JSON.stringify(
+      {
+        collection_info: {
+          namespace,
+          name,
+          version,
+          authors: ['Platform engineering <platform@example.invalid>'],
+          readme: 'README.md',
+          tags: ['platform', 'agent'],
+          description: 'Roles and modules of the platform team',
+          license: ['MIT'],
+          license_file: null,
+          dependencies: {},
+          repository: `https://git.example.invalid/${namespace}/${name}`,
+          documentation: `https://git.example.invalid/${namespace}/${name}/docs`,
+          homepage: `https://git.example.invalid/${namespace}/${name}`,
+          issues: `https://git.example.invalid/${namespace}/${name}/issues`,
+        },
+        file_manifest_file: { name: 'FILES.json', ftype: 'file', chksum_type: 'sha256', chksum_sha256: sha(filesJson), format: 1 },
+        format: 1,
+      },
+      null,
+      4,
+    ),
+  );
+  return tarGz([
+    ['FILES.json', filesJson],
+    ['MANIFEST.json', manifest],
+    ...dirs.map((d): [string, Buffer] => [`${d}/`, Buffer.alloc(0)]),
+    ...files,
+  ]);
+}
+
+/** The collection of {@link ansiblePackage}, published as ansible-galaxy does (R-ANS-008); the import runs as a task. */
+async function publishCollections(ctx: APIRequestContext, auth: Record<string, string>): Promise<void> {
+  for (const version of ansiblePackage.versions) {
+    const archive = collection(ansiblePackage.namespace, ansiblePackage.name, version);
+    const res = await patient(() =>
+      ctx.post(`/api/ansible/${otherProject}/${ansiblePackage.repo}/v3/artifacts/collections/`, {
+      headers: auth,
+      multipart: {
+        sha256: createHash('sha256').update(archive).digest('hex'),
+        file: { name: `${ansiblePackage.namespace}-${ansiblePackage.name}-${version}.tar.gz`, mimeType: 'application/gzip', buffer: archive },
+      },
+    }),
+    );
+    await expectStatus(res, [200, 201, 202, 409], `ansible publish ${ansiblePackage.namespace}.${ansiblePackage.name} ${version}`);
+  }
 }
 
 /** Pushes a small image (one layer, a config, a manifest per tag) through `/v2/` with a registry token (R-OCI-005). */
@@ -427,10 +653,12 @@ async function pushImage(ctx: APIRequestContext, edge: string, pat: string, imag
     }),
   );
   for (const tag of image.tags) {
-    const res = await ctx.put(`/v2/${repo}/manifests/${tag}`, {
+    const res = await patient(() =>
+      ctx.put(`/v2/${repo}/manifests/${tag}`, {
       data: manifest,
       headers: { ...auth, 'Content-Type': 'application/vnd.oci.image.manifest.v1+json' },
-    });
+      }),
+    );
     await expectStatus(res, [201], `push ${repo}:${tag}`);
   }
 }

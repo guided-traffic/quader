@@ -74,17 +74,19 @@ SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_c
 
 -- name: PackageViewVersions :many
 -- The visible rows of the given packages (format and normalized name), one per version per repository, with the repository, the size of the
--- version's files (when asked) and the downloads of its lead item. packages holds
+-- version's files (when asked), the downloads of its lead item and when that item was last downloaded (R-API-029). packages holds
 -- "<format>\x1f<name>" entries. The caller groups the rows per version.
 SELECT pv.id AS version_id, r.format, p.name, p.display_name, pv.version, pv.created_at,
        r.id AS repo_id, r.class AS repo_class,
        CASE WHEN sqlc.arg(with_size)::boolean
             THEN COALESCE((SELECT sum(i.size) FROM items i WHERE i.version_id = pv.id AND i.kind = 'file' AND i.trashed_at IS NULL), 0)
             ELSE 0 END::bigint AS size_bytes,
-       COALESCE((SELECT s.downloads FROM item_download_stats s WHERE s.item_id = pv.lead_item_id), 0)::bigint AS downloads
+       COALESCE(s.downloads, 0)::bigint AS downloads,
+       s.last_download_at
   FROM package_version_listing pv
   JOIN packages p ON p.id = pv.package_id
   JOIN repositories r ON r.id = p.repo_id
+  LEFT JOIN item_download_stats s ON s.item_id = pv.lead_item_id
  WHERE pv.trashed_at IS NULL
    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
    AND concat_ws(chr(31), r.format, p.name) = ANY(sqlc.arg(packages)::text[])

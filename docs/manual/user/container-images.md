@@ -78,7 +78,7 @@ podman build --platform linux/amd64,linux/arm64 --manifest myapp .              
 podman manifest push --all myapp quader.example.com/web/docker-local/myapp:1.0          # example
 ```
 
-Without `--all` Podman sends only the index, and Quader refuses it with `MANIFEST_BLOB_UNKNOWN`, because the platform manifests it lists are not stored. A client pulls the platform that matches its machine; `docker pull --platform linux/arm64 <reference>` or `podman pull --platform linux/arm64 <reference>` pulls another one, and `podman manifest inspect <reference>` lists the platforms of an index. The package page shows them in its **Platforms** table.
+Without `--all` Podman sends only the index, and Quader refuses it with `MANIFEST_BLOB_UNKNOWN`, because the platform manifests it lists are not stored. A client pulls the platform that matches its machine; `docker pull --platform linux/arm64 <reference>` or `podman pull --platform linux/arm64 <reference>` pulls another one, and `podman manifest inspect <reference>` lists the platforms of an index. The page of a tag shows them in the **Platforms** table of its **Details** tab.
 
 ## Pull an image
 

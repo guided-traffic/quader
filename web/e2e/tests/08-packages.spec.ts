@@ -175,7 +175,9 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     await page.getByRole('button', { name: 'Search' }).click();
     await page.getByRole('link', { name: pkgName }).click();
     await expect(page.getByRole('heading', { name: pkgName, level: 1 }).first()).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'README', selected: true })).toBeVisible();
+    // The package page is its versions, the README of the latest version below them (R-UI-110).
+    await expect(page.locator('.pkg-versions').getByRole('link', { name: version, exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: `README of ${version}`, level: 2 })).toBeVisible();
     const rendered = page.locator('quader-package-readme .readme');
     await expect(rendered.getByRole('heading', { name: 'Usage', level: 2 })).toHaveAttribute(
       'id',
@@ -191,6 +193,10 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
   });
 
   await test.step('the client setup page shows the configure snippet of every matrix client verbatim', async () => {
+    // The install panel is the version's (R-UI-111): its page has its own address, with the version after an @.
+    await page.locator('.pkg-versions').getByRole('link', { name: version, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/packages/npm/${pkgName}@${version.replaceAll('.', '\\.')}$`));
+    await expect(page.getByRole('heading', { name: `${pkgName} ${version}`, level: 1 })).toBeVisible();
     await page.getByRole('link', { name: 'Set up your client for this repository' }).click();
     await expect(page.getByRole('heading', { name: 'Client setup', level: 1 })).toBeVisible();
     // The credential is one line, the environment variable by default (Q-UI-316).

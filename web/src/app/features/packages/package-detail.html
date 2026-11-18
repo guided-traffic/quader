@@ -1,383 +1,145 @@
-<quader-page-header [heading]="name()" [name]="true">
-  <span meta class="type-badge">
-    <quader-format-icon [format]="format()" />
-    <span translate="no">{{ format() }}</span>
+<quader-page-header [heading]="name()" [name]="true" [description]="pkg()?.description">
+  <span meta class="pkg-meta">
+    <span class="type-badge">
+      <quader-format-icon [format]="format()" />
+      <span translate="no">{{ format() }}</span>
+    </span>
+    @if (pkg(); as p) {
+      <span class="dot-separated muted">
+        <span i18n="@@pkg.version-count">{p.versionCount, plural, =1 {1 version} other {{{ p.versionCount | number }} versions}}</span>
+        <span
+          ><ng-container i18n="@@pkg.latest">Latest</ng-container>&ngsp;<a [routerLink]="versionLink(p.latestVersion)" translate="no">{{
+            p.latestVersion
+          }}</a></span
+        >
+      </span>
+    }
   </span>
 </quader-page-header>
 
 @if (loadFailure(); as f) {
   <quader-error-notice [error]="f" (retry)="summary.reload()" />
-} @else if (!detail()) {
+} @else if (!pkg() || versions.isLoading()) {
   <p role="status" i18n="@@pkg.loading">Loading.</p>
-} @else if (detail(); as d) {
-  <section class="pkg-header" aria-label="Package facts" i18n-aria-label="@@pkg.facts">
-    <div class="version-line">
-      <span class="field-label" i18n="@@pkg.fact.version">Version</span>
-      <span class="version-picker">
-        <!-- A choice among the versions: a select, as it looks (UI-A-11, Q-UI-315). -->
-        <select
-          class="select-input version-select"
-          aria-label="Version"
-          i18n-aria-label="@@pkg.version.picker"
-          translate="no"
-          (change)="chooseVersion($event)"
-        >
-          @for (v of options(); track v.version) {
-            <option [value]="v.version" [selected]="v.version === selected()">{{ v.version }}</option>
-          }
-        </select>
-        <label class="check-row">
-          <input type="checkbox" [checked]="includePrereleases()" (change)="togglePrereleases($event)" />
-          <span i18n="@@pkg.version.prereleases">Include pre-releases</span>
-        </label>
-      </span>
-      @if (versionGrade(); as g) {
-        <a class="version-grade" [routerLink]="[]" [queryParams]="{ tab: 'vulnerabilities' }" queryParamsHandling="merge">
-          <quader-grade [grade]="g" />
-        </a>
+} @else if (pkg(); as p) {
+  <section class="pkg-versions" aria-labelledby="pkg-versions-heading">
+    <div class="versions-toolbar">
+      <h2 id="pkg-versions-heading" class="visually-hidden" i18n="@@pkg.ver.heading">Versions</h2>
+      <div class="versions-filter">
+        <input
+          class="text-input"
+          type="search"
+          spellcheck="false"
+          autocomplete="off"
+          [attr.aria-label]="filterLabel"
+          [attr.placeholder]="filterLabel"
+          [value]="draft()"
+          (input)="onFilter($any($event.target).value)"
+        />
+        <span class="material-icons" aria-hidden="true">search</span>
+      </div>
+      @if (draft().trim() !== '') {
+        <p class="versions-count secondary-inline" role="status" i18n="@@pkg.ver.matching">
+          {{ matching().length | number }} of {{ rows().length | number }} versions
+        </p>
       }
     </div>
-    @if (unlisted()) {
-      <p class="banner-warning" role="note">
-        <span class="material-icons inline warn" aria-hidden="true">visibility_off</span>
-        <span
-          ><strong i18n="@@pkg.unlisted">Unlisted.</strong>
-          <span i18n="@@pkg.unlisted-detail"
-            >This version is hidden from search. It is still downloaded when a project asks for exactly this version.</span
-          ></span
-        >
-      </p>
-    }
-    @if (blockedIn().length > 0) {
-      <p class="banner-warning" role="note">
-        <span class="material-icons inline warn" aria-hidden="true">block</span>
-        <span
-          ><strong i18n="@@pkg.blocked-in">Blocked in</strong>{{ ' ' }}<span translate="no">{{ blockedIn().join(', ') }}</span></span
-        >
-      </p>
-    }
-    @if (deprecated(); as why) {
-      <p class="banner-warning" role="note">
-        <span class="material-icons inline warn" aria-hidden="true">warning</span>
-        <span
-          ><strong i18n="@@pkg.deprecated">Deprecated.</strong> <span translate="no">{{ why }}</span></span
-        >
-      </p>
-    }
+
+    <quader-data-table
+      class="versions-table"
+      [caption]="caption"
+      [columns]="columns()"
+      [sort]="sortState()"
+      (sortChange)="changeSort($event)"
+      [empty]="matching().length === 0"
+      [emptyText]="emptyText()"
+      [hasMore]="shown().length < matching().length"
+      (more)="more()"
+    >
+      @for (v of shown(); track v.version) {
+        <tr>
+          <th scope="row">
+            <span class="version-cell">
+              <a [routerLink]="versionLink(v.version)" translate="no">{{ v.version }}</a>
+              @for (t of v.tags; track t) {
+                <span class="badge info" translate="no">{{ t }}</span>
+              }
+              @if (v.prerelease) {
+                <span class="badge" i18n="@@pkg.badge.prerelease">pre-release</span>
+              }
+            </span>
+          </th>
+          <td class="num size" [attr.title]="v.sizeBytes + ' B'">{{ size(v.sizeBytes) }}</td>
+          @if (graded()) {
+            <td>
+              @if (v.grade; as g) {
+                <quader-version-grade [grade]="g" />
+              } @else {
+                <span class="muted">–</span>
+              }
+            </td>
+          }
+          <td class="time">
+            <time [attr.datetime]="v.publishedAt" [attr.title]="v.publishedAt | date: 'medium'">{{ when(v.publishedAt) }}</time>
+          </td>
+          <td class="time">
+            @if (v.lastDownloadedAt; as at) {
+              <time [attr.datetime]="at" [attr.title]="at | date: 'medium'">{{ when(at) }}</time>
+            } @else {
+              <span class="muted" i18n="@@pkg.ver.never">Never</span>
+            }
+          </td>
+          @if (showRepositories()) {
+            <td class="wrap" translate="no">
+              @for (r of v.repositories; track r; let last = $last) {
+                <a [routerLink]="repositoryLink(r)">{{ repositoryText(r) }}</a>{{ last ? '' : ', ' }}
+              }
+            </td>
+          }
+        </tr>
+      }
+    </quader-data-table>
   </section>
 
-  <div class="pkg-layout" [class.stacked]="activeTab() === 'documentation' || activeTab() === 'contents'">
-    <div class="pkg-install">
-      <quader-install-panel [format]="format()" [name]="name()" [version]="d" />
-    </div>
+  @if (ansibleDocsLink(); as link) {
+    <p class="pkg-docs-link">
+      <a [routerLink]="link" [queryParams]="{ tab: 'documentation' }" i18n="@@pkg.ansible-docs-link"
+        >Documentation of {{ p.latestVersion }}</a
+      >
+    </p>
+  }
 
-    <div class="pkg-tabs">
-      <quader-tab-group [selectedIndex]="activeIndex()" (selectedIndexChange)="selectTab($event)">
-        @for (t of tabs(); track t.id) {
-          <quader-tab [label]="t.label" [count]="t.count ?? null">
-            <div class="tab">
-              @switch (t.id) {
-                @case ('documentation') {
-                  @if (activeTab() === 'documentation') {
-                    <quader-ansible-docs
-                      [packageId]="d.packageId"
-                      [version]="d.version"
-                      [tree]="docsTree()"
-                      [loading]="docs.isLoading()"
-                      [failure]="docsFailure()"
-                      [readmeOnly]="docsReadmeOnly()"
-                      [severalRepositories]="d.repositories.length > 1"
-                      [doc]="doc()"
-                      [q]="q()"
-                      (refresh)="docs.reload()"
-                    />
-                  }
-                }
-                @case ('contents') {
-                  @if (activeTab() === 'contents') {
-                    <quader-ansible-contents
-                      [tree]="docsTree()"
-                      [loading]="docs.isLoading()"
-                      [failure]="docsFailure()"
-                      (refresh)="docs.reload()"
-                    />
-                  }
-                }
-                @case ('import-log') {
-                  @if (activeTab() === 'import-log' && localRepository(); as repository) {
-                    <quader-ansible-import-log [repository]="repository" [collection]="d.name" [version]="d.version" />
-                  }
-                }
-                @case ('readme') {
-                  @if (readmeFailure(); as f) {
-                    <quader-error-notice [error]="f" (retry)="readme.reload()" />
-                  } @else if (readme.isLoading()) {
-                    <p role="status" i18n="@@pkg.loading">Loading.</p>
-                  } @else {
-                    <quader-package-readme [readme]="readme.hasValue() ? (readme.value() ?? null) : null" />
-                  }
-                }
-                @case ('metadata') {
-                  @if (!hasMetadata()) {
-                    <p class="empty" i18n="@@pkg.meta.none">This version declares no further metadata.</p>
-                  }
-                  @if (image(); as img) {
-                    <h2 i18n="@@pkg.image.heading">Image</h2>
-                    <dl class="facts">
-                      <dt i18n="@@pkg.image.digest">Digest</dt>
-                      <dd>
-                        <code translate="no">{{ img.digest }}</code>
-                        <quader-copy-button [value]="img.digest" [label]="copyImageDigest" />
-                      </dd>
-                      @if (img.mediaType !== '') {
-                        <dt i18n="@@pkg.image.media-type">Media type</dt>
-                        <dd translate="no">{{ img.mediaType }}</dd>
-                      }
-                      @if (img.artifactType !== '') {
-                        <dt i18n="@@pkg.image.artifact-type">Artifact type</dt>
-                        <dd translate="no">{{ img.artifactType }}</dd>
-                      }
-                      @if (img.size !== null) {
-                        <dt i18n="@@pkg.image.total-size">Size</dt>
-                        <dd [attr.title]="img.size + ' B'">{{ size(img.size) }}</dd>
-                      }
-                    </dl>
-                    @if (img.platforms.length > 0) {
-                      <h2 i18n="@@pkg.image.platforms">Platforms</h2>
-                      <quader-data-table [caption]="tableCaptionPlatforms" [columns]="platformColumns" [empty]="false">
-                        @for (p of img.platforms; track $index) {
-                          <tr>
-                            <th scope="row">
-                              <span translate="no">{{ p.platform }}</span>
-                              @if (p.hint !== '') {
-                                <span class="visually-hidden" translate="no">{{ ' (' + p.hint + ')' }}</span>
-                              }
-                            </th>
-                            <td>
-                              <code class="ellipsis" translate="no" [attr.title]="p.digest">{{ p.digest }}</code>
-                              <quader-copy-button [value]="p.digest" [label]="p.copyLabel" />
-                            </td>
-                            <td translate="no">{{ p.mediaType }}</td>
-                            @if (p.size !== null) {
-                              <td class="num" [attr.title]="p.size + ' B'">{{ size(p.size) }}</td>
-                            } @else {
-                              <td class="num">–</td>
-                            }
-                          </tr>
-                        }
-                      </quader-data-table>
-                    }
-                  }
-                  @if (links().length > 0) {
-                    <h2 i18n="@@pkg.meta.links">Links</h2>
-                    <dl class="facts">
-                      @for (l of links(); track l.label) {
-                        <dt>{{ l.label }}</dt>
-                        <dd translate="no">
-                          @if (l.href; as href) {
-                            <a [href]="href" [attr.rel]="externalRel" target="_blank">{{ l.text }}</a>
-                            <span class="material-icons inline" aria-hidden="true">open_in_new</span>
-                            <span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span>
-                          } @else {
-                            {{ l.text }}
-                          }
-                        </dd>
-                      }
-                    </dl>
-                  }
-                  @if (authors().length > 0) {
-                    <h2 i18n="@@pkg.meta.authors">Authors</h2>
-                    <ul class="plain" translate="no">
-                      @for (a of authors(); track a) {
-                        <li>{{ a }}</li>
-                      }
-                    </ul>
-                  }
-                  @if (distTags().length > 0) {
-                    <h2 i18n="@@pkg.meta.dist-tags">Distribution tags</h2>
-                    <dl class="facts" translate="no">
-                      @for (t of distTags(); track t[0]) {
-                        <dt>{{ t[0] }}</dt>
-                        <dd>{{ t[1] }}</dd>
-                      }
-                    </dl>
-                  }
-                  @for (g of dependencyGroups(); track g.label) {
-                    <h2>{{ g.label }}</h2>
-                    <dl class="facts" translate="no">
-                      @for (e of g.entries; track e[0]) {
-                        <dt>
-                          @if (dependencyLink(e[0]); as link) {
-                            <a [routerLink]="link">{{ e[0] }}</a>
-                          } @else if (d.format === 'ansible') {
-                            <span class="secondary-inline">{{ e[0] }}</span>
-                          } @else {
-                            {{ e[0] }}
-                          }
-                        </dt>
-                        <dd>{{ e[1] }}</dd>
-                      }
-                    </dl>
-                  }
-                  @if (frameworkGroups().length > 0) {
-                    <h2 i18n="@@pkg.meta.frameworks">Dependencies by target framework</h2>
-                    @for (g of frameworkGroups(); track $index) {
-                      <h3>
-                        @if (g.framework; as fw) {
-                          <span translate="no">{{ fw }}</span>
-                        } @else {
-                          <span i18n="@@pkg.meta.all-frameworks">All frameworks</span>
-                        }
-                      </h3>
-                      @if (g.entries.length === 0) {
-                        <p class="empty" i18n="@@pkg.meta.no-dependencies">No dependencies.</p>
-                      } @else {
-                        <dl class="facts" translate="no">
-                          @for (e of g.entries; track e[0]) {
-                            <dt>{{ e[0] }}</dt>
-                            <dd>{{ e[1] }}</dd>
-                          }
-                        </dl>
-                      }
-                    }
-                  }
-                  @if (nugetFacts().length > 0) {
-                    <h2 i18n="@@pkg.meta.facts">Package details</h2>
-                    <dl class="facts">
-                      @for (f of nugetFacts(); track f[0]) {
-                        <dt>{{ f[0] }}</dt>
-                        <dd translate="no">{{ f[1] }}</dd>
-                      }
-                    </dl>
-                  }
-                  @if (debFacts().length > 0) {
-                    <h2 i18n="@@pkg.meta.facts">Package details</h2>
-                    <dl class="facts" data-testid="deb-facts">
-                      @for (f of debFacts(); track f[0]) {
-                        <dt>{{ f[0] }}</dt>
-                        <dd translate="no">{{ f[1] }}</dd>
-                      }
-                    </dl>
-                  }
-                  @if (ansibleFacts().length > 0) {
-                    <h2 i18n="@@pkg.meta.facts">Package details</h2>
-                    <dl class="facts" data-testid="ansible-facts">
-                      @for (f of ansibleFacts(); track f[0]) {
-                        <dt>{{ f[0] }}</dt>
-                        <dd translate="no">{{ f[1] }}</dd>
-                      }
-                    </dl>
-                  }
-                  @if (engines().length > 0) {
-                    <h2 i18n="@@pkg.meta.engines">Required runtimes</h2>
-                    <dl class="facts" translate="no">
-                      @for (e of engines(); track e[0]) {
-                        <dt>{{ e[0] }}</dt>
-                        <dd>{{ e[1] }}</dd>
-                      }
-                    </dl>
-                  }
-                }
-                @case ('files') {
-                  <quader-data-table [caption]="tableCaptionFiles" [columns]="fileColumns" [empty]="d.files.length === 0">
-                    @for (f of d.files; track f.path) {
-                      <tr>
-                        <th scope="row" translate="no">{{ f.path }}</th>
-                        <td class="num" [attr.title]="f.sizeBytes + ' B'">{{ size(f.sizeBytes) }}</td>
-                        <td>
-                          <code class="ellipsis" translate="no" [attr.title]="f.sha256">{{ f.sha256 }}</code>
-                          <quader-copy-button [value]="f.sha256" [label]="copySha" />
-                        </td>
-                        <td>
-                          <a class="btn btn-tertiary" [href]="fileHref(f)" download i18n="@@pkg.file.download-link">Download</a>
-                        </td>
-                      </tr>
-                    }
-                  </quader-data-table>
-                }
-                @case ('repositories') {
-                  <quader-data-table [caption]="tableCaptionRepositories" [columns]="repositoryColumns" [empty]="d.repositories.length === 0">
-                    @for (r of d.repositories; track r.key) {
-                      <tr>
-                        <th scope="row" translate="no">{{ r.key }}</th>
-                        <td>{{ classLabels[r.class] }}</td>
-                        <td>
-                          <time [attr.datetime]="r.publishedAt">{{ r.publishedAt | date: 'medium' }}</time>
-                        </td>
-                        <td>
-                          <a class="btn btn-tertiary" [routerLink]="repositoryLink(r.key)" i18n="@@pkg.repo.open">Open repository</a>
-                        </td>
-                      </tr>
-                    }
-                  </quader-data-table>
-                }
-                @case ('vulnerabilities') {
-                  @if (vulnerabilities.isLoading()) {
-                    <p role="status" i18n="@@pkg.loading">Loading.</p>
-                  } @else {
-                    <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [severity]="severityFilter()" />
-                  }
-                }
-                @case ('versions') {
-                  <quader-data-table [caption]="tableCaptionVersions" [columns]="versionColumns" [empty]="all().length === 0">
-                    @for (v of all(); track v.version) {
-                      <tr>
-                        <th scope="row">
-                          <a
-                            [routerLink]="[]"
-                            [queryParams]="{ version: v.version, doc: null, q: null }"
-                            queryParamsHandling="merge"
-                            translate="no"
-                            >{{ v.version }}</a
-                          >
-                          @if (v.prerelease) {
-                            <span class="badge" i18n="@@pkg.badge.prerelease">pre-release</span>
-                          }
-                        </th>
-                        <td>
-                          <time [attr.datetime]="v.publishedAt" [title]="v.publishedAt | date: 'medium'">{{ v.publishedAt | date: 'mediumDate' }}</time>
-                        </td>
-                        <td class="num size" [attr.title]="v.sizeBytes + ' B'">{{ size(v.sizeBytes) }}</td>
-                        <td translate="no" class="wrap">{{ v.repositories.join(', ') }}</td>
-                        <td class="num">{{ v.downloadCount | number }}</td>
-                        <td>
-                          @if (gradeByVersion().get(v.version); as g) {
-                            <quader-grade [grade]="g" />
-                          } @else {
-                            <span class="secondary-inline">–</span>
-                          }
-                        </td>
-                      </tr>
-                    }
-                  </quader-data-table>
-                }
-              }
-            </div>
-          </quader-tab>
-        }
-      </quader-tab-group>
-    </div>
-  </div>
+  @if (readmeFailure(); as f) {
+    <quader-error-notice [error]="f" (retry)="readme.reload()" />
+  } @else if (readme.hasValue() && readme.value(); as r) {
+    <section class="pkg-readme" aria-labelledby="pkg-readme-heading">
+      <h2 id="pkg-readme-heading">
+        README&ngsp;<span class="muted"
+          ><ng-container i18n="@@pkg.readme-of">of</ng-container>&ngsp;<span translate="no">{{ p.latestVersion }}</span></span
+        >
+      </h2>
+      <quader-package-readme [readme]="r" />
+    </section>
+  }
 
   <quader-disclosure class="pkg-details" [heading]="detailsHeading" [hint]="detailsText">
     <dl class="facts">
-      <dt i18n="@@pkg.fact.published">Published</dt>
-      <dd>
-        <time [attr.datetime]="d.publishedAt">{{ d.publishedAt | date: 'medium' }}</time>
-      </dd>
-      <dt i18n="@@pkg.fact.licenses">Licenses</dt>
-      <dd translate="no">{{ d.licenses.length > 0 ? d.licenses.join(', ') : '–' }}</dd>
-      <dt i18n="@@pkg.fact.downloads">Downloads</dt>
-      <dd>{{ d.downloadCount | number }}</dd>
       <dt i18n="@@pkg.fact.repositories">Repositories</dt>
-      <dd>
-        <ul class="chips">
-          @for (r of d.repositories; track r.key) {
-            <li translate="no">{{ r.key }}</li>
+      <dd translate="no">
+        <ul class="plain-list">
+          @for (r of p.repositories; track r) {
+            <li><a [routerLink]="repositoryLink(r)">{{ r }}</a></li>
           }
         </ul>
       </dd>
+      @if (p.keywords.length > 0) {
+        <dt i18n="@@pkg.fact.keywords">Keywords</dt>
+        <dd translate="no">{{ p.keywords.join(', ') }}</dd>
+      }
+      <dt i18n="@@pkg.fact.downloads">Downloads</dt>
+      <dd>{{ p.downloadCount | number }}</dd>
+      <dt i18n="@@pkg.fact.first-published">First published</dt>
+      <dd><time [attr.datetime]="p.createdAt" [attr.title]="p.createdAt | date: 'medium'">{{ when(p.createdAt) }}</time></dd>
     </dl>
   </quader-disclosure>
-
 }

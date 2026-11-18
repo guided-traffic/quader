@@ -5096,7 +5096,7 @@ Breakpoints on the viewport: every two-column screen would carry the shell's lay
 navigation rail: a second navigation design for an audience that scans by name. A wizard for
 policies: hides two of principals, resources and actions at every step.
 
-**Spec:** [R-UI-001](spec/api-and-ui.md#r-ui-001--technology-baseline-and-delivery), [R-UI-002](spec/api-and-ui.md#r-ui-002--application-shell), [R-UI-007](spec/api-and-ui.md#r-ui-007--package-details-and-versions), [R-UI-027](spec/api-and-ui.md#r-ui-027--permission-policy-list-and-editor), [R-UI-046](spec/api-and-ui.md#r-ui-046--state-management-with-signals); decided:
+**Spec:** [R-UI-001](spec/api-and-ui.md#r-ui-001--technology-baseline-and-delivery), [R-UI-002](spec/api-and-ui.md#r-ui-002--application-shell), [R-UI-007](spec/api-and-ui.md#r-ui-007--a-packages-page), [R-UI-027](spec/api-and-ui.md#r-ui-027--permission-policy-list-and-editor), [R-UI-046](spec/api-and-ui.md#r-ui-046--state-management-with-signals); decided:
 [Q-UI-1](spec/api-and-ui.md#q-ui-1--component-library), [Q-UI-2](spec/api-and-ui.md#q-ui-2--visual-direction-of-the-shell-example-screenshot-requested), [Q-UI-3](spec/api-and-ui.md#q-ui-3--layout-of-the-package-details-page-example-screenshot-requested), [Q-UI-4](spec/api-and-ui.md#q-ui-4--layout-of-the-policy-editor-and-the-explainer-example-screenshot-requested).
 
 ### ADR-087 · READMEs rendered on the server through an allowlist sanitizer

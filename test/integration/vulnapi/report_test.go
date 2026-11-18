@@ -273,7 +273,7 @@ func TestR_VULN_021_Summary(t *testing.T) {
 }
 
 // TestR_VULN_020_R_VULN_039_PackageViews: the per-version view with the evaluation state, the block and the grade per repository,
-// the grade of every version, and the grade of the latest version in the list.
+// the grade of every version with how many of its open findings have a fix (R-VULN-040), and the grade of the latest version in the list.
 func TestR_VULN_020_R_VULN_039_PackageViews(t *testing.T) {
 	e := newEnv(t)
 	e.st.Exec(`INSERT INTO vuln_source_state (source, ecosystem, state, synced_at) VALUES ('osv', 'npm', 'complete', now())`)
@@ -282,7 +282,7 @@ func TestR_VULN_020_R_VULN_039_PackageViews(t *testing.T) {
 		e.addVersion(repo, "quader-test-mal", "2.0.0")
 	}
 	e.addFinding(finding{Repo: "npm-local", Package: "quader-test-mal", Version: "1.0.0", Kind: "malicious", Severity: "critical", Advisory: "MAL-2026-1234"})
-	e.addFinding(finding{Repo: "npm-local", Package: "quader-test-mal", Version: "2.0.0", Severity: "low", Advisory: "GHSA-aaaa-aaaa-0005"})
+	e.addFinding(finding{Repo: "npm-local", Package: "quader-test-mal", Version: "2.0.0", Severity: "low", Advisory: "GHSA-aaaa-aaaa-0005", Fix: true})
 	e.addFinding(finding{Repo: "npm-local", Package: "quader-test-mal", Version: "2.0.0", Severity: "low", Advisory: "GHSA-aaaa-aaaa-0006", Status: "dismissed", DismissalReason: "mitigated"})
 	id := packageID("npm", "quader-test-mal")
 
@@ -313,7 +313,7 @@ func TestR_VULN_020_R_VULN_039_PackageViews(t *testing.T) {
 	if mirror.Evaluation != "not_covered" || mirror.Blocked || len(mirror.Findings) != 0 {
 		t.Errorf("npm-mirror = %+v", mirror)
 	}
-	if g := local.Grade; g.Grade != "D" || g.Open.Critical != 1 || g.Evaluation != "evaluated" || g.Repository != "it/npm-local" || g.CheckedAt == nil || g.Eosl {
+	if g := local.Grade; g.Grade != "D" || g.Open.Critical != 1 || g.Fixable != 0 || g.Evaluation != "evaluated" || g.Repository != "it/npm-local" || g.CheckedAt == nil || g.Eosl {
 		t.Errorf("the grade of 1.0.0 in npm-local (one malicious finding): %+v", g)
 	}
 	if g := mirror.Grade; g.Grade != "N/A" || g.Evaluation != "not_covered" || g.CheckedAt != nil {
@@ -331,9 +331,10 @@ func TestR_VULN_020_R_VULN_039_PackageViews(t *testing.T) {
 		}
 	}
 	_ = json.Unmarshal(a.Body, &p)
-	// Every repository holds both versions: the grade is the worst of them, npm-local's (Q-VULN-155); the dismissed Low is not open.
+	// Every repository holds both versions: the grade is the worst of them, npm-local's (Q-VULN-155); the dismissed Low is not open,
+	// so 2.0.0 has one open finding, and it has a fix (R-VULN-040).
 	if a.Status != 200 || len(p.Versions) != 2 || p.Versions[0].Grade.Grade != "D" || p.Versions[0].Grade.Open.Critical != 1 ||
-		p.Versions[1].Grade.Grade != "A" || p.Versions[1].Grade.Open.Low != 1 || p.Versions[1].Grade.Repository != "it/npm-local" {
+		p.Versions[1].Grade.Grade != "A" || p.Versions[1].Grade.Open.Low != 1 || p.Versions[1].Grade.Fixable != 1 || p.Versions[1].Grade.Repository != "it/npm-local" {
 		t.Errorf("package grades: %d %s", a.Status, a.Body)
 	}
 	// The content page of a repository (R-UI-052): the grade of each package's latest version in one request of the list.
@@ -449,6 +450,7 @@ func TestR_VULN_010_ClaimedNameMatches(t *testing.T) {
 type grade struct {
 	Grade      string
 	Open       struct{ Critical, High, Medium, Low, None, Unknown int64 }
+	Fixable    int64
 	Eosl       bool
 	Os         *string
 	CheckedAt  *string

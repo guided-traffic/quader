@@ -533,6 +533,7 @@ export function sampleGrade(
   return {
     grade,
     open: severityCounts(open),
+    fixable: 0,
     eosl: false,
     checkedAt: grade === 'N/A' ? null : '2026-11-12T12:31:51Z',
     evaluation: grade === 'N/A' ? 'not_covered' : 'evaluated',

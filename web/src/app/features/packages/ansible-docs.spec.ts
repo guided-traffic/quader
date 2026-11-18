@@ -7,7 +7,7 @@ import { bareEntry, commonFixture, DocsFixture } from '../../api/testing/fakes-a
 import { FakeAnsibleApi, importTask } from '../../api/testing/fakes-ansible';
 import { FakePackagesApi, ansibleDocsFixture, ansibleFixture } from '../../api/testing/fakes-packages';
 import { expectAccessible, inProject, renderScreen, settle, text, type } from '../../testing/screen';
-import { PackageDetail } from './package-detail';
+import { PackageVersionPage } from './package-version';
 import { CONTENTS_PAGE } from './ansible-contents';
 import { SEARCH_DEBOUNCE_MS } from './ansible-docs';
 
@@ -15,9 +15,9 @@ type Opened = Awaited<ReturnType<typeof open>>;
 
 async function open(inputs: Record<string, unknown> = {}, setup?: (fake: FakePackagesApi) => void) {
   const r = await renderScreen(
-    PackageDetail,
+    PackageVersionPage,
     inProject({
-      inputs: { format: 'ansible', name: 'acme.tools', ...inputs },
+      inputs: { format: 'ansible', name: 'acme.tools', version: '1.2.0', ...inputs },
       setup: (get) => {
         const fake = get(PackagesApi) as FakePackagesApi;
         ansibleFixture(fake);
@@ -55,7 +55,7 @@ describe('The Documentation tab of an Ansible collection', () => {
   describe('the tab list', () => {
     it('R-UI-060 opens on Documentation, then Contents with the count of its entries, and has no README tab', async () => {
       const r = await open();
-      expect(tabLabels(r)).toEqual(['Documentation', 'Contents 32', 'Metadata', 'Files', 'Repositories', 'All versions', 'Import log']);
+      expect(tabLabels(r)).toEqual(['Documentation', 'Contents 32', 'Files', 'Details', 'Import log']);
       expect(r.root.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toContain('Documentation');
       // The README is the first page of the tab, so the README operation is not used.
       expect(r.fake.readmeCalls).toEqual([]);
@@ -67,7 +67,7 @@ describe('The Documentation tab of an Ansible collection', () => {
         for (const v of fake.versionList) if (v.format === 'ansible') v.metadata = { requiresAnsible: '>=2.15.0' };
         for (const v of fake.versionList) v.hasReadme = true;
       });
-      expect(tabLabels(r)).toEqual(['Metadata', 'Files', 'Repositories', 'All versions', 'Import log']);
+      expect(tabLabels(r)).toEqual(['Files', 'Details', 'Import log']);
       expect(r.fake.docCalls).toEqual([]);
       expect(r.fake.readmeCalls).toEqual([]);
     });
@@ -77,7 +77,7 @@ describe('The Documentation tab of an Ansible collection', () => {
         ansibleDocsFixture(fake, commonFixture({ state: 'none' }));
         for (const v of fake.versionList) v.hasReadme = false;
       });
-      expect(tabLabels(r)).toEqual(['Metadata', 'Files', 'Repositories', 'All versions', 'Import log']);
+      expect(tabLabels(r)).toEqual(['Files', 'Details', 'Import log']);
       expect(r.fake.docCalls).toEqual([]);
     });
 
@@ -86,13 +86,13 @@ describe('The Documentation tab of an Ansible collection', () => {
         ansibleDocsFixture(fake, commonFixture({ state: 'none' }));
         for (const v of fake.versionList) v.hasReadme = true;
       });
-      expect(tabLabels(r)).toEqual(['Documentation', 'Metadata', 'Files', 'Repositories', 'All versions', 'Import log']);
+      expect(tabLabels(r)).toEqual(['Documentation', 'Files', 'Details', 'Import log']);
       expect(tree(r)).toBeNull();
       expect(r.fake.docCalls).toEqual(['file:README.md']);
     });
 
     it('R-UI-060 R-UI-063 a tab that reads from the server on its own asks for nothing while another tab is open', async () => {
-      const r = await open({ tab: 'metadata' }, (fake) => {
+      const r = await open({ tab: 'details' }, (fake) => {
         ansibleDocsFixture(fake, commonFixture({ state: 'none' }));
         for (const v of fake.versionList) v.hasReadme = true;
       });
@@ -106,25 +106,23 @@ describe('The Documentation tab of an Ansible collection', () => {
 
     it('R-UI-060 R-UI-064 a 404 of the tree removes the Documentation and Contents tabs without a message', async () => {
       const r = await open({}, (fake) => fake.docFixtures.clear());
-      expect(tabLabels(r)).toEqual(['Metadata', 'Files', 'Repositories', 'All versions', 'Import log']);
+      expect(tabLabels(r)).toEqual(['Files', 'Details', 'Import log']);
       expect(r.root.querySelector('[role="alert"]')).toBeNull();
     });
 
-    it('R-UI-060 the install panel stays above the tabs while Documentation or Contents is open, and beside them for the others', async () => {
+    it('R-UI-060 R-UI-111 the install panel stands above the tabs at the width of the page, so the documentation has the whole width below it', async () => {
       const r = await open();
-      const layout = () => r.root.querySelector('.pkg-layout')!;
-      expect(layout().classList.contains('stacked')).toBe(true);
-      await set(r, { tab: 'contents' });
-      expect(layout().classList.contains('stacked')).toBe(true);
-      await set(r, { tab: 'metadata' });
-      expect(layout().classList.contains('stacked')).toBe(false);
+      const panel = r.root.querySelector('quader-install-panel')!;
+      const tabs = r.root.querySelector('quader-tab-group')!;
+      expect(panel.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(panel.parentElement).toBe(tabs.parentElement);
     });
 
     it('R-UI-060 the tree is requested when its tab is open, once for the version, and not again when the user comes back', async () => {
-      const r = await open({ tab: 'metadata' });
+      const r = await open({ tab: 'details' });
       expect(r.fake.docCalls).toEqual([]);
       await set(r, { tab: 'documentation' });
-      await set(r, { tab: 'metadata' });
+      await set(r, { tab: 'details' });
       await set(r, { tab: 'contents' });
       expect(r.fake.docCalls.filter((c) => c.startsWith('tree'))).toEqual(['tree']);
     });
@@ -353,15 +351,6 @@ describe('The Documentation tab of an Ansible collection', () => {
       const r = await open({ doc: 'module/check_host_reachable', q: 'host' });
       await expectAccessible(r.root);
     });
-
-    it('R-UI-060 changing the version drops doc and q', async () => {
-      const r = await open({ doc: 'module/check_host_reachable', q: 'host' });
-      const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-      const input = r.root.querySelector<HTMLSelectElement>('select.version-select')!;
-      input.value = '1.0.0';
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      expect(navigate).toHaveBeenCalledWith([], { queryParams: { version: '1.0.0', doc: null, q: null }, queryParamsHandling: 'merge' });
-    });
   });
 
   describe('the Contents tab', () => {
@@ -481,9 +470,9 @@ describe('The Documentation tab of an Ansible collection', () => {
 
     async function renderTasks(tasks: ReturnType<typeof importTask>[]) {
       const r = await renderScreen(
-        PackageDetail,
+        PackageVersionPage,
         inProject({
-          inputs: { format: 'ansible', name: 'acme.tools', tab: 'import-log' },
+          inputs: { format: 'ansible', name: 'acme.tools', version: '1.2.0', tab: 'import-log' },
           setup: (get) => {
             const fake = get(PackagesApi) as FakePackagesApi;
             ansibleFixture(fake);
@@ -496,9 +485,9 @@ describe('The Documentation tab of an Ansible collection', () => {
     }
   });
 
-  describe('the Metadata tab', () => {
+  describe('the Details tab', () => {
     it('R-UI-063 lists the dependencies with a link for a collection the installation holds and muted text for another', async () => {
-      const r = await open({ tab: 'metadata', version: '1.2.0' }, (fake) => {
+      const r = await open({ tab: 'details' }, (fake) => {
         fake.packages.push({ ...fake.packages[0]!, id: 'pkg_01JBQ9GENERAL', format: 'ansible', name: 'community.general' });
         for (const v of fake.versionList) {
           if (v.format === 'ansible' && v.version === '1.2.0') {
@@ -506,7 +495,7 @@ describe('The Documentation tab of an Ansible collection', () => {
           }
         }
       });
-      const dts = [...r.root.querySelectorAll('.pkg-tabs dl.facts dt')];
+      const dts = [...r.root.querySelectorAll('.version-tabs dl.facts dt')];
       const held = dts.find((dt) => text(dt) === 'community.general')!;
       expect(held.querySelector('a')?.getAttribute('href')).toBe('/projects/web/packages/ansible/community.general');
       const missing = dts.find((dt) => text(dt) === 'other.missing')!;
@@ -516,11 +505,11 @@ describe('The Documentation tab of an Ansible collection', () => {
     });
 
     it('R-UI-063 the documentation link is labelled Docs site, and a link with another scheme than http or https is text', async () => {
-      const r = await open({ tab: 'metadata', version: '1.2.0' });
-      const links = [...r.root.querySelectorAll('.pkg-tabs dl.facts')].find((dl) => text(dl).includes('Docs site'))!;
+      const r = await open({ tab: 'details' });
+      const links = [...r.root.querySelectorAll('.version-tabs dl.facts')].find((dl) => text(dl).includes('Docs site'))!;
       expect([...links.querySelectorAll('dt')].map((dt) => text(dt))).toContain('Docs site');
       expect(text(r.root)).not.toMatch(/\bDocumentation\s+https/);
-      const bad = await open({ tab: 'metadata', version: '1.2.0' }, (fake) => {
+      const bad = await open({ tab: 'details' }, (fake) => {
         for (const v of fake.versionList) {
           if (v.format === 'ansible') v.metadata = { ...v.metadata, documentationUrl: 'javascript:alert(1)' };
         }

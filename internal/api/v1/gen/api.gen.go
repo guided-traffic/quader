@@ -7690,6 +7690,9 @@ type PackageVersion struct {
 	// HasReadme Whether `readme` answers 200; the UI uses it to choose the default tab without a probing request.
 	HasReadme bool `json:"hasReadme"`
 
+	// LastDownloadedAt When the version was last fetched, as in the version list (R-API-065); `null` when it never was.
+	LastDownloadedAt *time.Time `json:"lastDownloadedAt"`
+
 	// Licenses SPDX identifiers or the license expression the package declares; empty when it declares none.
 	Licenses []string `json:"licenses"`
 
@@ -7762,6 +7765,11 @@ type PackageVersionSummary struct {
 	// Digest With `include=digest` only, the version's content digest from the format's metadata (an OCI tag - `sha256:` and the hex digest of its manifest); absent for a format without one.
 	Digest        *string `json:"digest,omitempty"`
 	DownloadCount int64   `json:"downloadCount"`
+
+	// LastDownloadedAt When the version was last fetched through one of `repositories`: the latest download of its lead file (the tarball, the
+	// package, the manifest), as the download statistics of R-STOR-015 record it, which a replica flushes with a delay of up to
+	// its flush interval; `null` when it was never fetched, and for a remote OCI tag, which has no stored file (R-API-065).
+	LastDownloadedAt *time.Time `json:"lastDownloadedAt"`
 
 	// Prerelease By the format's version rules.
 	Prerelease  bool      `json:"prerelease"`
@@ -9709,7 +9717,10 @@ type VulnerabilityGrade struct {
 	// `pending_scan` (its manifests have not been scanned yet, so the absence of findings says nothing) and `scan_failed` (the scan of one of
 	// them did not finish; `images` names why).
 	Evaluation VulnerabilityEvaluation `json:"evaluation"`
-	Grade      VulnerabilityGradeGrade `json:"grade"`
+
+	// Fixable How many of the open findings of `open` name a fixed version (R-VULN-040, Q-VULN-160): the same findings, counted in the same statement; zero for N/A.
+	Fixable int64                   `json:"fixable"`
+	Grade   VulnerabilityGradeGrade `json:"grade"`
 
 	// Open The open findings by severity of the repository whose grade it is; zero for N/A.
 	Open VulnerabilitySeverityCounts `json:"open"`

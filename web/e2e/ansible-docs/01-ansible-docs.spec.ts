@@ -14,7 +14,7 @@ function env(name: string): string {
 const local = { name: env('QUADER_E2E_ANSIBLE_DOCS_LOCAL_PACKAGE'), version: env('QUADER_E2E_ANSIBLE_DOCS_LOCAL_VERSION') };
 
 function pageUrl(p: { name: string; version: string }, query = ''): string {
-  return `/ui/en/projects/${e2eProject}/packages/ansible/${p.name}?version=${p.version}${query}`;
+  return `/ui/en/projects/${e2eProject}/packages/ansible/${p.name}@${p.version}${query}`;
 }
 
 const tab = (page: Page, name: string) => page.getByRole('tab', { name, exact: false });
@@ -38,7 +38,7 @@ test('R-UI-060 R-UI-061 R-UI-062 R-UI-063 R-ANS-046 a collection published with 
 
   await test.step('the tabs, and the README as the first page', async () => {
     await expect(tab(page, 'Documentation')).toHaveAttribute('aria-selected', 'true');
-    for (const name of ['Contents', 'Metadata', 'Files', 'Repositories', 'All versions', 'Import log']) {
+    for (const name of ['Contents', 'Files', 'Details', 'Import log']) {
       await expect(tab(page, name).first()).toBeVisible();
     }
     await expect(page.getByRole('tab', { name: 'README' })).toHaveCount(0);
@@ -117,7 +117,7 @@ test('R-UI-060 R-UI-064 the Documentation tab with the install panel above it at
 
   await test.step('at 1440 px the tree and the page are side by side, the install panel above them', async () => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto(pageUrl(local, '&doc=module%2Fping_host'));
+    await page.goto(pageUrl(local, '?doc=module%2Fping_host'));
     await expect(page.locator('.doc-title')).toBeVisible();
     const tree = await page.locator('.pane-tree').boundingBox();
     const body = await page.locator('.pane-details').boundingBox();
@@ -138,7 +138,7 @@ test('R-UI-060 R-UI-064 the Documentation tab with the install panel above it at
 
   await test.step('at 390 px one pane shows at a time, the page does not scroll sideways, and the way back leads to the tree', async () => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(pageUrl(local, '&doc=module%2Fping_host'));
+    await page.goto(pageUrl(local, '?doc=module%2Fping_host'));
     await expect(page.locator('.doc-title')).toBeVisible();
     await expect(page.locator('.pane-tree')).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'the page scrolls sideways').toBe(true);

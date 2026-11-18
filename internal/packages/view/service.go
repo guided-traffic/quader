@@ -579,6 +579,18 @@ func (g versionGroup) downloads() (n int64) {
 	return n
 }
 
+// lastDownload is the latest download of the lead file of the version's rows, nil when none of them was fetched (R-API-065).
+func (g versionGroup) lastDownload() *time.Time {
+	var out *time.Time
+	for _, r := range g.rows {
+		if r.LastDownloadAt.Valid && (out == nil || r.LastDownloadAt.Time.After(*out)) {
+			at := r.LastDownloadAt.Time
+			out = &at
+		}
+	}
+	return out
+}
+
 func (g versionGroup) repoIDs() []int64 {
 	out := make([]int64, 0, len(g.rows))
 	for _, r := range g.rows {
@@ -665,6 +677,7 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 		out = append(out, VersionSummary{
 			Version: g.version, Prerelease: pre, PublishedAt: g.published,
 			SizeBytes: g.primary().SizeBytes, Repositories: sc.topo.Names(sc.holders(g.repoIDs())), DownloadCount: g.downloads(),
+			LastDownloadedAt: g.lastDownload(),
 		})
 	}
 	cmp := func(x, y VersionSummary) int {
@@ -776,7 +789,7 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 	d := VersionDetail{
 		PackageID: ID(format, name), Format: format, Name: pri.DisplayName, Version: version,
 		Prerelease: a.Prerelease(version), PublishedAt: g.published,
-		SizeBytes: pri.SizeBytes, DownloadCount: g.downloads(), Repo: sc.topo.Name(pri.RepoID),
+		SizeBytes: pri.SizeBytes, DownloadCount: g.downloads(), LastDownloadedAt: g.lastDownload(), Repo: sc.topo.Name(pri.RepoID),
 		Licenses: []string{}, Metadata: map[string]any{},
 	}
 	earliest := map[int64]time.Time{}

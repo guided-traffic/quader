@@ -9377,7 +9377,8 @@ paths:
         expands to its members. `sort=-version` orders by the format's version precedence, newest
         first; the default is `-publishedAt`. `include=digest` also reads each version's `digest` from
         the format's metadata (an OCI tag: `sha256:…` of its manifest, R-UI-052); a format without one
-        has no `digest`.
+        has no `digest`. `lastDownloadedAt` is when the version was last fetched from any of the listed repositories, read
+        with the rows in the same statement (R-API-065).
       x-quader-permission:
         public: true
       parameters:
@@ -9430,6 +9431,7 @@ paths:
                     sizeBytes: 48213
                     repositories: [npm-local, npm-all]
                     downloadCount: 410
+                    lastDownloadedAt: "2026-11-17T16:40:02.118Z"
                 nextCursor: null
         "400":
           $ref: "#/components/responses/BadRequest"
@@ -9481,6 +9483,7 @@ paths:
                 licenses: [MIT]
                 sizeBytes: 48213
                 downloadCount: 410
+                lastDownloadedAt: "2026-11-17T16:40:02.118Z"
                 hasReadme: true
                 metadata:
                   distTags: {latest: 1.4.0}
@@ -17439,7 +17442,7 @@ components:
           type: [string, "null"]
     PackageVersionSummary:
       type: object
-      required: [version, prerelease, publishedAt, sizeBytes, repositories, downloadCount]
+      required: [version, prerelease, publishedAt, sizeBytes, repositories, downloadCount, lastDownloadedAt]
       properties:
         version:
           type: string
@@ -17464,6 +17467,13 @@ components:
         downloadCount:
           type: integer
           format: int64
+        lastDownloadedAt:
+          type: [string, "null"]
+          format: date-time
+          description: |
+            When the version was last fetched through one of `repositories`: the latest download of its lead file (the tarball, the
+            package, the manifest), as the download statistics of R-STOR-015 record it, which a replica flushes with a delay of up to
+            its flush interval; `null` when it was never fetched, and for a remote OCI tag, which has no stored file (R-API-065).
     PackageVersionList:
       type: object
       required: [items, nextCursor]
@@ -17507,7 +17517,7 @@ components:
           description: The relative URL of the content route of the file item (`/api/v1/projects/{projectKey}/repositories/{repoKey}/content/{path}`), which the session cookie authenticates on the role `api`; the UI's downloads use it (R-API-025, R-API-029, Q-UI-106).
     PackageVersion:
       type: object
-      required: [packageId, format, name, version, prerelease, publishedAt, licenses, sizeBytes, downloadCount, hasReadme, metadata, repositories, files]
+      required: [packageId, format, name, version, prerelease, publishedAt, licenses, sizeBytes, downloadCount, lastDownloadedAt, hasReadme, metadata, repositories, files]
       properties:
         packageId:
           type: string
@@ -17534,6 +17544,10 @@ components:
         downloadCount:
           type: integer
           format: int64
+        lastDownloadedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the version was last fetched, as in the version list (R-API-065); `null` when it never was.
         hasReadme:
           type: boolean
           description: Whether `readme` answers 200; the UI uses it to choose the default tab without a probing request.
@@ -19455,7 +19469,7 @@ components:
     VulnerabilityGrade:
       type: object
       additionalProperties: false
-      required: [grade, open, eosl, checkedAt, evaluation, repository]
+      required: [grade, open, fixable, eosl, checkedAt, evaluation, repository]
       description: |
         The grade of a version in a repository (R-VULN-038, R-VULN-039): S without an open finding,
         A with only Low, None or Unknown (at most 10), B with Medium or more than 10 Low, None or Unknown, C with High, D with 1 to 5
@@ -19470,6 +19484,11 @@ components:
         open:
           description: The open findings by severity of the repository whose grade it is; zero for N/A.
           $ref: "#/components/schemas/VulnerabilitySeverityCounts"
+        fixable:
+          type: integer
+          format: int64
+          minimum: 0
+          description: "How many of the open findings of `open` name a fixed version (R-VULN-040, Q-VULN-160): the same findings, counted in the same statement; zero for N/A."
         eosl: {type: boolean, description: "An image whose OS is at its end of life; false for every other format."}
         os: {type: string, description: "An image's OS as the analyser names it (alpine 3.24.1), the different ones of several platforms joined with \", \"; absent for every other format."}
         checkedAt:

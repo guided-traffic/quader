@@ -11,7 +11,7 @@ import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { formatSize } from '../../packages/format-size';
 import { InstallCommand } from '../../packages/install-command';
-import { packageCommands } from '../../packages/package-links';
+import { versionCommands } from '../../packages/package-links';
 import { ContentShape } from './content-shape';
 
 /** How many versions an opened item lists at a time. */
@@ -56,7 +56,7 @@ const VERSIONS_PAGE = 20;
       @for (v of versions.items(); track v.version) {
         <tr [attr.aria-current]="v.version === selected() ? 'true' : null">
           <th scope="row">
-            <a [routerLink]="detailLink()" [queryParams]="{ version: v.version }" translate="no">{{ v.version }}</a>
+            <a [routerLink]="versionLink(v.version)" translate="no">{{ v.version }}</a>
             @if (v.prerelease) {
               <span class="badge" i18n="@@repo.content.prerelease">pre-release</span>
             }
@@ -162,7 +162,10 @@ export class RepositoryItemVersions {
 
   protected readonly caption = computed(() => `${this.shape().versionsLabel}: ${this.pkg().name}`);
   protected readonly copyDigestLabel = $localize`:@@repo.content.copy-digest:Copy digest`;
-  protected readonly detailLink = computed(() => packageCommands(splitRef(this.repository()).project, this.pkg().format, this.pkg().name));
+  /** The page of a version (R-UI-111). */
+  protected versionLink(version: string): string[] {
+    return versionCommands(splitRef(this.repository()).project, this.pkg().format, this.pkg().name, version);
+  }
   protected readonly columns = computed<readonly TableColumn[]>(() => {
     const s = this.shape();
     const columns: TableColumn[] = [{ id: 'version', label: s.versionLabel }];

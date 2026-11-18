@@ -201,29 +201,30 @@ test('R-VULN-023 R-VULN-022 the package page shows the finding on the affected v
     const [finding] = await findingsOf(admin, repo, 1);
     expect((await admin.get(tarball)).status(), 'download before the block').toBe(200);
     await signInLocal(page);
-    const packagePage = (version: string, tab: string) => `/ui/en/projects/${e2eProject}/packages/npm/quader-test-cvss?version=${version}&tab=${tab}`;
+    // A version's page has an address of its own (R-UI-111); the package page is its versions (R-UI-110).
+    const packagePage = (version: string, tab: string) => `/ui/en/projects/${e2eProject}/packages/npm/quader-test-cvss@${version}?tab=${tab}`;
 
     await test.step('the tab shows one finding on 1.0.0 and none on 1.0.1', async () => {
       await page.goto(packagePage('1.0.0', 'vulnerabilities'));
-      await expect(page.getByRole('tab', { name: 'Vulnerabilities (1)' })).toBeVisible();
+      await expect(page.getByRole('tab', { name: 'Vulnerabilities', exact: true })).toBeVisible();
       const panel = page.locator('quader-package-vulnerabilities');
       await expect(panel.getByRole('heading', { name: repo })).toBeVisible();
       await expect(panel.getByRole('link', { name: finding!.advisory })).toBeVisible();
-      // R-UI-094: the repository's grade card, and the version's grade in the header.
+      // R-UI-094, R-UI-112: the repository's grade card, and the version's grade with its total in the facts.
       await expect(panel.locator('quader-grade-card')).toBeVisible();
       await expect(panel.locator('quader-grade-card')).not.toContainText('no known vulnerabilities');
-      await expect(page.locator('.pkg-header a.version-grade')).toBeVisible();
+      await expect(page.locator('.version-facts a.facts-grade')).toContainText('1 finding');
       await expectAccessible(page, 'the package page, Vulnerabilities tab');
       await page.goto(packagePage('1.0.1', 'vulnerabilities'));
       await expect(page.locator('quader-package-vulnerabilities')).toContainText('S · no known vulnerabilities');
     });
 
-    await test.step('All versions shows the grade of each version, S on 1.0.1 only', async () => {
-      await page.goto(packagePage('1.0.0', 'versions'));
+    await test.step('the versions table of the package shows the grade of each version, S on 1.0.1 only', async () => {
+      await page.goto(`/ui/en/projects/${e2eProject}/packages/npm/quader-test-cvss`);
       const row = (v: string) => page.getByRole('row', { name: new RegExp(`^${v.replace('.', '\\.')}`) });
-      await expect(row('1.0.0').locator('quader-grade')).toBeVisible();
-      await expect(row('1.0.0').locator('quader-grade')).not.toContainText('S ·');
-      await expect(row('1.0.1').locator('quader-grade')).toContainText('S · no known vulnerabilities');
+      await expect(row('1.0.0').locator('quader-version-grade')).toBeVisible();
+      await expect(row('1.0.0').locator('quader-version-grade')).not.toContainText('S ·');
+      await expect(row('1.0.1').locator('quader-version-grade')).toContainText('S · no findings');
     });
 
     await test.step('confirm the finding, then block downloads', async () => {
@@ -245,7 +246,7 @@ test('R-VULN-023 R-VULN-022 the package page shows the finding on the affected v
       await expect(page.getByRole('row', { name: new RegExp(finding!.advisory) })).toContainText('Blocked (blocked in triage)');
       await expect(page.getByRole('list', { name: 'Open findings by state' }).getByRole('link', { name: /^1\s*Blocked versions/ })).toBeVisible();
       await page.goto(packagePage('1.0.0', 'vulnerabilities'));
-      await expect(page.locator('.pkg-header .banner-warning')).toContainText(`Blocked in ${qualified(repo)}`);
+      await expect(page.locator('.version-facts .banner-warning')).toContainText(`Blocked in ${qualified(repo)}`);
       await expect(page.locator('quader-package-vulnerabilities .banner-warning')).toContainText('blocked in triage');
       expect((await admin.get(tarball)).status(), 'download after the block').toBe(403);
     });
@@ -256,7 +257,7 @@ test('R-VULN-023 R-VULN-022 the package page shows the finding on the affected v
       await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
       await expect(page.locator('.vuln-blocked')).toHaveCount(0);
       await page.goto(packagePage('1.0.0', 'vulnerabilities'));
-      await expect(page.locator('.pkg-header .banner-warning')).toHaveCount(0);
+      await expect(page.locator('.version-facts .banner-warning')).toHaveCount(0);
       await page.goto(`/ui/en/projects/${e2eProject}/vulnerabilities?repository=${qualified(repo)}`);
       await expect(page.getByRole('list', { name: 'Open findings by state' }).getByRole('link', { name: /^0\s*Blocked versions/ })).toBeVisible();
       expect((await admin.get(tarball)).status(), 'download after the block is lifted').toBe(200);

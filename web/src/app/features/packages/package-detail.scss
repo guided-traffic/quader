@@ -1,37 +1,12 @@
-// The version in the main view (Q-UI-315): the label and the picker on one line; the field fits a version, not a URL.
-.version-line {
+// The facts under the name: the format's badge, then the number of versions and the latest one on the same line.
+.pkg-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--quader-space-3);
-
-  .version-select {
-    inline-size: 12rem;
-  }
-}
-
-// The selected version's grade, a link to its Vulnerabilities tab (R-UI-094, Q-UI-375).
-.version-grade {
-  color: var(--quader-on-surface);
-  text-decoration: none;
-
-  &:hover {
-    color: var(--quader-link);
-  }
-
-  &:focus-visible {
-    outline: var(--quader-focus-ring);
-    outline-offset: 2px;
-  }
-}
-
-.pkg-details {
-  display: block;
-  margin-block-start: var(--quader-space-6);
+  gap: var(--quader-space-2) var(--quader-space-4);
 }
 
 .type-badge {
-  align-self: flex-start;
   display: inline-flex;
   align-items: center;
   gap: var(--quader-space-1);
@@ -45,93 +20,80 @@
   }
 }
 
-.pkg-header {
-  margin-block-end: var(--quader-space-4);
-}
-
-.version-picker {
+// The search above the table is as wide as a version and a few more characters, not as the page (Q-UI-452).
+.versions-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--quader-space-3);
+  gap: var(--quader-space-2) var(--quader-space-4);
+  padding-block-end: var(--quader-space-3);
 }
 
-.chips {
-  display: flex;
+.versions-filter {
+  position: relative;
+  flex: 0 1 18rem;
+  min-inline-size: 0;
+
+  input {
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding-inline-end: var(--quader-space-6);
+  }
+
+  .material-icons {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: var(--quader-space-2);
+    transform: translateY(-50%);
+    color: var(--quader-text-muted);
+    font-size: 1.25rem;
+    pointer-events: none;
+  }
+}
+
+.versions-count {
+  margin: 0;
+}
+
+// The version, its tags and the pre-release mark stay on one line where the column allows, and wrap as a whole.
+.version-cell {
+  display: inline-flex;
   flex-wrap: wrap;
-  gap: var(--quader-space-2);
+  align-items: center;
+  gap: var(--quader-space-1) var(--quader-space-2);
+}
+
+// A size keeps its number and unit together, a time its words.
+.size,
+.time {
+  white-space: nowrap;
+}
+
+.pkg-docs-link {
+  margin-block: var(--quader-space-4) 0;
+}
+
+.pkg-readme {
+  margin-block-start: var(--quader-space-6);
+
+  h2 {
+    margin-block: 0 var(--quader-space-3);
+    font: var(--quader-type-title-medium);
+  }
+}
+
+.pkg-details {
+  display: block;
+  margin-block-start: var(--quader-space-6);
+}
+
+.plain-list {
   margin: 0;
   padding: 0;
   list-style: none;
-
-  li {
-    padding: 0 var(--quader-space-2);
-    border: 1px solid var(--quader-border);
-    border-radius: var(--quader-radius-full);
-    font-size: 0.8125rem;
-  }
 }
 
-.badge {
-  margin-inline-start: var(--quader-space-2);
-}
-
-.plain {
-  margin: 0;
-  padding-inline-start: var(--quader-space-4);
-}
-
-.tab {
-  padding-block: var(--quader-space-4);
-
-  h2 {
-    margin-block: var(--quader-space-4) var(--quader-space-2);
-    font: var(--quader-type-title-medium);
-
-    &:first-child {
-      margin-block-start: 0;
-    }
-  }
-}
-
-// One column: the install panel sits above the tabs, so the command never lies below a long
-// README. From 60rem of content width the panel moves to the right and stays in view (Q-UI-3).
-.pkg-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--quader-space-4);
-  align-items: start;
-}
-
-.pkg-install {
-  min-inline-size: 0;
-}
-
-.pkg-tabs {
-  min-inline-size: 0;
-}
-
-// The Documentation and Contents tabs take the whole width: beside the install panel the page pane of the two-pane tab is too narrow for
-// a table of six columns (Q-UI-257), so the panel stays above the tabs for them.
-@container content (min-width: 60rem) {
-  .pkg-layout:not(.stacked) {
-    grid-template-columns: minmax(0, 1fr) 24rem;
-  }
-
-  .pkg-layout:not(.stacked) .pkg-install {
-    grid-column: 2;
-    grid-row: 1;
-    position: sticky;
-    inset-block-start: var(--quader-space-3);
-  }
-
-  .pkg-layout:not(.stacked) .pkg-tabs {
-    grid-column: 1;
-    grid-row: 1;
-  }
-}
-
-// A size keeps its number and unit together.
-.size {
-  white-space: nowrap;
+// Muted text at the size of its neighbours: "Never" in a column of times, the counts beside the format.
+.muted {
+  color: var(--quader-text-muted);
 }

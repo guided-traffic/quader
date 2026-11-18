@@ -275,10 +275,12 @@ SELECT pv.id AS version_id, r.format, p.name, p.display_name, pv.version, pv.cre
        CASE WHEN $1::boolean
             THEN COALESCE((SELECT sum(i.size) FROM items i WHERE i.version_id = pv.id AND i.kind = 'file' AND i.trashed_at IS NULL), 0)
             ELSE 0 END::bigint AS size_bytes,
-       COALESCE((SELECT s.downloads FROM item_download_stats s WHERE s.item_id = pv.lead_item_id), 0)::bigint AS downloads
+       COALESCE(s.downloads, 0)::bigint AS downloads,
+       s.last_download_at
   FROM package_version_listing pv
   JOIN packages p ON p.id = pv.package_id
   JOIN repositories r ON r.id = p.repo_id
+  LEFT JOIN item_download_stats s ON s.item_id = pv.lead_item_id
  WHERE pv.trashed_at IS NULL
    AND NOT (pv.id = ANY($2::bigint[]))
    AND concat_ws(chr(31), r.format, p.name) = ANY($3::text[])
@@ -299,20 +301,21 @@ type PackageViewVersionsParams struct {
 }
 
 type PackageViewVersionsRow struct {
-	VersionID   int64
-	Format      string
-	Name        string
-	DisplayName string
-	Version     string
-	CreatedAt   pgtype.Timestamptz
-	RepoID      int64
-	RepoClass   string
-	SizeBytes   int64
-	Downloads   int64
+	VersionID      int64
+	Format         string
+	Name           string
+	DisplayName    string
+	Version        string
+	CreatedAt      pgtype.Timestamptz
+	RepoID         int64
+	RepoClass      string
+	SizeBytes      int64
+	Downloads      int64
+	LastDownloadAt pgtype.Timestamptz
 }
 
 // The visible rows of the given packages (format and normalized name), one per version per repository, with the repository, the size of the
-// version's files (when asked) and the downloads of its lead item. packages holds
+// version's files (when asked), the downloads of its lead item and when that item was last downloaded (R-API-029). packages holds
 // "<format>\x1f<name>" entries. The caller groups the rows per version.
 func (q *Queries) PackageViewVersions(ctx context.Context, arg PackageViewVersionsParams) ([]PackageViewVersionsRow, error) {
 	rows, err := q.db.Query(ctx, packageViewVersions,
@@ -342,6 +345,7 @@ func (q *Queries) PackageViewVersions(ctx context.Context, arg PackageViewVersio
 			&i.RepoClass,
 			&i.SizeBytes,
 			&i.Downloads,
+			&i.LastDownloadAt,
 		); err != nil {
 			return nil, err
 		}

@@ -393,7 +393,7 @@ func (s *Server) ListPackageVersions(w http.ResponseWriter, r *http.Request, id 
 	WritePage(w, r, MapPage(NewPage(lq, rows, order.VersionKey), func(v view.VersionSummary) gen.PackageVersionSummary {
 		summary := gen.PackageVersionSummary{
 			Version: v.Version, Prerelease: v.Prerelease, PublishedAt: v.PublishedAt, SizeBytes: v.SizeBytes,
-			Repositories: repoTexts(v.Repositories), DownloadCount: v.DownloadCount,
+			Repositories: repoTexts(v.Repositories), DownloadCount: v.DownloadCount, LastDownloadedAt: v.LastDownloadedAt,
 		}
 		if v.Digest != "" {
 			digest := v.Digest
@@ -442,7 +442,7 @@ func versionOf(base string, d view.VersionDetail) gen.PackageVersion {
 	out := gen.PackageVersion{
 		PackageId: d.PackageID, Format: d.Format, Name: d.Name, Version: d.Version, Prerelease: d.Prerelease,
 		PublishedAt: d.PublishedAt, Licenses: d.Licenses, SizeBytes: d.SizeBytes, DownloadCount: d.DownloadCount,
-		HasReadme: d.HasReadme, Metadata: metadataOf(d.Metadata),
+		LastDownloadedAt: d.LastDownloadedAt, HasReadme: d.HasReadme, Metadata: metadataOf(d.Metadata),
 		Repositories: make([]gen.PackageVersionRepository, 0, len(d.Repositories)),
 		Files:        make([]gen.PackageFile, 0, len(d.Files)),
 	}
