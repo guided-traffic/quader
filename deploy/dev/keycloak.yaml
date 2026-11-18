@@ -174,10 +174,12 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: {drop: [ALL]}
+          # 120 x 5 s is the 10 minutes up.sh waits for the rollout: a restart starts the build of the server over, so the kubelet
+          # does not restart a slow start inside that wait (Q-HA-304; with 60 the first start on a slow runner was cut after 300 s)
           startupProbe:
             httpGet: {path: /health/started, port: management, scheme: HTTPS}
             periodSeconds: 5
-            failureThreshold: 60
+            failureThreshold: 120
           readinessProbe:
             httpGet: {path: /health/ready, port: management, scheme: HTTPS}
             periodSeconds: 5

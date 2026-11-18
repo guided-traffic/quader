@@ -333,7 +333,7 @@ for i in "${!PIDS[@]}"; do
     failed=1
   fi
 done
-[ "$failed" = 0 ] || die "a dependency did not come up"
+[ "$failed" = 0 ] || { explain_setup_failure; die "a dependency did not come up"; }
 
 # The dev CA, for a client on the host (curl --cacert, a browser's trust store, the e2e suite).
 mkdir -p "$STATE_DIR/pki"
