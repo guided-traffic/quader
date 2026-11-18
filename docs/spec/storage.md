@@ -645,6 +645,12 @@ loop (at most storage.upload.commit_attempts times):
   the full sweep after the grace period); the pipeline SHOULD enqueue the digest in
   `blob_gc_queue` on that path so that the incremental collection finds it.
 - After `commit_attempts` the request fails with `503` and `Retry-After`.
+- The link step itself repeats when a concurrent writer changes the path or its ancestors between two of its statements: a delete
+  removed an ancestor folder it had just found (it creates the folder again), or an upload took the path (it becomes an overwrite).
+  It runs at most five rounds and then fails with `503` `unavailable` and `Retry-After` ("The path is being changed by concurrent
+  requests; retry."). A round repeats only after another transaction committed such a change inside it, and the folders a round
+  creates are its own until it commits, so the bound is reached only when other writers commit changes of the same ancestors five
+  times within one link step.
 - Overwrite: when an untrashed item exists at the path, the caller MUST hold `overwrite` in
   addition to `deploy` (INV-9), unless the existing item references the same blob, in which case
   the request succeeds as a no-op with `200` and needs only `deploy`. A replaced user-deployed

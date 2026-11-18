@@ -461,6 +461,9 @@ type replicaOpts struct {
 	// guard wraps the guard of the delete job the replica installs (a test that watches or refuses what a batch asks); nil installs
 	// the files service's guard as it is.
 	guard func(items.JobGuard) items.JobGuard
+	// requestLog receives the request chain's warnings and errors, a 5xx with its cause among them (R-ARCH-023), as JSON lines
+	// that name the replica; nil discards them.
+	requestLog io.Writer
 }
 
 // replica is one in-process web replica with a listener of its own.
@@ -724,6 +727,9 @@ func (r *replica) serve(o replicaOpts) {
 	chain := httpserver.Chain{
 		Router: router, Resolver: resolver, Authenticate: r.e.authenticate, Replica: r.name,
 		ReplicaHeader: httpserver.ReplicaAlways, Draining: r.drain.Load,
+	}
+	if o.requestLog != nil {
+		chain.Log = slog.New(slog.NewJSONHandler(o.requestLog, &slog.HandlerOptions{Level: slog.LevelWarn})).With("replica", r.name)
 	}
 	h := chain.Handler()
 	if o.validate != nil {

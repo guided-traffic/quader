@@ -24,6 +24,7 @@ import (
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/api/v1/apitest"
 	"github.com/guided-traffic/quader/internal/authz"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // transferEnv is the component environment (env_test.go) with two replicas with two replicas, the repository generic-local and the
@@ -476,7 +477,10 @@ func TestR_HA_011_UploadsDuringARolloutRestart(t *testing.T) {
 }
 
 func TestConcurrentWritersOnOnePath(t *testing.T) {
-	te := newTransferEnv(t)
+	// A refusal of the writers' race (F-126) is named by its status and body; a 5xx also by its cause in the replicas' request
+	// log, which the second subtest prints when it fails.
+	requests := &testenv.SyncBuffer{}
+	te := newTransferEnv(t, func(o *replicaOpts) { o.requestLog = requests })
 	a, b := te.a, te.b
 	t.Run("R-STOR-005 concurrent uploads of different bytes to one path serialize: every one succeeds, one item remains, and it is one of the uploads", func(t *testing.T) {
 		const n = 12
@@ -546,7 +550,7 @@ func TestConcurrentWritersOnOnePath(t *testing.T) {
 		close(stop)
 		wg.Wait()
 		if fail.Load() != 0 {
-			t.Errorf("%d requests failed, the first: %v", fail.Load(), firstFail.Load())
+			t.Errorf("%d requests failed, the first: %v; the replicas' request log:\n%s", fail.Load(), firstFail.Load(), testenv.Tail(requests.String(), 40))
 		}
 		orphans := te.number(`SELECT count(*) FROM items i WHERE i.parent_path <> ''
 			AND NOT EXISTS (SELECT 1 FROM items p WHERE p.repo_id = i.repo_id AND p.path = i.parent_path AND p.kind = 'folder')`)
