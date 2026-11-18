@@ -22,6 +22,7 @@ root context.
 {{- $ratio := dig "runtime" "memory_limit_ratio" 0.85 $cfg | float64 -}}
 {{- $reserved := add (include "quader.bytes" (dig "cache" "rendition_bytes" "256MiB" $cfg) | int64) (include "quader.bytes" (dig "proxy" "metadata_cache_bytes" "128MiB" $cfg) | int64) (include "quader.bytes" (dig "proxy" "merged_metadata_cache_bytes" "256MiB" $cfg) | int64) (include "quader.bytes" (dig "proxy" "query_cache_bytes" "8MiB" $cfg) | int64) -}}
 {{- $perRequest := include "quader.requestBytes" . | int64 -}}
+{{- $kernelPerRequest := include "quader.kernelRequestBytes" . | int64 -}}
 
 {{- range $u := include "quader.units" . | fromYamlArray -}}
 {{- $r := $u.r -}}
@@ -123,6 +124,11 @@ than 64 requests cannot serve a handful of clients at once.
 {{- $slots := floor (divf (subf (mulf 0.8 $ratio (include "quader.quantityBytes" $mem | float64)) $reserved) $perRequest) | int64 -}}
 {{- if lt $slots 64 -}}
 {{- fail (printf "quader: %s.resources.limits.memory (%v) admits %d concurrent requests, fewer than 64: (0.8 × config.runtime.memory_limit_ratio (%v) × the limit − %d bytes of cache budgets) / %d bytes per request (config.cache.rendition_bytes, config.proxy.metadata_cache_bytes, merged_metadata_cache_bytes and query_cache_bytes; config.storage.download.buffer_size and hold_back, config.storage.s3.http.receive_window; R-ARCH-005); raise the limit or lower those values" $u.key $mem $slots $ratio $reserved $perRequest) -}}
+{{- end -}}
+{{- /* The kernel's share (Q-ARCH-500): what the Go limit leaves of the container holds the send buffers of the requests. */ -}}
+{{- $kernelSlots := floor (divf (mulf 0.8 (subf 1.0 $ratio) (include "quader.quantityBytes" $mem | float64)) $kernelPerRequest) | int64 -}}
+{{- if lt $kernelSlots 64 -}}
+{{- fail (printf "quader: %s.resources.limits.memory (%v) admits %d concurrent requests, fewer than 64: 0.8 × (1 − config.runtime.memory_limit_ratio (%v)) × the limit, the kernel's share, / %d bytes of send buffer per request (twice config.server.send_buffer, or 4 MiB with autotuning; Q-ARCH-500); raise the limit, lower the ratio or lower config.server.send_buffer" $u.key $mem $kernelSlots $ratio $kernelPerRequest) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

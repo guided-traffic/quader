@@ -510,7 +510,7 @@ connection through an edge proxy that balances per request.
 | The replica's support-bundle part being collected ([operations-and-observability.md](operations-and-observability.md) R-OPS-027, P1) | At most `support.collect_timeout` | Uploaded as a blob when done; abandoned at `SIGTERM`, which leaves the bundle `partial` (R-ARCH-001). |
 | Signal coalescer queue (R-ARCH-018) | At most one coalescing window | Best-effort wake-ups that no request depends on. |
 | Fallback rate-limit buckets (R-ARCH-034) | While Valkey is unavailable | The degraded mode INV-12 names. While Valkey is available, the counters are cluster-wide. |
-| In-flight request counter (`server.max_in_flight`, R-ARCH-005); the memory slots and the heap gate of R-ARCH-005's memory guard, sized from the replica's own memory limit (Q-ARCH-240); upstream fetch slots, which only fetching requests take ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-040); Argon2id verification slots ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-014) | Concurrent requests | Protect the replica itself: its connections, its upstream share and its memory. A refused request succeeds on retry elsewhere. |
+| In-flight request counter (`server.max_in_flight`, R-ARCH-005); the memory slots, the heap gate and the kernel's share of R-ARCH-005's memory guard, sized from the replica's own memory limit (Q-ARCH-240, Q-ARCH-500); upstream fetch slots, which only fetching requests take ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-040); Argon2id verification slots ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-014) | Concurrent requests | Protect the replica itself: its connections, its upstream share and its memory. A refused request succeeds on retry elsewhere. |
 | The window, waits and in-flight background fetches of a mirror's pass, and the background slot counters of a repository ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-054, R-REPO-055, R-REPO-058) | One pass attempt, in the process that runs it | The pass's durable state (cursor, pending names, fence) is in PostgreSQL; a pass continued in another process starts its window at 1, and no request reads any of it. |
 | Circuit breakers for the object store and for Valkey | Seconds | They describe this replica's own network path ([storage.md](storage.md) R-STOR-033, R-ARCH-031). |
 
@@ -910,12 +910,28 @@ a replica admits is bounded by its memory as well as by `max_in_flight`:
   gate bounds requests that hold more than a download, such as a document held in memory
   (R-ARCH-028). A closed gate that sees no GC cycle for 1 s runs one, so it opens once the load is
   gone ([Q-ARCH-242](#q-arch-242--a-closed-heap-gate-runs-a-gc-cycle-when-none-came-for-a-second)).
+- **The kernel's share** ([Q-ARCH-500](#q-arch-500--the-kernels-share-of-the-container-holds-the-send-buffers-of-the-requests-and-the-guard-charges-and-reads-it)).
+  What the Go limit leaves of the container, `runtime.memory_limit_bytes` − `L` (154 MiB of 1 GiB at the
+  default ratio), holds what the kernel charges to the replica's cgroup beside the Go runtime: the
+  socket buffers of its connections (`sock` in `memory.stat`) and the kernel's own memory (`kernel`).
+  A response whose client does not read waits in its connection's send buffer, which the guard does
+  not see in the heap and which stays after the request has ended. Every connection of a client
+  listener gets `server.send_buffer` as its `SO_SNDBUF` (128 KiB; the kernel doubles it), and
+  every admitted request is charged twice that against 0.8 × the share, beside what the kernel holds
+  beyond the charges at the last sample (every 50 ms): a 1 GiB container admits 491 requests at once.
+  The kernel's bytes are read every 50 ms as well, and at 80 % of the share no request is admitted
+  until they fall below 70 % (the kernel gate). Both need a cgroup v2 whose `memory.max` is
+  `runtime.memory_limit_bytes`, which makes it the replica's own; elsewhere (no cgroup, a CI job's
+  cgroup with several processes) the replica logs at start that the kernel's share is not bounded.
+  With `server.send_buffer: 0` the kernel autotunes the buffer and the charge is the most it grows to,
+  the third value of `net.ipv4.tcp_wmem` (4 MiB by default).
 - **Visibility.** Every refusal of step 4 counts in `quader_http_requests_shed_total{endpoint,reason}`
-  (`in_flight`, `memory_slots`, `heap`); `quader_http_memory_slots` is the number of slots in downloads of a large object
-  ([operations-and-observability.md](operations-and-observability.md) R-OPS-008). The gate logs when it
-  closes and when it opens.
+  (`in_flight`, `memory_slots`, `heap`, `kernel`); `quader_http_memory_slots` is the number of slots in downloads
+  of a large object, the smaller of the Go and the kernel's count
+  ([operations-and-observability.md](operations-and-observability.md) R-OPS-008). The heap gate and the
+  kernel gate log when they close and when they open, with their reading.
 - Not bounded by the guard: connections that send no request (H-324), the growth of a cache after a request was admitted (H-539), memory a replica retains
-  beyond the high-water mark (H-323), and slots that slow requests hold (H-322).
+  beyond the high-water mark (H-323), slots that slow requests hold (H-322), and the kernel's share where the cgroup is not the replica's own (H-988).
 
 Transfer rules:
 - A handler MUST finish authentication and the coarse authorization of its route (R-ARCH-008)
@@ -945,6 +961,7 @@ server:
   transfer_stall_timeout: 60s        # default (proposed)
   max_header_bytes: 65536            # default (proposed)
   max_in_flight: 4096                # default (proposed), per replica
+  send_buffer: 128KiB                # default (proposed): SO_SNDBUF of the client connections, 0 = autotuning (Q-ARCH-500)
   shutdown_timeout: 25s              # default (proposed) outside the chart; the chart derives it from the grace period (R-ARCH-024)
   tls:
     cert_file: ""                    # default (proposed): empty = plain HTTP
@@ -986,6 +1003,13 @@ Acceptance criteria:
   concurrent downloads of a 1 MiB file whose clients do not read: none is shed, although the
   caches' budgets (648 MiB) would have left 77 slots under Q-ARCH-240, and every download completes
   with its bytes (`TestBurstBesideEmptyCaches`).
+- A replica whose cgroup has the memory limit it was configured with admits a request only while the
+  send buffers of the admitted requests (twice `server.send_buffer` each) and what the kernel holds
+  beyond them stay below 0.8 × (the limit − `L`), and none while `sock` plus `kernel` of its
+  `memory.stat` is at that mark, until it falls below 0.7 × (`TestMemoryGuard`, `TestKernelMemory`).
+  A replica of 1 GiB in a container of 1 GiB that 1,000 clients ask for files of 1 to 5 MiB and stop
+  reading answers the excess `503` `server_busy` and is not OOM-killed, with and without a CPU limit
+  of 0.1 (the forced reproduction of Q-ARCH-500, run by hand; it has no automated test).
 
 ### R-ARCH-006 · Client address and trusted proxies
 Priority: **MVP** · Covers: HA-025
@@ -7338,6 +7362,30 @@ Context: `CloseContext` waited until every pool had closed, and a pool does not 
 
 **Applied in the spec:** R-ARCH-024 step 6. Tests: `TestR_ARCH_024_AStopWhileTheDatabaseDoesNotAnswerEndsWithinItsBudget` ([stall_test.go](../../test/integration/postgres/stall_test.go)), `TestR_ARCH_024_AClosePhaseDoesNotWaitForTheDriversOwnWork`.
 
+### Q-ARCH-500 · The kernel's share of the container holds the send buffers of the requests, and the guard charges and reads it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Extends [Q-ARCH-240](#q-arch-240--a-replica-admits-what-its-memory-holds-memory-slots-and-a-heap-gate-in-step-4) and [Q-ARCH-328](#q-arch-328--admission-charges-the-bytes-a-request-holds-and-the-caches-hold-now-not-a-worst-case-per-request-and-the-caches-budgets).
+
+Context: in the nightly runs 44186978088 (2026-11-18, job 134406003231) and 43194646678 (2026-11-12) a `packages` pod of the dev profile (limit 1 GiB, `GOMAXPROCS` 1) was OOM-killed in `TestHAFaults_ValkeySlow` while its node was starved of CPU and the edge read nothing (813 connections per edge pod, idle 0 %), and its log had no line of the memory guard. The guard promises that a replica under overload answers `503` and is not killed, but it saw only the Go side: the charges and the live heap, against 0.8 × `L`, `L` being 0.85 of the container. A response whose client does not read waits in its connection's send buffer, which Linux autotunes up to `net.ipv4.tcp_wmem`'s 4 MiB, charges to the pod's cgroup as `sock`, and keeps after the handler has returned and the request's charge is gone. Forced on the integration stack with the binary in a container of 1 GiB (linux/arm64, `tcp_wmem` 4 MiB, MTU 1500 between the clients and the replica), the `packages` role, files of 1 to 5 MiB, and clients that read 64 KiB of a download and then stop for 45 s:
+- 300 such clients: the cgroup held 578 MiB, of it 131 MiB `sock`; the client connections' send queues held 133 MiB (445 KiB each), the object store's (HTTP/2, Q-ARCH-241) nothing.
+- 1,000 clients, no CPU limit: OOM-killed after 954 admitted downloads at `memory.current` 1,023 MiB (`anon` 619, `sock` 383, `file` 2 MiB), no request shed: 794 of 1,114 slots in use, the live heap below its mark.
+- 900 clients with `docker update --cpus 0.1`: no kill, but `memory.current` held at 1,023 MiB for two minutes while the kernel took the page cache from 50 to 6 MiB, `sock` up to 306 MiB, nothing shed by the guard. The CPU stall makes the downloads pile up; the kernel memory is what passes the limit.
+- A kernel gate alone (option (a)) stopped the kill, but after it opened, 640 downloads were admitted in the 300 ms before the next sample closed it, and their send queues took `sock` from 112 to 237 MiB against a mark of 123 MiB, `memory.current` again to 1,023 MiB.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A kernel gate | Read `sock` + `kernel` of the cgroup's `memory.stat` with the heap; no request admitted at 80 % of the container's limit less `L` until below 70 % | Sees what the kernel kills on; no new key | Reactive: a burst between two samples fills its send queues after the gate looked (measured above) |
+| (b) A bounded send buffer, a kernel charge per request and the kernel gate (chosen) | `server.send_buffer` (128 KiB) as each client connection's `SO_SNDBUF`; each admitted request is charged twice that (the kernel's bookkeeping) against 0.8 × (container − `L`), beside what the kernel holds beyond the charges at the last sample; the gate of (a) stays | Bounded by construction like the Go side: a burst is refused before it fills anything; what the charges do not explain (finished responses still queued, uploads, the kernel's own memory) is subtracted from the room at each sample, and the gate catches the rest | A fixed buffer caps one connection at about its size per round trip: about 150 MB/s at 1 ms, 8 MB/s at 20 ms for a client that talks to the replica directly over a long path; fewer requests at once on a small container (491 on 1 GiB) |
+| (c) A gate on `memory.current` at 90 % of the container | One reading of everything | Simplest reading | Go's garbage legitimately reaches `L` (85 %) under ordinary load, so the gate closes without danger; it opens only when the scavenger returns memory |
+| (d) A lower `runtime.memory_limit_ratio` only | More room for the kernel | No code | With autotuning a held download may queue up to 4 MiB, so no ratio bounds it; fewer Go slots: 1 GiB with full caches no longer passes the chart's 64 |
+| (e) Lower the Go limit by the kernel's bytes at every sample | One pool for both | Uses the whole container | `debug.SetMemoryLimit` stops the world at each call; the slots move under running requests |
+
+**Choice:** (b). In [memory.go](../../internal/httpserver/memory.go) (`KernelBudget`, `KernelRequestBytes`, the kernel gate, `ShedKernel`), [cgroup.go](../../internal/httpserver/cgroup.go) (`KernelMemory`: the replica's cgroup v2 from `/proc/self/cgroup`, used only when its `memory.max` is `runtime.memory_limit_bytes`, so the cgroup of a CI job that runs several processes is not read as the replica's), [linger.go](../../internal/httpserver/linger.go) (`SO_SNDBUF` at accept, client listeners only) and [memory.go](../../internal/app/memory.go) (`kernelGate`, `kernelRequestMemory`: twice `server.send_buffer`, or with `0` the third value of `net.ipv4.tcp_wmem`, 4 MiB where it cannot be read). The refusal is `503 server_busy` with the reason `kernel`; `quader_http_memory_slots` is the smaller of the two counts. The chart refuses a serving pod whose kernel share holds fewer than 64 send buffers (R-HA-029).
+
+**Rationale:** The arithmetic now holds by construction for the container, not only for the Go runtime. With `C` = 1 GiB and the ratio 0.85: `L` = 870 MiB, the Go side holds at most `L` (the live heap ≤ 0.8 × `L` = 696 MiB by the slots and the heap gate, the rest garbage the collector keeps under `L`), the kernel share is `C` − `L` = 153.6 MiB, its mark 122.9 MiB, 491 send buffers of 256 KiB; together 870 + 123 = 993 MiB of 1,024, and the page cache is what the kernel reclaims first. On 2 GiB: 983 kernel slots against 2,228 Go slots with empty caches. The same reproduction after the change: 1,000 clients without a CPU limit, `memory.current` at most 854 MiB, `sock` at most 131 MiB, 491 slots, 238,863 answers `503 server_busy`, no kill; 900 clients at 0.1 CPU, at most 651 MiB. 100 sequential downloads of 5 MiB took 2.22 to 2.24 s with and without the 128 KiB buffer between two containers of one host, so the edge in the cluster does not feel it; a client far away does, and an installation that serves such clients directly raises `server.send_buffer` and gives the pod the memory for it. The CI kills fill the limit the same way: in run 44211950522 (job 134492262444, `ValkeyCredentialMismatch`, the first run with the per-pod recorder of [e2e.md](../developer/e2e.md#reading-a-stall)) `quader-packages-…-tslqg` went from 3 to 495 MiB of `sock` between 02:07:49 and 02:08:50 beside 386 MiB of `anon`, and was OOM-killed in the next five seconds; which of its connections held the bytes was not recorded, and the reproduction is what names the client side. The kills of 11-12 and 11-18 predate the recorder and are consistent with it (65 to 90 tarballs of 1 to 5 MB in flight on the pod in its last minute, 813 connections at each edge pod). The development agent revisits the default when a measurement shows a client population for which 128 KiB limits downloads, or when the per-request charge no longer matches what a held download's connection queues (about 275 KiB of `sock` per held download measured against the 256 KiB charged; the difference is subtracted at each sample).
+
+**Applied in the spec:** R-ARCH-005 (the kernel's share, visibility, H-988), R-ARCH-032 (load protection row), H-539; [ha-and-helm.md](ha-and-helm.md) R-HA-029; [operations-and-observability.md](operations-and-observability.md) R-OPS-008. Tests: `TestMemoryGuard` (the kernel gate, the kernel charge of a burst), `TestKernelMemory`, `TestSendBuffer`, `TestMemoryLimit` (the kernel's budget), the chart's `R-HA-029` cases.
+
 ### Q-ARCH-226 · The host answers an early, read-only ownership question
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -10504,13 +10552,29 @@ What makes it real: a client that opens connections faster than the timeouts clo
 thousands at a time. Mitigation today: connection limits at the edge and the pod's file-descriptor
 limit.
 
+### H-988 · Where the replica's cgroup is not its own, the kernel's memory is outside the guard
+
+Stage: the kernel's share of R-ARCH-005 step 4 (Q-ARCH-500), on every client listener of a replica with a known memory limit.
+
+Live for every replica whose cgroup v2 has no `memory.max` equal to `runtime.memory_limit_bytes`: a process outside a container,
+a container without a memory limit or with `runtime.memory_limit_bytes` set by hand to another value, a cgroup v1 host, and the
+integration tests, which run several processes in the cgroup of the CI job. Not live for the chart, which takes
+`runtime.memory_limit_bytes` from the container's limit. Subject: the availability of that replica.
+
+There the replica logs at start that the kernel's share is not bounded, and neither the kernel charges nor the kernel gate run.
+`server.send_buffer` still bounds what each connection queues, but nothing bounds how many connections queue it: 1,000 clients
+that stop reading a download hold up to 256 MiB of send buffers beside the Go limit.
+
+What makes it real: such a replica under a load whose clients stop reading, with a memory limit enforced by something else (a
+cgroup it does not see as its own). Mitigation today: run it in a container whose limit is `runtime.memory_limit_bytes`.
+
 ### H-539 · A cache that grows after a request was admitted is outside the memory charges
 
 Stage: the memory slots of R-ARCH-005 step 4 (Q-ARCH-328), on every client listener of a `web` replica with a known memory limit.
 
 Live for every such installation whose caches are not yet full. Subject: the memory headroom of the replica between the high-water mark and the container limit.
 
-The charges count the bytes the caches held at the last heap sample (every 50 ms) and the requests admitted since. A cache that grows afterwards, because admitted requests fill it, takes memory the admission has already given to those requests: the sum can pass 0.8 × `L` by what the caches grow, at most their budgets less what they held (648 MiB with the defaults). The heap gate closes when the live heap reaches 0.8 × `L` and refuses new requests until it falls below 0.7 × `L`; the 15 % that R-HA-036 keeps between `L` and the container limit and the 20 % between the mark and `L` are what carries the replica meanwhile. Before Q-ARCH-328 the full budgets were reserved, so the sum held by construction (Q-ARCH-243).
+The charges count the bytes the caches held at the last heap sample (every 50 ms) and the requests admitted since. A cache that grows afterwards, because admitted requests fill it, takes memory the admission has already given to those requests: the sum can pass 0.8 × `L` by what the caches grow, at most their budgets less what they held (648 MiB with the defaults). The heap gate closes when the live heap reaches 0.8 × `L` and refuses new requests until it falls below 0.7 × `L`; the 20 % between the mark and `L` is what carries the replica meanwhile (the 15 % that R-HA-036 keeps between `L` and the container limit is the kernel's share since Q-ARCH-500, of which 20 % is left beyond its own mark). Before Q-ARCH-328 the full budgets were reserved, so the sum held by construction (Q-ARCH-243).
 
 What makes it real: a burst of requests that fill the metadata caches while many downloads are held, on a container whose limit leaves less than the growth: the 1 GiB dev profile with the default 648 MiB of budgets. Mitigation today: the heap gate, the 64-slot floor of the chart's check (R-HA-029) computed with the full budgets, and smaller cache budgets. What would close it is a cache that charges its growth to the guard before it inserts (option (e) of Q-ARCH-328).
 

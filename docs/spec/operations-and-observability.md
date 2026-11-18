@@ -958,8 +958,8 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_http_requests_total` | counter | `listener`, `endpoint` (client listener), `handler`, `method`, `code` | Completed requests |
 | `quader_http_request_duration_seconds` | histogram | `listener`, `endpoint` (client listener), `handler`, `method`, `code_class` | Time from first byte received to last byte sent |
 | `quader_http_requests_in_flight` | gauge | `listener`, `endpoint` (client listener) | Requests in progress |
-| `quader_http_requests_shed_total` | counter | `endpoint`, `reason` (`in_flight`, `memory_slots`, `heap`) | Requests step 4 of the chain answered `503 server_busy`: beyond the endpoint's `max_in_flight`, beyond the replica's memory slots, or while the heap gate was closed ([architecture.md](architecture.md) R-ARCH-005, Q-ARCH-240) |
-| `quader_http_memory_slots` | gauge | — | Downloads of a large object the replica's memory admits beside the bytes its caches hold now, in units of the request bytes (R-ARCH-005, Q-ARCH-328); `0` when no memory limit is known |
+| `quader_http_requests_shed_total` | counter | `endpoint`, `reason` (`in_flight`, `memory_slots`, `heap`, `kernel`) | Requests step 4 of the chain answered `503 server_busy`: beyond the endpoint's `max_in_flight`, beyond the replica's memory slots, while the heap gate was closed, or beyond the kernel's share (Q-ARCH-500) ([architecture.md](architecture.md) R-ARCH-005, Q-ARCH-240) |
+| `quader_http_memory_slots` | gauge | — | Downloads of a large object the replica's memory admits beside the bytes its caches hold now, in units of the request bytes, and no more than the kernel's share holds send buffers (R-ARCH-005, Q-ARCH-328, Q-ARCH-500); `0` when no memory limit is known |
 | `quader_http_memory_slots_in_use` | gauge | — | What admitted requests are charged now, in the same unit and rounded up; only present while the replica knows a memory limit (R-ARCH-005) |
 | `quader_http_received_bytes_total` | counter | `handler` | Request body bytes |
 | `quader_http_sent_bytes_total` | counter | `handler` | Response body bytes |

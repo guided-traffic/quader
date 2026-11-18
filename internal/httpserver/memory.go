@@ -15,6 +15,7 @@ const (
 	ShedInFlight    = "in_flight"    // the endpoint's max_in_flight
 	ShedMemorySlots = "memory_slots" // the replica's memory charges
 	ShedHeap        = "heap"         // the live heap at the high-water mark
+	ShedKernel      = "kernel"       // the kernel's memory of the replica at its high-water mark
 )
 
 // High- and low-water marks of the memory guard, shares of the Go memory limit
@@ -50,6 +51,12 @@ const memoryRecheck = time.Second
 //     mark, no request is admitted, until they fall below the low-water mark. It
 //     bounds what the charges do not see, such as a cache that grew after its
 //     requests were admitted.
+//   - Kernel: while the memory the kernel charges to the replica's cgroup beside
+//     the Go runtime (the socket buffers of its connections and the kernel's own
+//     memory) is at the high-water mark of the share the Go memory limit leaves
+//     of the container's, no request is admitted, until it falls below the
+//     low-water mark (Q-ARCH-500). It bounds the send queues of downloads whose
+//     clients do not read, which no charge and no heap reading sees.
 type MemoryGuard struct {
 	budget    int64 // the high-water mark in bytes
 	perSlot   int64 // what a download of a large object holds: the charge at admission
@@ -57,12 +64,20 @@ type MemoryGuard struct {
 	high, low uint64
 	used      atomic.Int64 // charges of the admitted requests
 	held      atomic.Int64 // bytes the caches held at the last sample
-	shedding  atomic.Bool
+	heapShut  atomic.Bool  // the heap gate is closed
+	kernShut  atomic.Bool  // the kernel gate is closed
 	read      func() (heap, cycles uint64)
 	readHeld  func() int64
+	readKern  func() (int64, error)
+	kernHigh  int64        // the kernel share's high-water mark in bytes
+	kernMarks [2]uint64    // the same high-water mark and the low-water mark, for the gate
+	kernPer   int64        // what one request may make the kernel hold: its connection's send buffer
+	kernUsed  atomic.Int64 // kernel charges of the admitted requests
+	kernExtra atomic.Int64 // what the kernel held beyond the charges at the last sample
 	onSlots   func(slots int)
 	slots     int
-	onChange  func(shedding bool, heap uint64)
+	onChange  func(gate string, closed bool, bytes uint64)
+	onError   func(error)
 	collect   func()
 	now       func() time.Time
 
@@ -89,8 +104,23 @@ type MemoryGuardConfig struct {
 	// Read returns the live heap plus the goroutine stacks and the number of
 	// completed GC cycles; nil reads them from runtime/metrics.
 	Read func() (heap, cycles uint64)
-	// OnChange is called when the heap mark is crossed, with the heap read.
-	OnChange func(shedding bool, heap uint64)
+	// Kernel returns the bytes the kernel charges to the replica's cgroup beside
+	// the Go runtime: its socket buffers and its own memory (Q-ARCH-500). nil, or
+	// a KernelBudget <= 0, means no kernel gate.
+	Kernel func() (int64, error)
+	// KernelBudget is the share of the container's memory limit that the Go
+	// memory limit leaves to the kernel: the container's limit less Limit.
+	KernelBudget int64
+	// KernelRequestBytes is what one request may make the kernel hold: the send
+	// buffer of its connection. Every admitted request is charged it against the
+	// high-water mark of KernelBudget, beside what the kernel held beyond the
+	// charges at the last sample; zero charges nothing.
+	KernelRequestBytes int64
+	// OnChange is called when a gate closes or opens: ShedHeap with the heap
+	// read, ShedKernel with the kernel's bytes.
+	OnChange func(gate string, closed bool, bytes uint64)
+	// OnError is called when Kernel fails; the kernel gate keeps its state.
+	OnError func(error)
 	// OnSlots is called when Slots changes, which the caches' bytes cause.
 	OnSlots func(slots int)
 }
@@ -105,7 +135,13 @@ func NewMemoryGuard(c MemoryGuardConfig) *MemoryGuard {
 	g := &MemoryGuard{
 		budget: int64(high), perSlot: c.RequestBytes, overhead: c.Overhead,
 		high: uint64(high), low: uint64(memoryLowWater * float64(c.Limit)),
-		read: c.Read, readHeld: c.Held, onSlots: c.OnSlots, onChange: c.OnChange, collect: runtime.GC, now: time.Now,
+		read: c.Read, readHeld: c.Held, onSlots: c.OnSlots, onChange: c.OnChange, onError: c.OnError, collect: runtime.GC, now: time.Now,
+	}
+	if c.Kernel != nil && c.KernelBudget > 0 {
+		g.readKern = c.Kernel
+		g.kernHigh = int64(memoryHighWater * float64(c.KernelBudget))
+		g.kernMarks = [2]uint64{uint64(memoryHighWater * float64(c.KernelBudget)), uint64(memoryLowWater * float64(c.KernelBudget))}
+		g.kernPer = max(c.KernelRequestBytes, 0)
 	}
 	if g.overhead <= 0 || g.overhead > g.perSlot {
 		g.overhead = g.perSlot
@@ -120,13 +156,21 @@ func NewMemoryGuard(c MemoryGuardConfig) *MemoryGuard {
 // less what the caches held at the last sample.
 func (g *MemoryGuard) avail() int64 { return g.budget - g.held.Load() }
 
+// kernAvail is what the admitted requests may make the kernel hold together: its
+// high-water mark less what it held beyond their charges at the last sample.
+func (g *MemoryGuard) kernAvail() int64 { return g.kernHigh - g.kernExtra.Load() }
+
 // Slots is the number of downloads of a large object the guard admits at once
-// beside what the caches hold, at least 1; 0 for a nil guard.
+// beside what the caches and the kernel hold, at least 1; 0 for a nil guard.
 func (g *MemoryGuard) Slots() int {
 	if g == nil {
 		return 0
 	}
-	return int(max(1, g.avail()/g.perSlot))
+	n := g.avail() / g.perSlot
+	if g.kernPer > 0 {
+		n = min(n, g.kernAvail()/g.kernPer)
+	}
+	return int(max(1, n))
 }
 
 // InUse is what the admitted requests hold, in downloads of a large object,
@@ -153,11 +197,30 @@ func (g *MemoryGuard) charge(n int64) bool {
 	}
 }
 
+// chargeKernel adds a request's kernel charge if it fits beside what the kernel
+// held beyond the charges at the last sample; like charge, a request alone is
+// always admitted.
+func (g *MemoryGuard) chargeKernel() bool {
+	if g.kernPer == 0 {
+		return true
+	}
+	for {
+		u := g.kernUsed.Load()
+		if u+g.kernPer > g.kernAvail() && u > 0 {
+			return false
+		}
+		if g.kernUsed.CompareAndSwap(u, u+g.kernPer) {
+			return true
+		}
+	}
+}
+
 // Ticket is what one admitted request holds of the guard.
 type Ticket struct {
 	g        *MemoryGuard
 	mu       sync.Mutex
 	held     int64 // what the request is charged now
+	kern     int64 // what the request is charged of the kernel's share
 	open     int64 // the costs of the readers open now
 	readers  int
 	settled  bool
@@ -220,7 +283,8 @@ func (t *Ticket) release() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.g.used.Add(-t.held)
-	t.held, t.released = 0, true
+	t.g.kernUsed.Add(-t.kern)
+	t.held, t.kern, t.released = 0, 0, true
 }
 
 type ticketKey struct{}
@@ -240,20 +304,28 @@ func WithoutTicket(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ticketKey{}, (*Ticket)(nil))
 }
 
-// Admit charges a request what a download of a large object holds. reason is
-// empty when the request is admitted; release gives back everything it holds
-// and must be called once. The ticket is nil for a nil guard.
+// Admit charges a request what a download of a large object holds, and the send
+// buffer of its connection against the kernel's share. reason is empty when the
+// request is admitted; release gives back everything it holds and must be
+// called once. The ticket is nil for a nil guard.
 func (g *MemoryGuard) Admit() (t *Ticket, release func(), reason string) {
 	if g == nil {
 		return nil, func() {}, ""
 	}
-	if g.shedding.Load() {
+	if g.heapShut.Load() {
 		return nil, nil, ShedHeap
+	}
+	if g.kernShut.Load() {
+		return nil, nil, ShedKernel
 	}
 	if !g.charge(g.perSlot) {
 		return nil, nil, ShedMemorySlots
 	}
-	t = &Ticket{g: g, held: g.perSlot}
+	if !g.chargeKernel() {
+		g.used.Add(-g.perSlot)
+		return nil, nil, ShedKernel
+	}
+	t = &Ticket{g: g, held: g.perSlot, kern: g.kernPer}
 	return t, t.release, ""
 }
 
@@ -274,38 +346,66 @@ func (g *MemoryGuard) Run(ctx context.Context, every time.Duration) {
 	}
 }
 
-// Sample reads the caches' bytes and the heap once and moves the gate: closed at
-// the high-water mark, open again below the low-water mark. A gate that has
-// been closed for memoryRecheck without a GC cycle runs one, so it opens once
-// the load is gone. Only one goroutine samples: Run, or a test.
+// Sample reads the caches' bytes, the heap and the kernel's bytes once and moves
+// the gates: each closed at its high-water mark, open again below its low-water
+// mark. A heap gate that has been closed for memoryRecheck without a GC cycle
+// runs one, so it opens once the load is gone; the kernel's bytes fall without
+// one, as the clients read or close. Only one goroutine samples: Run, or a test.
 func (g *MemoryGuard) Sample() {
 	if g.readHeld != nil {
 		g.held.Store(g.readHeld())
-		if n := g.Slots(); n != g.slots && g.onSlots != nil {
-			g.slots = n
-			g.onSlots(n)
-		}
 	}
 	heap, cycles := g.read()
 	if t := g.now(); cycles != g.cycles || g.lastCycle.IsZero() {
 		g.cycles, g.lastCycle = cycles, t
-	} else if g.shedding.Load() && t.Sub(g.lastCycle) >= memoryRecheck {
+	} else if g.heapShut.Load() && t.Sub(g.lastCycle) >= memoryRecheck {
 		g.collect()
 		g.lastCycle = t
 		heap, g.cycles = g.read()
 	}
-	was := g.shedding.Load()
+	g.move(&g.heapShut, ShedHeap, heap, g.high, g.low)
+	g.sampleKernel()
+	if n := g.Slots(); n != g.slots && g.onSlots != nil {
+		g.slots = n
+		g.onSlots(n)
+	}
+}
+
+// sampleKernel reads the kernel's bytes, keeps what it holds beyond the charges
+// of the admitted requests and moves the kernel gate. A failed reading changes
+// nothing.
+func (g *MemoryGuard) sampleKernel() {
+	if g.readKern == nil {
+		return
+	}
+	n, err := g.readKern()
+	if err != nil {
+		if g.onError != nil {
+			g.onError(err)
+		}
+		return
+	}
+	g.kernExtra.Store(max(n-g.kernUsed.Load(), 0))
+	if n < 0 {
+		n = 0
+	}
+	g.move(&g.kernShut, ShedKernel, uint64(n), g.kernMarks[0], g.kernMarks[1])
+}
+
+// move closes a gate at high and opens it again below low.
+func (g *MemoryGuard) move(shut *atomic.Bool, gate string, v, high, low uint64) {
+	was := shut.Load()
 	now := was
 	switch {
-	case !was && heap >= g.high:
+	case !was && v >= high:
 		now = true
-	case was && heap < g.low:
+	case was && v < low:
 		now = false
 	}
 	if now != was {
-		g.shedding.Store(now)
+		shut.Store(now)
 		if g.onChange != nil {
-			g.onChange(now, heap)
+			g.onChange(gate, now, v)
 		}
 	}
 }

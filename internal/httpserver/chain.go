@@ -88,7 +88,7 @@ type Chain struct {
 	// after MaxInFlight; it refuses the same way. Nil admits everything.
 	Memory *MemoryGuard
 	// OnShed is called for every request stage 4 refuses, with the reason
-	// (ShedInFlight, ShedMemorySlots, ShedHeap).
+	// (ShedInFlight, ShedMemorySlots, ShedHeap, ShedKernel).
 	OnShed func(reason string)
 
 	// Resolver is stage 5. Annotate, if set, receives the resolved information so

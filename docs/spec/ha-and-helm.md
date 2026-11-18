@@ -3535,7 +3535,7 @@ The chart MUST refuse to render, naming the offending value, before anything is 
 | `worker.replicaCount`, `api.replicaCount` or `packages.replicaCount` (or its `autoscaling.minReplicas`) < 1 | the value |
 | `config.storage.upload.max_size` > the spool budget derived from the `packages` spool size (and the `web` spool size with `web.enabled`); the upload limit of the UI's content route (`config.ui.deploy.max_upload_bytes`, or `config.storage.upload.max_size` when it is 0) > the spool budget of `api` (R-HA-035, Q-UI-106) | both |
 | `terminationGracePeriodSeconds` of a role < `config.health.shutdown_drain_delay` + 15 s | both |
-| `api`, `packages`, `web` with `web.enabled`, a path pool or an endpoint pool without `resources.limits.memory`, or with one that admits fewer than 64 requests: ⌊0.8 × `config.runtime.memory_limit_ratio` × the limit ÷ the request bytes of R-ARCH-005⌋, from `config.storage.download.buffer_size`, `hold_back` and `config.storage.s3.http.receive_window` (R-HA-036, Q-HA-70) | the limit, the Deployment or the slot count and the values it comes from |
+| `api`, `packages`, `web` with `web.enabled`, a path pool or an endpoint pool without `resources.limits.memory`, or with one that admits fewer than 64 requests: ⌊0.8 × `config.runtime.memory_limit_ratio` × the limit ÷ the request bytes of R-ARCH-005⌋, from `config.storage.download.buffer_size`, `hold_back` and `config.storage.s3.http.receive_window` (R-HA-036, Q-HA-70), or whose kernel share holds fewer than 64 send buffers: ⌊0.8 × (1 − the ratio) × the limit ÷ twice `config.server.send_buffer` (4 MiB with `0`)⌋ (Q-ARCH-500) | the limit, the Deployment or the slot count and the values it comes from |
 | `config.valkey.mode: sentinel` with `config.valkey.sentinel.addresses` or `config.valkey.sentinel.primary_name` empty | the value |
 | `highAvailability.enforce` and `config.valkey.mode` other than `sentinel`, or fewer than 3 Sentinel addresses | `config.valkey.mode` or `config.valkey.sentinel.addresses` |
 | `secrets.valkey.existingSecret` empty | the value |
@@ -4748,7 +4748,7 @@ Priority: **MVP** · Covers: HA-052
   and the caches count by what they hold, so empty caches reserve nothing. `server.max_in_flight`
   stays an upper bound; with the chart's 2 GiB and the default caches full the 1,191 memory slots bind first
   (Q-ARCH-243, Q-ARCH-270), 2,228 with empty ones. The chart refuses a `web` pod
-  without a memory limit and one whose limit, with the caches full, admits fewer than 64 requests (R-HA-029, Q-HA-70).
+  without a memory limit and one whose limit, with the caches full, admits fewer than 64 requests, or whose kernel share holds fewer than 64 send buffers (R-HA-029, Q-HA-70, [architecture.md](architecture.md) Q-ARCH-500).
 - Buffers are bounded so that memory does not scale with transfer size: streaming bodies, spool
   instead of memory above `storage.spool.memory_threshold`, bounded metadata documents (format pages
   set limits for npm packuments and NuGet registration pages).

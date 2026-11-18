@@ -28,13 +28,18 @@ The rate limits share a budget between callers; stage 4 of the chain protects th
 ([R-ARCH-005](../spec/architecture.md#r-arch-005--http-listeners-routing-and-middleware-chain),
 [Q-ARCH-240](../spec/architecture.md#q-arch-240--a-replica-admits-what-its-memory-holds-memory-slots-and-a-heap-gate-in-step-4)).
 A request beyond the endpoint's `max_in_flight`, beyond the bytes the replica's memory holds for requests (the memory slots, [Q-ARCH-328](../spec/architecture.md#q-arch-328--admission-charges-the-bytes-a-request-holds-and-the-caches-hold-now-not-a-worst-case-per-request-and-the-caches-budgets)), or while the live heap is at 80 % of the Go
-memory limit, gets `503 server_busy` with `Retry-After: 1` and costs nothing more than the answer
+memory limit, or beyond the kernel's share of the container that holds the send buffers of its connections
+([Q-ARCH-500](../spec/architecture.md#q-arch-500--the-kernels-share-of-the-container-holds-the-send-buffers-of-the-requests-and-the-guard-charges-and-reads-it)),
+gets `503 server_busy` with `Retry-After: 1` and costs nothing more than the answer
 ([memory.go](../../internal/httpserver/memory.go), [chain.go](../../internal/httpserver/chain.go)). A replica under overload
-therefore refuses instead of being OOM-killed, which would cut every transfer it holds. What the guard does not stop: one client's
+therefore refuses instead of being OOM-killed, which would cut every transfer it holds. Clients that ask for downloads and stop
+reading are such an overload: before Q-ARCH-500 a thousand of them OOM-killed a 1 GiB replica in a forced reproduction, through the kernel's socket
+buffers, which the heap does not show. What the guard does not stop: one client's
 slow requests holding every slot ([H-322](../spec/architecture.md#h-322--slow-requests-of-one-client-take-the-memory-slots-of-every-client)),
 retained memory above the high-water mark ([H-323](../spec/architecture.md#h-323--a-replica-that-retains-memory-above-the-high-water-mark-refuses-every-request)),
 a cache that grows after a request was admitted ([H-539](../spec/architecture.md#h-539--a-cache-that-grows-after-a-request-was-admitted-is-outside-the-memory-charges)),
-and connections that send no request ([H-324](../spec/architecture.md#h-324--connections-that-send-no-request-are-outside-the-memory-guard)).
+connections that send no request ([H-324](../spec/architecture.md#h-324--connections-that-send-no-request-are-outside-the-memory-guard)),
+and the kernel's memory of a replica whose cgroup is not its own ([H-988](../spec/architecture.md#h-988--where-the-replicas-cgroup-is-not-its-own-the-kernels-memory-is-outside-the-guard)).
 
 ## Cross-origin access
 
@@ -77,6 +82,7 @@ The gaps of the spec pages whose mechanism this page describes:
 - [H-323](../spec/architecture.md#h-323--a-replica-that-retains-memory-above-the-high-water-mark-refuses-every-request): a replica that retains memory above the high-water mark refuses every request.
 - [H-324](../spec/architecture.md#h-324--connections-that-send-no-request-are-outside-the-memory-guard): connections that send no request are outside the memory guard.
 - [H-539](../spec/architecture.md#h-539--a-cache-that-grows-after-a-request-was-admitted-is-outside-the-memory-charges): a cache that grows after a request was admitted is outside the memory charges.
+- [H-988](../spec/architecture.md#h-988--where-the-replicas-cgroup-is-not-its-own-the-kernels-memory-is-outside-the-guard): where the replica's cgroup is not its own, the kernel's memory is outside the guard.
 
 ### H-111 · The read and write budgets are per class, not per route
 

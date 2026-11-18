@@ -58,6 +58,9 @@ type Options struct {
 	Environ []string
 	// LogWriter receives the JSON log; nil means os.Stdout.
 	LogWriter io.Writer
+	// CgroupRoot is where /proc and /sys/fs/cgroup are read for the kernel gate
+	// of the memory guard (Q-ARCH-500); empty means "/". Tests set it.
+	CgroupRoot string
 	// Extra registers more client-listener routes before the route table is
 	// checked. Tests and the drain fixture use it; production passes nil.
 	Extra func(*httpserver.Router)
@@ -621,14 +624,15 @@ func checkAPIRoutes(doc *v1.Document, router *httpserver.Router) error {
 
 func (a *App) newServer(name, addr string, h httpHandler, tls *httpserver.ListenerTLS) (*httpserver.Server, error) {
 	s := a.cfg.Server
-	cut := a.tele.metrics.TransferCut
+	cut, sendBuffer := a.tele.metrics.TransferCut, int(s.SendBuffer)
 	if name == "ops" {
 		cut = nil // a probe or a scrape that is reset at the ops deadline is no transfer of a client
+		sendBuffer = 0
 	}
 	return httpserver.NewServer(httpserver.ServerConfig{
 		Name: name, Addr: addr, Handler: h, TLS: tls, Log: a.log.With("component", "http", "listener", name),
 		ReadHeaderTimeout: s.ReadHeaderTimeout, IdleTimeout: s.IdleTimeout, MaxHeaderBytes: s.MaxHeaderBytes,
-		StallTimeout: s.TransferStallTimeout, OnTransferCut: cut,
+		SendBuffer: sendBuffer, StallTimeout: s.TransferStallTimeout, OnTransferCut: cut,
 	})
 }
 

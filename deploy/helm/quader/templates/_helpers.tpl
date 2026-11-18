@@ -158,6 +158,20 @@ a power of two), storage.s3.http.receive_window and 128 KiB. internal/app/memory
 {{- end -}}
 
 {{/*
+What one request may make the kernel hold, for the kernel's share of R-ARCH-005 step 4 (Q-ARCH-500): twice
+server.send_buffer, which the kernel doubles for its bookkeeping, or 4 MiB, the default most of
+net.ipv4.tcp_wmem, when the buffer is left to autotuning. internal/app/memory.go computes the same.
+*/}}
+{{- define "quader.kernelRequestBytes" -}}
+{{- $n := include "quader.bytes" (dig "server" "send_buffer" "128KiB" .Values.config) | int64 -}}
+{{- if gt $n 0 -}}
+{{- mul 2 $n -}}
+{{- else -}}
+{{- 4194304 -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Seconds of a duration made of whole hours, minutes and seconds (1h30m, 90s, 5s).
 */}}
 {{- define "quader.seconds" -}}
