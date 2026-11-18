@@ -246,7 +246,7 @@
   }
 }
 
-// A project's mark (Q-UI-424): its letter on the accent fill. Small beside a name of one line, medium beside a name with a second
+// A project's mark (Q-UI-424): its letter on a stone of Quader's mark. Small beside a name of one line, medium beside a name with a second
 // line and in the project switcher.
 .quader-project-mark {
   flex: none;
@@ -258,11 +258,12 @@
   block-size: 1.25rem;
   margin-block: -0.125rem;
   border-radius: var(--quader-radius-s);
-  background: var(--quader-accent-fill);
-  color: var(--quader-on-accent);
+  background: var(--quader-mark-stone);
+  color: var(--quader-mark-letter);
   font-size: 0.6875rem;
   font-weight: 600;
   line-height: 1;
+  transition: background-color var(--quader-motion-duration) var(--quader-motion-easing);
 
   &::before {
     content: attr(data-letter);
@@ -275,6 +276,16 @@
     border-radius: var(--quader-radius-m);
     font-size: 0.875rem;
   }
+}
+
+// A project's mark lights up as the coloured stone of Quader's mark (Q-UI-424) where the pointer or the keyboard is on what
+// names the project: a table's row, a link or a button with the mark in it, an option of a list of suggestions.
+:is(tr, a, button, [role='option']):hover .quader-project-mark,
+:is(tr, a, button):focus-within .quader-project-mark,
+:is(a, button, [role='option']):focus-visible .quader-project-mark,
+[role='option'][aria-selected='true'] .quader-project-mark,
+.quader-project-link:hover .quader-project-mark {
+  background: var(--quader-mark-accent);
 }
 
 // A format is its icon and its name on one line (UI-A-24), a class its icon and its name (Q-UI-330): each a column of its own

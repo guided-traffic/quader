@@ -128,6 +128,9 @@
   // stones and the wordmark, and the one coloured stone. The inline mark of shared/brand/quader-mark.ts reads them.
   --quader-mark-stone: light-dark(#28272d, #ececef);
   --quader-mark-accent: light-dark(#b4690e, #e9a13b);
+  // A project's mark (owner, 2026-11-18): a stone of Quader's mark with the project's letter on it; under the pointer or the
+  // keyboard's focus of its row it is the coloured stone. The letter is the other scheme's stone, legible on both.
+  --quader-mark-letter: light-dark(#ececef, #28272d);
   // The plate behind a format logo that has no variant of its own for a dark ground (Debian's swirl is 1.9:1 to 2.3:1 on
   // the dark surfaces), shared/format-icon.ts, Q-UI-226: none in the light scheme, the light text tone in the dark one.
   --quader-logo-plate: light-dark(transparent, #ececef);

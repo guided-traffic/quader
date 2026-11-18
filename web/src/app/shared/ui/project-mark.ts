@@ -8,7 +8,8 @@ export function letterOf(displayName: string | null | undefined, key: string): s
 }
 
 /**
- * A project's mark (Q-UI-424): its first letter on the accent fill, the one icon of a project wherever it stands, before its name
+ * A project's mark (Q-UI-424): its first letter on a stone of Quader's mark, which turns into the coloured stone under the pointer
+ * or the keyboard's focus of its row; the one icon of a project wherever it stands, before its name
  * in every list of projects, in the search's suggestions, in the project switcher and wherever a row names its project. The
  * letter is drawn by the stylesheet (`::before`): as text it would be part of the name of the link around it, a letter the
  * visible name does not start with (axe `label-content-name-mismatch`). Decorative: the name stands beside it.

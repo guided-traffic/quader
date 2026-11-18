@@ -6277,7 +6277,8 @@ line.
 
 - **The project's mark** ([Q-UI-424](#q-ui-424--a-projects-mark-is-one-component-before-its-name-wherever-a-project-is-listed)),
   `<quader-project-mark>` ([project-mark.ts](../../web/src/app/shared/ui/project-mark.ts)): the first letter of its display name
-  (else its key) on the accent fill, decorative. It stands before the name in every list of projects (the start page, the admin
+  (else its key) on a stone of Quader's mark, which turns into the mark's coloured stone while the pointer or the keyboard's focus
+  is on its row, link or option; decorative. It stands before the name in every list of projects (the start page, the admin
   area's projects, the search's **Projects** tab, the project switcher's lists, at 32 px beside a name with its key under it) and
   wherever a row names its project (the admin area's repository list, the search's repositories and packages, the permission
   policies, the audit log, at 20 px), there as `<quader-project-link>`: the mark and the project's display name, linked to it.
@@ -13997,6 +13998,15 @@ name a project are decided by the development agent from the options below; the 
 **Platform engineering** stands beside its mark on one line; a longer name breaks inside itself beside the mark (Q-UI-425). The
 switcher's button and its lists use the same component. **Rationale:** one icon of a project makes a project recognisable in every
 place. The development agent revisits the 11 rem if a project's name is usually longer.
+
+**The mark's colours (decided by the owner, 2026-11-18):** "ich hätte gerne, dass diese Projekticons weiß sind und bei Hover über
+der Zeile bernsteinfarben aufleuchten wie die Farbe von unserem Icon." The mark is a stone of Quader's own mark
+(`--quader-mark-stone`: near white in the dark scheme) with the letter in `--quader-mark-letter`; while the pointer is on the
+row, the link, the button or the option that holds it, or the keyboard's focus is in it, it is the mark's coloured stone
+(`--quader-mark-accent`), with the change over the motion duration of the tokens (none under reduced motion). Decided by the
+development agent: in the light scheme the stone is the mark's dark stone, not white, because a white tile does not stand out
+from a white page; the letter is the other scheme's stone and holds 3:1 on both grounds (`palette.spec.ts`). The accent fill
+it had before made every list of projects a column of blue tiles beside blue links.
 
 **Applied in the spec:** R-UI-102. Code: [project-mark.ts](../../web/src/app/shared/ui/project-mark.ts).
 

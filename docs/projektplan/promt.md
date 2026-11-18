@@ -1082,6 +1082,20 @@ agent** is not decided until the owner has said so.
   there / keep it with an en dash / replace it by **Created**). The list exists only in the admin area; the caller's role is
   empty in every row for an administrator who is no member, and the main area's list of projects shows it where it matters.
   The freed room goes to the project's name. Status: handed to the builder of the admin lists.
+- **W-16 · A project's mark is white and lights up amber under the pointer** (owner, 2026-11-18, with a picture of the admin
+  area's projects list): "Ich hätte gerne dass diese Projekticons weiß sind und bei hover über der Zeile Bernsteinfarben
+  aufleuchten wie die Farbe von unserem Icon." Built by the development agent: the mark is a stone of Quader's mark with the
+  project's letter, and the mark's coloured stone while the pointer or the keyboard is on its row, link or option (Q-UI-424,
+  `--quader-mark-letter`). In the light scheme the stone is the dark stone of the mark (the development agent's choice: a
+  white tile on a white page is not seen). Looked at in the running UI, dark and light, in the start page's list and the
+  admin area's repository list.
+- **W-17 · The security dashboard is the auditor's, under "Your work", and has one filter** (owner, 2026-11-18): "Option A"
+  for the filter (from three: one filter at the list's head / the upper form as the scope of the whole page / the form moved
+  down to the list): the form above the counts with **Advisory ID**, **Package starts with**, **Project key** and **Search**
+  goes; the project becomes a filter of the drawer beside the advisory and the package that are there already. And: "beim
+  Security dashboard handelt es sich nicht um ein Admin Feature, sondern um ein Auditor-Feature. Für Auditoren oder
+  Administratoren gehört es unter Your Work als zweite Kategorie "Security Audit", darunter dann Security Dashboard.
+  Sichtbar nur für Instanz-Auditoren und Instanz-Administratoren." Status: a builder is briefed.
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
@@ -1203,6 +1217,10 @@ agent** is not decided until the owner has said so.
         sign-in · failure". Half of the log of this stack is that entry.
       - `security`: the fields show examples as grey text ("CVE-2021-23337", "lodash", "shop"); the chart of 90 days is one bar
         at the right edge on an installation whose data is a day old.
+    - **Seen while the admin lists' package was looked at** (2026-11-18): the start page's list of projects at 1,100 px is wider
+      than the page (**Repositories** is cut, **Members** out of sight) and its **Description** breaks after every word; the
+      admin area's repository list still breaks "Customer portal release engineering and delivery" into three lines beside its
+      mark; in `system/jobs` the result ("enqueued: 0, repositories: 0") breaks while the replica's column beside it has room.
       - `system/jobs` and `system/backups` have no entry in the side bar; **System status** stays marked on both.
     - **The detail and form screens of the admin area**, looked at on 2026-11-18 (dark, 1440 px): a user, a group, a new permission
       policy, a new CI issuer, an endpoint, the authentication settings, the format choice of a new repository.

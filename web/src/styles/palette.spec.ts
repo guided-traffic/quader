@@ -123,6 +123,9 @@ const surfaces: Record<string, string | readonly [string, string]> = {
   'menu item hover': ['--quader-menu-hover', '--quader-menu-bg'],
   // The panel of the project switcher (Q-UI-129): the menu's fill.
   'switcher panel': '--quader-menu-bg',
+  // A project's mark (Q-UI-424): the stone, and the coloured stone it turns into under the pointer.
+  'project mark': '--quader-mark-stone',
+  'project mark lit': '--quader-mark-accent',
   // The badges (Q-UI-128): each status's pill.
   'neutral badge': '--quader-badge-neutral-bg',
   'positive badge': '--quader-badge-ok-bg',
@@ -272,6 +275,12 @@ const markPairs: readonly (readonly [string, string])[] = [
   ['--quader-mark-accent', 'top bar'],
   ['--quader-mark-stone', 'page'],
   ['--quader-mark-accent', 'page'],
+  // A project's mark (Q-UI-424): the stone on the page and on the menu of the project switcher, its letter on the stone and
+  // on the coloured stone.
+  ['--quader-mark-stone', 'switcher panel'],
+  ['--quader-mark-accent', 'switcher panel'],
+  ['--quader-mark-letter', 'project mark'],
+  ['--quader-mark-letter', 'project mark lit'],
   // The marks of the vulnerability trend (R-VULN-022), on the page and on the raised surface the chart sits on.
   ...['critical', 'high', 'medium', 'low', 'none', 'unknown'].flatMap((s): [string, string][] => [
     [`--quader-chart-${s}`, 'page'],
