@@ -254,29 +254,6 @@ is, what was seen and how far it is confirmed: **confirmed** means checked in th
 development agent, **read** means found by reading the code and not reproduced. Add new findings
 here; remove a finding in the commit that fixes it.
 
-Found on 2026-11-18 in the acceptance nightly 44233617621 (`main` at dd97187a, the only run on the runners):
-
-### Tests and tools
-
-- **F-137 · The evicted worker of drain variant B finished its `gc-full` job itself instead of releasing it** (`e2e (drain-load-b)`, job
-  134618485678; product or test, not decided: the analysis was stopped). The only failed assertion of the leg: "R-STOR-046: the gc-full job
-  finished on "fe3594f5-370d-be57-17be-b7b0d4f13888", want a worker other than the evicted quader-worker-5b8d5dcc54-z44r5". **Verified:**
-  the job's `replica` was an instance UID because `jobs.ran_by` no longer joined a row of the replicas (the API then answers the raw UID,
-  `toJob` in `internal/api/v1/jobs_api.go`); the job ended `succeeded`, attempt 1, with `candidates:6 deleted:6`, at 07:16:25.10, 28.8 s after
-  the worker logged "shutting down" (07:15:56.34); the worker's batch delete at the object store is at 07:15:55.08, before the eviction; at
-  07:16:25.34 it logged "a database connection came back closed and is discarded" for `SaveJobProgress` (the line of Q-ARCH-498) and it
-  stopped after 35.0 s. In the green legs of 11-13 to 11-17 the job ended on the other worker with `candidates:0`, about 30 s after the
-  eviction (runs 44067104691 and 43841333499 read): there the release came at once and the second worker ran its own settle time. The rest
-  of the leg held: every npm and dotnet command exited 0, k6 p99 643 ms, no SIGKILL, the six probe jobs resumed. **Not verified:** the
-  cause. Two leads: (1) a regression of this night, the nearest being 5cd1e824 (the control pool's discard and the stop within the budget),
-  since the leg was green five nights before it and the new log line sits at the job's end; no code path is named yet. The closed connection 29 s into the stop is also what F-136 asks about (a control statement cut at the end of the drain step); whether the two are one event is not read. (2) a race the test
-  always had: the job was claimed about 1.3 s before the SIGTERM and had deleted its candidates already, so only its settle wait was left,
-  and whether the release reaches a handler in that wait is not read. That the UID is the evicted worker's is inferred (its replica row is
-  the only one that left), not read from a log: the worker logs neither the job's start nor its end nor a release. Next step: read
-  `Quiesce`, `Stop` and the release write in `internal/jobs/worker.go` against the settle wait of `internal/blob/gc.go`, compare the
-  evicted worker's log of a green leg, and run `-f sets=drain-load-b` on dd97187a and on ebeb567d (the commit before the two changes of the connection pools, 55a6688c and 5cd1e824) to tell (1) from (2). The
-  artifacts are `e2e-nuget-artifacts-drain-load-b` and `e2e-nuget-cluster-state-drain-load-b` of the run.
-
 Found on 2026-11-18 by reading the stall evidence of the baseline nightly 44186978088 (`e2e (ha-faults)`) and the runner cluster:
 
 ### Tests and tools
@@ -1414,22 +1391,29 @@ agent** is not decided until the owner has said so.
   Veröffentlichung der aktuellen Version arbeitest und im Anschluss weiter an der CI von "HA and Performance (nightly)"
   arbeitest … Triff die für unser Projekt optimalen Entscheidungen selbstständig."). Test and Release 44384406557 of cf297363
   (W-20) was red in two legs and cut no release; the three findings below.
-- **F-146 · A worker drained after a database failover stops silently for 35 s and leaves its row in the state `ready`**
-  (2026-11-18, `e2e (push)` of Test and Release 44384406557, `TestE14Drain`, by the assertion W-13 added that day; the test had
-  passed in the two runs before). The drained node held the PostgreSQL primary: between 20:01:48 and 20:01:54 UTC every pod
-  lost its connections ("terminating connection due to administrator command"). `quader-worker-vuln-…-7pspc` took the
-  scheduler lease again at 20:01:56 and stopped in 9 ms at 20:02:19, its row gone. `quader-worker-…-4n77h` logged nothing
-  about the database after 20:01:54, got the SIGTERM at 20:02:19, wrote nothing but the object store's probe for 35 s and
-  "stopped took 35.004s"; no line about the registry, no overrun; its row stayed `ready` with a stale heartbeat, listed as
-  lost. No SIGKILL, the load saw only 200s. This is the gap W-13 named ("a database that cannot be reached during the
-  shutdown"), met on the first night, and worse than named: the database was back for the other worker. Cause not read:
-  why neither the mark `draining` nor the deletion was written or reported, and what waited for 35 s. A builder has the
-  evidence (the leg's artifacts) and the task: reproduce it on the integration stack, fix the cause, retry mark and
-  deletion within their phases, and a line in the log for every wait.
+- **F-146 · The drain test took a killed process's row for the drained pod's; closed, with what it led to** (2026-11-18,
+  `e2e (push)` of Test and Release 44384406557, `TestE14Drain`, by the assertion W-13 added that day). The development
+  agent's first reading was wrong: it took a worker that "stopped after 35 s and left its row in the state `ready`" for a
+  replica that could not sign off after a database switchover. Read by the builder from the leg's artifacts: `TestE06Lease`
+  had killed that pod's process with SIGKILL four minutes earlier (`e06-sigkill.json`), the kubelet restarted it in place
+  under the same name, and the killed process's row is what stayed, `ready` and lost, as a killed replica's does for 24
+  hours. The drained process signed off; the test matched rows by the pod's name. The database was up during the stop (the
+  switchover was the test's own and over 16 s before the drain). The 35 s were the plan of a worker with running jobs
+  (released at 29 s, the engines quiesced at 35 s), not a hang. Not verified: the old row's UID (the artifacts hold no dump
+  of the table; inferred from the one row the query returned and the prune rule).
+  **Fixed and built with it** (Q-HA-307 to Q-HA-310, Q-ARCH-501, Q-ARCH-502, Q-STOR-217): the test follows instance UIDs and
+  names the case of a database that never answered; the mark `draining` and the final deletion are retried within their
+  steps (the deletion for at most 15 s and never past the close deadline; a healthy stop still makes one attempt); a
+  heartbeat no longer writes `ready` over `draining`; a heartbeat stale past its bound is logged, and logged again when it
+  recovers; a stop that waits longer than 5 s says for which jobs; a job that only waits is handed over at the drain. **Left
+  open on purpose** (Q-HA-310): a replica that reaches the database at no point of its stop leaves a lost row. **F-137 is
+  closed with it**: its second lead held (the `gc-full` job was inside its settle wait and ended 0.24 s before the release at
+  29 s; a race the test always had), its first did not (neither 5cd1e824 nor 55a6688c changes when a job is released); the
+  settle wait now ends at the drain. Changed and not run: `TestE14Drain`; the nightly's `drain-load-b` is the proof of F-137.
 - **F-147 · `apt-get update` hung a gating job for 19 minutes and the release was skipped** (2026-11-18, job `chart` of the
   same run): "installing build-essential" at 19:50:58 UTC, `Ign:1 http://archive.ubuntu.com/ubuntu noble InRelease` at
-  19:51:28, nothing until the job's timeout at 20:10:06; **Semantic Release** needs the job and was skipped, so W-20 has no
-  release yet. The family of F-117; its remedy (`apt-get update || warning`) guards a failing update, not a hanging one,
+  19:51:28, nothing until the job's timeout at 20:10:06; **Semantic Release** needs the job and was skipped, so W-20 had no
+  release until the run of 2543ad7b cut it at 21:12 UTC (with F-149 in between). The family of F-117; its remedy (`apt-get update || warning`) guards a failing update, not a hanging one,
   and about twenty steps of the two workflows install packages that way. A builder has the task: one helper that skips the
   network when the package is there and bounds every call, used by every step, and steps of the gate that fail fast.
 - **F-148 · The journey of the vulnerability report asked for the chips by a name they lost in the morning** (2026-11-18,
@@ -1609,7 +1593,7 @@ v0.56.1 to v0.56.4).
 - Where the time went: the development agent's own dispatches and pushes stalled the baseline nightly twice and one builder's leg once, before
   F-133 named the cause. A push to `main` or a dispatch beside a running kind leg makes that leg worthless as evidence.
 - Open for the next run, in this order:
-  1. F-137: tell the regression from the race, as its entry says; it is the only red leg of the acceptance run.
+  1. ~~F-137~~ — closed in the night of 2026-11-18 (a race of the test, and the settle wait now ends at the drain; see F-146).
   2. `drain-load-c`, `drain-load-e`, `Latency` and the vulnerability scanning performance have no result on `main` after this night's
      changes (`drain-load-e` was green on its branch only): read them in the next scheduled nightly. Not read yet in the artifacts of
      44233617621: the `cg:` rows of the stall evidence after 2a161226, `TestHAPooler_Switchover` on `main`, `vuln-long` and `alerts`
