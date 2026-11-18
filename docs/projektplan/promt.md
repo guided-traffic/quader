@@ -1377,6 +1377,15 @@ agent** is not decided until the owner has said so.
   FAILED … timed out waiting for the condition on clusters/quader-db" in both legs at the same second; no test ran. It looks
   like the stall family of F-133 (several kind legs at once on one machine); not read whether it is, the legs' pressure
   records were not opened. The failed jobs are run again once the run has ended.
+- **F-145 · An integration test of the person search asked a replica for an API it does not serve** (2026-11-18,
+  `integration (shard b)` of Test and Release 44358371450, red in both attempts): `TestR_AUTHZ_026_PrincipalLookupBounds`
+  created the project's service account with `POST …/service-accounts`, and the replicas of the package
+  `test/integration/projects` answer 503 "The identity API is not available on this replica." The builder of W-12 had
+  changed the test without a stack to run it on. Reproduced on the local integration stack, fixed by creating the account by
+  its rows (the test's subject is the lookup), and the packages `projects` and `search` run green locally. In the same run's
+  second attempt `e2e (npm)`, `e2e (push)` (F-144) and `e2e (access-long)` with the journeys of F-143 were green. What it
+  shows: a builder that changes an integration test runs that package on the stack before it hands over; the stack exists
+  per worktree and costs a minute.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
