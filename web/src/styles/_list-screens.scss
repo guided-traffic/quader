@@ -1,148 +1,186 @@
-// The shared look of list screens: the data table, the filter toggle and the filter panel, and the
-// layout that puts the panel to the right of the table. Global on purpose: the table frame belongs to
-// <quader-data-table>, but its rows are projected from the screens, so scoped component styles
-// would not reach them. Colours and lengths come from the tokens only (R-UI-044).
+// The shared look of list screens: the head of a list (search, Filters, chips), the drawer's filters, the data table and the
+// cells every list shares. Global on purpose: the table frame belongs to <quader-data-table>, but its rows are projected from the
+// screens, so scoped component styles would not reach them. Colours and lengths come from the tokens only (R-UI-044).
 
-// The toolbar with the Filters button, the panel and the list, in this order in the page, so that the panel opens where it
-// was asked for and the keyboard reaches it right after the button (Q-UI-327).
-.list-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'bar' 'main';
-  column-gap: var(--quader-space-4);
-  align-items: start;
+// ---- The head of a list -----------------------------------------------------------------------------------------------------
 
-  > .list-toolbar {
-    grid-area: bar;
-  }
-
-  > .list-side {
-    grid-area: side;
-  }
-
-  > .list-main {
-    grid-area: main;
-  }
-
-  &.panel-open {
-    grid-template-columns: minmax(0, 1fr) 19rem;
-    grid-template-rows: auto 1fr;
-    grid-template-areas: 'bar side' 'main side';
-  }
-
-  // The panel sits beside the list only where the list keeps at least 71 rem there: a little more than the 70.5 rem it has at
-  // 1440 px without the panel, the width every list's columns are made and checked for. Narrower, the panel sits between the
-  // Filters button and the list, which keeps its whole width (Q-UI-327; at 1860 px a list beside the panel scrolled sideways,
-  // the owner's screen).
-  @container content (max-width: 91rem) {
-    &.panel-open {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: none;
-      grid-template-areas: 'bar' 'side' 'main';
-
-      > .list-side {
-        margin-block-end: var(--quader-space-4);
-      }
-    }
-  }
+// One row above every list (Q-UI-420 to Q-UI-422): the search by name, as wide as a name (R-UI-085), the Filters button and the
+// chips of the filters that are set, then the list's own controls at the row's end. The list below keeps its whole width: the
+// filters open in a drawer over the page. Below 36 rem of content the search takes its own line, the button and the chips the next.
+.quader-list-head {
+  display: block;
+  margin-block-end: var(--quader-space-3);
 }
 
-// Above the list the panel's categories sit side by side, so that the panel takes a few lines and not the window's height, and its
-// button is as wide as its label where the content area is no phone's.
-@container content (max-width: 91rem) {
-  .list-layout > .list-side .panel-body {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
-    align-items: start;
-  }
-}
-
-@container content (min-width: 40rem) and (max-width: 91rem) {
-  .list-layout > .list-side .panel-foot button {
-    inline-size: auto;
-  }
-}
-
-.list-main {
-  min-inline-size: 0;
-}
-
-// The column of client addresses (Q-UI-300, Q-UI-330): one width for every field of the list, that of the list's longest address
-// (`--quader-address-chars`, set by the list) in the field's own face and size, with the field's padding, border and copy button;
-// at most its share (`--quader-address-share`, 46 characters unless the list sets it), and at most what the list's other columns
-// leave (`--quader-list-others`, which the data table sums from the columns' widths, a column's `prefer`red width where it has one,
-// Q-UI-308), never under 10 rem (the field's input keeps 8 rem, the copy button 2). A project's repository list and the search
-// results set the share to their longest address: there the address takes what is left after the repository's 20 rem, up to its
-// whole length, and the repository takes what is left over after that. `cqi` is the width of the table's scroll region, which a
-// scrollbar beside the rows narrows: measured against the list instead, the table was a scrollbar wider than its region and
-// scrolled sideways. The field fills the cell and shows the address from its start; a longer address scrolls inside its field.
-td.address-cell {
-  // Resolved where it is used, so `ch` is the monospace face's at the field's size, and `cqi` the rows' width.
-  --quader-address-column: min(
-    calc(
-      min(var(--quader-address-chars, 46), var(--quader-address-share, 46)) * 1ch + 2 * var(--quader-space-3) + 2px +
-        var(--quader-control-height)
-    ),
-    max(10rem, 100cqi - var(--quader-list-others, 34rem))
-  );
-
-  inline-size: var(--quader-address-column);
-  font-family: var(--quader-font-mono);
-  font-size: 0.875rem;
-
-  // The field's width is also the column's least, so every field of the list has one width.
-  quader-address-field {
-    min-inline-size: var(--quader-address-column);
-    max-inline-size: none;
-  }
-}
-
-// Below 64 rem of the list's width a column marked `narrow` (the data table's `narrow-drop`) is hidden and gives its room to the
-// others (Q-UI-308): the admin area's repository list at 1280 px shows the last activity no more.
-@container table (max-width: 64rem) {
-  .quader-data-table .narrow-drop {
-    display: none;
-  }
-
-  .quader-data-table td.address-cell {
-    --quader-address-column: min(
-      calc(
-        min(var(--quader-address-chars, 46), var(--quader-address-share, 46)) * 1ch + 2 * var(--quader-space-3) + 2px +
-          var(--quader-control-height)
-      ),
-      max(10rem, 100cqi - var(--quader-list-others, 34rem) + var(--quader-list-narrow, 0px))
-    );
-  }
-}
-
-// A format is its icon and its name on one line (UI-A-24), a class its icon and its name (Q-UI-330): each a column of its own
-// in the repository lists and the search results, never broken.
-td.format-cell .format-name,
-td.class-cell .class-name {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--quader-space-2);
-  white-space: nowrap;
-}
-
-td.format-cell quader-format-icon {
-  font-size: 1.25rem;
-}
-
-td.class-cell .material-icons {
-  font-size: 1.25rem;
-  color: var(--quader-text-muted);
-}
-
-.list-toolbar {
+.list-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--quader-space-3);
-  margin-block-end: var(--quader-space-3);
+  gap: var(--quader-space-2) var(--quader-space-3);
+}
 
-  .list-toolbar-spacer {
-    flex: 1 1 auto;
+.list-search {
+  position: relative;
+  flex: 0 1 var(--quader-field-width-name);
+  min-inline-size: 12rem;
+
+  // The magnifier stands at the start, so the browser's clear button at the end of a search field has its room.
+  input {
+    box-sizing: border-box;
+    inline-size: 100%;
+    padding-inline-start: calc(var(--quader-space-2) + 1.125rem + var(--quader-space-2));
+  }
+
+  .material-icons {
+    position: absolute;
+    inset-inline-start: var(--quader-space-2);
+    inset-block-start: 50%;
+    transform: translateY(-50%);
+    color: var(--quader-text-muted);
+    font-size: 1.125rem;
+    pointer-events: none;
+  }
+}
+
+// The button and the chips beside it: one line that never wraps; what does not fit folds into "+N more" (Q-UI-422).
+.list-filters {
+  display: flex;
+  flex: 1 1 14rem;
+  align-items: center;
+  gap: var(--quader-space-3);
+  min-inline-size: 0;
+
+  > .chip-row {
+    position: relative;
+    flex: 1 1 0;
+    flex-wrap: nowrap;
+    min-inline-size: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+}
+
+.list-head-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2);
+  margin-inline-start: auto;
+
+  &:empty {
+    display: none;
+  }
+}
+
+// A list whose own control is a filter (the start page's **Your projects**) keeps it beside the search, not at the row's end.
+.quader-list-head.end-beside .list-head-end {
+  margin-inline-start: 0;
+}
+
+@container content (max-width: 36rem) {
+  .list-search {
+    flex-basis: 100%;
+  }
+}
+
+// A chip of a set filter: the filter's name muted, its value, and the button that removes it, never broken. A chip that does not
+// fit is taken out of the row's flow (`chip-hidden`) and keeps its width, so the row can be measured again when it grows.
+.list-filters .chip-item {
+  flex: none;
+
+  &.chip-hidden {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .chip {
+    box-sizing: border-box;
+    block-size: 1.75rem;
+    white-space: nowrap;
+  }
+
+  .chip-label {
+    color: var(--quader-text-muted);
+  }
+}
+
+.chip-more {
+  white-space: nowrap;
+}
+
+// ---- The drawer's filters ----------------------------------------------------------------------------------------------------
+
+// The filters stand open, one under the other (Q-UI-423): each a labelled field or a group with its legend, the apply button at the
+// drawer's foot. The body scrolls, the drawer's head and the foot stay in view. A field takes the drawer's width (R-UI-085).
+.filter-form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+.filter-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--quader-space-5);
+  min-block-size: 0;
+  padding: var(--quader-space-4) var(--quader-space-6);
+  overflow: auto;
+
+  .text-input,
+  .select-input {
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: none;
+  }
+
+  quader-text-field,
+  quader-select-field {
+    display: block;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--quader-space-1);
+    margin: 0;
+  }
+
+  .hint {
+    margin: 0;
+    color: var(--quader-text-muted);
+    font-size: var(--quader-text-muted-size);
+  }
+}
+
+.filter-foot {
+  display: flex;
+  flex: none;
+  justify-content: flex-end;
+  padding: var(--quader-space-3) var(--quader-space-6);
+  border-block-start: 1px solid var(--quader-border);
+}
+
+.quader-filter-category {
+  display: block;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quader-space-2);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  > legend {
+    margin-block-end: var(--quader-space-2);
+    padding: 0;
   }
 }
 
@@ -167,6 +205,118 @@ td.class-cell .material-icons {
   font-weight: 600;
 }
 
+// ---- Icon and name -----------------------------------------------------------------------------------------------------------
+
+// An icon before a name (Q-UI-425): the visibility icon before a repository's key, a project's mark before its name. The icon has a
+// column of its own and the name the rest, so the icon and the start of the name share the first line in every row; a name longer
+// than its column breaks inside itself beside the icon, after a hyphen where it has one, else where it must. A description or a key
+// under the name stands in the name's column. Every list that puts an icon before a name uses it.
+.icon-name {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--quader-space-2);
+  max-inline-size: 100%;
+  vertical-align: top;
+  text-align: start;
+
+  // `break-word`, not `anywhere`: a column narrower than a word keeps the word's width, so a name breaks between its words and
+  // after its hyphens, and inside a part only where that part alone is wider than the cell ("Web fronten / d" in the audit log).
+  > .icon-name-text,
+  > a {
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
+
+  > .icon-name-text > a {
+    white-space: normal;
+  }
+
+  // The icon stands on the first line of the name, centred on it.
+  > quader-visibility-icon .material-icons {
+    display: block;
+    margin: 0;
+    line-height: inherit;
+  }
+
+  // The same cell without an icon (the admin area's repository list, whose level is a column): the name takes the whole cell.
+  > .icon-name-text:only-child {
+    grid-column: 1 / -1;
+  }
+}
+
+// A project's mark (Q-UI-424): its letter on the accent fill. Small beside a name of one line, medium beside a name with a second
+// line and in the project switcher.
+.quader-project-mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin-block: -0.125rem;
+  border-radius: var(--quader-radius-s);
+  background: var(--quader-accent-fill);
+  color: var(--quader-on-accent);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+
+  &::before {
+    content: attr(data-letter);
+  }
+
+  &.medium {
+    inline-size: 2rem;
+    block-size: 2rem;
+    margin-block: 0;
+    border-radius: var(--quader-radius-m);
+    font-size: 0.875rem;
+  }
+}
+
+// A format is its icon and its name on one line (UI-A-24), a class its icon and its name (Q-UI-330): each a column of its own
+// in the repository lists and the search results, never broken.
+td.format-cell .format-name,
+td.class-cell .class-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quader-space-2);
+  white-space: nowrap;
+}
+
+td.format-cell quader-format-icon {
+  font-size: 1.25rem;
+}
+
+td.class-cell .material-icons {
+  font-size: 1.25rem;
+  color: var(--quader-text-muted);
+}
+
+// Below 64 rem of the list's width a column marked `narrow` (the data table's `narrow-drop`) is hidden and gives its room to the
+// others (Q-UI-308): the admin area's repository list at 1280 px shows the last activity no more.
+@container table (max-width: 64rem) {
+  .quader-data-table .narrow-drop {
+    display: none;
+  }
+}
+
+// The toolbar of a list that has no list head (Browse).
+.list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-3);
+  margin-block-end: var(--quader-space-3);
+
+  .list-toolbar-spacer {
+    flex: 1 1 auto;
+  }
+}
+
 // ---- Data table --------------------------------------------------------------------------
 
 .quader-data-table {
@@ -175,17 +325,15 @@ td.class-cell .material-icons {
   // The reference's table (Q-UI-128): no frame, on the page's fill, hairlines above and below the head and under every row.
   .table-frame {
     background: var(--quader-surface);
-    // The list's width, which its narrow columns and its stacked rows follow (Q-UI-306, Q-UI-308), beside the filter panel or
-    // without it, inside a list screen or a detail page.
+    // The list's width, which its narrow columns and its stacked rows follow (Q-UI-306, Q-UI-308), inside a list screen or a
+    // detail page.
     container: table / inline-size;
   }
 
-  // The inner scroll keeps the header in view: the region scrolls, not the page. It is the container of the columns' shares
-  // (`cqi`), and keeps the room of its scrollbar whether the rows scroll or not, so that `cqi` is the rows' width without it
-  // (Chrome counts a scrollbar that only comes with the rows into the container's width).
+  // The inner scroll keeps the header in view: the region scrolls, not the page. It keeps no room for a scrollbar its rows do not
+  // need: a reserved gutter ended every table 15 px before the edge that the head of the list and the lines above it reach
+  // (Q-UI-427). A table whose rows scroll has its scrollbar at that edge.
   .table-scroll {
-    container-type: inline-size;
-    scrollbar-gutter: stable;
     max-block-size: max(22rem, calc(100dvh - 17rem));
     overflow: auto;
 
@@ -262,7 +410,8 @@ td.class-cell .material-icons {
     }
 
     // Keys, names and identifiers are never broken at a hyphen; a status keeps icon and label on one line. A list may let
-    // the name of its first column wrap after a hyphen (`th.wrap-name`, the repository list, Q-UI-303).
+    // the name of its first column wrap after a hyphen (`th.wrap-name`, Q-UI-303); a name beside its icon breaks inside itself
+    // (`.icon-name`, Q-UI-425).
     th[scope='row']:not(.wrap-name) a,
     td[translate='no']:not(.wrap),
     td time,
@@ -270,6 +419,11 @@ td.class-cell .material-icons {
     td > .bad,
     td > .warn {
       white-space: nowrap;
+    }
+
+    // As specific as the rule above, and after it.
+    :is(th[scope='row'], td) .icon-name a {
+      white-space: normal;
     }
 
     td > .ok,
@@ -377,135 +531,6 @@ td.class-cell .material-icons {
   }
 }
 
-// ---- Filter panel --------------------------------------------------------------------------
-
-.quader-filter-panel {
-  display: block;
-
-  .panel {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--quader-border);
-    border-radius: var(--quader-radius-m);
-    background: var(--quader-surface-raised);
-    box-shadow: var(--quader-elevation-1);
-  }
-
-  .panel-head {
-    display: flex;
-    align-items: center;
-    gap: var(--quader-space-2);
-    padding: var(--quader-space-3) var(--quader-space-3) var(--quader-space-3) var(--quader-space-4);
-    border-block-end: 1px solid var(--quader-border);
-
-    h2 {
-      flex: 1 1 auto;
-      margin: 0;
-      font: var(--quader-type-title-medium);
-      outline: none;
-    }
-  }
-
-  .panel-body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--quader-space-2);
-    padding: var(--quader-space-3);
-  }
-
-  .panel-foot {
-    padding: var(--quader-space-3);
-    border-block-start: 1px solid var(--quader-border);
-
-    button {
-      inline-size: 100%;
-    }
-  }
-}
-
-.quader-filter-panel {
-  .text-input,
-  .select-input {
-    inline-size: 100%;
-  }
-
-  // A select of the panel takes the panel's width (Q-UI-334).
-  quader-select-field {
-    display: block;
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: var(--quader-space-1);
-    margin-block-end: var(--quader-space-2);
-  }
-}
-
-// Without an open panel the grid has one column and the empty side cell must not add a gap.
-.list-layout:not(.panel-open) > .list-side {
-  display: none;
-}
-
-.quader-filter-category {
-  display: block;
-
-  .category {
-    border: 1px solid var(--quader-border);
-    border-radius: var(--quader-radius-s);
-    background: var(--quader-table-head-bg);
-  }
-
-  .category-heading {
-    margin: 0;
-    font: inherit;
-  }
-
-  .category-toggle {
-    display: flex;
-    align-items: center;
-    gap: var(--quader-space-2);
-    inline-size: 100%;
-    min-block-size: 2.5rem;
-    padding: var(--quader-space-2) var(--quader-space-3);
-    border: 0;
-    border-radius: var(--quader-radius-s);
-    background: none;
-    color: inherit;
-    font: var(--quader-type-label-large);
-    text-align: start;
-    cursor: pointer;
-
-    &:focus-visible {
-      outline: var(--quader-focus-ring);
-      outline-offset: -2px;
-    }
-
-    .category-label {
-      flex: 1 1 auto;
-    }
-
-    .chevron {
-      font-size: 1.25rem;
-      color: var(--quader-text-muted);
-    }
-  }
-
-  .category-dot {
-    inline-size: 0.5rem;
-    block-size: 0.5rem;
-    border-radius: 50%;
-    background: var(--quader-accent);
-  }
-
-  .category-body {
-    padding: var(--quader-space-2) var(--quader-space-3) var(--quader-space-3);
-
-    &[hidden] {
-      display: none;
-    }
-  }
-}
 .chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -544,12 +569,11 @@ td.class-cell .material-icons {
   }
 }
 
-
 // ---- Stacked rows ------------------------------------------------------------------------------
 
 // Every list (`<quader-data-table>`, unless `[stack]="false"`) shows each row as a block below 48 rem of the list's width
-// (Q-UI-306): the name with its description and the row's menu on the first line, then each other cell on a line of its own,
-// the address field across the full width. The head shows only its sort buttons, one row above the blocks (Q-UI-391); the data
+// (Q-UI-306): the name with its description and the row's actions on the first line, then each other cell on a line of its own.
+// The head shows only its sort buttons, one row above the blocks (Q-UI-391); the data
 // table gives every cell its column's name in `data-label`, shown before the value, and marks an empty one (`data-empty`),
 // which leaves its line out.
 @mixin stacked-rows {
@@ -641,14 +665,6 @@ td.class-cell .material-icons {
     tbody tr > td.actions {
       grid-column: 2;
       grid-row: 1;
-    }
-
-    td.address-cell {
-      inline-size: auto;
-
-      quader-address-field {
-        min-inline-size: 0;
-      }
     }
 
     td[data-label]::before {

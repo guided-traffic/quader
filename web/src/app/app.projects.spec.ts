@@ -176,34 +176,28 @@ describe('The project is the context of the content (Q-UI-129)', () => {
     expect([...root.querySelectorAll('nav.breadcrumbs a')].map((a) => a.getAttribute('href'))).toEqual(['/projects', '/projects/web']);
   });
 
-  it('R-UI-020 Q-UI-330 inside a project the repository list has the columns repository, format, class and client address, without the project', async () => {
+  it('R-UI-020 Q-UI-426 inside a project the repository list has the columns repository, format and class, no client address and no project', async () => {
     const { root } = await render('/projects/web/repositories', undefined, TWO);
     const heads = [...root.querySelectorAll('main thead th')].map((th) => th.textContent?.replace(/help_outline/g, '').trim());
-    expect(heads.slice(0, 4)).toEqual(['Repository', 'Format', 'Class', 'Client address']);
+    expect(heads).toEqual(['Repository', 'Format', 'Class', 'Actions']);
     const row = root.querySelector('main tbody tr')!;
     expect(row.querySelector('td.format-cell .format-name quader-format-icon')).toBeTruthy();
     expect(row.querySelector('td.class-cell .class-name')).toBeTruthy();
     expect(row.querySelector('th[scope="row"] .secondary:not(:last-child)')).toBeNull();
     expect(row.querySelector('td.project-cell')).toBeNull();
-    expect(row.querySelector('td.address-cell quader-address-field')).toBeTruthy();
+    expect(root.querySelector('main quader-address-field')).toBeNull();
     expect(heads).not.toContain('Last activity');
   });
 
-  it('R-UI-065 R-UI-066 Q-UI-300 Q-UI-330 inside a project every address field of the list has one width: the column is sized to the longest address up to the room left after the repository, no field to its own', async () => {
+  it('R-UI-102 Q-UI-426 Q-UI-425 a row of a project\'s list offers Set up client for its repository, and its key stands beside its visibility icon', async () => {
     const { root } = await render('/projects/web/repositories', undefined, TWO);
-    const inputs = [...root.querySelectorAll<HTMLInputElement>('main quader-address-field input')];
-    expect(inputs.length).toBeGreaterThan(0);
-    const table = root.querySelector<HTMLElement>('main quader-data-table')!;
-    const longest = String(Math.max(...inputs.map((i) => i.value.length)));
-    expect(table.style.getPropertyValue('--quader-address-chars')).toBe(longest);
-    // The address may take its whole length where the room is there: its share is the longest address (Q-UI-330).
-    expect(table.style.getPropertyValue('--quader-address-share')).toBe(longest);
-    for (const input of inputs) {
-      expect(input.closest('td')?.classList.contains('address-cell')).toBe(true);
-      expect(input.style.inlineSize).toBe('');
-    }
-    expect(root.querySelector('main quader-address-field input[aria-label^="Client address of "]')).toBeTruthy();
-    expect(root.querySelector('main quader-address-field quader-copy-button button[aria-label^="Copy client address of "]')).toBeTruthy();
+    const row = root.querySelector('main tbody tr')!;
+    const name = row.querySelector('th[scope="row"] .icon-name')!;
+    expect(name.querySelector(':scope > quader-visibility-icon')).toBeTruthy();
+    expect(name.querySelector(':scope > .icon-name-text > a')?.textContent?.trim()).toBeTruthy();
+    const setup = row.querySelector<HTMLAnchorElement>('td.actions a.btn')!;
+    expect(setup.textContent?.replace(/\s+/g, ' ').trim()).toMatch(/^Set up client \S+$/);
+    expect(setup.getAttribute('href')).toMatch(/^\/setup\?repository=web%2F/);
   });
 });
 

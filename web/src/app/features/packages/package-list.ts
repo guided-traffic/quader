@@ -1,7 +1,5 @@
-import { DatePipe } from '@angular/common';
 import {
   Component,
-  LOCALE_ID,
   computed,
   effect,
   inject,
@@ -17,8 +15,9 @@ import { RepositoriesApi, refOf } from '../../api/repositories-api';
 import { PagedResource, valueOf } from '../../shared/paged-resource';
 import { FormatIconView } from '../../shared/format-icon';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
-import { FilterCategory, FilterPanel, FilterToggle } from '../../shared/ui/filter-panel';
-import { relativeTime } from './format-time';
+import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
+import { ListChip, ListHead } from '../../shared/ui/list-head';
+import { TimeAgo } from '../../shared/ui/time-ago';
 import { packageCommands } from './package-links';
 import { PackageMemory, SavedView } from './package-memory';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -33,18 +32,16 @@ function many(value: Param): string[] {
   return value === undefined ? [] : typeof value === 'string' ? [value] : [...value];
 }
 
-/** One removable chip of an applied filter. */
-interface Chip {
-  readonly key: string;
-  readonly label: string;
+/** One chip of a filter that is set, with the query change that removes it. */
+interface Chip extends ListChip {
   /** The query change that removes it. */
   readonly remove: Readonly<Record<string, string | readonly string[] | null>>;
 }
 
 /**
- * The packages list (R-UI-006), the start page of the packages area. It uses the shared data table
- * and the shared filter panel (Q-UI-68): the filters are the panel's categories, the sort is a
- * column header, "Load more" is the table's. Filters, sort and tab live in the query parameters
+ * The packages list (R-UI-006), the start page of the packages area. It uses the shared data table and the shared head of a list
+ * (Q-UI-420): the search by name or description above the list, the other filters in the drawer, the filters that are set as
+ * chips beside **Filters**; the sort is a column header, "Load more" is the table's. Filters, sort and tab live in the query parameters
  * (R-UI-003) and every change restarts the cursor walk, because a cursor is bound to its filters and
  * sort (R-API-010). Filtering and sorting happen on the server (R-API-029); the screen sorts and
  * filters nothing itself. "Recently opened" and "Saved views" are browser-storage features and
@@ -54,13 +51,13 @@ interface Chip {
   selector: 'quader-package-list',
   imports: [
     PageHeader,
-    DatePipe,
     RouterLink,
     DataTable,
     FilterCategory,
     FilterPanel,
-    FilterToggle,
     FormatIconView,
+    ListHead,
+    TimeAgo,
   ],
   templateUrl: './package-list.html',
   styleUrl: './package-list.scss',
@@ -70,7 +67,6 @@ export class PackageList {
   private readonly repositories = inject(RepositoriesApi);
   private readonly router = inject(Router);
   protected readonly memory = inject(PackageMemory);
-  private readonly locale = inject(LOCALE_ID);
 
   /** Query parameters, bound by the router's component input binding. */
   /** Route parameter `:project` of `/projects/:project/packages` (Q-UI-129). */
@@ -95,7 +91,6 @@ export class PackageList {
   protected readonly list = new PagedResource<PackageSummary>();
 
   protected readonly panelOpen = signal(false);
-  protected readonly search = signal('');
   protected readonly stagedKeyword = signal('');
   protected readonly stagedFormats = signal<readonly string[]>([]);
   protected readonly stagedRepositories = signal<readonly string[]>([]);
@@ -141,7 +136,8 @@ export class PackageList {
     for (const f of this.formatNames()) {
       out.push({
         key: `format:${f}`,
-        label: `${typeLabel}: ${this.formatLabel(f)}`,
+        label: typeLabel,
+        value: this.formatLabel(f),
         remove: { format: this.formatNames().filter((x) => x !== f) },
       });
     }
@@ -149,21 +145,16 @@ export class PackageList {
     for (const r of this.repositoryNames()) {
       out.push({
         key: `repository:${r}`,
-        label: `${repoLabel}: ${r}`,
+        label: repoLabel,
+        value: r,
         remove: { repository: this.repositoryNames().filter((x) => x !== r) },
-      });
-    }
-    if (this.q()) {
-      out.push({
-        key: 'q',
-        label: `${$localize`:@@pkg.filter.text:Name or description`}: ${this.q()}`,
-        remove: { q: null },
       });
     }
     if (this.keyword()) {
       out.push({
         key: 'keyword',
-        label: `${$localize`:@@pkg.filter.keyword:Keyword`}: ${this.keyword()}`,
+        label: $localize`:@@pkg.filter.keyword:Keyword`,
+        value: this.keyword() ?? '',
         remove: { keyword: null },
       });
     }
@@ -171,14 +162,14 @@ export class PackageList {
     if (created) {
       out.push({
         key: 'created',
-        label: `${$localize`:@@pkg.filter.created:Created`}: ${created}`,
+        label: $localize`:@@pkg.filter.created:Created`,
+        value: created,
         remove: { period: null, from: null, to: null },
       });
     }
     return out;
   });
-  protected readonly filtered = computed(() => this.chips().length > 0);
-  protected readonly activeCount = computed(() => this.chips().length);
+  protected readonly filtered = computed(() => this.chips().length > 0 || !!this.q());
 
   protected readonly formatOptions = computed(() =>
     (valueOf(this.formats) ?? []).filter((f) => f.name !== 'generic'),
@@ -190,14 +181,15 @@ export class PackageList {
   protected readonly tableCaption = $localize`:@@pkg.list.caption:Packages`;
   protected readonly emptyText = $localize`:@@pkg.list.empty:No package has been published yet.`;
   protected readonly emptyFilteredText = $localize`:@@pkg.list.empty-filtered:No package matches the filters.`;
-  protected readonly applyLabel = $localize`:@@pkg.filter.apply:Search`;
+  protected readonly searchLabel = $localize`:@@pkg.list.search:Filter packages`;
   /** The columns a reader chooses by (Q-UI-314), with the list's budget (Q-UI-308). */
   protected readonly columns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@pkg.col.package:Package`, sortable: true, width: '16rem' },
     { id: 'type', label: $localize`:@@pkg.col.format:Format`, width: '7rem', stackLabel: false },
+    // The words of the repository page's package table (Q-UI-432): **Latest**, not **Latest version**.
     {
       id: 'latest',
-      label: $localize`:@@pkg.col.latest:Latest version`,
+      label: $localize`:@@pkg.col.latest:Latest`,
       help: $localize`:@@pkg.help.latest:The highest stable version you may see. A pre-release is shown only while no stable version exists.`,
       width: '8rem',
     },
@@ -223,15 +215,7 @@ export class PackageList {
     effect(() => {
       const filters = this.filters();
       untracked(() => {
-        this.search.set(this.q() ?? '');
-        this.stagedKeyword.set(this.keyword() ?? '');
-        this.stagedFormats.set(this.formatNames());
-        this.stagedRepositories.set(this.repositoryNames());
-        this.stagedPeriod.set(this.period() ?? '');
-        this.stagedFrom.set(this.from() ?? '');
-        this.stagedTo.set(this.to() ?? '');
-        // An applied filter is never hidden: the panel opens with it.
-        if (this.activeCount() > 0) this.panelOpen.set(true);
+        this.restage();
         void this.list.start(this.api.list(filters));
       });
     });
@@ -242,10 +226,6 @@ export class PackageList {
       this.defaultChecked = true;
       if (!this.filtered() && !this.sort() && !this.tab()) void this.router.navigate([], { queryParams: view.query, replaceUrl: true });
     });
-  }
-
-  protected since(iso: string): string {
-    return relativeTime(iso, this.locale);
   }
 
   protected formatLabel(name: string): string {
@@ -283,12 +263,21 @@ export class PackageList {
     this.stagedRepositories.update((v) => (on ? [...new Set([...v, value])] : v.filter((x) => x !== value)));
   }
 
+  /** The drawer's values back to the applied ones: after a change of the query, and when the drawer closes without **Apply**. */
+  protected restage(): void {
+    this.stagedKeyword.set(this.keyword() ?? '');
+    this.stagedFormats.set(this.formatNames());
+    this.stagedRepositories.set(this.repositoryNames());
+    this.stagedPeriod.set(this.period() ?? '');
+    this.stagedFrom.set(this.from() ?? '');
+    this.stagedTo.set(this.to() ?? '');
+  }
+
   protected submitFilters(): void {
     const custom = this.stagedPeriod() === 'custom';
     this.navigate({
       format: [...this.stagedFormats()],
       repository: [...this.stagedRepositories()],
-      q: this.search().trim() || null,
       keyword: this.stagedKeyword().trim() || null,
       period: this.stagedPeriod() || null,
       from: custom ? this.stagedFrom() || null : null,
@@ -296,17 +285,19 @@ export class PackageList {
     });
   }
 
+  /** **Clear all** of the drawer: its filters go; the search text is the field's and stays. */
   protected clearFilters(): void {
+    this.navigate({ format: null, repository: null, keyword: null, period: null, from: null, to: null });
+  }
+
+  /** **Clear all filters** under a list that matches nothing: the search text goes too. */
+  protected clearEverything(): void {
     this.navigate({ format: null, repository: null, q: null, keyword: null, period: null, from: null, to: null });
   }
 
-  protected removeLabel(label: string): string {
-    return $localize`:@@pkg.chips.remove:Remove the filter ${label}:filter:`;
-  }
-
-  protected removeChip(chip: Chip): void {
+  protected removeChip(chip: ListChip): void {
     const change: Record<string, string | readonly string[] | null> = {};
-    for (const [k, v] of Object.entries(chip.remove)) change[k] = Array.isArray(v) && v.length === 0 ? null : v;
+    for (const [k, v] of Object.entries((chip as Chip).remove)) change[k] = Array.isArray(v) && v.length === 0 ? null : v;
     this.navigate(change);
   }
 
@@ -340,7 +331,7 @@ export class PackageList {
     this.renaming.set(null);
   }
 
-  private navigate(queryParams: Record<string, string | readonly string[] | null>): void {
+  protected navigate(queryParams: Record<string, string | readonly string[] | null>): void {
     void this.router.navigate([], { queryParams, queryParamsHandling: 'merge' });
   }
 }

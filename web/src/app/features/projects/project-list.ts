@@ -7,25 +7,26 @@ import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
 import { projectRoleLabel } from './project-roles';
 import { ProjectContext } from '../../core/project-context';
 import { SessionStore } from '../../core/session-store';
-import { TextField } from '../../shared/access/fields';
 import { Needs } from '../../shared/access/needs';
 import { ErrorNotice } from '../../shared/error-notice';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
-import { FilterCategory, FilterPanel, FilterToggle } from '../../shared/ui/filter-panel';
+import { ListHead } from '../../shared/ui/list-head';
+import { ProjectMark } from '../../shared/ui/project-mark';
 import { formatSize } from '../packages/format-size';
 import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
 import { ProjectDialog } from './project-dialog';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /**
- * Projects (R-UI-041): key, display name, Owners, members, number of repositories and the caller's own role.
+ * Projects (R-UI-041): the project (its mark, display name and key), visibility, Owners, members, number of repositories, storage
+ * and the caller's own role; the search by key or name above the list (Q-UI-421), without a drawer: the list has no other filter.
  * A holder of `projects:read` sees every project; a member without that capability sees the projects it is a
  * member of (Q-AUTHZ-207). Creating needs `projects:write`; editing through the row also the Owner of the project.
  */
 @Component({
   selector: 'quader-project-list',
-  imports: [PageHeader, RouterLink, DataTable, ErrorNotice, FilterCategory, FilterPanel, FilterToggle, Needs, TextField, VisibilityIcon],
+  imports: [PageHeader, RouterLink, DataTable, ErrorNotice, ListHead, Needs, ProjectMark, VisibilityIcon],
   template: `
     <quader-page-header heading="Projects" i18n-heading="@@projects.heading">
       <button actions class="btn btn-confirm"
@@ -47,63 +48,52 @@ import { PageHeader } from '../../shared/ui/page-header';
       <quader-error-notice [error]="e" />
     }
 
-    <div class="list-layout" [class.panel-open]="panelOpen()">
-      <div class="list-toolbar">
-        <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
-      </div>
-      <quader-filter-panel
-        #panel
-        class="list-side"
-        [(open)]="panelOpen"
-        [activeCount]="activeCount()"
-        [applyLabel]="applyLabel"
-        (apply)="apply()"
-        (clearAll)="clear()"
-      >
-        <quader-filter-category i18n-label="@@projects.q" label="Key or name" [active]="!!q().trim()" [expanded]="!!q().trim()">
-          <quader-text-field width="name" i18n-label="@@projects.q" label="Key or name" name="q" [(value)]="q" />
-        </quader-filter-category>
-      </quader-filter-panel>
+    <quader-list-head [searchLabel]="searchLabel" [search]="q()" (searchChange)="searchFor($event)" [filters]="false" />
 
-      <div class="list-main">
-        <quader-data-table
-          [caption]="caption"
-          [columns]="columns"
-          [sort]="sort()"
-          (sortChange)="sortBy($event)"
-          [loaded]="list.loaded()"
-          [loading]="list.loading()"
-          [error]="list.error()"
-          [empty]="list.items().length === 0"
-          i18n-emptyText="@@projects.empty"
-          emptyText="There is no project yet."
-          [hasMore]="list.hasMore()"
-          (more)="list.more()"
-          (retry)="list.reload()"
-        >
-          @for (p of list.items(); track p.key) {
-            <tr>
-              <th scope="row"><a [routerLink]="['/projects', p.key]" translate="no">{{ p.key }}</a></th>
-              <td>{{ p.displayName }}</td>
-              <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
-              <td class="wrap" translate="no">{{ ownerSummary(p) }}</td>
-              <td>{{ p.members }}</td>
-              <td>{{ p.repositories }}</td>
-              <td [attr.title]="p.logicalBytes + ' B'">{{ size(p.logicalBytes) }}</td>
-              <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
-              <td class="actions">
-                @if (canEdit(p)) {
-                  <button class="btn btn-tertiary" type="button" (click)="edit(p)">
-                    <ng-container i18n="@@projects.edit">Edit</ng-container>
-                    <span class="visually-hidden"> {{ p.key }}</span>
-                  </button>
-                }
-              </td>
-            </tr>
-          }
-        </quader-data-table>
-      </div>
-    </div>
+    <quader-data-table
+      [caption]="caption"
+      [columns]="columns"
+      [sort]="sort()"
+      (sortChange)="sortBy($event)"
+      [loaded]="list.loaded()"
+      [loading]="list.loading()"
+      [error]="list.error()"
+      [empty]="list.items().length === 0"
+      i18n-emptyText="@@projects.empty"
+      emptyText="There is no project yet."
+      [hasMore]="list.hasMore()"
+      (more)="list.more()"
+      (retry)="list.reload()"
+    >
+      @for (p of list.items(); track p.key) {
+        <tr>
+          <!-- The project's mark before its name, its key under it: the first column of every list of projects (Q-UI-424). -->
+          <th scope="row">
+            <span class="icon-name">
+              <quader-project-mark [key]="p.key" [name]="p.displayName" size="medium" />
+              <span class="icon-name-text">
+                <a [routerLink]="['/projects', p.key]">{{ p.displayName || p.key }}</a>
+                <span class="secondary" translate="no">{{ p.key }}</span>
+              </span>
+            </span>
+          </th>
+          <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
+          <td class="wrap" translate="no">{{ ownerSummary(p) }}</td>
+          <td>{{ p.members }}</td>
+          <td>{{ p.repositories }}</td>
+          <td [attr.title]="p.logicalBytes + ' B'">{{ size(p.logicalBytes) }}</td>
+          <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
+          <td class="actions">
+            @if (canEdit(p)) {
+              <button class="btn btn-tertiary" type="button" (click)="edit(p)">
+                <ng-container i18n="@@projects.edit">Edit</ng-container>
+                <span class="visually-hidden"> {{ p.key }}</span>
+              </button>
+            }
+          </td>
+        </tr>
+      }
+    </quader-data-table>
   `,
   styleUrl: '../../shared/access/access.scss',
 })
@@ -118,16 +108,13 @@ export class ProjectList {
   protected readonly levelText = levelName;
   protected readonly list = new PagedResource<Project>();
   protected readonly q = signal('');
-  protected readonly panelOpen = signal(false);
-  protected readonly activeCount = signal(0);
   protected readonly sort = signal<TableSort>({ column: 'key', direction: 'asc' });
   protected readonly actionError = signal<ApiError | null>(null);
   protected readonly canWrite = computed(() => this.session.has('projects:write'));
   protected readonly caption = $localize`:@@projects.caption:Projects`;
-  protected readonly applyLabel = $localize`:@@projects.apply:Apply filter`;
+  protected readonly searchLabel = $localize`:@@projects.search:Filter projects`;
   protected readonly columns: readonly TableColumn[] = [
-    { id: 'key', label: $localize`:@@projects.col.key:Key`, sortable: true },
-    { id: 'name', label: $localize`:@@projects.col.name:Display name` },
+    { id: 'key', label: $localize`:@@projects.col.project:Project`, sortable: true, width: '14rem' },
     { id: 'visibility', label: $localize`:@@projects.col.visibility:Visibility` },
     { id: 'owners', label: $localize`:@@projects.col.owners:Owners` },
     { id: 'members', label: $localize`:@@projects.col.members:Members` },
@@ -165,7 +152,6 @@ export class ProjectList {
 
   protected async apply(): Promise<void> {
     const q = this.q().trim() || undefined;
-    this.activeCount.set(q ? 1 : 0);
     await this.list.start(this.api.list({ q, sort: this.sort().direction === 'desc' ? '-key' : 'key' }));
   }
 
@@ -174,8 +160,8 @@ export class ProjectList {
     void this.apply();
   }
 
-  protected clear(): void {
-    this.q.set('');
+  protected searchFor(text: string): void {
+    this.q.set(text);
     void this.apply();
   }
 

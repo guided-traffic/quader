@@ -1,6 +1,6 @@
 import { PolicyApi } from '../../api/authz-api';
 import { FakePolicyApi, samplePolicy } from '../../api/testing/access-fakes';
-import { renderScreen, settle, text } from '../../testing/screen';
+import { chipTexts, renderScreen, settle, text } from '../../testing/screen';
 import { PolicyList } from './policy-list';
 
 describe('Policy list table and filter panel (R-UI-027, R-UI-020)', () => {
@@ -17,9 +17,9 @@ describe('Policy list table and filter panel (R-UI-027, R-UI-020)', () => {
     expect(root.querySelector('th[aria-sort]')!.getAttribute('aria-sort')).toBe('descending');
   });
 
-  it('R-UI-027 a link with a principal opens the filter panel with the filter shown and counted', async () => {
+  it('R-UI-027 Q-UI-422 a link with a principal shows the filter as a chip beside Filters, counted on the button', async () => {
     const { root } = await renderScreen(PolicyList, { inputs: { principal: 'user:alice' } });
-    expect(root.querySelector('quader-filter-panel form')).toBeTruthy();
+    expect(chipTexts(root)).toEqual(['Principal: user:alice']);
     expect(root.querySelector('button.filter-toggle .filter-count')?.textContent).toBe('1');
   });
 });

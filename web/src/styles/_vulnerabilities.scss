@@ -32,14 +32,10 @@
   white-space: nowrap;
 }
 
-// The report's time of detection may wrap ("2 minutes / ago"), so the column fits its header (Q-UI-380).
-.quader-data-table td.vuln-detected time {
-  white-space: normal;
-}
-
-// A qualified repository name `<project>/<key>` breaks after its slash only (Q-UI-380).
-.qualified-name .nobr,
-.qualified-name a {
+// A qualified repository name `<project>/<key>` is one line, a fixed version and "None yet" are whole, and so is the time of
+// detection: a cell that broke made every row three lines high (Q-UI-428). A list of fixed versions breaks between them.
+.quader-data-table td.qualified-name,
+.quader-data-table td.vuln-fix .nobr {
   white-space: nowrap;
 }
 

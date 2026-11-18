@@ -1,7 +1,7 @@
 import { PolicyApi } from '../../api/authz-api';
 import { FakePolicyApi, problem } from '../../api/testing/access-fakes';
 import { Notifier } from '../../core/notifier';
-import { buttonByText, renderScreen, settle, text, typeAndLeave, typeInto, sleep } from '../../testing/screen';
+import { buttonByText, chipTexts, renderScreen, settle, text, typeAndLeave, typeInto, sleep } from '../../testing/screen';
 import { seriousViolations } from '../../testing/axe';
 import { PREVIEW_DEBOUNCE_MS, PolicyEditor } from './policy-editor';
 import { PolicyList } from './policy-list';
@@ -23,7 +23,7 @@ describe('Policy list (R-UI-027)', () => {
   it('R-UI-027 the principal query parameter filters the list', async () => {
     const { root } = await renderScreen(PolicyList, { inputs: { principal: 'user:nobody' } });
     expect(root.textContent).toContain('No policy matches');
-    expect(root.querySelector<HTMLInputElement>('input[name="principal"]')!.value).toBe('user:nobody');
+    expect(chipTexts(root)).toEqual(['Principal: user:nobody']);
   });
 });
 

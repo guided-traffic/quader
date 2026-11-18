@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { Component, WritableSignal, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { DIALOG_DATA, DialogClose, DialogTitle, QuaderDialog } from '../../shared/ui/dialog';
 import { CiApi, CiIssuance, CiIssuanceDetail, IssuanceFilters, CiRevokeRequest } from '../../api/ci-api';
 import { collectAll } from '../../api/pagination';
@@ -10,7 +10,8 @@ import { SelectField, SelectOption, TextField } from '../../shared/access/fields
 import { Confirm } from '../../shared/confirm-dialog';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
-import { FilterCategory, FilterPanel, FilterToggle } from '../../shared/ui/filter-panel';
+import { FilterPanel } from '../../shared/ui/filter-panel';
+import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { ErrorNotice } from '../../shared/error-notice';
 
 const pretty = (v: unknown): string => JSON.stringify(v, null, 2);
@@ -150,116 +151,95 @@ function dayStart(value: string, plusDays = 0): string | undefined {
  */
 @Component({
   selector: 'quader-ci-issuance-list',
-  imports: [DatePipe, ErrorNotice, DataTable, FilterCategory, FilterPanel, FilterToggle, SelectField, TextField],
+  imports: [DatePipe, ErrorNotice, DataTable, FilterPanel, ListHead, SelectField, TextField],
   template: `
-    <div class="list-layout" [class.panel-open]="panelOpen()">
-      <div class="list-toolbar">
-        <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
-        @if (canRevoke()) {
-          <button class="btn btn-default" type="button" [disabled]="!revocable() || busy()" aria-describedby="ci-revoke-note" (click)="revokeMatching()" i18n="@@ci.issuances.revoke-matching">
-            Revoke matching tokens
-          </button>
-        }
-      </div>
-      <quader-filter-panel #panel class="list-side" [(open)]="panelOpen" [activeCount]="activeCount()" (apply)="apply()" (clearAll)="clear()">
-        @if (!fixedIssuer()) {
-          <quader-filter-category i18n-label="@@ci.issuances.f.issuer" label="Issuer" [active]="!!issuerFilter().trim()" [expanded]="!!issuerFilter().trim()">
-            <quader-text-field width="name" i18n-label="@@ci.issuances.f.issuer" label="Issuer" name="issuer" [(value)]="issuerFilter" />
-          </quader-filter-category>
-        }
-        @if (!project()) {
-          <quader-filter-category i18n-label="@@ci.issuances.f.project-id" label="GitLab project ID" [active]="!!projectId().trim()" [expanded]="!!projectId().trim()">
-            <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.project-id" label="GitLab project ID" name="projectId" [(value)]="projectId" />
-          </quader-filter-category>
-          <quader-filter-category i18n-label="@@ci.issuances.f.project-path" label="Project path" [active]="!!projectPath().trim()" [expanded]="!!projectPath().trim()">
-            <quader-text-field width="name" i18n-label="@@ci.issuances.f.project-path" label="Project path" name="projectPath" [(value)]="projectPath" />
-          </quader-filter-category>
-          <quader-filter-category i18n-label="@@ci.issuances.f.pipeline" label="Pipeline ID" [active]="!!pipelineId().trim()" [expanded]="!!pipelineId().trim()">
-            <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.pipeline" label="Pipeline ID" name="pipelineId" [(value)]="pipelineId" />
-          </quader-filter-category>
-        }
-        <quader-filter-category i18n-label="@@ci.issuances.f.job" label="Job ID" [active]="!!jobId().trim()" [expanded]="!!jobId().trim()">
-          <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.job" label="Job ID" name="jobId" [(value)]="jobId" />
-        </quader-filter-category>
-        @if (!project()) {
-          <quader-filter-category i18n-label="@@ci.issuances.f.mapping" label="Mapping" [active]="!!mapping().trim()" [expanded]="!!mapping().trim()">
-            <quader-text-field width="name" i18n-label="@@ci.issuances.f.mapping" label="Mapping" name="mapping" [(value)]="mapping" />
-          </quader-filter-category>
-        }
-        <quader-filter-category i18n-label="@@ci.issuances.f.state" label="State" [active]="!!state()" [expanded]="!!state()">
-          <quader-select-field i18n-label="@@ci.issuances.f.state" label="State" name="state" [options]="stateOptions" [(value)]="state" />
-        </quader-filter-category>
-        @if (!project()) {
-          <quader-filter-category i18n-label="@@ci.issuances.f.from" label="Issued from" [active]="!!from()" [expanded]="!!from()">
-            <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.from" label="Issued from" name="from" type="date" [(value)]="from" />
-          </quader-filter-category>
-          <quader-filter-category i18n-label="@@ci.issuances.f.to" label="Issued until" [active]="!!to()" [expanded]="!!to()">
-            <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.to" label="Issued until" name="to" type="date" [(value)]="to" />
-          </quader-filter-category>
-        }
-      </quader-filter-panel>
+    <!-- The issued tokens have no search by name; the head is Filters, the filters that are set and the bulk revoke (Q-UI-420). -->
+    <quader-list-head [chips]="chips()" (removeChip)="removeChip($event)" [(filtersOpen)]="panelOpen" [controls]="panel.panelId">
+      @if (canRevoke()) {
+        <button headEnd class="btn btn-default" type="button" [disabled]="!revocable() || busy()" aria-describedby="ci-revoke-note" (click)="revokeMatching()" i18n="@@ci.issuances.revoke-matching">
+          Revoke matching tokens
+        </button>
+      }
+    </quader-list-head>
+    <quader-filter-panel #panel [(open)]="panelOpen" [activeCount]="chips().length" (apply)="apply()" (clearAll)="clear()" (dismissed)="restage()">
+      @if (!fixedIssuer()) {
+        <quader-text-field width="name" i18n-label="@@ci.issuances.f.issuer" label="Issuer" name="issuer" [(value)]="issuerFilter" />
+      }
+      @if (!project()) {
+        <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.project-id" label="GitLab project ID" name="projectId" [(value)]="projectId" />
+        <quader-text-field width="name" i18n-label="@@ci.issuances.f.project-path" label="Project path" name="projectPath" [(value)]="projectPath" />
+        <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.pipeline" label="Pipeline ID" name="pipelineId" [(value)]="pipelineId" />
+      }
+      <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.job" label="Job ID" name="jobId" [(value)]="jobId" />
+      @if (!project()) {
+        <quader-text-field width="name" i18n-label="@@ci.issuances.f.mapping" label="Mapping" name="mapping" [(value)]="mapping" />
+      }
+      <quader-select-field i18n-label="@@ci.issuances.f.state" label="State" name="state" [options]="stateOptions" [(value)]="state" />
+      @if (!project()) {
+        <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.from" label="Issued from" name="from" type="date" [(value)]="from" />
+        <quader-text-field width="bytes" i18n-label="@@ci.issuances.f.to" label="Issued until" name="to" type="date" [(value)]="to" />
+      }
+    </quader-filter-panel>
 
-      <div class="list-main">
-        @if (canRevoke() && !revocable()) {
-          @if (unsupported().length > 0) {
-            <p id="ci-revoke-note" class="muted" role="note">
-              <ng-container i18n="@@ci.issuances.revoke-unsupported">The bulk revoke acts on the issuer, project ID, pipeline ID, job ID and mapping only. It would revoke more than the list shows while these filters are applied:</ng-container>
-              {{ ' ' + unsupported().join(', ') }}.
-            </p>
-          } @else {
-            <p id="ci-revoke-note" class="muted" role="note" i18n="@@ci.issuances.revoke-note">
-              To revoke in bulk, filter by one issuer and by a project ID, a pipeline ID, a job ID or a mapping, then apply the filters.
-            </p>
-          }
-        }
-        @if (actionError(); as e) {
-          <quader-error-notice [error]="e" />
-        }
-        @if (list.error(); as e) {
-          <quader-error-notice [error]="e" (retry)="list.reload()" />
-        }
-        @if (list.error()?.status !== 501) {
-          <quader-data-table
-            [caption]="caption"
-            [columns]="columns()"
-            [loaded]="list.loaded()"
-            [loading]="list.loading()"
-            [empty]="list.items().length === 0"
-            i18n-emptyText="@@ci.issuances.empty"
-            emptyText="No CI token matches."
-            [hasMore]="list.hasMore()"
-            (more)="list.more()"
-          >
-            @for (i of list.items(); track i.tokenId) {
-              <tr>
-                <th scope="row">{{ i.issuedAt | date: 'short' }}</th>
-                @if (!project()) {
-                  <td translate="no">{{ i.issuer }}</td>
-                }
-                <td translate="no">{{ i.mappingNames.join(', ') }}</td>
-                <td translate="no" class="wrap">{{ i.projectPath ?? i.projectId }}</td>
-                <td translate="no">{{ i.pipelineId ?? '–' }} / {{ i.jobId }}</td>
-                <td translate="no">{{ i.ref ?? '–' }}</td>
-                <td>
-                  @if (i.revokedAt) {
-                    <span class="bad"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@ci.issuance.revoked-short">Revoked</ng-container></span>
-                  } @else if (i.active) {
-                    <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span> <ng-container i18n="@@ci.issuance.active">Active</ng-container></span>
-                  } @else if (i.state === 'removed') {
-                    <span class="bad"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@ci.issuance.removed-short">Removed</ng-container></span>
-                  } @else {
-                    <span class="muted"><span class="material-icons" aria-hidden="true">schedule</span> <ng-container i18n="@@ci.issuance.expired">Expired</ng-container></span>
-                  }
-                </td>
-                <td class="actions">
-                  <button class="btn btn-tertiary" type="button" (click)="open(i)" i18n="@@ci.issuances.details">Details</button>
-                </td>
-              </tr>
+    @if (canRevoke() && !revocable()) {
+      @if (unsupported().length > 0) {
+        <p id="ci-revoke-note" class="muted" role="note">
+          <ng-container i18n="@@ci.issuances.revoke-unsupported">The bulk revoke acts on the issuer, project ID, pipeline ID, job ID and mapping only. It would revoke more than the list shows while these filters are applied:</ng-container>
+          {{ ' ' + unsupported().join(', ') }}.
+        </p>
+      } @else {
+        <p id="ci-revoke-note" class="muted" role="note" i18n="@@ci.issuances.revoke-note">
+          To revoke in bulk, filter by one issuer and by a project ID, a pipeline ID, a job ID or a mapping, then apply the filters.
+        </p>
+      }
+    }
+    @if (actionError(); as e) {
+      <quader-error-notice [error]="e" />
+    }
+    @if (list.error(); as e) {
+      <quader-error-notice [error]="e" (retry)="list.reload()" />
+    }
+    @if (list.error()?.status !== 501) {
+      <quader-data-table
+        [caption]="caption"
+        [columns]="columns()"
+        [loaded]="list.loaded()"
+        [loading]="list.loading()"
+        [empty]="list.items().length === 0"
+        i18n-emptyText="@@ci.issuances.empty"
+        emptyText="No CI token matches."
+        [hasMore]="list.hasMore()"
+        (more)="list.more()"
+      >
+        @for (i of list.items(); track i.tokenId) {
+          <tr>
+            <!-- A log's time is the moment itself: its date and time, one format for every log (Q-UI-431). -->
+            <th scope="row"><time [attr.datetime]="i.issuedAt">{{ i.issuedAt | date: 'medium' }}</time></th>
+            @if (!project()) {
+              <td translate="no">{{ i.issuer }}</td>
             }
-          </quader-data-table>
+            <td translate="no">{{ i.mappingNames.join(', ') }}</td>
+            <td translate="no" class="wrap">{{ i.projectPath ?? i.projectId }}</td>
+            <td translate="no">{{ i.pipelineId ?? '–' }} / {{ i.jobId }}</td>
+            <td translate="no">{{ i.ref ?? '–' }}</td>
+            <td>
+              @if (i.revokedAt) {
+                <span class="bad"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@ci.issuance.revoked-short">Revoked</ng-container></span>
+              } @else if (i.active) {
+                <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span> <ng-container i18n="@@ci.issuance.active">Active</ng-container></span>
+              } @else if (i.state === 'removed') {
+                <span class="bad"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@ci.issuance.removed-short">Removed</ng-container></span>
+              } @else {
+                <span class="muted"><span class="material-icons" aria-hidden="true">schedule</span> <ng-container i18n="@@ci.issuance.expired">Expired</ng-container></span>
+              }
+            </td>
+            <td class="actions">
+              <button class="btn btn-tertiary" type="button" (click)="open(i)" i18n="@@ci.issuances.details">Details</button>
+            </td>
+          </tr>
         }
-      </div>
-    </div>
+      </quader-data-table>
+    }
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -282,7 +262,6 @@ export class IssuanceList {
 
   protected readonly list = new PagedResource<CiIssuance>();
   protected readonly panelOpen = signal(false);
-  protected readonly activeCount = signal(0);
   protected readonly actionError = signal<ApiError | null>(null);
   protected readonly busy = signal(false);
 
@@ -297,6 +276,29 @@ export class IssuanceList {
   protected readonly to = signal('');
   /** The filters the list currently shows; the bulk revoke acts on exactly these. */
   private applied: IssuanceFilters = {};
+  /** The drawer's values the list shows now, as they stood when they were applied. */
+  private readonly staged = signal<Readonly<Record<string, string>>>({});
+  /** The filters that are set, as the head's chips (Q-UI-422); a fixed issuer is the screen's, no filter. */
+  protected readonly chips = computed<readonly ListChip[]>(() => {
+    const v = this.staged();
+    const named: readonly [string, string][] = [
+      ['issuerFilter', $localize`:@@ci.issuances.f.issuer:Issuer`],
+      ['projectId', $localize`:@@ci.issuances.f.project-id:GitLab project ID`],
+      ['projectPath', $localize`:@@ci.issuances.f.project-path:Project path`],
+      ['pipelineId', $localize`:@@ci.issuances.f.pipeline:Pipeline ID`],
+      ['jobId', $localize`:@@ci.issuances.f.job:Job ID`],
+      ['mapping', $localize`:@@ci.issuances.f.mapping:Mapping`],
+      ['state', $localize`:@@ci.issuances.f.state:State`],
+      ['from', $localize`:@@ci.issuances.f.from:Issued from`],
+      ['to', $localize`:@@ci.issuances.f.to:Issued until`],
+    ];
+    return named.flatMap(([key, label]) => {
+      const value = (v[key] ?? '').trim();
+      if (!value) return [];
+      const shown = key === 'state' ? (this.stateOptions.find((o) => o.value === value)?.label ?? value) : value;
+      return [{ key, label, value: shown }];
+    });
+  });
 
   protected readonly fixedIssuer = computed(() => this.issuer() !== '');
   protected readonly canRevoke = computed(() => !this.project() && this.session.has('tokens:revoke'));
@@ -348,11 +350,28 @@ export class IssuanceList {
     };
   }
 
+  /** The drawer's fields, by name. */
+  private fields(): Readonly<Record<string, WritableSignal<string>>> {
+    return {
+      issuerFilter: this.issuerFilter,
+      projectId: this.projectId,
+      projectPath: this.projectPath,
+      pipelineId: this.pipelineId,
+      jobId: this.jobId,
+      mapping: this.mapping,
+      state: this.state,
+      from: this.from,
+      to: this.to,
+    };
+  }
+
   protected async apply(): Promise<void> {
     const f = this.filters();
     this.applied = f;
-    const own = { ...f, issuer: this.fixedIssuer() ? undefined : f.issuer };
-    this.activeCount.set(Object.values(own).filter((v) => v !== undefined).length);
+    const values: Record<string, string> = {};
+    for (const [key, field] of Object.entries(this.fields())) values[key] = field();
+    if (this.fixedIssuer()) values['issuerFilter'] = '';
+    this.staged.set(values);
     const blocked = [
       ...(f.projectPath ? [$localize`:@@ci.issuances.f.project-path:Project path`] : []),
       ...(f.active === false ? [$localize`:@@ci.issuances.f.state:State`] : []),
@@ -364,8 +383,20 @@ export class IssuanceList {
     await this.list.start(this.api.listIssuances(f, this.project()));
   }
 
+  /** The drawer's fields back to the filters the list shows: it closed without **Apply**. */
+  protected restage(): void {
+    const values = this.staged();
+    for (const [key, field] of Object.entries(this.fields())) field.set(values[key] ?? '');
+  }
+
+  protected removeChip(chip: ListChip): void {
+    this.restage();
+    this.fields()[chip.key]?.set('');
+    void this.apply();
+  }
+
   protected clear(): void {
-    for (const s of [this.issuerFilter, this.projectId, this.projectPath, this.pipelineId, this.jobId, this.mapping, this.state, this.from, this.to]) s.set('');
+    for (const s of Object.values(this.fields())) s.set('');
     void this.apply();
   }
 

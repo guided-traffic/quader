@@ -71,3 +71,94 @@
   gap: var(--quader-space-2);
   padding: var(--quader-space-3) var(--quader-space-6) var(--quader-space-6);
 }
+
+// ---- Drawer ------------------------------------------------------------------------------------------------------------
+
+// Quader's drawer (Q-UI-420, `<quader-drawer>` in shared/ui/drawer.ts): the CDK dialog at the window's right edge and its full
+// height, sliding in from the right over the page, which keeps its layout behind it. The behaviour (modal role, focus trap and
+// return, the page that does not scroll) is the CDK's; Escape and a click on the backdrop close it through the drawer, so it
+// slides out first (the class `closing` on the pane and the backdrop).
+.quader-drawer-backdrop {
+  background: rgb(0 0 0 / 40%);
+  animation: quader-drawer-fade-in var(--quader-motion-duration) var(--quader-motion-easing);
+
+  &.closing {
+    animation: quader-drawer-fade-out var(--quader-motion-duration) var(--quader-motion-easing) forwards;
+  }
+}
+
+.quader-drawer {
+  max-inline-size: 100vw;
+
+  .cdk-dialog-container {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    inline-size: 100%;
+    block-size: 100%;
+    border-inline-start: 1px solid var(--quader-border);
+    background: var(--quader-dialog-bg);
+    box-shadow: var(--quader-elevation-2);
+    color: var(--quader-on-surface);
+    font-size: var(--quader-text-size);
+    line-height: var(--quader-text-line);
+    outline: 0;
+    animation: quader-drawer-in var(--quader-motion-duration) var(--quader-motion-easing);
+  }
+
+  &.closing .cdk-dialog-container {
+    animation: quader-drawer-out var(--quader-motion-duration) var(--quader-motion-easing) forwards;
+  }
+}
+
+@keyframes quader-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes quader-drawer-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes quader-drawer-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes quader-drawer-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+// The drawer's parts: its head (the heading, its actions and the close button) stays in view, the content takes the rest.
+.drawer {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+.drawer-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--quader-space-2);
+  padding: var(--quader-space-3) var(--quader-space-3) var(--quader-space-3) var(--quader-space-6);
+  border-block-end: 1px solid var(--quader-border);
+}
+
+.drawer-title {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--quader-heading);
+  font-size: var(--quader-heading-3);
+  font-weight: var(--quader-heading-weight);
+  line-height: 1.5;
+  letter-spacing: var(--quader-heading-tracking);
+  outline: none;
+}

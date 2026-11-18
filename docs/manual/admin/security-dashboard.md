@@ -30,10 +30,10 @@ The search row above the counts has three fields; each one set narrows the count
 | Field | Finds | Notes |
 |---|---|---|
 | **Advisory ID** | The findings of an advisory by its identifier or by any alias | `CVE-2021-23337` finds the finding whose advisory is `GHSA-35jh-r3h4-6jhm`, because the GitHub advisory names that CVE as an alias. The identifier is written in its usual spelling as you type: `cve-2021-23337` is sent as `CVE-2021-23337`, a `GHSA-` identifier keeps its lower-case groups |
-| **Package starts with** | Findings of packages whose normalized name starts with the text | `lodash` finds `lodash` and `lodash.merge`. The exact package name and the version are in the filter panel under **Package** |
+| **Package starts with** | Findings of packages whose normalized name starts with the text | `lodash` finds `lodash` and `lodash.merge`. The exact package name and the version are behind **Filters**, under **Package** |
 | **Project key** | The findings of the repositories of that project | A key that does not exist, or a project you may not read, gives an empty list, not an error |
 
-Everything else of the content report's filter panel (severity, status, kind, repository, format, flags, detection dates, text) is available as well, and all of it is part of the address. A search by advisory identifier does not scan every finding: it starts at the advisory and reaches its findings through an index, so it answers as fast on a large installation as on a small one. The **Text** filter in the panel is a substring search over package, identifier and summary and is slower on very large installations; use the three fields when you know what you look for.
+Everything else of the content report's filters (**Filter findings** above the list, and severity, status, kind, repository, format, flags and detection dates behind **Filters**) is available as well, and all of it is part of the address. A search by advisory identifier does not scan every finding: it starts at the advisory and reaches its findings through an index, so it answers as fast on a large installation as on a small one. **Filter findings** is a substring search over package, identifier and summary and is slower on very large installations; use the three fields when you know what you look for.
 
 ## Triage
 

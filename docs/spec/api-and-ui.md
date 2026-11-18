@@ -3118,13 +3118,11 @@ Priority: **MVP** · Covers: UI-001, UI-004
 - List screens: the repository, user, group, service account, token, permission policy, endpoint
   and audit log lists share one data table (bordered, inner scroll with a sticky header, sortable
   column headers with `aria-sort`, a "?" help tooltip on a column that needs one, loading, empty
-  and error states with retry, "Load more") and, where the screen has filters, one filter panel on
-  the right (a toggle button with the number of applied filters above the table, collapsible
-  filter categories, "Clear all", a close button, one apply button). The panel sits beside the list only where the list keeps
-  at least 71 rem there, otherwise between the Filters button and the list, its categories side by side and each as tall as its
-  heading while closed; in the page's order it follows the button, so the keyboard reaches it next; a list never scrolls
-  sideways because the panel is open, and a table's columns share the width of its rows without the scrollbar beside them
-  ([Q-UI-327](#q-ui-327--the-filter-panel-sits-beside-a-list-only-where-the-list-keeps-71-rem-and-a-tables-columns-share-its-rows-width-without-the-scrollbar)). A column is sortable only
+  and error states with retry, "Load more") and one head above the table (R-UI-100): the search by name, **Filters** with the
+  number of filters that are set, and the set filters as chips. **Filters** opens the filter drawer over the page (R-UI-101,
+  [Q-UI-420](#q-ui-420--the-filters-of-a-list-open-in-a-drawer-from-the-right-over-the-page)): the filters open, one under the other, "Clear all", a close button, one apply button; the list keeps its width
+  and its columns. A table keeps no room for a scrollbar its rows do not need, so it ends where the lines above it end
+  ([Q-UI-427](#q-ui-427--a-table-keeps-no-room-for-a-scrollbar-its-rows-do-not-need)). A column is sortable only
   where the API sorts by it (`sort` of `GET /api/v1/users`, `groups`, `service-accounts`,
   `permission-policies`), or where the whole list is in the browser (endpoints); a filter appears
   only where the API takes it. The panel opens by itself while a filter is applied. The packages
@@ -3326,16 +3324,17 @@ Acceptance criteria:
 ### R-UI-006 · Packages list
 Priority: **MVP** · Covers: UI-008, ART-048
 
-- The list uses the shared data table and the shared filter panel of R-UI-002 (Q-UI-68): the
-  filters below are the panel's categories, the sort control is a column header, "Load more" is the
-  table's.
-- Backed by R-API-029 (the start page of a project is its repositories, R-UI-052, Q-UI-216). Filters, as the categories of the panel: package type (multi-select),
-  repository (multi-select), name or description (`q`), keyword, created period (last 7, 30, 90 days,
-  custom; a custom end day is included). Applied filters appear as removable chips and live in the URL.
+- The list uses the shared data table and the shared head of a list of R-UI-100 (Q-UI-68): the search by name or description
+  (`q`) is the head's field **Filter packages**, the other filters are the drawer's (R-UI-101), the sort control is a column
+  header, "Load more" is the table's.
+- Backed by R-API-029 (the start page of a project is its repositories, R-UI-052, Q-UI-216). Filters of the drawer: package type
+  (multi-select), repository (multi-select), keyword, created period (last 7, 30, 90 days, custom; a custom end day is included).
+  The filters that are set appear as removable chips beside **Filters** (Q-UI-422) and live in the URL.
 - Table (Q-UI-314): the package (its name, with its description as the muted second line, never cut), its format (icon plus
   text, never icon alone; the icon is the format owner's logo where the owner's terms allow it, else the neutral package
-  glyph, Q-UI-225), the latest version, updated (relative, with the absolute time in a `<time datetime>` element and its
-  title). The number of versions, of repositories, the downloads and the first publication are on the package's page (its
+  glyph, Q-UI-225), **Latest**, the latest version (the word of a repository's package table,
+  [Q-UI-432](#q-ui-432--the-package-list-says-latest-as-the-package-table-of-a-repository-does)), updated (relative, with the
+  absolute time in a `<time datetime>` element and its title, R-UI-103). The number of versions, of repositories, the downloads and the first publication are on the package's page (its
   Details). Sortable by the package and updated in the headers; the sort by first created stays the API's and a saved view's
   (`sort=createdAt`). Every sort is the server's (R-API-029).
 - Paging with an explicit "Load more" button; no infinite scroll.
@@ -4026,16 +4025,17 @@ Priority: **MVP** · Covers: UI-030, REPO-007
 
 - The columns come from the job of the list's kind of user (R-UI-067, [Q-UI-330](#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)); under the key stands only its
   description ([Q-UI-302](#q-ui-302--the-repository-list-names-a-repository-by-key-and-description-in-its-first-column-and-puts-the-rows-actions-in-a-menu)), every other property is a column, and below 48 rem of the list's width the rows stack (Q-UI-306).
-  - The project's own list (`/projects/{project}/repositories`, Q-UI-129), the plain user's (find a repository, copy its
-    address): **Repository** (key and description), **Format** (icon and display name), **Class** (icon and name), **Client
-    address** (the address field, one width for the column: what is left after the repository's 20 rem and the least widths of
-    the others, up to the list's longest address, a longer one scrolling inside its field, Q-UI-300), and the row's menu; room
-    left over after the address goes to the repository.
+  - The project's own list (`/projects/{project}/repositories`, Q-UI-129), the plain user's (find a repository and set up its
+    client): **Repository** (the visibility icon, the key and the description, R-UI-102), **Format** (icon and display name),
+    **Class** (icon and name), and at the row's end **Set up client**, which opens the client setup for the repository, beside
+    the row's menu. The client address is no column: it stands on the repository's page and in the client setup ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)).
+    The repository takes every pixel the others leave.
   - The admin area's list (`/admin/repositories`), the administrator's (manage the repositories): **Repository**, **Project**
-    (linked to it), **Format**, **Class**, **Last activity** (the date, Q-UI-305) and the row's actions: a quiet copy button
-    whose name and tooltip carry the client address, beside the menu, which has **Copy client address** too. The address is no
-    field there. A column **Visibility** (T-18) fits beside them at 1440 px.
-- Filters in the filter panel: project, format, class, text, disabled only. The list is ordered by key; the API takes
+    (its mark and its name, linked to it, R-UI-102), **Format**, **Class**, **Visibility**, **Last activity** (relative, R-UI-103)
+    and the row's actions: a quiet copy button whose name and tooltip carry the client address, beside the menu, which has
+    **Copy client address** too. The address is no field there.
+- The head of the list (R-UI-100): the search by key or description (`q`, **Filter repositories**); the drawer's filters: project
+  (the admin area's list), format, class, disabled only. The list is ordered by key; the API takes
   no `sort` parameter yet, so the table has no sort control (sorting by creation arrives with the
   API, and the creation time with the summary, Q-UI-18). "Recently opened" (browser storage, 20) is the start page's: neither
   list shows it ([Q-UI-329](#q-ui-329--recently-opened-is-the-start-pages-only-the-admin-areas-repository-list-leaves-it-out-too)); a project's list says under its heading what the project is and, to a plain user,
@@ -4222,8 +4222,9 @@ Acceptance criteria:
 Priority: **MVP** · Covers: UI-035, UI-036
 
 - List: username, display name, email, origin (identity provider, administrator-created, SCIM,
-  break-glass), status, the badge External (R-UI-056), last login; filters text, status, origin, group, administrator,
-  external (filter panel); the user name column sorts (`sort=username`, `-username`).
+  break-glass), status, the badge External (R-UI-056), last sign-in (relative, R-UI-103); the search by name or email in the
+  list's head, the filters status, origin, group, administrator and external in its drawer (R-UI-100, R-UI-101); the user name
+  column sorts (`sort=username`, `-username`).
 - Detail ([Q-UI-223](#q-ui-223--the-user-the-endpoint-and-the-service-account-and-group-lists-follow-the-guide)): display name and email edited in place with "Save changes" (an administrator's correction lasts until the next login), ID and origin as
   read-only fields; identities (provider and subject, read-only and copyable); attributes from the identity
   provider, read-only and labelled as such; status with "Disable" (choice to revoke tokens) and
@@ -4245,8 +4246,8 @@ Acceptance criteria:
 ### R-UI-025 · Groups
 Priority: **MVP** · Covers: UI-037
 
-- List: name, description, origin, member count; filters name and origin (filter panel); the name
-  column sorts (`sort=name`, `-name`).
+- List: name, description, origin, member count; the search by name in the list's head, the origin in its drawer (R-UI-100,
+  R-UI-101); the name column sorts (`sort=name`, `-name`).
 - Editor: name (rename allowed where the owner allows it), description, auto-join, members with
   their sources (manual, identity provider, SCIM) where only manual ones are editable, role bindings
   of the group (read-only with link to `/admin/roles`), the policies naming the group (read-only
@@ -4381,9 +4382,11 @@ Priority: **MVP** · Covers: UI-053, AUTHN-039, AUTHN-040
   under it; **Create token** and **End all other sessions** are the header's actions (Q-UI-307, UI-A-20). An empty token list
   says what is missing: "No active tokens." while the revoked and expired ones are hidden, "No tokens yet." with them (the
   administrator's filtered list keeps "No tokens match.").
-- Personal tokens: list with the token (description and hint), scope summary, expires and last used, and, from 64 rem of the
-  list, created and created via; the row ends with **Revoke** and a quiet **Rotate**, or the state of a token that is no longer
-  active ([Q-UI-332](#q-ui-332--a-token-list-shows-token-scope-expiry-last-use-and-its-action-created-and-created-via-give-way-first)); tokens
+- Personal tokens: list with the token (description and hint), the scope summary, which takes the room the others leave, expires
+  and last used, and, from 64 rem of the list, created, each time relative (R-UI-103); the row ends with **Rotate** and
+  **Revoke**, two quiet buttons with their words, or the state of a token that is no longer active
+  ([Q-UI-332](#q-ui-332--a-token-list-shows-token-scope-expiry-last-use-and-its-action-created-and-created-via-give-way-first),
+  [Q-UI-429](#q-ui-429--a-token-list-gives-the-scope-the-room-leaves-out-how-a-token-was-made-and-words-both-actions)); tokens
   expiring within 7 days are marked, and a token with `admin: true` whose owner does not hold the administrator role now says that
   its administrator rights are inactive. Create dialog: description (required), expiry (presets and a
   custom date, bounded by R-AUTH-040), scope (three choices, Q-UI-213: administrator rights, only for a caller who holds the
@@ -4564,7 +4567,7 @@ Priority: **MVP** · Covers: OPS-023
   registry, in English and German, with the event name under it; an unknown name is shown as sent), target (actor and target wrap in their
   column and are never cut, UI-A-46), outcome,
   source address; filters time range (presets and custom), actor, action, category, project, repository,
-  outcome (filter panel); "Load more". The log is always newest first and has no sort control. The action filter suggests every
+  outcome (the list's drawer, R-UI-101; the head has no search by name, its end the time zone and the exports); "Load more". The log is always newest first and has no sort control. The action filter suggests every
   prefix of the registry's event types at every level (`ci.*`, `ci.issuer.*`) and every type with its name, from the registry.
 - Detail panel with the full event and links to actor and target.
 - Times in the user's locale with a UTC toggle; export of the current filter as CSV or JSON Lines
@@ -4837,7 +4840,7 @@ Priority: **MVP** · Covers: quader-only
   It is editable for a holder of `identities:write`; saving needs recent authentication; the break-glass account shows it
   disabled with "The break-glass account is never external."
 - The users list shows a badge **External** next to the name of an external user and has the filter External (yes, no) in its
-  filter panel (`external=`).
+  filter drawer (`external=`).
 - "Add user" has the same checkbox, preset to the installation's `newUsersExternal` (R-UI-031).
 
 Acceptance criteria:
@@ -4892,7 +4895,8 @@ the model gives the screens:
   memberships of `authz/me`, every project for a holder of `projects:read`) and then the projects whose level admits the caller
   (R-UI-054), and a caller with exactly one project starts in it; inside a project the project switcher at the top of the side bar changes it. There is no project filter in the top
   bar, and no list of a project's content is narrowed by a stored choice.
-- Start page: key, display name, description, the caller's role (for a member), the number of repositories and of members.
+- Start page: the project (its mark, its display name and its key under it, R-UI-102), description, the caller's role (for a
+  member), the number of repositories and of members; the head's search by key or name and **Your projects** (R-UI-100).
   The admin area's list of projects (`/admin/projects`, `projects:read`) keeps the owners, has a column with the logical size the project is
   charged (`logicalBytes`, [R-STOR-049](storage.md#r-stor-049--the-storage-of-a-project)) and creates and edits projects.
 - Create dialog (administrators, `projects:write`): key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$`, immutable), display name,
@@ -5381,14 +5385,10 @@ the list showed a field of a different width in every row and scrolled sideways.
 - **Never cut.** The address is never cut with an ellipsis, never wrapped, and its `title` is not the only way to read it.
   Where the field is shorter than the address, the address scrolls inside the field (an input does so natively), and the
   copy button stays joined to it.
-- **One width per place.** A field takes the width of its line, not of its address. In a list every field has the same
-  width: the column is as wide as the list's longest address, but never more than its share: in a project's repository list what
-  is left after the repository's preferred 20 rem and the least widths of the others, elsewhere 46 characters and what the other
-  columns leave at their least widths, so the properties beside it are not squeezed; the field fills the cell and
-  shows the address from its start, a longer address scrolls inside it (Q-UI-300, Q-UI-330); below 48 rem of the list's width
-  the rows stack and the field takes the row's width (Q-UI-306). A list whose kind of user does not copy addresses as its job
-  shows none: the admin area's repository list and the search results have a copy button in the row instead (Q-UI-330). A field
-  alone on its line fills the line up to a measure of 70 characters, so stacked fields are one width too (Q-UI-301).
+- **One width per place.** A field takes the width of its line, not of its address. No list has an address column: an address
+  means nothing without its client, so a project's repository list offers **Set up client** in the row ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)), and the
+  admin area's repository list has a copy button in the row (Q-UI-330). A field alone on its line fills the line up to a measure
+  of 70 characters, so stacked fields are one width too (Q-UI-301).
 - **Selectable.** A click or focus in the field selects the whole address; the user can also select a part of it and copy
   with the keyboard. The address is the field's value, so the browser's find, drag and copy work as on any input (Q-UI-273).
 - **Copy button.** `aria-label` and `title` name what is copied (**Copy client address**; in a list the label names the row,
@@ -5416,15 +5416,13 @@ Acceptance criteria:
   address; a field shorter than its address shows its start; a click on the button writes exactly the address to the clipboard
   and sets the status message; a failed write sets the alert; focus in the field selects all of its text; an empty address
   renders nothing; axe finds no violation.
-- The lists of R-UI-066 size their address column to their longest address, and every field of a list is in that column.
-- Rendered (rule 11 of the plan, `make ui-renders`): in a project's repository list every address field has one width, an address of 57 characters shows whole in a project's list at 1920 px beside the open filter panel, and no
-  repository list scrolls sideways at 1920, 1440, 1280, 1024 or 390 px, in both schemes, with the filter panel open or closed
-  (Q-UI-330).
+- Rendered (rule 11 of the plan, `make ui-renders`): no repository list scrolls sideways at 1440, 1024 or 390 px, in both schemes,
+  with the filter drawer open or closed (Q-UI-330, Q-UI-426).
 - Every screen of R-UI-066 shows its address through the component, and no template of those screens gives a client address
   the class `ellipsis`.
-- Playwright: on a project's repository list the cell of a row holds an input whose value equals the address the API gave, and a
-  click on the row's copy button puts that value on the clipboard; on the admin area's list the row's copy button, named with the
-  address, does the same.
+- Playwright: a project's repository list holds no address field, and the row's **Set up client** opens the client setup of the
+  repository; on the admin area's list the row's copy button, named with the address, puts the address the API gave on the
+  clipboard.
 
 ### R-UI-066 · The screens that show a client address use the address field
 Priority: **MVP** · Covers: quader-only
@@ -5433,7 +5431,7 @@ Each screen shows its client addresses through `<quader-address-field>` (R-UI-06
 
 | Screen | Place | Notes |
 |---|---|---|
-| Repository list (R-UI-020), `/projects/{project}/repositories` | The column **Client address**, one field per row | The first address of the repository; one width for the column, the list's longest address up to what is left after the repository's 20 rem (Q-UI-300, Q-UI-330); the label names the row. The admin area's list (`/admin/repositories`) and the search results (`/search`) have no field: a copy button in the row (Q-UI-330) |
+| Repository list (R-UI-020), `/projects/{project}/repositories` | No field: the row's **Set up client** opens the client setup, where the address stands with the snippets that use it ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)) | The admin area's list (`/admin/repositories`) has a copy button in the row, whose name and tooltip carry the address (Q-UI-330); the search results (`/search`) have neither (Q-UI-430) |
 | Repository page (R-UI-021), settings view | The fact **Client address** | The field fills the fact up to the measure (Q-UI-301) |
 | Repository page, consumer view | The fact **Client address**, one field per address of the repository, stacked | Stacked fields are one width (Q-UI-301) |
 | Repository content page (R-UI-052) | The header: the repository's first address; **Details**: each further address with its label | Q-UI-320 |
@@ -6016,12 +6014,11 @@ the start side bar (R-UI-002); it never opens a route under `/admin` (R-UI-099).
   `group`, the tab is the first group that had a suggestion when Enter was pressed, else **Repositories**. The tab is part of the
   address.
 - **A tab is the list of its kind with `q`**, 25 rows at a time with **Load more** (R-API-010): Repositories, `GET
-  /api/v1/repositories?q=`, in the admin area's pattern of
-  [Q-UI-330](#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)
-  (the key with its description, the project, format and class as columns, the client address a quiet copy button and no address
-  field: who searches opens the repository); Packages, `GET /api/v1/packages?q=`, with
-  the columns of Q-UI-314 and the project and repository of each; Projects, `GET /api/v1/projects?q=`, with the start page's columns
-  (Q-UI-311). A row leads to its object's page in the main area.
+  /api/v1/repositories?q=`, built from the parts of the repository list
+  ([Q-UI-430](#q-ui-430--the-searchs-repository-rows-are-built-from-the-parts-of-the-repository-list): the visibility icon, the key
+  with its description, the project by its mark and its name, format and class; no address and no copy button, Q-UI-426);
+  Packages, `GET /api/v1/packages?q=`, with the columns of Q-UI-314 and the project (its mark and name) and repository of each;
+  Projects, `GET /api/v1/projects?q=`, with the start page's columns (Q-UI-311), the project's mark before its name. A row leads to its object's page in the main area.
 - **Empty**: "Nothing you may read matches "<text>"." on the tab. A text of fewer than two characters shows "Type at least two
   characters." and asks nothing.
 - The page has no users, groups or admin pages and no link into the admin area. It takes over the page of the stopgap that replaced
@@ -6065,6 +6062,110 @@ Acceptance criteria:
   **All … for** lines, the empty list's entries, the filter) as `ada`, `priya` and `sam` and asserts that only `ada`'s choice of a
   marked entry reaches `/admin`.
 
+### R-UI-100 · The head of every list: the search by name, Filters and the filters that are set
+Priority: **MVP** · Covers: quader-only
+
+The owner's walk of 2026-11-18 (W-6, [promt.md](../projektplan/promt.md#owner-walk-of-2026-11-18-the-frontend)): a name was three steps
+away (**Filters**, the section **Name or description**, **Search**), and what was filtered was not visible while the panel was
+closed. Every list screen has one row above its table, built by one component, `<quader-list-head>`
+([list-head.ts](../../web/src/app/shared/ui/list-head.ts)):
+
+- **The search by name** ([Q-UI-421](#q-ui-421--the-search-by-name-is-a-field-above-the-list-outside-the-drawer)): a field as wide
+  as a name (R-UI-085), named and hinted by its job (**Filter repositories**, **Filter packages**, **Filter findings**, **Filter
+  users**, **Filter groups**, **Filter service accounts**, **Filter projects**). It filters as the list's name filter does, through
+  the same query parameter or request member, 250 ms after the last key or at once on Enter. A list whose API has no search by name
+  (the permission policies, the token administration, the audit log, the issued CI tokens) has no field.
+- **Filters**, the button that opens the list's drawer (R-UI-101), with the number of filters that are set. A list whose only filter
+  is the name (the admin area's projects, the service accounts, the start page's projects) has no button and no drawer.
+- **The filters that are set**, one chip each, to the right of the button
+  ([Q-UI-422](#q-ui-422--a-set-filter-is-a-chip-beside-filters-and-what-does-not-fit-folds-into-n-more)): the filter's name muted,
+  its value, and a button that removes that filter alone, named "Remove the filter Format: npm". Chips that do not fit beside the
+  button fold into one **+N more** button that opens the drawer. The search text is the field's and no chip.
+- **The list's own controls** at the row's end: the selection's action (**Revoke selected**, **Change status**), the bulk revoke of
+  the issued CI tokens, the audit log's time zone and exports, the start page's **Your projects**.
+
+Below 36 rem of content the field takes its own line and the button and the chips the next. A list's table keeps its whole width.
+
+Acceptance criteria:
+
+- Unit tests of the list head: the field sends the trimmed text 250 ms after the last key and at once on Enter; a text the list
+  applies from elsewhere replaces what the field shows; a chip names its filter and its value, and its button removes it.
+- Each list's spec: the head stands before the table; an applied filter is a chip and the drawer stays closed; removing a chip
+  changes only its filter.
+- Rendered (`make ui-renders`): the head of every list in both schemes at 1440, 1024 and 390 px, with several filters set
+  (`repositories-chips`, `packages-chips`, `vulnerabilities-chips`, `admin-users-chips`) and, at 390 px, more chips than fit.
+
+### R-UI-101 · The filters open in a drawer over the page
+Priority: **MVP** · Covers: quader-only
+
+The owner (W-6): the panel beside the list was "extremely ugly"; the list was rebuilt narrower when it opened. **Filters** opens a
+drawer that slides in from the right over the page ([Q-UI-420](#q-ui-420--the-filters-of-a-list-open-in-a-drawer-from-the-right-over-the-page),
+[ADR-200](../decisions.md#adr-200--a-lists-filters-open-in-a-drawer-the-apps-one-pattern-for-content-over-the-page)); the list
+behind it keeps its width and its columns. One behaviour at every width.
+
+- **The drawer** is a shared component, `<quader-drawer>` ([drawer.ts](../../web/src/app/shared/ui/drawer.ts)): a modal dialog
+  named by its heading **Filters**, at the window's right edge and its full height, 24 rem wide or the window's width. The focus
+  moves to its heading and is trapped inside; Escape, its close button and a click beside it close it; the focus returns to
+  **Filters**; the page behind it does not scroll. It slides in and out with the motion of every panel.
+- **The filters stand open**, one under the other, each a labelled field or a group named by its legend
+  ([Q-UI-423](#q-ui-423--the-drawers-filters-stand-open-apply-closes-it-and-closing-without-apply-keeps-what-the-list-shows)).
+  **Clear all** in the drawer's head removes every filter of the drawer and keeps the search text; **Apply filters** at its foot
+  applies the staged values at once and closes it. A drawer closed without **Apply filters** keeps the filters the list shows.
+- `<quader-filter-panel>` ([filter-panel.ts](../../web/src/app/shared/ui/filter-panel.ts)) is the drawer of a list's filters, and
+  carries those of the packages, the repositories, the vulnerability report, the users, the groups, the permission policies, the
+  token administration, the audit log and the issued CI tokens.
+
+Acceptance criteria:
+
+- Unit tests of the drawer: closed until **Filters** opens it; a modal dialog named **Filters**, outside the screen's element;
+  focus on its heading, back on **Filters** after the close button; Escape closes it without applying; **Apply filters** applies
+  once and closes it; the open drawer passes axe.
+- Playwright: the journeys that filter a list (the packages, the audit log, the issued CI tokens) open the drawer by **Filters**,
+  set its fields and apply them with **Apply filters**.
+
+### R-UI-102 · A project has its mark wherever it is listed, and an icon before a name stays on the name's first line
+Priority: **MVP** · Covers: quader-only
+
+The owner (W-1, W-3, 2026-11-18): the search's suggestions and the project switcher showed a project with its letter mark, the
+project tables showed the name alone; and a long repository key broke away from its visibility icon, which stood alone on the first
+line.
+
+- **The project's mark** ([Q-UI-424](#q-ui-424--a-projects-mark-is-one-component-before-its-name-wherever-a-project-is-listed)),
+  `<quader-project-mark>` ([project-mark.ts](../../web/src/app/shared/ui/project-mark.ts)): the first letter of its display name
+  (else its key) on the accent fill, decorative. It stands before the name in every list of projects (the start page, the admin
+  area's projects, the search's **Projects** tab, the project switcher's lists, at 32 px beside a name with its key under it) and
+  wherever a row names its project (the admin area's repository list, the search's repositories and packages, the permission
+  policies, the audit log, at 20 px), there as `<quader-project-link>`: the mark and the project's display name, linked to it.
+- **An icon before a name** ([Q-UI-425](#q-ui-425--an-icon-before-a-name-has-a-column-of-its-own-in-the-cell-and-a-long-name-breaks-inside-itself-beside-it)):
+  the cell `.icon-name` gives the icon a column of its own and the name the rest, so the icon and the start of the name share the
+  first line in every row; a name longer than its column breaks inside itself, after a hyphen where it has one. A description
+  under the name stands in the name's column.
+
+Acceptance criteria:
+
+- Unit tests: the search's repository rows and a project's repository rows hold the visibility icon and the key as the two columns
+  of `.icon-name`; the search's project cell holds the mark; the start page's and the admin area's project rows hold the mark.
+- Rendered: `repositories-long-keys`, `repositories` and `admin-repositories` with `release-candidates-for-the-customer-portal-frontend`
+  and the project **Customer portal release engineering and delivery** show the icon and the start of the name on one line.
+
+### R-UI-103 · One way to write a time
+Priority: **MVP** · Covers: quader-only
+
+The walk of 2026-11-18 found three ways across lists: "4 minutes ago", "Nov 18, 2026" and "Nov 18, 2026, 8:17:21 AM"
+([Q-UI-431](#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)):
+
+- **A list of things** (packages, repositories, findings, users, tokens, the search results) writes a time relative to now in the
+  build's language, "4 minutes ago", "yesterday", "in 4 weeks", with its date and time ("Nov 18, 2026, 8:17:21 AM") as the title of
+  the `<time>` element: `<quader-time-ago absolute="title">`.
+- **A card or a page's facts** write the relative time with the absolute time in brackets (Q-UI-378): `<quader-time-ago>`.
+- **A log** (the audit log, the issued CI tokens), where the moment is the content, writes the date and the time, `medium`.
+- One wording of a relative time: `relativeTime` ([format-time.ts](../../web/src/app/features/packages/format-time.ts)); `timeAgo`
+  ([time-ago.ts](../../web/src/app/shared/ui/time-ago.ts)) is the same in the build's locale. A screen that calls either follows.
+
+Acceptance criteria:
+
+- Unit tests: `relativeTime` and `timeAgo` give one wording ("now", "1 minute ago", "yesterday", "in 4 weeks"); the list form puts
+  the absolute time into the title.
 ### R-UI-110 · A package's versions as one table
 Priority: **MVP** · Covers: quader-only
 
@@ -7243,6 +7344,8 @@ The owner asked on 2026-10-30 for a product-grade layout with a navigation sideb
 **Rationale:** The shell and the lists are what an administrator looks at all day, and eight list screens had eight hand-written tables with the same four states each. One component makes the behaviour that is easy to get wrong (an `aria-sort` that follows the sort, a help text that is a real button with a described-by tooltip, a scroll region that is focusable, a sticky header) right once, and it is the reason the packages list can arrive later with the same behaviour at no design cost. (a) leaves that duplication; (c) conflicts with a decision that still holds; (d) buys virtual scrolling that no list needs and costs a dependency. Opening a filter panel costs one click compared with the always-visible form, which is why the toggle shows the number of applied filters and the panel opens by itself when a filter is applied. The development agent revisits this if the walkthrough shows that administrators miss the always-visible filters on the user and token lists (an option would be a pinned panel on wide screens) or when the packages list brings a filter set that does not fit the category pattern.
 
 **Applied in the spec:** R-UI-002 gains the top bar, grouped navigation, rail, breadcrumbs and list-screen bullets and three acceptance criteria; R-UI-006 states that the packages list uses the shared table and filter panel; R-UI-020 drops "sort by key or creation" (the API has no `sort`; the list is ordered by key) and names the filter panel; R-UI-024, R-UI-025 and R-UI-037 name the sortable column and the panel. The implementation is described in [web-ui.md](../developer/web-ui.md#shell-design-tokens-and-the-list-components).
+
+**Revised by [Q-UI-420](#q-ui-420--the-filters-of-a-list-open-in-a-drawer-from-the-right-over-the-page) to Q-UI-423 (owner, 2026-11-18):** the filter panel is a drawer over the page whose filters stand open; the search by name left it for a field in the list's head, and the filters that are set show beside **Filters** as chips, so a link that arrives with a filter no longer opens anything.
 
 ### Q-UI-69 · Client addresses come from the server's base URL, never from the page's location
 
@@ -11489,6 +11592,10 @@ preferred 20 rem and the least widths of the others, room left over going back t
 column 46 characters and what the others leave at their least widths. Never under 10 rem. A longer address scrolls inside its
 field from its start, never an ellipsis. The admin area's list and the search results show no field at all.
 
+**Reversed for every list by [Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client) (owner, 2026-11-18):** no list has an address column any more, so nothing of this
+decision is in force: the share, `--quader-address-chars`, `--quader-address-share`, `--quader-list-others` and `td.address-cell` are
+gone, and so is the render report's check of the address widths.
+
 ### Q-UI-301 · A field alone on its line fills the line up to a measure of 70 characters
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -11514,6 +11621,9 @@ are longer than 70 characters.
 
 **Unchanged by [Q-UI-330](#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share):** a field alone on its line is not one of a list's columns; in a stacked row the field takes the row's
 width (Q-UI-306).
+
+**Narrowed by [Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client) (2026-11-18):** no list holds an address field, so the measure is that of a field alone on its line
+and of a stack of the addresses of one thing (the repository's page, the client setup, the start page's recently opened).
 
 ### Q-UI-302 · The repository list names a repository by key and description in its first column and puts the row's actions in a menu
 
@@ -11542,6 +11652,9 @@ its share. The development agent would revisit the menu if the owner names one f
 **Revised by [Q-UI-330](#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share) (2026-11-12):** the description is the only line under the key; project, format and class are columns. The
 admin area's row has one quiet button beside the menu, the copy of the client address, which the menu offers too.
 
+**Revised by [Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client) (2026-11-18):** a project's row has **Set up client** as a quiet button beside the menu; the key
+stands beside its visibility icon in the cell `.icon-name` (Q-UI-425).
+
 ### Q-UI-303 · The repository list's key breaks after a hyphen where it is longer than its column
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -11567,6 +11680,12 @@ room for Q-UI-300. The development agent revisits it with the columns of the oth
 
 **Unchanged by [Q-UI-330](#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share):** the key still breaks after a hyphen where it is longer than its column, which is now the widest of the
 admin area's list.
+
+**Revised by [Q-UI-425](#q-ui-425--an-icon-before-a-name-has-a-column-of-its-own-in-the-cell-and-a-long-name-breaks-inside-itself-beside-it)
+(owner, 2026-11-18):** the key moved to the next line as a whole and left its visibility icon alone on the first. In every list that
+puts an icon before a name the icon and the name are the two columns of `.icon-name`, and a name breaks inside itself beside the
+icon, after a hyphen where it has one and anywhere where a part is longer than its column; `th.wrap-name` stays for lists without
+an icon.
 
 ### Q-UI-304 · make ui-renders renders the working tree through the dev server, signs the three kinds of user in through a provider of the profile, and seeds through the API
 
@@ -11631,6 +11750,9 @@ area's column only.
 
 **Applied in the spec:** R-UI-020. Code: [repository-list.html](../../web/src/app/features/repositories/repository-list.html).
 
+**Revised by [Q-UI-431](#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)
+(2026-11-18):** the last activity is relative to now ("3 days ago"), its date and time the title.
+
 ### Q-UI-306 · Below 48 rem of its width the repository list stacks each row, with the address across the row
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -11658,6 +11780,9 @@ width, also beside the open filter panel. The development agent revisits the 48 
 area's row and a search result have no address field, the copy button stands on the first line. The rows stack below 49 rem
 of the list's frame, 48 rem of columns and 1 rem for a scrollbar beside the rows, and every list's least widths sum to at most
 48 rem, so no list scrolls sideways before it stacks.
+
+**Revised by [Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client) (2026-11-18):** a stacked row has no address any more; a project's row has **Set up client** and the
+menu on the name's line.
 
 ### Q-UI-307 · A page's own actions are buttons at the right end of its header; views of the same thing are tabs
 
@@ -11715,6 +11840,10 @@ of the list's width (`--quader-list-narrow`); the repository list's Last activit
 characters of an address at 1280 px as at 1440 px (UI-A-30). Fix wave 4: the narrow columns and the stacked rows follow the table's
 own width (the container `table`, its frame), and the address column's share is of the width of the rows without the scrollbar
 beside them (Q-UI-327).
+
+**Revised by [Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client) (2026-11-18):** no list
+has a `fill` column any more, so the data table sums no room for one; a column that `prefer`s takes what the others leave, and a
+`narrow` column gives its room to the others below 64 rem.
 
 ### Q-UI-309 · An empty list or region is a sentence and the action that fills it, without a frame
 
@@ -12130,6 +12259,10 @@ and the keyboard reaches it right after the button; a closed category is as tall
 9 rem and a key longer than that breaks where it must: an action without a name of its own (`vulnerability.source.imported`)
 showed its key and made the log 42 px wider than its region at 1440 px.
 
+**Replaced by [Q-UI-420](#q-ui-420--the-filters-of-a-list-open-in-a-drawer-from-the-right-over-the-page) (owner, 2026-11-18) and [Q-UI-427](#q-ui-427--a-table-keeps-no-room-for-a-scrollbar-its-rows-do-not-need):**
+the filters open in a drawer over the page, one behaviour at every width; the list keeps its width beside nothing. The scroll
+region of a table keeps no room for a scrollbar any more: its only purpose was the address column's share, which is gone.
+
 ### Q-UI-328 · The project's repository list names format and class under the key, as the admin area's does
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -12231,6 +12364,13 @@ Q-UI-312, Q-UI-325, Q-UI-328. Code: [repository-list.html](../../web/src/app/fea
 [_list-screens.scss](../../web/src/styles/_list-screens.scss). Style guide:
 [Lists](../developer/ui-style-guide.md#lists), [Address field](../developer/ui-style-guide.md#address-field).
 
+**Revised by [Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client) (owner, 2026-11-18):** the project's list keeps no address field (the owner: "useless at this place;
+without a guide or a context it is worthless"): **Repository**, **Format**, **Class** and the row's **Set up client** beside the
+menu; the repository takes what the others leave. The search results lose their copy button and are built from the parts of the
+repository list ([Q-UI-430](#q-ui-430--the-searchs-repository-rows-are-built-from-the-parts-of-the-repository-list)). The admin area's
+list keeps its columns and its copy button; its project is the project's mark and name in 11 rem (Q-UI-424). `prefer` is a flag
+now: the column takes what the others leave, and they keep their widths.
+
 ### Q-UI-331 · An endpoint's rules are the shared data table, and a rule's client address is the row's copy button
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -12283,6 +12423,10 @@ explain it and can wait for a wider window. The development agent revisits it if
 or scan the token administration by creation.
 
 **Applied in the spec:** R-UI-029, R-UI-030. Code: [token-table.ts](../../web/src/app/shared/access/token-table.ts).
+
+**Revised by [Q-UI-429](#q-ui-429--a-token-list-gives-the-scope-the-room-leaves-out-how-a-token-was-made-and-words-both-actions)
+(2026-11-18):** **Scope** takes the room the others leave and **Token** keeps 10 rem; **Created via** is no column; **Rotate** and
+**Revoke** are two quiet buttons with their words (9 rem). A time is relative, its title the absolute time (Q-UI-431).
 
 ### Q-UI-333 · A page's sections are quiet disclosures, Tokens too, open while there is a token; the profile follows
 
@@ -12755,6 +12899,10 @@ Context: the first card read "Advisory data from this minute (Nov 12, 2026, 2:22
 version is shown that was checked more than a month ago, which the sync of R-VULN-004 makes rare. **Applied in the spec:** R-UI-093;
 [time-ago.ts](../../web/src/app/shared/ui/time-ago.ts).
 
+**Revised by [Q-UI-431](#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)
+(2026-11-18):** the relative time has the one wording of the UI, "3 minutes ago (Nov 12, 2026, 2:22:37 PM)", not cogpit's short
+form; the component writes it for a list's cell too, with the absolute time as the title (`absolute="title"`).
+
 ### Q-UI-379 · The Vulnerabilities tab pages the open findings of a version from the findings API, filtered by the card's bar
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -12792,6 +12940,10 @@ project already.
 **Choice:** (a). **Rationale:** the qualified name `<project>/<repository>` is how Quader names a repository outside its project ([Q-REPO-212](repositories-and-proxy.md#q-repo-212--a-repository-is-addressed-inside-its-project-and-no-repository-is-shared)), so a
 column that repeats its first part costs the room without adding a fact. The development agent revisits the column if the owner wants
 the project as a column of its own. **Applied in the spec:** R-VULN-022 (List, Instance-wide); [Q-UI-165](#q-ui-165--the-security-dashboard-is-the-content-report-mounted-in-the-admin-area-with-its-own-links-project-column-and-search)'s column is replaced by the link.
+
+**Revised by [Q-UI-428](#q-ui-428--the-reports-cells-keep-a-qualified-name-a-fixed-version-and-a-time-on-one-line)
+(2026-11-18):** the qualified name no longer breaks after its slash, and the time of detection no longer wraps: every row was three
+lines high.
 
 ### Q-UI-381 · The shield in a list is 20 px, the size of a format icon
 
@@ -13244,6 +13396,252 @@ the first stable release). **Rationale:** both pages answer the same Enter. The 
 
 **Applied in the spec:** R-UI-098; a revisit line in each of Q-UI-390 to Q-UI-399 that R-UI-098 changes.
 
+### Q-UI-420 · The filters of a list open in a drawer from the right over the page
+
+Status: **Decided by the owner (2026-11-18)** for the drawer; the development agent built it from the options below; the owner
+reviews the build at the walkthrough.
+
+Context: W-6 of the walk of 2026-11-18. The filter panel stood beside a list where the list kept 71 rem and between its button and
+the list where it did not ([Q-UI-327](#q-ui-327--the-filter-panel-sits-beside-a-list-only-where-the-list-keeps-71-rem-and-a-tables-columns-share-its-rows-width-without-the-scrollbar)),
+and the list was rebuilt narrower when it opened. The owner: "extremely ugly"; "shall we try a drawer?". The app had no drawer for
+content; the only one was the navigation's at narrow widths.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A drawer from the right over the page, the CDK dialog at the window's edge, as a shared component `<quader-drawer>` (chosen) | One behaviour at every width; the list keeps its width | The owner's choice; focus trap, Escape, focus return, the page that does not scroll and the modal role come from the CDK the dialogs already use; one component for the next content over the page | The drawer covers the right of the list while it is open; the set filters are read in the chips (Q-UI-422) |
+| (b) The navigation's drawer, reused | One drawer in the app | Nothing new | It is the shell's, from the left, without a dialog role or a focus trap |
+| (c) Keep the panel beside the list (Q-UI-327) | Two layouts | Filters and list side by side | The owner's verdict |
+
+**Choice:** (a), [ADR-200](../decisions.md#adr-200--a-lists-filters-open-in-a-drawer-the-apps-one-pattern-for-content-over-the-page).
+The drawer is 24 rem wide (the window's width below that), a backdrop dims the page, and it slides in and out with the panels' motion.
+**Rationale:** the owner chose the drawer; building it on the CDK dialog gives every rule of R-UI-044 for free and the app one way to
+put content over a page. The development agent revisits the width if a list's filters need more than 24 rem.
+
+**Applied in the spec:** R-UI-100, R-UI-101; Q-UI-327 replaced. Code: [drawer.ts](../../web/src/app/shared/ui/drawer.ts),
+[filter-panel.ts](../../web/src/app/shared/ui/filter-panel.ts), `.quader-drawer` in [_dialog.scss](../../web/src/styles/_dialog.scss).
+
+### Q-UI-421 · The search by name is a field above the list, outside the drawer
+
+Status: **Decided by the owner (2026-11-18)**, on the development agent's proposal, for the field outside the drawer; its behaviour is
+decided by the development agent from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The field filters 250 ms after the last key and at once on Enter, through the list's own name filter, the text trimmed (chosen) | As the repository page's **Filter packages** | One behaviour for the two fields the owner compared; no button; a paged list asks once per settled text | A request per settled text on a paged list |
+| (b) Enter only | No request while typing | Fewer requests | Unlike the repository page's field the owner named |
+| (c) The field filters the loaded rows in the browser | Instant | No request | A paged list filters only what is loaded, which the style guide forbids |
+
+**Choice:** (a). The field is as wide as a name (28 rem, R-UI-085), its placeholder and accessible name the job ("Filter
+repositories"). A list whose API has no search by name has no field; a list whose only filter is the name has no drawer and no
+**Filters**. The search text is not a chip; **Clear all** of the drawer keeps it, **Clear all filters** under an empty result clears
+it too. **Rationale:** the owner asked for the field the repository page has; its behaviour is that field's. The development agent
+revisits the delay if the paged lists load too often.
+
+**Applied in the spec:** R-UI-100. Code: [list-head.ts](../../web/src/app/shared/ui/list-head.ts).
+
+### Q-UI-422 · A set filter is a chip beside Filters, and what does not fit folds into +N more
+
+Status: **Decided by the owner (2026-11-18)** that the set filters show beside **Filters** while the drawer is closed; the form is
+decided by the development agent from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One chip per set filter, its name muted and its value, with a button that removes that filter; the chips that do not fit beside the button fold into one **+N more**, which opens the drawer (chosen) | One row at every width | Every filter is visible and removable in one click where it fits; the row never grows; the drawer shows every filter open | Measuring the row in the browser; at 390 px only one or two chips stand |
+| (b) The chips wrap onto further lines | Every chip always visible | No measuring | Five filters at 390 px are four lines above the list |
+| (c) One summary chip ("3 filters") | Short | One element | The owner asked for the filters, "hinted or in full"; a summary names none |
+
+**Choice:** (a). A chip never breaks; it stays in the row's order; a value is the reader's word (**OCI (Docker)**, **High**,
+**Last 7 days**). The removing button is named "Remove the filter Format: npm"; **+N more** is named "Show all 5 filters".
+**Rationale:** it is the owner's "hinted or in full" in one rule: in full where the room is, hinted where it is not. The development
+agent revisits (b) if the walkthrough shows that users miss the folded chips.
+
+**Applied in the spec:** R-UI-100. Code: `ListHead.fit` in [list-head.ts](../../web/src/app/shared/ui/list-head.ts).
+
+### Q-UI-423 · The drawer's filters stand open; Apply closes it, and closing without Apply keeps what the list shows
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The filters stand open, one under the other, each a labelled field or a group with its legend; **Apply filters** applies and closes the drawer; a drawer closed otherwise forgets its staged values (chosen) | No folding in the drawer | A filter is one step away; the drawer is a short form; what the chips say is what the list shows | A long drawer for the vulnerability report (nine filters), which scrolls inside |
+| (b) Closed sections, as in the panel | Folding | A short drawer | A click per filter, the cost the owner named |
+| (c) Every change applies at once | No button | One step less | A paged list reloads on every checkbox |
+
+**Choice:** (a). **Clear all** in the drawer's head removes the drawer's filters at once and keeps the search text. **Rationale:**
+the sections cost a click each, and a drawer has the window's height for its filters. The development agent revisits (c) for a list
+that is complete in the browser.
+
+**Applied in the spec:** R-UI-101. Code: [filter-panel.ts](../../web/src/app/shared/ui/filter-panel.ts); each list's `restage`.
+
+### Q-UI-424 · A project's mark is one component, before its name wherever a project is listed
+
+Status: **Decided by the owner (2026-11-18)** for the mark in every list of projects; the component, its sizes and the rows that
+name a project are decided by the development agent from the options below; the owner reviews them at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One component, `<quader-project-mark>`, its letter drawn by the stylesheet; 32 px beside a name with its key under it, 20 px beside a name of one line; a row that names its project shows `<quader-project-link>`, the mark and the display name (chosen) | One mark | The switcher, the suggestions and every list show the same mark; the letter is not part of the link's name (axe `label-content-name-mismatch`) | A row shows the project's display name, which may be longer than its key |
+| (b) The mark in the lists of projects only, a row's project by its key | Fewer marks | Short cells | The owner: "wherever a row names its project" |
+
+**Choice:** (a). The project column of the admin area's repository list and of the search's repositories and packages is 11 rem, so
+**Platform engineering** stands beside its mark on one line; a longer name breaks inside itself beside the mark (Q-UI-425). The
+switcher's button and its lists use the same component. **Rationale:** one icon of a project makes a project recognisable in every
+place. The development agent revisits the 11 rem if a project's name is usually longer.
+
+**Applied in the spec:** R-UI-102. Code: [project-mark.ts](../../web/src/app/shared/ui/project-mark.ts).
+
+### Q-UI-425 · An icon before a name has a column of its own in the cell, and a long name breaks inside itself beside it
+
+Status: **Decided by the owner (2026-11-18)** for the result (W-3); the pattern is decided by the development agent from the options
+below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The cell `.icon-name`: a grid of the icon's column and the name's, the name breaking after a hyphen and, where a part is longer than its column, anywhere (chosen) | One pattern for every list | The icon and the start of the name share the first line in every row; a description stands under the name, aligned with it | A broken key reads in parts |
+| (b) Keep the key on one line | No break | Whole keys | The list scrolls sideways at 1440 px (Q-UI-303) |
+| (c) Cut it with an ellipsis | One line | Even rows | A name that cannot be read |
+
+**Choice:** (a), for every list that puts an icon before a name: the repository lists, the search's repositories, the lists of
+projects and a row's project. It replaces `th.wrap-name` there; lists without an icon keep it. **Rationale:** the owner's row had the
+icon alone on the first line because icon and link were loose siblings; a column for each cannot do that. The development agent
+revisits nothing here.
+
+**Applied in the spec:** R-UI-102; Q-UI-303 revised. Code: `.icon-name` in [_list-screens.scss](../../web/src/styles/_list-screens.scss).
+
+### Q-UI-426 · A project's repository list has no client address; its row offers Set up client
+
+Status: **Decided by the owner (2026-11-18)** that the address leaves the list (W-4: "useless at this place; without a guide or a
+context it is worthless"); the columns and the row's action are decided by the development agent from the options below; the owner
+reviews them at the walkthrough.
+
+Context: this reverses the part of [Q-UI-330](#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)
+that kept the address field in a project's list, and the list rows of R-UI-065, Q-UI-300 and Q-UI-301. The address stays where its
+context is: the repository's page and the client setup.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Repository** (the visibility icon, the key, the description as its muted second line), **Format**, **Class**, and at the row's end **Set up client** as a quiet button beside the menu (chosen) | The name cell of every repository list | One name cell for the project's list, the admin area's and the search's; the repository takes the room the address left; the setup is one click from the row | The description is read under the key, not down a column |
+| (b) The description as a column of its own (the development agent's first proposal) | Five columns | The description scanned down a column | Prose squeezed into a narrow column at 1024 px; the project's list would differ from the admin area's and the search's |
+| (c) No row action | The menu only | Simple | The address had been the row's reason to be copied; the setup is where that job went |
+
+**Choice:** (a). **Set up client** opens today's client setup for the repository (`/setup?repository=<project>/<key>`), its accessible
+name ends with the key. The search's repository rows lose their copy button for the same reason (Q-UI-430). The admin area's list
+keeps its quiet copy button and its menu's **Copy client address**: an administrator hands addresses out, and the owner's objection
+named the project's list. With no address column left in a list, the address share (`fill`, `--quader-address-share`,
+`--quader-address-chars`, `--quader-list-others`, `td.address-cell`) and the render report's check of address widths go.
+**Rationale:** the owner's verdict; a repository's address is copied where its client is set up. The development agent revisits the
+admin area's copy button with the guides that open from a repository (W-2).
+
+**Applied in the spec:** R-UI-020, R-UI-065, R-UI-066; Q-UI-300, Q-UI-301, Q-UI-330 revised. Code:
+[repository-list.html](../../web/src/app/features/repositories/repository-list.html),
+[data-table.ts](../../web/src/app/shared/ui/data-table.ts).
+
+### Q-UI-427 · A table keeps no room for a scrollbar its rows do not need
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: every table ended 15 px before the right edge that the head of the list, the tab line and the separators above it reach
+(`home`, `repository-npm-local`, `packages`, `profile-tokens`, `search-results`). The cause, one for all: the data table's scroll
+region kept the room of its scrollbar (`scrollbar-gutter: stable`) whether its rows scrolled or not, so that the address column's
+share could be taken of the rows' width (Q-UI-327).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No reserved gutter (chosen) | The table reaches the edge | Every table ends where the lines above it end; nothing measures the rows' width any more (Q-UI-426) | A table whose rows scroll has its scrollbar at that edge, over the last 15 px of the table |
+| (b) Keep the gutter, pull the lines above in | Same edge | The scrollbar has its room | Every head, tab line and separator of every list changes |
+
+**Choice:** (a). **Rationale:** the gutter served the address share, which is gone. The development agent revisits nothing here.
+
+**Applied in the spec:** Q-UI-327 replaced. Code: `.table-scroll` in [_list-screens.scss](../../web/src/styles/_list-screens.scss).
+
+### Q-UI-428 · The report's cells keep a qualified name, a fixed version and a time on one line
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: in the vulnerability report every row was three lines high because cells broke: **Fixed in** read "None / yet", the
+repository `web-frontend/` / `npm-vendor`, and the time of detection "2 minutes / ago" (Q-UI-380 let these break).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The qualified name, each fixed version, "None yet" and the time are whole; a list of fixed versions breaks between versions (chosen) | Short rows | A row is as high as its summary; nothing reads broken | The identifier's column, with its summary, gets less room |
+| (b) Restructure the report | Other columns | Room | Not decided by the owner (the report by package and version is open) |
+
+**Choice:** (a). **Rationale:** a name or a short phrase is never broken (the style guide); the summary is the prose that may wrap.
+The development agent revisits the identifier's 10 rem (Q-UI-392) if a triager's list at 1280 px scrolls sideways.
+
+**Applied in the spec:** Q-UI-380 revised. Code: [vulnerability-report.html](../../web/src/app/features/vulnerabilities/vulnerability-report.html),
+[_vulnerabilities.scss](../../web/src/styles/_vulnerabilities.scss).
+
+### Q-UI-429 · A token list gives the scope the room, leaves out how a token was made, and words both actions
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on the profile's tokens the cell **Scope** broke into four lines ("All repository permissions of the owner, without
+administration") while the column **Token** was mostly empty; **Created via** said `ui`, a technical fact in the plain user's main
+view; the row's actions were an icon without a label (rotate) and a word (**Revoke**).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Scope** takes the room the others leave, **Token** keeps 10 rem; **Created via** is no column; **Rotate** and **Revoke** are two quiet buttons with their words (chosen) | Five columns that decide and **Created** (`narrow`) | The scope reads in two lines at 1440 px; nothing technical in the main view; one pattern for the two actions | How a token was made is read in the audit log only |
+| (b) **Created via** behind a disclosure per row | Kept | The fact stays in the list | A pattern no other list has (Q-UI-332 (c)) |
+| (c) The actions in a menu | One button | Room | The plain user's one frequent action behind a menu |
+
+**Choice:** (a). **Rationale:** the scope decides whether a token stays; how it was made does not. The development agent revisits
+**Created via** if administrators miss it in the token administration.
+
+**Applied in the spec:** R-UI-029; Q-UI-332 revised. Code: [token-table.ts](../../web/src/app/shared/access/token-table.ts).
+
+### Q-UI-430 · The search's repository rows are built from the parts of the repository list
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the search results were a third list of repositories built differently again: no visibility icon, the project by its key
+without its mark, and a copy button without a label at the end of each row.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The name cell of the repository list (the visibility icon, the key, the description), the project as its mark and name, format and class; no copy button (chosen) | One set of parts | The three repository lists read alike | None found |
+| (b) The admin area's row, with the copy button | As before | Copy from the search | W-4's reason holds here too |
+
+**Choice:** (a). The repository prefers the room; the project takes 11 rem. The search's packages show their project the same way and
+say **Latest**. **Rationale:** a repository looks the same in every list. The development agent revisits nothing here.
+
+**Applied in the spec:** R-UI-098; Q-UI-330 revised. Code: [search-results.ts](../../web/src/app/features/search/search-results.ts).
+
+### Q-UI-431 · A time in a list is relative, with the absolute time as its title; a log writes the moment
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: three ways to write a time across lists: "4 minutes ago" (the packages), "Nov 18, 2026" (the packages of a repository, the
+tokens, the admin area's last activity), "Nov 18, 2026, 8:17:21 AM" (the files of a repository, the users' last sign-in); and two
+wordings of a relative time ("4 minutes ago", "3 min ago").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A list of things: the relative time in the build's language, the date and time its title; a card: both, the absolute in brackets; a log (the audit log, the issued CI tokens): the date and the time; one wording, `Intl.RelativeTimeFormat` (chosen) | Three places, three forms, one wording | As the reference writes times in its lists; a log keeps the moment, which is its content; the helpers change in place, so every screen that calls them follows | An exact time in a list is one hover away |
+| (b) The date everywhere | One form | Stable pictures | "When did this change" needs arithmetic |
+| (c) The date and time everywhere | One form | Exact | Wide cells, the cause of broken rows |
+
+**Choice:** (a). `relativeTime` ([format-time.ts](../../web/src/app/features/packages/format-time.ts)) is the wording, "now" under a
+minute; `timeAgo` ([time-ago.ts](../../web/src/app/shared/ui/time-ago.ts)) is it in the build's locale; `<quader-time-ago
+absolute="title">` is a list's cell. The lists of this change use it; a screen that formats a time with the date pipe follows when it
+is next changed. **Rationale:** one rule a reader learns once. The development agent revisits the log's form if the owner wants
+relative times there too.
+
+**Applied in the spec:** R-UI-103; Q-UI-305 and Q-UI-378 revised.
+
+### Q-UI-432 · The package list says Latest, as the package table of a repository does
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Latest** in the package list and the search's packages (chosen) | The repository page's word | One word for one column; the help says what it is | None found |
+| (b) **Latest version** everywhere | The longer word | Explicit | The repository page's table is not this change's |
+
+**Choice:** (a). **Rationale:** the same column has one name. The development agent revisits nothing here.
+
+**Applied in the spec:** R-UI-006.
 ### Q-UI-450 · A row of the versions table is the version, its size, its vulnerabilities and two times
 
 Status: **Decided by the owner** (2026-11-18, W-7: which facts a row carries); the order and the rest **decided by the development

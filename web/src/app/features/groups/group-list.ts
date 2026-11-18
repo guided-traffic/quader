@@ -1,14 +1,15 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Group, GroupFilters, IdentityApi } from '../../api/identity-api';
 import { SessionStore } from '../../core/session-store';
-import { SelectField, SelectOption, TextField } from '../../shared/access/fields';
+import { SelectField, SelectOption } from '../../shared/access/fields';
 import { Needs } from '../../shared/access/needs';
 import { PagedResource } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
-import { FilterCategory, FilterPanel, FilterToggle } from '../../shared/ui/filter-panel';
+import { FilterPanel } from '../../shared/ui/filter-panel';
+import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { GroupCreateDialog } from './group-create-dialog';
 import { PageHeader } from '../../shared/ui/page-header';
 
@@ -23,19 +24,17 @@ export function groupOriginLabel(origin: Group['origin']): string {
   }
 }
 
-/** Groups (R-UI-025): name, description, origin and member count, with the filter panel, a sortable name and paging. */
+/** Groups (R-UI-025): name, description, origin and member count, with the search by name, the origin in the drawer (Q-UI-420), a sortable name and paging. */
 @Component({
   selector: 'quader-group-list',
   imports: [
     PageHeader,
     RouterLink,
     DataTable,
-    FilterCategory,
     FilterPanel,
-    FilterToggle,
+    ListHead,
     Needs,
     SelectField,
-    TextField,
   ],
   template: `
     <quader-page-header heading="Groups" i18n-heading="@@groups.heading">
@@ -43,53 +42,43 @@ export function groupOriginLabel(origin: Group['origin']): string {
     </quader-page-header>
     <quader-needs id="needs-groups" capability="identities:write" />
 
-    <div class="list-layout" [class.panel-open]="panelOpen()">
-      <div class="list-toolbar">
-        <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
-      </div>
-      <quader-filter-panel
-        #panel
-        class="list-side"
-        [(open)]="panelOpen"
-        [activeCount]="activeCount()"
-        (apply)="apply()"
-        (clearAll)="clear()"
-      >
-        <quader-filter-category i18n-label="@@groups.q" label="Name" [active]="!!q().trim()" [expanded]="!!q().trim()">
-          <quader-text-field width="name" i18n-label="@@groups.q" label="Name" name="q" [(value)]="q" />
-        </quader-filter-category>
-        <quader-filter-category i18n-label="@@groups.origin" label="Origin" [active]="!!origin()" [expanded]="!!origin()">
-          <quader-select-field i18n-label="@@groups.origin" label="Origin" name="origin" [options]="originOptions" [(value)]="origin" />
-        </quader-filter-category>
-      </quader-filter-panel>
+    <quader-list-head
+      [searchLabel]="searchLabel"
+      [search]="applied().q ?? ''"
+      (searchChange)="searchFor($event)"
+      [chips]="chips()"
+      (removeChip)="removeChip($event)"
+      [(filtersOpen)]="panelOpen"
+      [controls]="panel.panelId"
+    />
+    <quader-filter-panel #panel [(open)]="panelOpen" [activeCount]="chips().length" (apply)="apply()" (clearAll)="clear()" (dismissed)="restage()">
+      <quader-select-field i18n-label="@@groups.origin" label="Origin" name="origin" [options]="originOptions" [(value)]="origin" />
+    </quader-filter-panel>
 
-      <div class="list-main">
-        <quader-data-table
-          [caption]="caption"
-          [columns]="columns"
-          [sort]="sort()"
-          (sortChange)="sortBy($event)"
-          [loaded]="list.loaded()"
-          [loading]="list.loading()"
-          [error]="list.error()"
-          [empty]="list.items().length === 0"
-          i18n-emptyText="@@groups.empty"
-          emptyText="No group matches."
-          [hasMore]="list.hasMore()"
-          (more)="list.more()"
-          (retry)="list.reload()"
-        >
-          @for (g of list.items(); track g.id) {
-            <tr>
-              <th scope="row"><a [routerLink]="['/admin/groups', g.name]" translate="no">{{ g.name }}</a></th>
-              <td>{{ g.description }}</td>
-              <td>{{ originLabel(g.origin) }}</td>
-              <td class="num">{{ g.memberCount }}</td>
-            </tr>
-          }
-        </quader-data-table>
-      </div>
-    </div>
+    <quader-data-table
+      [caption]="caption"
+      [columns]="columns"
+      [sort]="sort()"
+      (sortChange)="sortBy($event)"
+      [loaded]="list.loaded()"
+      [loading]="list.loading()"
+      [error]="list.error()"
+      [empty]="list.items().length === 0"
+      i18n-emptyText="@@groups.empty"
+      emptyText="No group matches."
+      [hasMore]="list.hasMore()"
+      (more)="list.more()"
+      (retry)="list.reload()"
+    >
+      @for (g of list.items(); track g.id) {
+        <tr>
+          <th scope="row"><a [routerLink]="['/admin/groups', g.name]" translate="no">{{ g.name }}</a></th>
+          <td>{{ g.description }}</td>
+          <td>{{ originLabel(g.origin) }}</td>
+          <td class="num">{{ g.memberCount }}</td>
+        </tr>
+      }
+    </quader-data-table>
   `,
   styleUrl: '../../shared/access/access.scss',
 })
@@ -103,7 +92,13 @@ export class GroupList {
   protected readonly q = signal('');
   protected readonly origin = signal('');
   protected readonly panelOpen = signal(false);
-  protected readonly activeCount = signal(0);
+  /** The filters the list shows now; the drawer's field stages the next one. */
+  protected readonly applied = signal<GroupFilters>({});
+  protected readonly searchLabel = $localize`:@@groups.search:Filter groups`;
+  protected readonly chips = computed<readonly ListChip[]>(() => {
+    const origin = this.applied().origin;
+    return origin ? [{ key: 'origin', label: $localize`:@@groups.origin:Origin`, value: groupOriginLabel(origin) }] : [];
+  });
   protected readonly sort = signal<TableSort>({ column: 'name', direction: 'asc' });
   protected readonly caption = $localize`:@@groups.caption:Groups`;
   protected readonly columns: readonly TableColumn[] = [
@@ -133,7 +128,7 @@ export class GroupList {
       q: this.q().trim() || undefined,
       origin: (this.origin() || undefined) as GroupFilters['origin'],
     };
-    this.activeCount.set(Object.values(filters).filter((v) => v !== undefined).length);
+    this.applied.set(filters);
     const sort = this.sort();
     await this.list.start(this.api.groups({ ...filters, sort: sort.direction === 'desc' ? '-name' : 'name' }));
   }
@@ -143,8 +138,24 @@ export class GroupList {
     void this.apply();
   }
 
+  protected searchFor(text: string): void {
+    this.restage();
+    this.q.set(text);
+    void this.apply();
+  }
+
+  /** The drawer's field back to the filter the list shows: it closed without **Apply**. */
+  protected restage(): void {
+    this.origin.set(this.applied().origin ?? '');
+  }
+
+  protected removeChip(chip: ListChip): void {
+    if (chip.key === 'origin') this.origin.set('');
+    void this.apply();
+  }
+
+  /** **Clear all** of the drawer: its filter goes; the search text is the field's and stays. */
   protected clear(): void {
-    this.q.set('');
     this.origin.set('');
     void this.apply();
   }

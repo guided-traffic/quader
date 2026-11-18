@@ -147,12 +147,43 @@ export function type(
   );
 }
 
-/** Opens the filter panel of a list screen (a no-op when an applied filter opened it already). */
-export async function openFilters(fixture: ComponentFixture<unknown>, root: ParentNode): Promise<void> {
-  if (root.querySelector('quader-filter-panel form')) return;
-  button(root, /^\s*filter_list\s*Filters/).click();
+/**
+ * Opens the filter drawer of a list screen (Q-UI-420) and returns it: the drawer is the CDK dialog at the window's edge, so its
+ * form is in the overlay container, not under the screen's root.
+ */
+export async function openFilters(fixture: ComponentFixture<unknown>, root: ParentNode): Promise<HTMLElement> {
+  if (!filterDrawer()) {
+    button(root, /^\s*filter_list\s*Filters/).click();
+    await settle(fixture);
+  }
+  const drawer = filterDrawer();
+  if (!drawer) throw new Error('the filter drawer did not open');
+  return drawer;
+}
+
+/** The open filter drawer (its dialog element), or null. */
+export function filterDrawer(): HTMLElement | null {
+  return document.querySelector('.quader-drawer form.filter-form')?.closest<HTMLElement>('[role="dialog"]') ?? null;
+}
+
+/** Applies the open filter drawer: its **Apply** button, which closes it. */
+export async function applyFilters(fixture: ComponentFixture<unknown>): Promise<void> {
+  const drawer = filterDrawer();
+  if (!drawer) throw new Error('no filter drawer is open');
+  drawer.querySelector<HTMLButtonElement>('.filter-foot button[type="submit"]')!.click();
   await settle(fixture);
 }
+
+/** The search field of a list's head (Q-UI-421): the text is applied at once, as Enter does. */
+export async function searchList(fixture: ComponentFixture<unknown>, root: ParentNode, value: string): Promise<void> {
+  const input = root.querySelector<HTMLInputElement>('.list-search input')!;
+  type(input, value);
+  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  await settle(fixture);
+}
+
+/** The chips of the filters that are set, as their text ("Format: npm"). */
+export const chipTexts = (root: ParentNode): string[] => [...root.querySelectorAll('.list-filters .chip-text')].map((c) => text(c));
 
 /** The button or link whose text contains `label`, searched under `root`. */
 export function buttonByText(root: ParentNode, label: string): HTMLButtonElement | HTMLAnchorElement {

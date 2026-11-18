@@ -50,7 +50,8 @@ describe('Start page', () => {
 
   it('Q-UI-414 the start page has no package search of its own: the top bar\'s field is the one search', async () => {
     const { root } = await renderScreen(ProjectsHome);
-    expect(root.querySelector('input[type="search"]')).toBeNull();
+    // The one field of the page filters its list of projects (Q-UI-421); none searches packages.
+    expect([...root.querySelectorAll('input[type="search"]')].map((i) => i.getAttribute('aria-label'))).toEqual(['Filter projects']);
     expect(text(root)).not.toContain('Find a package');
   });
 

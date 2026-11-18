@@ -13,7 +13,7 @@ import {
 } from './advisories';
 
 /**
- * The data of `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): three projects, repositories of every
+ * The data of `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): four projects (one with a long name and key), repositories of every
  * format and class with short and long keys, a few published packages and files, the three kinds of user of R-UI-067 and
  * an empty project and repository for the empty states. Everything is created through Quader's public API and is
  * idempotent: a second run finds what the first made and adds nothing.
@@ -44,12 +44,21 @@ export const projects = [
   { key: 'platform', visibility: 'public', displayName: 'Platform engineering', description: 'Base images, Debian packages, NuGet libraries and automation for every team.' },
   // Empty: the empty states of a project.
   { key: 'sandbox', visibility: 'private', displayName: 'Sandbox', description: '' },
+  // A long name and a long key: what they do to a list of projects and to a row that names its project (Q-UI-424, Q-UI-425).
+  {
+    key: 'customer-portal-release-delivery',
+    visibility: 'internal',
+    displayName: 'Customer portal release engineering and delivery',
+    description: 'Release pipelines, signing keys and the delivery automation of the customer portal.',
+  },
 ] as const;
 
 /** The project the power user owns, and in which the screens of a project are rendered. */
 export const mainProject = 'web-frontend';
 export const otherProject = 'platform';
 export const emptyProject = 'sandbox';
+/** The project with a long name and a long key. */
+export const longProject = 'customer-portal-release-delivery';
 /** A key long enough to show what a long key and its address do to a list (R-UI-065). */
 export const longNpmKey = 'release-candidates-for-the-customer-portal-frontend';
 export const longDebKey = 'debian-internal-packages-for-bookworm-and-trixie';
@@ -93,6 +102,7 @@ export const repositories: readonly RepoSeed[] = [
   { project: otherProject, key: 'collections', format: 'ansible', class: 'local', description: 'Ansible collections of the platform team.', visibility: { artifacts: 'public', wiki: 'internal' } },
   { project: otherProject, key: 'galaxy', format: 'ansible', class: 'remote' },
   { project: otherProject, key: 'ansible', format: 'ansible', class: 'virtual', members: ['collections', 'galaxy'] },
+  { project: longProject, key: 'signed-release-artifacts', format: 'generic', class: 'local', description: 'Signed release archives of the customer portal.' },
 ];
 
 /** Who is what: the project roles of R-AUTHZ-026 and the system role `admin` (R-AUTHZ-010); see R-UI-067. */

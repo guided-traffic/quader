@@ -98,7 +98,7 @@ export class EndpointDetail {
    * the versions and the pre-releases give their room (`narrow`) and the rest fits 48 rem, where the rows stack (Q-UI-331).
    */
   protected readonly ruleColumns: readonly TableColumn[] = [
-    { id: 'name', label: $localize`:@@ep.col.rule:Rule`, width: '9rem', prefer: '9rem' },
+    { id: 'name', label: $localize`:@@ep.col.rule:Rule`, width: '9rem', prefer: true },
     { id: 'repository', label: $localize`:@@ep.rule.col.repository:Repository`, width: '9rem' },
     { id: 'patterns', label: $localize`:@@ep.rule.col.patterns:Packages and paths`, width: '8rem' },
     { id: 'versions', label: $localize`:@@ep.rule.col.versions:Versions`, width: '6rem', narrow: true },

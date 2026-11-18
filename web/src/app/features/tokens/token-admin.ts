@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { ApiError } from '../../api/problem';
 import { Token, TokenFilters, TokensApi } from '../../api/tokens-api';
@@ -10,7 +10,8 @@ import { Needs } from '../../shared/access/needs';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
 import { TokenTable } from '../../shared/access/token-table';
 import { ErrorNotice } from '../../shared/error-notice';
-import { FilterCategory, FilterPanel, FilterToggle } from '../../shared/ui/filter-panel';
+import { FilterPanel } from '../../shared/ui/filter-panel';
+import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /**
@@ -26,9 +27,8 @@ import { PageHeader } from '../../shared/ui/page-header';
     PageHeader,
     Checkbox,
     ErrorNotice,
-    FilterCategory,
     FilterPanel,
-    FilterToggle,
+    ListHead,
     Needs,
     SelectField,
     TextField,
@@ -51,8 +51,21 @@ export class TokenAdmin {
   protected readonly unusedDays = signal('');
   protected readonly selected = signal<readonly string[]>([]);
   protected readonly panelOpen = signal(false);
-  /** How many filters the list currently applies; the default state "active" is not one. */
-  protected readonly activeCount = signal(0);
+  /** The drawer's values the list shows now, as they stood when they were applied. */
+  private readonly applied = signal({ owner: '', type: '', state: 'active', expiresBefore: '', unusedDays: '' });
+  /** The filters that are set, as the head's chips (Q-UI-422); the default state "active" is not one. */
+  protected readonly chips = computed<readonly ListChip[]>(() => {
+    const a = this.applied();
+    const out: ListChip[] = [];
+    const named = (options: readonly SelectOption[], value: string): string => options.find((o) => o.value === value)?.label ?? value;
+    if (a.owner.trim()) out.push({ key: 'owner', label: $localize`:@@tokens-admin.owner:Owner`, value: a.owner.trim() });
+    if (a.type) out.push({ key: 'type', label: $localize`:@@tokens-admin.type:Type`, value: named(this.typeOptions, a.type) });
+    if (a.state !== 'active') out.push({ key: 'state', label: $localize`:@@tokens-admin.state:State`, value: named(this.stateOptions, a.state) });
+    if (a.expiresBefore) out.push({ key: 'expiresBefore', label: $localize`:@@tokens-admin.expires-before:Expires before`, value: a.expiresBefore });
+    const days = Number.parseInt(a.unusedDays, 10);
+    if (Number.isFinite(days) && days > 0) out.push({ key: 'unusedDays', label: $localize`:@@tokens-admin.unused:Not used for (days)`, value: String(days) });
+    return out;
+  });
   /** An unfiltered list says that no active token exists; "No tokens match." is for a filter (UI-A-25). */
   protected readonly noActive = $localize`:@@tokens-admin.empty:No active tokens.`;
   protected readonly noMatch = $localize`:@@token-table.empty:No tokens match.`;
@@ -92,12 +105,26 @@ export class TokenAdmin {
       lastUsedBefore:
         Number.isFinite(days) && days > 0 ? new Date(Date.now() - days * 86_400_000).toISOString() : undefined,
     };
-    this.activeCount.set(
-      [filters.owner, filters.type, filters.state !== 'active' ? filters.state : undefined, filters.expiresBefore, filters.lastUsedBefore].filter(
-        (v) => v !== undefined,
-      ).length,
-    );
+    this.applied.set({ owner: this.owner(), type: this.type(), state: this.state(), expiresBefore: this.expiresBefore(), unusedDays: this.unusedDays() });
     await this.list.start(this.api.list(filters));
+  }
+
+  /** The drawer's fields back to the filters the list shows: it closed without **Apply**. */
+  protected restage(): void {
+    const a = this.applied();
+    this.owner.set(a.owner);
+    this.type.set(a.type);
+    this.state.set(a.state);
+    this.expiresBefore.set(a.expiresBefore);
+    this.unusedDays.set(a.unusedDays);
+  }
+
+  protected removeChip(chip: ListChip): void {
+    this.restage();
+    const field = { owner: this.owner, type: this.type, expiresBefore: this.expiresBefore, unusedDays: this.unusedDays }[chip.key];
+    if (chip.key === 'state') this.state.set('active');
+    else field?.set('');
+    void this.apply();
   }
 
   protected clear(): void {

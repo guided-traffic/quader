@@ -878,7 +878,11 @@ agent** is not decided until the owner has said so.
   owner: "implement the findings first; I cannot review it as it is". Four builders build on base 3addcae4, each a whole package
   with its spec, tests, documentation and renders; nothing of it has landed yet:
   - **Lists:** W-1, W-3, W-4, W-6 and the list defects the development agent saw (the tables' right edge, broken cells in the
-    vulnerability report and the token list, the search results' repository list, one way to write a time);
+    vulnerability report and the token list, the search results' repository list, one way to write a time). **Landed on
+    2026-11-18** (ADR-200, R-UI-100 to R-UI-103, Q-UI-420 to Q-UI-432). Decided differently from the development agent's
+    proposal in W-4: the description stays under the key instead of in a column of its own, so that every repository list is
+    built from the same cell (Q-UI-426). The admin area's repository list keeps its copy button for the address, because the
+    owner's objection named the project's list; open to his objection. Not run locally: the journeys 02, 06, 08 and 13;
   - **Package page:** W-7 with the two API additions (last fetched and findings with a fix, per version) and a seed with many
     versions. **Landed on 2026-11-18** (R-UI-110 to R-UI-112, R-API-065, R-VULN-040, Q-UI-450 to Q-UI-458, Q-API-295,
     Q-VULN-160): a package opens on the table of its versions, a version's page is `…/<name>@<version>`. "Last fetched" is read

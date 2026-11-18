@@ -198,6 +198,7 @@ checked every earlier decision against them:
 | [ADR-155](#adr-155--three-roles-api-packages-and-worker-variants-are-pools) | Three roles: api, packages and worker; variants are pools | Accepted (owner decision of 2026-11-04; the fetch role dropped the same day) |
 | [ADR-156](#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project) | Projects own their repositories, members hold roles, names are scoped to the project | Accepted (owner decision of 2026-11-06); the details decided by the development agent — owner review at the walkthrough |
 | [ADR-199](#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark) | The product is renamed from trove to Quader, with the token prefix `qdr_` and a new mark | Accepted (owner decision of 2026-11-17); the prefix `qdr_` chosen by the development agent, open to the owner's objection |
+| [ADR-200](#adr-200--a-lists-filters-open-in-a-drawer-the-apps-one-pattern-for-content-over-the-page) | A list's filters open in a drawer, the app's one pattern for content over the page | Accepted (owner decision of 2026-11-18) for the drawer; its build decided by the development agent, owner review at the walkthrough |
 | [ADR-203](#adr-203--browse-goes-a-repositorys-files-live-on-its-page) | Browse goes; a repository's files live on its page | Accepted (owner decision of 2026-11-18); the details decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
@@ -890,6 +891,40 @@ leaked token would name the old product). For the name and the mark: none; set b
 [Q-AUTH-2](spec/identity-and-authentication.md#q-auth-2--session-cookie-name),
 [R-ARCH-025](spec/architecture.md#r-arch-025--versioning-and-compatibility-policy), [spec/bastion.md](spec/bastion.md).
 
+### ADR-200 · A list's filters open in a drawer, the app's one pattern for content over the page
+
+**Status:** Accepted (owner decision of 2026-11-18) for the drawer; its build decided by the development agent, owner review at
+the walkthrough
+
+**Context.** In the walk of 2026-11-18 (W-6) the owner called the filter panel beside a list "extremely ugly" and asked for a drawer.
+One component carried the filters of every list, and it stood beside the list where the list kept 71 rem and between its button and
+the list where it did not
+([Q-UI-327](spec/api-and-ui.md#q-ui-327--the-filter-panel-sits-beside-a-list-only-where-the-list-keeps-71-rem-and-a-tables-columns-share-its-rows-width-without-the-scrollbar)):
+two layouts, and a list rebuilt narrower whenever the panel opened. The app had no drawer for content; the navigation's drawer at
+narrow widths belongs to the shell.
+
+**Decision.**
+- Content over the page is a drawer that slides in from the right: `<quader-drawer>`
+  ([drawer.ts](../web/src/app/shared/ui/drawer.ts)), the CDK dialog the app's dialogs already use (Q-UI-126), placed at the window's
+  right edge with its full height, 24 rem wide. It is a modal dialog named by its heading; the focus moves in and is trapped;
+  Escape, its close button and a click beside it close it; the focus returns to the opener; the page behind it does not scroll.
+- A list's filters are such a drawer, `<quader-filter-panel>`: one behaviour at every width. The list keeps its width and its
+  columns. The search by name is outside the drawer, in the list's head, and the filters that are set show beside **Filters** as
+  chips ([R-UI-100](spec/api-and-ui.md#r-ui-100--the-head-of-every-list-the-search-by-name-filters-and-the-filters-that-are-set),
+  [R-UI-101](spec/api-and-ui.md#r-ui-101--the-filters-open-in-a-drawer-over-the-page)).
+
+**Consequences.** Every list screen with filters changed at once, and the layout grid of Q-UI-327 is gone. What filters a list is
+read in its chips while the drawer is closed, not in an open panel. A further screen that needs content over the page (the
+details of one row, a picker) uses the same component and does not build its own overlay.
+
+**Alternatives considered.** The navigation's drawer reused (from the left, the shell's, without a dialog role or focus trap); the
+panel beside the list kept (the owner's verdict); a drawer of the app's own without the CDK (the focus trap, the inert page behind
+it and the scroll block written again).
+
+**Revisit condition:** a list's filters need more than 24 rem, or a second kind of content over the page does not fit a drawer.
+
+**Spec:** [Q-UI-420](spec/api-and-ui.md#q-ui-420--the-filters-of-a-list-open-in-a-drawer-from-the-right-over-the-page) to
+[Q-UI-423](spec/api-and-ui.md#q-ui-423--the-drawers-filters-stand-open-apply-closes-it-and-closing-without-apply-keeps-what-the-list-shows).
 ### ADR-203 · Browse goes; a repository's files live on its page
 
 **Status:** Accepted (owner decision of 2026-11-18, walk objection W-8); the details decided by the development agent — owner review

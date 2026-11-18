@@ -1,4 +1,4 @@
-import { bobPassword, expect, expectAccessible, openFilter, qualified, repositories, repositoryApi, signInLocal, signInWithKeycloak, test, unique, watchCsp } from '../support';
+import { bobPassword, expect, expectAccessible, applyFilters, openFilters, qualified, repositories, repositoryApi, signInLocal, signInWithKeycloak, test, unique, watchCsp } from '../support';
 
 // R-UI-047 journey "ci" (R-UI-035, R-UI-036, R-CI-019, R-CI-020, Q-CI-26): against the real backend and the issuer double of
 // test/oidcstub, an administrator registers the double as a CI issuer (with the CA of its certificate), creates the reference
@@ -250,17 +250,10 @@ test('R-UI-035 R-UI-036 R-CI-019 an administrator registers the issuer, creates 
       }
     ).job_id;
     await page.goto('/ui/en/admin/ci/issuances');
-    await openFilter(page, 'Issuer');
-    await page
-      .getByRole('search', { name: 'Filters' })
-      .getByLabel('Issuer', { exact: true })
-      .fill(issuerName);
-    await openFilter(page, 'Job ID');
-    await page.getByRole('search', { name: 'Filters' }).getByLabel('Job ID').fill(jobId);
-    await page
-      .getByRole('search', { name: 'Filters' })
-      .getByRole('button', { name: 'Apply filters' })
-      .click();
+    const drawer = await openFilters(page);
+    await drawer.getByLabel('Issuer', { exact: true }).fill(issuerName);
+    await drawer.getByLabel('Job ID').fill(jobId);
+    await applyFilters(page);
     await expect(page.getByRole('button', { name: 'Revoke matching tokens' })).toBeEnabled();
     await page.getByRole('button', { name: 'Revoke matching tokens' }).click();
     const confirm = page.getByRole('dialog');

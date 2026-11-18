@@ -15,7 +15,9 @@ import { filesCommands } from '../../core/project-links';
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
-import { FilterCategory, FilterPanel, FilterToggle } from '../../shared/ui/filter-panel';
+import { FilterPanel } from '../../shared/ui/filter-panel';
+import { ListChip, ListHead } from '../../shared/ui/list-head';
+import { ProjectLink } from '../../shared/ui/project-mark';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
 import { actionSuggestions, auditActionLabel, categoryLabel, outcomeLabel } from './audit-labels';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -47,9 +49,9 @@ const PRESETS: Readonly<Record<string, number>> = {
     CopyButton,
     DataTable,
     ErrorNotice,
-    FilterCategory,
     FilterPanel,
-    FilterToggle,
+    ListHead,
+    ProjectLink,
   ],
   templateUrl: './audit-log.html',
   styleUrl: './audit-log.scss',
@@ -80,7 +82,6 @@ export class AuditLog {
   protected readonly draft = signal<Readonly<Record<string, string>>>({});
   protected readonly presetDraft = signal('24h');
   protected readonly panelOpen = signal(false);
-  protected readonly applyLabel = $localize`:@@repo.filter.apply:Search`;
   protected readonly caption = $localize`:@@audit.caption:Audit events, newest first`;
   /** No sort control: the log is always newest first, and the API takes no sort parameter. */
   protected readonly columns: readonly TableColumn[] = [
@@ -143,13 +144,23 @@ export class AuditLog {
         this.range()
       ),
   );
-  /** The number of filters in the URL, the time range included when it is not the default. */
-  protected readonly activeCount = computed(
-    () =>
-      [this.actor(), this.action(), this.category(), this.repository(), this.outcome(), this.range()].filter(
-        (v) => !!v,
-      ).length,
-  );
+  /** The filters in the URL as the head's chips (Q-UI-422), the time range when it is not the default. */
+  protected readonly chips = computed<readonly ListChip[]>(() => {
+    const out: ListChip[] = [];
+    const range = this.range();
+    if (range) out.push({ key: 'range', label: $localize`:@@audit.filter.range:Time range`, value: this.rangeText(range) });
+    const actor = this.actor();
+    if (actor) out.push({ key: 'actor', label: $localize`:@@audit.col.actor:Actor`, value: actor });
+    const action = this.action();
+    if (action) out.push({ key: 'action', label: $localize`:@@audit.col.action:Action`, value: this.actionLabel(action) });
+    const category = this.category();
+    if (category) out.push({ key: 'category', label: $localize`:@@audit.filter.category:Category`, value: this.categoryText(category) });
+    const repository = this.repository();
+    if (repository) out.push({ key: 'repository', label: $localize`:@@audit.filter.repository:Repository`, value: repository });
+    const outcome = this.outcome();
+    if (outcome) out.push({ key: 'outcome', label: $localize`:@@audit.col.outcome:Outcome`, value: this.outcomeText(outcome) });
+    return out;
+  });
   protected readonly csvUrl = computed(() => this.api.exportUrl(this.filters(), 'csv'));
   protected readonly jsonlUrl = computed(() => this.api.exportUrl(this.filters(), 'jsonl'));
 
@@ -174,22 +185,21 @@ export class AuditLog {
       // A preset moves with the clock; the explicit refresh and a filter change reload.
       untracked(() => void this.list.start(this.api.events(filters), AUDIT_PAGE_SIZE));
     });
-    effect(() => {
-      // An applied filter is never hidden: the panel opens with it.
-      if (this.activeCount() > 0) untracked(() => this.panelOpen.set(true));
+    effect(() => this.restage());
+  }
+
+  /** The drawer's values back to the ones in the URL: after a change of the URL, and when the drawer closes without **Apply**. */
+  protected restage(): void {
+    this.draft.set({
+      actor: this.actor() ?? '',
+      action: this.action() ?? '',
+      category: this.category() ?? '',
+      repository: this.repository() ?? '',
+      outcome: this.outcome() ?? '',
+      from: this.from() ?? '',
+      to: this.to() ?? '',
     });
-    effect(() => {
-      this.draft.set({
-        actor: this.actor() ?? '',
-        action: this.action() ?? '',
-        category: this.category() ?? '',
-        repository: this.repository() ?? '',
-        outcome: this.outcome() ?? '',
-        from: this.from() ?? '',
-        to: this.to() ?? '',
-      });
-      this.presetDraft.set(this.preset());
-    });
+    this.presetDraft.set(this.preset());
   }
 
   protected setDraft(name: string, value: string): void {
@@ -214,6 +224,29 @@ export class AuditLog {
       },
       queryParamsHandling: 'merge',
     });
+  }
+
+  protected removeChip(chip: ListChip): void {
+    this.now.set(Date.now());
+    const change: Record<string, null> = { [chip.key]: null, event: null };
+    if (chip.key === 'range') Object.assign(change, { from: null, to: null });
+    void this.router.navigate([], { queryParams: change, queryParamsHandling: 'merge' });
+  }
+
+  /** A time range's words: the preset's, or the custom bounds as typed. */
+  private rangeText(range: string): string {
+    switch (range) {
+      case '1h':
+        return $localize`:@@audit.range.1h:Last hour`;
+      case '7d':
+        return $localize`:@@audit.range.7d:Last 7 days`;
+      case '30d':
+        return $localize`:@@audit.range.30d:Last 30 days`;
+      case 'custom':
+        return `${this.from() ?? '…'} – ${this.to() ?? '…'}`;
+      default:
+        return range;
+    }
   }
 
   protected clear(): void {

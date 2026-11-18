@@ -8,10 +8,13 @@ import { FakePackagesApi, NPM_REPOSITORIES } from '../../api/testing/fakes-packa
 import { BrowserStorage } from '../../core/storage';
 import { spokenText } from '../../testing/axe';
 import {
+  applyFilters,
   button,
-  buttonByText,
+  chipTexts,
   expectAccessible,
+  filterDrawer,
   openFilters,
+  searchList,
   inProject,
   renderScreen,
   settle,
@@ -68,7 +71,8 @@ describe('Packages list', () => {
     expect(r.root.querySelector('h1')?.textContent).toBe('Packages');
     const headers = [...r.root.querySelectorAll('thead th')].map((th) => text(th.querySelector('.th-sort, .th-inner > span:first-child') ?? th));
     // What a reader chooses by (Q-UI-314); the counts and the first publication are on the package's page.
-    expect(headers).toEqual([expect.stringContaining('Package'), 'Format', 'Latest version', expect.stringContaining('Updated')]);
+    // The words of the repository page's package table (Q-UI-432): Latest, not Latest version.
+    expect(headers).toEqual([expect.stringContaining('Package'), 'Format', 'Latest', expect.stringContaining('Updated')]);
     expect(names(r)).toHaveLength(3);
     const ui = rows(r).find((row) => text(row).includes('@team-a/ui'))!;
     const cells = [...ui.children].map((c) => text(c));
@@ -137,41 +141,47 @@ describe('Packages list', () => {
     expect(unknown.fake.listFilters.at(-1)?.sort).toBe('name');
   });
 
-  it('R-UI-006 the filter panel offers package type, repository, name or description, keyword and created', async () => {
+  it('R-UI-006 Q-UI-420 the head searches by name or description; the drawer offers package type, repository, keyword and created', async () => {
     const r = await open();
-    await openFilters(r.fixture, r.root);
-    const categories = [...r.root.querySelectorAll('quader-filter-category .category-label')].map((c) => text(c));
-    expect(categories).toEqual(['Package type', 'Repository', 'Name or description', 'Keyword', 'Created']);
+    expect(r.root.querySelector('.list-search input')?.getAttribute('aria-label')).toBe('Filter packages');
+    const drawer = await openFilters(r.fixture, r.root);
+    const legends = [...drawer.querySelectorAll('fieldset > legend')].map((c) => text(c));
+    expect(legends).toEqual(['Package type', 'Repository', 'Keyword', 'Created']);
+    await expectAccessible(drawer);
     await expectAccessible(r.root);
   });
 
-  it('R-UI-006 choosing a type and searching sends all staged values to the query at once', async () => {
+  it('Q-UI-421 the search field sends the text to the query', async () => {
     const r = await open();
     const navigate = navigateSpy();
-    await openFilters(r.fixture, r.root);
-    for (const label of ['Package type', 'Name or description', 'Keyword']) buttonByText(r.root, label).click();
-    await settle(r.fixture);
-    const check = [...r.root.querySelectorAll<HTMLInputElement>('quader-filter-category input[type="checkbox"]')].find(
+    await searchList(r.fixture, r.root, ' logging ');
+    expect(navigate).toHaveBeenLastCalledWith([], { queryParams: { q: 'logging' }, queryParamsHandling: 'merge' });
+  });
+
+  it('R-UI-006 choosing a type and applying sends all staged values to the query at once', async () => {
+    const r = await open();
+    const navigate = navigateSpy();
+    const drawer = await openFilters(r.fixture, r.root);
+    const check = [...drawer.querySelectorAll<HTMLInputElement>('quader-filter-category input[type="checkbox"]')].find(
       (i) => text(i.parentElement!) === 'NuGet',
     )!;
     check.checked = true;
     check.dispatchEvent(new Event('change', { bubbles: true }));
-    type(r.root.querySelector<HTMLInputElement>('input[aria-label="Name or description"]')!, ' logging ');
-    type(r.root.querySelector<HTMLInputElement>('input[aria-label="Keyword"]')!, 'log');
+    type(drawer.querySelector<HTMLInputElement>('input[aria-label="Keyword"]')!, 'log');
     await settle(r.fixture);
-    button(r.root, 'Search').click();
+    await applyFilters(r.fixture);
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { format: ['nuget'], repository: [], q: 'logging', keyword: 'log', period: null, from: null, to: null },
+      queryParams: { format: ['nuget'], repository: [], keyword: 'log', period: null, from: null, to: null },
       queryParamsHandling: 'merge',
     });
   });
 
-  it('R-UI-006 acceptance: with format=nuget the list shows one row; the filter is a chip and the panel opens with it', async () => {
+  it('R-UI-006 acceptance: with format=nuget the list shows one row; the filter is a chip beside Filters, the drawer stays closed', async () => {
     const r = await open({ format: 'nuget' });
     expect(names(r)).toEqual(['Contoso.Logging']);
     expect(r.fake.listFilters.at(-1)?.format).toEqual(['nuget']);
-    expect(r.root.querySelector('.chip')?.textContent).toContain('Package type: NuGet');
-    expect(r.root.querySelector('quader-filter-panel form')).not.toBeNull();
+    expect(chipTexts(r.root)).toEqual(['Package type: NuGet']);
+    expect(filterDrawer()).toBeNull();
   });
 
   it('R-UI-006 several formats and repositories repeat the parameter (OR within a field)', async () => {
@@ -184,13 +194,9 @@ describe('Packages list', () => {
 
   it('R-UI-006 every applied filter is a removable chip with an accessible name; removing one changes only that filter', async () => {
     const r = await open({ format: ['npm', 'nuget'], q: 'team', keyword: 'ui' });
-    const chips = [...r.root.querySelectorAll('.chip')].map((c) => text(c));
-    expect(chips).toEqual([
-      'Package type: npmclose',
-      'Package type: NuGetclose',
-      'Name or description: teamclose',
-      'Keyword: uiclose',
-    ]);
+    // The search text is the field's, not a chip (Q-UI-421).
+    expect(chipTexts(r.root)).toEqual(['Package type: npm', 'Package type: NuGet', 'Keyword: ui']);
+    expect(r.root.querySelector<HTMLInputElement>('.list-search input')?.value).toBe('team');
     const navigate = navigateSpy();
     expect(r.root.querySelector('.chip button')?.getAttribute('aria-label')).toBe('Remove the filter Package type: npm');
     r.root.querySelector<HTMLButtonElement>('.chip button')!.click();
@@ -229,7 +235,7 @@ describe('Packages list', () => {
     expect(Date.now() - from).toBeGreaterThan(6.9 * 86_400_000);
     expect(Date.now() - from).toBeLessThan(7.1 * 86_400_000);
     expect(week.fake.listFilters.at(-1)?.createdTo).toBeUndefined();
-    expect(week.root.querySelector('.chip')?.textContent).toContain('Created: Last 7 days');
+    expect(chipTexts(week.root)).toEqual(['Created: Last 7 days']);
 
     const custom = await open({ period: 'custom', from: '2026-09-01', to: '2026-09-30' });
     const sent = custom.fake.listFilters.at(-1)!;

@@ -1,5 +1,5 @@
 import { seriousViolations } from '../../testing/axe';
-import { buttonByText, openFilters, renderScreen, settle, text, typeInto } from '../../testing/screen';
+import { buttonByText, openFilters, renderScreen, settle, text, typeInto, chipTexts } from '../../testing/screen';
 import { UserList } from './user-list';
 
 describe('Users list table and filter panel (R-UI-024, R-UI-020)', () => {
@@ -20,24 +20,49 @@ describe('Users list table and filter panel (R-UI-024, R-UI-020)', () => {
     expect(root.querySelectorAll('th button.th-sort')).toHaveLength(1);
   });
 
-  it('R-UI-024 the filter panel counts the applied filters; "Clear all" resets them and the list', async () => {
+  it('R-UI-024 Q-UI-422 the applied filters are chips, counted on Filters; "Clear all" resets them and the list', async () => {
     const { fixture, root } = await renderScreen(UserList);
-    await openFilters(fixture, root);
-    typeInto(root, 'Name or email', 'bob');
-    buttonByText(root, 'Apply filters').click();
+    let drawer = await openFilters(fixture, root);
+    typeInto(drawer, 'Status', 'disabled');
+    buttonByText(drawer, 'Apply filters').click();
     await settle(fixture);
     expect(root.querySelector('button.filter-toggle .filter-count')?.textContent).toBe('1');
-    expect(root.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(chipTexts(root)).toEqual(['Status: Disabled']);
 
-    buttonByText(root, 'Clear all').click();
+    drawer = await openFilters(fixture, root);
+    buttonByText(drawer, 'Clear all').click();
     await settle(fixture);
     expect(root.querySelector('button.filter-toggle .filter-count')).toBeNull();
     expect(root.querySelectorAll('tbody tr')).toHaveLength(2);
   });
 
-  it('R-UI-044 the open filter panel passes the accessibility check', async () => {
+  it('Q-UI-422 removing a chip removes only its filter; the drawer closed without Apply keeps the applied filters', async () => {
     const { fixture, root } = await renderScreen(UserList);
-    await openFilters(fixture, root);
+    let drawer = await openFilters(fixture, root);
+    typeInto(drawer, 'Status', 'active');
+    typeInto(drawer, 'Origin', 'admin');
+    buttonByText(drawer, 'Apply filters').click();
+    await settle(fixture);
+    expect(chipTexts(root)).toEqual(['Status: Active', 'Origin: Created by an administrator']);
+
+    drawer = await openFilters(fixture, root);
+    typeInto(drawer, 'Status', 'disabled');
+    drawer.querySelector<HTMLButtonElement>('button.drawer-close')!.click();
+    await settle(fixture);
+    drawer = await openFilters(fixture, root);
+    expect(drawer.querySelector<HTMLSelectElement>('select[name="status"]')!.value).toBe('active');
+    drawer.querySelector<HTMLButtonElement>('button.drawer-close')!.click();
+    await settle(fixture);
+
+    root.querySelector<HTMLButtonElement>('button[aria-label="Remove the filter Status: Active"]')!.click();
+    await settle(fixture);
+    expect(chipTexts(root)).toEqual(['Origin: Created by an administrator']);
+  });
+
+  it('R-UI-044 the open filter drawer passes the accessibility check', async () => {
+    const { fixture, root } = await renderScreen(UserList);
+    const drawer = await openFilters(fixture, root);
+    expect(await seriousViolations(drawer)).toEqual([]);
     expect(await seriousViolations(root)).toEqual([]);
   });
 });

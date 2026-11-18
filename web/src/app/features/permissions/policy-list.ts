@@ -1,12 +1,14 @@
-import { Component, effect, inject, input, signal, untracked } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PermissionPolicy, PolicyApi, PolicyFilters } from '../../api/authz-api';
 import { SessionStore } from '../../core/session-store';
 import { TextField } from '../../shared/access/fields';
 import { Needs } from '../../shared/access/needs';
 import { PagedResource } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
-import { FilterCategory, FilterPanel, FilterToggle } from '../../shared/ui/filter-panel';
+import { FilterPanel } from '../../shared/ui/filter-panel';
+import { ListChip, ListHead } from '../../shared/ui/list-head';
+import { ProjectLink } from '../../shared/ui/project-mark';
 import { expandActions } from './policy-model';
 import { PageHeader } from '../../shared/ui/page-header';
 
@@ -31,14 +33,14 @@ export function actionSummary(policy: Pick<PermissionPolicy, 'entries'>): string
 }
 
 /**
- * Permission policies (R-UI-027): name, description, principal summary, resources summary and
- * actions; filters by principal and repository in the filter panel; the name column sorts
+ * Permission policies (R-UI-027): name, project (mark and name), description, principal summary, resources summary and actions;
+ * filters by principal, repository and project in the drawer, the ones that are set as chips beside **Filters** (Q-UI-420); the name column sorts
  * through the API's `sort` parameter; cursor paging. The `principal` query parameter
  * opens the list filtered.
  */
 @Component({
   selector: 'quader-policy-list',
-  imports: [PageHeader, RouterLink, DataTable, FilterCategory, FilterPanel, FilterToggle, Needs, TextField],
+  imports: [PageHeader, RouterLink, DataTable, FilterPanel, ListHead, Needs, ProjectLink, TextField],
   templateUrl: './policy-list.html',
   styleUrl: '../../shared/access/access.scss',
 })
@@ -50,6 +52,7 @@ export class PolicyList {
   readonly project = input<string | undefined>();
 
   private readonly api = inject(PolicyApi);
+  private readonly route = inject(ActivatedRoute);
   protected readonly session = inject(SessionStore);
 
   protected readonly list = new PagedResource<PermissionPolicy>();
@@ -57,7 +60,18 @@ export class PolicyList {
   protected readonly repositoryFilter = signal('');
   protected readonly projectFilter = signal('');
   protected readonly panelOpen = signal(false);
-  protected readonly activeCount = signal(0);
+  /** The list is a project's (`/projects/<key>/policies`): the project is the route's and no filter. */
+  protected readonly inProject = (): boolean => this.route.snapshot.paramMap.has('project');
+  /** The filters the list shows now; the drawer's fields stage the next ones. */
+  protected readonly applied = signal<PolicyFilters>({});
+  protected readonly chips = computed<readonly ListChip[]>(() => {
+    const f = this.applied();
+    const out: ListChip[] = [];
+    if (f.principal) out.push({ key: 'principal', label: $localize`:@@policies.principal:Principal`, value: f.principal });
+    if (f.repository) out.push({ key: 'repository', label: $localize`:@@policies.repository:Repository`, value: f.repository });
+    if (f.project && !this.inProject()) out.push({ key: 'project', label: $localize`:@@policies.project:Project`, value: f.project });
+    return out;
+  });
   protected readonly sort = signal<TableSort>({ column: 'name', direction: 'asc' });
   protected readonly caption = $localize`:@@policies.caption:Permission policies`;
   protected readonly columns: readonly TableColumn[] = [
@@ -88,8 +102,6 @@ export class PolicyList {
       this.principalFilter.set(this.principal() ?? '');
       this.repositoryFilter.set(this.repository() ?? '');
       this.projectFilter.set(this.project() ?? '');
-      // A link with a filter shows it.
-      if (this.principal() || this.repository() || this.project()) this.panelOpen.set(true);
       untracked(() => void this.apply());
     });
   }
@@ -102,7 +114,7 @@ export class PolicyList {
       // Groups are expanded by the API unless told otherwise; the list shows policies that name
       // the principal or one of its groups, as the filter says.
     };
-    this.activeCount.set(Object.values(filters).filter((v) => v !== undefined).length);
+    this.applied.set(filters);
     const sort = this.sort();
     await this.list.start(this.api.list({ ...filters, sort: sort.direction === 'desc' ? '-name' : 'name' }));
   }
@@ -112,10 +124,26 @@ export class PolicyList {
     void this.apply();
   }
 
+  /** The drawer's fields back to the filters the list shows: it closed without **Apply**. */
+  protected restage(): void {
+    const f = this.applied();
+    this.principalFilter.set(f.principal ?? '');
+    this.repositoryFilter.set(f.repository ?? '');
+    this.projectFilter.set(f.project ?? '');
+  }
+
+  protected removeChip(chip: ListChip): void {
+    this.restage();
+    if (chip.key === 'principal') this.principalFilter.set('');
+    if (chip.key === 'repository') this.repositoryFilter.set('');
+    if (chip.key === 'project') this.projectFilter.set('');
+    void this.apply();
+  }
+
   protected clear(): void {
     this.principalFilter.set('');
     this.repositoryFilter.set('');
-    this.projectFilter.set('');
+    if (!this.inProject()) this.projectFilter.set('');
     void this.apply();
   }
 

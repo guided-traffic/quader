@@ -1,6 +1,7 @@
 import { NavArea, NavItem } from '../../core/navigation';
 import { SearchSuggestions, SuggestionKind } from '../../api/search-api';
 import { packageCommands } from '../packages/package-links';
+import { letterOf } from '../../shared/ui/project-mark';
 import { termsOf } from './highlight';
 
 /** The filter of the field (R-UI-095): **All**, a kind of the main area, or for an instance administrator users or groups. */
@@ -147,11 +148,6 @@ export function matchPlaces<T extends { readonly label: string }>(items: readonl
     .sort((a, b) => a.r - b.r || a.i.label.localeCompare(b.i.label))
     .slice(0, limit)
     .map((x) => x.i);
-}
-
-/** The first letter of a project's display name, or of its key: the project switcher's mark. */
-export function letterOf(displayName: string | null | undefined, key: string): string {
-  return ((displayName ?? '').trim().charAt(0) || key.charAt(0)).toUpperCase();
 }
 
 export function placeEntry(p: Place, area: Area, prefix: string): SearchEntry {

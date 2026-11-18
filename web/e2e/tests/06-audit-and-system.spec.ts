@@ -1,4 +1,4 @@
-import { expect, expectAccessible, openFilter, signInLocal, signOut, test } from '../support';
+import { expect, expectAccessible, applyFilters, openFilters, signInLocal, signOut, test } from '../support';
 
 // R-UI-047 journeys "audit entry" and "system status" (R-UI-036, R-UI-037, R-UI-038, E1.11). They read what the
 // journeys before them did (the files run in order): the audit log has an entry for each action, and the system
@@ -22,9 +22,9 @@ test('R-UI-036 R-UI-037 the audit log has an entry for each action of the journe
 
   for (const { action, actor } of actions) {
     await test.step(`${action} is in the log`, async () => {
-      await openFilter(page, 'Action');
-      await page.getByRole('combobox', { name: 'Action' }).fill(action);
-      await page.getByRole('button', { name: 'Search' }).click();
+      const drawer = await openFilters(page);
+      await drawer.getByRole('combobox', { name: 'Action' }).fill(action);
+      await applyFilters(page);
       const table = page.getByRole('table', { name: 'Audit events, newest first' });
       const rows = table.getByRole('row').filter({ hasText: action });
       await expect(rows.first()).toBeVisible();

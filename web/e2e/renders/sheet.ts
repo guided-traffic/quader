@@ -16,8 +16,8 @@ const kindOrder = ['anonymous', 'plain', 'power', 'admin'];
 
 /**
  * The global teardown of `make ui-renders`: the contact sheet `.out/ui-renders/index.html`, grouped by screen, and
- * `report.json` with what each picture measured. At the top: the failures, the screens that scroll sideways at 1024 px and
- * wider, and the lists whose address fields differ in width. It runs after failed renders too.
+ * `report.json` with what each picture measured. At the top: the failures and the screens that scroll sideways at 1024 px and
+ * wider. It runs after failed renders too.
  */
 export default function sheet(): void {
   if (!existsSync(manifestDir)) return;
@@ -32,8 +32,7 @@ export default function sheet(): void {
   const sideways = entries.flatMap((e) =>
     e.shots.filter((s) => s.scheme === 'light' && (s.overflowX > 1 || (s.width >= 1024 && s.regions.length > 0))),
   );
-  const uneven = entries.flatMap((e) => e.shots.filter((s) => s.scheme === 'light' && s.addressWidths.some((w) => new Set(w).size > 1)));
-  writeFileSync(join(outDir, 'report.json'), JSON.stringify({ entries, failed: failed.length, sideways: sideways.length, uneven: uneven.length }, null, 1));
+  writeFileSync(join(outDir, 'report.json'), JSON.stringify({ entries, failed: failed.length, sideways: sideways.length }, null, 1));
   writeFileSync(join(outDir, 'failures.txt'), failed.map((e) => `${e.kind} ${e.screen} ${e.path}\n${e.failures.map((f) => `  ${f}`).join('\n')}\n`).join(''));
 
   const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -42,7 +41,7 @@ export default function sheet(): void {
       s.offender ? ` (widest: ${esc(s.offender.what)}, ${s.offender.overflowX} px)` : ''
     }${s.regions
       .map((r) => ` ${esc(r.what)} ${r.overflowX} px`)
-      .join(';')}${s.addressWidths.length ? ` address widths ${esc(JSON.stringify(s.addressWidths))}` : ''}</li>`;
+      .join(';')}</li>`;
   const groups = new Map<string, Entry[]>();
   for (const e of entries) groups.set(e.screen, [...(groups.get(e.screen) ?? []), e]);
 
@@ -81,13 +80,11 @@ figure { margin: 0; } figure img { width: 220px; border: 1px solid #ccc; display
 <ul class="findings">${failed.map((e) => `<li><a href="#${esc(e.screen)}">${esc(e.screen)}</a> as ${esc(e.kind)}: ${e.failures.map(esc).join('; ')}</li>`).join('') || '<li>None.</li>'}</ul>
 <h2>Sideways scroll at 1024 px and wider (${sideways.length})</h2>
 <ul class="findings">${sideways.map(shotLine).join('') || '<li>None.</li>'}</ul>
-<h2>Address fields of one list in different widths (${uneven.length})</h2>
-<ul class="findings">${uneven.map(shotLine).join('') || '<li>None.</li>'}</ul>
 <h2>Screens</h2>
 <nav>${[...groups.keys()].map((s) => `<a href="#${esc(s)}">${esc(s)}</a>`).join('')}</nav>
 ${sections.join('\n')}
 </body></html>
 `;
   writeFileSync(join(outDir, 'index.html'), html);
-  console.log(`ui-renders: ${join(outDir, 'index.html')}; ${failed.length} failed, ${sideways.length} sideways, ${uneven.length} uneven address columns`);
+  console.log(`ui-renders: ${join(outDir, 'index.html')}; ${failed.length} failed, ${sideways.length} sideways`);
 }

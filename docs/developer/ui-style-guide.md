@@ -64,7 +64,7 @@ Every page inside the shell has this order:
 | Header | `<quader-page-header heading description>` ([page-header.ts](../../web/src/app/shared/ui/page-header.ts), [Q-UI-307](../spec/api-and-ui.md#q-ui-307--a-pages-own-actions-are-buttons-at-the-right-end-of-its-header-views-of-the-same-thing-are-tabs)): the `<h1 tabindex="-1">` names the object on its page (`[name]="true"` for a key or a package name) or the list's noun; one muted sentence under it; the facts that name the object projected with `meta`; its client address where it has one (`[addresses]`). A detail page names its object in the `<h1>` and its kind as a badge projected with `meta` (the user `alice` with the badge **User**), and has no link up to its list: that is the breadcrumb. The vulnerability pages still have `<header class="page-header">` |
 | Primary action | At the right end of the header (projected with `actions`), one `btn btn-confirm` (**Add member**, **Create token**). A second action of the page is a `btn btn-default` to its left; more go into a `more_vert` menu |
 | Tabs | Directly under the header, `tab-nav`, the count of a list as a neutral `badge` in the tab. Another view of the same object (its files, its vulnerabilities) is a tab or an entry of the header's menu, never a quiet link in the header. A job has one way to it: the client setup is the header's **Set up client**, which opens the setup page for the object, not also a tab ([Q-UI-321](../spec/api-and-ui.md#q-ui-321--a-repositorys-client-setup-is-reached-one-way-the-headers-set-up-client-opens-the-setup-for-the-repository)) |
-| Toolbar of a list | Under the tabs: the filter on the full width, then sort and direction |
+| Head of a list | Under the tabs, one row, `<quader-list-head>` ([R-UI-100](../spec/api-and-ui.md#r-ui-100--the-head-of-every-list-the-search-by-name-filters-and-the-filters-that-are-set)): the search by name (**Filter repositories**, as wide as a name), **Filters**, the filters that are set as chips, and the list's own controls at the row's end. **Filters** opens the list's drawer ([Q-UI-420](../spec/api-and-ui.md#q-ui-420--the-filters-of-a-list-open-in-a-drawer-from-the-right-over-the-page)); the list keeps its width |
 | Content | A table, a form or sections, as below |
 | Details | What only a power user or an administrator needs, last, in one closed `<quader-disclosure>` **Details** (see [Opening and closing](#opening-and-closing)) |
 
@@ -94,29 +94,23 @@ what would need a second one belongs in the [manual](manual.md).
   menu ([Q-UI-302](../spec/api-and-ui.md#q-ui-302--the-repository-list-names-a-repository-by-key-and-description-in-its-first-column-and-puts-the-rows-actions-in-a-menu)).
 - **The columns come from the job of the list's kind of user** (R-UI-067, [Q-UI-330](../spec/api-and-ui.md#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)). Ask first what the list is for: the
   properties its user decides on get columns of their own, the column that names the thing gets the most room, and nothing is
-  packed under the name but its description. The repository lists are the example: in a project (find and copy) repository,
-  format, class, client address; in the admin area (manage) repository, project, format, class, last activity, and the address
-  as a copy button. Judge a render by that first, and only then by widths and scrolling.
+  packed under the name but its description. The repository lists are the example: in a project (find and set up) repository,
+  format, class, and **Set up client** at the row's end; in the admin area (manage) repository, project, format, class,
+  visibility, last activity, and the address as a copy button. No list has an address column: an address means nothing without
+  its client ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)). Judge a render by that first, and only then by widths and scrolling.
 - **The list's budget is its columns' widths** ([Q-UI-308](../spec/api-and-ui.md#q-ui-308--every-list-takes-its-layout-from-the-data-table-a-column-budget-a-least-width-for-its-name-one-alignment-stacked-rows)). A column of `<quader-data-table>` declares its least width
-  (`width`, which must hold its header and its longest value on one line: a format with its icon 8 rem, a class 5 rem); the name
-  column takes 12 to 16 rem and what the others leave. A list with a client address marks that column `fill`: it is the
-  longest address up to its share (Q-UI-300). Where the address is the list's main value (a project's repository list) the
-  name column `prefer`s 20 rem: the address takes what is left after it and the least widths of the others, up to the longest
-  address, and room left over goes back to the name column; the other columns keep their widths. Where the user finds and opens
-  rather than copies (the admin area's list, the search results) there is no field, and a name column that `prefer`s its least
-  width takes every pixel the others leave. The least widths of a list sum to at most 48 rem, where its rows stack. A column of
-  lower rank is `narrow`: below 64 rem
-  of the list's width it is hidden and the others take its room (the list marks its cells `narrow-drop`; the admin area's Last
-  activity). The list's width is the table's own (the container `table`),
-  and the address's share is of its rows' width without the scrollbar beside them, so a list scrolls sideways neither when
-  its rows scroll nor beside the filter panel, which sits beside a list only where the list keeps 71 rem, else between the
-  Filters button and the list
-  ([Q-UI-327](../spec/api-and-ui.md#q-ui-327--the-filter-panel-sits-beside-a-list-only-where-the-list-keeps-71-rem-and-a-tables-columns-share-its-rows-width-without-the-scrollbar)).
+  (`width`, which must hold its header and its longest value on one line: a format with its icon 8 rem, a class 5 rem, a project
+  with its mark 11 rem); the name column takes 12 to 16 rem and what the others leave. A column that `prefer`s takes every pixel
+  the others leave, and every other column keeps its width (the name of a repository list, the scope of a token list). The least
+  widths of a list sum to at most 48 rem, where its rows stack. A column of lower rank is `narrow`: below 64 rem of the list's
+  width it is hidden and the others take its room (the list marks its cells `narrow-drop`; the admin area's Last activity). The
+  list's width is the table's own (the container `table`); the table keeps no room for a scrollbar its rows do not need, so it
+  ends where the lines above it end ([Q-UI-427](../spec/api-and-ui.md#q-ui-427--a-table-keeps-no-room-for-a-scrollbar-its-rows-do-not-need)).
 - **One alignment.** Every cell starts at the top of its row; a control in a cell (a button, a select, the address field) is
   centred on the first line of text. A list does not set its own vertical alignment.
 - **On a narrow list the rows stack.** Below 48 rem of columns (49 rem of the list with the room of a scrollbar) every data table shows each row as a block: the name and
-  its menu, then each cell on a line, named by its column (the table sets `data-label`; `stackLabel: false` where the value says
-  it), a cell without a value ("–") left out, the address across the row
+  its actions, then each cell on a line, named by its column (the table sets `data-label`; `stackLabel: false` where the value
+  says it), a cell without a value ("–") left out
   ([Q-UI-306](../spec/api-and-ui.md#q-ui-306--below-48-rem-of-its-width-the-repository-list-stacks-each-row-with-the-address-across-the-row)).
   The head of a stacked list is one row of its sort buttons above the blocks; a header that sorts nothing is for assistive
   technology only ([Q-UI-391](../spec/api-and-ui.md#q-ui-391--a-stacked-list-keeps-its-sort-buttons-in-a-row-above-its-blocks)).
@@ -126,12 +120,33 @@ what would need a second one belongs in the [manual](manual.md).
 - **A line of facts** (a source line; never the properties of a list's row, which are columns) separates them with one middle dot, the same space
   on both sides, in the muted colour: `.dot-separated` around its parts, `.dot-before` on one part ([_controls.scss](../../web/src/styles/_controls.scss)).
   Where such a line wraps, no line starts with a dot.
-- **Names stay on one line**, except the key of the repository list, which wraps after a hyphen where it is longer than its
-  column (`th.wrap-name`, [Q-UI-303](../spec/api-and-ui.md#q-ui-303--the-repository-lists-key-breaks-after-a-hyphen-where-it-is-longer-than-its-column)).
+- **Names stay on one line**, except a name of a list's first column that is longer than its column: `th.wrap-name` lets it
+  break after a hyphen ([Q-UI-303](../spec/api-and-ui.md#q-ui-303--the-repository-lists-key-breaks-after-a-hyphen-where-it-is-longer-than-its-column)).
+  So does a date, a time, a version and a short phrase ("None yet"): never broken (Q-UI-428).
+- **An icon before a name** is the cell `.icon-name`: the icon in a column of its own, the name and the description under it in
+  the other, so the icon and the start of the name always share the first line, and a long name breaks inside itself beside the
+  icon ([Q-UI-425](../spec/api-and-ui.md#q-ui-425--an-icon-before-a-name-has-a-column-of-its-own-in-the-cell-and-a-long-name-breaks-inside-itself-beside-it)):
+
+  ```html
+  <th scope="row"><span class="icon-name"><quader-visibility-icon [level]="…" /><span class="icon-name-text"><a …>{{ key }}</a><span class="secondary">…</span></span></span></th>
+  ```
+
+- **A project is its mark and its name** ([Q-UI-424](../spec/api-and-ui.md#q-ui-424--a-projects-mark-is-one-component-before-its-name-wherever-a-project-is-listed)):
+  in a list of projects `<quader-project-mark size="medium">` before the display name with the key under it; in a row that names
+  its project `<quader-project-link [key]>`, the small mark and the display name, linked. Never the key alone.
+- **A time in a list is relative**, its date and time the title: `<quader-time-ago [at] absolute="title" />` ("4 minutes ago",
+  "in 4 weeks"). A log (the audit log, the issued CI tokens) writes the date and the time; a card the relative time with the
+  absolute in brackets ([Q-UI-431](../spec/api-and-ui.md#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)).
 - An inline control in a row (the role select) has no visible label and an `aria-label` that names the row. It shows the current
   value, and a change is saved at once, with the status message of the `Notifier`.
 - Filter and order work on what is loaded, or are sent to the server where the list is paged. A filter that finds nothing says
   so in a row of the table; an empty list says so in place of the table and offers the action that fills it.
+- **The head of a list** is `<quader-list-head>` ([list-head.ts](../../web/src/app/shared/ui/list-head.ts), [R-UI-100](../spec/api-and-ui.md#r-ui-100--the-head-of-every-list-the-search-by-name-filters-and-the-filters-that-are-set)): give
+  it `searchLabel` where the API searches by name, the chips of the filters that are set (`ListChip`: the filter's name and its
+  value; never the search text), and the drawer's `panelId`; put the list's own controls into it with `headEnd`. The filters are
+  the content of `<quader-filter-panel>`: a labelled field each, or a `<quader-filter-category label>` around a group of checkboxes
+  or a control named only by `aria-label`. A list keeps the applied values apart from the drawer's staged ones and puts the staged
+  ones back on `dismissed`. A list whose only filter is the name has no drawer (`[filters]="false"`).
 
 ## Settings pages
 
@@ -163,6 +178,7 @@ existing ones are moved over ([What does not follow this page yet](#what-does-no
 | A collapsible section of any screen: the details of a content page, the groups of a settings page or an editor | `<quader-disclosure heading hint note>` (`note`: a short state after the heading, such as **Unsaved changes** of a closed section that holds one) ([disclosure.ts](../../web/src/app/shared/ui/disclosure.ts), [Q-UI-322](../spec/api-and-ui.md#q-ui-322--a-closed-section-of-details-is-one-quiet-disclosure-a-small-heading-with-a-chevron-and-one-hint-line)): the heading at the text's size, weight 600, a chevron before it, one muted hint line, closed at first; `[(expanded)]` binds its state. Never a settings section below a list or a README |
 | Something added and removed with `@if` | A wrapper with `class="collapse-animated" animate.enter="collapse-in" animate.leave="collapse-out"` around one child |
 | A side panel, a drop-down panel, the sidebar | `panel-in`, `panel-out`; `dropdown-in`, `dropdown-out`; `sidebar-in`, `sidebar-out` |
+| Content over the page: a list's filters | `<quader-drawer [(open)] heading>` ([drawer.ts](../../web/src/app/shared/ui/drawer.ts), [ADR-200](../decisions.md#adr-200--a-lists-filters-open-in-a-drawer-the-apps-one-pattern-for-content-over-the-page)): the CDK dialog at the window's right edge; it slides in and out by itself (`quader-drawer-in`, `-out`), and focus, Escape and the return of focus come with it |
 | A native `<details>` | Nothing: it animates by itself where the browser can |
 | The chevron of the toggle | `class="expand-chevron"` on `expand_more` inside the button with `aria-expanded`; it turns with the same timing |
 
@@ -192,8 +208,8 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
   | `field-w-name` | `--quader-field-width-name` | 28 rem, half the column | a key, a name, a login, a host, every select and every picker |
   | `field-w-full` | — | the column | a URL, a description, a path, a pattern, a list, a key block; every text area |
 
-  A field is never wider than its column; a narrower column shrinks it. A filter panel's fields and a search row's fields take
-  the panel's or the row's width. A number field never takes the column: `check-rules.mjs` fails the lint for a template's number
+  A field is never wider than its column; a narrower column shrinks it. A filter drawer's fields and a search row's fields take
+  the drawer's or the row's width; the search field of a list's head is as wide as a name. A number field never takes the column: `check-rules.mjs` fails the lint for a template's number
   field (`type="number"`, `inputmode="numeric"` or `"decimal"`, a pattern of digits) without the width number, duration or bytes.
   A URL is one line however long it may be. A field and the button that acts on it (**Bind role**, **Move repository**) stand in
   `.field-action-row`: the button level with the control, under it where the line is too narrow.
@@ -243,10 +259,7 @@ copy of one line, an address or a command
 | `label` | The accessible name of the field; in a list it names the row (**Client address of npm-internal**) |
 | `copyLabel` | The accessible name and title of the copy button (**Copy client address of npm-internal**) |
 
-In a list the cell is `<td class="address-cell">` of the column marked `fill`; the list sets on the data table the length of its
-longest address, `[style.--quader-address-chars]="addressChars()"`, and the data table sums the room of the other columns from
-their `width`s into `--quader-list-others` ([repository-list.html](../../web/src/app/features/repositories/repository-list.html)
-is the worked example).
+No list shows an address field ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)): a list row offers **Set up client** or, in the admin area, a quiet copy button.
 
 - **When.** The address a client puts into its configuration: a repository's base URL or registry host with a path, a Bastion's
   repository address, an exposure rule's address; and a command of one line (the install command of a package, labelled
@@ -264,16 +277,10 @@ is the worked example).
   with the input's, inner corners square, outer corners `--quader-control-radius`.
 - **Width: one per place, never per address, never more than its share.** The field fills its line and never takes its
   address's width.
-  - In a list every field has one width: the column `td.address-cell` is as wide as the list's longest address in the field's
-    face, but at most its share (`--quader-address-share`, 46 characters unless the list sets it) and at most what the other
-    columns leave (`--quader-list-others`, with a column's `prefer`red width where it has one), never under 10 rem. A project's
-    repository list sets the share to its longest address and lets the repository prefer 20 rem: the address takes the rest up
-    to its whole length, and room left over goes back to the repository. The field fills the cell and shows the address from its start, never its tail; a longer address scrolls
-    inside it ([Q-UI-300](../spec/api-and-ui.md#q-ui-300--in-a-list-every-address-field-has-one-width-the-lists-longest-address-up-to-what-the-other-columns-leave), [Q-UI-330](../spec/api-and-ui.md#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)).
-  - A list whose user does not copy addresses as its job has no field: the admin area's repository list and the search results
-    have a quiet `<quader-copy-button [quiet]="true">` at the end of the row (beside the menu where the row has one), its `label`
-    **Copy client address** with the address, which is also the button's tooltip; the admin area's menu offers
+  - A list has no field. The admin area's repository list has a quiet `<quader-copy-button [quiet]="true">` at the end of the row,
+    beside the menu, its `label` **Copy client address** with the address, which is also the button's tooltip; the menu offers
     **Copy client address** too ([Q-UI-330](../spec/api-and-ui.md#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)).
+    A project's list offers **Set up client** in the row, the search results neither ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)).
   - A field alone on its line, or a stack of the addresses of one thing, fills the line up to `--quader-address-measure`
     (40 rem, 70 characters), so a stack is one width ([Q-UI-301](../spec/api-and-ui.md#q-ui-301--a-field-alone-on-its-line-fills-the-line-up-to-a-measure-of-70-characters)).
   - Where the field is shorter than its address, the address scrolls inside it (the input at least 8 rem), the button stays
@@ -343,7 +350,8 @@ Before a screen is committed:
       the title names the thing, no field is red before the user touched it, every step or section names one topic.
 - [ ] Rendered with `make ui-renders` ([web-ui.md](web-ui.md#renders-of-every-screen)) and every changed screen looked at in
       both schemes and at 390 px, as each kind of user that reaches it; the contact sheet lists no failure, no page that scrolls
-      sideways at any width and no region that does at 1024 px and wider, that the change brought, and no list whose address fields differ in width.
+      sideways at any width and no region that does at 1024 px and wider, that the change brought; and in each picture no icon on
+      another line than its name, no name, date or short phrase broken across lines, no table that ends before the lines above it.
 - [ ] Compared side by side with the reference's screen for the same job, in a real browser, not only in a unit test.
 - [ ] Seen in the dark and the light scheme, and at a narrow window.
 - [ ] Only shared controls, classes of `_controls.scss` and `--quader-*` tokens; no colour literal.

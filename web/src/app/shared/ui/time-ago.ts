@@ -1,33 +1,43 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, input } from '@angular/core';
+import { Component, LOCALE_ID, computed, inject, input } from '@angular/core';
+import { relativeTime } from '../../features/packages/format-time';
 
-/**
- * How long ago a time was, in cogpit's short form: "just now", "3 min ago", "1 h ago", "4 d ago" (Q-UI-378). A time ahead of `now`
- * (a clock that runs ahead) reads "just now".
- */
-export function timeAgo(iso: string, now: number = Date.now()): string {
-  const minutes = Math.floor((now - Date.parse(iso)) / 60_000);
-  if (!(minutes >= 1)) return $localize`:@@time.ago.now:just now`;
-  if (minutes < 60) return $localize`:@@time.ago.minutes:${minutes}:count: min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return $localize`:@@time.ago.hours:${hours}:count: h ago`;
-  return $localize`:@@time.ago.days:${Math.floor(hours / 24)}:count: d ago`;
+/** The locale of the build: the one `$localize` was compiled for, English where the build has none. */
+function buildLocale(): string {
+  return (typeof $localize !== 'undefined' && $localize.locale) || 'en-US';
 }
 
 /**
- * A time as one relative time with the absolute time in brackets, "3 min ago (Nov 12, 2026, 2:22:37 PM)" (Q-UI-378): the one form
- * of the grade card's facts (R-UI-093), and of any place that shows a time with both.
+ * How long ago a time was, in the one wording of the UI (Q-UI-431): "now", "4 minutes ago", "yesterday", "3 months ago". It is
+ * `relativeTime` in the locale of the build, for the callers that have no `LOCALE_ID` at hand.
+ */
+export function timeAgo(iso: string, now: number = Date.now()): string {
+  return relativeTime(iso, buildLocale(), now);
+}
+
+/**
+ * A time relative to now with its absolute date and time (Q-UI-378, Q-UI-431). `absolute="brackets"` (the default) writes both,
+ * "3 minutes ago (Nov 12, 2026, 2:22:37 PM)": the form of a card's facts (R-UI-093) and of any place that is no list.
+ * `absolute="title"` writes the relative time alone and puts the absolute one into the `<time>` element's title: the form of every
+ * list's cell, whose column is too narrow for both.
  */
 @Component({
   selector: 'quader-time-ago',
   imports: [DatePipe],
-  template: `{{ relative() }} (<time [attr.datetime]="at()">{{ at() | date: 'medium' }}</time>)`,
+  template: `@if (absolute() === 'title') {
+      <time [attr.datetime]="at()" [attr.title]="at() | date: 'medium'">{{ relative() }}</time>
+    } @else {
+      {{ relative() }} (<time [attr.datetime]="at()">{{ at() | date: 'medium' }}</time>)
+    }`,
 })
 export class TimeAgo {
+  private readonly locale = inject(LOCALE_ID);
   /** The time, RFC 3339. */
   readonly at = input.required<string>();
+  /** Where the absolute time stands: in brackets after the relative one, or in the title of a list's cell. */
+  readonly absolute = input<'brackets' | 'title'>('brackets');
   /** The time it is now, in milliseconds; a test sets it, the page leaves it to the clock. */
   readonly now = input<number | null>(null);
 
-  protected readonly relative = computed(() => timeAgo(this.at(), this.now() ?? Date.now()));
+  protected readonly relative = computed(() => relativeTime(this.at(), this.locale, this.now() ?? Date.now()));
 }

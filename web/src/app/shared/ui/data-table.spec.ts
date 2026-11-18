@@ -138,14 +138,14 @@ describe('Data table', () => {
     expect(host.mores).toBe(1);
   });
 
-  it('R-UI-020 R-UI-065 a list with a fill column gives it what the declared widths of the others leave, and the headers carry them', async () => {
+  it('R-UI-020 Q-UI-308 the headers carry the least widths, a narrow column is marked, and a stacked cell names its column', async () => {
     @Component({
       imports: [DataTable],
       template: `
         <quader-data-table caption="Things" [columns]="columns">
           <tr>
             <th scope="row">one</th>
-            <td>https://example.net/one/</td>
+            <td>A description</td>
             <td>–</td>
             <td class="actions"><button type="button">x</button></td>
           </tr>
@@ -155,7 +155,7 @@ describe('Data table', () => {
     class Budget {
       readonly columns: readonly TableColumn[] = [
         { id: 'name', label: 'Name', width: '16rem' },
-        { id: 'address', label: 'Address', fill: true, stackLabel: false },
+        { id: 'description', label: 'Description', stackLabel: false },
         { id: 'when', label: 'When', width: '7rem', narrow: true },
         { id: 'actions', label: 'Actions', hideLabel: true, width: '2rem' },
       ];
@@ -168,23 +168,22 @@ describe('Data table', () => {
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
     const table = root.querySelector<HTMLElement>('quader-data-table')!;
-    expect(table.style.getPropertyValue('--quader-list-others')).toBe('calc(16rem + 7rem + 2rem + 4 * 2 * var(--quader-space-4))');
     expect(table.classList.contains('stack')).toBe(true);
+    // No list sets a share of its width for an address any more (Q-UI-426).
+    expect(table.getAttribute('style') ?? '').not.toContain('--quader-list');
     const heads = [...root.querySelectorAll<HTMLElement>('thead th')];
     expect(heads.map((h) => h.style.minInlineSize)).toEqual(['16rem', '', '7rem', '2rem']);
-    // A narrow column gives its room back to the address below 64 rem of the list (UI-A-30).
-    expect(table.style.getPropertyValue('--quader-list-narrow')).toBe('calc(7rem + 1 * 2 * var(--quader-space-4))');
     expect(heads.map((h) => h.classList.contains('narrow-drop'))).toEqual([false, false, true, false]);
     // Stacked, a cell names its column unless its column says not to; an empty value leaves its line out.
     const cells = [...root.querySelectorAll<HTMLElement>('tbody td')];
     expect(cells.map((c) => c.getAttribute('data-label'))).toEqual([null, 'When', null]);
     expect(cells[1]!.hasAttribute('data-empty')).toBe(true);
     expect(cells[0]!.hasAttribute('data-empty')).toBe(false);
-    // Without a column that prefers a width, the headers carry their widths as their least only.
+    // Without a column that prefers the room, the headers carry their widths as their least only.
     expect(heads.map((h) => h.style.inlineSize)).toEqual(['', '', '', '']);
   });
 
-  it('Q-UI-330 a column that prefers a width counts with it in the room the fill column leaves, and the other columns keep their widths', async () => {
+  it('Q-UI-330 a column that prefers the room takes what the others leave, and the other columns keep their widths', async () => {
     @Component({
       imports: [DataTable],
       template: `
@@ -192,7 +191,6 @@ describe('Data table', () => {
           <tr>
             <th scope="row">one</th>
             <td>generic</td>
-            <td>https://example.net/one/</td>
             <td class="actions"><button type="button">x</button></td>
           </tr>
         </quader-data-table>
@@ -200,9 +198,8 @@ describe('Data table', () => {
     })
     class Prefer {
       readonly columns: readonly TableColumn[] = [
-        { id: 'name', label: 'Name', width: '13rem', prefer: '20rem' },
+        { id: 'name', label: 'Name', width: '13rem', prefer: true },
         { id: 'format', label: 'Format', width: '8rem' },
-        { id: 'address', label: 'Address', fill: true, stackLabel: false },
         { id: 'actions', label: 'Actions', hideLabel: true, width: '2rem' },
       ];
     }
@@ -213,11 +210,8 @@ describe('Data table', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
-    const table = root.querySelector<HTMLElement>('quader-data-table')!;
-    expect(table.style.getPropertyValue('--quader-list-others')).toBe('calc(20rem + 8rem + 2rem + 4 * 2 * var(--quader-space-4))');
     const heads = [...root.querySelectorAll<HTMLElement>('thead th')];
-    expect(heads.map((h) => h.style.minInlineSize)).toEqual(['13rem', '8rem', '', '2rem']);
-    // The name column takes what is left over; every other column keeps its width.
-    expect(heads.map((h) => h.style.inlineSize)).toEqual(['100%', '8rem', '', '2rem']);
+    expect(heads.map((h) => h.style.minInlineSize)).toEqual(['13rem', '8rem', '2rem']);
+    expect(heads.map((h) => h.style.inlineSize)).toEqual(['100%', '8rem', '2rem']);
   });
 });

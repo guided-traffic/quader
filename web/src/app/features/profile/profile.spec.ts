@@ -321,19 +321,20 @@ describe('Personal tokens (R-UI-029)', () => {
     expect(root.querySelector('quader-token-secret')).toBeTruthy();
   });
 
-  it('R-UI-029 Q-UI-332 an owner\'s token list shows token, scope, expiry, last use, created and created via (narrow), and the row\'s actions', async () => {
+  it('R-UI-029 Q-UI-429 an owner\'s token list shows token, scope, expiry, last use, created (narrow) and the row\'s actions; no created via', async () => {
     const { root } = await renderScreen(ProfileTokens);
     const table = root.querySelector('quader-token-table quader-data-table')!;
     const heads = [...table.querySelectorAll<HTMLElement>('thead th')];
-    expect(heads.map((th) => text(th).replace(/help_outline/g, ''))).toEqual([
-      'Token', 'Scope', 'Expires', 'Last used', 'Created', 'Created via', 'Actions',
-    ]);
-    expect(heads.map((th) => th.classList.contains('narrow-drop'))).toEqual([false, false, false, false, true, true, false]);
+    expect(heads.map((th) => text(th).replace(/help_outline/g, ''))).toEqual(['Token', 'Scope', 'Expires', 'Last used', 'Created', 'Actions']);
+    expect(heads.map((th) => th.classList.contains('narrow-drop'))).toEqual([false, false, false, false, true, false]);
+    // The scope takes the room the others leave, so its words break as little as the list allows (Q-UI-429).
+    expect(heads[1]!.style.inlineSize).toBe('100%');
     expect(table.classList.contains('stack-wide')).toBe(false);
-    // Rotate is a quiet icon named for the row, Revoke a quiet button; a date shows the day, its title the time.
+    // Rotate and Revoke are one pattern: quiet buttons with their words, named for the row; a time is relative, its title the time.
     const row = table.querySelector('tbody tr')!;
-    const rotate = [...row.querySelectorAll('td.actions button')].find((b) => text(b).includes('Rotate'))!;
-    expect(rotate.classList.contains('btn-icon')).toBe(true);
+    const actions = [...row.querySelectorAll<HTMLButtonElement>('td.actions button')];
+    expect(actions.map((b) => [...b.classList].includes('btn-icon'))).toEqual([false, false]);
+    expect(actions.map((b) => text(b).split(' ')[0])).toEqual(['Rotate', 'Revoke']);
     expect(row.querySelector('td time')?.getAttribute('title')).toBeTruthy();
   });
 

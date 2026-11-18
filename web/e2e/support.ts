@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { APIRequestContext, expect, Page, Request, request, test as base } from '@playwright/test';
+import { APIRequestContext, Locator, expect, Page, Request, request, test as base } from '@playwright/test';
 
 /** What a journey needs besides the page: the management API as the administrator, and the replicas seen. */
 interface Fixtures {
@@ -233,14 +233,20 @@ export async function signOut(page: Page): Promise<void> {
 }
 
 /**
- * Opens the filter panel of a list screen (if it is closed) and unfolds one filter category (if it is folded), so that
- * the fields of that category can be used. The panel opens by itself while a filter is applied, and a category with a
- * value starts unfolded, so both steps look at the state first.
+ * Opens the filter drawer of a list screen (Q-UI-420), if it is closed, and returns it: a dialog named **Filters** over the page,
+ * whose filters stand open, one under the other.
  */
-export async function openFilter(page: Page, category: string): Promise<void> {
-  const panel = page.getByRole('search', { name: 'Filters' });
-  if (!(await panel.isVisible())) await page.getByRole('button', { name: /^Filters/ }).first().click();
-  const toggle = panel.getByRole('button', { name: new RegExp(`^${category}( \\(active\\))?$`) });
-  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+export async function openFilters(page: Page): Promise<Locator> {
+  const drawer = page.getByRole('dialog', { name: 'Filters' });
+  if (!(await drawer.isVisible())) await page.getByRole('button', { name: /^Filters/ }).first().click();
+  await expect(drawer).toBeVisible();
+  return drawer;
+}
+
+/** Applies the open filter drawer with its **Apply filters** button; the drawer closes. */
+export async function applyFilters(page: Page): Promise<void> {
+  const drawer = page.getByRole('dialog', { name: 'Filters' });
+  await drawer.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(drawer).toBeHidden();
 }
 

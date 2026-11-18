@@ -2,6 +2,7 @@ import { Component, ElementRef, computed, inject, input, signal, viewChild } fro
 import { RouterLink } from '@angular/router';
 import { Project } from '../../api/projects-api';
 import { ProjectContext } from '../../core/project-context';
+import { ProjectMark } from '../../shared/ui/project-mark';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
 
 /** How many matches the switcher lists at once; a longer list is narrowed by typing. */
@@ -15,7 +16,7 @@ const SHOWN = 20;
  */
 @Component({
   selector: 'quader-project-switcher',
-  imports: [RouterLink, VisibilityIcon],
+  imports: [ProjectMark, RouterLink, VisibilityIcon],
   host: {
     '(document:click)': 'outside($event)',
     '(keydown.escape)': 'escape($event)',
@@ -29,7 +30,7 @@ const SHOWN = 20;
       aria-controls="project-switcher-panel"
       (click)="toggle()"
     >
-      <span class="switcher-mark" aria-hidden="true" translate="no">{{ initial() }}</span>
+      <quader-project-mark [key]="current() ?? ''" [name]="label()" size="medium" />
       <span class="switcher-text">
         <span class="switcher-name" translate="no">
           @if (context.current(); as project) {
@@ -63,6 +64,7 @@ const SHOWN = 20;
             @for (p of recent(); track p.key) {
               <li>
                 <a class="switcher-item" [routerLink]="['/projects', p.key]" (click)="close(false)">
+                  <quader-project-mark [key]="p.key" [name]="p.displayName" />
                   <span class="switcher-name" translate="no">{{ p.displayName }}</span>
                   <span class="switcher-key" translate="no">{{ p.key }}</span>
                 </a>
@@ -83,6 +85,7 @@ const SHOWN = 20;
                   [attr.aria-current]="p.key === current() ? 'true' : null"
                   (click)="close(false)"
                 >
+                  <quader-project-mark [key]="p.key" [name]="p.displayName" />
                   <span class="switcher-name" translate="no">{{ p.displayName }}</span>
                   <span class="switcher-key" translate="no">{{ p.key }}</span>
                 </a>
@@ -106,7 +109,6 @@ export class ProjectSwitcher {
   protected readonly open = signal(false);
   protected readonly query = signal('');
   protected readonly current = this.context.key;
-  protected readonly initial = computed(() => (this.label().trim().charAt(0) || this.current()?.charAt(0)) ?? '');
 
   /** The recently visited projects that still exist, newest first, without the current one. */
   protected readonly recent = computed<readonly Project[]>(() => {

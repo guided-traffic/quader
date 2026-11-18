@@ -67,7 +67,7 @@ describe('package links', () => {
     expect(relativeTime('2026-10-27T12:00:00Z', 'en', now)).toBe('3 days ago');
     expect(relativeTime('2026-10-30T09:00:00Z', 'en', now)).toBe('3 hours ago');
     expect(relativeTime('2026-08-30T12:00:00Z', 'en', now)).toBe('2 months ago');
-    expect(relativeTime('2026-10-30T11:59:40Z', 'en', now)).toBe('this minute');
+    expect(relativeTime('2026-10-30T11:59:40Z', 'en', now)).toBe('now');
     expect(relativeTime('2026-10-27T12:00:00Z', 'de', now)).toBe('vor 3 Tagen');
   });
 

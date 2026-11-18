@@ -16,25 +16,18 @@ export interface TableColumn {
   readonly numeric?: boolean;
   /** The header text stays for assistive technology only (checkbox and action columns). */
   readonly hideLabel?: boolean;
-  /**
-   * The column's least width (a CSS length), from the list's budget (Q-UI-308): the header cell carries it, and a list with a
-   * `fill` column gives that column what the others leave. It must hold the header's label.
-   */
+  /** The column's least width (a CSS length), from the list's budget (Q-UI-308): the header cell carries it. It must hold the header's label. */
   readonly width?: string;
-  /** The column that takes the room the others leave, up to its own content: the client address (Q-UI-300). */
-  readonly fill?: boolean;
   /**
-   * The width the column takes before the `fill` column gets the rest (the repository's 20 rem, Q-UI-330). It gives way down to
-   * `width` where the list is narrow, and it takes what is left over where the `fill` column's content is shorter; in a list
-   * without a `fill` column it takes everything the others leave (the search results). Every other column of such a list keeps
-   * its `width`.
+   * The column takes everything the others leave, and every other column of the list keeps its `width` (Q-UI-330): the name of a
+   * repository list or of the search results, the scope of a token list. Its own `width` is its least.
    */
-  readonly prefer?: string;
+  readonly prefer?: boolean;
   /** When the rows stack (below 48 rem), the cell shows its column's name before its value; false where the value says it. */
   readonly stackLabel?: boolean;
   /**
-   * The column gives its room to the address below 64 rem of the list's width (Q-UI-308, UI-A-30): its header and the list's
-   * cells marked `narrow-drop` are hidden there, and the address column takes their width.
+   * The column gives its room to the others below 64 rem of the list's width (Q-UI-308, UI-A-30): its header and the list's cells
+   * marked `narrow-drop` are hidden there.
    */
   readonly narrow?: boolean;
 }
@@ -132,8 +125,6 @@ let nextTableId = 1;
     class: 'quader-data-table',
     '[class.stack]': 'stack()',
     '[class.stack-wide]': 'stackWide()',
-    '[style.--quader-list-others]': 'others()',
-    '[style.--quader-list-narrow]': 'narrowRoom()',
   },
 })
 export class DataTable {
@@ -166,31 +157,13 @@ export class DataTable {
   protected readonly captionId = `quader-table-${nextTableId++}`;
 
   /**
-   * The room of every column but the `fill` one, with their padding: `td.address-cell` leaves it to them (Q-UI-308). A column
-   * with a `prefer`red width counts with it, so the address gets the rest after it (Q-UI-330).
-   */
-  protected readonly others = computed(() => {
-    const cols = this.columns();
-    if (!cols.some((c) => c.fill)) return null;
-    const rest = cols.filter((c) => !c.fill);
-    const widths = rest.map((c) => c.prefer ?? c.width ?? '0px').join(' + ');
-    return `calc(${widths} + ${rest.length + 1} * 2 * var(--quader-space-4))`;
-  });
-  /**
-   * In a list with a column that prefers a width, every other column keeps its width (the header cell gets it as its size, not
-   * only as its least) and that column asks for the whole table, so the room left over goes to it alone (Q-UI-330); the `fill`
-   * column keeps the width its cells compute.
+   * In a list with a column that prefers the room, every other column keeps its width (the header cell gets it as its size, not
+   * only as its least) and that column asks for the whole table, so the room left over goes to it alone (Q-UI-330).
    */
   protected kept(c: TableColumn): string | null {
-    if (c.fill || !this.columns().some((x) => x.prefer)) return null;
+    if (!this.columns().some((x) => x.prefer)) return null;
     return c.prefer ? '100%' : (c.width ?? null);
   }
-  /** The room the columns marked `narrow` give back below 64 rem: their widths and padding. */
-  protected readonly narrowRoom = computed(() => {
-    const narrow = this.columns().filter((c) => c.narrow && !c.fill);
-    if (narrow.length === 0) return null;
-    return `calc(${narrow.map((c) => c.width ?? '0px').join(' + ')} + ${narrow.length} * 2 * var(--quader-space-4))`;
-  });
 
   constructor() {
     // Each cell carries its column's name for the stacked rows, and an empty value ("–") is marked, so a stacked row leaves its

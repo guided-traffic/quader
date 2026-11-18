@@ -2,7 +2,7 @@ import { Router } from '@angular/router';
 import { AuditApi } from '../../api/audit-api';
 import { ApiError } from '../../api/problem';
 import { FakeAuditApi, sampleEvent } from '../../api/testing/fakes-catalog';
-import { button, expectAccessible, openFilters, renderScreen, settle, text, type } from '../../testing/screen';
+import { applyFilters, button, chipTexts, expectAccessible, openFilters, renderScreen, settle, text, type } from '../../testing/screen';
 import { AuditLog } from './audit-log';
 
 async function open(inputs: Record<string, unknown> = {}, setup?: (audit: FakeAuditApi) => void) {
@@ -78,15 +78,14 @@ describe('Audit log', () => {
     expect(span).toBe(7 * 24 * 3_600_000);
   });
 
-  it('R-UI-037 "Search" puts the filters into the URL and keeps the other parameters', async () => {
+  it('R-UI-037 Apply puts the filters into the URL and keeps the other parameters', async () => {
     const { root, fixture, router } = await open();
-    await openFilters(fixture, root);
-    type(root.querySelector<HTMLInputElement>('#a-actor')!, 'alice');
-    type(root.querySelector<HTMLSelectElement>('#a-category')!, 'authz');
-    type(root.querySelector<HTMLSelectElement>('#a-range')!, '7d');
+    const drawer = await openFilters(fixture, root);
+    type(drawer.querySelector<HTMLInputElement>('#a-actor')!, 'alice');
+    type(drawer.querySelector<HTMLSelectElement>('#a-category')!, 'authz');
+    type(drawer.querySelector<HTMLSelectElement>('#a-range')!, '7d');
     await settle(fixture);
-    button(root, 'Search').click();
-    await settle(fixture);
+    await applyFilters(fixture);
     const [, extras] = (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1)!;
     expect(extras.queryParams).toMatchObject({
       actor: 'alice',
@@ -103,9 +102,12 @@ describe('Audit log', () => {
       from: '2026-10-01T00:00',
       to: '2026-10-02T00:00',
     });
-    expect(root.querySelector('#a-from')).toBeTruthy();
-    expect(root.querySelector('#a-to')).toBeTruthy();
+    expect(chipTexts(root)).toEqual(['Time range: 2026-10-01T00:00 – 2026-10-02T00:00']);
+    const drawer = await openFilters(fixture, root);
+    expect(drawer.querySelector('#a-from')).toBeTruthy();
+    expect(drawer.querySelector('#a-to')).toBeTruthy();
     await settle(fixture);
+    await expectAccessible(drawer);
     await expectAccessible(root);
   });
 

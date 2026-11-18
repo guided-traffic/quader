@@ -4,7 +4,7 @@ import { IdentityApi } from '../../api/identity-api';
 import { FakeAuthSettingsApi, FakeIdentityApi, sampleUser } from '../../api/testing/access-fakes';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { seriousViolations } from '../../testing/axe';
-import { button, buttonByText, openFilters, renderScreen, settle, text, typeInto } from '../../testing/screen';
+import { button, buttonByText, openFilters, renderScreen, settle, text, typeInto, chipTexts } from '../../testing/screen';
 import { UserCreateDialog } from './user-create-dialog';
 import { UserDetail } from './user-detail';
 import { UserList } from './user-list';
@@ -64,12 +64,13 @@ describe('The external flag of a user (R-UI-056)', () => {
     const rows = [...root.querySelectorAll('tbody tr')];
     expect(rows.map((r) => r.querySelector('.badge')?.textContent?.trim() ?? null)).toEqual([null, 'External']);
 
-    await openFilters(fixture, root);
-    const select = root.querySelector<HTMLSelectElement>('select[name="external"]')!;
+    const drawer = await openFilters(fixture, root);
+    const select = drawer.querySelector<HTMLSelectElement>('select[name="external"]')!;
     select.value = 'true';
     select.dispatchEvent(new Event('change', { bubbles: true }));
-    buttonByText(root, 'Apply filters').click();
+    buttonByText(drawer, 'Apply filters').click();
     await settle(fixture);
+    expect(chipTexts(root)).toEqual(['External: External users']);
     expect([...root.querySelectorAll('tbody tr th a')].map((a) => text(a))).toEqual(['Bob Example']);
   });
 

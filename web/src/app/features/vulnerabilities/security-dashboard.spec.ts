@@ -60,7 +60,7 @@ describe('The auditor\'s security dashboard (Q-UI-130, R-VULN-022)', () => {
       .map((tr) => tr.querySelector('td.qualified-name'))
       .find((td) => text(td!).startsWith('shop/'))!;
     expect(cell.querySelector('a')?.getAttribute('href')).toContain('project=shop');
-    expect(cell.querySelector('wbr')).toBeTruthy();
+    expect(cell.querySelector('wbr')).toBeNull();
     const all = rows(r).map((tr) => text(tr));
     expect(all.some((t) => t.includes('shop') && t.includes('minimist'))).toBe(true);
     expect(all.some((t) => t.includes('web') && t.includes('quader-test-vuln'))).toBe(true);

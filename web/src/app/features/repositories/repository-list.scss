@@ -22,3 +22,28 @@ td.actions {
     margin-inline-end: var(--quader-space-1);
   }
 }
+
+// A stacked row of a project's list (Q-UI-306, Q-UI-426): the name and the menu on the first line, **Set up client** on a line of
+// its own at the block's end, so the name and its description keep the row's width on a phone.
+@container table (max-width: 49rem) {
+  quader-data-table.stack tr > td.actions.with-setup {
+    display: contents;
+
+    > .btn-icon {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: start;
+    }
+
+    > .row-setup,
+    > .deleting {
+      grid-column: 1 / -1;
+      justify-self: start;
+    }
+
+    // The button's word starts where the lines above start (the cells' padding, not the button's).
+    > .row-setup {
+      margin-inline-start: calc(var(--quader-space-2) - var(--quader-space-3));
+    }
+  }
+}

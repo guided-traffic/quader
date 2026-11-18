@@ -85,7 +85,7 @@ test('R-UI-010 R-UI-011 R-UI-012 R-UI-080 create, upload on the repository page,
   expect(replicas.size, `replicas that answered: ${[...replicas]}`).toBeGreaterThanOrEqual(2);
 });
 
-test('R-UI-065 R-UI-066 the repository list of a project shows the client address in a read-only field, the one of the admin area a copy button, and each puts it on the clipboard', async ({ page, context, admin }) => {
+test('R-UI-066 Q-UI-426 the repository list of a project offers Set up client for a row and no address, the one of the admin area a copy button that puts the address on the clipboard', async ({ page, context, admin }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   const key = unique('ui-address');
   const created = await admin.post(repositories(), {
@@ -100,12 +100,12 @@ test('R-UI-065 R-UI-066 the repository list of a project shows the client addres
 
     await signInLocal(page);
     await page.goto(`/ui/en/projects/${e2eProject}/repositories?q=${key}`);
-    const field = page.getByRole('textbox', { name: `Client address of ${key}` });
-    await expect(field).toHaveValue(address);
-    await expect(field).toHaveJSProperty('readOnly', true);
-    await page.getByRole('button', { name: `Copy client address of ${key}` }).click();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(address);
-    await expectAccessible(page, 'repository list with the client address field');
+    // The address means nothing without its client: the row offers the client's setup, where the address stands (Q-UI-426).
+    await expect(page.getByRole('textbox', { name: `Client address of ${key}` })).toHaveCount(0);
+    await expect(page.getByRole('searchbox', { name: 'Filter repositories' })).toHaveValue(key);
+    await expectAccessible(page, 'repository list of a project');
+    await page.getByRole('link', { name: `Set up client ${key}` }).click();
+    await expect(page).toHaveURL(new RegExp(`/setup\\?repository=${e2eProject}%2F${key}`));
 
     // The admin area's list has no field: a quiet copy button beside the row's menu carries the address (Q-UI-330).
     await page.evaluate(() => navigator.clipboard.writeText(''));

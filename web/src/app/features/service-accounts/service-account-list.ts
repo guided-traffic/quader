@@ -13,7 +13,7 @@ import { Needs } from '../../shared/access/needs';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
 import { ErrorNotice } from '../../shared/error-notice';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
-import { FilterCategory, FilterPanel, FilterToggle } from '../../shared/ui/filter-panel';
+import { ListHead } from '../../shared/ui/list-head';
 import { PageHeader } from '../../shared/ui/page-header';
 
 /** What the dialog is opened with: the project key to create a project service account, named within it (R-AUTHZ-026). */
@@ -97,12 +97,12 @@ export class ServiceAccountCreateDialog {
 }
 
 /**
- * Service accounts (R-UI-026): name, description and status, with a name filter and cursor
- * paging. The hint says when to use one.
+ * Service accounts (R-UI-026): name, description and status, with the search by name above the list (Q-UI-421) and cursor paging;
+ * the list has no other filter, so no drawer. The hint says when to use one.
  */
 @Component({
   selector: 'quader-service-account-list',
-  imports: [PageHeader, RouterLink, DataTable, FilterCategory, FilterPanel, FilterToggle, Needs, TextField],
+  imports: [PageHeader, RouterLink, DataTable, ListHead, Needs],
   template: `
     <quader-page-header heading="Service accounts" i18n-heading="@@sas.heading">
       <button actions class="btn btn-confirm" type="button" [disabled]="!session.has('identities:write')" aria-describedby="needs-sas" (click)="add()" i18n="@@sas.add">New service account</button>
@@ -112,63 +112,44 @@ export class ServiceAccountCreateDialog {
       Use a service account for CI systems that cannot sign in through OpenID Connect and for long-running automation. Its tokens act as the account, not as a person.
     </p>
 
-    <div class="list-layout" [class.panel-open]="panelOpen()">
-      <div class="list-toolbar">
-        <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
-      </div>
-      <quader-filter-panel
-        #panel
-        class="list-side"
-        [(open)]="panelOpen"
-        [activeCount]="activeCount()"
-        [applyLabel]="applyLabel"
-        (apply)="apply()"
-        (clearAll)="clear()"
-      >
-        <quader-filter-category i18n-label="@@sas.q" label="Name" [active]="!!q().trim()" [expanded]="!!q().trim()">
-          <quader-text-field width="name" i18n-label="@@sas.q" label="Name" name="q" [(value)]="q" />
-        </quader-filter-category>
-      </quader-filter-panel>
+    <quader-list-head [searchLabel]="searchLabel" [search]="q()" (searchChange)="searchFor($event)" [filters]="false" />
 
-      <div class="list-main">
-        <quader-data-table
-          [caption]="caption"
-          [columns]="columns"
-          [sort]="sort()"
-          (sortChange)="sortBy($event)"
-          [loaded]="list.loaded()"
-          [loading]="list.loading()"
-          [error]="list.error()"
-          [empty]="list.items().length === 0"
-          i18n-emptyText="@@sas.empty"
-          emptyText="No service account matches."
-          [hasMore]="list.hasMore()"
-          (more)="list.more()"
-          (retry)="list.reload()"
-        >
-          @for (a of list.items(); track a.id) {
-            <tr>
-              <th scope="row"><a [routerLink]="saLink(a)" translate="no">{{ a.name }}</a></th>
-              <td>{{ a.description }}</td>
-              <td>
-                @if (a.project) {
-                  <a [routerLink]="['/projects', a.project]" translate="no">{{ a.project }}</a>
-                } @else {
-                  –
-                }
-              </td>
-              <td>
-                @if (a.status === 'active') {
-                  <span class="ok"><span class="material-icons inline" aria-hidden="true">check_circle</span><ng-container i18n="@@sas.active">Active</ng-container></span>
-                } @else {
-                  <span class="bad"><span class="material-icons inline" aria-hidden="true">block</span><ng-container i18n="@@sas.disabled">Disabled</ng-container></span>
-                }
-              </td>
-            </tr>
-          }
-        </quader-data-table>
-      </div>
-    </div>
+    <quader-data-table
+      [caption]="caption"
+      [columns]="columns"
+      [sort]="sort()"
+      (sortChange)="sortBy($event)"
+      [loaded]="list.loaded()"
+      [loading]="list.loading()"
+      [error]="list.error()"
+      [empty]="list.items().length === 0"
+      i18n-emptyText="@@sas.empty"
+      emptyText="No service account matches."
+      [hasMore]="list.hasMore()"
+      (more)="list.more()"
+      (retry)="list.reload()"
+    >
+      @for (a of list.items(); track a.id) {
+        <tr>
+          <th scope="row"><a [routerLink]="saLink(a)" translate="no">{{ a.name }}</a></th>
+          <td>{{ a.description }}</td>
+          <td>
+            @if (a.project) {
+              <a [routerLink]="['/projects', a.project]" translate="no">{{ a.project }}</a>
+            } @else {
+              –
+            }
+          </td>
+          <td>
+            @if (a.status === 'active') {
+              <span class="ok"><span class="material-icons inline" aria-hidden="true">check_circle</span><ng-container i18n="@@sas.active">Active</ng-container></span>
+            } @else {
+              <span class="bad"><span class="material-icons inline" aria-hidden="true">block</span><ng-container i18n="@@sas.disabled">Disabled</ng-container></span>
+            }
+          </td>
+        </tr>
+      }
+    </quader-data-table>
   `,
   styleUrl: '../../shared/access/access.scss',
 })
@@ -180,11 +161,9 @@ export class ServiceAccountList {
 
   protected readonly list = new PagedResource<ServiceAccount>();
   protected readonly q = signal('');
-  protected readonly panelOpen = signal(false);
-  protected readonly activeCount = signal(0);
   protected readonly sort = signal<TableSort>({ column: 'name', direction: 'asc' });
   protected readonly caption = $localize`:@@sas.caption:Service accounts`;
-  protected readonly applyLabel = $localize`:@@sas.apply:Apply filter`;
+  protected readonly searchLabel = $localize`:@@sas.search:Filter service accounts`;
   protected readonly columns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@sas.col.name:Name`, sortable: true },
     { id: 'description', label: $localize`:@@sas.col.description:Description` },
@@ -203,7 +182,6 @@ export class ServiceAccountList {
 
   protected async apply(): Promise<void> {
     const q = this.q().trim() || undefined;
-    this.activeCount.set(q ? 1 : 0);
     const sort = this.sort();
     await this.list.start(this.api.serviceAccounts({ q, sort: sort.direction === 'desc' ? '-name' : 'name' }));
   }
@@ -213,8 +191,8 @@ export class ServiceAccountList {
     void this.apply();
   }
 
-  protected clear(): void {
-    this.q.set('');
+  protected searchFor(text: string): void {
+    this.q.set(text);
     void this.apply();
   }
 

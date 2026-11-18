@@ -1,6 +1,5 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
-import { DatePipe } from '@angular/common';
 import {
   Component,
   computed,
@@ -20,12 +19,14 @@ import { SessionStore } from '../../core/session-store';
 import { ProjectContext } from '../../core/project-context';
 import { Confirm } from '../../shared/confirm-dialog';
 import { PageHeader } from '../../shared/ui/page-header';
-import { AddressField } from '../../shared/address-field';
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
 import { JobProgress } from '../../shared/job-progress';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
-import { FilterCategory, FilterPanel, FilterToggle } from '../../shared/ui/filter-panel';
+import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
+import { ListChip, ListHead } from '../../shared/ui/list-head';
+import { ProjectLink } from '../../shared/ui/project-mark';
+import { TimeAgo } from '../../shared/ui/time-ago';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
 import { FormatIconView } from '../../shared/format-icon';
 import { FrequentPlaces } from '../../core/frequent-places';
@@ -33,11 +34,12 @@ import { classLabel } from './repository-class';
 
 /**
  * The repository list (R-UI-020), its columns from the job of its kind of user (Q-UI-330). Inside a project, the plain user's:
- * the repository (key and description), format, class and the client address as a field of one width, its share of 46
- * characters at most (Q-UI-300), and the row's menu. In the admin area, the administrator's: the repository, project, format,
- * class, last activity, and a quiet copy button for the address beside the menu (Q-UI-302). Below 48 rem of the list's width
- * the rows stack (Q-UI-306). Filters live in the query parameters (R-UI-003) and restart the cursor
- * walk; "Load more" continues it. A repository is addressed inside its project (R-REPO-002): its key links to
+ * the repository (visibility icon, key and description), format, class, and the row's **Set up client** beside its menu: the
+ * address is no column (Q-UI-426), it stands where its client is set up. In the admin area, the administrator's: the repository,
+ * project (mark and name), format, class, visibility, last activity, and a quiet copy button for the address beside the menu
+ * (Q-UI-302). Below 48 rem of the list's width the rows stack (Q-UI-306). The head of the list is the search by key or
+ * description, **Filters** and the filters that are set (Q-UI-420 to Q-UI-422); the filters live in the query parameters
+ * (R-UI-003) and restart the cursor walk; "Load more" continues it. A repository is addressed inside its project (R-REPO-002): its key links to
  * the content page `/projects/<project>/repositories/<key>` (R-UI-052), its Settings action to `…/settings`. Delete asks for the key, may offer to detach the repository from
  * the virtual repositories that include it, and follows the deletion job until the row is gone.
  */
@@ -48,17 +50,17 @@ import { classLabel } from './repository-class';
     CdkMenu,
     CdkMenuItem,
     CdkMenuTrigger,
-    DatePipe,
     RouterLink,
-    AddressField,
     CopyButton,
     DataTable,
     ErrorNotice,
     FilterCategory,
     FilterPanel,
-    FilterToggle,
     JobProgress,
+    ListHead,
     PageHeader,
+    ProjectLink,
+    TimeAgo,
     VisibilityIcon,
   ],
   templateUrl: './repository-list.html',
@@ -93,7 +95,6 @@ export class RepositoryList {
   /** Repositories whose deletion job is being followed, by qualified name. */
   protected readonly deleting = signal<ReadonlyMap<string, JobReference>>(new Map());
   protected readonly deleteFailure = signal<ApiError | null>(null);
-  protected readonly search = signal('');
   protected readonly stagedClass = signal('');
   protected readonly stagedFormat = signal('');
   protected readonly stagedInactive = signal(false);
@@ -141,9 +142,21 @@ export class RepositoryList {
   protected readonly filtered = computed(
     () => !!(this.q() || this.class() || this.format() || this.state() || this.filterProject()),
   );
-  protected readonly activeCount = computed(
-    () => [this.q(), this.class(), this.format(), this.state(), this.filterProject()].filter((v) => !!v).length,
-  );
+  /** The filters of the drawer that are set, as the head's chips (Q-UI-422); the search text is the field's. */
+  protected readonly chips = computed<readonly ListChip[]>(() => {
+    const out: ListChip[] = [];
+    const project = this.filterProject();
+    if (project) out.push({ key: 'project', label: $localize`:@@repo.col.project:Project`, value: project });
+    const format = this.format();
+    if (format) out.push({ key: 'format', label: $localize`:@@repo.col.format:Format`, value: this.formatLabel(format) });
+    const cls = this.class();
+    if (cls) out.push({ key: 'class', label: $localize`:@@repo.col.class:Class`, value: this.classText(cls) });
+    if (this.state() === 'inactive') {
+      out.push({ key: 'state', label: $localize`:@@repo.filter.state:State`, value: $localize`:@@repo.filter.inactive:Disabled only` });
+    }
+    return out;
+  });
+  protected readonly searchLabel = $localize`:@@repo.list.search:Filter repositories`;
   constructor() {
     effect(() => {
       const filters = {
@@ -154,13 +167,7 @@ export class RepositoryList {
         project: this.projectKey() ?? undefined,
       };
       untracked(() => {
-        this.search.set(filters.q ?? '');
-        this.stagedClass.set(filters.class ?? '');
-        this.stagedFormat.set(filters.format ?? '');
-        this.stagedInactive.set(filters.state === 'inactive');
-        this.stagedProject.set(this.filterProject() ?? '');
-        // An applied filter is never hidden: the panel opens with it.
-        if (this.activeCount() > 0) this.panelOpen.set(true);
+        this.restage();
         void this.list.start(this.api.list(filters));
       });
     });
@@ -170,13 +177,11 @@ export class RepositoryList {
   protected readonly tableCaption = $localize`:@@repo.list.caption:Repositories`;
   protected readonly emptyText = $localize`:@@repo.list.empty:There is no repository yet.`;
   protected readonly emptyFilteredText = $localize`:@@repo.list.empty-filtered:No repository matches the filters.`;
-  protected readonly applyLabel = $localize`:@@repo.filter.apply:Search`;
   /** No sort control: the repository list is ordered by key and the API takes no sort parameter. */
   protected readonly columns = computed<readonly TableColumn[]>(() => {
     const admin = !this.inProject();
     return this.allColumns.filter((c) => {
       if (c.id === 'project' || c.id === 'activity') return admin && (c.id === 'project' || this.showActivity());
-      if (c.id === 'address') return !admin;
       if (c.id === 'visibility') return admin;
       if (c.id === 'actions-admin') return admin;
       if (c.id === 'actions') return !admin;
@@ -191,16 +196,13 @@ export class RepositoryList {
     () => !this.inProject() && this.canCreate() && this.list.items().some((r) => !!r.lastActivityAt),
   );
   /**
-   * The widths are each column's least (Q-UI-308); the repository takes what they leave, so the most important property gets
-   * the most room (Q-UI-330). Inside a project the repository prefers 20 rem, the address field takes the rest up to the list's
-   * longest address (one width for every row, Q-UI-300), and the repository what is left over after that; at 48 rem, where the
-   * rows stack, every column still has its least width.
+   * The widths are each column's least (Q-UI-308); the repository takes what they leave, so the most important property gets the
+   * most room (Q-UI-330); at 48 rem, where the rows stack, every column still has its least width. The project is its mark and its
+   * name (Q-UI-424): 11 rem hold **Platform engineering** beside its mark on one line.
    */
   private readonly allColumns: readonly TableColumn[] = [
-    this.inProject()
-      ? { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '13rem', prefer: '20rem' }
-      : { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '14rem' },
-    { id: 'project', label: $localize`:@@repo.col.project:Project`, width: '6.5rem' },
+    { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '13rem', prefer: true },
+    { id: 'project', label: $localize`:@@repo.col.project:Project`, width: '11rem' },
     { id: 'format', label: $localize`:@@repo.col.format:Format`, width: '8rem' },
     {
       id: 'class',
@@ -209,14 +211,7 @@ export class RepositoryList {
       width: '5rem',
     },
     // The admin area's column: who reads the artifacts, an icon and a word (Q-UI-330); inside a project the icon stands before the name.
-    { id: 'visibility', label: $localize`:@@repo.col.visibility:Visibility`, width: '6.5rem' },
-    {
-      id: 'address',
-      label: $localize`:@@repo.col.address:Client address`,
-      help: $localize`:@@repo.help.address:The address that package managers and download tools use for this repository.`,
-      fill: true,
-      stackLabel: false,
-    },
+    { id: 'visibility', label: $localize`:@@repo.col.visibility:Visibility`, width: '6rem' },
     {
       id: 'activity',
       label: $localize`:@@repo.col.activity:Last activity`,
@@ -225,7 +220,8 @@ export class RepositoryList {
       // Below 64 rem of the list's width the other columns take this room: the admin area's list at 1280 px.
       narrow: true,
     },
-    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true, width: '2rem' },
+    // Inside a project: **Set up client** and the menu.
+    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true, width: '9rem' },
     // The admin area's row has the copy button beside the menu.
     { id: 'actions-admin', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true, width: '4.5rem' },
   ];
@@ -234,12 +230,6 @@ export class RepositoryList {
 
   protected classIcon(c: RepositorySummary['class']): string {
     return c === 'local' ? 'storage' : c === 'remote' ? 'cloud_download' : 'layers';
-  }
-  protected addressLabel(row: RepositorySummary): string {
-    return $localize`:@@repo.address-of:Client address of ${row.key}:key:`;
-  }
-  protected copyLabel(row: RepositorySummary): string {
-    return $localize`:@@repo.copy-address-of:Copy client address of ${row.key}:key:`;
   }
   /** The admin area's copy button: its name and its tooltip carry the address itself (Q-UI-330). */
   protected copyValueLabel(address: string): string {
@@ -261,12 +251,6 @@ export class RepositoryList {
     return row.addresses[0] ?? '';
   }
 
-  /**
-   * The length of the list's longest address: `.address-cell` sizes the column to it, so every field has one width; it is also
-   * the address's share inside a project, where the address may take its whole length if the room is there (Q-UI-330).
-   */
-  protected readonly addressChars = computed(() => Math.max(0, ...this.list.items().map((r) => this.address(r).length)));
-
   protected actionsLabel(row: RepositorySummary): string {
     return $localize`:@@repo.actions-of:Actions for ${row.key}:key:`;
   }
@@ -275,10 +259,21 @@ export class RepositoryList {
     void this.router.navigate([], { queryParams: change, queryParamsHandling: 'merge' });
   }
 
-  /** The panel's apply button: all staged values reach the query at once. */
+  /** The drawer's values back to the applied ones: after a change of the query, and when the drawer closes without **Apply**. */
+  protected restage(): void {
+    this.stagedClass.set(this.class() ?? '');
+    this.stagedFormat.set(this.format() ?? '');
+    this.stagedInactive.set(this.state() === 'inactive');
+    this.stagedProject.set(this.filterProject() ?? '');
+  }
+
+  protected removeChip(chip: ListChip): void {
+    this.applyFilter({ [chip.key]: null });
+  }
+
+  /** The drawer's apply button: all staged values reach the query at once. */
   protected submitFilters(): void {
     this.applyFilter({
-      q: this.search().trim() || null,
       class: this.stagedClass() || null,
       format: this.stagedFormat() || null,
       state: this.stagedInactive() ? 'inactive' : null,
@@ -286,8 +281,9 @@ export class RepositoryList {
     });
   }
 
+  /** **Clear all** of the drawer: its filters go; the search text is the field's and stays. */
   protected clearFilters(): void {
-    this.applyFilter({ q: null, class: null, format: null, state: null, project: null });
+    this.applyFilter({ class: null, format: null, state: null, ...(this.inProject() ? {} : { project: null }) });
   }
 
   protected async remove(row: RepositorySummary): Promise<void> {

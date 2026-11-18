@@ -9,11 +9,12 @@ import { ProjectContext } from '../../core/project-context';
 import { SessionStore } from '../../core/session-store';
 import { AddressField } from '../../shared/address-field';
 import { valueOf } from '../../shared/paged-resource';
-import { TextField } from '../../shared/access/fields';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { ListHead } from '../../shared/ui/list-head';
+import { ProjectMark } from '../../shared/ui/project-mark';
 import { PageHeader } from '../../shared/ui/page-header';
 import { ProjectDialog } from './project-dialog';
 import { projectRoleLabel } from './project-roles';
@@ -30,7 +31,7 @@ const RECENT_SHOWN = 5;
  */
 @Component({
   selector: 'quader-projects-home',
-  imports: [RouterLink, AddressField, Checkbox, DataTable, PageHeader, TextField, VisibilityIcon],
+  imports: [RouterLink, AddressField, Checkbox, DataTable, ListHead, PageHeader, ProjectMark, VisibilityIcon],
   template: `
     <quader-page-header [heading]="heading" [description]="hint()">
       @if (canCreate()) {
@@ -62,14 +63,14 @@ const RECENT_SHOWN = 5;
     }
 
     <h2 class="projects-heading" i18n="@@projects-home.projects">Projects</h2>
-    @if (context.projects().length > 5) {
-      <quader-text-field width="name" i18n-label="@@projects.q" label="Key or name" name="q" [(value)]="q" />
-    }
-    @if (session.authenticated() && hasOthers()) {
-      <quader-checkbox [checked]="onlyMine()" (checkedChange)="onlyMine.set($event)">
-        <ng-container i18n="@@projects-home.mine">Your projects</ng-container>
-      </quader-checkbox>
-    }
+    <!-- The head of the list (Q-UI-420): the search by key or name, and the list's one filter beside it; no drawer for one choice. -->
+    <quader-list-head class="end-beside" [searchLabel]="searchLabel" [search]="q()" (searchChange)="q.set($event)" [filters]="false">
+      @if (session.authenticated() && hasOthers()) {
+        <quader-checkbox headEnd [checked]="onlyMine()" (checkedChange)="onlyMine.set($event)">
+          <ng-container i18n="@@projects-home.mine">Your projects</ng-container>
+        </quader-checkbox>
+      }
+    </quader-list-head>
     <quader-data-table
       [caption]="caption()"
       [columns]="columns()"
@@ -80,9 +81,15 @@ const RECENT_SHOWN = 5;
     >
       @for (p of shown(); track p.key) {
         <tr>
+          <!-- The project's mark before its name, its key under it: the first column of every list of projects (Q-UI-424). -->
           <th scope="row">
-            <a [routerLink]="['/projects', p.key]">{{ p.displayName || p.key }}</a>
-            <span class="secondary" translate="no">{{ p.key }}</span>
+            <span class="icon-name">
+              <quader-project-mark [key]="p.key" [name]="p.displayName" size="medium" />
+              <span class="icon-name-text">
+                <a [routerLink]="['/projects', p.key]">{{ p.displayName || p.key }}</a>
+                <span class="secondary" translate="no">{{ p.key }}</span>
+              </span>
+            </span>
           </th>
           <td>{{ p.description }}</td>
           <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
@@ -97,14 +104,6 @@ const RECENT_SHOWN = 5;
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
-    .find {
-      display: flex;
-      flex-direction: column;
-      gap: var(--quader-space-1);
-      max-inline-size: var(--quader-address-measure);
-      margin-block-end: var(--quader-space-6);
-    }
-
     .recent ul {
       display: flex;
       flex-direction: column;
@@ -187,8 +186,9 @@ export class ProjectsHome {
       });
   });
 
-  /** The filter of a long project list. */
+  /** The search of the project list (Q-UI-421). */
   protected readonly q = signal('');
+  protected readonly searchLabel = $localize`:@@projects.search:Filter projects`;
   protected readonly levelText = levelName;
   protected readonly onlyMine = signal(false);
   /** The memberships alone, from the server (`membership=true`); read only while the filter is on (R-UI-054). */

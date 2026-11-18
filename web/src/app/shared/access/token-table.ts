@@ -1,8 +1,8 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, input, model, output } from '@angular/core';
 import { Checkbox } from '../ui/checkbox';
 import { Token, TokenScope } from '../../api/tokens-api';
 import { DataTable, TableColumn } from '../ui/data-table';
+import { TimeAgo } from '../ui/time-ago';
 import { Tooltip } from '../ui/tooltip';
 
 /** Tokens that expire within this many days are marked (R-UI-029). */
@@ -36,16 +36,16 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
 }
 
 /**
- * A table of tokens (R-UI-029, R-UI-030, R-UI-026), its columns from the job of who reads it (Q-UI-332): the token (its
+ * A table of tokens (R-UI-029, R-UI-030, R-UI-026), its columns from the job of who reads it (Q-UI-332, Q-UI-429): the token (its
  * description, and its hint, which also names its type: `qdr_pat_…`), the owner in the administrator's list of everyone's
- * tokens, the scope, when it expires and when it was last used, and at the row's end **Revoke** with a quiet **Rotate** where
- * the caller may rotate, or the state of a token that is no longer active. When it was created and through what are `narrow`
- * columns of an owner's list, shown from 64 rem of the list. Status and expiry warnings carry text and icon, never colour
+ * tokens, the scope, which takes the room the others leave, when it expires and when it was last used, and at the row's end
+ * **Rotate** and **Revoke**, two quiet buttons with their words, or the state of a token that is no longer active. When it was
+ * created is a `narrow` column of an owner's list, shown from 64 rem of the list; through what it was created is no column. Status and expiry warnings carry text and icon, never colour
  * alone. Neither the value nor its hash is part of a listed token, only the `hint` that helps to recognise one.
  */
 @Component({
   selector: 'quader-token-table',
-  imports: [DatePipe, DataTable, Checkbox, Tooltip],
+  imports: [DataTable, Checkbox, TimeAgo, Tooltip],
   template: `
     <quader-data-table
       [caption]="caption"
@@ -97,10 +97,10 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
               >
             }
           </td>
-          <!-- The date only; the time is its title (Q-UI-305, Q-UI-332). -->
+          <!-- A time relative to now; the absolute time is its title (Q-UI-431). -->
           <td>
             @if (t.expiresAt; as at) {
-              <time [attr.datetime]="at" [title]="at | date: 'medium'">{{ at | date: 'mediumDate' }}</time>
+              <quader-time-ago [at]="at" absolute="title" />
               @if (soon(t)) {
                 <br /><span class="badge warn"
                   ><span class="material-icons" aria-hidden="true">schedule</span
@@ -113,25 +113,23 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
           </td>
           <td>
             @if (t.lastUsedAt; as at) {
-              <time [attr.datetime]="at" [title]="at | date: 'medium'">{{ at | date: 'mediumDate' }}</time>
+              <quader-time-ago [at]="at" absolute="title" />
             } @else {
               <span class="muted" i18n="@@token-table.not-used">Not used yet</span>
             }
           </td>
           @if (!showOwner()) {
-            <td class="narrow-drop">
-              <time [attr.datetime]="t.createdAt" [title]="t.createdAt | date: 'medium'">{{ t.createdAt | date: 'mediumDate' }}</time>
-            </td>
-            <td class="narrow-drop" translate="no">{{ t.createdVia }}</td>
+            <td class="narrow-drop"><quader-time-ago [at]="t.createdAt" absolute="title" /></td>
           }
-          <!-- An active token's actions; a token that is no longer active says what it is instead (Q-UI-332). -->
+          <!-- An active token's actions, each a quiet button with its word (Q-UI-429); a token that is no longer active says what it
+               is instead (Q-UI-332). -->
           <td class="actions">
             @switch (t.state) {
               @case ('active') {
                 @if (canRotate()) {
-                  <button class="btn btn-tertiary btn-icon" type="button" [quaderTooltip]="rotateText" (click)="rotate.emit(t)">
-                    <span class="material-icons" aria-hidden="true">autorenew</span>
-                    <span class="visually-hidden"><ng-container i18n="@@token-table.rotate">Rotate</ng-container> {{ t.description }}</span>
+                  <button class="btn btn-tertiary" type="button" [quaderTooltip]="rotateText" (click)="rotate.emit(t)">
+                    <ng-container i18n="@@token-table.rotate">Rotate</ng-container>
+                    <span class="visually-hidden"> {{ t.description }}</span>
                   </button>
                 }
                 @if (canRevoke()) {
@@ -176,21 +174,22 @@ export class TokenTable {
   protected readonly caption = $localize`:@@token-table.caption:Tokens`;
   protected readonly rotateText = $localize`:@@token-table.rotate-tip:Rotate: a new value now, the old one ends after the overlap you choose`;
   /**
-   * Each width is its column's least (Q-UI-308); the token takes what they leave. An owner's list sums to 47.5 rem, and with the
-   * two `narrow` columns to 63 rem; the administrator's list, with selection and owner and without those two, to 60.5 rem and
-   * stacks below 64 rem (`stackWide`).
+   * Each width is its column's least (Q-UI-308); the scope takes what they leave, so its words break into as few lines as the list
+   * allows (Q-UI-429). An owner's list sums to 46 rem, and with the `narrow` column to 52.5 rem; the administrator's list, with
+   * selection and owner and without it, to 57 rem and stacks below 64 rem (`stackWide`).
    */
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     ...(this.selectable()
       ? [{ id: 'select', label: $localize`:@@token-table.select:Select`, hideLabel: true, width: '2rem' }]
       : []),
-    { id: 'description', label: $localize`:@@token-table.token:Token`, width: '8.5rem', prefer: '8.5rem' },
+    { id: 'description', label: $localize`:@@token-table.token:Token`, width: '10rem' },
     ...(this.showOwner() ? [{ id: 'owner', label: $localize`:@@token-table.owner:Owner`, width: '7rem' }] : []),
     {
       id: 'scope',
       label: $localize`:@@token-table.scope:Scope`,
       help: $localize`:@@token-table.help.scope:What the token may do: all permissions of its owner, or only the listed repository grants.`,
       width: '9rem',
+      prefer: true,
     },
     { id: 'expires', label: $localize`:@@token-table.expires:Expires`, width: '6.5rem' },
     {
@@ -203,9 +202,8 @@ export class TokenTable {
       ? []
       : [
           { id: 'created', label: $localize`:@@token-table.created:Created`, width: '6.5rem', narrow: true },
-          { id: 'via', label: $localize`:@@token-table.via:Created via`, width: '5rem', narrow: true },
         ]),
-    { id: 'actions', label: $localize`:@@token-table.actions:Actions`, hideLabel: true, width: '7rem' },
+    { id: 'actions', label: $localize`:@@token-table.actions:Actions`, hideLabel: true, width: '9rem' },
   ]);
 
   private readonly now = computed(() => {

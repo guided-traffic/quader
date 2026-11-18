@@ -34,8 +34,6 @@ export interface Shot {
    * its width (the scrollbars are shown, as on a desktop with a mouse).
    */
   readonly regions: readonly { readonly what: string; readonly overflowX: number }[];
-  /** The widths of the address fields of each table, rounded to the pixel: one width per list is the rule (R-UI-065). */
-  readonly addressWidths: readonly (readonly number[])[];
   /**
    * When the panel scrolls sideways: the innermost element that reaches furthest past its right edge, hidden ones included (a
    * closed section keeps its box), as a path of tags and classes, and by how far.
@@ -181,9 +179,6 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
     const main = document.querySelector('main');
     const doc = document.scrollingElement;
     const overflowX = Math.max(main ? main.scrollWidth - main.clientWidth : 0, doc ? doc.scrollWidth - doc.clientWidth : 0);
-    const addressWidths = Array.from(document.querySelectorAll('main table'))
-      .map((t) => Array.from(t.querySelectorAll('quader-address-field input')).map((i) => Math.round(i.getBoundingClientRect().width)))
-      .filter((w) => w.length > 0);
     let offender: { what: string; overflowX: number } | null = null;
     if (overflowX > 1 && main) {
       const edge = main.getBoundingClientRect().left + main.clientWidth;
@@ -203,7 +198,7 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
         offender = { what: parts.join(' > '), overflowX: best.over };
       }
     }
-    return { overflowX, addressWidths, offender };
+    return { overflowX, offender };
   });
   const regions = await page.evaluate(sidewaysRegions);
   for (const r of first) {

@@ -8,7 +8,7 @@ import { helpFor } from '../../core/help-topics';
 import { Navigation } from '../../core/navigation';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
-import { buttonByText, expectAccessible, openFilters, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
+import { buttonByText, expectAccessible, filterDrawer, openFilters, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
 import { ClaimTester } from './claim-tester';
 import { IssuancesPage } from './issuances-page';
 import { IssuerCreate, IssuerDetail } from './issuer-detail';
@@ -265,8 +265,8 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
     const { root, fixture, get } = await renderScreen(IssuancesPage, { setup: (g) => (ci(g).issuances = [sampleIssuance(), second]) });
     expect([...root.querySelectorAll('tbody tr')]).toHaveLength(2);
     await openFilters(fixture, root);
-    typeInto(root, 'Job ID', '555');
-    (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+    typeInto(filterDrawer()!, 'Job ID', '555');
+    filterDrawer()!.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
     await sleep(fixture, 80);
     const rows = [...root.querySelectorAll('tbody tr')];
     expect(rows).toHaveLength(1);
@@ -304,9 +304,9 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
     expect((buttonByText(root, 'Revoke matching tokens') as HTMLButtonElement).disabled).toBe(true);
     expect(text(root)).toContain('filter by one issuer');
     await openFilters(fixture, root);
-    typeInto(root, 'Issuer', 'gitlab-com');
-    typeInto(root, 'Job ID', '98765');
-    (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+    typeInto(filterDrawer()!, 'Issuer', 'gitlab-com');
+    typeInto(filterDrawer()!, 'Job ID', '98765');
+    filterDrawer()!.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
     await sleep(fixture, 80);
     const revoke = buttonByText(root, 'Revoke matching tokens') as HTMLButtonElement;
     expect(revoke.disabled).toBe(false);
@@ -326,18 +326,20 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
     const { root, fixture } = await renderScreen(IssuancesPage, {});
     for (const [label, value] of [['Project path', 'team-a/app'], ['Issued from', '2026-11-02'], ['Issued until', '2026-11-03']] as const) {
       await openFilters(fixture, root);
-      typeInto(root, 'Issuer', 'gitlab-com');
-      typeInto(root, 'Job ID', '98765');
-      typeInto(root, label, value);
-      (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+      typeInto(filterDrawer()!, 'Issuer', 'gitlab-com');
+      typeInto(filterDrawer()!, 'Job ID', '98765');
+      typeInto(filterDrawer()!, label, value);
+      filterDrawer()!.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
       await sleep(fixture, 80);
       expect((buttonByText(root, 'Revoke matching tokens') as HTMLButtonElement).disabled, label).toBe(true);
       expect(text(root.querySelector('#ci-revoke-note')!), label).toContain(label);
-      typeInto(root, label, '');
+      await openFilters(fixture, root);
+      typeInto(filterDrawer()!, label, '');
     }
-    typeInto(root, 'Issuer', 'gitlab-com');
-    typeInto(root, 'Job ID', '98765');
-    (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+    await openFilters(fixture, root);
+    typeInto(filterDrawer()!, 'Issuer', 'gitlab-com');
+    typeInto(filterDrawer()!, 'Job ID', '98765');
+    filterDrawer()!.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
     await sleep(fixture, 80);
     expect((buttonByText(root, 'Revoke matching tokens') as HTMLButtonElement).disabled).toBe(false);
   });
@@ -345,9 +347,9 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
   it('R-CI-020 the day filters are the bounds of the local day the table shows, the end exclusive', async () => {
     const { root, fixture, get } = await renderScreen(IssuancesPage, {});
     await openFilters(fixture, root);
-    typeInto(root, 'Issued from', '2026-11-02');
-    typeInto(root, 'Issued until', '2026-11-03');
-    (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+    typeInto(filterDrawer()!, 'Issued from', '2026-11-02');
+    typeInto(filterDrawer()!, 'Issued until', '2026-11-03');
+    filterDrawer()!.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
     await sleep(fixture, 80);
     const last = ci(get).listFilters.at(-1)!;
     expect(last.from).toBe(new Date(2026, 10, 2).toISOString());
@@ -357,9 +359,9 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
   it('R-CI-020 without a matching active token nothing is asked and nothing is revoked', async () => {
     const { root, fixture, get } = await renderScreen(IssuancesPage, { setup: (g) => (ci(g).issuances = [sampleIssuance({ active: false })]) });
     await openFilters(fixture, root);
-    typeInto(root, 'Issuer', 'gitlab-com');
-    typeInto(root, 'Job ID', '98765');
-    (root.querySelector('quader-filter-panel button[type="submit"]') as HTMLButtonElement).click();
+    typeInto(filterDrawer()!, 'Issuer', 'gitlab-com');
+    typeInto(filterDrawer()!, 'Job ID', '98765');
+    filterDrawer()!.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
     await sleep(fixture, 80);
     buttonByText(root, 'Revoke matching tokens').click();
     await sleep(fixture, 100);

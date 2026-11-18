@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
-import { e2eProject, expect, expectAccessible, fillKey, openFilter, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
+import { e2eProject, expect, expectAccessible, fillKey, applyFilters, openFilters, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
 // R-UI-047 journey "packages" (E2.8; R-UI-006 to R-UI-009, R-UI-016, R-UI-017): a version published to an npm local
 // repository through the npm protocol appears in the packages list, its README renders sanitized, and the client setup
@@ -144,9 +144,9 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     await page.goto(`/ui/en/projects/${e2eProject}/packages`);
     await expect(page.getByRole('heading', { name: 'Packages', level: 1 })).toBeVisible();
     await expectAccessible(page, 'package list');
-    await openFilter(page, 'Repository');
-    await page.getByRole('checkbox', { name: qualified(repoKey), exact: true }).check();
-    await page.getByRole('button', { name: 'Search' }).click();
+    const drawer = await openFilters(page);
+    await drawer.getByRole('checkbox', { name: qualified(repoKey), exact: true }).check();
+    await applyFilters(page);
     const row = page.getByRole('table', { name: 'Packages' }).getByRole('row', { name: new RegExp(pkgName) });
     await expect(row.getByRole('link', { name: pkgName })).toBeVisible();
     await expect(row).toContainText(version);
@@ -170,9 +170,9 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
 
   await test.step('the README renders, and what the sanitizer must drop is gone', async () => {
     await page.goto(`/ui/en/projects/${e2eProject}/packages`);
-    await openFilter(page, 'Repository');
-    await page.getByRole('checkbox', { name: qualified(repoKey), exact: true }).check();
-    await page.getByRole('button', { name: 'Search' }).click();
+    const drawer = await openFilters(page);
+    await drawer.getByRole('checkbox', { name: qualified(repoKey), exact: true }).check();
+    await applyFilters(page);
     await page.getByRole('link', { name: pkgName }).click();
     await expect(page.getByRole('heading', { name: pkgName, level: 1 }).first()).toBeVisible();
     // The package page is its versions, the README of the latest version below them (R-UI-110).

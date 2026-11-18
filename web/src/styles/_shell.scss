@@ -221,22 +221,6 @@ quader-root {
     }
   }
 
-  // The project's initial in a rounded square, as the reference marks a project; decoration, the name is the label.
-  .switcher-mark {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    inline-size: 2rem;
-    block-size: 2rem;
-    border-radius: var(--quader-radius-m);
-    background: var(--quader-accent-fill);
-    color: var(--quader-on-accent);
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
   .switcher-text {
     flex: 1 1 auto;
     min-inline-size: 0;

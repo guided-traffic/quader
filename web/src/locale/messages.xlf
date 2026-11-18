@@ -101,7 +101,7 @@
     <unit id="shell.documentation">
       <notes>
         <note category="location">src/app/app.html:49,52</note>
-        <note category="location">src/app/features/search/search-model.ts:100</note>
+        <note category="location">src/app/features/search/search-model.ts:101</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -143,7 +143,7 @@
     <unit id="shell.menu.setup">
       <notes>
         <note category="location">src/app/app.html:91,92</note>
-        <note category="location">src/app/features/search/search-model.ts:98</note>
+        <note category="location">src/app/features/search/search-model.ts:99</note>
       </notes>
       <segment>
         <source>Client setup</source>
@@ -245,7 +245,7 @@
       <notes>
         <note category="location">src/app/app.routes.ts:57</note>
         <note category="location">src/app/app.routes.ts:58</note>
-        <note category="location">src/app/features/search/search-results.ts:199</note>
+        <note category="location">src/app/features/search/search-results.ts:197</note>
       </notes>
       <segment>
         <source>Search</source>
@@ -255,7 +255,7 @@
       <notes>
         <note category="location">src/app/app.routes.ts:64</note>
         <note category="location">src/app/core/navigation.ts:47</note>
-        <note category="location">src/app/features/search/search-model.ts:88</note>
+        <note category="location">src/app/features/search/search-model.ts:89</note>
       </notes>
       <segment>
         <source>Guides</source>
@@ -1793,7 +1793,7 @@
       <notes>
         <note category="location">src/app/core/navigation.ts:46</note>
         <note category="location">src/app/core/navigation.ts:55</note>
-        <note category="location">src/app/features/search/search-model.ts:87</note>
+        <note category="location">src/app/features/search/search-model.ts:88</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -3422,7 +3422,7 @@
     </unit>
     <unit id="audit.export.csv">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:17,18</note>
+        <note category="location">src/app/features/audit/audit-log.html:16,17</note>
       </notes>
       <segment>
         <source>Export CSV</source>
@@ -3430,7 +3430,7 @@
     </unit>
     <unit id="audit.export.jsonl">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:19,23</note>
+        <note category="location">src/app/features/audit/audit-log.html:17,20</note>
       </notes>
       <segment>
         <source>Export JSON Lines</source>
@@ -3438,8 +3438,8 @@
     </unit>
     <unit id="audit.filter.range">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:37</note>
-        <note category="location">src/app/features/audit/audit-log.html:39,40</note>
+        <note category="location">src/app/features/audit/audit-log.html:33,34</note>
+        <note category="location">src/app/features/audit/audit-log.ts:151</note>
       </notes>
       <segment>
         <source>Time range</source>
@@ -3447,7 +3447,8 @@
     </unit>
     <unit id="audit.range.1h">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:41,42</note>
+        <note category="location">src/app/features/audit/audit-log.html:35,36</note>
+        <note category="location">src/app/features/audit/audit-log.ts:240</note>
       </notes>
       <segment>
         <source>Last hour</source>
@@ -3455,7 +3456,7 @@
     </unit>
     <unit id="audit.range.24h">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:42,43</note>
+        <note category="location">src/app/features/audit/audit-log.html:36,37</note>
       </notes>
       <segment>
         <source>Last 24 hours</source>
@@ -3463,7 +3464,8 @@
     </unit>
     <unit id="audit.range.7d">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:43,44</note>
+        <note category="location">src/app/features/audit/audit-log.html:37,38</note>
+        <note category="location">src/app/features/audit/audit-log.ts:242</note>
       </notes>
       <segment>
         <source>Last 7 days</source>
@@ -3471,7 +3473,8 @@
     </unit>
     <unit id="audit.range.30d">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:44,45</note>
+        <note category="location">src/app/features/audit/audit-log.html:38,39</note>
+        <note category="location">src/app/features/audit/audit-log.ts:244</note>
       </notes>
       <segment>
         <source>Last 30 days</source>
@@ -3479,7 +3482,7 @@
     </unit>
     <unit id="audit.range.custom">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:45,47</note>
+        <note category="location">src/app/features/audit/audit-log.html:39,42</note>
       </notes>
       <segment>
         <source>Custom</source>
@@ -3487,7 +3490,7 @@
     </unit>
     <unit id="audit.filter.from">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:50,51</note>
+        <note category="location">src/app/features/audit/audit-log.html:44,45</note>
       </notes>
       <segment>
         <source>From (your time zone)</source>
@@ -3495,7 +3498,7 @@
     </unit>
     <unit id="audit.filter.to">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:54,55</note>
+        <note category="location">src/app/features/audit/audit-log.html:48,49</note>
       </notes>
       <segment>
         <source>To (your time zone)</source>
@@ -3503,8 +3506,7 @@
     </unit>
     <unit id="audit.filter.actor">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:59</note>
-        <note category="location">src/app/features/audit/audit-log.html:60</note>
+        <note category="location">src/app/features/audit/audit-log.html:53,54</note>
       </notes>
       <segment>
         <source>Actor (name or ID)</source>
@@ -3512,8 +3514,7 @@
     </unit>
     <unit id="audit.filter.action">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:62</note>
-        <note category="location">src/app/features/audit/audit-log.html:71</note>
+        <note category="location">src/app/features/audit/audit-log.html:57,59</note>
       </notes>
       <segment>
         <source>Action</source>
@@ -3521,9 +3522,9 @@
     </unit>
     <unit id="audit.filter.category">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:80</note>
-        <note category="location">src/app/features/audit/audit-log.html:81</note>
-        <note category="location">src/app/features/audit/audit-log.html:184,185</note>
+        <note category="location">src/app/features/audit/audit-log.html:74,75</note>
+        <note category="location">src/app/features/audit/audit-log.html:180,181</note>
+        <note category="location">src/app/features/audit/audit-log.ts:157</note>
       </notes>
       <segment>
         <source>Category</source>
@@ -3531,10 +3532,10 @@
     </unit>
     <unit id="repo.filter.any">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:82,83</note>
-        <note category="location">src/app/features/audit/audit-log.html:93,94</note>
-        <note category="location">src/app/features/repositories/repository-list.html:62,63</note>
-        <note category="location">src/app/features/repositories/repository-list.html:75,76</note>
+        <note category="location">src/app/features/audit/audit-log.html:76,77</note>
+        <note category="location">src/app/features/audit/audit-log.html:89,90</note>
+        <note category="location">src/app/features/repositories/repository-list.html:57,58</note>
+        <note category="location">src/app/features/repositories/repository-list.html:70,71</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -3542,9 +3543,9 @@
     </unit>
     <unit id="audit.filter.repository">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:88</note>
-        <note category="location">src/app/features/audit/audit-log.html:89</note>
-        <note category="location">src/app/features/audit/audit-log.html:210,212</note>
+        <note category="location">src/app/features/audit/audit-log.html:83,84</note>
+        <note category="location">src/app/features/audit/audit-log.html:206,208</note>
+        <note category="location">src/app/features/audit/audit-log.ts:159</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -3552,8 +3553,7 @@
     </unit>
     <unit id="audit.filter.outcome">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:91</note>
-        <note category="location">src/app/features/audit/audit-log.html:92</note>
+        <note category="location">src/app/features/audit/audit-log.html:87,88</note>
       </notes>
       <segment>
         <source>Outcome</source>
@@ -3561,7 +3561,7 @@
     </unit>
     <unit id="audit.empty">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:111,112</note>
+        <note category="location">src/app/features/audit/audit-log.html:106,107</note>
       </notes>
       <segment>
         <source>No event matches the filters in this time range.</source>
@@ -3569,7 +3569,7 @@
     </unit>
     <unit id="audit.detail.heading">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:164,165</note>
+        <note category="location">src/app/features/audit/audit-log.html:160,161</note>
       </notes>
       <segment>
         <source>Event</source>
@@ -3577,7 +3577,7 @@
     </unit>
     <unit id="audit.detail.close">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:166,168</note>
+        <note category="location">src/app/features/audit/audit-log.html:162,164</note>
       </notes>
       <segment>
         <source> Close </source>
@@ -3585,8 +3585,8 @@
     </unit>
     <unit id="audit.col.time">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:173,175</note>
-        <note category="location">src/app/features/audit/audit-log.ts:89</note>
+        <note category="location">src/app/features/audit/audit-log.html:169,171</note>
+        <note category="location">src/app/features/audit/audit-log.ts:90</note>
       </notes>
       <segment>
         <source>Time</source>
@@ -3594,8 +3594,9 @@
     </unit>
     <unit id="audit.col.action">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:179,181</note>
-        <note category="location">src/app/features/audit/audit-log.ts:94</note>
+        <note category="location">src/app/features/audit/audit-log.html:175,177</note>
+        <note category="location">src/app/features/audit/audit-log.ts:95</note>
+        <note category="location">src/app/features/audit/audit-log.ts:155</note>
       </notes>
       <segment>
         <source>Action</source>
@@ -3603,8 +3604,9 @@
     </unit>
     <unit id="audit.col.outcome">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:186,188</note>
-        <note category="location">src/app/features/audit/audit-log.ts:103</note>
+        <note category="location">src/app/features/audit/audit-log.html:182,184</note>
+        <note category="location">src/app/features/audit/audit-log.ts:104</note>
+        <note category="location">src/app/features/audit/audit-log.ts:161</note>
       </notes>
       <segment>
         <source>Outcome</source>
@@ -3612,8 +3614,9 @@
     </unit>
     <unit id="audit.col.actor">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:194,196</note>
-        <note category="location">src/app/features/audit/audit-log.ts:92</note>
+        <note category="location">src/app/features/audit/audit-log.html:190,192</note>
+        <note category="location">src/app/features/audit/audit-log.ts:93</note>
+        <note category="location">src/app/features/audit/audit-log.ts:153</note>
       </notes>
       <segment>
         <source>Actor</source>
@@ -3621,7 +3624,7 @@
     </unit>
     <unit id="audit.detail.token">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:206,207</note>
+        <note category="location">src/app/features/audit/audit-log.html:202,203</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -3629,7 +3632,7 @@
     </unit>
     <unit id="audit.detail.resource">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:228,229</note>
+        <note category="location">src/app/features/audit/audit-log.html:224,225</note>
       </notes>
       <segment>
         <source>Resource</source>
@@ -3637,8 +3640,8 @@
     </unit>
     <unit id="audit.col.source">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:233,234</note>
-        <note category="location">src/app/features/audit/audit-log.ts:106</note>
+        <note category="location">src/app/features/audit/audit-log.html:229,230</note>
+        <note category="location">src/app/features/audit/audit-log.ts:107</note>
       </notes>
       <segment>
         <source>Source address</source>
@@ -3646,7 +3649,7 @@
     </unit>
     <unit id="audit.detail.endpoint">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:238,240</note>
+        <note category="location">src/app/features/audit/audit-log.html:234,236</note>
       </notes>
       <segment>
         <source>Endpoint</source>
@@ -3654,7 +3657,7 @@
     </unit>
     <unit id="audit.detail.replica">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:244,245</note>
+        <note category="location">src/app/features/audit/audit-log.html:240,241</note>
       </notes>
       <segment>
         <source>Replica</source>
@@ -3662,7 +3665,7 @@
     </unit>
     <unit id="audit.detail.event-id">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:247,249</note>
+        <note category="location">src/app/features/audit/audit-log.html:243,245</note>
       </notes>
       <segment>
         <source>Event ID</source>
@@ -3670,7 +3673,7 @@
     </unit>
     <unit id="audit.detail.trace">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:253,255</note>
+        <note category="location">src/app/features/audit/audit-log.html:249,251</note>
       </notes>
       <segment>
         <source>Trace ID</source>
@@ -3678,7 +3681,7 @@
     </unit>
     <unit id="audit.detail.details">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:260,261</note>
+        <note category="location">src/app/features/audit/audit-log.html:256,257</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -3686,7 +3689,7 @@
     </unit>
     <unit id="repo.loading">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:263,265</note>
+        <note category="location">src/app/features/audit/audit-log.html:259,261</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:15,16</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:156,160</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:186,189</note>
@@ -3699,20 +3702,9 @@
         <source>Loading.</source>
       </segment>
     </unit>
-    <unit id="repo.filter.apply">
-      <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:83</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:173</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:150,153</note>
-        <note category="location">src/app/features/system/jobs-page.ts:77,80</note>
-      </notes>
-      <segment>
-        <source>Search</source>
-      </segment>
-    </unit>
     <unit id="audit.caption">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:84</note>
+        <note category="location">src/app/features/audit/audit-log.ts:85</note>
       </notes>
       <segment>
         <source>Audit events, newest first</source>
@@ -3720,7 +3712,7 @@
     </unit>
     <unit id="audit.help.time">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:90</note>
+        <note category="location">src/app/features/audit/audit-log.ts:91</note>
       </notes>
       <segment>
         <source>Events are listed newest first. Narrow the time range in the filters to reach older ones.</source>
@@ -3728,7 +3720,7 @@
     </unit>
     <unit id="audit.col.target">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:95</note>
+        <note category="location">src/app/features/audit/audit-log.ts:96</note>
       </notes>
       <segment>
         <source>Target</source>
@@ -3736,7 +3728,7 @@
     </unit>
     <unit id="audit.col.project">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:98</note>
+        <note category="location">src/app/features/audit/audit-log.ts:99</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -3744,7 +3736,7 @@
     </unit>
     <unit id="audit.help.project">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:99</note>
+        <note category="location">src/app/features/audit/audit-log.ts:100</note>
       </notes>
       <segment>
         <source>The project of the repository the event is about; a dash when it is about none.</source>
@@ -3752,7 +3744,7 @@
     </unit>
     <unit id="audit.help.outcome">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:104</note>
+        <note category="location">src/app/features/audit/audit-log.ts:105</note>
       </notes>
       <segment>
         <source>Success: the action was carried out. Failure: it was allowed but did not work. Denied: the caller was not permitted.</source>
@@ -3760,7 +3752,7 @@
     </unit>
     <unit id="audit.copy-id">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:301</note>
+        <note category="location">src/app/features/audit/audit-log.ts:334</note>
       </notes>
       <segment>
         <source>Copy the event ID</source>
@@ -3768,7 +3760,7 @@
     </unit>
     <unit id="audit.copy-trace">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:302</note>
+        <note category="location">src/app/features/audit/audit-log.ts:335</note>
       </notes>
       <segment>
         <source>Copy the trace ID</source>
@@ -5154,7 +5146,7 @@
     </unit>
     <unit id="ci.issuance.title">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:34,35</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:35,36</note>
       </notes>
       <segment>
         <source>Issued token</source>
@@ -5162,7 +5154,7 @@
     </unit>
     <unit id="ci.issuance.state">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:40,42</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:41,43</note>
       </notes>
       <segment>
         <source>State</source>
@@ -5170,7 +5162,7 @@
     </unit>
     <unit id="ci.issuance.revoked">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:43</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:44</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -5178,8 +5170,8 @@
     </unit>
     <unit id="ci.issuance.active">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:45,46</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:247,248</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:46,47</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:229,230</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -5187,7 +5179,7 @@
     </unit>
     <unit id="ci.issuance.removed">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:47,48</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:48,49</note>
       </notes>
       <segment>
         <source>Removed with its mapping</source>
@@ -5195,8 +5187,8 @@
     </unit>
     <unit id="ci.issuance.expired">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:49,50</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:251,252</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:50,51</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:233,234</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -5204,7 +5196,7 @@
     </unit>
     <unit id="ci.issuance.token-id">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:52,53</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:53,54</note>
       </notes>
       <segment>
         <source>Token ID</source>
@@ -5212,7 +5204,7 @@
     </unit>
     <unit id="ci.issuance.issuer">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:54,55</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:55,56</note>
       </notes>
       <segment>
         <source>Issuer</source>
@@ -5220,7 +5212,7 @@
     </unit>
     <unit id="ci.issuance.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:56,57</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:57,58</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -5228,7 +5220,7 @@
     </unit>
     <unit id="ci.issuance.project">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:58,59</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:59,60</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -5236,7 +5228,7 @@
     </unit>
     <unit id="ci.issuance.job">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:60,61</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:61,62</note>
       </notes>
       <segment>
         <source>Pipeline and job</source>
@@ -5244,7 +5236,7 @@
     </unit>
     <unit id="ci.issuance.ref">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:63</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:64</note>
       </notes>
       <segment>
         <source>Ref</source>
@@ -5252,7 +5244,7 @@
     </unit>
     <unit id="ci.issuance.user">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:64,65</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:65,66</note>
       </notes>
       <segment>
         <source>Started by</source>
@@ -5260,7 +5252,7 @@
     </unit>
     <unit id="ci.issuance.issued">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:66,67</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:67,68</note>
       </notes>
       <segment>
         <source>Issued</source>
@@ -5268,7 +5260,7 @@
     </unit>
     <unit id="ci.issuance.expires">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:68,69</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:69,70</note>
       </notes>
       <segment>
         <source>Expires</source>
@@ -5276,7 +5268,7 @@
     </unit>
     <unit id="ci.issuance.requested-scope">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:70,71</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:71,72</note>
       </notes>
       <segment>
         <source>Requested scope</source>
@@ -5284,7 +5276,7 @@
     </unit>
     <unit id="ci.issuance.granted-scope">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:72,73</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:73,74</note>
       </notes>
       <segment>
         <source>Granted scope</source>
@@ -5292,7 +5284,7 @@
     </unit>
     <unit id="ci.issuance.client">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:74,75</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:75,76</note>
       </notes>
       <segment>
         <source>Client</source>
@@ -5300,7 +5292,7 @@
     </unit>
     <unit id="ci.issuance.usage">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:77,79</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:78,80</note>
       </notes>
       <segment>
         <source>Usage</source>
@@ -5308,7 +5300,7 @@
     </unit>
     <unit id="ci.issuance.usage-text">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:79,80</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:80,81</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ u.requests }}"/> requests, last used</source>
@@ -5316,8 +5308,8 @@
     </unit>
     <unit id="ci.issuance.grants">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:87,88</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:89,90</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:88,89</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:90,91</note>
       </notes>
       <segment>
         <source>Grants of the token</source>
@@ -5325,8 +5317,8 @@
     </unit>
     <unit id="ci.issuance.claims">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:90,91</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:91,93</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:91,92</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:92,94</note>
       </notes>
       <segment>
         <source>Claims at the time of the exchange</source>
@@ -5334,7 +5326,7 @@
     </unit>
     <unit id="ci.close">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:94,96</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:95,97</note>
       </notes>
       <segment>
         <source>Close</source>
@@ -5351,7 +5343,7 @@
     <unit id="ci.issuances.f.issuer">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:166</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:167</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:285</note>
       </notes>
       <segment>
         <source>Issuer</source>
@@ -5359,8 +5351,8 @@
     </unit>
     <unit id="ci.issuances.f.project-id">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:171</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:172</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:169</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:286</note>
       </notes>
       <segment>
         <source>GitLab project ID</source>
@@ -5368,9 +5360,9 @@
     </unit>
     <unit id="ci.issuances.f.project-path">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:174</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:175</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:357</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:170</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:287</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:376</note>
       </notes>
       <segment>
         <source>Project path</source>
@@ -5378,8 +5370,8 @@
     </unit>
     <unit id="ci.issuances.f.pipeline">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:177</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:178</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:171</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:288</note>
       </notes>
       <segment>
         <source>Pipeline ID</source>
@@ -5387,8 +5379,8 @@
     </unit>
     <unit id="ci.issuances.f.job">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:181</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:182</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:173</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:289</note>
       </notes>
       <segment>
         <source>Job ID</source>
@@ -5396,8 +5388,8 @@
     </unit>
     <unit id="ci.issuances.f.mapping">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:185</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:186</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:175</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:290</note>
       </notes>
       <segment>
         <source>Mapping</source>
@@ -5405,9 +5397,9 @@
     </unit>
     <unit id="ci.issuances.f.state">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:189</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:190</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:358</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:177</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:291</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:377</note>
       </notes>
       <segment>
         <source>State</source>
@@ -5415,9 +5407,9 @@
     </unit>
     <unit id="ci.issuances.f.from">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:193</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:194</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:359</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:179</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:292</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:378</note>
       </notes>
       <segment>
         <source>Issued from</source>
@@ -5425,9 +5417,9 @@
     </unit>
     <unit id="ci.issuances.f.to">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:196</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:197</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:360</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:180</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:293</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:379</note>
       </notes>
       <segment>
         <source>Issued until</source>
@@ -5435,7 +5427,7 @@
     </unit>
     <unit id="ci.issuances.revoke-unsupported">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:206,207</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:187,188</note>
       </notes>
       <segment>
         <source>The bulk revoke acts on the issuer, project ID, pipeline ID, job ID and mapping only. It would revoke more than the list shows while these filters are applied:</source>
@@ -5443,7 +5435,7 @@
     </unit>
     <unit id="ci.issuances.revoke-note">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:211,213</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:192,196</note>
       </notes>
       <segment>
         <source> To revoke in bulk, filter by one issuer and by a project ID, a pipeline ID, a job ID or a mapping, then apply the filters. </source>
@@ -5451,7 +5443,7 @@
     </unit>
     <unit id="ci.issuances.empty">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:229,230</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:210,211</note>
       </notes>
       <segment>
         <source>No CI token matches.</source>
@@ -5459,7 +5451,7 @@
     </unit>
     <unit id="ci.issuance.revoked-short">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:245,246</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:227,228</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -5467,7 +5459,7 @@
     </unit>
     <unit id="ci.issuance.removed-short">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:249,250</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:231,232</note>
       </notes>
       <segment>
         <source>Removed</source>
@@ -5475,7 +5467,7 @@
     </unit>
     <unit id="ci.issuances.details">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:255,257</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:237,239</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -5483,7 +5475,7 @@
     </unit>
     <unit id="ci.issuances.state.any">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:304</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:306</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -5491,7 +5483,7 @@
     </unit>
     <unit id="ci.issuances.state.active">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:305</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:307</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -5499,7 +5491,7 @@
     </unit>
     <unit id="ci.issuances.state.inactive">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:306</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:308</note>
       </notes>
       <segment>
         <source>Expired or revoked</source>
@@ -5507,7 +5499,7 @@
     </unit>
     <unit id="ci.issuances.caption">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:308</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:310</note>
       </notes>
       <segment>
         <source>Issued CI tokens</source>
@@ -5515,7 +5507,7 @@
     </unit>
     <unit id="ci.issuances.col.issued">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:310</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:312</note>
       </notes>
       <segment>
         <source>Issued</source>
@@ -5523,7 +5515,7 @@
     </unit>
     <unit id="ci.issuances.col.issuer">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:311</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:313</note>
       </notes>
       <segment>
         <source>Issuer</source>
@@ -5531,7 +5523,7 @@
     </unit>
     <unit id="ci.issuances.col.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:312</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:314</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -5539,7 +5531,7 @@
     </unit>
     <unit id="ci.issuances.col.project">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:313</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:315</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -5547,7 +5539,7 @@
     </unit>
     <unit id="ci.issuances.col.job">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:314</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:316</note>
       </notes>
       <segment>
         <source>Pipeline / job</source>
@@ -5555,7 +5547,7 @@
     </unit>
     <unit id="ci.issuances.col.ref">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:315</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:317</note>
       </notes>
       <segment>
         <source>Ref</source>
@@ -5563,7 +5555,7 @@
     </unit>
     <unit id="ci.issuances.col.state">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:316</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:318</note>
       </notes>
       <segment>
         <source>State</source>
@@ -5571,7 +5563,7 @@
     </unit>
     <unit id="ci.issuances.col.actions">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:317</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:319</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -5579,7 +5571,7 @@
     </unit>
     <unit id="ci.issuances.none-to-revoke">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:400</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:431</note>
       </notes>
       <segment>
         <source>No active token matches the filters.</source>
@@ -5587,7 +5579,7 @@
     </unit>
     <unit id="ci.issuances.revoke-title">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:404</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:435</note>
       </notes>
       <segment>
         <source>Revoke <ph id="0" equiv="count" disp="count"/> tokens?</source>
@@ -5595,7 +5587,7 @@
     </unit>
     <unit id="ci.issuances.revoke-text">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:406</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:437</note>
       </notes>
       <segment>
         <source>The <ph id="0" equiv="count" disp="count"/> active tokens that match the applied filters stop working at once on every replica. Running jobs that use them fail. This cannot be undone.</source>
@@ -5603,7 +5595,7 @@
     </unit>
     <unit id="ci.issuances.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:408</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:439</note>
       </notes>
       <segment>
         <source>Revoke <ph id="0" equiv="count" disp="count"/> tokens</source>
@@ -5611,7 +5603,7 @@
     </unit>
     <unit id="ci.issuances.revoked">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:412</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:443</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="revoked"/> tokens revoked.</source>
@@ -7639,7 +7631,7 @@
     <unit id="repo.action.copy-address">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:139,141</note>
-        <note category="location">src/app/features/repositories/repository-list.html:193,195</note>
+        <note category="location">src/app/features/repositories/repository-list.html:192,195</note>
       </notes>
       <segment>
         <source>Copy client address</source>
@@ -7648,7 +7640,7 @@
     <unit id="repo.action.delete">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:145,146</note>
-        <note category="location">src/app/features/repositories/repository-list.html:209,210</note>
+        <note category="location">src/app/features/repositories/repository-list.html:208,209</note>
       </notes>
       <segment>
         <source> Delete </source>
@@ -7715,9 +7707,8 @@
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:107</note>
         <note category="location">src/app/features/repositories/content/repository-files.ts:181</note>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:178</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:228</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:230</note>
-        <note category="location">src/app/features/search/search-results.ts:225</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:224</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:226</note>
         <note category="location">src/app/features/system/backups/backups-page.html:177,179</note>
         <note category="location">src/app/features/system/job-table.ts:94</note>
         <note category="location">src/app/features/system/tasks-card.ts:113</note>
@@ -7738,8 +7729,7 @@
     <unit id="repo.copy-address-value">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:113</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:246</note>
-        <note category="location">src/app/features/search/search-results.ts:313</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:236</note>
       </notes>
       <segment>
         <source>Copy client address <ph id="0" equiv="address" disp="address"/></source>
@@ -7756,7 +7746,7 @@
     <unit id="copy.done">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:124</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:252</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:242</note>
         <note category="location">src/app/shared/copy-button.ts:36</note>
       </notes>
       <segment>
@@ -7766,7 +7756,7 @@
     <unit id="copy.failed">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:126</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:254</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:244</note>
         <note category="location">src/app/shared/copy-button.ts:39</note>
       </notes>
       <segment>
@@ -9092,7 +9082,7 @@
     </unit>
     <unit id="group.origin.admin">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:18</note>
+        <note category="location">src/app/features/groups/group-list.ts:19</note>
       </notes>
       <segment>
         <source>Created by an administrator</source>
@@ -9100,7 +9090,7 @@
     </unit>
     <unit id="group.origin.oidc">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:20</note>
+        <note category="location">src/app/features/groups/group-list.ts:21</note>
       </notes>
       <segment>
         <source>Identity provider</source>
@@ -9108,7 +9098,7 @@
     </unit>
     <unit id="group.origin.scim">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:22</note>
+        <note category="location">src/app/features/groups/group-list.ts:23</note>
       </notes>
       <segment>
         <source>SCIM</source>
@@ -9116,7 +9106,7 @@
     </unit>
     <unit id="groups.heading">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:41</note>
+        <note category="location">src/app/features/groups/group-list.ts:40</note>
       </notes>
       <segment>
         <source>Groups</source>
@@ -9124,25 +9114,16 @@
     </unit>
     <unit id="groups.add">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:42,43</note>
+        <note category="location">src/app/features/groups/group-list.ts:41,42</note>
       </notes>
       <segment>
         <source>New group</source>
       </segment>
     </unit>
-    <unit id="groups.q">
-      <notes>
-        <note category="location">src/app/features/groups/group-list.ts:58</note>
-        <note category="location">src/app/features/groups/group-list.ts:59</note>
-      </notes>
-      <segment>
-        <source>Name</source>
-      </segment>
-    </unit>
     <unit id="groups.origin">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:61</note>
-        <note category="location">src/app/features/groups/group-list.ts:62</note>
+        <note category="location">src/app/features/groups/group-list.ts:55</note>
+        <note category="location">src/app/features/groups/group-list.ts:100</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -9150,15 +9131,23 @@
     </unit>
     <unit id="groups.empty">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:77,78</note>
+        <note category="location">src/app/features/groups/group-list.ts:68,69</note>
       </notes>
       <segment>
         <source>No group matches.</source>
       </segment>
     </unit>
+    <unit id="groups.search">
+      <notes>
+        <note category="location">src/app/features/groups/group-list.ts:97</note>
+      </notes>
+      <segment>
+        <source>Filter groups</source>
+      </segment>
+    </unit>
     <unit id="groups.caption">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:108</note>
+        <note category="location">src/app/features/groups/group-list.ts:103</note>
       </notes>
       <segment>
         <source>Groups</source>
@@ -9166,7 +9155,7 @@
     </unit>
     <unit id="groups.col.name">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:110</note>
+        <note category="location">src/app/features/groups/group-list.ts:105</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -9174,7 +9163,7 @@
     </unit>
     <unit id="groups.col.description">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:111</note>
+        <note category="location">src/app/features/groups/group-list.ts:106</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -9182,7 +9171,7 @@
     </unit>
     <unit id="groups.col.origin">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:114</note>
+        <note category="location">src/app/features/groups/group-list.ts:109</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -9190,7 +9179,7 @@
     </unit>
     <unit id="groups.help.origin">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:115</note>
+        <note category="location">src/app/features/groups/group-list.ts:110</note>
       </notes>
       <segment>
         <source>Where the group comes from: created by an administrator, mapped from the identity provider, or provisioned by SCIM.</source>
@@ -9198,7 +9187,7 @@
     </unit>
     <unit id="groups.col.members">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:117</note>
+        <note category="location">src/app/features/groups/group-list.ts:112</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -9206,7 +9195,7 @@
     </unit>
     <unit id="groups.any">
       <notes>
-        <note category="location">src/app/features/groups/group-list.ts:121</note>
+        <note category="location">src/app/features/groups/group-list.ts:116</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -10200,7 +10189,7 @@
         <note category="location">src/app/features/packages/ansible-import-log.ts:50,51</note>
         <note category="location">src/app/features/system/backups/backups-page.html:226,227</note>
         <note category="location">src/app/features/system/jobs-page.ts:100,101</note>
-        <note category="location">src/app/shared/ui/data-table.ts:125,126</note>
+        <note category="location">src/app/shared/ui/data-table.ts:118,119</note>
       </notes>
       <segment>
         <source> Load more </source>
@@ -10688,18 +10677,10 @@
         <source>Delete</source>
       </segment>
     </unit>
-    <unit id="pkg.chips.label">
-      <notes>
-        <note category="location">src/app/features/packages/package-list.html:118</note>
-      </notes>
-      <segment>
-        <source>Applied filters</source>
-      </segment>
-    </unit>
     <unit id="pkg.filter.type">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:144</note>
-        <note category="location">src/app/features/packages/package-list.ts:140</note>
+        <note category="location">src/app/features/packages/package-list.html:136,137</note>
+        <note category="location">src/app/features/packages/package-list.ts:135</note>
       </notes>
       <segment>
         <source>Package type</source>
@@ -10707,28 +10688,18 @@
     </unit>
     <unit id="pkg.filter.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:156</note>
-        <note category="location">src/app/features/packages/package-list.ts:148</note>
+        <note category="location">src/app/features/packages/package-list.html:148,150</note>
+        <note category="location">src/app/features/packages/package-list.ts:144</note>
       </notes>
       <segment>
         <source>Repository</source>
       </segment>
     </unit>
-    <unit id="pkg.filter.text">
-      <notes>
-        <note category="location">src/app/features/packages/package-list.html:170</note>
-        <note category="location">src/app/features/packages/package-list.html:175,176</note>
-        <note category="location">src/app/features/packages/package-list.ts:159</note>
-      </notes>
-      <segment>
-        <source>Name or description</source>
-      </segment>
-    </unit>
     <unit id="pkg.filter.keyword">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:181</note>
-        <note category="location">src/app/features/packages/package-list.html:187</note>
-        <note category="location">src/app/features/packages/package-list.ts:166</note>
+        <note category="location">src/app/features/packages/package-list.html:162,164</note>
+        <note category="location">src/app/features/packages/package-list.html:168</note>
+        <note category="location">src/app/features/packages/package-list.ts:156</note>
       </notes>
       <segment>
         <source>Keyword</source>
@@ -10736,9 +10707,9 @@
     </unit>
     <unit id="pkg.filter.created">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:192</note>
-        <note category="location">src/app/features/packages/package-list.html:196</note>
-        <note category="location">src/app/features/packages/package-list.ts:174</note>
+        <note category="location">src/app/features/packages/package-list.html:173,175</note>
+        <note category="location">src/app/features/packages/package-list.html:177</note>
+        <note category="location">src/app/features/packages/package-list.ts:165</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -10746,7 +10717,7 @@
     </unit>
     <unit id="pkg.filter.any">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:199,200</note>
+        <note category="location">src/app/features/packages/package-list.html:180,181</note>
       </notes>
       <segment>
         <source>Any time</source>
@@ -10754,7 +10725,7 @@
     </unit>
     <unit id="pkg.filter.from">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:206,208</note>
+        <note category="location">src/app/features/packages/package-list.html:187,189</note>
       </notes>
       <segment>
         <source>From</source>
@@ -10762,7 +10733,7 @@
     </unit>
     <unit id="pkg.filter.to">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:215,216</note>
+        <note category="location">src/app/features/packages/package-list.html:196,198</note>
       </notes>
       <segment>
         <source>To (included)</source>
@@ -10770,7 +10741,7 @@
     </unit>
     <unit id="pkg.list.clear">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:271,272</note>
+        <note category="location">src/app/features/packages/package-list.html:247,248</note>
       </notes>
       <segment>
         <source> Clear all filters </source>
@@ -10778,7 +10749,7 @@
     </unit>
     <unit id="pkg.list.empty-setup">
       <notes>
-        <note category="location">src/app/features/packages/package-list.html:276,279</note>
+        <note category="location">src/app/features/packages/package-list.html:252,256</note>
       </notes>
       <segment>
         <source>Set up a client to publish the first package</source>
@@ -10786,7 +10757,7 @@
     </unit>
     <unit id="pkg.list.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:190</note>
+        <note category="location">src/app/features/packages/package-list.ts:181</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -10794,7 +10765,7 @@
     </unit>
     <unit id="pkg.list.empty">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:191</note>
+        <note category="location">src/app/features/packages/package-list.ts:182</note>
       </notes>
       <segment>
         <source>No package has been published yet.</source>
@@ -10802,24 +10773,24 @@
     </unit>
     <unit id="pkg.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:192</note>
+        <note category="location">src/app/features/packages/package-list.ts:183</note>
       </notes>
       <segment>
         <source>No package matches the filters.</source>
       </segment>
     </unit>
-    <unit id="pkg.filter.apply">
+    <unit id="pkg.list.search">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:193</note>
+        <note category="location">src/app/features/packages/package-list.ts:184</note>
       </notes>
       <segment>
-        <source>Search</source>
+        <source>Filter packages</source>
       </segment>
     </unit>
     <unit id="pkg.col.package">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:196</note>
-        <note category="location">src/app/features/search/search-results.ts:229</note>
+        <note category="location">src/app/features/packages/package-list.ts:187</note>
+        <note category="location">src/app/features/search/search-results.ts:226</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -10827,8 +10798,8 @@
     </unit>
     <unit id="pkg.col.format">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:197</note>
-        <note category="location">src/app/features/search/search-results.ts:232</note>
+        <note category="location">src/app/features/packages/package-list.ts:188</note>
+        <note category="location">src/app/features/search/search-results.ts:229</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -10836,17 +10807,17 @@
     </unit>
     <unit id="pkg.col.latest">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:200</note>
-        <note category="location">src/app/features/search/search-results.ts:235</note>
+        <note category="location">src/app/features/packages/package-list.ts:192</note>
+        <note category="location">src/app/features/search/search-results.ts:232</note>
       </notes>
       <segment>
-        <source>Latest version</source>
+        <source>Latest</source>
       </segment>
     </unit>
     <unit id="pkg.help.latest">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:201</note>
-        <note category="location">src/app/features/search/search-results.ts:236</note>
+        <note category="location">src/app/features/packages/package-list.ts:193</note>
+        <note category="location">src/app/features/search/search-results.ts:233</note>
       </notes>
       <segment>
         <source>The highest stable version you may see. A pre-release is shown only while no stable version exists.</source>
@@ -10854,8 +10825,8 @@
     </unit>
     <unit id="pkg.col.updated">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:206</note>
-        <note category="location">src/app/features/search/search-results.ts:241</note>
+        <note category="location">src/app/features/packages/package-list.ts:198</note>
+        <note category="location">src/app/features/search/search-results.ts:238</note>
       </notes>
       <segment>
         <source>Updated</source>
@@ -10863,8 +10834,8 @@
     </unit>
     <unit id="pkg.help.updated">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:208</note>
-        <note category="location">src/app/features/search/search-results.ts:242</note>
+        <note category="location">src/app/features/packages/package-list.ts:200</note>
+        <note category="location">src/app/features/search/search-results.ts:239</note>
       </notes>
       <segment>
         <source>When the latest version you may see was published.</source>
@@ -10872,7 +10843,7 @@
     </unit>
     <unit id="pkg.period.7">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:214</note>
+        <note category="location">src/app/features/packages/package-list.ts:206</note>
       </notes>
       <segment>
         <source>Last 7 days</source>
@@ -10880,7 +10851,7 @@
     </unit>
     <unit id="pkg.period.30">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:215</note>
+        <note category="location">src/app/features/packages/package-list.ts:207</note>
       </notes>
       <segment>
         <source>Last 30 days</source>
@@ -10888,7 +10859,7 @@
     </unit>
     <unit id="pkg.period.90">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:216</note>
+        <note category="location">src/app/features/packages/package-list.ts:208</note>
       </notes>
       <segment>
         <source>Last 90 days</source>
@@ -10896,18 +10867,10 @@
     </unit>
     <unit id="pkg.period.custom">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:217</note>
+        <note category="location">src/app/features/packages/package-list.ts:209</note>
       </notes>
       <segment>
         <source>Custom period</source>
-      </segment>
-    </unit>
-    <unit id="pkg.chips.remove">
-      <notes>
-        <note category="location">src/app/features/packages/package-list.ts:304</note>
-      </notes>
-      <segment>
-        <source>Remove the filter <ph id="0" equiv="filter" disp="label"/></source>
       </segment>
     </unit>
     <unit id="pkg.readme.truncated">
@@ -12497,8 +12460,8 @@
     </unit>
     <unit id="policies.principal">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.html:22</note>
-        <note category="location">src/app/features/permissions/policy-list.html:26,28</note>
+        <note category="location">src/app/features/permissions/policy-list.html:16,18</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:70</note>
       </notes>
       <segment>
         <source>Principal</source>
@@ -12506,7 +12469,7 @@
     </unit>
     <unit id="policies.principal-hint">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.html:30,32</note>
+        <note category="location">src/app/features/permissions/policy-list.html:20,22</note>
       </notes>
       <segment>
         <source>user:name, group:name or sa:name</source>
@@ -12514,8 +12477,8 @@
     </unit>
     <unit id="policies.repository">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.html:33</note>
-        <note category="location">src/app/features/permissions/policy-list.html:34</note>
+        <note category="location">src/app/features/permissions/policy-list.html:22</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:71</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -12523,8 +12486,8 @@
     </unit>
     <unit id="policies.project">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.html:36</note>
-        <note category="location">src/app/features/permissions/policy-list.html:37</note>
+        <note category="location">src/app/features/permissions/policy-list.html:24</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:72</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -12532,7 +12495,7 @@
     </unit>
     <unit id="policies.empty">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.html:52,53</note>
+        <note category="location">src/app/features/permissions/policy-list.html:38,39</note>
       </notes>
       <segment>
         <source>No policy matches.</source>
@@ -12540,7 +12503,7 @@
     </unit>
     <unit id="policies.inert">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.html:62,63</note>
+        <note category="location">src/app/features/permissions/policy-list.html:48,49</note>
       </notes>
       <segment>
         <source>Grants nothing</source>
@@ -12548,7 +12511,7 @@
     </unit>
     <unit id="policies.sum.users">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:22</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:24</note>
       </notes>
       <segment>
         <source>Users: <ph id="0" equiv="count" disp="count.user"/></source>
@@ -12556,7 +12519,7 @@
     </unit>
     <unit id="policies.sum.groups">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:23</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:25</note>
       </notes>
       <segment>
         <source>Groups: <ph id="0" equiv="count" disp="count.group"/></source>
@@ -12564,7 +12527,7 @@
     </unit>
     <unit id="policies.sum.sas">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:24</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:26</note>
       </notes>
       <segment>
         <source>Service accounts: <ph id="0" equiv="count" disp="count.sa"/></source>
@@ -12572,7 +12535,7 @@
     </unit>
     <unit id="policies.caption">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:62</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:76</note>
       </notes>
       <segment>
         <source>Permission policies</source>
@@ -12580,7 +12543,7 @@
     </unit>
     <unit id="policies.col.name">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:64</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:78</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -12588,7 +12551,7 @@
     </unit>
     <unit id="policies.col.project">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:67</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:81</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -12596,7 +12559,7 @@
     </unit>
     <unit id="policies.help.project">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:68</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:82</note>
       </notes>
       <segment>
         <source>The project a policy belongs to; a dash is a global policy. A project&apos;s policy grants on that project&apos;s repositories only.</source>
@@ -12604,7 +12567,7 @@
     </unit>
     <unit id="policies.col.description">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:70</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:84</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -12612,7 +12575,7 @@
     </unit>
     <unit id="policies.col.principals">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:73</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:87</note>
       </notes>
       <segment>
         <source>Principals</source>
@@ -12620,7 +12583,7 @@
     </unit>
     <unit id="policies.help.principals">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:74</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:88</note>
       </notes>
       <segment>
         <source>Who the policy grants to, counted by kind: users, groups and service accounts.</source>
@@ -12628,7 +12591,7 @@
     </unit>
     <unit id="policies.col.resources">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:78</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:92</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -12636,7 +12599,7 @@
     </unit>
     <unit id="policies.help.resources">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:79</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:93</note>
       </notes>
       <segment>
         <source>The repository keys or patterns the policy covers. Open the policy to see which repositories they match now.</source>
@@ -12644,7 +12607,7 @@
     </unit>
     <unit id="policies.col.actions">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:81</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:95</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -12652,7 +12615,7 @@
     </unit>
     <unit id="policies.sum.more">
       <notes>
-        <note category="location">src/app/features/permissions/policy-list.ts:130</note>
+        <note category="location">src/app/features/permissions/policy-list.ts:158</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="list" disp="shown"/> and <ph id="1" equiv="count" disp="repos.length - 3"/> more</source>
@@ -13633,7 +13596,7 @@
     </unit>
     <unit id="projects.heading">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:30</note>
+        <note category="location">src/app/features/projects/project-list.ts:31</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -13641,7 +13604,7 @@
     </unit>
     <unit id="projects.add">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:38,40</note>
+        <note category="location">src/app/features/projects/project-list.ts:39,41</note>
       </notes>
       <segment>
         <source> New project </source>
@@ -13649,25 +13612,15 @@
     </unit>
     <unit id="projects.hint">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:43,46</note>
+        <note category="location">src/app/features/projects/project-list.ts:44,47</note>
       </notes>
       <segment>
         <source> A project holds a team&apos;s repositories. Its members have a role in it; its Owners manage the repositories, permission policies and service accounts without a system role. </source>
       </segment>
     </unit>
-    <unit id="projects.q">
-      <notes>
-        <note category="location">src/app/features/projects/project-list.ts:63</note>
-        <note category="location">src/app/features/projects/project-list.ts:64</note>
-        <note category="location">src/app/features/projects/projects-home.ts:66</note>
-      </notes>
-      <segment>
-        <source>Key or name</source>
-      </segment>
-    </unit>
     <unit id="projects.empty">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:79,80</note>
+        <note category="location">src/app/features/projects/project-list.ts:63,64</note>
       </notes>
       <segment>
         <source>There is no project yet.</source>
@@ -13675,7 +13628,7 @@
     </unit>
     <unit id="projects.edit">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:97,98</note>
+        <note category="location">src/app/features/projects/project-list.ts:89,90</note>
       </notes>
       <segment>
         <source>Edit</source>
@@ -13683,41 +13636,38 @@
     </unit>
     <unit id="projects.caption">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:126</note>
+        <note category="location">src/app/features/projects/project-list.ts:114</note>
       </notes>
       <segment>
         <source>Projects</source>
       </segment>
     </unit>
-    <unit id="projects.apply">
+    <unit id="projects.search">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:127</note>
+        <note category="location">src/app/features/projects/project-list.ts:115</note>
+        <note category="location">src/app/features/projects/projects-home.ts:191</note>
       </notes>
       <segment>
-        <source>Apply filter</source>
+        <source>Filter projects</source>
       </segment>
     </unit>
-    <unit id="projects.col.key">
+    <unit id="projects.col.project">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:129</note>
+        <note category="location">src/app/features/projects/project-list.ts:117</note>
+        <note category="location">src/app/features/projects/projects-home.ts:225</note>
+        <note category="location">src/app/features/search/search-results.ts:215</note>
+        <note category="location">src/app/features/search/search-results.ts:227</note>
+        <note category="location">src/app/features/search/search-results.ts:245</note>
       </notes>
       <segment>
-        <source>Key</source>
-      </segment>
-    </unit>
-    <unit id="projects.col.name">
-      <notes>
-        <note category="location">src/app/features/projects/project-list.ts:130</note>
-      </notes>
-      <segment>
-        <source>Display name</source>
+        <source>Project</source>
       </segment>
     </unit>
     <unit id="projects.col.visibility">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:131</note>
+        <note category="location">src/app/features/projects/project-list.ts:118</note>
         <note category="location">src/app/features/projects/projects-home.ts:227</note>
-        <note category="location">src/app/features/search/search-results.ts:250</note>
+        <note category="location">src/app/features/search/search-results.ts:247</note>
       </notes>
       <segment>
         <source>Visibility</source>
@@ -13725,7 +13675,7 @@
     </unit>
     <unit id="projects.col.owners">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:132</note>
+        <note category="location">src/app/features/projects/project-list.ts:119</note>
       </notes>
       <segment>
         <source>Owners</source>
@@ -13733,9 +13683,9 @@
     </unit>
     <unit id="projects.col.members">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:133</note>
+        <note category="location">src/app/features/projects/project-list.ts:120</note>
         <note category="location">src/app/features/projects/projects-home.ts:235</note>
-        <note category="location">src/app/features/search/search-results.ts:258</note>
+        <note category="location">src/app/features/search/search-results.ts:255</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -13743,9 +13693,9 @@
     </unit>
     <unit id="projects.col.repositories">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:134</note>
+        <note category="location">src/app/features/projects/project-list.ts:121</note>
         <note category="location">src/app/features/projects/projects-home.ts:234</note>
-        <note category="location">src/app/features/search/search-results.ts:257</note>
+        <note category="location">src/app/features/search/search-results.ts:254</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -13753,7 +13703,7 @@
     </unit>
     <unit id="projects.col.storage">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:137</note>
+        <note category="location">src/app/features/projects/project-list.ts:124</note>
       </notes>
       <segment>
         <source>Storage</source>
@@ -13761,7 +13711,7 @@
     </unit>
     <unit id="projects.help.storage">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:138</note>
+        <note category="location">src/app/features/projects/project-list.ts:125</note>
       </notes>
       <segment>
         <source>The logical size the project is charged: the full size of every file in its repositories, also where another project holds the same content.</source>
@@ -13769,9 +13719,9 @@
     </unit>
     <unit id="projects.col.role">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:142</note>
+        <note category="location">src/app/features/projects/project-list.ts:129</note>
         <note category="location">src/app/features/projects/projects-home.ts:230</note>
-        <note category="location">src/app/features/search/search-results.ts:253</note>
+        <note category="location">src/app/features/search/search-results.ts:250</note>
       </notes>
       <segment>
         <source>Your role</source>
@@ -13779,9 +13729,9 @@
     </unit>
     <unit id="projects.help.role">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:143</note>
+        <note category="location">src/app/features/projects/project-list.ts:130</note>
         <note category="location">src/app/features/projects/projects-home.ts:231</note>
-        <note category="location">src/app/features/search/search-results.ts:254</note>
+        <note category="location">src/app/features/search/search-results.ts:251</note>
       </notes>
       <segment>
         <source>Your role in the project; empty when you see it through a system role and are no member.</source>
@@ -13789,7 +13739,7 @@
     </unit>
     <unit id="projects.col.actions">
       <notes>
-        <note category="location">src/app/features/projects/project-list.ts:145</note>
+        <note category="location">src/app/features/projects/project-list.ts:132</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -14488,7 +14438,7 @@
     </unit>
     <unit id="switcher.button">
       <notes>
-        <note category="location">src/app/features/projects/project-switcher.ts:40,41</note>
+        <note category="location">src/app/features/projects/project-switcher.ts:41,42</note>
       </notes>
       <segment>
         <source>Switch project</source>
@@ -14496,7 +14446,7 @@
     </unit>
     <unit id="switcher.title">
       <notes>
-        <note category="location">src/app/features/projects/project-switcher.ts:46,48</note>
+        <note category="location">src/app/features/projects/project-switcher.ts:47,49</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -14504,8 +14454,8 @@
     </unit>
     <unit id="switcher.search">
       <notes>
-        <note category="location">src/app/features/projects/project-switcher.ts:54,55</note>
-        <note category="location">src/app/features/projects/project-switcher.ts:56,58</note>
+        <note category="location">src/app/features/projects/project-switcher.ts:55,56</note>
+        <note category="location">src/app/features/projects/project-switcher.ts:57,59</note>
       </notes>
       <segment>
         <source>Find a project</source>
@@ -14513,7 +14463,7 @@
     </unit>
     <unit id="switcher.recent">
       <notes>
-        <note category="location">src/app/features/projects/project-switcher.ts:61,62</note>
+        <note category="location">src/app/features/projects/project-switcher.ts:62,63</note>
       </notes>
       <segment>
         <source>Recently opened</source>
@@ -14521,7 +14471,7 @@
     </unit>
     <unit id="switcher.all">
       <notes>
-        <note category="location">src/app/features/projects/project-switcher.ts:73,74</note>
+        <note category="location">src/app/features/projects/project-switcher.ts:75,76</note>
       </notes>
       <segment>
         <source>Your projects</source>
@@ -14529,7 +14479,7 @@
     </unit>
     <unit id="switcher.none">
       <notes>
-        <note category="location">src/app/features/projects/project-switcher.ts:75,77</note>
+        <note category="location">src/app/features/projects/project-switcher.ts:77,79</note>
       </notes>
       <segment>
         <source>No project matches.</source>
@@ -14537,7 +14487,7 @@
     </unit>
     <unit id="switcher.overview">
       <notes>
-        <note category="location">src/app/features/projects/project-switcher.ts:93,98</note>
+        <note category="location">src/app/features/projects/project-switcher.ts:96,101</note>
       </notes>
       <segment>
         <source>All projects</source>
@@ -14545,7 +14495,7 @@
     </unit>
     <unit id="projects-home.add">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:37,39</note>
+        <note category="location">src/app/features/projects/projects-home.ts:38,40</note>
       </notes>
       <segment>
         <source>New project</source>
@@ -14553,7 +14503,7 @@
     </unit>
     <unit id="projects-home.recent">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:43,45</note>
+        <note category="location">src/app/features/projects/projects-home.ts:44,46</note>
       </notes>
       <segment>
         <source>Recently opened</source>
@@ -14561,10 +14511,11 @@
     </unit>
     <unit id="repo.content.tab.setup">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:56,58</note>
+        <note category="location">src/app/features/projects/projects-home.ts:57,59</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:26,30</note>
         <note category="location">src/app/features/repositories/content/repository-files.ts:102,105</note>
         <note category="location">src/app/features/repositories/content/repository-items.ts:67,70</note>
+        <note category="location">src/app/features/repositories/repository-list.html:161,162</note>
       </notes>
       <segment>
         <source>Set up client</source>
@@ -14572,7 +14523,7 @@
     </unit>
     <unit id="projects-home.projects">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:64,65</note>
+        <note category="location">src/app/features/projects/projects-home.ts:65,66</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -14588,7 +14539,7 @@
     </unit>
     <unit id="projects-home.heading">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:161</note>
+        <note category="location">src/app/features/projects/projects-home.ts:160</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -14596,7 +14547,7 @@
     </unit>
     <unit id="projects-home.hint-anonymous">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:165</note>
+        <note category="location">src/app/features/projects/projects-home.ts:164</note>
       </notes>
       <segment>
         <source>The projects with public content. Sign in to see your own.</source>
@@ -14604,7 +14555,7 @@
     </unit>
     <unit id="projects-home.hint-recent">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:166</note>
+        <note category="location">src/app/features/projects/projects-home.ts:165</note>
       </notes>
       <segment>
         <source>Take up a repository you opened before, or open a project.</source>
@@ -14650,21 +14601,10 @@
         <source>Your projects</source>
       </segment>
     </unit>
-    <unit id="projects.col.project">
-      <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:225</note>
-        <note category="location">src/app/features/search/search-results.ts:217</note>
-        <note category="location">src/app/features/search/search-results.ts:230</note>
-        <note category="location">src/app/features/search/search-results.ts:248</note>
-      </notes>
-      <segment>
-        <source>Project</source>
-      </segment>
-    </unit>
     <unit id="projects-home.col.description">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:226</note>
-        <note category="location">src/app/features/search/search-results.ts:249</note>
+        <note category="location">src/app/features/search/search-results.ts:246</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -14673,7 +14613,6 @@
     <unit id="repo.address-of">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:239</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:239</note>
       </notes>
       <segment>
         <source>Client address of <ph id="0" equiv="key" disp="key"/></source>
@@ -14682,7 +14621,6 @@
     <unit id="repo.copy-address-of">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:243</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:242</note>
       </notes>
       <segment>
         <source>Copy client address of <ph id="0" equiv="key" disp="key"/></source>
@@ -15140,7 +15078,7 @@
     <unit id="repo.badge.disabled">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:15,18</note>
-        <note category="location">src/app/features/repositories/repository-list.html:121,123</note>
+        <note category="location">src/app/features/repositories/repository-list.html:118,120</note>
       </notes>
       <segment>
         <source>disabled</source>
@@ -15157,7 +15095,7 @@
     <unit id="repo.content.files-menu">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:41,43</note>
-        <note category="location">src/app/features/repositories/repository-list.html:199,200</note>
+        <note category="location">src/app/features/repositories/repository-list.html:198,199</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -15167,7 +15105,7 @@
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:44,47</note>
         <note category="location">src/app/features/repositories/repository-detail.html:12,16</note>
-        <note category="location">src/app/features/repositories/repository-list.html:203,206</note>
+        <note category="location">src/app/features/repositories/repository-list.html:202,205</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -15242,7 +15180,7 @@
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:161,162</note>
         <note category="location">src/app/features/repositories/repository-detail.html:435,436</note>
-        <note category="location">src/app/features/repositories/repository-list.html:216,217</note>
+        <note category="location">src/app/features/repositories/repository-list.html:215,216</note>
       </notes>
       <segment>
         <source>Deleting</source>
@@ -18338,10 +18276,11 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:52,53</note>
         <note category="location">src/app/features/repositories/repository-detail.html:335,336</note>
-        <note category="location">src/app/features/repositories/repository-list.html:55</note>
-        <note category="location">src/app/features/repositories/repository-list.html:60</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:207</note>
-        <note category="location">src/app/features/search/search-results.ts:221</note>
+        <note category="location">src/app/features/repositories/repository-list.html:64,65</note>
+        <note category="location">src/app/features/repositories/repository-list.html:68</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:153</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:209</note>
+        <note category="location">src/app/features/search/search-results.ts:219</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -18351,10 +18290,11 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:54,55</note>
         <note category="location">src/app/features/repositories/repository-detail.html:337,338</note>
-        <note category="location">src/app/features/repositories/repository-list.html:68</note>
-        <note category="location">src/app/features/repositories/repository-list.html:73</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:204</note>
-        <note category="location">src/app/features/search/search-results.ts:218</note>
+        <note category="location">src/app/features/repositories/repository-list.html:51,52</note>
+        <note category="location">src/app/features/repositories/repository-list.html:55</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:151</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:206</note>
+        <note category="location">src/app/features/search/search-results.ts:216</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -18372,7 +18312,6 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:58,60</note>
         <note category="location">src/app/features/repositories/repository-detail.html:346,347</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:215</note>
       </notes>
       <segment>
         <source>Client address</source>
@@ -18566,7 +18505,7 @@
     <unit id="repo.col.activity">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:358,359</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:222</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:217</note>
       </notes>
       <segment>
         <source>Last activity</source>
@@ -18852,7 +18791,7 @@
     <unit id="repo.delete.title">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:722</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:299</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:295</note>
       </notes>
       <segment>
         <source>Delete repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -18861,7 +18800,7 @@
     <unit id="repo.delete.text">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:724</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:301</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:297</note>
       </notes>
       <segment>
         <source>The repository and everything in it are deleted for good. Deletion runs as a background job; the key stays taken until it has finished.</source>
@@ -18870,7 +18809,7 @@
     <unit id="repo.delete.confirm">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:726</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:303</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:299</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -18919,7 +18858,7 @@
     <unit id="repo.delete.failed">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:790</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:346</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:342</note>
       </notes>
       <segment>
         <source>Deleting repository <ph id="0" equiv="key" disp="this.ref()"/> failed. Its row is kept; try again.</source>
@@ -18928,7 +18867,7 @@
     <unit id="repo.delete.done">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:795</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:336</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:332</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> deleted.</source>
@@ -18937,7 +18876,7 @@
     <unit id="repo.delete.progress">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:800</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:257</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:247</note>
       </notes>
       <segment>
         <source>Repository deletion</source>
@@ -19136,20 +19075,12 @@
         <source>Create repository</source>
       </segment>
     </unit>
-    <unit id="repo.filter.text">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-list.html:31</note>
-        <note category="location">src/app/features/repositories/repository-list.html:37,39</note>
-      </notes>
-      <segment>
-        <source>Key or description</source>
-      </segment>
-    </unit>
     <unit id="repo.col.project">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.html:43</note>
-        <note category="location">src/app/features/repositories/repository-list.html:50</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:203</note>
+        <note category="location">src/app/features/repositories/repository-list.html:38,40</note>
+        <note category="location">src/app/features/repositories/repository-list.html:45</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:149</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:205</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -19157,7 +19088,8 @@
     </unit>
     <unit id="repo.filter.state">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.html:81</note>
+        <note category="location">src/app/features/repositories/repository-list.html:77</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:155</note>
       </notes>
       <segment>
         <source>State</source>
@@ -19165,7 +19097,8 @@
     </unit>
     <unit id="repo.filter.inactive">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.html:88,90</note>
+        <note category="location">src/app/features/repositories/repository-list.html:83,85</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:155</note>
       </notes>
       <segment>
         <source>Disabled only</source>
@@ -19173,7 +19106,7 @@
     </unit>
     <unit id="repo.badge.deleting">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.html:124,126</note>
+        <note category="location">src/app/features/repositories/repository-list.html:121,123</note>
       </notes>
       <segment>
         <source>being deleted</source>
@@ -19181,7 +19114,7 @@
     </unit>
     <unit id="repo.action.settings">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.html:188,190</note>
+        <note category="location">src/app/features/repositories/repository-list.html:187,190</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -19189,7 +19122,7 @@
     </unit>
     <unit id="repo.list.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:119</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:120</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -19197,15 +19130,23 @@
     </unit>
     <unit id="repo.list.ask">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:132</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:133</note>
       </notes>
       <segment>
         <source>Ask <ph id="0" equiv="owners" disp="owners.join(&apos;, &apos;)"/> for access or a new repository.</source>
       </segment>
     </unit>
+    <unit id="repo.list.search">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-list.ts:159</note>
+      </notes>
+      <segment>
+        <source>Filter repositories</source>
+      </segment>
+    </unit>
     <unit id="repo.list.caption">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:170</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:177</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -19213,7 +19154,7 @@
     </unit>
     <unit id="repo.list.empty">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:171</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:178</note>
       </notes>
       <segment>
         <source>There is no repository yet.</source>
@@ -19221,7 +19162,7 @@
     </unit>
     <unit id="repo.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:172</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:179</note>
       </notes>
       <segment>
         <source>No repository matches the filters.</source>
@@ -19229,10 +19170,9 @@
     </unit>
     <unit id="repo.col.repository">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:201</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:202</note>
-        <note category="location">src/app/features/search/search-results.ts:216</note>
-        <note category="location">src/app/features/search/search-results.ts:231</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:204</note>
+        <note category="location">src/app/features/search/search-results.ts:214</note>
+        <note category="location">src/app/features/search/search-results.ts:228</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -19240,8 +19180,8 @@
     </unit>
     <unit id="repo.help.class">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:208</note>
-        <note category="location">src/app/features/search/search-results.ts:222</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:210</note>
+        <note category="location">src/app/features/search/search-results.ts:220</note>
       </notes>
       <segment>
         <source>Local repositories hold what you upload, remote repositories fetch and cache from another registry, virtual repositories combine other repositories behind one address.</source>
@@ -19249,23 +19189,15 @@
     </unit>
     <unit id="repo.col.visibility">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:212</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:214</note>
       </notes>
       <segment>
         <source>Visibility</source>
       </segment>
     </unit>
-    <unit id="repo.help.address">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:216</note>
-      </notes>
-      <segment>
-        <source>The address that package managers and download tools use for this repository.</source>
-      </segment>
-    </unit>
     <unit id="repo.help.activity">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:223</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:218</note>
       </notes>
       <segment>
         <source>The last time a client read from or wrote to the repository. A dash means nothing has been recorded yet.</source>
@@ -19273,7 +19205,7 @@
     </unit>
     <unit id="repo.actions-of">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:271</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:255</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="key" disp="row.key"/></source>
@@ -19281,7 +19213,7 @@
     </unit>
     <unit id="repo.delete.detach">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:306</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:302</note>
       </notes>
       <segment>
         <source>Also remove it from the virtual repositories that include it</source>
@@ -20423,7 +20355,7 @@
     </unit>
     <unit id="search.place.profile">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:89</note>
+        <note category="location">src/app/features/search/search-model.ts:90</note>
       </notes>
       <segment>
         <source>Profile</source>
@@ -20431,7 +20363,7 @@
     </unit>
     <unit id="search.place.tokens">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:90</note>
+        <note category="location">src/app/features/search/search-model.ts:91</note>
       </notes>
       <segment>
         <source>Personal tokens</source>
@@ -20439,7 +20371,7 @@
     </unit>
     <unit id="search.place.sessions">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:99</note>
+        <note category="location">src/app/features/search/search-model.ts:100</note>
       </notes>
       <segment>
         <source>Sessions</source>
@@ -20447,7 +20379,7 @@
     </unit>
     <unit id="search.group.places">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:190</note>
+        <note category="location">src/app/features/search/search-model.ts:186</note>
       </notes>
       <segment>
         <source>Places</source>
@@ -20455,7 +20387,7 @@
     </unit>
     <unit id="search.group.frequent-repositories">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:191</note>
+        <note category="location">src/app/features/search/search-model.ts:187</note>
       </notes>
       <segment>
         <source>Frequently visited repositories</source>
@@ -20463,7 +20395,7 @@
     </unit>
     <unit id="search.group.frequent-projects">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:192</note>
+        <note category="location">src/app/features/search/search-model.ts:188</note>
       </notes>
       <segment>
         <source>Frequently visited projects</source>
@@ -20471,7 +20403,7 @@
     </unit>
     <unit id="search.group.admin-area">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:193</note>
+        <note category="location">src/app/features/search/search-model.ts:189</note>
       </notes>
       <segment>
         <source>Admin area</source>
@@ -20479,8 +20411,8 @@
     </unit>
     <unit id="search.group.repositories">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:194</note>
-        <note category="location">src/app/features/search/search-results.ts:201</note>
+        <note category="location">src/app/features/search/search-model.ts:190</note>
+        <note category="location">src/app/features/search/search-results.ts:199</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -20488,8 +20420,8 @@
     </unit>
     <unit id="search.group.packages">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:195</note>
-        <note category="location">src/app/features/search/search-results.ts:202</note>
+        <note category="location">src/app/features/search/search-model.ts:191</note>
+        <note category="location">src/app/features/search/search-results.ts:200</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -20497,8 +20429,8 @@
     </unit>
     <unit id="search.group.projects">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:196</note>
-        <note category="location">src/app/features/search/search-results.ts:203</note>
+        <note category="location">src/app/features/search/search-model.ts:192</note>
+        <note category="location">src/app/features/search/search-results.ts:201</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -20506,7 +20438,7 @@
     </unit>
     <unit id="search.group.pages">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:197</note>
+        <note category="location">src/app/features/search/search-model.ts:193</note>
       </notes>
       <segment>
         <source>Pages</source>
@@ -20514,7 +20446,7 @@
     </unit>
     <unit id="search.group.admin-pages">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:198</note>
+        <note category="location">src/app/features/search/search-model.ts:194</note>
       </notes>
       <segment>
         <source>Admin pages</source>
@@ -20522,7 +20454,7 @@
     </unit>
     <unit id="search.group.users">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:199</note>
+        <note category="location">src/app/features/search/search-model.ts:195</note>
       </notes>
       <segment>
         <source>Users</source>
@@ -20530,7 +20462,7 @@
     </unit>
     <unit id="search.group.groups">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:200</note>
+        <note category="location">src/app/features/search/search-model.ts:196</note>
       </notes>
       <segment>
         <source>Groups</source>
@@ -20538,7 +20470,7 @@
     </unit>
     <unit id="search.more.repositories">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:208</note>
+        <note category="location">src/app/features/search/search-model.ts:204</note>
       </notes>
       <segment>
         <source>All repositories for “<ph id="0" equiv="text" disp="q"/>”</source>
@@ -20546,7 +20478,7 @@
     </unit>
     <unit id="search.more.packages">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:210</note>
+        <note category="location">src/app/features/search/search-model.ts:206</note>
       </notes>
       <segment>
         <source>All packages for “<ph id="0" equiv="text" disp="q"/>”</source>
@@ -20554,7 +20486,7 @@
     </unit>
     <unit id="search.more.projects">
       <notes>
-        <note category="location">src/app/features/search/search-model.ts:211</note>
+        <note category="location">src/app/features/search/search-model.ts:207</note>
       </notes>
       <segment>
         <source>All projects for “<ph id="0" equiv="text" disp="q"/>”</source>
@@ -20562,7 +20494,7 @@
     </unit>
     <unit id="search.results.description">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:206</note>
+        <note category="location">src/app/features/search/search-results.ts:204</note>
       </notes>
       <segment>
         <source>What you may read that matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -20570,7 +20502,7 @@
     </unit>
     <unit id="search.results.too-short">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:210</note>
+        <note category="location">src/app/features/search/search-results.ts:208</note>
       </notes>
       <segment>
         <source>Type at least two characters.</source>
@@ -20578,7 +20510,7 @@
     </unit>
     <unit id="search.results.none">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:211</note>
+        <note category="location">src/app/features/search/search-results.ts:209</note>
       </notes>
       <segment>
         <source>Nothing you may read matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -20988,18 +20920,9 @@
         <source> Use a service account for CI systems that cannot sign in through OpenID Connect and for long-running automation. Its tokens act as the account, not as a person. </source>
       </segment>
     </unit>
-    <unit id="sas.q">
-      <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:128</note>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:129</note>
-      </notes>
-      <segment>
-        <source>Name</source>
-      </segment>
-    </unit>
     <unit id="sas.empty">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:144,145</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:127,128</note>
       </notes>
       <segment>
         <source>No service account matches.</source>
@@ -21007,7 +20930,7 @@
     </unit>
     <unit id="sas.active">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:162,163</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:145,146</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -21015,7 +20938,7 @@
     </unit>
     <unit id="sas.disabled">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:164,165</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:147,148</note>
       </notes>
       <segment>
         <source>Disabled</source>
@@ -21023,23 +20946,23 @@
     </unit>
     <unit id="sas.caption">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:186</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:165</note>
       </notes>
       <segment>
         <source>Service accounts</source>
       </segment>
     </unit>
-    <unit id="sas.apply">
+    <unit id="sas.search">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:187</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:166</note>
       </notes>
       <segment>
-        <source>Apply filter</source>
+        <source>Filter service accounts</source>
       </segment>
     </unit>
     <unit id="sas.col.name">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:189</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:168</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -21047,7 +20970,7 @@
     </unit>
     <unit id="sas.col.description">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:190</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:169</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -21055,7 +20978,7 @@
     </unit>
     <unit id="sas.col.project">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:191</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:170</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -21063,7 +20986,7 @@
     </unit>
     <unit id="sas.col.status">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-list.ts:192</note>
+        <note category="location">src/app/features/service-accounts/service-account-list.ts:171</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -23047,6 +22970,15 @@
       </notes>
       <segment>
         <source>State</source>
+      </segment>
+    </unit>
+    <unit id="repo.filter.apply">
+      <notes>
+        <note category="location">src/app/features/system/backups/backups-page.html:150,153</note>
+        <note category="location">src/app/features/system/jobs-page.ts:77,80</note>
+      </notes>
+      <segment>
+        <source>Search</source>
       </segment>
     </unit>
     <unit id="backups.runs.empty">
@@ -25098,7 +25030,7 @@
     </unit>
     <unit id="tokens-admin.revoke-selected">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:10,11</note>
+        <note category="location">src/app/features/tokens/token-admin.html:9,10</note>
       </notes>
       <segment>
         <source>Revoke selected</source>
@@ -25106,8 +25038,8 @@
     </unit>
     <unit id="tokens-admin.owner">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:22</note>
-        <note category="location">src/app/features/tokens/token-admin.html:27,28</note>
+        <note category="location">src/app/features/tokens/token-admin.html:18,19</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:61</note>
       </notes>
       <segment>
         <source>Owner</source>
@@ -25115,7 +25047,7 @@
     </unit>
     <unit id="tokens-admin.owner-hint">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:30,32</note>
+        <note category="location">src/app/features/tokens/token-admin.html:21,23</note>
       </notes>
       <segment>
         <source>me, a user name or sa:name</source>
@@ -25123,8 +25055,8 @@
     </unit>
     <unit id="tokens-admin.type">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:33</note>
-        <note category="location">src/app/features/tokens/token-admin.html:34</note>
+        <note category="location">src/app/features/tokens/token-admin.html:23</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:62</note>
       </notes>
       <segment>
         <source>Type</source>
@@ -25132,8 +25064,8 @@
     </unit>
     <unit id="tokens-admin.state">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:36</note>
-        <note category="location">src/app/features/tokens/token-admin.html:37</note>
+        <note category="location">src/app/features/tokens/token-admin.html:24</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:63</note>
       </notes>
       <segment>
         <source>State</source>
@@ -25141,8 +25073,8 @@
     </unit>
     <unit id="tokens-admin.expires-before">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:39</note>
-        <note category="location">src/app/features/tokens/token-admin.html:43,45</note>
+        <note category="location">src/app/features/tokens/token-admin.html:28,30</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:64</note>
       </notes>
       <segment>
         <source>Expires before</source>
@@ -25150,8 +25082,8 @@
     </unit>
     <unit id="tokens-admin.unused">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:49</note>
-        <note category="location">src/app/features/tokens/token-admin.html:53,55</note>
+        <note category="location">src/app/features/tokens/token-admin.html:36,38</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:66</note>
       </notes>
       <segment>
         <source>Not used for (days)</source>
@@ -25159,7 +25091,7 @@
     </unit>
     <unit id="tokens-admin.loading">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:82,87</note>
+        <note category="location">src/app/features/tokens/token-admin.html:63,66</note>
       </notes>
       <segment>
         <source>Loading tokens.</source>
@@ -25167,7 +25099,7 @@
     </unit>
     <unit id="tokens-admin.by-value">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:89,90</note>
+        <note category="location">src/app/features/tokens/token-admin.html:68,69</note>
       </notes>
       <segment>
         <source>Revoke by value</source>
@@ -25175,7 +25107,7 @@
     </unit>
     <unit id="tokens-admin.by-value-text">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:91,93</note>
+        <note category="location">src/app/features/tokens/token-admin.html:70,72</note>
       </notes>
       <segment>
         <source> Paste a leaked token to revoke it. The value is sent once and removed from this form at once. </source>
@@ -25183,7 +25115,7 @@
     </unit>
     <unit id="tokens-admin.value">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:100,102</note>
+        <note category="location">src/app/features/tokens/token-admin.html:79,81</note>
       </notes>
       <segment>
         <source>Token value</source>
@@ -25191,7 +25123,7 @@
     </unit>
     <unit id="tokens-admin.reveal">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:107,108</note>
+        <note category="location">src/app/features/tokens/token-admin.html:86,87</note>
       </notes>
       <segment>
         <source>Show the value</source>
@@ -25199,7 +25131,7 @@
     </unit>
     <unit id="tokens-admin.revoke-value">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.html:111,113</note>
+        <note category="location">src/app/features/tokens/token-admin.html:90,92</note>
       </notes>
       <segment>
         <source> Revoke token </source>
@@ -25207,7 +25139,7 @@
     </unit>
     <unit id="tokens-admin.empty">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:57</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:70</note>
       </notes>
       <segment>
         <source>No active tokens.</source>
@@ -25215,8 +25147,8 @@
     </unit>
     <unit id="token-table.empty">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:58</note>
-        <note category="location">src/app/shared/access/token-table.ts:161</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:71</note>
+        <note category="location">src/app/shared/access/token-table.ts:159</note>
       </notes>
       <segment>
         <source>No tokens match.</source>
@@ -25224,7 +25156,7 @@
     </unit>
     <unit id="tokens-admin.any">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:67</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:80</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -25232,7 +25164,7 @@
     </unit>
     <unit id="tokens-admin.type.pat">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:68</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:81</note>
       </notes>
       <segment>
         <source>Personal (pat)</source>
@@ -25240,7 +25172,7 @@
     </unit>
     <unit id="tokens-admin.type.sat">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:69</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:82</note>
       </notes>
       <segment>
         <source>Service account (sat)</source>
@@ -25248,7 +25180,7 @@
     </unit>
     <unit id="tokens-admin.type.cit">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:70</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:83</note>
       </notes>
       <segment>
         <source>Pipeline (cit)</source>
@@ -25256,7 +25188,7 @@
     </unit>
     <unit id="tokens-admin.state.active">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:73</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:86</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -25264,7 +25196,7 @@
     </unit>
     <unit id="tokens-admin.state.expired">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:74</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:87</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -25272,7 +25204,7 @@
     </unit>
     <unit id="tokens-admin.state.revoked">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:75</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:88</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -25280,7 +25212,7 @@
     </unit>
     <unit id="tokens-admin.state.all">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:76</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:89</note>
       </notes>
       <segment>
         <source>All</source>
@@ -25288,7 +25220,7 @@
     </unit>
     <unit id="tokens-admin.revoke-title">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:114</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:141</note>
       </notes>
       <segment>
         <source>Revoke this token?</source>
@@ -25296,7 +25228,7 @@
     </unit>
     <unit id="tokens-admin.revoke-text">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:115</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:142</note>
       </notes>
       <segment>
         <source>“<ph id="0" equiv="description" disp="token.description"/>” of <ph id="1" equiv="owner" disp="token.owner.name"/> stops working at once on every replica.</source>
@@ -25304,8 +25236,8 @@
     </unit>
     <unit id="tokens-admin.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:116</note>
-        <note category="location">src/app/features/tokens/token-admin.ts:127</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:143</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:154</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -25313,7 +25245,7 @@
     </unit>
     <unit id="tokens-admin.revoke-selected-title">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:125</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:152</note>
       </notes>
       <segment>
         <source>Revoke the selected tokens?</source>
@@ -25321,7 +25253,7 @@
     </unit>
     <unit id="tokens-admin.revoke-selected-text">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:126</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:153</note>
       </notes>
       <segment>
         <source>The selected tokens (<ph id="0" equiv="count" disp="ids.length"/>) stop working at once on every replica. This cannot be undone.</source>
@@ -25329,7 +25261,7 @@
     </unit>
     <unit id="tokens-admin.revoked">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:143</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:170</note>
       </notes>
       <segment>
         <source>Tokens revoked.</source>
@@ -25337,7 +25269,7 @@
     </unit>
     <unit id="tokens-admin.value-revoked">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:158</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:185</note>
       </notes>
       <segment>
         <source>The token of <ph id="0" equiv="owner" disp="revoked.owner"/> was revoked.</source>
@@ -25345,7 +25277,7 @@
     </unit>
     <unit id="tokens-admin.value-accepted">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:159</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:186</note>
       </notes>
       <segment>
         <source>The request was accepted. If the value is a token, it is revoked; this answer does not say whether it was one.</source>
@@ -26416,19 +26348,10 @@
         <source>Add user</source>
       </segment>
     </unit>
-    <unit id="users.q">
-      <notes>
-        <note category="location">src/app/features/users/user-list.html:18</note>
-        <note category="location">src/app/features/users/user-list.html:19</note>
-      </notes>
-      <segment>
-        <source>Name or email</source>
-      </segment>
-    </unit>
     <unit id="users.status">
       <notes>
-        <note category="location">src/app/features/users/user-list.html:21</note>
-        <note category="location">src/app/features/users/user-list.html:22</note>
+        <note category="location">src/app/features/users/user-list.html:16</note>
+        <note category="location">src/app/features/users/user-list.ts:65</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -26436,8 +26359,8 @@
     </unit>
     <unit id="users.origin">
       <notes>
-        <note category="location">src/app/features/users/user-list.html:24</note>
-        <note category="location">src/app/features/users/user-list.html:25</note>
+        <note category="location">src/app/features/users/user-list.html:17</note>
+        <note category="location">src/app/features/users/user-list.ts:66</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -26445,8 +26368,8 @@
     </unit>
     <unit id="users.group">
       <notes>
-        <note category="location">src/app/features/users/user-list.html:27</note>
-        <note category="location">src/app/features/users/user-list.html:28</note>
+        <note category="location">src/app/features/users/user-list.html:18</note>
+        <note category="location">src/app/features/users/user-list.ts:67</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -26454,8 +26377,8 @@
     </unit>
     <unit id="users.admin">
       <notes>
-        <note category="location">src/app/features/users/user-list.html:30</note>
-        <note category="location">src/app/features/users/user-list.html:31</note>
+        <note category="location">src/app/features/users/user-list.html:19</note>
+        <note category="location">src/app/features/users/user-list.ts:68</note>
       </notes>
       <segment>
         <source>Administrator</source>
@@ -26463,8 +26386,8 @@
     </unit>
     <unit id="users.external">
       <notes>
-        <note category="location">src/app/features/users/user-list.html:33</note>
-        <note category="location">src/app/features/users/user-list.html:34</note>
+        <note category="location">src/app/features/users/user-list.html:20</note>
+        <note category="location">src/app/features/users/user-list.ts:70</note>
       </notes>
       <segment>
         <source>External</source>
@@ -26472,7 +26395,7 @@
     </unit>
     <unit id="users.empty">
       <notes>
-        <note category="location">src/app/features/users/user-list.html:49,50</note>
+        <note category="location">src/app/features/users/user-list.html:33,34</note>
       </notes>
       <segment>
         <source>No user matches.</source>
@@ -26480,7 +26403,7 @@
     </unit>
     <unit id="users.external-badge">
       <notes>
-        <note category="location">src/app/features/users/user-list.html:63,65</note>
+        <note category="location">src/app/features/users/user-list.html:47,50</note>
       </notes>
       <segment>
         <source>External</source>
@@ -26488,7 +26411,7 @@
     </unit>
     <unit id="users.active">
       <notes>
-        <note category="location">src/app/features/users/user-list.html:70,71</note>
+        <note category="location">src/app/features/users/user-list.html:54,55</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -26496,15 +26419,23 @@
     </unit>
     <unit id="users.disabled">
       <notes>
-        <note category="location">src/app/features/users/user-list.html:72,73</note>
+        <note category="location">src/app/features/users/user-list.html:56,57</note>
       </notes>
       <segment>
         <source>Disabled</source>
       </segment>
     </unit>
+    <unit id="users.search">
+      <notes>
+        <note category="location">src/app/features/users/user-list.ts:59</note>
+      </notes>
+      <segment>
+        <source>Filter users</source>
+      </segment>
+    </unit>
     <unit id="users.caption">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:61</note>
+        <note category="location">src/app/features/users/user-list.ts:76</note>
       </notes>
       <segment>
         <source>Users</source>
@@ -26512,7 +26443,7 @@
     </unit>
     <unit id="users.col.user">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:63</note>
+        <note category="location">src/app/features/users/user-list.ts:78</note>
       </notes>
       <segment>
         <source>User</source>
@@ -26520,7 +26451,7 @@
     </unit>
     <unit id="users.col.email">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:64</note>
+        <note category="location">src/app/features/users/user-list.ts:79</note>
       </notes>
       <segment>
         <source>Email</source>
@@ -26528,7 +26459,7 @@
     </unit>
     <unit id="users.col.origin">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:67</note>
+        <note category="location">src/app/features/users/user-list.ts:82</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -26536,7 +26467,7 @@
     </unit>
     <unit id="users.help.origin">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:68</note>
+        <note category="location">src/app/features/users/user-list.ts:83</note>
       </notes>
       <segment>
         <source>How the account came to exist: at first sign-in through the identity provider, created by an administrator, provisioned by SCIM, or the built-in break-glass account.</source>
@@ -26544,7 +26475,7 @@
     </unit>
     <unit id="users.col.status">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:70</note>
+        <note category="location">src/app/features/users/user-list.ts:85</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -26552,7 +26483,7 @@
     </unit>
     <unit id="users.col.last-login">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:71</note>
+        <note category="location">src/app/features/users/user-list.ts:86</note>
       </notes>
       <segment>
         <source>Last sign-in</source>
@@ -26560,10 +26491,10 @@
     </unit>
     <unit id="users.any">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:75</note>
-        <note category="location">src/app/features/users/user-list.ts:81</note>
-        <note category="location">src/app/features/users/user-list.ts:88</note>
-        <note category="location">src/app/features/users/user-list.ts:93</note>
+        <note category="location">src/app/features/users/user-list.ts:90</note>
+        <note category="location">src/app/features/users/user-list.ts:96</note>
+        <note category="location">src/app/features/users/user-list.ts:103</note>
+        <note category="location">src/app/features/users/user-list.ts:108</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -26571,7 +26502,7 @@
     </unit>
     <unit id="users.status.active">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:76</note>
+        <note category="location">src/app/features/users/user-list.ts:91</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -26579,7 +26510,7 @@
     </unit>
     <unit id="users.status.disabled">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:77</note>
+        <note category="location">src/app/features/users/user-list.ts:92</note>
       </notes>
       <segment>
         <source>Disabled</source>
@@ -26587,7 +26518,7 @@
     </unit>
     <unit id="users.status.locked">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:78</note>
+        <note category="location">src/app/features/users/user-list.ts:93</note>
       </notes>
       <segment>
         <source>Locked</source>
@@ -26595,7 +26526,7 @@
     </unit>
     <unit id="users.admin.yes">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:89</note>
+        <note category="location">src/app/features/users/user-list.ts:104</note>
       </notes>
       <segment>
         <source>Administrators</source>
@@ -26603,7 +26534,7 @@
     </unit>
     <unit id="users.admin.no">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:90</note>
+        <note category="location">src/app/features/users/user-list.ts:105</note>
       </notes>
       <segment>
         <source>Not administrators</source>
@@ -26611,7 +26542,7 @@
     </unit>
     <unit id="users.external.yes">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:94</note>
+        <note category="location">src/app/features/users/user-list.ts:109</note>
       </notes>
       <segment>
         <source>External users</source>
@@ -26619,7 +26550,7 @@
     </unit>
     <unit id="users.external.no">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:95</note>
+        <note category="location">src/app/features/users/user-list.ts:110</note>
       </notes>
       <segment>
         <source>Not external</source>
@@ -27239,7 +27170,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/version-findings.ts:88</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:98</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:256</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:255</note>
       </notes>
       <segment>
         <source>Severity</source>
@@ -27248,7 +27179,7 @@
     <unit id="vuln.col.identifier">
       <notes>
         <note category="location">src/app/features/vulnerabilities/version-findings.ts:89</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:260</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:259</note>
       </notes>
       <segment>
         <source>Identifier</source>
@@ -27258,7 +27189,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/version-findings.ts:90</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:99</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:257</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:256</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -27572,7 +27503,7 @@
     <unit id="vuln.col.package">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:100</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:261</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:260</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -27581,7 +27512,7 @@
     <unit id="vuln.col.repository">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:101</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:262</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:261</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -27590,7 +27521,7 @@
     <unit id="vuln.col.detected">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:102</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:264</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:263</note>
       </notes>
       <segment>
         <source>Detected</source>
@@ -28020,17 +27951,9 @@
         <source>Findings</source>
       </segment>
     </unit>
-    <unit id="vuln.chips.label">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:53</note>
-      </notes>
-      <segment>
-        <source>Applied filters</source>
-      </segment>
-    </unit>
     <unit id="vuln.select-all">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:70,71</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:65,66</note>
       </notes>
       <segment>
         <source>Select all loaded findings</source>
@@ -28038,7 +27961,7 @@
     </unit>
     <unit id="vuln.selected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:72,73</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:67,68</note>
       </notes>
       <segment>
         <source>selected</source>
@@ -28046,7 +27969,7 @@
     </unit>
     <unit id="vuln.bulk">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:73,74</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:68,69</note>
       </notes>
       <segment>
         <source>Change status</source>
@@ -28054,7 +27977,7 @@
     </unit>
     <unit id="vuln.clear-selection">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:74,78</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:69,71</note>
       </notes>
       <segment>
         <source>Clear selection</source>
@@ -28062,8 +27985,8 @@
     </unit>
     <unit id="vuln.filter.severity">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:87</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:348</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:82,83</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:346</note>
       </notes>
       <segment>
         <source>Severity</source>
@@ -28071,8 +27994,8 @@
     </unit>
     <unit id="vuln.filter.status">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:95</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:350</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:91</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:348</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -28080,9 +28003,9 @@
     </unit>
     <unit id="vuln.filter.kind">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:103</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:104</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:352</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:99</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:99</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:350</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -28090,11 +28013,11 @@
     </unit>
     <unit id="vuln.filter.any">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:105,106</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:100,101</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:147,148</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:154,155</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:161,162</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:169,170</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:177,178</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:162,163</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:170,171</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -28102,8 +28025,8 @@
     </unit>
     <unit id="vuln.filter.repository">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:111</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:338</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:106,108</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:336</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -28111,8 +28034,8 @@
     </unit>
     <unit id="vuln.filter.format">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:121</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:340</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:117</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:338</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -28120,8 +28043,8 @@
     </unit>
     <unit id="vuln.filter.package">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:129</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:342</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:124,126</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:340</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -28129,7 +28052,7 @@
     </unit>
     <unit id="vuln.filter.package-name">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:131,132</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:126,127</note>
       </notes>
       <segment>
         <source>Package name</source>
@@ -28137,8 +28060,8 @@
     </unit>
     <unit id="vuln.filter.version">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:135,136</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:345</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:130,131</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:343</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -28146,9 +28069,9 @@
     </unit>
     <unit id="vuln.filter.advisory">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:140</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:141</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:347</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:135,136</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:136</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:345</note>
       </notes>
       <segment>
         <source>Advisory</source>
@@ -28156,7 +28079,7 @@
     </unit>
     <unit id="vuln.filter.advisory-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:142,144</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:137,140</note>
       </notes>
       <segment>
         <source>An identifier or an alias, for example GHSA-… or CVE-….</source>
@@ -28164,7 +28087,7 @@
     </unit>
     <unit id="vuln.filter.flags">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:147,148</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:142,145</note>
       </notes>
       <segment>
         <source>Exploit, fix and block</source>
@@ -28172,8 +28095,8 @@
     </unit>
     <unit id="vuln.filter.exploited">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:152,153</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:355</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:145,146</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:353</note>
       </notes>
       <segment>
         <source>Known exploited</source>
@@ -28181,9 +28104,9 @@
     </unit>
     <unit id="vuln.filter.yes-option">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:155,157</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:162,163</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:170,171</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:148,150</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:155,156</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:163,164</note>
       </notes>
       <segment>
         <source>Yes</source>
@@ -28191,8 +28114,8 @@
     </unit>
     <unit id="vuln.filter.fix">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:159,160</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:356</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:152,153</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:354</note>
       </notes>
       <segment>
         <source>Fix available</source>
@@ -28200,8 +28123,8 @@
     </unit>
     <unit id="vuln.filter.no-option">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:163,165</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:171,173</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:156,158</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:164,166</note>
       </notes>
       <segment>
         <source>No</source>
@@ -28209,8 +28132,8 @@
     </unit>
     <unit id="vuln.filter.blocked">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:167,168</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:357</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:160,161</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:355</note>
       </notes>
       <segment>
         <source>Blocks downloads</source>
@@ -28218,8 +28141,8 @@
     </unit>
     <unit id="vuln.filter.block-reason">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:175,176</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:358</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:168,169</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:356</note>
       </notes>
       <segment>
         <source>Block reason</source>
@@ -28227,7 +28150,7 @@
     </unit>
     <unit id="vuln.filter.detected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:184</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:177,179</note>
       </notes>
       <segment>
         <source>Detected</source>
@@ -28235,7 +28158,7 @@
     </unit>
     <unit id="vuln.filter.from">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:186,187</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:179,180</note>
       </notes>
       <segment>
         <source>From</source>
@@ -28243,33 +28166,15 @@
     </unit>
     <unit id="vuln.filter.to">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:190,191</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:183,184</note>
       </notes>
       <segment>
         <source>Until</source>
       </segment>
     </unit>
-    <unit id="vuln.filter.text">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:194</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:195</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:361</note>
-      </notes>
-      <segment>
-        <source>Text</source>
-      </segment>
-    </unit>
-    <unit id="vuln.filter.text-hint">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:196,198</note>
-      </notes>
-      <segment>
-        <source>Matches the package name, the identifier and the summary.</source>
-      </segment>
-    </unit>
     <unit id="vuln.marker.malicious">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:231,232</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:219,221</note>
       </notes>
       <segment>
         <source>Malicious</source>
@@ -28277,7 +28182,7 @@
     </unit>
     <unit id="vuln.marker.exploited">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:234,235</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:222,224</note>
       </notes>
       <segment>
         <source>Known exploited</source>
@@ -28285,15 +28190,23 @@
     </unit>
     <unit id="vuln.list.clear">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:261,264</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:254,257</note>
       </notes>
       <segment>
         <source>Clear all filters</source>
       </segment>
     </unit>
+    <unit id="vuln.list.search">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:244</note>
+      </notes>
+      <segment>
+        <source>Filter findings</source>
+      </segment>
+    </unit>
     <unit id="vuln.col.select">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:255</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:254</note>
       </notes>
       <segment>
         <source>Select</source>
@@ -28301,7 +28214,7 @@
     </unit>
     <unit id="vuln.col.fixed-in">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:263</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:262</note>
       </notes>
       <segment>
         <source>Fixed in</source>
@@ -28309,7 +28222,7 @@
     </unit>
     <unit id="vuln.list.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:267</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:266</note>
       </notes>
       <segment>
         <source>Vulnerability findings</source>
@@ -28317,7 +28230,7 @@
     </unit>
     <unit id="vuln.list.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:268</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:267</note>
       </notes>
       <segment>
         <source>No open findings. Nothing in the repositories you can read is affected by a known advisory.</source>
@@ -28325,23 +28238,15 @@
     </unit>
     <unit id="vuln.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:269</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:268</note>
       </notes>
       <segment>
         <source>No finding matches the filters.</source>
       </segment>
     </unit>
-    <unit id="vuln.filter.apply">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:270</note>
-      </notes>
-      <segment>
-        <source>Apply filters</source>
-      </segment>
-    </unit>
     <unit id="security.project-filter">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:296</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:294</note>
       </notes>
       <segment>
         <source>Show only the findings of project <ph id="0" equiv="project" disp="project"/></source>
@@ -28349,7 +28254,7 @@
     </unit>
     <unit id="vuln.fix.none">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:304</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:303</note>
       </notes>
       <segment>
         <source>None yet</source>
@@ -28357,7 +28262,7 @@
     </unit>
     <unit id="vuln.filter.project">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:335</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:333</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -28365,7 +28270,7 @@
     </unit>
     <unit id="vuln.filter.package-prefix">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:344</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:342</note>
       </notes>
       <segment>
         <source>Package starts with</source>
@@ -28373,7 +28278,7 @@
     </unit>
     <unit id="vuln.filter.yes">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:353</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:351</note>
       </notes>
       <segment>
         <source>yes</source>
@@ -28381,7 +28286,7 @@
     </unit>
     <unit id="vuln.filter.no">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:354</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:352</note>
       </notes>
       <segment>
         <source>no</source>
@@ -28389,7 +28294,7 @@
     </unit>
     <unit id="vuln.filter.detected-from">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:359</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:357</note>
       </notes>
       <segment>
         <source>Detected from</source>
@@ -28397,23 +28302,15 @@
     </unit>
     <unit id="vuln.filter.detected-to">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:360</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:358</note>
       </notes>
       <segment>
         <source>Detected until</source>
       </segment>
     </unit>
-    <unit id="vuln.chips.remove">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:366</note>
-      </notes>
-      <segment>
-        <source>Remove the filter <ph id="0" equiv="filter" disp="label"/></source>
-      </segment>
-    </unit>
     <unit id="vuln.select-row">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:468</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:470</note>
       </notes>
       <segment>
         <source>Select <ph id="0" equiv="advisory" disp="f.advisory"/> in <ph id="1" equiv="package" disp="f.package"/>@<ph id="2" equiv="version" disp="f.version"/></source>
@@ -29234,7 +29131,7 @@
     </unit>
     <unit id="token-table.rotate">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:134</note>
+        <note category="location">src/app/shared/access/token-table.ts:131,132</note>
       </notes>
       <segment>
         <source>Rotate</source>
@@ -29242,7 +29139,7 @@
     </unit>
     <unit id="token-table.revoke">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:139,140</note>
+        <note category="location">src/app/shared/access/token-table.ts:137,138</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -29250,7 +29147,7 @@
     </unit>
     <unit id="token-table.state.expired">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:145,147</note>
+        <note category="location">src/app/shared/access/token-table.ts:143,145</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -29258,7 +29155,7 @@
     </unit>
     <unit id="token-table.state.revoked">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:148,150</note>
+        <note category="location">src/app/shared/access/token-table.ts:146,148</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -29266,7 +29163,7 @@
     </unit>
     <unit id="token-table.caption">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:176</note>
+        <note category="location">src/app/shared/access/token-table.ts:174</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -29274,7 +29171,7 @@
     </unit>
     <unit id="token-table.rotate-tip">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:177</note>
+        <note category="location">src/app/shared/access/token-table.ts:175</note>
       </notes>
       <segment>
         <source>Rotate: a new value now, the old one ends after the overlap you choose</source>
@@ -29282,7 +29179,7 @@
     </unit>
     <unit id="token-table.select">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:185</note>
+        <note category="location">src/app/shared/access/token-table.ts:183</note>
       </notes>
       <segment>
         <source>Select</source>
@@ -29290,7 +29187,7 @@
     </unit>
     <unit id="token-table.token">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:187</note>
+        <note category="location">src/app/shared/access/token-table.ts:185</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -29298,7 +29195,7 @@
     </unit>
     <unit id="token-table.owner">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:188</note>
+        <note category="location">src/app/shared/access/token-table.ts:186</note>
       </notes>
       <segment>
         <source>Owner</source>
@@ -29306,7 +29203,7 @@
     </unit>
     <unit id="token-table.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:191</note>
+        <note category="location">src/app/shared/access/token-table.ts:189</note>
       </notes>
       <segment>
         <source>Scope</source>
@@ -29314,7 +29211,7 @@
     </unit>
     <unit id="token-table.help.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:192</note>
+        <note category="location">src/app/shared/access/token-table.ts:190</note>
       </notes>
       <segment>
         <source>What the token may do: all permissions of its owner, or only the listed repository grants.</source>
@@ -29322,7 +29219,7 @@
     </unit>
     <unit id="token-table.expires">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:195</note>
+        <note category="location">src/app/shared/access/token-table.ts:194</note>
       </notes>
       <segment>
         <source>Expires</source>
@@ -29330,7 +29227,7 @@
     </unit>
     <unit id="token-table.last-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:198</note>
+        <note category="location">src/app/shared/access/token-table.ts:197</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -29338,7 +29235,7 @@
     </unit>
     <unit id="token-table.help.last-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:199</note>
+        <note category="location">src/app/shared/access/token-table.ts:198</note>
       </notes>
       <segment>
         <source>The last time the token authenticated a request. Not every use is recorded immediately.</source>
@@ -29346,23 +29243,15 @@
     </unit>
     <unit id="token-table.created">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:205</note>
+        <note category="location">src/app/shared/access/token-table.ts:204</note>
       </notes>
       <segment>
         <source>Created</source>
       </segment>
     </unit>
-    <unit id="token-table.via">
-      <notes>
-        <note category="location">src/app/shared/access/token-table.ts:206</note>
-      </notes>
-      <segment>
-        <source>Created via</source>
-      </segment>
-    </unit>
     <unit id="token-table.actions">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:208</note>
+        <note category="location">src/app/shared/access/token-table.ts:206</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -29370,7 +29259,7 @@
     </unit>
     <unit id="token-table.select-one">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:238</note>
+        <note category="location">src/app/shared/access/token-table.ts:236</note>
       </notes>
       <segment>
         <source>Select <ph id="0" equiv="description" disp="t.description"/></source>
@@ -29789,7 +29678,7 @@
     </unit>
     <unit id="table.loading">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:72,74</note>
+        <note category="location">src/app/shared/ui/data-table.ts:65,67</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -29797,7 +29686,7 @@
     </unit>
     <unit id="table.empty">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:151</note>
+        <note category="location">src/app/shared/ui/data-table.ts:142</note>
       </notes>
       <segment>
         <source>Nothing to show.</source>
@@ -29805,15 +29694,23 @@
     </unit>
     <unit id="table.help-label">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:253</note>
+        <note category="location">src/app/shared/ui/data-table.ts:226</note>
       </notes>
       <segment>
         <source>About the column <ph id="0" equiv="column" disp="c.label"/></source>
       </segment>
     </unit>
+    <unit id="drawer.close">
+      <notes>
+        <note category="location">src/app/shared/ui/drawer.ts:43</note>
+      </notes>
+      <segment>
+        <source>Close</source>
+      </segment>
+    </unit>
     <unit id="filters.toggle">
       <notes>
-        <note category="location">src/app/shared/ui/filter-panel.ts:34,35</note>
+        <note category="location">src/app/shared/ui/filter-panel.ts:23,24</note>
       </notes>
       <segment>
         <source>Filters</source>
@@ -29821,82 +29718,74 @@
     </unit>
     <unit id="filters.active-count">
       <notes>
-        <note category="location">src/app/shared/ui/filter-panel.ts:49</note>
+        <note category="location">src/app/shared/ui/filter-panel.ts:38</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="this.activeCount()"/> filters active</source>
       </segment>
     </unit>
-    <unit id="filters.category-active">
-      <notes>
-        <note category="location">src/app/shared/ui/filter-panel.ts:73,75</note>
-      </notes>
-      <segment>
-        <source>(active)</source>
-      </segment>
-    </unit>
-    <unit id="filters.title">
-      <notes>
-        <note category="location">src/app/shared/ui/filter-panel.ts:122,123</note>
-      </notes>
-      <segment>
-        <source>Filters</source>
-      </segment>
-    </unit>
     <unit id="filters.clear-all">
       <notes>
-        <note category="location">src/app/shared/ui/filter-panel.ts:123,124</note>
+        <note category="location">src/app/shared/ui/filter-panel.ts:92,93</note>
       </notes>
       <segment>
         <source>Clear all</source>
       </segment>
     </unit>
-    <unit id="filters.close">
-      <notes>
-        <note category="location">src/app/shared/ui/filter-panel.ts:124,125</note>
-      </notes>
-      <segment>
-        <source>Close filters</source>
-      </segment>
-    </unit>
     <unit id="filters.apply">
       <notes>
-        <note category="location">src/app/shared/ui/filter-panel.ts:146</note>
+        <note category="location">src/app/shared/ui/filter-panel.ts:111</note>
       </notes>
       <segment>
         <source>Apply filters</source>
       </segment>
     </unit>
-    <unit id="time.ago.now">
+    <unit id="filters.title">
       <notes>
-        <note category="location">src/app/shared/ui/time-ago.ts:10</note>
+        <note category="location">src/app/shared/ui/filter-panel.ts:119</note>
       </notes>
       <segment>
-        <source>just now</source>
+        <source>Filters</source>
       </segment>
     </unit>
-    <unit id="time.ago.minutes">
+    <unit id="filters.close">
       <notes>
-        <note category="location">src/app/shared/ui/time-ago.ts:11</note>
+        <note category="location">src/app/shared/ui/filter-panel.ts:120</note>
       </notes>
       <segment>
-        <source><ph id="0" equiv="count" disp="minutes"/> min ago</source>
+        <source>Close filters</source>
       </segment>
     </unit>
-    <unit id="time.ago.hours">
+    <unit id="list-head.chips">
       <notes>
-        <note category="location">src/app/shared/ui/time-ago.ts:13</note>
+        <note category="location">src/app/shared/ui/list-head.ts:127</note>
       </notes>
       <segment>
-        <source><ph id="0" equiv="count" disp="hours"/> h ago</source>
+        <source>Filters that are set</source>
       </segment>
     </unit>
-    <unit id="time.ago.days">
+    <unit id="list-head.remove">
       <notes>
-        <note category="location">src/app/shared/ui/time-ago.ts:14</note>
+        <note category="location">src/app/shared/ui/list-head.ts:184</note>
       </notes>
       <segment>
-        <source><ph id="0" equiv="count" disp="Math.floor(hours / 24)"/> d ago</source>
+        <source>Remove the filter <ph id="0" equiv="filter" disp="c.label"/>: <ph id="1" equiv="value" disp="c.value"/></source>
+      </segment>
+    </unit>
+    <unit id="list-head.more">
+      <notes>
+        <note category="location">src/app/shared/ui/list-head.ts:188</note>
+      </notes>
+      <segment>
+        <source>+<ph id="0" equiv="count" disp="this.hidden()"/> more</source>
+      </segment>
+    </unit>
+    <unit id="list-head.more-label">
+      <notes>
+        <note category="location">src/app/shared/ui/list-head.ts:192</note>
+      </notes>
+      <segment>
+        <source>Show all <ph id="0" equiv="count" disp="this.chips().length"/> filters</source>
       </segment>
     </unit>
     <unit id="visibility.private">

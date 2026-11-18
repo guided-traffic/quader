@@ -12,8 +12,8 @@ A package appears once, however many repositories hold it. Everything in its row
 |---|---|
 | **Package** | The package name, which opens the package, and under it the description of the latest version |
 | **Format** | The package format |
-| **Latest version** | The highest stable version you may see. A pre-release is shown only while no stable version exists |
-| **Updated** | When the latest version you may see was published, as a relative time; hover for the exact time |
+| **Latest** | The highest stable version you may see. A pre-release is shown only while no stable version exists |
+| **Updated** | When the latest version you may see was published, as a relative time ("4 minutes ago"); point at it for the exact time |
 
 When a version was published, how large it is, its vulnerabilities and when it was last fetched are in the versions table of the
 package's page.
@@ -22,20 +22,28 @@ The **?** next to some column headings explains the column. The list shows one p
 
 ## Filter the list
 
-1. Select **Filters**. The filter panel opens next to the list, or above it on a narrow screen. The button shows how many filters are applied.
-2. Open a category and set its value:
+Type into **Filter packages** above the list to keep the packages whose name or description contains the text, ignoring case; the
+list follows a moment after you stop typing, or at once with Enter.
 
-   | Category | What it keeps |
+The other filters are behind **Filters**, which opens them in a panel that slides in from the right over the page. The button shows
+how many filters are set.
+
+1. Select **Filters**.
+2. Set the filters you need; they stand one under the other:
+
+   | Filter | What it keeps |
    |---|---|
    | **Package type** | Packages of the ticked formats |
    | **Repository** | Packages with a version in one of the ticked repositories; a virtual repository stands for its members |
-   | **Name or description** | Packages whose name or description contains the text, ignoring case |
    | **Keyword** | Packages with a version that lists exactly this keyword |
    | **Created** | Packages whose first version falls into **Last 7 days**, **Last 30 days**, **Last 90 days** or a **Custom period** from **From** to **To (included)** |
 
-3. Select **Search** to apply the filters.
+3. Select **Apply filters**. The panel closes.
 
-Each applied filter appears as a chip above the list; the cross on a chip removes that filter. **Clear all** in the panel removes every filter, and so does **Clear all filters** when no package matches. **Close filters** or Escape closes the panel.
+Each filter that is set appears as a chip beside **Filters**, with its value; the cross on a chip removes that filter. Where the chips
+do not fit, the last place says **+2 more**, which opens the panel with every filter. **Clear all** in the panel removes every filter
+of the panel and keeps the text of **Filter packages**; **Clear all filters**, when no package matches, removes the text too. The
+close button or Escape closes the panel without applying what you changed.
 
 ## Sort the list
 

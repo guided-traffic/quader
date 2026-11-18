@@ -3,78 +3,64 @@
 </quader-page-header>
 <quader-needs id="needs-users" capability="identities:write" />
 
-<div class="list-layout" [class.panel-open]="panelOpen()">
-  <div class="list-toolbar">
-    <quader-filter-toggle [(open)]="panelOpen" [activeCount]="activeCount()" [controls]="panel.panelId" />
-  </div>
-  <quader-filter-panel
-    #panel
-    class="list-side"
-    [(open)]="panelOpen"
-    [activeCount]="activeCount()"
-    (apply)="apply()"
-    (clearAll)="clear()"
-  >
-    <quader-filter-category i18n-label="@@users.q" label="Name or email" [active]="!!q().trim()" [expanded]="!!q().trim()">
-      <quader-text-field width="name" i18n-label="@@users.q" label="Name or email" name="q" [(value)]="q" />
-    </quader-filter-category>
-    <quader-filter-category i18n-label="@@users.status" label="Status" [active]="!!status()" [expanded]="!!status()">
-      <quader-select-field i18n-label="@@users.status" label="Status" name="status" [options]="statusOptions" [(value)]="status" />
-    </quader-filter-category>
-    <quader-filter-category i18n-label="@@users.origin" label="Origin" [active]="!!origin()" [expanded]="!!origin()">
-      <quader-select-field i18n-label="@@users.origin" label="Origin" name="origin" [options]="originOptions" [(value)]="origin" />
-    </quader-filter-category>
-    <quader-filter-category i18n-label="@@users.group" label="Group" [active]="!!group().trim()" [expanded]="!!group().trim()">
-      <quader-text-field width="name" i18n-label="@@users.group" label="Group" name="group" [(value)]="group" />
-    </quader-filter-category>
-    <quader-filter-category i18n-label="@@users.admin" label="Administrator" [active]="!!admin()" [expanded]="!!admin()">
-      <quader-select-field i18n-label="@@users.admin" label="Administrator" name="admin" [options]="adminOptions" [(value)]="admin" />
-    </quader-filter-category>
-    <quader-filter-category i18n-label="@@users.external" label="External" [active]="!!external()" [expanded]="!!external()">
-      <quader-select-field i18n-label="@@users.external" label="External" name="external" [options]="externalOptions" [(value)]="external" />
-    </quader-filter-category>
-  </quader-filter-panel>
+<quader-list-head
+  [searchLabel]="searchLabel"
+  [search]="applied().q ?? ''"
+  (searchChange)="searchFor($event)"
+  [chips]="chips()"
+  (removeChip)="removeChip($event)"
+  [(filtersOpen)]="panelOpen"
+  [controls]="panel.panelId"
+/>
+<quader-filter-panel #panel [(open)]="panelOpen" [activeCount]="chips().length" (apply)="apply()" (clearAll)="clear()" (dismissed)="restage()">
+  <quader-select-field i18n-label="@@users.status" label="Status" name="status" [options]="statusOptions" [(value)]="status" />
+  <quader-select-field i18n-label="@@users.origin" label="Origin" name="origin" [options]="originOptions" [(value)]="origin" />
+  <quader-text-field width="name" i18n-label="@@users.group" label="Group" name="group" [(value)]="group" />
+  <quader-select-field i18n-label="@@users.admin" label="Administrator" name="admin" [options]="adminOptions" [(value)]="admin" />
+  <quader-select-field i18n-label="@@users.external" label="External" name="external" [options]="externalOptions" [(value)]="external" />
+</quader-filter-panel>
 
-  <div class="list-main">
-    <quader-data-table
-      [caption]="caption"
-      [columns]="columns"
-      [sort]="sort()"
-      (sortChange)="sortBy($event)"
-      [loaded]="list.loaded()"
-      [loading]="list.loading()"
-      [error]="list.error()"
-      [empty]="list.items().length === 0"
-      i18n-emptyText="@@users.empty"
-      emptyText="No user matches."
-      [hasMore]="list.hasMore()"
-      (more)="list.more()"
-      (retry)="list.reload()"
-    >
-      @for (u of list.items(); track u.id) {
-        <tr>
-          <th scope="row" class="person">
-            <quader-avatar class="avatar" aria-hidden="true" [seed]="u.id" [imageUrl]="u.avatarUrl" />
-            <span class="who">
-              <a [routerLink]="['/admin/users', u.username]" translate="no">{{ u.displayName || u.username }}</a>
-              <span class="secondary" translate="no">&#64;{{ u.username }}</span>
-            </span>
-            @if (u.external) {
-              <span class="badge" i18n="@@users.external-badge">External</span>
-            }
-          </th>
-          <td>{{ u.email ?? '' }}</td>
-          <td>{{ originLabel(u.origin) }}</td>
-          <td>
-            @if (u.status === 'active') {
-              <span class="ok"><span class="material-icons inline" aria-hidden="true">check_circle</span><ng-container i18n="@@users.active">Active</ng-container></span>
-            } @else {
-              <span class="bad"><span class="material-icons inline" aria-hidden="true">block</span><ng-container i18n="@@users.disabled">Disabled</ng-container></span>
-            }
-          </td>
-          <td>{{ u.lastLoginAt | date: 'medium' }}</td>
-        </tr>
-      }
-    </quader-data-table>
-  </div>
-</div>
+<quader-data-table
+  [caption]="caption"
+  [columns]="columns"
+  [sort]="sort()"
+  (sortChange)="sortBy($event)"
+  [loaded]="list.loaded()"
+  [loading]="list.loading()"
+  [error]="list.error()"
+  [empty]="list.items().length === 0"
+  i18n-emptyText="@@users.empty"
+  emptyText="No user matches."
+  [hasMore]="list.hasMore()"
+  (more)="list.more()"
+  (retry)="list.reload()"
+>
+  @for (u of list.items(); track u.id) {
+    <tr>
+      <th scope="row" class="person">
+        <quader-avatar class="avatar" aria-hidden="true" [seed]="u.id" [imageUrl]="u.avatarUrl" />
+        <span class="who">
+          <a [routerLink]="['/admin/users', u.username]" translate="no">{{ u.displayName || u.username }}</a>
+          <span class="secondary" translate="no">&#64;{{ u.username }}</span>
+        </span>
+        @if (u.external) {
+          <span class="badge" i18n="@@users.external-badge">External</span>
+        }
+      </th>
+      <td>{{ u.email ?? '' }}</td>
+      <td>{{ originLabel(u.origin) }}</td>
+      <td>
+        @if (u.status === 'active') {
+          <span class="ok"><span class="material-icons inline" aria-hidden="true">check_circle</span><ng-container i18n="@@users.active">Active</ng-container></span>
+        } @else {
+          <span class="bad"><span class="material-icons inline" aria-hidden="true">block</span><ng-container i18n="@@users.disabled">Disabled</ng-container></span>
+        }
+      </td>
+      <td>
+        @if (u.lastLoginAt; as at) {
+          <quader-time-ago [at]="at" absolute="title" />
+        }
+      </td>
+    </tr>
+  }
+</quader-data-table>

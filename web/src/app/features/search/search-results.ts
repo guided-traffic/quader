@@ -1,17 +1,16 @@
-import { DatePipe } from '@angular/common';
-import { Component, LOCALE_ID, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PackageSummary, PackagesApi } from '../../api/packages-api';
 import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
 import { RepositoriesApi, RepositorySummary, refOf } from '../../api/repositories-api';
-import { CopyButton } from '../../shared/copy-button';
 import { FormatIconView } from '../../shared/format-icon';
 import { PagedResource, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TabContent, TabGroup, TabPage } from '../../shared/ui/tabs';
 import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
-import { relativeTime } from '../packages/format-time';
+import { ProjectLink, ProjectMark } from '../../shared/ui/project-mark';
+import { TimeAgo } from '../../shared/ui/time-ago';
 import { packageCommands } from '../packages/package-links';
 import { projectRoleLabel } from '../projects/project-roles';
 import { classLabel } from '../repositories/repository-class';
@@ -25,16 +24,16 @@ const PAGE = 25;
 
 /**
  * The results page of the main area (R-UI-098, Q-UI-411): Enter in the top bar's field without a picked suggestion opens it. Its
- * tabs are the lists of the three kinds with `q`, each the list the caller may read: Repositories (`GET /repositories?q=`) in the
- * admin area's pattern (Q-UI-330: the key with its description, project, format and class as columns, the address a quiet copy
- * button), Packages (`GET /packages?q=`, the columns of Q-UI-314 with the project and the repository), Projects (`GET
+ * tabs are the lists of the three kinds with `q`, each the list the caller may read: Repositories (`GET /repositories?q=`) from the
+ * parts of the repository list (Q-UI-430: the visibility icon, the key with its description, the project by its mark and its name,
+ * format and class; no address, Q-UI-426), Packages (`GET /packages?q=`, the columns of Q-UI-314 with the project and the repository), Projects (`GET
  * /projects?q=`, the start page's columns). `kind` chooses the tab; without it, the first group that had a suggestion when Enter
  * was pressed (navigation state `firstKind`), else Repositories. The page has no users, groups or admin pages and no link into the
  * admin area (R-UI-099). It takes over the stopgap's page of Q-UI-390 (Q-UI-415).
  */
 @Component({
   selector: 'quader-search-results',
-  imports: [DatePipe, RouterLink, CopyButton, DataTable, FormatIconView, PageHeader, TabContent, TabGroup, TabPage, VisibilityIcon],
+  imports: [RouterLink, DataTable, FormatIconView, PageHeader, ProjectLink, ProjectMark, TabContent, TabGroup, TabPage, TimeAgo, VisibilityIcon],
   template: `
     <quader-page-header [heading]="heading" [description]="description()" />
 
@@ -54,16 +53,21 @@ const PAGE = 25;
             (retry)="repositories.reload()"
           >
             @for (row of repositories.items(); track refOf(row)) {
+              <!-- The parts of the repository list (Q-UI-430): the visibility icon before the key, the description under it, the
+                   project by its mark and its name, format and class; no address, which means nothing without its client (Q-UI-426). -->
               <tr>
-                <th scope="row" class="wrap-name">
-                  <a [routerLink]="['/projects', row.project, 'repositories', row.key]" translate="no">{{ row.key }}</a>
-                  @if (row.description) {
-                    <span class="secondary">{{ row.description }}</span>
-                  }
+                <th scope="row">
+                  <span class="icon-name">
+                    <quader-visibility-icon [level]="row.visibility.artifacts" />
+                    <span class="icon-name-text">
+                      <a [routerLink]="['/projects', row.project, 'repositories', row.key]" translate="no">{{ row.key }}</a>
+                      @if (row.description) {
+                        <span class="secondary">{{ row.description }}</span>
+                      }
+                    </span>
+                  </span>
                 </th>
-                <td class="project-cell">
-                  <a [routerLink]="['/projects', row.project]" translate="no">{{ row.project }}</a>
-                </td>
+                <td class="project-cell"><quader-project-link [key]="row.project" /></td>
                 <td class="format-cell">
                   <span class="format-name"
                     ><quader-format-icon [format]="row.format" /><span translate="no">{{ formatLabel(row.format) }}</span></span
@@ -73,12 +77,6 @@ const PAGE = 25;
                   <span class="class-name"
                     ><span class="material-icons" aria-hidden="true">{{ classIcon(row.class) }}</span>{{ classText(row.class) }}</span
                   >
-                </td>
-                <!-- No address field: who searches opens the repository; copying is the button's (Q-UI-330). -->
-                <td class="actions">
-                  @if (row.addresses[0]; as a) {
-                    <quader-copy-button [value]="a" [label]="copyValueLabel(a)" [quiet]="true" />
-                  }
                 </td>
               </tr>
             }
@@ -108,9 +106,7 @@ const PAGE = 25;
                     <span class="secondary">{{ row.description }}</span>
                   }
                 </th>
-                <td class="project-cell">
-                  <a [routerLink]="['/projects', at.project]" translate="no">{{ at.project }}</a>
-                </td>
+                <td class="project-cell"><quader-project-link [key]="at.project" /></td>
                 <td class="repository-cell">
                   <a [routerLink]="['/projects', at.project, 'repositories', at.key]" translate="no">{{ at.key }}</a>
                 </td>
@@ -120,9 +116,7 @@ const PAGE = 25;
                   >
                 </td>
                 <td translate="no">{{ row.latestVersion }}</td>
-                <td>
-                  <time [attr.datetime]="row.updatedAt" [attr.title]="row.updatedAt | date: 'medium'">{{ since(row.updatedAt) }}</time>
-                </td>
+                <td><quader-time-ago [at]="row.updatedAt" absolute="title" /></td>
               </tr>
             }
           </quader-data-table>
@@ -145,8 +139,13 @@ const PAGE = 25;
             @for (p of projects.items(); track p.key) {
               <tr>
                 <th scope="row">
-                  <a [routerLink]="['/projects', p.key]">{{ p.displayName || p.key }}</a>
-                  <span class="secondary" translate="no">{{ p.key }}</span>
+                  <span class="icon-name">
+                    <quader-project-mark [key]="p.key" [name]="p.displayName" size="medium" />
+                    <span class="icon-name-text">
+                      <a [routerLink]="['/projects', p.key]">{{ p.displayName || p.key }}</a>
+                      <span class="secondary" translate="no">{{ p.key }}</span>
+                    </span>
+                  </span>
                 </th>
                 <td>{{ p.description }}</td>
                 <td class="level"><quader-visibility-icon [level]="p.visibility" />{{ levelText(p.visibility) }}</td>
@@ -166,7 +165,6 @@ export class SearchResults {
   private readonly repositoriesApi = inject(RepositoriesApi);
   private readonly packagesApi = inject(PackagesApi);
   private readonly projectsApi = inject(ProjectsApi);
-  private readonly locale = inject(LOCALE_ID);
 
   /** The text of the search, the query parameter `q`. */
   readonly q = input<string | undefined>();
@@ -211,10 +209,10 @@ export class SearchResults {
       : $localize`:@@search.results.none:Nothing you may read matches “${this.term()}:text:”.`,
   );
 
-  /** The admin area's pattern (Q-UI-330): the repository takes what the others leave, and the row ends with the copy button. */
+  /** The repository list's parts (Q-UI-430): the repository takes what the others leave (Q-UI-330). */
   protected readonly repositoryColumns: readonly TableColumn[] = [
-    { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '14rem', prefer: '14rem' },
-    { id: 'project', label: $localize`:@@projects.col.project:Project`, width: '6.5rem' },
+    { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '14rem', prefer: true },
+    { id: 'project', label: $localize`:@@projects.col.project:Project`, width: '11rem' },
     { id: 'format', label: $localize`:@@repo.col.format:Format`, width: '8rem' },
     {
       id: 'class',
@@ -222,17 +220,16 @@ export class SearchResults {
       help: $localize`:@@repo.help.class:Local repositories hold what you upload, remote repositories fetch and cache from another registry, virtual repositories combine other repositories behind one address.`,
       width: '5rem',
     },
-    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true, width: '2rem' },
   ];
   /** What a reader chooses a package by (Q-UI-314), with where it is: the project and the repository that hold it. */
   protected readonly packageColumns: readonly TableColumn[] = [
-    { id: 'name', label: $localize`:@@pkg.col.package:Package`, width: '14rem', prefer: '14rem' },
-    { id: 'project', label: $localize`:@@projects.col.project:Project`, width: '6.5rem' },
+    { id: 'name', label: $localize`:@@pkg.col.package:Package`, width: '14rem', prefer: true },
+    { id: 'project', label: $localize`:@@projects.col.project:Project`, width: '11rem' },
     { id: 'repository', label: $localize`:@@repo.col.repository:Repository`, width: '8rem' },
     { id: 'type', label: $localize`:@@pkg.col.format:Format`, width: '7rem', stackLabel: false },
     {
       id: 'latest',
-      label: $localize`:@@pkg.col.latest:Latest version`,
+      label: $localize`:@@pkg.col.latest:Latest`,
       help: $localize`:@@pkg.help.latest:The highest stable version you may see. A pre-release is shown only while no stable version exists.`,
       width: '8rem',
     },
@@ -243,7 +240,7 @@ export class SearchResults {
       width: '7rem',
     },
   ];
-  /** The start page's columns (Q-UI-311). */
+  /** The start page's columns (Q-UI-311), the project's mark before its name (Q-UI-424). */
   protected readonly projectColumns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@projects.col.project:Project`, width: '14rem' },
     { id: 'description', label: $localize`:@@projects-home.col.description:Description` },
@@ -300,16 +297,8 @@ export class SearchResults {
     return c === 'local' ? 'storage' : c === 'remote' ? 'cloud_download' : 'layers';
   }
 
-  protected since(iso: string): string {
-    return relativeTime(iso, this.locale);
-  }
-
   protected roleLabel(role: ProjectRole): string {
     return projectRoleLabel(role);
   }
 
-  /** The copy button's name and tooltip carry the address itself, as in the admin area's list (Q-UI-330). */
-  protected copyValueLabel(address: string): string {
-    return $localize`:@@repo.copy-address-value:Copy client address ${address}:address:`;
-  }
 }

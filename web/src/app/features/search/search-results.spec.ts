@@ -39,18 +39,21 @@ describe('The results page of the search (R-UI-098)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-098 Q-UI-330 the Repositories tab keeps the admin list\'s pattern: key, project, format and class as columns, the address as a copy button', async () => {
+  it('R-UI-098 R-UI-102 Q-UI-430 the Repositories tab is built from the parts of the repository list: the visibility icon before the key, the project by its mark and name, format and class, no address', async () => {
     const r = await open('generic');
     const rows = [...r.root.querySelectorAll('tbody tr')];
     expect(rows.length).toBeGreaterThan(0);
     const first = rows[0]!;
+    expect(first.querySelector('th .icon-name > quader-visibility-icon')).toBeTruthy();
     expect(first.querySelector('th a')!.getAttribute('href')).toMatch(/^\/projects\/[^/]+\/repositories\/[^/]+$/);
-    expect(first.querySelector('td a')!.getAttribute('href')).toMatch(/^\/projects\/[^/]+$/);
+    const project = first.querySelector('td.project-cell quader-project-link')!;
+    expect(project.querySelector('quader-project-mark')).toBeTruthy();
+    expect(project.querySelector('a')!.getAttribute('href')).toMatch(/^\/projects\/[^/]+$/);
     const heads = [...r.root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', ''));
-    expect(heads.map((h) => h.split(' ')[0])).toEqual(['Repository', 'Project', 'Format', 'Class', 'Actions']);
+    expect(heads.map((h) => h.split(' ')[0])).toEqual(['Repository', 'Project', 'Format', 'Class']);
+    // The address means nothing without its client (Q-UI-426): no field and no copy button.
     expect(addressValues(r.root)).toEqual([]);
-    const copy = first.querySelector<HTMLButtonElement>('td.actions quader-copy-button button')!;
-    expect(copy.getAttribute('aria-label')).toMatch(/^Copy client address https?:\/\//);
+    expect(first.querySelector('quader-copy-button')).toBeNull();
   });
 
   it('R-UI-098 kind=package opened directly shows the Packages tab with its project and repository, and Load more after 25 rows', async () => {

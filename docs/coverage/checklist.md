@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 620 of 882 spec requirements are implemented: a passing test names them and no
+**Status.** 620 of 886 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 788 specified (513 of them implemented), 1,451 open.
-882 spec requirements: 647 cover catalog features, 235 cover none (`quader-only`, [listed at the
+886 spec requirements: 647 cover catalog features, 239 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>235 requirements</summary>
+<summary>239 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3031,6 +3031,10 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-097 | Live suggestions while typing | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-098 | Enter opens the results page of the main area | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-099 | The search leads into the admin area only by an administrator's choice of a marked suggestion | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-100 | The head of every list: the search by name, Filters and the filters that are set | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-101 | The filters open in a drawer over the page | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-102 | A project has its mark wherever it is listed, and an icon before a name stays on the name's first line | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-103 | One way to write a time | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-110 | A package's versions as one table | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-112 | A version's vulnerabilities in one statement | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |

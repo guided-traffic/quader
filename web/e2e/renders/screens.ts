@@ -1,4 +1,4 @@
-import { Page, expect } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
 import {
   Kind,
   ansiblePackage,
@@ -41,15 +41,65 @@ export interface Screen {
 }
 
 /**
- * A list as it opens, then with its filter panel open: beside the panel the list has some 300 px less, and that width is the
- * one its columns and addresses have to fit (the owner's screen of 2026-11-12, a repository list at 1860 px).
+ * A list as it opens, then with its filter drawer open over the page (Q-UI-420): the list behind it keeps its width and columns.
+ * With `fill`, the drawer's filters are then set through its fields and applied: the head shows them as chips beside **Filters**
+ * (Q-UI-422), and at 390 px more chips than fit fold into **+N more**.
  */
-async function* filtersOpen(page: Page): AsyncGenerator<string> {
-  yield '';
-  await page.locator('main .filter-toggle').first().click();
-  await expect(page.locator('main quader-filter-panel form')).toBeVisible();
-  yield 'filters';
+function filtersOpen(fill?: (drawer: Locator) => Promise<void>): Screen['walk'] {
+  return async function* (page) {
+    yield '';
+    await page.locator('main .filter-toggle').first().click();
+    const drawer = page.getByRole('dialog', { name: 'Filters' });
+    await expect(drawer.locator('form.filter-form')).toBeVisible();
+    yield 'filters';
+    if (!fill) return;
+    await fill(drawer);
+    await drawer.getByRole('button', { name: 'Apply filters' }).click();
+    await expect(drawer).toBeHidden();
+    await expect(page.locator('main .list-filters .chip-row')).toBeVisible();
+    yield 'chips';
+  };
 }
+
+/** A list without a drawer: as it opens, then with a text in the search field of its head (Q-UI-421). */
+function searched(text: string): Screen['walk'] {
+  return async function* (page) {
+    yield '';
+    const field = page.locator('main .list-search input');
+    await field.fill(text);
+    await field.press('Enter');
+    await expect(field).toHaveValue(text);
+    yield 'search';
+  };
+}
+
+/** The repository list of the main project with two filters set: a format and a class. */
+const repositoryChips = async (drawer: Locator): Promise<void> => {
+  await drawer.getByRole('combobox', { name: 'Format' }).selectOption('npm');
+  await drawer.getByRole('combobox', { name: 'Class' }).selectOption('local');
+};
+
+/** The packages of the main project with three filters set: a type, a repository and a period. */
+const packageChips = async (drawer: Locator): Promise<void> => {
+  await drawer.getByRole('checkbox', { name: 'npm', exact: true }).check();
+  await drawer.getByRole('checkbox', { name: `${mainProject}/npm-vendor`, exact: true }).check();
+  await drawer.getByRole('combobox', { name: 'Created' }).selectOption('30');
+};
+
+/** The findings of the main project with five filters set: more chips than fit beside **Filters** at 390 px. */
+const findingChips = async (drawer: Locator): Promise<void> => {
+  await drawer.getByRole('checkbox', { name: 'Critical', exact: true }).check();
+  await drawer.getByRole('checkbox', { name: 'High', exact: true }).check();
+  await drawer.getByRole('checkbox', { name: `${mainProject}/npm-vendor`, exact: true }).check();
+  await drawer.getByLabel('Fix available').selectOption('true');
+  await drawer.getByRole('combobox', { name: 'Kind' }).selectOption('vulnerability');
+};
+
+/** The users with two filters set. */
+const userChips = async (drawer: Locator): Promise<void> => {
+  await drawer.getByLabel('Status').selectOption('active');
+  await drawer.getByLabel('Origin').selectOption('jit');
+};
 
 /**
  * The operations of a folder as its Owner uses them (R-UI-011, R-UI-012): the folder, the upload dialog with a file chosen and
@@ -540,8 +590,8 @@ export const screens: readonly Screen[] = [
   { id: 'search-results', path: '/ui/search?q=web', kinds: all },
   { id: 'search-results-none', path: '/ui/search?q=zzqx', kinds: ['plain'] },
   { id: 'search-results-kind-package', path: '/ui/search?q=acme&kind=package', kinds: all },
-  { id: 'repositories', path: `${P}/repositories`, kinds: all, walk: filtersOpen },
-  { id: 'repositories-long-keys', path: `${O}/repositories`, kinds: all, walk: filtersOpen },
+  { id: 'repositories', path: `${P}/repositories`, kinds: all, walk: filtersOpen(repositoryChips) },
+  { id: 'repositories-long-keys', path: `${O}/repositories`, kinds: all, walk: filtersOpen() },
   { id: 'repositories-empty-project', path: `/ui/projects/${emptyProject}/repositories`, kinds: admins },
   { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all },
   { id: 'repository-npm-remote', path: `${P}/repositories/npmjs`, kinds: all },
@@ -557,8 +607,8 @@ export const screens: readonly Screen[] = [
   { id: 'repository-deb', path: `${O}/repositories/${longDebKey}`, kinds: all },
   { id: 'repository-nuget-virtual', path: `${O}/repositories/nuget`, kinds: all },
   { id: 'repository-ansible', path: `${O}/repositories/collections`, kinds: all },
-  { id: 'packages', path: `${P}/packages`, kinds: all, walk: filtersOpen },
-  { id: 'packages-other-project', path: `${O}/packages`, kinds: all, walk: filtersOpen },
+  { id: 'packages', path: `${P}/packages`, kinds: all, walk: filtersOpen(packageChips) },
+  { id: 'packages-other-project', path: `${O}/packages`, kinds: all, walk: filtersOpen() },
   // A package's page is its versions (R-UI-110), a version's page its findings, install command, files and details (R-UI-111).
   { id: 'package-npm', path: pkg(P, npmPackage), kinds: all },
   { id: 'package-npm-many', path: pkg(P, manyVersionsPackage), kinds: all, walk: versionsTable },
@@ -590,8 +640,8 @@ export const screens: readonly Screen[] = [
   { id: 'files-npm', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-`, kinds: all },
   { id: 'files-npm-file', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-/ui-kit-1.1.0.tgz`, kinds: owners },
   { id: 'files-oci', path: `${P}/repositories/images/files`, kinds: ['plain'] },
-  { id: 'vulnerabilities', path: `${P}/vulnerabilities`, kinds: all, walk: filtersOpen },
-  // A filter opens the panel; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
+  { id: 'vulnerabilities', path: `${P}/vulnerabilities`, kinds: all, walk: filtersOpen(findingChips) },
+  // A filter is a chip beside Filters; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
   { id: 'vulnerabilities-filtered', path: `${P}/vulnerabilities?severity=high`, kinds: admins, walk: sortByDetection },
   { id: 'members', path: `${P}/members`, kinds: all },
   { id: 'setup', path: '/ui/setup', kinds: all },
@@ -638,25 +688,25 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-ansible-virtual', path: `${O}/repositories/ansible/settings`, kinds: admins, walk: allSections },
   { id: 'help-admin-page', path: '/ui/help/admin/repositories', kinds: admins },
   { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins },
-  { id: 'admin-projects', path: '/ui/admin/projects', kinds: admins, walk: filtersOpen },
-  { id: 'admin-repositories', path: '/ui/admin/repositories', kinds: admins, walk: filtersOpen },
+  { id: 'admin-projects', path: '/ui/admin/projects', kinds: admins, walk: searched('web') },
+  { id: 'admin-repositories', path: '/ui/admin/repositories', kinds: admins, walk: filtersOpen() },
   { id: 'admin-repository-new', path: '/ui/admin/repositories/new', kinds: admins, walk: chooser },
-  { id: 'admin-users', path: '/ui/admin/users', kinds: admins, walk: filtersOpen },
+  { id: 'admin-users', path: '/ui/admin/users', kinds: admins, walk: filtersOpen(userChips) },
   { id: 'admin-user', path: '/ui/admin/users/sam', kinds: admins },
   // The break-glass account: no Advanced action, so the page asks the token list whether it offers Revoke all.
   { id: 'admin-user-break-glass', path: '/ui/admin/users/admin', kinds: admins },
   { id: 'admin-user-advanced', path: '/ui/admin/users/sam', kinds: admins, walk: advancedOpen },
-  { id: 'admin-groups', path: '/ui/admin/groups', kinds: admins, walk: filtersOpen },
+  { id: 'admin-groups', path: '/ui/admin/groups', kinds: admins, walk: filtersOpen() },
   { id: 'admin-group', path: `/ui/admin/groups/${group}`, kinds: admins },
-  { id: 'admin-service-accounts', path: '/ui/admin/service-accounts', kinds: admins, walk: filtersOpen },
+  { id: 'admin-service-accounts', path: '/ui/admin/service-accounts', kinds: admins, walk: searched('release') },
   { id: 'admin-service-account', path: `/ui/admin/service-accounts/${serviceAccount}`, kinds: admins },
-  { id: 'admin-permissions', path: '/ui/admin/permissions', kinds: admins, walk: filtersOpen },
+  { id: 'admin-permissions', path: '/ui/admin/permissions', kinds: admins, walk: filtersOpen() },
   { id: 'admin-permission-new', path: '/ui/admin/permissions/new', kinds: admins },
   { id: 'admin-roles', path: '/ui/admin/roles', kinds: admins },
-  { id: 'admin-tokens', path: '/ui/admin/tokens', kinds: admins, walk: filtersOpen },
+  { id: 'admin-tokens', path: '/ui/admin/tokens', kinds: admins, walk: filtersOpen() },
   { id: 'admin-ci', path: '/ui/admin/ci', kinds: admins },
   { id: 'admin-ci-new', path: '/ui/admin/ci/new', kinds: admins },
-  { id: 'admin-ci-issuances', path: '/ui/admin/ci/issuances', kinds: admins, walk: filtersOpen },
+  { id: 'admin-ci-issuances', path: '/ui/admin/ci/issuances', kinds: admins, walk: filtersOpen() },
   { id: 'admin-bastions', path: '/ui/admin/bastions', kinds: admins },
   { id: 'admin-endpoints', path: '/ui/admin/endpoints', kinds: admins },
   // The endpoint every installation has (R-EP-001).
@@ -670,7 +720,7 @@ export const screens: readonly Screen[] = [
   // The upstream of a remote where it is entered: the presets, the credentials, Test connection, the details (R-UI-082).
   ...upstreams,
   { id: 'admin-security', path: '/ui/admin/security', kinds: admins },
-  { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen },
+  { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen() },
   { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins },
   { id: 'admin-system', path: '/ui/admin/system', kinds: admins },
   { id: 'admin-system-jobs', path: '/ui/admin/system/jobs', kinds: admins },
