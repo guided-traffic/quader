@@ -254,7 +254,7 @@ starts [e2e-evidence.sh](../../deploy/dev/e2e-evidence.sh) before the first step
 loads and the client pods are inside the window; the sets whose name ends in `-down` record nothing. A green run is the baseline to hold a red one against.
 It exists because five findings (H-795, F-119, F-124, F-127 and the stall of the set `push`) ended in "we do not know what starved the nodes"
 ([Q-HA-300](../spec/ha-and-helm.md#q-ha-300--every-e2e-set-records-what-starved-the-kind-nodes-inside-the-nodes-whether-it-passes-or-fails)),
-and since [Q-HA-302](../spec/ha-and-helm.md#q-ha-302--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)
+and since [Q-HA-305](../spec/ha-and-helm.md#q-ha-305--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)
 it also records who used the CPU: the leg's own nodes, the runner's other pods or another leg's kind nodes.
 
 On the CI runner the kind node containers are not in the runner pod's cgroup. The job's Docker daemon (the privileged `dind` container) sees the cgroup
@@ -399,7 +399,7 @@ Before it injects the fault, `runLoadFault` reads what k6 has written in the war
 condition (a status other than `2xx` and `304`, a connection error, other bytes than were published) means the cluster was not
 healthy before the fault: the test stops the load and fails there with `the cluster was not healthy before the fault, which was not
 injected`, the count, the statuses and the warm-up's p99, and the fault is not injected
-([Q-HA-302](../spec/ha-and-helm.md#q-ha-302--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)).
+([Q-HA-305](../spec/ha-and-helm.md#q-ha-305--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)).
 The verdict is the one the end of the run would give, since the warm-up is part of the run; what changes is the cause in the
 message, and a fault's conditions are never judged against a baseline that is itself the failure. The one exception is the node loss of
 `ha-suite`, which tolerated k6 failures until 10 s after the replacements were ready, the warm-up included: a failure before the node is

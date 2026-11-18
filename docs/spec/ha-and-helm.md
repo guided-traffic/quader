@@ -10290,7 +10290,7 @@ help and must say so plainly; a slow machine shows in the pull durations and in 
 **Applied in the spec:** none. [docs/developer/local-profile.md](../developer/local-profile.md#troubleshooting),
 [docs/developer/e2e.md](../developer/e2e.md#findings-of-the-suite) (item 17).
 
-### Q-HA-302 · A stall of the kind nodes is told apart from a neighbour's load, and a fault test does not start on a sick cluster
+### Q-HA-305 · A stall of the kind nodes is told apart from a neighbour's load, and a fault test does not start on a sick cluster
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Extends
 [Q-HA-300](#q-ha-300--every-e2e-set-records-what-starved-the-kind-nodes-inside-the-nodes-whether-it-passes-or-fails).

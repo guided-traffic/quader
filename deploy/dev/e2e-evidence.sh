@@ -13,7 +13,7 @@
 #
 #   samples.csv       one row per source and sample, sorted by time (columns below): the host, each kind node's cgroup, the edge, and
 #                     the top-level cgroups of the machine (`cg:<name>`: the runner's pods, the Docker daemon's containers, …) with
-#                     the CPU time each used, so that a stall can be told apart: the leg's own nodes or a neighbour (Q-HA-302)
+#                     the CPU time each used, so that a stall can be told apart: the leg's own nodes or a neighbour (Q-HA-305)
 #   pods.csv          per pod of each kind node, every QUADER_E2E_EVIDENCE_POD_INTERVAL seconds: CPU time, memory by kind (anon,
 #                     file, socket buffers, kernel) and the OOM kills of its cgroup; pod-names.tsv maps the uids to names
 #   containers.tsv    the containers of the job's own Docker daemon (kind nodes, k6, helpers), every 10 s: which `cgd:` rows are the leg's
@@ -151,7 +151,7 @@ EOF
 
 # ── the machine's cgroups (runs in a helper container of the job's Docker daemon, the cgroup tree mounted at /host-cgroup) ────────
 # On the CI runner the job's Docker daemon sees the cgroup root of the whole machine: the kind nodes of every leg on it are children
-# of `docker` there, the runner pods of both classes are under `kubepods` (verified on the runner cluster on 2026-11-18, Q-HA-302). Each
+# of `docker` there, the runner pods of both classes are under `kubepods` (verified on the runner cluster on 2026-11-18, Q-HA-305). Each
 # second, one row per top-level cgroup with a cpu.stat (`cg:<name>`): its pressure, its CPU time, its cpu.weight and the number of
 # members (pods under kubepods, containers under docker); every $4-th sample one row per container of `docker` (`cgd:<id12>`, CPU
 # time only), so that the leg's own containers (containers.tsv) and a neighbour's can be told apart.
@@ -294,7 +294,7 @@ $SAMPLER >>$NODE_HOST_SAMPLES" _ host "$SAMPLE_INTERVAL" /proc/pressure/ "" 1 "$
       || log "evidence: the host sampler did not start in $first"
   fi
   # the machine's cgroups: a helper container of the job's Docker daemon, from the kind nodes' image (bash is in it), with the daemon's
-  # cgroup tree mounted read-only; on the CI runner that is the root of the whole machine (Q-HA-302)
+  # cgroup tree mounted read-only; on the CI runner that is the root of the whole machine (Q-HA-305)
   node_image="$(docker inspect -f '{{.Config.Image}}' "$first" 2>/dev/null)"
   docker rm -f "$CG_NAME" >/dev/null 2>&1
   if [ -n "$node_image" ] && docker run -d --name "$CG_NAME" --network none -v /sys/fs/cgroup:/host-cgroup:ro --entrypoint bash "$node_image" \
