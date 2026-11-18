@@ -1183,6 +1183,25 @@ agent** is not decided until the owner has said so.
       - `security`: the fields show examples as grey text ("CVE-2021-23337", "lodash", "shop"); the chart of 90 days is one bar
         at the right edge on an installation whose data is a day old.
       - `system/jobs` and `system/backups` have no entry in the side bar; **System status** stays marked on both.
+    - **The detail and form screens of the admin area**, looked at on 2026-11-18 (dark, 1440 px): a user, a group, a new permission
+      policy, a new CI issuer, an endpoint, the authentication settings, the format choice of a new repository.
+      - Layout that is broken: in a group's member table **Remove** stands 5 px lower than the member's name in the same row; the
+        check box of "Public issuer" on a new CI issuer is smaller than the two other check boxes of the form; under the fixed
+        bar with **Create policy** a line of the form shows through below the bar.
+      - Naming a person by typing (W-12): "Add a member" of a group ("A user name, or sa:name for a service account") and
+        **Principal** in the policy's "Try it" ("for example user:alice"). A group's members are bare usernames, without avatar
+        and name.
+      - A user's page is titled with the username ("sam"), not the name; **Display name** and **Email** are fields with a
+        **Save changes**, and the sentence under them says both are replaced at the next sign-in; the **ID** (a UUID) and the
+        origin stand in the main form, the avatar and the status behind **Details**. Two **Save changes** on one page.
+      - A new CI issuer has **Accepted audiences** and **Pin claims** (two text areas "one per line") in the main form, with
+        **More settings** below them: expert settings in the standard flow.
+      - A new permission policy: the links at the left (General, Principals and actions, …) are underlined blue text, a form the
+        app uses nowhere else for a page's sections.
+      - The browser's own select box also on a group (**Source**) and in a policy's "Try it" (**Action**).
+      - Ansible Galaxy, Generic and npm carry the same icon in the format choice; Debian, NuGet and OCI have their own.
+      - An address that does not exist under `/ui/admin/` shows "Page not found" without the side bar, the search and the
+        user menu.
 - **Tooling, done in the walk:** the dev server of the `local` configuration listens on `127.0.0.1` like Quader and the sign-in
   provider; it listened on `::1` only, which the owner's Firefox (IPv6 lookups off) could not reach
   ([web-ui.md](../developer/web-ui.md#local-ui-development)). A checkout that still holds the fixed secrets of before the rename in
