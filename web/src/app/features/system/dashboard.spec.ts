@@ -1,18 +1,21 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { BackupsApi } from '../../api/backups-api';
 import { ApiError } from '../../api/problem';
+import { FakeBackupsApi, sampleSummary } from '../../api/testing/fakes-backups';
 import { FakeSystemApi, provideFakeApis, sampleInfo, sampleReplica, sampleRuntime } from '../../api/testing/fakes';
 import { Replica, SystemApi } from '../../api/system-api';
 import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
 import { Dashboard } from './dashboard';
 
-async function render(setup?: (system: FakeSystemApi) => void) {
+async function render(setup?: (system: FakeSystemApi) => void, backups?: (api: FakeBackupsApi) => void) {
   await TestBed.configureTestingModule({
     imports: [Dashboard],
     providers: [provideRouter([]), ...provideFakeApis()],
   }).compileComponents();
   setup?.(TestBed.inject(SystemApi) as FakeSystemApi);
+  backups?.(TestBed.inject(BackupsApi) as FakeBackupsApi);
   await TestBed.inject(SessionStore).load();
   const fixture = TestBed.createComponent(Dashboard);
   for (let i = 0; i < 4; i++) await fixture.whenStable();
@@ -145,6 +148,48 @@ describe('Admin dashboard (Q-OPS-175)', () => {
     expect(text(card)).toContain('1 of 1 ready');
     expect([...card.querySelectorAll('dt')].map((d) => d.textContent?.trim())).not.toContain('Nodes');
     expect(text(root.querySelector<HTMLElement>('.instance-bar')!)).toContain('All roles ready');
+  });
+
+  describe('the state of the backup (R-UI-165, Q-UI-654)', () => {
+    /** The row Last backup of the card Operations, or null. */
+    const backupRow = (root: HTMLElement) =>
+      [...root.querySelectorAll<HTMLElement>('section[aria-labelledby="dash-ops"] dl.kv > div')].find((d) => d.querySelector('dt')?.textContent?.trim() === 'Last backup') ?? null;
+    const viewBackups = (root: HTMLElement) => root.querySelector<HTMLAnchorElement>('section[aria-labelledby="dash-ops"] a[href="/admin/system/backups"]');
+
+    it('R-UI-165 the card Operations says when the last backup succeeded, relative with its date as the title, and links the Backups tab', async () => {
+      const at = new Date(Date.now() - 3 * 3600_000).toISOString();
+      const { root } = await render(installation, (b) => (b.summaryResult = sampleSummary({ lastSuccessAt: at, overdue: false })));
+      const row = backupRow(root)!;
+      expect(text(row)).toContain('3 hours ago');
+      expect(row.querySelector('time')?.getAttribute('datetime')).toBe(at);
+      expect(row.querySelector('time')?.getAttribute('title')).toBeTruthy();
+      expect(row.querySelector('.state.warn')).toBeNull();
+      expect(viewBackups(root)?.textContent?.trim()).toBe('View backups');
+      expect(await seriousViolations(root)).toEqual([]);
+    });
+
+    it('R-UI-165 an overdue backup is a warning beside its time, and no backup yet is a warning of its own', async () => {
+      const overdue = await render(installation, (b) => (b.summaryResult = sampleSummary({ overdue: true })));
+      const row = backupRow(overdue.root)!;
+      expect(row.querySelector('time')).toBeTruthy();
+      expect(text(row.querySelector('.state.warn')!)).toContain('Overdue');
+      TestBed.resetTestingModule();
+
+      const none = await render(installation, (b) => (b.summaryResult = sampleSummary({ lastSuccessAt: null, overdue: null })));
+      const empty = backupRow(none.root)!;
+      expect(empty.querySelector('time')).toBeNull();
+      expect(text(empty.querySelector('.state.warn')!)).toContain('No backup yet');
+      expect(viewBackups(none.root)).toBeTruthy();
+      expect(await seriousViolations(none.root)).toEqual([]);
+    });
+
+    it('R-UI-165 a summary the caller may not read leaves the row and the link out, and no error', async () => {
+      const { root } = await render(installation, (b) => (b.failure = new ApiError(403, { code: 'forbidden' }, null)));
+      expect(backupRow(root)).toBeNull();
+      expect(viewBackups(root)).toBeNull();
+      expect(root.querySelectorAll('quader-error-notice').length).toBe(0);
+      expect(text(root)).toContain('Jobs running');
+    });
   });
 
   it('R-UI-038 WCAG 2.2.2: the automatic refresh can be paused', async () => {

@@ -153,6 +153,15 @@ h2 {
   padding: var(--quader-space-2) var(--quader-space-2) var(--quader-space-1);
 }
 
+// The time of the last backup and its warning stay on the row's line and wrap as a whole where the card is narrow (R-UI-165).
+.kv dd.backup {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--quader-space-2);
+}
+
 // A state is a badge (_controls.scss); a check's duration stands beside it, a note with a state is a line of text in
 // the state's colour.
 .check {

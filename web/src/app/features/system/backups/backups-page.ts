@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
   BACKUP_OPERATIONS,
@@ -30,26 +30,28 @@ import {
   stateView,
 } from './backups-model';
 import { ManualRunPanel } from './manual-run-panel';
-import { PageHeader } from '../../../shared/ui/page-header';
+import { SystemRefresh } from '../system-refresh';
 
 /** Runs per page of the list; the automatic refresh keeps the first page current and leaves a longer list alone. */
 export const RUNS_PAGE_SIZE = 25;
 
 /**
- * Backups (R-UI-048, R-API-050): the status of the backup job, the run in progress, the runs, the stored backups the newest
- * listing run found, the command for a manual run and, after a restore, where this installation came from. The screen only
- * reads: every request it sends is a GET. It refreshes with the status screen's interval and pause control (R-UI-038). The runs'
- * filters are the head of every list: **Filters** opens the drawer, the filters that are set stand beside it as chips (Q-UI-566).
+ * The tab Backups of the page System status (R-UI-048, R-UI-164, R-API-050): the status of the backup job, the run in progress,
+ * the runs, the stored backups the newest listing run found, the command for a manual run and, after a restore, where this
+ * installation came from. The screen only reads: every request it sends is a GET. It refreshes with the status screen's
+ * interval; the page's header pauses and refreshes it (Q-UI-651). The runs' filters are the head of every list: **Filters**
+ * opens the drawer, the filters that are set stand beside it as chips (Q-UI-566).
  */
 @Component({
   selector: 'quader-backups-page',
-  imports: [PageHeader, DatePipe, RouterLink, EmptyState, ErrorNotice, FilterPanel, ListHead, NoValue, SelectField, BackupState, ManualRunPanel],
+  imports: [DatePipe, RouterLink, EmptyState, ErrorNotice, FilterPanel, ListHead, NoValue, SelectField, BackupState, ManualRunPanel],
   templateUrl: './backups-page.html',
   styleUrl: './backups-page.scss',
 })
 export class BackupsPage {
   private readonly api = inject(BackupsApi);
   private readonly router = inject(Router);
+  private readonly pageRefresh = inject(SystemRefresh);
 
   /** Query parameters of the run filters. */
   readonly operation = input<string | undefined>();
@@ -69,7 +71,6 @@ export class BackupsPage {
   protected readonly blobsLabel = $localize`:@@backups.active.blobs-label:Blobs copied`;
   protected readonly storedCaption = $localize`:@@backups.stored.caption:Complete backups found in the target`;
 
-  protected readonly paused = signal(false);
   protected readonly now = signal(Date.now());
   /** The drawer's values; they reach the address with **Apply filters** and go back to it when the drawer closes without. */
   protected readonly operationDraft = signal('');
@@ -134,6 +135,7 @@ export class BackupsPage {
   });
 
   constructor() {
+    this.pageRefresh.register(() => this.refresh(), inject(DestroyRef));
     effect(() => {
       this.appliedOperation();
       this.appliedState();
@@ -143,7 +145,7 @@ export class BackupsPage {
       });
     });
     effect((onCleanup) => {
-      if (this.paused()) return;
+      if (this.pageRefresh.paused()) return;
       const timer = setInterval(() => this.refresh(), REFRESH_INTERVAL_MS);
       onCleanup(() => clearInterval(timer));
     });

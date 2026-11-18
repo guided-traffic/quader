@@ -1,14 +1,3 @@
-<quader-page-header heading="Backups" i18n-heading="@@backups.heading">
-  <button actions class="btn btn-default" type="button" [attr.aria-pressed]="paused()" (click)="paused.set(!paused())">
-    @if (paused()) {
-      <ng-container i18n="@@system.resume">Resume automatic refresh</ng-container>
-    } @else {
-      <ng-container i18n="@@system.pause">Pause automatic refresh</ng-container>
-    }
-  </button>
-  <button actions class="btn btn-default" type="button" (click)="refresh()" i18n="@@system.refresh">Refresh now</button>
-</quader-page-header>
-
 @if (statusFailure(); as f) {
   <quader-error-notice [error]="f" (retry)="refresh()" />
 }

@@ -401,6 +401,29 @@
           <dt i18n="@@dashboard.jobs.failed">Jobs failed in 24 hours</dt>
           <dd [class.bad-text]="o.jobs.failedLast24h > 0">{{ o.jobs.failedLast24h }}</dd>
         </div>
+        <!-- The state of the backup from the Backups tab's summary, the time in a list's form; left out where it cannot be read
+             (R-UI-165, Q-UI-654). -->
+        @if (lastBackup(); as b) {
+          <div>
+            <dt i18n="@@dashboard.backup">Last backup</dt>
+            <dd class="backup">
+              @if (b.kind === 'none') {
+                <span class="state warn"
+                  ><span class="material-icons" aria-hidden="true">warning</span
+                  ><ng-container i18n="@@dashboard.backup.none">No backup yet</ng-container></span
+                >
+              } @else {
+                <quader-time-ago [at]="b.at" absolute="title" />
+                @if (b.kind === 'overdue') {
+                  <span class="state warn"
+                    ><span class="material-icons" aria-hidden="true">warning</span
+                    ><ng-container i18n="@@dashboard.backup.overdue">Overdue</ng-container></span
+                  >
+                }
+              }
+            </dd>
+          </div>
+        }
         @if (valueOf(encryption); as e) {
           <div>
             <dt i18n="@@dashboard.key">Active key</dt>
@@ -415,6 +438,9 @@
           i18n="@@dashboard.jobs.view"
           >View jobs</a
         >
+        @if (lastBackup()) {
+          <a class="btn btn-default btn-sm" routerLink="/admin/system/backups" i18n="@@dashboard.backups.view">View backups</a>
+        }
       </div>
     </section>
   </div>

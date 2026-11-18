@@ -4750,15 +4750,18 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
   the live replicas (connected with the slowest `durationMs`, or how many replicas fail), their facts
   of R-OPS-004, and the stored content of the overview; the counts of the overview with links to
   their screens and "New repository" for `repositories:write-config`; and the job queue with the
-  active key. It refreshes every 15 seconds with a pause control (WCAG 2.2.2), like the status screen,
-  and a failing overview leaves the rest readable with a retry.
+  active key and the state of the backup ([R-UI-165](#r-ui-165--the-dashboard-shows-the-state-of-the-backup)). It refreshes every
+  15 seconds with a pause control (WCAG 2.2.2), like the status screen, and a failing overview leaves the rest readable with a retry.
+- **The page** ([R-UI-164](#r-ui-164--system-status-jobs-and-backups-are-the-tabs-of-one-page)): `/admin/system` is the tab
+  **Status** of the page **System status**, beside **Jobs** (`/admin/system/jobs`) and **Backups** (`/admin/system/backups`,
+  R-UI-048); the header's **Pause automatic refresh** and **Refresh now** act on the tab that is shown.
 - Cards from `GET /api/v1/system/info` and `/system/replicas`: version and revision (its first twelve characters, the full hash
   their title, [Q-UI-570](#q-ui-570--a-hash-in-running-text-is-its-short-form-with-the-whole-as-its-title)), with a link to the notices of the
   bundled software of the same build (Q-UI-144); base URL and
   source; the maintenance mode, as a row only while it is not `normal` (Q-OPS-156); database (server version, schema version against the supported ones);
   scheduled tasks (`/system/tasks`: next run, last outcome) with "Run now", which runs on a
   `worker` replica; recent jobs (`/system/jobs`) with cancel.
-- **Jobs** (`/admin/system/jobs`, and the recent jobs of the status screen, one table for both): kind, state (a badge,
+- **Jobs** (the tab `/admin/system/jobs`, and the recent jobs of the status screen, one table for both): kind, state (a badge,
   Q-UI-560), enqueued, progress, replica, result and cancel; the kind and the replica stay on one line, the result takes the
   room (Q-UI-563). The filters kind and state are the head of every list, **Filters** and its drawer with the chips of the set
   ones ([Q-UI-566](#q-ui-566--the-jobs-and-the-backup-runs-take-the-head-of-every-list)). The result cell of a job whose `error` is set shows its `code`, under it the `detail`
@@ -5412,7 +5415,8 @@ The second half is proved by [Q-UI-212](#q-ui-212--a-broken-snippet-template-is-
 ### R-UI-048 · Backups
 Priority: **MVP** · Covers: OPS-032
 
-`/admin/system/backups`, for callers with `settings:read` (as R-API-050), renders R-API-050. It shows the backup job
+`/admin/system/backups`, the tab **Backups** of the page **System status** (R-UI-164), for callers with `settings:read` (as
+R-API-050), renders R-API-050. It shows the backup job
 of INV-19 and changes nothing: backups are started by the CronJob or by hand with `kubectl`,
 configured through the chart and the configuration file, and restored by a Helm hook Job
 ([backup-and-restore.md](backup-and-restore.md) R-BAK-011, R-BAK-012; Q-API-10).
@@ -7038,6 +7042,62 @@ Acceptance criteria:
   endpoint's rule offers no menu to a reader whose rule is not served; the tombstone's **Clear** and a task's **Run now** are
   quiet buttons.
 - The journeys that act on a changed row open its menu (12, 13, 17).
+
+### R-UI-164 · System status, Jobs and Backups are the tabs of one page
+Priority: **MVP** · Covers: quader-only
+
+The owner's decision of 2026-11-18 (W-19, [Q-UI-650](#q-ui-650--jobs-and-backups-are-tabs-of-system-status)): the jobs and the
+backups were reached only through two text links at the end of the long status screen, and the side bar marked **System
+status** on both.
+
+- **One page, three tabs.** The page **System status** has one header, the tab strip under it (`tab-nav`, links with
+  `aria-current="page"`, as the profile's pages) with **Status**, **Jobs** and **Backups**, and the tab's content below. Each
+  tab has its own address: `/admin/system`, `/admin/system/jobs`, `/admin/system/backups`; the browser's back button and a
+  reload keep the tab. The title of the page stays **System status**; the document title and the breadcrumb end with the tab
+  (**Admin area › System status › Jobs**), as the profile's pages do ([Q-UI-653](#q-ui-653--the-status-tab-loses-its-links-to-the-other-tabs-a-filter-belongs-to-its-tab)).
+- **One pair of refresh controls** ([Q-UI-651](#q-ui-651--one-pair-of-refresh-controls-in-the-pages-header-acts-on-the-shown-tab)):
+  **Pause automatic refresh** and **Refresh now** stand in the header and act on the tab that is shown; no tab has a second
+  pair. A pause holds across the tabs while the page is open.
+- **No links of their own.** The status tab's text links **Jobs** and **Backups** at its end and the link **All jobs** of its
+  card **Recent jobs** are gone: the tabs are the way there. The links from the dashboard and the repository screens keep their
+  addresses and land on the tab.
+- **A filter belongs to its tab.** The jobs' `kind` and `state` and the runs' `operation` and `state` stay in the address of
+  their tab; a tab's link carries none, so leaving the tab drops them, and the browser's back button brings them back.
+- **Who sees which tab** ([Q-UI-652](#q-ui-652--the-tab-strip-is-shown-to-whoever-may-open-every-tab)): Status and Backups read
+  operations that need `settings:read`; the jobs answer every signed-in caller with the jobs they started (R-API-015). A caller
+  with `settings:read` sees the three tabs; a caller without it, who follows a link of a repository screen to the jobs, sees
+  them without a strip of one tab. The API decides as before (R-UI-005).
+- **The side bar** keeps the one entry **System status**, marked on the three tabs.
+
+Acceptance criteria:
+
+- Unit tests (the page as the router builds it): one `<h1>` **System status** on every tab, the three tabs with their
+  addresses and the current one marked, one **Refresh now** and one pause button in the header, **Refresh now** reloads only
+  the shown tab, the pause holds across a change of tab and stops each tab's timer, a filter in the jobs' address is dropped by
+  another tab, the status tab has no link to `/admin/system/…` but the tabs, a caller without `settings:read` sees the jobs
+  without a strip; no serious axe violation.
+- The route map test: `/admin/system/jobs` and `/admin/system/backups` are titled **Jobs** and **Backups** and show the `<h1>`
+  **System status**.
+- The journeys 06 and 16 reach the jobs and the backups through their tabs.
+
+### R-UI-165 · The dashboard shows the state of the backup
+Priority: **MVP** · Covers: quader-only
+
+Added by the development agent to W-19, for the owner to object ([Q-UI-654](#q-ui-654--the-dashboard-shows-the-state-of-the-backup)):
+a missing or overdue backup is seen on the first screen of the admin area, without opening the backups.
+
+- The dashboard's card **Operations** has the row **Last backup**: the time of the last success in the list's form ("3 hours
+  ago", the date and time its title, Q-UI-431), with the warning badge **Overdue** beside it when the backup summary says so
+  (R-API-050: older than 1.5 times the expected interval), or the warning badge **No backup yet** while no run has succeeded.
+- The card's foot links **View backups** to the tab **Backups** (`/admin/system/backups`), beside **View jobs**.
+- The row and the link read `GET /api/v1/system/backups/summary`, the operation the Backups tab shows its status from; no new
+  field. A caller whose summary is refused, or an installation whose summary cannot be read, gets the card without the row and
+  the link; the rest of the dashboard is unchanged. The summary is read again with the dashboard's refresh.
+
+Acceptance criteria:
+
+- Unit tests: the row shows the time of the last success and links the Backups tab; "Overdue" and "No backup yet" are warning
+  badges; a refused summary leaves the row and the link out; the dashboard has no serious axe violation.
 
 ## Deferred
 
@@ -16517,6 +16577,98 @@ Status: **Decided by the development agent** — selected from the options below
 hold. The development agent revisits the menu-of-one case if it comes back.
 
 **Applied in the spec:** R-UI-163. Code: [row-actions-rule.mjs](../../web/scripts/row-actions-rule.mjs).
+
+### Q-UI-650 · Jobs and Backups are tabs of System status
+
+Status: **Decided by the owner, 2026-11-18** (W-19, "Option A" from three).
+
+Context: `/admin/system/jobs` and `/admin/system/backups` were reached only through two text links at the end of the long status
+screen (the jobs also from a card of the dashboard and from two repository screens), and the side bar kept **System status** marked
+on both.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Tabs on the page: **Status**, **Jobs**, **Backups**, each with its address (chosen by the owner) | One header, one entry in the side bar | The three views of the installation's operation are seen at once and reached in one click; the side bar's mark is true | The status tab no longer shows the way to the jobs at its end |
+| (b) Two entries of their own in the side bar | **Jobs** and **Backups** under **System** | Each one click from anywhere | Three entries for one area; the side bar grows |
+| (c) Leave it and move the links up | The links under the header | Nothing to build | Still links where the app has tabs for views of one thing (Q-UI-307) |
+
+**Choice:** (a), the owner's. **Rationale:** views of the same thing are tabs (Q-UI-307). The rule is
+[R-UI-164](#r-ui-164--system-status-jobs-and-backups-are-the-tabs-of-one-page).
+
+**Applied in the spec:** R-UI-164, R-UI-038, R-UI-048.
+
+### Q-UI-651 · One pair of refresh controls in the page's header acts on the shown tab
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the three pages each had **Pause automatic refresh** and **Refresh now** in a header of their own.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The page is a route of its own around the tabs' routes: its header holds the pair, the shown tab registers what **Refresh now** reloads and reads the pause for its timer; the pause holds across the tabs while the page is open (chosen) | `SystemPage` with `SystemRefresh`, the tabs below its `router-outlet` | One header that does not move when the tab changes; one pause for the page, as the user meant it | A tab depends on the page's service |
+| (b) Each tab keeps its own header with the pair, the strip under each | The profile's construction | Each tab stands alone | The header is drawn again on every change of tab; three pauses that forget each other |
+
+**Choice:** (a). **Rationale:** the user pauses the page, not one tab, and a header that stays in place is the tabbed page
+the owner asked for. The development agent revisits it if a tab needs a control of its own in the header.
+
+**Applied in the spec:** R-UI-164. Code: [system-page.ts](../../web/src/app/features/system/system-page.ts),
+[system-refresh.ts](../../web/src/app/features/system/system-refresh.ts).
+
+### Q-UI-652 · The tab strip is shown to whoever may open every tab
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Status reads `GET /system/info`, `/system/replicas` and `/system/encryption`, Backups `GET /system/backups` and its
+summary, all with `settings:read`; Jobs reads `GET /system/jobs`, which answers every signed-in caller with the jobs they started.
+The repository screens link a project's Owner, who may hold no `settings:read`, to the jobs (an index build, a mirror pass).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) With `settings:read` the three tabs; without it no strip, the jobs alone under the page's header (chosen) | A tab the caller may not open is not shown; one tab is no strip | Nobody is offered a tab that answers "permission denied"; the Owner sees their job | The Owner's page is titled **System status** and shows only jobs |
+| (b) Always three tabs | One form | Simple | Two tabs that fail for the Owner |
+
+**Choice:** (a). The side bar's entry needs `settings:read` as before, and every route answers as before: the API decides
+(R-UI-005). **Rationale:** a tab is a promise that the view opens. The development agent revisits the title if Owners land on the
+jobs often: the page could then be titled **Jobs** for them.
+
+**Applied in the spec:** R-UI-164.
+
+### Q-UI-653 · The status tab loses its links to the other tabs; a filter belongs to its tab
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The text links **Jobs** and **Backups** at the status tab's end and the card's **All jobs** go; a tab's link carries no filter, so a filter set on a tab is dropped by leaving it; the breadcrumb and the document title end with the tab, as the profile's pages (chosen) | One way to each tab; a filter stays in its tab's address, so a reload and the back button keep it | One way to each job (the style guide's checklist); a filter of the jobs means nothing to the backups | The card **Recent jobs** at the end of a long tab has no link down to all jobs: the tab is at the top |
+| (b) Keep **All jobs** in the card | A link beside the tab | Short way from the card | Two ways to one view |
+| (c) Keep each tab's filters when the tab is left and restore them on return | Filters in the page | The filter survives a look at another tab | State the address does not show; the back button already does it |
+
+**Choice:** (a). **Rationale:** the tabs are the way to the views, and the address is the state of a tab. The development agent
+revisits (b) if administrators look for the jobs at the card.
+
+**Applied in the spec:** R-UI-164.
+
+### Q-UI-654 · The dashboard shows the state of the backup
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Added to W-19 for the owner to object.
+
+Context: the dashboard said nothing of the backup; a backup that never ran or stopped running was seen only on the Backups tab, two
+clicks from the first screen of the admin area.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A row **Last backup** in the card **Operations**: the last success as a relative time, **Overdue** or **No backup yet** as warning badges, and **View backups** in the card's foot (chosen) | One request more, `GET /system/backups/summary`, the Backups tab's own | A missing backup is seen on the first screen; no new API field; the card already holds the job queue | One more row in a card of four |
+| (b) A card of its own | The backup beside **Operations** | Room for the last failure and the run in progress | A card for one figure |
+| (c) The instance bar | A warning beside the state of the replicas | Most visible | The bar says whether the installation serves; a backup is not that |
+
+**Choice:** (a). The time is the list's form, relative with the date and time as its title, because the card's value stands at the
+row's end like a list's cell; the facts of a card in brackets (Q-UI-431) would break the row. A refused or failing summary leaves
+the row out without an error. **Rationale:** the state of the backup is an operation's state, and the card **Operations** is where
+the dashboard has it. The development agent revisits (b) if the owner wants the last failure on the dashboard too.
+
+**Applied in the spec:** R-UI-165, R-UI-038 (the dashboard). Code: [dashboard.html](../../web/src/app/features/system/dashboard.html),
+[dashboard-model.ts](../../web/src/app/features/system/dashboard-model.ts).
 
 ## What this does not cover
 

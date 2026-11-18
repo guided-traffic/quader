@@ -44,7 +44,7 @@ test('R-UI-036 R-UI-037 the audit log has an entry for each action of the journe
   expect(replicas.size, `replicas that answered: ${[...replicas]}`).toBeGreaterThanOrEqual(2);
 });
 
-test('R-UI-037 R-UI-038 the system status shows every replica and which one answered', async ({ page, replicas }) => {
+test('R-UI-037 R-UI-038 R-UI-164 the system status shows every replica and which one answered, and its tab Jobs the jobs', async ({ page, replicas }) => {
   await signInLocal(page);
   await page.goto('/ui/en/admin/system');
   await expect(page.getByRole('heading', { name: 'System status', level: 1 })).toBeVisible();
@@ -65,8 +65,11 @@ test('R-UI-037 R-UI-038 the system status shows every replica and which one answ
   await page.reload();
   await expect(page.getByRole('heading', { name: 'System status', level: 1 })).toBeVisible();
 
-  await page.goto('/ui/en/admin/system/jobs');
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  // Jobs is a tab of the page (R-UI-164): reached through the strip, the header stays.
+  await page.getByRole('navigation', { name: 'System status pages' }).getByRole('link', { name: 'Jobs', exact: true }).click();
+  await expect(page).toHaveURL(/\/ui\/en\/admin\/system\/jobs$/);
+  await expect(page.getByRole('heading', { name: 'System status', level: 1 })).toBeVisible();
+  await expect(page.getByRole('table', { name: 'Jobs, newest first' }).or(page.getByText('There is no job yet.'))).toBeVisible();
   await expectAccessible(page, 'jobs');
 
   await signOut(page);

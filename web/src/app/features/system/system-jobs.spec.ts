@@ -1,3 +1,4 @@
+import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { ApiError } from '../../api/problem';
 import { EncryptionApi, EncryptionStatus } from '../../api/system-api';
@@ -9,6 +10,7 @@ import { JobProgress } from '../../shared/job-progress';
 import { JobsPage } from './jobs-page';
 import { SystemStatus } from './system-status';
 import { ringGaps, rotationStep } from './system-status-model';
+import { SystemRefresh } from './system-refresh';
 
 const RING: EncryptionStatus = {
   answeredBy: 'quader-api-0',
@@ -341,7 +343,7 @@ describe('Jobs screen', () => {
     await expectAccessible(failing.root);
   });
 
-  it('R-UI-038 the automatic refresh can be paused (WCAG 2.2.2)', async () => {
+  it('R-UI-038 R-UI-164 the page\'s pause stops the automatic refresh of the jobs (WCAG 2.2.2)', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     try {
       const { root, fixture, jobs } = await open();
@@ -349,10 +351,10 @@ describe('Jobs screen', () => {
       vi.advanceTimersByTime(5_000);
       await settle(fixture);
       expect(jobs.filterCalls.length).toBe(calls + 1);
-      const pause = root.querySelector<HTMLButtonElement>('header button[aria-pressed]')!;
-      pause.click();
+      // The control is the page's header's (system-page.spec.ts); the tab has none of its own.
+      expect(root.querySelector('button[aria-pressed]')).toBeNull();
+      TestBed.inject(SystemRefresh).togglePause();
       await settle(fixture);
-      expect(pause.getAttribute('aria-pressed')).toBe('true');
       vi.advanceTimersByTime(30_000);
       await settle(fixture);
       expect(jobs.filterCalls.length).toBe(calls + 1);

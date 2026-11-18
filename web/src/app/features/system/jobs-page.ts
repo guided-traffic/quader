@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { Job, JobState, JobsApi, jobActive } from '../../api/jobs-api';
 import { describeProblem } from '../../core/http/problem-messages';
@@ -9,7 +9,7 @@ import { EmptyState } from '../../shared/ui/empty-state';
 import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { JobTable, jobStatusText } from './job-table';
-import { PageHeader } from '../../shared/ui/page-header';
+import { SystemRefresh } from './system-refresh';
 
 const STATES: readonly JobState[] = [
   'queued',
@@ -32,32 +32,17 @@ function kindsOf(text: string | undefined): string[] {
 }
 
 /**
- * Jobs (R-UI-038, R-API-015): every job the caller may see, newest first, filterable by kind and
+ * The tab Jobs of the page System status (R-UI-038, R-UI-164, R-API-015): every job the caller may see, newest first, filterable by kind and
  * state (query parameters `kind` and repeated `state`), with "Cancel" for queued and running jobs.
  * The filters are the head of every list (Q-UI-420, Q-UI-566): **Filters** opens the drawer, the
  * filters that are set stand beside it as chips. A cancelled running job shows as `cancelling` until
  * it stops at its next checkpoint, then as `cancelled`; the list refreshes itself while an active job
- * is shown, and the refresh can be paused.
+ * is shown, and the page's header pauses and refreshes it (Q-UI-651).
  */
 @Component({
   selector: 'quader-jobs-page',
-  imports: [PageHeader, EmptyState, ErrorNotice, FilterCategory, FilterPanel, JobTable, ListHead],
+  imports: [EmptyState, ErrorNotice, FilterCategory, FilterPanel, JobTable, ListHead],
   template: `
-    <quader-page-header heading="Jobs" i18n-heading="@@jobs.heading">
-      <button actions class="btn btn-default"
-        type="button"
-        [attr.aria-pressed]="paused()"
-        (click)="paused.set(!paused())"
-      >
-        @if (paused()) {
-          <ng-container i18n="@@system.resume">Resume automatic refresh</ng-container>
-        } @else {
-          <ng-container i18n="@@system.pause">Pause automatic refresh</ng-container>
-        }
-      </button>
-      <button actions class="btn btn-default" type="button" (click)="load()" i18n="@@system.refresh">Refresh now</button>
-    </quader-page-header>
-
     <!-- The jobs have no search by name; the head is Filters and the filters that are set (Q-UI-420, Q-UI-566). -->
     <quader-list-head [chips]="chips()" (removeChip)="removeChip($event)" [(filtersOpen)]="panelOpen" [controls]="panel.panelId" />
     <quader-filter-panel
@@ -129,13 +114,13 @@ export class JobsPage {
   private readonly api = inject(JobsApi);
   private readonly router = inject(Router);
   private readonly notifier = inject(Notifier);
+  private readonly refresh = inject(SystemRefresh);
 
   /** Query parameters; `state` repeats and arrives as a string or an array. */
   readonly kind = input<string | undefined>();
   readonly state = input<string | readonly string[] | undefined>();
 
   protected readonly list = new PagedResource<Job>();
-  protected readonly paused = signal(false);
   protected readonly panelOpen = signal(false);
   protected readonly states = STATES;
   /** The drawer's values; they reach the address with **Apply filters** and go back to it when the drawer closes without. */
@@ -166,6 +151,7 @@ export class JobsPage {
   });
 
   constructor() {
+    this.refresh.register(() => this.load(), inject(DestroyRef));
     effect(() => {
       this.kinds();
       this.stateFilter();
@@ -175,7 +161,7 @@ export class JobsPage {
       });
     });
     effect((onCleanup) => {
-      if (this.paused() || !this.hasActive()) return;
+      if (this.refresh.paused() || !this.hasActive()) return;
       const timer = setInterval(() => this.load(), JOBS_REFRESH_MS);
       onCleanup(() => clearInterval(timer));
     });

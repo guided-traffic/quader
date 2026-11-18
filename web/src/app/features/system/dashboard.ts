@@ -1,32 +1,36 @@
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, inject, resource, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { BackupsApi } from '../../api/backups-api';
 import { EncryptionApi, SystemApi } from '../../api/system-api';
 import { ApiError } from '../../api/problem';
 import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
 import { valueOf } from '../../shared/paged-resource';
 import { formatSize } from '../packages/format-size';
-import { CheckSummary, checkSummary, roleLoad, share } from './dashboard-model';
+import { CheckSummary, checkSummary, lastBackup, roleLoad, share } from './dashboard-model';
 import { REFRESH_INTERVAL_MS } from './system-status';
 import { alarms, roleGroups, serviceStatus } from './system-status-model';
 import { PageHeader } from '../../shared/ui/page-header';
+import { TimeAgo } from '../../shared/ui/time-ago';
 
 /**
  * The admin dashboard (Q-OPS-175): the first screen of the admin area, an overview of the installation in cards.
  * The instance bar, the components (each role's replicas and their load from the heartbeat measurements), the
  * dependencies (PostgreSQL, Valkey, the object store with the content it holds, each with its readiness check), and
- * the counts of content and access with the way to their screens. It refreshes like the status screen, with a pause.
+ * the counts of content and access with the way to their screens, and the state of the backup (R-UI-165). It refreshes like the
+ * status screen, with a pause.
  */
 @Component({
   selector: 'quader-dashboard',
-  imports: [PageHeader, DatePipe, DecimalPipe, NgTemplateOutlet, RouterLink, ErrorNotice],
+  imports: [PageHeader, DatePipe, DecimalPipe, NgTemplateOutlet, RouterLink, ErrorNotice, TimeAgo],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
 export class Dashboard {
   private readonly system = inject(SystemApi);
   private readonly encryptionApi = inject(EncryptionApi);
+  private readonly backups = inject(BackupsApi);
   protected readonly session = inject(SessionStore);
   protected readonly size = formatSize;
   /** A resource's value without the throw of its error state, which would stop the whole template. */
@@ -36,6 +40,12 @@ export class Dashboard {
   protected readonly replicas = resource({ loader: () => this.system.replicas() });
   protected readonly overview = resource({ loader: () => this.system.overview() });
   protected readonly encryption = resource({ loader: () => this.encryptionApi.status() });
+  /** The Backups tab's own summary; refused or failing, the card leaves the backup out (R-UI-165). */
+  protected readonly backup = resource({ loader: () => this.backups.summary() });
+  protected readonly lastBackup = computed(() => {
+    const summary = valueOf(this.backup);
+    return summary ? lastBackup(summary) : null;
+  });
   protected readonly paused = signal(false);
   /** The repository classes in the order the repository screens name them. */
   protected readonly classes = [
@@ -106,6 +116,7 @@ export class Dashboard {
     this.replicas.reload();
     this.overview.reload();
     this.encryption.reload();
+    this.backup.reload();
   }
 
   protected togglePause(): void {

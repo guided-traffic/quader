@@ -64,7 +64,7 @@ kubectl -n quader create job --from=cronjob/quader-backup quader-backup-manual-$
 
 ## Check that a backup restores
 
-The **Backups** screen under System status shows the runs, the last success and the stored backups ([Backups](operations.md#backups)); it changes nothing and it cannot verify. Verifying is a command, and the pods of the release that hold the target's credentials are the backup Jobs, so run it as a Job built from the CronJob:
+The tab **Backups** of System status shows the runs, the last success and the stored backups ([Backups](operations.md#backups)); it changes nothing and it cannot verify. Verifying is a command, and the pods of the release that hold the target's credentials are the backup Jobs, so run it as a Job built from the CronJob:
 
 ```shell
 kubectl -n quader create job quader-backup-verify --from=cronjob/quader-backup --dry-run=client -o json \

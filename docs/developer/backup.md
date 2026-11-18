@@ -203,14 +203,17 @@ Integration, against the shared stack: `restore_full_test.go` (the end-to-end cr
 `.out/restore-it`, and the exit codes of the command). A backup is built by hand from the `format` package (`restore_fixture_test.go`).
 ## The backups screen
 
-`/admin/system/backups` (R-UI-048) renders the three operations of R-API-050 and sends nothing but `GET`. It lives with the other
-system screens in [web/src/app/features/system/backups/](../../web/src/app/features/system/backups/).
+`/admin/system/backups` (R-UI-048), the tab **Backups** of the page **System status** (R-UI-164), renders the three operations of
+R-API-050 and sends nothing but `GET`. It lives with the other system screens in
+[web/src/app/features/system/backups/](../../web/src/app/features/system/backups/); the page's header
+([system-page.ts](../../web/src/app/features/system/system-page.ts)) holds its **Pause automatic refresh** and **Refresh now**. The
+dashboard reads the same summary for its row **Last backup** (R-UI-165).
 
 | File | Responsibility |
 |---|---|
 | [api/backups-api.ts](../../web/src/app/api/backups-api.ts) | `BackupsApi` (`runs`, `run`, `summary`) over the generated shapes; no method that is not a GET |
 | [api/testing/fakes-backups.ts](../../web/src/app/api/testing/fakes-backups.ts) | `FakeBackupsApi`, `sampleRun`, `sampleSummary` for the component specs |
-| [backups-page.ts](../../web/src/app/features/system/backups/backups-page.ts), `.html`, `.scss` | the screen: status, run in progress, runs with filters (`operation`, `state` query parameters) and "Load more", the open run, stored backups, restore notice; refresh on the status screen's interval (Q-BAK-36) |
+| [backups-page.ts](../../web/src/app/features/system/backups/backups-page.ts), `.html`, `.scss` | the tab: status, run in progress, runs with filters (`operation`, `state` query parameters) and "Load more", the open run, stored backups, restore notice; refresh on the status screen's interval (Q-BAK-36), paused and triggered by the page's header through `SystemRefresh` |
 | [backups-model.ts](../../web/src/app/features/system/backups/backups-model.ts) | pure functions: `stateView` (badge tone, icon, word and hint per state, Q-BAK-37), durations, result accessors, `manualRunCommand` |
 | [backup-state.ts](../../web/src/app/features/system/backups/backup-state.ts) | the state as the standard badge |
 | [manual-run-panel.ts](../../web/src/app/features/system/backups/manual-run-panel.ts) | the `kubectl` command with the copy button; placeholders while `manualRun` is empty |

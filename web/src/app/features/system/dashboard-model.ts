@@ -1,3 +1,4 @@
+import { BackupSummary } from '../../api/backups-api';
 import { Replica } from '../../api/system-api';
 import { RoleGroup } from './system-status-model';
 
@@ -85,4 +86,15 @@ export function checkSummary(replicas: readonly Replica[], check: string): Check
 /** A share between 0 and 1, or null when the whole is unknown or zero. */
 export function share(part: number, whole: number | null): number | null {
   return whole && whole > 0 ? Math.min(1, Math.max(0, part / whole)) : null;
+}
+
+/**
+ * The state of the backup in the dashboard's card Operations (R-UI-165, Q-UI-654): the time of the last success, overdue or not by
+ * the summary's own rule (R-API-050: older than 1.5 times the expected interval), or none yet.
+ */
+export type LastBackup = { readonly kind: 'none' } | { readonly kind: 'ok' | 'overdue'; readonly at: string };
+
+export function lastBackup(summary: Pick<BackupSummary, 'lastSuccessAt' | 'overdue'>): LastBackup {
+  if (!summary.lastSuccessAt) return { kind: 'none' };
+  return { kind: summary.overdue ? 'overdue' : 'ok', at: summary.lastSuccessAt };
 }

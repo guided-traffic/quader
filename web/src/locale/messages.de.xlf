@@ -3425,15 +3425,6 @@
         <target>Zu Gruppe hinzufügen</target>
       </segment>
     </unit>
-    <unit id="system.jobs.all">
-      <notes>
-        <note category="location">src/app/features/system/system-status.html:495,498</note>
-      </notes>
-      <segment>
-        <source>All jobs</source>
-        <target>Alle Jobs</target>
-      </segment>
-    </unit>
     <unit id="shell.breadcrumbs">
       <notes>
         <note category="location">src/app/app.html:228,230</note>
@@ -8354,15 +8345,6 @@
         <target>Projekt wählen</target>
       </segment>
     </unit>
-    <unit id="jobs.heading">
-      <notes>
-        <note category="location">src/app/features/system/jobs-page.ts:35</note>
-      </notes>
-      <segment>
-        <source>Jobs</source>
-        <target>Jobs</target>
-      </segment>
-    </unit>
     <unit id="policy-diff.changed">
       <notes>
         <note category="location">src/app/features/permissions/policy-diff-dialog.ts:38,40</note>
@@ -9113,15 +9095,6 @@
       <segment>
         <source>A project keeps at least one Owner. Make another member an Owner first.</source>
         <target>Ein Projekt behält mindestens einen Eigentümer. Machen Sie zuerst ein anderes Mitglied zum Eigentümer.</target>
-      </segment>
-    </unit>
-    <unit id="system.link.jobs">
-      <notes>
-        <note category="location">src/app/features/system/system-status.html:500,501</note>
-      </notes>
-      <segment>
-        <source>Jobs</source>
-        <target>Jobs</target>
       </segment>
     </unit>
     <unit id="virtual.unreadable-one">
@@ -12582,15 +12555,6 @@
       <segment>
         <source>Details</source>
         <target>Details</target>
-      </segment>
-    </unit>
-    <unit id="backups.heading">
-      <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:1</note>
-      </notes>
-      <segment>
-        <source>Backups</source>
-        <target>Backups</target>
       </segment>
     </unit>
     <unit id="audit.category.token">
@@ -28193,15 +28157,6 @@
         <target>Höchste Lebensdauer</target>
       </segment>
     </unit>
-    <unit id="system.link.backups">
-      <notes>
-        <note category="location">src/app/features/system/system-status.html:501,503</note>
-      </notes>
-      <segment>
-        <source>Backups</source>
-        <target>Backups</target>
-      </segment>
-    </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:597</note>
@@ -34223,6 +34178,78 @@
       <segment>
         <source>Actions for <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/></source>
         <target>Aktionen für <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/></target>
+      </segment>
+    </unit>
+    <unit id="dashboard.backup">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:408,409</note>
+      </notes>
+      <segment>
+        <source>Last backup</source>
+        <target>Letztes Backup</target>
+      </segment>
+    </unit>
+    <unit id="dashboard.backup.none">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:413,414</note>
+      </notes>
+      <segment>
+        <source>No backup yet</source>
+        <target>Noch kein Backup</target>
+      </segment>
+    </unit>
+    <unit id="dashboard.backup.overdue">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:420,421</note>
+      </notes>
+      <segment>
+        <source>Overdue</source>
+        <target>Überfällig</target>
+      </segment>
+    </unit>
+    <unit id="dashboard.backups.view">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:442,445</note>
+      </notes>
+      <segment>
+        <source>View backups</source>
+        <target>Backups anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="system.tabs">
+      <notes>
+        <note category="location">src/app/features/system/system-page.ts:31</note>
+      </notes>
+      <segment>
+        <source>System status pages</source>
+        <target>Seiten des Systemstatus</target>
+      </segment>
+    </unit>
+    <unit id="system.tab.status">
+      <notes>
+        <note category="location">src/app/features/system/system-page.ts:33,35</note>
+      </notes>
+      <segment>
+        <source>Status</source>
+        <target>Status</target>
+      </segment>
+    </unit>
+    <unit id="system.tab.jobs">
+      <notes>
+        <note category="location">src/app/features/system/system-page.ts:37,38</note>
+      </notes>
+      <segment>
+        <source>Jobs</source>
+        <target>Jobs</target>
+      </segment>
+    </unit>
+    <unit id="system.tab.backups">
+      <notes>
+        <note category="location">src/app/features/system/system-page.ts:39,43</note>
+      </notes>
+      <segment>
+        <source>Backups</source>
+        <target>Backups</target>
       </segment>
     </unit>
   </file>

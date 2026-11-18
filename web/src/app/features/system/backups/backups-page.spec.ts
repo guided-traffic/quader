@@ -19,6 +19,7 @@ import { applyFilters, button, chipTexts, expectAccessible, openFilters, renderS
 import { REFRESH_INTERVAL_MS } from '../system-status';
 import { BackupsPage } from './backups-page';
 import { JOB_NAME_MAX, durationText, manualRunCommand, stateView } from './backups-model';
+import { SystemRefresh } from '../system-refresh';
 
 function fake(get: <A>(token: abstract new (...args: never[]) => A) => A): FakeBackupsApi {
   return get(BackupsApi) as FakeBackupsApi;
@@ -124,18 +125,20 @@ describe('The backups screen: status (R-UI-048)', () => {
     expect(card.querySelector('.badge.warn')).toBeTruthy();
   });
 
-  it('R-UI-048 pauses the automatic refresh and refreshes on request', async () => {
+  it('R-UI-048 R-UI-164 the page\'s pause stops the automatic refresh and its Refresh now reloads the tab', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     const { root, fixture, get } = await renderScreen(BackupsPage);
     const api = fake(get);
     const before = api.summaryCalls;
-    button(root, 'Pause automatic refresh').click();
+    // The controls are the page's header's (system-page.spec.ts); the tab has none of its own.
+    expect(root.querySelector('button[aria-pressed]')).toBeNull();
+    const refresh = get(SystemRefresh);
+    refresh.togglePause();
     await settle(fixture);
-    expect(button(root, 'Resume automatic refresh').getAttribute('aria-pressed')).toBe('true');
     vi.advanceTimersByTime(REFRESH_INTERVAL_MS * 3);
     await settle(fixture);
     expect(api.summaryCalls).toBe(before);
-    button(root, 'Refresh now').click();
+    refresh.now();
     await settle(fixture);
     expect(api.summaryCalls).toBe(before + 1);
   });

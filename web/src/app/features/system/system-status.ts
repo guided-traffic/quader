@@ -1,6 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, resource, signal, viewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, DestroyRef, computed, effect, inject, resource, signal, viewChild } from '@angular/core';
 import { newIdempotencyKey } from '../../api/client';
 // >>> M1 ui-a
 import { Job, JobsApi } from '../../api/jobs-api';
@@ -33,9 +32,9 @@ import {
   valkeySummary,
 } from './system-status-model';
 import { valueOf } from '../../shared/paged-resource';
-import { PageHeader } from '../../shared/ui/page-header';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { NoValue } from '../../shared/ui/no-value';
+import { SystemRefresh } from './system-refresh';
 
 /** Automatic refresh interval with a pause control (R-UI-038, WCAG 2.2.2). */
 export const REFRESH_INTERVAL_MS = 15_000;
@@ -52,10 +51,13 @@ export const RECENT_JOBS = 10;
  */
 export const PRIMARY_DISAGREEMENT_GRACE_MS = 30_000;
 
-/** System status (R-UI-038): installation facts, replicas per role, Valkey, stored-secret keys. */
+/**
+ * The tab Status of the page System status (R-UI-038, R-UI-164): installation facts, replicas per role, Valkey, stored-secret
+ * keys, the scheduled tasks and the recent jobs. The page's header refreshes it and pauses its timer (Q-UI-651).
+ */
 @Component({
   selector: 'quader-system-status',
-  imports: [DataTable, PageHeader, DatePipe, RouterLink, ErrorNotice, JobProgress, JobTable, NoValue, TasksCard],
+  imports: [DataTable, DatePipe, ErrorNotice, JobProgress, JobTable, NoValue, TasksCard],
   templateUrl: './system-status.html',
   styleUrl: './system-status.scss',
 })
@@ -103,6 +105,7 @@ export class SystemStatus {
   private readonly encryptionApi = inject(EncryptionApi);
   private readonly notifier = inject(Notifier);
   private readonly session = inject(SessionStore);
+  private readonly refresh = inject(SystemRefresh);
   // >>> M1 ui-a
   private readonly jobsApi = inject(JobsApi);
   private readonly tasksCard = viewChild(TasksCard);
@@ -131,7 +134,6 @@ export class SystemStatus {
     return e ? rotationStep(e) : null;
   });
   // <<< M1 ui-a
-  protected readonly paused = signal(false);
   protected readonly reencrypting = signal(false);
   private disagreeSince: number | null = null;
 
@@ -176,8 +178,9 @@ export class SystemStatus {
   protected readonly canReencrypt = computed(() => this.session.has('content:bypass'));
 
   constructor() {
+    this.refresh.register(() => this.reload(), inject(DestroyRef));
     effect((onCleanup) => {
-      if (this.paused()) return;
+      if (this.refresh.paused()) return;
       const timer = setInterval(() => this.reload(), REFRESH_INTERVAL_MS);
       onCleanup(() => clearInterval(timer));
     });
@@ -202,10 +205,6 @@ export class SystemStatus {
     this.recentJobs.reload();
     this.tasksCard()?.reload();
     // <<< M1 ui-a
-  }
-
-  protected togglePause(): void {
-    this.paused.update((p) => !p);
   }
 
   /** The id of the heading of a sub-group: the role's main Deployment, or one of its pools. */

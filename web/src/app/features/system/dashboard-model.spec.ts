@@ -1,5 +1,5 @@
 import { sampleInfo, sampleReplica, sampleRuntime } from '../../api/testing/fakes';
-import { checkSummary, roleLoad, share } from './dashboard-model';
+import { checkSummary, lastBackup, roleLoad, share } from './dashboard-model';
 import { roleGroups } from './system-status-model';
 
 describe('Admin dashboard model (Q-OPS-175)', () => {
@@ -53,6 +53,12 @@ describe('Admin dashboard model (Q-OPS-175)', () => {
     ];
     expect(checkSummary(replicas, 'database')).toEqual({ check: 'database', reporting: 3, passing: 2, failing: 1, maxMs: 2000 });
     expect(checkSummary(replicas, 'valkey')).toEqual({ check: 'valkey', reporting: 0, passing: 0, failing: 0, maxMs: null });
+  });
+
+  it('R-UI-165 the last backup is its time, overdue by the summary\'s rule, or none yet', () => {
+    expect(lastBackup({ lastSuccessAt: '2026-11-18T02:00:00Z', overdue: false })).toEqual({ kind: 'ok', at: '2026-11-18T02:00:00Z' });
+    expect(lastBackup({ lastSuccessAt: '2026-11-10T02:00:00Z', overdue: true })).toEqual({ kind: 'overdue', at: '2026-11-10T02:00:00Z' });
+    expect(lastBackup({ lastSuccessAt: null, overdue: null })).toEqual({ kind: 'none' });
   });
 
   it('R-UI-038 a share is bounded and needs a known whole', () => {

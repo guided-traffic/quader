@@ -9,7 +9,7 @@ import { applyFilters, expect, expectAccessible, openFilters, signInLocal, signO
 // component tier with fixtures (web/src/app/features/system/backups/backups-page.spec.ts); the scenarios that produce those
 // states on a cluster (drain during a run, kill -9) belong to the backup suite of test/e2e.
 
-test('R-UI-048 the backups screen shows the status, the runs, the stored backups and the command, and sends only GET requests', async ({ page, context }) => {
+test('R-UI-048 R-UI-164 the tab Backups shows the status, the runs, the stored backups and the command, and sends only GET requests', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await signInLocal(page);
   const methods: string[] = [];
@@ -17,9 +17,12 @@ test('R-UI-048 the backups screen shows the status, the runs, the stored backups
     if (new URL(request.url()).pathname.startsWith('/api/')) methods.push(`${request.method()} ${new URL(request.url()).pathname}`);
   });
   await page.goto('/ui/en/admin/system');
-  await page.getByRole('link', { name: 'Backups', exact: true }).click();
+  // Backups is a tab of the page System status (R-UI-164): one header, the tab marked as the current page.
+  const tabs = page.getByRole('navigation', { name: 'System status pages' });
+  await tabs.getByRole('link', { name: 'Backups', exact: true }).click();
   await expect(page).toHaveURL(/\/ui\/en\/admin\/system\/backups$/);
-  await expect(page.getByRole('heading', { name: 'Backups', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'System status', level: 1 })).toBeVisible();
+  await expect(tabs.getByRole('link', { name: 'Backups', exact: true })).toHaveAttribute('aria-current', 'page');
 
   await test.step('the status says when the last backup was made, or that there is none', async () => {
     const status = page.getByRole('region', { name: 'Status', exact: true });

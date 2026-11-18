@@ -13,6 +13,7 @@ import {
 import { EncryptionApi, Replica, SystemApi } from '../../api/system-api';
 import { SessionStore } from '../../core/session-store';
 import { SystemStatus } from './system-status';
+import { SystemRefresh } from './system-refresh';
 
 async function render(setup?: (system: FakeSystemApi, enc: FakeEncryptionApi, session: FakeSessionApi) => void) {
   await TestBed.configureTestingModule({
@@ -285,19 +286,18 @@ describe('System status screen', () => {
     expect(text(root)).toContain('rid-9');
   });
 
-  it('R-UI-038 the pause control stops the automatic refresh (WCAG 2.2.2)', async () => {
+  it('R-UI-038 R-UI-164 the page\'s pause stops the automatic refresh of the tab (WCAG 2.2.2)', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
-    const { root, fixture } = await render();
+    const { fixture } = await render();
     const system = TestBed.inject(SystemApi) as FakeSystemApi;
     const spy = vi.spyOn(system, 'info');
     vi.advanceTimersByTime(15_000);
     await fixture.whenStable();
     expect(spy).toHaveBeenCalledTimes(1);
 
-    const pause = root.querySelector<HTMLButtonElement>('header button[aria-pressed]');
-    pause?.click();
+    // The control is the page's header's (system-page.spec.ts); the tab reads the page's pause.
+    TestBed.inject(SystemRefresh).togglePause();
     await fixture.whenStable();
-    expect(pause?.getAttribute('aria-pressed')).toBe('true');
     vi.advanceTimersByTime(60_000);
     await fixture.whenStable();
     expect(spy).toHaveBeenCalledTimes(1);

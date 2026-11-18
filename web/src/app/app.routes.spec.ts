@@ -71,9 +71,10 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   ['/admin/endpoints/main/rules/new', 'New exposure rule'],
   ['/admin/endpoints/main/rules/r1', 'Exposure rule'],
   ['/admin/audit', 'Audit log'],
+  // The tabs of the page System status: titled by the tab, one header (R-UI-164).
   ['/admin/system', 'System status'],
-  ['/admin/system/jobs', 'Jobs'],
-  ['/admin/system/backups', 'Backups'],
+  ['/admin/system/jobs', 'Jobs', 'System status'],
+  ['/admin/system/backups', 'Backups', 'System status'],
   ['/admin/settings/auth', 'Authentication settings'],
   ['/admin/settings/general', 'General settings'],
   ['/no/such/page', 'Page not found'],
