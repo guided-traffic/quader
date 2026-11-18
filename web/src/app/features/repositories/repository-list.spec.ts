@@ -28,7 +28,7 @@ describe('Repository list', () => {
     const heads = [...root.querySelectorAll<HTMLElement>('thead th')];
     // No column is pinned to its least while another takes every pixel (the project broke into three lines beside an empty column).
     expect(heads.map((h) => h.style.inlineSize).every((w) => w === '')).toBe(true);
-    expect(heads.map((h) => h.style.minInlineSize)).toEqual(['13rem', '11rem', ...heads.slice(2).map(() => '')]);
+    expect(heads.map((h) => h.style.minInlineSize)).toEqual(['13rem', '12rem', ...heads.slice(2).map(() => '')]);
     const empty = [...root.querySelectorAll('tbody td.narrow-drop quader-no-value')];
     for (const cell of empty) expect(cell.parentElement!.hasAttribute('data-empty')).toBe(true);
   });

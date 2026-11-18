@@ -3487,7 +3487,7 @@
     <unit id="audit.filter.range">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:33,34</note>
-        <note category="location">src/app/features/audit/audit-log.ts:158</note>
+        <note category="location">src/app/features/audit/audit-log.ts:161</note>
       </notes>
       <segment>
         <source>Time range</source>
@@ -3496,7 +3496,7 @@
     <unit id="audit.range.1h">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:35,36</note>
-        <note category="location">src/app/features/audit/audit-log.ts:265</note>
+        <note category="location">src/app/features/audit/audit-log.ts:268</note>
       </notes>
       <segment>
         <source>Last hour</source>
@@ -3513,7 +3513,7 @@
     <unit id="audit.range.7d">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:37,38</note>
-        <note category="location">src/app/features/audit/audit-log.ts:267</note>
+        <note category="location">src/app/features/audit/audit-log.ts:270</note>
       </notes>
       <segment>
         <source>Last 7 days</source>
@@ -3522,7 +3522,7 @@
     <unit id="audit.range.30d">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:38,39</note>
-        <note category="location">src/app/features/audit/audit-log.ts:269</note>
+        <note category="location">src/app/features/audit/audit-log.ts:272</note>
       </notes>
       <segment>
         <source>Last 30 days</source>
@@ -3572,7 +3572,7 @@
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:79,80</note>
         <note category="location">src/app/features/audit/audit-log.html:214,215</note>
-        <note category="location">src/app/features/audit/audit-log.ts:164</note>
+        <note category="location">src/app/features/audit/audit-log.ts:167</note>
       </notes>
       <segment>
         <source>Category</source>
@@ -3593,7 +3593,7 @@
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:88,89</note>
         <note category="location">src/app/features/audit/audit-log.html:240,242</note>
-        <note category="location">src/app/features/audit/audit-log.ts:166</note>
+        <note category="location">src/app/features/audit/audit-log.ts:169</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -3636,7 +3636,7 @@
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:209,211</note>
         <note category="location">src/app/features/audit/audit-log.ts:102</note>
-        <note category="location">src/app/features/audit/audit-log.ts:162</note>
+        <note category="location">src/app/features/audit/audit-log.ts:165</note>
       </notes>
       <segment>
         <source>Action</source>
@@ -3645,8 +3645,8 @@
     <unit id="audit.col.outcome">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:216,218</note>
-        <note category="location">src/app/features/audit/audit-log.ts:111</note>
-        <note category="location">src/app/features/audit/audit-log.ts:168</note>
+        <note category="location">src/app/features/audit/audit-log.ts:114</note>
+        <note category="location">src/app/features/audit/audit-log.ts:171</note>
       </notes>
       <segment>
         <source>Outcome</source>
@@ -3656,7 +3656,7 @@
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:224,226</note>
         <note category="location">src/app/features/audit/audit-log.ts:100</note>
-        <note category="location">src/app/features/audit/audit-log.ts:160</note>
+        <note category="location">src/app/features/audit/audit-log.ts:163</note>
       </notes>
       <segment>
         <source>Actor</source>
@@ -3681,7 +3681,7 @@
     <unit id="audit.col.source">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:263,264</note>
-        <note category="location">src/app/features/audit/audit-log.ts:114</note>
+        <note category="location">src/app/features/audit/audit-log.ts:117</note>
       </notes>
       <segment>
         <source>Source address</source>
@@ -3784,7 +3784,7 @@
     </unit>
     <unit id="audit.col.project">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:106</note>
+        <note category="location">src/app/features/audit/audit-log.ts:108</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -3792,7 +3792,7 @@
     </unit>
     <unit id="audit.help.project">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:107</note>
+        <note category="location">src/app/features/audit/audit-log.ts:110</note>
       </notes>
       <segment>
         <source>The project of the repository the event is about; a dash when it is about none.</source>
@@ -3800,7 +3800,7 @@
     </unit>
     <unit id="audit.help.outcome">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:112</note>
+        <note category="location">src/app/features/audit/audit-log.ts:115</note>
       </notes>
       <segment>
         <source>Success: the action was carried out. Failure: it was allowed but did not work. Denied: the caller was not permitted. Warning: it was carried out, and an administrator should look at it.</source>
@@ -3808,7 +3808,7 @@
     </unit>
     <unit id="audit.copy-id">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:373</note>
+        <note category="location">src/app/features/audit/audit-log.ts:376</note>
       </notes>
       <segment>
         <source>Copy the event ID</source>
@@ -3816,7 +3816,7 @@
     </unit>
     <unit id="audit.copy-trace">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:374</note>
+        <note category="location">src/app/features/audit/audit-log.ts:377</note>
       </notes>
       <segment>
         <source>Copy the trace ID</source>
@@ -7712,7 +7712,7 @@
     </unit>
     <unit id="ep.col.rule">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:103</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:104</note>
       </notes>
       <segment>
         <source>Rule</source>
@@ -7720,7 +7720,7 @@
     </unit>
     <unit id="ep.rule.col.repository">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:104</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:105</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -7728,7 +7728,7 @@
     </unit>
     <unit id="ep.rule.col.patterns">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:105</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:106</note>
       </notes>
       <segment>
         <source>Packages and paths</source>
@@ -7736,7 +7736,7 @@
     </unit>
     <unit id="ep.rule.col.versions">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:106</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:107</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -7744,7 +7744,7 @@
     </unit>
     <unit id="ep.rule.col.prereleases">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:107</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:108</note>
       </notes>
       <segment>
         <source>Pre-releases</source>
@@ -7752,7 +7752,7 @@
     </unit>
     <unit id="ep.rule.col.enabled">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:108</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:109</note>
       </notes>
       <segment>
         <source>Enabled</source>
@@ -7760,12 +7760,12 @@
     </unit>
     <unit id="repo.col.actions">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:109</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:110</note>
         <note category="location">src/app/features/guides/guide-format.ts:147</note>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:179</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:184</note>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:178</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:228</note>
         <note category="location">src/app/features/repositories/repository-list.ts:230</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:232</note>
         <note category="location">src/app/features/system/backups/backups-page.html:154,156</note>
         <note category="location">src/app/features/system/job-table.ts:132</note>
         <note category="location">src/app/features/system/tasks-card.ts:121</note>
@@ -7776,7 +7776,7 @@
     </unit>
     <unit id="ep.address.not-served">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:111</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:112</note>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:127,130</note>
       </notes>
       <segment>
@@ -7785,8 +7785,8 @@
     </unit>
     <unit id="repo.copy-address-value">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:115</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:242</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:116</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:244</note>
       </notes>
       <segment>
         <source>Copy client address <ph id="0" equiv="address" disp="address"/></source>
@@ -7794,7 +7794,7 @@
     </unit>
     <unit id="ep.rule.actions-of">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:119</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:120</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="name" disp="name"/></source>
@@ -7802,8 +7802,8 @@
     </unit>
     <unit id="copy.done">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:126</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:248</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:127</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:250</note>
         <note category="location">src/app/shared/copy-button.ts:36</note>
       </notes>
       <segment>
@@ -7812,8 +7812,8 @@
     </unit>
     <unit id="copy.failed">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:128</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:250</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:129</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:252</note>
         <note category="location">src/app/shared/copy-button.ts:39</note>
       </notes>
       <segment>
@@ -7822,7 +7822,7 @@
     </unit>
     <unit id="ep.rule.enabled">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:157</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:158</note>
       </notes>
       <segment>
         <source>Rule <ph id="0" equiv="name" disp="rule.name"/> enabled.</source>
@@ -7830,7 +7830,7 @@
     </unit>
     <unit id="ep.rule.disabled">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:158</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:159</note>
       </notes>
       <segment>
         <source>Rule <ph id="0" equiv="name" disp="rule.name"/> disabled.</source>
@@ -7838,8 +7838,8 @@
     </unit>
     <unit id="ep.rule.changed">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:165</note>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:194</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:166</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:195</note>
       </notes>
       <segment>
         <source>Rule <ph id="0" equiv="name" disp="rule.name"/> was changed by someone else. The table shows the current state.</source>
@@ -7847,7 +7847,7 @@
     </unit>
     <unit id="ep.rule.delete.title">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:179</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:180</note>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.ts:441</note>
       </notes>
       <segment>
@@ -7856,7 +7856,7 @@
     </unit>
     <unit id="ep.rule.delete.text">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:181</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:182</note>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.ts:443</note>
       </notes>
       <segment>
@@ -7865,7 +7865,7 @@
     </unit>
     <unit id="ep.rule.delete.confirm">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:183</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:184</note>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.ts:445</note>
       </notes>
       <segment>
@@ -7874,7 +7874,7 @@
     </unit>
     <unit id="ep.rule.deleted">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:189</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:190</note>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.ts:451</note>
       </notes>
       <segment>
@@ -7883,7 +7883,7 @@
     </unit>
     <unit id="ep.rule.toggle">
       <notes>
-        <note category="location">src/app/features/endpoints/endpoint-detail.ts:206</note>
+        <note category="location">src/app/features/endpoints/endpoint-detail.ts:207</note>
       </notes>
       <segment>
         <source>Enabled: <ph id="0" equiv="name" disp="name"/></source>
@@ -9359,7 +9359,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:38,40</note>
         <note category="location">src/app/features/repositories/repository-list.html:45</note>
         <note category="location">src/app/features/repositories/repository-list.ts:152</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:211</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:213</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -9373,7 +9373,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:64,65</note>
         <note category="location">src/app/features/repositories/repository-list.html:68</note>
         <note category="location">src/app/features/repositories/repository-list.ts:156</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:215</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:217</note>
         <note category="location">src/app/features/search/search-results.ts:219</note>
       </notes>
       <segment>
@@ -9896,7 +9896,7 @@
     <unit id="docs.suboption-of">
       <notes>
         <note category="location">src/app/features/packages/ansible-doc-entry.html:90</note>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:231</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:233</note>
       </notes>
       <segment>
         <source>suboptions of</source>
@@ -9952,8 +9952,8 @@
     </unit>
     <unit id="pkg.meta.external">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:189,191</note>
-        <note category="location">src/app/features/packages/package-version.html:196,197</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:190,191</note>
+        <note category="location">src/app/features/packages/package-version.html:198,199</note>
       </notes>
       <segment>
         <source>(opens another site)</source>
@@ -9961,7 +9961,7 @@
     </unit>
     <unit id="docs.examples">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:200,201</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:202,203</note>
       </notes>
       <segment>
         <source>Examples</source>
@@ -9969,7 +9969,7 @@
     </unit>
     <unit id="docs.returns">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:210,211</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:212,213</note>
       </notes>
       <segment>
         <source>Return values</source>
@@ -9977,7 +9977,7 @@
     </unit>
     <unit id="docs.authors">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:262,263</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:264,265</note>
       </notes>
       <segment>
         <source>Authors</source>
@@ -10235,7 +10235,7 @@
         <note category="location">src/app/features/packages/ansible-import-log.ts:50,51</note>
         <note category="location">src/app/features/system/backups/backups-page.html:227,228</note>
         <note category="location">src/app/features/system/jobs-page.ts:103,104</note>
-        <note category="location">src/app/shared/ui/data-table.ts:124,125</note>
+        <note category="location">src/app/shared/ui/data-table.ts:125,126</note>
       </notes>
       <segment>
         <source> Load more </source>
@@ -10819,7 +10819,7 @@
     </unit>
     <unit id="pkg.col.package">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:191</note>
+        <note category="location">src/app/features/packages/package-list.ts:195</note>
         <note category="location">src/app/features/search/search-results.ts:226</note>
       </notes>
       <segment>
@@ -10828,7 +10828,7 @@
     </unit>
     <unit id="pkg.col.format">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:192</note>
+        <note category="location">src/app/features/packages/package-list.ts:196</note>
         <note category="location">src/app/features/search/search-results.ts:229</note>
       </notes>
       <segment>
@@ -10837,7 +10837,7 @@
     </unit>
     <unit id="pkg.col.latest">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:196</note>
+        <note category="location">src/app/features/packages/package-list.ts:200</note>
         <note category="location">src/app/features/search/search-results.ts:232</note>
       </notes>
       <segment>
@@ -10846,7 +10846,7 @@
     </unit>
     <unit id="pkg.help.latest">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:197</note>
+        <note category="location">src/app/features/packages/package-list.ts:201</note>
         <note category="location">src/app/features/search/search-results.ts:233</note>
       </notes>
       <segment>
@@ -10855,7 +10855,7 @@
     </unit>
     <unit id="pkg.col.updated">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:202</note>
+        <note category="location">src/app/features/packages/package-list.ts:205</note>
         <note category="location">src/app/features/search/search-results.ts:238</note>
       </notes>
       <segment>
@@ -10864,7 +10864,7 @@
     </unit>
     <unit id="pkg.help.updated">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:204</note>
+        <note category="location">src/app/features/packages/package-list.ts:207</note>
         <note category="location">src/app/features/search/search-results.ts:239</note>
       </notes>
       <segment>
@@ -10873,7 +10873,7 @@
     </unit>
     <unit id="pkg.period.7">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:210</note>
+        <note category="location">src/app/features/packages/package-list.ts:212</note>
       </notes>
       <segment>
         <source>Last 7 days</source>
@@ -10881,7 +10881,7 @@
     </unit>
     <unit id="pkg.period.30">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:211</note>
+        <note category="location">src/app/features/packages/package-list.ts:213</note>
       </notes>
       <segment>
         <source>Last 30 days</source>
@@ -10889,7 +10889,7 @@
     </unit>
     <unit id="pkg.period.90">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:212</note>
+        <note category="location">src/app/features/packages/package-list.ts:214</note>
       </notes>
       <segment>
         <source>Last 90 days</source>
@@ -10897,7 +10897,7 @@
     </unit>
     <unit id="pkg.period.custom">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:213</note>
+        <note category="location">src/app/features/packages/package-list.ts:215</note>
       </notes>
       <segment>
         <source>Custom period</source>
@@ -10905,7 +10905,7 @@
     </unit>
     <unit id="pkg.views.actions-of">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:330</note>
+        <note category="location">src/app/features/packages/package-list.ts:332</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="name" disp="name"/></source>
@@ -11009,7 +11009,7 @@
     </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:133,135</note>
+        <note category="location">src/app/features/packages/package-version.html:134,136</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -11017,7 +11017,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:141,142</note>
+        <note category="location">src/app/features/packages/package-version.html:142,143</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -11025,7 +11025,7 @@
     </unit>
     <unit id="pkg.image.digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:143,145</note>
+        <note category="location">src/app/features/packages/package-version.html:144,146</note>
         <note category="location">src/app/features/packages/package-version.ts:326</note>
       </notes>
       <segment>
@@ -11034,7 +11034,7 @@
     </unit>
     <unit id="pkg.image.media-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:149,150</note>
+        <note category="location">src/app/features/packages/package-version.html:150,151</note>
         <note category="location">src/app/features/packages/package-version.ts:327</note>
       </notes>
       <segment>
@@ -11043,7 +11043,7 @@
     </unit>
     <unit id="pkg.image.artifact-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:153,154</note>
+        <note category="location">src/app/features/packages/package-version.html:154,155</note>
       </notes>
       <segment>
         <source>Artifact type</source>
@@ -11051,7 +11051,7 @@
     </unit>
     <unit id="pkg.image.total-size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:157,158</note>
+        <note category="location">src/app/features/packages/package-version.html:158,159</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -11059,7 +11059,7 @@
     </unit>
     <unit id="pkg.image.platforms">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:162,163</note>
+        <note category="location">src/app/features/packages/package-version.html:163,164</note>
       </notes>
       <segment>
         <source>Platforms</source>
@@ -11067,7 +11067,7 @@
     </unit>
     <unit id="pkg.meta.links">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:188,189</note>
+        <note category="location">src/app/features/packages/package-version.html:189,190</note>
       </notes>
       <segment>
         <source>Links</source>
@@ -11075,7 +11075,7 @@
     </unit>
     <unit id="pkg.meta.authors">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:205,206</note>
+        <note category="location">src/app/features/packages/package-version.html:208,209</note>
       </notes>
       <segment>
         <source>Authors</source>
@@ -11083,7 +11083,7 @@
     </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:230,231</note>
+        <note category="location">src/app/features/packages/package-version.html:233,234</note>
       </notes>
       <segment>
         <source>Dependencies by target framework</source>
@@ -11091,7 +11091,7 @@
     </unit>
     <unit id="pkg.meta.all-frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:236,238</note>
+        <note category="location">src/app/features/packages/package-version.html:239,241</note>
       </notes>
       <segment>
         <source>All frameworks</source>
@@ -11099,7 +11099,7 @@
     </unit>
     <unit id="pkg.meta.no-dependencies">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:240,242</note>
+        <note category="location">src/app/features/packages/package-version.html:243,245</note>
       </notes>
       <segment>
         <source>No dependencies.</source>
@@ -11107,9 +11107,9 @@
     </unit>
     <unit id="pkg.meta.facts">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:252,253</note>
-        <note category="location">src/app/features/packages/package-version.html:261,262</note>
-        <note category="location">src/app/features/packages/package-version.html:270,271</note>
+        <note category="location">src/app/features/packages/package-version.html:255,256</note>
+        <note category="location">src/app/features/packages/package-version.html:264,265</note>
+        <note category="location">src/app/features/packages/package-version.html:273,274</note>
       </notes>
       <segment>
         <source>Package details</source>
@@ -11117,7 +11117,7 @@
     </unit>
     <unit id="pkg.meta.engines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:279,280</note>
+        <note category="location">src/app/features/packages/package-version.html:282,283</note>
       </notes>
       <segment>
         <source>Required runtimes</source>
@@ -11125,7 +11125,7 @@
     </unit>
     <unit id="pkg.repo.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:287,288</note>
+        <note category="location">src/app/features/packages/package-version.html:290,291</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -13605,7 +13605,7 @@
     <unit id="projects.col.project">
       <notes>
         <note category="location">src/app/features/projects/project-list.ts:128</note>
-        <note category="location">src/app/features/projects/projects-home.ts:133</note>
+        <note category="location">src/app/features/projects/projects-home.ts:137</note>
         <note category="location">src/app/features/search/search-results.ts:215</note>
         <note category="location">src/app/features/search/search-results.ts:227</note>
         <note category="location">src/app/features/search/search-results.ts:245</note>
@@ -13617,7 +13617,7 @@
     <unit id="projects.col.visibility">
       <notes>
         <note category="location">src/app/features/projects/project-list.ts:129</note>
-        <note category="location">src/app/features/projects/projects-home.ts:135</note>
+        <note category="location">src/app/features/projects/projects-home.ts:140</note>
         <note category="location">src/app/features/search/search-results.ts:247</note>
       </notes>
       <segment>
@@ -13635,7 +13635,7 @@
     <unit id="projects.col.members">
       <notes>
         <note category="location">src/app/features/projects/project-list.ts:131</note>
-        <note category="location">src/app/features/projects/projects-home.ts:143</note>
+        <note category="location">src/app/features/projects/projects-home.ts:147</note>
         <note category="location">src/app/features/search/search-results.ts:255</note>
       </notes>
       <segment>
@@ -13645,7 +13645,7 @@
     <unit id="projects.col.repositories">
       <notes>
         <note category="location">src/app/features/projects/project-list.ts:132</note>
-        <note category="location">src/app/features/projects/projects-home.ts:142</note>
+        <note category="location">src/app/features/projects/projects-home.ts:146</note>
         <note category="location">src/app/features/search/search-results.ts:254</note>
       </notes>
       <segment>
@@ -14489,7 +14489,7 @@
     </unit>
     <unit id="projects-home.col.description">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:134</note>
+        <note category="location">src/app/features/projects/projects-home.ts:139</note>
         <note category="location">src/app/features/search/search-results.ts:246</note>
       </notes>
       <segment>
@@ -14498,7 +14498,7 @@
     </unit>
     <unit id="projects.col.role">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:138</note>
+        <note category="location">src/app/features/projects/projects-home.ts:143</note>
         <note category="location">src/app/features/search/search-results.ts:250</note>
       </notes>
       <segment>
@@ -14507,7 +14507,7 @@
     </unit>
     <unit id="projects.help.role">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:139</note>
+        <note category="location">src/app/features/projects/projects-home.ts:144</note>
         <note category="location">src/app/features/search/search-results.ts:251</note>
       </notes>
       <segment>
@@ -15584,7 +15584,7 @@
     </unit>
     <unit id="repo.content.col.name">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:176</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:181</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -15592,7 +15592,7 @@
     </unit>
     <unit id="repo.content.col.size">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:177</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:182</note>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:174</note>
       </notes>
       <segment>
@@ -15601,7 +15601,7 @@
     </unit>
     <unit id="repo.content.col.modified">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:178</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:183</note>
       </notes>
       <segment>
         <source>Last change</source>
@@ -15609,7 +15609,7 @@
     </unit>
     <unit id="files.folder-actions">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:213</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:218</note>
       </notes>
       <segment>
         <source>More actions for this folder</source>
@@ -15617,7 +15617,7 @@
     </unit>
     <unit id="files.copy-url-of">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:216</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:221</note>
       </notes>
       <segment>
         <source>Copy the download address of <ph id="0" equiv="name" disp="c.path"/></source>
@@ -15625,7 +15625,7 @@
     </unit>
     <unit id="files.folder-created">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:239</note>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:244</note>
       </notes>
       <segment>
         <source>Folder <ph id="0" equiv="path" disp="created"/> created.</source>
@@ -15794,7 +15794,7 @@
     </unit>
     <unit id="upload.state.queued">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:111,113</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:112,114</note>
       </notes>
       <segment>
         <source>waiting</source>
@@ -15802,7 +15802,7 @@
     </unit>
     <unit id="upload.state.hashing">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:114,116</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:115,117</note>
       </notes>
       <segment>
         <source>computing checksum</source>
@@ -15810,7 +15810,7 @@
     </unit>
     <unit id="upload.state.done">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:126,127</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:127,128</note>
       </notes>
       <segment>
         <source>uploaded</source>
@@ -15818,7 +15818,7 @@
     </unit>
     <unit id="upload.state.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:130,132</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:131,133</note>
       </notes>
       <segment>
         <source>cancelled</source>
@@ -15826,7 +15826,7 @@
     </unit>
     <unit id="upload.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:150,152</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:151,153</note>
       </notes>
       <segment>
         <source> Cancel upload </source>
@@ -15834,7 +15834,7 @@
     </unit>
     <unit id="upload.close">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:153,154</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:154,155</note>
       </notes>
       <segment>
         <source>Close</source>
@@ -15842,7 +15842,7 @@
     </unit>
     <unit id="upload.start">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:160,161</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:161,162</note>
       </notes>
       <segment>
         <source> Upload </source>
@@ -15850,7 +15850,7 @@
     </unit>
     <unit id="upload.progress">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:219</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:220</note>
       </notes>
       <segment>
         <source>Upload progress</source>
@@ -15858,7 +15858,7 @@
     </unit>
     <unit id="upload.too-large">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:246</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:247</note>
       </notes>
       <segment>
         <source>Larger than <ph id="0" equiv="limit" disp="Math.floor(UPLOAD_LIMIT_BYTES / 1048576)"/> MiB. Use a native client or curl for files this large.</source>
@@ -15866,7 +15866,7 @@
     </unit>
     <unit id="upload.announce.done">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:315</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:316</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="file.name"/> uploaded.</source>
@@ -15874,7 +15874,7 @@
     </unit>
     <unit id="upload.announce.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:322</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:323</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="file.name"/> failed.</source>
@@ -15882,7 +15882,7 @@
     </unit>
     <unit id="upload.exists">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:345</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:346</note>
       </notes>
       <segment>
         <source>A file already exists at this path. Tick &quot;Replace files that already exist&quot; to overwrite it.</source>
@@ -15890,7 +15890,7 @@
     </unit>
     <unit id="upload.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/upload-dialog.ts:349</note>
+        <note category="location">src/app/features/repositories/content/upload-dialog.ts:350</note>
       </notes>
       <segment>
         <source>The upload failed.</source>
@@ -16466,7 +16466,7 @@
     </unit>
     <unit id="deb.keys.col.fingerprint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:293</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:295</note>
       </notes>
       <segment>
         <source>Fingerprint</source>
@@ -16474,7 +16474,7 @@
     </unit>
     <unit id="deb.keys.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:294</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:296</note>
       </notes>
       <segment>
         <source>State</source>
@@ -16482,7 +16482,7 @@
     </unit>
     <unit id="deb.keys.col.type">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:295</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:297</note>
       </notes>
       <segment>
         <source>Type</source>
@@ -16490,7 +16490,7 @@
     </unit>
     <unit id="deb.keys.col.origin">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:296</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:298</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -16498,7 +16498,7 @@
     </unit>
     <unit id="deb.keys.col.created">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:297</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:299</note>
       </notes>
       <segment>
         <source>Key created</source>
@@ -16506,7 +16506,7 @@
     </unit>
     <unit id="deb.keys.col.since">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:298</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:300</note>
       </notes>
       <segment>
         <source>In this state since</source>
@@ -16514,7 +16514,7 @@
     </unit>
     <unit id="deb.keys.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:300</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:302</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -16522,7 +16522,7 @@
     </unit>
     <unit id="deb.keys.actions-of">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:317</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:319</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/></source>
@@ -16530,7 +16530,7 @@
     </unit>
     <unit id="deb.keys.done.created">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:369</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:371</note>
       </notes>
       <segment>
         <source>The next key was created. Both keys sign from the next build.</source>
@@ -16538,7 +16538,7 @@
     </unit>
     <unit id="deb.keys.done.imported">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:379</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:381</note>
       </notes>
       <segment>
         <source>The key was imported as the next key. Both keys sign from the next build.</source>
@@ -16546,7 +16546,7 @@
     </unit>
     <unit id="deb.keys.promote.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:389</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:391</note>
       </notes>
       <segment>
         <source>Promote the next key</source>
@@ -16554,7 +16554,7 @@
     </unit>
     <unit id="deb.keys.promote.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:391</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:393</note>
       </notes>
       <segment>
         <source>The next key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> becomes the primary key. The old primary key is retired: it stops signing, leaves the key file clients fetch and its private key is erased.</source>
@@ -16562,7 +16562,7 @@
     </unit>
     <unit id="deb.keys.promote.line2">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:392</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:394</note>
       </notes>
       <segment>
         <source>A client that never replaced its key file fails to update from then on.</source>
@@ -16570,7 +16570,7 @@
     </unit>
     <unit id="deb.keys.promote.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:394</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:396</note>
       </notes>
       <segment>
         <source>Promote</source>
@@ -16578,7 +16578,7 @@
     </unit>
     <unit id="deb.keys.done.promoted">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:399</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:401</note>
       </notes>
       <segment>
         <source>The key was promoted.</source>
@@ -16586,7 +16586,7 @@
     </unit>
     <unit id="deb.keys.confirm.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:408</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:410</note>
       </notes>
       <segment>
         <source>Confirm the retirement of the key</source>
@@ -16594,7 +16594,7 @@
     </unit>
     <unit id="deb.keys.remove.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:409</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:411</note>
       </notes>
       <segment>
         <source>Remove the next key</source>
@@ -16602,7 +16602,7 @@
     </unit>
     <unit id="deb.keys.confirm.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:412</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:414</note>
       </notes>
       <segment>
         <source>The key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> is retired and its private key is erased. This cannot be undone.</source>
@@ -16610,7 +16610,7 @@
     </unit>
     <unit id="deb.keys.remove.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:413</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:415</note>
       </notes>
       <segment>
         <source>The next key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> stops signing and leaves the key file clients fetch. Its private key is erased and the key cannot be imported again.</source>
@@ -16618,7 +16618,7 @@
     </unit>
     <unit id="deb.keys.confirm.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:416</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:418</note>
       </notes>
       <segment>
         <source>Retire the key</source>
@@ -16626,7 +16626,7 @@
     </unit>
     <unit id="deb.keys.remove.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:417</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:419</note>
       </notes>
       <segment>
         <source>Remove the key</source>
@@ -16634,7 +16634,7 @@
     </unit>
     <unit id="deb.keys.done.retired">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:422</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:424</note>
       </notes>
       <segment>
         <source>The key was retired.</source>
@@ -16642,7 +16642,7 @@
     </unit>
     <unit id="deb.keys.done.reinstated">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:430</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:432</note>
       </notes>
       <segment>
         <source>The key was reinstated.</source>
@@ -18271,7 +18271,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:51,52</note>
         <note category="location">src/app/features/repositories/repository-list.html:55</note>
         <note category="location">src/app/features/repositories/repository-list.ts:154</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:212</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:214</note>
         <note category="location">src/app/features/search/search-results.ts:216</note>
       </notes>
       <segment>
@@ -18457,7 +18457,7 @@
     <unit id="repo.col.activity">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:328,329</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:222</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:224</note>
       </notes>
       <segment>
         <source>Last activity</source>
@@ -18743,7 +18743,7 @@
     <unit id="repo.delete.title">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:715</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:301</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:303</note>
       </notes>
       <segment>
         <source>Delete repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -18752,7 +18752,7 @@
     <unit id="repo.delete.text">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:717</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:303</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:305</note>
       </notes>
       <segment>
         <source>The repository and everything in it are deleted for good. Deletion runs as a background job; the key stays taken until it has finished.</source>
@@ -18761,7 +18761,7 @@
     <unit id="repo.delete.confirm">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:719</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:305</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:307</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -18810,7 +18810,7 @@
     <unit id="repo.delete.failed">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:783</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:348</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:350</note>
       </notes>
       <segment>
         <source>Deleting repository <ph id="0" equiv="key" disp="this.ref()"/> failed. Its row is kept; try again.</source>
@@ -18819,7 +18819,7 @@
     <unit id="repo.delete.done">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:788</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:338</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:340</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> deleted.</source>
@@ -18828,7 +18828,7 @@
     <unit id="repo.delete.progress">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.ts:793</note>
-        <note category="location">src/app/features/repositories/repository-list.ts:253</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:255</note>
       </notes>
       <segment>
         <source>Repository deletion</source>
@@ -19071,7 +19071,7 @@
     </unit>
     <unit id="repo.help.class">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:216</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:218</note>
         <note category="location">src/app/features/search/search-results.ts:220</note>
       </notes>
       <segment>
@@ -19080,7 +19080,7 @@
     </unit>
     <unit id="repo.col.visibility">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:219</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:221</note>
       </notes>
       <segment>
         <source>Visibility</source>
@@ -19088,7 +19088,7 @@
     </unit>
     <unit id="repo.help.activity">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:223</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:225</note>
       </notes>
       <segment>
         <source>The last time a client read from or wrote to the repository. A dash means nothing has been recorded yet.</source>
@@ -19096,7 +19096,7 @@
     </unit>
     <unit id="repo.actions-of">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:261</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:263</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="key" disp="row.key"/></source>
@@ -19104,7 +19104,7 @@
     </unit>
     <unit id="repo.delete.detach">
       <notes>
-        <note category="location">src/app/features/repositories/repository-list.ts:308</note>
+        <note category="location">src/app/features/repositories/repository-list.ts:310</note>
       </notes>
       <segment>
         <source>Also remove it from the virtual repositories that include it</source>
@@ -25148,7 +25148,7 @@
     <unit id="token-table.empty">
       <notes>
         <note category="location">src/app/features/tokens/token-admin.ts:76</note>
-        <note category="location">src/app/shared/access/token-table.ts:160</note>
+        <note category="location">src/app/shared/access/token-table.ts:159</note>
       </notes>
       <segment>
         <source>No token matches.</source>
@@ -26718,7 +26718,7 @@
     </unit>
     <unit id="vuln.adv.external">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/advisory-view.ts:129,131</note>
+        <note category="location">src/app/features/vulnerabilities/advisory-view.ts:130,132</note>
       </notes>
       <segment>
         <source>(opens another site)</source>
@@ -26726,7 +26726,7 @@
     </unit>
     <unit id="vuln.adv.source">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/advisory-view.ts:139,140</note>
+        <note category="location">src/app/features/vulnerabilities/advisory-view.ts:141,142</note>
       </notes>
       <segment>
         <source>Source:</source>
@@ -26734,7 +26734,7 @@
     </unit>
     <unit id="vuln.adv.license">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/advisory-view.ts:142,143</note>
+        <note category="location">src/app/features/vulnerabilities/advisory-view.ts:144,145</note>
       </notes>
       <segment>
         <source>, licensed under</source>
@@ -29100,7 +29100,7 @@
     </unit>
     <unit id="token-table.admin-inactive">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:87,89</note>
+        <note category="location">src/app/shared/access/token-table.ts:86,88</note>
       </notes>
       <segment>
         <source>Administrator rights inactive: the owner is no administrator now</source>
@@ -29108,7 +29108,7 @@
     </unit>
     <unit id="token-table.unknown-endpoints">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:95,97</note>
+        <note category="location">src/app/shared/access/token-table.ts:94,96</note>
       </notes>
       <segment>
         <source>Bound to an endpoint that is not configured:</source>
@@ -29116,7 +29116,7 @@
     </unit>
     <unit id="token-table.soon">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:108,109</note>
+        <note category="location">src/app/shared/access/token-table.ts:107,108</note>
       </notes>
       <segment>
         <source>Expires soon</source>
@@ -29124,7 +29124,7 @@
     </unit>
     <unit id="token-table.never">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:112,114</note>
+        <note category="location">src/app/shared/access/token-table.ts:111,113</note>
       </notes>
       <segment>
         <source>Never</source>
@@ -29132,7 +29132,7 @@
     </unit>
     <unit id="token-table.not-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:119,121</note>
+        <note category="location">src/app/shared/access/token-table.ts:118,120</note>
       </notes>
       <segment>
         <source>Not used yet</source>
@@ -29140,7 +29140,7 @@
     </unit>
     <unit id="token-table.rotate">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:132,133</note>
+        <note category="location">src/app/shared/access/token-table.ts:131,132</note>
       </notes>
       <segment>
         <source>Rotate</source>
@@ -29148,7 +29148,7 @@
     </unit>
     <unit id="token-table.revoke">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:138,139</note>
+        <note category="location">src/app/shared/access/token-table.ts:137,138</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -29156,7 +29156,7 @@
     </unit>
     <unit id="token-table.state.expired">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:144,146</note>
+        <note category="location">src/app/shared/access/token-table.ts:143,145</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -29164,7 +29164,7 @@
     </unit>
     <unit id="token-table.state.revoked">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:147,149</note>
+        <note category="location">src/app/shared/access/token-table.ts:146,148</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -29172,7 +29172,7 @@
     </unit>
     <unit id="token-table.caption">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:175</note>
+        <note category="location">src/app/shared/access/token-table.ts:174</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -29180,7 +29180,7 @@
     </unit>
     <unit id="token-table.rotate-tip">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:176</note>
+        <note category="location">src/app/shared/access/token-table.ts:175</note>
       </notes>
       <segment>
         <source>Rotate: a new value now, the old one ends after the overlap you choose</source>
@@ -29188,7 +29188,7 @@
     </unit>
     <unit id="token-table.select">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:186</note>
+        <note category="location">src/app/shared/access/token-table.ts:185</note>
       </notes>
       <segment>
         <source>Select</source>
@@ -29196,7 +29196,7 @@
     </unit>
     <unit id="token-table.token">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:188</note>
+        <note category="location">src/app/shared/access/token-table.ts:187</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -29204,7 +29204,7 @@
     </unit>
     <unit id="token-table.owner">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:189</note>
+        <note category="location">src/app/shared/access/token-table.ts:188</note>
       </notes>
       <segment>
         <source>Owner</source>
@@ -29212,7 +29212,7 @@
     </unit>
     <unit id="token-table.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:192</note>
+        <note category="location">src/app/shared/access/token-table.ts:191</note>
       </notes>
       <segment>
         <source>Scope</source>
@@ -29220,7 +29220,7 @@
     </unit>
     <unit id="token-table.help.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:193</note>
+        <note category="location">src/app/shared/access/token-table.ts:192</note>
       </notes>
       <segment>
         <source>What the token may do: all permissions of its owner, or only the listed repository grants.</source>
@@ -29228,7 +29228,7 @@
     </unit>
     <unit id="token-table.expires">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:196</note>
+        <note category="location">src/app/shared/access/token-table.ts:195</note>
       </notes>
       <segment>
         <source>Expires</source>
@@ -29236,7 +29236,7 @@
     </unit>
     <unit id="token-table.last-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:199</note>
+        <note category="location">src/app/shared/access/token-table.ts:198</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -29244,7 +29244,7 @@
     </unit>
     <unit id="token-table.help.last-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:200</note>
+        <note category="location">src/app/shared/access/token-table.ts:199</note>
       </notes>
       <segment>
         <source>The last time the token authenticated a request. Not every use is recorded immediately.</source>
@@ -29252,7 +29252,7 @@
     </unit>
     <unit id="token-table.created">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:205</note>
+        <note category="location">src/app/shared/access/token-table.ts:204</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -29260,7 +29260,7 @@
     </unit>
     <unit id="token-table.actions">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:207</note>
+        <note category="location">src/app/shared/access/token-table.ts:206</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -29268,7 +29268,7 @@
     </unit>
     <unit id="token-table.select-one">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:237</note>
+        <note category="location">src/app/shared/access/token-table.ts:236</note>
       </notes>
       <segment>
         <source>Select <ph id="0" equiv="description" disp="t.description"/></source>
@@ -29276,7 +29276,7 @@
     </unit>
     <unit id="address.label">
       <notes>
-        <note category="location">src/app/shared/address-field.ts:105</note>
+        <note category="location">src/app/shared/address-field.ts:111</note>
         <note category="location">src/app/shared/ui/page-header.ts:100</note>
       </notes>
       <segment>
@@ -29285,7 +29285,7 @@
     </unit>
     <unit id="address.copy">
       <notes>
-        <note category="location">src/app/shared/address-field.ts:107</note>
+        <note category="location">src/app/shared/address-field.ts:113</note>
         <note category="location">src/app/shared/ui/page-header.ts:101</note>
       </notes>
       <segment>
@@ -29703,7 +29703,7 @@
     </unit>
     <unit id="table.help-label">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:232</note>
+        <note category="location">src/app/shared/ui/data-table.ts:287</note>
       </notes>
       <segment>
         <source>About the column <ph id="0" equiv="column" disp="c.label"/></source>

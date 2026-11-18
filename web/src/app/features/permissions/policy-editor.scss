@@ -1,5 +1,5 @@
 // One page, sections down the left with a table of contents, a sticky preview on the right while
-// the content area is at least 960 CSS px wide, a collapsible region above the save bar below
+// the content area is at least 66 rem wide, a collapsible region above the save bar below
 // that (Q-UI-4, R-UI-027).
 
 .editor {
@@ -133,7 +133,9 @@
   }
 }
 
-@media (min-width: 60rem) {
+// The content area, not the window: at 1,024 px with the side bar open the window was 64 rem and the form between the contents
+// and the preview 110 px wide, one word a line (R-UI-171). The three columns need 12 + 28 + 24 rem and their gaps.
+@container content (min-width: 66rem) {
   .editor {
     grid-template-columns: 12rem minmax(0, 1fr) 24rem;
   }
@@ -183,7 +185,7 @@
   }
 }
 
-@media (max-width: 59.99rem) {
+@container content (max-width: 65.99rem) {
   .preview {
     order: 1;
   }

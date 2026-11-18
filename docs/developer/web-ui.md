@@ -141,6 +141,10 @@ through the dev server works only against a Quader whose base URL is `https://lo
 - The `read` class of the API's rate limits admits 800 requests per 4 s instead of 200 (`api.rate_limits.read`): `make
   ui-renders` opens three pages of one user at a time, and a full run reached 197 reads of one user in 4 s, at the default's
   edge. One person in one browser stays far below the default.
+- The `anonymous` class admits 50 requests a second with a burst of 200 per client address instead of 5 and 20
+  (`api.rate_limits.anonymous`, [Q-UI-686](../spec/api-and-ui.md#q-ui-686--the-ui-development-profile-gives-an-anonymous-address-the-budget-of-a-signed-in-reader)):
+  every anonymous visitor of `make ui-renders` comes from 127.0.0.1, and three anonymous screens that opened at once got 429 for
+  `whoami`, the banner and the projects.
 - A new installation is empty: repositories and packages are created through the UI or the API, or by the seed of
   `make ui-renders`.
 - The volumes belong to the compose project `quader-ui-dev`, one per machine, while `.dev/ui-dev` (with the key ring) belongs
@@ -220,7 +224,8 @@ running and stops only what it started: Quader with the sign-in provider (`serve
 3. **The screens** ([renders/screens.ts](../../web/e2e/renders/screens.ts)): every route of the app with the seed's parameters,
    each with the kinds of user that reach it. For each width the screen is loaded, then every tab of it (`role=tab` inside
    `main`) is opened in turn; each view is taken light and dark (`prefers-color-scheme`, which the app follows while no theme is
-   stored, the theme button's "Follow the system"). The window grows by what the content panel and its scroll regions hide, so
+   stored, the theme button's "Follow the system"). A view is taken when no call of the app's API has been open for 400 ms (at most
+   15 s; a new document drops the calls of the one before it, which Chromium cancels without a word to the run). The window grows by what the content panel and its scroll regions hide, so
    a picture shows the whole length. A flow is a screen with a `walk`: the creation form is walked for OCI, npm, Ansible, NuGet and Debian,
    local, remote and virtual, as the power user in a project and as the administrator in the admin area: as it opens, with two
    members for a virtual repository, with Advanced settings open, and with the key's error (`new-<format>-<class>-…`); the format
@@ -232,9 +237,35 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    room, as on a phone), and before the window grows each picture's scroll regions are measured once more: a table taller than
    its region has its scrollbar beside the rows then, which takes their width.
 4. **A failure is loud.** A screen fails when it shows an error notice, when a call of the app's own API (`/api/`, `/auth/`)
-   answers 4xx or 5xx, or when the console reports an error; the pictures are taken first. Playwright lists the failures and exits
-   non-zero; the contact sheet marks the rows. A screen whose normal state includes such an answer lists it in `expected` of
-   `screens.ts` with its reason.
+   answers 4xx or 5xx, when the console reports an error, when its walk or a tab stops (`stopped at <width> px: …`, with the
+   pictures it took so far), or when a layout check finds a defect (below); the pictures are taken first. Playwright lists the
+   failures and exits non-zero; `failures.txt` has one line per failure, the contact sheet marks the rows and lists the layout
+   findings at its top. A screen whose normal state includes such an answer lists it in `expected` of `screens.ts` with its reason.
+5. **The layout checks** ([renders/layout.ts](../../web/e2e/renders/layout.ts), R-UI-170 to R-UI-174,
+   [Q-UI-682](../spec/api-and-ui.md#q-ui-682--the-render-run-measures-the-layout-in-the-page-and-a-finding-fails-the-screen)) measure each
+   picture's page once (one `page.evaluate`, in the light scheme: the dark one has the same layout). A finding is a line
+   `layout <check> (<width> px, light[, <state>]): <element path> "<its text>": <what was measured> (and N more like it)` in
+   `failures.txt` and in `report.json` (`findings` of each shot). A finding that is right as it is goes into `allowed` of
+   `layout.ts` with its reason (`allowedFindings` in the report); a check is never switched off.
+
+   <details>
+   <summary>The checks, what each catches, and what it does not see</summary>
+
+   | Check | Catches | Blind spots |
+   |---|---|---|
+   | `icon-apart` | An icon (`.material-icons`, `quader-format-icon`, `quader-visibility-icon`, `quader-project-mark`, `quader-avatar`, and a `quader-copy-button` as the icon of the value before it) whose label, its next sibling with visible text (else its previous one), starts on a line the icon does not touch (in a row of a flex or grid box: the label's whole block): W-3's key under its visibility icon, the jobs' state, a hash's copy button under the hash | An icon whose parent lays it out above its text (a flex column, a block in a block, a grid of one column) is skipped as meant; an icon whose label is not its sibling (a label two levels away) is not paired |
+   | `broken` | More than one line box in what stays on one line: a status or badge (`.badge`, `span.ok`, `span.warn`, `span.bad`), a chip, a button's label, a tab, a list's header, a `time`, a cell or row header marked `translate="no"` (its `.secondary` line left out), `td.num`, a format, a class, a level; and a word of at most 16 letters and digits in a list's cell broken inside itself (the audit log's "Platfor" / "m enginee" / "ring") | A name that may break beside its icon (`.icon-name`, Q-UI-425), a key a list lets break (`wrap`, `wrap-name`), a row header of a stacked table, a `button.link` (a row's name in the look of a link), a relative time and its date in brackets on two lines (Q-UI-431), a sentence (`p.warn`), the tables of a document (the manual, a guide); a longer token broken where it must (Q-UI-425), the text of `code` |
+   | `row-offset` | A cell of a list's row (`table.data`) whose first text line is off the row's name: by more than 1 px on the baseline where the fonts are the same, by more than 1.5 px on the middle where they differ (a 12 px word centred in a badge lands on a half pixel); a cell without text by its first icon | Stacked tables; the second and later lines of a cell; a row without text in its first cells; the tables of a document |
+   | `row-actions` | The `td.actions` cells of one table built different ways (a menu, a word, an icon, counted per row) | Action cells without the class `actions`; two rows that differ by permission show as a finding and are allowed by reason |
+   | `clipped` | A text cut with an ellipsis, or a read-only field's value cut (an address, a command; the field and its joined button measured as one), where the box that holds it has the room for the rest beside it | A text cut by `overflow: hidden` without an ellipsis; a cut where the room is in a neighbouring column rather than the cell (a file's hash at 24 characters); a field the user types into, which is as wide as its expected input (R-UI-085) and scrolls a longer value |
+   | `stacked-fits` | A data table that stands as blocks although its columns at their least widths fit its region (measured as the table measures itself, Q-UI-680) | Raw tables that stack by their own rules |
+   | `sideways` | The panel or the page scrolls sideways (any width); a region inside it scrolls sideways (from 1,024 px) | A region that scrolls at 390 px (a code block, a table that cannot stack scrolls there by design); allowed with their reason: a code block (`pre.code-block`, its lines as they are copied) and a document's table (`div.readme-table`) scroll in their own region at every width |
+   | `empty-scroll` | In the window's first height, the window scrolls at all, or the panel scrolls more than 24 px past its last visible content: a positioned element (a text for assistive technology only) standing in rows a region hides | Empty room inside the content (a gap between sections) |
+
+   </details>
+
+   A screen can add widths of its own (`widths` in `screens.ts`) where a list changes its form between the run's three: the
+   start page's projects and a project's repositories at 1,100 px, the admin area's repositories at 1,100 and 1,280 px.
 
 **Add a screen.** A new route gets a line in `screens.ts` with the kinds that reach it from the navigation and the seed's
 parameters; data the screen needs goes into `seed.ts`, idempotent and through the API; a flow gets a `walk` that yields the name
@@ -806,8 +837,7 @@ Its look is the reference's table (Q-UI-128, `_list-screens.scss`): no border ar
 head in the heading colour at weight 600 between two hairlines, a hairline under every row. It also owns the layout of every
 list (Q-UI-308): a column's `width` is its least width, carried by the header cell; a column that `prefer`s takes every pixel the
 others leave, and they keep their widths (Q-UI-330); the scroll region keeps no room for a scrollbar its rows do not need, so the
-table ends where the lines above it end (Q-UI-427); every cell is aligned to the top with a control centred on the first line; below 48 rem of the list's width the rows stack (class `stack`,
-`[stack]="false"` to keep the table) and the head shows only the headers with `aria-sort`, as a row of sort buttons (Q-UI-391), and after every change of the body the table labels each cell with its column
+table ends where the lines above it end (Q-UI-427); every cell is aligned to the top with a control centred on the first line (a control stands at the line's top, its margins the line's height); where its columns at their least widths do not fit its scroll region the rows stack (`measure` sets the class `stacked`, measured again when the list's width, measured on a ruler of no height, or its rows change; `[stack]="false"` keeps the table; Q-UI-680), the cells of a stacked row side by side after the name's line (Q-UI-681), and the head shows only the headers with `aria-sort`, as a row of sort buttons (Q-UI-391), and after every change of the body the table labels each cell with its column
 (`data-label`, unless `stackLabel: false`) and marks a cell without a value (`data-empty`). An empty list shows
 `<quader-empty-state>` with the content marked `emptyAction`.
 

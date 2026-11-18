@@ -125,22 +125,26 @@ export class ProjectsHome {
       ? $localize`:@@projects-home.caption-public:Public projects`
       : $localize`:@@projects-home.caption:Your projects`,
   );
-  /** The project's name first, its key under it (the style guide's Lists); the list's budget (Q-UI-308). */
+  /**
+   * The project's name first, its key under it (the style guide's Lists). The name and the description wrap and declare their
+   * least widths, and share the rest by their content; the level, the role and the counts never break and are as wide as their
+   * values (Q-UI-563). Without a least width the description was one word wide; the list's form follows these widths (Q-UI-680).
+   */
   protected readonly columns = computed<readonly TableColumn[]>(() =>
     this.anonymous() ? this.allColumns.filter((c) => c.id !== 'role') : this.allColumns,
   );
   private readonly allColumns: readonly TableColumn[] = [
-    { id: 'name', label: $localize`:@@projects.col.project:Project`, width: '14rem' },
-    { id: 'description', label: $localize`:@@projects-home.col.description:Description` },
-    { id: 'visibility', label: $localize`:@@projects.col.visibility:Visibility`, width: '8rem' },
+    { id: 'name', label: $localize`:@@projects.col.project:Project`, width: '12rem' },
+    // Stacked, the description is the line under the name and needs no name of its own (R-UI-174).
+    { id: 'description', label: $localize`:@@projects-home.col.description:Description`, width: '12rem', stackLabel: false },
+    { id: 'visibility', label: $localize`:@@projects.col.visibility:Visibility` },
     {
       id: 'role',
       label: $localize`:@@projects.col.role:Your role`,
       help: $localize`:@@projects.help.role:Your role in the project; empty when you see it through a system role and are no member.`,
-      width: '7rem',
     },
-    { id: 'repositories', label: $localize`:@@projects.col.repositories:Repositories`, numeric: true, width: '7rem' },
-    { id: 'members', label: $localize`:@@projects.col.members:Members`, numeric: true, width: '5rem' },
+    { id: 'repositories', label: $localize`:@@projects.col.repositories:Repositories`, numeric: true },
+    { id: 'members', label: $localize`:@@projects.col.members:Members`, numeric: true },
   ];
 
   protected roleLabel(role: ProjectRole): string {

@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ApiError } from '../../api/problem';
 import { seriousViolations } from '../../testing/axe';
@@ -248,5 +248,88 @@ describe('Data table', () => {
     const heads = [...root.querySelectorAll<HTMLElement>('thead th')];
     expect(heads.map((h) => h.style.minInlineSize)).toEqual(['13rem', '8rem', '2rem']);
     expect(heads.map((h) => h.style.inlineSize)).toEqual(['100%', '8rem', '2rem']);
+  });
+
+  it('R-UI-174 a stacked cell is named after its column also when the columns changed before the rows did', async () => {
+    @Component({
+      imports: [DataTable],
+      template: `
+        <quader-data-table caption="Versions" [columns]="columns()">
+          @for (r of rows(); track r) {
+            <tr>
+              <th scope="row">{{ r }}</th>
+              @if (graded()) {
+                <td>grade</td>
+              }
+              <td>published</td>
+            </tr>
+          }
+        </quader-data-table>
+      `,
+    })
+    class Changing {
+      readonly graded = signal(false);
+      readonly rows = signal(['1.0.0']);
+      readonly columns = computed<readonly TableColumn[]>(() => [
+        { id: 'version', label: 'Version' },
+        ...(this.graded() ? [{ id: 'grade', label: 'Vulnerabilities' }] : []),
+        { id: 'published', label: 'Published' },
+      ]);
+    }
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [Changing] }).compileComponents();
+    const fixture = TestBed.createComponent(Changing);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.graded.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    // A later change of the body: the observer labels the cells with the columns of now.
+    fixture.componentInstance.rows.set(['1.0.0', '2.0.0']);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
+    const root = fixture.nativeElement as HTMLElement;
+    const labels = [...root.querySelectorAll('tbody tr')].map((tr) => [...tr.querySelectorAll('td')].map((td) => td.getAttribute('data-label')));
+    expect(labels).toEqual([
+      ['Vulnerabilities', 'Published'],
+      ['Vulnerabilities', 'Published'],
+    ]);
+  });
+
+  it('R-UI-174 Q-UI-680 the rows stack where the columns at their least widths need more than the region has, and only there', async () => {
+    // jsdom lays nothing out: the table's least width and the region's room are what the browser would measure. The table is
+    // measured with its width set to nothing (its least), then given its width back.
+    let need = 900;
+    let has = 700;
+    const widths: string[] = [];
+    const rect = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      if (this.tagName === 'TABLE') widths.push((this as HTMLElement).style.inlineSize);
+      const width = this.tagName === 'TABLE' ? need : has;
+      return { width, height: 10, top: 0, left: 0, right: width, bottom: 10, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => has);
+    try {
+      const { root, host, settle } = await render();
+      await settle();
+      const table = root.querySelector('quader-data-table')!;
+      expect(table.classList.contains('stacked')).toBe(true);
+      expect(widths).toContain('0px');
+      expect(root.querySelector<HTMLElement>('table.data')!.style.inlineSize).toBe('');
+      // Room enough: the rows are a table again when the body changes.
+      has = 900;
+      host.rows.set(['alpha', 'beta', 'gamma']);
+      await settle();
+      await new Promise((r) => setTimeout(r));
+      expect(table.classList.contains('stacked')).toBe(false);
+      need = 901;
+      host.rows.set(['alpha']);
+      await settle();
+      await new Promise((r) => setTimeout(r));
+      expect(table.classList.contains('stacked')).toBe(true);
+    } finally {
+      rect.mockRestore();
+      client.mockRestore();
+    }
   });
 });

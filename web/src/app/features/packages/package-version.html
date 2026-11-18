@@ -125,7 +125,8 @@
                   <tr>
                     <th scope="row" class="wrap-name file-path" translate="no">{{ f.path }}</th>
                     <td class="num nowrap" [attr.title]="f.sizeBytes + ' B'">{{ size(f.sizeBytes) }}</td>
-                    <td>
+                    <!-- The hash and its copy button on one line: at 1,024 px the button went under the hash. -->
+                    <td class="nowrap">
                       <code class="ellipsis" translate="no" [attr.title]="f.sha256">{{ f.sha256 }}</code>
                       <quader-copy-button [value]="f.sha256" [label]="copySha" />
                     </td>
@@ -191,9 +192,11 @@
                     <dt>{{ l.label }}</dt>
                     <dd translate="no">
                       @if (l.href; as href) {
-                        <a [href]="href" [attr.rel]="externalRel" target="_blank">{{ l.text }}</a>
-                        <span class="material-icons inline" aria-hidden="true">open_in_new</span>
-                        <span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span>
+                        <span class="external-link">
+                          <a [href]="href" [attr.rel]="externalRel" target="_blank">{{ l.text }}</a>
+                          <span class="material-icons" aria-hidden="true">open_in_new</span>
+                          <span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span>
+                        </span>
                       } @else {
                         {{ l.text }}
                       }

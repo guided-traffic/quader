@@ -19,7 +19,6 @@ describe('Token administration (R-UI-030)', () => {
     expect(rows[0]!.querySelector('td.actions button')?.textContent).toContain('Revoke');
     const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace(/help_outline/g, ''));
     expect(heads).toEqual(['Select', 'Token', 'Owner', 'Scope', 'Expires', 'Last used', 'Actions']);
-    expect(root.querySelector('quader-data-table')?.classList.contains('stack-wide')).toBe(true);
     expect(await seriousViolations(root)).toEqual([]);
   });
 

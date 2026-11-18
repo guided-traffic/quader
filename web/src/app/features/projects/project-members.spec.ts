@@ -80,7 +80,7 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
     expect(text(row)).toContain("It's you");
     expect(text(row)).toContain('Direct member');
     expect(row.querySelector('quader-avatar img')?.getAttribute('src')).toBe('/api/v1/avatars/abc');
-    // Below 48 rem the rows stack (Q-UI-306); the role's cell carries its column's name for its own line.
+    // Where the columns do not fit the rows stack (Q-UI-680); the role's cell carries its column's name for its stacked form.
     expect(row.querySelector('td[data-label="Role"] select')).toBeTruthy();
   });
 

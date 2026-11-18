@@ -31,8 +31,8 @@ import { ProfileNav } from './profile-nav';
     @if (error(); as e) {
       <quader-error-notice [error]="e" (retry)="load()" />
     }
-    <!-- The shared data table: a column budget, the browser's long user agent wrapping in its cell, and stacked rows below
-         48 rem, so the page never scrolls sideways (R-UI-029, at 390 px it did by about 230 px). -->
+    <!-- The shared data table: a column budget, the browser's long user agent wrapping in its cell, and stacked rows where
+         the columns do not fit, so the page never scrolls sideways (R-UI-029, at 390 px it did by about 230 px). -->
     @if (loaded() || !error()) {
       <quader-data-table [caption]="caption" [columns]="columns" [loaded]="loaded()" [loading]="!loaded()" [empty]="sessions().length === 0">
         @for (s of sessions(); track s.id) {

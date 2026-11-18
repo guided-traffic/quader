@@ -97,7 +97,8 @@ export class EndpointDetail {
   protected readonly rulesCaption = $localize`:@@ep.rules.caption:Exposure rules`;
   /**
    * Each width is the column's least (Q-UI-308); the rule takes what they leave. They sum to 63 rem; below 64 rem of the list
-   * the versions and the pre-releases give their room (`narrow`) and the rest fits 48 rem, where the rows stack (Q-UI-331).
+   * the versions and the pre-releases give their room (`narrow`), and where the rest does not fit the rows stack (Q-UI-331,
+   * Q-UI-680).
    */
   protected readonly ruleColumns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@ep.col.rule:Rule`, width: '9rem', prefer: true },

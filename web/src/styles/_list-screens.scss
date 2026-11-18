@@ -363,7 +363,10 @@ td.class-cell .material-icons {
   // The inner scroll keeps the header in view: the region scrolls, not the page. It keeps no room for a scrollbar its rows do not
   // need: a reserved gutter ended every table 15 px before the edge that the head of the list and the lines above it reach
   // (Q-UI-427). A table whose rows scroll has its scrollbar at that edge.
+  // It is the containing block of the rows' texts for assistive technology only (`.visually-hidden`, absolute): without it they
+  // stood at their places in the rows the region hides, and the panel scrolled that far into an empty page (R-UI-173).
   .table-scroll {
+    position: relative;
     max-block-size: max(22rem, calc(100dvh - 17rem));
     overflow: auto;
 
@@ -390,13 +393,38 @@ td.class-cell .material-icons {
     }
 
     // A badge (20 px) in a cell is centred on the first line too and adds nothing to its height: without this a cell with a
-    // badge had a line of 20 px, and its text stood 2 px lower than the text of the cells beside it (owner, 2026-11-18).
-    tbody :is(th, td) .badge {
+    // badge had a line of 20 px, and its text stood 2 px lower than the text of the cells beside it (owner, 2026-11-18). A status
+    // is drawn as a badge without the class (`span.ok` with its icon, _controls.scss): the same rule, or **Active**, **Denied**,
+    // **Succeeded** stood 2 px low in every list (found by the renders' check, R-UI-172).
+    tbody :is(th, td) :is(.badge, span:is(.ok, .warn, .bad):has(> .material-icons)) {
       margin-block: calc((1rem - 20px) / 2);
     }
 
+    // A copy button beside a value in a cell (a hash) is a box of its own on the line's top, as a row's copy button is; a switch
+    // (an inline check box with its word) is centred on the line. Each stood 2 to 4 px under the row's line.
+    tbody :is(th, td) quader-copy-button {
+      display: inline-flex;
+      vertical-align: top;
+      margin-block: calc((1rem - var(--quader-control-height)) / 2);
+    }
+
+    tbody :is(th, td) > label.switch {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--quader-space-2);
+      block-size: 1rem;
+      vertical-align: top;
+
+      input {
+        margin: 0;
+      }
+    }
+
+    // Each control's box of margins is the line's 16 px, and it stands at the line's top: on the baseline, a word button beside
+    // an icon button stood on the icon glyph's baseline, 3 px under the row's line (**Set up client** beside the menu, R-UI-172).
     tbody :is(th, td) > :is(.btn, quader-address-field, select, .select-input, .text-input, quader-copy-button, .row-actions) {
       margin-block: calc((1rem - var(--quader-control-height)) / 2);
+      vertical-align: top;
     }
 
     thead th {
@@ -414,10 +442,12 @@ td.class-cell .material-icons {
       white-space: nowrap;
     }
 
+    // A number with its unit never breaks ("18 B" stood in two lines once its column declared no width, R-UI-171).
     th.num,
     td.num {
       text-align: end;
       font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
 
     tbody th[scope='row'] {
@@ -437,12 +467,6 @@ td.class-cell .material-icons {
         justify-content: flex-end;
       }
 
-      // A row's copy button (Q-UI-330) is a box of its own, so that the rule above centres it on the row's first line as it
-      // does a menu button.
-      quader-copy-button {
-        display: inline-flex;
-        vertical-align: top;
-      }
     }
 
     // Keys, names and identifiers are never broken at a hyphen; a status keeps icon and label on one line. A list may let
@@ -472,13 +496,14 @@ td.class-cell .material-icons {
     }
 
     // A long address, target or URL is cut with an ellipsis; its full text is the title.
+    // On the line's top, as tall as the line: in the middle it stood 1.7 px under the row's line (a file's hash, R-UI-172).
     .ellipsis {
       display: inline-block;
       max-inline-size: 24ch;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      vertical-align: middle;
+      vertical-align: top;
     }
 
     // A long address or identifier wraps instead of pushing the action column out of view.
@@ -494,10 +519,12 @@ td.class-cell .material-icons {
       font-weight: 400;
     }
 
+    // A format is its icon and its name on one line (UI-A-24), also where its column declares no width (Q-UI-563).
     .type-cell {
       display: inline-flex;
       align-items: center;
       gap: var(--quader-space-2);
+      white-space: nowrap;
 
       .material-icons {
         font-size: 1.25rem;
@@ -608,12 +635,12 @@ td.class-cell .material-icons {
 
 // ---- Stacked rows ------------------------------------------------------------------------------
 
-// Every list (`<quader-data-table>`, unless `[stack]="false"`) shows each row as a block below 48 rem of the list's width
-// (Q-UI-306): the name with its description and the row's actions on the first line, then each other cell on a line of its own.
-// The head shows only its sort buttons, one row above the blocks (Q-UI-391); the data
-// table gives every cell its column's name in `data-label`, shown before the value, and marks an empty one (`data-empty`),
-// which leaves its line out.
-@mixin stacked-rows {
+// Every list (`<quader-data-table>`, unless `[stack]="false"`) shows each row as a block where its columns do not fit (R-UI-174,
+// Q-UI-680): the data table measures its columns at their least widths against its room and sets `stacked`. A block is the name with
+// its description and the row's actions on the first line, then the other cells side by side, as many to a line as fit, each named
+// by its column (Q-UI-681). The head shows only its sort buttons, one row above the blocks (Q-UI-391); the data table gives every
+// cell its column's name in `data-label`, shown before the value, and marks an empty one (`data-empty`), which is left out.
+.quader-data-table.stacked {
   .table-scroll {
     max-block-size: none;
     overflow: visible;
@@ -666,31 +693,47 @@ td.class-cell .material-icons {
       display: block;
     }
 
+    // The name and the actions on the first line; the break (`::before`, a line of its own of no height); then the other cells,
+    // each as wide as its name and value, side by side, a long value on a line of its own where it breaks inside itself.
     tbody tr {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: var(--quader-space-2) var(--quader-space-3);
+      gap: var(--quader-space-1) var(--quader-space-5);
       padding-block: var(--quader-space-3);
       border-block-end: 1px solid var(--quader-border);
+
+      &::before {
+        content: '';
+        order: 1;
+        flex-basis: 100%;
+        block-size: 0;
+      }
     }
 
     // A row that only carries an expansion of the row above (one cell across the table) adds no block of its own.
     tbody tr:has(> td[colspan]:only-child) {
       padding-block: 0;
       border-block-end-width: 0;
+
+      &::before {
+        display: none;
+      }
     }
 
     tbody tr > * {
       display: block;
-      grid-column: 1 / -1;
+      flex: 0 1 auto;
+      order: 2;
+      min-inline-size: 0;
       padding: 0 var(--quader-space-2);
       border-block-end: 0;
     }
 
     tbody tr > th[scope='row'] {
-      grid-column: 1;
-      grid-row: 1;
+      flex: 1 1 0;
+      order: 0;
+      align-self: flex-start;
 
       // A name wraps where it must when the row is a block: there is no column to grow.
       a {
@@ -700,12 +743,14 @@ td.class-cell .material-icons {
     }
 
     tbody tr > td.actions {
-      grid-column: 2;
-      grid-row: 1;
+      flex: none;
+      order: 0;
+      align-self: flex-start;
+      margin-inline-start: auto;
     }
 
     // A person (`th.person`: the avatar, the name and the user name under it; the members and the users) keeps the avatar beside
-    // the name in a block, as in a row; the rule above would put the avatar on a line of its own.
+    // the name in a block, as in a row.
     tbody tr > th.person[scope='row'] {
       display: flex;
     }
@@ -735,35 +780,36 @@ td.class-cell .material-icons {
       text-align: start;
     }
 
+    // In a block a control stands on the line of its column's name, on their common baseline.
     tbody :is(th, td) > :is(.btn, quader-address-field, select, .select-input, .text-input, quader-copy-button, .row-actions) {
       margin-block: 0;
+      vertical-align: baseline;
     }
-  }
-}
-
-// The query asks the list's frame, which holds the scrollbar beside the rows (up to 1 rem where the scrollbars are shown): the
-// rows stack below 48 rem of columns and that room, so a list whose least widths sum to 48 rem never scrolls sideways (Q-UI-330).
-@container table (max-width: 49rem) {
-  .quader-data-table.stack {
-    @include stacked-rows;
   }
 
   // A stacked row whose action is **Set up client** (a project's repository list, the repositories behind a format's tile;
   // Q-UI-306, Q-UI-426, Q-UI-487): the name and the menu on the first line, **Set up client** on a line of its own at the block's
   // end, so the name and its description keep the row's width on a phone.
-  .quader-data-table.stack tr > td.actions.with-setup {
+  tr:has(> td.actions.with-setup)::after {
+    content: '';
+    order: 3;
+    flex-basis: 100%;
+    block-size: 0;
+  }
+
+  tr > td.actions.with-setup {
     display: contents;
 
     > .btn-icon {
-      grid-column: 2;
-      grid-row: 1;
-      align-self: start;
+      order: 0;
+      align-self: flex-start;
+      margin-inline-start: auto;
     }
 
     > .row-setup,
     > .deleting {
-      grid-column: 1 / -1;
-      justify-self: start;
+      flex: none;
+      order: 4;
     }
 
     // The button's word starts where the lines above start (the cells' padding, not the button's).
@@ -772,12 +818,3 @@ td.class-cell .material-icons {
     }
   }
 }
-
-// A list whose least widths need more than 48 rem stacks below 64 rem of columns and that room (`stackWide`, the administrator's
-// list of everyone's tokens, Q-UI-332), so it never scrolls sideways before it stacks.
-@container table (max-width: 65rem) {
-  .quader-data-table.stack.stack-wide {
-    @include stacked-rows;
-  }
-}
-

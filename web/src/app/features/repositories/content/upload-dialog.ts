@@ -104,7 +104,8 @@ interface Entry {
           <tbody>
             @for (e of entries(); track $index) {
               <tr>
-                <th scope="row" translate="no">{{ e.file.name }}</th>
+                <!-- A file name longer than the dialog breaks after its hyphens, as a list's key does (Q-UI-303). -->
+                <th scope="row" class="wrap-name" translate="no">{{ e.file.name }}</th>
                 <td>
                   @switch (e.state) {
                     @case ('queued') {

@@ -101,9 +101,12 @@ export class AuditLog {
     // An action's name and key wrap in 9 rem; a longer key breaks where it must (audit-log.scss), so that the log fits 1440 px.
     { id: 'action', label: $localize`:@@audit.col.action:Action`, width: '9rem' },
     { id: 'target', label: $localize`:@@audit.col.target:Target` },
+    // A project's mark and the longest word of its name: without a least width the name broke inside its words, "Platfor" /
+    // "m enginee" / "ring", beside a target that took the room (found by the renders' check, R-UI-171).
     {
       id: 'project',
       label: $localize`:@@audit.col.project:Project`,
+      width: '7rem',
       help: $localize`:@@audit.help.project:The project of the repository the event is about; a dash when it is about none.`,
     },
     {

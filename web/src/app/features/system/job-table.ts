@@ -42,7 +42,7 @@ export function jobStatusText(state: JobState): string {
     }
   `,
   template: `
-    <!-- The shared data table: a column budget and stacked rows below 48 rem, so the screen never scrolls sideways at 390 px. -->
+    <!-- The shared data table: a column budget and stacked rows where the columns do not fit, so the screen never scrolls sideways at 390 px. -->
     <quader-data-table [caption]="caption()" [columns]="columns">
       @for (j of jobs(); track j.id) {
         <tr>

@@ -67,7 +67,7 @@ export class SystemStatus {
     return /^[0-9a-f]{13,}$/.test(revision) ? revision.slice(0, 12) : revision;
   }
 
-  /** The replicas of a role or pool in the shared data table, which stacks below 48 rem (no sideways scroll at 390 px). */
+  /** The replicas of a role or pool in the shared data table, which stacks where its columns do not fit (no sideways scroll at 390 px). */
   protected readonly replicaColumns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@system.col.name:Name`, width: '10rem' },
     { id: 'node', label: $localize`:@@system.col.node:Node`, width: '6rem' },

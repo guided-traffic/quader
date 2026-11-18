@@ -331,7 +331,6 @@ describe('Personal tokens (R-UI-029)', () => {
     // actions are as wide as their values (Q-UI-563).
     expect(heads.map((th) => th.style.inlineSize)).toEqual(['', '', '', '', '', '']);
     expect(heads.map((th) => th.style.minInlineSize)).toEqual(['10rem', '9rem', '', '', '', '']);
-    expect(table.classList.contains('stack-wide')).toBe(false);
     // Rotate and Revoke are one pattern: quiet buttons with their words, named for the row; a time is relative, its title the time.
     const row = table.querySelector('tbody tr')!;
     const actions = [...row.querySelectorAll<HTMLButtonElement>('td.actions button')];

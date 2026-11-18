@@ -124,9 +124,11 @@ export function referenceLinks(advisory: Pick<VulnerabilityAdvisory, 'references
                 <span class="secondary-inline">{{ r.type }}</span>
               }
               @if (r.href; as href) {
-                <a [href]="href" [attr.rel]="rel" target="_blank">{{ r.text }}</a>
-                <span class="material-icons inline" aria-hidden="true">open_in_new</span>
-                <span class="visually-hidden" i18n="@@vuln.adv.external">(opens another site)</span>
+                <span class="external-link">
+                  <a [href]="href" [attr.rel]="rel" target="_blank">{{ r.text }}</a>
+                  <span class="material-icons" aria-hidden="true">open_in_new</span>
+                  <span class="visually-hidden" i18n="@@vuln.adv.external">(opens another site)</span>
+                </span>
               } @else {
                 {{ r.text }}
               }

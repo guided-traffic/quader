@@ -55,7 +55,6 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
       [emptyText]="emptyText()"
       [hasMore]="hasMore()"
       [loading]="loading()"
-      [stackWide]="showOwner()"
       (more)="more.emit()"
     >
       @for (t of tokens(); track t.id) {
@@ -179,7 +178,7 @@ export class TokenTable {
    * are as wide as their content (Q-UI-563). No column `prefer`s: the token's description and the scope share what the others
    * leave in proportion to their content, so neither is pinned to its least while the other has room. A scope that took all the
    * room left the administrator's **Client setup: npm, web-frontend/npm-vendor, 2026-11-18** three lines in 10 rem beside
-   * "Repository grants: 1" in 280 px (2026-11-18). The administrator's list stacks below 64 rem (`stackWide`, Q-UI-332).
+   * "Repository grants: 1" in 280 px (2026-11-18). The list stacks where these least widths do not fit (Q-UI-680).
    */
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     ...(this.selectable()

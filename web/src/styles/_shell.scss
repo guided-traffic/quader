@@ -524,7 +524,11 @@ quader-root {
     }
   }
 
+  // The panel scrolls, the window does not. It is the containing block of what is positioned inside it: a text for assistive
+  // technology only (`.visually-hidden`, absolute) in a long list stood at its place far below the window's end and made the
+  // window scroll into an empty page (a package's 33 versions, 900 px of nothing; R-UI-173).
   main {
+    position: relative;
     flex: 1 1 auto;
     min-block-size: 0;
     overflow: auto;

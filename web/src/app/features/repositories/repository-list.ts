@@ -39,7 +39,7 @@ import { classIcon, classLabel } from './repository-class';
  * the repository (visibility icon, key and description), format, class, and the row's **Set up client** beside its menu: the
  * address is no column (Q-UI-426), it stands where its client is set up. In the admin area, the administrator's: the repository,
  * project (mark and name), format, class, visibility, last activity, and a quiet copy button for the address beside the menu
- * (Q-UI-302). Below 48 rem of the list's width the rows stack (Q-UI-306). The head of the list is the search by key or
+ * (Q-UI-302). Where its columns do not fit the rows stack (Q-UI-680). The head of the list is the search by key or
  * description, **Filters** and the filters that are set (Q-UI-420 to Q-UI-422); the filters live in the query parameters
  * (R-UI-003) and restart the cursor walk; "Load more" continues it. A repository is addressed inside its project (R-REPO-002): its key links to
  * the content page `/projects/<project>/repositories/<key>` (R-UI-052), its Settings action to `…/settings`. Delete asks for the key, may offer to detach the repository from
@@ -208,7 +208,9 @@ export class RepositoryList {
    */
   private readonly allColumns = computed<readonly TableColumn[]>(() => [
     { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '13rem', prefer: this.inProject() },
-    { id: 'project', label: $localize`:@@repo.col.project:Project`, width: '11rem' },
+    // Its mark and "Customer portal release" on one line: at 11 rem the seed's longest project stood in three lines at 1,280 px
+    // beside descriptions that took the room (2026-11-18).
+    { id: 'project', label: $localize`:@@repo.col.project:Project`, width: '12rem' },
     { id: 'format', label: $localize`:@@repo.col.format:Format` },
     {
       id: 'class',

@@ -3293,7 +3293,7 @@ Priority: **MVP** · Covers: UI-001, UI-004
   where the API sorts by it (`sort` of `GET /api/v1/users`, `groups`, `service-accounts`,
   `permission-policies`), or where the whole list is in the browser (endpoints); a filter appears
   only where the API takes it. The panel opens by itself while a filter is applied. The packages
-  list (R-UI-006) uses the same two components. Below 48 rem of its width a list stacks its rows, and its head is one row of
+  list (R-UI-006) uses the same two components. Where its columns do not fit a list stacks its rows (R-UI-174), and its head is one row of
   its sort buttons above them, so it sorts at every width ([Q-UI-391](#q-ui-391--a-stacked-list-keeps-its-sort-buttons-in-a-row-above-its-blocks)).
 - User menu: profile and tokens, client setup, quick repository setup (P1; only when repositories
   may be created), language, theme, keyboard shortcuts on or off, sign out.
@@ -4442,8 +4442,9 @@ Priority: **MVP** · Covers: UI-039, UI-040
   instance-wide list; a project's screen (R-UI-041) lists the project's policies.
 - Layout (Q-UI-4): one page for create and edit, no step-by-step wizard. The sections run down the
   left with an in-page table of contents; the preview panel is a sticky right column while the
-  content area is at least 960 CSS px wide and a collapsible region above the save bar when it is
-  narrower. The explainer (R-UI-028, P1) is its own screen, reached from the editor through "Test
+  content area is at least 66 rem wide (a container query on the content area; the window's 960 px
+  left the form 110 px wide at 1,024 px with the side bar open, R-UI-171) and a collapsible region
+  above the save bar when it is narrower. The explainer (R-UI-028, P1) is its own screen, reached from the editor through "Test
   this policy" (saved policies only, once the explainer ships), which opens it in a new tab with the policy's first principal and
   repository filled in, so the draft in the editor stays untouched.
 - Editor sections, following the policy model of
@@ -6722,7 +6723,7 @@ a single tab, **Members 2**, stood above it ([Q-UI-550](#q-ui-550--the-members-l
 - The list is the shared data table (`<quader-data-table>`): **Account** (the avatar, the display name with **It's you**, the user
   name or **Group** under it), **Source**, **Role** and the row's menu. **Account** and **Role** sort by their column headers;
   **Role** puts the strongest role first and then the accounts in order. The answer holds every member, so the search and the sort
-  run in the browser and are exact. Below 48 rem the rows stack as every list's do (Q-UI-306).
+  run in the browser and are exact. Where the columns do not fit the rows stack as every list's do (R-UI-174).
 - The page has one view and no tab strip. The number of members is a neutral badge after the heading, **Members 2**
   (`count` of the page header).
 
@@ -7248,6 +7249,92 @@ Acceptance criteria:
   actions** in that order (`repository-content.spec.ts`); Details still names the address for downloads by path; the settings
   page and its consumer view hold no address field (`repository-detail.spec.ts`); the page header ships no rule of a client row
   (`page-header.spec.ts`).
+
+### R-UI-170 · An icon stands on the line of its label, and the renders find one that does not
+Priority: **MVP** · Covers: quader-only
+
+The owner's walk of 2026-11-18 (W-5, about W-3: "Can you not see something like this yourself?"): a repository's visibility icon
+stood alone on the first line of its row and the key started on the second, and the render of that row had been looked at and
+passed. The same defect was the jobs' state ("check_circle" above "Succeeded") before Q-UI-560.
+
+- Wherever an icon stands before or after its label (a status, a button, a link, a format, a project's mark, a row's name), the
+  icon and the first line of the label share a line ([Q-UI-425](#q-ui-425--an-icon-before-a-name-has-a-column-of-its-own-in-the-cell-and-a-long-name-breaks-inside-itself-beside-it),
+  Q-UI-560). An icon its parent lays out above its text (a tile, an empty state, a column) is meant so.
+- `make ui-renders` measures it in every picture and fails the screen on a finding (the check `icon-apart` of
+  [layout.ts](../../web/e2e/renders/layout.ts), [Q-UI-682](#q-ui-682--the-render-run-measures-the-layout-in-the-page-and-a-finding-fails-the-screen)).
+
+Acceptance criteria:
+
+- The render run's report names no `icon-apart` finding; `failures.txt` would name the screen, the width, the element and its label.
+
+### R-UI-171 · A short thing stays on one line
+Priority: **MVP** · Covers: quader-only
+
+A status or a badge, a chip, a button's label, a tab, a table's header, a date or a time, a key or an identifier in a cell (an
+element the app marks `translate="no"`), a number with its unit, a format, a class and a visibility level stand on one line
+(R-UI-145, Q-UI-428, Q-UI-563). Not covered: a name that breaks inside itself beside its icon (Q-UI-425), a key a list lets
+break after its hyphens (`th.wrap-name`, Q-UI-303), and the name of a row that stands as a block (R-UI-174).
+
+A word of a list's cell does not break inside itself: a column that wraps declares a least width that holds its words (the
+audit log's project broke into "Platfor" / "m enginee" / "ring" beside a target that took the room). A token longer than any
+column (an identifier, a path, a hash) may still break where it must (Q-UI-425).
+
+Acceptance criteria:
+
+- The render run's report names no `broken` finding (the check `broken` of [layout.ts](../../web/e2e/renders/layout.ts)).
+
+### R-UI-172 · A row reads along one line, and its actions are built like its neighbours'
+Priority: **MVP** · Covers: quader-only
+
+The first line of every cell of a table's row stands on the line of the row's name: the same baseline where the fonts are the same,
+else the same middle, within a pixel (the walk measured 2 px for **Format** and **Class**, 5 px for a group's **Remove**;
+Q-UI-308, Q-UI-562). A control in a cell stands at the line's top with margins that make it the line's height, not on its
+baseline: **Set up client** beside the row's menu stood on the menu glyph's baseline, 3 px under the row's name (found by the check,
+2026-11-18). The action cells of one table are built one way in every row that has one: a menu, a word or an icon, as R-UI-163
+asks.
+
+Acceptance criteria:
+
+- The render run's report names no `row-offset` and no `row-actions` finding (the checks of the same names in
+  [layout.ts](../../web/e2e/renders/layout.ts)).
+
+### R-UI-173 · Nothing is cut while there is room beside it, and nothing scrolls sideways
+Priority: **MVP** · Covers: quader-only
+
+- A text cut with an ellipsis, and a field's value cut, is cut only where the box that holds it has no room for the rest.
+- The page scrolls sideways at no width; from 1,024 px no region inside it scrolls sideways either (Q-UI-427, R-UI-085). A table is
+  never wider than its place: where its columns do not fit, its rows stack (R-UI-174).
+- Neither the window nor the shell's panel scrolls past the content. The panel and a table's scroll region are the containing
+  blocks of what is positioned inside them: a text for assistive technology only (`.visually-hidden`) in the rows a region hides
+  stood at its place, far below the window's end, and a package's 33 versions had 900 px of empty page under them (the check
+  `empty-scroll`).
+- The renders take a screen at a further width where a list changes its form between the run's three (the start page at 1,100 px,
+  the admin area's repositories at 1,100 and 1,280 px; `widths` of a screen in
+  [screens.ts](../../web/e2e/renders/screens.ts)).
+
+Acceptance criteria:
+
+- The render run's report names no `clipped` and no `sideways` finding (the checks of the same names in
+  [layout.ts](../../web/e2e/renders/layout.ts) and [render.spec.ts](../../web/e2e/renders/render.spec.ts)).
+
+### R-UI-174 · A list stacks its rows only where its columns do not fit, and a stacked row is dense
+Priority: **MVP** · Covers: quader-only
+
+At 1,024 px with the side bar open every list of the app stood as blocks, one line per cell, because the shared table stacked
+below 48 rem of its own width whatever its columns needed; a package's 33 versions were 5,136 px high there (seen in the builders'
+renders, 2026-11-18).
+
+- A data table stacks where its columns at their least widths (a wrapping column's declared `width`, a column that never breaks
+  at its longest value) need more than its region has, and only there
+  ([Q-UI-680](#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself)).
+- A stacked row is the name with its actions on the first line, then the other cells side by side, as many to a line as fit, each
+  with its column's name ([Q-UI-681](#q-ui-681--a-stacked-row-puts-its-cells-side-by-side)).
+
+Acceptance criteria:
+
+- Unit test: the table stacks where its least width exceeds its region's and not where it fits, measured again when its rows
+  change (`data-table.spec.ts`).
+- The render run's report names no `stacked-fits` finding: a stacked table whose columns would fit is a finding.
 
 ## Deferred
 
@@ -12639,6 +12726,8 @@ and of a stack of the addresses of one thing (the repository's page, the client 
 **Narrowed again by [Q-UI-664](#q-ui-664--the-repositorys-header-leads-to-set-up-client-and-holds-no-address) (2026-11-18):** a
 repository's client address stands in a field on Set up client only (R-UI-169); the repository page's Details keep the address for
 downloads by path, and the start page shows none.
+**Revised by [Q-UI-683](#q-ui-683--an-address-field-is-as-wide-as-its-address-at-least-the-measure-at-most-its-line) (2026-11-18):**
+the measure is the field's least width; a longer address widens its field up to the line.
 
 ### Q-UI-302 · The repository list names a repository by key and description in its first column and puts the row's actions in a menu
 
@@ -12795,6 +12884,10 @@ width, also beside the open filter panel. The development agent revisits the 48 
 area's row and a search result have no address field, the copy button stands on the first line. The rows stack below 49 rem
 of the list's frame, 48 rem of columns and 1 rem for a scrollbar beside the rows, and every list's least widths sum to at most
 48 rem, so no list scrolls sideways before it stacks.
+
+**Revised by [Q-UI-680](#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself) and
+[Q-UI-681](#q-ui-681--a-stacked-row-puts-its-cells-side-by-side) (2026-11-18):** a list stacks where its columns at their measured
+least widths do not fit its region, not below a fixed 49 rem, and a stacked row puts its cells side by side after the name's line.
 
 **Revised by [Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client) (2026-11-18):** a stacked row has no address any more; a project's row has **Set up client** and the
 menu on the name's line.
@@ -13377,7 +13470,8 @@ scrolls sideways at 1920, 1440, 1280, 1170 to 1090 or 390 px, with the panel ope
 in the admin area and the search results, 13 rem in a project, project 6.5 rem, format 8 rem (**Ansible Galaxy** with its icon on
 one line), class 5 rem, last activity 7.5 rem (gone below 64 rem of the list), the address field 10 rem (its input keeps 8 rem).
 The repository lists' least widths sum to 48 rem, the search results' to 45.5 rem; they stack below 48 rem and 1 rem for a
-scrollbar beside the rows. A project's list shows no last activity any more (Q-UI-312).
+scrollbar beside the rows (since [Q-UI-680](#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself)
+where their measured least widths do not fit). A project's list shows no last activity any more (Q-UI-312).
 
 **Rationale:** a list is read across its rows for the properties its user decides on, so they need columns, and the column that
 names the thing gets the room where the user manages. Where the user copies, the address is the list's main value: it takes what
@@ -13462,7 +13556,9 @@ service account's and the token administration's. Who reads a token list decides
 
 **Choice:** (a). Least widths: token 8.5 rem (it takes what the others leave), owner 7, scope 9, expires 6.5, last used 6.5,
 created 6.5 and created via 5 (`narrow`), the actions 7, the selection 2. An owner's list sums to 47.5 rem, with the narrow columns
-to 63 rem; the token administration's to 60.5 rem, so it stacks below 64 rem (`stackWide`). A date shows the day, its `title` the
+to 63 rem; the token administration's to 60.5 rem, so it stacks below 64 rem (`stackWide`; since
+[Q-UI-680](#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself) every list stacks
+where its measured least widths do not fit, and `stackWide` is gone). A date shows the day, its `title` the
 time.
 
 **Rationale:** the facts that decide whether a token stays are its scope, its expiry and its last use; when and how it was made
@@ -16031,7 +16127,8 @@ one screen: wider than its values, it took room the wrapping columns needed.
 | (b) Bigger least widths for the broken columns | Numbers | Small change | A number for one screen's data; the next long name breaks again |
 | (c) Ellipsis for every long value | One line | Even rows | A name cut where it was readable |
 
-**Choice:** (a). The admin area's repositories: the repository and the project wrap (13 and 11 rem least) and share the room,
+**Choice:** (a). The admin area's repositories: the repository and the project wrap (13 and 11 rem least, the project 12 rem
+since the renders' look of 2026-11-18 found it in three lines at 1,280 px) and share the room,
 the rest is as wide as its values; inside a project the repository is the one that wraps and prefers. The token lists: the
 token and the scope share the room (Q-UI-429 revised), the times and the actions as wide as their values. The jobs: the result is
 the one that wraps and prefers; the kind and the replica stay whole. Where a value can be longer than any column, it is cut on one
@@ -17055,6 +17152,110 @@ repository's page.
 [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html),
 [repository-detail.html](../../web/src/app/features/repositories/repository-detail.html),
 [page-header.ts](../../web/src/app/shared/ui/page-header.ts).
+
+### Q-UI-680 · A list stacks where its columns at their least widths do not fit, measured by the table itself
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Follows
+the plan's words for W-5: "the threshold follows the table's columns".
+
+Context: every data table stacked its rows below 49 rem of its frame (Q-UI-306, Q-UI-330), and the administrator's token list below
+65 rem (`stackWide`, Q-UI-332). At 1,024 px with the side bar open a list has about 44 rem, so every list of the app stood as
+blocks there, also a folder's three columns. A list whose columns needed more than 49 rem was wider than its place above it: the
+start page's projects at 1,100 px, its **Members** out of sight. Since Q-UI-563 a column that never breaks declares no width, so
+no number in the stylesheet can know what a list needs.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The table measures itself: its least width (each wrapping column at its declared `width` or its longest word, each column that never breaks at its longest value) against the room of its scroll region, again when its width or its rows change; it sets `stacked` where the room is less (chosen) | A `ResizeObserver` on a ruler of no height across the list, the measurement in the same task | The threshold is the list's own, also for a column without a width and for the rows a page loads later; no number to maintain | Script in the layout: the table is laid out twice when it is measured |
+| (b) A threshold per list, summed from its columns' declared widths, in a container query per list | CSS only | No measurement | A column that never breaks has no declared width (Q-UI-563), so the sum is a guess again; a container query cannot read a property, so every list needs a rule of its own |
+| (c) Keep 48 rem and lower it for short lists | Numbers | Small | The same defect at the next list; a list that needs 60 rem still overflows |
+
+**Choice:** (a), in [data-table.ts](../../web/src/app/shared/ui/data-table.ts) (`measure`): the table is given no width, so it
+lays out at its least, then its width back; a stacked table leaves its blocks for that measurement and goes back in the same task,
+so nothing is painted between. `stackWide` is gone. The observed element is a ruler of no height, so the change of the frame's
+height that the stacking makes starts no second round of the observer. **Rationale:** what a list needs is a property of its
+columns and its rows, and only the browser knows it. The development agent revisits the measurement if a list with hundreds of
+rows makes a resize slow.
+
+**Applied in the spec:** R-UI-174; Q-UI-306, Q-UI-308, Q-UI-330 and Q-UI-332 revised in their stacking threshold. Code:
+[data-table.ts](../../web/src/app/shared/ui/data-table.ts), [_list-screens.scss](../../web/src/styles/_list-screens.scss) (Stacked
+rows).
+
+### Q-UI-681 · A stacked row puts its cells side by side
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Follows
+the plan's words for W-5: "the stacked form is denser than a line per cell".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The name and the actions on the first line, then the other cells side by side, each its column's name and its value, as many to a line as fit; a long value takes a line and breaks inside itself (chosen) | A flex row with a break after the first line | Three or four short facts on one line at 390 px; the same markup, the head kept for assistive technology | Facts of different rows do not stand under each other |
+| (b) One line per cell, as before | Q-UI-306 | Every fact at the same place | 33 versions 5,136 px high |
+| (c) Two columns of facts | A grid | Facts under each other | A short fact takes half the row; a long one breaks into a narrow column |
+
+**Choice:** (a). The facts are 20 px apart, their names muted (`data-label`), an empty cell left out. **Rationale:** a stacked row
+is read, not compared; what makes it long is the line each short fact took. The development agent revisits (c) if a stacked list
+is used to compare rows.
+
+**Applied in the spec:** R-UI-174; Q-UI-306 revised. Code: [_list-screens.scss](../../web/src/styles/_list-screens.scss).
+
+### Q-UI-682 · The render run measures the layout in the page, and a finding fails the screen
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Follows
+the owner's W-5: "Can you not see something like this yourself?"
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each picture's page is measured once by a script of rules (an icon apart from its label, a short thing in two lines, a row off its line, a cut text with room, sideways scroll, a stacked table that fits); a finding fails the screen with its element, its text, the width and the scheme; a finding that is right is allowed by a written reason beside the checks (chosen) | `layoutFindings` in [layout.ts](../../web/e2e/renders/layout.ts), one `page.evaluate` per state, in the light scheme | Exact and cheap; the same rules as the style guide's, each with its check; the run stays green only where the pictures pass them | Only what a rule names is found |
+| (b) Compare each picture with an approved one | Pixel diff | Finds any change | Every intended change is a diff; the defects of W-3 were in approved pictures |
+| (c) The development agent looks harder | No tool | Nothing to build | The defects were looked at and passed |
+
+**Choice:** (a). The checks and their blind spots are listed in [web-ui.md](../developer/web-ui.md#renders-of-every-screen); each
+rule is a requirement (R-UI-170 to R-UI-174). The dark scheme has the light one's layout and is not measured again. **Rationale:**
+the defects the owner found had a measurable form; a rule that measures it finds it in every picture, where an eye finds it in
+the one it looks at. The development agent revisits a check whose allowed list grows longer than its findings.
+
+**Applied in the spec:** R-UI-170 to R-UI-174. Code: [layout.ts](../../web/e2e/renders/layout.ts),
+[render.spec.ts](../../web/e2e/renders/render.spec.ts), [sheet.ts](../../web/e2e/renders/sheet.ts).
+
+### Q-UI-683 · An address field is as wide as its address, at least the measure, at most its line
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the render's check `clipped` found the address on Set up client cut after 70 characters with 500 px free beside it
+(`setup-deb`, `setup-long-key` at 1,440 px: the seed's addresses of 89 and 96 characters). Since W-20 that header is the one place
+the address stands in a field. An install command of one line is already as wide as its text up to the panel (Q-UI-455).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The field is as wide as its address with its button, at least `--quader-address-measure` and at most its line, measured in characters of the field's font as the command field is (chosen) | `--quader-address-chars` on the field | A long address is read whole where there is room; fields of one stack keep one width while their addresses are shorter than the measure | A stack with one long address has one wider field |
+| (b) Keep the measure as the cap | Q-UI-301 | Every field one width | The address cut beside empty room, which the owner objected to in W-5's kind |
+| (c) The field always fills its line | No measure | Simple | A short address in a field far wider than it (R-UI-085) |
+
+**Choice:** (a). **Rationale:** the address is the page's subject on Set up client; a field cut while its line has room is the
+defect R-UI-173 names. The development agent revisits a stack whose fields differ if it reads worse than a cut address.
+
+**Applied in the spec:** R-UI-173; Q-UI-301 revised in its cap. Code: [address-field.ts](../../web/src/app/shared/address-field.ts).
+
+### Q-UI-686 · The UI development profile gives an anonymous address the budget of a signed-in reader
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the anonymous screens of `make ui-renders` (`projects-anonymous`, `search-field`, `guides`, the setup of a public
+repository) got 429 for `whoami`, the banner, the projects and the login options in every run: the anonymous visitors of the three
+workers share the address 127.0.0.1, and the class `anonymous` (5 a second, burst 20, per address, R-API-016) is spent when three
+of them open a page at once.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The profile's `api.rate_limits.anonymous` is 50 a second with a burst of 200, the default of `read` (chosen) | One setting of [up.sh](../../deploy/ui-dev/up.sh), beside the profile's `read` | Deterministic for any number of workers; no product default changes | The profile does not show an anonymous visitor's 429; the limiter's own tests do |
+| (b) The anonymous screens in one serial project | Playwright | The profile keeps the default | One visitor's page already makes eight to ten calls; a walk of many states depends on timing |
+| (c) A forwarded address of its own per worker (`X-Forwarded-For`) | Realistic visitors | The default stays | Depends on the proxy's and the trusted proxies' handling; one heavy walk can still spend its budget |
+
+**Choice:** (a). **Rationale:** the renders show the screens, not the limiter; the profile already lifts `read` for the same
+reason. The development agent revisits (c) if the renders are to show the 429 of an anonymous visitor.
+
+**Applied in the spec:** R-UI-173 (a run that ends green). Code: [up.sh](../../deploy/ui-dev/up.sh); documented in
+[web-ui.md](../developer/web-ui.md#local-ui-development).
 
 ## What this does not cover
 

@@ -186,23 +186,25 @@ export class PackageList {
   protected readonly emptyText = $localize`:@@pkg.list.empty:No package has been published yet.`;
   protected readonly emptyFilteredText = $localize`:@@pkg.list.empty-filtered:No package matches the filters.`;
   protected readonly searchLabel = $localize`:@@pkg.list.search:Filter packages`;
-  /** The columns a reader chooses by (Q-UI-314), with the list's budget (Q-UI-308). */
+  /**
+   * The columns a reader chooses by (Q-UI-314). The name wraps after its hyphens and declares its least (Q-UI-308); the format,
+   * the version and the time never break and are as wide as their values (Q-UI-563). Their guessed widths summed to 46 rem, and
+   * the list stood as blocks at 1,024 px with the side bar open (R-UI-174).
+   */
   protected readonly columns: readonly TableColumn[] = [
-    { id: 'name', label: $localize`:@@pkg.col.package:Package`, sortable: true, width: '16rem' },
-    { id: 'type', label: $localize`:@@pkg.col.format:Format`, width: '7rem', stackLabel: false },
+    { id: 'name', label: $localize`:@@pkg.col.package:Package`, sortable: true, width: '14rem' },
+    { id: 'type', label: $localize`:@@pkg.col.format:Format`, stackLabel: false },
     // The words of the repository page's package table (Q-UI-432): **Latest**, not **Latest version**.
     {
       id: 'latest',
       label: $localize`:@@pkg.col.latest:Latest`,
       help: $localize`:@@pkg.help.latest:The highest stable version you may see. A pre-release is shown only while no stable version exists.`,
-      width: '8rem',
     },
     {
       id: 'updatedAt',
       label: $localize`:@@pkg.col.updated:Updated`,
       sortable: true,
       help: $localize`:@@pkg.help.updated:When the latest version you may see was published.`,
-      width: '7rem',
     },
   ];
   protected commands = (format: string, name: string): string[] => packageCommands(this.project(), format, name);

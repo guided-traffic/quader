@@ -3,12 +3,31 @@
   max-inline-size: var(--quader-settings-measure);
 }
 
+// The level's icon, the repository's key and its badge on one line: a key longer than the line breaks inside itself beside the
+// icon (as Q-UI-425 has it in a list), and the icon stands on the key's first line. Wrapping as a whole, the key went under its
+// icon at 390 px (R-UI-170).
 .subject {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--quader-space-2);
   margin: var(--quader-space-1) 0 0;
+  line-height: var(--quader-text-line);
+
+  > quader-visibility-icon {
+    display: flex;
+    flex: none;
+    align-items: center;
+    block-size: var(--quader-text-line);
+  }
+
+  > strong {
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+  }
+
+  > .badge {
+    flex: none;
+  }
 }
 
 .field {

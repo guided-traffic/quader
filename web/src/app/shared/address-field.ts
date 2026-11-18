@@ -6,14 +6,16 @@ import { CopyButton } from './copy-button';
  * shows its clone address (R-UI-065). The address is the input's value: never cut with an ellipsis, and scrolled inside
  * the field where it is longer than the field. An empty address renders nothing.
  *
- * The field fills the line it is on: alone on its line up to `--quader-address-measure` (Q-UI-301), in a list the cell,
- * whose column `.address-cell` sizes to the list's longest address (Q-UI-300). So every field of a list, and every field
- * of a stack, has the same width. A field shorter than its address shows the address's start, the host, and scrolls.
+ * The field fills the line it is on: alone on its line at least `--quader-address-measure` (Q-UI-301) and as wide as its
+ * address where that is longer, up to the line (Q-UI-683), so a long address is read whole where there is room and the
+ * fields of a stack of short addresses have one width. A field shorter than its address shows the address's start, the host,
+ * and scrolls.
  */
 @Component({
   selector: 'quader-address-field',
   imports: [CopyButton],
   encapsulation: ViewEncapsulation.None,
+  host: { '[style.--quader-address-chars]': 'value().length' },
   template: `
     @if (value()) {
       <input
@@ -32,12 +34,16 @@ import { CopyButton } from './copy-button';
     }
   `,
   styles: `
+    /* The font is the input's, so that a character of --quader-address-chars is one of the address's; the rest is the input's
+       padding and border and the joined copy button, as the one-line command's field counts it (Q-UI-455). */
     quader-address-field {
       display: flex;
       align-items: stretch;
       box-sizing: border-box;
       inline-size: 100%;
-      max-inline-size: var(--quader-address-measure);
+      max-inline-size: max(var(--quader-address-measure), calc((var(--quader-address-chars, 0) + 2) * 1ch + 4.5rem));
+      font-family: var(--quader-font-mono);
+      font-size: 0.875rem;
     }
 
     /* Several addresses of one repository, stacked. */

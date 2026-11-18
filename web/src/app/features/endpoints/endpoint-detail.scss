@@ -3,13 +3,8 @@
   font: var(--quader-type-title-medium);
 }
 
-// The state's word beside its switch, on the row's first line.
-.switch {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--quader-space-2);
-  min-block-size: 24px;
-}
+// The state's word beside its switch, on the row's first line: the shared rule of a switch in a cell (_list-screens.scss) makes
+// it the line's height. A box of 24 px put the word 4 px under the rule's name (R-UI-172).
 
 .settings {
   max-inline-size: var(--quader-settings-measure);

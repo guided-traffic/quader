@@ -184,9 +184,11 @@
               }
               @if (s.link; as link) {
                 @if (safeHttpUrl(link); as href) {
-                  <a [href]="href" target="_blank" [attr.rel]="externalRel" translate="no">{{ link }}</a>
-                  <span class="material-icons inline" aria-hidden="true">open_in_new</span>
-                  <span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span>
+                  <span class="external-link">
+                    <a [href]="href" target="_blank" [attr.rel]="externalRel" translate="no">{{ link }}</a>
+                    <span class="material-icons" aria-hidden="true">open_in_new</span>
+                    <span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span>
+                  </span>
                 }
               }
             </li>

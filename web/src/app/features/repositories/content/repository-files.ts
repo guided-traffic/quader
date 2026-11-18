@@ -172,11 +172,16 @@ export class RepositoryFiles {
     if (this.permissions().deploy) return $localize`:@@files.empty-upload:This repository holds no files yet. Upload files here or with your client.`;
     return emptyContentText(this.shape(), this.fill());
   });
+  /**
+   * The name wraps beside its icon and declares its least (Q-UI-308); the size, the time and the copy button never break and are
+   * as wide as their values (Q-UI-563). Their guessed widths kept 120 px empty beside them while a long file name stood in three
+   * lines at 1,024 px (2026-11-18).
+   */
   protected readonly columns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@repo.content.col.name:Name`, width: '12rem' },
-    { id: 'size', label: $localize`:@@repo.content.col.size:Size`, numeric: true, width: '6rem' },
-    { id: 'modified', label: $localize`:@@repo.content.col.modified:Last change`, width: '9rem' },
-    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true, width: '3rem' },
+    { id: 'size', label: $localize`:@@repo.content.col.size:Size`, numeric: true },
+    { id: 'modified', label: $localize`:@@repo.content.col.modified:Last change` },
+    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true },
   ];
 
   constructor() {

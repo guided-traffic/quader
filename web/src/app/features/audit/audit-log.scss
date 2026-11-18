@@ -64,14 +64,15 @@ tr.current {
 }
 
 // The actor and a repository's target are read: they wrap in their column, a long one at any character, and are never cut
-// (UI-A-46). A target is often a path with a digest: it gets the room for a path on one or two lines.
+// (UI-A-46). A target is often a path with a digest: it gets the room for a path on two or three lines, so that the log keeps
+// its columns at 1,440 px beside a project whose words stay whole (R-UI-171, R-UI-174).
 td.read-text {
   min-inline-size: 5rem;
   overflow-wrap: anywhere;
 }
 
 td.target {
-  min-inline-size: 12rem;
+  min-inline-size: 10rem;
 
   .read-text {
     overflow-wrap: anywhere;

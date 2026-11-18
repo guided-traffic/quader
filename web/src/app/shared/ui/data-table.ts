@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, afterRenderEffect, computed, inject, input, output } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterRenderEffect, computed, inject, input, output, untracked } from '@angular/core';
 import { Tooltip } from './tooltip';
 import { ApiError } from '../../api/problem';
 import { ErrorNotice } from '../error-notice';
@@ -23,7 +23,7 @@ export interface TableColumn {
    * repository list or of the search results, the scope of a token list. Its own `width` is its least.
    */
   readonly prefer?: boolean;
-  /** When the rows stack (below 48 rem), the cell shows its column's name before its value; false where the value says it. */
+  /** When the rows stack (R-UI-174), the cell shows its column's name before its value; false where the value says it. */
   readonly stackLabel?: boolean;
   /**
    * The column gives its room to the others below 64 rem of the list's width (Q-UI-308, UI-A-30): its header and the list's cells
@@ -73,6 +73,7 @@ let nextTableId = 1;
     } @else if (empty()) {
       <quader-empty-state [text]="emptyText()"><ng-content select="[emptyAction]" /></quader-empty-state>
     } @else {
+      <div class="table-width" aria-hidden="true"></div>
       <div class="table-frame">
         <div class="scroll table-scroll" tabindex="0" role="region" [attr.aria-labelledby]="captionId">
           <table class="data">
@@ -130,7 +131,6 @@ let nextTableId = 1;
   host: {
     class: 'quader-data-table',
     '[class.stack]': 'stack()',
-    '[class.stack-wide]': 'stackWide()',
   },
 })
 export class DataTable {
@@ -152,13 +152,11 @@ export class DataTable {
   readonly more = output<void>();
   readonly retry = output<void>();
 
-  /** Below 48 rem of its width the list shows each row as a block (Q-UI-306); a list whose rows cannot be read so turns it off. */
-  readonly stack = input(true);
   /**
-   * A list whose least widths need more than 48 rem stacks below 64 rem of columns instead (the administrator's list of
-   * everyone's tokens, Q-UI-332).
+   * Where its columns do not fit, the list shows each row as a block (R-UI-174, Q-UI-680); a list whose rows cannot be read so
+   * turns it off.
    */
-  readonly stackWide = input(false);
+  readonly stack = input(true);
 
   protected readonly captionId = `quader-table-${nextTableId++}`;
 
@@ -178,13 +176,20 @@ export class DataTable {
     let observer: MutationObserver | undefined;
     let body: Element | null = null;
     afterRenderEffect(() => {
-      const columns = this.columns();
+      this.columns();
       // The body appears with the first answer and goes with an empty list or an error: look for it again then.
       this.loaded();
       this.empty();
       this.error();
       const current = host.querySelector('tbody');
+      const changed = (): void => {
+        label();
+        this.measure(host);
+      };
+      // The columns are read when the body changes, not when the observer was made: a list whose columns follow its data (a
+      // package's versions gain Vulnerabilities with the first grade) named every cell after the column before it.
       const label = (): void => {
+        const columns = untracked(() => this.columns());
         for (const row of Array.from(current?.rows ?? [])) {
           Array.from(row.cells).forEach((cell, i) => {
             const c = columns[i];
@@ -196,17 +201,67 @@ export class DataTable {
           });
         }
       };
-      label();
+      changed();
       if (current !== body && typeof MutationObserver !== 'undefined') {
         observer?.disconnect();
         body = current;
         if (current) {
-          observer = new MutationObserver(label);
+          observer = new MutationObserver(changed);
           observer.observe(current, { childList: true, subtree: true, characterData: true });
         }
       }
+      // The list's width: an element of no height across the table, so a change of the frame's height alone is no reason to
+      // measure. The measurement waits for the next frame: a change of the layout inside the observer's callback would start a
+      // second round of every observer of the page ("ResizeObserver loop completed with undelivered notifications").
+      const ruler = host.querySelector('.table-width');
+      if (ruler !== measured && typeof ResizeObserver !== 'undefined') {
+        resized?.disconnect();
+        measured = ruler;
+        if (ruler) {
+          let last = -1;
+          resized = new ResizeObserver((entries) => {
+            const width = entries[entries.length - 1]?.contentRect.width ?? 0;
+            if (width === last) return;
+            last = width;
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => this.measure(host));
+          });
+          resized.observe(ruler);
+        }
+      }
     });
-    inject(DestroyRef).onDestroy(() => observer?.disconnect());
+    let measured: Element | null = null;
+    let resized: ResizeObserver | undefined;
+    let frame = 0;
+    // A web font that arrives late changes every column's width.
+    void document.fonts?.ready.then(() => this.measure(host));
+    inject(DestroyRef).onDestroy(() => {
+      observer?.disconnect();
+      resized?.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+    });
+  }
+
+  /**
+   * Stacks the rows where the columns do not fit (R-UI-174, Q-UI-680): the table at its least width, which is each column's
+   * declared least width (`width`) or its longest word, and a column that never breaks at its whole value, against the room of
+   * its scroll region, which a scrollbar beside the rows narrows. The table is measured as a table, so a stacked one is taken
+   * out of its blocks for the measurement and back in the same task; nothing is painted between.
+   */
+  private measure(host: HTMLElement): void {
+    const table = host.querySelector<HTMLElement>('table.data');
+    const region = host.querySelector<HTMLElement>('.table-scroll');
+    if (!this.stack() || !table || !region) {
+      host.classList.remove('stacked');
+      return;
+    }
+    if (region.getBoundingClientRect().width === 0) return;
+    host.classList.remove('stacked');
+    const width = table.style.inlineSize;
+    table.style.inlineSize = '0px';
+    const need = table.getBoundingClientRect().width;
+    table.style.inlineSize = width;
+    host.classList.toggle('stacked', need > region.clientWidth + 0.5);
   }
 
   protected readonly sortedId = computed(() => this.sort()?.column ?? null);

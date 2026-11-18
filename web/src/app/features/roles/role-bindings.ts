@@ -67,7 +67,7 @@ export class RoleBindings {
   protected readonly bindKinds = ['user', 'group', 'service_account'] as const;
 
   protected readonly canWrite = computed(() => this.session.has('roles:write'));
-  /** The holders of a role in the shared data table, which stacks below 48 rem (no sideways scroll at 390 px). */
+  /** The holders of a role in the shared data table, which stacks where its columns do not fit (no sideways scroll at 390 px). */
   protected readonly bindingColumns = computed<readonly TableColumn[]>(() => [
     { id: 'principal', label: $localize`:@@roles.principal:Principal`, width: '10rem' },
     { id: 'granted', label: $localize`:@@roles.granted-at:Granted`, width: '10rem' },

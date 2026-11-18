@@ -558,12 +558,44 @@ details {
   margin-inline-start: calc(-1 * var(--quader-dot));
   clip-path: inset(-0.5rem -0.5rem -0.5rem calc(var(--quader-dot) - 0.25rem));
 
+  // A part that wraps inside itself (a time with its date in brackets at 390 px) starts its next line after the dot's width,
+  // where the clip shows it: it started at the dot and lost its first letters ("ov 18, 2026", R-UI-173).
+  > * {
+    padding-inline-start: var(--quader-dot);
+    text-indent: calc(-1 * var(--quader-dot));
+  }
+
+  // The indent is inherited: a box inside a part (the grade's shield and its words) lays out its own lines without it.
+  > * * {
+    text-indent: 0;
+  }
+
   > *::before {
     content: '·';
     display: inline-block;
     inline-size: var(--quader-dot);
     text-align: center;
+    text-indent: 0;
     color: var(--quader-text-muted);
+  }
+}
+
+// A link to another site and its mark (`open_in_new`), one unit: the mark stands on the link's last line. As siblings in running
+// text the mark went to a line of its own where a long address wrapped (a package's Links at 390 px, R-UI-170).
+.external-link {
+  display: inline-flex;
+  align-items: last baseline;
+  gap: var(--quader-space-1);
+  max-inline-size: 100%;
+
+  > a {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+
+  > .material-icons {
+    flex: none;
+    font-size: 1.125rem;
   }
 }
 

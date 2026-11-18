@@ -290,7 +290,9 @@ export class DebSigningKeys {
   protected readonly generatedText = $localize`:@@deb.keys.origin.generated:Generated`;
   protected readonly caption = $localize`:@@deb.keys.caption:Signing keys of this repository`;
   protected readonly columns = computed<readonly TableColumn[]>(() => [
-    { id: 'fingerprint', label: $localize`:@@deb.keys.col.fingerprint:Fingerprint` },
+    // The fingerprint wraps by its groups of four and holds **Public certificate** on one line: without a least width it stood in
+    // five lines of two groups beside columns with room (R-UI-171).
+    { id: 'fingerprint', label: $localize`:@@deb.keys.col.fingerprint:Fingerprint`, width: '10rem' },
     { id: 'state', label: $localize`:@@deb.keys.col.state:State` },
     { id: 'type', label: $localize`:@@deb.keys.col.type:Type` },
     { id: 'origin', label: $localize`:@@deb.keys.col.origin:Origin` },

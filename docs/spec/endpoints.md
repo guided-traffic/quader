@@ -1121,7 +1121,7 @@ Priority: **MVP** · Covers: quader-only
   hosts, surface, exposure mode, rule count, pool; inert names flagged), `/admin/endpoints/{endpoint}`
   (the configuration read-only, marked as coming from the configuration file, and the rule list in the shared data table:
   rule (name and description), repository, packages and paths, versions, pre-releases, enabled, and the row's copy button and
-  menu with edit and delete; versions and pre-releases give their room below 64 rem of the list, and the rows stack below 48 rem,
+  menu with edit and delete; versions and pre-releases give their room below 64 rem of the list, and the rows stack where the columns do not fit (R-UI-174),
   [Q-UI-331](api-and-ui.md#q-ui-331--an-endpoints-rules-are-the-shared-data-table-and-a-rules-client-address-is-the-rows-copy-button)),
   `/admin/endpoints/{endpoint}/rules/new` and `/admin/endpoints/{endpoint}/rules/{name}`.
 - **Rule editor.** One page like the policy editor ([api-and-ui.md](api-and-ui.md) R-UI-027, Q-UI-4):

@@ -132,16 +132,20 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
   (`width`, which must hold its header and its longest value on one line: a format with its icon 8 rem, a class 5 rem, a project
   with its mark 11 rem); the name column takes 12 to 16 rem and what the others leave. A column that `prefer`s takes every pixel
   the others leave, and every other column keeps its width (the name of a repository list, the scope of a token list). The least
-  widths of a list sum to at most 48 rem, where its rows stack. A column of lower rank is `narrow`: below 64 rem of the list's
+  widths are where the list stacks its rows (below). A column of lower rank is `narrow`: below 64 rem of the list's
   width it is hidden and the others take its room (the list marks its cells `narrow-drop`; the admin area's Last activity). The
   list's width is the table's own (the container `table`); the table keeps no room for a scrollbar its rows do not need, so it
   ends where the lines above it end ([Q-UI-427](../spec/api-and-ui.md#q-ui-427--a-table-keeps-no-room-for-a-scrollbar-its-rows-do-not-need)).
 - **One alignment.** Every cell starts at the top of its row; a control in a cell (a button, a select, the address field) is
   centred on the first line of text. A list does not set its own vertical alignment.
-- **On a narrow list the rows stack.** Below 48 rem of columns (49 rem of the list with the room of a scrollbar) every data table shows each row as a block: the name and
-  its actions, then each cell on a line, named by its column (the table sets `data-label`; `stackLabel: false` where the value
-  says it), a cell without a value ("–") left out
-  ([Q-UI-306](../spec/api-and-ui.md#q-ui-306--below-48-rem-of-its-width-the-repository-list-stacks-each-row-with-the-address-across-the-row)).
+- **Where the columns do not fit, the rows stack.** A data table measures its columns at their least widths (a wrapping column's
+  `width`, a column that never breaks at its longest value) against its room and shows each row as a block where they do not fit,
+  and only there ([Q-UI-680](../spec/api-and-ui.md#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself)):
+  the name and its actions on the first line, then the other cells side by side, as many to a line as fit, each named by its
+  column (the table sets `data-label`; `stackLabel: false` where the value says it), a cell without a value ("–") left out
+  ([Q-UI-681](../spec/api-and-ui.md#q-ui-681--a-stacked-row-puts-its-cells-side-by-side)). So a column's least width decides
+  where its list stacks: a wrapping column without one is as narrow as its longest word (the start page's description, one word
+  a line).
   The head of a stacked list is one row of its sort buttons above the blocks; a header that sorts nothing is for assistive
   technology only ([Q-UI-391](../spec/api-and-ui.md#q-ui-391--a-stacked-list-keeps-its-sort-buttons-in-a-row-above-its-blocks)).
   `[stack]="false"` keeps the table for a list that cannot be read as blocks.
@@ -327,7 +331,9 @@ No list shows an address field ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-pro
     `btn btn-tertiary row-setup` whose accessible name ends with the key; on a page and in a header it is a default button, never
     blue ([Q-UI-487](../spec/api-and-ui.md#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)). The search results offer neither ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)).
   - A field alone on its line, or a stack of the addresses of one thing, fills the line up to `--quader-address-measure`
-    (40 rem, 70 characters), so a stack is one width ([Q-UI-301](../spec/api-and-ui.md#q-ui-301--a-field-alone-on-its-line-fills-the-line-up-to-a-measure-of-70-characters)).
+    (40 rem, 70 characters), so a stack is one width ([Q-UI-301](../spec/api-and-ui.md#q-ui-301--a-field-alone-on-its-line-fills-the-line-up-to-a-measure-of-70-characters));
+    a longer address widens its field up to the line, so it is never cut beside empty room
+    ([Q-UI-683](../spec/api-and-ui.md#q-ui-683--an-address-field-is-as-wide-as-its-address-at-least-the-measure-at-most-its-line)).
   - Where the field is shorter than its address, the address scrolls inside it (the input at least 8 rem), the button stays
     attached. Never an ellipsis.
 - **Behaviour.** Focus or click selects the whole address; copy uses `quader-copy-button` (clipboard, polite status, alert on failure).
@@ -373,6 +379,9 @@ screen draws its own, and no screen shows a version's highest severity instead.
 
 ## Text
 
+- A link to another site carries the mark `open_in_new` and a visually hidden "(opens another site)", all three in
+  `<span class="external-link">`, so the mark stays on the link's last line where a long address wraps.
+
 - Sentence case everywhere; upper-case is not used for labels.
 - 14 px on 21 px for text and controls, 12 px for small text. Headings use `--quader-heading-1` to `-3`.
 - A setting's name or value of the configuration in running text is `<code translate="no">`
@@ -397,8 +406,11 @@ Before a screen is committed:
       the title names the thing, no field is red before the user touched it, every step or section names one topic.
 - [ ] Rendered with `make ui-renders` ([web-ui.md](web-ui.md#renders-of-every-screen)) and every changed screen looked at in
       both schemes and at 390 px, as each kind of user that reaches it; the contact sheet lists no failure, no page that scrolls
-      sideways at any width and no region that does at 1024 px and wider, that the change brought; and in each picture no icon on
-      another line than its name, no name, date or short phrase broken across lines, no table that ends before the lines above it.
+      sideways at any width and no region that does at 1024 px and wider, that the change brought; no layout finding (an icon apart
+      from its label, a short thing broken, a row off its line or with other actions, a cut text with room, a table stacked though
+      it fits, a page that scrolls into nothing: [the checks](web-ui.md#renders-of-every-screen), R-UI-170 to R-UI-174); and in
+      each picture what the checks do not see: a table that ends before the lines above it, a field far wider than its input, two
+      words or two styles for one thing, an element that takes the room without being the screen's job.
 - [ ] Compared side by side with the reference's screen for the same job, in a real browser, not only in a unit test.
 - [ ] Seen in the dark and the light scheme, and at a narrow window.
 - [ ] Only shared controls, classes of `_controls.scss` and `--quader-*` tokens; no colour literal.
@@ -434,5 +446,6 @@ written earlier were not reviewed against it, so this list is what is known, not
 
 - The settings rules and the 56 rem column are read from one screenshot of the reference, not measured from its rendered page; the
   values of Q-UI-128 come from its admin dashboard and user list.
-- Nothing enforces this page except the lint rules of R-UI-046 and the review before a commit. Whether a screen matches the reference
+- Nothing enforces this page except the lint rules of R-UI-046, the layout checks of the renders (R-UI-170 to R-UI-174) and the
+  review before a commit. Whether a screen matches the reference
   cannot be tested automatically.

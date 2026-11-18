@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 619 of 919 spec requirements are implemented: a passing test names them and no
+**Status.** 619 of 924 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
 **Totals.** 2,239 catalog features on 60 pages: 788 specified (513 of them implemented), 1,451 open.
-919 spec requirements: 646 cover catalog features, 273 cover none (`quader-only`, [listed at the
+924 spec requirements: 646 cover catalog features, 278 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>273 requirements</summary>
+<summary>278 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3069,6 +3069,11 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-167 | Recently opened is a folding group of the side bar of Your work | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-168 | A side bar is made of titled blocks; Security audit is the second title of Your work's side bar | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-169 | A repository's address stands in a field on Set up client only | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-170 | An icon stands on the line of its label, and the renders find one that does not | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-171 | A short thing stays on one line | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-172 | A row reads along one line, and its actions are built like its neighbours' | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-173 | Nothing is cut while there is room beside it, and nothing scrolls sideways | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-174 | A list stacks its rows only where its columns do not fit, and a stacked row is dense | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 (implemented) | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-007 (implemented) | One origin for UI and package content | MVP | [architecture.md](../spec/architecture.md) |

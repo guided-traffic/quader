@@ -80,14 +80,24 @@
   overflow-wrap: anywhere;
 }
 
-// A fact with a copy button (an image's digest) keeps its value on the line of its label.
+// A fact with a copy button (an image's digest) keeps its value on the line of its label, and the button beside the value: a
+// value that wraps breaks inside itself. Wrapping as flex items, the button went to a line of its own under a digest at 1,024 px
+// (R-UI-170).
 .tab dl.facts {
   align-items: baseline;
 
   dd:has(> quader-copy-button) {
     display: flex;
-    flex-wrap: wrap;
     align-items: baseline;
     gap: var(--quader-space-1);
+
+    > code {
+      min-inline-size: 0;
+      overflow-wrap: anywhere;
+    }
+
+    > quader-copy-button {
+      flex: none;
+    }
   }
 }
