@@ -199,13 +199,9 @@ func newStubControl(t testing.TB, target, host, secret string, timeout time.Dura
 		fwd:  fwd,
 		base: "https://" + host,
 		tok:  secretValue(t, secret, "control-token"),
-		c: &http.Client{Timeout: timeout, Transport: &http.Transport{
-			DisableKeepAlives: true,
-			DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
-				return dialForward(ctx, &d, network, addr)
-			},
-			TLSClientConfig: &tls.Config{RootCAs: caPool(t), MinVersion: tls.VersionTLS12, ServerName: host},
-		}},
+		c: &http.Client{Timeout: timeout, Transport: quietTLSTransport(func(ctx context.Context, network, _ string) (net.Conn, error) {
+			return dialForward(ctx, &d, network, addr)
+		}, &tls.Config{RootCAs: caPool(t), MinVersion: tls.VersionTLS12, ServerName: host})},
 	}
 }
 

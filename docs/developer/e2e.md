@@ -580,7 +580,10 @@ forward for the whole process, so a drain or a busy API server that breaks the f
 in flight (the cleanup of `TestVulnLong_R_VULN_004_FullSyncDrainedMidRun` hit it), and a single connection through a
 forward can end without an answer on a quiet cluster too (the setup of the `vuln` set lost a publish to the npm stub with
 `EOF` in the nightly run 42002617340, and a readiness ping through a packages pod's forward with `connection reset by peer`
-in run 42035411725, each failing every test of the set). A call that failed on the transport (a reset, an end of
+in run 42035411725, each failing every test of the set). The commonest way a forward ended was the clients' own TLS close:
+a close_notify that reached a server's socket before the server closed it made the socket end in a reset, and kubectl
+ends the whole forward on a reset of any one connection. Every harness client that may go through a forward therefore
+closes its connections without close_notify (`quietTLS`, item 16 of the [findings](#findings-of-the-suite)). A call that failed on the transport (a reset, an end of
 stream, a refused connection; never an HTTP status) therefore goes to a new forward, at most twice per call
 (`overForward` in [m1_env_test.go](../../test/e2e/m1_env_test.go)): `forward.renew` ends a kubectl process that is
 still the one the call started on, waits up to 30 s for the next one to listen on the same port, and the call goes out
@@ -981,6 +984,23 @@ profile after the fixes (`SET=push` and `SET=failover`, above): the measurements
    the `api` replica B; both decide from the policy of their own repository snapshot, which a replica applies at its own change-log
    poll (`cluster.epoch_poll_interval`, 1 s; R-VULN-027, R-ARCH-018), and with Valkey stopped there is no early eviction. The
    product follows the spec; the test now waits for the finding to stop blocking on the `api` replica within the same 2 s.
+16. **Fixed in the harness: the clients' own TLS close ended their `kubectl port-forward`** (nightly 43698804297, `e2e (vuln)`:
+   `TestVuln_R_VULN_011_R_VULN_018_AnAdvisoryAppearsLate/R-VULN-018_with_Valkey_stopped_as_well`, `GET …/vulnerabilities/trove.json: EOF`;
+   nightly 44067104691, `e2e (vuln-long)`: `TestVulnLong_R_VULN_026_RestoreKeepsBlocksAndTriage`, five probes of one restored packages
+   pod cut by EOF or a reset). Each time the forward's kubectl process had ended with `An error occurred forwarding … read tcp4
+   127.0.0.1:…->127.0.0.1:8080: read: connection reset by peer` and `error: lost connection to pod` (the `portforward-*.log` of the
+   artifacts; four ends of the same forward within one second in the restore), and in the first run the pod logged the two requests
+   before the cut one and never the cut one. The reset came from the pod's own socket after an answer: the server writes the
+   answer of a `Connection: close` request and closes; the client's TLS close_notify, sent as soon as it has read the answer, can
+   reach the server's socket before that close, and Linux then closes with a reset because data was left unread. The kubelet's copy
+   reads the reset and kubectl ends the whole forward. Stubs of the test do it too (the forwards to `svc/osvstub` and `svc/npmstub`
+   of the green nightly 44186978088 ended the same way). Reproduced on Linux with a Go server, a copying proxy in the kubelet's
+   place and the e2e client's transport: 3 of 200 connections ended in the reset with an immediate close, all 200 with the
+   server's close 20 ms late (a busy node), none of either when the client closes without close_notify. The harness clients
+   (`api`, the stub control clients, the CI issuer double) now close that way (`quietTLS` in
+   [m1_env_test.go](../../test/e2e/m1_env_test.go), [Q-HA-301](../spec/ha-and-helm.md#q-ha-301--the-harness-clients-close-their-tls-connections-without-close_notify-so-a-closing-connection-does-not-end-a-kubectl-port-forward)).
+   It is not a request Quader dropped: a client of the edge gets its answer in full whatever the teardown does, and the cut
+   request never reached the pod.
 
 ## TLS in the suite
 
