@@ -287,8 +287,8 @@ internal/webui:  //go:embed all:dist
 |---|---|
 | `/ui/` or `/ui/<route>` without locale | `302` to `/ui/<locale>/<route>` with the query kept. Locale: `Options.Preference` (the app sets it to `uiLocalePreference` in [internal/app/ui_locale.go](../../internal/app/ui_locale.go): it resolves the `__Host-qdr_session` cookie with the read-only `session.Store.Peek` (no touch, no ending of sessions), because the authentication stage ignores the cookie on `/ui/`, and reads `user_preferences.locale`; Q-API-184), then `Accept-Language` (q-values, `de-DE` matches `de`), then `Options.DefaultLocale`. `Cache-Control: no-store`, `Vary: Accept-Language` |
 | `/ui/<locale>` | `302` to `/ui/<locale>/` |
-| `/ui/<locale>/` and any path whose last segment has no `.` | The locale's `index.html` with nonce and document headers (SPA fallback) |
-| `/ui/<locale>/<file with extension>` | The file; `404` problem+json if missing or a directory. It never falls back to the index |
+| `/ui/<locale>/`, any path whose last segment has no `.`, the page of a package (`…/packages/<format>/<name>`, `isPackageRoute`) and the page of a folder or file of a repository (`…/repositories/<key>/files/<path>`, `isFilesRoute`), whose last segment may have one | The locale's `index.html` with nonce and document headers (SPA fallback) |
+| Any other `/ui/<locale>/<file with extension>` | The file; `404` problem+json if missing or a directory. It never falls back to the index |
 | `/ui/<locale>/<hashed file>` the build lacks | From the shared asset store with the headers of the build's own files; `404` when no release published it, `503` with `Retry-After: 1` and `no-store` when the store cannot be asked ([The shared asset store](#the-shared-asset-store)) |
 | Method other than `GET`, `HEAD` | `405` with `Allow` |
 

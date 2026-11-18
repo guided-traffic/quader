@@ -229,7 +229,7 @@ func (h *Handler) redirect(w http.ResponseWriter, r *http.Request, target string
 
 func (h *Handler) serveLocale(w http.ResponseWriter, r *http.Request, b *bundle, tail string) {
 	last := tail[strings.LastIndexByte(tail, '/')+1:]
-	if tail == "" || tail == "index.html" || !strings.Contains(last, ".") || isPackageRoute(tail) {
+	if tail == "" || tail == "index.html" || !strings.Contains(last, ".") || isPackageRoute(tail) || isFilesRoute(tail) {
 		h.serveIndex(w, r, b)
 		return
 	}
@@ -258,6 +258,18 @@ func (h *Handler) serveLocale(w http.ResponseWriter, r *http.Request, b *bundle,
 // index and not a 404 (R-UI-007).
 func isPackageRoute(tail string) bool {
 	return strings.HasPrefix(tail, "packages/") || strings.Contains(tail, "/packages/")
+}
+
+// isFilesRoute reports whether tail is the page of a folder or a file of a repository (`projects/<key>/repositories/<key>/files/<path>`,
+// R-UI-010): the page of a file ends in the file's name, `…/files/docs/readme.txt`, which is no asset of the UI, so a reload or a link
+// to it must reach the index and not a 404. The UI's own assets are never below a `repositories` segment.
+func isFilesRoute(tail string) bool {
+	_, rest, found := strings.Cut(tail, "/repositories/")
+	if !found {
+		return false
+	}
+	_, _, found = strings.Cut(rest, "/files/")
+	return found
 }
 
 // serveFrom serves the file at tail of the bundle and reports whether it did: false for a path

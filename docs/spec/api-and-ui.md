@@ -2963,7 +2963,8 @@ Priority: **MVP** · Covers: UI-058
   uploads (R-UI-012). Checked on 2026-10-28 against v22 release coverage: `resource()` and
   `httpResource()`, Signal Forms and `@angular/aria` are stable or generally available in v22.
 - Serving (R-ARCH-004): hashed assets with `Cache-Control: public, max-age=31536000, immutable`,
-  `index.html` with `Cache-Control: no-cache` and the SPA fallback for every non-file path. A hashed asset is a file named
+  `index.html` with `Cache-Control: no-cache` and the SPA fallback for every non-file path; the page of a package (R-UI-007) and the
+  page of a file of a repository (R-UI-010) are such paths although their last segment can have a dot. A hashed asset is a file named
   `<name>-<8 characters of A–Z, a–z, 0–9, _ and ->.<extension>` in at most two plain directories below the locale
   ([Q-UI-140](#q-ui-140--which-file-names-of-the-ui-build-are-hashed)); `build:embed` fails a build whose files do not follow
   that rule. A hashed asset the replica's own build lacks, which during a rolling upgrade is one of the other release, is

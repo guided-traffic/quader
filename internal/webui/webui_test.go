@@ -152,6 +152,23 @@ func TestSPAFallback(t *testing.T) {
 		}
 	})
 
+	t.Run("R-UI-010 the page of a file of a repository answers the index, also below the admin area's and a nested path", func(t *testing.T) {
+		for _, p := range []string{
+			"/ui/en/projects/e2e/repositories/generic-local/files/hello.txt",
+			"/ui/de/projects/e2e/repositories/npm-internal/files/@acme/ui-kit/-/ui-kit-1.1.0.tgz",
+		} {
+			rec := do(h, "GET", p)
+			if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `<base href="/ui/`) {
+				t.Errorf("%s: code %d", p, rec.Code)
+			}
+		}
+		for _, p := range []string{"/ui/en/repositories/files.js", "/ui/en/files/app.js", "/ui/en/projects/e2e/repositories/files.css"} {
+			if rec := do(h, "GET", p); rec.Code != http.StatusNotFound {
+				t.Errorf("%s is no page of a file: code %d", p, rec.Code)
+			}
+		}
+	})
+
 	t.Run("R-UI-001 HEAD sends headers and no body", func(t *testing.T) {
 		rec := do(h, "HEAD", "/ui/en/admin/jobs")
 		if rec.Code != 200 || rec.Body.Len() != 0 || rec.Header().Get("Content-Security-Policy") == "" {

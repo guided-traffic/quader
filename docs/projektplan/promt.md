@@ -1054,6 +1054,13 @@ agent** is not decided until the owner has said so.
   the type check of the journeys, the Go tests) do not read the German file; `make web-embed` does and was not among them.
   Fixed by restoring the two units from the files package's commit. Since then a landing of UI work also runs `xmllint` over
   both locale files, compares the units and sources of the German file with the English one, and runs `make web-embed`.
+- **F-139 · The page of a file answered 404 when it was opened by its address, and a journey asked for a text that is gone**
+  (2026-11-18, `e2e (access-long)` of Test and Release 44288465071, the run of 7b1e693a; both from the files package, whose journeys
+  could not run before the push). The embedded UI answers a path whose last segment has a dot as a file of the build, so
+  `…/repositories/<key>/files/hello.txt` was a 404 on a reload or from a link, while the dev server of the renders has its own
+  rule for it and showed the page. Fixed: `isFilesRoute` in [webui.go](../../internal/webui/webui.go) with a unit test. Journey 03
+  still expected "No repository matches." where the list says "No repository matches the filters.". What it shows: a page whose
+  address ends in a name with a dot needs a test against the embedded UI, not only a render.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
