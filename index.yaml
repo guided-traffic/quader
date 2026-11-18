@@ -2,8 +2,23 @@ apiVersion: v1
 entries:
   quader:
   - apiVersion: v2
+    appVersion: 0.56.1
+    created: "2026-11-18T00:45:58.24619659Z"
+    description: quader, an artifact repository manager for package formats, as a
+      web and a worker Deployment.
+    digest: 5ad83acea58459b4a7c337eace452408a70bb95087c20fa2c17ffe6c9ada62b9
+    home: https://github.com/guided-traffic/quader
+    kubeVersion: '>=1.30.0-0'
+    name: quader
+    sources:
+    - https://github.com/guided-traffic/quader
+    type: application
+    urls:
+    - https://guided-traffic.github.io/quader/quader-0.56.1.tgz
+    version: 0.56.1
+  - apiVersion: v2
     appVersion: 0.56.0
-    created: "2026-11-17T22:45:50.885344+01:00"
+    created: "2026-11-18T00:45:58.241858365Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: a6461364035e696f8c09c6618f9280c6eb1bbb5bd79840b15896804a690f460b
@@ -18,8 +33,23 @@ entries:
     version: 0.56.0
   quader-bastion:
   - apiVersion: v2
+    appVersion: 0.56.1
+    created: "2026-11-18T00:45:58.250033279Z"
+    description: The quader Bastion, a read-only, internet-facing cache instance in
+      front of a main quader installation (quader serve --role bastion).
+    digest: 56386b499d71f2d8efc6977b4a9ef9f5d5dc3131f054e551dee43053fb07e193
+    home: https://github.com/guided-traffic/quader
+    kubeVersion: '>=1.30.0-0'
+    name: quader-bastion
+    sources:
+    - https://github.com/guided-traffic/quader
+    type: application
+    urls:
+    - https://guided-traffic.github.io/quader/quader-bastion-0.56.1.tgz
+    version: 0.56.1
+  - apiVersion: v2
     appVersion: 0.56.0
-    created: "2026-11-17T22:45:50.88779+01:00"
+    created: "2026-11-18T00:45:58.248108056Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 6fd7da3d644f857c88331e17b2008447328227562f1d09dabc41d9e3b093abc6
@@ -32,4 +62,4 @@ entries:
     urls:
     - https://guided-traffic.github.io/quader/quader-bastion-0.56.0.tgz
     version: 0.56.0
-generated: "2026-11-17T22:45:50.882218+01:00"
+generated: "2026-11-18T00:45:58.23520913Z"
