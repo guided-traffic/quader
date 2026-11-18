@@ -33644,6 +33644,12 @@
     <unit id="files.details">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-file.ts:98</note>
+      </notes>
+      <segment>
+        <source>Details</source>
+        <target>Details</target>
+      </segment>
+    </unit>
     <unit id="pkg.version-count">
       <notes>
         <note category="location">src/app/features/packages/package-detail.html:9,10</note>
@@ -34029,6 +34035,8 @@
       <segment>
         <source>More actions for this folder</source>
         <target>Weitere Aktionen für diesen Ordner</target>
+      </segment>
+    </unit>
     <unit id="route.packages.version.title">
       <notes>
         <note category="location">src/app/features/packages/packages.routes.ts:41</note>

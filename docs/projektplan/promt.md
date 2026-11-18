@@ -1043,6 +1043,13 @@ agent** is not decided until the owner has said so.
     the render's growing window leaves the empty part.
   - A version's page and a file's page show the status **Needs triage** and "by user:priya" to a reader; the first is the open
     question above, the second a technical way to name a person.
+- **F-138 · The merge of two packages cut two units of the German locale file, and `main` was red for one run** (2026-11-18,
+  Test and Release 44287670389: `web (Angular)`, the image build and what needs the image). The development agent joined both
+  sides of the conflicts in `web/src/locale/messages.de.xlf`; each conflict ended inside a unit, so `files.details` and
+  `files.folder-actions` lost their end and `ng build` refused the file. The gates it ran before the push (lint, the unit tests,
+  the type check of the journeys, the Go tests) do not read the German file; `make web-embed` does and was not among them.
+  Fixed by restoring the two units from the files package's commit. Since then a landing of UI work also runs `xmllint` over
+  both locale files, compares the units and sources of the German file with the English one, and runs `make web-embed`.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
