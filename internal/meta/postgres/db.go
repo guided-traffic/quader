@@ -85,7 +85,7 @@ func Open(ctx context.Context, cfg config.Database, instance, role string, log *
 	}
 	db := &DB{cfg: cfg, log: log, instance: instance, role: role, retry: newRetrier(cfg.Retry)}
 	db.life, db.endingLife = context.WithCancel(context.Background())
-	db.holds = map[string]*holders{poolRequest: {}, poolControl: {}, poolLease: {}}
+	db.holds = map[string]*holders{poolRequest: newHolders(poolRequest, log), poolControl: newHolders(poolControl, log), poolLease: newHolders(poolLease, log)}
 	db.retry.metrics = o.metrics
 	var err error
 	if role == meta.RoleBackup {
@@ -326,8 +326,10 @@ func (db *DB) CloseContext(ctx context.Context) error {
 			if p.pool != nil {
 				pools = append(pools, closingPool{
 					name: p.name, close: p.pool.Close,
-					held:    func() int32 { st := p.pool.Stat(); return st.AcquiredConns() + st.ConstructingConns() },
-					holders: func() []string { return db.holds[p.label].describe(time.Now()) },
+					held: func() int32 { st := p.pool.Stat(); return st.AcquiredConns() + st.ConstructingConns() },
+					holders: func() []string {
+						return db.holds[p.label].describeHeld(time.Now(), p.pool.Stat().ConstructingConns())
+					},
 				})
 			}
 		}
@@ -340,11 +342,17 @@ func (db *DB) CloseContext(ctx context.Context) error {
 type closingPool struct {
 	name  string
 	close func()
-	// held is the connections the close waits for: acquired ones and ones still under construction.
+	// held is the connections the close waits for: acquired ones (closed ones being cleaned up among them) and ones still under
+	// construction.
 	held func() int32
-	// holders names the borrowers of the connections held, longest first; nil names none.
+	// holders names the connections held: the borrowers, longest first, then the closed ones being cleaned up and the ones under
+	// construction; nil names none.
 	holders func() []string
 }
+
+// ErrPoolsOpen is the error of a close that reached its deadline while a pool still held connections; the error that wraps it names
+// them. The shutdown logs the goroutines of the process with it, which show where a held connection waits (Q-ARCH-497).
+var ErrPoolsOpen = errors.New("database pools still open at the close deadline")
 
 func closePools(ctx context.Context, pools []closingPool) error {
 	open := make([]atomic.Bool, len(pools))
@@ -382,7 +390,8 @@ func closePools(ctx context.Context, pools []closingPool) error {
 			if who := p.holders(); len(who) > 0 {
 				text += " by " + strings.Join(who, ", ")
 			} else {
-				text += " by a connection under construction"
+				// For example an acquire in progress: the pool pings an idle connection before the tracer records its borrower.
+				text += " by no recorded borrower"
 			}
 		}
 		held = append(held, text)
@@ -390,5 +399,5 @@ func closePools(ctx context.Context, pools []closingPool) error {
 	if len(held) == 0 { // every pool closed as the deadline passed, or the ones left open hold nothing
 		return nil
 	}
-	return fmt.Errorf("database pools still open at the close deadline: %s: %w", strings.Join(held, ", "), context.Cause(ctx))
+	return fmt.Errorf("%w: %s: %w", ErrPoolsOpen, strings.Join(held, ", "), context.Cause(ctx))
 }

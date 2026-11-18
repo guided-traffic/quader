@@ -1,8 +1,12 @@
 package postgres
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"log/slog"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -58,5 +62,73 @@ func TestR_HA_011_TheCloseErrorNamesTheBorrowers(t *testing.T) {
 	err := closePools(ctx, pools)
 	if err == nil || !strings.Contains(err.Error(), "control pool (1 connection held) by cluster.(*changeLog).poll for 8.7s") {
 		t.Fatalf("closePools = %v", err)
+	}
+	if !errors.Is(err, ErrPoolsOpen) || !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("closePools = %v: want ErrPoolsOpen and the deadline", err)
+	}
+}
+
+// TestR_HA_011_AClosedConnectionIsNamedUntilItsCleanupEnds: a connection that came back closed has no borrower, and the pool keeps
+// its place until the driver has cleaned it up; the close names it as such and not as a connection under construction, the
+// connections under construction are named apart, and a cleanup slower than the warning bound is logged when the bound passes and
+// when it ends (Q-ARCH-497, H-822).
+func TestR_HA_011_AClosedConnectionIsNamedUntilItsCleanupEnds(t *testing.T) {
+	var logs syncBuffer
+	h := newHolders(poolControl, slog.New(slog.NewTextHandler(&logs, nil)))
+	h.warnAt = 20 * time.Millisecond
+	c := &pgx.Conn{}
+	borrow(h, c)
+	h.released(c) // a connection without a driver connection is not a closed one
+	if got := h.describeHeld(time.Now(), 0); len(got) != 0 {
+		t.Fatalf("%v: a returned connection is still listed", got)
+	}
+	quick, slow := make(chan struct{}), make(chan struct{})
+	h.watchCleanup(quick)
+	h.watchCleanup(slow)
+	got := strings.Join(h.describeHeld(time.Now(), 1), ", ")
+	if got != "2 closed connections still being cleaned up, 1 connection under construction" {
+		t.Fatalf("describeHeld = %q", got)
+	}
+	close(quick)
+	waitUntil(t, func() bool { return h.cleaning.Load() == 1 })
+	if got := strings.Join(h.describeHeld(time.Now(), 0), ", "); got != "1 closed connection still being cleaned up" {
+		t.Fatalf("describeHeld = %q", got)
+	}
+	waitUntil(t, func() bool { return strings.Contains(logs.String(), "still being cleaned up") })
+	if strings.Contains(logs.String(), "was cleaned up") {
+		t.Fatal("the end of a cleanup that has not ended is logged")
+	}
+	close(slow)
+	waitUntil(t, func() bool { return h.cleaning.Load() == 0 && strings.Contains(logs.String(), "was cleaned up") })
+	if !strings.Contains(logs.String(), "db_pool=control") {
+		t.Errorf("the pool is not named: %s", logs.String())
+	}
+	if n := strings.Count(logs.String(), "still being cleaned up"); n != 1 {
+		t.Errorf("%d warnings for the one slow cleanup, want 1 (the quick one is not logged): %s", n, logs.String())
+	}
+}
+
+// syncBuffer is a log sink the test reads while the watcher writes.
+type syncBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (s *syncBuffer) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.Write(p)
+}
+
+func (s *syncBuffer) String() string { s.mu.Lock(); defer s.mu.Unlock(); return s.b.String() }
+
+func waitUntil(t *testing.T, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for !cond() {
+		if time.Now().After(deadline) {
+			t.Fatal("the condition did not hold within 5 s")
+		}
+		time.Sleep(time.Millisecond)
 	}
 }

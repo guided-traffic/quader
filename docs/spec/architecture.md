@@ -7281,6 +7281,24 @@ Context: The criterion of R-ARCH-034 is "1,000 requests sent within 2 s are admi
 
 **Applied in the spec:** none (R-ARCH-034 is unchanged); [ha-and-helm.md](ha-and-helm.md) Q-HA-285 points here; H-823 is closed. Test: `TestClusterWideRateLimit`.
 
+### Q-ARCH-497 · A closed connection that holds its pool is named and logged, and a close that reaches its deadline logs the goroutines
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Refines [Q-ARCH-461](#q-arch-461--the-goroutine-dump-of-an-overrun-names-every-stack-and-the-log-carries-the-pool-counts).
+
+Context: [H-822](ha-and-helm.md#h-822--the-control-connection-of-a-replica-can-stay-unusable-for-more-than-10-s-in-the-integration-runs-and-the-cause-is-not-found). Verified in the driver (pgx 5.11, puddle 2.2.3): a connection whose statement is cut by its context is closed, and on its release pgxpool destroys it; the destructor waits up to 15 s for the driver's cleanup (a cancel request over a new connection, the terminate message, reading until the server closes), and the pool counts the connection as acquired and keeps its place until then. The release has already removed the borrower, so the close error of Test and Release 43316531262 (`TestR_NPM_010`, 2026-11-12) read "control pool (1 connection held) by a connection under construction" for what can as well be such a cleanup, and the goroutine dump of Q-ARCH-461 was not written: the pools returned at the close deadline with an error and the close phase did not overrun. The dumps of the overruns of 2026-11-10 (run 42831867192, job 129884351119) show cleanups waiting in the cancel request's TCP connect to the database port and in the read for the server's close. Reproduced on the integration stack: a statement on the control connection cut while PostgreSQL is paused leaves the control pool handing out nothing for the 2 s an `Acquire` waited and for the 3 s the cleanup took.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Name and log it (chosen) | The holder table counts the closed connections until their cleanup ends; the close error names them apart from the connections under construction; a cleanup over 1 s is logged at the second and at its end with its pool; a close with a pool still open at its deadline logs the pool counts and the grouped goroutines | The next occurrence says whether a cleanup held the pool, for how long and where it waited, in the replica's log that a failed test prints | Explains, does not shorten the stall |
+| (b) Cancel on the server instead of closing (pgconn's `CancelRequestContextWatcherHandler`) | A cut statement is cancelled by a cancel request and the connection stays | No cleanup when the cancel request gets through | In the dumps the cancel request itself was what waited; changes how every cut statement of every pool ends, unmeasured |
+| (c) A second connection for the control pool | A cleanup no longer empties it | The control loops keep a connection | Rejected by [Q-HA-284](ha-and-helm.md#q-ha-284--a-readiness-probe-does-not-cut-its-statement-at-the-end-of-its-check) for the connection budget of R-HA-016, and the cause stays unknown |
+
+**Choice:** (a), in [holders.go](../../internal/meta/postgres/holders.go) (`watchCleanup`, `describeHeld`), [db.go](../../internal/meta/postgres/db.go) (`ErrPoolsOpen`) and [app.go](../../internal/app/app.go) (`Shutdown`).
+
+**Rationale:** The evidence names the mechanism that holds the pool (the cleanup of a closed connection) but not why the cleanup waited seconds on the runners: a TCP connect to the database port that does not complete is outside the product. A change of the driver's cancel path before that is known would be a guess. The development agent would revisit the choice when a logged cleanup names the step that waits: (b) if the server is reachable and the close is what waits, a look at the runners' network path if the connect is.
+
+**Applied in the spec:** none (R-HA-011 and R-ARCH-024 are unchanged); H-822 is updated. [docs/developer/database.md](../developer/database.md). Tests: `TestR_HA_011_AClosedConnectionIsNamedUntilItsCleanupEnds`, `TestR_HA_011_TheCloseErrorNamesTheBorrowers`.
+
 ### Q-ARCH-226 · The host answers an early, read-only ownership question
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
