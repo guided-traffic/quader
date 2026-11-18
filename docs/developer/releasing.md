@@ -82,9 +82,10 @@ SDKs, without which run 41871333853 ran out of disk. The RAM is
 overbooked: the scheduler places a pod by its request, and a job above it (the kind legs, `lint`, `unit`) can be evicted by
 the kubelet when several jobs on one node peak at once; such a red job is the node's capacity, not a test. The self-hosted classes run on three nodes of 32 cores, 64 GiB of RAM and about 450 GiB of disk. Neither class has a disk limit since 2026-11-09: the former 30 GiB of `docker-storage` evicted the kind legs of `large` (`The self-hosted runner lost communication with the server`, no log and no artifact; read `kubectl get events -n arc-runners` within the hour), and the kubelet's eviction at 10% free disk on the node is the guard that remains. Since 2026-11-18 the Docker daemon of a `large` runner starts with the pod's cgroup as its parent (`kubepods/burstable/pod<uid>/docker`): the kind nodes, k6 and the image builds of a leg share the pod's CPU request and count against its memory limit, so a leg above 28 GiB is OOM-killed inside its pod (F-133 in [promt.md](../projektplan/promt.md) has the measurement and what is not verified yet). Before that, and still on `self-hosted`, a job's containers run in the host's cgroup `/docker/<id>`, outside the runner pod and its limits. The integration
 shards, `compat`, the image builds and the performance jobs were not measured. A job therefore installs what it calls: `make` and the C compiler (`build-essential`), `file`
-and `jq` where a step uses them, through [build-tools](../../.github/actions/build-tools/action.yml), which installs only what the runner lacks, so a GitHub-hosted runner, whose image has them, does not depend on the Ubuntu archive (on 2026-11-11 the archive did not resolve there for over an hour; the self-hosted image still installs them, F-117); every `apt-get update` of the workflows treats an index it cannot read (a PPA of the runner image answered 503 on 2026-11-11) as a warning, and the install that follows still has to succeed, the Docker Compose plugin for the integration stack, Go from `go.mod`,
+and `jq` where a step uses them, through [build-tools](../../.github/actions/build-tools/action.yml), which installs only what the runner lacks, so a GitHub-hosted runner, whose image has them, does not depend on the Ubuntu archive (on 2026-11-11 the archive did not resolve there for over an hour; the self-hosted image still installs them, F-117), the Docker Compose plugin for the integration stack, Go from `go.mod`,
 Node.js from `web/.nvmrc`, and the pinned helm, kubectl, kind and Docker Buildx; the chart job also fetches promtool
-at its pin (`make promtool`, below).
+at its pin (`make promtool`, below). Every OS package among them is installed by [apt-install.sh](../../.github/scripts/apt-install.sh),
+which bounds the install in time ([OS packages in the jobs](#os-packages-in-the-jobs)).
 
 | Job | Make target | Runs |
 |---|---|---|
@@ -119,7 +120,7 @@ at its pin (`make promtool`, below).
 | coverage evidence (implemented.txt) | `go run ./internal/tools/coverage -claims -tests …` over the unit, Angular, chart, integration and kind-leg reports of this run, and `-carried` over the newest report of each kind leg without one (Q-ROAD-11) | [implemented.txt](../coverage/implemented.txt) claims no requirement the reports do not prove; writes the record and the pages rendered from it, lists the requirements proven for the first time in the job summary and uploads the files as `coverage-evidence` for Semantic Release; needs `unit`, `web`, the `integration` shards, `chart` and the kind legs, and holds `actions: read` for the reports of earlier runs; a failing test in such a report withdraws its requirement from the record without failing the job (Q-ROAD-12) |
 | Combined Coverage Report | `make coverage-report` | merges the unit and integration profiles; the job summary and the badge `coverage-badge` |
 | Release Tooling | `make test-release-tooling` | `npm ci`, `npm audit signatures`, and [hack/verify-release-tooling.mjs](../../hack/verify-release-tooling.mjs), which renders release notes with the installed plugins |
-| Semantic Release | – | needs the static checks, unit, web, chart, image, the scans, `workflows`, `coverage` and `release-tooling`; the integration, S3 conformance and kind legs and the two coverage jobs that need them still run and do not gate it until the first stable release (Q-ARCH-457); runs only on a push to `main`; publishes the release ([release flow](#release-flow)) |
+| Semantic Release | – | needs the static checks, unit, web, chart, image, the scans, `workflows`, `coverage` and `release-tooling`; the integration, S3 conformance and kind legs and the two coverage jobs that need them still run and do not gate it until the first stable release (Q-ARCH-457); runs only on a push to `main`; publishes the release ([release flow](#release-flow)). A gating job that failed or was cancelled at its limit skips it; re-running the failed jobs of the run runs it after them ([when a gating job hung](#when-a-gating-job-failed-on-the-network)) |
 
 A kind leg that fails keeps its cluster state as the artifact `e2e-cluster-state-<set>` (14 days): per namespace the pods, their
 descriptions and the events, and the logs of every pod of `quader` and of the edge (`ingress-controller`) whole, with the kubelet's
@@ -176,6 +177,8 @@ of run 42465102401 where a row says so):
 | promtool, Trivy (`make promtool`, `make trivy`) | the Makefile's rules | github.com release assets | [tools/github-download.sh](../../tools/github-download.sh) with the job's token in CI; SHA-256; retries and stall bound |
 | Trivy action, Docker Scout | the actions | not checked | action's own download |
 | kind, golangci-lint, govulncheck, gocyclo, oasdiff, osv-scanner | `go install` in the workflows and the Makefile | the Go module proxy | not a release asset |
+| OS packages (`build-essential`, `libatomic1`, `jq`, `file`, `unzip`, `docker-compose-v2`, ClamAV) | [apt-install.sh](../../.github/scripts/apt-install.sh), directly or through build-tools | the Ubuntu archive (`archive.ubuntu.com`, `security.ubuntu.com`) | skipped when installed, bounded in time ([OS packages in the jobs](#os-packages-in-the-jobs)) |
+| The browser libraries of Playwright | `npx playwright install --with-deps chromium` (kind legs with browser journeys) | the Ubuntu archive, through Playwright's own apt call | the step's `timeout-minutes: 10` only |
 
 `make dev-up` downloads no tool: `deploy/dev/lib.sh` `check_tools` checks kind, kubectl and Helm against their pins and prints the
 install command when one is missing. The charts of its releases go into `.dev/charts`: `make dev-charts` ([deploy/dev/charts.sh](../../deploy/dev/charts.sh))
@@ -189,6 +192,88 @@ GitHub release assets (the chart indexes point there); in run 42465102401 their 
 cloudnative-pg after about 5 minutes). Their digests are pinned ([Q-ARCH-356](../spec/architecture.md#q-arch-356--how-do-ci-jobs-download-github-release-assets-while-the-release-host-is-degraded),
 [H-589](../security/data-and-secret-flow.md#h-589--release-downloads-send-the-job-token-to-githubcom-two-residuals) for the cloudnative-pg one). The cache of those archives in CI is not in place yet
 ([Q-ARCH-355](../spec/architecture.md#q-arch-355--how-do-the-ci-jobs-get-their-pinned-tools-without-a-live-release-asset-download-per-job)).
+
+### OS packages in the jobs
+
+A step that needs an Ubuntu package calls [.github/scripts/apt-install.sh](../../.github/scripts/apt-install.sh) with the package
+names; the [build-tools](../../.github/actions/build-tools/action.yml) action calls it for what the runner lacks. No file under
+`.github/` runs apt itself: `TestNothingUnderGithubRunsAptGetItself` of
+[internal/tools/ciworkflows](../../internal/tools/ciworkflows/workflows_test.go) fails on any `apt-get` there, and the unit job runs it.
+
+Why: in Test and Release 44384406557 (2026-11-18) the gating job `chart` started `apt-get update` at 19:50:58, apt gave up one
+request to `archive.ubuntu.com` at 19:51:28 (`Ign:1`, apt's own 30 s), started two more to the same host, and printed nothing
+again until GitHub cancelled the job at its 20-minute limit at 20:10:06. Semantic Release was skipped and the commit went
+without a release. The bare `apt-get update || warning` of every call site guarded an update that fails, not one that hangs.
+
+What the script does, in order:
+
+1. A package that is installed (`dpkg-query`) is skipped; when all are, the script ends at once without sudo or the network.
+2. The package indexes are read once per job: a successful update leaves a stamp in `RUNNER_TEMP`, and a later call of the job
+   does not update again.
+3. The update reads the Ubuntu sources only, when the image has `/etc/apt/sources.list.d/ubuntu.sources` (the Ubuntu 24.04
+   layout): `-o Dir::Etc::sourcelist=<that file> -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0`. The runner image adds the
+   git PPA, which answered after six seconds in the hung run and with 503 on 2026-11-11 (Release Tooling of 43063590899), and no job
+   installs anything from it. Without that file every source is read.
+4. The packages are downloaded first (`install --download-only`), then unpacked from the cache (`install --no-download`), so the
+   bound that ends a stalled download never stops dpkg in the middle of a package.
+5. Each of the three calls runs under `timeout` (TERM, then KILL 10 s later) and with `Acquire::http::Timeout=20`,
+   `Acquire::https::Timeout=20`, `Acquire::Retries=3`. An update or download that the bound ended runs once more; one that failed by
+   itself does not, since apt has retried each request already.
+6. An update that failed or was ended twice is a warning, and the install goes on from the indexes present. A failed download or
+   unpacking fails the step with `::error::`, naming the packages and the hosts apt was waiting on.
+
+The numbers, measured in the green run before it (Test and Release 44372205911, the logs of the 28 jobs that called apt-get,
+`gh api repos/guided-traffic/quader/actions/jobs/<id>/logs`, 33 updates):
+
+| Bound | Value | Measured in the green run | Why this value |
+|---|---|---|---|
+| A request without a byte (`Acquire::http::Timeout`, `https`) | 20 s | apt gave up a stalled request to `archive.ubuntu.com` after 30 s (as in the hung run) and its retry succeeded at once (`web (Angular)`: 33 s for 10 kB of `libatomic1`); another update waited 22 s on the same host; the slowest answer of a healthy host was the PPA's, about 6 s | ends such a stall 10 s sooner and stays at three times the slowest healthy answer |
+| Retries of a failed request (`Acquire::Retries`) | 3 | – | apt's own retry is what recovered the stall |
+| `apt-get update` | 60 s | 3 to 35 s, median 8 s; 34 MB of indexes; the 35 s held the stall of 22 s | about 1.7 times the slowest, which itself held a stall |
+| Download of the packages | 90 s | 2 to 14 s for 82 to 102 MB (`build-essential` is 87 packages, with ClamAV 99) | more than six times the slowest; 1 MB/s still finishes |
+| Unpacking | 120 s | the whole install step, update and download included, took 7 to 45 s | several times the longest whole step |
+| Step `timeout-minutes` of a package step in a gating job | 9 | – | above the script's worst case, 2 × 70 + 2 × 100 + 130 = 470 s, so the script's own message comes first; below the 15 minutes of the shortest job that installs packages (`build without Node.js`, `Release Tooling`) |
+
+Not chosen: `Acquire::ForceIPv4`. The hung run's log names no address family, and the outage of F-117 broke IPv6 and IPv4
+alike; forcing IPv4 would take away the family that works when IPv4 is the broken one.
+
+What it was tested against. The unit test [aptinstall_test.go](../../internal/tools/ciworkflows/aptinstall_test.go) runs the script
+with `dpkg-query`, `sudo`, `timeout` and `apt-get` stubbed (no root, no network): the installed case, the bounds and options of each
+call, the one update per job, an update that hangs once and twice, a failed update, a download that hangs twice and one that fails,
+and an `awk` that crashes while the error is worded (the exit status stays apt's; macOS awk did crash now and then when the
+environment held a value with newlines, which is why the stubs read their output from files).
+By hand, on 2026-11-18, in `ubuntu:24.04` containers (arm64, so `ports.ubuntu.com`): a healthy install, the update that does not
+contact an extra source in `sources.list.d`, and a source that answers with headers and then one byte every 5 seconds. apt's own
+timeout never fired on that source; the script ended the update at 60 s, read again, gave up at 120 s and failed the install of
+`jq` with `Unable to locate package` at 121 s, because an update that never finished leaves a runner image without indexes.
+
+#### The steps that download in the gating jobs
+
+Every job among the `needs` of Semantic Release, and Semantic Release itself, gives each step that downloads outside its main
+make target a step timeout, so a host that does not answer fails that step in minutes and names it, instead of holding the job
+until its limit: 9 minutes for a package step (above), 5 for `actions/setup-go`, `actions/setup-node`, `azure/setup-helm`,
+`azure/setup-kubectl`, `go install`, `freshclam` and `npm ci` (the slowest of them in the green run: `actions/setup-node` with
+the npm cache, 92 s). `TestTheGatingJobsBoundTheirDownloads` holds this, and that a package step's bound lies between the
+script's worst case and the job's limit. Left to the job's limit: `actions/checkout`, the artifact and cache actions,
+`npx semantic-release`, and the make targets themselves (module downloads, image builds, the scans).
+Outside the gating jobs the script bounds itself; the Playwright steps of the kind legs, whose `--with-deps` runs apt itself,
+have `timeout-minutes: 10` (101 s in the green run, `npm ci` included), and the reachability check of the chart repositories
+runs `curl` with `--connect-timeout 20 --max-time 60`.
+
+#### When a gating job failed on the network
+
+A gating job that failed or was cancelled at its limit skips Semantic Release. Read the job's log: a step that ends in
+`::error::the download of … did not finish` or `::error::apt-get could not fetch …` names the packages and the hosts; before the
+script, a hung index looked like `Get:` lines of `archive.ubuntu.com` followed by nothing until `The operation was canceled.`
+Then re-run the failed jobs of that run (`gh run rerun <run id> --failed`, or "Re-run failed jobs" on the run's page): GitHub
+runs the failed and cancelled jobs again, and Semantic Release after them once they pass. If a newer push to `main` has
+started its own run, re-run nothing: that run releases every commit since the last tag. Jobs are never re-run automatically.
+
+The runner image is the lasting fix: an image that carries the packages makes every such step end at the `dpkg-query` check.
+The self-hosted image (another repository) lacks `build-essential` (`make`, `gcc`), `jq`, `file`, `unzip`, `libatomic1`,
+`docker-compose-v2`, and for the malware scan `clamav` and `clamav-daemon` (the scan still downloads the ClamAV database with
+`freshclam`); the large class also installs the browser libraries of Playwright
+(`npx playwright install-deps --dry-run chromium` lists them).
 
 ### Coverage
 

@@ -3,7 +3,9 @@ description: >-
   Makes make, the C compiler and the extra commands a job names available. A runner that already has them (the GitHub-hosted
   images do) installs nothing, so the job does not depend on the Ubuntu archive being reachable (F-117: the archive did not
   resolve on the GitHub-hosted runners for over an hour on 2026-11-11); a runner that lacks them installs build-essential and
-  the missing commands from the Ubuntu package of the same name.
+  the missing commands from the Ubuntu package of the same name, through .github/scripts/apt-install.sh, which bounds the
+  package install in time (F-147: a package index update that waited on the archive for 19 minutes cost a release). Run after
+  actions/checkout.
 inputs:
   commands:
     description: Extra commands the job needs, separated by spaces; each is also the name of its Ubuntu package (for example "jq file").
@@ -28,11 +30,4 @@ runs:
           echo "make, gcc ${EXTRA:+and $EXTRA }are on the runner; nothing to install"
           exit 0
         fi
-        echo "installing ${missing[*]}"
-        # A source the runner image adds besides the Ubuntu archive (a PPA) that cannot be read makes apt-get update exit 100
-        # although the archive's indexes were read (Release Tooling of Test and Release 43063590899: a Launchpad PPA answered
-        # 503). The install below still has to succeed from the indexes that were read.
-        if ! sudo apt-get update; then
-          echo "::warning::apt-get update could not read every package index; installing from the indexes it read"
-        fi
-        sudo apt-get install -y "${missing[@]}"
+        "$GITHUB_ACTION_PATH/../../scripts/apt-install.sh" "${missing[@]}"

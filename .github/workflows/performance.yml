@@ -190,7 +190,7 @@ jobs:
       - name: Install the Docker Compose plugin (the integration stack)
         run: |
           set -euo pipefail
-          docker compose version >/dev/null 2>&1 || { sudo apt-get update || echo "::warning::apt-get update could not read every package index; installing from the indexes it read"; sudo apt-get install -y docker-compose-v2; }
+          docker compose version >/dev/null 2>&1 || .github/scripts/apt-install.sh docker-compose-v2
           docker compose version
 
       - name: Log in to Docker Hub (stack image pulls)
@@ -263,7 +263,7 @@ jobs:
       - name: Install the Docker Compose plugin (the integration stack)
         run: |
           set -euo pipefail
-          docker compose version >/dev/null 2>&1 || { sudo apt-get update || echo "::warning::apt-get update could not read every package index; installing from the indexes it read"; sudo apt-get install -y docker-compose-v2; }
+          docker compose version >/dev/null 2>&1 || .github/scripts/apt-install.sh docker-compose-v2
           docker compose version
 
       - name: Log in to Docker Hub (stack image pulls)
@@ -560,8 +560,7 @@ jobs:
         run: |
           set -euo pipefail
           # Node.js 26 links libatomic.so.1, which the runner image does not ship (Q-ARCH-218).
-          sudo apt-get update || echo "::warning::apt-get update could not read every package index; installing from the indexes it read"
-          sudo apt-get install -y libatomic1
+          .github/scripts/apt-install.sh libatomic1
 
       - name: Set up Node.js (the Playwright journeys)
         if: matrix.browser && steps.leg.outputs.run == 'true'
@@ -570,13 +569,15 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journeys and their browser
+        timeout-minutes: 10
         if: matrix.browser && steps.leg.outputs.run == 'true'
         working-directory: web
         run: |
           set -euo pipefail
           npm ci
           # The browser build is the one the locked @playwright/test version names: one version per tool.
-          # --with-deps installs the system libraries through apt (sudo, as for the build tools above).
+          # --with-deps installs the system libraries through apt itself, not through .github/scripts/apt-install.sh; the step's
+          # timeout bounds it instead (npm ci and the browser took 101 s in a green run).
           npx playwright install --with-deps chromium
 
       - name: Install the pinned Docker Buildx
@@ -624,7 +625,7 @@ jobs:
           echo "CloudNativePG chart $CNPG_CHART_VERSION"
           # up.sh installs the charts of these repositories; the haproxy-ingress and cloudnative-pg archives are release assets, fetched by make dev-charts. Fail early, not 5 minutes into make dev-up.
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -824,7 +825,7 @@ jobs:
           kubectl version --client
           helm version --short
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -1029,7 +1030,7 @@ jobs:
           kubectl version --client
           helm version --short
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -1217,7 +1218,7 @@ jobs:
           kubectl version --client
           helm version --short
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -1403,7 +1404,7 @@ jobs:
           kubectl version --client
           helm version --short
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -1579,7 +1580,7 @@ jobs:
           kubectl version --client
           helm version --short
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -1717,6 +1718,7 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journey and its browser
+        timeout-minutes: 10
         if: steps.leg.outputs.run == 'true'
         working-directory: web
         run: |
@@ -1774,7 +1776,7 @@ jobs:
           kubectl version --client
           helm version --short
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -1933,6 +1935,7 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journeys and their browser
+        timeout-minutes: 10
         if: matrix.journeys == true && steps.leg.outputs.run == 'true'
         working-directory: web
         run: |
@@ -1990,7 +1993,7 @@ jobs:
           kubectl version --client
           helm version --short
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -2169,7 +2172,7 @@ jobs:
           kubectl version --client
           helm version --short
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -2352,7 +2355,7 @@ jobs:
           kubectl version --client
           helm version --short
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -2539,7 +2542,7 @@ jobs:
           kubectl version --client
           helm version --short
           for u in https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator https://prometheus-community.github.io/helm-charts; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image
@@ -2668,6 +2671,7 @@ jobs:
           node-version-file: web/.nvmrc
 
       - name: Install the Playwright journey and its browser
+        timeout-minutes: 10
         working-directory: web
         run: |
           set -euo pipefail
@@ -2724,7 +2728,7 @@ jobs:
           helm version --short
           # The published releases come from the chart repository of GitHub Pages; the rest is the dev profile's own.
           for u in https://guided-traffic.github.io/quader https://charts.jetstack.io https://guided-traffic.github.io/valkey-operator https://guided-traffic.github.io/internal-secrets-operator; do
-            curl -fsSL --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
+            curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
       - name: make image

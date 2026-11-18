@@ -206,6 +206,7 @@ quader/
 │   ├── mirror/               # the mirror mode of remote repositories (mirror.md): the engine (dispatch, pass, fence, window, bounds, store, metrics) beside the names of its job kinds and queue; discover/ is the leaf contract a format's remote adapter implements
 │   ├── importer/             # the import tooling (import.md): the runner, the clients of the source and of the target, the state file, the npm and NuGet formats of the importer
 │   ├── tools/coverage/       # the requirement coverage generator (docs/coverage)
+│   ├── tools/ciworkflows/    # tests of .github: no bare apt-get, step timeouts of the gating jobs, apt-install.sh against stubs
 │   └── webui/                # go:embed of the Angular build; dist/index.html is the committed placeholder
 ├── web/                      # Angular workspace: angular.json, src/, scripts/ (build-embed, check-budget), .nvmrc
 ├── deploy/
@@ -228,8 +229,9 @@ quader/
 ├── .github/
 │   ├── workflows/              # release.yml (Test and Release), build.yml (Release Docker & Helm), renovate.yml
 │   ├── actionlint.yaml         # actionlint's configuration (the App token inputs of the pinned version)
-│   ├── scripts/                # s3-conformance.sh, run by make s3-conformance
+│   ├── scripts/                # s3-conformance.sh, run by make s3-conformance; apt-install.sh, every OS package of a job, bounded in time
 │   ├── actions/load-pins/      # loads tools/versions.env into the job
+│   ├── actions/build-tools/    # make, the C compiler and the commands a job names, when the runner lacks them (apt-install.sh)
 │   ├── actions/install-buildx/ # the pinned Docker Buildx, verified and cached under .bin (Q-ARCH-355)
 │   └── actions/select-leg/     # decides whether a leg of the nightly matrix runs in this dispatch
 ├── hack/                     # verify-release-tooling.mjs: the release notes of .releaserc.json rendered
