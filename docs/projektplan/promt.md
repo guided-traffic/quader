@@ -1156,15 +1156,28 @@ agent** is not decided until the owner has said so.
   projects, **Revoke** on tokens and a Bastion's tokens, **Unbind** on system roles, **Remove** on a group's members,
   **Details** on CI issuances) have one. Two lists do neither: the CI mappings show **Edit** and **Test** as two words, the
   Debian signing keys two buttons. Wanted: the rule in the spec and the style guide (one action: its word as a quiet button;
-  two or more: the menu, with at most one frequent action as an icon beside it), and the two lists brought to it. Status:
-  a builder is briefed, together with W-19.
+  two or more: the menu, with at most one frequent action as an icon beside it), and the two lists brought to it.
+  - **Built** (2ef5951b on `main`; R-UI-163, Q-UI-640 to Q-UI-644): the rule in the spec and the style guide; a menu for the CI
+    mappings (a reader keeps the word **Test**), the Debian signing keys and the saved views of the package list; the word
+    **Remove** for a project's members, whose menu had one entry; a lint rule (`row-actions-rule.mjs`) refuses two word
+    buttons in one cell. Kept as two words on purpose: **Rotate** and **Revoke** of a token (Q-UI-641: **Revoke** never
+    stands behind a menu). Looked at: a project's members as `priya`. Not looked at: the three new menus. The journeys 12,
+    13 and 17 were changed and not run.
 - **W-19 · Jobs and Backups are tabs of System status** (owner, 2026-11-18, "Option A" from three: tabs on the page / two
   entries of their own in the side bar / leave it and move the links up). Verified in the code: both pages are reached only
   through two text links at the end of the long **System status** page (jobs also from a card of the dashboard), the side
   bar keeps **System status** marked on both, and the dashboard shows no state of the backup. Wanted: one entry in the side
   bar, three tabs at the top of the page, **Status**, **Jobs**, **Backups**, each with its address. Added by the development
   agent, for the owner to object: the dashboard shows the state of the backup ("No backup yet", the last success), so that a
-  missing backup is seen without two clicks. Status: a builder is briefed, together with W-18.
+  missing backup is seen without two clicks.
+  - **Built** (7c5bd389 on `main`; R-UI-164, R-UI-165, Q-UI-650 to Q-UI-654): one header with the refresh controls, the tabs
+    under it, each at its old address; the side bar marks **System status** on all three; the breadcrumb ends with the tab;
+    the links at the end of the status page are gone; the dashboard's card **Operations** has a row **Last backup** and
+    **View backups**. Looked at as `ada`, dark, 1440 px: the three tabs and the dashboard's row ("No backup yet").
+  - **For the owner:** the row **Last backup** stands in the last card at the bottom of the dashboard; a missing backup does
+    not catch the eye there. A project's Owner who follows a repository screen's link to the jobs lands on a page titled
+    "System status" with an empty side bar and the breadcrumb "Admin area", and sees only the jobs of the project (Q-UI-652;
+    it was so before the tabs). The journeys 06 and 16 were changed and not run.
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
@@ -1344,6 +1357,14 @@ agent** is not decided until the owner has said so.
   for the row by "project/key", which a guide's row no longer writes; journey 23 had the selector of journey 12 and was
   fixed with it. Fixed in 08cb7050; not run locally (the journeys need the cluster), the run of that commit shows it. The
   failed job's log cut the error of journey 09, so its cause is read from the code, not from the log.
+- **F-141 · `e2e (ci)` was red once for a certificate the test did not trust** (2026-11-18, Test and Release 44346085826, the
+  run of 1785aff2): `GET /api/v1/authz/me` of the fixture of `TestCIPipeline` answered "tls: failed to verify certificate:
+  x509: certificate signed by unknown authority (possibly because of "x509: ECDSA verification failure" …)"; `TestCITokens`
+  and `TestCITasks` failed with it. Nothing of that push touches certificates or the edge. The run was replaced by the next
+  push before it could be run again; cause not read. To be read if it shows again.
+- **F-142 · A push whose last commit says `[skip ci]` starts no run for the commits before it** (2026-11-18): ad2e3ac2 (W-14)
+  was pushed together with the plan's commit behind it and got no run of its own; the next push's run covered it. Since
+  then a commit that changes code is pushed alone, and the plan's commit after it.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
