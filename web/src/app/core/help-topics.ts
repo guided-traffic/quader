@@ -17,6 +17,8 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   // The folders and files of a repository (`/projects/<key>/repositories/<repo>/files/…`) are looked up as `/project/files`.
   ['/project/files', { section: 'user', page: 'files' }],
   ['/project/repositories', { section: 'user', page: 'repositories' }],
+  // Set up client of a repository (`/projects/<key>/repositories/<repo>/setup`, R-UI-120) is looked up as `/project/setup`.
+  ['/project/setup', { section: 'user', page: 'client-setup' }],
   // >>> M4b vulnerabilities
   ['/project/vulnerabilities', { section: 'user', page: 'vulnerabilities' }],
   // <<< M4b vulnerabilities
@@ -28,8 +30,6 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   ['/projects', { section: 'admin', page: 'projects' }],
   ['/search', { section: 'user', page: 'search' }],
   ['/guides', { section: 'user', page: 'client-setup' }],
-  // Set up client of a repository (`/projects/<key>/repositories/<repo>/setup`, R-UI-120) is looked up as `/setup`.
-  ['/setup', { section: 'user', page: 'client-setup' }],
   ['/profile/tokens', { section: 'user', page: 'access-tokens' }],
   ['/admin/projects', { section: 'admin', page: 'projects' }],
   ['/admin/repositories', { section: 'admin', page: 'repositories' }],
@@ -62,9 +62,9 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
 export function helpFor(url: string): readonly string[] {
   const raw = url.split(/[?#]/, 1)[0] ?? '';
   const inProject = /^\/projects\/[^/]+(\/.*)?$/.exec(raw);
-  const setup = /^\/projects\/[^/]+\/repositories\/[^/]+\/setup$/.test(raw);
-  const inner = inProject?.[1]?.replace(/^\/repositories\/[^/]+\/files(?=\/|$)/, '/files') ?? '';
-  const path = setup ? '/setup' : inProject ? `/project${inner}` : raw;
+  // The files and Set up client of a repository are looked up without the repository: `/project/files`, `/project/setup`.
+  const inner = inProject?.[1]?.replace(/^\/repositories\/[^/]+\/(files|setup)(?=\/|$)/, '/$1') ?? '';
+  const path = inProject ? `/project${inner}` : raw;
   let best: readonly [string, HelpTopic] | undefined;
   for (const entry of HELP_TOPICS) {
     const [route] = entry;

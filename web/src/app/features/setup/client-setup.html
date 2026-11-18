@@ -5,7 +5,8 @@
 } @else {
   <quader-page-header [heading]="heading" [addresses]="addresses()">
     <!-- The context of the page (R-UI-120): what it was opened from, never asked again. -->
-    <div meta class="context dot-separated">
+    <!-- The format and the class as the badges of the repository's own header, so one repository reads the same on both pages. -->
+    <div meta class="context header-facts">
       @if (ref(); as r) {
         <span class="repo" translate="no">
           @if (visibility(); as level) {
@@ -15,10 +16,10 @@
         </span>
       }
       @if (descriptor(); as d) {
-        <span translate="no"><quader-format-icon [format]="d.name" />&ngsp;{{ d.displayName ?? d.name }}</span>
+        <span class="badge format-badge" translate="no"><quader-format-icon [format]="d.name" />{{ d.displayName ?? d.name }}</span>
       }
-      @if (activeClass()) {
-        <span>{{ classText() }}</span>
+      @if (activeClass(); as c) {
+        <span class="badge class-badge"><span class="material-icons" aria-hidden="true">{{ classIcon(c) }}</span>{{ classText() }}</span>
       }
     </div>
   </quader-page-header>
@@ -36,7 +37,7 @@
 
   <!-- The client is one control, shown only where the format has more than one (Q-UI-482). -->
   @if (clients().length > 1) {
-    <p class="client-row">
+    <p class="client-choice">
       <label class="field-label" for="setup-client" i18n="@@setup.client">Client</label>
       <select id="setup-client" class="select-input" [value]="activeClient()" (change)="pickClient($any($event.target).value)">
         @for (c of clients(); track c.id) {

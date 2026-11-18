@@ -7,17 +7,19 @@ import { asApiError, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
-import { classLabel } from '../repositories/repository-class';
+import { ProjectLink } from '../../shared/ui/project-mark';
+import { classIcon, classLabel } from '../repositories/repository-class';
 
 /**
- * The repositories of one format the reader may use (R-UI-124, Q-UI-481): a tile of **Guides** leads here. Each row is a repository
- * with its class and description and **Set up client**, which opens its page (R-UI-120); the virtual repositories come first,
- * the recommended address. A reader without a repository of the format, or one who wants to read before choosing, finds the
+ * The repositories of one format the reader may use (R-UI-124, Q-UI-481): a tile of **Guides** leads here. The rows are built from
+ * the parts of every repository list (Q-UI-425, Q-UI-426, Q-UI-430): the visibility icon before the key with the description under
+ * it, the project by its mark and its name, the class with its icon, and **Set up client** as the row's action (Q-UI-487), which
+ * opens the repository's page (R-UI-120). The virtual repositories come first, the recommended address. A reader without a repository of the format, or one who wants to read before choosing, finds the
  * guide of each class below the list: that page writes `<project>` and `<repository>` into the addresses.
  */
 @Component({
   selector: 'quader-guide-format',
-  imports: [RouterLink, PageHeader, ErrorNotice, DataTable, VisibilityIcon],
+  imports: [RouterLink, PageHeader, ErrorNotice, DataTable, VisibilityIcon, ProjectLink],
   template: `
     @if (formatFailure(); as f) {
       <quader-error-notice [error]="f" (retry)="formats.reload()" />
@@ -39,23 +41,33 @@ import { classLabel } from '../repositories/repository-class';
         (retry)="repositories.reload()"
       >
         @for (r of rows(); track refOf(r)) {
+          <!-- The parts of the repository list (Q-UI-430): the visibility icon before the key, the description under it, the project
+               by its mark and its name, the class with its icon; the format is the page's. -->
           <tr>
             <th scope="row">
-              <!-- The icon and the start of the name on one line; a long name breaks inside itself (W-3). -->
-              <span class="repo-name">
+              <span class="icon-name">
                 <quader-visibility-icon [level]="r.visibility.artifacts" />
-                <a [routerLink]="repositoryLink(r)" translate="no">{{ refOf(r) }}</a>
+                <span class="icon-name-text">
+                  <a [routerLink]="repositoryLink(r)" translate="no">{{ r.key }}</a>
+                  @if (r.class === 'virtual') {
+                    <span class="badge" i18n="@@guides.format.recommended">recommended</span>
+                  }
+                  @if (r.description) {
+                    <span class="secondary">{{ r.description }}</span>
+                  }
+                </span>
               </span>
             </th>
-            <td>
-              {{ classText(r.class) }}
-              @if (r.class === 'virtual') {
-                <span class="secondary" i18n="@@guides.format.recommended">recommended</span>
-              }
+            <td class="project-cell"><quader-project-link [key]="r.project" /></td>
+            <td class="class-cell">
+              <span class="class-name"><span class="material-icons" aria-hidden="true">{{ classIcon(r.class) }}</span>{{ classText(r.class) }}</span>
             </td>
-            <td>{{ r.description || '–' }}</td>
-            <td class="row-end">
-              <a class="btn btn-default" [routerLink]="setupLink(r)" i18n="@@repo.content.tab.setup">Set up client</a>
+            <td class="actions with-setup">
+              <!-- The row's action (Q-UI-487): a quiet button, its accessible name ending with the key, as in a project's list. -->
+              <a class="btn btn-tertiary row-setup" [routerLink]="setupLink(r)"
+                ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
+                ><span class="visually-hidden" translate="no">&ngsp;{{ r.key }}</span></a
+              >
             </td>
           </tr>
         }
@@ -77,23 +89,8 @@ import { classLabel } from '../repositories/repository-class';
     }
   `,
   styles: `
-    .repo-name {
-      display: flex;
-      align-items: baseline;
-      gap: var(--quader-space-1);
-
-      a {
-        min-inline-size: 0;
-        overflow-wrap: anywhere;
-      }
-    }
-    .secondary {
-      display: block;
-      color: var(--quader-text-muted);
-      font-size: var(--quader-text-muted-size);
-    }
-    .row-end {
-      text-align: end;
+    .badge {
+      margin-inline-start: var(--quader-space-2);
     }
     .classes {
       margin-block-start: var(--quader-space-6);
@@ -142,11 +139,12 @@ export class GuideFormat {
     const e = this.repositories.error();
     return e ? asApiError(e) : null;
   });
+  /** The columns of the repository list (Q-UI-330): the repository takes what the others leave. */
   protected readonly columns: readonly TableColumn[] = [
-    { id: 'repository', label: $localize`:@@guides.format.col.repository:Repository`, width: '16rem' },
-    { id: 'class', label: $localize`:@@guides.format.col.class:Class`, width: '9rem' },
-    { id: 'description', label: $localize`:@@guides.format.col.description:Description` },
-    { id: 'action', label: $localize`:@@guides.format.col.action:Action`, hideLabel: true, stackLabel: false },
+    { id: 'key', label: $localize`:@@repo.col.repository:Repository`, width: '13rem', prefer: true },
+    { id: 'project', label: $localize`:@@repo.col.project:Project`, width: '11rem' },
+    { id: 'class', label: $localize`:@@repo.col.class:Class`, width: '5rem' },
+    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true, width: '9rem' },
   ];
   protected readonly emptyText = $localize`:@@guides.format.empty:You can use no repository of this package type. The guides below explain each kind.`;
 
@@ -158,9 +156,8 @@ export class GuideFormat {
     return setupCommands(refOf(r));
   }
 
-  protected classText(cls: string): string {
-    return classLabel(cls);
-  }
+  protected readonly classText = classLabel;
+  protected readonly classIcon = classIcon;
 
   protected classGuideText(cls: string): string {
     switch (cls) {

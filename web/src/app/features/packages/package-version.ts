@@ -1,5 +1,5 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, LOCALE_ID, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PackageDocTree, PackageVersionDocs, PackagesApi } from '../../api/packages-api';
 import { VulnerabilitiesApi, VulnerabilityVersionReport } from '../../api/vulnerabilities-api';
@@ -16,7 +16,7 @@ import { AnsibleContents } from './ansible-contents';
 import { AnsibleDocs } from './ansible-docs';
 import { AnsibleImportLog } from './ansible-import-log';
 import { formatSize } from './format-size';
-import { relativeTime } from './format-time';
+import { TimeAgo } from '../../shared/ui/time-ago';
 import { InstallPanel } from './install-panel';
 import { EXTERNAL_REL, packageCommands } from './package-links';
 import { PackageMemory } from './package-memory';
@@ -57,7 +57,7 @@ interface TabEntry {
 @Component({
   selector: 'quader-package-version',
   imports: [
-    DatePipe,
+    TimeAgo,
     DecimalPipe,
     RouterLink,
     TabGroup,
@@ -83,7 +83,6 @@ export class PackageVersionPage {
   private readonly vulnerabilityApi = inject(VulnerabilitiesApi);
   private readonly router = inject(Router);
   private readonly memory = inject(PackageMemory);
-  private readonly locale = inject(LOCALE_ID);
 
   /** Route parameters: the project, then the matcher's format, name and version. */
   readonly project = input.required<string>();
@@ -301,9 +300,6 @@ export class PackageVersionPage {
 
   protected readonly externalRel = EXTERNAL_REL;
   protected readonly size = formatSize;
-  protected when(iso: string): string {
-    return relativeTime(iso, this.locale);
-  }
   /** A repository's page, inside its own project. */
   protected repositoryLink(qualified: string): string[] {
     const i = qualified.indexOf('/');

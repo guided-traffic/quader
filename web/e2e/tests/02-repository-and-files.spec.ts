@@ -105,7 +105,7 @@ test('R-UI-066 Q-UI-426 the repository list of a project offers Set up client fo
     await expect(page.getByRole('searchbox', { name: 'Filter repositories' })).toHaveValue(key);
     await expectAccessible(page, 'repository list of a project');
     await page.getByRole('link', { name: `Set up client ${key}` }).click();
-    await expect(page).toHaveURL(new RegExp(`/setup\\?repository=${e2eProject}%2F${key}`));
+    await expect(page).toHaveURL(new RegExp(`/projects/${e2eProject}/repositories/${key}/setup$`));
 
     // The admin area's list has no field: a quiet copy button beside the row's menu carries the address (Q-UI-330).
     await page.evaluate(() => navigator.clipboard.writeText(''));

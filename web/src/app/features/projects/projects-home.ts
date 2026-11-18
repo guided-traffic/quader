@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { collectAll } from '../../api/pagination';
 import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
 import { RepositoriesApi, RepositorySummary, refOf } from '../../api/repositories-api';
+import { setupCommands } from '../../core/project-links';
 import { FrequentPlaces } from '../../core/frequent-places';
 import { ProjectContext } from '../../core/project-context';
 import { SessionStore } from '../../core/session-store';
@@ -14,7 +15,7 @@ import { QuaderDialog } from '../../shared/ui/dialog';
 import { VisibilityIcon, levelName } from '../../shared/ui/visibility-level';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ListHead } from '../../shared/ui/list-head';
-import { ProjectMark } from '../../shared/ui/project-mark';
+import { ProjectLink, ProjectMark } from '../../shared/ui/project-mark';
 import { PageHeader } from '../../shared/ui/page-header';
 import { ProjectDialog } from './project-dialog';
 import { projectRoleLabel } from './project-roles';
@@ -31,7 +32,7 @@ const RECENT_SHOWN = 5;
  */
 @Component({
   selector: 'quader-projects-home',
-  imports: [RouterLink, AddressField, Checkbox, DataTable, ListHead, PageHeader, ProjectMark, VisibilityIcon],
+  imports: [RouterLink, AddressField, Checkbox, DataTable, ListHead, PageHeader, ProjectLink, ProjectMark, VisibilityIcon],
   template: `
     <quader-page-header [heading]="heading" [description]="hint()">
       @if (canCreate()) {
@@ -45,17 +46,21 @@ const RECENT_SHOWN = 5;
         <ul>
           @for (r of recent(); track refOf(r)) {
             <li>
+              <!-- The repository and its project by its mark and its name, as a row names its project (Q-UI-424). -->
               <div class="recent-name">
                 <a [routerLink]="['/projects', r.project, 'repositories', r.key]" translate="no">{{ r.key }}</a>
-                <span class="muted" translate="no">{{ r.project }}</span>
+                <quader-project-link [key]="r.project" />
               </div>
-              <!-- The client address only (Q-UI-320); a further address is on the repository's page. -->
-              @if (r.addresses[0]; as a) {
-                <quader-address-field [value]="a" [label]="addressLabel(r.key)" [copyLabel]="copyLabel(r.key)" />
-              }
-              <a class="btn btn-default" [routerLink]="['/projects', r.project, 'repositories', r.key, 'setup']" i18n="@@repo.content.tab.setup"
-                >Set up client</a
-              >
+              <!-- The client address only (Q-UI-320), and Set up client beside it: one job on one line, as in the repository's
+                   header (Q-UI-517); a further address is on the repository's page. -->
+              <div class="client-row">
+                @if (r.addresses[0]; as a) {
+                  <quader-address-field [value]="a" [label]="addressLabel(r.key)" [copyLabel]="copyLabel(r.key)" />
+                }
+                <a class="btn btn-default" [routerLink]="setupLink(r)" i18n="@@repo.content.tab.setup"
+                  >Set up client</a
+                >
+              </div>
             </li>
           }
         </ul>
@@ -124,6 +129,12 @@ const RECENT_SHOWN = 5;
       margin-block-end: var(--quader-space-6);
     }
 
+    // The project's mark is centred on a line of 1 rem, the line of a list's cell (Q-UI-424); in the page's taller line it stood
+    // above the name.
+    .recent-name quader-project-link {
+      line-height: 1rem;
+    }
+
     .recent li {
       display: flex;
       flex-direction: column;
@@ -133,8 +144,8 @@ const RECENT_SHOWN = 5;
       border-block-end: 1px solid var(--quader-border);
     }
 
-    .recent li quader-address-field {
-      inline-size: 100%;
+    .recent li .client-row {
+      align-self: stretch;
     }
 
     .muted {
@@ -166,6 +177,10 @@ export class ProjectsHome {
   );
   protected readonly canCreate = computed(() => this.session.has('projects:write'));
   protected readonly refOf = refOf;
+  /** Set up client of a recent repository (R-UI-126). */
+  protected setupLink(r: RepositorySummary): string[] {
+    return setupCommands(refOf(r));
+  }
 
   /**
    * The repositories opened last, newest first, as one `GET /repositories?name=…` returns them (Q-UI-406): an entry the caller may

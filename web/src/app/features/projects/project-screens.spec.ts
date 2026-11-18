@@ -295,6 +295,8 @@ describe('Session helpers and messages of the project screens (R-UI-041, R-UI-04
     expect(helpFor('/projects/web/repositories/npm-local/files')).toEqual(['/help', 'user', 'files']);
     expect(helpFor('/projects/web/repositories/files')).toEqual(['/help', 'user', 'repositories']);
     expect(helpFor('/projects/web/repositories/npm-local')).toEqual(['/help', 'user', 'repositories']);
+    expect(helpFor('/projects/web/repositories/npm-local/setup?client=yarn')).toEqual(['/help', 'user', 'client-setup']);
+    expect(helpFor('/projects/web/repositories/setup')).toEqual(['/help', 'user', 'repositories']);
     expect(helpFor('/projects/web/vulnerabilities')).toEqual(['/help', 'user', 'vulnerabilities']);
     expect(helpFor('/projects/web/policies/npm-read')).toEqual(['/help', 'admin', 'permissions']);
     expect(helpFor('/projects/web/service-accounts')).toEqual(['/help', 'admin', 'sign-in-and-identity']);

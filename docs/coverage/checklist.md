@@ -3044,7 +3044,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-123 | What each reader sees | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-124 | Guides: the formats as tiles, a format's repositories, the guide of a class | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-125 | The explanation reads like a page, not like a reference | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
-| R-UI-126 | Set up client is one action with one look | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-126 | Set up client is one action with one target and one look per place | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-127 | The format tiles are one component | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-003 (implemented) | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 (implemented) | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |

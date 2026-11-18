@@ -135,8 +135,8 @@ what would need a second one belongs in the [manual](manual.md).
   in a list of projects `<quader-project-mark size="medium">` before the display name with the key under it; in a row that names
   its project `<quader-project-link [key]>`, the small mark and the display name, linked. Never the key alone.
 - **A time in a list is relative**, its date and time the title: `<quader-time-ago [at] absolute="title" />` ("4 minutes ago",
-  "in 4 weeks"). A log (the audit log, the issued CI tokens) writes the date and the time; a card the relative time with the
-  absolute in brackets ([Q-UI-431](../spec/api-and-ui.md#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)).
+  "in 4 weeks"). A log (the audit log, the issued CI tokens) writes the date and the time; a card or a page's facts the relative
+  time with the absolute in brackets ([Q-UI-431](../spec/api-and-ui.md#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)).
 - An inline control in a row (the role select) has no visible label and an `aria-label` that names the row. It shows the current
   value, and a change is saved at once, with the status message of the `Notifier`.
 - Filter and order work on what is loaded, or are sent to the server where the list is paged. A filter that finds nothing says
@@ -280,7 +280,9 @@ No list shows an address field ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-pro
   - A list has no field. The admin area's repository list has a quiet `<quader-copy-button [quiet]="true">` at the end of the row,
     beside the menu, its `label` **Copy client address** with the address, which is also the button's tooltip; the menu offers
     **Copy client address** too ([Q-UI-330](../spec/api-and-ui.md#q-ui-330--a-list-takes-its-columns-from-the-job-of-its-kind-of-user-the-important-properties-are-columns-and-the-address-takes-no-more-than-its-share)).
-    A project's list offers **Set up client** in the row, the search results neither ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)).
+    A project's list and the repositories behind a format's tile offer **Set up client** in the row, as the quiet row action
+    `btn btn-tertiary row-setup` whose accessible name ends with the key; on a page and in a header it is a default button, never
+    blue ([Q-UI-487](../spec/api-and-ui.md#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)). The search results offer neither ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)).
   - A field alone on its line, or a stack of the addresses of one thing, fills the line up to `--quader-address-measure`
     (40 rem, 70 characters), so a stack is one width ([Q-UI-301](../spec/api-and-ui.md#q-ui-301--a-field-alone-on-its-line-fills-the-line-up-to-a-measure-of-70-characters)).
   - Where the field is shorter than its address, the address scrolls inside it (the input at least 8 rem), the button stays
@@ -310,7 +312,7 @@ screen draws its own, and no screen shows a version's highest severity instead.
 | `<quader-grade-card>` | The shield of 32 px, the text, the rule, the bar and the facts: an image's OS, its end of life (warning colour) and "Scanned 1 h ago (…)", a package's "Checked 3 min ago (…)", and **Findings in** the repository, a link to the report filtered by repository, package and version | `grade`, `packageName`, `findingVersions` (the version, or an image's manifest digests), `image`; `barQueries` and `activeSeverity` make the bar the filter of the page's findings (the package page) |
 | `<quader-severity-bar>` | Critical, High, Medium, Low (with None) and Unknown as five segments, each as wide as its share (at least 7 %) plus the room of its count; Unknown hatched; a severity without findings faint, its 0 readable | `counts`; `queries` turns the segments into filter links (the report's header replaces the query with them, `merge` keeps the page's other parameters); `active` marks the segment of the filter in force |
 | `<quader-grade-shield>` | The crest as inline SVG with its letter | `grade`, `size` (`list` 20 px, `card` 32 px), `label` |
-| `<quader-time-ago>` ([time-ago.ts](../../web/src/app/shared/ui/time-ago.ts)) | One relative time and the absolute time in brackets: "3 min ago (Nov 12, 2026, 2:22:37 PM)" ([Q-UI-378](../spec/api-and-ui.md#q-ui-378--a-time-on-the-grade-card-is-one-relative-time-with-the-absolute-time-in-brackets-from-one-component)) | `at` (RFC 3339) |
+| `<quader-time-ago>` ([time-ago.ts](../../web/src/app/shared/ui/time-ago.ts)) | One relative time and the absolute time in brackets: "3 minutes ago (Nov 12, 2026, 2:22:37 PM)", a card's or a page's fact ([Q-UI-378](../spec/api-and-ui.md#q-ui-378--a-time-on-the-grade-card-is-one-relative-time-with-the-absolute-time-in-brackets-from-one-component)); with `absolute="title"` the relative time alone, the absolute one its title, a list's cell ([Q-UI-431](../spec/api-and-ui.md#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)). No screen formats a time with the date pipe or a helper of its own | `at` (RFC 3339), `absolute` |
 
 - **When.** A list shows `<quader-grade>`; the bar and the facts are the card's, on the detail page (simple by default, details
   on demand, [Q-UI-374](../spec/api-and-ui.md#q-ui-374--a-list-shows-the-shield-and-the-text-the-bar-and-the-facts-are-the-cards)).

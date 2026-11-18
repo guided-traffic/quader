@@ -22,7 +22,7 @@ on its button, add a class input, not a second implementation.
 | the same, line 76 to 81 (settings view) | `<code>` and `quader-copy-button` | field |
 | `repository-wizard.html` line 250 | `<dd><address or –></dd>` | field where an address exists, the dash otherwise |
 | [client-setup.html](../../web/src/app/features/setup/client-setup.html) line 288 | `<code>{{ s.registryUrl }}</code>` in the banner sentence | the sentence without the code, the field below it |
-| [guide-page.html](../../web/src/app/features/guides/guide-page.html) line 120 | `<code>{{ bastionSetup.value().registryUrl }}</code>` in a paragraph | the label as text, the field below |
+| `guide-page.html` line 120 (the guides page of that time; removed with ADR-202 on 2026-11-18) | `<code>{{ bastionSetup.value().registryUrl }}</code>` in a paragraph | the label as text, the field below |
 | [endpoint-detail.html](../../web/src/app/features/endpoints/endpoint-detail.html) line 140 to 143 | `<code>` and `quader-copy-button` with `copyAddress` | field |
 
 Not touched (R-UI-066 "Not in scope"): `guide-view.ts`, the snippets of client-setup and guide-page, `install-command.html`,

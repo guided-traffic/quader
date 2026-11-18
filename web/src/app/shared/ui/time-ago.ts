@@ -29,6 +29,12 @@ export function timeAgo(iso: string, now: number = Date.now()): string {
     } @else {
       {{ relative() }} (<time [attr.datetime]="at()">{{ at() | date: 'medium' }}</time>)
     }`,
+  // The date and the time are one value: a line breaks before or after it, never inside it.
+  styles: `
+    time {
+      white-space: nowrap;
+    }
+  `,
 })
 export class TimeAgo {
   private readonly locale = inject(LOCALE_ID);

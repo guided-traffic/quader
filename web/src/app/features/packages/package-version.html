@@ -27,16 +27,12 @@
           </a>
         }
         <span
-          ><ng-container i18n="@@pkg.fact.published">Published</ng-container>&ngsp;<time
-            [attr.datetime]="d.publishedAt"
-            [attr.title]="d.publishedAt | date: 'medium'"
-            >{{ when(d.publishedAt) }}</time
-          ></span
+          ><ng-container i18n="@@pkg.fact.published">Published</ng-container>&ngsp;<quader-time-ago [at]="d.publishedAt" /></span
         >
         <span class="nowrap" [attr.title]="d.sizeBytes + ' B'">{{ size(d.sizeBytes) }}</span>
         <span
           ><ng-container i18n="@@pkg.fact.last-fetched">Last fetched</ng-container>&ngsp;@if (d.lastDownloadedAt; as at) {
-            <time [attr.datetime]="at" [attr.title]="at | date: 'medium'">{{ when(at) }}</time>
+            <quader-time-ago [at]="at" />
           } @else {
             <ng-container i18n="@@pkg.fact.never">never</ng-container>
           }</span
@@ -295,7 +291,7 @@
                     <th scope="row" translate="no"><a [routerLink]="repositoryLink(r.key)">{{ r.key }}</a></th>
                     <td>{{ classLabels[r.class] }}</td>
                     <td>
-                      <time [attr.datetime]="r.publishedAt" [attr.title]="r.publishedAt | date: 'medium'">{{ when(r.publishedAt) }}</time>
+                      <quader-time-ago [at]="r.publishedAt" absolute="title" />
                     </td>
                   </tr>
                 }

@@ -4018,8 +4018,8 @@ Priority: **MVP** · Covers: UI-030, REPO-007
   description ([Q-UI-302](#q-ui-302--the-repository-list-names-a-repository-by-key-and-description-in-its-first-column-and-puts-the-rows-actions-in-a-menu)), every other property is a column, and below 48 rem of the list's width the rows stack (Q-UI-306).
   - The project's own list (`/projects/{project}/repositories`, Q-UI-129), the plain user's (find a repository and set up its
     client): **Repository** (the visibility icon, the key and the description, R-UI-102), **Format** (icon and display name),
-    **Class** (icon and name), and at the row's end **Set up client**, which opens the client setup for the repository, beside
-    the row's menu. The client address is no column: it stands on the repository's page and in the client setup ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)).
+    **Class** (icon and name), and at the row's end **Set up client**, the quiet form of a row's action ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)),
+    which opens the repository's page Set up client (R-UI-120), beside the row's menu. The client address is no column: it stands on the repository's page and in the client setup ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)).
     The repository takes every pixel the others leave.
   - The admin area's list (`/admin/repositories`), the administrator's (manage the repositories): **Repository**, **Project**
     (its mark and its name, linked to it, R-UI-102), **Format**, **Class**, **Visibility**, **Last activity** (relative, R-UI-103)
@@ -5411,8 +5411,8 @@ Acceptance criteria:
   with the filter drawer open or closed (Q-UI-330, Q-UI-426).
 - Every screen of R-UI-066 shows its address through the component, and no template of those screens gives a client address
   the class `ellipsis`.
-- Playwright: a project's repository list holds no address field, and the row's **Set up client** opens the client setup of the
-  repository; on the admin area's list the row's copy button, named with the address, puts the address the API gave on the
+- Playwright: a project's repository list holds no address field, and the row's **Set up client** opens the repository's page Set
+  up client (`…/repositories/<key>/setup`); on the admin area's list the row's copy button, named with the address, puts the address the API gave on the
   clipboard.
 
 ### R-UI-066 · The screens that show a client address use the address field
@@ -5422,11 +5422,11 @@ Each screen shows its client addresses through `<quader-address-field>` (R-UI-06
 
 | Screen | Place | Notes |
 |---|---|---|
-| Repository list (R-UI-020), `/projects/{project}/repositories` | No field: the row's **Set up client** opens the client setup, where the address stands with the snippets that use it ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)) | The admin area's list (`/admin/repositories`) has a copy button in the row, whose name and tooltip carry the address (Q-UI-330); the search results (`/search`) have neither (Q-UI-430) |
+| Repository list (R-UI-020), `/projects/{project}/repositories` | No field: the row's **Set up client** opens the repository's page Set up client, where the address stands with the snippets that use it ([Q-UI-426](#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)) | The admin area's list (`/admin/repositories`) has a copy button in the row, whose name and tooltip carry the address (Q-UI-330); the search results (`/search`) have neither (Q-UI-430) |
 | Repository page (R-UI-021), settings view | The fact **Client address** | The field fills the fact up to the measure (Q-UI-301) |
 | Repository page, consumer view | The fact **Client address**, one field per address of the repository, stacked | Stacked fields are one width (Q-UI-301) |
 | Repository content page (R-UI-052) | The header: the repository's first address; **Details**: each further address with its label | Q-UI-320 |
-| Start page (Q-UI-311), recently opened repositories | One field per repository: its first address | Q-UI-320 |
+| Start page (Q-UI-311), recently opened repositories | One field per repository: its first address, with **Set up client** beside it on one line as in the repository's header (Q-UI-517) | Q-UI-320 |
 | Repository wizard (R-UI-021), review step | The line **Client address** | |
 | Set up client (R-UI-120) | The page header: the repository's address on this installation, or on the Bastion chosen under **More options** | The address has its context: the snippets that use it (W-4 of the owner's walk of 2026-11-18) |
 | Endpoint page, the address of an exposure rule | No field: the row's copy button, whose name and tooltip carry the address ([Q-UI-331](#q-ui-331--an-endpoints-rules-are-the-shared-data-table-and-a-rules-client-address-is-the-rows-copy-button)) | The administrator manages the rules; the address is handed out with the button |
@@ -6151,6 +6151,9 @@ The walk of 2026-11-18 found three ways across lists: "4 minutes ago", "Nov 18, 
 - **A log** (the audit log, the issued CI tokens), where the moment is the content, writes the date and the time, `medium`.
 - One wording of a relative time: `relativeTime` ([format-time.ts](../../web/src/app/features/packages/format-time.ts)); `timeAgo`
   ([time-ago.ts](../../web/src/app/shared/ui/time-ago.ts)) is the same in the build's locale. A screen that calls either follows.
+- No screen of a package or a repository writes a time with the date pipe or a helper of its own: the versions of a package and
+  its **First published**, a version's facts and its repositories, the items of a repository and their versions, and the files of a
+  folder use `<quader-time-ago>` in the form of their place (the merge of the four packages of the walk, 2026-11-18).
 
 Acceptance criteria:
 
@@ -6256,8 +6259,9 @@ repository, where the format, the class and the repository are known, and asks f
   `bastion` (R-BAS-007); the document title and the `h1` are **Set up client**, the breadcrumb is the project's trail with the
   repository's key and **Set up client** (Q-UI-480).
 - The header names the context and asks for nothing: the repository (`<project>/<key>` with the icon of its level, a link to its
-  page), the format with its icon, the class, and the address the snippets use as an address field (R-UI-065): the repository's
-  on this installation, or its address on the Bastion chosen under **More options**.
+  page), the format and the class as the badges of the repository's own header (R-UI-052: the format with its icon, the class with
+  its icon), and the address the snippets use as an address field (R-UI-065): the repository's on this installation, or its address
+  on the Bastion chosen under **More options**.
 - The client is one select **Client** with the format's clients of `GET /api/v1/formats` in their order, the one of `?client=`
   or the first chosen; a format with one client shows no control (Q-UI-482). Choosing a client replaces `?client=`.
 - The page is reached from every **Set up client** (R-UI-126). It needs `read` on the repository: the API answers `404`
@@ -6337,10 +6341,12 @@ Priority: **MVP** · Covers: quader-only
 - **`/guides`** (the navigation entry **Guides**, also the user menu's): the heading **Guides**, one sentence, and the formats of
   `GET /api/v1/formats` that list clients as the tiles of R-UI-127, in the catalog's order; nothing else to choose (owner,
   2026-11-18). A signed-out visitor sees it while `publicContent` is true.
-- **`/guides/{format}`** (Q-UI-481): the heading "<display name> repositories", a sentence, the format's badge, and the
-  repositories of that format the reader may read and that are not disabled, virtual first (marked **recommended**), then by
-  name: **Repository** (the icon of its level and `<project>/<key>`, a link to the repository), **Class**, **Description**, and
-  **Set up client** (R-UI-126). An empty list says that the reader can use no repository of the format. Below the list, **Without
+- **`/guides/{format}`** (Q-UI-481): the heading "<display name> repositories", a sentence, and the repositories of that format
+  the reader may read and that are not disabled, virtual first (marked **recommended**), then by name. The list is built from the
+  parts of every repository list ([Q-UI-430](#q-ui-430--the-searchs-repository-rows-are-built-from-the-parts-of-the-repository-list),
+  Q-UI-425, Q-UI-426): **Repository** (the visibility icon, the key as a link to the repository, the description as its muted second
+  line), **Project** (its mark and its name, R-UI-102), **Class** (icon and name), and at the row's end **Set up client** in the
+  form of a row's action (R-UI-126). The format is the page's, so it is no column. An empty list says that the reader can use no repository of the format. Below the list, **Without
   a repository**: one link per class the format has, to the guide of that class.
 - **`/guides/{format}/{class}`**: the page of R-UI-120 without a repository. The header names the format and the class; the
   address shows `<project>` and `<repository>`, and the credential line says that they stand for the project and the key of the
@@ -6351,7 +6357,8 @@ Priority: **MVP** · Covers: quader-only
 Acceptance criteria:
 
 - Unit tests (`guides.spec.ts`): the tiles are the formats with clients and lead to `/guides/<format>`; the npm page lists the
-  repositories virtual first with **Set up client** to `…/setup`, and links the three class guides.
+  repositories virtual first in the columns and the name cell of the repository list, with **Set up client** to `…/setup`, and
+  links the three class guides.
 
 ### R-UI-125 · The explanation reads like a page, not like a reference
 Priority: **MVP** · Covers: quader-only
@@ -6374,22 +6381,27 @@ Acceptance criteria:
 - Renders (rule 11): `setup-long-key` and `setup-deb` (`debian-internal-packages-for-bookworm-and-trixie`) at 390 px show every
   address of their snippets whole.
 
-### R-UI-126 · Set up client is one action with one look
+### R-UI-126 · Set up client is one action with one target and one look per place
 Priority: **MVP** · Covers: quader-only
 
-- One label, **Set up client**, one look, the default button (Q-UI-487), and one target: the repository's page of R-UI-120. It
-  stands in the repository's header (not for a disabled repository), in the empty state of a repository, in the rows of the lists
-  of repositories (W-4), in the recently opened repositories of the start page, in the install panel of a package (with the
-  panel's client as `?client=`) and in the rows of a format's guides (R-UI-124). The repository's settings have no section that
-  points to it (the development agent, 2026-11-18): the repository's own page carries it in its header.
+- One label, **Set up client**, and one target: the repository's page of R-UI-120. It stands in the repository's header beside its
+  client address (not for a disabled repository), in the empty state of a repository and of its files, in the rows of a project's
+  list of repositories (W-4), in the recently opened repositories of the start page, in the install panel of a version (with the
+  panel's client as `?client=`) and in the rows of the repositories behind a format's tile (R-UI-124). The repository's settings
+  have no section that points to it (the development agent, 2026-11-18): the repository's own page carries it in its header.
+- One look per place ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)): the default button (`btn-default`) on a page and in a header; in a row of a table the
+  quiet form of a row's action (`btn-tertiary`), whose accessible name ends with the repository's key. It is never blue.
+- No link leads to `/setup`: `check-rules.mjs` fails the lint on a route literal of `/setup` or `/browse` in the application's
+  code (`removed-routes-rule.mjs`, tested in `lint-rules.test.mjs`).
 - The packages list of a project names no repository: its **Set up client** leads to the Guides (R-UI-124), where the reader
   picks the format and the repository.
 - The user menu and the search's pages (R-UI-097) have no entry for a client setup without a repository.
 
 Acceptance criteria:
 
-- Unit tests of the repository page, the start page, the install panel, the packages list and the guides: the label, the class
-  `btn-default` and the target.
+- Unit tests of the repository page, the start page, the install panel, the packages list, a project's repository list and the
+  repositories of a format: the label, the class (`btn-default` on a page, `btn-tertiary` in a row) and the target.
+- The lint rule's test: a link to `/setup` or `/browse` fails, a repository's own `…/setup` passes.
 
 ### R-UI-127 · The format tiles are one component
 Priority: **MVP** · Covers: quader-only
@@ -6397,6 +6409,11 @@ Priority: **MVP** · Covers: quader-only
 - `quader-format-tiles` ([format-tiles.ts](../../web/src/app/shared/ui/format-tiles.ts)): each format of the list as a tile with
   its icon and its display name, each tile a link the screen decides. The first page of a new repository (R-UI-080) and the Guides
   (R-UI-124) show the same tiles (owner, 2026-11-18: one tile pattern for both).
+- The grid takes the page's width, each tile at least 9.5 rem, so the installed formats stand in one row at 1440 px ([Q-UI-488](#q-ui-488--the-format-tiles-take-the-pages-width)).
+
+Acceptance criteria:
+
+- Renders (rule 11): `guides` and `repository-new` at 1440 px show the six formats of the render seed in one row.
 
 ## Deferred
 
@@ -11950,7 +11967,8 @@ beside the tabs (**Browse files**, **Vulnerabilities** on the repository page; *
 | (b) Keep the quiet links | Unchanged | Nothing to build | Four patterns |
 
 **Choice:** (a). On the repository page (Q-UI-313) the header holds the address field and **Set up client** as its primary
-action; **Settings** is a default button for who may change.
+action; **Settings** is a default button for who may change. Revised by [Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row) (2026-11-18): **Set up client** is a default
+button there too.
 
 **Rationale:** a user finds an action where every other page puts it. The development agent revisits the menu if a page has two
 frequent actions.
@@ -12060,7 +12078,8 @@ suggestions); the start page's package search stays as it is until then. Revisit
 [Q-UI-390](#q-ui-390--enter-in-the-top-bars-search-opens-a-results-page-of-the-main-area-no-search-leads-into-the-admin-area):
 that list exists (`GET /api/v1/repositories` answers every caller with what it may read), and the top bar's field searches it for
 every signed-in user. Fix wave 2: each recently opened repository shows its
-first address only, and its **Set up client** opens `/setup?repository=` (Q-UI-320, Q-UI-321).
+first address only, and its **Set up client** opens `/setup?repository=` (Q-UI-320, Q-UI-321); since 2026-11-18 the
+repository's page `…/setup` (R-UI-126).
 Revisited by T-22 ([Q-UI-414](#q-ui-414--the-start-pages-package-search-goes-the-top-bars-field-is-the-one-search)): the start
 page's package search goes, the top bar's field is the one search; **Recently opened** reads the store of
 [Q-UI-405](#q-ui-405--frequently-visited-is-kept-in-the-browser-per-principal-by-visits-and-recency) with one request (R-API-063).
@@ -12274,7 +12293,7 @@ development agent revisits it if users want the setup and the content side by si
 **Set up client**, as its tab did not.
 
 **Revisited on 2026-11-18:** the button opens the repository's own page `…/repositories/<key>/setup` (R-UI-120) and has the default
-look of every **Set up client** ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-everywhere)).
+look of **Set up client** on a page ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)).
 
 ### Q-UI-322 · A closed section of details is one quiet disclosure: a small heading with a chevron and one hint line
 
@@ -13683,8 +13702,9 @@ context is: the repository's page and the client setup.
 | (b) The description as a column of its own (the development agent's first proposal) | Five columns | The description scanned down a column | Prose squeezed into a narrow column at 1024 px; the project's list would differ from the admin area's and the search's |
 | (c) No row action | The menu only | Simple | The address had been the row's reason to be copied; the setup is where that job went |
 
-**Choice:** (a). **Set up client** opens today's client setup for the repository (`/setup?repository=<project>/<key>`), its accessible
-name ends with the key. The search's repository rows lose their copy button for the same reason (Q-UI-430). The admin area's list
+**Choice:** (a). **Set up client** opens the repository's page Set up client (`…/repositories/<key>/setup`, R-UI-120; revised
+when the Guides package was merged, 2026-11-18, which removed `/setup`), its accessible name ends with the key; it keeps the quiet
+form of a row's action ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)). The search's repository rows lose their copy button for the same reason (Q-UI-430). The admin area's list
 keeps its quiet copy button and its menu's **Copy client address**: an administrator hands addresses out, and the owner's objection
 named the project's list. With no address column left in a list, the address share (`fill`, `--quader-address-share`,
 `--quader-address-chars`, `--quader-list-others`, `td.address-cell`) and the render report's check of address widths go.
@@ -13784,7 +13804,9 @@ wordings of a relative time ("4 minutes ago", "3 min ago").
 **Choice:** (a). `relativeTime` ([format-time.ts](../../web/src/app/features/packages/format-time.ts)) is the wording, "now" under a
 minute; `timeAgo` ([time-ago.ts](../../web/src/app/shared/ui/time-ago.ts)) is it in the build's locale; `<quader-time-ago
 absolute="title">` is a list's cell. The lists of this change use it; a screen that formats a time with the date pipe follows when it
-is next changed. **Rationale:** one rule a reader learns once. The development agent revisits the log's form if the owner wants
+is next changed. Followed on 2026-11-18, when the four packages of the walk were merged: the package page (its versions as a list,
+**First published** as a fact), the version page (its line of facts with the absolute time in brackets, its repositories as a list),
+the items of a repository and their versions (they wrote "Nov 18, 2026" and "Nov 18, 2026, 8:17:21 AM") and the files of a folder. **Rationale:** one rule a reader learns once. The development agent revisits the log's form if the owner wants
 relative times there too.
 
 **Applied in the spec:** R-UI-103; Q-UI-305 and Q-UI-378 revised.
@@ -14263,21 +14285,48 @@ revisits it if a format's snippets depend on visible column alignment.
 
 **Applied in the spec:** R-UI-125.
 
-### Q-UI-487 · Set up client is a default button everywhere
+### Q-UI-487 · Set up client is a default button on a page and a quiet row action in a table row
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
-owner asked on 2026-11-18 for one label and one look.
+owner asked on 2026-11-18 for one label and one look. Revised when the four packages of the walk were merged (2026-11-18): the
+first choice, the default button everywhere, met two other looks built at the same time, the blue button beside the address in the
+repository's header (Q-UI-517) and the quiet text action in a project's repository list (Q-UI-426).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) **Set up client**, `btn-default`, in the header, the rows, the empty states, the install panel and the guides (chosen) | One look | Calm in a list of rows; the same in every place | The repository's header has no confirm button |
-| (b) The confirm button everywhere | One look | Prominent | A column of blue buttons in every list |
-| (c) Blue in the header, grey elsewhere (today) | Two looks | Prominent where it is the page's action | The two looks the owner objected to |
+| (a) `btn-default` everywhere, the rows of a table too (the first choice) | One look | The same in every place | A grey button in every row of a list draws more than the row's name; the style guide gives a row's actions the quiet form |
+| (b) The confirm button everywhere | One look | Prominent | A column of blue buttons in every list; the blue is the commit of a form or a dialog |
+| (c) Blue in the repository's header, grey elsewhere | Two looks | Prominent where it is the page's job | The two looks the owner objected to |
+| (d) `btn-default` on a page and in a header (the repository's header, an empty state, the start page's recent repositories, the install panel, the packages list's header); in a row of a table the quiet form of a row's action, `btn-tertiary`, its accessible name ending with the key (a project's repository list, the repositories behind a format's tile) (chosen) | One look per place | A row's action looks like every row's action ([ui-style-guide.md](../developer/ui-style-guide.md#buttons-and-dialogs): quiet for anything repeated down a list); the rows stay calm; nowhere blue | Two forms of one action, by where it stands |
 
-**Choice:** (a). **Rationale:** the action appears in lists, where a confirm button per row competes with the content; one look
-needs the one that works in a row. The development agent revisits it if readers do not find it in the repository's header.
+**Choice:** (d). No **Set up client** is blue: it opens a page and commits nothing. **Rationale:** the owner objected to one action
+looking different on two screens of one kind (the grey button of the packages list against the blue one of a repository); a page and
+a table row are two kinds of place, and each keeps the form the style guide gives it. The development agent revisits it if readers
+miss the row's action in a list.
 
-**Applied in the spec:** R-UI-126, R-UI-052.
+**Applied in the spec:** R-UI-126, R-UI-052, R-UI-124; Q-UI-426, Q-UI-517 and Q-UI-514 revised. Code: `row-setup` in
+[repository-list.html](../../web/src/app/features/repositories/repository-list.html) and
+[guide-format.ts](../../web/src/app/features/guides/guide-format.ts), the header in
+[repository-content.html](../../web/src/app/features/repositories/content/repository-content.html).
+
+### Q-UI-488 · The format tiles take the page's width
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: seen in the first render of the four packages together (2026-11-18): the tiles stood in a grid of at most 56 rem, so at
+1440 px the six installed formats showed as five tiles and one on a second row, with the right half of the page empty, on Guides and
+on the format chooser of a new repository.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The grid takes the page's width, a tile at least 9.5 rem; empty tracks keep a tile at that width when there are few formats (chosen) | As many tiles in a row as fit | Six formats in one row at 1440 px; no rule that knows the number of formats | At 1024 px with the side bar open four and two |
+| (b) Balance the rows: as many columns as make the rows equal | Three and three | No lone tile at any width | The tiles stay narrower than the page for no reason; a count of columns per number of formats |
+| (c) As before | — | — | The lone tile |
+
+**Choice:** (a). **Rationale:** the tiles are the page's only content, so they may use its width; the room the cap kept empty was the
+defect. The development agent revisits it if a seventh format leaves one tile alone at 1440 px.
+
+**Applied in the spec:** R-UI-127. Code: [format-tiles.ts](../../web/src/app/shared/ui/format-tiles.ts).
 
 ### Q-API-310 · The guide's snippets travel beside its sections, and a reader's guide holds what the reader can do
 
@@ -14412,8 +14461,8 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). The name is not repeated as a heading under the path (revised on the coordinator's review of the renders,
 2026-11-18: the first build showed it in the breadcrumb, the path and an `h2`); the section's `h2` is visually hidden.
-**Download** is a default button, not the primary: the header's primary action stays **Set up client** (one primary
-per view). The statistics are read when **Details** opens. A time is "4 minutes ago (Nov 18, 2026, 8:17 AM)" through
+**Download** is a default button, not the primary: the repository's header holds **Set up client** (a default button too since
+[Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row), so the view has no primary action). The statistics are read when **Details** opens. A time is "4 minutes ago (Nov 18, 2026, 8:17 AM)" through
 `<quader-time-ago>` (Q-UI-378), the form of a detail page. **Rationale:** the facts a reader needs are few; the checksums beyond
 SHA-256 and the API's view are for who checks a file. The development agent revisits it if users ask for the other checksums often.
 
@@ -14474,8 +14523,15 @@ Context: seen by the development agent in the walk of 2026-11-18 (`repository-np
 together; GitLab's clone field and its button share one line too. The development agent revisits it if the button is missed at the
 left.
 
-**Applied in the spec:** R-UI-052. Code: `.client-row` in [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html)
-and [repository-content.scss](../../web/src/app/features/repositories/content/repository-content.scss). Test: `Q-UI-517` in
+**Revised on 2026-11-18** (the merge of the four packages of the walk): the start page's recently opened repositories put their
+address and **Set up client** on one line in the same way (the shared `.client-row` of
+[_catalog-screens.scss](../../web/src/styles/_catalog-screens.scss)), and name the project by its mark and its name (Q-UI-424)
+instead of its key. **Set up client** beside the address is the default button, not the primary one, and leads to the repository's
+page `…/setup` ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row), R-UI-126). The line is unchanged.
+
+**Applied in the spec:** R-UI-052. Code: `.client-row` in [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html),
+[projects-home.ts](../../web/src/app/features/projects/projects-home.ts) and
+[_catalog-screens.scss](../../web/src/styles/_catalog-screens.scss). Test: `Q-UI-517` in
 [repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts).
 
 ### Q-UI-518 · A list of files writes a time with the shared helpers, never its own format

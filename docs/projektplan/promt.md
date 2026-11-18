@@ -888,7 +888,16 @@ agent** is not decided until the owner has said so.
     Q-VULN-160): a package opens on the table of its versions, a version's page is `…/<name>@<version>`. "Last fetched" is read
     from the stored download statistics of the version's main file, so a remote image tag without a stored file reads "Never".
     Not run locally: the journeys 08, 21, the vulnerability journey 15 and the two Ansible documentation journeys;
-  - **Guides:** W-2, the guide and the client setup as one page, one label and style for **Set up client**;
+  - **Guides:** W-2, the guide and the client setup as one page, one label and style for **Set up client**. **Landed on
+    2026-11-18** (ADR-202, R-UI-120 to R-UI-127, R-API-070, Q-UI-480 to Q-UI-488, Q-API-310), carried onto the three landed
+    packages by a fifth builder, who also made the four agree: every **Set up client** opens the repository's own page (a lint
+    rule refuses a route literal `/setup` or `/browse`), the action is the default button on a page and the quiet row action in a
+    table, the list behind a format tile is built from the repository list's parts, the tiles use the page's width, and the
+    package, version, repository and file pages write a time by R-UI-103. Not run locally: the journeys 02, 08, 09, 11, 17 and
+    20. Seen by that builder and not fixed: the guides trail names a format by its key (`oci`); the grade reads "C · 2 High" in
+    a repository's items and "1,145 findings · 112 fixable" in a package's versions; the header's menu button stands alone on a
+    line at 390 px; an empty repository shows **Set up client** twice. Not looked at by anyone yet: the admin area's screens with
+    the four packages together;
   - **Files:** W-8, and the defects of the repository's page (the long package name's row, the filter field's width, the file
     row's icon, the address beside **Set up client**). **Landed on 2026-11-18** (ADR-203, R-UI-010 to R-UI-014, R-UI-052,
     Q-UI-510 to Q-UI-521). The development agent looked at the builder's renders before it landed and sent four defects back,

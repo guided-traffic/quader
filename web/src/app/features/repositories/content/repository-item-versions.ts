@@ -1,6 +1,6 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TimeAgo } from '../../../shared/ui/time-ago';
 import { PackageSummary, PackageVersionSummary, PackagesApi } from '../../../api/packages-api';
 import { splitRef } from '../../../api/repositories-api';
 import { VulnerabilitiesApi, VulnerabilityGrade } from '../../../api/vulnerabilities-api';
@@ -24,7 +24,7 @@ const VERSIONS_PAGE = 20;
  */
 @Component({
   selector: 'quader-repository-item-versions',
-  imports: [DatePipe, RouterLink, CopyButton, DataTable, GradeLabel, InstallCommand],
+  imports: [TimeAgo, RouterLink, CopyButton, DataTable, GradeLabel, InstallCommand],
   template: `
     <div class="command-panel">
       <p class="command-title">
@@ -73,7 +73,7 @@ const VERSIONS_PAGE = 20;
           }
           <td class="num">{{ size(v.sizeBytes) }}</td>
           <td>
-            <time [attr.datetime]="v.publishedAt" [attr.title]="v.publishedAt | date: 'long'">{{ v.publishedAt | date: 'medium' }}</time>
+            <quader-time-ago [at]="v.publishedAt" absolute="title" />
           </td>
           @if (scanned()) {
             <td>

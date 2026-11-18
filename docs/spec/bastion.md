@@ -4426,7 +4426,7 @@ needs only `read` on the repository, so an administrator can hand a link to a de
 The page numbers its steps again when the target step is there. The development agent would revisit (c) when a format's guide
 gains Bastion-specific text.
 
-**Applied in the spec:** R-BAS-007, R-UI-049 (through R-BAS-007). Implementation: [web-ui.md](../developer/web-ui.md#client-setup-and-guides-for-a-bastion).
+**Applied in the spec:** R-BAS-007, R-UI-049 (through R-BAS-007). Implementation: [web-ui.md](../developer/web-ui.md#set-up-client-for-a-bastion).
 
 ### Q-BAS-97 · The reported address is matched against the listed addresses, and the setup needs no base URL of its own
 

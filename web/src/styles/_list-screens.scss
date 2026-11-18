@@ -700,6 +700,30 @@ td.class-cell .material-icons {
   .quader-data-table.stack {
     @include stacked-rows;
   }
+
+  // A stacked row whose action is **Set up client** (a project's repository list, the repositories behind a format's tile;
+  // Q-UI-306, Q-UI-426, Q-UI-487): the name and the menu on the first line, **Set up client** on a line of its own at the block's
+  // end, so the name and its description keep the row's width on a phone.
+  .quader-data-table.stack tr > td.actions.with-setup {
+    display: contents;
+
+    > .btn-icon {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: start;
+    }
+
+    > .row-setup,
+    > .deleting {
+      grid-column: 1 / -1;
+      justify-self: start;
+    }
+
+    // The button's word starts where the lines above start (the cells' padding, not the button's).
+    > .row-setup {
+      margin-inline-start: calc(var(--quader-space-2) - var(--quader-space-3));
+    }
+  }
 }
 
 // A list whose least widths need more than 48 rem stacks below 64 rem of columns and that room (`stackWide`, the administrator's

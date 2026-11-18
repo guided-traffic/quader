@@ -946,7 +946,7 @@ without a repository is the same page at `/guides/{format}/{class}`. `/setup` is
 beside its sections, and the format contract no longer names a setup section per guide section
 ([R-API-070](spec/api-and-ui.md#r-api-070--a-guide-carries-its-snippets-beside-its-sections)).
 
-**Consequences.** Every **Set up client** has one target and one look. The address of a repository is shown with the snippets that
+**Consequences.** Every **Set up client** has one target, and one look per place (a default button on a page, a quiet row action in a table row, Q-UI-487). The address of a repository is shown with the snippets that
 use it. The token is created on the page and read into the variable, so the reader does not leave the task. A guide is reached
 through a repository, so a reader without one takes one more step (the format's page, then a class). The guide of a reader who may
 not publish leaves publishing out. Kit check 8 now requires the configure and install templates of every client of a format with
@@ -958,7 +958,7 @@ other (the state the owner rejected).
 
 **Spec:** [R-UI-120](spec/api-and-ui.md#r-ui-120--set-up-client-is-one-page-of-a-repository) to
 [R-UI-127](spec/api-and-ui.md#r-ui-127--the-format-tiles-are-one-component), R-UI-016, R-UI-049, R-API-053, R-API-070; decided:
-Q-UI-480 to Q-UI-487, Q-API-310.
+Q-UI-480 to Q-UI-488, Q-API-310.
 
 ### ADR-203 · Browse goes; a repository's files live on its page
 

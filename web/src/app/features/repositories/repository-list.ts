@@ -30,7 +30,8 @@ import { TimeAgo } from '../../shared/ui/time-ago';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
 import { FormatIconView } from '../../shared/format-icon';
 import { FrequentPlaces } from '../../core/frequent-places';
-import { classLabel } from './repository-class';
+import { setupCommands } from '../../core/project-links';
+import { classIcon, classLabel } from './repository-class';
 
 /**
  * The repository list (R-UI-020), its columns from the job of its kind of user (Q-UI-330). Inside a project, the plain user's:
@@ -228,8 +229,10 @@ export class RepositoryList {
 
   protected readonly levelText = levelName;
 
-  protected classIcon(c: RepositorySummary['class']): string {
-    return c === 'local' ? 'storage' : c === 'remote' ? 'cloud_download' : 'layers';
+  protected readonly classIcon = classIcon;
+  /** Set up client of a row's repository (R-UI-126). */
+  protected setupLink(row: RepositorySummary): string[] {
+    return setupCommands(refOf(row));
   }
   /** The admin area's copy button: its name and its tooltip carry the address itself (Q-UI-330). */
   protected copyValueLabel(address: string): string {

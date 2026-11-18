@@ -80,11 +80,11 @@
             </td>
           }
           <td class="time">
-            <time [attr.datetime]="v.publishedAt" [attr.title]="v.publishedAt | date: 'medium'">{{ when(v.publishedAt) }}</time>
+            <quader-time-ago [at]="v.publishedAt" absolute="title" />
           </td>
           <td class="time">
             @if (v.lastDownloadedAt; as at) {
-              <time [attr.datetime]="at" [attr.title]="at | date: 'medium'">{{ when(at) }}</time>
+              <quader-time-ago [at]="at" absolute="title" />
             } @else {
               <span class="muted" i18n="@@pkg.ver.never">Never</span>
             }
@@ -139,7 +139,7 @@
       <dt i18n="@@pkg.fact.downloads">Downloads</dt>
       <dd>{{ p.downloadCount | number }}</dd>
       <dt i18n="@@pkg.fact.first-published">First published</dt>
-      <dd><time [attr.datetime]="p.createdAt" [attr.title]="p.createdAt | date: 'medium'">{{ when(p.createdAt) }}</time></dd>
+      <dd><quader-time-ago [at]="p.createdAt" /></dd>
     </dl>
   </quader-disclosure>
 }

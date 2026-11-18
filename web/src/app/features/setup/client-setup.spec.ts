@@ -86,6 +86,9 @@ describe('Set up client', () => {
     expect(context).toContain('npm');
     expect(context).toContain('Virtual');
     expect(r.root.querySelector('.context a')?.getAttribute('href')).toBe('/projects/web/repositories/npm-all');
+    // The format and the class are the badges of the repository's own header.
+    expect(text(r.root.querySelector('.context .badge.format-badge')!)).toContain('npm');
+    expect(text(r.root.querySelector('.context .badge.class-badge')!)).toContain('Virtual');
     expect(r.root.querySelector('quader-address-field input')?.getAttribute('value') ?? (r.root.querySelector<HTMLInputElement>('quader-address-field input')?.value)).toBe(
       'https://quader.example.net/api/npm/web/npm-all/',
     );

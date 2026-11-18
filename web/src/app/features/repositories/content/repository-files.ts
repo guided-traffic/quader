@@ -1,6 +1,5 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
-import { DatePipe } from '@angular/common';
-import { Component, LOCALE_ID, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Child, FilesApi } from '../../../api/files-api';
@@ -11,7 +10,7 @@ import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { QuaderDialog } from '../../../shared/ui/dialog';
 import { formatSize } from '../../packages/format-size';
-import { relativeTime } from '../../packages/format-time';
+import { TimeAgo } from '../../../shared/ui/time-ago';
 import { contentShapeOf } from './content-shape';
 import { FilePermissions, NO_FILE_PERMISSIONS, iconOf } from './file-paths';
 import { FolderDialog, FolderDialogData } from './folder-dialog';
@@ -29,7 +28,7 @@ export const FILES_PAGE = 200;
  */
 @Component({
   selector: 'quader-repository-files',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DatePipe, RouterLink, CopyButton, DataTable],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, TimeAgo, RouterLink, CopyButton, DataTable],
   template: `
     <div class="toolbar files-toolbar">
       <div class="filter">
@@ -119,7 +118,7 @@ export const FILES_PAGE = 200;
           </td>
           <td>
             @if (c.modifiedAt; as at) {
-              <time [attr.datetime]="at" [attr.title]="at | date: 'medium'">{{ since(at) }}</time>
+              <quader-time-ago [at]="at" absolute="title" />
             } @else {
               –
             }
@@ -139,7 +138,6 @@ export class RepositoryFiles {
   private readonly files = inject(FilesApi);
   private readonly dialog = inject(QuaderDialog);
   private readonly notifier = inject(Notifier);
-  private readonly locale = inject(LOCALE_ID);
 
   /** The qualified name of the repository. */
   readonly repository = input.required<string>();
@@ -222,10 +220,6 @@ export class RepositoryFiles {
 
   protected size(bytes: number): string {
     return formatSize(bytes);
-  }
-
-  protected since(iso: string): string {
-    return relativeTime(iso, this.locale);
   }
 
   protected async upload(): Promise<void> {

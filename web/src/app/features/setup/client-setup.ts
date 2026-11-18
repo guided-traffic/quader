@@ -17,7 +17,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
 import { GuideView } from '../guides/guide-view';
-import { classLabel } from '../repositories/repository-class';
+import { classIcon, classLabel } from '../repositories/repository-class';
 import { reportedBastions } from './bastion-targets';
 import { snippetExplanation } from './clients';
 import { SetupSnippet } from './setup-snippet';
@@ -110,6 +110,7 @@ export class ClientSetupPage {
     return cls && (this.descriptor()?.classes as readonly string[] | undefined)?.includes(cls) ? cls : null;
   });
   protected readonly classText = computed(() => classLabel(this.activeClass() ?? ''));
+  protected readonly classIcon = classIcon;
   protected readonly visibility = computed(() => this.repository()?.visibility?.artifacts ?? null);
   protected readonly disabled = computed(() => {
     const r = this.repository();

@@ -23,7 +23,9 @@ export const GUIDES_ROUTES: Routes = [
       },
       {
         path: ':class',
-        title: $localize`:@@route.setup.title:Set up client`,
+        // A title the router resolves names the page in the trail (Guides › npm › Set up client), as under a repository; a plain
+        // title would leave the step to the parameter, the class's key. The class is the page's badge.
+        title: () => $localize`:@@route.setup.title:Set up client`,
         loadComponent: () => import('../setup/client-setup').then((m) => m.ClientSetupPage),
       },
     ],

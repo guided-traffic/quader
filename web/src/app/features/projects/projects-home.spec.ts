@@ -31,13 +31,17 @@ describe('Start page', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-067 R-UI-096 shows the repositories opened before, from the search\'s store, with their client address and Set up client', async () => {
+  it('R-UI-067 R-UI-096 Q-UI-517 Q-UI-424 shows the repositories opened before, from the search\'s store, with their project, their client address and Set up client beside it', async () => {
     const { root, fixture } = await renderScreen(ProjectsHome, { setup: () => visited('web/generic-local') });
     await settle(fixture);
     expect(text(root.querySelector('.recent')!)).toContain('generic-local');
     expect(addressValues(root).some((a) => a.includes('web/generic-local'))).toBe(true);
     const setup = [...root.querySelectorAll('.recent a.btn')].find((a) => text(a) === 'Set up client');
     expect(setup?.getAttribute('href')).toBe('/projects/web/repositories/generic-local/setup');
+    // The address and Set up client are one line, as in the repository's header; the project is its mark and its name.
+    expect(setup?.closest('.client-row')?.querySelector('quader-address-field')).not.toBeNull();
+    expect(setup?.classList.contains('btn-default')).toBe(true);
+    expect(root.querySelector('.recent-name quader-project-link a')?.getAttribute('href')).toBe('/projects/web');
   });
 
   it('R-UI-096 Q-UI-406 Recently opened asks one name= request for its entries, newest first, and leaves out one the caller cannot read', async () => {
@@ -45,7 +49,7 @@ describe('Start page', () => {
     await settle(fixture);
     const named = (get(RepositoriesApi) as FakeRepositoriesApi).listFilters.filter((f) => f.name);
     expect(named).toEqual([{ name: ['web/releases', 'platform/gone', 'web/generic-local'] }]);
-    expect([...root.querySelectorAll('.recent-name a')].map((a) => text(a))).toEqual(['releases', 'generic-local']);
+    expect([...root.querySelectorAll('.recent-name > a')].map((a) => text(a))).toEqual(['releases', 'generic-local']);
   });
 
   it('Q-UI-414 the start page has no package search of its own: the top bar\'s field is the one search', async () => {

@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 import { numberFieldsWithoutWidth } from './field-width-rule.mjs';
+import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -63,4 +64,25 @@ test('Q-UI-335 a number field without a number width fails the check, one with i
   ];
   for (const t of good) assert.deepEqual(numberFieldsWithoutWidth(t), [], t);
   assert.equal(numberFieldsWithoutWidth('<p>x</p>\n<input type="number" />')[0].line, 2);
+});
+
+test('R-UI-126 a link to the removed routes /setup and /browse fails the check, a repository\'s own setup and files pass', () => {
+  const bad = [
+    '<a class="btn btn-default" routerLink="/setup" [queryParams]="{ repository: ref() }">Set up client</a>',
+    "void this.router.navigate(['/setup'], { queryParams: { repository } });",
+    'const url = `/setup?repository=${ref}`;',
+    "<a routerLink=\"/browse\">Browse</a>",
+    "return ['/browse', project, key];",
+  ];
+  for (const t of bad) assert.equal(linksToRemovedRoutes(t).length, 1, t);
+  const good = [
+    '<a class="btn btn-default" [routerLink]="setupLink()">Set up client</a>',
+    "return [...repositoryCommands(ref), 'setup'];",
+    "path: 'setup',",
+    "loadComponent: () => import('../setup/client-setup').then((m) => m.ClientSetupPage),",
+    "const path = setup ? '/project/setup' : raw;",
+    "['/projects', project, 'repositories', key, 'files']",
+  ];
+  for (const t of good) assert.deepEqual(linksToRemovedRoutes(t), [], t);
+  assert.equal(linksToRemovedRoutes('x\n<a routerLink="/setup">')[0].line, 2);
 });

@@ -1,5 +1,5 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, LOCALE_ID, computed, effect, inject, input, linkedSignal, resource, untracked } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { Component, computed, effect, inject, input, linkedSignal, resource, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PackagesApi } from '../../api/packages-api';
 import { collectAll } from '../../api/pagination';
@@ -11,7 +11,7 @@ import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { formatSize } from './format-size';
-import { relativeTime } from './format-time';
+import { TimeAgo } from '../../shared/ui/time-ago';
 import { versionCommands } from './package-links';
 import { PackageMemory } from './package-memory';
 import { PackageReadmeView } from './package-readme';
@@ -38,7 +38,7 @@ import { VersionGrade } from './version-grade';
  */
 @Component({
   selector: 'quader-package-detail',
-  imports: [DatePipe, DecimalPipe, RouterLink, PageHeader, Disclosure, DataTable, ErrorNotice, FormatIconView, PackageReadmeView, VersionGrade],
+  imports: [DecimalPipe, RouterLink, TimeAgo, PageHeader, Disclosure, DataTable, ErrorNotice, FormatIconView, PackageReadmeView, VersionGrade],
   templateUrl: './package-detail.html',
   styleUrl: './package-detail.scss',
 })
@@ -47,7 +47,6 @@ export class PackageDetail {
   private readonly vulnerabilityApi = inject(VulnerabilitiesApi);
   private readonly router = inject(Router);
   private readonly memory = inject(PackageMemory);
-  private readonly locale = inject(LOCALE_ID);
 
   /** Route parameters: the project of `/projects/:project/packages`, then the matcher's, bound by component input binding. */
   readonly project = input.required<string>();
@@ -149,9 +148,6 @@ export class PackageDetail {
   );
 
   protected readonly size = formatSize;
-  protected when(iso: string): string {
-    return relativeTime(iso, this.locale);
-  }
   protected versionLink(version: string): string[] {
     return versionCommands(this.project(), this.format(), this.name(), version);
   }

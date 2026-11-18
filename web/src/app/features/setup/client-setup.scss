@@ -4,10 +4,8 @@
   max-inline-size: var(--quader-settings-measure);
 }
 
-// The repository, the format and the class of the header, one line of facts.
+// The repository of the header before the badges of its format and class.
 .context {
-  color: var(--quader-text-muted);
-
   .repo {
     display: inline-flex;
     align-items: center;
@@ -17,7 +15,7 @@
 }
 
 // The client: one control with its label on one line, as wide as the longest client's name.
-.client-row {
+.client-choice {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

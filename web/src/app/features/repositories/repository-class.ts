@@ -28,3 +28,8 @@ export function classHelp(cls: string): string {
       return '';
   }
 }
+
+/** The icon of a class (a ligature of the icon font) wherever a class is written with its icon: the lists and a repository's header. */
+export function classIcon(cls: string): string {
+  return cls === 'local' ? 'storage' : cls === 'remote' ? 'cloud_download' : 'layers';
+}

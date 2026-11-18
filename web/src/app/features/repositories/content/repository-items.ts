@@ -1,7 +1,8 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { setupCommands } from '../../../core/project-links';
 import { RouterLink } from '@angular/router';
+import { TimeAgo } from '../../../shared/ui/time-ago';
 import { PackageSort, PackageSummary, PackagesApi } from '../../../api/packages-api';
 import { splitRef } from '../../../api/repositories-api';
 import { PagedResource } from '../../../shared/paged-resource';
@@ -32,7 +33,7 @@ export const GRADE_SORT_MAX = 1000;
  */
 @Component({
   selector: 'quader-repository-items',
-  imports: [DatePipe, DecimalPipe, RouterLink, DataTable, GradeLabel, RepositoryItemVersions],
+  imports: [TimeAgo, DecimalPipe, RouterLink, DataTable, GradeLabel, RepositoryItemVersions],
   template: `
     <div class="toolbar">
       <div class="filter">
@@ -100,7 +101,7 @@ export const GRADE_SORT_MAX = 1000;
             </td>
           }
           <td>
-            <time [attr.datetime]="p.updatedAt" [attr.title]="p.updatedAt | date: 'long'">{{ p.updatedAt | date: 'mediumDate' }}</time>
+            <quader-time-ago [at]="p.updatedAt" absolute="title" />
           </td>
           <td class="num">{{ p.downloadCount | number }}</td>
         </tr>

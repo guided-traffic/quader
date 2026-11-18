@@ -28,7 +28,7 @@ import { AddressField } from '../../../shared/address-field';
 import { Disclosure } from '../../../shared/ui/disclosure';
 import { FrequentPlaces } from '../../../core/frequent-places';
 import { clientAddress } from '../repository-model';
-import { classLabel } from '../repository-class';
+import { classIcon, classLabel } from '../repository-class';
 import { contentShapeOf } from './content-shape';
 import { FilePermissions, NO_FILE_PERMISSIONS, nameOf, parentOf } from './file-paths';
 import { RepositoryFile } from './repository-file';
@@ -108,6 +108,7 @@ export class RepositoryContent {
     (valueOf(this.formats) ?? []).find((f) => f.name === this.repository()?.format),
   );
   protected readonly levelText = levelName;
+  protected readonly classIcon = classIcon;
   protected readonly formatName = computed(() => this.descriptor()?.displayName ?? this.repository()?.format ?? '');
   protected readonly isGeneric = computed(() => this.repository()?.format === 'generic');
   protected readonly scanned = computed(() => this.descriptor()?.vulnerabilityScanning ?? false);

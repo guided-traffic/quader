@@ -188,3 +188,46 @@ dl.facts {
   overflow: hidden;
   clip-path: inset(50%);
 }
+
+// ---- A repository's facts and its client address ---------------------------------------------------------------------------
+
+// The badges of a repository's header: format, class, visibility; the repository's page and its page Set up client.
+.header-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2);
+}
+
+// The format badge carries the format's icon before its name (UI-A-24), a class badge its icon.
+.format-badge,
+.class-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quader-space-1);
+
+  quader-format-icon,
+  .material-icons {
+    font-size: 1rem;
+  }
+}
+
+// The client address and Set up client on one line: one job (Q-UI-517), in the repository's header and in the start page's
+// recently opened repositories. The field fills the line up to the measure of a field alone on its line (Q-UI-301); the button
+// stays beside it and goes under it where the line is too narrow.
+.client-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2);
+
+  quader-address-field {
+    flex: 1 1 18rem;
+    max-inline-size: var(--quader-address-measure);
+    min-inline-size: 0;
+  }
+
+  .btn {
+    flex: none;
+  }
+}

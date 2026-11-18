@@ -27,11 +27,13 @@ import { FormatIconView } from '../format-icon';
     :host {
       display: block;
     }
+    // The grid takes the page's width, so the installed formats stand in one row where it is wide (six tiles at 1440 px) and
+    // no tile is left alone on a second row beside an empty half of the page (Q-UI-488); empty tracks keep a tile at its
+    // width when there are few formats.
     .tiles {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
       gap: var(--quader-space-3);
-      max-inline-size: 56rem;
       margin: var(--quader-space-3) 0 0;
       padding: 0;
       list-style: none;

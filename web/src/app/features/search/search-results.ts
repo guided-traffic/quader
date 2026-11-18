@@ -13,7 +13,7 @@ import { ProjectLink, ProjectMark } from '../../shared/ui/project-mark';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { packageCommands } from '../packages/package-links';
 import { projectRoleLabel } from '../projects/project-roles';
-import { classLabel } from '../repositories/repository-class';
+import { classIcon, classLabel } from '../repositories/repository-class';
 
 /** The tabs of the page, in their order (R-UI-098). */
 export const RESULT_KINDS = ['repository', 'package', 'project'] as const;
@@ -293,9 +293,7 @@ export class SearchResults {
     return (valueOf(this.formats) ?? []).find((f) => f.name === name)?.displayName ?? name;
   }
 
-  protected classIcon(c: RepositorySummary['class']): string {
-    return c === 'local' ? 'storage' : c === 'remote' ? 'cloud_download' : 'layers';
-  }
+  protected readonly classIcon = classIcon;
 
   protected roleLabel(role: ProjectRole): string {
     return projectRoleLabel(role);

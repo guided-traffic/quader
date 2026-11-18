@@ -197,7 +197,8 @@ describe('The project is the context of the content (Q-UI-129)', () => {
     expect(name.querySelector(':scope > .icon-name-text > a')?.textContent?.trim()).toBeTruthy();
     const setup = row.querySelector<HTMLAnchorElement>('td.actions a.btn')!;
     expect(setup.textContent?.replace(/\s+/g, ' ').trim()).toMatch(/^Set up client \S+$/);
-    expect(setup.getAttribute('href')).toMatch(/^\/setup\?repository=web%2F/);
+    expect(setup.getAttribute('href')).toMatch(/^\/projects\/web\/repositories\/[^/]+\/setup$/);
+    expect(setup.classList.contains('btn-tertiary')).toBe(true);
   });
 });
 

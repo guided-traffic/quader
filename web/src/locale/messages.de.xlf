@@ -33552,42 +33552,6 @@
         <target><ph id="0" equiv="format" disp="name"/>-Repositorys</target>
       </segment>
     </unit>
-    <unit id="guides.format.col.repository">
-      <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:146</note>
-      </notes>
-      <segment>
-        <source>Repository</source>
-        <target>Repository</target>
-      </segment>
-    </unit>
-    <unit id="guides.format.col.class">
-      <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:147</note>
-      </notes>
-      <segment>
-        <source>Class</source>
-        <target>Klasse</target>
-      </segment>
-    </unit>
-    <unit id="guides.format.col.description">
-      <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:148</note>
-      </notes>
-      <segment>
-        <source>Description</source>
-        <target>Beschreibung</target>
-      </segment>
-    </unit>
-    <unit id="guides.format.col.action">
-      <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:149</note>
-      </notes>
-      <segment>
-        <source>Action</source>
-        <target>Aktion</target>
-      </segment>
-    </unit>
     <unit id="guides.format.empty">
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:151</note>

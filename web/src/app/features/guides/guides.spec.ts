@@ -26,16 +26,21 @@ describe('Guides', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-124 a tile leads to the repositories of its format: virtual first, the class of each, Set up client per row', async () => {
+  it('R-UI-124 Q-UI-430 a tile leads to the repositories of its format, built from the parts of the repository list: virtual first, Set up client per row', async () => {
     const r = await renderScreen(GuideFormat, { inputs: { format: 'npm' }, setup: catalog });
     expect(text(r.root.querySelector('h1')!)).toBe('npm repositories');
+    expect([...r.root.querySelectorAll('thead th')].map((th) => text(th))).toEqual(['Repository', 'Project', 'Class', 'Actions']);
     const rows = [...r.root.querySelectorAll('tbody tr')];
-    expect(rows.map((row) => text(row.querySelector('th a')!))).toEqual(['web/npm-all', 'web/npm-readonly', 'web/npm-local', 'web/npm-remote']);
-    expect(text(rows[0]!)).toContain('Virtual');
-    expect(text(rows[0]!)).toContain('recommended');
-    const setup = rows[0]!.querySelector<HTMLAnchorElement>('a.btn');
-    expect(text(setup!)).toBe('Set up client');
-    expect(setup?.classList.contains('btn-default')).toBe(true);
+    expect(rows.map((row) => text(row.querySelector('th .icon-name-text > a')!))).toEqual(['npm-all', 'npm-readonly', 'npm-local', 'npm-remote']);
+    // The name cell of every repository list: the visibility icon, the key, the description under it (Q-UI-425).
+    expect(rows[0]!.querySelector('th .icon-name > quader-visibility-icon')).not.toBeNull();
+    expect(rows[0]!.querySelector('td.project-cell quader-project-link')).not.toBeNull();
+    expect(text(rows[0]!.querySelector('td.class-cell')!)).toContain('Virtual');
+    expect(text(rows[0]!.querySelector('th')!)).toContain('recommended');
+    // The row's action in the form of a row (Q-UI-487): quiet, its name ending with the key.
+    const setup = rows[0]!.querySelector<HTMLAnchorElement>('td.actions a.btn');
+    expect(text(setup!)).toBe('Set up client npm-all');
+    expect(setup?.classList.contains('btn-tertiary')).toBe(true);
     expect(setup?.getAttribute('href')).toBe('/projects/web/repositories/npm-all/setup');
     // The guide without a repository is behind the list, one link per class of the format.
     const classes = [...r.root.querySelectorAll<HTMLAnchorElement>('section.classes a')].map((a) => a.getAttribute('href'));

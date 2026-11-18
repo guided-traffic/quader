@@ -154,10 +154,11 @@
         </td>
       }
       <td class="actions" [class.with-setup]="inProject()">
-        <!-- Inside a project the address is no column: it means nothing without its client, so the row offers the client's setup,
-             where the address stands with the snippets that use it (Q-UI-426). -->
+        <!-- Inside a project the address is no column: it means nothing without its client, so the row offers the repository's
+             page Set up client, where the address stands with the snippets that use it (Q-UI-426, R-UI-126), in the quiet form of a
+             row's action (Q-UI-487). -->
         @if (inProject()) {
-          <a class="btn btn-tertiary row-setup" routerLink="/setup" [queryParams]="{ repository: refOf(row) }"
+          <a class="btn btn-tertiary row-setup" [routerLink]="setupLink(row)"
             ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
             ><span class="visually-hidden" translate="no">&ngsp;{{ row.key }}</span></a
           >

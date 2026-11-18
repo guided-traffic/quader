@@ -5,10 +5,12 @@
 //    files client in src/app/api/ and generated code.
 //  - R-UI-050: every manual page that src/app/core/help-topics.ts names is a file of docs/manual/.
 //  - Q-UI-335: every number field of a template names its width (field-width-rule.mjs).
+//  - R-UI-126: no link to the removed routes /setup and /browse (removed-routes-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { numberFieldsWithoutWidth } from './field-width-rule.mjs';
+import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -61,6 +63,14 @@ for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('
   for (const { line, tag } of numberFieldsWithoutWidth(readFileSync(file, 'utf8'))) {
     failed = true;
     console.error(`Q-UI-335: ${relative(root, file)}:${line}: a number field without the width number, duration or bytes: ${tag.split('\n')[0].trim()}`);
+  }
+}
+
+// Set up client and the files are pages of their repository; the old routes answer "Page not found" (R-UI-126, ADR-203).
+for (const file of sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts'))) {
+  for (const { line, text } of linksToRemovedRoutes(readFileSync(file, 'utf8'))) {
+    failed = true;
+    console.error(`R-UI-126: ${relative(root, file)}:${line}: a link to a removed route (/setup, /browse): ${text}`);
   }
 }
 
