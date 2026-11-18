@@ -170,13 +170,15 @@ their `degraded` state.
 **Database outage grace** (Q-OPS-31). The `database` and `schema` checks read PostgreSQL, and a switchover takes
 10 to 15 s while queries retry for `database.retry.max_elapsed` (R-ARCH-019). Once the replica has been ready, a failure
 of one of them that is a connectivity failure (a refused, reset or timed-out connection, SQLSTATE `57P01`, `57P02`,
-`57P03`, `53300` or class `08`, a server in recovery, a check that exceeded `health.check_timeout`) does not make the
+`57P03`, `53300` or class `08`, a server in recovery, a check that exceeded `health.check_timeout`, and a pooler's own
+answer to a switchover behind it: `invalid server parameter` and a `28P01` on a connection that had already authenticated,
+[ha-and-helm.md](ha-and-helm.md) Q-HA-306) does not make the
 replica unready until it has lasted `health.database_outage_grace`. Until then the check shows as `degraded` in
 `/readyz?verbose=1` and in the registry, `/readyz` answers `200`, and the replica stays in the Service while its
 requests wait within their retry. The grace is measured from the first failed evaluation of an unbroken run, and a
 single passing evaluation does not restart it: only the check being `pass` again (`health.success_threshold`)
 does. After the grace the check fails as any gating check does. Three things the grace does not do: a failure that is
-not an outage (a schema that is behind, a rejected credential, a half-restored database) gates after the usual
+not an outage (a schema that is behind, a credential rejected at connect, a half-restored database) gates after the usual
 debounce; the first readiness of a replica gets no grace; `0` switches it off. The value MUST be below
 `database.retry.max_elapsed`, and start-up refuses a configuration that is not, naming the key: a replica has to turn
 unready before its queries give up.
