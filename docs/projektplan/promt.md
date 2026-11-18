@@ -1014,7 +1014,27 @@ agent** is not decided until the owner has said so.
   necessary"). The panel had the side bar's width: a name was cut to "Customer p…" and its key broke into three lines beside it.
   Built at once, locally: the panel is 24 rem wide and reaches over the page, and an entry is the mark, the name, and the key
   under the name, each on one line.
+- **W-11 · An administrator sets the default visibility of a project and restricts visibility levels** (owner, 2026-11-18, with
+  the general settings of his GitLab as the reference: "in the administration area I must be able to set these parameters
+  through a setting: default project visibility, restricted visibility levels"). The first exists: **Admin area › Settings ›
+  General › Visibility › Default visibility level** (`defaultLevel` of `/api/v1/settings/visibility`, R-AUTHZ-033, R-API-056), in
+  a section that is closed when the page opens. The second does not exist. Wanted: the levels an administrator restricts can
+  be chosen by an administrator only; whoever else sets the level of a project or a repository cannot choose them. A builder
+  builds it (API, decision, UI, documentation).
+- **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
+  agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
+  wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
+  that opens with the browser's triangle on the creation form.
 - **Seen by the development agent, not decided:**
+  - Station of the power user (`priya`), looked at before the owner on 2026-11-18:
+    - `members`: a list that is not built like the lists of W-6. Its filter field is as wide as the page, beside it stand a sort
+      button **Account** and an arrow instead of **Filters** and chips, and above it a tab strip with one tab, **Members 2**.
+    - `repository-settings-*`: the page has three **Save changes** buttons, one under each open section (the description, the
+      visibility, the upstream), and seven closed sections under them; the header's only button is **Vulnerabilities**.
+    - `repository-settings-*`: the visibility is two groups of three choices with their explanations, **Artifacts** and **Wiki**,
+      about a fifth of the page; the split is an expert's detail in the main view.
+    - `new-<format>-<class>`: the description is a field as wide as the form for a sentence; **Show as API request** opens with
+      the browser's own triangle, every other section of the form with the chevron of the app's disclosure.
   - `login`: the local form of the break-glass account stands first with the primary button, the sign-in provider below it as a
     secondary button. The owner typed `sam` into the form before he found the provider's button. Every user except the break-glass
     administrator signs in through a provider.
