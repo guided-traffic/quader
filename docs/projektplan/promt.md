@@ -318,6 +318,14 @@ Found on 2026-11-18 by reading the stall evidence of the baseline nightly 441869
   are now under `kubepods/burstable/pod<uid>/docker`, so those rows are empty for the leg's own containers until the recorder follows the daemon's
   cgroup parent. The `cg:` rows and the `node:` rows are not affected. F-133 is closed when a nightly with a Test and Release run beside it is green
   and its evidence shows the nodes kept their CPUs.
+  **Done in the night of 2026-11-18** (counted first in the evidence of `e2e (push)` of Test and Release 44384406557, a leg on the new layout:
+  10 own containers in `containers.tsv`, 1,467 `cgd:` rows of 9 containers, none of them an own one): the recorder searches the cgroup of its
+  first kind node once per set and takes its parent; on `large` it writes `daemon:parent` and `daemon:pod` rows, `cgd:` rows of the leg's own
+  containers again, and `pod-memory.csv` with the pod's `memory.current`, `memory.peak`, `memory.max` and its OOM counters (`oom_local` is the
+  pod's own limit being hit). On `self-hosted` its output is as before. Tested against fabricated cgroup trees and on a real kernel with a
+  stand-in container; **not verified on a runner**: the first legs must show the line "evidence: the job's Docker daemon puts its containers
+  under /kubepods/burstable/pod<uid>/docker …, inside the pod … (memory.max 28.0 GiB)", `cpu_weight` 800 on `daemon:parent`, and
+  `oom_local` 0.
 
 Found on 2026-11-08 during the run of T-16, by the penetration test of the F-82 fix and the code reviews of WP4b and WP12:
 
@@ -1414,8 +1422,14 @@ agent** is not decided until the owner has said so.
   same run): "installing build-essential" at 19:50:58 UTC, `Ign:1 http://archive.ubuntu.com/ubuntu noble InRelease` at
   19:51:28, nothing until the job's timeout at 20:10:06; **Semantic Release** needs the job and was skipped, so W-20 had no
   release until the run of 2543ad7b cut it at 21:12 UTC (with F-149 in between). The family of F-117; its remedy (`apt-get update || warning`) guards a failing update, not a hanging one,
-  and about twenty steps of the two workflows install packages that way. A builder has the task: one helper that skips the
-  network when the package is there and bounds every call, used by every step, and steps of the gate that fail fast.
+  and about twenty steps of the two workflows install packages that way. **Fixed** (8258f61c): every package install goes
+  through `.github/scripts/apt-install.sh`, which returns at once when the packages are there, reads only the distribution's
+  own sources (the image's git PPA is no longer read), bounds every apt call by the clock (worst case 470 s) and names the
+  host that did not answer; the 48 steps of the gating jobs that download have a step timeout; a test fails on a bare
+  `apt-get` under `.github/`. Reproduced by the builder with a server that sends a byte every 5 s: apt's own timeouts never
+  fire, only a wall-clock bound ends it. The gating jobs of the run of 8258f61c passed with it. **For the owner** (another
+  repository): the runner image should carry `build-essential`, `jq`, `file`, `unzip`, `libatomic1`, `docker-compose-v2`,
+  `clamav`, `clamav-daemon` and, on `large`, Chromium's libraries; every package step then ends at the installed-check.
 - **F-148 · The journey of the vulnerability report asked for the chips by a name they lost in the morning** (2026-11-18,
   `e2e (vuln)` of the same run): "Applied filters" is "Filters that are set" since ADR-200. The leg had been green all day
   because it runs its journeys only when their files change; W-20 changed one. Fixed in 90896979, not run locally. What it
@@ -1428,6 +1442,10 @@ agent** is not decided until the owner has said so.
   next push of code. The same must have cost time on other days and was read as "the release comes with the next push".
   Since that night: a commit of the plan goes **before** the code commit in the same push, or waits until the run's
   **Semantic Release** job has ended; nothing is pushed to `main` between a code push and that job.
+- **The releases of the night** (2026-11-18): `v0.62.0` at 21:12 UTC (W-20, the context title Security audit, the send buffer
+  bound of Q-ARCH-500) and `v0.62.1` at 21:35 UTC (the registry's sign-off through a database switchover and the handing
+  over of waiting jobs, the package installs of CI). The owner's installation followed to `0.62.0` by itself within the
+  hour, two ready replicas of each Deployment.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
