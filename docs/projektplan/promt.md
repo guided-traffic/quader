@@ -1078,6 +1078,10 @@ agent** is not decided until the owner has said so.
   for an identity for the first time, and one when it is back; shown as a warning, not as a failure; the metric
   `quader_auth_group_claim_missing_total` counts every sign-in as before, for alerting. Not verified: whether a user's page
   shows the stored state. Status: a builder is briefed.
+- **W-15 · The admin area's projects list has no column "Your role"** (owner, 2026-11-18, "Option A" from three: remove it
+  there / keep it with an en dash / replace it by **Created**). The list exists only in the admin area; the caller's role is
+  empty in every row for an administrator who is no member, and the main area's list of projects shows it where it matters.
+  The freed room goes to the project's name. Status: handed to the builder of the admin lists.
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
@@ -1184,7 +1188,9 @@ agent** is not decided until the owner has said so.
         `jobs` and `backups` have their own forms, `backups` with the browser's own select boxes;
       - a setting's name: in code type in the sentence under the buttons of `advisory-sources`, in plain type in the paragraph below.
     - **For the owner to decide:**
-      - `projects` (admin): the column **Your role** is empty in every row for an administrator, **Owners** in three of four.
+      - `projects` (admin): the column **Your role** is empty in every row for an administrator (decided: W-15); **Owners** is
+        empty in three of four rows, also for "Platform engineering" with two members: not read whether that is the seed or a
+        project can be without an Owner.
       - `roles`: a role is bound by typing "user:name, group:name or sa:name" into a field; no choice of a person. This is the only
         way to make someone an administrator. The capabilities are 25 codes in four columns, in no order.
       - `system` and `dashboard` are red ("Replicas unready", "A role is not ready", "Not drain-safe") because two processes that
