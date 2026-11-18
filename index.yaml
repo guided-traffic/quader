@@ -2,8 +2,23 @@ apiVersion: v1
 entries:
   quader:
   - apiVersion: v2
+    appVersion: 0.56.2
+    created: "2026-11-18T01:31:52.139179362Z"
+    description: quader, an artifact repository manager for package formats, as a
+      web and a worker Deployment.
+    digest: 50bad68a327b22fdae0082a386ba4988ab5d5472f307e862622c29b9dc1b23c0
+    home: https://github.com/guided-traffic/quader
+    kubeVersion: '>=1.30.0-0'
+    name: quader
+    sources:
+    - https://github.com/guided-traffic/quader
+    type: application
+    urls:
+    - https://guided-traffic.github.io/quader/quader-0.56.2.tgz
+    version: 0.56.2
+  - apiVersion: v2
     appVersion: 0.56.1
-    created: "2026-11-18T00:45:58.24619659Z"
+    created: "2026-11-18T01:31:52.133831198Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 5ad83acea58459b4a7c337eace452408a70bb95087c20fa2c17ffe6c9ada62b9
@@ -18,7 +33,7 @@ entries:
     version: 0.56.1
   - apiVersion: v2
     appVersion: 0.56.0
-    created: "2026-11-18T00:45:58.241858365Z"
+    created: "2026-11-18T01:31:52.129360896Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: a6461364035e696f8c09c6618f9280c6eb1bbb5bd79840b15896804a690f460b
@@ -33,8 +48,23 @@ entries:
     version: 0.56.0
   quader-bastion:
   - apiVersion: v2
+    appVersion: 0.56.2
+    created: "2026-11-18T01:31:52.147141742Z"
+    description: The quader Bastion, a read-only, internet-facing cache instance in
+      front of a main quader installation (quader serve --role bastion).
+    digest: fa887a53a305beee2ef4ce7e718f239a40a05bbd5ef81f75f104010a98872a60
+    home: https://github.com/guided-traffic/quader
+    kubeVersion: '>=1.30.0-0'
+    name: quader-bastion
+    sources:
+    - https://github.com/guided-traffic/quader
+    type: application
+    urls:
+    - https://guided-traffic.github.io/quader/quader-bastion-0.56.2.tgz
+    version: 0.56.2
+  - apiVersion: v2
     appVersion: 0.56.1
-    created: "2026-11-18T00:45:58.250033279Z"
+    created: "2026-11-18T01:31:52.145160419Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 56386b499d71f2d8efc6977b4a9ef9f5d5dc3131f054e551dee43053fb07e193
@@ -49,7 +79,7 @@ entries:
     version: 0.56.1
   - apiVersion: v2
     appVersion: 0.56.0
-    created: "2026-11-18T00:45:58.248108056Z"
+    created: "2026-11-18T01:31:52.142694114Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 6fd7da3d644f857c88331e17b2008447328227562f1d09dabc41d9e3b093abc6
@@ -62,4 +92,4 @@ entries:
     urls:
     - https://guided-traffic.github.io/quader/quader-bastion-0.56.0.tgz
     version: 0.56.0
-generated: "2026-11-18T00:45:58.23520913Z"
+generated: "2026-11-18T01:31:52.122647029Z"
