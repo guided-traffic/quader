@@ -54,9 +54,9 @@ This page lists what this version of Quader does not do, and the known weak spot
 
 ## Web UI
 
-- No search over packages and files from the top bar; it searches repositories only. Use the **Packages** list and **Browse**.
+- No search over packages and files from the top bar; it searches repositories only. Use the **Packages** list and the pages of a repository's files.
 - No warning before a session ends. Sessions end after 1 hour idle or 12 hours in total by default (`auth.sessions.idle_timeout`, `absolute_timeout`).
-- No trash can: deleted files and packages cannot be restored. The file browser cannot copy or move files or edit properties.
+- No trash can: deleted files and packages cannot be restored. The pages of a repository's files cannot copy or move files or edit properties.
 - The token screens cannot bind a token to an endpoint; use the management API or `quader admin token`, see [Endpoints and exposure rules](endpoints.md#bind-a-token-to-an-endpoint).
 - The exposure **Preview** judges only the versions you type, although its label says it lists the stored ones when empty, and it never shows which dist-tags stay visible.
 

@@ -84,7 +84,7 @@ A version that its publisher marked as deprecated shows **Deprecated.** with the
 | **README** | The README of this version. Shown only when the version has one |
 | **Metadata** | **Links** (**Homepage**, **Source repository**, **Issue tracker**), **Authors**, **Distribution tags**, **Dependencies**, **Development dependencies**, **Peer dependencies**, **Optional dependencies** and **Required runtimes**, as far as the version declares them |
 | **Files** | The files of this version with **Size**, **SHA-256** and a **Download** link. **Copy SHA-256** copies the checksum; compare it with the output of `sha256sum` on the downloaded file |
-| **Repositories** | Each repository that holds the version, its **Class** and when it was **Published** there. **Show in browser** opens the repository in **Browse** |
+| **Repositories** | Each repository that holds the version, its **Class** and when it was **Published** there. **Open repository** opens the repository's page |
 | **All versions** | Every version you may see, newest first, with **Published**, **Size**, **Repositories** and **Downloads**; pre-releases carry a **pre-release** badge. Select a version to switch to it |
 
 Links in **Metadata** open in a new tab and only for `http` and `https` addresses; any other link is shown as text.

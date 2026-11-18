@@ -1,9 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { e2eProject, expect, expectAccessible, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
-// R-UI-047 journey "a new repository" with the file tree (R-UI-010, R-UI-011, R-UI-012, R-UI-020, R-UI-080, E1.11): the
-// administrator creates a repository with the format chooser and its form, uploads a file in the browser, browses to it and
-// downloads it, with the requests spread over three replicas.
+// R-UI-047 journey "a new repository" with its files (R-UI-010, R-UI-011, R-UI-012, R-UI-020, R-UI-080, ADR-203, E1.11): the
+// administrator creates a repository with the format chooser and its form, uploads a file on the repository's page, opens the
+// file's own page and downloads it, with the requests spread over three replicas.
 
 const repoKey = unique('ui-files');
 const content = `quader browser journey ${repoKey}\n`;
@@ -12,7 +12,7 @@ test.afterAll(async ({ admin }) => {
   await admin.delete(repositoryApi(repoKey));
 });
 
-test('R-UI-010 R-UI-011 R-UI-012 R-UI-080 create, upload, browse and download', async ({ page, replicas }) => {
+test('R-UI-010 R-UI-011 R-UI-012 R-UI-080 create, upload on the repository page, open the file and download it', async ({ page, replicas }) => {
   await signInLocal(page);
 
   await test.step('the format chooser and the form create a local generic repository', async () => {
@@ -45,13 +45,9 @@ test('R-UI-010 R-UI-011 R-UI-012 R-UI-080 create, upload, browse and download', 
     await expectAccessible(page, 'repository detail');
   });
 
-  await test.step('the file tree shows it; a file is uploaded in the browser', async () => {
-    await page.goto(`/ui/en/projects/${e2eProject}/browse`);
-    await expectAccessible(page, 'file tree');
-    await page.getByLabel('Filter repositories').fill(repoKey);
-    await page.getByRole('treeitem', { name: new RegExp(repoKey) }).click();
-    await expect(page.getByRole('navigation', { name: 'Location' })).toContainText(repoKey);
-    await expectAccessible(page, 'file tree, a repository selected');
+  await test.step('the page of the new repository offers the upload; a file is uploaded in the browser', async () => {
+    // Created and empty: the toolbar offers the upload, the empty state says so (Q-UI-512).
+    await expect(page.getByText('This repository holds no files yet.')).toBeVisible();
     await page.getByRole('button', { name: 'Upload files' }).click();
     await expect(page.getByRole('heading', { name: 'Upload files' })).toBeVisible();
     await page.locator('input[type=file]').setInputFiles({
@@ -65,20 +61,19 @@ test('R-UI-010 R-UI-011 R-UI-012 R-UI-080 create, upload, browse and download', 
     await page.getByRole('button', { name: 'Close' }).click();
   });
 
-  await test.step('the folder view of the repository lists the file in the right pane', async () => {
-    await page.goto(`/ui/en/projects/${e2eProject}/browse/${repoKey}`);
+  await test.step('the list of the repository shows the file, and its name opens the page of the file', async () => {
+    await page.goto(`/ui/en/projects/${e2eProject}/repositories/${repoKey}`);
     await expect(page.getByRole('table')).toContainText('hello.txt');
-    await expectAccessible(page, 'repository contents');
+    await expectAccessible(page, 'files of the repository');
     await page.getByRole('link', { name: 'hello.txt' }).click();
-    await expect(page).toHaveURL(new RegExp(`/projects/${e2eProject}/browse/${repoKey}/hello\\.txt$`));
+    await expect(page).toHaveURL(new RegExp(`/projects/${e2eProject}/repositories/${repoKey}/files/hello\\.txt$`));
   });
 
-  await test.step('it is found by browsing and downloaded with the original bytes', async () => {
-    await page.goto(`/ui/en/projects/${e2eProject}/browse/${repoKey}`);
-    await page.getByRole('treeitem', { name: /hello\.txt/ }).click();
-    await expect(page.getByRole('navigation', { name: 'Location' })).toContainText('hello.txt');
-    await expect(page.getByText('SHA-256')).toBeVisible();
-    await expectAccessible(page, 'file details');
+  await test.step('the page of the file downloads the original bytes', async () => {
+    await page.goto(`/ui/en/projects/${e2eProject}/repositories/${repoKey}/files/hello.txt`);
+    await expect(page.getByRole('navigation', { name: 'Folder path' }).locator('[aria-current="page"]')).toContainText('hello.txt');
+    await expect(page.locator('.file-facts').getByText('SHA-256')).toBeVisible();
+    await expectAccessible(page, 'page of a file');
     const download = page.waitForEvent('download');
     await page.getByRole('link', { name: 'Download' }).click();
     const file = await download;

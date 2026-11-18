@@ -89,9 +89,11 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     await bob.getByRole('link', { name: 'Journey project', exact: true }).click();
     await expect(bob).toHaveURL(new RegExp(`/projects/${key}/repositories$`));
     const nav = bob.getByRole('navigation', { name: 'Main navigation' });
-    for (const entry of ['Packages', 'Browse', 'Repositories', 'Members', 'Permission policies', 'Service accounts', 'Settings']) {
+    for (const entry of ['Packages', 'Repositories', 'Members', 'Permission policies', 'Service accounts', 'Settings']) {
       await expect(nav.getByRole('link', { name: entry, exact: true })).toBeVisible();
     }
+    // Browse is gone: a repository's files are on its page (ADR-203).
+    await expect(nav.getByRole('link', { name: 'Browse', exact: true })).toHaveCount(0);
     for (const global of ['Users', 'Groups', 'System roles', 'Tokens', 'Audit log']) {
       await expect(nav.getByRole('link', { name: global, exact: true })).toHaveCount(0);
     }

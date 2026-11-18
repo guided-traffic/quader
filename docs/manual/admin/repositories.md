@@ -20,7 +20,7 @@ Every repository belongs to exactly one [project](projects.md), and its key is u
 
 **Admin area › Repositories** lists, in columns, **Repository** (the key, with its description under it), **Project**, **Format** (icon and name), **Class** and **Last activity** (the date; point at it for the time; in a narrower window the column is left out). At the end of each row the copy button copies the repository's client address; point at it to read the address. In a narrow window each repository is a block of its own. Badges mark repositories that are **disabled** or **being deleted**. **Filters** narrow the list by **Key or description**, **Project**, **Class**, **Format** and **State** (**Disabled only**). The repositories you opened last are on the start page.
 
-The menu at the end of each row (**Actions for** the key) offers **Copy client address**, **Settings**, **Browse**, **Vulnerabilities** where the format is scanned and, with `repositories:write-config` or as the project's Owner, **Delete**. **Create repository** opens the choice of the format.
+The menu at the end of each row (**Actions for** the key) offers **Copy client address**, **Settings**, **Files**, **Vulnerabilities** where the format is scanned and, with `repositories:write-config` or as the project's Owner, **Delete**. **Create repository** opens the choice of the format.
 
 A project's **Repositories** shows the same repositories of one project with **Repository**, **Format**, **Class** and **Client address**: every address field of the list has the same width, as much as the other columns leave, up to the longest address of the list; where an address is longer than its field, you scroll inside the field (or press End) to read the rest, and the copy button always copies the whole address.
 
@@ -354,13 +354,13 @@ The closed section **How to use** of the settings page shows the setup for this 
 
 ## File operations
 
-Administrators hold every repository action, so the browser and the file-transfer path offer them everything a policy can grant; see [Browsing and transferring files](../user/files.md).
+Administrators hold every repository action, so the pages of a repository's files and the file-transfer path offer them everything a policy can grant; see [Browsing and transferring files](../user/files.md).
 
 | Operation | Where | Action needed |
 |---|---|---|
-| Upload a file | **Browse** › **Upload files**, `PUT /files/<projectKey>/<key>/<path>` | `deploy`; `overwrite` to replace different bytes |
-| Create a folder | **Browse** › **New folder** | `deploy` |
-| Download | **Browse** › **Download**, `GET /files/<projectKey>/<key>/<path>` | `read` |
-| Delete a file or folder | **Browse** › **Delete**, `DELETE /files/<projectKey>/<key>/<path>` | `delete` on every item |
+| Upload a file | The repository's page, a folder › **Upload files**; `PUT /files/<projectKey>/<key>/<path>` | `deploy`; `overwrite` to replace different bytes |
+| Create a folder | The repository's page, a folder › **New folder** | `deploy` |
+| Download | The file's page › **Download**; `GET /files/<projectKey>/<key>/<path>` | `read` |
+| Delete a file or folder | The file's page › **Delete**, or a folder › **More actions for this folder** › **Delete folder**; `DELETE /files/<projectKey>/<key>/<path>` | `delete` on every item |
 
 Uploads go to generic local repositories only; npm content is published with the npm client, NuGet content with a NuGet client, container images with a container client through the registry (a raw upload into an OCI repository answers `409`; a raw delete runs the cascade of the registry's `DELETE`), and Debian packages with `PUT …/upload/<file>` of the APT address (a raw upload answers `409`; the generated index files below `dists/` are never written or deleted this way). Deleting npm tarballs this way respects package ownership. A folder with many items is deleted by a background job. Only an administrator can remove, through `DELETE /api/v1/projects/<projectKey>/repositories/<key>/items`, items that lie outside the include patterns or in a disabled repository. Copy, move, item properties and a trash are not available in this version.

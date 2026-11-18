@@ -34,11 +34,10 @@ test('R-UI-025 R-UI-026 a group, a policy with its preview, and the effect for b
   });
   await signInWithKeycloak(bob, 'bob', bobPassword);
   const bobSearch = async () => {
-    await bob.goto(`/ui/en/projects/${e2eProject}/browse`);
-    await bob.getByLabel('Filter repositories').fill(repoKey);
+    await bob.goto(`/ui/en/projects/${e2eProject}/repositories?q=${repoKey}`);
   };
   await bobSearch();
-  await expect(bob.getByText('No repository matches.')).toBeVisible();
+  await expect(bob.getByText('No repository matches the filters.')).toBeVisible();
 
   await signInLocal(page);
 
@@ -93,15 +92,19 @@ test('R-UI-025 R-UI-026 a group, a policy with its preview, and the effect for b
 
   await test.step('bob sees the repository now, and its file', async () => {
     await bobSearch();
-    await expect(bob.getByRole('treeitem', { name: new RegExp(repoKey) })).toBeVisible();
-    await bob.goto(`/ui/en/projects/${e2eProject}/browse/${repoKey}`);
-    await bob.getByRole('treeitem', { name: /docs/ }).click();
-    await expect(bob.getByRole('navigation', { name: 'Location' })).toContainText('docs');
-    await expectAccessible(bob, 'the file tree of a consumer');
+    await expect(bob.getByRole('link', { name: repoKey, exact: true })).toBeVisible();
+    await bob.goto(`/ui/en/projects/${e2eProject}/repositories/${repoKey}`);
+    await bob.getByRole('link', { name: 'docs', exact: true }).click();
+    await expect(bob.getByRole('navigation', { name: 'Folder path' })).toContainText('docs');
+    await expect(bob.getByRole('table')).toContainText('readme.txt');
+    // A reader is offered the list and nothing that changes it (Q-UI-512).
+    await expect(bob.getByRole('button', { name: 'Upload files' })).toHaveCount(0);
+    await expect(bob.getByRole('button', { name: 'More actions for this folder' })).toHaveCount(0);
+    await expectAccessible(bob, 'the files of a repository, as a consumer');
     // The same read on more requests, which land on other replicas, shows the grant everywhere.
     for (let i = 0; i < 4; i++) {
       await bobSearch();
-      await expect(bob.getByRole('treeitem', { name: new RegExp(repoKey) })).toBeVisible();
+      await expect(bob.getByRole('link', { name: repoKey, exact: true })).toBeVisible();
     }
   });
 

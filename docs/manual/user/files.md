@@ -1,58 +1,65 @@
 # Browsing and transferring files
 
-The file browser shows the repositories you may read as a tree of folders and files, with the details of whatever you select, and lets you download, upload, create folders and delete as your permissions allow. Every file is also reachable over plain HTTP below the files path, which this page shows with curl.
+The files of a repository are on the repository's own page: open a folder, open a file, download it, and, where your permissions allow, upload files, create folders and delete. Every file is also reachable over plain HTTP below the files path, which this page shows with curl.
 
-## The file browser
+## Where the files are
 
-Select **Browse** in the side bar of a project. The tree names each repository of the project by its key. The screen has two panes side by side: the tree of repositories and files on the left, and the details of what you select on the right. On a narrow screen one pane shows at a time; **Back to the tree** returns from the details.
+Open a project, select **Repositories** in its side bar and select a repository.
 
-### The tree
+- For a **generic** repository the page lists its files: the folders and files of its root, with **Name**, **Size** and **Last change**.
+- For a repository of a **package format** (npm, NuGet, container images, Debian, Ansible) the page lists its packages or images, which is what you usually need ([Repositories](repositories.md#the-content-of-a-repository)). Its raw files, as Quader stores them, are behind **More actions** › **Files**. That page says what the files are and leads back to the list with the link before the sentence. A virtual repository stores only what it generates itself (the index of a Debian or Ansible virtual repository); the files of its members are on their pages.
 
-Above the tree, the field **Filter repositories** keeps the repositories whose key or description contains what you type; the list narrows while you type, there is no search button. **Filters** opens the filter panel inside the tree pane with a **Class** and a **Format** to choose; select **Apply filters** to use them. Each applied filter is shown as a chip below the toolbar; the chip's cross removes it, and **Clear all** in the panel removes both. The sort button orders the repositories by **Key**, or **Class, then key** (virtual, then local, then remote). **Repositories** at the right of the toolbar counts the repositories shown; a plus sign means more can be loaded.
+Select a folder's name to open it. Above the list, the path shows where you are: **Files**, then each folder, the last one the folder you are in; select one to go up. The copy button after the last folder copies the path. On a narrow screen the folders between **Files** and the last one are behind **Show the folders in between**. The breadcrumb at the top of the page ends at the repository.
 
-Each repository row has an icon for its class (a box for local, a cloud for remote, layers for virtual), the key and a badge with its format. A remote repository carries **cache**, because it shows the files it has cached so far; a repository an administrator switched off carries **disabled**. A virtual repository does not hold files of its own: expand it to see the repositories it **resolves from**, in the order it asks them, and select one to open it. Only people who may read the repository's configuration see the members.
+Every folder and every file has its own address, for example `https://quader.example.com/ui/en/projects/web/repositories/generic-local/files/releases/app-1.2.0.tar.gz`, so you can bookmark it or send the link. The browser's back and forward buttons walk through the folders you opened.
 
-Expand a repository or a folder to load its entries, 200 at a time; **Load more** at the end of a folder loads the next 200, and **Load more repositories** below the tree loads further repositories. Repositories you may not read are not listed, and neither are files and folders you may not read. If there is no repository you may read, the tree says so; an administrator is offered **Create repository**, everyone else should ask an administrator for read access.
+A folder loads its entries 200 at a time; **Load more** at the end of the list loads the next 200. **Filter files** keeps the entries whose name contains what you type, among the entries loaded so far; while the folder has more, a note under the field says so, and **Load more** lets the filter see them too. Files and folders you may not read are not listed.
 
-What a repository holds depends on its class: a local repository shows what was uploaded or published to it, a remote repository the files it has cached so far, and npm repositories show their package files as Quader stores them. See [Repositories](repositories.md#repository-classes).
+What a repository holds depends on its class: a local repository shows what was uploaded or published to it, a remote repository the files it has cached so far. See [Repositories](repositories.md#repository-classes).
 
-The selection is part of the page address, for example `https://quader.example.com/ui/en/projects/web/browse/generic-local/releases/app-1.2.0.tar.gz`, so you can bookmark a file or send the link; opening it expands the tree down to the file. The browser's back and forward buttons walk through your selections.
+## The page of a file
 
-The tree works with the keyboard: the arrow keys move and expand, Home and End jump to the first and last entry, and typing a name jumps to it. Shift+F10 or the context-menu key moves the focus to the actions of the selection.
+Select a file's name to open its page. It shows:
 
-### The details
+- the file's path, its name last, with **Download** and, if you may delete it, **Delete** at the end of the row;
+- **Download address**, the file's address below the files path, with a copy button: the address for curl and other tools (see [Transfer files with curl](#transfer-files-with-curl));
+- **Size**, **Media type**, **Created** and **Last changed** (each with who did it, where known), and **SHA-256** with a copy button. If the stored content is missing or damaged, **Content** says so; tell an administrator.
 
-The top of the details shows the path of the selection as links (select a folder to go up) and the actions that apply to it and that you may use: **Download**, copy buttons for the address and the path, **Client setup**, **Upload files**, **New folder** and **Delete**. Below that:
+**Details** at the end of the page opens the rest: every checksum (**SHA-256**, **SHA-512**, **SHA-1** and **MD5**), each with a copy button; the downloads (**Downloads**, **Last download** and **Last downloader**), which reach the statistics within a minute of a download; and the file as the management API describes it, with the matching curl requests. They send the token from the environment variable `QUADER_TOKEN`: the header is in double quotes so that your shell fills in the value, and the address is in single quotes. Set the variable first, without typing the token into a shell that records its history.
 
-| Selection | Details |
-|---|---|
-| A repository | Tab **General**: **Class**, **Format**, **Description** and, for people who may read its configuration, the upstream address of a remote repository, **Project**, **Created** and **Last activity**, with links **Repository configuration** and **Client setup**; then its content as a table, or for a virtual repository the list **Resolves from**. Tab **API** |
-| A folder | Tab **Contents**: a table of its entries with **Name**, **Size** and **Last changed**; select a name to go into a folder or to a file. Tab **General** with **Path**, **Kind**, **Created** and **Last changed**, each with the user who did it where known; tab **API** |
-| A file | Tab **General** as for a folder plus **Size**, **Media type** and the checksums **SHA-256**, **SHA-512**, **SHA-1** and **MD5**, each with **Copy checksum**; tab **Statistics** with **Downloads**, **Last download** and **Last downloader**; tab **API** |
+## What you can do
 
-Download counts reach the statistics within a minute of a download. If a file's stored content is missing or damaged, **General** says so under **Content**; tell an administrator. The **API** tab shows the selection as the management API describes it and the matching curl requests. They send the token from the environment variable `QUADER_TOKEN`: the header is in double quotes so that your shell fills in the value, and the address is in single quotes. Set the variable first, without typing the token into a shell that records its history.
+The page offers only what you may do where you are. Someone who may only read sees the list, the folders, the files, **Download** and the copy buttons.
+
+| Action | Where | Permission |
+|---|---|---|
+| Download a file | The file's page | Read |
+| Copy a file's download address | The copy button in the file's row, or the file's page | Read |
+| Upload files, create a folder | **Upload files** and **New folder** above the list of a folder, in a generic local repository | Deploy on the folder |
+| Delete a folder | **More actions for this folder** › **Delete folder** above the list of the folder (not the root) | Delete on every file in it |
+| Delete a file | **Delete** on the file's page | Delete on the file |
+
+Copying and moving files and a trash can are not available yet; see [Known limitations](../admin/limitations.md).
 
 ## Download a file
 
-1. Select the file in the tree.
+1. Open the file's page.
 2. Select **Download**. The browser saves the file under its name.
 
-The button downloads through the web application, with your sign-in: it needs no token and counts like any other download. The address that **Copy download URL** copies is the one for tools, and it needs a token unless the repository is open to anonymous readers.
-
-The link button beside **Download** copies the file's address (**Copy download URL**) below the files path, which curl and other tools can use (see [Transfer files with curl](#transfer-files-with-curl)). **Copy path** copies the path inside the repository.
+The button downloads through the web application, with your sign-in: it needs no token and counts like any other download. The address under **Download address** is the one for tools, and it needs a token unless the repository is open to anonymous readers.
 
 ## Upload files
 
-You need the deploy permission on the target path, and the target must be a generic local repository. npm packages are published with the package manager, not uploaded here: an npm repository refuses an upload from this dialog, and remote and virtual repositories take no uploads at all.
+You need the deploy permission on the target folder, and the repository must be a generic local repository. npm packages, NuGet packages, container images, Debian packages and Ansible collections are published with their clients, not uploaded here: their repositories offer no upload, and remote and virtual repositories take no uploads at all. **Set up client** shows how to publish with a client.
 
-1. Select the repository or the folder to upload into. **Upload files** appears only in a local repository of a generic format, and only where you hold the deploy permission.
-2. Select **Upload files**.
-3. Check **Target folder**. It is relative to the root of the repository and prefilled with your selection; missing folders are created, and an empty field is the root.
+1. Open the folder to upload into (the repository's page is its root).
+2. Select **Upload files** above the list. It appears only in a generic local repository, and only where you hold the deploy permission.
+3. Check **Target folder**. It is relative to the root of the repository and prefilled with the folder you are in; missing folders are created, and an empty field is the root.
 4. Drop files onto the dialog, or select **Choose files**.
 5. To replace files that already exist at the target, tick **Replace files that already exist**. The option appears only if you hold the overwrite permission there.
 6. Select **Upload**.
 
-The files are sent one after another. **Status** shows **waiting**, **computing checksum**, a progress bar, **uploaded**, **cancelled**, or the reason a file failed. **Cancel upload** stops the file that is being sent; **Close** closes the dialog, and the folder in the tree shows the new files.
+The files are sent one after another. **Status** shows **waiting**, **computing checksum**, a progress bar, **uploaded**, **cancelled**, or the reason a file failed. **Cancel upload** stops the file that is being sent; **Close** closes the dialog, and the list shows the new files.
 
 - The browser uploads files of up to 100 MiB (the administrator's limit `ui.deploy.max_upload_bytes`: the dialog refuses a larger file before it starts, and the server answers it with **413** before it reads the body). For a larger file the dialog says to use a native client or curl, which take files up to the installation's limit (10 GiB by default).
 - The browser computes the SHA-256 of each file before sending it, and Quader checks it on arrival, so a damaged transfer is not stored.
@@ -61,7 +68,7 @@ The files are sent one after another. **Status** shows **waiting**, **computing 
 
 ## Create a folder
 
-1. Select the repository or the folder to create the new folder in.
+1. Open the folder to create the new folder in.
 2. Select **New folder**.
 3. Enter the **Folder name**. A name with slashes, such as `2026/q4`, creates the folders in between.
 4. Select **Create folder**.
@@ -70,14 +77,13 @@ Folders also arise on their own when you upload a file to a path that contains t
 
 ## Delete files and folders
 
-You need the delete permission on the file, or on every file in a folder; if one is missing, nothing is deleted.
+You need the delete permission on the file, or on every file in a folder; if one is missing, nothing is deleted. The root of a repository cannot be deleted here; whoever manages the repository deletes the repository instead.
 
-1. Select the file or folder. The root of a repository cannot be deleted here.
-2. Select **Delete**.
-3. Read the confirmation: it says how many items a folder holds. For a folder of more than 100 items, type the folder name into **Type the name to confirm**.
-4. Select **Delete**.
+1. Open the file's page and select **Delete**, or open the folder and select **More actions for this folder** › **Delete folder**.
+2. Read the confirmation: it says how many items a folder holds. For a folder of more than 100 items, type the folder name into **Type the name to confirm**.
+3. Select **Delete**.
 
-Deleting is final: Quader has no trash can yet. A very large folder (by default more than 10,000 items) is deleted by a background job; the details show **Deleting** with its progress, and the files disappear as the job runs.
+The page then shows the folder above. Deleting is final: Quader has no trash can yet. A very large folder (by default more than 10,000 items) is deleted by a background job; the folder above shows **Deleting** with its progress, and its list is read again when the job has ended.
 
 ## Transfer files with curl
 

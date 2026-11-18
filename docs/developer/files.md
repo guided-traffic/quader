@@ -208,6 +208,27 @@ The cursor is the path of the page's last entry; a page that ended at `scanLimit
 `?stats=false`) and flushes with one upsert in item id order every `storage.stats.flush_interval`; `repository.Activity` writes
 `last_activity_at` once a minute and at shutdown (R-REPO-012). Both are flushed by `filesComponent.Flush` (R-ARCH-024 step 6).
 
+## The pages of the UI
+
+The UI shows a repository's folders and files on the repository's page, `/ui/projects/<project>/repositories/<key>/files/<path>`
+([R-UI-010 to R-UI-012](../spec/api-and-ui.md#r-ui-010--files-of-a-repository),
+[ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page)); there is no file browser of its own. It
+uses the operations of this page and nothing else:
+
+| What the page does | Operation | Code |
+|---|---|---|
+| Says whether the path is a folder or a file, and shows a file's facts | `GET …/items?path=` | `itemRead` in [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts), [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts) |
+| Lists a folder, 200 entries a page | `GET …/children?path=&limit=200&cursor=` | [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts) |
+| Reads a file's download statistics when its Details opens | `GET …/stats?path=` | `stats` in repository-file.ts |
+| Decides which operations to offer | `POST /api/v1/authz/check` (`deploy`, `overwrite`, `delete` at the path, through `SessionStore.check`) | `allowed` and `permissions` in repository-content.ts |
+| Uploads and creates a folder | `PUT …/content/<path>` and `PUT …/content/<path>/`, the content routes above | [upload-dialog.ts](../../web/src/app/features/repositories/content/upload-dialog.ts), [folder-dialog.ts](../../web/src/app/features/repositories/content/folder-dialog.ts), through [files-api.ts](../../web/src/app/api/files-api.ts) |
+| Downloads | a navigation to the item's `contentUrl` (the `downloadUrl` when a replica sent none) | repository-file.ts |
+| Deletes a file or a folder | `DELETE …/items?path=` (204, or 202 with the `items-delete` job, whose progress the page shows) after counting the folder with `…/children?recursive=true` | `remove` in repository-content.ts |
+
+Copy, move and the trash can have no page: their operations ([R-STOR-019, R-STOR-022, R-STOR-023](../spec/storage.md#r-stor-019--copy-and-move))
+are not built. The places they will take on the repository's page are decided in
+[R-UI-013 and R-UI-014](../spec/api-and-ui.md#r-ui-013--copy-and-move-dialog).
+
 ## What the generic layer needs of the decision point
 
 The service takes the request's `edge.Access` through the three-method interface `files.Access`:

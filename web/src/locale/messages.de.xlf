@@ -2231,16 +2231,6 @@
         <target>Pakete</target>
       </segment>
     </unit>
-    <unit id="nav.browse">
-      <notes>
-        <note category="location">src/app/core/navigation.ts:146</note>
-        <note category="location">src/app/features/projects/project-context.routes.ts:35</note>
-      </notes>
-      <segment>
-        <source>Browse</source>
-        <target>Durchsuchen</target>
-      </segment>
-    </unit>
     <unit id="nav.vulnerabilities">
       <notes>
         <note category="location">src/app/core/navigation.ts:148</note>
@@ -4892,62 +4882,6 @@
         <target>Es ist keine Bastion registriert.</target>
       </segment>
     </unit>
-    <unit id="browse.tree.heading">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:7,10</note>
-      </notes>
-      <segment>
-        <source> Repositories and files </source>
-        <target>Repositories und Dateien</target>
-      </segment>
-    </unit>
-    <unit id="browse.filter.label">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:18,19</note>
-        <note category="location">src/app/features/browse/browse.html:20,21</note>
-      </notes>
-      <segment>
-        <source>Filter repositories</source>
-        <target>Repositories filtern</target>
-      </segment>
-    </unit>
-    <unit id="browse.sort.label">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:37,38</note>
-        <note category="location">src/app/features/browse/browse.html:39,40</note>
-      </notes>
-      <segment>
-        <source>Sort repositories</source>
-        <target>Repositories sortieren</target>
-      </segment>
-    </unit>
-    <unit id="browse.sort.key">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:56,58</note>
-      </notes>
-      <segment>
-        <source>Key</source>
-        <target>Schlüssel</target>
-      </segment>
-    </unit>
-    <unit id="browse.sort.class">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:68,70</note>
-      </notes>
-      <segment>
-        <source>Class, then key</source>
-        <target>Klasse, dann Schlüssel</target>
-      </segment>
-    </unit>
-    <unit id="browse.count">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:74,75</note>
-      </notes>
-      <segment>
-        <source>Repositories</source>
-        <target>Repositories</target>
-      </segment>
-    </unit>
     <unit id="pkg.chips.label">
       <notes>
         <note category="location">src/app/features/browse/browse.html:82</note>
@@ -4994,24 +4928,6 @@
         <target>Format</target>
       </segment>
     </unit>
-    <unit id="browse.tag.resolves-from">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:187,188</note>
-      </notes>
-      <segment>
-        <source>resolves from</source>
-        <target>löst auf über</target>
-      </segment>
-    </unit>
-    <unit id="browse.tag.cache">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:189,191</note>
-      </notes>
-      <segment>
-        <source>cache</source>
-        <target>Cache</target>
-      </segment>
-    </unit>
     <unit id="repo.badge.disabled">
       <notes>
         <note category="location">src/app/features/browse/browse.html:192,194</note>
@@ -5022,53 +4938,6 @@
       <segment>
         <source>disabled</source>
         <target>deaktiviert</target>
-      </segment>
-    </unit>
-    <unit id="browse.load-more">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:212,213</note>
-        <note category="location">src/app/features/browse/browse.ts:879</note>
-      </notes>
-      <segment>
-        <source>Load more</source>
-        <target>Mehr laden</target>
-      </segment>
-    </unit>
-    <unit id="browse.members-hidden">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:222,224</note>
-        <note category="location">src/app/features/browse/browse.html:498,500</note>
-      </notes>
-      <segment>
-        <source>The members are shown to repository managers only.</source>
-        <target>Die Mitglieder sehen nur Repository-Verwalter.</target>
-      </segment>
-    </unit>
-    <unit id="browse.empty">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:241,242</note>
-      </notes>
-      <segment>
-        <source> No repository matches. Repositories you may not read are not listed. </source>
-        <target>Kein Repository passt. Repositories, die Sie nicht lesen dürfen, werden nicht aufgelistet.</target>
-      </segment>
-    </unit>
-    <unit id="browse.clear-filters">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:244,245</note>
-      </notes>
-      <segment>
-        <source> Clear all filters </source>
-        <target>Alle Filter zurücksetzen</target>
-      </segment>
-    </unit>
-    <unit id="browse.empty-none">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:248,249</note>
-      </notes>
-      <segment>
-        <source> There is no repository you may read yet. </source>
-        <target>Es gibt noch kein Repository, das Sie lesen dürfen.</target>
       </segment>
     </unit>
     <unit id="repo.list.create">
@@ -5082,124 +4951,6 @@
         <target>Repository anlegen</target>
       </segment>
     </unit>
-    <unit id="browse.empty-ask">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:254,255</note>
-      </notes>
-      <segment>
-        <source> Ask an administrator for read access to a repository. </source>
-        <target>Bitten Sie eine Administratorin oder einen Administrator um Lesezugriff auf ein Repository.</target>
-      </segment>
-    </unit>
-    <unit id="browse.manual-link">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:257,259</note>
-        <note category="location">src/app/features/browse/browse.html:581,584</note>
-      </notes>
-      <segment>
-        <source>How browsing works</source>
-        <target>So funktioniert das Durchsuchen</target>
-      </segment>
-    </unit>
-    <unit id="browse.tree.label">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:265,266</note>
-      </notes>
-      <segment>
-        <source>Repositories and files</source>
-        <target>Repositories und Dateien</target>
-      </segment>
-    </unit>
-    <unit id="browse.more-repositories">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:284,286</note>
-      </notes>
-      <segment>
-        <source> Load more repositories </source>
-        <target>Weitere Repositories laden</target>
-      </segment>
-    </unit>
-    <unit id="browse.details.heading">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:294,296</note>
-      </notes>
-      <segment>
-        <source>Details</source>
-        <target>Details</target>
-      </segment>
-    </unit>
-    <unit id="browse.back">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:299,300</note>
-      </notes>
-      <segment>
-        <source>Back to the tree</source>
-        <target>Zurück zum Baum</target>
-      </segment>
-    </unit>
-    <unit id="browse.location">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:301</note>
-      </notes>
-      <segment>
-        <source>Location</source>
-        <target>Pfad</target>
-      </segment>
-    </unit>
-    <unit id="browse.actions">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:324</note>
-      </notes>
-      <segment>
-        <source>Actions</source>
-        <target>Aktionen</target>
-      </segment>
-    </unit>
-    <unit id="browse.download">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:330,331</note>
-      </notes>
-      <segment>
-        <source>Download</source>
-        <target>Herunterladen</target>
-      </segment>
-    </unit>
-    <unit id="browse.client-setup">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:341,343</note>
-      </notes>
-      <segment>
-        <source>Client setup</source>
-        <target>Client einrichten</target>
-      </segment>
-    </unit>
-    <unit id="browse.upload">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:347,348</note>
-      </notes>
-      <segment>
-        <source>Upload files</source>
-        <target>Dateien hochladen</target>
-      </segment>
-    </unit>
-    <unit id="browse.new-folder">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:351,352</note>
-      </notes>
-      <segment>
-        <source>New folder</source>
-        <target>Neuer Ordner</target>
-      </segment>
-    </unit>
-    <unit id="browse.delete">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:357,358</note>
-      </notes>
-      <segment>
-        <source>Delete</source>
-        <target>Löschen</target>
-      </segment>
-    </unit>
     <unit id="repo.deleting">
       <notes>
         <note category="location">src/app/features/browse/browse.html:369,370</note>
@@ -5211,78 +4962,6 @@
         <target>Wird gelöscht</target>
       </segment>
     </unit>
-    <unit id="browse.stats.downloads">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:398,399</note>
-      </notes>
-      <segment>
-        <source>Downloads</source>
-        <target>Downloads</target>
-      </segment>
-    </unit>
-    <unit id="browse.stats.last">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:400,401</note>
-      </notes>
-      <segment>
-        <source>Last download</source>
-        <target>Letzter Download</target>
-      </segment>
-    </unit>
-    <unit id="browse.stats.by">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:408,409</note>
-      </notes>
-      <segment>
-        <source>Last downloader</source>
-        <target>Letzter Downloader</target>
-      </segment>
-    </unit>
-    <unit id="browse.stats.hint">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:412,413</note>
-      </notes>
-      <segment>
-        <source> Counts reach the database within a minute of a download. </source>
-        <target>Die Zähler erreichen die Datenbank innerhalb einer Minute nach einem Download.</target>
-      </segment>
-    </unit>
-    <unit id="browse.api.json">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:419,420</note>
-      </notes>
-      <segment>
-        <source>The item as the API describes it</source>
-        <target>Das Element, wie die API es beschreibt</target>
-      </segment>
-    </unit>
-    <unit id="browse.api.curl">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:422,423</note>
-      </notes>
-      <segment>
-        <source>The same request with curl</source>
-        <target>Dieselbe Anfrage mit curl</target>
-      </segment>
-    </unit>
-    <unit id="browse.api.download">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:426,427</note>
-      </notes>
-      <segment>
-        <source>Download with curl</source>
-        <target>Herunterladen mit curl</target>
-      </segment>
-    </unit>
-    <unit id="browse.remote-hint">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:437,438</note>
-      </notes>
-      <segment>
-        <source>Shows the content cached so far.</source>
-        <target>Zeigt die bisher zwischengespeicherten Inhalte.</target>
-      </segment>
-    </unit>
     <unit id="repo.field.description">
       <notes>
         <note category="location">src/app/features/browse/browse.html:442,443</note>
@@ -5291,228 +4970,6 @@
       <segment>
         <source>Description</source>
         <target>Beschreibung</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.status">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:446,447</note>
-      </notes>
-      <segment>
-        <source>Status</source>
-        <target>Status</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.upstream">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:453,454</note>
-      </notes>
-      <segment>
-        <source>Upstream</source>
-        <target>Upstream</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.project">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:457,458</note>
-      </notes>
-      <segment>
-        <source>Project</source>
-        <target>Projekt</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.created">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:461,462</note>
-        <note category="location">src/app/features/browse/browse.html:522,523</note>
-      </notes>
-      <segment>
-        <source>Created</source>
-        <target>Angelegt</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.activity">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:466,467</note>
-      </notes>
-      <segment>
-        <source>Last activity</source>
-        <target>Letzte Aktivität</target>
-      </segment>
-    </unit>
-    <unit id="browse.repo-config">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:479,480</note>
-      </notes>
-      <segment>
-        <source>Repository configuration</source>
-        <target>Repository-Konfiguration</target>
-      </segment>
-    </unit>
-    <unit id="browse.members">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:484,485</note>
-      </notes>
-      <segment>
-        <source>Resolves from</source>
-        <target>Löst auf über</target>
-      </segment>
-    </unit>
-    <unit id="browse.members-none">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:495,496</note>
-      </notes>
-      <segment>
-        <source>This repository has no members yet.</source>
-        <target>Dieses Repository hat noch keine Mitglieder.</target>
-      </segment>
-    </unit>
-    <unit id="browse.tab.contents">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:501,502</note>
-        <note category="location">src/app/features/browse/browse.ts:887</note>
-      </notes>
-      <segment>
-        <source>Contents</source>
-        <target>Inhalt</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.path">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:506,507</note>
-      </notes>
-      <segment>
-        <source>Path</source>
-        <target>Pfad</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.kind">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:508,509</note>
-      </notes>
-      <segment>
-        <source>Kind</source>
-        <target>Art</target>
-      </segment>
-    </unit>
-    <unit id="browse.kind.file">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:511,512</note>
-      </notes>
-      <segment>
-        <source>File</source>
-        <target>Datei</target>
-      </segment>
-    </unit>
-    <unit id="browse.kind.folder">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:513,514</note>
-      </notes>
-      <segment>
-        <source>Folder</source>
-        <target>Ordner</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.size">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:517,518</note>
-        <note category="location">src/app/features/browse/browse.ts:355</note>
-      </notes>
-      <segment>
-        <source>Size</source>
-        <target>Größe</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.media">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:519,520</note>
-      </notes>
-      <segment>
-        <source>Media type</source>
-        <target>Medientyp</target>
-      </segment>
-    </unit>
-    <unit id="browse.by">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:527</note>
-        <note category="location">src/app/features/browse/browse.html:536</note>
-      </notes>
-      <segment>
-        <source>by</source>
-        <target>von</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.modified">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:531,532</note>
-        <note category="location">src/app/features/browse/browse.ts:356</note>
-      </notes>
-      <segment>
-        <source>Last changed</source>
-        <target>Zuletzt geändert</target>
-      </segment>
-    </unit>
-    <unit id="browse.fact.content">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:541,542</note>
-      </notes>
-      <segment>
-        <source>Content</source>
-        <target>Inhalt</target>
-      </segment>
-    </unit>
-    <unit id="browse.content.missing">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:546,547</note>
-      </notes>
-      <segment>
-        <source>The stored content is missing.</source>
-        <target>Der gespeicherte Inhalt fehlt.</target>
-      </segment>
-    </unit>
-    <unit id="browse.content.corrupt">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:550,551</note>
-      </notes>
-      <segment>
-        <source>The stored content failed its checksum.</source>
-        <target>Der gespeicherte Inhalt hat die Prüfsumme nicht bestanden.</target>
-      </segment>
-    </unit>
-    <unit id="browse.none-title">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:579,580</note>
-      </notes>
-      <segment>
-        <source>Nothing selected</source>
-        <target>Nichts ausgewählt</target>
-      </segment>
-    </unit>
-    <unit id="browse.none">
-      <notes>
-        <note category="location">src/app/features/browse/browse.html:580,581</note>
-      </notes>
-      <segment>
-        <source>Select a repository, folder or file in the tree.</source>
-        <target>Wählen Sie im Baum ein Repository, einen Ordner oder eine Datei aus.</target>
-      </segment>
-    </unit>
-    <unit id="route.browse.title">
-      <notes>
-        <note category="location">src/app/features/browse/browse.routes.ts:25</note>
-        <note category="location">src/app/features/browse/browse.routes.ts:29</note>
-      </notes>
-      <segment>
-        <source>Browse</source>
-        <target>Durchsuchen</target>
-      </segment>
-    </unit>
-    <unit id="browse.col.name">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:354</note>
-      </notes>
-      <segment>
-        <source>Name</source>
-        <target>Name</target>
       </segment>
     </unit>
     <unit id="repo.class.local">
@@ -5552,186 +5009,6 @@
       <segment>
         <source>Virtual</source>
         <target>Virtuell</target>
-      </segment>
-    </unit>
-    <unit id="browse.chip.remove">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:730</note>
-      </notes>
-      <segment>
-        <source>Remove the filter <ph id="0" equiv="filter" disp="label"/></source>
-        <target>Filter <ph id="0" equiv="filter" disp="label"/> entfernen</target>
-      </segment>
-    </unit>
-    <unit id="browse.folder.created">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:805</note>
-      </notes>
-      <segment>
-        <source>Folder <ph id="0" equiv="path" disp="created"/> created.</source>
-        <target>Ordner <ph id="0" equiv="path" disp="created"/> angelegt.</target>
-      </segment>
-    </unit>
-    <unit id="browse.delete.folder-many">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:831</note>
-      </notes>
-      <segment>
-        <source>The folder holds more than <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> items. They are deleted for good.</source>
-        <target>Der Ordner enthält mehr als <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> Elemente. Sie werden endgültig gelöscht.</target>
-      </segment>
-    </unit>
-    <unit id="browse.delete.folder">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:832</note>
-      </notes>
-      <segment>
-        <source>The folder holds <ph id="0" equiv="count" disp="count"/> items. They are deleted for good.</source>
-        <target>Der Ordner enthält <ph id="0" equiv="count" disp="count"/> Elemente. Sie werden endgültig gelöscht.</target>
-      </segment>
-    </unit>
-    <unit id="browse.delete.file">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:840</note>
-      </notes>
-      <segment>
-        <source>The file is deleted for good.</source>
-        <target>Die Datei wird endgültig gelöscht.</target>
-      </segment>
-    </unit>
-    <unit id="browse.delete.title">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:843</note>
-      </notes>
-      <segment>
-        <source>Delete <ph id="0" equiv="path" disp="sel.path"/>?</source>
-        <target><ph id="0" equiv="path" disp="sel.path"/> löschen?</target>
-      </segment>
-    </unit>
-    <unit id="browse.delete.confirm">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:845</note>
-      </notes>
-      <segment>
-        <source>Delete</source>
-        <target>Löschen</target>
-      </segment>
-    </unit>
-    <unit id="browse.delete.failed">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:866</note>
-      </notes>
-      <segment>
-        <source>The deletion failed. Some items may be gone.</source>
-        <target>Das Löschen ist fehlgeschlagen. Einige Elemente sind möglicherweise schon entfernt.</target>
-      </segment>
-    </unit>
-    <unit id="browse.deleted">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:875</note>
-      </notes>
-      <segment>
-        <source><ph id="0" equiv="path" disp="path"/> deleted.</source>
-        <target><ph id="0" equiv="path" disp="path"/> gelöscht.</target>
-      </segment>
-    </unit>
-    <unit id="browse.copy-path">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:880</note>
-      </notes>
-      <segment>
-        <source>Copy path</source>
-        <target>Pfad kopieren</target>
-      </segment>
-    </unit>
-    <unit id="browse.copy-url">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:881</note>
-      </notes>
-      <segment>
-        <source>Copy download URL</source>
-        <target>Download-URL kopieren</target>
-      </segment>
-    </unit>
-    <unit id="browse.copy-listing">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:882</note>
-      </notes>
-      <segment>
-        <source>Copy listing URL</source>
-        <target>Listing-URL kopieren</target>
-      </segment>
-    </unit>
-    <unit id="browse.copy-digest">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:883</note>
-      </notes>
-      <segment>
-        <source>Copy checksum</source>
-        <target>Prüfsumme kopieren</target>
-      </segment>
-    </unit>
-    <unit id="browse.copy-curl">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:884</note>
-      </notes>
-      <segment>
-        <source>Copy the curl command</source>
-        <target>curl-Befehl kopieren</target>
-      </segment>
-    </unit>
-    <unit id="browse.delete.progress">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:885</note>
-      </notes>
-      <segment>
-        <source>Deleting items</source>
-        <target>Elemente werden gelöscht</target>
-      </segment>
-    </unit>
-    <unit id="browse.tab.general">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:888</note>
-      </notes>
-      <segment>
-        <source>General</source>
-        <target>Allgemein</target>
-      </segment>
-    </unit>
-    <unit id="browse.tab.statistics">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:889</note>
-      </notes>
-      <segment>
-        <source>Statistics</source>
-        <target>Statistik</target>
-      </segment>
-    </unit>
-    <unit id="browse.tab.api">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:890</note>
-      </notes>
-      <segment>
-        <source>API</source>
-        <target>API</target>
-      </segment>
-    </unit>
-    <unit id="browse.folder-empty">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:892</note>
-      </notes>
-      <segment>
-        <source>This folder is empty.</source>
-        <target>Dieser Ordner ist leer.</target>
-      </segment>
-    </unit>
-    <unit id="browse.contents.caption">
-      <notes>
-        <note category="location">src/app/features/browse/browse.ts:893</note>
-      </notes>
-      <segment>
-        <source>Contents of the selected folder</source>
-        <target>Inhalt des ausgewählten Ordners</target>
       </segment>
     </unit>
     <unit id="folder.title">
@@ -12925,15 +12202,6 @@
         <target>Herunterladen</target>
       </segment>
     </unit>
-    <unit id="pkg.repo.show-in-browser">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.html:308,310</note>
-      </notes>
-      <segment>
-        <source>Show in browser</source>
-        <target>Im Browser anzeigen</target>
-      </segment>
-    </unit>
     <unit id="pkg.badge.prerelease">
       <notes>
         <note category="location">src/app/features/packages/package-detail.html:334,335</note>
@@ -13472,15 +12740,6 @@
       <segment>
         <source>Published</source>
         <target>Veröffentlicht</target>
-      </segment>
-    </unit>
-    <unit id="pkg.repo.browse">
-      <notes>
-        <note category="location">src/app/features/packages/package-detail.ts:589</note>
-      </notes>
-      <segment>
-        <source>Browse</source>
-        <target>Durchsuchen</target>
       </segment>
     </unit>
     <unit id="pkg.image.platform">
@@ -17925,15 +17184,6 @@
         <target>Einstellungen</target>
       </segment>
     </unit>
-    <unit id="repo.content.browse">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:33,35</note>
-      </notes>
-      <segment>
-        <source>Browse files</source>
-        <target>Dateien durchsuchen</target>
-      </segment>
-    </unit>
     <unit id="repo.action.vulnerabilities">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:36,39</note>
@@ -18062,15 +17312,6 @@
         <target>Ordnerpfad</target>
       </segment>
     </unit>
-    <unit id="repo.content.root">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:30,31</note>
-      </notes>
-      <segment>
-        <source>All files</source>
-        <target>Alle Dateien</target>
-      </segment>
-    </unit>
     <unit id="repo.content.filter-files">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-files.ts:43,44</note>
@@ -18097,15 +17338,6 @@
       <segment>
         <source>No file matches the filter.</source>
         <target>Keine Datei passt zum Filter.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.copy-url">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-files.ts:137</note>
-      </notes>
-      <segment>
-        <source>Copy the download address</source>
-        <target>Download-Adresse kopieren</target>
       </segment>
     </unit>
     <unit id="repo.content.col.name">
@@ -20855,16 +20087,6 @@
       <segment>
         <source>Disabled</source>
         <target>Deaktiviert</target>
-      </segment>
-    </unit>
-    <unit id="repo.action.browse">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:11,12</note>
-        <note category="location">src/app/features/repositories/repository-list.html:197,199</note>
-      </notes>
-      <segment>
-        <source>Browse</source>
-        <target>Durchsuchen</target>
       </segment>
     </unit>
     <unit id="repo.settings.save">
@@ -34331,6 +33553,461 @@
       <segment>
         <source>Open findings</source>
         <target>Offene Befunde</target>
+      </segment>
+    </unit>
+    <unit id="pkg.repo.open">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.html:308,309</note>
+      </notes>
+      <segment>
+        <source>Open repository</source>
+        <target>Repository öffnen</target>
+      </segment>
+    </unit>
+    <unit id="pkg.repo.open-column">
+      <notes>
+        <note category="location">src/app/features/packages/package-detail.ts:589</note>
+      </notes>
+      <segment>
+        <source>Open</source>
+        <target>Öffnen</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files-menu">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.html:41,43</note>
+        <note category="location">src/app/features/repositories/repository-list.html:199,200</note>
+      </notes>
+      <segment>
+        <source>Files</source>
+        <target>Dateien</target>
+      </segment>
+    </unit>
+    <unit id="files.virtual-note">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.html:83,85</note>
+      </notes>
+      <segment>
+        <source>A virtual repository stores only what it generates itself, such as an index; the files of its members are on their pages.</source>
+        <target>Ein virtuelles Repository speichert nur, was es selbst erzeugt, etwa einen Index; die Dateien seiner Mitglieder stehen auf deren Seiten.</target>
+      </segment>
+    </unit>
+    <unit id="files.raw-note">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.html:85,88</note>
+      </notes>
+      <segment>
+        <source>The raw files of the repository, as Quader stores them.</source>
+        <target>Die Rohdateien des Repositorys, so wie Quader sie speichert.</target>
+      </segment>
+    </unit>
+    <unit id="files.root">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.html:95,96</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:97,99</note>
+      </notes>
+      <segment>
+        <source>Files</source>
+        <target>Dateien</target>
+      </segment>
+    </unit>
+    <unit id="files.delete.progress">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:269</note>
+      </notes>
+      <segment>
+        <source>Deleting items</source>
+        <target>Elemente werden gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="files.copy-path">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:270</note>
+      </notes>
+      <segment>
+        <source>Copy path</source>
+        <target>Pfad kopieren</target>
+      </segment>
+    </unit>
+    <unit id="files.delete.folder-many">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:318</note>
+      </notes>
+      <segment>
+        <source>The folder holds more than <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> items. They are deleted for good.</source>
+        <target>Der Ordner enthält mehr als <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> Elemente. Sie werden endgültig gelöscht.</target>
+      </segment>
+    </unit>
+    <unit id="files.delete.folder">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:319</note>
+      </notes>
+      <segment>
+        <source>The folder holds <ph id="0" equiv="count" disp="count"/> items. They are deleted for good.</source>
+        <target>Der Ordner enthält <ph id="0" equiv="count" disp="count"/> Elemente. Sie werden endgültig gelöscht.</target>
+      </segment>
+    </unit>
+    <unit id="files.delete.file">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:327</note>
+      </notes>
+      <segment>
+        <source>The file is deleted for good.</source>
+        <target>Die Datei wird endgültig gelöscht.</target>
+      </segment>
+    </unit>
+    <unit id="files.delete.title">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:330</note>
+      </notes>
+      <segment>
+        <source>Delete <ph id="0" equiv="path" disp="path"/>?</source>
+        <target><ph id="0" equiv="path" disp="path"/> löschen?</target>
+      </segment>
+    </unit>
+    <unit id="files.delete.confirm">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:332</note>
+      </notes>
+      <segment>
+        <source>Delete</source>
+        <target>Löschen</target>
+      </segment>
+    </unit>
+    <unit id="files.deleted">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:340</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:350</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="path" disp="path"/> deleted.</source>
+        <target><ph id="0" equiv="path" disp="path"/> gelöscht.</target>
+      </segment>
+    </unit>
+    <unit id="files.delete.failed">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:351</note>
+      </notes>
+      <segment>
+        <source>The deletion failed. Some items may be gone.</source>
+        <target>Das Löschen ist fehlgeschlagen. Einige Elemente sind möglicherweise schon weg.</target>
+      </segment>
+    </unit>
+    <unit id="files.download">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:36,37</note>
+      </notes>
+      <segment>
+        <source>Download</source>
+        <target>Herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="files.delete">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:42,43</note>
+      </notes>
+      <segment>
+        <source>Delete</source>
+        <target>Löschen</target>
+      </segment>
+    </unit>
+    <unit id="files.download-address">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:50,51</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:183</note>
+      </notes>
+      <segment>
+        <source>Download address</source>
+        <target>Download-Adresse</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.size">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:56,57</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+        <target>Größe</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.media">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:58,59</note>
+      </notes>
+      <segment>
+        <source>Media type</source>
+        <target>Medientyp</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.created">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:60,62</note>
+      </notes>
+      <segment>
+        <source>Created</source>
+        <target>Erstellt</target>
+      </segment>
+    </unit>
+    <unit id="files.by">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:64</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:71</note>
+      </notes>
+      <segment>
+        <source>by</source>
+        <target>von</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.modified">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:67,69</note>
+      </notes>
+      <segment>
+        <source>Last changed</source>
+        <target>Zuletzt geändert</target>
+      </segment>
+    </unit>
+    <unit id="files.fact.content">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:75,77</note>
+      </notes>
+      <segment>
+        <source>Content</source>
+        <target>Inhalt</target>
+      </segment>
+    </unit>
+    <unit id="files.content.missing">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:79,80</note>
+      </notes>
+      <segment>
+        <source>The stored content is missing.</source>
+        <target>Der gespeicherte Inhalt fehlt.</target>
+      </segment>
+    </unit>
+    <unit id="files.content.corrupt">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:81,83</note>
+      </notes>
+      <segment>
+        <source>The stored content failed its checksum.</source>
+        <target>Der gespeicherte Inhalt hat seine Prüfsumme nicht bestanden.</target>
+      </segment>
+    </unit>
+    <unit id="files.details">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:98</note>
+      </notes>
+      <segment>
+        <source>Details</source>
+        <target>Details</target>
+      </segment>
+    </unit>
+    <unit id="files.details-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:99,100</note>
+      </notes>
+      <segment>
+        <source>Every checksum, the downloads, and the file as the API describes it.</source>
+        <target>Jede Prüfsumme, die Downloads und die Datei, wie die API sie beschreibt.</target>
+      </segment>
+    </unit>
+    <unit id="files.checksums">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:102,103</note>
+      </notes>
+      <segment>
+        <source>Checksums</source>
+        <target>Prüfsummen</target>
+      </segment>
+    </unit>
+    <unit id="files.stats.heading">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:114,115</note>
+      </notes>
+      <segment>
+        <source>Downloads</source>
+        <target>Downloads</target>
+      </segment>
+    </unit>
+    <unit id="files.stats.downloads">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:119,120</note>
+      </notes>
+      <segment>
+        <source>Downloads</source>
+        <target>Downloads</target>
+      </segment>
+    </unit>
+    <unit id="files.stats.last">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:121,123</note>
+      </notes>
+      <segment>
+        <source>Last download</source>
+        <target>Letzter Download</target>
+      </segment>
+    </unit>
+    <unit id="files.stats.by">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:129,130</note>
+      </notes>
+      <segment>
+        <source>Last downloader</source>
+        <target>Zuletzt heruntergeladen von</target>
+      </segment>
+    </unit>
+    <unit id="files.stats.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:132,133</note>
+      </notes>
+      <segment>
+        <source>Counts reach the database within a minute of a download.</source>
+        <target>Die Zähler erreichen die Datenbank innerhalb einer Minute nach einem Download.</target>
+      </segment>
+    </unit>
+    <unit id="files.api.json">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:136,137</note>
+      </notes>
+      <segment>
+        <source>The file as the API describes it</source>
+        <target>Die Datei, wie die API sie beschreibt</target>
+      </segment>
+    </unit>
+    <unit id="files.api.curl">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:138,139</note>
+      </notes>
+      <segment>
+        <source>The same request with curl</source>
+        <target>Dieselbe Anfrage mit curl</target>
+      </segment>
+    </unit>
+    <unit id="files.api.download">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:141,142</note>
+      </notes>
+      <segment>
+        <source>Download with curl</source>
+        <target>Mit curl herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="files.copy-download-address">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:184</note>
+      </notes>
+      <segment>
+        <source>Copy download address</source>
+        <target>Download-Adresse kopieren</target>
+      </segment>
+    </unit>
+    <unit id="files.copy-digest">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:186</note>
+      </notes>
+      <segment>
+        <source>Copy <ph id="0" equiv="checksum" disp="name"/></source>
+        <target><ph id="0" equiv="checksum" disp="name"/> kopieren</target>
+      </segment>
+    </unit>
+    <unit id="files.upload">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:54,55</note>
+      </notes>
+      <segment>
+        <source>Upload files</source>
+        <target>Dateien hochladen</target>
+      </segment>
+    </unit>
+    <unit id="files.new-folder">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:58,59</note>
+      </notes>
+      <segment>
+        <source>New folder</source>
+        <target>Neuer Ordner</target>
+      </segment>
+    </unit>
+    <unit id="files.delete-folder">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:64,65</note>
+      </notes>
+      <segment>
+        <source>Delete folder</source>
+        <target>Ordner löschen</target>
+      </segment>
+    </unit>
+    <unit id="files.filter-partial">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:72,75</note>
+      </notes>
+      <segment>
+        <source> The filter searches the <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries loaded so far. Load more to search the rest. </source>
+        <target> Der Filter durchsucht die <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> bisher geladenen Einträge. Laden Sie mehr, um auch den Rest zu durchsuchen. </target>
+      </segment>
+    </unit>
+    <unit id="files.folder-empty">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:161</note>
+      </notes>
+      <segment>
+        <source>This folder is empty.</source>
+        <target>Dieser Ordner ist leer.</target>
+      </segment>
+    </unit>
+    <unit id="files.empty-upload">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:162</note>
+      </notes>
+      <segment>
+        <source>This repository holds no files yet. Upload files here or with your client.</source>
+        <target>Dieses Repository enthält noch keine Dateien. Laden Sie Dateien hier oder mit Ihrem Client hoch.</target>
+      </segment>
+    </unit>
+    <unit id="files.copy-url-of">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:204</note>
+      </notes>
+      <segment>
+        <source>Copy the download address of <ph id="0" equiv="name" disp="c.path"/></source>
+        <target>Download-Adresse von <ph id="0" equiv="name" disp="c.path"/> kopieren</target>
+      </segment>
+    </unit>
+    <unit id="files.folder-created">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:231</note>
+      </notes>
+      <segment>
+        <source>Folder <ph id="0" equiv="path" disp="created"/> created.</source>
+        <target>Ordner <ph id="0" equiv="path" disp="created"/> erstellt.</target>
+      </segment>
+    </unit>
+    <unit id="route.repositories.files.title">
+      <notes>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:17</note>
+      </notes>
+      <segment>
+        <source>Files</source>
+        <target>Dateien</target>
+      </segment>
+    </unit>
+    <unit id="files.trail.between">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:232</note>
+      </notes>
+      <segment>
+        <source>Show the folders in between</source>
+        <target>Die Ordner dazwischen anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="files.folder-actions">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-files.ts:216</note>
+      </notes>
+      <segment>
+        <source>More actions for this folder</source>
+        <target>Weitere Aktionen für diesen Ordner</target>
       </segment>
     </unit>
   </file>

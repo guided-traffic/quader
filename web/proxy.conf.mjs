@@ -9,7 +9,7 @@ const target = process.env['QUADER_UI_DEV_BACKEND'] ?? 'https://localhost:19080'
 
 export default {
   '^/(?!ui(/|$))': { target, secure: true, changeOrigin: false, xfwd: true },
-  // A page of the app whose path ends in a file name (the file view, /ui/projects/<p>/browse/<repo>/README.md) gets the app:
+  // A page of the app whose path ends in a file name (a file's page, /ui/projects/<p>/repositories/<repo>/files/README.md) gets the app:
   // the dev server serves its index only for paths without an extension it knows. Every other request under /ui/ goes on as is.
   '^/ui/.*\\.[^/]+$': {
     target,

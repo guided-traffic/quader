@@ -229,7 +229,7 @@
           <ol>
             @for (crumb of breadcrumbs.trail(); track $index; let last = $last) {
               <li>
-                @if (last || !crumb.commands) {
+                @if ((last && !breadcrumbs.belowTrail()) || !crumb.commands) {
                   <span [attr.aria-current]="last ? 'page' : null" [attr.translate]="crumb.literal ? 'no' : null">{{ crumb.label }}</span>
                 } @else {
                   <a [routerLink]="crumb.commands" [attr.translate]="crumb.literal ? 'no' : null">{{ crumb.label }}</a>

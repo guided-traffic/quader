@@ -291,7 +291,9 @@ describe('Session helpers and messages of the project screens (R-UI-041, R-UI-04
     expect(helpFor('/projects/web/settings')).toEqual(['/help', 'admin', 'projects']);
     expect(helpFor('/projects/web/members')).toEqual(['/help', 'admin', 'projects']);
     expect(helpFor('/projects/web/packages/npm/left-pad')).toEqual(['/help', 'user', 'packages']);
-    expect(helpFor('/projects/web/browse/npm-local/a')).toEqual(['/help', 'user', 'files']);
+    expect(helpFor('/projects/web/repositories/npm-local/files/a')).toEqual(['/help', 'user', 'files']);
+    expect(helpFor('/projects/web/repositories/npm-local/files')).toEqual(['/help', 'user', 'files']);
+    expect(helpFor('/projects/web/repositories/files')).toEqual(['/help', 'user', 'repositories']);
     expect(helpFor('/projects/web/repositories/npm-local')).toEqual(['/help', 'user', 'repositories']);
     expect(helpFor('/projects/web/vulnerabilities')).toEqual(['/help', 'user', 'vulnerabilities']);
     expect(helpFor('/projects/web/policies/npm-read')).toEqual(['/help', 'admin', 'permissions']);

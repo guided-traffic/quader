@@ -93,7 +93,7 @@ describe('App shell', () => {
     await admin.fixture.whenStable();
     expect(sidebar()).toContain('Admin area');
     expect(sidebar()).toContain('System status');
-    expect(sidebar()).not.toContain('Browse');
+    expect(sidebar()).not.toContain('Vulnerabilities');
     expect(button.getAttribute('aria-current')).toBe('true');
     // Inside the admin area the button keeps the default look of the reference; only aria-current tells it apart.
     expect([...button.classList]).toEqual(['btn', 'btn-default', 'admin-button']);
@@ -107,7 +107,7 @@ describe('App shell', () => {
   it('R-UI-002 shows only the entries whose capability the caller holds, in each area', async () => {
     const { fixture, root } = await render('/', (api) => (api.meResult = { capabilities: ['audit:read'] }));
     const links = () => [...root.querySelectorAll('nav a .nav-label')].map((a) => a.textContent?.trim());
-    expect(links()).toEqual(['Repositories', 'Packages', 'Browse', 'Vulnerabilities', 'Members', 'Settings']);
+    expect(links()).toEqual(['Repositories', 'Packages', 'Vulnerabilities', 'Members', 'Settings']);
     await TestBed.inject(Router).navigateByUrl('/admin/audit');
     await fixture.whenStable();
     expect(links()).toEqual(['Audit log']);
@@ -320,7 +320,7 @@ describe('App shell', () => {
     const { fixture, root } = await render('/admin/endpoints');
     const help = () => [...root.querySelectorAll<HTMLAnchorElement>('header a')].find((a) => a.textContent?.trim().endsWith('Documentation'));
     expect(help()?.getAttribute('href')).toBe('/help/admin/endpoints');
-    await TestBed.inject(Router).navigateByUrl('/projects/web/browse');
+    await TestBed.inject(Router).navigateByUrl('/projects/web/repositories/generic-local/files/releases');
     await fixture.whenStable();
     expect(help()?.getAttribute('href')).toBe('/help/user/files');
     await TestBed.inject(Router).navigateByUrl('/admin/system/jobs');

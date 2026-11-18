@@ -1,4 +1,5 @@
-.facts {
+// The badges of the header: format, class, visibility.
+.header-facts {
   display: flex;
   flex-wrap: wrap;
   gap: var(--quader-space-2);
@@ -15,12 +16,31 @@
   }
 }
 
+// The client address and Set up client on one line: one job (Q-UI-517). The field fills the line up to the measure of a field
+// alone on its line (Q-UI-301); the button stays beside it and goes under it where the line is too narrow.
+.client-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2);
+
+  quader-address-field {
+    flex: 1 1 18rem;
+    max-inline-size: var(--quader-address-measure);
+    min-inline-size: 0;
+  }
+
+  .btn {
+    flex: none;
+  }
+}
+
 .resolves {
   margin: 0 0 var(--quader-space-2);
   color: var(--quader-text-muted);
 }
 
-// Details of the repository (Q-UI-313, Q-UI-319): closed, at the end of the main view.
+// Details of the repository (Q-UI-313, Q-UI-319) and of a file (Q-UI-514): closed, at the end of the main view.
 .details {
   display: block;
   margin-block-start: var(--quader-space-6);
@@ -31,16 +51,42 @@
   color: var(--quader-text-muted);
 }
 
+// The note under a filter that has not seen every entry keeps its distance from the list (Q-UI-513).
+.filter-note {
+  margin: 0 0 var(--quader-space-3);
+}
+
+// The way back from a package format's raw files to its list (Q-UI-511).
+.raw-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-1) var(--quader-space-3);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quader-space-1);
+
+  .material-icons {
+    font-size: 1.125rem;
+  }
+}
+
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--quader-space-2);
   align-items: center;
   padding-block: var(--quader-space-3);
 }
 
+// A filter by name is as wide as a name field, not the page (the style guide's field widths); it shrinks on a narrow screen.
 .filter {
   position: relative;
-  flex: 1;
+  flex: 0 1 var(--quader-field-width-name);
+  min-inline-size: 12rem;
 
   input {
     inline-size: 100%;
@@ -59,19 +105,133 @@
   }
 }
 
-.path-trail {
+// The operations of a folder stand at the end of its toolbar (Q-UI-512).
+.files-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-2);
+  margin-inline-start: auto;
+
+  .btn .material-icons {
+    font-size: 1.125rem;
+    margin-inline-end: var(--quader-space-1);
+  }
+}
+
+// The path of the page, the one place that names its folders and its file (R-UI-010, Q-UI-510, Q-UI-521): Files, then each
+// folder, the last one the page; a file's actions at the row's end. The row is a container, so the path collapses by its own width.
+.files-head {
+  container: files-head / inline-size;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--quader-space-2) var(--quader-space-4);
+  margin-block-start: var(--quader-space-3);
+}
+
+.files-trail {
+  flex: 1 1 20rem;
+  min-inline-size: 0;
+
+  ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    row-gap: var(--quader-space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--quader-heading-3);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  // A segment wraps at its hyphens, and inside a word only where nothing else fits.
+  .seg {
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+  }
+
+  // The separator belongs to the segment before it, so no line starts with one.
+  .seg:not(:last-child)::after {
+    content: '/';
+    margin-inline: var(--quader-space-2);
+    color: var(--quader-text-muted);
+    font-weight: 400;
+  }
+
+  // The current segment: the folder, or the file with its icon, and the copy button right after the name.
+  .here-name {
+    color: var(--quader-heading);
+  }
+
+  .here-name .entry-icon {
+    margin-inline-end: var(--quader-space-1);
+    color: var(--quader-text-muted);
+    font-size: 1.25rem;
+    vertical-align: -0.2em;
+  }
+
+  .here quader-copy-button {
+    display: inline-flex;
+    margin-inline-start: var(--quader-space-1);
+    vertical-align: middle;
+    font-size: var(--quader-text-size);
+  }
+
+  .trail-more {
+    vertical-align: middle;
+  }
+
+  // A link of the path is underlined under the pointer and on focus, as the breadcrumb's; it is not running text.
+  a {
+    text-decoration: none;
+
+    &:is(:hover, :focus-visible) {
+      text-decoration: underline;
+    }
+  }
+}
+
+// Wide: every folder. Narrow: the folders between Files and the page's own segment are one menu (Q-UI-521).
+.files-trail .collapsed {
+  display: none;
+}
+
+@container files-head (max-width: 64rem) {
+  .files-trail .collapsed {
+    display: block;
+  }
+
+  .files-trail .between {
+    display: none;
+  }
+}
+
+.deleting {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--quader-space-1);
+  gap: var(--quader-space-2);
   margin-block-start: var(--quader-space-3);
-  color: var(--quader-text-muted);
 }
 
+// The name of an item of a package format: the chevron keeps its size and the name wraps beside it, so a long name never moves
+// the row's start (the defect of the long package name, W-3).
 .name-cell {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--quader-space-1);
+
+  > .btn {
+    flex: none;
+  }
+
+  > span {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
 }
 
 .item-name {
@@ -84,20 +244,31 @@
   font-weight: 400;
 }
 
-.file-link {
+// A folder or a file: the icon on the name's first line, a fixed gap, and a long name that wraps inside itself beside the icon,
+// never under it (W-3). In a table the selector names the table: the shell makes a link in a table an inline block
+// (`.content :is(table, dl) a` in _shell.scss), which would put the icon on the text's baseline without the gap.
+.entry,
+.quader-data-table th a.entry {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--quader-space-2);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--quader-link);
-  font: inherit;
-  cursor: pointer;
+  max-inline-size: 100%;
 
-  .material-icons {
+  .entry-icon {
+    flex: none;
     color: var(--quader-text-muted);
     font-size: 1.125rem;
+    // One line of the row's text: the icon sits on the name's first line.
+    line-height: inherit;
+    block-size: 1lh;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .entry-name {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 }
 
@@ -122,4 +293,50 @@ tr.expansion td {
   flex-direction: column;
   gap: var(--quader-space-1);
   margin: 0 0 var(--quader-space-3);
+}
+
+// The page of a file (Q-UI-514): its name and its actions, the download address, the facts.
+.file-view {
+  margin-block-start: var(--quader-space-4);
+}
+
+// A file's actions at the end of its path's row (Q-UI-514).
+.file-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--quader-space-2);
+
+  .btn .material-icons {
+    font-size: 1.125rem;
+    margin-inline-end: var(--quader-space-1);
+  }
+}
+
+.file-address {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  max-inline-size: var(--quader-address-measure);
+  margin-block-end: var(--quader-space-4);
+}
+
+.digest {
+  display: flex;
+  align-items: center;
+  gap: var(--quader-space-2);
+
+  code {
+    overflow-wrap: anywhere;
+  }
+}
+
+h3 {
+  margin-block: var(--quader-space-4) var(--quader-space-2);
+}
+
+// The API's view of a file and its curl requests wrap instead of scrolling sideways: a long address is one word.
+.file-view pre.code-block {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

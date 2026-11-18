@@ -198,6 +198,7 @@ checked every earlier decision against them:
 | [ADR-155](#adr-155--three-roles-api-packages-and-worker-variants-are-pools) | Three roles: api, packages and worker; variants are pools | Accepted (owner decision of 2026-11-04; the fetch role dropped the same day) |
 | [ADR-156](#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project) | Projects own their repositories, members hold roles, names are scoped to the project | Accepted (owner decision of 2026-11-06); the details decided by the development agent — owner review at the walkthrough |
 | [ADR-199](#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark) | The product is renamed from trove to Quader, with the token prefix `qdr_` and a new mark | Accepted (owner decision of 2026-11-17); the prefix `qdr_` chosen by the development agent, open to the owner's objection |
+| [ADR-203](#adr-203--browse-goes-a-repositorys-files-live-on-its-page) | Browse goes; a repository's files live on its page | Accepted (owner decision of 2026-11-18); the details decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -888,6 +889,52 @@ leaked token would name the old product). For the name and the mark: none; set b
 [R-AUTH-022](spec/identity-and-authentication.md#r-auth-022--token-types-and-format),
 [Q-AUTH-2](spec/identity-and-authentication.md#q-auth-2--session-cookie-name),
 [R-ARCH-025](spec/architecture.md#r-arch-025--versioning-and-compatibility-policy), [spec/bastion.md](spec/bastion.md).
+
+### ADR-203 · Browse goes; a repository's files live on its page
+
+**Status:** Accepted (owner decision of 2026-11-18, walk objection W-8); the details decided by the development agent — owner review
+at the walkthrough
+
+**Context.** Until 2026-11-18 a project had two ways to the same content. **Browse** (`/projects/<project>/browse/<repo>/<path>`)
+showed a tree of the project's repositories, folders and files beside a details pane, and it was the only place with upload, new
+folder and delete. The page of a repository ([R-UI-052](spec/api-and-ui.md#r-ui-052--repository-content-page)) listed the files of a
+generic repository too and offered none of these, not even to the project's Owner. In his walk of 2026-11-18 the owner chose one way to
+the files, from the repository; keeping both, and keeping Browse for Owners and administrators only, were not chosen.
+
+**Decision.**
+- The navigation entry **Browse**, its routes and its screen are removed. Nothing redirects from the old addresses (no backward
+  compatibility before the first stable release, [Q-ARCH-340](spec/architecture.md#q-arch-340--no-backward-compatibility-until-the-first-stable-release)).
+- A folder or a file is the page of its repository at `/projects/<project>/repositories/<key>/files/<path…>`
+  ([Q-UI-510](spec/api-and-ui.md#q-ui-510--a-folder-and-a-file-are-the-repositorys-page-at-files-and-their-path)); the root of a
+  generic repository's files is the repository's own address. A package format keeps its packages as the page and shows its raw
+  files on demand ([Q-UI-511](spec/api-and-ui.md#q-ui-511--a-package-formats-raw-files-are-a-page-behind-files-in-the-header-menu)).
+- The operations move there, each for the caller who may use it at that path: upload, new folder and delete
+  ([R-UI-010 to R-UI-012](spec/api-and-ui.md#r-ui-010--files-of-a-repository),
+  [Q-UI-512](spec/api-and-ui.md#q-ui-512--the-operations-stand-where-they-act-and-only-for-who-may-use-them)). The plain reader
+  sees the list, a folder, a file, Download and the copy buttons.
+- Copy, move and the trash can are not built, because their operations are not ([R-STOR-019, R-STOR-022, R-STOR-023](spec/storage.md#r-stor-019--copy-and-move),
+  milestones M7 and M8 of the [FULL plan](projektplan/FULL.md)). Their place on the repository's page is decided now: a copy or a move
+  chooses its target repository from a list and its folder by browsing it in the dialog
+  ([Q-UI-515](spec/api-and-ui.md#q-ui-515--a-copy-or-a-move-chooses-its-target-repository-from-a-list-and-its-folder-by-browsing-it));
+  a repository's trash can is a page of the repository, the installation's an administrator's page
+  ([Q-UI-516](spec/api-and-ui.md#q-ui-516--the-trash-can-of-a-repository-is-a-page-of-the-repository-the-installations-is-the-administrators)).
+
+**Consequences.** The tree across the repositories of a project is gone: a reader who wants another repository goes back to the
+project's list, and a copy or a move into another repository needs the target picker of Q-UI-515 instead of a drag inside a tree.
+Every link that led into Browse leads to the repository's page or to the file's page
+([Q-UI-519](spec/api-and-ui.md#q-ui-519--every-link-into-browse-leads-to-the-repositorys-page-or-to-the-files-page)). The `@angular/aria`
+tree is still used by the Documentation tab of an Ansible collection, so it stays a dependency. No API changes: the page reads the
+items, children and stats operations and writes through the content route and the items delete of
+[R-API-025](spec/api-and-ui.md#r-api-025--items-and-raw-file-transfer).
+
+**Alternatives considered.** Keeping both screens (two ways to one job, and the operations on the one nobody expects); keeping
+Browse for Owners and administrators only (the same split, moved to fewer people). Both were the owner's options and not chosen.
+
+**Revisit condition:** users who work across many repositories at once ask for a tree again, or the copy and move of R-STOR-019 are
+built and the picker of Q-UI-515 proves too slow for a deep target.
+
+**Spec:** [R-UI-010 to R-UI-014](spec/api-and-ui.md#r-ui-010--files-of-a-repository),
+[R-UI-052](spec/api-and-ui.md#r-ui-052--repository-content-page), [Q-UI-510 to Q-UI-521](spec/api-and-ui.md#decisions).
 
 ## Design invariants
 

@@ -114,6 +114,11 @@ export const npmPackages: readonly { repo: string; name: string; version: string
   { repo: longNpmKey, name: '@acme/portal', version: '5.0.0-rc.3' },
 ];
 
+/** The deep folder of the generic files, and the number of entries of the folder with many (more than a page of 200). */
+export const deepFolder =
+  'deliveries/customer-portal-frontend-static-assets-for-the-november-release/build-artifacts-of-the-nightly-pipeline/2026-11-18-nightly-build-4711';
+export const manyIcons = 230;
+
 export const genericFiles: readonly { repo: string; path: string; content: string }[] = [
   { repo: 'assets', path: 'README.md', content: '# Assets\n\nStatic files of the customer portal.\n' },
   { repo: 'assets', path: 'fonts/inter/Inter-Regular.woff2', content: 'font bytes' },
@@ -125,7 +130,18 @@ export const genericFiles: readonly { repo: string; path: string; content: strin
     path: 'releases/design-system/2.5.0/design-system-2.5.0-with-a-file-name-long-enough-to-wrap-a-narrow-column.tar.gz',
     content: 'archive 2.5.0 long',
   },
+  // A folder several levels deep whose names are long: a path that has to wrap in the trail and the breadcrumb (R-UI-010).
+  { repo: 'assets', path: `${deepFolder}/sprite-with-every-icon-of-the-design-system-for-the-customer-portal.svg`, content: '<svg/>\n' },
+  // A folder with more entries than one page of the list holds (200), so that it shows Load more (Q-UI-513).
+  ...Array.from({ length: manyIcons }, (_, i) => ({
+    repo: 'assets',
+    path: `icons/material/${String(i + 1).padStart(3, '0')}-icon.svg`,
+    content: `<svg id="${i + 1}"/>\n`,
+  })),
 ];
+
+/** Folders created empty: an empty folder's state (R-UI-010). */
+export const genericFolders: readonly { repo: string; path: string }[] = [{ repo: 'assets', path: 'drafts' }];
 
 export const images: readonly { project: string; repo: string; name: string; tags: readonly string[] }[] = [
   { project: mainProject, repo: 'images', name: 'portal/web', tags: ['1.4.0', 'latest'] },
@@ -174,6 +190,19 @@ export class Api {
   }
   delete(url: string): Promise<APIResponse> {
     return this.ctx.delete(url, { headers: this.headers() });
+  }
+}
+
+/**
+ * Sends a request again after the `Retry-After` of a 429, up to ten times: the folder of many entries is more uploads than the
+ * write budget of one principal allows at once (R-API-052).
+ */
+async function patiently(send: () => Promise<APIResponse>): Promise<APIResponse> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await send();
+    if (res.status() !== 429 || attempt >= 10) return res;
+    const wait = Number(res.headers()['retry-after'] ?? '1');
+    await new Promise((r) => setTimeout(r, (Number.isFinite(wait) && wait > 0 ? wait : 1) * 1000));
   }
 }
 
@@ -321,15 +350,25 @@ export async function seedContent(ctx: APIRequestContext, edge: string, token: s
   }
   for (const f of genericFiles) {
     const url = `/files/${mainProject}/${f.repo}/${f.path.split('/').map(encodeURIComponent).join('/')}`;
-    const head = await ctx.head(url, { headers: auth });
+    const head = await patiently(() => ctx.head(url, { headers: auth }));
     if (head.status() === 200) continue;
-    const res = await ctx.put(url, { data: Buffer.from(f.content), headers: { ...auth, 'Content-Type': 'application/octet-stream' } });
+    const res = await patiently(() =>
+      ctx.put(url, { data: Buffer.from(f.content), headers: { ...auth, 'Content-Type': 'application/octet-stream' } }),
+    );
     await expectStatus(res, [200, 201], `upload ${f.repo}/${f.path}`);
+  }
+  for (const f of genericFolders) {
+    // An empty body with a trailing slash creates the folder; an existing one answers 200 (R-API-025).
+    const res = await ctx.put(`/files/${mainProject}/${f.repo}/${f.path}/`, { data: Buffer.alloc(0), headers: auth });
+    await expectStatus(res, [200, 201], `folder ${f.repo}/${f.path}`);
   }
   for (const image of images) await pushImage(ctx, edge, token, image);
   const archive = `/files/${advisoryMirror.project}/${advisoryMirror.key}/osv/npm/all.zip`;
   const upload = await ctx.put(archive, { data: advisoryArchive(), headers: { ...auth, 'Content-Type': 'application/zip' } });
-  await expectStatus(upload, [200, 201], `upload the advisory archive to ${advisoryMirror.project}/${advisoryMirror.key}`);
+  // The database of the renders is shared: an archive with other bytes is there already when another worktree's seed stored its
+  // own, and the power user may not replace it (no overwrite in that project). The seed only adds, so it keeps what is there.
+  const kept = upload.status() === 403 && (await ctx.head(archive, { headers: auth })).status() === 200;
+  if (!kept) await expectStatus(upload, [200, 201], `upload the advisory archive to ${advisoryMirror.project}/${advisoryMirror.key}`);
 }
 
 /**

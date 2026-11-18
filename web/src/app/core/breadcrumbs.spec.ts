@@ -41,7 +41,7 @@ describe('Breadcrumbs', () => {
     const crumbs = TestBed.inject(Breadcrumbs);
     // Not the screens that ask before they are left (the repository and the mapping editors): without an outlet they have no component to ask.
     for (const url of [
-      '/projects/web/browse/npm-local/docs/guide',
+      '/projects/web/repositories/generic-local/files/releases/1.0',
       '/projects/web/packages/npm/@team-a/ui',
       '/projects/web/policies/team-a',
       '/projects/web/service-accounts/ci-bot',
@@ -88,13 +88,10 @@ describe('Breadcrumbs', () => {
     ]);
   });
 
-  it('R-UI-002 the file tree adds one step per path segment, each linking to its folder', async () => {
-    const trail = await trailAt('/projects/web/browse/generic-local/docs/guide');
-    expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Browse', 'generic-local', 'docs', 'guide']);
-    expect(trail.at(-1)?.link).toBe('//projects/web/browse/generic-local/docs/guide');
-    expect(trail.slice(3).every((c) => c.literal)).toBe(true);
-    expect(trail[0]?.link).toBe('//projects');
-    expect(trail[2]?.link).toBe('//projects/web/browse');
+  it('R-UI-002 Q-UI-510 the trail of a folder or a file ends at its repository: the page shows the folders once, in its own path', async () => {
+    const trail = await trailAt('/projects/web/repositories/generic-local/files/docs/guide');
+    expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Repositories', 'generic-local']);
+    expect(trail.at(-1)).toEqual({ label: 'generic-local', link: '//projects/web/repositories/generic-local', literal: true });
   });
 
   it('R-UI-002 R-UI-003 a package adds one step with its whole name, scope slash included, linking the package', async () => {

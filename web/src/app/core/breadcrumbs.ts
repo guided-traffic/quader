@@ -27,7 +27,8 @@ export interface CrumbSpec {
  *   resolved title (the creation form of a format);
  * - a parameter segment (`:key`) adds a step with the parameter's value, so a detail screen reads
  *   "Repositories > my-repo";
- * - the file tree's matcher route adds one step per path segment;
+ * - a matcher route without `data.crumbParam` (the folders and files of a repository) adds no step: the trail ends at the
+ *   repository, and the page's own path shows the folders (Q-UI-510);
  * - a matcher route with `data.crumbParam` adds one step with that parameter's value (a package
  *   name such as `@team-a/ui`, whose slash belongs to the name); so does a path route with
  *   `data.crumbParam` (the project of `/projects/:project`), whose step links to that route itself.
@@ -53,6 +54,16 @@ export class Breadcrumbs {
   readonly trail = computed<readonly Crumb[]>(() => {
     const crumbs = collect(this.snapshot().root);
     return crumbs.length > 1 ? crumbs : [];
+  });
+
+  /**
+   * The page lies below the trail's last step (`data.belowTrail` of the deepest route: a folder or a file of a repository,
+   * whose path the page shows itself, Q-UI-510): then the last step is a link like the others, not the current page.
+   */
+  readonly belowTrail = computed(() => {
+    let route = this.snapshot().root;
+    while (route.firstChild) route = route.firstChild;
+    return route.data['belowTrail'] === true;
   });
 }
 
@@ -88,9 +99,6 @@ export function collect(root: ActivatedRouteSnapshot): Crumb[] {
     } else if (config && config.path === undefined && config.matcher && crumbParam) {
       // A matcher route whose parameter names the thing (a package name with its slash): one step.
       add({ label: route.params[crumbParam] ?? crumbParam, commands: [...before, ...own], literal: true });
-    } else if (config && config.path === undefined && config.matcher) {
-      // The file tree: the first segment is the repository, the rest is the path inside it.
-      own.forEach((segment, i) => add({ label: segment, commands: [...before, ...own.slice(0, i + 1)], literal: true }));
     } else if (config && typeof config.title === 'function' && config.path !== undefined && route.title) {
       // A title a resolver gives (the creation form's "New OCI (Docker) repository"): one step that names the page.
       add({ label: route.title, commands: [...before, ...own], literal: false });

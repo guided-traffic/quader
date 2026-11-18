@@ -1,9 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
-import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
-import { FilesApi } from '../../api/files-api';
-import { ApiError } from '../../api/problem';
-import { ErrorNotice } from '../../shared/error-notice';
-import { asApiError } from '../../shared/paged-resource';
+import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../../shared/ui/dialog';
+import { FilesApi } from '../../../api/files-api';
+import { ApiError } from '../../../api/problem';
+import { ErrorNotice } from '../../../shared/error-notice';
+import { asApiError } from '../../../shared/paged-resource';
 
 export interface FolderDialogData {
   readonly repository: string;

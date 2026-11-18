@@ -883,7 +883,11 @@ agent** is not decided until the owner has said so.
     versions;
   - **Guides:** W-2, the guide and the client setup as one page, one label and style for **Set up client**;
   - **Files:** W-8, and the defects of the repository's page (the long package name's row, the filter field's width, the file
-    row's icon, the address beside **Set up client**).
+    row's icon, the address beside **Set up client**). **Landed on 2026-11-18** (ADR-203, R-UI-010 to R-UI-014, R-UI-052,
+    Q-UI-510 to Q-UI-521). The development agent looked at the builder's renders before it landed and sent four defects back,
+    which are fixed in it: the path stood twice on the screen (breadcrumb and trail), a deep path started lines with its
+    separator, an archive file carried an icon with a folder's outline, and **Delete folder** stood beside **Upload files**
+    with the same weight. Not run locally: the journeys 02, 03 and 12, which need the kind cluster.
   After the four have landed: W-5's check in the render report, the two red render screens, and a render of every screen looked
   at again. Not built, because the owner has not decided them: what is listed under "Seen by the development agent" and assigned
   to no package above (the sign-in page, the vulnerability report by package and version, **Needs triage** for a reader, the
@@ -965,11 +969,16 @@ agent** is not decided until the owner has said so.
     page, and what becomes of the tabs **Metadata**, **Files** and **Repositories**.
 - **W-8 · Browse goes from the navigation; the files live on their repository's page** (owner, 2026-11-18, on the development
   agent's proposal; screens `browse`, `browse-folder`, `browse-file`, `repository-generic`). This answers the question that was
-  open since 2026-11-10 (section 8). **Browse** and the page of a repository both show the repository's files; upload, copy, move
-  and the trash can (R-UI-010 to R-UI-014) exist only in **Browse**. Wanted: one way to the files, from the repository. The file
-  operations move to the repository's page, each for the roles that may use it. Not chosen: keeping both, and keeping **Browse**
-  for owners and administrators only. What it costs: the tree across the repositories of a project is gone, and a copy or a move
-  into another repository needs a way to choose the target on the repository's page. To decide in the spec: where the files of a
+  open since 2026-11-10 (section 8). **Browse** and the page of a repository both show the repository's files; the file
+  operations exist only in **Browse**. Wanted: one way to the files, from the repository. The file operations move to the
+  repository's page, each for the roles that may use it. Not chosen: keeping both, and keeping **Browse** for owners and
+  administrators only. What it costs: the tree across the repositories of a project is gone.
+  - **Corrected on 2026-11-18:** the question of 2026-11-10 and this entry said that Browse carries upload, copy, move and the
+    trash can, and the development agent told the owner so as a checked fact. Checked was only that the repository's page offers
+    no operation. Browse had upload, new folder, delete and the copy buttons for addresses; copy, move and the trash can were
+    never built, their storage operations (R-STOR-019, R-STOR-022, R-STOR-023) are open milestones of [FULL.md](FULL.md). The
+    builder found it. So nothing but the tree across repositories is lost with Browse, and the place of copy, move and the trash
+    can on the repository's page is decided in the spec for when they are built (Q-UI-515, Q-UI-516). To decide in the spec: where the files of a
   repository that is not generic show (npm, NuGet, OCI, Debian, Ansible), what becomes of the routes under `/browse`, and where
   the trash can of a project lives.
 - **Seen by the development agent, not decided:**
@@ -1022,6 +1031,15 @@ agent** is not decided until the owner has said so.
   provider; it listened on `::1` only, which the owner's Firefox (IPv6 lookups off) could not reach
   ([web-ui.md](../developer/web-ui.md#local-ui-development)). A checkout that still holds the fixed secrets of before the rename in
   `.dev/ui-dev/secrets` fails at `make ui-dev-up` with `InvalidAccessKeyId`: `up.sh` writes a secret file only once.
+- **Seen in the builders' renders by the development agent, for the sweep after the four packages** (W-5):
+  - At 1024 px with the side bar open every table of the app turns into stacked blocks, one line per cell, because the shared
+    table stacks below 48 rem of its own width whatever its columns need: the versions of a package with 33 rows are 5,136 px
+    high there, a folder's three columns stack too. Wanted: the threshold follows the table's columns, and the stacked form is
+    denser than a line per cell.
+  - `package-npm-many` at 1440 px: the picture is 3,251 px high and the page ends at about 2,100; not read whether the page or
+    the render's growing window leaves the empty part.
+  - A version's page and a file's page show the status **Needs triage** and "by user:priya" to a reader; the first is the open
+    question above, the second a technical way to name a person.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;

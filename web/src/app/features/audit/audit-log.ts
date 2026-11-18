@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AUDIT_CATEGORIES, AuditApi, AuditEvent, AuditFilters } from '../../api/audit-api';
+import { filesCommands } from '../../core/project-links';
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
@@ -285,10 +286,9 @@ export class AuditLog {
     return ['/projects', project, 'repositories', key];
   }
 
-  /** The file tree at the item, inside the project of its repository. */
-  protected browseLink(repository: string, path: string): string[] {
-    const [project = '', key = ''] = repository.split('/');
-    return ['/projects', project, 'browse', key, ...path.split('/')];
+  /** The page of the item in its repository's files, inside the project of the repository (Q-UI-510). */
+  protected fileLink(repository: string, path: string): string[] {
+    return filesCommands(repository, path.split('/'));
   }
 
   protected targetText(e: AuditEvent): string {

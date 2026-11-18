@@ -14,7 +14,8 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   // The screens of a project (`/projects/<key>/…`, Q-UI-129) are looked up as `/project/…`, whatever the key.
   ['/project', { section: 'admin', page: 'projects' }],
   ['/project/packages', { section: 'user', page: 'packages' }],
-  ['/project/browse', { section: 'user', page: 'files' }],
+  // The folders and files of a repository (`/projects/<key>/repositories/<repo>/files/…`) are looked up as `/project/files`.
+  ['/project/files', { section: 'user', page: 'files' }],
   ['/project/repositories', { section: 'user', page: 'repositories' }],
   // >>> M4b vulnerabilities
   ['/project/vulnerabilities', { section: 'user', page: 'vulnerabilities' }],
@@ -60,7 +61,8 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
 export function helpFor(url: string): readonly string[] {
   const raw = url.split(/[?#]/, 1)[0] ?? '';
   const inProject = /^\/projects\/[^/]+(\/.*)?$/.exec(raw);
-  const path = inProject ? `/project${inProject[1] ?? ''}` : raw;
+  const inner = inProject?.[1]?.replace(/^\/repositories\/[^/]+\/files(?=\/|$)/, '/files') ?? '';
+  const path = inProject ? `/project${inner}` : raw;
   let best: readonly [string, HelpTopic] | undefined;
   for (const entry of HELP_TOPICS) {
     const [route] = entry;

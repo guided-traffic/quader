@@ -121,8 +121,10 @@ Medium are not, because the bar carries its counts as text (Q-UI-376).
 
 ## The two-pane browser
 
-The file browser (`/projects/<key>/browse`, [Q-UI-98](../spec/api-and-ui.md#q-ui-98--the-file-browser-is-two-panes-with-a-toolbar-and-a-details-header))
-is the one screen built from two panes; a screen that browses a hierarchy beside its details takes the same pattern.
+The Documentation tab of an Ansible collection ([Q-UI-241](../spec/api-and-ui.md#q-ui-241--the-documentation-tab-is-the-file-browsers-two-panes-a-tree-with-a-search-field-and-the-page))
+is the one screen built from two panes; a screen that browses a hierarchy beside its details takes the same pattern. The file browser
+that introduced it ([Q-UI-98](../spec/api-and-ui.md#q-ui-98--the-file-browser-is-two-panes-with-a-toolbar-and-a-details-header)) went with
+[ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page): a repository's files are pages of the repository.
 Its styles are the global partial [_browse.scss](../../web/src/styles/_browse.scss).
 
 - Two flat bordered surfaces (`--quader-surface-raised`, the hairline border, the 6 px radius) side by side, each `max(26rem,

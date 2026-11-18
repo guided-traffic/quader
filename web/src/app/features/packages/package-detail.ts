@@ -548,10 +548,10 @@ export class PackageDetail {
   protected readonly externalRel = EXTERNAL_REL;
   protected commands = (format: string, name: string): string[] => packageCommands(this.project(), format, name);
 
-  /** The file tree of a repository (`<project>/<key>`), inside the project of that repository. */
-  protected browseLink(repository: string): string[] {
+  /** The page of a repository (`<project>/<key>`), inside the project of that repository: its packages and its files (ADR-203). */
+  protected repositoryLink(repository: string): string[] {
     const { project, key } = splitRef(repository);
-    return ['/projects', project, 'browse', key];
+    return ['/projects', project, 'repositories', key];
   }
   protected readonly size = formatSize;
 
@@ -586,7 +586,7 @@ export class PackageDetail {
     { id: 'repository', label: $localize`:@@pkg.repo.repository:Repository` },
     { id: 'class', label: $localize`:@@pkg.repo.class:Class` },
     { id: 'published', label: $localize`:@@pkg.repo.published:Published` },
-    { id: 'browse', label: $localize`:@@pkg.repo.browse:Browse`, hideLabel: true },
+    { id: 'open', label: $localize`:@@pkg.repo.open-column:Open`, hideLabel: true },
   ];
   protected readonly platformColumns: readonly TableColumn[] = [
     { id: 'platform', label: $localize`:@@pkg.image.platform:Platform` },

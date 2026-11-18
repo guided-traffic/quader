@@ -305,7 +305,7 @@
                           <time [attr.datetime]="r.publishedAt">{{ r.publishedAt | date: 'medium' }}</time>
                         </td>
                         <td>
-                          <a class="btn btn-tertiary" [routerLink]="browseLink(r.key)" i18n="@@pkg.repo.show-in-browser">Show in browser</a>
+                          <a class="btn btn-tertiary" [routerLink]="repositoryLink(r.key)" i18n="@@pkg.repo.open">Open repository</a>
                         </td>
                       </tr>
                     }

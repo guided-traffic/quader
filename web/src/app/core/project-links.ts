@@ -9,8 +9,11 @@ export function repositoryCommands(ref: string): string[] {
   return ['/projects', project, 'repositories', key];
 }
 
-/** The router commands of a repository's file tree at `path` (empty for the repository itself). */
-export function browseCommands(ref: string, path: readonly string[] = []): string[] {
+/**
+ * The router commands of the folder or the file at `path` of a repository's files (R-UI-010, Q-UI-510): its page with the path
+ * after `files`; an empty path is the root of the files.
+ */
+export function filesCommands(ref: string, path: readonly string[] = []): string[] {
   const { project, key } = splitRef(ref);
-  return ['/projects', project, 'browse', key, ...path.filter((s) => s !== '')];
+  return ['/projects', project, 'repositories', key, 'files', ...path.filter((s) => s !== '')];
 }

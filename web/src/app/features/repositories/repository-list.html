@@ -193,8 +193,9 @@
                     >Copy client address</button
                   >
                 }
-                <a class="menu-item" cdkMenuItem [routerLink]="['/projects', row.project, 'browse', row.key]" i18n="@@repo.action.browse"
-                  >Browse</a
+                <!-- A repository's folders and files are on its page (ADR-203). -->
+                <a class="menu-item" cdkMenuItem [routerLink]="['/projects', row.project, 'repositories', row.key, 'files']" i18n="@@repo.content.files-menu"
+                  >Files</a
                 >
                 <!-- >>> M4b vulnerabilities -->
                 @if (row.format !== 'generic' && row.class !== 'virtual') {

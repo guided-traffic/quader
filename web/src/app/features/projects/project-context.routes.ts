@@ -31,11 +31,6 @@ export const PROJECT_CONTEXT_ROUTES: Routes = [
         loadChildren: () => import('../packages/packages.routes').then((m) => m.PACKAGES_ROUTES),
       },
       {
-        path: 'browse',
-        data: section($localize`:@@nav.browse:Browse`),
-        loadChildren: () => import('../browse/browse.routes').then((m) => m.BROWSE_ROUTES),
-      },
-      {
         path: 'repositories',
         data: section($localize`:@@route.repositories.title:Repositories`),
         loadChildren: () => import('../repositories/repositories.routes').then((m) => m.PROJECT_REPOSITORIES_ROUTES),

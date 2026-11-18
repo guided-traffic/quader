@@ -1,5 +1,5 @@
 import { Page, expect } from '@playwright/test';
-import { Kind, emptyProject, exposureRule, group, longDebKey, longNpmKey, mainProject, npmPackage, ociPackage, otherProject, projectServiceAccount, serviceAccount } from './seed';
+import { Kind, deepFolder, emptyProject, exposureRule, group, longDebKey, longNpmKey, mainProject, npmPackage, ociPackage, otherProject, projectServiceAccount, serviceAccount } from './seed';
 import { gradedPackage } from './advisories';
 import { routeTooMany } from './suggestions';
 
@@ -31,6 +31,81 @@ async function* filtersOpen(page: Page): AsyncGenerator<string> {
   await page.locator('main .filter-toggle').first().click();
   await expect(page.locator('main quader-filter-panel form')).toBeVisible();
   yield 'filters';
+}
+
+/**
+ * The operations of a folder as its Owner uses them (R-UI-011, R-UI-012): the folder, the upload dialog with a file chosen and
+ * then uploaded (the upload is answered by the walk, so the seed's folder stays as it is), New folder with a name typed, the
+ * folder's menu, and the confirmation of Delete folder from it, cancelled.
+ */
+async function* folderOperations(page: Page): AsyncGenerator<string> {
+  yield '';
+  if ((await page.getByRole('button', { name: 'Upload files' }).count()) === 0) return;
+  await page.getByRole('button', { name: 'Upload files' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('heading', { name: 'Upload files' })).toBeVisible();
+  await dialog.locator('input[type=file]').setInputFiles({
+    name: 'design-system-2.5.0-release-notes-for-the-customer-portal-frontend.md',
+    mimeType: 'text/markdown',
+    buffer: Buffer.from('# Design system 2.5.0\n'),
+  });
+  yield 'upload';
+  await page.route('**/api/v1/projects/*/repositories/*/content/**', (route) =>
+    route.request().method() === 'PUT' ? route.fulfill({ status: 201, json: {} }) : route.fallback(),
+  );
+  await dialog.getByRole('button', { name: 'Upload', exact: true }).click();
+  await expect(dialog.getByText('uploaded', { exact: true })).toBeVisible();
+  yield 'uploaded';
+  await page.unroute('**/api/v1/projects/*/repositories/*/content/**');
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  await page.getByRole('button', { name: 'New folder' }).click();
+  await page.getByLabel('Folder name').fill('2026/q4-hotfixes');
+  yield 'new-folder';
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  await page.getByRole('button', { name: 'More actions for this folder' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Delete folder' })).toBeVisible();
+  yield 'folder-menu';
+  await page.getByRole('menuitem', { name: 'Delete folder' }).click();
+  await expect(page.getByRole('dialog')).toContainText('Delete releases/design-system/2.5.0?');
+  yield 'delete-folder';
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+}
+
+/** A deep path as it opens, then, where it is narrow, with the folders in between opened from their menu (Q-UI-521). */
+async function* deepPath(page: Page): AsyncGenerator<string> {
+  yield '';
+  const more = page.getByRole('button', { name: 'Show the folders in between' });
+  if (!(await more.isVisible())) return;
+  await more.click();
+  await expect(page.getByRole('menu')).toBeVisible();
+  yield 'folders';
+}
+
+/** A file's page, then its Details opened, then, for whoever may delete it, the confirmation of Delete, cancelled. */
+async function* fileView(page: Page): AsyncGenerator<string> {
+  yield '';
+  await page.getByRole('button', { name: /^Details/ }).click();
+  await expect(page.getByText('Counts reach the database within a minute of a download.')).toBeVisible();
+  yield 'details';
+  const remove = page.locator('.file-actions').getByRole('button', { name: 'Delete' });
+  if ((await remove.count()) === 0) return;
+  await remove.click();
+  await expect(page.getByRole('dialog')).toContainText('The file is deleted for good.');
+  yield 'delete';
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+}
+
+/** A folder with more entries than a page holds, then filtered while a page is still to load, then with every page loaded. */
+async function* manyEntries(page: Page): AsyncGenerator<string> {
+  yield '';
+  const filter = page.getByRole('searchbox', { name: 'Filter files' });
+  await filter.fill('00');
+  await expect(page.getByText('The filter searches the 200 entries loaded so far.')).toBeVisible();
+  yield 'filtered';
+  await filter.fill('');
+  await page.getByRole('button', { name: 'Load more' }).click();
+  await expect(page.locator('main tbody tr')).toHaveCount(230);
+  yield 'more';
 }
 
 /** The list as it opens, then sorted by its Detected button: the click fails where the button cannot be reached. */
@@ -450,9 +525,17 @@ export const screens: readonly Screen[] = [
   { id: 'package-npm-fixed', path: `${P}/packages/npm/xml-stream-parser?version=0.9.2`, kinds: ['plain'] },
   // The tab's findings narrowed by a segment of the card's bar (Q-UI-379).
   { id: 'package-npm-graded-critical', path: `${P}/packages/${gradedPackage.format}/${gradedPackage.name}?tab=vulnerabilities&severity=critical`, kinds: ['plain'] },
-  { id: 'browse', path: `${P}/browse`, kinds: all, walk: filtersOpen },
-  { id: 'browse-folder', path: `${P}/browse/assets/releases/design-system/2.5.0`, kinds: all },
-  { id: 'browse-file', path: `${P}/browse/assets/README.md`, kinds: all },
+  // The folders and files of a repository on its page (R-UI-010 to R-UI-012, ADR-203): a folder with the Owner's operations, a
+  // folder deep in a path of long names, a folder of more than a page, an empty folder, a file and a package format's raw files.
+  { id: 'files-folder', path: `${P}/repositories/assets/files/releases/design-system/2.5.0`, kinds: all, walk: folderOperations },
+  { id: 'files-deep', path: `${P}/repositories/assets/files/${deepFolder}`, kinds: all, walk: deepPath },
+  { id: 'files-many', path: `${P}/repositories/assets/files/icons/material`, kinds: ['plain'], walk: manyEntries },
+  { id: 'files-empty-folder', path: `${P}/repositories/assets/files/drafts`, kinds: all },
+  { id: 'files-file', path: `${P}/repositories/assets/files/README.md`, kinds: all, walk: fileView },
+  { id: 'files-file-long', path: `${P}/repositories/assets/files/${deepFolder}/sprite-with-every-icon-of-the-design-system-for-the-customer-portal.svg`, kinds: ['plain'] },
+  { id: 'files-npm', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-`, kinds: all },
+  { id: 'files-npm-file', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-/ui-kit-1.1.0.tgz`, kinds: owners },
+  { id: 'files-oci', path: `${P}/repositories/images/files`, kinds: ['plain'] },
   { id: 'vulnerabilities', path: `${P}/vulnerabilities`, kinds: all, walk: filtersOpen },
   // A filter opens the panel; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
   { id: 'vulnerabilities-filtered', path: `${P}/vulnerabilities?severity=high`, kinds: admins, walk: sortByDetection },

@@ -1,8 +1,8 @@
 @if (failure(); as f) {
   <quader-error-notice [error]="f" (retry)="loaded.reload()" />
 } @else if (repository(); as r) {
-  <quader-page-header [heading]="r.key" [name]="true" [description]="sentence()" [addresses]="headerAddresses()">
-    <div meta class="facts">
+  <quader-page-header [heading]="r.key" [name]="true" [description]="sentence()">
+    <div meta class="header-facts">
       <span class="badge format-badge" translate="no"><quader-format-icon [format]="r.format" />{{ formatName() }}</span>
       <span class="badge">
         <span class="material-icons" aria-hidden="true">{{ r.class === 'local' ? 'storage' : r.class === 'remote' ? 'cloud_download' : 'layers' }}</span>
@@ -15,22 +15,30 @@
         <span class="badge warn" i18n="@@repo.badge.disabled">disabled</span>
       }
     </div>
+    <!-- The client address and the way to set a client up are one job, so they stand together (Q-UI-517). A disabled repository
+         refuses its clients, so there is nothing to set up; its badge says why. -->
+    @if (headerAddress() || !disabled()) {
+      <div meta class="client-row">
+        @if (headerAddress(); as a) {
+          <quader-address-field [value]="a" />
+        }
+        @if (!disabled()) {
+          <a class="btn btn-confirm" routerLink="/setup" [queryParams]="{ repository: ref() }" i18n="@@repo.content.tab.setup">Set up client</a>
+        }
+      </div>
+    }
     <ng-container actions>
-      <!-- A disabled repository refuses its clients, so there is nothing to set up; its badge says why. -->
-      @if (!disabled()) {
-        <a class="btn btn-confirm" routerLink="/setup" [queryParams]="{ repository: ref() }" i18n="@@repo.content.tab.setup">Set up client</a>
-      }
       @if (canConfigure()) {
         <a class="btn btn-default" [routerLink]="settingsLink()" i18n="@@repo.content.settings">Settings</a>
       }
-      @if (!isGeneric() || (scanned() && r.class !== 'virtual' && canReadFindings())) {
+      @if (offersFiles() || (scanned() && r.class !== 'virtual' && canReadFindings())) {
         <button class="btn btn-default btn-icon" type="button" [attr.aria-label]="actionsLabel" [cdkMenuTriggerFor]="moreMenu">
           <span class="material-icons" aria-hidden="true">more_vert</span>
         </button>
         <ng-template #moreMenu>
           <div class="menu" cdkMenu>
-            @if (!isGeneric()) {
-              <a class="menu-item" cdkMenuItem [routerLink]="['/projects', project(), 'browse', key()]" i18n="@@repo.content.browse">Browse files</a>
+            @if (offersFiles()) {
+              <a class="menu-item" cdkMenuItem [routerLink]="filesRoot()" i18n="@@repo.content.files-menu">Files</a>
             }
             @if (scanned() && r.class !== 'virtual' && canReadFindings()) {
               <a class="menu-item" cdkMenuItem [routerLink]="['/projects', project(), 'vulnerabilities']" [queryParams]="{ repository: ref() }" i18n="@@repo.action.vulnerabilities">Vulnerabilities</a>
@@ -41,10 +49,8 @@
     </ng-container>
   </quader-page-header>
 
-  <!-- The content alone: the client setup is the header's Set up client (Q-UI-321). -->
-  @if (isGeneric()) {
-    <quader-repository-files [repository]="ref()" [format]="descriptor()" [path]="folder()" [offerSetup]="!disabled()" (pathChange)="setPath($event)" />
-  } @else {
+  @if (view() === 'items') {
+    <!-- The content alone: the client setup is the header's Set up client (Q-UI-321). -->
     @if (r.class === 'remote') {
       @if (r.format === 'oci') {
         <p class="content-note" i18n="@@repo.content.oci-remote-note">Only the tags this repository has cached are listed here: those clients have pulled and, in mirror mode, those a pass has fetched.</p>
@@ -66,10 +72,124 @@
       (filterChange)="setFilter($event)"
       (sortParamChange)="setSort($event)"
     />
+  } @else {
+    @if (!isGeneric()) {
+      <!-- A package format's raw files are a detail on demand (Q-UI-511): the packages stay its main view. -->
+      <p class="content-note raw-note">
+        <a class="back-link" [routerLink]="['/projects', project(), 'repositories', key()]"
+          ><span class="material-icons" aria-hidden="true">arrow_back</span>{{ shape().itemsLabel }}</a
+        >
+        @if (r.class === 'virtual') {
+          <span i18n="@@files.virtual-note">A virtual repository stores only what it generates itself, such as an index; the files of its members are on their pages.</span>
+        } @else {
+          <span i18n="@@files.raw-note">The raw files of the repository, as Quader stores them.</span>
+        }
+      </p>
+    }
+    @if (!isGeneric() || path() !== '') {
+      <!-- The one place of the path (Q-UI-510, Q-UI-521): Files, the folders, the folder or file of the page. A separator stays
+           with the segment before it; below 64 rem the folders between Files and the last segment collapse into one menu. On a
+           file's page the last segment is the file with its icon, and its actions stand at the end of the row (Q-UI-514). -->
+      <div class="files-head">
+        <nav class="files-trail" i18n-aria-label="@@repo.content.folder-path" aria-label="Folder path">
+          <ol>
+            <li class="seg">
+              @if (path() === '') {
+                <span aria-current="page" i18n="@@files.root">Files</span>
+              } @else {
+                <a [routerLink]="filesRoot()" i18n="@@files.root">Files</a>
+              }
+            </li>
+            @if (between().length > 0) {
+              <li class="seg collapsed">
+                <button
+                  class="btn btn-tertiary btn-icon trail-more"
+                  type="button"
+                  [attr.aria-label]="betweenLabel"
+                  [cdkMenuTriggerFor]="betweenMenu"
+                >
+                  <span class="material-icons" aria-hidden="true">more_horiz</span>
+                </button>
+                <ng-template #betweenMenu>
+                  <div class="menu" cdkMenu>
+                    @for (c of between(); track $index) {
+                      <a class="menu-item" cdkMenuItem [routerLink]="c.commands" translate="no">{{ c.name }}</a>
+                    }
+                  </div>
+                </ng-template>
+              </li>
+              @for (c of between(); track $index) {
+                <li class="seg between" translate="no"><a [routerLink]="c.commands">{{ c.name }}</a></li>
+              }
+            }
+            @if (here(); as c) {
+              <li class="seg here" translate="no">
+                <span class="here-name" aria-current="page">
+                  @if (view() === 'file') {
+                    <span class="material-icons entry-icon" aria-hidden="true">description</span>
+                  }
+                  <span>{{ c.name }}</span>
+                </span>
+                <quader-copy-button [value]="path()" [label]="copyPathLabel" [quiet]="true" />
+              </li>
+            }
+          </ol>
+        </nav>
+        @if (view() === 'file' && item(); as it) {
+          <div class="file-actions">
+            @if (it.downloadUrl) {
+              <a class="btn btn-default" [href]="it.contentUrl ?? it.downloadUrl" download>
+                <span class="material-icons" aria-hidden="true">download</span>
+                <ng-container i18n="@@files.download">Download</ng-container>
+              </a>
+            }
+            @if (permissions().delete) {
+              <button class="btn btn-default" type="button" (click)="remove()">
+                <span class="material-icons" aria-hidden="true">delete</span>
+                <ng-container i18n="@@files.delete">Delete</ng-container>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+    @if (actionFailure(); as f) {
+      <quader-error-notice [error]="f" />
+    }
+    @if (deletion(); as d) {
+      <div class="deleting">
+        <span i18n="@@repo.deleting">Deleting</span>
+        <quader-job-progress [jobId]="d.job.id" [label]="deleteProgress" (finished)="jobEnded($event.state)" />
+      </div>
+    }
+    @switch (view()) {
+      @case ('folder') {
+        <quader-repository-files
+          [repository]="ref()"
+          [filesAddress]="filesAddress()"
+          [path]="path()"
+          [permissions]="permissions()"
+          [offerSetup]="!disabled()"
+          [revision]="revision()"
+          (remove)="remove()"
+        />
+      }
+      @case ('file') {
+        @if (item(); as it) {
+          <quader-repository-file [item]="it" />
+        }
+      }
+      @default {
+        @if (itemFailure(); as f) {
+          <quader-error-notice [error]="f" (retry)="itemRead.reload()" />
+        } @else {
+          <p role="status" i18n="@@repo.loading">Loading.</p>
+        }
+      }
+    }
   }
 
-
-  @if (upstream() || members().length > 0 || otherAddresses().length > 0) {
+  @if ((view() === 'items' || (isGeneric() && path() === '')) && (upstream() || members().length > 0 || otherAddresses().length > 0)) {
     <quader-disclosure class="details" [heading]="detailsHeading" [hint]="detailsText">
       @for (a of otherAddresses(); track a.value) {
         <p class="other-address">

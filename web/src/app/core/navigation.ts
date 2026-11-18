@@ -115,7 +115,7 @@ export const NAV_AREAS: readonly NavArea[] = [
 ];
 
 /**
- * The entries of the sidebar of project `key` (Q-UI-129, Q-UI-216: the repositories first). Repositories, packages, browse, vulnerabilities and members are
+ * The entries of the sidebar of project `key` (Q-UI-129, Q-UI-216: the repositories first). Repositories, packages, vulnerabilities and members are
  * for every caller who sees the project (the API decides what each shows); the policies, service accounts and CI
  * identity are for the capability holders and the project's Owners, as their endpoints are (R-AUTHZ-026); the settings
  * are read by every member and changed by the Owner and `projects:write`. A plain user of the project (R-UI-067: at most a reader,
@@ -143,7 +143,6 @@ export function projectEntries(key: string, session: SessionStore): readonly Nav
     // >>> M2 ui-packages
     { kind: 'item', route: at('packages'), icon: 'category', label: $localize`:@@nav.packages:Packages` },
     // <<< M2 ui-packages
-    { kind: 'item', route: at('browse'), icon: 'folder_open', label: $localize`:@@nav.browse:Browse` },
     // >>> M4b vulnerabilities
     { kind: 'item', route: at('vulnerabilities'), icon: 'security', label: $localize`:@@nav.vulnerabilities:Vulnerabilities` },
     // <<< M4b vulnerabilities

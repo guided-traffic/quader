@@ -5,7 +5,7 @@ import { Notifier } from './notifier';
 import { BrowserStorage } from './storage';
 import { QuaderTitleStrategy } from './title-strategy';
 import { diffFields } from '../shared/conflict-dialog';
-import { browseMatcher } from '../features/browse/browse.routes';
+import { filesMatcher } from '../features/repositories/repositories.routes';
 import { UrlSegment } from '@angular/router';
 
 describe('BrowserStorage', () => {
@@ -61,18 +61,19 @@ describe('QuaderTitleStrategy', () => {
   });
 });
 
-describe('browseMatcher', () => {
+describe('filesMatcher', () => {
   const seg = (...p: string[]) => p.map((x) => new UrlSegment(x, {}));
 
-  it('R-UI-003 Q-UI-129 takes the first segment as the repository key (the project is the parent route) and joins the rest as the path', () => {
-    const m = browseMatcher(seg('npm-local', '@team-a', 'ui'), null as never, null as never);
-    expect(m?.posParams?.['key']?.path).toBe('npm-local');
-    expect(m?.posParams?.['path']?.path).toBe('@team-a/ui');
+  it('R-UI-003 Q-UI-510 takes the segments after `files` as the path, slashes kept (the repository is the parent route)', () => {
+    const m = filesMatcher(seg('files', '@team-a', 'ui'), null as never, null as never);
+    expect(m?.consumed.length).toBe(3);
+    expect(m?.posParams?.['filePath']?.path).toBe('@team-a/ui');
   });
 
-  it('R-UI-003 matches a repository root with an empty path and nothing without segments', () => {
-    expect(browseMatcher(seg('npm-local'), null as never, null as never)?.posParams?.['path']?.path).toBe('');
-    expect(browseMatcher([], null as never, null as never)).toBeNull();
+  it('R-UI-003 Q-UI-510 matches `files` alone as the root and nothing else', () => {
+    expect(filesMatcher(seg('files'), null as never, null as never)?.posParams?.['filePath']?.path).toBe('');
+    expect(filesMatcher(seg('settings'), null as never, null as never)).toBeNull();
+    expect(filesMatcher([], null as never, null as never)).toBeNull();
   });
 });
 

@@ -693,7 +693,7 @@ web/
         ├── core/                # SessionStore, interceptors (CSRF, problem mapping, 401), layout
         ├── shared/              # presentational components, pipes, directives
         └── features/
-            ├── packages/  browse/  repositories/  setup/  tokens/
+            ├── packages/  repositories/  setup/  tokens/
             ├── formats/<id>/    # optional format-specific panels, registered by format ID
             └── admin/           # users, groups, service accounts, policies, CI identities, system
 ```

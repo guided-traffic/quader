@@ -85,7 +85,7 @@ Your work happens in projects. The start page shows the repositories you opened 
 
 | Where | Entries | Who sees it |
 |---|---|---|
-| A project (`/projects/<key>/…`) | The **project switcher** on top, then **Repositories**, **Packages**, **Browse**, **Vulnerabilities**; for who is more than a reader of the project or holds an administrative role also **Access** (**Members**, and for owners and holders of the permission **Permission policies**, **Service accounts**, **CI identity**) and **Settings** | Everyone who sees the project, anonymous readers included. A reader finds whom to ask under the heading of the project's **Repositories**, and a screen it may read but not change says the same: "Read only. Ask priya, an Owner of web, to change this." |
+| A project (`/projects/<key>/…`) | The **project switcher** on top, then **Repositories**, **Packages**, **Vulnerabilities**; for who is more than a reader of the project or holds an administrative role also **Access** (**Members**, and for owners and holders of the permission **Permission policies**, **Service accounts**, **CI identity**) and **Settings** | Everyone who sees the project, anonymous readers included. A reader finds whom to ask under the heading of the project's **Repositories**, and a screen it may read but not change says the same: "Read only. Ask priya, an Owner of web, to change this." |
 | Everywhere else | **Projects** and **Guides** | Everyone |
 | **Admin area** | Projects, repositories, endpoints, Bastions, identity, access and system screens | Only people who hold an administrative permission, and only the entries they may use. **Admin** in the top bar leads there, **Quader** leads back |
 

@@ -131,7 +131,7 @@ describe('Audit log', () => {
     expect(panel.querySelector('a[href="/admin/users/alice"]')).toBeTruthy();
     expect(panel.querySelector('a[href="/projects/web/repositories/generic-local"]')).toBeTruthy();
     expect(
-      panel.querySelector('a[href="/projects/web/browse/generic-local/releases/1.0/app.zip"]'),
+      panel.querySelector('a[href="/projects/web/repositories/generic-local/files/releases/1.0/app.zip"]'),
     ).toBeTruthy();
     await expectAccessible(root);
   });

@@ -59,12 +59,12 @@ The page of a repository shows its address for your package manager under its ti
 
 | Format | Classes | Clients the guides and setup cover | Where its content appears in the UI |
 |---|---|---|---|
-| npm | Local, remote, virtual | npm, pnpm, Yarn Berry (2 and later), Yarn Classic (1.x) | **Packages** and **Browse** |
-| NuGet | Local, remote, virtual | .NET CLI (dotnet), NuGet CLI (nuget.exe), Visual Studio | **Packages** and **Browse** |
-| OCI (Docker) | Local, remote, virtual | Docker CLI (with Buildx), Podman; Kubernetes through an image pull secret | **Packages** (an image name is a package, a tag a version) and **Browse** |
-| Debian (APT) | Local, remote, virtual | APT (apt, apt-get) on Debian and Ubuntu | **Packages** (a binary package name is a package) and **Browse** |
-| Ansible Galaxy | Local, remote, virtual | ansible-galaxy (ansible-core 2.17 and 2.21) | **Packages** (a collection is a package) and **Browse** |
-| Generic | Local | curl | **Browse** only: generic files have no package names, so they are not listed under **Packages** |
+| npm | Local, remote, virtual | npm, pnpm, Yarn Berry (2 and later), Yarn Classic (1.x) | **Packages**, and the repository's page with its **Files** |
+| NuGet | Local, remote, virtual | .NET CLI (dotnet), NuGet CLI (nuget.exe), Visual Studio | **Packages**, and the repository's page with its **Files** |
+| OCI (Docker) | Local, remote, virtual | Docker CLI (with Buildx), Podman; Kubernetes through an image pull secret | **Packages** (an image name is a package, a tag a version), and the repository's page with its **Files** |
+| Debian (APT) | Local, remote, virtual | APT (apt, apt-get) on Debian and Ubuntu | **Packages** (a binary package name is a package), and the repository's page with its **Files** |
+| Ansible Galaxy | Local, remote, virtual | ansible-galaxy (ansible-core 2.17 and 2.21) | **Packages** (a collection is a package), and the repository's page with its **Files** |
+| Generic | Local | curl | The repository's page only: generic files have no package names, so they are not listed under **Packages** |
 
 Generic repositories store files of any kind at paths you choose: installers, archives, documents, build outputs. OCI repositories hold container images and other OCI artifacts; [Container images with Docker and Podman](container-images.md) explains them. Debian repositories are APT repositories with signed indexes; [Debian packages with APT](apt-packages.md) explains them. Other formats are not built yet; see [Known limitations](../admin/limitations.md).
 
@@ -75,7 +75,7 @@ Quader shows you only what you may read. A repository you may not read is not li
 | What you hold | What you see and can do |
 |---|---|
 | A role in the repository's project | **Reader** reads every repository of the project, **Developer** also publishes and uploads, **Maintainer** and **Owner** also replace, delete and manage; [Projects](../admin/projects.md#members-and-roles) explains the roles |
-| Read on a repository | It appears in the **Browse** tree and, for npm, NuGet, OCI and Debian, under **Packages**; you can open its content page, download, and install from it |
+| Read on a repository | It appears in the project's **Repositories** and, for npm, NuGet, OCI and Debian, under **Packages**; you can open its page and its files, download, and install from it |
 | Deploy, overwrite or delete | Upload or publish, replace, and delete, on the paths and packages your permission names |
 | The permission to read repository configuration | Every repository, the settings of every repository, and **Admin area › Repositories** |
 | Nothing, as an anonymous reader | Only the public projects and repositories, and nothing you can change |
@@ -89,11 +89,10 @@ Permissions can be narrower than a whole repository: a permission may cover only
 
 Open a project and you land on its **Repositories**. Select a repository to see what it holds, on the level you think in: images and tags, packages and versions, or files. You get there from the project's **Repositories**, from **Admin area › Repositories** (every project, each row naming its project), and with **Find a repository** in the top bar: Enter opens **Search results**, a page of the main area that lists the matching repositories of every project you may read.
 
-The page is titled with the repository's key and says what the repository is. Under the title is its **Client address**, the address your package manager needs, with **Copy client address**. At the top right:
+The page is titled with the repository's key and says what the repository is. Under the title is its **Client address**, the address your package manager needs, with **Copy client address**, and beside it **Set up client**, which opens the client setup for this repository, with its format and the repository already chosen: you pick your client and how to handle the token. A disabled repository has no **Set up client**, because clients cannot use it. At the top right:
 
-- **Set up client** opens the client setup for this repository, with its format and the repository already chosen: you pick your client and how to handle the token. A disabled repository has none, because clients cannot use it.
 - **Settings** opens the repository's settings, if you may read them.
-- **More actions** holds **Browse files**, which opens the same repository in the file tree, and **Vulnerabilities**.
+- **More actions** holds **Files**, the raw files of a repository of a package format ([Browsing and transferring files](files.md)), and **Vulnerabilities**.
 
 Below them the page lists the **Images**, **Packages** or **Files** of the repository, depending on the format, with a filter. **Details**, at the end and closed until you open it, holds the repository's other addresses, each named (**Address for downloads by path (curl, wget)**), the upstream a remote repository caches, and the members a virtual repository resolves from.
 
@@ -103,7 +102,7 @@ Depending on the format, the content shows:
 |---|---|---|
 | **OCI (Docker)** | Images, each with its latest tag, the number of tags, the [grade](vulnerabilities.md#grades) of its latest tag, and when it was last pushed. A remote repository lists the images it has cached: the tags clients have pulled through it and, in mirror mode, the tags a pass has fetched | The tags with digest, size, pushed time (fetched time in a remote repository, the time its cached copy of the tag was stored) and grade, and a copyable `docker pull` or `podman pull` command for the tag you choose, with this installation's address |
 | **npm, NuGet, Debian** | Packages, each with its latest version, the number of versions, the [grade](vulnerabilities.md#grades) of its latest version where the format is scanned (npm and NuGet today) and downloads | The versions with size, published time and grade, and the install command for the version you choose |
-| **Generic** | The files of the repository, folder by folder | Selecting a folder opens it in place; selecting a file opens it in the file browser with all its details; the copy button copies its download address |
+| **Generic** | The files of the repository, folder by folder | Selecting a folder opens it, selecting a file opens its page with **Download** and its details; the copy button copies its download address. Uploading, new folders and deleting are on the same pages; see [Browsing and transferring files](files.md) |
 
 Select a package or image name to open the [package page](packages.md) for details, the README and all versions. A virtual repository lists what it resolves through its members, which are named above the list. A remote repository lists what has been fetched through it, marked in a note.
 

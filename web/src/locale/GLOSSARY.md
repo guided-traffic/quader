@@ -25,7 +25,8 @@ before using a new term in a German text.
 | sealed value | versiegelter Wert |
 | sign in, sign out | anmelden, abmelden |
 | session | Sitzung |
-| browse (file tree) | Durchsuchen |
+| files (of a repository), raw files | Dateien, Rohdateien |
+| download address | Download-Adresse |
 | principal | Prinzipal |
 | role binding | Rollenzuweisung |
 | system configuration (the installation's configuration file) | Systemkonfiguration |

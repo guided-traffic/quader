@@ -67,7 +67,7 @@ describe('Repository list', () => {
     await settle(fixture);
     const menu = root.ownerDocument.body.querySelector('.menu')!;
     expect([...menu.querySelectorAll('[role="menuitem"]')].map((i) => i.textContent?.trim())).toEqual(
-      expect.arrayContaining(['Settings', 'Browse']),
+      expect.arrayContaining(['Settings', 'Files']),
     );
   });
 
@@ -76,7 +76,7 @@ describe('Repository list', () => {
     root.querySelector<HTMLButtonElement>('button[aria-label="Actions for generic-local"]')!.click();
     await settle(fixture);
     const items = [...root.ownerDocument.body.querySelectorAll('.menu [role="menuitem"]')].map((i) => i.textContent?.trim());
-    expect(items).toContain('Browse');
+    expect(items).toContain('Files');
     expect(items).not.toContain('Settings');
   });
 

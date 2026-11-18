@@ -1,44 +1,43 @@
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, input, output, resource, signal, untracked } from '@angular/core';
+import { Component, LOCALE_ID, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { Child, FilesApi } from '../../../api/files-api';
-import { FormatDescriptor } from '../../../api/repositories-api';
-import { browseCommands } from '../../../core/project-links';
-import { ServerAddress } from '../../../core/server-address';
+import { Notifier } from '../../../core/notifier';
+import { filesCommands } from '../../../core/project-links';
 import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
+import { QuaderDialog } from '../../../shared/ui/dialog';
 import { formatSize } from '../../packages/format-size';
-import { clientAddress } from '../repository-model';
+import { relativeTime } from '../../packages/format-time';
 import { contentShapeOf } from './content-shape';
+import { FilePermissions, NO_FILE_PERMISSIONS, iconOf } from './file-paths';
+import { FolderDialog, FolderDialogData } from './folder-dialog';
+import { UploadDialog, UploadDialogData } from './upload-dialog';
 
-/** How many children a folder lists at a time. */
-const FILES_PAGE = 100;
+/** `ui.browser.page_size` (R-UI-010, default 200): how many entries of a folder load at a time. The UI cannot read the setting. */
+export const FILES_PAGE = 200;
 
 /**
- * The files of a repository of the generic format (R-UI-052): for this format files are the logical level. A folder lists its
- * children (R-API-025), a file links to its detail in the file browser and offers a copy of its download address. The path is the
- * `path` query parameter (R-UI-003), owned by the content page; a filter narrows what is loaded, since the server has no name filter
- * on children.
+ * A folder of a repository's files (R-UI-010, R-UI-052): its entries as the shared data table, folders and files by name in the
+ * order of their paths, in pages of 200 with **Load more** (R-API-025). A folder's name leads to the folder, a file's name to its
+ * page; a file's row copies its download address. The filter narrows the entries loaded so far, because the server has no name
+ * filter on children (Q-UI-513). Above the list, the operations the caller may use here (R-UI-011, Q-UI-512): **Upload files** and
+ * **New folder** for a holder of `deploy` in a local repository that takes raw uploads, and **Delete folder**, which the page runs.
  */
 @Component({
   selector: 'quader-repository-files',
-  imports: [DatePipe, RouterLink, CopyButton, DataTable],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DatePipe, RouterLink, CopyButton, DataTable],
   template: `
-    @if (crumbs().length > 0) {
-      <nav class="path-trail" i18n-aria-label="@@repo.content.folder-path" aria-label="Folder path">
-        <button type="button" class="btn btn-tertiary" (click)="open('')" i18n="@@repo.content.root">All files</button>
-        @for (c of crumbs(); track c.path) {
-          <span aria-hidden="true">/</span>
-          <button type="button" class="btn btn-tertiary" translate="no" (click)="open(c.path)">{{ c.name }}</button>
-        }
-      </nav>
-    }
-    <div class="toolbar">
+    <div class="toolbar files-toolbar">
       <div class="filter">
         <input
           class="text-input"
           type="search"
+          autocomplete="off"
+          spellcheck="false"
           i18n-aria-label="@@repo.content.filter-files"
           aria-label="Filter files"
           i18n-placeholder="@@repo.content.filter-files"
@@ -48,7 +47,43 @@ const FILES_PAGE = 100;
         />
         <span class="material-icons" aria-hidden="true">search</span>
       </div>
+      @if (permissions().deploy || (permissions().delete && path() !== '')) {
+        <div class="files-actions">
+          @if (permissions().deploy) {
+            <button class="btn btn-default" type="button" (click)="upload()">
+              <span class="material-icons" aria-hidden="true">upload</span>
+              <ng-container i18n="@@files.upload">Upload files</ng-container>
+            </button>
+            <button class="btn btn-default" type="button" (click)="newFolder()">
+              <span class="material-icons" aria-hidden="true">create_new_folder</span>
+              <ng-container i18n="@@files.new-folder">New folder</ng-container>
+            </button>
+          }
+          @if (permissions().delete && path() !== '') {
+            <!-- Rare and destructive: behind the folder's menu, not beside the upload (Q-UI-512). -->
+            <button
+              class="btn btn-default btn-icon"
+              type="button"
+              [attr.aria-label]="folderActionsLabel"
+              [cdkMenuTriggerFor]="folderMenu"
+            >
+              <span class="material-icons" aria-hidden="true">more_vert</span>
+            </button>
+            <ng-template #folderMenu>
+              <div class="menu" cdkMenu>
+                <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="remove.emit()" i18n="@@files.delete-folder"
+                  >Delete folder</button>
+              </div>
+            </ng-template>
+          }
+        </div>
+      }
     </div>
+    @if (filter() && list.hasMore()) {
+      <p class="content-note filter-note" role="note" i18n="@@files.filter-partial">
+        The filter searches the {{ list.items().length }} entries loaded so far. Load more to search the rest.
+      </p>
+    }
     <quader-data-table
       [caption]="caption"
       [columns]="columns"
@@ -56,29 +91,24 @@ const FILES_PAGE = 100;
       [loading]="list.loading()"
       [error]="list.error()"
       [empty]="shown().length === 0"
-      [emptyText]="filter() ? emptyFiltered : emptyText"
+      [emptyText]="emptyText()"
       [hasMore]="list.hasMore()"
       (more)="list.more()"
       (retry)="list.more()"
     >
-      @if (offerSetup() && !filter()) {
-        <!-- The action that fills an empty repository (Q-UI-309): the setup shows how to publish or upload with a client. -->
+      <!-- The action that fills an empty repository (Q-UI-309): the client setup, for whoever the toolbar offers no upload. -->
+      @if (path() === '' && !filter() && !permissions().deploy && offerSetup()) {
         <a emptyAction class="btn btn-default" routerLink="/setup" [queryParams]="{ repository: repository() }" i18n="@@repo.content.tab.setup"
           >Set up client</a
         >
       }
       @for (c of shown(); track c.path) {
         <tr>
-          <th scope="row">
-            @if (c.kind === 'folder') {
-              <button type="button" class="file-link" translate="no" (click)="open(fullPath(c))">
-                <span class="material-icons" aria-hidden="true">folder</span>{{ c.path }}
-              </button>
-            } @else {
-              <a class="file-link" [routerLink]="browseLink(c)" translate="no">
-                <span class="material-icons" aria-hidden="true">description</span>{{ c.path }}
-              </a>
-            }
+          <th scope="row" class="wrap-name">
+            <a class="entry" [routerLink]="entryLink(c)">
+              <span class="material-icons entry-icon" aria-hidden="true">{{ icon(c) }}</span>
+              <span class="entry-name" translate="no">{{ c.path }}</span>
+            </a>
           </th>
           <td class="num">
             @if (c.kind === 'file') {
@@ -89,14 +119,14 @@ const FILES_PAGE = 100;
           </td>
           <td>
             @if (c.modifiedAt; as at) {
-              <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+              <time [attr.datetime]="at" [attr.title]="at | date: 'medium'">{{ since(at) }}</time>
             } @else {
               –
             }
           </td>
           <td class="actions">
             @if (c.kind === 'file' && fileUrl(c); as url) {
-              <quader-copy-button [value]="url" [label]="copyUrlLabel" />
+              <quader-copy-button [value]="url" [label]="copyUrlLabel(c)" [quiet]="true" />
             }
           </td>
         </tr>
@@ -107,45 +137,55 @@ const FILES_PAGE = 100;
 })
 export class RepositoryFiles {
   private readonly files = inject(FilesApi);
-  private readonly address = inject(ServerAddress);
+  private readonly dialog = inject(QuaderDialog);
+  private readonly notifier = inject(Notifier);
+  private readonly locale = inject(LOCALE_ID);
 
   /** The qualified name of the repository. */
   readonly repository = input.required<string>();
-  readonly format = input.required<FormatDescriptor | undefined>();
+  /**
+   * The repository's address for downloads by path (its raw files address, R-REPO-002), as the page has
+   * it from the server's addresses or the format catalog; empty while it is not known.
+   */
+  readonly filesAddress = input<string>('');
   /** The folder shown; '' is the root. */
   readonly path = input<string>('');
+  /** What the caller may do here, as the page decided it (Q-UI-512). */
+  readonly permissions = input<FilePermissions>(NO_FILE_PERMISSIONS);
   /** Whether an empty repository offers Set up client: not for a disabled one, which no client can use. */
   readonly offerSetup = input(true);
-  readonly pathChange = output<string>();
+  /** Changes when the folder changed by something the list did not do itself (a delete job that ended): the list reloads. */
+  readonly revision = input(0);
+  /** Delete this folder: the page asks and deletes (R-UI-011). */
+  readonly remove = output<void>();
 
   protected readonly list = new PagedResource<Child>(FILES_PAGE);
   protected readonly filter = signal('');
-  private readonly base = resource({ loader: () => this.address.baseUrl() });
 
   protected readonly shown = computed(() => {
     const f = this.filter().trim().toLowerCase();
     return f ? this.list.items().filter((c) => c.path.toLowerCase().includes(f)) : this.list.items();
   });
-  protected readonly crumbs = computed(() => {
-    const parts = this.path().split('/').filter((s) => s !== '');
-    return parts.map((name, i) => ({ name, path: parts.slice(0, i + 1).join('/') }));
-  });
 
   protected readonly caption = contentShapeOf('generic').itemsLabel;
-  protected readonly emptyText = $localize`:@@repo.content.files-empty2:This repository holds no files yet. Upload a file with your client.`;
-  protected readonly emptyFiltered = $localize`:@@repo.content.files-empty-filtered:No file matches the filter.`;
-  protected readonly copyUrlLabel = $localize`:@@repo.content.copy-url:Copy the download address`;
+  protected readonly emptyText = computed(() => {
+    if (this.filter()) return $localize`:@@repo.content.files-empty-filtered:No file matches the filter.`;
+    if (this.path() !== '') return $localize`:@@files.folder-empty:This folder is empty.`;
+    if (this.permissions().deploy) return $localize`:@@files.empty-upload:This repository holds no files yet. Upload files here or with your client.`;
+    return $localize`:@@repo.content.files-empty2:This repository holds no files yet. Upload a file with your client.`;
+  });
   protected readonly columns: readonly TableColumn[] = [
-    { id: 'name', label: $localize`:@@repo.content.col.name:Name` },
-    { id: 'size', label: $localize`:@@repo.content.col.size:Size`, numeric: true },
-    { id: 'modified', label: $localize`:@@repo.content.col.modified:Last change` },
-    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true },
+    { id: 'name', label: $localize`:@@repo.content.col.name:Name`, width: '12rem' },
+    { id: 'size', label: $localize`:@@repo.content.col.size:Size`, numeric: true, width: '6rem' },
+    { id: 'modified', label: $localize`:@@repo.content.col.modified:Last change`, width: '9rem' },
+    { id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true, width: '3rem' },
   ];
 
   constructor() {
     effect(() => {
       const repository = this.repository();
       const path = this.path();
+      this.revision();
       untracked(() => {
         this.filter.set('');
         void this.list.start(this.files.children(repository, path, FILES_PAGE), FILES_PAGE);
@@ -153,26 +193,61 @@ export class RepositoryFiles {
     });
   }
 
-  protected fullPath(c: Child): string {
+  private fullPath(c: Child): string {
     const dir = this.path();
     return dir ? `${dir}/${c.path}` : c.path;
   }
 
-  protected open(path: string): void {
-    this.pathChange.emit(path);
+  protected entryLink(c: Child): string[] {
+    return filesCommands(this.repository(), this.fullPath(c).split('/'));
   }
 
-  protected browseLink(c: Child): string[] {
-    return browseCommands(this.repository(), this.fullPath(c).split('/'));
+  protected icon(c: Child): string {
+    return iconOf(c.kind);
   }
 
+  /** The download address of a file: the repository's address for downloads by path and the file's path (R-REPO-002). */
   protected fileUrl(c: Child): string {
-    const base = this.base.hasValue() ? this.base.value() : null;
-    const root = clientAddress(base, this.format(), this.repository());
-    return root ? `${root}${this.fullPath(c).split('/').map(encodeURIComponent).join('/')}` : '';
+    const root = this.filesAddress();
+    return root ? `${root.replace(/\/*$/, '/')}${this.fullPath(c).split('/').map(encodeURIComponent).join('/')}` : '';
+  }
+
+  protected readonly folderActionsLabel = $localize`:@@files.folder-actions:More actions for this folder`;
+
+  protected copyUrlLabel(c: Child): string {
+    return $localize`:@@files.copy-url-of:Copy the download address of ${c.path}:name:`;
   }
 
   protected size(bytes: number): string {
     return formatSize(bytes);
+  }
+
+  protected since(iso: string): string {
+    return relativeTime(iso, this.locale);
+  }
+
+  protected async upload(): Promise<void> {
+    const data: UploadDialogData = {
+      repository: this.repository(),
+      folder: this.path(),
+      canOverwrite: this.permissions().overwrite,
+    };
+    const ref = this.dialog.open<UploadDialog, UploadDialogData, number>(UploadDialog, { data, width: '40rem', maxWidth: '95vw' });
+    const uploaded = (await firstValueFrom(ref.closed)) ?? 0;
+    if (uploaded > 0) this.reload();
+  }
+
+  protected async newFolder(): Promise<void> {
+    const data: FolderDialogData = { repository: this.repository(), parent: this.path() };
+    const ref = this.dialog.open<FolderDialog, FolderDialogData, string>(FolderDialog, { data, width: '32rem', maxWidth: '95vw' });
+    const created = await firstValueFrom(ref.closed);
+    if (created) {
+      this.notifier.status($localize`:@@files.folder-created:Folder ${created}:path: created.`);
+      this.reload();
+    }
+  }
+
+  private reload(): void {
+    void this.list.start(this.files.children(this.repository(), this.path(), FILES_PAGE), FILES_PAGE);
   }
 }

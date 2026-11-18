@@ -8,7 +8,6 @@
       <span class="badge" translate="yes" i18n="@@repo.settings.disabled-badge">Disabled</span>
     }
   </p>
-  <a actions class="btn btn-default" [routerLink]="['/projects', project(), 'browse', key()]" i18n="@@repo.action.browse">Browse</a>
   @if (vulnerabilitiesShown()) {
     <a actions class="btn btn-default" [routerLink]="['/projects', project(), 'vulnerabilities']" [queryParams]="{ repository: ref() }" i18n="@@repo.action.vulnerabilities">Vulnerabilities</a>
   }

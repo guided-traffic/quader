@@ -2329,7 +2329,7 @@ Owned by [authorization.md](authorization.md) (R-AUTHZ-024):
 | GET | `/api/v1/authz/effective?repository=&package=` or `&path=` (`repository` is the qualified name `<projectKey>/<repoKey>`) | Every principal holding actions on a coordinate, members of the repository's project by their role included, with the granting policies; CI mappings whose templates could render to it marked `conditional` | `policies:read`, or `manage` on the coordinate |
 | POST | `/api/v1/authz/explain` | Decision trace for a principal or token on a coordinate | `policies:read` (plus `tokens:read` for a token) |
 
-The UI explainer (R-UI-028) and the effective-permissions tab (R-UI-010) render these answers.
+The UI explainer (R-UI-028) and the effective permissions in the Details of a file's page (R-UI-010, P1) render these answers.
 The explanation comes from the evaluator that enforces decisions, run in trace mode; nothing is
 reimplemented for display.
 
@@ -2995,7 +2995,7 @@ Priority: **MVP** · Covers: UI-058
 - Component library (Q-UI-1, replaced by Q-UI-126): Quader's own controls, plain HTML elements with the classes of
   `web/src/styles/_controls.scss`, on the Angular CDK in the release line of the Angular major in use (22.x,
   pinned once in the lockfile with the rest of Angular) for the behaviour of dialogs, menus and overlays, plus
-  `@angular/aria` for the widgets the CDK lacks (the tabs, the tree of R-UI-010 and the listboxes of the
+  `@angular/aria` for the widgets the CDK lacks (the tabs, the tree of an Ansible collection's documentation, Q-UI-241, and the listboxes of the
   member editor, R-UI-022). No other component suite is added, and `@angular/material` is not a dependency.
   Colours, type and measures are Quader's CSS custom properties (`web/src/styles/_tokens.scss`) for both themes.
   Icons come from a self-hosted icon font used through
@@ -3069,7 +3069,7 @@ Priority: **MVP** · Covers: UI-001, UI-004
   `/api/v1/authz/me` reports any administrative capability). The project's side bar starts with the **project switcher**
   (the project's mark and name as a button; a panel with a search field, the recently visited projects and the matches,
   opened and closed like a disclosure, closed by Escape with the focus back on the button) and lists the project's
-  screens: packages, browse, repositories, vulnerabilities
+  screens: repositories, packages, vulnerabilities
   ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022), a folding group **Access** (members, permission
   policies, service accounts and CI identity, the last three for the holder of their capability and for the Owner of the
   project) and settings. The start side bar lists Projects and Guides (R-UI-049); the guides and the client setup also
@@ -3091,7 +3091,8 @@ Priority: **MVP** · Covers: UI-001, UI-004
   the content area, so collapsing the side bar never breaks them.
 - Breadcrumbs: a trail on a bar at the top of the content panel, 40 px high as the reference's (Q-UI-128), derived from the route configuration (R-UI-003) and
   not written by the screens: the area name (no link), the screen, and for a detail screen the
-  object's name. The file tree adds one step per path segment. A trail of one step is not shown.
+  object's name. The trail of a folder or a file of a repository ends at the repository, whose step stays a link; the page shows
+  the folders itself (R-UI-010, Q-UI-510). A trail of one step is not shown.
 - List screens: the repository, user, group, service account, token, permission policy, endpoint
   and audit log lists share one data table (bordered, inner scroll with a sticky header, sortable
   column headers with `aria-sort`, a "?" help tooltip on a column that needs one, loading, empty
@@ -3144,7 +3145,7 @@ Every screen and every object has a bookmarkable URL under `/ui/{locale}`. Filte
 selected tab and selected version live in query parameters.
 
 <details>
-<summary>Route table (38)</summary>
+<summary>Route table (41)</summary>
 
 | Route | Screen | Requirement |
 |---|---|---|
@@ -3154,16 +3155,17 @@ selected tab and selected version live in query parameters.
 | `/projects/{project}/packages` | Packages list | R-UI-006 |
 | `/projects/{project}/packages/{format}/{name…}` (`?version=`) | Package details | R-UI-007 |
 | `/projects/{project}/vulnerabilities` (`?repository=&severity=&status=&…`), `/projects/{project}/vulnerabilities/findings/{id}`, `/projects/{project}/vulnerabilities/advisories/{ecosystem}/{id}` | Vulnerability report of the project, finding, advisory (from M4b) | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
-| `/projects/{project}/browse/{repo}/{path…}` | Browse with a selection | R-UI-010 |
 | `/projects/{project}/repositories`, `/projects/{project}/repositories/new` | Repositories of the project | R-UI-020, R-UI-021 |
-| `/projects/{project}/repositories/{key}` (`?q=&sort=&path=`) | Content of the repository | R-UI-052 |
+| `/projects/{project}/repositories/{key}` (`?q=&sort=`) | Content of the repository; for a generic repository the root of its files | R-UI-052 |
+| `/projects/{project}/repositories/{key}/files/{path…}` | A folder or a file of the repository; `…/files` alone is the root | R-UI-010 |
+| `/projects/{project}/repositories/{key}/trash` | Trash can of the repository (P1, not built) | R-UI-014 |
 | `/projects/{project}/repositories/{key}/settings` | Settings of the repository | R-UI-020 |
 | `/projects/{project}/members`, `/projects/{project}/settings` | Members and roles, settings of the project | R-UI-041 |
 | `/projects/{project}/policies`, `/projects/{project}/policies/new`, `/projects/{project}/policies/{name}` | Permission policies of the project | R-UI-027 |
 | `/projects/{project}/service-accounts`, `/projects/{project}/service-accounts/{name}` | Service accounts of the project | R-UI-026 |
 | `/projects/{project}/ci`, `/projects/{project}/ci/test`, `/projects/{project}/ci/mappings/{mapping}` | CI identity of the project | R-UI-035, R-UI-036 |
 | `/search` (`?q=&kind=`) | Search results of the main area | R-UI-098 |
-| `/trash` | Trash can (P1) | R-UI-014 |
+| `/admin/trash` | Trash can of the installation, for administrators (P1, not built) | R-UI-014 |
 | `/builds`, `/builds/{build}`, `/builds/{build}/{number}` | Builds (P1) | R-UI-040 |
 | `/setup` (`?repository=&client=`) | Client setup | R-UI-016 |
 | `/guides` (`?format=&client=&repository=&class=`) | Guides | R-UI-049 |
@@ -3198,7 +3200,7 @@ selected tab and selected version live in query parameters.
   by the qualified name `<projectKey>/<repoKey>`. The content routes live under `/projects/{project}/…`
   ([Q-UI-129](#q-ui-129--the-project-is-the-context-of-the-content-chosen-from-your-projects)); `/projects/{project}`
   answers with the repositories (Q-UI-216), so that the step of the project in the breadcrumb links to a route that exists. A route
-  that existed before the project was the context (`/packages`, `/browse`, `/vulnerabilities`,
+  that existed before the project was the context (`/packages`, `/browse`, `/vulnerabilities`, and since [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page) a project's `…/browse`,
   `/admin/repositories/{project}/{key}`, `/admin/projects/{project}`) is not found.
 - Route guards only shape navigation; the API decides (R-UI-005). When a screen's first API call
   answers 403, the screen shows a "no access" state with the missing permission and, for callers
@@ -3477,50 +3479,56 @@ Acceptance criteria:
 ### R-UI-052 · Repository content page
 Priority: **MVP** · Covers: quader-only
 
-`/projects/{project}/repositories/{key}` is what a repository holds, on the logical level (Q-UI-216); its settings moved to
-`…/settings`. One shell serves every format; what differs per format is a small table of words and columns, not a screen per format
-([content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts)).
+`/projects/{project}/repositories/{key}` is what a repository holds, on the logical level (Q-UI-216), and the one way to its
+folders and files (`…/{key}/files/{path…}`, R-UI-010, [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page));
+its settings moved to `…/settings`. One shell serves every format; what differs per format is a small table of words and columns,
+not a screen per format ([content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts)).
 
 - Header (the shared page header of R-UI-067): the key (the `h1`), one muted sentence (the repository's description, else what
-  the class means), the format and the class as badges (and **disabled** for a disabled repository), the repository's client
-  address as an address field (its first address; the others are in Details, Q-UI-320), and at the right the primary action
-  **Set up client** (not for a disabled repository), **Settings** for a caller who can read the configuration
-  (`repositories:read-config`, or the Owner of the project) and a `more_vert` menu with **Browse files** (not for generic, whose
-  content is its files) and **Vulnerabilities** (not for generic and virtual).
+  the class means), the format and the class as badges (and **disabled** for a disabled repository), and one line with the
+  repository's client address as an address field (its first address; the others are in Details, Q-UI-320) and the primary action
+  **Set up client** beside it (not for a disabled repository;
+  [Q-UI-517](#q-ui-517--the-client-address-and-set-up-client-stand-on-one-line-of-the-header)). At the right, **Settings** for a
+  caller who can read the configuration (`repositories:read-config`, or the Owner of the project) and a `more_vert` menu with
+  **Files** (every format but generic, whose content is its files, Q-UI-511) and **Vulnerabilities** (not for generic and virtual).
 - No tabs: the content (captioned Images, Packages or Files) follows the header. **Set up client** opens the client setup of
   R-UI-016 for this repository (`/setup?repository=<project>/<key>`), which shows the format and the repository as one line with
   **Change** (Q-UI-316); it is the page's one way to the setup (Q-UI-321).
 - A package format (npm, NuGet, OCI, Debian, every format with a view adapter) lists its items from `GET /api/v1/packages` with
-  `repository=<qualified name>` and `format=<format>`, the filter `q` (query, server-side, name and description) and the sort `name`
-  or `updatedAt`, paged with "Load more". The column **Vulnerabilities** appears only for a format whose versions are matched against
-  advisories (`FormatDescriptor.vulnerabilityScanning`, a format with the vulnerability adapter, R-VULN-009, or the image scanning, R-VULN-033)
-  and only when the answer carries grades (Q-UI-377); for a format that is not scanned a muted sentence says so (Debian today). It shows
-  the grade of the item's latest version in this repository (`vulnerabilityGrade` from `include=vulnerabilities`, R-VULN-039, Q-VULN-154)
-  as `<quader-grade>` (R-UI-094) and sorts by grade (`sort=grade`, worst first as `-grade`, in the browser, Q-UI-373). The versions list
-  of an item is `…/versions?repository=…` with its `…/vulnerabilities?repository=…` report, one request each per opened item.
+  `repository=<qualified name>` and `format=<format>`, the filter `q` (query, server-side, name and description; a field as wide as
+  a name, Q-UI-520) and the sort `name` or `updatedAt`, paged with "Load more". The column **Vulnerabilities** appears only for a
+  format whose versions are matched against advisories (`FormatDescriptor.vulnerabilityScanning`, a format with the vulnerability
+  adapter, R-VULN-009, or the image scanning, R-VULN-033) and only when the answer carries grades (Q-UI-377); for a format that is not
+  scanned a muted sentence says so (Debian today). It shows the grade of the item's latest version in this repository
+  (`vulnerabilityGrade` from `include=vulnerabilities`, R-VULN-039, Q-VULN-154) as `<quader-grade>` (R-UI-094) and sorts by grade
+  (`sort=grade`, worst first as `-grade`, in the browser, Q-UI-373). The versions list of an item is `…/versions?repository=…` with its
+  `…/vulnerabilities?repository=…` report, one request each per opened item.
 - The row of an item opens in place (`collapse-region`) to its versions: for an image, the tags with digest (`include=digest`), size and
   pushed time; for a package, its versions with size and published time; each with the grade of the version in this repository.
   Above the versions, the install command of the version chosen in the list (default: the item's latest version) from the install
   snippet of R-API-030 for this repository and the client picked in the panel (`credentials=none`, so it never holds a token): `docker
   pull`/`podman pull` with this installation's real address for OCI, the install command of the format elsewhere. The item's name links
-  to the package details (R-UI-007), a version's name to the details at that version.
-- A generic repository lists its files through `GET …/children` (R-API-025): folders open in place (query `path`, with a trail back up), a
-  file links to its detail in the file browser (R-UI-010) and offers a copy of its download address; the filter narrows what is loaded,
-  because children have no name filter on the server.
+  to the package details (R-UI-007), a version's name to the details at that version. A long name wraps inside itself beside its
+  chevron, and its row starts where its neighbours do (Q-UI-520).
+- A generic repository's content is its files: the page is the root folder of R-UI-010, and a folder or a file is the page at
+  `…/files/{path…}`. A package format's raw files are a detail on demand: **Files** in the header's menu opens their root (`…/files`)
+  with a way back to the list and a sentence that says what they are (Q-UI-511).
 - A virtual repository shows what it resolves: the same list, whose `repository` filter expands to its members (R-API-029). A remote repository
   lists what it holds: what the format has stored for it (a cached npm or NuGet version, for example); a note says that only what
   clients have fetched appears. An OCI remote lists the images and tags its cache holds, from the same list API as a local one
   (R-OCI-036, Q-OCI-215): the note says that only the cached tags appear (those clients pulled and those a mirror pass fetched), the
   column of the tag's time is **Fetched** and not Pushed, and an empty remote says that it has cached no images yet (Q-UI-217).
-- **Details** at the end of the page, closed (the disclosure of Q-UI-322), when the repository has one of these: the raw file
-  address, labelled **Address for downloads by path (curl, wget)** (the API's `addresses` list the format's protocol address
-  first and the raw file address after it where the two differ, R-REPO-002; the UI labels by that order and names no path of
-  its own, R-ARCH-007), the upstream a remote repository caches (its URL), and the members a virtual repository resolves from,
-  each linked to its content page as far as the caller may read them (the consumer view of R-REPO-010 has neither).
+- **Details** at the end of the list of a package format and of the root of a generic repository, closed (the disclosure of
+  Q-UI-322), when the repository has one of these: the raw file address, labelled **Address for downloads by path (curl, wget)**
+  (the API's `addresses` list the format's protocol address first and the raw file address after it where the two differ,
+  R-REPO-002; the UI labels by that order and names no path of its own, R-ARCH-007), the upstream a remote repository caches (its
+  URL), and the members a virtual repository resolves from, each linked to its content page as far as the caller may read them (the
+  consumer view of R-REPO-010 has neither).
 - An empty repository says how it is filled ("This repository holds no packages yet. Publish a package with your client.",
   for OCI images and generic files the same) and offers **Set up client** under it (the empty state of Q-UI-309), except for
-  a disabled repository. Without a description the header's sentence says what the class means; for a local repository
-  "Holds what is published to it."
+  a disabled repository, and except where the folder's toolbar offers **Upload files** (R-UI-011): there the sentence names the
+  upload and the page has no second upload button. Without a description the header's sentence says what the class means; for a
+  local repository "Holds what is published to it."
 - Opening the page records it in the recently opened repositories of the browser (R-UI-020), which the start page shows
   (Q-UI-311, Q-UI-323).
 
@@ -3534,43 +3542,49 @@ Acceptance criteria:
 - `/projects/web/repositories/<npm-key>` lists the packages with the grade of their latest version, and the open version
   row shows `npm install <name>@<version>`; a reader without `repositories:read-config` sees no Settings action.
 - The Edit action of the repository list and the Settings action of the content page open `…/settings`, and leaving it with unsaved changes asks first.
-- A generic repository shows Files, a folder opens in place and a file links to its detail.
+- A generic repository shows its files; a folder's name leads to `…/files/<folder>` and a file's name to `…/files/<path>`.
+- The client address and **Set up client** stand on one line of the header at 1440 px.
 
-### R-UI-010 · File tree browser
+### R-UI-010 · Files of a repository
 Priority: **MVP** · Covers: UI-011, ART-040, ART-041
 
-- Two bordered panes that fill the height of the content area, each with its own scroll: the tree on the
-  left, the details on the right; one pane at a time with back navigation on narrow screens
-  ([Q-UI-98](#q-ui-98--the-file-browser-is-two-panes-with-a-toolbar-and-a-details-header)). The selection is the
-  URL (`/browse/{project}/{repo}/{path…}`); a deep link expands the ancestors.
-- Tree toolbar: one filter field that narrows the repositories by key text as the user types (no search button; the
-  query parameter `q` follows after a short pause), the shared filter panel for class and format with the applied
-  filters as removable chips and "Clear all", a sort menu (class, then key; or key), and the number of repositories
-  shown. Tree root: the readable repositories of the project, each labelled with its key (`npm-local`; a repository of
-  another project, a member of a virtual one, with its qualified name). The screen is **Browse** at its root and with a
-  selection: one screen, one name (UI-A-18). Children load lazily through
-  `/api/v1/projects/{projectKey}/repositories/{repoKey}/children` (R-API-025) in pages of `ui.browser.page_size` with a "Load more" entry.
-  A row shows an icon by class (folder and file icons below), the key, a badge with the format and, where it applies,
-  the labels below.
-- A virtual repository's children are its members in resolution order, labelled "resolves from"; a member leads to
-  that repository, and the tree does not merge member contents. A remote repository shows its cached content,
-  labelled as cache.
-- Details header: the path of the selection as a breadcrumb and the actions of R-UI-011 as a toolbar. Content by
-  selection: a repository shows its summary (class, format, description, and for a caller who may read the
-  configuration the upstream, project, creation and last activity), links to its configuration and to the client
-  setup, and its content as the shared data table (a virtual repository lists its members instead); a folder shows
-  its children as the shared data table (name, size, last change) so it is browsed from the right pane too, tabs
-  Contents, General and API; a file shows tabs General (path, kind, size, creation, digests with copy buttons,
-  media type, download), Statistics (downloads) and API (the item's JSON and the equivalent `curl` command, INV-17).
-  Properties (P1, R-API-026) and Effective permissions (P1, R-API-034, for callers with `policies:read` or
-  `manage`) are not built yet. The link from a file to its package version appears when the API reports one; it
-  reports none today (`package` is always null).
-- Empty states: nothing selected (a short text and a link to the manual page), no readable repository (an
-  administrator is offered "Create repository", anyone else is told to ask for access, both get the manual link),
-  and a filter that matches nothing ("Clear all filters").
-- The tree follows the WAI-ARIA tree pattern (roles `tree` and `treeitem`, `aria-expanded`, `aria-level`,
-  `aria-setsize` and `aria-posinset` with lazy loading, arrow keys, Home and End, type-ahead), built on the tree
-  pattern of `@angular/aria` (R-UI-001, Q-UI-1).
+The folders and files of a repository are pages of the repository
+([ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page), owner, 2026-11-18): there is no screen of their
+own and no tree across the repositories of a project.
+
+- Addresses ([Q-UI-510](#q-ui-510--a-folder-and-a-file-are-the-repositorys-page-at-files-and-their-path)): a folder or a file is
+  `/projects/{project}/repositories/{key}/files/{path…}`, the path with its slashes; `…/files` alone is the root. For a generic
+  repository the root is the repository's own address, which every link to it uses. The page of a folder or a file is named after
+  it (the document title); the breadcrumb ends at the repository's key, which stays a link, so the path stands on the page once.
+  The address is bookmarkable, and a reload shows the same folder or file.
+- The page keeps the repository's header (R-UI-052). Below it, for a path that is not the root (and for a package format's root),
+  the path, the one place that names the folders and the file ([Q-UI-521](#q-ui-521--the-path-of-a-folder-or-a-file-stands-once-and-its-middle-folders-collapse-where-it-is-narrow)): **Files**, then each folder as a link,
+  the last segment the page itself (`aria-current`) with a quiet copy button for the path right after it. A separator stays with
+  the segment before it, so no line starts with one; a long name wraps at its hyphens. Where the path's row is narrower than
+  64 rem, the folders between **Files** and the last segment collapse into one button, **Show the folders in between**, whose
+  menu lists them as links.
+- A folder lists its children through `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/children` (R-API-025) as the shared
+  data table: **Name** (the icon of a folder or of a file, one each, an archive included, on the name's first line; a long name
+  wrapping beside it), **Size** (files),
+  **Last change** as the shared relative time with the absolute time as its title (Q-UI-518), and for a file a quiet copy button for
+  its download address (the repository's address for downloads by path and the file's path). A name is a link to the folder's or the
+  file's page. Entries load in pages of `ui.browser.page_size` with **Load more**
+  ([Q-UI-513](#q-ui-513--a-folder-loads-in-pages-of-200-and-its-filter-says-when-it-has-not-seen-every-entry)); the field **Filter
+  files** narrows the loaded entries and says so while more are to load.
+- A file's page ([Q-UI-514](#q-ui-514--a-files-page-is-its-name-download-its-address-and-its-facts-the-rest-is-details)): the file's
+  name with its icon is the last segment of its path, and **Download** (through the content route, R-API-025) and, for a holder of
+  `delete`, **Delete** stand at the end of that row; the name is not repeated as a heading (the section's `h2` is for assistive
+  technology only). Below: the download address as an address field, and
+  the facts **Size**, **Media type**, **Created**, **Last changed** (each with who, where known) and **SHA-256** (its short form, the
+  full value as the title, a copy button); a missing or damaged content says so under **Content**. **Details**, closed: every checksum
+  (SHA-256, SHA-512, SHA-1, MD5) with a copy button, the download statistics (**Downloads**, **Last download**, **Last downloader**,
+  read when Details opens), the item as the API describes it and the equivalent `curl` requests (INV-17). Properties (P1, R-API-026)
+  and Effective permissions (P1, R-API-034) are not built yet. The link from a file to its package version appears when the API
+  reports one; it reports none today (`package` is always null).
+- What a plain reader sees: the list, a folder, a file, Download and the copy buttons. Every operation of R-UI-011 is offered only to
+  the caller who may use it there ([Q-UI-512](#q-ui-512--the-operations-stand-where-they-act-and-only-for-who-may-use-them)).
+- Empty states: an empty folder ("This folder is empty."), an empty repository (R-UI-052), a filter that matches nothing, and a path
+  that does not exist or that the caller may not read (the not-found notice of the API's answer).
 
 Configuration:
 
@@ -3582,49 +3596,48 @@ ui:
 
 Acceptance criteria:
 
-- With the keyboard only, a user expands `npm-local`, reaches `@team-a/ui/-/ui-1.4.0.tgz`, opens its
-  details and downloads it.
-- A folder with 1,000 files shows the first page and loads the rest with "Load more".
+- With the keyboard only, a user opens a generic repository, reaches `releases/1.0/app.zip` through the folders' names, and
+  downloads it.
+- A folder with 1,000 files shows the first 200 and loads the rest with **Load more**.
+- A reader sees no Upload files, New folder or Delete on any page of a repository.
 
 ### R-UI-011 · Item actions
 Priority: **MVP** · Covers: UI-012, UI-016
 
-| Action | Applies to | Needs | Priority |
-|---|---|---|---|
-| Download | File | `read` | MVP |
-| Copy path, copy download URL | File, folder | `read` | MVP |
-| Delete | File, folder | `delete` | MVP |
-| Client setup | Repository | `read` | MVP |
-| Reindex | Repository | `manage` | P1 |
-| Invalidate cache (scope metadata, negative or all, R-API-024) | Remote or virtual repository | `manage` | MVP |
-| Copy, move | File, folder | R-API-027 | P1 |
-| Edit properties | File, folder | `annotate` | P1 |
-| Deploy | Toolbar | `deploy` | P1 |
+| Action | Applies to | Where | Needs | Priority |
+|---|---|---|---|---|
+| Download | File | the file's page | `read` | MVP |
+| Copy the download address | File | the folder's list (each file) and the file's page | `read` | MVP |
+| Copy path | Folder, file | the trail | `read` | MVP |
+| Upload files, New folder | A folder (the root too) of a local repository of the raw-files family (R-API-025) | the folder's toolbar | `deploy` | P1 (built) |
+| Delete | A file, a folder (not the root) of a local or remote repository | the file's page; **Delete folder** in the folder's **More actions for this folder** menu | `delete` | MVP |
+| Client setup | Repository | the header (R-UI-052) | `read` | MVP |
+| Copy, move | File, folder | the file's page, the folder's toolbar (R-UI-013) | R-API-027 | P1 (not built: R-STOR-019 is not built) |
+| Edit properties | File, folder | the file's Details | `annotate` | P1 (not built) |
+| Reindex | Repository | its settings (R-UI-087) | `manage` | P1 (not built) |
+| Invalidate cache (scope metadata, negative or all, R-API-024) | Remote or virtual repository | its settings | `manage` | MVP (no control yet) |
 
-- Actions are reached through the toolbar of the details header and through the keyboard (context-menu
-  key, Shift+F10 on the tree move focus to it), never through right-click alone (Q-UI-17, Q-UI-98). "Copy
-  path" and a copy button for the address (the download URL of a file, the listing URL of a folder) sit beside
-  Download. "Upload files" and "New folder" appear on a repository or folder of a local repository whose format
-  is served below the files path (the raw-files family, R-API-025) and only for a caller who holds `deploy`
-  there; "Client setup" on a repository opens the setup page for it. "Invalidate cache" has no control yet.
-- Deleting a file asks for confirmation naming the path. Deleting a folder shows the number of
-  items; above 100 items the user types the folder name to confirm. When the trash can is enabled,
-  the dialog says the items go there for the retention period. Folder deletion shows the job's
-  progress (R-UI-042).
+- What the caller may do is one batched check at the page's path (R-UI-005: `deploy`, `overwrite`, `delete`), cached by the session.
+  A disabled repository offers no operation. Every action is a button with a visible label; none is reached through right-click alone.
+- Deleting a file asks for confirmation naming the path. Deleting a folder shows the number of items; above 100 items the user
+  types the folder name to confirm. When the trash can is enabled (R-UI-014, not built), the dialog says the items go there for
+  the retention period; today it says they are deleted for good. After a delete the page shows the folder above; a folder delete
+  that runs as a job shows the job's progress there (R-UI-042), and the list reloads when the job has ended.
 
 Acceptance criteria:
 
-- Deleting a folder with 150 items requires typing its name; the tree no longer shows it after the
-  job succeeds.
+- Deleting a folder with 150 items requires typing its name; the folder above no longer lists it after the job succeeds.
+- An Owner of the project sees **Upload files** and **New folder** above a folder of a generic local repository and **Delete folder**
+  in the folder's menu; a reader of the same project sees none of them.
 
 ### R-UI-012 · Deploy dialog
 Priority: **P1** · Covers: UI-013
 
-- Target repository: those where the caller holds `deploy` and raw deploys are accepted
-  (R-API-025). For npm and NuGet repositories the dialog explains native publishing and links to
-  the publish tab of the client setup.
-- Fields: target path (prefilled with the selected folder), files (a drop zone plus a "Choose files"
-  button, so dragging is never required), overwrite (only with `overwrite`).
+- Opened by **Upload files** of a folder's toolbar (R-UI-011), in a local repository of the raw-files family where the caller
+  holds `deploy`. npm, NuGet, OCI and Debian repositories take no raw upload (R-API-025) and offer none: their clients publish, and
+  **Set up client** says how.
+- Fields: target folder (prefilled with the page's folder, relative to the root; missing folders are created), files (a drop zone plus
+  a "Choose files" button, so dragging is never required), overwrite (only with `overwrite`).
 - The size limit `ui.deploy.max_upload_bytes` is checked before the upload starts; larger files are
   pointed to native clients or `curl`.
 - Uploads use `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/content/{path}` on the UI's own origin (R-API-025, Q-UI-106), built by the `files` client of `web/src/app/api/` (R-UI-001), never by the dialog. Because the fetch backend reports no upload
@@ -3633,7 +3646,8 @@ Priority: **P1** · Covers: UI-013
   `fetch` or XHR (R-UI-001).
 - Files up to 256 MiB are hashed in the browser (Web Crypto SHA-256) and sent with `Repr-Digest`;
   larger files rely on the server's own digest.
-- Several files upload one after another with per-file status; "Cancel" aborts the current one.
+- Several files upload one after another with per-file status; "Cancel" aborts the current one. Closing the dialog after an upload
+  reloads the folder's list.
 - An upload cut without an answer (a drain that reaches the shutdown deadline, R-API-051, Q-ARCH-18
   in [architecture.md](architecture.md)) has stored nothing ([storage.md](storage.md) R-STOR-004).
   The dialog sends it once more from the start through the Service, from the `File` object it
@@ -3651,37 +3665,47 @@ ui:
 
 Acceptance criteria:
 
-- Uploading a 10 MiB file shows progress and ends with the file in the tree; a file above the limit
+- Uploading a 10 MiB file shows progress and ends with the file in the folder's list; a file above the limit
   is refused before any request.
 
 ### R-UI-013 · Copy and move dialog
 Priority: **P1** · Covers: UI-014
 
-- Target repository picker (same format; local, or virtual with a default deployment target;
-  `deploy` required), target path (default: the source path) with a live preview of the resulting
-  full path, conflict handling, "Dry run" showing the report of `/api/v1/content/copy` or `/move`,
-  then "Copy" or "Move".
-- Large operations show job progress (R-UI-042).
+Not built: the operations of R-API-027 and R-STOR-019 do not exist yet, so the pages offer no **Copy** and no **Move**. When they are
+built, the dialog is this ([Q-UI-515](#q-ui-515--a-copy-or-a-move-chooses-its-target-repository-from-a-list-and-its-folder-by-browsing-it)):
+
+- Opened by **Copy** or **Move** of a file's page or of a folder's toolbar, for a holder of `read` (copy) or `delete` (move) on the
+  source.
+- Target repository: a select of the repositories the caller may deploy to (same format, or generic; local, or virtual with a
+  default deployment target, R-STOR-019), the source's own repository first, the others grouped by project.
+- Target folder: the folders of the chosen repository, browsed in the dialog one level at a time from its root (the children of
+  R-API-025, folders only), and a path field that takes a typed path too; default: the source's folder. A live preview names the
+  resulting full path (`<project>/<repo>/<path>`).
+- Conflict handling (overwrite, with `overwrite`), **Dry run** showing the report of `/api/v1/content/copy` or `/move`, then **Copy**
+  or **Move**. Large operations show job progress (R-UI-042).
 
 Acceptance criteria:
 
-- The preview shows `npm-release/@team-a/ui/-/ui-1.4.0.tgz` before execution, and that is where the
-  file ends up.
+- The preview shows `web/npm-release/@team-a/ui/-/ui-1.4.0.tgz` before execution, and that is where the file ends up.
 
 ### R-UI-014 · Trash can
 Priority: **P1** · Covers: UI-018
 
-- `/trash` and, when the trash can is enabled and the caller sees entries, a last "Trash can" node in
-  the tree.
-- Table: path, original repository, deletion time and actor, time until purge; filters by repository
-  and path.
-- Restore dialog: original location by default, optional other repository and path, conflict
-  handling (`/api/v1/trash-can/restorations`). Purge of selected entries with confirmation. "Empty
-  trash can" (administrators) requires typing `empty`.
+Not built: the trash can of R-STOR-022 and R-STOR-023 does not exist yet; a delete is final, and the delete dialog says so. When it
+is built, it lives here ([Q-UI-516](#q-ui-516--the-trash-can-of-a-repository-is-a-page-of-the-repository-the-installations-is-the-administrators)):
+
+- Each repository has its trash can as a page of the repository, `/projects/{project}/repositories/{key}/trash`, reached from **Trash
+  can** in the header's menu, which is shown only to a caller who sees entries there (the visibility rule of R-STOR-022: `deploy` or
+  `manage` on the original path). A plain reader never sees it.
+- Table: path, deletion time and actor, time until purge; a filter by path. Restore dialog: the original location by default, or
+  another repository and folder chosen as in R-UI-013, conflict handling (`/api/v1/trash-can/restorations`). Purge of selected
+  entries with confirmation.
+- The installation's trash can across every repository is a page of the admin area, `/admin/trash`, for administrators, with
+  **Empty trash can**, which requires typing `empty`.
 
 Acceptance criteria:
 
-- A deleted file appears in the trash can and downloads again after restore.
+- A deleted file appears in its repository's trash can and downloads again after restore.
 
 ### R-UI-015 · Search
 Priority: **P1** · Covers: UI-019, UI-020, SRCH-048, SRCH-058
@@ -3690,8 +3714,9 @@ Priority: **P1** · Covers: UI-019, UI-020, SRCH-048, SRCH-058
   kind of the field's filter, and Enter under it opens the file search form below.
 - File search form: name, path glob, checksum, property, repositories, date ranges, "not downloaded
   since"; each field maps to one parameter of R-API-028 and to the URL.
-- Results table: path, repository, size, modified; actions "show in browser", download, copy URL.
-- From the browser, a search starts scoped to the selected repository and folder (a removable scope
+- Results table: path, repository, size, modified; actions "show in its folder" (the folder's page of R-UI-010), download,
+  copy URL.
+- From a folder of a repository's page, a search starts scoped to that repository and folder (a removable scope
   chip).
 
 Acceptance criteria:
@@ -3704,7 +3729,7 @@ Acceptance criteria:
 Priority: **MVP** · Covers: UI-021, UI-022, UI-023
 
 - Route `/setup` (`?format=&client=&repository=`, so a link opens the page prepared), reachable from the
-  user menu, a repository row, a repository node in the browser, the package details (the install panel
+  user menu, a repository row, the page of a repository, the package details (the install panel
   links to it with the repository and client chosen there) and empty states.
 - The shared page header (**Client setup**, one sentence, **Read the guide** as its action). Opened by a link that names a
   repository the caller may read, the page does not ask the format and the repository again: they are one line with
@@ -3974,7 +3999,7 @@ Quader is found, delivered by the frontend. The text is the manual of R-API-054;
 
 Acceptance criteria:
 
-- The Documentation link leads to `/help/admin/endpoints` on the endpoints screen, to `/help/user/files` on the file browser,
+- The Documentation link leads to `/help/admin/endpoints` on the endpoints screen, to `/help/user/files` on the page of a folder or a file of a repository,
   to `/help/admin/operations` on the jobs screen and to `/help` on the signed-out screen (`app.spec.ts`).
 - The overview lists both guides with every page linked; a page shows its title, its headings, the contents and its
   neighbours; a link to another page navigates in the application to that page and heading, a link inside the page
@@ -4003,7 +4028,7 @@ Priority: **MVP** · Covers: UI-030, REPO-007
   list shows it ([Q-UI-329](#q-ui-329--recently-opened-is-the-start-pages-only-the-admin-areas-repository-list-leaves-it-out-too)); a project's list says under its heading what the project is and, to a plain user,
   whom to ask (Q-UI-323).
 - The key links to the repository's content page (R-UI-052); the Settings action opens `…/settings`.
-- Row actions, in the row's menu (Q-UI-302): settings, browse, client setup, reindex (P1), invalidate cache (remote and virtual),
+- Row actions, in the row's menu (Q-UI-302): settings, files (R-UI-010, Q-UI-511), client setup, reindex (P1), invalidate cache (remote and virtual),
   from M4b vulnerabilities (local and remote repositories of a format with the vulnerability
   adapter: the repository's view of the report, `/projects/<projectKey>/vulnerabilities?repository=<projectKey>/<repoKey>`,
   [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022),
@@ -4298,7 +4323,7 @@ Acceptance criteria:
 ### R-UI-028 · Effective-permission explainer
 Priority: **P1** · Covers: IAM-030
 
-- `/admin/permissions/explain` for callers with `policies:read`; the item details tab of R-UI-010
+- `/admin/permissions/explain` for callers with `policies:read`; the Details of a file's page (R-UI-010)
   for repository managers.
 - Question form: "Why can [principal] [action] on [repository] [path or package]?", principal kinds
   user, group, service account and CI identity mapping, or a token ID.
@@ -6883,7 +6908,7 @@ R-UI-010 names `ui.browser.page_size` (200) and R-UI-012 names `ui.deploy.max_up
 | (b) Constants with the documented defaults (chosen) | `BROWSER_PAGE_SIZE = 200`, `UPLOAD_LIMIT_BYTES = 100 MiB` | Works today; the server still decides (its own upload limit answers `413`, the cursor accepts any page size up to 10,000) | A changed `ui.*` value does not reach the screen |
 | (c) A build-time value | Baked into the bundle | Single source | The same bundle serves every installation |
 
-**Choice:** (b). The constants sit next to their use (`features/browse/browse.ts`, `api/files-api.ts`). The upload dialog refuses a larger file before any request, as R-UI-012 requires.
+**Choice:** (b). The constants sit next to their use (`features/repositories/content/repository-files.ts` since [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page), `api/files-api.ts`). The upload dialog refuses a larger file before any request, as R-UI-012 requires.
 
 **Rationale:** The defaults are the proposed ones, and a mismatch costs a refused request, never a wrong write. The development agent would revisit this when the first operator sets `ui.deploy.max_upload_bytes`; the likely fix is (a), as two more members of `system/info`.
 
@@ -6902,11 +6927,12 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Rationale:** Each choice is the literal reading of R-UI-012 and R-ARCH-014; the create-only default makes an accidental overwrite impossible without the permission and the switch. The development agent would revisit the second client when `fetch` upload streaming reports progress in all supported browsers.
 
-**Applied in the spec:** R-UI-012 is unchanged (the dialog is P1; the file tree offers it because the API has the operation).
+**Applied in the spec:** R-UI-012 is unchanged (the dialog is P1; the file tree offered it because the API has the operation; since [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page) a folder of a repository's page does).
 
 ### Q-UI-17 · File tree: `@angular/aria` tree, actions in a toolbar
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Superseded by [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page)** (owner, 2026-11-18): the file tree is gone; a repository's folders and files are its pages
+(R-UI-010) and their actions stand on them (Q-UI-512). The text below is the record of the superseded decision.
 
 | Question | Options | Choice |
 |---|---|---|
@@ -7745,7 +7771,8 @@ squeezes less than it helps), or when the owner wants the prose wider or narrowe
 
 ### Q-UI-98 · The file browser is two panes with a toolbar and a details header
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Superseded by [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page)** (owner, 2026-11-18): Browse and its two panes are gone. The text below is the
+record of the superseded decision.
 
 Context: the owner called the browser "the worst design I have ever seen" (2026-11-02). It was a loose search form in the
 top-left (key, class, format, sort, a search button), one tree row, a "Details" heading far to the right and an empty
@@ -8919,8 +8946,8 @@ Status: **Decided by the development agent** — selected from the options below
 Context: ADR-155 asked whether the UI calls a `packages` or `files` route with the session cookie, and if it does, that the
 call is served through `api`. Verified in [web/src](../../web/src/app): the upload and the folder creation are
 `PUT /files/{repo}/{path}` with the session cookie and the CSRF header ([files-api.ts](../../web/src/app/api/files-api.ts),
-`upload`, `createFolder`), and the Download buttons of the browse screen and the package page navigate to the `downloadUrl`
-of the item or the version file ([browse.html](../../web/src/app/features/browse/browse.html),
+`upload`, `createFolder`), and the Download buttons of the browse screen (since [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page) the file's page) and the package page navigate to the `downloadUrl`
+of the item or the version file ([repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),
 [package-detail.html](../../web/src/app/features/packages/package-detail.html)), which is a `/files/` URL or a package
 protocol URL such as `/api/npm/npm-local/@team-a/ui/-/ui-1.4.0.tgz`. After the cut the edge sends those paths to `packages`,
 which evaluates no session cookie (R-EP-010).
@@ -9202,7 +9229,7 @@ by the server with `413`.
 (R-ARCH-029) serves the downloads.
 
 **Applied in the spec:** R-UI-012, R-UI-001's links rule, R-API-029. Code: `web/src/app/api/files-api.ts`,
-`features/browse/browse.html`, `features/packages/package-detail.html`. Tests: `files-api.spec.ts`, `browse.spec.ts`,
+`features/repositories/content/repository-file.ts` (was `features/browse/browse.html`), `features/packages/package-detail.html`. Tests: `files-api.spec.ts`, `repository-files.spec.ts`,
 `package-detail.spec.ts`.
 
 ### Q-UI-110 · The status screen groups by the replica's role and shows a role it does not know after the known ones
@@ -9244,8 +9271,8 @@ answered as they are, so the fallback never turns a refusal into a second attemp
 **Rationale:** the upgrade must keep the UI working in both steps. The development agent would remove the fallback once no supported
 upgrade starts from the shape before the cut (R-ARCH-025).
 
-**Applied in the spec:** R-HA-064 (the browser journey). Code: `web/src/app/api/files-api.ts` (`putWithFallback`), `browse.html`,
-`package-detail.ts` (`fileHref`). Tests: `files-api.spec.ts`, `browse.spec.ts`, `package-detail.spec.ts`.
+**Applied in the spec:** R-HA-064 (the browser journey). Code: `web/src/app/api/files-api.ts` (`putWithFallback`), `repository-file.ts`
+(was `browse.html`), `package-detail.ts` (`fileHref`). Tests: `files-api.spec.ts`, `repository-files.spec.ts`, `package-detail.spec.ts`.
 
 ### Q-UI-112 · The repository wizard asks for the format first
 
@@ -11396,7 +11423,8 @@ line, and that a row's actions go into a menu behind `more_vert` named for the r
 | (c) Hide columns below a width | Responsive columns | Room at 1280 px | Columns that come and go with the window; nothing in the guide |
 
 **Choice:** (a). The menu offers Settings, Browse, Vulnerabilities (where the format has the adapter) and Delete (for whoever
-may delete), as the buttons did; its trigger's name is **Actions for &lt;key&gt;**.
+may delete), as the buttons did; its trigger's name is **Actions for &lt;key&gt;**. Since [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page) the menu offers **Files**
+instead of Browse.
 
 **Rationale:** both changes are rules of the style guide that the list broke, and together with Q-UI-303 they give the address
 its share. The development agent would revisit the menu if the owner names one frequent action that should stay a quiet button.
@@ -11688,7 +11716,7 @@ setup. The development agent revisits the facts' place if power users miss them 
 
 **Applied in the spec:** R-UI-067, R-UI-052, R-UI-066 (the consumer view's place of the address is the header). Built in fix wave 1:
 the header with the address fields, **Set up client** as the primary action, **Settings** for who may change, **Browse files**
-and **Vulnerabilities** in the header's menu, and the upstream or the members as a closed **Details** at the end of the page; the
+(since [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page) **Files**, Q-UI-511) and **Vulnerabilities** in the header's menu, and the upstream or the members as a closed **Details** at the end of the page; the
 read-only settings view is still offered (UI-A-06). Fix wave 2: the header holds the first address alone and Details the others
 with their labels (Q-UI-320); the setup tab is gone (Q-UI-321); Details is the quiet disclosure (Q-UI-322).
 
@@ -11766,7 +11794,7 @@ Context: R-UI-041 gives every member the project's members and settings read-onl
 revisits it if readers look for colleagues there.
 
 **Applied in the spec:** R-UI-067, R-UI-041 (the read-only screens stay reachable by URL). Built in fix wave 1: the sidebar of a
-plain user (at most a reader, no system role) holds Repositories, Packages, Browse and Vulnerabilities; the project's
+plain user (at most a reader, no system role) holds Repositories, Packages, Browse (gone with [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page)) and Vulnerabilities; the project's
 repository list shows them a closed **About this project** with the description and the Owners by name; the list's row menu
 offers **Settings** only to who may read or change the configuration. **Replaced in part by
 [Q-UI-323](#q-ui-323--a-projects-repository-list-says-in-one-muted-line-what-the-project-is-and-whom-to-ask-recently-opened-is-the-start-pages)**
@@ -13298,6 +13326,279 @@ the planner's time.
 
 **Applied in the spec:** R-API-064 (the package row, the bullets on operators and on planning, the statement count);
 [search.sql](../../internal/meta/postgres/queries/search.sql) `SearchCustomPlans`, `SearchPackagesByPrefix`.
+
+### Q-UI-510 · A folder and a file are the repository's page at `files` and their path
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
+direction, files on the repository's page and no Browse, is the owner's (2026-11-18, W-8,
+[ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `…/repositories/{key}/files/{path…}` for a folder and a file alike (chosen) | One matcher route below the repository; `files` alone is the root | A file has an address of its own that reads as its path; a name that ends in a file extension stays a page of the app (the dev server's proxy rule for such paths, [proxy.conf.mjs](../../web/proxy.conf.mjs)) | A word in the address that the path could also hold (a folder named `files` is `…/files/files`) |
+| (b) The query parameter `?path=` on the repository's address, as the generic list had it | No new route | Nothing to match | A file has no address that reads as one; the breadcrumb cannot name the folders; the old list's behaviour of opening folders in place had no way back but the trail |
+| (c) GitLab's `…/-/tree/{path}` and `…/-/blob/{path}` | Two routes, folder and file told apart by the address | The kind is known before the item is read | Two addresses whose difference the user has to know; a link to a path whose kind changed (a file replaced by a folder) breaks |
+
+**Choice:** (a). The page reads the item at the path once (`GET …/items?path=`) and shows a folder or a file by its kind. A generic
+repository's root is its own address (`…/repositories/{key}`), which every link to the root uses; `…/files` without a path shows the
+same root and is what a package format's **Files** opens. The document title is the last segment of the path (or **Files** at the
+root). **The path stands on the page once** (revised on the coordinator's review of the renders, 2026-11-18): the breadcrumb ends
+at the repository, whose step stays a link (`data.belowTrail` of the route, `Breadcrumbs.belowTrail`), and the page's path below
+the header carries the folders and, on a file's page, the file ([Q-UI-521](#q-ui-521--the-path-of-a-folder-or-a-file-stands-once-and-its-middle-folders-collapse-where-it-is-narrow)). The first build added one breadcrumb
+step per folder as well, so a folder deep in the path stood twice on the screen and a file's name three times, and at 390 px the
+two took eleven lines before any content.
+
+**Rationale:** the owner's direction makes a file a place inside its repository; its address should say so. One way back up
+through the folders is enough: the page's own path, next to the content it names. The development agent revisits (c) if a link to a path is often opened as the wrong kind.
+
+**Applied in the spec:** R-UI-003 (the route table), R-UI-010, R-UI-052. Code: [repositories.routes.ts](../../web/src/app/features/repositories/repositories.routes.ts)
+(`filesMatcher`, `filesTitle`), [breadcrumbs.ts](../../web/src/app/core/breadcrumbs.ts), [project-links.ts](../../web/src/app/core/project-links.ts)
+(`filesCommands`), [help-topics.ts](../../web/src/app/core/help-topics.ts). Tests: `filesMatcher` in [misc.spec.ts](../../web/src/app/core/misc.spec.ts),
+the route map of [app.routes.spec.ts](../../web/src/app/app.routes.spec.ts), [breadcrumbs.spec.ts](../../web/src/app/core/breadcrumbs.spec.ts).
+
+### Q-UI-511 · A package format's raw files are a page behind **Files** in the header menu
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: npm, NuGet, OCI, Debian and Ansible list packages as their content; their raw files (tarballs, `.nupkg`, manifests and
+blobs, pool files) are how Quader stores them. A user rarely needs them; an administrator who cleans up or a support case does.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Files** in the header's `more_vert` menu, opening `…/files` with a way back to the list (chosen) | Details on demand, in the place Browse files had | The main view stays the packages; one click for who needs the files; the same page and operations as a generic repository's | A menu item is found only by who looks for it |
+| (b) A tab **Files** beside the list | Visible | Found at once | A tab in every reader's main view for what readers do not need; R-UI-052 has no tabs (Q-UI-321) |
+| (c) A section **Files** at the end of the page | On the page | No new address | A second long list on one page; the files of a large repository load for every reader |
+
+**Choice:** (a). The page of a package format's files says in one muted sentence that these are the raw files as Quader stores them,
+with a back link named after the list (**Packages**, **Images**). A virtual repository's **Files** lists only what it stores itself
+(the generated index files of a Debian or Ansible virtual repository, Q-STOR-180) and says that its members' files are on their pages.
+The repository list's row menu offers **Files** too, for every format (for a generic repository it leads to the same root as the key).
+
+**Rationale:** "simple by default, details on demand" (CLAUDE.md): the files are a detail of a package format. The development agent
+revisits (b) if users of a format look for its files often enough that the menu is a detour.
+
+**Applied in the spec:** R-UI-052, R-UI-010. Code: [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html),
+[repository-list.html](../../web/src/app/features/repositories/repository-list.html). Test: `Q-UI-511` in
+[repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
+
+### Q-UI-512 · The operations stand where they act, and only for who may use them
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A folder's operations in its toolbar (**Upload files**, **New folder**, and **Delete folder** in its menu), a file's on its page (**Download**, **Delete**), each shown only after the permission check at the page's path (chosen) | Actions on the object the page shows | The reader's page has no control it cannot use; one way to each job; no per-row menu to scan | A file is deleted from its page, one click further than from a row |
+| (b) A menu on every row with the operations of that entry | Browse's toolbar per row | Delete without opening the file | A permission check per row (or offered actions that fail); a menu on every row of a list of 200 |
+| (c) The operations for everyone, refused by the server | Simple code | Nothing hidden | A reader sees buttons that answer 403 (R-UI-005 says hide) |
+
+**Choice:** (a). The page asks the batched permission check of R-UI-005 once per path for `deploy`, `overwrite` and `delete`.
+**Upload files** and **New folder** appear in a local repository whose format is served below the files path (the raw-files
+family of R-API-025; today the generic format) for a holder of `deploy`; **Delete** and **Delete folder** for a holder of `delete`,
+never on the root, never in a virtual repository. **Delete folder** is the item of the folder's menu (**More actions for this
+folder**), not a button beside the upload: deleting a folder is rare and destroys, uploading is the Owner's common job (revised on
+the coordinator's review of the renders, 2026-11-18). A file's **Delete** stays beside **Download**, the file's own two actions. A disabled repository offers none of them. The upload opens the deploy dialog of
+R-UI-012 with the page's folder; an empty repository's empty state then names the upload and offers no second button.
+
+**Rationale:** the owner's rule (W-8): each operation for the roles that may use it, and the plain reader sees a list with nothing
+in the way. The development agent revisits (b) if deleting many single files from a folder turns out to be a common job.
+
+**Applied in the spec:** R-UI-010, R-UI-011, R-UI-012, R-UI-052. Code: `permissions` in
+[repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts),
+[repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
+[repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts). Tests: `R-UI-011` in
+[repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
+
+### Q-UI-513 · A folder loads in pages of 200, and its filter says when it has not seen every entry
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a folder can hold thousands of entries (a release folder, an icon set). The children API pages by cursor (R-API-025) and
+has no name filter.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Pages of `ui.browser.page_size` (200) with **Load more**; the filter narrows what is loaded and says so while more are to load (chosen) | The list and its filter in the browser | No API change; one request per page; the reader knows when the filter has not seen everything | Finding one name in 5,000 entries takes **Load more** first |
+| (b) A name filter on the children API | Server-side | Finds any name at once | An API, a query and an index change for a filter the file search of R-API-028 is meant to answer |
+| (c) Load every page up front | Complete | The filter sees everything | A folder of 50,000 entries is 250 requests before the first row |
+
+**Choice:** (a). Below the toolbar a note reads "The filter searches the 400 entries loaded so far. Load more to search the rest."
+while a filter is typed and the list has more. **Rationale:** a folder is browsed by its order; a search by name across a large
+folder is the file search's job (R-UI-015, R-API-028, P1). The development agent revisits (b) when the file search is built or if a
+folder of many entries is a common place to look a name up.
+
+**Applied in the spec:** R-UI-010. Code: `FILES_PAGE` in
+[repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts). Test: `Q-UI-513` in
+[repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
+
+### Q-UI-514 · A file's page is its name, Download, its address and its facts; the rest is Details
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The name once, as the last segment of the path with its icon and the actions at the end of that row; the download address, five facts and **SHA-256**; every checksum, the statistics and the API in a closed **Details** (chosen) | Simple by default | The reader's job (fetch the file, check it) is on the page at once | The other checksums are one click away |
+| (b) Browse's three tabs General, Statistics and API | As before | Nothing to decide | Tabs for facts that fit on one page; the statistics are a request every time a file is opened |
+| (c) A drawer over the list | The list stays visible | Context | No address of its own; narrow for the API's JSON |
+
+**Choice:** (a). The name is not repeated as a heading under the path (revised on the coordinator's review of the renders,
+2026-11-18: the first build showed it in the breadcrumb, the path and an `h2`); the section's `h2` is visually hidden.
+**Download** is a default button, not the primary: the header's primary action stays **Set up client** (one primary
+per view). The statistics are read when **Details** opens. A time is "4 minutes ago (Nov 18, 2026, 8:17 AM)" through
+`<quader-time-ago>` (Q-UI-378), the form of a detail page. **Rationale:** the facts a reader needs are few; the checksums beyond
+SHA-256 and the API's view are for who checks a file. The development agent revisits it if users ask for the other checksums often.
+
+**Applied in the spec:** R-UI-010. Code: [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts).
+Test: `Q-UI-514` in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
+
+### Q-UI-515 · A copy or a move chooses its target repository from a list and its folder by browsing it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Not built:
+the copy and move of R-STOR-019 do not exist.
+
+Context: Browse's tree reached every repository of the project, so a copy into another repository could have been a drag in it.
+Without the tree (ADR-203) the dialog has to offer the target.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A select of the repositories the caller may deploy to (same format or generic, local or virtual with a deployment target), the source's first, the others grouped by project; then the target's folders browsed in the dialog one level at a time, with a path field and a live preview (chosen) | Two steps in one dialog | Every target the server would accept and no other; deep folders reachable without typing; a typed path still works | A dialog that lists folders; the list of repositories is read once per dialog |
+| (b) A path field only, `<project>/<repo>/<path>` | One field | Simple | The user has to know the target's exact key and folder |
+| (c) A tree of every repository and folder in the dialog | Browse inside a dialog | Familiar | The tree the owner removed, in a smaller box |
+
+**Choice:** (a). The list of targets is the repository list filtered by format and class; whether the caller holds `deploy` is the
+batched check of R-UI-005 (the dry run of R-STOR-019 decides finally). **Rationale:** it keeps the one thing the tree did that a
+copy needs, reaching a folder, without bringing the tree back. The development agent revisits (b) if users mostly copy into one
+known place.
+
+**Applied in the spec:** R-UI-013, R-UI-011.
+
+### Q-UI-516 · The trash can of a repository is a page of the repository; the installation's is the administrator's
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Not built:
+the trash can of R-STOR-022 and R-STOR-023 does not exist.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `…/repositories/{key}/trash` for whoever sees entries there (**Trash can** in the header's menu), and `/admin/trash` with **Empty trash can** for administrators (chosen) | One per repository, one for the installation | It is where the deleted file was; the visibility rule of R-STOR-022 (deploy or manage on the original path) is per repository; a reader never sees it | Restoring across many repositories means visiting each |
+| (b) One page per project, `/projects/{project}/trash` | A project's trash | One place for a project's Owner | A new entry in the project's navigation for something most users never see; the project spans repositories of different formats |
+| (c) Only `/trash`, the installation's (R-UI-014 before ADR-203) | One page | Simple | Far from the repository; a project's Owner sees entries of every project they may deploy to, mixed |
+
+**Choice:** (a). **Rationale:** the files live on the repository's page, so their deleted versions belong there too, behind a
+menu item only for who may restore. The development agent revisits (b) if a project's Owner restores across repositories often.
+
+**Applied in the spec:** R-UI-014, R-UI-003 (the route table).
+
+### Q-UI-517 · The client address and Set up client stand on one line of the header
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: seen by the development agent in the walk of 2026-11-18 (`repository-npm-local`): the address field stood under the title,
+**Set up client** in the far corner of the header; the two belong to one job.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One line under the badges: the address field (up to the measure of a field alone, Q-UI-301) and **Set up client** beside it (chosen) | The job's two parts together | The eye finds the button where the address is; the header's right keeps Settings and the menu | The primary button leaves the header's action corner |
+| (b) Both in the action corner | Together at the right | The style guide's place of a primary action | A field of 40 rem in the corner pushes the title to a narrow column |
+| (c) As before | Nothing to change | — | The defect stays |
+
+**Choice:** (a). The line wraps where it is narrow: the button goes under the field. **Rationale:** what is used together stands
+together; GitLab's clone field and its button share one line too. The development agent revisits it if the button is missed at the
+left.
+
+**Applied in the spec:** R-UI-052. Code: `.client-row` in [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html)
+and [repository-content.scss](../../web/src/app/features/repositories/content/repository-content.scss). Test: `Q-UI-517` in
+[repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts).
+
+### Q-UI-518 · A list of files writes a time with the shared helpers, never its own format
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the files list of a generic repository wrote "Nov 18, 2026, 8:17:21 AM", the packages list "4 minutes ago" and the
+packages of a repository "Nov 18, 2026" (seen in the walk of 2026-11-18).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The list cell is `relativeTime` of [format-time.ts](../../web/src/app/features/packages/format-time.ts) with the absolute time as its title; the file's page `<quader-time-ago>` (chosen) | The shared helpers | One form per kind of place; when the helpers are unified, every list follows | None |
+| (b) A date pipe in the template | Local | — | A third form of the same thing |
+
+**Choice:** (a). **Rationale:** the owner's rule of one word and one form for one thing on screens of a kind. The unification of the
+helpers themselves is not this decision's.
+
+**Applied in the spec:** R-UI-010. Code: `since` in [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts).
+Test: `Q-UI-518` in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
+
+### Q-UI-519 · Every link into Browse leads to the repository's page or to the file's page
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Link | Before | Now |
+|---|---|---|
+| The project's side bar | **Browse** | gone |
+| The repository list's row menu | **Browse** | **Files** (`…/files`) |
+| The repository's page, header menu | **Browse files** | **Files** (Q-UI-511) |
+| The repository's settings page | **Browse** in its header | gone: the breadcrumb leads to the repository's page |
+| A file of a generic repository's list | its detail in Browse | the file's page |
+| The audit log's path of an event | the path in Browse | the file's page |
+| A package's tab Repositories | **Show in browser** | **Open repository**, the repository's page |
+| The help of the top bar | `/help/user/files` on Browse | the same page on every page below `…/files` |
+| The search's suggestions and results, the start page | the repository's page already | unchanged |
+| The manual's pages on files and repositories | Browse | the repository's page ([files.md](../manual/user/files.md)) |
+
+The options were these: (a) each link to the place that holds what it named (chosen); (b) every link to the repository's page.
+**Choice:** (a): a link that named a file keeps naming the file. **Rationale:** a link is a promise of what opens. The development
+agent revisits nothing here.
+
+**Applied in the spec:** R-UI-002, R-UI-003, R-UI-020, R-UI-050. Code: [navigation.ts](../../web/src/app/core/navigation.ts),
+[repository-list.html](../../web/src/app/features/repositories/repository-list.html),
+[repository-detail.html](../../web/src/app/features/repositories/repository-detail.html),
+[audit-log.ts](../../web/src/app/features/audit/audit-log.ts), [package-detail.html](../../web/src/app/features/packages/package-detail.html),
+[help-topics.ts](../../web/src/app/core/help-topics.ts).
+
+### Q-UI-520 · A long name wraps beside its icon or chevron, and a filter field is as wide as a name
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: seen in the walk of 2026-11-18 on the repository's page: the row of the package
+`customer-portal-api-client-generated-from-the-openapi-document` started about 10 px left of its neighbours, chevron and name alike
+(the chevron, a flex item, shrank beside the long name); the field **Filter packages** was as wide as the page (1,128 px); a file
+row's icon touched its name and sat higher than it, while a folder row had a gap and one line (the folder was a `button`, the file a
+link, with different line boxes). The owner's first objection, W-3, was the same kind of defect. Found in the first renders of
+this change (coordinator, 2026-11-18): an archive (`*.tar.gz`, `*.tgz`) had the icon `folder_zip`, whose outline is a folder's, in a
+list where folders and files stand together.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The icon or chevron keeps its size (`flex: none`) and stands on the name's first line; the name takes the rest and wraps inside itself (`overflow-wrap: anywhere`); a folder and a file are the same link element; the filter field takes the width of a name field (28 rem), down to 12 rem; one icon for every file (`description`) and one for every folder (`folder`) (chosen) | One layout per row | A long name never moves a row's start or leaves its icon; the field fits its input | A very long name takes more lines |
+| (b) Cut a long name with an ellipsis | One line | Rows of one height | The name the reader needs is cut (W-3 asks for the start beside the icon, not a cut) |
+
+**Choice:** (a). **Rationale:** the owner's W-3: the icon and the start of the name on one line, a name that is too long breaks
+inside itself beside the icon. The rule of the style guide: a field is as wide as its expected input.
+
+**Applied in the spec:** R-UI-010, R-UI-052. Code: `.name-cell`, `.entry` and `.filter` in
+[repository-content.scss](../../web/src/app/features/repositories/content/repository-content.scss).
+
+### Q-UI-521 · The path of a folder or a file stands once, and its middle folders collapse where it is narrow
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Asked for by
+the coordinator's review of the renders (2026-11-18): the path stood on the screen twice, a deep one took eleven lines at 390 px,
+three lines started with the separator, and the copy button floated beside the middle of the block.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Below 64 rem of the path's row, **Files**, one button for the folders in between, and the last segment; from 64 rem every folder (chosen) | A container query on the row; the button (`more_horiz`, **Show the folders in between**) opens a menu of the folders as links | Two lines at most for the seed's deep path on a phone; every folder in view where there is room; one way up to each folder at every width | At 1024 px with the side bar the folders are one click away |
+| (b) Every folder at every width | No control | Nothing hidden | The deep path of the seed takes six lines at 390 px |
+| (c) The middle folders collapse at every width | One layout | Short everywhere | The wide screen hides what it has room for |
+
+**Choice:** (a). Each separator is generated after its segment (`::after`), so a line ends with it and never starts with it; a
+segment wraps at its hyphens and breaks inside a word only when nothing else fits. The copy button of the path follows the last
+segment. On a file's page the last segment is the file with its icon, and the file's actions stand at the end of the row (Q-UI-514).
+**Rationale:** the path is the page's answer to "where am I"; its last segment matters most, and the folders in between are a
+way back up, which the menu keeps. The development agent revisits the 64 rem threshold if the path is often collapsed on wide
+screens.
+
+**Applied in the spec:** R-UI-010. Code: the path in [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html)
+(`between`, `here`) and `.files-head`, `.files-trail` in [repository-content.scss](../../web/src/app/features/repositories/content/repository-content.scss).
+Tests: `Q-UI-521` in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts); the render
+`files-deep` with its walk.
 
 ## What this does not cover
 

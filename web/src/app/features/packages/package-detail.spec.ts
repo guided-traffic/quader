@@ -163,7 +163,7 @@ describe('Package details', () => {
       expect.stringContaining('web/npm-localLocal'),
       expect.stringContaining('web/npm-allVirtual'),
     ]);
-    expect(rows[0]?.querySelector('a')?.getAttribute('href')).toBe('/projects/web/browse/npm-local');
+    expect(rows[0]?.querySelector('a')?.getAttribute('href')).toBe('/projects/web/repositories/npm-local');
     await expectAccessible(r.root);
   });
 

@@ -1,8 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
-import { DIALOG_DATA, DialogRef, DialogTitle } from '../../shared/ui/dialog';
-import { UPLOAD_LIMIT_BYTES, FilesApi, hexOfReprDigest, reprDigestOf } from '../../api/files-api';
-import { ApiError } from '../../api/problem';
-import { describeProblem } from '../../core/http/problem-messages';
+import { DIALOG_DATA, DialogRef, DialogTitle } from '../../../shared/ui/dialog';
+import { UPLOAD_LIMIT_BYTES, FilesApi, hexOfReprDigest, reprDigestOf } from '../../../api/files-api';
+import { ApiError } from '../../../api/problem';
+import { describeProblem } from '../../../core/http/problem-messages';
 
 export interface UploadDialogData {
   readonly repository: string;
@@ -121,15 +121,19 @@ interface Entry {
                       ></progress>
                     }
                     @case ('done') {
-                      <span class="material-icons inline ok" aria-hidden="true">check_circle</span>
-                      <span i18n="@@upload.state.done">uploaded</span>
+                      <span class="state">
+                        <span class="material-icons ok" aria-hidden="true">check_circle</span>
+                        <span i18n="@@upload.state.done">uploaded</span>
+                      </span>
                     }
                     @case ('cancelled') {
                       <span i18n="@@upload.state.cancelled">cancelled</span>
                     }
                     @case ('failed') {
-                      <span class="material-icons inline bad" aria-hidden="true">error</span>
-                      <span>{{ e.message }}</span>
+                      <span class="state failed">
+                        <span class="material-icons bad" aria-hidden="true">error</span>
+                        <span>{{ e.message }}</span>
+                      </span>
                     }
                   }
                 </td>
@@ -181,6 +185,23 @@ interface Entry {
       display: flex;
       gap: var(--quader-space-2);
       margin-block-end: var(--quader-space-3);
+    }
+    /* A status keeps its icon and its word on one line; a failure's reason wraps beside its icon. */
+    .state {
+      display: inline-flex;
+      align-items: flex-start;
+      gap: var(--quader-space-1);
+      white-space: nowrap;
+    }
+    .state .material-icons {
+      flex: none;
+      font-size: 1.125rem;
+    }
+    .state.failed {
+      white-space: normal;
+    }
+    th[scope='row'] {
+      overflow-wrap: anywhere;
     }
   `,
 })

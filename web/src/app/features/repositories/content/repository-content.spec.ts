@@ -154,7 +154,7 @@ describe('Repository content page', () => {
     expect(r.root.querySelector('tbody quader-grade')).toBeNull();
   });
 
-  it('R-UI-052 a generic repository lists its files with a link to the file and a copyable address, and a folder opens in place', async () => {
+  it('R-UI-052 R-UI-010 a generic repository lists its files, each folder and file linking to its own address on the page of the repository', async () => {
     const generic: RepoDoc = { key: 'generic-local', project: 'web', class: 'local', format: 'generic', description: 'Files' };
     const r = await renderScreen(RepositoryContent, {
       inputs: { project: 'web', key: 'generic-local' },
@@ -173,12 +173,13 @@ describe('Repository content page', () => {
     await settle(r.fixture);
     expect(r.root.querySelector('quader-data-table caption')?.textContent).toContain('Files');
     expect(text(r.root)).toContain('app.tar.gz');
-    expect(r.root.querySelector<HTMLAnchorElement>('tbody a[href$="/browse/generic-local/app.tar.gz"]')).not.toBeNull();
+    expect(r.root.querySelector<HTMLAnchorElement>('tbody a[href="/projects/web/repositories/generic-local/files/app.tar.gz"]')).not.toBeNull();
+    expect(r.root.querySelector<HTMLAnchorElement>('tbody a[href="/projects/web/repositories/generic-local/files/bin"]')).not.toBeNull();
     expect(generic.format).toBe('generic');
     await expectAccessible(r.root);
   });
 
-  it('R-UI-052 an empty repository says how it is filled and offers Set up client; a disabled one offers nothing', async () => {
+  it('R-UI-052 an empty repository says how it is filled and offers the upload to who may upload; a disabled one offers nothing', async () => {
     const empty = async (disabled: boolean) => {
       const r = await renderScreen(RepositoryContent, {
         inputs: { project: 'web', key: 'generic-local' },
@@ -194,11 +195,13 @@ describe('Repository content page', () => {
     };
     const r = await empty(false);
     const state = r.root.querySelector('quader-data-table quader-empty-state')!;
-    expect(text(state)).toContain('This repository holds no files yet. Upload a file with your client.');
-    expect(state.querySelector('a.btn')?.getAttribute('href')).toBe('/setup?repository=web%2Fgeneric-local');
+    // The caller may upload here (the fake allows every check): the toolbar offers the upload, the empty state says so (Q-UI-512).
+    expect(text(state)).toContain('This repository holds no files yet. Upload files here or with your client.');
+    expect(state.querySelector(':is(a, button)')).toBeNull();
+    expect(text(r.root.querySelector('.files-actions')!)).toContain('Upload files');
     await expectAccessible(r.root);
     const off = await empty(true);
-    expect(off.root.querySelector('quader-data-table quader-empty-state a')).toBeNull();
+    expect(off.root.querySelector('quader-data-table quader-empty-state :is(a, button)')).toBeNull();
   });
 
   it('R-UI-052 a virtual repository names what it resolves from and a remote one says it lists what clients fetched', async () => {
@@ -243,7 +246,7 @@ describe('Repository content page', () => {
     const r = await open(NPM_REPO);
     // One way to the setup (Q-UI-321): the header's primary action, no tab beside the content.
     expect([...r.root.querySelectorAll('[role="tab"]')].map((t) => text(t))).not.toContain('Set up client');
-    const setup = r.root.querySelector('.page-header-actions a.btn-confirm');
+    const setup = r.root.querySelector('quader-page-header .client-row a.btn-confirm');
     expect(setup?.getAttribute('href')).toBe('/setup?repository=web%2Fnpm-local');
     await expectAccessible(r.root);
   });
@@ -269,7 +272,7 @@ describe('Repository content page', () => {
 
   it('R-UI-052 a disabled repository offers no Set up client and says that it is disabled', async () => {
     const r = await open({ ...NPM_REPO, disabled: true });
-    expect(r.root.querySelector('.page-header-actions a.btn-confirm')).toBeNull();
+    expect(r.root.querySelector('quader-page-header a.btn-confirm')).toBeNull();
     expect(text(r.root.querySelector('quader-page-header')!)).toContain('disabled');
     await expectAccessible(r.root);
   });
@@ -282,11 +285,12 @@ describe('Repository content page', () => {
     expect([...reader.root.querySelectorAll('.page-header-actions a')].map((a) => a.textContent?.trim())).not.toContain('Settings');
   });
 
-  it('R-UI-066 R-UI-067 the header shows the client address and offers Set up client as its primary action', async () => {
+  it('R-UI-066 R-UI-067 Q-UI-517 the header shows the client address with Set up client, its primary action, beside it', async () => {
     const r = await open(NPM_REPO);
-    const field = r.root.querySelector<HTMLInputElement>('quader-page-header quader-address-field input');
+    const row = r.root.querySelector('quader-page-header .client-row')!;
+    const field = row.querySelector<HTMLInputElement>('quader-address-field input');
     expect(field?.value).toContain('web/npm-local/');
-    const primary = r.root.querySelector('.page-header-actions a.btn-confirm');
+    const primary = row.querySelector('a.btn-confirm');
     expect(primary?.textContent?.trim()).toBe('Set up client');
     expect(primary?.getAttribute('href')).toBe('/setup?repository=web%2Fnpm-local');
     // The other views are in the header's menu, not loose links beside the tabs.

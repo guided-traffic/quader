@@ -32,7 +32,7 @@ A local or virtual OCI repository has no settings of the format. What a local re
 - **Package ownership** (`local.packageOwnership`) is `enforce` by default: the first push of an image name records its owners, and from then on only they, holders of `manage` and administrators push to it, move its tags or delete it.
 - **Automatic claims** (`local.autoClaim`) are on by default: the first push of an image name claims it, so a virtual repository that contains the local repository never takes an image of that name from a remote member.
 - **Include and exclude patterns** match image names, such as `team/*`.
-- A **raw upload** through `/files/` or **Browse** is refused (`409`): manifests and tags are written only through the registry protocol. A raw delete runs the same rules as a `DELETE` of the protocol.
+- A **raw upload** through `/files/` is refused (`409`), and the repository's page offers none: manifests and tags are written only through the registry protocol. A raw delete runs the same rules as a `DELETE` of the protocol.
 
 ## A remote repository for Docker Hub
 

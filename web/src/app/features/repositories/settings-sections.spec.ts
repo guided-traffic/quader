@@ -87,7 +87,7 @@ describe('The sections of the repository settings page (R-UI-087)', () => {
     it('R-UI-087 a remote OCI repository shows key, description, visibility and upstream open, every other section closed, and no tab', async () => {
       const r = await openSettings(OCI_REMOTE);
       expect(r.root.querySelector('[role="tab"]')).toBeNull();
-      expect([...r.root.querySelectorAll('quader-page-header a')].map((a) => text(a))).toEqual(['Browse', 'Vulnerabilities']);
+      expect([...r.root.querySelectorAll('quader-page-header a')].map((a) => text(a))).toEqual(['Vulnerabilities']);
       expect(r.root.querySelector<HTMLInputElement>('#f-key')!.readOnly).toBe(true);
       expect(r.root.querySelector<HTMLTextAreaElement>('#f-description')!.value).toBe('Docker Hub, cached');
       expect(r.root.querySelector('quader-repository-visibility')).not.toBeNull();

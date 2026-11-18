@@ -1,18 +1,27 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { VisibilityIcon, levelName } from '../../../shared/ui/visibility-level';
-import { Component, computed, effect, inject, input, resource, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { newIdempotencyKey } from '../../../api/client';
+import { FilesApi, Item, isFilesAddress } from '../../../api/files-api';
+import { ApiError } from '../../../api/problem';
 import {
   FormatDescriptor,
+  JobReference,
   RepositoriesApi,
   Repository,
   RepositoryConsumerView,
   isConsumerView,
   repoRef,
 } from '../../../api/repositories-api';
+import { Notifier } from '../../../core/notifier';
+import { filesCommands } from '../../../core/project-links';
 import { ServerAddress } from '../../../core/server-address';
 import { SessionStore } from '../../../core/session-store';
+import { Confirm } from '../../../shared/confirm-dialog';
+import { CopyButton } from '../../../shared/copy-button';
 import { ErrorNotice } from '../../../shared/error-notice';
+import { JobProgress } from '../../../shared/job-progress';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { AddressField } from '../../../shared/address-field';
@@ -21,31 +30,41 @@ import { FrequentPlaces } from '../../../core/frequent-places';
 import { clientAddress } from '../repository-model';
 import { classLabel } from '../repository-class';
 import { contentShapeOf } from './content-shape';
+import { FilePermissions, NO_FILE_PERMISSIONS, nameOf, parentOf } from './file-paths';
+import { RepositoryFile } from './repository-file';
 import { RepositoryFiles } from './repository-files';
 import { ItemSort, RepositoryItems } from './repository-items';
 import { FormatIconView } from '../../../shared/format-icon';
 
 const SORTS: readonly ItemSort[] = ['name', '-name', 'updatedAt', '-updatedAt', 'grade', '-grade'];
 
+/** A delete of a folder with more items than this asks for the folder name (R-UI-011). */
+export const TYPE_TO_CONFIRM_ABOVE = 100;
+
 /**
- * The content page of a repository, `/projects/<project>/repositories/<key>` (R-UI-052, Q-UI-216): what the repository holds, on
- * the logical level, in one shell for every format. A package format lists its images or packages and opens their versions in the
- * row; a generic repository lists its files. A virtual repository shows what it resolves, a remote one what it has cached. The
- * second tab is the client setup of this repository (R-UI-016), on the page. The repository's settings are a separate route
- * (`…/settings`). The header (Q-UI-307, Q-UI-313) shows the client address and offers **Set up client**; the other views of
- * the repository are in its menu, and where it fetches from or resolves from is its Details.
+ * The page of a repository, `/projects/<project>/repositories/<key>` (R-UI-052, Q-UI-216), and its folders and files,
+ * `…/<key>/files/<path…>` (R-UI-010, ADR-203): what the repository holds, in one shell for every format. A package format lists its
+ * images or packages and opens their versions in the row, and shows its raw files on demand (**Files** in the header's menu); a
+ * generic repository's content is its files. A folder lists its entries, a file shows its facts and its download; upload, new
+ * folder and delete are offered where the caller holds the permission (R-UI-011, R-UI-012). The header (Q-UI-307, Q-UI-313,
+ * Q-UI-517) shows the client address with **Set up client** beside it; the settings are a separate route (`…/settings`).
  */
 @Component({
   selector: 'quader-repository-content',
-  imports: [FormatIconView, VisibilityIcon,
+  imports: [
+    FormatIconView,
+    VisibilityIcon,
     CdkMenu,
     CdkMenuItem,
     CdkMenuTrigger,
     RouterLink,
+    CopyButton,
     ErrorNotice,
     AddressField,
     Disclosure,
+    JobProgress,
     PageHeader,
+    RepositoryFile,
     RepositoryFiles,
     RepositoryItems,
   ],
@@ -54,8 +73,11 @@ const SORTS: readonly ItemSort[] = ['name', '-name', 'updatedAt', '-updatedAt', 
 })
 export class RepositoryContent {
   private readonly api = inject(RepositoriesApi);
+  private readonly files = inject(FilesApi);
   private readonly router = inject(Router);
   private readonly session = inject(SessionStore);
+  private readonly notifier = inject(Notifier);
+  private readonly confirm = inject(Confirm);
   private readonly frequent = inject(FrequentPlaces);
   private readonly serverAddress = inject(ServerAddress);
   private readonly baseUrl = resource({ loader: () => this.serverAddress.baseUrl() });
@@ -63,10 +85,11 @@ export class RepositoryContent {
   /** Route parameters, bound by the router's component input binding. */
   readonly project = input.required<string>();
   readonly key = input.required<string>();
-  /** Query parameters (R-UI-003): the open tab, the filter, the sort and the folder of a generic repository. */
+  /** The path after `files` (the matcher of Q-UI-510); undefined on the repository's own address. */
+  readonly filePath = input<string | undefined>();
+  /** Query parameters (R-UI-003): the filter and the sort of a package format's list. */
   readonly q = input<string | undefined>();
   readonly sort = input<string | undefined>();
-  readonly path = input<string | undefined>();
 
   protected readonly ref = computed(() => repoRef(this.project(), this.key()));
   protected readonly loaded = resource({
@@ -134,12 +157,12 @@ export class RepositoryContent {
     return a ? [a] : [];
   });
   /**
-   * The header shows the client address, the first of the repository's addresses (R-UI-066). The API lists the address of
-   * the format's protocol first and the raw file address after it, once, where the two differ (R-REPO-002, `ConsumerView` of
-   * internal/repository/document.go), so a further address is the one for downloads by path; Details shows it with that
-   * label, so that no field stands without a name (Q-UI-320).
+   * The header shows the client address, the first of the repository's addresses (R-UI-066), with **Set up client** beside it
+   * (Q-UI-517). The API lists the address of the format's protocol first and the raw file address after it, once, where the two
+   * differ (R-REPO-002, `ConsumerView` of internal/repository/document.go), so a further address is the one for downloads by path;
+   * Details shows it with that label, so that no field stands without a name (Q-UI-320).
    */
-  protected readonly headerAddresses = computed(() => this.addresses().slice(0, 1));
+  protected readonly headerAddress = computed(() => this.addresses()[0] ?? '');
   protected readonly otherAddresses = computed(() =>
     this.addresses()
       .slice(1)
@@ -148,6 +171,16 @@ export class RepositoryContent {
         return { value, label, copyLabel: $localize`:@@repo.content.copy-files-address:Copy address for downloads by path` };
       }),
   );
+  /**
+   * The address for downloads by path, the raw files address of R-REPO-002: the last of the server's addresses in the consumer
+   * view; for the full document the generic format's address template of the catalog, which is the raw files family's (R-API-025).
+   */
+  protected readonly filesAddress = computed(() => {
+    const r = this.repository();
+    if (!r) return '';
+    if (isConsumerView(r)) return r.addresses.at(-1) ?? '';
+    return clientAddress(valueOf(this.baseUrl), (valueOf(this.formats) ?? []).find((f) => f.name === 'generic'), this.ref());
+  });
   protected readonly actionsLabel = $localize`:@@repo.content.more:More actions`;
   protected readonly detailsHeading = $localize`:@@repo.content.details:Details`;
   protected readonly detailsText = $localize`:@@repo.content.details-text2:Further addresses, and where this repository fetches from or what it resolves from.`;
@@ -157,13 +190,99 @@ export class RepositoryContent {
     const s = this.sort();
     return (SORTS as readonly string[]).includes(s ?? '') ? (s as ItemSort) : 'name';
   });
-  protected readonly folder = computed(() => this.path() ?? '');
+
+  // ---- The files (R-UI-010, Q-UI-510, Q-UI-511) ----
+
+  /** The page shows files: a generic repository always, a package format below `files` (Q-UI-511). */
+  protected readonly showsFiles = computed(() => this.filePath() !== undefined || this.isGeneric());
+  /** The folder or file of the page; '' is the root of the repository. */
+  protected readonly path = computed(() => (this.filePath() ?? '').split('/').filter((s) => s !== '').join('/'));
+  /** **Files** in the header's menu: every package format; a generic repository's page is its files (Q-UI-511). */
+  protected readonly offersFiles = computed(() => {
+    const r = this.repository();
+    return !!r && r.format !== 'generic';
+  });
+  /** The item at the path, once: it says whether the page is a folder or a file. */
+  protected readonly itemRead = resource<Item | undefined, { repo: string; path: string } | null>({
+    params: () => (this.showsFiles() && this.path() !== '' ? { repo: this.ref(), path: this.path() } : null),
+    loader: async ({ params }) => (params ? this.files.item(params.repo, params.path) : undefined),
+  });
+  protected readonly item = computed(() => valueOf(this.itemRead) ?? null);
+  protected readonly itemFailure = computed(() => {
+    const e = this.itemRead.error();
+    return e ? asApiError(e) : null;
+  });
+  /** What the page shows below the header: the packages, a folder, a file, or nothing yet. */
+  protected readonly view = computed<'items' | 'folder' | 'file' | 'loading'>(() => {
+    if (!this.showsFiles()) return 'items';
+    if (this.path() === '') return 'folder';
+    const item = this.item();
+    if (!item || item.path !== this.path()) return 'loading';
+    return item.kind === 'file' ? 'file' : 'folder';
+  });
+  /** The folders of the path as links, the last one the page itself (Q-UI-510). */
+  protected readonly trail = computed(() => {
+    const parts = this.path().split('/').filter((s) => s !== '');
+    return parts.map((name, i) => ({ name, commands: filesCommands(this.ref(), parts.slice(0, i + 1)) }));
+  });
+  /** The folders between Files and the page's own segment: they collapse into one menu where the path is narrow (Q-UI-521). */
+  protected readonly between = computed(() => this.trail().slice(0, -1));
+  /** The page's own segment: the folder or the file it shows. */
+  protected readonly here = computed(() => this.trail().at(-1) ?? null);
+  protected readonly betweenLabel = $localize`:@@files.trail.between:Show the folders in between`;
+  /** The root of the files: the repository's own address for a generic repository, `files` for a package format. */
+  protected readonly filesRoot = computed(() =>
+    this.isGeneric() ? ['/projects', this.project(), 'repositories', this.key()] : filesCommands(this.ref()),
+  );
+
+  /** What the caller may do at the path (R-UI-005): one batched check, cached by the session for 60 seconds. */
+  protected readonly allowed = resource({
+    params: () => (this.showsFiles() && this.repository() ? { repo: this.ref(), path: this.path() } : null),
+    loader: async ({ params }): Promise<FilePermissions> => {
+      if (!params || this.session.state() !== 'authenticated') return NO_FILE_PERMISSIONS;
+      const at = { repository: params.repo, ...(params.path ? { path: params.path } : {}) };
+      const [deploy, overwrite, del] = await this.session.check([
+        { ...at, action: 'deploy' },
+        { ...at, action: 'overwrite' },
+        { ...at, action: 'delete' },
+      ]);
+      return { deploy: !!deploy, overwrite: !!overwrite, delete: !!del };
+    },
+  });
+  /**
+   * The operations offered (R-UI-011, Q-UI-512): uploads and new folders in a local repository of a format served below the
+   * files path (R-API-025) for a holder of `deploy`; deletes for a holder of `delete`, never in a virtual repository (it holds no
+   * items) and never of the root. A disabled repository offers none of them.
+   */
+  protected readonly permissions = computed<FilePermissions>(() => {
+    const r = this.repository();
+    const can = valueOf(this.allowed) ?? NO_FILE_PERMISSIONS;
+    if (!r || this.disabled()) return NO_FILE_PERMISSIONS;
+    const uploads = r.class === 'local' && isFilesAddress(this.descriptor()?.protocolBasePath ?? '');
+    return {
+      deploy: can.deploy && uploads,
+      overwrite: can.overwrite && uploads,
+      delete: can.delete && r.class !== 'virtual' && this.path() !== '',
+    };
+  });
+
+  /** A delete that runs as a job (R-UI-042), and the folder whose list reloads when it has ended. */
+  protected readonly deletion = signal<{ readonly job: JobReference; readonly path: string } | null>(null);
+  protected readonly actionFailure = signal<ApiError | null>(null);
+  /** Counts the changes the folder list did not make itself (a delete job that ended): the list reloads on each. */
+  protected readonly revision = signal(0);
+  protected readonly deleteProgress = $localize`:@@files.delete.progress:Deleting items`;
+  protected readonly copyPathLabel = $localize`:@@files.copy-path:Copy path`;
 
   constructor() {
     effect(() => {
       const ref = this.ref();
       const [project = '', key = ''] = ref.split('/');
       untracked(() => this.frequent.visitRepository(project, key));
+    });
+    effect(() => {
+      this.path();
+      untracked(() => this.actionFailure.set(null));
     });
   }
 
@@ -179,11 +298,68 @@ export class RepositoryContent {
     this.navigate({ sort: sort === 'name' ? null : sort });
   }
 
-  protected setPath(path: string): void {
-    this.navigate({ path: path || null });
-  }
-
   private navigate(change: Readonly<Record<string, string | null>>): void {
     void this.router.navigate([], { queryParams: change, queryParamsHandling: 'merge', replaceUrl: true });
+  }
+
+  /**
+   * Deletes the folder or the file of the page after a confirmation that names it (R-UI-011): a folder says how many items it
+   * holds, and above 100 the folder's name is typed. The page then shows the folder above; a delete that runs as a job shows its
+   * progress there, and the list reloads when it has ended.
+   */
+  protected async remove(): Promise<void> {
+    const repo = this.ref();
+    const path = this.path();
+    const item = this.item();
+    if (!item || path === '') return;
+    this.actionFailure.set(null);
+    const lines: string[] = [];
+    let typeToConfirm: string | undefined;
+    if (item.kind === 'folder') {
+      try {
+        const { count, capped } = await this.files.countBelow(repo, path, TYPE_TO_CONFIRM_ABOVE);
+        lines.push(
+          capped
+            ? $localize`:@@files.delete.folder-many:The folder holds more than ${TYPE_TO_CONFIRM_ABOVE}:limit: items. They are deleted for good.`
+            : $localize`:@@files.delete.folder:The folder holds ${count}:count: items. They are deleted for good.`,
+        );
+        if (capped) typeToConfirm = nameOf(path);
+      } catch (e) {
+        this.actionFailure.set(asApiError(e));
+        return;
+      }
+    } else {
+      lines.push($localize`:@@files.delete.file:The file is deleted for good.`);
+    }
+    const answer = await this.confirm.ask({
+      title: $localize`:@@files.delete.title:Delete ${path}:path:?`,
+      lines,
+      confirmLabel: $localize`:@@files.delete.confirm:Delete`,
+      typeToConfirm,
+    });
+    if (answer === null) return;
+    try {
+      const outcome = await this.files.deleteItem(repo, path, newIdempotencyKey());
+      const parent = parentOf(path);
+      if (!outcome.done) this.deletion.set({ job: outcome.job, path });
+      else this.notifier.status($localize`:@@files.deleted:${path}:path: deleted.`);
+      await this.router.navigate(this.folderCommands(parent));
+    } catch (e) {
+      this.actionFailure.set(asApiError(e));
+    }
+  }
+
+  protected jobEnded(state: string): void {
+    const d = this.deletion();
+    if (!d) return;
+    if (state === 'succeeded') this.notifier.status($localize`:@@files.deleted:${d.path}:path: deleted.`);
+    else this.notifier.alert($localize`:@@files.delete.failed:The deletion failed. Some items may be gone.`);
+    this.deletion.set(null);
+    this.revision.update((n) => n + 1);
+  }
+
+  /** The address of a folder of this repository: the root of the files, or the folder below `files`. */
+  private folderCommands(path: string): string[] {
+    return path === '' ? this.filesRoot() : filesCommands(this.ref(), path.split('/'));
   }
 }

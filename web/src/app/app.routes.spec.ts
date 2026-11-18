@@ -15,11 +15,13 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   ['/logged-out', 'Signed out'],
   ['/projects', 'Projects'],
   ['/projects/web/packages', 'Packages'],
-  ['/projects/web/browse', 'Browse'],
-  ['/projects/web/browse/npm-local/@team-a/ui/-/ui-1.0.0.tgz', 'Browse'],
   ['/projects/web/repositories', 'Repositories'],
   ['/projects/web/repositories/new', 'New repository'],
   ['/projects/web/repositories/generic-local', 'generic-local'],
+  // A folder and a file of a repository are its page, named after them (R-UI-010, Q-UI-510).
+  ['/projects/web/repositories/generic-local/files/releases', 'releases', 'generic-local'],
+  ['/projects/web/repositories/generic-local/files/releases/1.0/app.zip', 'app.zip', 'generic-local'],
+  ['/projects/web/repositories/generic-local/files', 'Files', 'generic-local'],
   ['/projects/web/repositories/npm-local/settings', 'Settings'],
   ['/projects/web/members', 'Members'],
   ['/projects/web/settings', 'Settings'],
@@ -106,11 +108,11 @@ describe('route map', () => {
     return route;
   };
 
-  it('R-UI-003 Q-UI-129 the file-tree route captures the project, the repository key and the slash-containing path', async () => {
-    await open('/projects/web/browse/npm-local/@team-a/ui/-/ui-1.0.0.tgz');
+  it('R-UI-003 Q-UI-510 the files route of a repository captures the project, the repository key and the slash-containing path', async () => {
+    await open('/projects/web/repositories/npm-local/files/@team-a/ui/-/ui-1.0.0.tgz');
     expect(leaf().params['project']).toBe('web');
     expect(leaf().params['key']).toBe('npm-local');
-    expect(leaf().params['path']).toBe('@team-a/ui/-/ui-1.0.0.tgz');
+    expect(leaf().params['filePath']).toBe('@team-a/ui/-/ui-1.0.0.tgz');
   });
 
   it('R-UI-052 Q-UI-216 /projects/{project} answers with the repositories of the project, so that its breadcrumb step links to a route that exists', async () => {
@@ -119,8 +121,8 @@ describe('route map', () => {
     expect(root.querySelector('main h1')?.textContent?.trim()).toBe('Repositories');
   });
 
-  it('Q-UI-129 the old content routes are gone: /packages, /browse, /vulnerabilities and /admin/repositories/{project}/{key} are not found', async () => {
-    for (const url of ['/packages', '/browse', '/vulnerabilities', '/admin/repositories/web/npm-local', '/admin/projects/web']) {
+  it('Q-UI-129 ADR-203 the old content routes are gone: /packages, /browse, the /browse of a project, /vulnerabilities and /admin/repositories/{project}/{key} are not found', async () => {
+    for (const url of ['/packages', '/browse', '/projects/web/browse', '/projects/web/browse/generic-local/releases', '/vulnerabilities', '/admin/repositories/web/npm-local', '/admin/projects/web']) {
       const root = await open(url);
       expect(root.querySelector('main h1')?.textContent?.trim(), url).toBe('Page not found');
     }
