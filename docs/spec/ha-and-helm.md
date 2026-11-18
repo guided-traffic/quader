@@ -10181,7 +10181,7 @@ copy, had copied 4 (80 MiB) when it was evicted 2 min 28 s after its start, and 
 **Applied:** `test/e2e/drain_load_test.go`, `test/e2e/drain_variants_test.go` (`prepareBackupJob`, `verifyE`), `test/e2e/backup_env_test.go`
 (`followJobPodLogs`, `logBackupRuns`).
 
-### Q-HA-302 · A stall of the kind nodes is told apart from a neighbour's load, and a fault test does not start on a sick cluster
+### Q-HA-305 · A stall of the kind nodes is told apart from a neighbour's load, and a fault test does not start on a sick cluster
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Extends
 [Q-HA-300](#q-ha-300--every-e2e-set-records-what-starved-the-kind-nodes-inside-the-nodes-whether-it-passes-or-fails).

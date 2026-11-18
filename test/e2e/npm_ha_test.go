@@ -185,7 +185,7 @@ type npmFaultRun = loadFaultRun[npmLoadResult]
 // returns its result, and the check of the warm-up (nil: none); note adds the load's numbers to the JSON record next to the fault's.
 //
 // The warm-up is the baseline the fault is measured against, and the load's own condition (only2xx304) covers it. When a request of
-// the warm-up has already broken that condition, the cluster was not healthy before the fault (Q-HA-302: on the CI runners a
+// the warm-up has already broken that condition, the cluster was not healthy before the fault (Q-HA-305: on the CI runners a
 // neighbour starved the kind nodes): the test fails there, with that cause, and the fault is not injected, so that its failure is
 // not read as the fault's and its conditions are not judged against a baseline that is itself the failure.
 func runLoadFault[R any](t *testing.T, record, name string, before, after time.Duration, start func() (func(*testing.T) R, func() error), fault func(), note func(R) map[string]any) loadFaultRun[R] {
