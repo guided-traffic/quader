@@ -1,7 +1,7 @@
 # Quader · Project plan to the beta release
 
 **Status:** ⚪ not started · 🟡 in progress or partly done · 🟢 done
-**Last updated:** 2026-11-10
+**Last updated:** 2026-11-18
 
 The way from zero to the beta release. The beta is Quader with two package registries, **npm** and
 **NuGet (.NET)**, each with local, remote (pull-through) and virtual repositories, running on the
@@ -1124,6 +1124,9 @@ Details: [roadmap: owner walkthrough](../coverage/roadmap.md#owner-walkthrough)
   - ⚪ Vulnerability report, a blocked malicious version, and the npm and .NET audits from Quader's data
   - ⚪ Node drain and PostgreSQL and Valkey failover under load
   - ⚪ Backup by the CronJob and restore into an empty namespace
+  - 🟡 The frontend, screen by screen as the plain user, the power user and the administrator (owner, started 2026-11-18): the
+    objections are recorded as W-1 and following in
+    [promt.md](promt.md#owner-walk-of-2026-11-18-the-frontend); nothing of them is built yet
 - ⚪ Objections from the walkthrough worked off
   - 🟢 Every repository belongs to exactly one project and none is shared (owner, 2026-11-06,
     [Q-AUTHZ-206](../spec/authorization.md#q-authz-206--every-repository-belongs-to-exactly-one-project)); a

@@ -503,7 +503,7 @@ by `version: "*"`. Red pipelines are worked on even though they no longer hold a
 - **Q-HA-293, to be discussed, not decided**: a replica whose first Valkey attempts get no answer becomes ready degraded (Q-HA-13 (d)), so a wrong password behind an unanswered first attempt is noticed only later. Should the first readiness wait for a verdict? Waiting would stall a replica started during a Valkey failover, which Q-HA-13 (c) rejected.
 
 - **H-812** ([image-scanning.md](../security/image-scanning.md)): Trivy shares the file system and network of the worker pod, so a crafted image that compromises it can read the secrets mounted there. Close it before images from untrusted remotes are scanned (a sandbox or a pod per scan, a further component), or accept it? A dedicated `vuln` worker pool would shrink it; the owner kept the plain workers on 2026-11-10 (Q-VULN-137).
-- **Browse**: stays, or goes now that the repository content pages exist (R-UI-052)? It also carries upload, copy, move and the trash can (R-UI-010 to R-UI-014). The owner decides after seeing the new pages.
+- **Browse**: decided by the owner on 2026-11-18, it goes from the navigation and its file operations move to the repository's page ([W-8](#owner-walk-of-2026-11-18-the-frontend)).
 
 **Gating jobs: green**
 
@@ -864,6 +864,155 @@ later." It is a confirmed direction, not a parked idea, and it is built after T-
     - an "instance admin" is the system role `admin` only (Q-UI-412), as the owner's word says;
     - "frequently visited" stays in the browser, as in the reference;
     - "Search in <project>" first inside a project is not part of T-22.
+
+### Owner walk of 2026-11-18: the frontend
+
+The owner walks the UI screen by screen on the UI development profile, as the plain user `sam`, the power user `priya` and the
+administrator `ada`, in his own browser; the development agent looks at the same screen's render and records one objection per
+entry. The walk is part of [phase 8](BETA.md#phase-8--walkthrough-and-beta-release). When the list is long enough, builders build
+it, one per package, each under rule 11. An entry marked **owner** is the owner's word; an entry marked **seen by the development
+agent** is not decided until the owner has said so.
+
+- **Status:** recording; nothing built.
+- **W-1 · A project has its icon wherever it is listed** (owner; screens `projects`, `search-field`). The search's suggestions show
+  a project with its letter icon (`quader-avatar` in [search-field.html](../../web/src/app/features/search/search-field.html)), and so
+  does the project switcher of the side bar. The project table of the start page shows the name alone. Wanted: the same icon before
+  the name in every list of projects. To check by the builder: the admin area's project list and the search results page.
+- **W-2 · The guides are ugly and overloaded** (owner: "nobody wants to work with this"; screens `guides`, `guides-repository`).
+  Before any content the page shows four boxed groups of radio buttons (package type, client, repository, repository class), a
+  link to the client setup, a boxed table of contents, and then dense prose. **Direction decided by the owner (2026-11-18):
+  context instead of choices.**
+  - A guide opens from a repository, where the format, the class and the repository are known; it asks for none of them.
+  - The guide and the client setup become one page: the snippets first, the explanation below them.
+  - The navigation entry **Guides** shows the formats as tiles and nothing else to choose before a guide opens.
+  - Not chosen: restyling the page with its four choices (it keeps them), and moving the guides into the manual (the text would
+    lose this installation's addresses).
+  - To decide in the spec: where the class is chosen for a guide opened from a tile, and what remains of the routes `/ui/guides`
+    and `/ui/setup`.
+- **W-3 · A long repository key breaks away from its icon** (owner; screen `repositories`, the row
+  `release-candidates-for-the-customer-portal-frontend`). The visibility icon stands alone on the first line and the key starts on
+  the second. The icon and the link are siblings in `th.wrap-name`
+  ([repository-list.html](../../web/src/app/features/repositories/repository-list.html)), and a key that does not fit beside the icon
+  moves to the next line as a whole. Wanted: the icon and the start of the key on one line in every row; a key that is too long
+  breaks inside itself, beside the icon.
+- **W-4 · The repository list of a project loses the client address** (owner: "useless at this place; without a guide or a
+  context it is worthless; maybe we leave it out here for now"; screen `repositories`). This reverses the part of Q-UI-330 that
+  kept the address field in a project's list, and the list rows of R-UI-065, Q-UI-300 and Q-UI-301. The address stays where its
+  context is: the repository's page and the client setup. To decide in the spec: what the columns of the list are without it, and
+  what the row offers instead (the development agent's proposal: the description as a column of its own, and **Set up client** as
+  the row's action).
+- **W-5 · The development agent finds such defects itself** (owner, about W-3: "Can you not see something like this yourself?").
+  The render of that row existed and was looked at; `make ui-renders` measures what scrolls sideways and the widths of the address
+  fields, and neither catches a broken line. Wanted:
+  - the render report flags an icon that stands on another line than its label, and a key or name in a table row that is broken
+    across lines or whose row is laid out differently from its neighbours;
+  - at every station of the walk the development agent looks at the render first and names what it sees before the owner has to.
+- **W-6 · The filters open as a drawer** (owner: the panel that opens beside the list is "extremely ugly"; "shall we try a
+  drawer?"; screen `packages-filters`, and every list with a filter panel). Today the panel stands beside the list where the list
+  keeps 71 rem and between its button and the list where it does not (Q-UI-327); the list is rebuilt narrower when it opens, and the
+  panel is a box of five closed sections with a button. Wanted: a drawer that slides in from the right over the page, the list
+  keeps its width and its columns. One component, `quader-filter-panel`
+  ([filter-panel.ts](../../web/src/app/shared/ui/filter-panel.ts)), carries the filters of twelve lists (packages, repositories,
+  browse, vulnerabilities, projects, users, groups, service accounts, policies, tokens, the audit log, the CI issuances), so the
+  change reaches all of them at once and replaces the two layouts of Q-UI-327 by one. The app has no drawer for content yet; the
+  only one is the navigation's at narrow widths. To decide in the spec: whether the filters stand open in the drawer instead of as
+  closed sections.
+  - **The search by name stays outside the drawer** (owner, 2026-11-18, on the development agent's proposal): a field above the
+    list, as the repository page has it (**Filter packages**). Today a name is three steps away: **Filters**, the section
+    **Name or description**, **Search**.
+  - **The filters that are set show beside the button** (owner, 2026-11-18): to the right of **Filters**, hinted or in full, while
+    the drawer is closed. To decide in the spec: one chip per set filter with its value and a way to remove it, and what a row of
+    chips becomes when it does not fit the width.
+- **W-7 · A package's page is its versions** (owner: the page is "very meaningless at present"; screens `package-npm`,
+  `package-npm-graded`, `package-oci`). The owner's standard case: a user navigates through the UI and looks for a certain
+  version of a dependency, or wants to know the vulnerabilities of that version. The page opens on the tab **Metadata** with two
+  lines; the versions are the fourth tab, each as a stack of labelled lines, and the version is chosen from a dropdown with a
+  checkbox for pre-releases.
+  - **Wanted (owner, with a reference screen of a registry's artifact list):** a click on a package shows its versions as a table,
+    one row per version: the version, its size, its vulnerabilities (the grade, the total of findings and how many have a fix),
+    when it was published and when it was last fetched. The content is the reference's, the design is Quader's own: nothing of
+    the reference's look is taken over.
+  - **Hashes are not at the start of a row** (owner: "nobody actually reads them"). For an image the tag leads; a digest is a
+    detail of the version.
+  - What the API has today: `PackageVersionSummary` carries `version`, `prerelease`, `publishedAt`, `sizeBytes`, `repositories`
+    and `downloadCount` ([openapi.yaml](../../api/openapi.yaml)), and the tab already shows the grade per version. What it lacks:
+    when a version was last fetched, and the number of findings with a fix per version (`fixAvailable` exists as a filter of the
+    findings and in the summary of a report).
+  - Folded in from what the development agent saw: the tab says **Vulnerabilities (1145)** and the grade says **E · 13 Critical**
+    (the row's grade, total and fixable replace both); the install command is cut off in its field; the page that opens has no
+    description and no README.
+  - The seed of the renders gives `image-convert-tools` one version. It needs a package with many versions, differing grades,
+    pre-releases and tags, or the new page cannot be judged.
+  - **A version has a page of its own with an address of its own** (owner, 2026-11-18, on the development agent's proposal):
+    the grade card, the findings, the install command, the files and the metadata of that one version. It can be linked and sent,
+    and the list of findings has the page's width. Not chosen: a row that opens inside the table (a thousand findings do not fit
+    into a row), and a drawer (too narrow for the findings, no address).
+  - To decide in the spec: the columns and their order, the sort and the search within the versions, the path of a version's
+    page, and what becomes of the tabs **Metadata**, **Files** and **Repositories**.
+- **W-8 · Browse goes from the navigation; the files live on their repository's page** (owner, 2026-11-18, on the development
+  agent's proposal; screens `browse`, `browse-folder`, `browse-file`, `repository-generic`). This answers the question that was
+  open since 2026-11-10 (section 8). **Browse** and the page of a repository both show the repository's files; upload, copy, move
+  and the trash can (R-UI-010 to R-UI-014) exist only in **Browse**. Wanted: one way to the files, from the repository. The file
+  operations move to the repository's page, each for the roles that may use it. Not chosen: keeping both, and keeping **Browse**
+  for owners and administrators only. What it costs: the tree across the repositories of a project is gone, and a copy or a move
+  into another repository needs a way to choose the target on the repository's page. To decide in the spec: where the files of a
+  repository that is not generic show (npm, NuGet, OCI, Debian, Ansible), what becomes of the routes under `/browse`, and where
+  the trash can of a project lives.
+- **Seen by the development agent, not decided:**
+  - `login`: the local form of the break-glass account stands first with the primary button, the sign-in provider below it as a
+    secondary button. The owner typed `sam` into the form before he found the provider's button. Every user except the break-glass
+    administrator signs in through a provider.
+  - `repository-npm-local`: the row of the long package name
+    (`customer-portal-api-client-generated-from-the-openapi-document`) starts 10 px further left than its neighbours, chevron and
+    name alike; the same kind of defect as W-3.
+  - `repository-npm-local`: the field **Filter packages** is as wide as the page (1128 px) for a few typed characters, against the
+    rule that a field is as wide as its expected input.
+  - `repository-npm-local`, `home`: the table ends 15 px before the right edge that the filter field and the separators above it
+    reach.
+  - `repository-npm-local`: the address field stands under the title, **Set up client** in the far corner of the header; the two
+    belong to one job and are not together.
+  - Every screen inside a project: the breadcrumb names the project by its key (`web-frontend`), the side bar by its name
+    (`Web frontend`).
+  - `packages` against `repository-npm-local`: two lists of packages with different columns and words. The repository's list has
+    **Latest**, **Versions**, **Vulnerabilities**, **Updated** as a date and **Downloads**; the project's list has **Format**,
+    **Latest version** and **Updated** as "4 minutes ago", no grade and no column that says which repository holds the package.
+  - `packages` against `repository-npm-local`: the same action is the grey button **Set up a client** on one and the blue button
+    **Set up client** on the other.
+  - `packages`: the tabs **Recently opened** and **Saved views** stand in the plain user's main view.
+  - `vulnerabilities`: the report is one row per finding, 1,222 of them; the first 60 rows are three packages. The plain user's
+    question, which package and which version is affected and how badly, has no row; the grade of T-21 is not in the list.
+  - `vulnerabilities`: every row is three lines high because cells break: **Fixed in** reads "None / yet", the repository
+    `web-frontend/` / `npm-vendor`, the advisory's summary runs over two lines.
+  - `vulnerabilities`: the reader `sam` sees the tile **1,222 Needs triage** and a status column **Needs triage** in every row; a
+    reader cannot triage.
+  - `vulnerabilities`: the chart **Open findings over time** stands above the findings in the plain user's main view.
+  - Three ways to write a time: "4 minutes ago" (`packages`), "Nov 18, 2026" (the packages of a repository), "Nov 18, 2026,
+    8:17:21 AM" (the files of a repository).
+  - `repository-generic`: the file row's icon touches the name and sits higher than it, the folder rows have a gap and one line.
+  - `search-results`: a third list of repositories, built differently again: no visibility icon, the project by its key without
+    its icon (W-1), and a copy button without a label at the end of each row that copies the client address (W-4 takes the address
+    out of the project's list for want of context).
+  - `profile-tokens`: the cell **Scope** breaks into four lines ("All repository permissions of the owner, without
+    administration") while the column **Token** beside it is mostly empty.
+  - `profile-tokens`: the column **Created via** says `ui`, a technical fact in the plain user's main view; the row's two actions
+    are an icon without a label (rotate) and a word (**Revoke**).
+  - `browse`: the format is a lower-case badge (`generic`, `oci`, `npm`) and a remote repository is marked `cache`; every other
+    screen says **Generic**, **OCI (Docker)** and **Remote**.
+  - `browse`: a long key is cut with an ellipsis here and broken across lines in the repository list (W-3): two treatments of one
+    case.
+  - `browse`: the tree has a field **Filter repositories**, a button **Filters** and a sort button without a label; the right
+    half of the page is an empty box until something is chosen.
+  - `browse` against `repository-generic`: both show the files of a repository. Upload, copy, move and the trash can exist only in
+    **Browse**; the repository's own page lists its files and offers none of them (seen as the power user `priya`).
+- **Tooling, done in the walk:** the dev server of the `local` configuration listens on `127.0.0.1` like Quader and the sign-in
+  provider; it listened on `::1` only, which the owner's Firefox (IPv6 lookups off) could not reach
+  ([web-ui.md](../developer/web-ui.md#local-ui-development)). A checkout that still holds the fixed secrets of before the rename in
+  `.dev/ui-dev/secrets` fails at `make ui-dev-up` with `InvalidAccessKeyId`: `up.sh` writes a secret file only once.
+- **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
+  - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
+    ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
+  - `projects-anonymous` and `search-field` as `anonymous` got 429 for `GET /api/v1/auth/whoami` and `GET /api/v1/system/banner`,
+    in two runs: the anonymous visitors of three workers share one address and its limit.
 
 ## 11 · Run record
 
