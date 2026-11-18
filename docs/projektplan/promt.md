@@ -1153,7 +1153,7 @@ agent** is not decided until the owner has said so.
   - **Corrected by the owner the same evening:** "Security-Audit hatte ich eigentlich als weiteren context-title erwartet."
     The development agent had briefed "a second section under Your work" and the builder made a folding group inside the
     block of **Your work**. Wanted: **Security audit** is a second context title of the side bar, written and placed like
-    **Your work**, with **Security dashboard** as a plain entry under it. Status: with the builder of W-20.
+    **Your work**, with **Security dashboard** as a plain entry under it. Built with W-20 (cf297363).
 - **W-18 · A row with one action names it, a row with several has a menu** (owner, 2026-11-18, "Option A" from three: write
   the practice down as the rule / a menu everywhere / icons everywhere). Verified in the code: the lists with a menu
   (repositories, a project's members, files, exposure rules) have several actions per row; the lists with a word (**Edit** on
@@ -1195,7 +1195,24 @@ agent** is not decided until the owner has said so.
   repository stands in a field only on **Set up client**. Decided by the owner on 2026-11-18 ("Option A passt für mich", from
   three: a folding section with the last five repositories as links / an entry that opens a page / the search field alone):
   a folding section **Recently opened** under **Your work** with the last five repositories as links, not shown while there
-  is none. Status: a builder is briefed.
+  is none.
+  - **Built** (cf297363 on `main`; R-UI-166 to R-UI-169, Q-UI-660 to Q-UI-664; R-UI-096, R-UI-126, R-UI-158 and Q-UI-620
+    rewritten): the start page is one heading and the list of projects; the side bar of the main area has the folding group
+    **Recently opened** (a project's mark and the repository's key per entry, a long key cut with the full name as title),
+    folded at first and remembered; a remembered repository is confirmed with one request per session and name, so none
+    appears that the caller cannot read. **Security audit** is a second context title, written like **Your work**, with
+    **Security dashboard** as a plain entry; a side bar is a list of titled blocks now (Q-UI-663).
+  - **Addresses in a field outside Set up client, removed with it:** the repository page's header (it reads **Set up
+    client**, **Settings**, the menu) and the client address in a repository's settings. **Left, for the owner:** "Address
+    for downloads by path" in a repository page's **Details** (Set up client does not show that address) and "Client
+    address on this endpoint" in the admin area's exposure rule editor.
+  - **Looked at** in the running UI as `noor`, dark at 1440 px and light at 390 px: the start page, the side bar with the
+    group open after four repositories were opened (marks and keys on one line, two long keys cut), both context titles
+    (measured: the same size, weight, colour and left edge), a repository's header wide and narrow; as `sam` no Security
+    audit. A browser without a history shows no group. Not looked at: `ada`'s admin area's title, an anonymous visitor.
+  - **Open:** the journey `vuln/16` and the render screens `sidebar-recent` and `sidebar-auditor` (in place of
+    `start-recent`, one of the two screens that ran into the render timeout) were changed and not run; a repository deleted
+    during a session stays in the group until the next sign-in or change of permissions and then leads to "not found".
 - **The owner on the power user's screens (2026-11-18):** "nothing gross struck me"; he asked which details the development
   agent would change. Its list, which it builds: the members list on the head row of every list and without its single tab; the
   wiki's visibility behind a disclosure on the repository's settings; the description field's width and the one disclosure
@@ -1412,6 +1429,8 @@ agent** is not decided until the owner has said so.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
+    The screen is gone since W-20 (its section left the start page); whether `sidebar-recent`, which took its place, settles
+    is not known before the next render run.
   - `projects-anonymous` and `search-field` as `anonymous` got 429 for `GET /api/v1/auth/whoami` and `GET /api/v1/system/banner`,
     in two runs: the anonymous visitors of three workers share one address and its limit.
 
