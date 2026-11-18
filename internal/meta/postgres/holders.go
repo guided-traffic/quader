@@ -73,8 +73,17 @@ func (h *holders) released(c *pgx.Conn) {
 	if h == nil || c == nil {
 		return
 	}
-	h.m.Delete(c)
+	v, held := h.m.LoadAndDelete(c)
 	if pc := c.PgConn(); pc != nil && pc.IsClosed() {
+		// A connection comes back closed when a statement on it was cut by its context or the connection broke: the pool discards
+		// it (Q-ARCH-498). Who had it says which caller's context ended, which a stall alone does not tell (H-822).
+		if h.log != nil {
+			borrower := "unknown"
+			if held {
+				borrower = v.(hold).name()
+			}
+			h.log.Warn("a database connection came back closed and is discarded", "db_pool", h.pool, "borrower", borrower)
+		}
 		h.watchCleanup(pc.CleanupDone())
 	}
 }

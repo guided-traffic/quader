@@ -4453,7 +4453,12 @@ learns of the removal with a delay. The steps cover that delay first:
    ([Q-HA-203](ha-and-helm.md#q-ha-203--the-close-of-the-database-pools-ends-with-the-close-phase)).
    The process exits `0` when every close step finished in time. When a pool still holds a
    connection at the close deadline, the error names it and the process exits non-zero: the exit
-   itself cuts the holder, because a pool cannot force-close an acquired connection.
+   itself cuts the holder, because a pool cannot force-close an acquired connection. What a stop owes
+   a database that does not answer is no more than that: the close waits for connections a borrower
+   still holds, and for nothing else. A connection that came back closed and is being discarded, and
+   a connection still being opened, are the driver's work and not the replica's; the pools return as
+   soon as no borrower holds a connection, without an error, and the exit ends the rest
+   ([Q-ARCH-499](#q-arch-499--the-close-of-the-pools-waits-for-borrowers-only-not-for-the-drivers-own-work)).
    What follows the close phase, the ops listener, the background goroutines and the tracer, waits at
    most the 0.5 s ops reserve per step and never past the exit deadline, however early the close
    phase ended: a peer on the ops listener that does not take its response is reset at that bound
@@ -7285,7 +7290,7 @@ Context: The criterion of R-ARCH-034 is "1,000 requests sent within 2 s are admi
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Refines [Q-ARCH-461](#q-arch-461--the-goroutine-dump-of-an-overrun-names-every-stack-and-the-log-carries-the-pool-counts).
 
-Context: [H-822](ha-and-helm.md#h-822--the-control-connection-of-a-replica-can-stay-unusable-for-more-than-10-s-in-the-integration-runs-and-the-cause-is-not-found). Verified in the driver (pgx 5.11, puddle 2.2.3): a connection whose statement is cut by its context is closed, and on its release pgxpool destroys it; the destructor waits up to 15 s for the driver's cleanup (a cancel request over a new connection, the terminate message, reading until the server closes), and the pool counts the connection as acquired and keeps its place until then. The release has already removed the borrower, so the close error of Test and Release 43316531262 (`TestR_NPM_010`, 2026-11-12) read "control pool (1 connection held) by a connection under construction" for what can as well be such a cleanup, and the goroutine dump of Q-ARCH-461 was not written: the pools returned at the close deadline with an error and the close phase did not overrun. The dumps of the overruns of 2026-11-10 (run 42831867192, job 129884351119) show cleanups waiting in the cancel request's TCP connect to the database port and in the read for the server's close. Reproduced on the integration stack: a statement on the control connection cut while PostgreSQL is paused leaves the control pool handing out nothing for the 2 s an `Acquire` waited and for the 3 s the cleanup took.
+Context: H-822 (the control connection of a replica stayed unusable for 10 s and longer in the integration runs; closed by [Q-ARCH-498](#q-arch-498--a-connection-the-pool-gives-up-on-gives-its-place-back-at-once-its-cancel-request-goes-out-on-its-own)). Verified in the driver (pgx 5.11, puddle 2.2.3): a connection whose statement is cut by its context is closed, and on its release pgxpool destroys it; the destructor waits up to 15 s for the driver's cleanup (a cancel request over a new connection, the terminate message, reading until the server closes), and the pool counts the connection as acquired and keeps its place until then. The release has already removed the borrower, so the close error of Test and Release 43316531262 (`TestR_NPM_010`, 2026-11-12) read "control pool (1 connection held) by a connection under construction" for what can as well be such a cleanup, and the goroutine dump of Q-ARCH-461 was not written: the pools returned at the close deadline with an error and the close phase did not overrun. The dumps of the overruns of 2026-11-10 (run 42831867192, job 129884351119) show cleanups waiting in the cancel request's TCP connect to the database port and in the read for the server's close. Reproduced on the integration stack: a statement on the control connection cut while PostgreSQL is paused leaves the control pool handing out nothing for the 2 s an `Acquire` waited and for the 3 s the cleanup took.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -7298,6 +7303,40 @@ Context: [H-822](ha-and-helm.md#h-822--the-control-connection-of-a-replica-can-s
 **Rationale:** The evidence names the mechanism that holds the pool (the cleanup of a closed connection) but not why the cleanup waited seconds on the runners: a TCP connect to the database port that does not complete is outside the product. A change of the driver's cancel path before that is known would be a guess. The development agent would revisit the choice when a logged cleanup names the step that waits: (b) if the server is reachable and the close is what waits, a look at the runners' network path if the connect is.
 
 **Applied in the spec:** none (R-HA-011 and R-ARCH-024 are unchanged); H-822 is updated. [docs/developer/database.md](../developer/database.md). Tests: `TestR_HA_011_AClosedConnectionIsNamedUntilItsCleanupEnds`, `TestR_HA_011_TheCloseErrorNamesTheBorrowers`.
+
+### Q-ARCH-498 · A connection the pool gives up on gives its place back at once; its cancel request goes out on its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Follows [Q-ARCH-497](#q-arch-497--a-closed-connection-that-holds-its-pool-is-named-and-logged-and-a-close-that-reaches-its-deadline-logs-the-goroutines).
+
+Context: H-822. Verified in the driver (pgx 5.11, puddle 2.2.3): a connection whose statement is cut by its context is closed, and its cleanup runs in the background, a cancel request on a new connection, the terminate message, and a read until the server closes, each bounded by 15 s; pgxpool's destructor waits for it, and the pool keeps the connection's place, counted as acquired, until then. The control connection is one connection on purpose (R-ARCH-019: a reservation inside `database.pool.max_conns` that request traffic cannot take; behind a transaction-mode pooler a control endpoint with a server pool of its own, [Q-HA-20](ha-and-helm.md#q-ha-20--control-connection-behind-a-transaction-mode-pooler)), so its pool hands out nothing for that time: the change-log poll, the heartbeat and the `database` and `schema` checks all wait. The first dump of a recurrence (Test and Release 44213944004, `TestR_VULN_004`, 2026-11-18) shows the cleanup in the read for the server's close, 8 s after the cut, against a healthy database, with the `database` check queued for the one place. Reproduced: with a proxy in front of PostgreSQL that stops forwarding, a cut control statement held the place for the whole stall.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The context watcher's cancel request (`CancelRequestContextWatcherHandler`) | A cut statement is cancelled by a cancel request and the connection stays | No cleanup when the server answers the cancel | When it does not, the deadline closes the connection and the same 15 s cleanup follows; it changes how every statement of every pool ends |
+| (b) A dial bound for the cancel request | The cancel's connection is bounded | Shortens one step | The read for the server's close, the step of the dump, stays at 15 s |
+| (c) A second control connection | A cleanup leaves the other | The loops keep a connection | Changes the budget of R-HA-016 and the minimum of `max_conns` ([Q-HA-284](ha-and-helm.md#q-ha-284--a-readiness-probe-does-not-cut-its-statement-at-the-end-of-its-check) rejected it); a second cut empties it again |
+| (d) Discard: a connection given up on is let go at once (chosen) | When the pool destroys a connection that is closed, busy or inside a transaction, its socket is closed and the driver's cancel request is ended, also in its dial, so the cleanup has nothing to wait for; the cancel request is sent again outside the pool, bounded by `database.connect_timeout` like any connection setup. A healthy idle connection (its lifetime, the close of the pool) still closes the courteous way | The place is free within milliseconds whatever the server does; the statement is still ended on the server; no change of the connection budget, of the pool sizes or of how a statement is cut | Until the server has the cancel request, or the statement ends by itself (at `statement_timeout` at the latest), the server may count one backend more for the replica than the pool does; the server sees a closed socket instead of a terminate message |
+
+**Choice:** (d), in [discard.go](../../internal/meta/postgres/discard.go) (`withDiscard` in the pool's `BeforeConnect`, `discard` as its `BeforeClose`) and [connect.go](../../internal/meta/postgres/connect.go). A connection that comes back closed is logged with its pool and the borrower whose statement was cut (`a database connection came back closed and is discarded`), which names the caller whose context ended.
+
+**Rationale:** A connection we have given up on needs no courteous goodbye, and nothing the control loops need waits on it any more. The extra backend during a stall is bounded by the cancel request and `statement_timeout`, and a server that does not answer cannot be asked for a new connection either. The development agent would revisit the choice if the discarded backends were seen to press against `max_connections`.
+
+**Applied in the spec:** R-ARCH-019 is unchanged (the control connection stays one connection); [docs/developer/database.md](../developer/database.md). Tests: `TestR_ARCH_019_ACutControlStatementGivesThePlaceBackWhileTheDatabaseDoesNotAnswer`, `TestR_ARCH_019_TheStatementOfADiscardedConnectionEndsOnTheServer` ([stall_test.go](../../test/integration/postgres/stall_test.go)), `TestR_ARCH_019_TheCancelRequestOfADiscardedConnectionLeavesThePool`.
+
+### Q-ARCH-499 · The close of the pools waits for borrowers only, not for the driver's own work
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `CloseContext` waited until every pool had closed, and a pool does not close before its discarded connections are cleaned up and its connections under construction are opened or failed (a construction for `min_conns` runs to `database.connect_timeout`, which the close does not cancel). In the recurrences of H-822 the stop took its whole budget (9.2 s in the integration setting) and ended in an error for a connection nobody held.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Wait for the pools as before | | Nothing left open | A database that does not answer costs every stop its budget and an error |
+| (b) Return as soon as no open pool has a connection a borrower holds (chosen) | The close watches the pools' counts every 10 ms; the closed connections being cleaned up are not counted; the pools finish closing in the background | A stop ends within milliseconds of its last borrower, without an error; a borrower that still holds a connection is still waited for to the deadline and named | The process exits with the driver's work unfinished, which the exit ends anyway |
+
+**Choice:** (b), in [db.go](../../internal/meta/postgres/db.go) (`closePools`, `onlyDriverWorkLeft`). **Rationale:** What a stop owes a database that does not answer is not to hold the replica for it: the statements of its borrowers are waited for, the driver's housekeeping is not (R-ARCH-024 step 6). The development agent would revisit the choice if a construction left behind were seen to outlive the process in a way that matters.
+
+**Applied in the spec:** R-ARCH-024 step 6. Tests: `TestR_ARCH_024_AStopWhileTheDatabaseDoesNotAnswerEndsWithinItsBudget` ([stall_test.go](../../test/integration/postgres/stall_test.go)), `TestR_ARCH_024_AClosePhaseDoesNotWaitForTheDriversOwnWork`.
 
 ### Q-ARCH-226 · The host answers an early, read-only ownership question
 

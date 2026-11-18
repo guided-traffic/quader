@@ -99,6 +99,24 @@ The connection string carries neither.
   and the grouped goroutines, which show where the cleanup waits
   ([Q-ARCH-497](../spec/architecture.md#q-arch-497--a-closed-connection-that-holds-its-pool-is-named-and-logged-and-a-close-that-reaches-its-deadline-logs-the-goroutines)).
   Tests: `TestR_HA_011_AHeldConnectionIsNamedByItsBorrower`, `TestR_HA_011_AClosedConnectionIsNamedUntilItsCleanupEnds`.
+  A connection the pool gives up on does not wait for that cleanup any more
+  ([discard.go](../../internal/meta/postgres/discard.go),
+  [Q-ARCH-498](../spec/architecture.md#q-arch-498--a-connection-the-pool-gives-up-on-gives-its-place-back-at-once-its-cancel-request-goes-out-on-its-own)).
+  Every pool connection gets, in the pool's `BeforeConnect`, a dial function that tells its own dial from the later dials of the
+  driver's cancel request, and an `AfterConnect` that stores that state in the connection's `CustomData`. When the pool destroys a
+  connection that is closed, busy or inside a transaction, its `BeforeClose` (`discard`) ends the driver's cancel request (also one
+  still dialing), closes the socket below TLS, and sends the cancel request again on a connection of its own, outside the pool and
+  bounded by `database.connect_timeout`; the driver's cleanup then has nothing left to wait for and the place is free at once. A
+  healthy idle connection (lifetime, idle time, the close of the pool) still closes with a terminate message. A connection that comes
+  back closed is logged with its pool and the borrower whose statement was cut (`a database connection came back closed and is
+  discarded`). `CloseContext` returns as soon as no open pool has a connection a borrower holds (the pool's acquired count less the
+  closed connections being cleaned up): a discarded connection and one still being opened are not waited for, and the stop ends
+  without an error
+  ([Q-ARCH-499](../spec/architecture.md#q-arch-499--the-close-of-the-pools-waits-for-borrowers-only-not-for-the-drivers-own-work)).
+  Tests: [stall_test.go](../../test/integration/postgres/stall_test.go) puts a proxy that stops forwarding between the pools and the
+  stack's PostgreSQL (the stack itself is not touched) and requires the control pool's place back and a clean stop within the
+  connect timeout; `TestR_ARCH_019_TheCancelRequestOfADiscardedConnectionLeavesThePool` and
+  `TestR_ARCH_024_AClosePhaseDoesNotWaitForTheDriversOwnWork` hold the parts.
   `Ready` returns `ErrStandby` for a server in recovery and destroys that connection (the control pool holds one, so
   the next check connects again and finds the new primary); `Read` destroys the connection when `fn` panics;
   `classify` treats a failed TLS verification of the server (`x509` and `tls.CertificateVerificationError` inside the
