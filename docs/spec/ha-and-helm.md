@@ -10234,6 +10234,57 @@ lockout matters), or if an installation shows the 1 s retries as a load on a Pos
 [deploy/dev/pooler.yaml](../../deploy/dev/pooler.yaml), [docs/developer/local-profile.md](../developer/local-profile.md), the pooler requirements of the
 [README](../../README.md) and of the manual ([configuration](../manual/admin/configuration.md#behind-a-transaction-mode-pooler), [runbook](../manual/admin/runbook.md)).
 
+### Q-HA-302 · A stall of the kind nodes is told apart from a neighbour's load, and a fault test does not start on a sick cluster
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Extends
+[Q-HA-300](#q-ha-300--every-e2e-set-records-what-starved-the-kind-nodes-inside-the-nodes-whether-it-passes-or-fails).
+
+Context: the evidence of Q-HA-300 was read for the first time in a red run on 2026-11-18 (nightly 44186978088, leg `ha-faults`,
+`TestHAFaults_ValkeySlow`). What it showed, and what it could not:
+
+- From 23:58 to 00:12 the leg's first four fault tests ran under the same npm load with a warm-up p99 of 0.5 to 1 s, the host's CPU pressure
+  at 400 to 480 ms per second and a load of 50 to 75 on 32 CPUs. At 00:12:28, when the load of `ValkeySlow` started and 66 s before Valkey was
+  slowed, the `full` CPU stall of the leg's nodes (every task of the node waiting at once) rose from 25 to 165 ms per second to 200 to 495,
+  the host's load rose to 247, the edge's idle share fell from about 60 % to 0 % with its connections stuck at 813 and its connection rate at 0,
+  k6's p50 rose to 2 to 35 s, a `packages` pod was `OOMKilled` at 00:13:34 (limit 1 GiB) and both edge pods were restarted by their liveness
+  probes at 00:15:03 and 00:16:03. It ended when the load stopped at 00:17:40.
+- The runner cluster's `Scheduled` events put the leg on the node `k8s-runner-omega` with one other kind leg (`edge` of the same run) from
+  23:44, and eight small jobs of "Test and Release" 44205650371 (Angular build, Trivy with an image build, golangci-lint, unit tests, release tooling,
+  NuGet vectors, integration shards b and c) on the same node from 00:10:54 to 00:10:57. Before 00:10:54 that node had the two kind legs and
+  one one-minute job.
+- Read on the runner cluster the same night: the job's Docker daemon (the privileged `dind` container) sees the cgroup root of the machine;
+  the kind nodes of every leg, their k6 containers and the image builders are children of the top-level cgroup `docker` (`cpu.weight` 100),
+  the runner pods and the small jobs' steps are under `kubepods` (`cpu.weight` 1250). When the 32 CPUs are all asked for, every kind cluster on
+  the machine together is guaranteed about 100/1550 of them (two CPUs) while the small jobs ask for the rest. Measured on the same node at 00:41
+  over 20 s: `docker` (two kind legs and their containers) 19.4 CPUs, `kubepods` (five small jobs and the runner processes) 5.7, the machine
+  25.2 of 32, steal 0.5 %.
+- What the evidence could not show: the CPU time of the leg's nodes against the small jobs' in the window (Q-HA-300 recorded pressure, not
+  use), the other runner pods on the machine, and what filled the `packages` pod's 1 GiB (its memory guard, R-ARCH-005, shed nothing).
+
+The test then injected the fault into the stalled cluster and judged the fault's latency condition against a warm-up p99 of 46 s, a baseline
+that was itself the failure.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The recorder reads the machine's cgroups and the pods; the fault tests check their warm-up (chosen) | `e2e-evidence.sh` adds `io` pressure and the CPU time to every row, the host's busy and steal time from `/proc/stat`, one row per top-level cgroup of the machine (`cg:<name>`: pressure, CPU time, `cpu.weight`, members) and per container of `docker` (`cgd:`) from a helper container with the daemon's cgroup tree mounted read-only, the job's own containers (`containers.tsv`), and per pod of each kind node its CPU time, memory by kind and OOM kills (`pods.csv`); `runLoadFault` reads k6's warm-up before it injects the fault and fails with "the cluster was not healthy before the fault" when a request already broke the load's condition | The next stall says whose CPU it was and what filled a killed pod; the failure names its cause instead of the fault; no fault is judged against a sick baseline | One helper container and a wider CSV per leg; a fault test on a sick cluster ends earlier and says less about the fault |
+| (b) Record only, no warm-up check | — | The fault always runs | The fault's verdict mixes in what happened before it, as in run 44186978088 |
+| (c) A latency bound on the warm-up | Fail when the warm-up p99 is above a value | Catches a slow but error-free baseline (run 42994478570: 1.4 s) | A new wall-clock bound without a requirement behind it; the load's own condition already covers errors |
+| (d) Serialize the kind legs of both workflows with `concurrency` | One group for every kind leg | Fewer legs side by side | GitHub keeps one pending run per group and cancels the others, and the release would wait behind the nightly, which the owner's rule forbids; the neighbours of run 44186978088 were small jobs, which a group of kind legs does not hold back |
+
+**Choice:** (a). The warm-up check uses the load's own condition (`only2xx304` and what the NuGet half holds), which the end of the run applies
+to the warm-up anyway: a run is red in exactly the cases it was red before. The one place where this is stricter is the node loss of the set
+`ha-suite`, which tolerated k6 failures up to 10 s after the replacements were ready, warm-up included; a failure before the node is lost is
+not the node loss's. The recorder's helper runs from the kind nodes' image (bash is in it), on no network, and ends at its stop file or after
+`QUADER_E2E_EVIDENCE_MAX_SECONDS` like the other loops.
+
+**Rationale:** the stall family (H-795, F-119, F-124, the stall of the set `push`) kept its cause open because the recordings could not separate
+the leg from its neighbours; with the CPU time per cgroup that is one subtraction. The cgroup layout on the runner is the owner's
+(the runner definitions are not in this repository): what it means for the runner classes is recorded in
+[promt.md](../projektplan/promt.md) section 8 with the measurements above.
+
+**Applied:** `deploy/dev/e2e-evidence.sh`, `test/e2e/npm_ha_test.go` (`runLoadFault`), `test/e2e/npm_load_test.go` (`warmUpFailures`),
+`test/e2e/nuget_ha_test.go`; [docs/developer/e2e.md](../developer/e2e.md#reading-a-stall).
+
 ## What this does not cover
 
 ### H-37 · A database restore revives revoked credentials and removed grants
