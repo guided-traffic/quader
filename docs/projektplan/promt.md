@@ -1996,14 +1996,42 @@ What a run did, in short, so the next run starts where it stopped. The plan item
 **Run of 2026-11-18/19, state on 2026-11-19 at 14:30 local time** (releases v0.61.0 to v0.63.3; `main` at `ad01d57e`, everything
 pushed). The newest first, because this is where the next run starts.
 
-- **In work, not on `main`:** three builders of the download limits (W-26), each in a worktree on the base `654abd2a`, to be
-  merged in the order (1) technical tokens on three levels, (2) accounting and enforcement, (3) the screens; their packages,
-  shared files, migrations 00080 to 00085 and ID ranges are in
-  [usage-and-limits.md](../developer/usage-and-limits.md#work-packages) of the developer documentation. Landing: cherry-pick,
-  the pinned counts of `internal/tools/coverage/coverage_test.go` (983 requirements, 685 MVP, before them), the locale file
-  merged unit by unit, `make coverage`, the gates, the renders looked at, the plan entry below the code commit. Package 3 can
-  only render with real data after package 2. W-25 (a probe starts the download in the background; trigger and platforms
-  decided) is built after them on the hook of R-LIM-037.
+- **In work, not on `main`** (state of 2026-11-19, 16:30): the three packages of the download limits (W-26) are built and
+  **merged on the local branch `w26-merged`** of the development machine (`24c13a14`: package 1 `7e5bbbe9`, package 2
+  `861ad257`, package 3 `24c13a14`, on top of `0db39e1e`; not pushed, because no screen of it has been seen with real
+  data). A fourth builder closes the seams on that base (brief: `.out/w26-p4-brief.md` of the checkout). Landing after it:
+  cherry-pick its commit onto `w26-merged`, the gates, the pictures looked at, then the four commits onto `main` with the
+  plan entry below them, in one push.
+  - **What the merge changed:** package 2's migrations became 00081 (`limits`) and 00082 (`usage`), because the numbers
+    may have no gap and package 1 used 00080 only; the gap H-1013 of the security page of the limits (a technical token
+    charged to the client address) is removed, package 1 closed it (`auth.Stage.accept` fills the credential, also for a
+    registry token; H-1013 is now the one of `permissions.md`); the decisions Q-ARCH-513 and Q-ARCH-514 stand before
+    Q-ARCH-520; the twelve `limits.*` audit events got their plain names in English and German (a test of the UI held
+    it); the locale files were merged unit by unit (4220 units each). On the merged tree: `go test ./internal/...
+    ./cmd/...`, `make lint` (the cold run exceeded the five minutes of `.golangci.yml`, the warm one passed: the limit is
+    raised by package 4), `make web-lint`, `make web-test` (1709), `make generate-check`, the link check, vet with the
+    integration and e2e tags, `make ui-layout-test`.
+  - **What the first render run showed:** nothing to look at. The UI database held a draft of migration 00080 from a
+    builder's run (purged, it is fixture data); on a fresh one the seed stopped at its first call of the API as built
+    (`PUT` of a project's maximum answers 428 without `If-Match`). The screens were written against hand-written shapes
+    from the specification, not against the API: package 3 could only render error states, and the builder said so.
+  - **Package 4, its ten points:** the screens on the generated client; the tab Projects and the project filter on the
+    operations package 2 added (`GET /api/v1/limits/projects`, `project=`); the technical-token table's **Limit** and
+    **Last 24 hours** columns and **Set limit** (R-UI-181); a deleted technical token's usage rows and rules
+    (R-LIM-028); a registry token of a technical token charged to it, proven on the request path; what package 2
+    built partly (R-LIM-020 `RateLimit` fields and the "Your limits" link, R-LIM-030, R-LIM-034, a host bound to a
+    repository); a seed with a realistic instance and every screen rendered and looked at; the journeys and the
+    integration tests of R-LIM-019; the documents (the developer page's work packages removed); the lint's time limit.
+  - **Not built by any package, said by their builders:** the e2e set `limits` of R-LIM-039 (it needs the kind
+    cluster); the k6 legs with the limits on the request path (the engine benchmark measured 2 Valkey round trips,
+    about 6 µs, per cached download; `querybudget` stayed green); a screen to change a technical token's description
+    or delete one (API only); an Owner cannot rotate a technical token, it revokes and issues a new secret
+    (Q-AUTH-419, the builder's decision against the first wording of R-UI-181, for the owner's walkthrough).
+  - **Breaking, for the owner's installation:** migration 00080 deletes the stored service-account tokens (the
+    accounts stay); `POST …/service-accounts/{name}/tokens` is gone; a service account's body names `reference`
+    instead of `principal`.
+  W-25 (a probe starts the download in the background; trigger and platforms decided) is built after them on the hook of
+  R-LIM-037 (`Charge.Background` exists).
 - **With the owner:** eight decisions of the specification in his working paper (built as specified until he chooses
   otherwise; an answer other than the first option goes to the builders); of W-24, the column's name **Last download** where
   his word was "Last fetched", and **Published** of a remote-only version being the time it was cached; `zstd` in the runners'
