@@ -1375,6 +1375,16 @@ agent** is not decided until the owner has said so.
   single caller, then the groups with the most generous value per figure, then the kind's default); and whether the one
   step enforces at once or starts observing, with the limits counted and shown as "would have been limited" (17), since
   every number of the profiles is an estimate. Nothing is specified or built before these are answered.
+  **Answered the same day, read from the page:** 13, an account for the rights and a token for the budget (the service
+  account stays and can belong to a repository too; a renewed token keeps budget and consumption); 14, only the instance
+  administrator raises above the instance, a project Owner up to a maximum the administrator gives the project; 15,
+  consumption under a repository's own rule counts against that rule only; 16, the place first, then the caller; 17, a
+  switch, with his note: "Es soll für die Durchsetzung von Instanzlimits einen Schalter geben, den der
+  Instanz-Administrator setzen kann. Die Limits können instanzweit damit zwischen Audit und Enforce konfiguriert werden."
+  **How it is built:** first the specification as one contract (a new page `usage-and-limits.md` and the amendments to the
+  identity, authorization, API and operations pages; to a builder on 2026-11-19, documents only), then three builders
+  against it at once: the technical tokens on three levels, the accounting and enforcement in the request path of every
+  format, and the screens. W-25 follows on its budget hook.
 - **A decision taken at OCI holds for every format** (owner, 2026-11-19): "Alles was wir hier für OCI besprechen gilt auch
   für alle anderen Registries die bereits gebaut sind und für zukünftige Registries. Ich verstehe, dass die API der
   Registries von ihrem Funktionsumfang unterschiedlich sind und deshalb manche Features nicht implementierbar sind. Das
@@ -1872,6 +1882,20 @@ agent** is not decided until the owner has said so.
   the same kind as the runner image: a module cache that holds every module of `go.sum` (written by a step that runs `go
   mod download`), so that no job asks the proxy; and a bound on the download itself so that a stall fails in minutes.
   The release follows with the next push, whose run covers W-23.
+- **F-157 · The first full run of `UI layout checks` on a runner: 336 screens passed, 7 failed** (2026-11-19, Test and
+  Release 44514749126 of 10a28fbd, 23.9 minutes of rendering on `self-hosted`, the job 29 minutes; the run before it was
+  replaced by a push after 19 minutes). Every setup step worked on the runners' new image. Two kinds of failure:
+  - **A heading in two lines** (`setup-ansible-local` as two kinds of user, 390 px): the toggle of the guide's section
+    "Remove a version, import tasks and tombstones" broke into two lines in a box of 350 px. On the development machine the
+    same screen had no finding; the runner's text is a little wider. The check was wrong, not the screen: the toggle of a
+    section's heading is a heading and wraps as one. Left out of the check `broken`, with two fixtures. What it shows:
+    a picture rendered on a Mac and one rendered on the runner differ by a pixel at the edges, so the runner's run is the
+    one that counts.
+  - **A click that waited 15 s** in the walk that opens every section of a repository's settings (five screens, at 390,
+    1,024 and 1,440 px; the builder of W-23 had seen it once locally): the report said "locator.click: Timeout 15000ms
+    exceeded." and nothing else, and the job uploaded the pictures only. Cause not known. The report now carries the lines
+    after the first (what the click waited for) and the job uploads Playwright's context of each failed screen; the next
+    run names the cause.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
