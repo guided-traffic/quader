@@ -1385,6 +1385,24 @@ agent** is not decided until the owner has said so.
   identity, authorization, API and operations pages; to a builder on 2026-11-19, documents only), then three builders
   against it at once: the technical tokens on three levels, the accounting and enforcement in the request path of every
   format, and the screens. W-25 follows on its budget hook.
+  **The specification is on `main`** (2026-11-19; [usage-and-limits.md](../spec/usage-and-limits.md): R-LIM-001 to R-LIM-039,
+  Q-LIM-1 to Q-LIM-27, gaps H-1005 to H-1012; R-API-016 rewritten, R-API-082, R-UI-177 to R-UI-186, R-AUTH-045 and
+  R-AUTH-046, R-AUTHZ-039 and R-AUTHZ-040, ADR-206; the feature catalog's BEYOND-030 taken up; 983 requirements, 685 of
+  them MVP). Checked by the development agent against the seventeen decisions (its table of them and the resolution of
+  R-LIM-013 with its worked examples read in full; the rest by its headings). **Three builders work against it since
+  then**, to be merged in this order: the technical tokens on three levels (migrations 00080, 00081), the accounting and
+  enforcement (00082 to 00085; the request path of every format, the counters in Valkey, the usage store, the API), and
+  the screens (against the specified bodies until the second has landed).
+  **Eight decisions of the specification put to the owner in the working paper, built as specified until he says
+  otherwise:** in Audit mode the package classes of today stay in force as the net, newly also on the registry's paths
+  (Q-LIM-4; his sentence was "nothing is refused"); a refused request is a refusal, not every 404 (Q-LIM-7; a NuGet restore
+  over two feeds draws hundreds of ordinary 404s); a ceiling exists for remote repositories and the two upstream figures
+  and none is set by default (Q-LIM-16); through a virtual repository the addressed repository's rule decides (Q-LIM-2); a
+  project Owner sees the addresses of the anonymous callers of its repositories for 30 days (Q-LIM-21); the enforcing
+  counters live in Valkey, whose user gains commands (Q-LIM-10); a repository's service account holds its rights as actions
+  of its own, a new source of rights (Q-AUTHZ-296, INV-9 amended); and the caller that led a fetch pays all of it
+  (Q-LIM-5). Three gaps of protocols are named there for him: NuGet and apt do not show why a request was refused; Docker
+  Hub counts pulls differently from Quader's upstream requests; an expired Debian `InRelease` cannot be served stale.
 - **A decision taken at OCI holds for every format** (owner, 2026-11-19): "Alles was wir hier für OCI besprechen gilt auch
   für alle anderen Registries die bereits gebaut sind und für zukünftige Registries. Ich verstehe, dass die API der
   Registries von ihrem Funktionsumfang unterschiedlich sind und deshalb manche Features nicht implementierbar sind. Das
@@ -1914,6 +1932,13 @@ agent** is not decided until the owner has said so.
   image they get past `Install build tools` and then build these images. To a builder on 2026-11-19, together with F-156:
   the images are built once per change of their inputs and reused from a cache that publishes nothing, the Go module
   cache holds every module of `go.sum`, and a download that stalls fails in minutes.
+- **F-159 · A unit test with a date in it turned the gating job `web (Angular)` red on its seventh day** (2026-11-19 from
+  12:31:51 UTC, Test and Release 44525198691): two tests of the grade card held a fixture time of 2026-11-12 12:31:51 UTC
+  and expected its relative time to read "now", minutes, hours, "yesterday" or days ago; from the seventh day on it reads
+  "last week". `main` was red for the gate from that minute on, with no change of the product. Fixed within the hour: the
+  tests assert the shape (a relative time with the absolute one in brackets), not the words. The other assertions on
+  relative times were read: each computes its dates from the time of the run or passes its own "now". What it shows: a
+  test that reads the clock against a fixed date passes for a week of reviews and fails afterwards.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
