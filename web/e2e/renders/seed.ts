@@ -1151,7 +1151,8 @@ export async function seedLimits(admin: Api): Promise<void> {
   );
   // A project's first maximum takes no If-Match (Q-API-354).
   const maximum = await admin.get(`/api/v1/projects/${longProject}/limits/maximum`);
-  if (maximum.status() === 404) {
+  await expectStatus(maximum, [200], `maximum of ${longProject}`);
+  if ((await maximum.json()).maximum === null) {
     await expectStatus(
       await admin.put(`/api/v1/projects/${longProject}/limits/maximum`, { profile: 'technical', overrides: { bytesPerDay: 2_000_000_000_000 } }),
       [201],

@@ -460,12 +460,14 @@ export class RepositoryCreate implements HasUnsavedChanges {
         this.pristine.update((current) => ({ ...current, upstream }));
       });
     });
-    // The key's availability, asked 400 ms after the last keystroke within the chosen project (R-UI-086).
+    // The key's availability, asked 400 ms after the last keystroke within the chosen project (R-UI-086). Only a key the person
+    // typed is asked: an untouched key is the server's free suggestion. Compared with the suggestion, the previous class's key was
+    // asked while the next class's suggestion loaded, and answered 404 in the browser (oci, Local to Virtual, 2026-11-19).
     effect(() => {
       const key = this.form().key;
       const project = this.chosenProject();
       const suggested = this.keyDefaults()?.suggestedKey ?? null;
-      const check = this.keyValid() && project !== '' && key !== suggested;
+      const check = this.keyValid() && project !== '' && this.keyEdited() && key !== suggested;
       untracked(() => this.scheduleKeyCheck(key, project, check));
     });
   }

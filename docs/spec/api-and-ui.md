@@ -6138,7 +6138,8 @@ Priority: **MVP** · Covers: UI-031
 - **Create repository** is enabled while nothing is being sent. Pressed with errors, it sends nothing, shows the error summary
   with a link per field and moves the focus to the summary.
 - The key's availability is asked 400 ms after the last keystroke; "A repository with this key already exists in the project." is
-  shown when the answer comes, because it answers what was typed. The suggested key is free when the form opens (R-REPO-063).
+  shown when the answer comes, because it answers what was typed. The suggested key is free when the form opens (R-REPO-063), and
+  a key the person did not type is never asked: not while another class's suggestion loads either.
 - An error says what to do: "Use 2 to 64 lower-case letters and digits, with ., _, __ or - between them." Server field errors
   appear at their fields whatever was touched.
 
@@ -15829,6 +15830,26 @@ of 2026-11-19).
 **Choice:** (a). **Applied in the spec:** R-API-008. Code: `projectRoleAdmits` in
 [authorize.go](../../internal/api/v1/authorize.go), tested in `TestR_AUTHZ_026_TheDeclarationOfAProjectRole`.
 
+### Q-API-356 · A project without a maximum is read as 200 with `maximum` null
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `GET /api/v1/projects/{projectKey}/limits/maximum` answered 404 for a project without a maximum (R-LIM-033). That is the
+ordinary state of a project, and the project's settings read it on every load, so every page load showed a failed request in the
+browser (the full render run of 2026-11-19, `project-settings` as Owner and administrator). The API's other optional singleton, the
+system banner (R-OPS-025), answers 200 with `{"enabled": false}` while none is set.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The read answers 200 with `{"project": …, "maximum": null}` and no `ETag` while none is set, the maximum and its `ETag` once set; 404 stays the answer for a project that does not exist (chosen) | `LimitProjectMaximumState`; the client's `maximum()` returns null for it; the first maximum is set without `If-Match` (Q-API-354) | The ordinary state is an ordinary answer, as the banner's; "none" and "no project" are told apart | The read's body wraps the maximum the `PUT` answers bare |
+| (b) The page learns it from an answer it already has | The instance's projects list (`GET /api/v1/limits/projects`) carries it | No read | That list is for `limits:read` at the instance, not for an Owner; the dialog still needs the `ETag` |
+| (c) Keep 404 and allow it in the renders | — | No change | A failed request on every load of a project's settings |
+
+**Choice:** (a). The project's settings and the tab **Projects** read it through the one client method. **Applied in the spec:**
+R-LIM-033 of [usage-and-limits.md](usage-and-limits.md). Code: `GetLimitProjectMaximum` in
+[limits_api.go](../../internal/api/v1/limits_api.go), `LimitsApi.maximum` in [limits-api.ts](../../web/src/app/api/limits-api.ts),
+tested in `TestR_LIM_033_AProjectsFirstMaximumTakesNoIfMatch`.
+
 ### Q-API-345 · The usage list is one operation per scope, with the period, the kind, the state and the sort as parameters
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -18638,7 +18659,11 @@ it: `row-offset` measures a stacked row's first line only.
 | (b) Cells at the line's top | — | Simple | A cell whose first line is taller (a field, a link button) puts its name lower than its neighbours' |
 | (c) The ended token's time and state on one line | — | This one cell | The next cell of two lines repeats it |
 
-**Choice:** (a). **Applied in the spec:** R-UI-174. Code: [_list-screens.scss](../../web/src/styles/_list-screens.scss),
+**Choice:** (a). `label-apart` finds a value only where its first piece (its first word, or its first box that does not break) would
+fit beside its name: a media type that does not break and a link of its own box wider than the room start on the next line by right
+(the full render run of 2026-11-19 had them, and a CI issuer's audience and an import's messages that did not have to). The name is
+measured by a span of its text in its place: a mark of no width beside it wrapped in a flex cell and misreported a visibility level.
+**Applied in the spec:** R-UI-174. Code: [_list-screens.scss](../../web/src/styles/_list-screens.scss),
 [layout.ts](../../web/e2e/renders/layout.ts), fixtures in [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts).
 
 ### Q-UI-763 · A meter in a stacked row is a line of its own: name, bar and figure on one line

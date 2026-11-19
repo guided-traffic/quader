@@ -877,7 +877,6 @@ async function* limitsSectionOpen(page: Page): AsyncGenerator<string> {
 
 const all: readonly Kind[] = ['plain', 'power', 'admin'];
 /** A signed-out visitor's page asks who is signed in and is told nobody. */
-const noMaximum = [{ match: /^GET \/api\/v1\/projects\/[^/]+\/limits\/maximum answered 404$/, why: 'a project without a maximum answers 404 (R-LIM-033)' }];
 const noSession = [{ match: /^GET \/api\/v1\/auth\/whoami answered 401$/, why: 'an anonymous visitor has no session' }];
 const owners: readonly Kind[] = ['power', 'admin'];
 const admins: readonly Kind[] = ['admin'];
@@ -1038,8 +1037,8 @@ export const screens: readonly Screen[] = [
   { id: 'project-ci-mapping-new', path: `${P}/ci/mappings/new`, kinds: owners },
   { id: 'project-settings', path: `${P}/settings`, kinds: owners, walk: visibilityOpen },
   // The download limits of a project and of a remote repository, and the project's usage (R-UI-180, R-UI-183, R-UI-184).
-  // The main project has no maximum: its read answers 404, which says "none" (R-LIM-033).
-  { id: 'project-settings-limits', path: `${P}/settings`, kinds: owners, walk: limitsSectionOpen, expected: noMaximum },
+  // The main project has no maximum: its read answers 200 with `maximum` null (Q-API-356).
+  { id: 'project-settings-limits', path: `${P}/settings`, kinds: owners, walk: limitsSectionOpen },
   { id: 'repository-settings-limits', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: limitsSectionOpen },
   { id: 'project-usage', path: `${P}/usage`, kinds: owners, walk: usageWalk },
   { id: 'project-usage-repository', path: `${P}/usage?repository=npmjs`, kinds: owners, walk: limitsModes },

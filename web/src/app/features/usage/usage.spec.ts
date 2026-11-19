@@ -205,6 +205,12 @@ describe("A caller's usage (R-UI-184) and a user's own (R-UI-185)", () => {
     const chart = historyChart(sampleHistory(), 'requests');
     expect(chart.marks.length).toBe(1);
     expect(chart.max).toBe(5000);
+    // A time label within a tenth of an edge ends or starts there instead of being centred past it.
+    for (const label of root.querySelectorAll<HTMLElement>('quader-usage-history .times span')) {
+      const at = parseFloat(label.style.insetInlineStart);
+      expect(label.classList.contains('end')).toBe(at > 90);
+      expect(label.classList.contains('start')).toBe(at < 10);
+    }
   });
 
   it('R-UI-184 names the steps and links a token to its account', () => {

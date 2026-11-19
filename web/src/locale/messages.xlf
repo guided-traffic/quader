@@ -6766,7 +6766,7 @@
     </unit>
     <unit id="ci.keys.failed">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:64,65</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:69,70</note>
       </notes>
       <segment>
         <source>Fetch failed</source>
@@ -6774,7 +6774,7 @@
     </unit>
     <unit id="ci.keys.usable">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:67</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:72</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ i.keys!.usable }}"/> usable</source>
@@ -6782,7 +6782,7 @@
     </unit>
     <unit id="ci.keys.fetched">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:68</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:73</note>
       </notes>
       <segment>
         <source>fetched</source>
@@ -6790,7 +6790,7 @@
     </unit>
     <unit id="ci.keys.none">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:70,71</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:75,76</note>
       </notes>
       <segment>
         <source>Not fetched yet</source>
@@ -6798,7 +6798,7 @@
     </unit>
     <unit id="ci.source.configuration">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:75,76</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:80,81</note>
       </notes>
       <segment>
         <source>configuration</source>
@@ -6806,7 +6806,7 @@
     </unit>
     <unit id="ci.source.api">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:77,78</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:82,83</note>
       </notes>
       <segment>
         <source>api</source>
@@ -6814,7 +6814,7 @@
     </unit>
     <unit id="ci.issuers.caption">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:106</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:111</note>
       </notes>
       <segment>
         <source>CI issuers</source>
@@ -6822,7 +6822,7 @@
     </unit>
     <unit id="ci.issuers.col.name">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:108</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:113</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -6830,7 +6830,7 @@
     </unit>
     <unit id="ci.issuers.col.kind">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:109</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:114</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -6838,7 +6838,7 @@
     </unit>
     <unit id="ci.issuers.col.issuer">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:110</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:115</note>
       </notes>
       <segment>
         <source>Issuer URL</source>
@@ -6846,7 +6846,7 @@
     </unit>
     <unit id="ci.issuers.col.audiences">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:111</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:116</note>
       </notes>
       <segment>
         <source>Audiences</source>
@@ -6854,7 +6854,7 @@
     </unit>
     <unit id="ci.issuers.col.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:112</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:117</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -6862,7 +6862,7 @@
     </unit>
     <unit id="ci.issuers.col.keys">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:113</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:118</note>
       </notes>
       <segment>
         <source>Signing keys</source>
@@ -6870,7 +6870,7 @@
     </unit>
     <unit id="ci.issuers.col.source">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:114</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:119</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -6878,7 +6878,7 @@
     </unit>
     <unit id="ci.issuers.col.source-help">
       <notes>
-        <note category="location">src/app/features/ci/issuer-list.ts:114</note>
+        <note category="location">src/app/features/ci/issuer-list.ts:119</note>
       </notes>
       <segment>
         <source>An issuer declared in the installation&apos;s configuration is read-only here.</source>
@@ -20647,7 +20647,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:72,74</note>
         <note category="location">src/app/features/repositories/repository-create.ts:392</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:607</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:609</note>
         <note category="location">src/app/features/repositories/repository-detail.html:80,81</note>
       </notes>
       <segment>
@@ -20681,7 +20681,7 @@
     <unit id="repo.field.description-optional">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:100,102</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:609</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:611</note>
         <note category="location">src/app/features/repositories/repository-detail.html:85,87</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:335</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:360</note>
@@ -20717,7 +20717,7 @@
     <unit id="repo.create.members">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:147,148</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:619</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:621</note>
         <note category="location">src/app/features/repositories/repository-detail.html:134,135</note>
       </notes>
       <segment>
@@ -20767,7 +20767,7 @@
     <unit id="repo.field.notes">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:180,181</note>
-        <note category="location">src/app/features/repositories/repository-create.ts:611</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:613</note>
         <note category="location">src/app/features/repositories/repository-detail.html:244,245</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:345</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:362</note>
@@ -20919,7 +20919,7 @@
     </unit>
     <unit id="repo.class.unsupported">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:492</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:494</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="format" disp="this.formatLabel()"/> does not implement the class <ph id="1" equiv="class" disp="classLabel(cls)"/>.</source>
@@ -20927,7 +20927,7 @@
     </unit>
     <unit id="repo.wizard.created">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:579</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:581</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="created.value.key"/> created.</source>
@@ -20935,7 +20935,7 @@
     </unit>
     <unit id="repo.field.include">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:613</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:615</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:364</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:46,48</note>
       </notes>
@@ -20945,7 +20945,7 @@
     </unit>
     <unit id="repo.field.exclude">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:615</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:617</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:366</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:63,65</note>
       </notes>
@@ -20955,7 +20955,7 @@
     </unit>
     <unit id="repo.field.hide">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:617</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:619</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:368</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:105,107</note>
       </notes>
@@ -20965,7 +20965,7 @@
     </unit>
     <unit id="repo.key.shape">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:686</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:688</note>
       </notes>
       <segment>
         <source>Use 2 to 64 lower-case letters and digits, with ., _, __ or - between them.</source>
@@ -20973,7 +20973,7 @@
     </unit>
     <unit id="upstream.url.required">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.ts:691</note>
+        <note category="location">src/app/features/repositories/repository-create.ts:693</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:138,140</note>
       </notes>
       <segment>

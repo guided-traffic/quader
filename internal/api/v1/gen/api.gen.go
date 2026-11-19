@@ -8415,6 +8415,13 @@ type LimitProjectMaximum struct {
 	Version   int64                `json:"version"`
 }
 
+// LimitProjectMaximumState defines model for LimitProjectMaximumState.
+type LimitProjectMaximumState struct {
+	// Maximum The project's maximum; `null` while it has none (Q-API-356).
+	Maximum *LimitProjectMaximum `json:"maximum"`
+	Project string               `json:"project"`
+}
+
 // LimitProjectMaximumWrite defines model for LimitProjectMaximumWrite.
 type LimitProjectMaximumWrite struct {
 	Effective *map[string]interface{} `json:"effective,omitempty"`

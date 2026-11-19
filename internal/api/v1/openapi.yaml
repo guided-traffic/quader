@@ -15200,7 +15200,9 @@ paths:
       tags: [limits]
       summary: Read a project's maximum
       description: |
-        The maximum an Owner's rules are capped at (R-LIM-016, R-LIM-033); `404` when none is set.
+        The maximum an Owner's rules are capped at (R-LIM-016, R-LIM-033), or `maximum` `null` while the project has none, the
+        ordinary state (Q-API-356); the `ETag` comes with a maximum only, and a first one is set without `If-Match`. `404` is a
+        project that does not exist.
       x-quader-permission:
         permission: limits:read
         project: path.projectKey
@@ -15214,7 +15216,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LimitProjectMaximum"
+                $ref: "#/components/schemas/LimitProjectMaximumState"
+              example: {project: web-frontend, maximum: null}
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -24600,6 +24603,16 @@ components:
         version: {type: integer, format: int64}
         updatedAt: {type: string, format: date-time}
         updatedBy: {type: [string, "null"]}
+    LimitProjectMaximumState:
+      type: object
+      required: [project, maximum]
+      properties:
+        project: {type: string}
+        maximum:
+          description: The project's maximum; `null` while it has none (Q-API-356).
+          oneOf:
+            - $ref: "#/components/schemas/LimitProjectMaximum"
+            - type: "null"
     LimitProjectMaximumWrite:
       type: object
       required: [profile]

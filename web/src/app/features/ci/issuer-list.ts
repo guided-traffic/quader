@@ -53,9 +53,14 @@ import { PageHeader } from '../../shared/ui/page-header';
           </th>
           <td translate="no">{{ i.kind }}</td>
           <td translate="no" class="wrap">{{ i.issuer }}</td>
+          <!-- One audience to a line; the first on the cell's first line, so that a stacked row's "Audiences" stands beside it
+               (Q-UI-762). -->
           <td translate="no" class="wrap">
-            @for (a of i.allowedAudiences; track a) {
-              <div>{{ a }}</div>
+            @for (a of i.allowedAudiences; track a; let last = $last) {
+              <span>{{ a }}</span>
+              @if (!last) {
+                <br />
+              }
             }
           </td>
           <td class="num">{{ i.mappingCount ?? 0 }}</td>

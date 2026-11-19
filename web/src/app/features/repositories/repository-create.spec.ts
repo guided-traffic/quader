@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { vi } from 'vitest';
 import { ApiError } from '../../api/problem';
 import { FormatDescriptor, RepositoriesApi, Repository } from '../../api/repositories-api';
 import {
@@ -136,6 +137,25 @@ describe('The creation form of a repository', () => {
     expect(r.root.querySelector('#e-key')).toBeNull();
     await sleep(r.fixture, 500);
     expect(text($(r, '#e-key'))).toBe('A repository with this key already exists in the project.');
+  });
+
+  it("R-UI-086 an untouched key is never asked, also while the next class's suggestion is slow to come", async () => {
+    const r = await openForm('npm');
+    const asked = vi.spyOn(r.fake, 'get');
+    let release!: () => void;
+    r.fake.defaultsHold = new Promise((go) => (release = go));
+    // Not chooseClass nor sleep: their settle waits for the held answer.
+    $(r, 'input[name="class"][value="remote"]').click();
+    r.fixture.detectChanges();
+    await new Promise((go) => setTimeout(go, 500));
+    r.fixture.detectChanges();
+    expect(asked).not.toHaveBeenCalled();
+    r.fake.defaultsHold = null;
+    release();
+    await sleep(r.fixture, 20);
+    expect($(r, '#f-key').value).toBe('npm-remote');
+    await sleep(r.fixture, 500);
+    expect(asked).not.toHaveBeenCalled();
   });
 
   it('R-UI-081 R-UI-042 a create of a local generic repository without typing sends the identity only, once on a double click', async () => {

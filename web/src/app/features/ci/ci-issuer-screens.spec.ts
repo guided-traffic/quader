@@ -29,7 +29,10 @@ describe('The CI issuer list (R-UI-035)', () => {
     expect(gitlab).toContain('gitlab');
     expect(gitlab).toContain('https://gitlab.example.com');
     expect(gitlab).toContain('https://quader.example.comnpm:quader.example.com');
-    expect([...root.querySelectorAll('tbody tr')[1]!.querySelectorAll('td')[2]!.querySelectorAll('div')].map((d) => text(d))).toEqual(['https://quader.example.com', 'npm:quader.example.com']);
+    // One audience to a line, the first on the cell's first line (Q-UI-762).
+    const audiences = root.querySelectorAll('tbody tr')[1]!.querySelectorAll('td')[2]!;
+    expect([...audiences.querySelectorAll(':scope > span')].map((d) => text(d))).toEqual(['https://quader.example.com', 'npm:quader.example.com']);
+    expect(audiences.querySelectorAll(':scope > br').length).toBe(1);
     expect(text(root.querySelectorAll('tbody tr')[1]!.querySelectorAll('td')[3]!)).toBe('1');
     expect(gitlab).toContain('2 usable');
     expect(gitlab).toContain('api');

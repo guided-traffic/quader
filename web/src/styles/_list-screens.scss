@@ -786,6 +786,19 @@ td.class-cell .material-icons {
       display: none;
     }
 
+    // An inline fold (`<quader-disclosure [inline]="true">`: the messages of an import) starts on its column's name's line, its
+    // content a block under it when open (Q-UI-762): as a block of its own, "1 message" stood under "Messages".
+    td > quader-disclosure.inline,
+    td > quader-disclosure.inline > .disclosure {
+      display: inline;
+    }
+
+    // Its toggle stands at the line's top as every control of a line does (R-UI-175): on the baseline of its chevron "1 message"
+    // stood 4 px above "Messages".
+    td > quader-disclosure.inline .inline-toggle {
+      vertical-align: top;
+    }
+
     // A meter (`td.meter-cell`: the usage overview's **Now**) takes a line of the block's whole width: the column's name, the bar
     // and its figure on one line, the state under the bar (Q-UI-763). As an inline name before the meter's box, the name stood on a
     // line of its own above the bar.

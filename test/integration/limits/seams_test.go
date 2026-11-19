@@ -70,7 +70,8 @@ func TestR_LIM_001_ARegistryTokenOfATechnicalTokenIsChargedToTheTechnicalToken(t
 		t.Fatalf("the technical token was charged %d requests, want the token request and the registry request", n)
 	}
 	if n := e.st.Number(`SELECT COALESCE(sum(requests), 0) FROM usage_bucket WHERE granularity = '5m' AND subject_kind = 'anonymous'`); n != 0 {
-		t.Fatalf("%d requests were charged to an address", n)
+		rows := e.st.Text(`SELECT string_agg(subject_ref || ' ' || place || ' repo=' || COALESCE(repository_id::text, '-') || ' requests=' || requests || ' refused=' || refused, '; ') FROM usage_bucket WHERE granularity = '5m' AND subject_kind = 'anonymous'`)
+		t.Fatalf("%d requests were charged to an address: %s", n, rows)
 	}
 	row := e.tokenRow(t, technical)
 	if subject := row["subject"].(map[string]any); subject["account"] != "sa:puller" || subject["level"] != "instance" || subject["deleted"] != false {
@@ -164,7 +165,8 @@ func TestR_LIM_019_WithValkeyStoppedTheReplicaDecidesOnItsShare(t *testing.T) {
 	}
 }
 
-// Q-API-354: a project's first maximum is set by PUT without If-Match; a replace requires it; an If-Match where nothing exists fails.
+// Q-API-354, Q-API-356: a project's first maximum is set by PUT without If-Match; a replace requires it; an If-Match where nothing
+// exists fails; the read says "none" with 200.
 func TestR_LIM_033_AProjectsFirstMaximumTakesNoIfMatch(t *testing.T) {
 	e := newEnv(t)
 	const path = "/api/v1/projects/it/limits/maximum"
@@ -177,6 +179,13 @@ func TestR_LIM_033_AProjectsFirstMaximumTakesNoIfMatch(t *testing.T) {
 	// R-UI-177: a project with repositories and neither a maximum nor a rule is no row of the projects' list (Q-API-351).
 	if items := projects(); len(items) != 0 {
 		t.Fatalf("projects without limits listed: %v", items)
+	}
+	// Q-API-356: no maximum is the ordinary state, read as 200 with `maximum` null and no ETag; a missing project stays 404.
+	if a := e.st.Do(e.r, "GET", path, e.admin, nil); a.Status != 200 || a.JSON(t)["maximum"] != nil || a.Header.Get("ETag") != "" {
+		t.Fatalf("a project without a maximum: %d %s (ETag %q)", a.Status, a.Body, a.Header.Get("ETag"))
+	}
+	if a := e.st.Do(e.r, "GET", "/api/v1/projects/no-such-project/limits/maximum", e.admin, nil); a.Status != 404 {
+		t.Fatalf("the maximum of a project that does not exist: %d %s", a.Status, a.Body)
 	}
 	if a := e.st.Do(e.r, "PUT", path, e.admin, body, "If-Match", `"1"`); a.Status != 412 {
 		t.Fatalf("an If-Match where no maximum exists: %d %s", a.Status, a.Body)
@@ -196,5 +205,9 @@ func TestR_LIM_033_AProjectsFirstMaximumTakesNoIfMatch(t *testing.T) {
 	}
 	if items := projects(); len(items) != 1 || items[0].(map[string]any)["project"] != "it" || items[0].(map[string]any)["maximum"] == nil {
 		t.Fatalf("the project with its maximum: %v", items)
+	}
+	read := e.st.Do(e.r, "GET", path, e.admin, nil)
+	if m, _ := read.JSON(t)["maximum"].(map[string]any); read.Status != 200 || m["profile"] != "technical" || read.Header.Get("ETag") != `"2"` {
+		t.Fatalf("the maximum read back: %d %s (ETag %q)", read.Status, read.Body, read.Header.Get("ETag"))
 	}
 }

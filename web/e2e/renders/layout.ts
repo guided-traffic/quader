@@ -25,7 +25,8 @@ export interface LayoutFinding {
 
 /**
  * The findings of the picture's present state (run in the page). Cheap: one walk over the elements of each kind, no waiting,
- * no change of the page but the measurement of a stacked table, which is undone in the same task (no frame is painted between).
+ * no change of the page but the measurement of a stacked table and of a stacked row's column names, which is undone in the same
+ * task (no frame is painted between).
  */
 export function layoutFindings(): LayoutFinding[] {
   const found = new Map<string, { check: string; what: string; text: string; detail: string; count: number }>();
@@ -473,25 +474,89 @@ export function layoutFindings(): LayoutFinding[] {
   // its value. The value's first line stands on the name's line (`label-apart`: a meter's box under its "Now"), and the facts side
   // by side on one line of the block have their names on one middle within LINE_TOLERANCE px (`stacked-offset`: an ended token's
   // "Ended", centred with its two lines against "Limit" and "Last used", a line above them); a value of two lines grows downwards.
-  // The name is a pseudo-element, which has no box to measure: an empty mark (a zero-width space) put before the value for the
-  // measurement stands on its line, and is taken out again in the same task.
+  // The name is a pseudo-element, measured by a span of its text in its place (`nameBox`). A value whose first piece is wider than the room
+  // beside the name (a long key that does not break, a link of the house, which is a box of its own) starts on the next line by
+  // right, and is no finding: measured, not named by a selector.
+  // The first piece of a value, in the order it is read: the first word of its first text, or its first box that does not break
+  // inside (an inline-block, an inline flex or grid box, a picture, a control). A block, a flex or grid box and a list are looked
+  // into: they put the value on a line of its own, and the question is whether what starts them would fit beside the name.
+  const ATOMIC = /^inline-(block|flex|grid|table)$/;
+  function firstPiece(node: Node): number | null {
+    for (let n = node.firstChild; n; n = n.nextSibling) {
+      if (n.nodeType === Node.TEXT_NODE) {
+        const text = n.nodeValue ?? '';
+        const start = text.search(/\S/);
+        if (start < 0) continue;
+        const end = text.slice(start).search(/\s/);
+        range.setStart(n, start);
+        range.setEnd(n, end < 0 ? text.length : start + end);
+        return range.getBoundingClientRect().width;
+      }
+      if (n.nodeType !== Node.ELEMENT_NODE) continue;
+      const e = n as Element;
+      const d = getComputedStyle(e).display;
+      if (d === 'none' || positioned(e) || e.closest('.visually-hidden, .cdk-visually-hidden')) continue;
+      if (ATOMIC.test(d) || e.matches('img, svg, input, select, textarea') || e.matches(UNIT)) {
+        const r = e.getBoundingClientRect();
+        if (r.width > 0) return r.width;
+        continue;
+      }
+      const inner = firstPiece(e);
+      if (inner !== null) return inner;
+    }
+    return null;
+  }
+  // The column's name of a cell, as it stands: the pseudo-element has no box to measure, so for the measurement it is replaced by
+  // a span of the same text in the same place (an inline box of a block cell, an item of a flex or grid cell) and put back in
+  // the same task. A mark of no width beside the name wrapped to its own line in a flex cell and measured a line too low.
+  const MEASURED = 'data-quader-layout-name';
+  const nameStyle = document.createElement('style');
+  nameStyle.textContent = `[${MEASURED}]::before { content: none !important; }`;
+  document.head.append(nameStyle);
+  function nameBox(cell: Element): DOMRect | null {
+    const label = cell.getAttribute('data-label') ?? '';
+    if (label === '') return null;
+    const span = document.createElement('span');
+    span.textContent = `${label} `;
+    span.style.color = getComputedStyle(cell, '::before').color;
+    cell.setAttribute(MEASURED, '');
+    cell.prepend(span);
+    range.setStart(span.firstChild!, 0);
+    range.setEnd(span.firstChild!, label.length);
+    const box = range.getBoundingClientRect();
+    span.remove();
+    cell.removeAttribute(MEASURED);
+    return box;
+  }
   for (const row of Array.from(document.querySelectorAll<HTMLTableRowElement>('.quader-data-table.stacked table.data > tbody > tr'))) {
     if (!shown(row)) continue;
-    const facts: { cell: Element; box: DOMRect; value: DOMRect | null; name: DOMRect }[] = [];
+    const facts: { cell: Element; box: DOMRect; value: DOMRect | null; name: DOMRect; piece: number | null; room: number }[] = [];
     for (const cell of Array.from(row.cells)) {
       if (!cell.matches('td[data-label]:not(.actions)') || !shown(cell) || getComputedStyle(cell, '::before').content === 'none') continue;
       const parts = [lines(cell)[0]?.reduce((a, b) => (a.top <= b.top ? a : b)) ?? null];
       for (const unit of Array.from(cell.querySelectorAll(UNIT))) if (outermost(unit) && shown(unit) && !positioned(unit)) parts.push(boxOf(unit));
       const value = parts.filter((r): r is DOMRect => r !== null).reduce<DOMRect | null>((a, b) => (a && a.top <= b.top ? a : b), null);
-      const mark = document.createElement('span');
-      mark.textContent = '​';
-      cell.prepend(mark);
-      facts.push({ cell, box: cell.getBoundingClientRect(), value, name: mark.getBoundingClientRect() });
-      mark.remove();
+      const piece = firstPiece(cell);
+      const name = nameBox(cell);
+      if (!name) continue;
+      // The room beside the name: a cell of a block grows to the block's width, so the row's width less the cell's padding and its name.
+      const cs = getComputedStyle(cell);
+      const rs = getComputedStyle(row);
+      const rowWidth = row.getBoundingClientRect().width - parseFloat(rs.paddingLeft) - parseFloat(rs.paddingRight);
+      const nameWidth = name.right - (cell.getBoundingClientRect().left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth));
+      const room = rowWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - nameWidth;
+      facts.push({ cell, box: cell.getBoundingClientRect(), value, name, piece, room });
     }
     for (const f of facts) {
-      if (f.value && f.value.top >= f.name.bottom - LINE_TOLERANCE) {
-        add('label-apart', f.cell, f.cell.textContent ?? '', `the value starts ${Math.round(f.value.top - f.name.top)} px below the column's name, on a line of its own`);
+      // A value whose first piece (its first word, or its first box that does not break: a link of the house, a badge) is wider
+      // than the room beside the name could not stand there: on a line of its own is its right place.
+      if (f.value && f.value.top >= f.name.bottom - LINE_TOLERANCE && (f.piece === null || f.piece <= f.room)) {
+        add(
+          'label-apart',
+          f.cell,
+          f.cell.textContent ?? '',
+          `the value starts ${Math.round(f.value.top - f.name.top)} px below the column's name, on a line of its own, though its first piece (${Math.round(f.piece ?? 0)} px) fits the ${Math.round(f.room)} px beside the name`,
+        );
       }
     }
     // The facts of one line of the block: their boxes share height, as the boxes of two lines do not.
@@ -519,6 +584,7 @@ export function layoutFindings(): LayoutFinding[] {
     }
     measureLine();
   }
+  nameStyle.remove();
 
   // ---- clipped: a text cut although there is room beside it (R-UI-173) ----------------------------------------------------
   // An element cut with an ellipsis, or a read-only field's value cut (an address, a command), where the box that holds it has the

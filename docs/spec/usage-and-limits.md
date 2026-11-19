@@ -1379,7 +1379,7 @@ Priority: **MVP** · Covers: BEYOND-030
 | `GET /api/v1/limits/settings` | The mode and the block time | 200 | `limits:read` |
 | `PATCH /api/v1/limits/settings` | Change them; a change of `mode` needs recent authentication | 200; 412; 422; 428 | `limits:write` |
 | `GET /api/v1/limits/mode-preview` | What `enforce` would have done in the last 24 hours | 200 | `limits:read` |
-| `GET /api/v1/projects/{projectKey}/limits/maximum` | The project's maximum | 200; 404 (none, or no project) | `limits:read` or an Owner of the project |
+| `GET /api/v1/projects/{projectKey}/limits/maximum` | The project's maximum, or `maximum` `null` and no `ETag` while it has none ([api-and-ui.md](api-and-ui.md) Q-API-356) | 200; 404 (no project) | `limits:read` or an Owner of the project |
 | `PUT /api/v1/projects/{projectKey}/limits/maximum` | Set or replace it: a first maximum without `If-Match` (201), a replace with it (200; 428 without) ([api-and-ui.md](api-and-ui.md) Q-API-354) | 200, 201; 412; 422; 428 | `limits:write` |
 | `DELETE /api/v1/projects/{projectKey}/limits/maximum` | Remove it | 204; 404; 412 | `limits:write` |
 | `GET /api/v1/limits/blocks?active=&place=` | Blocks (active by default), newest first; `place` is `project:<projectKey>` (the project and its repositories) or `repository:<projectKey>/<repoKey>` | 200 | `limits:read`; an Owner with `place` of its project |

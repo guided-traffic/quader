@@ -5539,7 +5539,9 @@ export interface paths {
         };
         /**
          * Read a project's maximum
-         * @description The maximum an Owner's rules are capped at (R-LIM-016, R-LIM-033); `404` when none is set.
+         * @description The maximum an Owner's rules are capped at (R-LIM-016, R-LIM-033), or `maximum` `null` while the project has none, the
+         *     ordinary state (Q-API-356); the `ETag` comes with a maximum only, and a first one is set without `If-Match`. `404` is a
+         *     project that does not exist.
          */
         get: operations["getLimitProjectMaximum"];
         /**
@@ -11560,6 +11562,11 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             updatedBy: string | null;
+        };
+        LimitProjectMaximumState: {
+            project: string;
+            /** @description The project's maximum; `null` while it has none (Q-API-356). */
+            maximum: components["schemas"]["LimitProjectMaximum"] | null;
         };
         LimitProjectMaximumWrite: {
             profile: string;
@@ -24194,7 +24201,13 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LimitProjectMaximum"];
+                    /**
+                     * @example {
+                     *       "project": "web-frontend",
+                     *       "maximum": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["LimitProjectMaximumState"];
                 };
             };
             400: components["responses"]["BadRequest"];

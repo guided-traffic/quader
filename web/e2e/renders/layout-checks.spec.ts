@@ -244,6 +244,19 @@ test.describe('a table\'s row (R-UI-176)', () => {
     const meter = '<div style="display:flex;flex-direction:column"><span><span style="display:inline-block;inline-size:64px;block-size:6px;background:#888"></span> 22%</span><span class="badge">Close to the limit</span></div>';
     const apart = await check(page, ...facts('baseline', meter));
     expect(only(apart, 'label-apart'), describe(apart)).toHaveLength(1);
+    // The admin area's CI issuers at 1024 px: one audience of six letters in a block of its own under "Audiences".
+    const audience = await check(page, ...facts('baseline', '<div>quader</div>'));
+    expect(only(audience, 'label-apart'), describe(audience)).toHaveLength(1);
+  });
+
+  test("Q-UI-762 a stacked row: a value whose first piece is wider than the room beside its name may start under it", async ({ page }) => {
+    // A media type that does not break, and a link that is a box of its own (a repository's long key in the search results).
+    const word = (await check(page, ...facts('baseline', '<span>application/vnd.oci.image.manifest.v1+json</span>'))).filter((f) => f.check === 'label-apart');
+    expect(word, describe(word)).toEqual([]);
+    const link = (
+      await check(page, ...facts('baseline', '<a href="#" style="display:inline-block">release-candidates-for-the-customer-portal-frontend</a>'))
+    ).filter((f) => f.check === 'label-apart');
+    expect(link, describe(link)).toEqual([]);
   });
 
   test('R-UI-176 a document\'s table is not measured', async ({ page }) => {
@@ -526,6 +539,21 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
     const found = await check(page, stackedFacts, before, true);
     expect(only(found, 'stacked-offset').length, describe(found)).toBeGreaterThan(0);
     expect(only(found, 'label-apart'), describe(found)).toHaveLength(1);
+  });
+
+  // The admin area's repository list at 390 px (the full render run of 2026-11-19): a format, a class and a visibility level, each
+  // its icon and its word, on the lines of a block.
+  const levelFacts = `<div class="quader-data-table stacked" style="inline-size:358px"><div class="table-frame"><div class="table-scroll"><table class="data"><tbody>
+      <tr>
+        <th scope="row"><span>apt</span></th>
+        <td class="format-cell" data-label="Format"><span class="format-name"><quader-format-icon><span class="material-icons" aria-hidden="true">inventory_2</span></quader-format-icon><span translate="no">Debian (APT)</span></span></td>
+        <td class="class-cell" data-label="Class"><span class="class-name"><span class="material-icons" aria-hidden="true">layers</span>Virtual</span></td>
+        <td class="level-cell" data-label="Visibility"><quader-visibility-icon><span class="material-icons inline" role="img" aria-label="Private">lock</span></quader-visibility-icon>Private</td>
+        <td data-label="Last activity">1 hour ago</td>
+      </tr></tbody></table></div></div></div>`;
+  test("Q-UI-762 a stacked row's format, class and visibility level with the app's stylesheet: the names on one line", async ({ page }) => {
+    const found = (await check(page, levelFacts, '', true)).filter((f) => f.check !== 'stacked-fits');
+    expect(found, describe(found)).toEqual([]);
   });
 
   test("R-UI-176 the guard can fail: the owner's row without the line rule is found with the app's stylesheet", async ({ page }) => {

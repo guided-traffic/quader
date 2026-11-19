@@ -182,7 +182,7 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
             }
             <div class="times" aria-hidden="true">
               @for (t of times(); track t.at) {
-                <span [style.inset-inline-start.%]="t.percent">{{ t.label }}</span>
+                <span [style.inset-inline-start.%]="t.percent" [class.start]="t.percent < 10" [class.end]="t.percent > 90">{{ t.label }}</span>
               }
             </div>
           </div>
@@ -292,12 +292,20 @@ export function historyChart(points: readonly UsagePoint[], series: HistorySerie
       inset-inline: 8.125% 0;
       block-size: 1rem;
     }
+    /* A label is centred on its point; within a tenth of either edge it ends or starts there, so it stays inside the chart (a
+       label of 12:00 PM at the right edge reached 7 px past a phone's panel). */
     .times span {
       position: absolute;
       transform: translateX(-50%);
       color: var(--quader-text-muted);
       font: var(--quader-type-body-small);
       white-space: nowrap;
+    }
+    .times span.start {
+      transform: none;
+    }
+    .times span.end {
+      transform: translateX(-100%);
     }
     .readout {
       min-block-size: var(--quader-line);

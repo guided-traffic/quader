@@ -1149,17 +1149,39 @@ func (s *Server) answerMaximum(w http.ResponseWriter, r *http.Request, projectKe
 		httpserver.Problem(w, r, err)
 		return
 	}
-	eff, _ := x.FiguresOfProfile(m.Profile, m.Overrides)
 	SetETag(w, m.Version, "")
-	writeJSON(w, r, status, map[string]any{
-		"project": projectKey, "profile": m.Profile, "overrides": m.Overrides, "effective": eff,
-		"version": m.Version, "updatedAt": m.UpdatedAt.UTC(), "updatedBy": s.principalName(ctx, l, m.UpdatedBy),
-	})
+	writeJSON(w, r, status, s.maximumRep(ctx, l, x, projectKey, m))
 }
 
-// GetLimitProjectMaximum implements GET /api/v1/projects/{projectKey}/limits/maximum.
+// maximumRep is a project's maximum as the API shows it (LimitProjectMaximum).
+func (s *Server) maximumRep(ctx context.Context, l LimitsServices, x *limits.Index, projectKey string, m limits.Maximum) map[string]any {
+	eff, _ := x.FiguresOfProfile(m.Profile, m.Overrides)
+	return map[string]any{
+		"project": projectKey, "profile": m.Profile, "overrides": m.Overrides, "effective": eff,
+		"version": m.Version, "updatedAt": m.UpdatedAt.UTC(), "updatedBy": s.principalName(ctx, l, m.UpdatedBy),
+	}
+}
+
+// GetLimitProjectMaximum implements GET /api/v1/projects/{projectKey}/limits/maximum. A project without a maximum is the ordinary
+// state, so the read answers 200 with `maximum` null and no ETag, as the banner answers `enabled` false (Q-API-356); 404 stays the
+// answer for a project that does not exist.
 func (s *Server) GetLimitProjectMaximum(w http.ResponseWriter, r *http.Request, projectKey string) {
-	s.answerMaximum(w, r, projectKey, http.StatusOK)
+	ctx := r.Context()
+	l, snap, x, err := s.snapshot(ctx)
+	if err == nil {
+		_, _, err = s.limitPlace(ctx, l, projectKey, "")
+	}
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
+	m, ok := findMaximum(snap, projectKey)
+	if !ok {
+		writeJSON(w, r, http.StatusOK, map[string]any{"project": projectKey, "maximum": nil})
+		return
+	}
+	SetETag(w, m.Version, "")
+	writeJSON(w, r, http.StatusOK, map[string]any{"project": projectKey, "maximum": s.maximumRep(ctx, l, x, projectKey, m)})
 }
 
 type maximumWrite struct {

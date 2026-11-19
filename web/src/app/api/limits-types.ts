@@ -56,6 +56,7 @@ export type ModePreview = Schema<'LimitModePreview'>;
 
 /** A project's maximum (R-LIM-033). */
 export type ProjectMaximum = Schema<'LimitProjectMaximum'>;
+export type ProjectMaximumState = Schema<'LimitProjectMaximumState'>;
 
 export type ProjectMaximumWrite = Required<Pick<Schema<'LimitProjectMaximumWrite'>, 'profile' | 'overrides'>>;
 

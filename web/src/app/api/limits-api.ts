@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient, QueryParams, newIdempotencyKey } from './client';
 import { collectAll } from './pagination';
-import { ApiError } from './problem';
 import { ProjectsApi } from './projects-api';
 import { cleanQuery, seg } from './query';
 import { Versioned } from './repositories-api';
@@ -19,6 +18,7 @@ import {
   LimitSubjectSuggestion,
   ModePreview,
   ProjectMaximum,
+  ProjectMaximumState,
   ProjectMaximumWrite,
   UsageDetail,
   UsageList,
@@ -281,14 +281,11 @@ export class HttpLimitsApi extends LimitsApi {
     return (await this.client.get('/api/v1/limits/mode-preview')).body;
   }
 
+  /** The project's maximum, null while it has none: the read answers `maximum` null then, with no ETag (Q-API-356). */
   override async maximum(project: string): Promise<Versioned<ProjectMaximum> | null> {
-    try {
-      return versioned(await this.client.getJson<ProjectMaximum>(`/api/v1/projects/${seg(project)}/limits/maximum`));
-    } catch (e) {
-      // 404 is "none" for a project the caller sees (R-LIM-033); a project it does not see is refused before.
-      if (e instanceof ApiError && e.status === 404) return null;
-      throw e;
-    }
+    const r = await this.client.getJson<ProjectMaximumState>(`/api/v1/projects/${seg(project)}/limits/maximum`);
+    const m = r.body.maximum;
+    return m ? { value: m, etag: r.etag ?? `"${m.version}"` } : null;
   }
 
   override async putMaximum(project: string, write: ProjectMaximumWrite, etag: string | null): Promise<Versioned<ProjectMaximum>> {
