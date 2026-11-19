@@ -178,7 +178,7 @@ of run 42465102401 where a row says so):
 | Trivy action, Docker Scout | the actions | not checked | action's own download |
 | kind, golangci-lint, govulncheck, gocyclo, oasdiff, osv-scanner | `go install` in the workflows and the Makefile | the Go module proxy | not a release asset |
 | OS packages (`build-essential`, `libatomic1`, `jq`, `file`, `unzip`, `docker-compose-v2`, ClamAV) | [apt-install.sh](../../.github/scripts/apt-install.sh), directly or through build-tools | the Ubuntu archive (`archive.ubuntu.com`, `security.ubuntu.com`) | skipped when installed, bounded in time ([OS packages in the jobs](#os-packages-in-the-jobs)) |
-| The browser libraries of Playwright | `npx playwright install --with-deps chromium` (kind legs with browser journeys) | the Ubuntu archive, through Playwright's own apt call | the step's `timeout-minutes: 25` only |
+| The browser libraries of Playwright | [playwright-install.sh](../../.github/scripts/playwright-install.sh) (kind legs with browser journeys) | nothing on a runner that has them; else the Ubuntu archive, through Playwright's own apt call (`--with-deps`) | the step's `timeout-minutes: 25` only |
 
 `make dev-up` downloads no tool: `deploy/dev/lib.sh` `check_tools` checks kind, kubectl and Helm against their pins and prints the
 install command when one is missing. The charts of its releases go into `.dev/charts`: `make dev-charts` ([deploy/dev/charts.sh](../../deploy/dev/charts.sh))
@@ -300,8 +300,8 @@ until its limit: 9 minutes for a package step (above), 5 for `actions/setup-go`,
 the npm cache, 92 s). `TestTheGatingJobsBoundTheirDownloads` holds this, and that a package step's bound lies between the
 script's worst case and the job's limit. Left to the job's limit: `actions/checkout`, the artifact and cache actions,
 `npx semantic-release`, and the make targets themselves (module downloads, image builds, the scans).
-Outside the gating jobs the script bounds itself; the Playwright steps of the kind legs, whose `--with-deps` runs apt itself,
-have `timeout-minutes: 25`: the step took 101 s in a green run (`npm ci` included), and over 10 minutes on the night of
+Outside the gating jobs the script bounds itself; the Playwright steps of the kind legs, whose `--with-deps` runs apt itself
+on a runner that lacks the browser's libraries, have `timeout-minutes: 25`: the step took 101 s in a green run (`npm ci` included), and over 10 minutes on the night of
 2026-11-18, when the archive's mirror delivered the fonts at about 50 kB/s without ever stalling; a bound of 10 minutes failed
 two legs of the nightly there that had 90 minutes and more to spare. The bound is against a hang, not against a slow night.
 The reachability check of the chart repositories
@@ -319,8 +319,20 @@ started its own run, re-run nothing: that run releases every commit since the la
 The runner image is the lasting fix: an image that carries the packages makes every such step end at the `dpkg-query` check.
 The self-hosted image (another repository) lacks `build-essential` (`make`, `gcc`), `jq`, `file`, `unzip`, `libatomic1`,
 `docker-compose-v2`, and for the malware scan `clamav` and `clamav-daemon` (the scan still downloads the ClamAV database with
-`freshclam`); the large class also installs the browser libraries of Playwright
-(`npx playwright install-deps --dry-run chromium` lists them).
+`freshclam`); the large class also installs the browser libraries of Playwright.
+An image with those packages is defined in the repository `guided-traffic/container-images` (directory `actions-runner`, of
+2026-11-19: the upstream runner image plus the packages above and Chromium's libraries and fonts as Playwright 1.64 lists
+them). **Not rolled out on 2026-11-19:** it is not published and the runners still start the upstream image, so every step
+above still installs.
+
+The Playwright steps are ready for it. Each calls [playwright-install.sh](../../.github/scripts/playwright-install.sh), which
+asks Playwright first (`npx playwright install-deps --dry-run chromium` simulates the install without the network and exits 0
+only when no library is missing) and then fetches the browser alone; on a runner that lacks a library it installs with
+`--with-deps`, as before. The list of libraries is Playwright's own, of the locked version. `TestEveryBrowserInstallGoesThroughTheScript`
+of [internal/tools/ciworkflows](../../internal/tools/ciworkflows/playwrightinstall_test.go) fails on a workflow step that
+runs `playwright install` itself. Run by hand on 2026-11-19 with Playwright 1.64.1 (arm64 containers): in the image with the
+libraries the script fetched the browser in 18 s and read no package index; in the upstream image the dry run failed and the
+install read 104 index files and installed libraries and browser in 30 s.
 
 ### Coverage
 

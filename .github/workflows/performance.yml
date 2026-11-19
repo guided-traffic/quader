@@ -648,9 +648,10 @@ jobs:
           set -euo pipefail
           npm ci
           # The browser build is the one the locked @playwright/test version names: one version per tool.
-          # --with-deps installs the system libraries through apt itself, not through .github/scripts/apt-install.sh; the step's
-          # timeout bounds it instead (npm ci and the browser took 101 s in a green run).
-          npx playwright install --with-deps chromium
+          # A runner that lacks the browser's system libraries installs them through Playwright's own apt call, not through
+          # .github/scripts/apt-install.sh; the step's timeout bounds it instead (npm ci and the browser took 101 s in a
+          # green run). A runner that has them fetches the browser only.
+          ../.github/scripts/playwright-install.sh chromium
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -1802,7 +1803,7 @@ jobs:
         run: |
           set -euo pipefail
           npm ci
-          npx playwright install --with-deps chromium
+          ../.github/scripts/playwright-install.sh chromium
 
       - name: Install the pinned helm
         if: steps.leg.outputs.run == 'true'
@@ -2020,7 +2021,7 @@ jobs:
         run: |
           set -euo pipefail
           npm ci
-          npx playwright install --with-deps chromium
+          ../.github/scripts/playwright-install.sh chromium
 
       - name: Install the pinned helm
         if: steps.leg.outputs.run == 'true'
@@ -2788,7 +2789,7 @@ jobs:
         run: |
           set -euo pipefail
           npm ci
-          npx playwright install --with-deps chromium
+          ../.github/scripts/playwright-install.sh chromium
 
       - name: Install the pinned helm
         if: steps.leg.outputs.run == 'true'

@@ -839,9 +839,10 @@ The browser binaries live outside the repository (`~/.cache/ms-playwright`, on m
 and are named by the Playwright version, so they follow the lockfile: after a Playwright bump run the install again.
 
 **CI.** The `e2e` job of [release.yml](../../.github/workflows/release.yml) sets up Node from `web/.nvmrc`, runs `npm ci` in
-`web/` and `npx playwright install --with-deps chromium` before the dev profile comes up, and uploads
-`.out/playwright/` (HTML report, traces and screenshots of failed journeys) as `e2e-playwright-<set>`. The `--with-deps`
-step uses `sudo apt-get`, which the job already does for the build tools; a self-hosted runner that is not a Debian
+`web/` and [.github/scripts/playwright-install.sh](../../.github/scripts/playwright-install.sh) `chromium` before the dev profile comes up, and uploads
+`.out/playwright/` (HTML report, traces and screenshots of failed journeys) as `e2e-playwright-<set>`. The script fetches
+the browser alone when the runner has its system libraries, and installs them with it (`--with-deps`, through `sudo apt-get`)
+when it does not ([releasing.md](releasing.md#os-packages-in-the-jobs)); a self-hosted runner that is not a Debian
 derivative needs the libraries Playwright lists installed by hand. On a GitHub-hosted runner (`ubuntu-24.04`) the install
 and the journeys passed in the `access-long` leg of Test and Release run 41864646902; locally the same commands ran on
 macOS (the browser download without `--with-deps`).
@@ -3504,7 +3505,7 @@ make e2e SET=vuln-pooler    # variant D on the cluster without the poolerss; lea
 QUADER_E2E_REUSE_CLIENTS=1 make e2e SET=vuln QUADER_E2E_RUN='^TestVuln_R_VULN_017_'   # one test; client pods that are running stay
 ```
 
-The journeys need `npm ci` in `web/` and `npx playwright install chromium` (CI: `--with-deps`), like the journeys of E1.11; `QUADER_E2E_PLAYWRIGHT_ARGS` narrows them (`-g <title>`). The
+The journeys need `npm ci` in `web/` and `npx playwright install chromium` (CI: `.github/scripts/playwright-install.sh chromium`), like the journeys of E1.11; `QUADER_E2E_PLAYWRIGHT_ARGS` narrows them (`-g <title>`). The
 node of `vuln-long` that is drained must not host the PostgreSQL primary: the test moves it first. CI: job `e2e-vuln` of Test and Release runs the set `vuln` when the change touches
 the scanning ([releasing.md](releasing.md#ci)), job `e2e-vuln` of HA and Performance (nightly) runs both sets.
 
