@@ -1209,6 +1209,32 @@ agent** is not decided until the owner has said so.
   render runs. **The checks also run in CI, decided by the owner on 2026-11-19** ("Ja, die Renderprüfung soll auch
   in der CI laufen."): a job of Test and Release on every push, without a path filter, outside the needs of Semantic
   Release until the first stable release (Q-ARCH-457); given to the same builder (Q-ARCH-510 to Q-ARCH-512).
+- **W-24 · A remote repository lists what was fetched, and every cell of the row is true** (owner, 2026-11-19, with
+  pictures of `platform/guidedtraffic` and of its image `guidedtraffic/kubectl`: one image, one tag `latest`, size 0 B,
+  **Last fetched** "Never", downloads 0): "Wie kann es sein, dass es nur ein einziges Image gibt und das keine Größe hat und
+  noch nie gefetched wurde. Ich hätte erwartet: A: Es werden nur gefetchte Images angezeigt. B: Es werden alle Remote
+  bekannten Images angezeigt, bereits gefetchte haben dann auch ein last fetched date und eine Größe. So wie hier, kann ich
+  mir nicht erklären." Read in the specification and the code: the row came from the development agent's check that
+  morning, a request for the manifest of the tag alone; the tag is an index of two platforms, and the size of a tag is
+  the sum of the config and the layers of the stored images below it ([view.go](../../internal/formats/oci/view.go)),
+  which is 0 while none is stored; `lastDownloadedAt` is `null` for the tag of a remote OCI repository by R-API-065
+  ("has no lead file"), an exception the development agent wrote into Q-API-295 instead of solving, so the column says
+  "Never" whatever was pulled. **Decided by the owner on 2026-11-19** ("Option A", from two: only what was fetched, with
+  true cells / everything the upstream knows, which Docker Hub's registry API cannot answer for the images of a
+  namespace): a remote repository lists what was fetched through it; **Last fetched** is the last fetch of the version by
+  a client and the downloads count those; a size that is not known is shown as not known, not as 0 B.
+- **W-25 · A probe starts the download** (owner, 2026-11-19, with W-24): "wenn jemand wie du nur einen Probe auf ein Image
+  macht, auch wenn er den Download nie anstößt, sollte Quader pro-aktiv den Download im Hintergrund schon starten." Open
+  before it is built, and the owner's to decide one at a time: which platforms of an index, what counts as a probe in each
+  format, and what bounds the work a request without a credential can start on a public remote.
+- **A decision taken at OCI holds for every format** (owner, 2026-11-19): "Alles was wir hier für OCI besprechen gilt auch
+  für alle anderen Registries die bereits gebaut sind und für zukünftige Registries. Ich verstehe, dass die API der
+  Registries von ihrem Funktionsumfang unterschiedlich sind und deshalb manche Features nicht implementierbar sind. Das
+  muss dann im Zweifel noch mit mir besprochen werden wie wir vorgehen. Ich kenne mich mit zum Beispiel Nuget oder NPM
+  nicht so richtig aus, und erwarte von dir dass du mich bei den Entscheidungen unterstützt und ein Auge auf anderen
+  Registries hast, während wir über OCI sprechen." For W-24 and W-25 and from here on: a behaviour decided at one format is
+  specified for the format contract and built for Ansible Galaxy, Debian, generic, npm, NuGet and OCI together; where a
+  protocol cannot do it, that comes back to the owner as a decision of its own.
 - **Seen by the development agent, not decided:**
   - **Three tiles of Guides carry the same placeholder mark** (2026-11-19, as a visitor): Ansible Galaxy, Generic and npm show
     the outlined box, Debian, NuGet and OCI a mark of their own.
