@@ -483,6 +483,20 @@ export function layoutFindings(): LayoutFinding[] {
     if (free >= cut) add('clipped', el, isField ? (el as HTMLInputElement).value : (el.textContent ?? ''), `${cut} px of it cut, ${Math.round(free)} px free beside it`);
   }
 
+  // ---- joined: a button joined to a field is as high as the field (R-UI-175) ---------------------------------------------------
+  // A field with its copy button is one box: the button's edges are the input's. The line rule gave the joined button of a
+  // command in an opened row its margins, and the row's stretch made it 48 px beside an input of 32 (2026-11-19).
+  for (const host of Array.from(document.querySelectorAll('quader-address-field'))) {
+    const field = host.querySelector('input');
+    const button = host.querySelector('button');
+    if (!field || !button || !shown(field) || !shown(button)) continue;
+    const f = field.getBoundingClientRect();
+    const b = button.getBoundingClientRect();
+    if (Math.abs(f.top - b.top) > 1 || Math.abs(f.bottom - b.bottom) > 1) {
+      add('joined', host, field.value, `the joined button is ${Math.round(b.height)} px high (y ${Math.round(b.top)} to ${Math.round(b.bottom)}), its field ${Math.round(f.height)} px (y ${Math.round(f.top)} to ${Math.round(f.bottom)})`);
+    }
+  }
+
   // ---- stacked-fits: a table whose rows stand as blocks although its columns fit (R-UI-174) -------------------------------
   // Measured as the data table measures it: its columns at their least widths against the room of its scroll region.
   for (const host of Array.from(document.querySelectorAll<HTMLElement>('.quader-data-table.stacked'))) {

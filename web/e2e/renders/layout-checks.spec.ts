@@ -95,6 +95,32 @@ const ownerRow = (nameCellCss: string): [string, string] => [
   `.name-cell { display: flex; align-items: flex-start; gap: 4px; } .name-cell > .btn { flex: none; } ${nameCellCss}`,
 ];
 
+/** A one-line command with its joined copy button, as the address field builds it; the button's margins are the case's. */
+const joinedField = (buttonCss: string): [string, string] => [
+  `<quader-address-field><input class="address-field-input" readonly value="docker pull localhost:4200/web-frontend/images/portal/api:1.4.0">
+     <quader-copy-button><button type="button" class="btn btn-icon" aria-label="Copy the command"><span class="material-icons" aria-hidden="true">content_copy</span></button></quader-copy-button>
+   </quader-address-field>`,
+  `quader-address-field { display: flex; align-items: stretch; inline-size: 600px; line-height: 1rem; }
+   .address-field-input { box-sizing: border-box; flex: 1 1 auto; min-block-size: 32px; padding: 4px 12px; border: 1px solid #888; font: inherit; }
+   quader-copy-button { display: flex; flex: none; margin-inline-start: -1px; ${buttonCss} }`,
+];
+
+test.describe('a button joined to a field (R-UI-175)', () => {
+  test('R-UI-175 a joined button that the line rule gave margins of -8 px is 48 px beside a field of 32 and is found', async ({ page }) => {
+    const [html, css] = joinedField('margin-block: -8px;');
+    const found = await check(page, html, css);
+    const joined = only(found, 'joined');
+    expect(joined, describe(found)).toHaveLength(1);
+    expect(joined[0]!.detail).toContain('48 px high');
+    expect(joined[0]!.detail).toContain('its field 32 px');
+  });
+
+  test('R-UI-175 a joined button without margins is as high as its field and passes', async ({ page }) => {
+    const [html, css] = joinedField('margin-block: 0;');
+    expect(only(await check(page, html, css), 'joined')).toHaveLength(0);
+  });
+});
+
 test.describe('the owner\'s row: a control beside a name in a table (R-UI-175)', () => {
   test('R-UI-175 the button 8 px below the line of the name is found, as the owner measured it', async ({ page }) => {
     const [html, css] = ownerRow('');

@@ -7522,8 +7522,9 @@ A check that cannot fail on the defect it names guards nothing: the run after W-
 its pictures.
 
 - The render checks measure R-UI-175 in every picture: `off-line` (a control or an icon beside its text, off its middle),
-  `icon-apart` (one that shares no height with its line), `row-offset` (a table's row; R-UI-172); each names the element, its
-  text and the distance in px ([web-ui.md](../developer/web-ui.md#renders-of-every-screen)).
+  `icon-apart` (one that shares no height with its line), `row-offset` (a table's row; R-UI-172), `joined` (a button joined to
+  a field, an address or a command with its copy button, is as high as the field and is no control beside a text); each names
+  the element, its text and the distance in px ([web-ui.md](../developer/web-ui.md#renders-of-every-screen)).
 - The checks are tested on fixture pages of their own in Chromium with the app's fonts, without the UI stack (`make ui-layout-test`,
   [Q-UI-723](#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner)): the
   owner's row must fail with the 8 px he saw, each exception of R-UI-175 must pass, and an offset of 1.5 px must fail. `make

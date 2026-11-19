@@ -400,7 +400,9 @@ td.class-cell .material-icons {
 
     // A copy button beside a value in a cell (a hash) is a box of its own on the line's top, as a row's copy button is; a switch
     // (an inline check box with its word) is centred on the line. Each stood 2 to 4 px under the row's line.
-    tbody :is(th, td) quader-copy-button {
+    // Not the button joined to a field (a command in an opened row): it is a part of the field and as high as the input; with
+    // these margins the field's stretch made it 16 px higher (2026-11-19).
+    tbody :is(th, td) quader-copy-button:not(quader-address-field quader-copy-button) {
       display: inline-flex;
       vertical-align: top;
       margin-block: calc((var(--quader-line) - var(--quader-control-height)) / 2);

@@ -82,6 +82,8 @@ import { CopyButton } from './copy-button';
       outline-offset: 1px;
     }
 
+    /* The joined button is a part of the field and as high as the input, not a control beside a text: the rules that put a
+       cell's copy button on its line leave it out (_list-screens.scss, R-UI-175). */
     quader-address-field quader-copy-button {
       display: flex;
       flex: none;
