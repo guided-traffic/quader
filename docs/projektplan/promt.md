@@ -1981,6 +1981,56 @@ agent** is not decided until the owner has said so.
 
 What a run did, in short, so the next run starts where it stopped. The plan items, findings and decisions carry the details.
 
+**Run of 2026-11-18/19, state on 2026-11-19 at 14:30 local time** (releases v0.61.0 to v0.63.3; `main` at `ad01d57e`, everything
+pushed). The newest first, because this is where the next run starts.
+
+- **In work, not on `main`:** three builders of the download limits (W-26), each in a worktree on the base `654abd2a`, to be
+  merged in the order (1) technical tokens on three levels, (2) accounting and enforcement, (3) the screens; their packages,
+  shared files, migrations 00080 to 00085 and ID ranges are in
+  [usage-and-limits.md](../developer/usage-and-limits.md#work-packages) of the developer documentation. Landing: cherry-pick,
+  the pinned counts of `internal/tools/coverage/coverage_test.go` (983 requirements, 685 MVP, before them), the locale file
+  merged unit by unit, `make coverage`, the gates, the renders looked at, the plan entry below the code commit. Package 3 can
+  only render with real data after package 2. W-25 (a probe starts the download in the background; trigger and platforms
+  decided) is built after them on the hook of R-LIM-037.
+- **With the owner:** eight decisions of the specification in his working paper (built as specified until he chooses
+  otherwise; an answer other than the first option goes to the builders); of W-24, the column's name **Last download** where
+  his word was "Last fetched", and **Published** of a remote-only version being the time it was cached; `zstd` in the runners'
+  image; a registry mirror in the runners' cluster for the kind node and dev profile images; whether the public remote for the
+  guidedtraffic images is also wanted on his installation (W-22); the setup page of a public remote offering a visitor
+  `docker login`; three tiles of Guides with one placeholder mark. From the night before, said to him once and not answered:
+  the schedule rule of the nightly and Q-ARCH-500, Q-HA-313, Q-HA-315; `security-admin` does not see the security dashboard;
+  the **Last backup** row at the dashboard's foot; a project Owner following a jobs link lands on System status with an empty
+  side bar; the role bindings table shows `user:ada`; a repository's header lost its address field; "Address for downloads by
+  path" and the exposure rule's "Client address" stayed; the upload dialog's states in lower case; the start page's empty
+  **Your role** cell; the policy editor's selector button wrapping at 390 px; the stale worktrees and branches under
+  `.claude/worktrees` (`stab/*`, `night/*`, every finished builder's), which are deleted only on his word.
+- **To check, not yet seen:**
+  - The first run with the CI caches (Test and Release 44531328598) to its end: the job `image` and the kind legs that load
+    its image; then a **second** run, which must show "nothing fetched" in the module step and loaded, not built, clients
+    images (the builder's list is at F-158).
+  - The seven legs of the second nightly that did not run (`nuget-ha`, `cold-crash`, `drain-load-b`, `-c`, `-e`, `Latency`,
+    the vulnerability scanning performance): again in the night, on a quiet `main`; the first legs on the runners' new image
+    and with the caches.
+  - Whether the late scheduled nightly of 11-19 deferred to the dispatched full run (a run of the schedule on `76d280f1`
+    completed at about 12:00 UTC; its legs' summaries are not read).
+  - A full render set with the check `joined`; the changed kind test `e1_01_login_test.go` of W-21; F-126; the owner's
+    installation on the newest release (not reachable from the development machine).
+  - The owner's view of the UI (`https://localhost:4200/ui/`) is down while builders render; start it again from `main` after
+    the packages landed (the script and the lock are the session's; `make ui-dev-up`, `deploy/ui-dev/serve.sh`, `ng serve
+    --configuration local`, then the seed through `deploy/ui-dev/renders.sh --grep 'login as anonymous'`, all under
+    `lockf .dev/ui-render.lock`).
+- **Built and released in this run:** the frontend walk W-12 to W-24 (person search, replica states, the audit entry, the mark
+  as a stone of the logo, Security audit as a context title, the row actions, Jobs and Backups as tabs, Recently opened in the
+  side bar, an ended session at load, a public remote, a control on its text's line with the render checks in CI, a remote
+  repository's true rows in every format); the findings F-130 to F-137, F-140 to F-159 as their entries say; the first two
+  full nightlies on the new runner layout, F-133 closed by measurement; the runners' own image; the CI caches.
+- **What cost time, for the next run:** hosts outside (the Ubuntu archive for about seven hours in three shapes, the module
+  proxy once, a browser mirror in the night) took four releases' worth of attention before the image and the caches removed
+  the dependency instead of bounding it; three things the development agent landed and the owner or the runner then found (the
+  button below its line, the joined copy button, a heading the check held to one line) were each visible in a picture that
+  existed; a `[skip ci]` commit pushed into a running pipeline cost a release (F-149), and a test with a date in it turned the
+  gate red by itself (F-159).
+
 **Run of 2026-11-07/08** (releases v0.25.1 to v0.26.0).
 
 - Built: the findings F-71 (a narrowed token no longer acts on its owner's account or other tokens), F-72 and F-74 (every narrowing
