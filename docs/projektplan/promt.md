@@ -1503,8 +1503,8 @@ agent** is not decided until the owner has said so.
   CVE-2026-97054, HIGH, installed v1.27.3, fixed in 1.26.11 and 1.27.4 — the analyser of the image scanning, which is the
   upstream release archive at its pin (`v0.76.2`, the newest release, of 2026-11-05). Quader's own binary is built with Go
   1.27.4 and had no finding. The vulnerability database learned of the finding that night; the run four hours before was
-  green on the same image content. **Decided by the development agent in the owner's absence, for him to review first
-  thing:** the finding is accepted at that one path until 2026-12-19 in a new `.trivyignore.yaml`, because it is a finding
+  green on the same image content. **Decided by the development agent in the owner's absence and confirmed by the owner
+  on 2026-11-19 ("Option A"):** the finding is accepted at that one path until 2026-12-19 in a new `.trivyignore.yaml`, because it is a finding
   of `net/http`'s server and Quader runs the analyser as a command for one scan (`image --input … --offline-scan`, then
   `sbom …`), never as a server. Verified with the pinned Trivy on a copy of the analyser: exit 1 without the file, exit 0
   with it, exit 1 for the same binary at another path, exit 1 with a day in the past. A test refuses an entry without
