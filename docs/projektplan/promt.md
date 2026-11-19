@@ -1253,6 +1253,19 @@ agent** is not decided until the owner has said so.
   - Found on the way, for W-24 (inferred): the size of an OCI index is set when the index row is written and not when a
     child is recorded later; a single-platform tag shows the size its manifest declares while nothing is stored; a
     Debian remote's files write no package row.
+  **First decision, by the owner on 2026-11-19** ("Option A", from three: a request that names exactly one version
+  starts the fetch of that version's content / also the newest version when a request names a package / OCI alone): the
+  trigger is a request that names exactly one version or file without fetching its content, in every format; a request
+  that names a package with all its versions, or no package, starts nothing. Said to him with it: in npm, NuGet and Debian
+  the rule fires seldom, because their clients read the package or index level and then fetch the content themselves.
+  His question to that, and the answer read in the code: such a fetch goes through Quader in every format, not to the
+  original host, because a remote repository rewrites the addresses of the content in the documents it serves onto
+  itself (npm: `dist.tarball`, [handlers_remote.go](../../internal/formats/npm/handlers_remote.go); NuGet: the
+  registration's `packageContent`, `Rewrite` in [remote.go](../../internal/formats/nuget/remote.go); Ansible: the
+  `download_url` of collections and of roles, the roles' GitHub archives included, from the hosts the operator named),
+  and OCI and APT have no addresses in their documents: the client asks the host it was configured with. The one
+  exception is an OCI layer that names foreign `urls`, which a client fetches from there. Still to decide: the platforms
+  of an index, the bound for a request without a credential, and whether a repository can turn the behaviour off.
 - **A decision taken at OCI holds for every format** (owner, 2026-11-19): "Alles was wir hier für OCI besprechen gilt auch
   für alle anderen Registries die bereits gebaut sind und für zukünftige Registries. Ich verstehe, dass die API der
   Registries von ihrem Funktionsumfang unterschiedlich sind und deshalb manche Features nicht implementierbar sind. Das
