@@ -317,7 +317,8 @@ Found on 2026-11-18 by reading the stall evidence of the baseline nightly 441869
   (`deploy/dev/e2e-evidence.sh`) reads the job's containers as children of the top-level `docker` (`cgd:` rows, `containers.tsv`); on `large` they
   are now under `kubepods/burstable/pod<uid>/docker`, so those rows are empty for the leg's own containers until the recorder follows the daemon's
   cgroup parent. The `cg:` rows and the `node:` rows are not affected. F-133 is closed when a nightly with a Test and Release run beside it is green
-  and its evidence shows the nodes kept their CPUs.
+  and its evidence shows the nodes kept their CPUs. **Closed on 2026-11-19** by the second full nightly (44453781574, see its record in section 10):
+  beside two Test and Release runs a loaded leg kept nine tenths of its CPUs and was green; the NuGet legs were not among them.
   **Done in the night of 2026-11-18** (counted first in the evidence of `e2e (push)` of Test and Release 44384406557, a leg on the new layout:
   10 own containers in `containers.tsv`, 1,467 `cgd:` rows of 9 containers, none of them an own one): the recorder searches the cgroup of its
   first kind node once per set and takes its parent; on `large` it writes `daemon:parent` and `daemon:pod` rows, `cgd:` rows of the leg's own
@@ -1559,6 +1560,36 @@ agent** is not decided until the owner has said so.
   to 102 MB of packages from that one host before it does anything; the runners use the stock image
   (`ghcr.io/actions/actions-runner`), so the remedy named at F-117 and F-147, an image that carries the packages, is an
   image to build and keep, in the runner's repository. The script ends at once on such an image.
+- **The second full nightly** (HA and Performance 44453781574, "HA and Performance (all legs)", dispatched at 03:46 UTC on
+  6cd1cb09 on purpose beside Test and Release: 44453761606 until 04:25 UTC and 44458581063 from 04:28 to 05:06 UTC; ended
+  06:50 UTC): **24 of 31 legs green, 7 red without having run** (F-154, the archive). Green this time `upgrade` and
+  `vuln-long`, the two the first nightly lost to the browser's install (F-150). To do: the seven legs again when the
+  archive answers.
+  - **The run's name** carries what it is ("(all legs)"), as built that night; verified on GitHub.
+  - **F-133's question, the CPUs of the nodes beside a Test and Release run**, read from `daemon:parent` of the twelve legs on
+    `large` that ran in both nightlies (the first was alone on the runners):
+
+    | Leg | Beside Test and Release | CPUs used, alone → beside | Full CPU stall, alone → beside |
+    |---|---|---|---|
+    | `npm-ha-soak` | 20 of 35 min | 14.2 → 12.8 | 1.5 % → 4.1 % (31 s → 87 s) |
+    | `ha-suite` | its first 4 of 30 min | 13.7 → 12.3 | 1.8 % → 3.7 % (31 s → 66 s) |
+    | `npm-ha` | all 45 min | 6.3 → 6.1 | 1.0 % → 1.7 % |
+    | `drain-roles` | all 15 min | 18.7 → 18.0 | 2.0 % → 2.4 % |
+    | `failover` | all 10 min | 1.6 → 1.8 | 0.6 % → 1.0 % |
+    | `backup`, `vuln-pooler` | all | 1.9 → 1.9, 1.3 → 1.7 | 0.7 % → 0.8 %, 0.5 % → 0.7 % |
+    | `ha-faults`, `ha-pooler`, `drain-load-pooler`, `oci-long`, `edge` | none (after 05:06) | within 0.5 | within 0.3 points |
+
+    A neighbour costs a loaded leg about a tenth of its CPUs and doubles to triples its full stall; every such leg was
+    green. Before the runner change the same legs' nodes were left with about two CPUs. **F-133 is closed on that.** Not
+    seen beside a Test and Release run: `nuget-ha`, `cold-crash` and `drain-load-b`, `-c`, `-e`, which did not run; `nuget-ha`
+    is the leg with the largest demand (Q-HA-102). Not explained: `ha-suite` doubled its stall with four minutes of
+    overlap; its other neighbours on the pool in those minutes are not read.
+  - **How near the pod is to its limit** (the open question of the first nightly, answered by the recorder's new columns):
+    the pod reached 28.0 GiB in three legs again, but what cannot be given back (anonymous, shmem, sockets, kernel less its
+    reclaimable slab) peaked at 10.9 GiB (`ha-faults`), 9.0 to 9.3 GiB in `drain-roles`, `ha-suite` and `drain-load-pooler`,
+    5 to 8.5 GiB elsewhere; no OOM, at most 1.2 s of full memory stall in a leg (`edge`). The limit is filled by page
+    cache; 17 GiB of it are room. The seven legs on GitHub's own runners (`alerts`, `bastion`, `bastion-long`, `ci-ha`,
+    `upgrade`, `vuln`, `vuln-long`) have no pod and no such file.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
