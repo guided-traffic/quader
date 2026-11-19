@@ -145,6 +145,9 @@ through the dev server works only against a Quader whose base URL is `https://lo
   (`api.rate_limits.anonymous`, [Q-UI-686](../spec/api-and-ui.md#q-ui-686--the-ui-development-profile-gives-an-anonymous-address-the-budget-of-a-signed-in-reader)):
   every anonymous visitor of `make ui-renders` comes from 127.0.0.1, and three anonymous screens that opened at once got 429 for
   `whoami`, the banner and the projects.
+- The `write` class admits 100 requests a second with a burst of 400 instead of 10 and 50 (`api.rate_limits.write`): the seed
+  of `make ui-renders` writes a whole instance as one administrator within seconds, and on a new database, which is every run
+  of CI, it passed the default with the rules of the download limits and got 429.
 - A new installation is empty: repositories and packages are created through the UI or the API, or by the seed of
   `make ui-renders`.
 - The volumes belong to the compose project `quader-ui-dev`, one per machine, while `.dev/ui-dev` (with the key ring) belongs
