@@ -2031,6 +2031,24 @@ agent** is not decided until the owner has said so.
     **twice**, once from a GitHub-hosted job (zstd) and once from a self-hosted one (gzip, no `zstd` in the runners'
     image), 165 and 161 MB for the modules, 136 and 121 MB for the npm clients. With all five clients images that is
     nearer 6 GB than the estimated 4; `zstd` in the runners' image would halve it.
+- **F-161 · A registry client's first request was charged to its address and answered 429 where it expects the challenge**
+  (found by the first pipeline of the download limits, Test and Release 44625189982 of 2026-11-19, `integration (shard c)`:
+  the OCI conformance suite failed, 31 of its requests answered `429` by `limits.requestsPerSecond` of the rule for every
+  anonymous caller; every one of them a first attempt without a credential). Every registry client asks without a credential
+  first, the version check `GET /v2/` before anything else, to learn the token endpoint from the `401`. The rule that such
+  a request is not charged (Q-API-290, made for NuGet's first attempts) read the `/api/<format>/` addresses only; the
+  download limits count `/v2/` since their second package and enforce since the owner's review, so a build farm behind
+  one address would have met `429` at sign-in. **Fixed the same night** (Q-API-357): the version check and a registry path
+  of a repository whose artifacts are not public are judged like the other formats' paths; the conformance suite passes
+  locally with no `429`. The release with the limits was out for about an hour with it. What it shows: the builders ran
+  the 65 integration packages, not the conformance suite, which has a build tag of its own and runs in CI only; and the
+  rule "a decision taken at one format holds for every format" was not applied to a decision that predates it. The kind
+  legs in Enforce were all green in that run (ten of ten), and the UI layout checks.
+  - **Open, for the owner:** the class `package_write` (10 unsafe requests a second, burst 50 per caller) now also holds on
+    the registry's paths in Enforce, where no general class held before the limits (F-155). An image push sends at least
+    three unsafe requests per layer; a push of many layers in parallel may meet it. Not observed: `e2e (oci)` and
+    `e2e (push)` were green in Enforce with their small images. The upload figures that would replace the class do not
+    exist yet (Q-LIM-27).
 - **F-160 · `drain-load-e` failed its latency condition in the night's baseline run, with every functional condition held**
   (nightly 44595121737 of 2026-11-19, dispatched 19:08 UTC on the code of `ad01d57e`, the seven legs the night before had
   not run; the first nightly on the runners' own image and with the CI caches, and the last before the download limits).
