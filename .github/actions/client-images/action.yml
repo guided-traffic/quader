@@ -1,0 +1,55 @@
+# Puts the client images of one set of the acceptance suites into the job's Docker, built once per change of their inputs
+# (Q-ARCH-520): the key of .github/scripts/client-images.sh (a hash of the build context, the pins the build reads, the
+# forwarder binary and the script), the tar of `docker save` restored from the GitHub Actions cache under that key and loaded,
+# or, on a miss or a tar that does not load, the build of `make <set>-clients-image` as before, saved under the key at once (not
+# at the end of the job, so a red test still leaves the entry). The tar is deleted afterwards: the images are in Docker, and a
+# large leg has no disk to spare. A leg that uses this sets QUADER_E2E_<SET>_CLIENTS_IMAGE_BUILD=0, so deploy/dev/e2e.sh loads
+# the images into kind and does not build them again.
+# Run after actions/checkout and the Go setup (the key builds the forwarder).
+name: Client images of the acceptance suites
+description: Load the client images of one e2e set from the GitHub Actions cache, or build and cache them when their inputs changed
+inputs:
+  set:
+    description: npm, nuget, oci, apt or ansible (the sets of .github/scripts/client-images.sh)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Key the images by their inputs
+      id: key
+      shell: bash
+      env:
+        SET: ${{ inputs.set }}
+      run: |
+        set -euo pipefail
+        "$GITHUB_ACTION_PATH/../../scripts/client-images.sh" key "$SET" >/dev/null
+        echo "tar=.out/client-images/${SET}.tar" >> "$GITHUB_OUTPUT"
+
+    - name: Restore the images from the cache
+      id: restore
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ steps.key.outputs.tar }}
+        key: ${{ steps.key.outputs.key }}
+
+    - name: Load the images, or build them on a miss
+      id: images
+      shell: bash
+      env:
+        SET: ${{ inputs.set }}
+        TAR: ${{ steps.key.outputs.tar }}
+      run: '"$GITHUB_ACTION_PATH/../../scripts/client-images.sh" load-or-build "$SET" "$TAR"'
+
+    - name: Save the built images under their key
+      if: steps.images.outputs.built == 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ steps.key.outputs.tar }}
+        key: ${{ steps.key.outputs.key }}
+
+    - name: Remove the tar
+      if: always()
+      shell: bash
+      env:
+        TAR: ${{ steps.key.outputs.tar }}
+      run: rm -f "$TAR"

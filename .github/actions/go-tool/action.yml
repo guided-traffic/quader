@@ -1,0 +1,95 @@
+# Puts a pinned Go tool that is built with `go install <package>@<version>` (golangci-lint, govulncheck, gocyclo, kind, actionlint)
+# at .bin/<name>-<version>-<go version>, the file name the Makefile's rules use, so `make lint`, `make vuln` and `make cyclo`
+# find it and build nothing (Q-ARCH-525). The binary is restored from the GitHub Actions cache under a key of exactly that name
+# and the platform; on a miss it is built within a bound of 300 s that names the module proxy when it ends the build, and
+# saved at once. A tool's module graph is not part of go.sum, so .github/actions/go-modules does not cover it. With `bin: true`
+# the tool is also put on PATH under its plain name (kind, actionlint).
+# Run after actions/checkout, load-pins and actions/setup-go.
+name: Pinned Go tool
+description: Restore a pinned Go tool binary from the cache, or build it within a bound and cache it
+inputs:
+  name:
+    description: The tool's name, the first part of its file name in .bin (golangci-lint, govulncheck, gocyclo, kind, actionlint)
+    required: true
+  package:
+    description: The package go install builds, without the version (for example sigs.k8s.io/kind)
+    required: true
+  version:
+    description: The pin from tools/versions.env
+    required: true
+  bin:
+    description: Put the tool on PATH under its plain name
+    required: false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Name the binary
+      id: file
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        [ -n "$VERSION" ] || { echo "::error::no version for $NAME: run load-pins first"; exit 1; }
+        echo "file=.bin/${NAME}-${VERSION}-$(go env GOVERSION)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore the binary
+      id: restore
+      uses: actions/cache/restore@v6
+      env:
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: '3'
+      with:
+        path: ${{ steps.file.outputs.file }}
+        key: go-tool-${{ steps.file.outputs.file }}-${{ runner.os }}-${{ runner.arch }}
+
+    - name: Build the binary on a miss
+      id: build
+      shell: bash
+      env:
+        FILE: ${{ steps.file.outputs.file }}
+        PACKAGE: ${{ inputs.package }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        # A restored binary counts when Go can read its build information and that names the pin; a truncated one does not.
+        if [ -x "$FILE" ] && go version -m "$FILE" 2>/dev/null | awk -v v="$VERSION" '$1 == "mod" && $3 == v { found = 1 } END { exit !found }'; then
+          echo "$FILE is in the cache; nothing to build"
+          exit 0
+        fi
+        rm -f "$FILE"
+        tmp="$(mktemp -d)"
+        start=$SECONDS
+        status=0
+        GOBIN="$tmp" timeout -k 10 300 go install "${PACKAGE}@${VERSION}" || status=$?
+        if [ "$status" -ne 0 ]; then
+          if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
+            echo "::error::go install ${PACKAGE}@${VERSION} did not finish in 300 s (GOPROXY=$(go env GOPROXY))"
+          fi
+          exit "$status"
+        fi
+        mkdir -p .bin
+        mv "$tmp/$(basename "$PACKAGE")" "$FILE"
+        rmdir "$tmp"
+        echo "built $FILE in $((SECONDS - start)) s"
+        echo "built=true" >> "$GITHUB_OUTPUT"
+
+    - name: Save the binary
+      if: steps.build.outputs.built == 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ steps.file.outputs.file }}
+        key: go-tool-${{ steps.file.outputs.file }}-${{ runner.os }}-${{ runner.arch }}
+
+    - name: Put the tool on PATH
+      if: inputs.bin == 'true'
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        FILE: ${{ steps.file.outputs.file }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/bin"
+        ln -sf "$GITHUB_WORKSPACE/$FILE" "$RUNNER_TEMP/bin/$NAME"
+        echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"

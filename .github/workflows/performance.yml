@@ -49,6 +49,7 @@
 # then e2e-nuget (nuget-ha, drain-load-b, -c, -e, cold-crash). Lane 2: e2e (drain-roles, then failover), then npm-ha-soak, then e2e-edge, then e2e-drain-pooler. Lane 3: e2e-vuln (its large leg vuln-pooler, the
 # GitHub-hosted legs are not in the lanes), then e2e-backup, e2e-oci. Each lane job
 # needs its predecessor with `!cancelled()`, so a leg the dispatch does not select, or a failed one, does not stop the lane.
+# Every kind leg also needs the job image, whose Quader image it loads instead of building one (Q-ARCH-522).
 name: HA and Performance (nightly)
 run-name: "${{ inputs.sets && format('HA and Performance (sets: {0})', inputs.sets) || 'HA and Performance (all legs)' }}"
 
@@ -84,6 +85,88 @@ env:
   VITEST_MAX_WORKERS: "8"
 
 jobs:
+  # The Quader image of the commit, built once for every kind leg of the run (Q-ARCH-522): each leg loads it from the artifact
+  # quader-image instead of building the Containerfile itself, which fetched the Node.js, Go and Alpine images, the npm packages of
+  # web/, the Go modules and the analyser from outside in every leg. select-leg gets no sets: a dispatch of any part builds it (a
+  # leg it names may need it; a dispatch of latency, vuln-perf or the platform matrix alone builds it for nothing, about four
+  # minutes of a standard runner), and a scheduled run that defers to a recent full run skips it with its legs.
+  image:
+    name: Quader image for the kind legs
+    runs-on: self-hosted
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Select the leg (on the schedule, a recent full run)
+        id: leg
+        uses: ./.github/actions/select-leg
+        with:
+          leg: image
+          job: image
+          sets: ''
+          token: ${{ github.token }}
+
+      - name: Load the tool pins
+        if: steps.leg.outputs.run == 'true'
+        uses: ./.github/actions/load-pins
+
+      - name: Set up Go
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install build tools
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 9
+        uses: ./.github/actions/build-tools
+
+      - name: Install the pinned Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 16
+        uses: ./.github/actions/install-buildx
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+
+      - name: Set up Docker Buildx
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/setup-buildx-action@v4
+        with:
+          cache-binary: false
+
+      - name: Log in to Docker Hub (base image pulls)
+        if: steps.leg.outputs.run == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: guidedtraffic
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: make image
+        if: steps.leg.outputs.run == 'true'
+        run: make image IMAGE=guidedtraffic/quader:dev VERSION=dev
+
+      - name: Save the image for the kind legs
+        if: steps.leg.outputs.run == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p .out
+          docker save -o .out/quader-image.tar guidedtraffic/quader:dev
+
+      - name: Upload the image for the kind legs
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: actions/upload-artifact@v7
+        with:
+          name: quader-image
+          path: .out/quader-image.tar
+          if-no-files-found: error
+          retention-days: 1
+
   # The platform matrix of R-HA-049 (Q-HA-274, docs/developer/releasing.md#the-platform-matrix): the chart against the API server of the
   # oldest and the newest Kubernetes it is tested on (K8S_MIN_KIND_NODE_IMAGE 1.34, DEV_KIND_NODE_IMAGE 1.37), installed by Helm 4 and by
   # the latest Helm 3. Each leg is a one-node kind cluster of its own on a GitHub-hosted runner (deploy/dev/k8s-matrix.sh): lint, a server-side
@@ -125,6 +208,7 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
 
       - name: Install the helm of this leg (HELM3_VERSION for Helm 3, HELM_VERSION for Helm 4)
         if: steps.leg.outputs.run == 'true'
@@ -140,11 +224,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Log in to Docker Hub (the node image pull)
         if: steps.leg.outputs.run == 'true'
@@ -209,6 +295,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -297,6 +389,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -390,7 +488,7 @@ jobs:
   npm-ha-soak:
     name: e2e (npm-ha-soak)
     # Lane 2 (Q-ARCH-431): after e2e, whatever its result.
-    needs: e2e
+    needs: [image, e2e]
     if: ${{ !cancelled() && (!inputs.sets || contains(format(',{0},', inputs.sets), ',npm-ha-soak,')) }}
     runs-on: large
     timeout-minutes: 90
@@ -400,6 +498,9 @@ jobs:
       QUADER_DEV_HTTP_PORT: "8085"
       # The install-time bound of R-REPO-055's clients first is enforced here, not per change (Q-REPO-197).
       QUADER_PERF_GATE: "1"
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -424,6 +525,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -445,11 +552,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         if: steps.leg.outputs.run == 'true'
@@ -477,9 +586,17 @@ jobs:
           set -euo pipefail
           [ "$(uname -m)" = "x86_64" ] || { echo "::error::the dev profile needs an amd64 runner (or qemu), got $(uname -m)"; exit 1; }
 
-      - name: make image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         if: steps.leg.outputs.run == 'true'
@@ -556,6 +673,7 @@ jobs:
   # Lane 2 (Q-ARCH-431): the legs run one after the other, drain-roles first, so the heavy drain sees the fewest neighbours.
   e2e:
     name: e2e (${{ matrix.set }})
+    needs: image
     runs-on: large
     timeout-minutes: 90
     strategy:
@@ -571,11 +689,14 @@ jobs:
             # Declared so that the browser steps below type-check (actionlint); false skips them, as the e2e job skips them for failover.
             browser: false
     env:
-      # The image is built with an explicit VERSION=dev: the binary refuses a version that is not
-      # major.minor.patch or "dev" (see docs/developer/e2e.md). make image builds it into the local Docker.
+      # The job image builds it with an explicit VERSION=dev (the binary refuses a version that is not major.minor.patch or "dev",
+      # docs/developer/e2e.md); the leg loads it from the artifact quader-image into the local Docker.
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -600,6 +721,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -621,11 +748,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the shared library the pinned Node.js loads
         if: matrix.browser && steps.leg.outputs.run == 'true'
@@ -639,6 +768,8 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
 
       - name: Install the Playwright journeys and their browser
         timeout-minutes: 25
@@ -701,9 +832,17 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -796,6 +935,7 @@ jobs:
   # Lane 1 (Q-ARCH-431): npm-ha, then ha-suite, ha-faults and ha-pooler, one large leg at a time.
   e2e-npm:
     name: e2e (${{ matrix.set }})
+    needs: image
     runs-on: large
     timeout-minutes: 120
     strategy:
@@ -815,6 +955,9 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -839,6 +982,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -860,11 +1009,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       # The clients run inside the clients image (its own Node.js, test/e2e/clients/Dockerfile), so this job needs no
       # Node.js on the runner and none of the libraries the pinned Node.js loads (Q-ARCH-218).
@@ -902,9 +1053,17 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -987,7 +1146,7 @@ jobs:
   # Lane 1 (Q-ARCH-431): after e2e-npm, whatever its result; the legs nuget-ha, drain-load-b, -c, -e and cold-crash run one at a time (max-parallel: 1).
   e2e-nuget:
     name: e2e (${{ matrix.set }})
-    needs: e2e-npm
+    needs: [image, e2e-npm]
     if: ${{ !cancelled() }}
     runs-on: large
     timeout-minutes: 120
@@ -1010,8 +1169,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # Both clients images are built once by the steps make npm-clients-image and make nuget-clients-image; deploy/dev/e2e.sh loads them
-      # and does not build them again.
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
       QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
@@ -1040,6 +1199,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -1061,11 +1226,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -1087,13 +1254,19 @@ jobs:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
-      - name: make npm-clients-image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make npm-clients-image
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
 
-      - name: make nuget-clients-image
+      - name: Load or build the NuGet clients image
         if: steps.leg.outputs.run == 'true'
-        run: make nuget-clients-image
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: nuget
 
       - name: The dev profile's dependency pins and the runner architecture
         if: steps.leg.outputs.run == 'true'
@@ -1108,9 +1281,10 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load the Quader image of this run
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -1185,7 +1359,7 @@ jobs:
   # Lane 2 (Q-ARCH-431): after e2e-edge, whatever its result.
   e2e-drain-pooler:
     name: e2e (${{ matrix.set }})
-    needs: e2e-edge
+    needs: [image, e2e-edge]
     if: ${{ !cancelled() }}
     runs-on: large
     timeout-minutes: 120
@@ -1199,8 +1373,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # Both clients images are built once by the steps make npm-clients-image and make nuget-clients-image; deploy/dev/e2e.sh loads them
-      # and does not build them again.
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
       QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
@@ -1229,6 +1403,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -1250,11 +1430,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -1276,13 +1458,19 @@ jobs:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
-      - name: make npm-clients-image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make npm-clients-image
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
 
-      - name: make nuget-clients-image
+      - name: Load or build the NuGet clients image
         if: steps.leg.outputs.run == 'true'
-        run: make nuget-clients-image
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: nuget
 
       - name: The dev profile's dependency pins and the runner architecture
         if: steps.leg.outputs.run == 'true'
@@ -1297,9 +1485,10 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load the Quader image of this run
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -1380,7 +1569,7 @@ jobs:
   # Lane 3 (Q-ARCH-431): after e2e-backup, whatever its result.
   e2e-oci:
     name: e2e (${{ matrix.set }})
-    needs: e2e-backup
+    needs: [image, e2e-backup]
     if: ${{ !cancelled() }}
     runs-on: large
     timeout-minutes: 120
@@ -1394,7 +1583,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # The clients images are built once by the step make oci-clients-image; deploy/dev/e2e.sh loads them and does not build them again.
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_OCI_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
@@ -1420,6 +1610,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -1441,11 +1637,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -1467,9 +1665,12 @@ jobs:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
-      - name: make oci-clients-image
+      - name: Load or build the OCI clients images
         if: steps.leg.outputs.run == 'true'
-        run: make oci-clients-image
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: oci
 
       - name: The dev profile's dependency pins and the runner architecture
         if: steps.leg.outputs.run == 'true'
@@ -1484,9 +1685,10 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load the Quader image of this run
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -1557,6 +1759,7 @@ jobs:
 
   e2e-ci:
     name: e2e (${{ matrix.set }})
+    needs: image
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
@@ -1569,6 +1772,10 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -1601,6 +1808,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -1622,11 +1835,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -1661,9 +1876,24 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
+
+      - name: Load or build the NuGet clients image
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: nuget
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -1737,6 +1967,7 @@ jobs:
   # are the first free ones of both workflows.
   e2e-bastion:
     name: e2e (${{ matrix.set }})
+    needs: image
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     strategy:
@@ -1751,6 +1982,10 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -1783,6 +2018,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -1795,6 +2036,8 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
 
       - name: Install the Playwright journey and its browser
         timeout-minutes: 25
@@ -1819,11 +2062,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -1858,9 +2103,24 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
+
+      - name: Load or build the NuGet clients image
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: nuget
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -1948,6 +2208,7 @@ jobs:
   # client pods and runs on a large one. Edge ports 8095, 8096 and 8103 are the first free ones of both workflows.
   e2e-vuln:
     name: e2e (${{ matrix.set }})
+    needs: image
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 150
     strategy:
@@ -1969,6 +2230,10 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -2001,6 +2266,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -2013,6 +2284,8 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
 
       - name: Install the Playwright journeys and their browser
         timeout-minutes: 25
@@ -2037,11 +2310,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -2076,9 +2351,24 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
+
+      - name: Load or build the NuGet clients image
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: nuget
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -2164,7 +2454,7 @@ jobs:
   # Lane 3 (Q-ARCH-431): after e2e-vuln, whatever its result.
   e2e-backup:
     name: e2e (backup)
-    needs: e2e-vuln
+    needs: [image, e2e-vuln]
     if: ${{ !cancelled() }}
     runs-on: large
     timeout-minutes: 120
@@ -2172,6 +2462,9 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-backup-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: "8102"
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -2196,6 +2489,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -2217,11 +2516,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -2256,9 +2557,17 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -2348,7 +2657,7 @@ jobs:
   e2e-edge:
     name: e2e (edge)
     # Lane 2 (Q-ARCH-431): after e2e-edge, whatever its result.
-    needs: npm-ha-soak
+    needs: [image, npm-ha-soak]
     if: ${{ !cancelled() }}
     runs-on: large
     timeout-minutes: 180
@@ -2356,6 +2665,10 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-edge-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: "8104"
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
+      QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -2380,6 +2693,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -2401,11 +2720,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -2440,9 +2761,24 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
+
+      - name: Load or build the NuGet clients image
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: nuget
+
+      - name: Load the Quader image of this run
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -2531,6 +2867,7 @@ jobs:
   # e2e-vuln does (Q-ARCH-326). A red leg is a finding and holds nothing (owner, 2026-11-01). Edge port 8105.
   e2e-alerts:
     name: e2e (alerts)
+    needs: image
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 210
@@ -2568,6 +2905,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -2589,11 +2932,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -2628,9 +2973,10 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load the Quader image of this run
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       - name: Fetch the dev charts that are GitHub release assets
         timeout-minutes: 16
@@ -2714,6 +3060,7 @@ jobs:
   # A red leg is a finding and holds nothing (owner, 2026-11-01).
   e2e-upgrade:
     name: e2e (${{ matrix.set }})
+    needs: image
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
@@ -2730,8 +3077,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # Both clients images are built once by the steps make npm-clients-image and make nuget-clients-image; deploy/dev/e2e.sh loads them
-      # and does not build them again.
+      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
+      # deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
       QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
@@ -2769,6 +3116,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
+
+      - name: Download the Go modules of go.sum
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
 
       - name: Install build tools
         if: steps.leg.outputs.run == 'true'
@@ -2781,6 +3134,8 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
 
       - name: Install the Playwright journey and its browser
         if: steps.leg.outputs.run == 'true'
@@ -2805,11 +3160,13 @@ jobs:
 
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/bin"
-          GOBIN="$RUNNER_TEMP/bin" go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+        timeout-minutes: 10
+        uses: ./.github/actions/go-tool
+        with:
+          name: kind
+          package: sigs.k8s.io/kind
+          version: ${{ env.KIND_VERSION }}
+          bin: 'true'
 
       - name: Install the pinned Docker Buildx
         if: steps.leg.outputs.run == 'true'
@@ -2831,13 +3188,19 @@ jobs:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
-      - name: make npm-clients-image
+      - name: Load or build the npm clients image
         if: steps.leg.outputs.run == 'true'
-        run: make npm-clients-image
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: npm
 
-      - name: make nuget-clients-image
+      - name: Load or build the NuGet clients image
         if: steps.leg.outputs.run == 'true'
-        run: make nuget-clients-image
+        timeout-minutes: 30
+        uses: ./.github/actions/client-images
+        with:
+          set: nuget
 
       - name: The dev profile's dependency pins and the runner architecture
         if: steps.leg.outputs.run == 'true'
@@ -2853,9 +3216,10 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: make image
+      - name: Load the Quader image of this run
         if: steps.leg.outputs.run == 'true'
-        run: make image IMAGE="$QUADER_IMAGE" VERSION=dev
+        timeout-minutes: 10
+        uses: ./.github/actions/quader-image
 
       # TestUpgrade_R_HA_020_AcrossTwoBundles installs the commit with its second UI bundle and upgrades to the image above (Q-HA-124).
       - name: make image-marked

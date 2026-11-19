@@ -1,0 +1,31 @@
+# Loads the Quader image that the job `image` of the same run built (Q-ARCH-522): the artifact quader-image, the `docker save`
+# of guidedtraffic/quader:dev for the runners' architecture. A kind leg takes it instead of building the Containerfile again,
+# which pulled the Node.js, Go and Alpine images from Docker Hub, ran npm ci of web/ against the npm registry and go mod
+# download against the module proxy inside the build, and fetched the analyser from github.com, in every leg of every run.
+# The leg needs the job `image` (needs: image). Run after actions/checkout; QUADER_IMAGE names the tag the leg deploys.
+name: The Quader image of this run
+description: Download the image the job image built in this run and load it into the job's Docker
+runs:
+  using: composite
+  steps:
+    - name: Download the image
+      uses: actions/download-artifact@v8
+      with:
+        name: quader-image
+        path: .out/quader-image
+
+    - name: Load the image
+      shell: bash
+      run: |
+        set -euo pipefail
+        docker load -i .out/quader-image/quader-image.tar
+        rm -rf .out/quader-image
+        want="${QUADER_IMAGE:-guidedtraffic/quader:dev}"
+        if [ "$want" != guidedtraffic/quader:dev ]; then docker tag guidedtraffic/quader:dev "$want"; fi
+        have="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$want")"
+        case "$(uname -m)" in x86_64) host=linux/amd64 ;; aarch64|arm64) host=linux/arm64 ;; *) host="linux/$(uname -m)" ;; esac
+        if [ "$have" != "$host" ]; then
+          echo "::error::the image of this run is for $have, this runner is $host"
+          exit 1
+        fi
+        echo "loaded $want ($have, $(docker image inspect --format '{{.Id}}' "$want")) from the job image of this run"

@@ -249,6 +249,28 @@ The suite runs over TLS by default: the scheme, the CA and the probe scheme are 
 and nothing in the suite hard-codes `http`. What the move to TLS changed is listed in
 [TLS in the suite](#tls-in-the-suite).
 
+### The images of a CI leg
+
+Locally `make e2e` builds what a set needs. A CI leg builds none of the images that do not change with it
+([releasing.md](releasing.md#what-the-jobs-fetch-and-what-is-cached)):
+
+- **The Quader image** is the one the job `image` of the same run built: the leg needs that job and loads the artifact `quader-image`
+  through [quader-image](../../.github/actions/quader-image/action.yml) ([Q-ARCH-522](../spec/architecture.md#q-arch-522--the-kind-legs-load-the-quader-image-the-job-image-of-their-run-built-and-need-that-job)).
+  Only the set `upgrade` still builds its second image, `make image-marked`.
+- **The clients images** of every set that starts client pods (the sets with `NPM_CLIENTS=1`, `NUGET_CLIENTS=1`, `OCI_CLIENTS=1`,
+  `APT_CLIENTS=1` or `ANSIBLE_CLIENTS=1` in [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh)) come from
+  [client-images](../../.github/actions/client-images/action.yml), one step per set of images, before the set runs: the tar of `docker
+  save` from the GitHub Actions cache under a key of the images' inputs, or a build of `make <set>-clients-image` when an input
+  changed ([Q-ARCH-520](../spec/architecture.md#q-arch-520--the-client-images-of-the-acceptance-suites-come-from-the-github-actions-cache-as-the-tar-of-docker-save-keyed-by-their-inputs)).
+  The leg sets `QUADER_E2E_<SET>_CLIENTS_IMAGE_BUILD=0`, so `e2e.sh` loads the images into kind and builds nothing.
+  `TestEveryLegThatUsesAClientsImageGetsItFromTheCache` reads the sets of each leg from `e2e.sh` and fails when a leg lacks a step or
+  the switch; a new set with client pods therefore needs both in its job.
+- **The stub upstreams, the driver and the issuer double** are built by `e2e.sh` in every leg, from the commit's Go code on the
+  distroless base.
+
+The same path runs locally, without the GitHub cache: `.github/scripts/client-images.sh key npm` prints the key and its inputs,
+`.github/scripts/client-images.sh load-or-build npm .out/client-images/npm.tar` loads that tar or builds the image and writes it.
+
 ## Reading a stall
 
 Every set, green or red, leaves `evidence/` in its artifact (`.out/e2e/evidence/`, uploaded with the rest of `.out/e2e/` as `e2e-artifacts-<set>`). `e2e.sh`
@@ -2282,8 +2304,9 @@ test/e2e/nugetclients/
   `QUADER_DEV_CA_FILE`.
 - **CI.** The job `e2e-nuget` of [releasing.md](releasing.md#ci) runs the set `nuget` on every change (edge port 8088, cluster
   `quader-nuget-<run id>`), the set `nuget-closing` on a closing dispatch (port 8089) and the set `nuget-ha` nightly (port 8090, in
-  [performance.yml](../../.github/workflows/performance.yml)). The job builds the clients image with `make nuget-clients-image` first
-  and sets `QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD=0`, so the set loads it instead of building it again. The fuzz targets of the closing run
+  [performance.yml](../../.github/workflows/performance.yml)). The job takes the clients image from the cache or builds it when its
+  inputs changed ([The images of a CI leg](#the-images-of-a-ci-leg)) and sets `QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD=0`, so the set
+  loads it instead of building it again. The fuzz targets of the closing run
   are in [releasing.md](releasing.md#ci) too.
 - **Sets that name no test yet.** `nuget-closing` is declared `empty_ok` in [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) and names `TestNuGetClosing` since phase 4; `nuget-ha` was one too until `TestNuGetHA` landed ([Drain and failover under NuGet load](#drain-and-failover-under-nuget-load)).
   While no `func Test...` in `test/e2e/*_test.go` matches the expression of an `empty_ok` set, the script logs a notice and exits 0 before it looks for a cluster
@@ -3849,8 +3872,8 @@ The sets build the client images and start two npm and two NuGet client pods and
 
 ### What the CI legs provide
 
-The CI legs of the sets (HA and Performance, job `e2e-upgrade`, [performance.yml](../../.github/workflows/performance.yml)) must provide: a checkout with all tags (`fetch-depth: 0`); `make image` before the set (the
-tag `guidedtraffic/quader:dev`) and, for `upgrade`, `make image-marked` (the tag `guidedtraffic/quader:dev-marked`); Node from `web/.nvmrc`, `npm ci` in `web/` and `npx playwright install --with-deps chromium`; for `upgrade-release`, network access to Docker Hub and to `guided-traffic.github.io`; the dev profile
+The CI legs of the sets (HA and Performance, job `e2e-upgrade`, [performance.yml](../../.github/workflows/performance.yml)) must provide: a checkout with all tags (`fetch-depth: 0`); the Quader image of the run before the set (the
+tag `guidedtraffic/quader:dev`, loaded from the job `image`, [The images of a CI leg](#the-images-of-a-ci-leg)) and, for `upgrade`, `make image-marked` (the tag `guidedtraffic/quader:dev-marked`); Node from `web/.nvmrc`, `npm ci` in `web/` and `npx playwright install --with-deps chromium`; for `upgrade-release`, network access to Docker Hub and to `guided-traffic.github.io`; the dev profile
 (`make dev-up`) as for every e2e leg; a step timeout above the measured duration of the set.
 
 ### Measured on the dev cluster

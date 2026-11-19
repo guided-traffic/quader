@@ -16,6 +16,7 @@ import (
 
 type step struct {
 	Name           string            `yaml:"name"`
+	If             string            `yaml:"if"`
 	Uses           string            `yaml:"uses"`
 	With           map[string]string `yaml:"with"`
 	Run            string            `yaml:"run"`
@@ -25,6 +26,8 @@ type step struct {
 type job struct {
 	If             string            `yaml:"if"`
 	Needs          yaml.Node         `yaml:"needs"`
+	Env            map[string]string `yaml:"env"`
+	Strategy       yaml.Node         `yaml:"strategy"`
 	Permissions    map[string]string `yaml:"permissions"`
 	TimeoutMinutes yaml.Node         `yaml:"timeout-minutes"`
 	Steps          []step            `yaml:"steps"`
@@ -70,12 +73,17 @@ func installsPackages(s step) bool {
 }
 
 // downloads names what a step fetches from the network outside the job's main make target, or "" when it fetches nothing of
-// that kind: the package install, the actions that download a toolchain, go install, the ClamAV database and npm ci.
+// that kind: the package install, the actions that download a toolchain, the Go modules and tools (from the cache or the module
+// proxy), the clients and Quader images, go install, the ClamAV database and npm ci.
 func downloads(s step) string {
 	if installsPackages(s) {
 		return "OS packages"
 	}
-	for _, a := range []string{"actions/setup-go@", "actions/setup-node@", "azure/setup-helm@", "azure/setup-kubectl@", "./.github/actions/install-buildx"} {
+	actions := []string{
+		"actions/setup-go@", "actions/setup-node@", "azure/setup-helm@", "azure/setup-kubectl@", "./.github/actions/install-buildx",
+		"./.github/actions/go-modules", "./.github/actions/go-tool", "./.github/actions/client-images", "./.github/actions/quader-image",
+	}
+	for _, a := range actions {
 		if strings.HasPrefix(s.Uses, a) {
 			return a
 		}

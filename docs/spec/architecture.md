@@ -9678,6 +9678,10 @@ Context: The set `nuget-ha` now starts the npm client pods as well (the drain of
 | (c) One job builds the images and passes them to the legs as artifacts | One build for all legs | Builds happen once | The NuGet clients image (2.3 GB) would be uploaded and downloaded per leg; not measured, rejected for that transfer |
 
 **Choice:** (a) for the jobs that load both images (`e2e-nuget` and `e2e-upgrade` here). The npm-only legs keep (b): changing them is not needed for this change.
+**Superseded in part by [Q-ARCH-520](#q-arch-520--the-client-images-of-the-acceptance-suites-come-from-the-github-actions-cache-as-the-tar-of-docker-save-keyed-by-their-inputs)
+(2026-11-19):** the build steps of (a) are the cached step of `client-images` now, in every leg that loads a clients image, the
+npm-only legs included, so (b) is gone. The transfer that (c) rejected unmeasured is measured there: the NuGet image is 737 MB (zstd)
+to 803 MB (gzip) as a cache entry.
 
 **Rationale:** The same two steps and flags as the jobs of Test and Release mean that a reader finds the build in the same place in every job. Verified: the flags `QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD` and `QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD` are the ones the Test and Release jobs set, and the targets `npm-clients-image` and `nuget-clients-image` exist in the Makefile (the Test and Release jobs run them). Not verified: that `nuget-ha` loads the npm pods without a rebuild, because the set's npm pod support is the other agents' change to deploy/dev/e2e.sh. Revisit when a leg needs an image on a runner that cannot hold it, or when the npm-only legs move to (a) with the next change of their job.
 
@@ -10628,6 +10632,195 @@ Context: the renders are never committed. A red job must say what failed and sho
 every picture. The development agent revisits the retention if a red run is looked at later than a week.
 
 **Applied:** [release.yml](../../.github/workflows/release.yml).
+
+### Q-ARCH-520 · The client images of the acceptance suites come from the GitHub Actions cache, as the tar of `docker save`, keyed by their inputs
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-158 (Test and Release 44519652288, 2026-11-19): `e2e (nuget)` and `e2e (ci)` failed after ten minutes in the build of the
+NuGet clients image, because `archive.ubuntu.com` did not answer the package install inside the build. The five sets of client images
+(npm, NuGet, OCI, APT, Ansible) were built from their Dockerfiles in every leg that needs them, with no layer cache, and each build
+installs from hosts outside: the Ubuntu and Debian archives, the npm registry, PyPI, `dist.nuget.org`, Microsoft's registry, Docker
+Hub and quay.io. Their inputs change a few times a month. The jobs set up Buildx with the `docker-container` driver; the self-hosted
+runners have no `zstd`, so the Actions cache writes gzip there and zstd on the GitHub-hosted runners (the same key is then two
+entries). Measured (linux/arm64 builds on the development machine, 2026-11-19; the runners build linux/amd64, not measured):
+
+| Set | Images | `docker save` tar | gzip -6 | zstd -3 |
+|---|---|---|---|---|
+| npm | 1 | 443 MB | 139 MB | 125 MB |
+| NuGet | 1 | 2,302 MB | 803 MB | 737 MB |
+| OCI | 2 | 990 MB | 335 MB | 320 MB |
+| APT | 4 | 523 MB | 181 MB | 157 MB |
+| Ansible | 2 | 414 MB | 125 MB | 112 MB |
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `actions/cache` around the `docker save` tar of a set, keyed by a hash of the set's inputs ([client-images.sh](../../.github/scripts/client-images.sh), [client-images](../../.github/actions/client-images/action.yml)) (chosen) | A hit is `docker load` of the restored tar; a miss builds as before and saves at once | A hit contacts no registry and no archive: `docker load` reads a file. First-party actions only. A partial or corrupt tar is detected by the load and rebuilt | One tar per set and runner kind in the 10 GB of the repository (about 1.6 GB gzip on self-hosted, 0.9 GB zstd on GitHub-hosted for the sets each class uses); the self-hosted runners restored from the cache at 1 to 12 MB/s in the logs of run 44511234820, so the NuGet tar takes about 70 to 200 s there |
+| (b) BuildKit's GitHub Actions cache (`--cache-from/--cache-to type=gha`), the runtime token exported by `actions/github-script` | Layer cache of the build | Built into the builder of the jobs | The base images' layers are not in that cache: `--load` still pulls them from Docker Hub, quay.io and Microsoft's registry, and the base image's metadata is resolved from the registry on every build. Many small entries per build; mode=max for the NuGet image stores every stage |
+| (c) A registry cache or a published clients image | Push once, pull in the legs | One pull per leg, no rebuild | Publishes an image under the repository or the organisation account: the owner's decision, not built. A pull from a registry is a host outside as well |
+| (d) Build in every leg (before) | | Nothing to keep | F-158: a leg depends on every archive the build installs from, in every run |
+
+**Choice:** (a). A leg that uses the step sets `QUADER_E2E_<SET>_CLIENTS_IMAGE_BUILD=0`, so `deploy/dev/e2e.sh` loads the images into
+kind and does not build them again. No workflow step builds a clients image another way: the tests
+`TestEveryLegThatUsesAClientsImageGetsItFromTheCache` and `TestNoJobBuildsAClientsImageItself`
+([caches_test.go](../../internal/tools/ciworkflows/caches_test.go)) read the sets of each leg from `deploy/dev/e2e.sh` and hold it.
+**Rationale:** only (a) takes the hosts out of a leg whose images did not change: (b) still pulls the bases, (c) publishes. The
+development agent revisits it if the restore on the self-hosted runners is regularly slower than the build it replaces (the first runs
+show it: the step logs the seconds of each), or if the owner decides on a registry the runners reach inside the cluster.
+
+**Applied:** [client-images.sh](../../.github/scripts/client-images.sh), [client-images](../../.github/actions/client-images/action.yml),
+both workflows; [releasing.md](../developer/releasing.md#what-the-jobs-fetch-and-what-is-cached), [e2e.md](../developer/e2e.md#the-images-of-a-ci-leg).
+
+### Q-ARCH-521 · The key of a clients image: the build context, the pins the build reads, the forwarder binary, the script and the architecture
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a changed input must rebuild the images, and nothing else should, or the cache misses on every commit. The inputs of a set
+are its directory under `test/e2e` (the Dockerfiles, `build.sh`, entrypoints, lockfiles and constraint files), the pins of
+`tools/versions.env` its `build.sh` passes as build arguments (the base images by digest, the exact package versions), and the
+forwarder `test/e2e/clients/fwd`, which `build.sh` compiles with the job's Go and copies into every image but Podman's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) SHA-256 over: every file of the set's directory (without `node_modules`), the name and value of each pin the set reads, the SHA-256 of the forwarder binary built for `linux/<arch>` with `-trimpath`, the SHA-256 of `client-images.sh`, the architecture (chosen) | | The forwarder is hashed as built, so its source, its modules and the Go toolchain are all covered without listing them; the Go build is reproducible | Building the forwarder for the key costs about a second; a file of the directory that the image does not copy (`check-pins.mjs`, `smoke.sh`) also rebuilds |
+| (b) A hash of the directory and the whole `tools/versions.env` | | Simple | Every pin bump of any tool rebuilds all five sets |
+| (c) The forwarder's source and `go.mod` instead of its binary | | No build for the key | Every change of `go.mod` rebuilds all sets; a change of the Go toolchain does not |
+
+**Choice:** (a), as `e2e-clients-<set>-linux-<arch>-<sha256>`. The inputs are printed into the step's log, line by line, so a miss
+says which input moved. What it leaves out on purpose: the indexes of the archives at build time (the images pin exact versions where
+the tests need one: Mono, jq, curl of the npm image; the APT and Ansible images take `curl` from the base image's own archive,
+Q-DEB-105). **Rationale:** exact without a list of Go dependencies to maintain. To rebuild a set by hand, change any input, for example
+a comment in its Dockerfile, or delete the entry (`gh cache delete <key>`).
+`TestClientImagesTheKeyChangesWithTheInputsOnly` ([clientimages_test.go](../../internal/tools/ciworkflows/clientimages_test.go)) holds
+which changes move the key.
+
+**Applied:** [client-images.sh](../../.github/scripts/client-images.sh).
+
+### Q-ARCH-522 · The kind legs load the Quader image the job `image` of their run built, and need that job
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: every kind leg ran `make image` itself: the Containerfile pulls `node:<version>-alpine`, `golang:<version>-alpine` and
+Alpine from Docker Hub, runs `npm ci` of `web/` against the npm registry and `go mod download` against the module proxy inside the
+build (unbounded, uncached: the F-156 pattern), fetches the analyser from github.com and the base from gcr.io. Ten legs of Test and
+Release per push and 25 legs of a scheduled nightly did so, two to four minutes each (111 to 173 s on GitHub-hosted runners,
+[e2e.md](../developer/e2e.md#findings-of-the-suite); 2 minutes in `e2e (nuget)` of run 44511234820). The gating job `image` builds the same Containerfile in every run. The image changes with every commit, so a cache keyed by
+its inputs would miss on every push.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The job `image` builds `guidedtraffic/quader:dev` with `VERSION=dev`, as the legs did, checks UID 65532, saves it and uploads the artifact `quader-image` (one day); every kind leg `needs: image` and loads it through [quader-image](../../.github/actions/quader-image/action.yml), which checks the architecture; the nightly gets a job `image` of its own (chosen) | | One build per run instead of one per leg: the hosts above are contacted once per run, by a job that gates the release already; the leg saves its own build | The legs start after the job `image` (4.25 minutes in run 44511234820) instead of at once; a red `image` skips the legs of the release run, which would have failed at the same build. Semantic Release's `needs` are unchanged |
+| (b) Each leg builds, as before | | Legs start at once | Every leg depends on Docker Hub, the npm registry, the module proxy and github.com in every run |
+| (c) The container scan takes the artifact too | `container-scan` needs `image` | One build fewer | Serialises two gating jobs: the scan would wait for the build, which can lengthen the time to a release; the scan stays parallel |
+
+**Choice:** (a), without (c). The upgrade leg's second image (`make image-marked`, the other UI bundle) is still built in its leg: it
+is one nightly leg. In the nightly, the job `image` asks select-leg with no sets, so a dispatch of any part builds it and a scheduled run
+that defers to a recent full run skips it with its legs. **Rationale:** the build moves to the one job that does it anyway, and the
+legs' outside contacts drop from one per leg to one per run. The development agent revisits (c) if the scan's own build fails on the
+network, and the whole if the legs' start after the job `image` costs more than their own build saved (the first runs show both).
+`TestTheKindLegsLoadTheQuaderImageOfTheRun` ([caches_test.go](../../internal/tools/ciworkflows/caches_test.go)) holds it.
+
+**Applied:** [release.yml](../../.github/workflows/release.yml), [performance.yml](../../.github/workflows/performance.yml),
+[quader-image](../../.github/actions/quader-image/action.yml); [releasing.md](../developer/releasing.md#what-the-jobs-fetch-and-what-is-cached).
+
+### Q-ARCH-523 · The Go module cache: the download cache keyed by `go.sum`, completed by every job, saved by the first that missed
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-156 (Test and Release 44511234820, 2026-11-19): `actions/setup-go` restored its cache ("Cache hit") and the gating job
+`chart` still downloaded 75 modules; one download from `proxy.golang.org` sent nothing for 16 minutes and the job reached its limit.
+setup-go keys its cache by `go.sum` alone and saves it only from a job without an exact hit, so the entry holds the modules and the
+build cache of whichever job finished first after a change of `go.sum`: the self-hosted entry of that day held 24 MB, the GitHub-hosted
+one 416 MB (two entries, since gzip and zstd make two versions of one key). Measured on the development machine (2026-11-19): `go mod
+download` of the whole graph fetches 477 files from the proxy in 21 to 31 s; the download cache (`$GOMODCACHE/cache/download`: 114
+zips, 249 `go.mod` files) is 216 MB, 165 MB as tar.gz, 161 MB as tar.zst; the unpacked tree is 1.2 GB. `go mod download` with only the
+download cache present unpacks every module without the network in 16 s, and with the tree present takes 0.1 s. The repository has one
+module with requirements; the eight `go.mod` files under `internal/archtest/testdata` require nothing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) setup-go with `cache: false`; [go-modules](../../.github/actions/go-modules/action.yml) restores the download cache under `go-modules-<hash of go.sum>`, runs the bounded `go mod download` (Q-ARCH-524), and a job that missed saves at once (chosen) | Every job runs the full download, so whoever saves first saves all of it | No change of the job graph; the entry is complete whoever writes it; only the zips are kept (165 MB, not 1.2 GB) | Every job restores 165 MB: on the self-hosted runners 15 to 40 s at the 4 to 12 MB/s seen for entries of that size, about what the 75 modules took from the proxy (13 to 34 s); the unpacking of every module on a hit (16 s on macOS; Linux not measured) |
+| (b) A job that fills and saves the cache, needed by every Go job | | One download per change of `go.sum` | Every Go job waits for it: the gating jobs start a minute or two later on every push, and a red fill job skips the release |
+| (c) setup-go's cache, plus `go mod download` after it | | Small change | The entry still holds whatever the first job's build cache held (GOCACHE is part of it), and a hit is never re-saved, so a short entry stays short until `go.sum` changes |
+
+**Choice:** (a). The build cache (`GOCACHE`) is no longer cached: on the self-hosted runners setup-go's entry held 24 MB of it, so the
+jobs there compiled from scratch already; the GitHub-hosted legs lose a 416 MB entry of one leg's build cache and compile their stubs
+and the driver again (not measured). Jobs whose Go builds nothing of `go.sum` skip the step, each named with its reason in
+`goModulesExempt` of [caches_test.go](../../internal/tools/ciworkflows/caches_test.go): `image` of both workflows and `container-scan`
+(`make image` builds in Docker), `malware-scan` and `release-tooling` (Go runs only the Makefile's `go env`), `workflows` and the
+platform matrix (actionlint and kind through go-tool). **Rationale:** complete without a new job in the release path. The development agent revisits it if
+the restore is regularly slower than the proxy on the self-hosted runners, and names `zstd` in the runner image to the owner (a smaller,
+faster entry there). `TestEveryGoJobRestoresTheCompleteModuleCache` holds that every other Go job has the step right after the Go setup,
+before any step that runs make or go.
+
+**Applied:** [go-modules](../../.github/actions/go-modules/action.yml), both workflows.
+
+### Q-ARCH-524 · The module download is a step of its own, bounded at 300 s, and names the request that got no answer
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `go` has no overall bound on a module fetch: in F-156 one request waited 16 minutes for a byte. Before, the downloads happened
+inside the make targets of the gating jobs, which only the job's limit bounded. `GOPROXY=https://proxy.golang.org,direct` falls back to
+the origin on 404 and 410 only; with `|` it falls back on any error, but a stall is no error.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) [go-mod-download.sh](../../.github/scripts/go-mod-download.sh): `go mod download -x` under `timeout -k 10 300`, in the step "Download the Go modules of go.sum" with `timeout-minutes: 10`, before every step that builds; on a hang it lists the requests that got no answer and the proxy (chosen) | | A stall fails in five minutes and says which module of which host; after a hit the later make targets find every module and fetch nothing. Tried locally against a proxy that accepts and never answers: the step ended after 8 s of an 8 s bound with the 20 requests named | 300 s is ten times a full download; on a very slow proxy it is not enough |
+| (b) `GOPROXY=https://proxy.golang.org\|direct` | | Falls back on errors | Not on a stall; `direct` fetches from every module's origin host and needs git |
+| (c) A second public proxy in `GOPROXY` | | Another host on failure | A third-party host in the build of every job; not on a stall either |
+| (d) `GOPROXY=off` after the step | | A later fetch fails at once | The tools built with `go install` (Q-ARCH-525) and the scripts that build outside the module need the proxy |
+
+**Choice:** (a), GOPROXY unchanged. The step timeout lies below the shortest limit of a gating job with Go (15 minutes); the restore
+inside the step gives up a stalled segment after 3 minutes (`SEGMENT_DOWNLOAD_TIMEOUT_MINS`) and counts as a miss. **Rationale:** the
+bound is against a hang, as for the packages and the browser (F-150): an order above the measured download. The extended
+`TestTheGatingJobsBoundTheirDownloads` holds the step bound in the gating jobs; the script's own tests are
+[gomoddownload_test.go](../../internal/tools/ciworkflows/gomoddownload_test.go).
+
+**Applied:** [go-mod-download.sh](../../.github/scripts/go-mod-download.sh).
+
+### Q-ARCH-525 · The Go tools built with `go install` come from the cache, keyed by their pin and the Go version
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: golangci-lint (the jobs `lint` and `gosec`), govulncheck, gocyclo, kind (every kind leg and `versions`) and actionlint are
+built with `go install <package>@<pin>` from the module proxy; their module graphs are not part of `go.sum`. Only `lint` cached its
+binary; `gosec`, `govulncheck` and `cyclomatic-complexity` (gating) built theirs inside the make target in every run, bounded by the job's
+limit only, and every kind leg built kind.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) [go-tool](../../.github/actions/go-tool/action.yml): the binary at `.bin/<name>-<pin>-<go version>` (the Makefile's file name) restored under `go-tool-<that name>-<os>-<arch>`; on a miss `go install` within 300 s and saved; `bin: true` puts it on PATH (chosen) | | One build per pin and toolchain; the make targets find the binary and build nothing; a restored binary is checked with `go version -m` against the pin | One entry per tool and runner kind (golangci-lint 32 MB, the others a few MB each, not measured) |
+| (b) Add the tools to `go.mod` as `tool` directives | One module graph | Covered by the module cache | Their dependencies join the product's graph, which the pins of `tools/versions.env` keep out on purpose (OASDIFF_VERSION's comment) |
+| (c) Release binaries from GitHub | | No build | Another host per tool, and a digest per platform to keep |
+
+**Choice:** (a). `TestEveryGoToolComesFromTheToolCache` fails on a workflow step that runs `go install` and on `make lint`, `make
+gosec`, `make vuln` or `make cyclo` without the go-tool step of its binary before it. **Rationale:** the existing practice of the
+`lint` job, made complete and bounded.
+
+**Applied:** [go-tool](../../.github/actions/go-tool/action.yml), [release.yml](../../.github/workflows/release.yml),
+[performance.yml](../../.github/workflows/performance.yml).
+
+### Q-ARCH-526 · What stays fetched in every run, and why
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the inventory of [releasing.md](../developer/releasing.md#what-the-jobs-fetch-and-what-is-cached) lists every fetch of both
+workflows. Some are determined by pins and still not cached.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Cache the clients images, the Go modules and tools, the Quader image per run and the npm packages of `web/` in the kind legs; leave the rest, each named with its reason below (chosen) | | Covers the fetches that failed (F-156, F-158) and the ones a leg repeats most | The rest still depends on its host |
+| (b) Also cache the kind node image and the dev profile's images (`docker save`, `kind load`) | | No registry pull per leg | Roughly 2 GB per runner kind beside the 10 GB the repository has; at the 4 to 12 MB/s of the self-hosted restores slower than the registries' CDNs; the kind nodes pull most of them through containerd, not through the runner's Docker |
+| (c) Cache the browser of Playwright and the Go toolchain | | Two hosts fewer | About 150 MB and 70 MB more per runner kind for hosts that have not failed a run; the Go toolchain comes from a GitHub release asset and the cache is GitHub's as well |
+
+**Choice:** (a). Left as they are, each with the reason: the kind node image and the dev profile's images (registry pulls by digest,
+size; a registry inside the runners' cluster would be the remedy, which is the owner's infrastructure); the distroless base of the stub
+and driver images (one 2 MB pull from gcr.io per leg); the Go toolchain (setup-go, a GitHub release asset, bounded at 5 minutes, F-153);
+Helm and kubectl (their own hosts, bounded at 5 minutes); the charts of the dev profile (Q-ARCH-355, unchanged); Playwright's browser;
+the ClamAV signatures and the vulnerability databases, which change. **Rationale:** the budget goes to what failed and what a leg repeats
+most. The development agent revisits an entry of this list when a run fails on its host.
+
+**Applied:** [releasing.md](../developer/releasing.md#what-the-jobs-fetch-and-what-is-cached).
 
 ## What this does not cover
 

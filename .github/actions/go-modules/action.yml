@@ -1,0 +1,37 @@
+# Puts every module of go.sum into the job's module cache (Q-ARCH-523, Q-ARCH-524), so that no later step of the job asks the
+# module proxy: the download cache ($GOMODCACHE/cache/download, the zips and go.mod files, not the unpacked tree) is restored
+# from the GitHub Actions cache under a key of go.sum alone; .github/scripts/go-mod-download.sh then runs `go mod download`,
+# bounded in time, which fetches nothing after a hit and everything after a miss; and a job that missed saves the complete
+# cache at once. Every job that missed after a change of go.sum downloads the whole graph, so whichever saves first saves all
+# of it (the cache of actions/setup-go, which this replaces, held what the first job to finish happened to need: F-156).
+# Run right after actions/setup-go with `cache: false`.
+name: Go modules of go.sum
+description: Restore the Go module download cache keyed by go.sum, download what is missing within a bound, save it after a miss
+runs:
+  using: composite
+  steps:
+    - name: Locate the module cache
+      id: dir
+      shell: bash
+      run: echo "dir=$(go env GOMODCACHE)/cache/download" >> "$GITHUB_OUTPUT"
+
+    - name: Restore the module cache
+      id: restore
+      uses: actions/cache/restore@v6
+      env:
+        # actions/cache waits 10 minutes on a stalled segment by default; a stalled restore is a miss after 3.
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: '3'
+      with:
+        path: ${{ steps.dir.outputs.dir }}
+        key: go-modules-${{ hashFiles('go.sum') }}
+
+    - name: Download the modules of go.sum
+      shell: bash
+      run: '"$GITHUB_ACTION_PATH/../../scripts/go-mod-download.sh"'
+
+    - name: Save the module cache
+      if: steps.restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ steps.dir.outputs.dir }}
+        key: go-modules-${{ hashFiles('go.sum') }}
