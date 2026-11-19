@@ -400,7 +400,14 @@ async function* allSections(page: Page): AsyncGenerator<string> {
   const closed = page.locator('main quader-disclosure .toggle[aria-expanded="false"]');
   if ((await closed.count()) === 0) return;
   while ((await closed.count()) > 0) {
-    await closed.first().click();
+    // The toggle is named by the region it controls, and the walk waits until that toggle says it is open. The page writes
+    // `aria-expanded` a moment after the click, not with it: counting the closed toggles in that moment found the one just
+    // clicked, and the click meant for it then waited 15 s for a closed toggle that no longer existed (thirteen screens of the
+    // run on a runner, 2026-11-19; one in twenty runs on a fast machine).
+    const region = await closed.first().getAttribute('aria-controls');
+    const toggle = page.locator(`main quader-disclosure .toggle[aria-controls="${region}"]`);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     // A section that opens moves the toggles under it while it grows: the next click waits until it stands still, or it hits
     // the toggle that moved into its place and closes a section again.
     await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
