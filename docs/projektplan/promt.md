@@ -1344,6 +1344,37 @@ agent** is not decided until the owner has said so.
   the settings and of the administrators' overview, and ten decisions with options and a favourite each, which he
   answers in the page. Nothing of it is specified or built; the budget of W-25's background download is the upstream
   budget of a class of callers in the repository there, so W-25 is built after these decisions.
+  **W-26 · The download limits: the owner's answers, read from the page on 2026-11-19** (he chose in the working paper;
+  where he wrote a note, it is quoted):
+  1. A group's limit is a profile for each member, each with a budget of its own (not a shared pot).
+  2. A caller in several groups gets the most generous (the development agent had proposed an ordered list of rules).
+  3. Instance, project and repository: the most specific wins; a repository can set a limit of its own for a caller, also a
+     higher one, which replaces the instance's (proposed was: one budget per caller for the installation, repositories
+     only narrow).
+  4. At the limit, what fits the figure: requests 429 with the time to wait; bytes per second are slowed, no error; bytes
+     per hour 429 before the download starts; with the upstream budget used up, what is cached is still served.
+  5. Windows: second, hour and day.
+  6. The budget of a technical token hangs on the single token (proposed was the account): "Ich kann hier für jedes System
+     einen eigenen Token ausstellen und die Budgets damit pro System genau einstellen."
+  7. An anonymous address: IPv4 by itself, IPv6 per /64, and a ceiling for all anonymous callers together.
+  8. Who sees the consumption: instance administrator and auditor everything, a project Owner what happens in the project,
+     every user their own; single values 30 days, sums after that.
+  9. Without any setting: known callers the profile Standard, anonymous ones Anonym, administrators unlimited.
+  10. Everything in one step (proposed was: count and show first, then limit).
+  11. "Anonymous" is a fixed class of the limit settings only; the rule that no group and no policy names the anonymous
+      caller stays.
+  12. A kind of its own (proposed was a project's service account with a token narrowed to the repository): "Es gibt
+      technische Token auf Instanz, Projekt und Repo-Ebene. Jeweils mit eigenem Budget."
+  Counted in the first step: requests, bytes from the cache, bytes from the upstream, upstream requests, parallel
+  downloads, the day's volume, background downloads and refused requests; later: uploads and the growth of a
+  repository's storage. He changed no number of the profiles.
+  **What follows from the answers, put to him in the same page as five further questions:** whether an account for the
+  rights stays behind a technical token (13); who may raise a limit above the instance's (14: the upstream figures use
+  what belongs to the whole installation); whether consumption under a repository's own rule also counts against the
+  instance budget (15); the order where the place of a rule and the caller it names meet (16: the place first, then a
+  single caller, then the groups with the most generous value per figure, then the kind's default); and whether the one
+  step enforces at once or starts observing, with the limits counted and shown as "would have been limited" (17), since
+  every number of the profiles is an estimate. Nothing is specified or built before these are answered.
 - **A decision taken at OCI holds for every format** (owner, 2026-11-19): "Alles was wir hier für OCI besprechen gilt auch
   für alle anderen Registries die bereits gebaut sind und für zukünftige Registries. Ich verstehe, dass die API der
   Registries von ihrem Funktionsumfang unterschiedlich sind und deshalb manche Features nicht implementierbar sind. Das
