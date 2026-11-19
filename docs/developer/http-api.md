@@ -487,15 +487,17 @@ without that stage. Each of these rules applies only where the endpoint serves t
 `apiRequest`; Q-ARCH-306): on `packages`, `OPTIONS /api/v1/x` from an allowed origin is decided like `OPTIONS /does-not-exist`,
 and on `api` a request to `/files/` or `/api/<format>/` carries no `RateLimit-Policy`.
 
-The classes are `api_read`, `api_write` and `api_anonymous` for `/api/v1/` and `/files/`, and `api_package_read`,
-`api_package_write` and `api_package_anonymous` for the package protocols under `/api/<format>/`
-([ratelimit.go](../../internal/api/v1/ratelimit.go), `isPackagePath`; Q-API-169). The package classes have budgets and buckets
-of their own (`api.rate_limits.package_read`, `package_write`, `package_anonymous`), so an install does not use up the
-management budget of its token. `api_package_anonymous` skips a request that `RateLimitOptions.Challenged` reports: the
-composition root passes `v1.ChallengedByLevels` over the installed grant index, which reports a package request whose
-repository the index holds with artifacts that are not `public` (a key it does not hold is charged: its decision may read
-PostgreSQL first), so the challenge a NuGet client draws before it sends
-its credentials costs no budget (Q-API-290). The class an endpoint applies on top is [endpoints.md](endpoints.md). The mechanism is [the cluster limiter](valkey.md#rate-limit-counters). Every answer on a limited
+The classes are `api_read`, `api_write` and `api_anonymous` for `/api/v1/`, and `api_package_write` for the unsafe methods of
+every protocol path (`/api/<format>/`, `/files/`, `/v2/`) in mode `enforce` only ([ratelimit.go](../../internal/api/v1/ratelimit.go)
+`protocolStage`, `packageClass`; Q-API-344). A protocol path is otherwise limited by the download limits
+([usage-and-limits.md](usage-and-limits.md)), in `enforce` only: in `audit` nothing there is refused or slowed (Q-LIM-4); a
+protocol request without the engine of the download limits (a test of the management API's classes alone) is limited by nothing.
+`api_package_write` has a budget and buckets of its own (`api.rate_limits.package_write`), keyed by the caller's subject, so a
+publish loop does not use up the management budget of its token. The download limits skip a request that
+`RateLimitOptions.Challenged` reports: the composition root passes `v1.ChallengedByLevels` over the installed grant index, which
+reports a package request whose repository the index holds with artifacts that are not `public` (a key it does not hold is
+charged: its decision may read PostgreSQL first), so the challenge a NuGet client draws before it sends its credentials costs no
+budget (Q-API-290). The class an endpoint applies on top is [endpoints.md](endpoints.md). The mechanism is [the cluster limiter](valkey.md#rate-limit-counters). Every answer on a limited
 route that a class charged carries `RateLimit-Policy` and `RateLimit`; a refusal is `429 rate_limited` with `Retry-After` and counts in
 `quader_api_rate_limited_total{class}`. Enabling `api.rate_limits.exempt_admins` needs the authz area's `content:bypass`
 check (`IsAdmin` in `RateLimitOptions`); without the authorizer nobody is exempt.

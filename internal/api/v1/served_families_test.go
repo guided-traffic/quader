@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/limits"
 )
 
 // roleChain is the chain of the default endpoint of a role with the stages of this package at their places: the preflight
@@ -35,7 +37,7 @@ func roleChain(t *testing.T, role string, token bool) http.Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
-	limit, err := NewRateLimit(RateLimitOptions{Config: tightLimits(), Limiters: ls})
+	limit, err := NewRateLimit(RateLimitOptions{Config: tightLimits(), Limiters: ls, Limits: limitsEngine(t, limits.ModeEnforce)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +127,10 @@ func TestQ_ARCH_306_TheEdgeStagesAnswerAnUnservedFamilyLikeAnUnknownPath(t *test
 				t.Errorf("%s: the preflight of %s answers %d", other[role], p.path, got.Code)
 			case p.path == "/api/v1/system/ping" && p.method == http.MethodGet && got.Header().Get("Content-Security-Policy") == "":
 				t.Errorf("%s: %s has no header of the management API: %v", other[role], p.path, got.Header())
-			case p.method == http.MethodGet && p.path != "/ui/" && p.path != "/v2/" && got.Header().Get("RateLimit-Policy") == "":
+			// A read of the management API has the class read; on a protocol path a write has package_write in enforce, and a read
+			// is counted by the figures of the download limits, which this index leaves unlimited (Q-LIM-4).
+			case p.method == http.MethodGet && strings.HasPrefix(p.path, "/api/v1/") && got.Header().Get("RateLimit-Policy") == "",
+				p.method == http.MethodPut && got.Header().Get("RateLimit-Policy") == "":
 				t.Errorf("%s: %s %s is not limited: %d %v", other[role], p.method, p.path, got.Code, got.Header())
 			}
 			if len(p.hdr) > 0 && p.hdr[0] == "Origin" && p.path == "/api/v1/system/ping" && got.Header().Get("Access-Control-Allow-Origin") == "" {

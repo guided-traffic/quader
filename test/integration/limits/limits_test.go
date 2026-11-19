@@ -37,11 +37,13 @@ type env struct {
 // intervals are short so the counters and the usage store follow within a second.
 func newEnv(t *testing.T) *env { return newEnvWith(t, envOptions{valkey: true}) }
 
-// envOptions vary the installation of newEnv: Valkey stopped (R-LIM-019), the replica's role, rows written before it starts.
+// envOptions vary the installation of newEnv: Valkey stopped (R-LIM-019), the replica's role, rows written before it starts, more
+// of the replica's environment.
 type envOptions struct {
 	valkey bool
 	role   string
 	seed   func(st *testenv.Stack)
+	env    []string
 }
 
 func newEnvWith(t *testing.T, o envOptions) *env {
@@ -60,7 +62,7 @@ func newEnvWith(t *testing.T, o envOptions) *env {
 	if o.seed != nil {
 		o.seed(st)
 	}
-	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Role: o.role})
+	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Role: o.role, Env: o.env})
 	e.file = bytes.Repeat([]byte("q"), fileSize)
 	e.filePath = "/files/it/" + rFiles + "/a.bin"
 	if a := st.Do(e.r, "PUT", e.filePath, e.admin, e.file, "Content-Type", "application/octet-stream"); a.Status/100 != 2 {
@@ -111,8 +113,18 @@ func TestR_LIM_017_ACachedDownloadCostsTwoRoundTrips(t *testing.T) {
 	t.Logf("round trips of the limits around one cached download: %v", got)
 }
 
-func TestR_LIM_026_AuditRefusesNothingNewAndEnforceRefuses(t *testing.T) {
-	e := newEnv(t)
+// R-LIM-026, Q-LIM-4 (the owner's (b), 2026-11-19): a new instance starts in enforce; in audit nothing on a protocol path is refused
+// or slowed, neither by a figure nor by package_write, and every figure that would have refused is recorded; enforce refuses.
+func TestR_LIM_026_AuditRefusesNothingAndEnforceRefuses(t *testing.T) {
+	// The stack turns the classes of R-API-016 off; this test needs package_write.
+	e := newEnvWith(t, envOptions{env: []string{
+		"QUADER_API_RATE_LIMITS_ENABLED=true",
+		"QUADER_API_RATE_LIMITS_PACKAGE_WRITE_REQUESTS_PER_SECOND=0.01", "QUADER_API_RATE_LIMITS_PACKAGE_WRITE_BURST=3",
+	}})
+	if a := e.st.Do(e.r, "GET", "/api/v1/limits/settings", e.admin, nil); a.Status != 200 || a.JSON(t)["mode"] != "enforce" {
+		t.Fatalf("the mode of a new instance: %d %s", a.Status, a.Body)
+	}
+	e.setMode(t, "audit")
 	e.setStandard(t, map[string]any{"requestsPerSecond": 2, "requestsBurst": 2, "cachedBytesPerHour": fileSize + 1})
 	time.Sleep(1500 * time.Millisecond) // the change area reaches the replica's index
 	for i := range 6 {
@@ -122,12 +134,28 @@ func TestR_LIM_026_AuditRefusesNothingNewAndEnforceRefuses(t *testing.T) {
 			t.Fatalf("audit sends the RateLimit member of a figure: %q", a.Header.Get("RateLimit-Policy"))
 		}
 	}
+	// The upload of newEnv took one of package_write's three; in audit the class refuses no write.
+	for i := range 5 {
+		a := e.st.Do(e.r, "PUT", "/files/it/"+rFiles+"/w"+strconv.Itoa(i)+".bin", e.admin, e.file, "Content-Type", "application/octet-stream")
+		if a.Status/100 != 2 || strings.Contains(a.Header.Get("RateLimit-Policy"), "package_write") {
+			t.Fatalf("audit, write %d: %d %v", i, a.Status, a.Header)
+		}
+	}
 	time.Sleep(2 * time.Second) // the usage buffer flushes
 	if n := e.st.Number(`SELECT count(*) FROM usage_limit_event WHERE mode = 'audit' AND subject_ref = $1`, e.readerPrincipl); n == 0 {
 		t.Fatal("audit recorded no would_limit event")
 	}
 	e.setMode(t, "enforce")
 	time.Sleep(1500 * time.Millisecond)
+	t.Run("Q-LIM-27 in enforce package_write refuses the writes beyond its burst", func(t *testing.T) {
+		var last testenv.Answer
+		for i := range 4 {
+			last = e.st.Do(e.r, "PUT", "/files/it/"+rFiles+"/e"+strconv.Itoa(i)+".bin", e.admin, e.file, "Content-Type", "application/octet-stream")
+		}
+		if last.Status != 429 || !strings.Contains(last.Header.Get("RateLimit-Policy"), `"package_write"`) {
+			t.Fatalf("the 4th write in enforce: %d %v", last.Status, last.Header)
+		}
+	})
 	codes := map[string]int{}
 	for range 6 {
 		a := e.st.Do(e.r, "GET", e.filePath, e.reader, nil)

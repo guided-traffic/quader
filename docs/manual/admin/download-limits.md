@@ -23,10 +23,10 @@ A **profile** is a named set of these figures; an empty figure is unlimited. A *
 
 The instance is in one of two modes, shown under the heading of **Download limits**:
 
-- **Audit** (the default): every limit is counted and shown; nothing is refused or slowed. The overview shows who **Would have been limited**. The request classes of the management API's rate limits stay in force as before.
-- **Enforce**: the limits refuse and slow requests.
+- **Enforce** (the default of a new instance): the limits refuse and slow requests.
+- **Audit**: every limit is counted and shown; nothing is refused or slowed on the package and registry addresses, not even by a request limit. The overview shows who **Would have been limited**. Use it to watch the numbers before you rely on them, knowing that while it lasts a caller, also one without a credential on a public remote repository, can send as many requests as it likes. The rate limits of the management API, of the sign-in and of the token endpoints hold in both modes.
 
-**Switch to Enforce…** (administrators only) first shows what the last 24 hours would have been in Enforce: how many callers would have been limited, requests refused, downloads slowed and callers blocked, the figures that would have refused most and the kinds of caller, each a link to the overview of those callers. **Switch to Enforce** asks for a recent sign-in and takes effect on every replica within seconds. **Switch to Audit…** goes back.
+**Switch to Audit…** (administrators only) says in one sentence what it turns off; **Switch to Audit** asks for a recent sign-in. **Switch to Enforce…** first shows what the last 24 hours would have been in Enforce: how many callers would have been limited, requests refused, downloads slowed and callers blocked, the figures that would have refused most and the kinds of caller, each a link to the overview of those callers. **Switch to Enforce** asks for a recent sign-in and takes effect on every replica within seconds.
 
 ## The usage overview
 

@@ -10689,12 +10689,12 @@
         <source>Reading the last 24 hours…</source>
       </segment>
     </unit>
-    <unit id="limits.mode.to-audit-text">
+    <unit id="limits.mode.to-audit-removes">
       <notes>
         <note category="location">src/app/features/limits/limit-mode.ts:92,95</note>
       </notes>
       <segment>
-        <source>Limits will be counted and shown, and nothing will be refused or slowed.</source>
+        <source>In Audit nothing is refused or slowed on the package and registry addresses, not even by the request limits; every limit is counted and shown as &quot;Would have been limited&quot;.</source>
       </segment>
     </unit>
     <unit id="limits.cancel">
@@ -29113,7 +29113,7 @@
     </unit>
     <unit id="usage.history.empty">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:352</note>
+        <note category="location">src/app/features/usage/usage-history.ts:360</note>
       </notes>
       <segment>
         <source>No downloads in the last 24 hours.</source>
@@ -29121,7 +29121,7 @@
     </unit>
     <unit id="usage.history.col-time">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:354</note>
+        <note category="location">src/app/features/usage/usage-history.ts:362</note>
       </notes>
       <segment>
         <source>Time</source>
@@ -29129,8 +29129,8 @@
     </unit>
     <unit id="usage.col.requests">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:355</note>
-        <note category="location">src/app/features/usage/usage-history.ts:413</note>
+        <note category="location">src/app/features/usage/usage-history.ts:363</note>
+        <note category="location">src/app/features/usage/usage-history.ts:421</note>
         <note category="location">src/app/features/usage/usage-overview.ts:166</note>
         <note category="location">src/app/features/usage/usage-tables.ts:60</note>
         <note category="location">src/app/features/usage/usage-tables.ts:128</note>
@@ -29141,8 +29141,8 @@
     </unit>
     <unit id="usage.col.cached">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:356</note>
-        <note category="location">src/app/features/usage/usage-history.ts:415</note>
+        <note category="location">src/app/features/usage/usage-history.ts:364</note>
+        <note category="location">src/app/features/usage/usage-history.ts:423</note>
         <note category="location">src/app/features/usage/usage-overview.ts:167</note>
         <note category="location">src/app/features/usage/usage-tables.ts:61</note>
         <note category="location">src/app/features/usage/usage-tables.ts:129</note>
@@ -29153,8 +29153,8 @@
     </unit>
     <unit id="usage.col.uncached">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:357</note>
-        <note category="location">src/app/features/usage/usage-history.ts:417</note>
+        <note category="location">src/app/features/usage/usage-history.ts:365</note>
+        <note category="location">src/app/features/usage/usage-history.ts:425</note>
         <note category="location">src/app/features/usage/usage-overview.ts:168</note>
         <note category="location">src/app/features/usage/usage-tables.ts:62</note>
         <note category="location">src/app/features/usage/usage-tables.ts:130</note>
@@ -29165,7 +29165,7 @@
     </unit>
     <unit id="usage.col.upstream">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:360</note>
+        <note category="location">src/app/features/usage/usage-history.ts:368</note>
         <note category="location">src/app/features/usage/usage-overview.ts:169</note>
         <note category="location">src/app/features/usage/usage-tables.ts:63</note>
       </notes>
@@ -29175,7 +29175,7 @@
     </unit>
     <unit id="usage.col.refused">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:364</note>
+        <note category="location">src/app/features/usage/usage-history.ts:372</note>
         <note category="location">src/app/features/usage/usage-overview.ts:170</note>
         <note category="location">src/app/features/usage/usage-tables.ts:64</note>
       </notes>
@@ -29185,7 +29185,7 @@
     </unit>
     <unit id="usage.history.col-limited">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:365</note>
+        <note category="location">src/app/features/usage/usage-history.ts:373</note>
       </notes>
       <segment>
         <source>Limit events</source>
@@ -29193,7 +29193,7 @@
     </unit>
     <unit id="usage.history.charts-label">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:375</note>
+        <note category="location">src/app/features/usage/usage-history.ts:383</note>
       </notes>
       <segment>
         <source>Requests, from the cache and from the upstream in five-minute points. Arrow keys read one point out.</source>
@@ -29201,7 +29201,7 @@
     </unit>
     <unit id="usage.history.read-requests">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:398</note>
+        <note category="location">src/app/features/usage/usage-history.ts:406</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="this.count(p.requests)"/> requests</source>
@@ -29209,7 +29209,7 @@
     </unit>
     <unit id="usage.history.read-cached">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:399</note>
+        <note category="location">src/app/features/usage/usage-history.ts:407</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="this.bytes(p.cachedBytes)"/> from the cache</source>
@@ -29217,7 +29217,7 @@
     </unit>
     <unit id="usage.history.read-uncached">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:400</note>
+        <note category="location">src/app/features/usage/usage-history.ts:408</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="this.bytes(p.uncachedBytes)"/> from the upstream</source>
@@ -29225,7 +29225,7 @@
     </unit>
     <unit id="usage.history.read-refused">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:403</note>
+        <note category="location">src/app/features/usage/usage-history.ts:411</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="this.count(p.refused)"/> refused</source>
@@ -29233,7 +29233,7 @@
     </unit>
     <unit id="usage.history.read-events">
       <notes>
-        <note category="location">src/app/features/usage/usage-history.ts:406</note>
+        <note category="location">src/app/features/usage/usage-history.ts:414</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="n" disp="this.count(events)"/> limit events</source>

@@ -246,6 +246,14 @@ func (s *Stack) KeyFile(name string, key []byte) string {
 // operations the suite reached.
 func (s *Stack) Validator() *apitest.Validator { return s.val }
 
+// LimitsMode sets the mode of the download limits (R-LIM-026). A new instance starts in enforce; a test of another mechanism
+// that sends more than a profile admits (many parallel downloads of one user, a load) asks for audit, in which nothing on a
+// protocol path is refused or slowed (Q-LIM-4). Before a replica starts, or wait for the change area after it.
+func (s *Stack) LimitsMode(mode string) {
+	s.tb.Helper()
+	s.Exec(`UPDATE limit_settings SET mode = $1, version = version + 1, updated_at = now()`, mode)
+}
+
 // Exec runs a statement on the installation's database as its owner.
 func (s *Stack) Exec(sql string, args ...any) {
 	s.tb.Helper()

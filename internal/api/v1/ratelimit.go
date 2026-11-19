@@ -26,12 +26,12 @@ import (
 //	anonymous  requests without credentials        bucket: the client address
 //
 // The protocol paths (/api/<format>/…, /files/… and everything below /v2/, R-LIM-005) are counted by the figures of the
-// download limits, per subject and place (limits.Engine.Check, one round trip). Beside them the package classes of R-API-016
-// keep a bucket of their own per subject (R-LIM-001): package_read and package_anonymous while the mode is audit, the safety
-// net of Audit mode (Q-LIM-4), package_write in both modes until the upload figures exist (Q-LIM-27). The class counter
-// travels in the same round trip as the request windows. package_anonymous and the figures leave out a request on a known
-// repository whose artifacts are not public, which the decision point answers with the challenge
-// (RateLimitOptions.Challenged, Q-API-290, R-LIM-005).
+// download limits, per subject and place (limits.Engine.Check, one round trip). In audit nothing on them is refused or slowed,
+// by a figure or by a class (Q-LIM-4, the owner's decision of 2026-11-19): every figure records would_limit. In enforce the
+// figures refuse, and beside them the class package_write of R-API-016 keeps a bucket of its own per subject for the unsafe
+// methods (R-LIM-001) until the upload figures exist (Q-LIM-27); its counter travels in the same round trip as the request
+// windows. The figures leave out a request on a known repository whose artifacts are not public, which the decision point
+// answers with the challenge (RateLimitOptions.Challenged, Q-API-290, R-LIM-005).
 //
 // The stage runs after authentication, so the principal is known. The class an endpoint applies on top of these is R-EP-015.
 
@@ -41,9 +41,7 @@ const (
 	LimiterWrite     = "api_write"
 	LimiterAnonymous = "api_anonymous"
 
-	LimiterPackageRead      = "api_package_read"
-	LimiterPackageWrite     = "api_package_write"
-	LimiterPackageAnonymous = "api_package_anonymous"
+	LimiterPackageWrite = "api_package_write"
 )
 
 func classOf(name string) string { return strings.TrimPrefix(name, "api_") }
@@ -59,11 +57,11 @@ type RateLimitOptions struct {
 	// Registry receives quader_api_rate_limited_total{class}; nil registers nothing.
 	Registry prometheus.Registerer
 	// Challenged reports a package request without a credential that the decision point answers with the challenge whatever
-	// its route, at no more cost than a decision in memory: [ChallengedByLevels]. The class package_anonymous does not charge
-	// such a request (Q-API-290). Nil charges every package request without a credential.
+	// its route, at no more cost than a decision in memory: [ChallengedByLevels]. The download limits do not charge such a
+	// request (Q-API-290). Nil charges every package request without a credential.
 	Challenged func(r *http.Request) bool
-	// Limits is the engine of the download limits; nil is a replica without them: the package classes then hold in every
-	// mode, keyed by the subject.
+	// Limits is the engine of the download limits, which every role wires; nil (a test of the management API's classes alone)
+	// limits nothing on the protocol paths.
 	Limits *limits.Engine
 	// IsAdministrator reports whether the caller's principal holds the role admin now, whatever the token's scope: the
 	// administrator of R-LIM-012 (Q-LIM-18). Nil means nobody is.
@@ -147,9 +145,7 @@ func NewRateLimit(o RateLimitOptions) (func(http.Handler) http.Handler, error) {
 		LimiterWrite:     mk(LimiterWrite, o.Config.Write.RequestsPerSecond, o.Config.Write.Burst),
 		LimiterAnonymous: mk(LimiterAnonymous, o.Config.Anonymous.RequestsPerSecond, o.Config.Anonymous.Burst),
 
-		LimiterPackageRead:      mk(LimiterPackageRead, o.Config.PackageRead.RequestsPerSecond, o.Config.PackageRead.Burst),
-		LimiterPackageWrite:     mk(LimiterPackageWrite, o.Config.PackageWrite.RequestsPerSecond, o.Config.PackageWrite.Burst),
-		LimiterPackageAnonymous: mk(LimiterPackageAnonymous, o.Config.PackageAnonymous.RequestsPerSecond, o.Config.PackageAnonymous.Burst),
+		LimiterPackageWrite: mk(LimiterPackageWrite, o.Config.PackageWrite.RequestsPerSecond, o.Config.PackageWrite.Burst),
 	}
 	st := protocolStage{o: o, classes: classes}
 	return func(next http.Handler) http.Handler {
@@ -199,18 +195,14 @@ func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.H
 	p := httpserver.PrincipalFrom(ctx)
 	// A preflight is not a request of the protocol, and a request without a credential that the decision point is certain to
 	// answer with the challenge is no request of a subject (Q-API-290, R-LIM-005).
-	if r.Method == http.MethodOptions || (p.Anonymous && s.o.Challenged != nil && s.o.Challenged(r)) {
+	if r.Method == http.MethodOptions || s.o.Limits == nil || (p.Anonymous && s.o.Challenged != nil && s.o.Challenged(r)) {
 		next.ServeHTTP(w, r)
 		return
 	}
 	admin := s.o.IsAdministrator != nil && s.o.IsAdministrator(r)
 	caller := httplimit.CallerOf(r, p, admin)
 	subject, _ := limits.SubjectOf(caller)
-	mode := limits.ModeAudit
-	if s.o.Limits != nil {
-		mode = s.o.Limits.Mode()
-	}
-	name := packageClass(r, p, mode)
+	name := packageClass(r, s.o.Limits.Mode())
 	if s.classesOff {
 		name = ""
 	}
@@ -218,22 +210,6 @@ func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.H
 		name = ""
 	}
 	received := httpserver.InfoFrom(ctx).Received
-	if s.o.Limits == nil {
-		if name == "" {
-			next.ServeHTTP(w, r)
-			return
-		}
-		c := s.classes[name]
-		v := c.l.TakeAt(ctx, subject.String(), received)
-		setRateLimitFields(w, c, name, v)
-		if !v.Allowed {
-			c.limited.Inc()
-			httpserver.Problem(w, r, classRefusal(v))
-			return
-		}
-		next.ServeHTTP(w, r)
-		return
-	}
 	repo := httplimit.Repo
 	if s.o.Repo != nil {
 		repo = s.o.Repo
@@ -276,19 +252,15 @@ func (s protocolStage) serve(w http.ResponseWriter, r *http.Request, next http.H
 	next.ServeHTTP(cw, r.WithContext(limits.WithCharge(ctx, charge)))
 }
 
-// packageClass is the class of R-API-016 in force for a protocol request (Q-LIM-4, Q-LIM-27): package_write for an unsafe
-// method in both modes, package_read and package_anonymous in audit only; "" for none.
-func packageClass(r *http.Request, p httpserver.Principal, mode limits.Mode) string {
+// packageClass is the class of R-API-016 in force for a protocol request: package_write for an unsafe method in enforce until
+// the upload figures exist (Q-LIM-27); none in audit, which refuses and slows nothing on a protocol path (Q-LIM-4), and none
+// for a safe method, which the figures count.
+func packageClass(r *http.Request, mode limits.Mode) string {
 	safe := r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions
-	switch {
-	case p.Anonymous && mode != limits.ModeEnforce:
-		return LimiterPackageAnonymous
-	case !safe:
-		return LimiterPackageWrite
-	case mode == limits.ModeEnforce:
+	if mode != limits.ModeEnforce || safe {
 		return ""
 	}
-	return LimiterPackageRead
+	return LimiterPackageWrite
 }
 
 // limitedPath reports whether a path lies in a family stage 7 limits: the management API and the protocol paths. The stage

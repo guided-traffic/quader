@@ -35853,15 +35853,6 @@
         <target>Die letzten 24 Stunden werden gelesen …</target>
       </segment>
     </unit>
-    <unit id="limits.mode.to-audit-text">
-      <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:92,95</note>
-      </notes>
-      <segment>
-        <source>Limits will be counted and shown, and nothing will be refused or slowed.</source>
-        <target>Limits werden gezählt und angezeigt, und nichts wird abgewiesen oder verlangsamt.</target>
-      </segment>
-    </unit>
     <unit id="limits.cancel">
       <notes>
         <note category="location">src/app/features/limits/limit-mode.ts:96,97</note>
@@ -38730,6 +38721,12 @@
       <segment>
         <source>never expires</source>
         <target>läuft nie ab</target>
+      </segment>
+    </unit>
+    <unit id="limits.mode.to-audit-removes">
+      <segment>
+        <source>In Audit nothing is refused or slowed on the package and registry addresses, not even by the request limits; every limit is counted and shown as &quot;Would have been limited&quot;.</source>
+        <target>Im Modus Audit wird auf den Paket- und Registry-Adressen nichts abgelehnt oder gebremst, auch nicht durch die Anfragelimits; jedes Limit wird gezählt und als „Wäre begrenzt worden“ angezeigt.</target>
       </segment>
     </unit>
   </file>

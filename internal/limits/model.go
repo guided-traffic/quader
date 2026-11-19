@@ -234,8 +234,8 @@ type Settings struct {
 	UpdatedBy    string
 }
 
-// DefaultSettings are the settings of a fresh installation: Audit, 900 s.
-func DefaultSettings() Settings { return Settings{Mode: ModeAudit, BlockSeconds: 900, Version: 1} }
+// DefaultSettings are the settings of a fresh installation: Enforce, 900 s (decision 17 of usage-and-limits.md).
+func DefaultSettings() Settings { return Settings{Mode: ModeEnforce, BlockSeconds: 900, Version: 1} }
 
 // Snapshot is what the index is compiled from: everything the store holds of the limits.
 type Snapshot struct {

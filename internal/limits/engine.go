@@ -333,7 +333,7 @@ type ClassCheck func(b *cluster.LimitBatch) func(res []cluster.LimitResult, err 
 
 // Check is stage 7 for a request on a protocol path (R-LIM-005, R-LIM-017): one round trip that counts the request windows
 // of the budget key, reads its block marker and runs the class of R-API-016 that is in force. In enforce the block and the
-// request figures refuse; in audit they are recorded as would_limit and only the class refuses (Q-LIM-4).
+// request figures refuse; in audit they are recorded as would_limit and nothing refuses (Q-LIM-4: no class is in force).
 func (e *Engine) Check(ctx context.Context, c *Charge, at time.Time, class ClassCheck) Stage {
 	if at.IsZero() {
 		at = e.now()

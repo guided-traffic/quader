@@ -31,7 +31,7 @@ export interface ModeDialogData {
 /**
  * The dialog of the mode switch (R-UI-182, Q-UI-733). **Switch to Enforce** shows first what the last 24 hours would have been
  * in Enforce, with the figures that would have refused most and the kinds of caller, each a link to the overview filtered by
- * **Would have been limited**; **Switch to Audit** says what Audit does. The switch sends `PATCH` with the `ETag`; recent
+ * **Would have been limited**; **Switch to Audit** says in one sentence that it removes the protection (Q-LIM-4). The switch sends `PATCH` with the `ETag`; recent
  * authentication is asked for by the session dialog of R-UI-042.
  */
 @Component({
@@ -89,7 +89,7 @@ export interface ModeDialogData {
           <p role="status" i18n="@@limits.mode.preview-loading">Reading the last 24 hours…</p>
         }
       } @else {
-        <p i18n="@@limits.mode.to-audit-text">Limits will be counted and shown, and nothing will be refused or slowed.</p>
+        <p i18n="@@limits.mode.to-audit-removes">In Audit nothing is refused or slowed on the package and registry addresses, not even by the request limits; every limit is counted and shown as "Would have been limited".</p>
       }
     </div>
     <div class="dialog-actions">

@@ -51,9 +51,11 @@ func describe(c map[string]int) string {
 }
 
 // background are the statements of the replica itself (its health probes and its registration), which run whatever is served.
+// GetSystemState is the probe's two reads of the restore markers after its GetSchemaState (checkRestoreMarker): twice per probe,
+// so a window of 15 probes reached the 30 downloads and was taken for a statement of the request.
 var background = map[string]bool{
 	"GetSchemaState": true, "TableExists": true, "SELECT NOT pg_is_in_recovery()": true, "-- ping": true, "ping": true, "UpsertReplica": true,
-	"ListClusterEpochs": true, "EndpointsCountServingReplicas": true,
+	"ListClusterEpochs": true, "EndpointsCountServingReplicas": true, "GetSystemState": true,
 }
 
 // statementsPerDownload checks that a path costs the same statements with scanning (the replica on) and without (the replica

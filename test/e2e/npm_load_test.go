@@ -50,9 +50,10 @@ const (
 // npmHAFixture is what every scenario's load uses: the tokens, the lockfile project and the input of k6/npm.js.
 type npmHAFixture struct {
 	fx *npmFixture
-	// tokens: two per ci loop, then haK6Tokens of k6's, then the publisher's. The package_read class of R-API-016
-	// budgets 200 requests/s per token with a burst of 1,000 in 5 s; one loop asks for 475 tarballs every 2.5 s, so on
-	// one token it met the budget in four of ten commands (429, then npm's 10 s retry). A loop alternates its two
+	// tokens: two per ci loop, then haK6Tokens of k6's, then the publisher's. Each technical token is a subject of the
+	// download limits with a budget of its own (R-LIM-001; the class package_read of R-API-016 that first met it, 200
+	// requests/s per token with a burst of 1,000 in 5 s, is removed by Q-LIM-4); one loop asks for 475 tarballs every 2.5 s, so on
+	// one token it met that budget in four of ten commands (429, then npm's 10 s retry). A loop alternates its two
 	// tokens; k6 spreads its 120 requests/s over its tokens, because the edge queues them while a PostgreSQL
 	// switchover holds the replicas and hands them on at once, a burst of 2,280 on one token (Actions run 41249697928).
 	tokens  []string

@@ -17,8 +17,14 @@ a body, the usage store behind the overview, the API and the screens. The techni
   flushed to PostgreSQL every ten seconds, read by the overview and never by a request.
 - **A request writes no row and costs at most three round trips:** one at stage 7, one before a download from the cache, one at step
   9a for a miss. Bytes, refusals, the end of a download and lease renewals ride on the replica's flush, once a second.
-- **Audit counts everything and applies nothing new.** In `audit` the package classes of R-API-016 are the safety net; in `enforce`
-  the profiles take over ([R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce)).
+- **Enforce is the default; Audit counts everything and applies nothing.** A new instance starts in `enforce` (`DefaultSettings`,
+  the migration's default). In `audit` nothing on a protocol path is refused or slowed, no package class of R-API-016 either
+  (`packageClass` in [ratelimit.go](../../internal/api/v1/ratelimit.go) answers `package_write` for an unsafe method in `enforce`
+  and nothing else; Q-LIM-4, the owner's decision of 2026-11-19)
+  ([R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce)). The render seed switches its shared database to `audit`
+  (`seedAuditMode`), so the seed's own requests are never refused and the pictures show what Audit records; an integration test
+  of another mechanism that sends more than a profile admits (hundreds of parallel downloads of one user) asks for `audit` with
+  `Stack.LimitsMode` of [testenv](../../test/integration/testenv/stack.go) before its replica starts.
 - **The format contract is version 6.** A route's kind decides what is counted; `Host.Serve` admits downloads, and check 16 of the
   format kit fails a format that writes a download's body itself
   ([R-LIM-036](../spec/usage-and-limits.md#r-lim-036--the-format-contract-version-6)).
@@ -106,7 +112,7 @@ of step 9a. No PostgreSQL statement runs on a request: the index is in memory, t
 | `TestR_LIM_017_RequestWindowsAndCost`, `TestR_LIM_021_…`, `TestR_LIM_022_StepNineA`, `TestR_LIM_023_Pacing`, `TestR_LIM_024_ParallelDownloads`, `TestR_LIM_025_TheBlock` | The engine on in-memory counters: windows, cost, Audit, the admission, 9a and the ceiling, pacing shares and the floor, leases and their fallback share, blocks and their lift |
 | `TestR_LIM_036_EveryRouteOfEveryFormatCountsByItsKind` ([formats/all](../../internal/formats/all)) | The kind of every route of the six formats |
 | Check 16 of the format kit ([checks_admission.go](../../internal/formats/formattest/checks_admission.go)) | Every format answers 429 before any byte when the admission refuses; the defect `WritesOwnDownload` fails it |
-| [ratelimit_test.go](../../internal/api/v1/ratelimit_test.go) | The package classes on `/files/` and `/v2/`, keyed by the subject |
+| [ratelimit_test.go](../../internal/api/v1/ratelimit_test.go) | In `audit` nothing on a protocol path is refused by a class; in `enforce` `package_write` on `/api/<format>/`, `/files/` and `/v2/`, keyed by the subject (Q-LIM-4, Q-LIM-27) |
 | [ifmatch_test.go](../../internal/api/v1/ifmatch_test.go) | A project's first maximum by `PUT` without `If-Match`, a replace with it (Q-API-354) |
 | [requestlog_test.go](../../internal/observability/requestlog_test.go) | The limits' fields of the request record, null off the protocol paths |
 | Integration set `limits` ([test/integration/limits](../../test/integration/limits)) | A cached download's round trips, Audit and Enforce, a failed credential, the overview; `TestR_LIM_001_ARegistryTokenOfATechnicalTokenIsChargedToTheTechnicalToken` (a docker-style exchange with a technical token's secret, then a `/v2/` request); `TestR_LIM_028_ADeletedTechnicalTokensRuleGoesAndItsUsageStays` (the token record's `limit`, a run of `limits-cleanup`, which also runs the fold of the hourly rows into the daily sums: `FoldUsageDays` grouped by an expression its subqueries named ungrouped and failed every run until 2026-11-19); `TestR_LIM_033_AProjectsFirstMaximumTakesNoIfMatch`; `TestR_LIM_019_WithValkeyStoppedTheReplicaDecidesOnItsShare` |

@@ -1177,8 +1177,8 @@ NuGet contributes:
 - The service index is subject to the same rules, which makes a client authenticate on its first
   request. NuGet 6.7 and later are meant to pre-authenticate every resource below `<feed>/` then (R-NUGET-001); the .NET SDK
   10.0.403 (NuGet 7.9.0) of the acceptance suite was measured not to: each flat container request of a restore drew a 401 before
-  its 200. Those first attempts are charged to no rate-limit class, so only the repetitions with the token count, against the
-  token's `package_read` ([api-and-ui.md](../api-and-ui.md) R-API-016,
+  its 200. Those first attempts are charged to nothing, so only the repetitions with the token count, against the token's
+  subject in the download limits ([usage-and-limits.md](../usage-and-limits.md) R-LIM-005, [api-and-ui.md](../api-and-ui.md) R-API-016,
   [Q-API-290](../api-and-ui.md#q-api-290--package_anonymous-does-not-charge-a-request-the-decision-point-challenges)).
 
 Configuration (common repository member, shown for context; [repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-004):

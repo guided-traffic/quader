@@ -58,7 +58,7 @@ const (
 type nugetHAFixture struct {
 	fx *nugetFixture
 	// tokens: two per restore loop, then nugetHAK6Tokens of k6's, then the publisher's. As for npm (npmHAFixture) a loop
-	// alternates its two tokens and k6 spreads its requests over its own, so the package_read budget of R-API-016 is not the
+	// alternates its two tokens and k6 spreads its requests over its own, so the budget of one token's subject is not the
 	// thing the load measures.
 	tokens   []string
 	csproj   []byte

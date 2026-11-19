@@ -1116,8 +1116,10 @@ the registry's `/v2/` (finding F-155), and nothing counted bytes or callers. Wha
   download or a miss; the usage store is buffered per replica and written to PostgreSQL every ten seconds (R-LIM-017, R-LIM-027).
 - At the limit: 429 for requests; slowing down for bytes per second; 429 before a download for hourly and daily bytes; what is
   cached is still served when the upstream budget is used up (R-REPO-025 step 9a); a block after too many refused requests.
-- One instance switch, Audit (default) or Enforce. In Audit the package classes of R-API-016, now on `/v2/` as well and keyed by
-  the subject, stay in force as the safety net (R-LIM-026, R-API-016).
+- One instance switch, Enforce (the default) or Audit. In Audit nothing on a protocol path is refused or slowed, the package
+  classes of R-API-016 included (the owner, 2026-11-19, Q-LIM-4 (b)); `package_read` and `package_anonymous` are removed and
+  `package_write`, keyed by the subject, holds in Enforce only. The default is Enforce because Audit has no request limit
+  (the development agent, on the owner's leave of 2026-11-19; R-LIM-026, R-API-016).
 - A service account belongs to the instance, a project or a repository; a repository's account holds its actions at the account;
   each account has named technical tokens, each a budget subject that rotation keeps
   ([identity-and-authentication.md](spec/identity-and-authentication.md) R-AUTH-045, R-AUTH-046,
@@ -1136,8 +1138,8 @@ rules, counting and showing before limiting, a technical token as a project acco
 development agent's proposals the owner chose against); counters in PostgreSQL as for storage quotas (Q-LIM-10); every 404 as a
 refused request (Q-LIM-7); policies for a repository's account (Q-AUTHZ-296).
 
-**Revisit condition:** Valkey incidents let budgets be exceeded visibly; a format whose route kinds do not say what is content; the
-owner reads "nothing is refused in Audit" as including the request classes.
+**Revisit condition:** Valkey incidents let budgets be exceeded visibly; a format whose route kinds do not say what is content; an
+installation switched to Audit is abused through a public remote (H-1015 of [security/usage-and-limits.md](security/usage-and-limits.md)).
 
 **Spec:** [usage-and-limits.md](spec/usage-and-limits.md) R-LIM-001 to R-LIM-039, Q-LIM-1 to Q-LIM-27;
 [api-and-ui.md](spec/api-and-ui.md) R-API-016, R-API-082, R-UI-177 to R-UI-186, Q-API-344, Q-API-345, Q-UI-730 to Q-UI-736;

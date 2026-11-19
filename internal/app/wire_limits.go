@@ -189,7 +189,7 @@ func (a *App) limitsFailedCredential() func(*http.Request, error) {
 
 // limitsIndex holds the compiled index of the limits (R-LIM-013): loaded at start, rebuilt on a change of the area limits and
 // of the repository configuration (a renamed or moved repository is a place of another name), and at least once a minute.
-// A replica that has not loaded it yet decides with the built-in defaults of an empty index: Audit, every subject unlimited.
+// A replica that has not loaded it yet decides with the built-in defaults of an empty index: Enforce, every subject unlimited.
 type limitsIndex struct {
 	store     *store.Store
 	log       *slog.Logger

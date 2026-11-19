@@ -67,7 +67,7 @@ page; every decision block below that cites one of them builds on it.
 | 14 | Only the instance administrator raises above the instance; a project Owner narrows or redistributes in project and repository, higher than the instance only up to a maximum the instance administrator gives the project | R-LIM-016 |
 | 15 | Consumption under a repository's own rule counts against that rule only; the caller's instance budget stays for every other repository; the overview shows consumption per place and the sum | R-LIM-014 |
 | 16 | The order: the place first, then the caller. Repository before project before instance; at each place the rule for the single caller or address, else the caller's groups with the most generous value per figure, else the default of its kind | R-LIM-013 |
-| 17 | A switch Audit / Enforce for the instance, set by the instance administrator, default Audit; in Audit everything is counted and the overview shows who would have been limited, nothing is refused or slowed; the UI and the API use his two words | R-LIM-026 |
+| 17 | A switch Audit / Enforce for the instance, set by the instance administrator; in Audit everything is counted and the overview shows who would have been limited, nothing is refused or slowed, the package classes of R-API-016 included (owner, 2026-11-19, [Q-LIM-4](#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included)); the UI and the API use his two words. The default is Enforce: the development agent's choice on the owner's leave of 2026-11-19 ("Du kannst … auch gerne den Enforce zum Standard machen. Ich erwarte dass ein Admin sich im klaren ist, was er braucht. Die Default Installation ist einfach für mich immer zum testen und ausprobieren."), since Audit has no request limit at all and an instance should start in the state that protects it | R-LIM-026 |
 
 And, binding for every format (owner, 2026-11-19): "Alles was wir hier für OCI besprechen gilt auch für alle anderen Registries
 die bereits gebaut sind und für zukünftige Registries." Every rule below is stated for the format contract and holds for Ansible
@@ -245,11 +245,10 @@ Priority: **MVP** · Covers: BEYOND-030
   download through the UI is a request on `/files/` and counted here. The CI exchange keeps R-CI-021, login and token validation
   R-AUTH-038.
 - **The package classes of R-API-016** change ([Q-LIM-3](#q-lim-3--protocol-paths-are-counted-by-the-figures-the-management-api-keeps-its-classes),
-  [Q-LIM-4](#q-lim-4--in-audit-mode-the-package-classes-of-r-api-016-stay-in-force-as-the-safety-net)): `package_read` and
-  `package_anonymous` apply to every protocol path (`/v2/` and `/files/` included), keyed by the subject of R-LIM-001, and only
-  while the mode is `audit`; in `enforce` the request figures replace them. `package_write` applies to unsafe methods on every
-  protocol path in both modes until the upload figures (Later) replace it
-  ([Q-LIM-27](#q-lim-27--uploads-stay-under-package_write-in-both-modes-until-the-upload-figures-exist)).
+  [Q-LIM-4](#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included)): the request figures of the profiles count every protocol path (`/v2/` and `/files/`
+  included), and the classes `package_read` and `package_anonymous` are gone. `package_write` applies to unsafe methods on every
+  protocol path, keyed by the subject of R-LIM-001, in `enforce` only, until the upload figures (Later) replace it
+  ([Q-LIM-27](#q-lim-27--uploads-stay-under-package_write-in-enforce-until-the-upload-figures-exist)). In `audit` nothing on a protocol path is refused or slowed by a request limit.
 - **The endpoint's class** (R-EP-015) runs first at stage 7 and still holds: a request on a further endpoint must fit the endpoint's
   class and the figures of this page.
 - **Which repository a request names** is read through the one parser of repository addresses (`qname.ParseAddress`, R-ARCH-005),
@@ -260,8 +259,8 @@ Priority: **MVP** · Covers: BEYOND-030
 Acceptance criteria:
 
 - In `enforce` with the profile Anonymous, 200 `GET /v2/` from one address within 2 s are admitted at most 140 times (burst 100
-  plus 20 per second); in `audit` the class `package_anonymous` (20 per second, burst 100) refuses the same requests, as it does on
-  `/api/npm/…`.
+  plus 20 per second); in `audit` all 200 are admitted, as on `/api/npm/…`, and the address is recorded as would-have-been-limited
+  for `requestsPerSecond`.
 - 300 `GET <feed>/v3/flatcontainer/<id>/index.json` without a credential on a NuGet repository whose artifacts are `internal` are
   all answered 401 and none is counted as a request or a refused request of the address.
 
@@ -1047,7 +1046,7 @@ Priority: **MVP** · Covers: BEYOND-030
 
 (Owner, decision 17.)
 
-- One instance setting, `mode`: `audit` (the default) or `enforce`, changed by a holder of `limits:write` through
+- One instance setting, `mode`: `enforce` (the default) or `audit`, changed by a holder of `limits:write` through
   `PATCH /api/v1/limits/settings` with `If-Match` and recent authentication (R-API-007), and in the UI (R-UI-182). Every change is
   audited (`limits.mode.changed`). It reaches every replica within the bound of the change area `limits`.
 - **In both modes** every figure is counted, every decision is computed, and the usage store records consumption.
@@ -1055,20 +1054,20 @@ Priority: **MVP** · Covers: BEYOND-030
   as `would_limit` with its figure: in the usage store (R-LIM-027), in `quader_limits_decisions_total{outcome="would_limit"}`, and in
   the request log (`limits_outcome: would_limit:<figure>`). A block is not set. The new `RateLimit` members are not sent.
 - **In `enforce`** the decisions apply as R-LIM-020 to R-LIM-025 say.
-- **What protects an installation in `audit`**
-  ([Q-LIM-4](#q-lim-4--in-audit-mode-the-package-classes-of-r-api-016-stay-in-force-as-the-safety-net), for the owner's review): the
-  classes `package_read` and `package_anonymous` of R-API-016, now on every protocol path including `/v2/` and keyed by the subject
-  of R-LIM-001, refuse as today while the mode is `audit`; `enforce` switches them off and the profiles' request figures take
-  their place. `package_write` holds in both modes. An installation that is updated therefore keeps its request limit, and gains it
-  on `/v2/`, before anyone switches to `enforce`.
+- **Nothing protects the protocol paths in `audit`** ([Q-LIM-4](#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included), the owner's decision of
+  2026-11-19): no request limit refuses or slows there, the class `package_write` of R-API-016 included; the limits of the
+  management API (R-API-016's `read`, `write`, `anonymous`), of the sign-in and of the token endpoints are not modes of this page
+  and hold. Switching to `audit` is therefore the step that removes protection, and its dialog says so (R-UI-182).
+- A new instance starts in `enforce` (decision 17).
 - Switching from `audit` to `enforce` does not reset a counter: a subject over a limit is refused at its next request.
 
-Data model: `limit_settings` (one row): `mode text NOT NULL DEFAULT 'audit' CHECK (mode IN ('audit','enforce'))`,
+Data model: `limit_settings` (one row): `mode text NOT NULL DEFAULT 'enforce' CHECK (mode IN ('audit','enforce'))`,
 `block_seconds integer NOT NULL DEFAULT 900 CHECK (block_seconds BETWEEN 60 AND 86400)`, `version`, `updated_at`, `updated_by`.
 
 Acceptance criteria:
 
-- In `audit`, an anonymous address that exceeds `cachedBytesPerHour` of the profile Anonymous downloads on unslowed and unrefused;
+- In `audit`, an anonymous address that exceeds `cachedBytesPerHour` of the profile Anonymous downloads on unslowed and unrefused,
+  and so does a caller that exceeds `requestsPerSecond` and the burst of `package_write`;
   `GET /api/v1/usage?state=wouldBeLimited` lists it with `wouldLimitEvents` of `cachedBytesPerHour`, and the request log of the next
   download has `limits_outcome: "would_limit:cachedBytesPerHour"`.
 - After `PATCH /api/v1/limits/settings {"mode": "enforce"}`, the same address's next download answers 429 on every replica within
@@ -1685,7 +1684,9 @@ Not part of this step, named by the owner on 2026-11-19 or by this page:
 ## Decisions
 
 Each question below was decided by the development agent from the listed options, except where a block says the owner decided; the
-owner reviews the choices at the walkthrough.
+owner reviews the other choices at the walkthrough. The eight he reviewed first are decided by him on 2026-11-19: Q-LIM-2, Q-LIM-5,
+Q-LIM-7, Q-LIM-10, Q-LIM-16, Q-LIM-21 and [authorization.md](authorization.md) Q-AUTHZ-296 as built (a), and Q-LIM-4 (b), with
+`enforce` the default mode (decision 17).
 
 ### Q-LIM-1 · A CI token is charged to its issuer and the project of its bundle
 
@@ -1710,7 +1711,7 @@ back to `sub`, as R-CI-021 does).
 
 ### Q-LIM-2 · A request through a virtual repository is decided at the repository the client addressed
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the owner (2026-11-19): (a)**, as the development agent had built it.
 
 Context: the owner's rule "through a virtual repository a request counts once, at the member that served it". Which repository's
 rules decide is a second question: the request figures are decided at stage 7, before a member is known.
@@ -1746,31 +1747,31 @@ agent would revisit this if a management operation turns out to move content (a 
 
 **Applied in the spec:** R-LIM-005; [api-and-ui.md](api-and-ui.md) R-API-016.
 
-### Q-LIM-4 · In Audit mode the package classes of R-API-016 stay in force as the safety net
+### Q-LIM-4 · In Audit nothing on a protocol path is refused or slowed, the package classes of R-API-016 included
 
-Status: **Decided by the development agent** — selected from the options below; **the owner reviews it first** at the walkthrough.
+Status: **Decided by the owner (2026-11-19): (b)**, against the development agent's (a).
 
-Context: the owner chose Audit as the default state (decision 17) and "in Audit nothing is refused or slowed". Today the package
-classes of R-API-016 refuse on `/api/<format>/`; an installation that updates would lose them if Audit meant "nothing".
+Context: the owner's decision 17 says "in Audit nothing is refused or slowed". Before the download limits the package classes of
+R-API-016 refused on `/api/<format>/`; the question was whether they stay in force while the mode is `audit`.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `package_read` and `package_anonymous` keep refusing while the mode is `audit`, on every protocol path including `/v2/`, keyed by the subject; `enforce` replaces them (chosen) | The old classes are the safety net of Audit mode | No installation loses its only request limit by updating; F-155 is closed at once; the values equal the request figures of Standard and Anonymous, so switching changes little for requests | Two systems side by side in Audit mode; "nothing is refused" holds only for the figures of this page |
-| (b) Audit refuses nothing at all on protocol paths | One system | The owner's sentence literally | An installation that updates has no request limit on any protocol path until someone switches; a public remote is open to unbounded upstream requests |
-| (c) Enforce the request figures in Audit too, audit the rest | The profiles' request figures always hold | One system for requests | Contradicts the owner's decision 17 for a figure of his own |
+| (a) `package_read` and `package_anonymous` keep refusing while the mode is `audit`, on every protocol path including `/v2/`, keyed by the subject; `enforce` replaces them (the development agent's proposal) | The old classes are the net of Audit mode | No installation loses its only request limit by updating | Two systems side by side in Audit mode; "nothing is refused" holds only for the figures of this page |
+| (b) Audit refuses nothing at all on protocol paths (chosen by the owner) | One system | The owner's sentence literally | While the mode is `audit` an instance has no request limit on any protocol path; a public remote is open to unbounded upstream requests |
+| (c) Enforce the request figures in Audit too, audit the rest | The profiles' request figures always hold | One system for requests | Contradicts decision 17 for a figure of his own |
 
-**Choice:** (a).
+**Choice:** (b). **Rationale:** the owner's sentence "in Audit nothing is refused or slowed" holds literally, for the classes that
+existed before as much as for the new figures: Audit is observation, Enforce is protection. `package_read` and `package_anonymous`
+had no effect left in either mode and are removed with their configuration keys (pre-alpha, no compatibility); `package_write`
+stays for `enforce` alone ([Q-LIM-27](#q-lim-27--uploads-stay-under-package_write-in-enforce-until-the-upload-figures-exist)). Because Audit now has no request limit, a new instance starts
+in `enforce` (decision 17), and the switch to Audit says that it removes the protection (R-UI-182). The gap is H-1015 of
+[docs/security/usage-and-limits.md](../security/usage-and-limits.md).
 
-**Rationale:** the owner's Audit is about the new figures, whose numbers are estimates; the classes that exist today are not new
-and their numbers are the ones the profiles start from. Losing them on update would make the default state weaker than the release
-before. The development agent would revisit this if the owner reads "nothing is refused" as including the old classes; option
-(b) then is a one-line change of R-LIM-026.
-
-**Applied in the spec:** R-LIM-005, R-LIM-026; [api-and-ui.md](api-and-ui.md) R-API-016, Q-API-344.
+**Applied in the spec:** R-LIM-005, R-LIM-026; [api-and-ui.md](api-and-ui.md) R-API-016, Q-API-344, R-UI-182.
 
 ### Q-LIM-5 · A collapsed fetch is charged to its leader alone, also after its client left
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the owner (2026-11-19): (a)**, as the development agent had built it.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -1806,7 +1807,7 @@ index), which the route kind could then declare as a download.
 
 ### Q-LIM-7 · A refused request is a refusal, not a missing package
 
-Status: **Decided by the development agent** — selected from the options below; **the owner reviews it first** at the walkthrough.
+Status: **Decided by the owner (2026-11-19): (a)**, as the development agent had built it.
 
 Context: the owner's table counts "answers 401, 403 and 404 to a caller (probing for names)". NuGet asks every feed of a restore for
 every package and gets a 404 from each feed that does not hold it; a restore of 300 packages over two feeds draws 300 such 404s, the
@@ -1862,7 +1863,7 @@ would revisit this if users of bounded remotes meet 429s at expiry often.
 
 ### Q-LIM-10 · The enforcing counters live in Valkey, the usage store in PostgreSQL
 
-Status: **Decided by the development agent** — selected from the options below; **the owner reviews it first** at the walkthrough.
+Status: **Decided by the owner (2026-11-19): (a)**, as the development agent had built it.
 
 Context: Q-STOR-12 keeps quota counters in PostgreSQL because a storage quota must survive a Valkey incident. The figures here are
 checked on every protocol request, and the brief of W-26 asks for the cost per request.
@@ -1952,7 +1953,7 @@ subjects appears. **Applied in the spec:** R-LIM-025.
 
 ### Q-LIM-16 · A ceiling is a remote repository's, for the two upstream figures, and none is set by default
 
-Status: **Decided by the development agent** — selected from the options below; **the owner reviews it first** at the walkthrough.
+Status: **Decided by the owner (2026-11-19): (a)**, as the development agent had built it.
 
 Context: the owner's example names uncached bytes and upstream requests per hour for each class; whether the other figures are
 offered was open.
@@ -2027,7 +2028,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 ### Q-LIM-21 · A project Owner sees the addresses of the anonymous callers of its repositories
 
-Status: **Decided by the development agent** — selected from the options below; **the owner reviews it first** at the walkthrough.
+Status: **Decided by the owner (2026-11-19): (a)**, as the development agent had built it.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -2100,14 +2101,15 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). **Applied in the spec:** R-LIM-020, R-LIM-026.
 
-### Q-LIM-27 · Uploads stay under package_write in both modes until the upload figures exist
+### Q-LIM-27 · Uploads stay under package_write in Enforce until the upload figures exist
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Narrowed
+to `enforce` by the owner's Q-LIM-4 (2026-11-19): in `audit` nothing on a protocol path is refused, a publish included.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `package_write` (10 per second, burst 50) holds in both modes on every protocol path (chosen) | — | A publish's cost (spool, validation) stays bounded; uploads are Later by the owner | Writes count against the request figures and `package_write` both |
-| (b) Writes under the request figures only in `enforce` | — | One system | A publish loop gets 200 per second under Standard |
+| (a) `package_write` (10 per second, burst 50) holds in `enforce` on every protocol path (chosen) | — | A publish's cost (spool, validation) stays bounded; uploads are Later by the owner | Writes count against the request figures and `package_write` both |
+| (b) Writes under the request figures only | — | One system | A publish loop gets 200 per second under Standard |
 
 **Choice:** (a). **Applied in the spec:** R-LIM-005; [api-and-ui.md](api-and-ui.md) R-API-016.
 
@@ -2305,7 +2307,7 @@ Context: the detail and the explanation name a rule's profile by its key; the pr
 ## What this does not cover
 
 - The protocol gaps for the owner: [Gaps of the protocols](#gaps-of-the-protocols).
-- The perspective and its own gaps (H-1009 to H-1012): [security/usage-and-limits.md](../security/usage-and-limits.md).
+- The perspective and its own gaps (H-1010 to H-1012, H-1014, H-1015): [security/usage-and-limits.md](../security/usage-and-limits.md).
 
 ### H-1005 · Counters lost in a Valkey outage or failover give a subject up to one more window of every budget
 

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/qname"
 )
 
@@ -42,10 +44,19 @@ func tightLimits() config.APIRateLimits {
 		Write:     config.APIRateLimitWrite{RequestsPerSecond: 1, Burst: 2},
 		Anonymous: config.APIRateLimitAnonymous{RequestsPerSecond: 1, Burst: 2},
 
-		PackageRead:      config.APIRateLimitPackageRead{RequestsPerSecond: 1, Burst: 4},
-		PackageWrite:     config.APIRateLimitPackageWrite{RequestsPerSecond: 1, Burst: 2},
-		PackageAnonymous: config.APIRateLimitPackageAnonymous{RequestsPerSecond: 1, Burst: 3},
+		PackageWrite: config.APIRateLimitPackageWrite{RequestsPerSecond: 1, Burst: 2},
 	}
+}
+
+// limitsEngine is an engine of the download limits in the mode, over an index without profiles or rules: every figure is
+// unlimited, so what refuses is a class of R-API-016.
+func limitsEngine(t *testing.T, mode limits.Mode) *limits.Engine {
+	t.Helper()
+	x := limits.NewIndex(limits.Snapshot{Settings: limits.Settings{Mode: mode, BlockSeconds: 900, Version: 1}})
+	return limits.NewEngine(limits.Options{
+		Store: cluster.NewMemoryLimits(), Index: func() *limits.Index { return x }, Replica: "r1", LeaseTTL: time.Minute,
+		Share: func() int { return 1 },
+	})
 }
 
 func asPrincipal(r *http.Request, p httpserver.Principal) *http.Request {
@@ -168,9 +179,7 @@ func TestRateLimitStage(t *testing.T) {
 			Write:     config.APIRateLimitWrite{RequestsPerSecond: 10, Burst: 50},
 			Anonymous: config.APIRateLimitAnonymous{RequestsPerSecond: 5, Burst: 20},
 
-			PackageRead:      config.APIRateLimitPackageRead{RequestsPerSecond: 200, Burst: 1000},
-			PackageWrite:     config.APIRateLimitPackageWrite{RequestsPerSecond: 10, Burst: 50},
-			PackageAnonymous: config.APIRateLimitPackageAnonymous{RequestsPerSecond: 20, Burst: 100},
+			PackageWrite: config.APIRateLimitPackageWrite{RequestsPerSecond: 10, Burst: 50},
 		}
 		h, _ := limitedChain(t, cfg)
 		// The default policy is announced as the cluster policy; the limiter without
@@ -219,104 +228,82 @@ func TestRateLimitStage(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-016 the package protocols have their own classes and buckets", func(t *testing.T) {
-		h, _ := limitedChain(t, tightLimits())
-		var last *httptest.ResponseRecorder
-		for range 5 {
-			last = do(h, "GET", "/api/npm/main/left-pad", token("a"))
-		}
-		if last.Code != 429 || last.Header().Get("Retry-After") == "" || !strings.HasPrefix(last.Header().Get("RateLimit-Policy"), `"package_read";q=4;`) {
-			t.Fatalf("5th request: %d %v", last.Code, last.Header())
-		}
-		// The management API of the same token has its own budget, and so has the next token.
-		if do(h, "GET", "/api/v1/repositories", token("a")).Code != 200 {
-			t.Fatal("the package protocol used up the budget of the management API")
-		}
-		if do(h, "GET", "/api/npm/main/left-pad", token("b")).Code != 200 {
-			t.Fatal("a second token was slowed down")
-		}
-		// Unsafe methods are the write class.
-		var put *httptest.ResponseRecorder
-		for range 3 {
-			put = do(h, "PUT", "/api/npm/main/left-pad", token("w"))
-		}
-		if put.Code != 429 || !strings.HasPrefix(put.Header().Get("RateLimit-Policy"), `"package_write";q=2;`) {
-			t.Fatalf("3rd publish: %d %v", put.Code, put.Header())
-		}
-	})
-
-	t.Run("R-API-016 an anonymous package request is limited per client address in its own class", func(t *testing.T) {
-		h, _ := limitedChain(t, tightLimits())
-		var last *httptest.ResponseRecorder
-		for range 4 {
-			last = do(h, "GET", "/api/npm/main/left-pad", httpserver.AnonymousPrincipal())
-		}
-		if last.Code != 429 || !strings.HasPrefix(last.Header().Get("RateLimit-Policy"), `"package_anonymous";q=3;`) {
-			t.Fatalf("%d %v", last.Code, last.Header())
-		}
-		if do(h, "GET", "/api/v1/system/ping", httpserver.AnonymousPrincipal()).Code != 200 {
-			t.Fatal("the package protocol used up the anonymous budget of the management API")
-		}
-	})
-
-	t.Run("R-API-016 R-NUGET-012 a package request without a credential that the decision point challenges is not charged", func(t *testing.T) {
-		levels := fakeLevels{{Project: "main", Key: "open"}: authz.LevelPublic, {Project: "main", Key: "nuget-local"}: authz.LevelInternal}
-		h, reg := limitedChain(t, tightLimits(), func(o *RateLimitOptions) {
-			o.Challenged = ChallengedByLevels(func() LevelReader { return levels })
-		})
-		// A NuGet client's first attempt of every request, far beyond the burst of 3: each reaches the decision point, which
-		// answers the challenge, and carries no field of the class it was not charged to.
-		for i := range 20 {
-			rec := do(h, "GET", "/api/nuget/main/nuget-local/v3/flatcontainer/acme.widgets/index.json", httpserver.AnonymousPrincipal())
-			if rec.Code != 200 || rec.Header().Get("RateLimit-Policy") != "" {
-				t.Fatalf("attempt %d without a credential on an internal repository: %d %v", i, rec.Code, rec.Header())
+	t.Run("Q-LIM-4 in audit nothing on a protocol path is refused or limited by a class: reads, reads without a credential, writes", func(t *testing.T) {
+		h, reg := limitedChain(t, tightLimits(), func(o *RateLimitOptions) { o.Limits = limitsEngine(t, limits.ModeAudit) })
+		for _, tc := range []struct {
+			method, path string
+			p            httpserver.Principal
+		}{
+			{"GET", "/api/npm/main/left-pad", token("a")},
+			{"GET", "/api/npm/main/left-pad", httpserver.AnonymousPrincipal()},
+			{"PUT", "/api/npm/main/left-pad", token("w")},
+			{"GET", "/files/repo/a", token("f")},
+			{"GET", "/v2/web/docker/library/nginx/manifests/latest", token("v")},
+		} {
+			for i := range 20 {
+				rec := do(h, tc.method, tc.path, tc.p)
+				if rec.Code != 200 || strings.Contains(rec.Header().Get("RateLimit-Policy"), `"package_`) {
+					t.Fatalf("%s %s, request %d in audit: %d %v", tc.method, tc.path, i, rec.Code, rec.Header())
+				}
 			}
 		}
-		// The repetition with the token is charged to the token's class.
-		if pol := do(h, "GET", "/api/nuget/main/nuget-local/v3/flatcontainer/acme.widgets/index.json", token("a")).Header().Get("RateLimit-Policy"); !strings.HasPrefix(pol, `"package_read";`) {
-			t.Fatalf("the repetition with the token: policy %q", pol)
-		}
-		// A public repository's anonymous reads keep the class: the 4th is refused.
-		var last *httptest.ResponseRecorder
-		for range 4 {
-			last = do(h, "GET", "/api/nuget/main/open/v3/flatcontainer/acme.widgets/index.json", httpserver.AnonymousPrincipal())
-		}
-		if last.Code != 429 || !strings.HasPrefix(last.Header().Get("RateLimit-Policy"), `"package_anonymous";q=3;`) {
-			t.Fatalf("4th anonymous read of a public repository: %d %v", last.Code, last.Header())
-		}
-		if got := rejectedByClass(t, reg)["package_anonymous"]; got != 1 {
-			t.Fatalf("quader_api_rate_limited_total{class=package_anonymous} = %v, want 1", got)
+		if got := rejectedByClass(t, reg); got["package_write"] != 0 {
+			t.Fatalf("refused in audit: %v", got)
 		}
 	})
 
-	t.Run("R-API-016 R-LIM-005 only /api/v1/ and the protocol paths are limited here; /files/ and /v2/ are protocol paths", func(t *testing.T) {
-		h, _ := limitedChain(t, tightLimits())
+	t.Run("R-API-016 Q-LIM-27 in enforce the unsafe methods of the protocol paths have the class package_write; reads have none", func(t *testing.T) {
+		h, reg := limitedChain(t, tightLimits(), func(o *RateLimitOptions) { o.Limits = limitsEngine(t, limits.ModeEnforce) })
+		for _, path := range []string{"/api/npm/main/left-pad", "/files/repo/a", "/v2/web/docker/library/nginx/manifests/latest"} {
+			w := token("w-" + path)
+			var put *httptest.ResponseRecorder
+			for range 3 {
+				put = do(h, "PUT", path, w)
+			}
+			if put.Code != 429 || put.Header().Get("Retry-After") == "" || !strings.HasPrefix(put.Header().Get("RateLimit-Policy"), `"package_write";q=2;`) {
+				t.Fatalf("3rd write to %s: %d %v", path, put.Code, put.Header())
+			}
+			// The management API of the same token has its own budget, and so has the next token.
+			if do(h, "POST", "/api/v1/x", w).Code != 200 {
+				t.Fatal("the package protocol used up the budget of the management API")
+			}
+			if do(h, "PUT", path, token("other-"+path)).Code != 200 {
+				t.Fatal("a second token was slowed down")
+			}
+		}
+		// A read is counted by the figures of the download limits, which this index leaves unlimited, and by no class.
 		for range 10 {
-			if rec := do(h, "GET", "/ui/index.html", token("a")); rec.Code != 200 || rec.Header().Get("RateLimit") != "" {
-				t.Fatalf("%d %v", rec.Code, rec.Header())
+			if rec := do(h, "GET", "/api/npm/main/left-pad", token("r")); rec.Code != 200 || strings.Contains(rec.Header().Get("RateLimit-Policy"), `"package_`) {
+				t.Fatalf("a read in enforce: %d %v", rec.Code, rec.Header())
 			}
 		}
-		for _, path := range []string{"/files/repo/a", "/v2/", "/v2/web/docker/library/nginx/manifests/latest"} {
-			p := token("f-" + path)
-			for range 4 {
-				do(h, "GET", path, p)
-			}
-			if rec := do(h, "GET", path, p); rec.Code != 429 || !strings.HasPrefix(rec.Header().Get("RateLimit-Policy"), `"package_read";q=4;`) {
-				t.Fatalf("%s is not limited by package_read: %d %v", path, rec.Code, rec.Header())
-			}
+		if got := rejectedByClass(t, reg)["package_write"]; got != 3 {
+			t.Fatalf("quader_api_rate_limited_total{class=package_write} = %v, want 3", got)
 		}
 	})
 
-	t.Run("R-API-016 R-LIM-001 the package classes are keyed by the subject: a user's tokens share one bucket", func(t *testing.T) {
-		h, _ := limitedChain(t, tightLimits())
+	t.Run("R-API-016 R-LIM-001 package_write is keyed by the subject: a user's tokens share one bucket", func(t *testing.T) {
+		h, _ := limitedChain(t, tightLimits(), func(o *RateLimitOptions) { o.Limits = limitsEngine(t, limits.ModeEnforce) })
 		alice := func(tok string) httpserver.Principal {
 			return httpserver.Principal{ID: "u-alice", Name: "alice", Kind: httpserver.KindUser, Credential: httpserver.Credential{Method: httpserver.MethodBearer, TokenID: tok}}
 		}
-		for i := range 4 {
-			do(h, "GET", "/api/npm/main/left-pad", alice("t"+strconv.Itoa(i)))
+		for i := range 2 {
+			do(h, "PUT", "/api/npm/main/left-pad", alice("t"+strconv.Itoa(i)))
 		}
-		if do(h, "GET", "/api/npm/main/left-pad", alice("t9")).Code != 429 {
-			t.Fatal("a fifth token of the same user has a bucket of its own")
+		if do(h, "PUT", "/api/npm/main/left-pad", alice("t9")).Code != 429 {
+			t.Fatal("a third token of the same user has a bucket of its own")
+		}
+	})
+
+	t.Run("R-LIM-005 without the engine of the download limits nothing on a protocol path is limited here", func(t *testing.T) {
+		h, _ := limitedChain(t, tightLimits())
+		for range 10 {
+			if rec := do(h, "PUT", "/api/npm/main/left-pad", token("a")); rec.Code != 200 || rec.Header().Get("RateLimit") != "" {
+				t.Fatalf("%d %v", rec.Code, rec.Header())
+			}
+			if rec := do(h, "GET", "/ui/index.html", token("a")); rec.Code != 200 || rec.Header().Get("RateLimit") != "" {
+				t.Fatalf("%d %v", rec.Code, rec.Header())
+			}
 		}
 	})
 

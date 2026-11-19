@@ -6,6 +6,7 @@ import {
   expectStatus,
   kinds,
   mainProject,
+  seedAuditMode,
   seedContent,
   seedGrants,
   seedLimits,
@@ -31,6 +32,7 @@ export default async function setup(): Promise<void> {
   const ctx = await request.newContext({ baseURL: edge, ignoreHTTPSErrors: true, extraHTTPHeaders: { Origin: edge } });
   await expectStatus(await ctx.post('/auth/local/login', { data: { username: 'admin', password } }), [204], 'break-glass sign-in');
   const admin = await Api.of(ctx, edge);
+  await seedAuditMode(admin);
   await seedProjectsAndRepositories(admin);
 
   const browser = await chromium.launch();

@@ -17,7 +17,7 @@
 // protection (R-ARCH-005 step 4), which a client retries; another status; or the error class of a request that got no
 // answer (connection_refused, eof, reset, timeout, tls, http2, other_error). Everything but 200 and shed is a failure.
 //
-// Files in /out: tokens (one token per line; R-API-016's package_read budget is 200/s per token, so the throughput
+// Files in /out: tokens (one token per line; each technical token is a subject of the download limits with a budget of its own, so the throughput
 // scenarios spread over all of them), perf-fixture.json ({"tarball_1mib", "tarball_50kib", "local_documents": [...],
 // "virtual_documents": [...]}, paths below the target). The result is /out/perf-npm.json.
 // Environment: TARGET (https://localhost:8080), HOST (localhost), HOSTS_ADDR (<pod IP>:8080, what HOST resolves to),

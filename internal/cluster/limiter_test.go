@@ -191,7 +191,7 @@ func TestLimiterCluster(t *testing.T) {
 		// decided at the end, as after a database switchover that held the token lookup.
 		held := func(take func(l *Limiter, at time.Time) bool, perSecond int) int {
 			st, clk := newMemWindows(), newLimClock()
-			l := replica(t, st, clk, 1, nil).NewLimiter("api_package_read", ScopeCluster, 10, 10)
+			l := replica(t, st, clk, 1, nil).NewLimiter("api_package_write", ScopeCluster, 10, 10)
 			start := clk.now()
 			clk.advance(3 * time.Second)
 			admitted := 0

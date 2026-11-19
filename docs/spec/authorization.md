@@ -7033,7 +7033,7 @@ what the capability says. The development agent revisits it when the owner decid
 
 ### Q-AUTHZ-296 · A repository's service account holds its actions at the account, not through policies
 
-Status: **Decided by the development agent** — selected from the options below; **the owner reviews it first** at the walkthrough.
+Status: **Decided by the owner (2026-11-19): (a)**, as the development agent had built it.
 The rule "rights are given once, at the account" is the owner's (W-26 decision 13, 2026-11-19).
 
 Context: a project's service account is granted through its project's policies (Q-AUTHZ-175). A repository has no policies of its

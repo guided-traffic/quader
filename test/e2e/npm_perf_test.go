@@ -42,7 +42,7 @@ func TestNPMPerf(t *testing.T) {
 		adm := h.fx.adm
 		ensureSA(t, adm, perfSA)
 		ensurePolicy(t, adm, perfSA, []string{npmLocalKey, npmRemoteKey, npmAllKey}, [2]any{"sa:" + perfSA, []string{"read"}})
-		// R-API-016's package_read budget is per token: twenty tokens carry P-7's 2,000 requests/s
+		// Each technical token is a subject of the download limits (R-LIM-001): twenty tokens carry P-7's 2,000 requests/s
 		tokens := pacedSATokens(t, adm, perfSA, 20, 3600)
 		local := func(p string) string {
 			return strings.Replace(p, npmAddr(npmAllKey)+"/", npmAddr(npmLocalKey)+"/", 1)

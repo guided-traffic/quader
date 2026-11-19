@@ -65,14 +65,15 @@ Per case:
 
 | Mode | Stage | Subject | What bounds it | Live or dormant |
 |---|---|---|---|---|
-| `audit` (the default) | 7 | the address prefix | the request classes `package_anonymous` (20 per second, burst 100) of R-API-016, now on `/v2/` too; nothing on bytes, upstream requests or parallel downloads ([R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce)) | live on every installation that has a public remote on an endpoint the internet reaches and stays in `audit` (H-1009) |
-| `enforce` | 7 | the address prefix | the profile Anonymous: 20 per second, 2,000 per hour | live |
+| `audit` (switched to by an administrator) | 7 | the address prefix | nothing: no request limit, nothing on bytes, upstream requests or parallel downloads; everything is recorded as would-have-been-limited ([R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce), [Q-LIM-4](../spec/usage-and-limits.md#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included)) | dormant in the default state; live from an administrator's switch to `audit` (H-1015) |
+| `enforce` (the default) | 7 | the address prefix | the profile Anonymous: 20 per second, 2,000 per hour | live |
 | `enforce` | step 9a of R-REPO-025 | the address prefix and the remote's anonymous ceiling | 20 upstream requests and 2 GB from the upstream per hour per address; the ceiling for all anonymous callers, which is unset by default ([Q-LIM-16](../spec/usage-and-limits.md#q-lim-16--a-ceiling-is-a-remote-repositorys-for-the-two-upstream-figures-and-none-is-set-by-default)) | live; the installation's upstream quota is bounded only once a ceiling is set (H-1007) |
 | `enforce` | `edge.ServeItem` | the address prefix | 10 GB from the cache per hour, 30 GB a day, 4 parallel downloads, paced at 20 MB/s per address | live; many addresses together are bounded by the replicas' capacity only (H-1007) |
 | both | the usage store | the address prefix | the per-replica buffer is bounded (100,000 keys, then an overflow row), the Valkey keys expire within 48 hours | Valkey eviction is H-1008 |
 
-What makes the default real: an installation that publishes a public remote to the internet and never switches to `enforce`. The
-switch's dialog shows what `enforce` would have refused in the last 24 hours ([R-UI-182](../spec/api-and-ui.md#r-ui-182--the-mode-switch)).
+An instance starts in `enforce`. What makes the `audit` row real: an administrator switches to `audit` on an installation that
+publishes a public remote to the internet; the switch's dialog says in one sentence that nothing is refused or slowed there
+afterwards ([R-UI-182](../spec/api-and-ui.md#r-ui-182--the-mode-switch)).
 
 ## Who can raise a limit
 
@@ -130,13 +131,6 @@ The gaps of the spec page whose mechanisms this page describes:
 - [H-1007](../spec/usage-and-limits.md#h-1007--many-addresses-are-many-anonymous-budgets): many addresses are many anonymous budgets.
 - [H-1008](../spec/usage-and-limits.md#h-1008--the-limits-keys-in-valkey-grow-with-the-addresses-that-call-and-can-evict-other-keys): the limits' keys in Valkey grow with the addresses that call and can evict other keys.
 
-### H-1009 · In Audit mode nothing of the download limits refuses: an anonymous caller of a public remote is bounded by the request classes alone
-
-Component: the mode of [R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce). Subject: every remote repository whose
-artifacts are `public`, on an endpoint the internet reaches. Live on every installation in `audit`, which is the default. What makes it real: a caller without a credential can make the remote fetch from its upstream as many artifacts as
-20 requests per second admit, spending the installation's upstream quota and storage, until an administrator switches to `enforce`
-or sets the remote's ceilings (which apply in `enforce` only).
-
 ### H-1010 · Anonymous callers behind one address are blocked by refused requests another caller sends from it
 
 Component: the block of [R-LIM-025](../spec/usage-and-limits.md#r-lim-025--the-block-after-refused-requests). Subject: readers of
@@ -148,8 +142,8 @@ valid credential are not affected.
 ### H-1011 · A project Owner reads the addresses of the anonymous callers of its repositories
 
 Component: the usage overview's project scope ([R-LIM-029](../spec/usage-and-limits.md#r-lim-029--who-sees-which-usage),
-[Q-LIM-21](../spec/usage-and-limits.md#q-lim-21--a-project-owner-sees-the-addresses-of-the-anonymous-callers-of-its-repositories)).
-Subject: every person who reads a project's `public` repositories without a credential. Live. What makes it real: an
+[Q-LIM-21](../spec/usage-and-limits.md#q-lim-21--a-project-owner-sees-the-addresses-of-the-anonymous-callers-of-its-repositories),
+decided by the owner on 2026-11-19). Subject: every person who reads a project's `public` repositories without a credential. Live. What makes it real: an
 Owner who is not entitled by the installation's data protection rules to see visitors' addresses reads them for 30 days, and can
 export them as CSV.
 
@@ -160,6 +154,19 @@ the client address of R-ARCH-006. Subject: every anonymous budget and block. Liv
 `server.trusted_proxies` that trusts a network the client controls lets it choose an address per request and never meet a budget or
 a block; an empty one behind an edge proxy makes every anonymous caller the proxy's address, so one caller's consumption or block
 is everyone's.
+
+### H-1015 · While the mode is Audit an instance has no request limit on its protocol paths
+
+Component: stage 7 on the protocol paths (`/api/<format>/…`, `/files/…`, `/v2/…`) in the mode of
+[R-LIM-026](../spec/usage-and-limits.md#r-lim-026--audit-and-enforce), by the owner's [Q-LIM-4](../spec/usage-and-limits.md#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included) (b)
+of 2026-11-19: in `audit` no profile figure, no ceiling, no block and no class of R-API-016 refuses or slows there (`package_write`
+holds in `enforce` only). Subject: every caller of a protocol path, above all every remote repository whose artifacts are `public`
+on an endpoint the internet reaches. Dormant in the default state, `enforce`; live from the moment an administrator switches to
+`audit`. What makes it real: a caller without a credential makes such a remote fetch from its upstream as many artifacts as it asks
+for, unbounded, spending the installation's upstream quota (Docker Hub's pull limit) and storage, and a client with a token sends
+reads and publishes at any rate, until an administrator switches back to `enforce`. The plan's finding F-155 is open in `audit` by
+the owner's decision. The limits of the management API (R-API-016's `read`, `write`, `anonymous`), of the sign-in (R-AUTH-038) and
+of the token endpoints are not modes of the download limits and hold in both.
 
 ### H-1014 · In Audit mode a block set before the switch stays in Valkey until it expires, unenforced
 

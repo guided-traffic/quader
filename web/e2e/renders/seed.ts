@@ -1082,11 +1082,20 @@ DELETE FROM usage_limit_event WHERE subject_kind = ${lit(u.kind)} AND subject_re
 }
 
 /**
+ * The renders run in Audit (R-LIM-026): an instance starts in Enforce, which would refuse the seed's own heavy requests and every
+ * builder's after them; in Audit everything is counted and shown, and Enforce is pictured through the page's routes.
+ */
+export async function seedAuditMode(admin: Api): Promise<void> {
+  await expectStatus(await admin.patch('/api/v1/limits/settings', { mode: 'audit' }, { 'If-Match': '*' }), [200], 'the limits mode Audit');
+}
+
+/**
  * The download limits of the renders (R-UI-177 to R-UI-186): an own profile with a long name, rules at the three places (an IPv6
  * prefix, a group and a CI project at the instance, the power user and the project's heavy mirror token at the main project, every
  * anonymous caller at a remote), a maximum of the project with the long name, and the ceilings of a public remote. The power user's
  * hourly request figure is low on purpose: the seed's own requests pass it, so the overview shows a caller at the limit in Audit.
- * The mode stays Audit: the database is shared, and Enforce is rendered through the page's routes. A second run adds nothing.
+ * The mode is Audit (seedAuditMode): the database is shared, and Enforce is rendered through the page's routes. A second run adds
+ * nothing.
  */
 export async function seedLimits(admin: Api): Promise<void> {
   const settings = await admin.get('/api/v1/limits/settings');

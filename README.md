@@ -1822,9 +1822,7 @@ api:
     read: {requests_per_second: 50, burst: 200}        # default (safe methods)
     write: {requests_per_second: 10, burst: 50}        # default (unsafe methods)
     anonymous: {requests_per_second: 5, burst: 20}     # default (requests without credentials, per address)
-    package_read: {requests_per_second: 200, burst: 1000}     # default (safe methods on /api/<format>/)
-    package_write: {requests_per_second: 10, burst: 50}       # default (unsafe methods on /api/<format>/)
-    package_anonymous: {requests_per_second: 20, burst: 100}  # default (package requests without credentials, per address; not those on a repository whose artifacts are not public, which are challenged)
+    package_write: {requests_per_second: 10, burst: 50}       # default (unsafe methods on /api/<format>/, /files/ and /v2/, per caller; in the download limits' mode Enforce only)
 repositories:
   lookup_wait: 5s                       # default; at least 100ms: wait for the change-log poll on a key the snapshot does not know
 ci:                                     # GitLab CI OIDC (docs/spec/gitlab-ci-oidc.md, docs/developer/ci-oidc.md)

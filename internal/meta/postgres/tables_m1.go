@@ -74,4 +74,6 @@ func init() {
 	// the runtime authentication settings (00013_identity_revisions, R-API-012).
 	meta.RegisterRevisionColumn("principal", "revision")
 	meta.RegisterRevisionColumn("auth_settings", "revision")
+	// technical_token.revision is the ETag of a technical token (00080_technical_tokens, R-AUTH-045).
+	meta.RegisterRevisionColumn("technical_token", "revision")
 }

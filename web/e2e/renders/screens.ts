@@ -776,8 +776,9 @@ const upstreams: Screen[] = [
 
 /**
  * The download limits and the usage in Enforce (R-UI-177, R-UI-183): the settings and the usage answers are read through the
- * page's routes with the mode Enforce. The render database is shared and stays in Audit, so another builder's run never meets a
- * refusal of these limits.
+ * page's routes with the mode Enforce. The render database is shared and the setup puts it in Audit (an instance starts in
+ * Enforce), so the seed's own heavy requests and another builder's run never meet a refusal of these limits, and the main
+ * pictures show what Audit records: "Would have been limited". A refused and a blocked caller are pictured in Enforce.
  */
 const enforceAnswers = /\/api\/v1\/(limits\/settings|usage|users\/me\/usage|projects\/[^/]+\/usage)(\/|\?|$)/;
 
@@ -828,6 +829,14 @@ async function* limitRulesWalk(page: Page): AsyncGenerator<string> {
   await inEnforce(page);
   await expect(page.locator('main quader-limit-mode')).toContainText('Enforce');
   yield 'enforce';
+  // The switch back removes the protection: its dialog says so (Q-LIM-4).
+  const toAudit = page.locator('main').getByRole('button', { name: 'Switch to Audit…' });
+  if ((await toAudit.count()) > 0) {
+    await toAudit.click();
+    await expect(page.getByRole('dialog', { name: 'Switch to Audit' })).toBeVisible();
+    yield 'to-audit';
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  }
   await backToAudit(page);
 }
 

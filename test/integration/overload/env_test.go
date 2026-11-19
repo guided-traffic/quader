@@ -36,6 +36,9 @@ type install struct {
 func newInstall(t *testing.T) *install {
 	t.Helper()
 	s := testenv.NewStack(t, testenv.StackOptions{Valkey: true, Name: "ovl"})
+	// Hundreds of parallel downloads of one user measure the replica's admission, not the download limits, whose profile
+	// Standard admits 20 at once in enforce, the mode a new instance starts in.
+	s.LimitsMode("audit")
 	s.Repository(repo, "local", "generic", "{}")
 	u := s.User("loader")
 	s.Policy("loader", []string{"read", "deploy"}, []string{repo}, u)

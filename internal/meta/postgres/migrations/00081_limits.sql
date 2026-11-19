@@ -111,10 +111,11 @@ CREATE TABLE limit_project_maximum (
 );
 CREATE INDEX limit_project_maximum_profile ON limit_project_maximum (profile_id);
 
--- The instance's settings: one row (R-LIM-026, R-LIM-025). Audit is the default (owner, decision 17).
+-- The instance's settings: one row (R-LIM-026, R-LIM-025). Enforce is the default (decision 17, on the owner's leave of
+-- 2026-11-19): Audit refuses and slows nothing on the protocol paths (Q-LIM-4), so an instance starts protected.
 CREATE TABLE limit_settings (
     id             boolean     PRIMARY KEY DEFAULT true CHECK (id),
-    mode           text        NOT NULL DEFAULT 'audit' CHECK (mode IN ('audit', 'enforce')),
+    mode           text        NOT NULL DEFAULT 'enforce' CHECK (mode IN ('audit', 'enforce')),
     block_seconds  integer     NOT NULL DEFAULT 900 CHECK (block_seconds BETWEEN 60 AND 86400),
     version        bigint      NOT NULL DEFAULT 1,
     updated_at     timestamptz NOT NULL DEFAULT now(),

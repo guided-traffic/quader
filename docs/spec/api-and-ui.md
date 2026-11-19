@@ -833,47 +833,47 @@ token validation and token revocation are R-AUTH-038 in
 R-CI-021 in [gitlab-ci-oidc.md](gitlab-ci-oidc.md); the class a further endpoint applies to every
 request on it, package protocols included, is R-EP-015 in [endpoints.md](endpoints.md).
 
-**The border** (owner's decisions of 2026-11-19, W-26; [Q-API-344](#q-api-344--the-management-api-keeps-its-classes-the-package-classes-become-the-safety-net-of-audit-mode)).
+**The border** (owner's decisions of 2026-11-19, W-26; [Q-API-344](#q-api-344--the-management-api-keeps-its-classes-on-the-protocol-paths-only-package_write-stays-in-enforce)).
 Requests on the protocol paths, `/api/<format>/…`, `/files/…` and everything below `/v2/`, are counted by the figures of
 [usage-and-limits.md](usage-and-limits.md): per subject (a user with all its sessions and personal tokens, a technical token, a CI
-project, an anonymous address), per place, with profiles, ceilings and the mode `audit` or `enforce`. This requirement keeps the
-classes of the management API and holds the package classes as the safety net of Audit mode:
+project, an anonymous address), per place, with profiles, ceilings and the mode `audit` or `enforce`. In `audit` nothing on a
+protocol path is refused or slowed by a request limit ([Q-LIM-4](usage-and-limits.md#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included), the owner's decision of
+2026-11-19). This requirement keeps the classes of the management API and one class of the protocol paths:
 
 | Class | Applies to | Bucket key | Limiter name | In force |
 |---|---|---|---|---|
 | `read` | Safe methods on `/api/v1/` | Principal (token ID, or session user) | `api_read` | always |
 | `write` | Unsafe methods on `/api/v1/` | Principal | `api_write` | always |
 | `anonymous` | Requests without credentials on `/api/v1/` | Client address (R-ARCH-006, R-OPS-005) | `api_anonymous` | always |
-| `package_read` | Safe methods on a protocol path | The subject of [usage-and-limits.md](usage-and-limits.md) R-LIM-001 | `api_package_read` | while the mode is `audit` |
-| `package_write` | Unsafe methods on a protocol path | The subject of R-LIM-001 | `api_package_write` | always, until the upload figures replace it (Later on [usage-and-limits.md](usage-and-limits.md)) |
-| `package_anonymous` | Requests without credentials on a protocol path, except those the decision point challenges (below) | The anonymous subject of R-LIM-002 (an IPv4 address, an IPv6 `/64`) | `api_package_anonymous` | while the mode is `audit` |
+| `package_write` | Unsafe methods on a protocol path | The subject of [usage-and-limits.md](usage-and-limits.md) R-LIM-001 | `api_package_write` | in mode `enforce`, until the upload figures replace it (Later on [usage-and-limits.md](usage-and-limits.md), Q-LIM-27) |
 
-- In `enforce`, `package_read` and `package_anonymous` are not applied: the request figures of the profiles
-  ([usage-and-limits.md](usage-and-limits.md) R-LIM-004) take their place. The default values of the two classes equal the request
-  figures of the profiles Standard and Anonymous, so switching the mode changes the request limit of a caller with the default
-  profile only by its hourly figure and its key.
-- The package classes cover `/v2/` and `/files/` as every other protocol path: finding F-155 is closed. `/files/` is no longer
-  limited by `read`, `write` and `anonymous`.
-- The package classes are keyed by the subject of R-LIM-001: a personal access token no longer has a bucket of its own; it shares
-  its user's. A registry token is its underlying token's subject.
-- The stage of the package classes is the same round trip as the request figures (R-LIM-017): one check per protocol request.
+- Reads on a protocol path, with or without a credential, are limited by the request figures of the profiles
+  ([usage-and-limits.md](usage-and-limits.md) R-LIM-004) in mode `enforce` and by nothing in mode `audit`. The classes
+  `package_read` and `package_anonymous` are removed (Q-LIM-4): in `audit` they would have refused, which the owner's decision
+  excludes, and in `enforce` the figures had already taken their place.
+- `package_write` covers `/v2/` and `/files/` as every other protocol path. `/files/` is not limited by `read`, `write` and
+  `anonymous`. In mode `audit` finding F-155 is open: a protocol path has no request limit there (H-1015 of
+  [docs/security/usage-and-limits.md](../security/usage-and-limits.md)).
+- `package_write` is keyed by the subject of R-LIM-001: a personal access token has no bucket of its own; it shares its user's. A
+  registry token is its underlying token's subject.
+- The check of `package_write` is the same round trip as the request figures (R-LIM-017): one check per protocol request.
 
-The package classes have buckets of their own, so a lockfile install does not use up the budget
-of the same caller's management API and a flood on a package protocol cannot starve it; the
-default endpoint, which has no endpoint class, is limited by them as well (Q-API-169). A refused
-package request has the error shape of the format (R-ARCH-023).
+`package_write` has buckets of its own, so a publish loop does not use up the budget of the same caller's management API; the
+default endpoint, which has no endpoint class, is limited by it as well (Q-API-169). A refused package request has the error
+shape of the format (R-ARCH-023).
 
-`package_anonymous` does not charge a request that the decision point is certain to answer with the
+The request figures do not charge a request without a credential that the decision point is certain to answer with the
 challenge: one whose address names a repository the grant index holds with artifacts that are not
 `public` ([authorization.md](authorization.md) R-AUTHZ-033; the anonymous subject holds no grant, so only
 that level admits it, and the format dispatcher decides before any handler runs). A NuGet client
 sends every request without its configured credentials first and repeats it with them after the 401
-([formats/nuget.md](formats/nuget.md) R-NUGET-012); that repetition is charged to the token's class, and
-the first attempt is charged to no class. A request the class does not charge carries none of its fields.
+([formats/nuget.md](formats/nuget.md) R-NUGET-012); that repetition is charged to the token's subject, and
+the first attempt is charged to nothing. A request that is not charged carries none of the fields.
 The stage reads the index the replica has installed. A repository the index does not hold is charged,
 because its request asks PostgreSQL whether the repository was just created before it is decided
-(R-ARCH-011 step 2); so are a path that names no repository and a replica without an index ([Q-API-290](#q-api-290--package_anonymous-does-not-charge-a-request-the-decision-point-challenges)).
-The request figures of [usage-and-limits.md](usage-and-limits.md) R-LIM-005 follow the same rule.
+(R-ARCH-011 step 2); so are a path that names no repository and a replica without an index ([Q-API-290](#q-api-290--package_anonymous-does-not-charge-a-request-the-decision-point-challenges),
+decided for the class `package_anonymous`, which Q-LIM-4 removed; [usage-and-limits.md](usage-and-limits.md) R-LIM-005 keeps the
+rule for the request figures).
 
 - **Limiter.** Each class is a limiter of R-ARCH-034 ([architecture.md](architecture.md)) with
   scope `cluster`: a sliding-window counter in Valkey with the window `W = burst ÷ rate`, which
@@ -921,9 +921,7 @@ api:
     read:      {requests_per_second: 50, burst: 200}     # default (proposed)
     write:     {requests_per_second: 10, burst: 50}      # default (proposed)
     anonymous: {requests_per_second: 5,  burst: 20}      # default (proposed)
-    package_read:      {requests_per_second: 200, burst: 1000}   # default (proposed); in force while the mode is audit
-    package_write:     {requests_per_second: 10,  burst: 50}     # default (proposed)
-    package_anonymous: {requests_per_second: 20,  burst: 100}    # default (proposed); in force while the mode is audit
+    package_write: {requests_per_second: 10, burst: 50}  # default (proposed); in force while the mode is enforce
 ```
 
 Acceptance criteria:
@@ -940,17 +938,16 @@ Acceptance criteria:
   and `quader_ratelimit_fallback{limiter="api_read"}` is 1 on every replica.
 - With the defaults, a `200` answer of `GET /api/v1/repositories` carries
   `RateLimit-Policy: "read";q=200;w=4`.
-- In mode `audit`, a loop of 1,100 `GET /api/npm/<projectKey>/<repoKey>/<name>` with one personal token receives 429 answers after
-  the burst of 1,000, each with `Retry-After` and `RateLimit-Policy: "package_read";q=1000;w=5`; the same loop with a second
-  personal token of the same user is refused at once, because both share the user's bucket; `GET /api/v1/repositories` with the
-  same token is still admitted. In mode `enforce` the same loops are decided by the user's profile and carry no `package_read`
-  member.
-- In mode `audit`, 200 `GET /v2/` from one address without a credential within 2 s are admitted at most 140 times, each refusal
-  `TOOMANYREQUESTS` with `RateLimit-Policy: "package_anonymous";q=100;w=5`.
+- In mode `audit`, a loop of 1,100 `GET /api/npm/<projectKey>/<repoKey>/<name>` with one personal token, 200 `GET /v2/` from one
+  address without a credential within 2 s and a loop of 60 `PUT` of one token are all admitted, none carries a member of a
+  package class, and the subjects are recorded as would-have-been-limited. In mode `enforce` the reads are decided by the
+  profiles, and the third `PUT` of a token beyond the burst of `package_write` answers 429 with
+  `RateLimit-Policy: "package_write";q=…`, as does a third token of the same user, because the tokens share the user's bucket;
+  `POST /api/v1/…` with the same token is still admitted.
 - With the defaults, 300 `GET <feed>/v3/flatcontainer/<id>/index.json` without a credential from one address on a
   NuGet repository whose artifacts are `internal` all answer 401 with the challenge and none 429; on a repository whose
-  artifacts are `public` the requests beyond the burst of 100 answer 429 with
-  `RateLimit-Policy: "package_anonymous";q=100;w=5` in mode `audit`, and by the profile Anonymous in mode `enforce`.
+  artifacts are `public` the requests beyond the burst of 100 answer 429 by the profile Anonymous in mode `enforce`, and none in
+  mode `audit`.
 - Three `dotnet restore` of a solution with at least 100 packages in its restore graph, with the credentials in
   `nuget.config`, from three addresses at once through a repository that is not `public`, succeed (E3.2).
 
@@ -7838,8 +7835,10 @@ dialog titled "Switch to Enforce" that shows, before anything changes, what the 
 - **Switch to Enforce** (primary) sends `PATCH /api/v1/limits/settings {"mode": "enforce"}` with `If-Match`, after recent
   authentication (R-API-007, R-UI-042); **Cancel**.
 
-**Switch to Audit…** opens a dialog with one sentence, "Limits will be counted and shown, and nothing will be refused or slowed.",
-and **Switch to Audit**. After either switch the status line of R-UI-177 changes and a notice confirms it.
+**Switch to Audit…** is the step that removes protection: an instance starts in Enforce, and in Audit no request limit holds on
+the protocol paths ([usage-and-limits.md](usage-and-limits.md) R-LIM-026, [Q-LIM-4](usage-and-limits.md#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included)). It opens a
+dialog with one sentence, "In Audit nothing is refused or slowed on the package and registry addresses, not even by the request
+limits; every limit is counted and shown as "Would have been limited".", and **Switch to Audit**. After either switch the status line of R-UI-177 changes and a notice confirms it.
 
 Acceptance criteria:
 
@@ -10538,7 +10537,8 @@ their own.
 
 ### Q-API-169 · The package protocols have rate-limit classes of their own
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. `package_read` and `package_anonymous` are removed and `package_write` holds in mode `enforce` only, by the owner's
+[Q-LIM-4](usage-and-limits.md#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included) (2026-11-19) and Q-API-344.
 
 Context: the general classes of R-API-016 limited `/api/v1/` and `/files/` only, and the class an endpoint applies (R-EP-015) is empty on the default endpoint. A caller with a token could therefore send unlimited package requests to the default endpoint: one upstream request per invented name through a remote repository, and full publish attempts that cost a spool and a validation each (S-4).
 
@@ -15737,10 +15737,11 @@ owner's two (2026-11-19): only what was fetched is listed, and every cell is tru
 **Choice:** (a). **Applied in the spec:** R-API-081, [formats/oci.md](formats/oci.md) Q-OCI-222,
 [repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-330.
 
-### Q-API-344 · The management API keeps its classes; the package classes become the safety net of Audit mode
+### Q-API-344 · The management API keeps its classes; on the protocol paths only package_write stays, in Enforce
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The model
-is the owner's (W-26, 2026-11-19); the border is the development agent's.
+is the owner's (W-26, 2026-11-19); the border is the development agent's. Revised on 2026-11-19 by the owner's
+[Q-LIM-4](usage-and-limits.md#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included) (b): in Audit nothing on a protocol path is refused or slowed.
 
 Context: the owner's figures count every request to a repository. R-API-016 had classes for `/api/v1/`, `/files/` and
 `/api/<format>/` and none for `/v2/` (finding F-155), keyed by the token ID first, so every personal token had a budget of its own,
@@ -15748,15 +15749,14 @@ against the owner's rule that a PAT counts against its user.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `/api/v1/` keeps `read`, `write`, `anonymous`; the package classes cover every protocol path, keyed by the subject, `package_read` and `package_anonymous` only in mode `audit`, `package_write` always (chosen) | The figures of [usage-and-limits.md](usage-and-limits.md) take over the protocol paths in `enforce` | No installation loses its request limit by updating; F-155 closed in both modes; the key follows the owner's rule | Two mechanisms on the protocol paths while in `audit` |
-| (b) Remove the three package classes | The figures alone | One mechanism | In `audit`, the default, nothing bounds protocol requests |
-| (c) Keep the package classes in both modes beside the figures | — | — | Two limits on every request in `enforce`, with different keys and numbers |
+| (a) `/api/v1/` keeps `read`, `write`, `anonymous`; the package classes cover every protocol path, keyed by the subject, `package_read` and `package_anonymous` only in mode `audit`, `package_write` always | The figures of [usage-and-limits.md](usage-and-limits.md) take over the protocol paths in `enforce` | No installation loses its request limit by updating | Contradicts the owner's Q-LIM-4: the classes refuse in Audit |
+| (b) `/api/v1/` keeps `read`, `write`, `anonymous`; `package_read` and `package_anonymous` are removed; `package_write` stays for unsafe methods on every protocol path, keyed by the subject, in mode `enforce` only (chosen) | The figures alone limit reads in `enforce`; nothing limits a protocol path in `audit` | One mechanism for reads; the key follows the owner's rule; Audit refuses nothing, as the owner holds | In `audit` nothing bounds protocol requests (H-1015); the default mode is therefore `enforce` |
+| (c) Keep the package classes in both modes beside the figures | — | — | Two limits on every request in `enforce`, with different keys and numbers; refusals in Audit |
 
-**Choice:** (a). **Rationale:** [usage-and-limits.md](usage-and-limits.md) Q-LIM-3 and Q-LIM-4. The development agent would revisit
-this with Q-LIM-4.
+**Choice:** (b), since Q-LIM-4 (first (a)). **Rationale:** [usage-and-limits.md](usage-and-limits.md) Q-LIM-3, Q-LIM-4 and
+Q-LIM-27.
 
-**Applied in the spec:** R-API-016 (the border, the class table, the configuration comments, the acceptance criteria), R-API-082.
-
+**Applied in the spec:** R-API-016 (the border, the class table, the configuration, the acceptance criteria), R-API-082.
 ### Q-API-350 · The settings of the download limits need recent authentication as one operation
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -19045,7 +19045,9 @@ Status: **Decided by the development agent** — selected from the options below
 
 ### Q-API-290 · `package_anonymous` does not charge a request the decision point challenges
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The class
+`package_anonymous` is removed by the owner's [Q-LIM-4](usage-and-limits.md#q-lim-4--in-audit-nothing-on-a-protocol-path-is-refused-or-slowed-the-package-classes-of-r-api-016-included) (2026-11-19); the rule holds for the request figures of
+[usage-and-limits.md](usage-and-limits.md) R-LIM-005.
 
 Context: with the visibility levels the authentication stage passes every request without a credential as the anonymous
 subject, and the decision point answers the challenge where no `public` level admits it (R-AUTHZ-033). The challenge thereby
