@@ -1264,8 +1264,14 @@ agent** is not decided until the owner has said so.
   registration's `packageContent`, `Rewrite` in [remote.go](../../internal/formats/nuget/remote.go); Ansible: the
   `download_url` of collections and of roles, the roles' GitHub archives included, from the hosts the operator named),
   and OCI and APT have no addresses in their documents: the client asks the host it was configured with. The one
-  exception is an OCI layer that names foreign `urls`, which a client fetches from there. Still to decide: the platforms
-  of an index, the bound for a request without a credential, and whether a repository can turn the behaviour off.
+  exception is an OCI layer that names foreign `urls`, which a client fetches from there.
+  **Second decision, by the owner on 2026-11-19** ("Option A", from three: a list of platforms per repository with
+  `linux/amd64, linux/arm64` as the value in the field / every platform / none ahead, as today): of an index the
+  background fetch takes the platforms of the repository's list, which stands in the advanced settings with those two as
+  its value and is the same list the mirror reads, so the mirror's default changes from every platform to these two. The
+  question exists in OCI alone: in the other formats a version is one file, and a probe of a Debian file names its
+  architecture. Still to decide: the bound for the work a request can start, and with it whether a repository can turn the
+  behaviour off.
 - **A decision taken at OCI holds for every format** (owner, 2026-11-19): "Alles was wir hier für OCI besprechen gilt auch
   für alle anderen Registries die bereits gebaut sind und für zukünftige Registries. Ich verstehe, dass die API der
   Registries von ihrem Funktionsumfang unterschiedlich sind und deshalb manche Features nicht implementierbar sind. Das
@@ -1740,6 +1746,16 @@ agent** is not decided until the owner has said so.
     5 to 8.5 GiB elsewhere; no OOM, at most 1.2 s of full memory stall in a leg (`edge`). The limit is filled by page
     cache; 17 GiB of it are room. The seven legs on GitHub's own runners (`alerts`, `bastion`, `bastion-long`, `ci-ha`,
     `upgrade`, `vuln`, `vuln-long`) have no pod and no such file.
+- **F-155 · The registry's paths are under none of the general rate limits** (2026-11-19, read for W-25, not confirmed by
+  a request): R-API-016 names its classes for `/api/v1/`, `/files/` and the package protocols under `/api/<format>/`, and
+  `limitedPath` in [ratelimit.go](../../internal/api/v1/ratelimit.go) asks for exactly those; the OCI protocol is served
+  under `/v2/`. On the default endpoint a request there, with or without a credential, is bounded by the replica's
+  `server.max_in_flight` alone; a further endpoint has its own class for every request (R-EP-015). What it means per
+  case: a request without a credential on a remote whose artifacts are `public` and whose `cacheFillAction` is `read` can
+  ask for any number of tags the patterns admit, each an upstream request that Docker Hub counts against the
+  installation's pull limit. Live on the development stack (`platform/guidedtraffic`, loopback only); on an installation
+  it needs a public OCI remote on an endpoint the internet reaches, which is not known to exist. Not changed: a limit on
+  `/v2/` also meets the clients behind one address that pull many layers at once, so its numbers are a decision.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
