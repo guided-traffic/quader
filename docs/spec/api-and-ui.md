@@ -15850,6 +15850,29 @@ R-LIM-033 of [usage-and-limits.md](usage-and-limits.md). Code: `GetLimitProjectM
 [limits_api.go](../../internal/api/v1/limits_api.go), `LimitsApi.maximum` in [limits-api.ts](../../web/src/app/api/limits-api.ts),
 tested in `TestR_LIM_033_AProjectsFirstMaximumTakesNoIfMatch`.
 
+### Q-API-357 · A registry request without a credential that is answered with the challenge is not charged either
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the download limits count the registry's paths below `/v2/` since R-LIM-005, and a new instance enforces them (Q-LIM-4).
+Every registry client sends its first request without a credential to learn the token endpoint from the `401` (R-OCI-004): the
+version check `GET /v2/`, and with some clients every request. The rule of Q-API-290 read only the `/api/<format>/` addresses, so
+these requests were charged to the client address under the profile Anonymous and answered `429` at its limit. Seen in Test and
+Release 44625189982 (2026-11-19): the OCI conformance suite, one address, got `429` for 31 first attempts and failed; a build farm
+behind one address is the same case. A client that receives `429` where it expects the challenge does not sign in.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The rule of Q-API-290 for the registry: the version check `/v2/` and a path below `/v2/<project>/<key>/` of a repository the index holds with artifacts that are not `public` are not charged when they carry no credential (chosen) | `ChallengedByLevels` reads both address forms | One rule for every format (the owner's rule that a decision taken at one format holds for all); costs a decision in memory, as Q-API-290 measured | An address can send unbounded challenged requests, bounded by stage 4 only, as on `/api/<format>/` |
+| (b) Charge them, with a higher request figure for Anonymous | — | No exemption | No number separates a build farm's first attempts from abuse; the client still fails at the limit |
+| (c) Answer the challenge at the limit instead of `429` | — | The client signs in | A second meaning of a refusal; the request is still counted against callers who read without a credential |
+
+**Choice:** (a). Charged as before: a repository the index does not hold (its decision may ask PostgreSQL), a repository with
+`public` artifacts (the request is served), the token endpoint `/v2/_token` (its own limits) and the catalog `/v2/_catalog`.
+**Applied in the spec:** R-LIM-005 of [usage-and-limits.md](usage-and-limits.md). Code: `ChallengedByLevels` in
+[ratelimit.go](../../internal/api/v1/ratelimit.go), tested in `TestR_API_016_ChallengedByLevels` and by the OCI conformance suite
+of the integration tests.
+
 ### Q-API-345 · The usage list is one operation per scope, with the period, the kind, the state and the sort as parameters
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

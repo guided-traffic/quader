@@ -237,7 +237,9 @@ Priority: **MVP** · Covers: BEYOND-030
   `/api/` that is not `/api/v1/`), `/files/…` and everything below `/v2/` (the version check `/v2/`, `/v2/_catalog` and `/v2/_token`
   included). F-155 of the project plan is closed by this: the registry's paths are counted like every other protocol path.
 - **Not counted as a request**: a request without a credential that the decision point is certain to answer with the challenge
-  (the rule of Q-API-290 in [api-and-ui.md](api-and-ui.md), unchanged: a NuGet client's first attempt without its credentials);
+  (the rule of Q-API-290 in [api-and-ui.md](api-and-ui.md): a NuGet client's first attempt without its credentials; and by
+  Q-API-357 the same on the registry's paths: the version check `/v2/` and a registry client's first attempt at a repository
+  whose artifacts are not `public`);
   a `OPTIONS` preflight; a request refused before stage 7 (`421`, `503 server_busy`, the endpoint's class of R-EP-015), except a
   failed credential, which R-LIM-003 records.
 - **The management API** (`/api/v1/…`), `/auth/…`, `/ui/…` and the host-root exchange routes are not protocol paths. They keep the

@@ -84,11 +84,27 @@ type LevelReader interface {
 // (R-NUGET-012); the class of a request without a credential is meant for callers who read without one, not for that first
 // attempt. A repository the index does not hold is charged: the request asks PostgreSQL whether it was just created before it
 // is decided (R-ARCH-011 step 2). So are a path that names no repository, a raw-file path and a replica without an index.
+//
+// The registry is the same case with every client (R-OCI-004): a registry client sends its first request without a credential
+// to learn the token endpoint from the 401, the version check GET /v2/ before any other. The version check names no repository
+// and is answered with the challenge from memory whoever asks; a path below /v2/<project>/<key>/ is judged as an
+// /api/<format>/ one. Charged to the address, a build farm behind one address would get 429 where its clients expect the
+// challenge, and no client signs in after a 429. The token endpoint and the catalog are not part of this: they have limits
+// of their own or list what the caller may see.
 func ChallengedByLevels(index func() LevelReader) func(r *http.Request) bool {
 	return func(r *http.Request) bool {
-		a, ok := qname.ParseAddress(r.URL.EscapedPath())
-		if !ok || a.Family != qname.FamilyAPI {
+		path := r.URL.EscapedPath()
+		if path == "/v2/" || path == "/v2" {
+			return true
+		}
+		a, ok := qname.ParseAddress(path)
+		if ok && a.Family != qname.FamilyAPI {
 			return false
+		}
+		if !ok {
+			if a, ok = qname.ParseRegistryAddress(path); !ok {
+				return false
+			}
 		}
 		idx := index()
 		if idx == nil {

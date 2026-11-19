@@ -114,6 +114,13 @@ func TestR_API_016_ChallengedByLevels(t *testing.T) {
 		{"a refused spelling of the repository segment is charged", "/api/npm/main/st%61ff/x", false},
 		{"a raw-file path is charged", "/files/main/staff/a.txt", false},
 		{"the management API is charged", "/api/v1/repositories", false},
+		{"the registry's version check answers the challenge whoever asks", "/v2/", true},
+		{"a registry path of private artifacts answers the challenge", "/v2/main/team/app/manifests/latest", true},
+		{"a registry upload to internal artifacts answers the challenge", "/v2/main/staff/app/blobs/uploads/", true},
+		{"a registry path of public artifacts is read without a credential", "/v2/main/open/app/manifests/latest", false},
+		{"a registry path of a repository the index does not hold is charged", "/v2/main/nothing/app/tags/list", false},
+		{"the registry's token endpoint is charged", "/v2/_token", false},
+		{"the registry's catalog is charged", "/v2/_catalog", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := challenged(httptest.NewRequest("GET", tc.path, nil)); got != tc.want {
