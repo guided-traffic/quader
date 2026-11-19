@@ -1560,6 +1560,19 @@ agent** is not decided until the owner has said so.
   to 102 MB of packages from that one host before it does anything; the runners use the stock image
   (`ghcr.io/actions/actions-runner`), so the remedy named at F-117 and F-147, an image that carries the packages, is an
   image to build and keep, in the runner's repository. The script ends at once on such an image.
+  **Decided by the owner on 2026-11-19** ("Option A, ich glaube das ist schon lange überfällig"; not chosen: a package cache
+  in this repository, and leaving it at a re-run): the image is built in `guided-traffic/container-images`. Done there that
+  morning, in the working tree, not committed (that repository's rule for agents): directory `actions-runner`, the upstream
+  image of the runner version plus `build-essential`, `file`, `jq`, `unzip`, `gettext-base`, `libatomic1`,
+  `docker-compose-v2`, `clamav`, `clamav-daemon` and Chromium's libraries and fonts as Playwright 1.64 lists them. Built for
+  arm64 on the development machine (2.0 GB against 1.3 GB upstream); in it, without a network, every package step of the
+  workflows ended at "already installed" and `docker compose version` answered. **Not done:** the amd64 build (the archive
+  was still silent), the commit and the first publication (the owner's), the visibility of the new Docker Hub repository,
+  and the switch of the four `image:` lines of the runner scale sets with a tag rule: the build workflow of that repository
+  runs on these runners, so a tag that moves with the weekly rebuild could take away the runners that would build its
+  repair. In this repository the browser steps no longer need the archive on such an image: they call
+  `.github/scripts/playwright-install.sh`, which fetches the browser alone when Playwright's own dry run finds every
+  library (18 s and no index read in the new image; the old path, unchanged, in the upstream image).
 - **The second full nightly** (HA and Performance 44453781574, "HA and Performance (all legs)", dispatched at 03:46 UTC on
   6cd1cb09 on purpose beside Test and Release: 44453761606 until 04:25 UTC and 44458581063 from 04:28 to 05:06 UTC; ended
   06:50 UTC): **24 of 31 legs green, 7 red without having run** (F-154, the archive). Green this time `upgrade` and
