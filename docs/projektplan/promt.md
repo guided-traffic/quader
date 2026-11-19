@@ -1169,8 +1169,21 @@ agent** is not decided until the owner has said so.
   the sign-in screen with the notice that the session has ended / on as a visitor without a word / the server counts a
   dead cookie as no credential): a browser whose session has ended lands on the sign-in screen, which says so and offers
   to sign in or to continue without signing in. The development agent's part of it: `whoami` takes the dead cookie away
-  with its `session_expired`, as the sign-out does, on that one route only. To a builder on 2026-11-19 (Q-AUTH-410 to
-  Q-AUTH-414, R-UI-175, R-UI-176, Q-UI-710 to Q-UI-714).
+  with its `session_expired`, as the sign-out does, on that one route only. To a builder on 2026-11-19.
+  - **Built** (on `main` the same day; R-AUTH-001, R-AUTH-002, R-AUTH-013, R-UI-004 and R-UI-057 rewritten, Q-AUTH-410 to
+    Q-AUTH-414, Q-UI-710 to Q-UI-713, Q-AUTH-177 points to its revisit, gap H-1004): `GET` and `HEAD` of `whoami` answer a
+    refused session cookie with `401 session_expired`, `Cache-Control: no-store` and the two clearing lines of the sign-out,
+    the same answer for a malformed, an unknown and an ended cookie; every other route leaves the cookies alone. The UI
+    reads the problem's code: `session_expired` at load goes to `/login?returnTo=…&ended=1`, also with public content; the
+    screen says "Your session has ended. Sign in again to continue where you left off.", takes the parameter out of the
+    address, and with public content does not redirect to the identity provider by itself. H-1004 is the window that
+    stays: a `whoami` in flight with the old cookie clears the cookie a sign-in in another tab has just set, and that
+    person signs in once more. The builder ran the login package of the integration tests with its new case; the changed
+    kind test `e1_01_login_test.go` is not run.
+    **Looked at by the development agent** on the owner's stack after the backend's restart, in a browser with a dead
+    cookie, light and dark at 1,440 and 390 px: `/ui/guides` lands on the sign-in screen with the notice, the browser has
+    no cookie left, a reload shows no notice, **Continue without signing in** opens Guides with its six tiles, no request
+    besides `whoami` answered 401 and no page shows an error notice.
 - **W-22 · A public remote repository for the guidedtraffic images** (owner, 2026-11-19): "kannst du auch bitte ein public
   remote Repo hinzufügen. Nutze doch bitte https://hub.docker.com/u/guidedtraffic als remote und mach es zugänglich alle
   pull through auch für nicht angemeldete user." Read by the development agent as: on the stack he is looking at, and in
@@ -1182,6 +1195,8 @@ agent** is not decided until the owner has said so.
   pattern. Not known: whether the owner also wants it on his installation, which cannot be reached from the development
   machine.
 - **Seen by the development agent, not decided:**
+  - **Three tiles of Guides carry the same placeholder mark** (2026-11-19, as a visitor): Ansible Galaxy, Generic and npm show
+    the outlined box, Debian, NuGet and OCI a mark of their own.
   - **The setup page of a public remote offers a visitor `docker login`** (2026-11-19, `platform/guidedtraffic` without a
     credential): the first snippet of `client-setup?client=docker` is `docker login … --username quader`, though the guide
     of a visitor is to come without credential steps and the pull that follows needs none.
