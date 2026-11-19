@@ -2031,6 +2031,19 @@ agent** is not decided until the owner has said so.
     **twice**, once from a GitHub-hosted job (zstd) and once from a self-hosted one (gzip, no `zstd` in the runners'
     image), 165 and 161 MB for the modules, 136 and 121 MB for the npm clients. With all five clients images that is
     nearer 6 GB than the estimated 4; `zstd` in the runners' image would halve it.
+- **F-162 · `quader admin token create` refused a second run and named a way on that needs a token** (found by the full
+  nightly on the download limits, 44625277245 of 2026-11-19, `e2e (backup)`, step `backup-pitr`: the second set on one cluster
+  bootstraps its administrator again and got `technical_token_active`). Since the technical tokens the command issues a
+  secret of the technical token `--name` (default `admin-cli`) and refused while that token had a live secret, with the
+  message "rotate it (POST /api/v1/tokens/{id}/rotate)". The command is the way in for an operator who holds no token: a
+  second bootstrap, a lost token, a restored database. Before the technical tokens it issued a token every time. **Fixed
+  the same night** (Q-AUTH-421): `--replace` revokes the live secret and issues the new one; without it the command still
+  refuses, and its message names `--replace` and `--name`. The end-to-end suites' administrator is issued with it. Run:
+  the CLI's integration test with the new cases. Not run before the push: the leg itself, which the next nightly shows.
+  - **The pipeline of the registry fix** (Test and Release 44632375471, the release with Q-API-357): the OCI conformance
+    suite passed; `integration (shard c)` was red by another test, `TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged`
+    of the Debian virtual repository ("the build after the change left the suite current", while the log shows the build
+    failing with `member_unverified` in the second the replica shut down): timing, no limit in it, first record of it.
 - **F-161 · A registry client's first request was charged to its address and answered 429 where it expects the challenge**
   (found by the first pipeline of the download limits, Test and Release 44625189982 of 2026-11-19, `integration (shard c)`:
   the OCI conformance suite failed, 31 of its requests answered `429` by `limits.requestsPerSecond` of the rule for every
