@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 619 of 929 spec requirements are implemented: a passing test names them and no
+**Status.** 619 of 983 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 788 specified (513 of them implemented), 1,451 open.
-929 spec requirements: 646 cover catalog features, 283 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 788 specified (512 of them implemented), 1,451 open.
+983 spec requirements: 700 cover catalog features, 283 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -85,7 +85,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [VCS archive format](#vcs-archive-format-pkg-vcs) | `PKG-VCS` | 13 | – | 0 | 13 | 0 |
 | [Machine-learning models and model-serving containers](#machine-learning-models-and-model-serving-containers-pkg-ml) | `PKG-ML` | 19 | – | 0 | 19 | 0 |
 | [AI agent assets and IDE extension formats](#ai-agent-assets-and-ide-extension-formats-pkg-ai) | `PKG-AI` | 37 | – | 0 | 37 | 0 |
-| [Beyond the baseline: further formats and capabilities](#beyond-the-baseline-further-formats-and-capabilities-beyond) | `BEYOND` | 34 | – | 2 | 32 | 2 |
+| [Beyond the baseline: further formats and capabilities](#beyond-the-baseline-further-formats-and-capabilities-beyond) | `BEYOND` | 34 | 1 of 1 | 2 | 32 | 1 |
 
 </details>
 
@@ -2919,10 +2919,10 @@ Catalog page: [formats/ai-and-ide.md](../features/formats/ai-and-ide.md) · spec
 
 ## Beyond the baseline: further formats and capabilities (BEYOND)
 
-Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified by priority: P1 1 of 5 · P2 1 of 26 · Later 0 of 3
+Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified by priority: MVP 1 of 1 · P1 1 of 5 · P2 0 of 25 · Later 0 of 3
 
 <details>
-<summary>34 features: 2 specified, 32 open, 2 implemented</summary>
+<summary>34 features: 2 specified, 32 open, 1 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -2956,7 +2956,7 @@ Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified 
 | BEYOND-027 | Minimum release age for remote repositories | P1 | open | – |
 | BEYOND-028 | Namespace claims against dependency confusion | P1 | implemented | [R-REPO-023](../spec/repositories-and-proxy.md) (implemented), [R-REPO-048](../spec/repositories-and-proxy.md) (implemented) |
 | BEYOND-029 | Cache pre-warming from lockfiles and SBOMs | P2 | open | – |
-| BEYOND-030 | Per-tenant quotas and rate limits | P2 | implemented | [R-API-016](../spec/api-and-ui.md) (implemented), [R-EP-015](../spec/endpoints.md) (implemented) |
+| BEYOND-030 | Per-tenant quotas and rate limits | MVP | specified | [R-API-016](../spec/api-and-ui.md) (implemented), [R-API-082](../spec/api-and-ui.md), [R-UI-177](../spec/api-and-ui.md), [R-UI-178](../spec/api-and-ui.md), [R-UI-179](../spec/api-and-ui.md), [R-UI-180](../spec/api-and-ui.md), [R-UI-181](../spec/api-and-ui.md), [R-UI-182](../spec/api-and-ui.md), [R-UI-183](../spec/api-and-ui.md), [R-UI-184](../spec/api-and-ui.md), [R-UI-185](../spec/api-and-ui.md), [R-UI-186](../spec/api-and-ui.md), [R-AUTHZ-039](../spec/authorization.md), [R-AUTHZ-040](../spec/authorization.md), [R-EP-015](../spec/endpoints.md) (implemented), [R-AUTH-046](../spec/identity-and-authentication.md), [R-AUTH-045](../spec/identity-and-authentication.md), [R-LIM-001](../spec/usage-and-limits.md), [R-LIM-002](../spec/usage-and-limits.md), [R-LIM-003](../spec/usage-and-limits.md), [R-LIM-004](../spec/usage-and-limits.md), [R-LIM-005](../spec/usage-and-limits.md), [R-LIM-006](../spec/usage-and-limits.md), [R-LIM-007](../spec/usage-and-limits.md), [R-LIM-008](../spec/usage-and-limits.md), [R-LIM-009](../spec/usage-and-limits.md), [R-LIM-010](../spec/usage-and-limits.md), [R-LIM-011](../spec/usage-and-limits.md), [R-LIM-012](../spec/usage-and-limits.md), [R-LIM-013](../spec/usage-and-limits.md), [R-LIM-014](../spec/usage-and-limits.md), [R-LIM-015](../spec/usage-and-limits.md), [R-LIM-016](../spec/usage-and-limits.md), [R-LIM-017](../spec/usage-and-limits.md), [R-LIM-018](../spec/usage-and-limits.md), [R-LIM-019](../spec/usage-and-limits.md), [R-LIM-020](../spec/usage-and-limits.md), [R-LIM-021](../spec/usage-and-limits.md), [R-LIM-022](../spec/usage-and-limits.md), [R-LIM-023](../spec/usage-and-limits.md), [R-LIM-024](../spec/usage-and-limits.md), [R-LIM-025](../spec/usage-and-limits.md), [R-LIM-026](../spec/usage-and-limits.md), [R-LIM-027](../spec/usage-and-limits.md), [R-LIM-028](../spec/usage-and-limits.md), [R-LIM-029](../spec/usage-and-limits.md), [R-LIM-030](../spec/usage-and-limits.md), [R-LIM-031](../spec/usage-and-limits.md), [R-LIM-032](../spec/usage-and-limits.md), [R-LIM-033](../spec/usage-and-limits.md), [R-LIM-034](../spec/usage-and-limits.md), [R-LIM-035](../spec/usage-and-limits.md), [R-LIM-036](../spec/usage-and-limits.md), [R-LIM-037](../spec/usage-and-limits.md), [R-LIM-038](../spec/usage-and-limits.md), [R-LIM-039](../spec/usage-and-limits.md) |
 | BEYOND-031 | Provider presets for further CI systems | P1 | open | – |
 | BEYOND-032 | Kubernetes service-account token trust | P2 | open | – |
 | BEYOND-033 | SPIFFE JWT-SVID trust | P2 | open | – |

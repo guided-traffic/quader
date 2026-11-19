@@ -489,7 +489,9 @@ R-UI-045); API text stays English.
 | 422 | `idempotency_key_reused` | R-API-014 |
 | 422 | `reserved_name` | A create uses a name reserved by a route (R-API-004) |
 | 428 | `precondition_required` | `If-Match` required (R-API-012) |
-| 429 | `rate_limited` | R-API-016; `Retry-After` set |
+| 429 | `rate_limited` | R-API-016, and the request figures of [usage-and-limits.md](usage-and-limits.md) R-LIM-020; `Retry-After` set |
+| 429 | `download_limit_reached`, `upstream_limit_reached`, `too_many_parallel_downloads`, `caller_blocked` | A figure of [usage-and-limits.md](usage-and-limits.md) R-LIM-020 on a protocol path; `Retry-After` set; the members `figure`, `limit`, `windowSeconds`, `place`, `retryAfterSeconds` |
+| 422 | `limit_above_maximum` | A project or repository rule above its cap ([usage-and-limits.md](usage-and-limits.md) R-LIM-016); `errors[]` names each figure with its cap |
 | 500 | `internal` | Unexpected failure (R-ARCH-023) |
 | 502 | `upstream_error` | A synchronous action that calls an upstream or issuer failed |
 | 503 | `unavailable` | A dependency is unreachable or maintenance mode refuses the write; `Retry-After` set. An unavailable Valkey never causes it: every use of Valkey has a fallback ([architecture.md](architecture.md) R-ARCH-031) |
@@ -825,21 +827,35 @@ thirty. Protecting one replica's own CPU and memory is the job of `server.max_in
 token validation and token revocation are R-AUTH-038 in
 [identity-and-authentication.md](identity-and-authentication.md); those of the CI exchange are
 R-CI-021 in [gitlab-ci-oidc.md](gitlab-ci-oidc.md); the class a further endpoint applies to every
-request on it, package protocols included, is R-EP-015 in [endpoints.md](endpoints.md). This
-requirement adds the general classes for `/api/v1/`, `/files/` and the package protocols under
-`/api/<format>/`:
+request on it, package protocols included, is R-EP-015 in [endpoints.md](endpoints.md).
 
-| Class | Applies to | Bucket key | Limiter name |
-|---|---|---|---|
-| `read` | Safe methods | Principal (token ID, or session user) | `api_read` |
-| `write` | Unsafe methods | Principal | `api_write` |
-| `anonymous` | Requests without credentials | Client address (R-ARCH-006, R-OPS-005) | `api_anonymous` |
-| `package_read` | Safe methods on `/api/<format>/` | Principal | `api_package_read` |
-| `package_write` | Unsafe methods on `/api/<format>/` | Principal | `api_package_write` |
-| `package_anonymous` | Requests without credentials on `/api/<format>/`, except those the decision point challenges (below) | Client address | `api_package_anonymous` |
+**The border** (owner's decisions of 2026-11-19, W-26; [Q-API-344](#q-api-344--the-management-api-keeps-its-classes-the-package-classes-become-the-safety-net-of-audit-mode)).
+Requests on the protocol paths, `/api/<format>/…`, `/files/…` and everything below `/v2/`, are counted by the figures of
+[usage-and-limits.md](usage-and-limits.md): per subject (a user with all its sessions and personal tokens, a technical token, a CI
+project, an anonymous address), per place, with profiles, ceilings and the mode `audit` or `enforce`. This requirement keeps the
+classes of the management API and holds the package classes as the safety net of Audit mode:
+
+| Class | Applies to | Bucket key | Limiter name | In force |
+|---|---|---|---|---|
+| `read` | Safe methods on `/api/v1/` | Principal (token ID, or session user) | `api_read` | always |
+| `write` | Unsafe methods on `/api/v1/` | Principal | `api_write` | always |
+| `anonymous` | Requests without credentials on `/api/v1/` | Client address (R-ARCH-006, R-OPS-005) | `api_anonymous` | always |
+| `package_read` | Safe methods on a protocol path | The subject of [usage-and-limits.md](usage-and-limits.md) R-LIM-001 | `api_package_read` | while the mode is `audit` |
+| `package_write` | Unsafe methods on a protocol path | The subject of R-LIM-001 | `api_package_write` | always, until the upload figures replace it (Later on [usage-and-limits.md](usage-and-limits.md)) |
+| `package_anonymous` | Requests without credentials on a protocol path, except those the decision point challenges (below) | The anonymous subject of R-LIM-002 (an IPv4 address, an IPv6 `/64`) | `api_package_anonymous` | while the mode is `audit` |
+
+- In `enforce`, `package_read` and `package_anonymous` are not applied: the request figures of the profiles
+  ([usage-and-limits.md](usage-and-limits.md) R-LIM-004) take their place. The default values of the two classes equal the request
+  figures of the profiles Standard and Anonymous, so switching the mode changes the request limit of a caller with the default
+  profile only by its hourly figure and its key.
+- The package classes cover `/v2/` and `/files/` as every other protocol path: finding F-155 is closed. `/files/` is no longer
+  limited by `read`, `write` and `anonymous`.
+- The package classes are keyed by the subject of R-LIM-001: a personal access token no longer has a bucket of its own; it shares
+  its user's. A registry token is its underlying token's subject.
+- The stage of the package classes is the same round trip as the request figures (R-LIM-017): one check per protocol request.
 
 The package classes have buckets of their own, so a lockfile install does not use up the budget
-of the same token's management API and a flood on a package protocol cannot starve it; the
+of the same caller's management API and a flood on a package protocol cannot starve it; the
 default endpoint, which has no endpoint class, is limited by them as well (Q-API-169). A refused
 package request has the error shape of the format (R-ARCH-023).
 
@@ -853,6 +869,7 @@ the first attempt is charged to no class. A request the class does not charge ca
 The stage reads the index the replica has installed. A repository the index does not hold is charged,
 because its request asks PostgreSQL whether the repository was just created before it is decided
 (R-ARCH-011 step 2); so are a path that names no repository and a replica without an index ([Q-API-290](#q-api-290--package_anonymous-does-not-charge-a-request-the-decision-point-challenges)).
+The request figures of [usage-and-limits.md](usage-and-limits.md) R-LIM-005 follow the same rule.
 
 - **Limiter.** Each class is a limiter of R-ARCH-034 ([architecture.md](architecture.md)) with
   scope `cluster`: a sliding-window counter in Valkey with the window `W = burst ÷ rate`, which
@@ -882,11 +899,13 @@ because its request asks PostgreSQL whether the repository was just created befo
   `available` is `burst` minus the window's estimate, at least 0. During the fallback, `q` and `r`
   describe the replica's share. The draft does not address several servers; it lets the available
   quota change between responses and tells clients not to expect the same fields on the next
-  response, which covers a request that reaches a replica in fallback.
+  response, which covers a request that reaches a replica in fallback. The figures of
+  [usage-and-limits.md](usage-and-limits.md) add their own members in `enforce` (R-LIM-020).
 - The one guessable credential, the break-glass password, is counted cluster-wide in PostgreSQL by
   R-AUTH-038 in [identity-and-authentication.md](identity-and-authentication.md), because a lockout
-  must survive a loss of Valkey's data. Administrators are not exempt by default. Rejections are
-  counted in `quader_api_rate_limited_total{class}`.
+  must survive a loss of Valkey's data. Administrators are not exempt by default; `exempt_admins` exempts the holders of the
+  admin capability from these classes only, never from the figures of [usage-and-limits.md](usage-and-limits.md), where an
+  administrator's default is the profile Unlimited (R-LIM-012). Rejections are counted in `quader_api_rate_limited_total{class}`.
 
 Configuration (each value is the budget of one bucket across the whole installation):
 
@@ -898,9 +917,9 @@ api:
     read:      {requests_per_second: 50, burst: 200}     # default (proposed)
     write:     {requests_per_second: 10, burst: 50}      # default (proposed)
     anonymous: {requests_per_second: 5,  burst: 20}      # default (proposed)
-    package_read:      {requests_per_second: 200, burst: 1000}   # default (proposed)
+    package_read:      {requests_per_second: 200, burst: 1000}   # default (proposed); in force while the mode is audit
     package_write:     {requests_per_second: 10,  burst: 50}     # default (proposed)
-    package_anonymous: {requests_per_second: 20,  burst: 100}    # default (proposed)
+    package_anonymous: {requests_per_second: 20,  burst: 100}    # default (proposed); in force while the mode is audit
 ```
 
 Acceptance criteria:
@@ -917,13 +936,17 @@ Acceptance criteria:
   and `quader_ratelimit_fallback{limiter="api_read"}` is 1 on every replica.
 - With the defaults, a `200` answer of `GET /api/v1/repositories` carries
   `RateLimit-Policy: "read";q=200;w=4`.
-- A loop of 1,100 `GET /api/npm/<projectKey>/<repoKey>/<name>` with one token receives 429 answers after the
-  burst of 1,000, each with `Retry-After` and `RateLimit-Policy: "package_read";q=1000;w=5`;
-  `GET /api/v1/repositories` with the same token is still admitted.
+- In mode `audit`, a loop of 1,100 `GET /api/npm/<projectKey>/<repoKey>/<name>` with one personal token receives 429 answers after
+  the burst of 1,000, each with `Retry-After` and `RateLimit-Policy: "package_read";q=1000;w=5`; the same loop with a second
+  personal token of the same user is refused at once, because both share the user's bucket; `GET /api/v1/repositories` with the
+  same token is still admitted. In mode `enforce` the same loops are decided by the user's profile and carry no `package_read`
+  member.
+- In mode `audit`, 200 `GET /v2/` from one address without a credential within 2 s are admitted at most 140 times, each refusal
+  `TOOMANYREQUESTS` with `RateLimit-Policy: "package_anonymous";q=100;w=5`.
 - With the defaults, 300 `GET <feed>/v3/flatcontainer/<id>/index.json` without a credential from one address on a
   NuGet repository whose artifacts are `internal` all answer 401 with the challenge and none 429; on a repository whose
   artifacts are `public` the requests beyond the burst of 100 answer 429 with
-  `RateLimit-Policy: "package_anonymous";q=100;w=5`.
+  `RateLimit-Policy: "package_anonymous";q=100;w=5` in mode `audit`, and by the profile Anonymous in mode `enforce`.
 - Three `dotnet restore` of a solution with at least 100 packages in its restore graph, with the credentials in
   `nuget.config`, from three addresses at once through a repository that is not `public`, succeed (E3.2).
 
@@ -2301,6 +2324,62 @@ Acceptance criteria (`TestR_API_060_TheAnswerHoldsAMemberPerKindAsked`, `TestR_A
 `TestR_API_061_ASuggestionNamesOnlyWhatTheCallerMayRead` in `test/integration/search`): `kind=user,group,service_account` answers the
 members `users`, `groups` and `serviceAccounts`; `kind=service_account` without `identities:read` answers 403 the same for every `q`;
 the administrator's `q=bot&kind=service_account` names the instance-wide `bot` with `project: null`.
+
+### R-API-082 · The operations of usage, limits and technical tokens
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's decisions of 2026-11-19 (W-26). The bodies are specified on [usage-and-limits.md](usage-and-limits.md) R-LIM-031 to
+R-LIM-035 and [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-045 and R-AUTH-046, field by field with an
+example; `api/openapi.yaml` is written from them. Every operation of a project or a repository declares `project: path.projectKey`
+and `projectRole: owner` besides its capability (R-API-008, R-AUTHZ-026), so an Owner of the project is admitted where the column
+says so, and a project the caller is no member of answers 404.
+
+| Method | Path | Permission | Body |
+|---|---|---|---|
+| GET, POST | `/api/v1/limits/profiles` | GET `limits:read` or an Owner of any project; POST `limits:write` | R-LIM-031 |
+| GET, PUT, DELETE | `/api/v1/limits/profiles/{key}` | as above; PUT, DELETE `limits:write` | R-LIM-031 |
+| GET, POST | `/api/v1/limits/assignments` | GET `limits:read`; POST `limits:write` | R-LIM-032 |
+| GET, PUT, DELETE | `/api/v1/limits/assignments/{id}` | GET `limits:read`; PUT, DELETE `limits:write` | R-LIM-032 |
+| GET, POST | `/api/v1/projects/{projectKey}/limits/assignments` | `limits:read`, `limits:write`, or an Owner | R-LIM-032 |
+| GET, PUT, DELETE | `/api/v1/projects/{projectKey}/limits/assignments/{id}` | as above | R-LIM-032 |
+| GET, POST | `/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments` | as above | R-LIM-032 |
+| GET, PUT, DELETE | `/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id}` | as above | R-LIM-032 |
+| GET, PUT | `/api/v1/projects/{projectKey}/repositories/{repoKey}/limits/ceilings` | GET `limits:read`, `repositories:read-config` or an Owner; PUT `limits:write`, `repositories:write-config` or an Owner | R-LIM-032 |
+| GET, PATCH | `/api/v1/limits/settings` | GET `limits:read`; PATCH `limits:write`, recent authentication for `mode` (R-API-007) | R-LIM-033 |
+| GET | `/api/v1/limits/mode-preview` | `limits:read` | R-LIM-033 |
+| GET, PUT, DELETE | `/api/v1/projects/{projectKey}/limits/maximum` | GET `limits:read` or an Owner; PUT, DELETE `limits:write` | R-LIM-033 |
+| GET | `/api/v1/limits/blocks` | `limits:read`; an Owner with `place` naming its project or one of its repositories | R-LIM-033 |
+| DELETE | `/api/v1/limits/blocks/{id}` | `limits:write`, or an Owner of the block's project | R-LIM-033 |
+| GET | `/api/v1/limits/explain` | `limits:read`, or an Owner for a repository of its project | R-LIM-035 |
+| GET | `/api/v1/limits/subjects` | `limits:read`, or an Owner with `project` | R-LIM-034 |
+| GET | `/api/v1/usage`, `/api/v1/usage/export` | `usage:read` | R-LIM-034 |
+| GET | `/api/v1/usage/subjects/{kind}/{id}` | `usage:read` | R-LIM-034 |
+| GET | `/api/v1/projects/{projectKey}/usage`, `…/usage/export`, `…/usage/subjects/{kind}/{id}` | `usage:read` or an Owner | R-LIM-034 |
+| GET | `/api/v1/users/me/usage` | every signed-in user (`authenticated`) | R-LIM-034 |
+| GET | `/api/v1/users/me/limits` | every signed-in user, for a repository it can read | R-LIM-035 |
+| GET, POST | `/api/v1/service-accounts/{name}/technical-tokens` | `identities:read`; POST: an administrator, as R-AUTH-027 | R-AUTH-045 |
+| GET, PATCH, DELETE | `/api/v1/service-accounts/{name}/technical-tokens/{tokenName}` | `identities:read`; PATCH `identities:write`; DELETE `identities:write` or `tokens:revoke` | R-AUTH-045 |
+| POST | `/api/v1/service-accounts/{name}/technical-tokens/{tokenName}/secrets` | as the POST of a technical token | R-AUTH-045 |
+| GET, POST, … | `/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens[/{tokenName}[/secrets]]` | the same, or an Owner | R-AUTH-045 |
+| GET, POST | `/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts` | `identities:read`, `identities:write`, or an Owner | R-AUTH-046 |
+| GET, PATCH, DELETE | `/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}` | as above | R-AUTH-046 |
+| POST | `…/repositories/{repoKey}/service-accounts/{name}/disable`, `…/enable` | as above | R-AUTH-046 |
+| GET, POST, … | `…/repositories/{repoKey}/service-accounts/{name}/technical-tokens[/{tokenName}[/secrets]]` | as above, the token rules of R-AUTH-027 for an Owner | R-AUTH-045 |
+
+- The operations `POST /api/v1/service-accounts/{name}/tokens` and `POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens`
+  are removed: a service-account token is created as a technical token (R-AUTH-045). Rotation (`POST /api/v1/tokens/{id}/rotate`),
+  the token list and revocation (`/api/v1/tokens…`) stay; a token record of type `sat` names its technical token.
+- Every capability in the column is a system scope item (R-AUTH-025), so a monitoring token with `{"system": ["usage:read"]}` reads
+  the overview.
+- The lists answer in the shape of R-API-010; a write answers the resource with its `ETag`; the error codes are those of the owning
+  requirement.
+
+Acceptance criteria:
+
+- `api/openapi.yaml` holds every operation of the table with its declaration; the declaration test of R-API-008 passes, and a
+  member of `web` who is no Owner gets 403 on `GET /api/v1/projects/web/usage`, a non-member 404.
+- `GET /api/v1/usage` with a token scoped `{"system": ["usage:read"]}` of a service account bound to `auditor` answers 200; the same
+  token gets 403 on `PATCH /api/v1/limits/settings`.
 
 ### R-API-058 · Operations that serve wiki content
 Priority: **MVP** · Covers: quader-only
@@ -7542,6 +7621,309 @@ Acceptance criteria:
 - `make ui-layout-test` passes (`web/e2e/renders/layout-checks.spec.ts`), its test names carry R-UI-175 and R-UI-176.
 - `make web-lint` passes; the rule's own test fails on both declarations (`web/scripts/lint-rules.test.mjs`).
 - A full render run names no layout finding.
+
+### R-UI-177 · Download limits in the admin area
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's decisions of 2026-11-19 (W-26; [usage-and-limits.md](usage-and-limits.md)). The admin area's side bar gains two entries
+after **Tokens** ([Q-UI-730](#q-ui-730--the-admin-area-has-two-entries-usage-and-download-limits)): **Usage** (`/admin/usage`, R-UI-183)
+for holders of `usage:read`, and **Download limits** (`/admin/limits`) for holders of `limits:read`. A caller without either sees
+neither.
+
+**Download limits** is one page with the shared page header (title "Download limits") and the tab strip of links under it:
+**Rules** (`/admin/limits`), **Profiles** (`/admin/limits/profiles`, R-UI-178), **Projects** (`/admin/limits/projects`),
+**Blocks** (`/admin/limits/blocks`).
+
+- **The mode** stands under the header on every tab, as a status line with its word and one sentence: "Mode: **Audit**. Every limit
+  is counted and shown; nothing is refused or slowed." or "Mode: **Enforce**. Limits refuse and slow requests." A holder of
+  `limits:write` has the button **Switch to Enforce…** or **Switch to Audit…** beside it (R-UI-182). The words Audit and Enforce are
+  the owner's and are not translated into other terms.
+- **Rules** (the instance place): the rule table of R-UI-179 over `GET /api/v1/limits/assignments`, with **Add rule** in the head for
+  a holder of `limits:write`. The built-in rules stand first, each with the badge **Built-in**, their action **Change** and no
+  **Delete**. Under the table one line: "Block time after too many refused requests: 15 minutes" with **Change** (a field in minutes,
+  1 to 1,440, saved through `PATCH /api/v1/limits/settings`).
+- **Projects**: one row per project that has a maximum or a rule: the project (mark, display name, key), **Maximum** (the profile's
+  name with "+ N changes" for overrides, or "None"), **Rules** (the number at the project and its repositories), and the action
+  **Set maximum** or **Change maximum**, which opens a dialog with the profile select and the override fields of R-UI-179's dialog,
+  and **Remove maximum**. The head's search finds a project by key or name; **Add maximum** opens the dialog with a project field
+  first. Empty: "No project has a maximum. A project's Owner can set limits up to the instance's values." 
+- **Blocks**: the active blocks, newest first (`GET /api/v1/limits/blocks`): the subject (as in R-UI-183's first column), the place,
+  started, ends (a relative time, R-UI-103), the refused requests against the limit ("61 of 60 per hour"), and **Lift** for a holder
+  of `limits:write` (a confirmation that names the subject). A filter switch **Show ended blocks** adds the blocks of the last 30
+  days with their end or "Lifted by <name>". Empty: "Nothing is blocked."
+- A holder of `limits:read` without `limits:write` (the auditor, the security administrator) sees every tab read-only, without the
+  actions.
+
+Acceptance criteria:
+
+- The auditor opens **Download limits** and sees the mode, the five built-in rules and no **Add rule**; the administrator sees
+  **Add rule** and **Switch to Enforce…**.
+
+### R-UI-178 · The profile editor
+Priority: **MVP** · Covers: BEYOND-030
+
+`/admin/limits/profiles` lists the profiles (`GET /api/v1/limits/profiles`): name with the badge **Built-in**, description, the
+eleven figures in one compact cell ("200/s · 1,000 burst · 50,000/h · cache 200 MB/s, 300 GB/h · upstream 50 MB/s, 30 GB/h, 2,000
+req/h · 20 parallel · 1,000 GB/day · 500 refused/h"; an unlimited figure is left out; Unlimited reads "Unlimited"), and **Used by**
+("4 rules, 1 project maximum"). **New profile** in the head and a row's **Edit** open the editor; **Delete** is offered for an own
+profile that nothing uses, else shown disabled with the reason ("Used by 3 rules").
+
+The editor is a page (`/admin/limits/profiles/new`, `/admin/limits/profiles/{key}`), one column as the style guide's settings pages:
+
+- **Name**, **Key** (on create only; filled from the name, editable, the pattern's help "Lower case letters, digits and hyphens"),
+  **Description (optional)**.
+- The figures in four groups, each a heading and its fields, each field as wide as its input (R-UI-087's rule; a field of seven
+  digits and its unit): **Requests** (per second, burst, per hour), **From the cache** (MB per second, GB per hour), **From the
+  upstream** (MB per second, GB per hour, upstream requests per hour), **Downloads** (in parallel, GB per day), **Refused requests**
+  (per hour). The value is in the field (a default is a value in the field, [CLAUDE.md](../../CLAUDE.md)); an empty field is unlimited, and the field
+  says so as its placeholder "Unlimited". Units are decimal: 1 MB is 1,000,000 bytes, 1 GB 1,000,000,000
+  ([Q-UI-736](#q-ui-736--the-ui-shows-decimal-mb-and-gb-the-api-bytes)); the API's bytes are converted on load and on save, and a
+  value that is not a whole number of bytes after conversion is rounded down.
+- A help line per group, one sentence: what happens at the limit ("At the limit a request is answered 429 with the time to wait.",
+  "Above the rate a download is slowed down; above the hourly amount the next download is refused before it starts.", "With the
+  upstream budget used up, what is cached is still served.", "A further download waits up to 10 seconds."), and under **From the
+  cache** the note that a very low rate makes a large file take longer than some clients wait in total.
+- Unlimited cannot be edited: its page shows the figures read-only with "Unlimited is always unlimited."
+- **Save** sends `PUT` (or `POST`) with `If-Match`; a `412` opens the conflict dialog of R-UI-042.
+
+Acceptance criteria:
+
+- Changing Standard's "From the cache, GB per hour" from 300 to 250 sends `cachedBytesPerHour: 250000000000`.
+- Emptying a field sends `null`, and the list shows the figure no more.
+
+### R-UI-179 · The rule table and the rule dialog
+Priority: **MVP** · Covers: BEYOND-030
+
+One component (`<quader-limit-rules>`) lists the rules of a place and is used at the instance (R-UI-177), a project and a repository
+(R-UI-180), so that the three places look and work the same.
+
+- **Columns**: **Applies to** (the "who": for a user the avatar, the display name and under it `@username`; a group its icon and
+  name; a technical token its key icon, its name and under it its account (`sa:web/partner`); a CI project the CI icon, the project
+  path and under it the issuer; an address range in the monospace type; "Every signed-in user", "Every technical token", "Every CI
+  job", "Every anonymous caller", "Every administrator"; a rule whose "who" was deleted "(deleted)" in the secondary type),
+  **Profile** (the name, and "+ uncached 20 GB/h" for each override, at most two, then "+ N more"), **Note**, and the action menu
+  (**Change**, **Delete**). A capped rule whose figures are clamped now carries the warning badge **Above the maximum** with a tooltip
+  that names the figures and what applies.
+- **Order**: single callers and addresses, then groups, then the kinds, as resolution tries them (R-LIM-013); within each, by name.
+- **The dialog** (**Add rule**, **Change**):
+  - **Applies to**: a choice of **A user**, **A group**, **A technical token**, **A CI project**, **An address or range**, **Every
+    caller of a kind**. A user, a group, a technical token and a CI project are chosen in the shared principal field (R-UI-150),
+    which gains the kinds technical token and CI project, whose matches come from `GET /api/v1/limits/subjects` (a technical token's
+    row: its key icon, its name, under it its account; a CI project's row: the project path, under it the issuer and the ID); at a
+    project or repository the field searches through the project's lookup (R-API-077) and the subjects of the project. An address is
+    a field of the width of an IPv6 prefix with the help "An address, or a range such as 198.51.100.0/24 or 2001:db8:1::/48". A kind
+    is a select. On **Change** the "who" is read-only.
+  - **Profile**: a select of the profiles by name, with the figures of the chosen one shown read-only under it in the compact form of
+    R-UI-178.
+  - **Change single figures**: a closed disclosure (details on demand) with the eleven fields of R-UI-178, empty unless overridden;
+    each overridden field has a link **Use the profile's value**. An empty field that is overridden reads "Unlimited".
+  - **Note (optional)**.
+  - At a project or a repository, for a caller without `limits:write`: a line under the profile names the cap, "You can set up to
+    the instance's values for this caller, or up to the project's maximum (Technical)", and a `422 limit_above_maximum` marks each
+    named field with its cap ("At most 30 GB per hour here").
+- Empty table (a project or a repository): "No rule here. Callers get the instance's limits." The instance never has an empty
+  table.
+
+Acceptance criteria:
+
+- The same rule table renders at `/admin/limits`, at a project's settings and at a repository's settings with the same columns.
+- Adding a rule for the group `contractors` with Restricted and one override sends one `POST` with `who`, `profile` and the single
+  override.
+
+### R-UI-180 · The limits of a project and of a repository
+Priority: **MVP** · Covers: BEYOND-030
+
+Simple by default ([CLAUDE.md](../../CLAUDE.md), [Q-UI-731](#q-ui-731--at-a-project-and-a-repository-the-limits-are-a-closed-section-of-the-settings)):
+the plain path of a project and of a repository shows nothing of the limits.
+
+- **A project's settings** (`/projects/{project}/settings`) gain a closed section **Download limits** before **Advanced**, for an
+  Owner and for holders of `limits:read`. Its title line says "2 rules" when the project has rules and "Maximum: Technical" when it
+  has a maximum, else nothing. Open, it shows one sentence ("Rules here apply to the project's repositories that have no rules of
+  their own."), the project's maximum as a read-only line ("Maximum given by an administrator: Technical" or "No maximum: you can
+  set limits up to the instance's values."), and the rule table of R-UI-179 with **Add rule**. A link **Usage of this project**
+  leads to R-UI-183 in the project's scope.
+- **A repository's settings** (R-UI-087) gain a closed section **Download limits** after **Access details**. Its title line says the
+  number of rules when there are any. Open, it shows the rule table of R-UI-179 for the repository and, for a remote repository, the
+  group **Ceilings** with one sentence ("All callers of one kind together; a request must fit both its caller's limit and the
+  ceiling.") and two rows, **All anonymous callers** and **All signed-in callers**, each with **GB per hour from the upstream** and
+  **Upstream requests per hour** (empty: unlimited) and its own **Save changes**. A link **Usage of this repository** leads to
+  R-UI-183 scoped to the repository.
+- **A repository's service accounts**: a closed section **Service accounts** after **Download limits** (R-UI-181).
+- A member who is no Owner sees neither section; a holder of `limits:read` sees them read-only.
+- The project's side bar for an Owner gains **Usage** (`/projects/{project}/usage`) after **Service accounts**; it is listed only for
+  an Owner and for holders of `usage:read`.
+
+Acceptance criteria:
+
+- An Owner opens a remote's settings: **Download limits** is closed and says nothing; opened, it shows "No rule here." and the
+  ceilings empty. A reader of the project sees no such section.
+
+### R-UI-181 · Technical tokens at the instance, a project and a repository
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's word is **technical token** (decisions 12 and 13): the service account carries the rights, each technical token below
+it is named for the system that uses it and has a budget of its own
+([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-045, R-AUTH-046,
+[Q-UI-734](#q-ui-734--a-technical-token-is-a-named-row-of-its-service-accounts-page-with-its-limit-and-its-usage)).
+
+- **The service account's page** (R-UI-026) at the instance (`/admin/service-accounts/{name}`), at a project
+  (`/projects/{project}/service-accounts/{name}`) and at a repository (`/projects/{project}/repositories/{repo}/service-accounts/{name}`)
+  calls its section **Technical tokens**, open while the account has one. Its list: **Token** (the name, under it the hint of its
+  current secret and its description), **Limit** (the profile of the token's own rule, "+ N changes", or "Default (Technical)"),
+  **Last 24 hours** (requests and bytes, "1,204 requests · 3.2 GB"), **Expires**, **Last used**, and the actions **Rotate**,
+  **Set limit**, **Revoke**. A token without a live secret shows **Expired** or **Revoked** and the action **Issue new secret**.
+- **New technical token** (the section's head) opens the create dialog of R-UI-026 with **Name** first (required; help: "The system
+  that uses this token, for example `nightly-mirror`. It cannot be changed."), then description, expiry, scope and endpoints as
+  today. The secret is shown once, as today.
+- **Set limit** opens the rule dialog of R-UI-179 with the "who" fixed to this token and the place of its account (the instance,
+  the project, the repository); a token with a rule shows **Change limit** and **Remove limit**.
+- **Issue new secret** opens the create dialog without the name; the result is shown once.
+- **A repository's service accounts**: the repository's settings section **Service accounts** (R-UI-180) lists the repository's
+  accounts (name as `sa:<project>/<repo>/<name>`, description, the actions it holds, state, technical tokens) with **New service
+  account**: a dialog with **Name**, **Description (optional)** and **Rights on this repository**, one checkbox per action (Read,
+  Annotate, Deploy, Overwrite, Delete, Manage) with the one-line help of R-UI-027; Read is ticked. A row opens the account's page,
+  whose top holds the rights as the same checkboxes with **Save changes**.
+- **The admin area's Service accounts** list gains the column **Level** (Instance, Project, Repository) and shows the repository of a
+  repository's account beside its project; the filter by project includes its repositories' accounts.
+- **The admin area's Tokens** (R-UI-030) shows a technical token's secret as "<token name> · <hint>" with the account as its owner.
+- An Owner sees the create, rotate and limit actions on the accounts of its project and of its repositories; a holder of
+  `identities:write` alone does not see **New technical token** (R-UI-026's rule stays).
+
+Acceptance criteria:
+
+- An Owner creates the repository account `ci` on `web/npm-local` with Read and Deploy, issues the technical token `release`, and
+  the token publishes to `web/npm-local`; rotating it keeps the row and its **Last 24 hours**.
+
+### R-UI-182 · The mode switch
+Priority: **MVP** · Covers: BEYOND-030
+
+**Switch to Enforce…** ([Q-UI-733](#q-ui-733--the-mode-switch-shows-what-the-last-24-hours-would-have-been-before-it-is-flipped)) opens a
+dialog titled "Switch to Enforce" that shows, before anything changes, what the last 24 hours would have been in Enforce
+(`GET /api/v1/limits/mode-preview`):
+
+- one sentence each, with the numbers: "12 callers would have been limited.", "3,400 requests would have been refused.", "25
+  downloads would have been slowed down.", "1 caller would have been blocked."; under it the figures that would have refused most
+  (the three of `byFigure` with the most events) and the kinds of caller (`byKind`), each linked to the overview filtered by
+  **Would have been limited**;
+- when nothing would have been limited: "In the last 24 hours no caller would have been limited.";
+- the consequence in one line: "From now on, limits refuse and slow requests on every replica within seconds."
+- **Switch to Enforce** (primary) sends `PATCH /api/v1/limits/settings {"mode": "enforce"}` with `If-Match`, after recent
+  authentication (R-API-007, R-UI-042); **Cancel**.
+
+**Switch to Audit…** opens a dialog with one sentence, "Limits will be counted and shown, and nothing will be refused or slowed.",
+and **Switch to Audit**. After either switch the status line of R-UI-177 changes and a notice confirms it.
+
+Acceptance criteria:
+
+- With the preview's fixture of 12 callers, the dialog shows "12 callers would have been limited." and its link opens the overview
+  with the state filter set.
+
+### R-UI-183 · The usage overview
+Priority: **MVP** · Covers: BEYOND-030
+
+`/admin/usage` (instance scope, `usage:read`) and `/projects/{project}/usage` (project scope, an Owner and `usage:read`), with
+`?repository=<repo>` for one repository ("who pulls most here"). The page's title is "Usage", in a project "Usage of <project
+display name>", for a repository "Usage of <repository key>".
+
+- **Head** (R-UI-100): the search by name or address; **Filters** (the drawer of R-UI-101) with **Kind** (Users, Technical tokens,
+  CI, Anonymous addresses, System), **State** (Close to the limit, Limit reached or Would have been limited, Blocked) and, in the instance
+  scope, **Project**; the period as a segmented control **Last hour**, **Last 24 hours**, **Last 30 days**; **Export CSV** as a quiet
+  button (`…/usage/export` with the same filters).
+- **Two views as links over the table**: **Close to the limit** and **Limit reached** (in Audit **Would have been limited**), each the state
+  filter set.
+- **In Audit mode** a line under the head says "Mode: Audit. Limits are counted, not applied." and every state reads "Would be
+  limited" instead of "Limit reached".
+- **Columns**: **Caller** (as R-UI-179's first column; an anonymous address in the monospace type, a CI project by path, "System" for
+  the system; a blocked subject with the badge **Blocked**), **Requests**, **From the cache**, **From the upstream**, **Upstream
+  requests**, **Refused**, and **Now** (the meter, [Q-UI-732](#q-ui-732--the-meter-shows-the-tightest-hour-or-day-figure-now-not-the-periods)):
+  a bar of the utilisation of the tightest hour or day figure with its percentage, and its state as text under it (**Close to the
+  limit** from 70 %, **Limit reached** or **Would have been limited**, **Unlimited**, nothing for normal); the bar's colour follows the
+  design tokens for warning and danger, never green (green only for a positive status). The tooltip names the figure and the place
+  ("Cache per hour at the instance: 246 of 300 GB").
+- Every numeric column sorts (the head's sort control and the column header); bytes in decimal units with one decimal ("1.2 GB"),
+  the exact count in the tooltip.
+- A row opens the subject's detail (R-UI-184).
+- From 64 rem of the list every column shows; below, **Upstream requests** and **Refused** give way first, then the row stacks
+  (R-UI-174).
+- **Empty states**: no usage in the period, "No downloads in the last 24 hours."; a filter that matches nothing, "No caller matches.";
+  in a project scope without protocol traffic, "Nobody downloaded from this project in the last 24 hours."
+- **What each kind of user sees** (R-UI-067): an administrator and an auditor the instance scope with addresses; a project Owner its
+  project's scope with the names and addresses of the callers of its repositories; nobody else reaches the page (the route's guard
+  sends them to their own usage, R-UI-185).
+
+Acceptance criteria:
+
+- The overview with 60 seeded subjects sorts by **From the cache** descending; **Close to the limit** lists exactly the subjects with
+  a ratio from 0.7 below 1 and no limit event.
+- A project Owner's overview lists an anonymous address that pulled from its public remote, and no subject that only used another
+  project.
+
+### R-UI-184 · A caller's usage, and which limit applies
+Priority: **MVP** · Covers: BEYOND-030
+
+`/admin/usage/{kind}/{id}` and `/projects/{project}/usage/{kind}/{id}` (`GET …/usage/subjects/{kind}/{id}`). The title names the
+caller ("alice", "deploy-prod of sa:web/partner", "198.51.100.23", "acme/web (CI)").
+
+- **Top**: the caller as in R-UI-183's first column, its kind, and for a technical token a link to its account; when blocked, a notice
+  "Blocked until 10:55 after 61 refused requests in an hour" with **Lift block** for a caller who may lift it.
+- **Limits**: one block per budget key (the instance, and each project or repository whose rule applies to it): its place, the rule
+  that applies and why in one sentence, read from the explanation ("Rule for the group contractors at web/npm-remote, profile
+  Restricted, one figure changed"), and every figure as a row: the figure's name, a meter of used against limit for the windowed
+  figures (**Requests per hour**, **From the cache per hour**, **From the upstream per hour**, **Upstream requests per hour**,
+  **Volume per day**, **Parallel downloads**, **Refused per hour**), and the rates as text (**Requests per second**, **From the cache
+  per second**, **From the upstream per second**); an unlimited figure reads "Unlimited".
+- **Which limit applies**: a quiet button **Explain for a repository**, which opens a panel with a repository field (the repositories
+  of the scope) and shows the steps of R-LIM-035 as an ordered list ("Repository web/npm-remote: no rule for alice. Groups: rule for
+  contractors applies."), the effective figures, a clamp ("Above the project's maximum: 30 GB applies") and the ceiling of a remote.
+- **Last 24 hours**: a chart of the five-minute history (requests, from the cache, from the upstream as three series; refused and
+  limited events as marks), with a table of the same points behind **Show as table** for keyboard and screen-reader users; the
+  colours follow the design tokens.
+- **By repository** (for the period of the head): repository, requests, from the cache, from the upstream, upstream requests,
+  refused; sortable.
+- **By credential** (users only): **Browser session** and each personal token by its description and hint, with requests, from the
+  cache and from the upstream.
+- The period control of R-UI-183 stands in the head and changes **By repository** and **By credential**; the limits and the 24 hours
+  stay "now".
+
+Acceptance criteria:
+
+- For a user who downloaded through a session and two tokens, **By credential** lists three rows whose sum equals the totals.
+- **Explain for a repository** for Alice at `web/npm-remote` lists the steps of R-LIM-013's first worked example.
+
+### R-UI-185 · A user's own usage on the profile
+Priority: **MVP** · Covers: BEYOND-030
+
+The profile's tab strip (R-UI-029) gains **Usage** (`/profile/usage`, [Q-UI-735](#q-ui-735--a-users-own-usage-is-a-tab-of-the-profile))
+for every signed-in user (`GET /api/v1/users/me/usage`):
+
+- the caller's own limits per budget key, as R-UI-184's **Limits**, with the sentence "Your limits come from <rule>." instead of the
+  administrator's wording;
+- **Which limit applies** as R-UI-184, over `GET /api/v1/users/me/limits` and the repositories the user can read;
+- **Last 24 hours**, **By repository** and **By credential** as R-UI-184;
+- a blocked user sees the block's notice without an action;
+- in Audit mode the line "Limits are counted, not applied yet." and every state as "Would have been limited".
+- Empty: "You have not downloaded anything in the last 24 hours."
+
+Acceptance criteria:
+
+- A user whose personal token was refused with `download_limit_reached` opens the link of the refusal's `detail` and sees
+  **From the cache per hour** at 100 % with "Limit reached".
+
+### R-UI-186 · What a limited caller sees in the UI
+Priority: **MVP** · Covers: BEYOND-030
+
+- The UI's own calls go to the management API, which the figures do not limit (R-API-016); its downloads (a file's **Download**, a
+  package version's download) go to `/files/` or a protocol path and can be refused.
+- A download refused with one of the codes of [usage-and-limits.md](usage-and-limits.md) R-LIM-020 shows a notice, not an error
+  page: "Your download limit of 300 GB per hour is used up. Try again in 14 minutes." (the problem's `detail`), with the link **See
+  your usage** to `/profile/usage`; a `caller_blocked` says "Downloads are paused for you until 10:55 after too many refused
+  requests." A caller without a session (a visitor) gets the same text without the link.
+- A slowed download is not announced: the browser's download shows its rate.
+
+Acceptance criteria:
+
+- A file download refused with `too_many_parallel_downloads` shows the notice with the problem's text and the link, and the page
+  stays as it was.
 
 ## Deferred
 
@@ -15315,6 +15697,38 @@ owner's two (2026-11-19): only what was fetched is listed, and every cell is tru
 **Choice:** (a). **Applied in the spec:** R-API-081, [formats/oci.md](formats/oci.md) Q-OCI-222,
 [repositories-and-proxy.md](repositories-and-proxy.md) Q-REPO-330.
 
+### Q-API-344 · The management API keeps its classes; the package classes become the safety net of Audit mode
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The model
+is the owner's (W-26, 2026-11-19); the border is the development agent's.
+
+Context: the owner's figures count every request to a repository. R-API-016 had classes for `/api/v1/`, `/files/` and
+`/api/<format>/` and none for `/v2/` (finding F-155), keyed by the token ID first, so every personal token had a budget of its own,
+against the owner's rule that a PAT counts against its user.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `/api/v1/` keeps `read`, `write`, `anonymous`; the package classes cover every protocol path, keyed by the subject, `package_read` and `package_anonymous` only in mode `audit`, `package_write` always (chosen) | The figures of [usage-and-limits.md](usage-and-limits.md) take over the protocol paths in `enforce` | No installation loses its request limit by updating; F-155 closed in both modes; the key follows the owner's rule | Two mechanisms on the protocol paths while in `audit` |
+| (b) Remove the three package classes | The figures alone | One mechanism | In `audit`, the default, nothing bounds protocol requests |
+| (c) Keep the package classes in both modes beside the figures | — | — | Two limits on every request in `enforce`, with different keys and numbers |
+
+**Choice:** (a). **Rationale:** [usage-and-limits.md](usage-and-limits.md) Q-LIM-3 and Q-LIM-4. The development agent would revisit
+this with Q-LIM-4.
+
+**Applied in the spec:** R-API-016 (the border, the class table, the configuration comments, the acceptance criteria), R-API-082.
+
+### Q-API-345 · The usage list is one operation per scope, with the period, the kind, the state and the sort as parameters
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET /api/v1/usage` and `GET /api/v1/projects/{projectKey}/usage` with parameters; the views "close to the limit" and "limit reached" are values of `state` (chosen) | — | The declaration of a project's operation admits the Owner the usual way (R-API-008); one statement shape for every view | Two paths for one list |
+| (b) One path with a `project` parameter | — | One path | The Owner's admission would be decided in the handler, not by the declaration |
+| (c) A path per view | — | — | Five operations for one table |
+
+**Choice:** (a). **Applied in the spec:** R-API-082; [usage-and-limits.md](usage-and-limits.md) R-LIM-034.
+
 ### Q-API-270 · One operation answers the suggestions, and the results page reads the three lists
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -17788,6 +18202,91 @@ what differs for a visitor (no session, the public remote's header). The develop
 local and a remote repository.
 
 **Applied in the spec:** R-UI-176. Code: [screens.ts](../../web/e2e/renders/screens.ts).
+
+### Q-UI-730 · The admin area has two entries, Usage and Download limits
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Usage** (the overview) and **Download limits** (mode, rules, profiles, project maxima, blocks) (chosen) | Two jobs, two entries | The owner's two needs (see quickly who downloads what; set limits) each a click away; the auditor sees Usage without settings he cannot change | Two entries more in a long side bar |
+| (b) One entry **Download limits** with Usage as a tab | — | One entry | The overview, the daily look, behind a settings page |
+| (c) Under **Settings** | — | Fits "settings" | The overview is no setting; Settings holds installation-wide toggles (R-UI-031, R-UI-033) |
+
+**Choice:** (a). **Applied in the spec:** R-UI-177, R-UI-183.
+
+### Q-UI-731 · At a project and a repository, the limits are a closed section of the settings
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A closed section **Download limits** in the project's and the repository's settings, whose title line names the rules when there are some (chosen) | Details on demand | The plain path shows nothing (the owner's rule of 2026-11-12); an Owner who set a rule sees it from the title | One more section on a long page |
+| (b) A side-bar entry per project | — | Visible | Every Owner meets limits whether it needs them or not |
+| (c) A step of the repository's creation | — | — | Against "only what that repository needs to work" |
+
+**Choice:** (a). The project's **Usage** is a side-bar entry for an Owner, because looking at usage is a job of its own.
+**Applied in the spec:** R-UI-180.
+
+### Q-UI-732 · The meter shows the tightest hour or day figure now, not the period's
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's sketch has the period (hour, day, 30 days) and "the utilisation of its tightest limit as a meter".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The meter is now: the last 60 minutes against the hour figures and the last 24 hours against the day figure, whatever the period (chosen) | — | The question "who is about to be limited" has one answer; the period changes the sums only | A 30-day view shows a current meter beside 30-day sums |
+| (b) The meter over the period | — | Consistent with the columns | A 30-day sum against an hourly limit means nothing |
+| (c) No meter in 30 days | — | — | The view loses its sort by utilisation |
+
+**Choice:** (a), with the column titled **Now**. **Applied in the spec:** R-UI-183; [usage-and-limits.md](usage-and-limits.md) R-LIM-034.
+
+### Q-UI-733 · The mode switch shows what the last 24 hours would have been before it is flipped
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A dialog with the preview of the last 24 hours, then the switch with recent authentication (chosen) | — | The administrator sees who would be hit before anyone is | One read more |
+| (b) A plain confirmation | — | Simple | The owner's estimates would bite unseen |
+| (c) A switch per figure | — | Finer | The owner decided one switch (decision 17) |
+
+**Choice:** (a). **Applied in the spec:** R-UI-182; [usage-and-limits.md](usage-and-limits.md) R-LIM-033.
+
+### Q-UI-734 · A technical token is a named row of its service account's page, with its limit and its usage
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The account's section **Technical tokens**: one row per named token with its limit and its last 24 hours; **Set limit** writes the rule at the account's place (chosen) | — | The owner's "one token per system, its budget set per system" in one place; the account keeps the rights | The rule is also visible in the place's rule table, two ways to one rule |
+| (b) A page of technical tokens apart from the accounts | — | A list of every system | Rights and budget are separated in the UI as they are in the model, but the owner sees the token below its account |
+| (c) Limits only in the rule tables | — | One way | The token's page does not say what it may download |
+
+**Choice:** (a). **Applied in the spec:** R-UI-181.
+
+### Q-UI-735 · A user's own usage is a tab of the profile
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Usage**, a fourth tab of the profile (chosen) | — | The owner's "every user their own consumption and limits (profile page)" | A fourth tab |
+| (b) A section of the profile's first page | — | No tab | The profile page grows with a chart and two tables |
+
+**Choice:** (a). **Applied in the spec:** R-UI-185.
+
+### Q-UI-736 · The UI shows decimal MB and GB, the API bytes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Decimal units (1 MB = 10^6 bytes) in the profile editor and the overview, bytes in the API (chosen) | — | The owner's table reads MB/s and GB/h; network rates are decimal | The project's logical size is shown in binary units (R-UI-041) |
+| (b) Binary units (MiB, GiB) | — | Like storage sizes | The owner's numbers would not reappear as he wrote them |
+
+**Choice:** (a). **Applied in the spec:** R-UI-178, R-UI-183.
 
 ## What this does not cover
 

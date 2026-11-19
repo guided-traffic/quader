@@ -857,7 +857,9 @@ Middleware, outermost first:
    ([identity-and-authentication.md](identity-and-authentication.md) Q-AUTH-186, Q-ANS-4).
 7. The endpoint's rate-limit class, on every route of a further endpoint
    ([endpoints.md](endpoints.md) R-EP-015), then the rate limits on `/api/v1/`, `/files/`, the
-   package protocols under `/api/<format>/` and `/auth/` ([api-and-ui.md](api-and-ui.md)). Their
+   package protocols under `/api/<format>/`, `/v2/` and `/auth/` ([api-and-ui.md](api-and-ui.md) R-API-016), and on the protocol
+   paths the subject, the place, the request figures and the block of [usage-and-limits.md](usage-and-limits.md) (R-LIM-001,
+   R-LIM-013, R-LIM-025), in the same round trip. Their
    counters are cluster-wide in Valkey wherever the owning page gives a class cluster scope, and
    fall back to per-replica buckets while Valkey is unavailable (R-ARCH-034). The check never waits
    longer than `valkey.command_timeout`.
@@ -1245,8 +1247,10 @@ package formats
 // bytes and returns the received count with a refusal of it. Version 4 is the upstream presets' (ADR-198): catalog.Facts.UpstreamPresets
 // replaces DefaultUpstreamURL, DefaultExtraHosts and DefaultCredentialHosts. Version 5 is the fetch of a version's (ADR-205):
 // Descriptor.VersionFetch is required of a format with a package view, ViewSizer reports a ViewSize that may be partial or not known,
-// and ItemStore.RecordDownload counts a document a format answers itself. A format declares the literal it was written against.
-const ContractVersion = 5
+// and ItemStore.RecordDownload counts a document a format answers itself. Version 6 is the download limits' (ADR-206): Host.Serve
+// may refuse a download with 429 before its status line, and a route's Kind decides what the limits count it as. A format declares
+// the literal it was written against.
+const ContractVersion = 6
 
 // The types of other packages under the names a format spells them: one type each, no mirrors
 // (Q-ARCH-188, Q-ARCH-189). A format imports this package and nothing else of the core.
@@ -2278,8 +2282,8 @@ Priority: **MVP** · Covers: FMT-001, FMT-002, FMT-003
   - an external process would add a network hop to every package request.
 - At start-up, `Register` panics, and the process exits, on any of these:
   - a duplicate or reserved ID;
-  - a `ContractVersion` mismatch (the contract is frozen since the end of M3, E3.3 and ADR-141, at 4 since the upstream presets,
-    ADR-198, after 3 of the upload sessions, ADR-178, and 2 of the project model, ADR-156; a change that raises it moves every
+  - a `ContractVersion` mismatch (the contract is frozen since the end of M3, E3.3 and ADR-141, at 6 since the download limits,
+    ADR-206, after 5 of the fetch of a version, ADR-205, 4 of the upstream presets, ADR-198, 3 of the upload sessions, ADR-178, and 2 of the project model, ADR-156; a change that raises it moves every
     format in the same change, R-ARCH-025);
   - a route set that fails the kit's ambiguity check, which `Register` runs itself: every route has
     a name, a method, a template, a handler, a kind, an action and at least one example, and every
@@ -3803,15 +3807,16 @@ inside the process.
   recycled after `valkey.max_conn_lifetime`. A rotated Secret therefore takes effect without a
   restart. Passwords never appear in the configuration file, in logs or in metrics.
 - **Least privilege.** Quader needs only these commands, on keys and channels under its prefix:
-  `GET`, `SET`, `DELIFEQ`, `INCR`, `EXPIRE`, `MULTI`, `EXEC`, `DISCARD`, `PUBLISH`,
+  `GET`, `SET`, `DELIFEQ`, `INCR`, `INCRBY`, `EXPIRE`, `ZADD`, `ZREM`, `ZREMRANGEBYSCORE`, `ZCARD`, `MULTI`, `EXEC`, `DISCARD`, `PUBLISH`,
   `SUBSCRIBE`, `UNSUBSCRIBE`, `SUNSUBSCRIBE`, `PUNSUBSCRIBE`, `PING`, `HELLO`, `ROLE`,
   `CLIENT SETNAME` and `CLIENT SETINFO`. `DISCARD`, `SUNSUBSCRIBE` and `PUNSUBSCRIBE` are sent by
   the client library when it resets a Pub/Sub connection; Quader issues no sharded or pattern
-  subscription. It runs no scripts. An example ACL rule, which the integration tier and the dev
-  profile use:
+  subscription. It runs no scripts. `INCRBY` and the four sorted-set commands are the download limits' (byte charges and the
+  leases of parallel downloads, [usage-and-limits.md](usage-and-limits.md) R-LIM-017, Q-LIM-10). An example ACL rule, which the
+  integration tier and the dev profile use:
 
   ```text
-  user quader on >… resetkeys ~quader:* resetchannels &quader:* -@all +get +set +delifeq +incr +expire +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo
+  user quader on >… resetkeys ~quader:* resetchannels &quader:* -@all +get +set +delifeq +incr +incrby +expire +zadd +zrem +zremrangebyscore +zcard +multi +exec +publish +subscribe +unsubscribe +sunsubscribe +punsubscribe +discard +ping +hello +role +client|setname +client|setinfo
   ```
 
 - **Metrics.** Those of R-HA-057 (`quader_valkey_available`, `quader_valkey_circuit_open`,
@@ -3964,6 +3969,11 @@ The owning pages define the limit classes, their bucket keys and their values
 [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-021). This requirement provides the limiter they use
 (Q-ARCH-17).
 
+- **The download limits' counters** ([usage-and-limits.md](usage-and-limits.md) R-LIM-017, R-LIM-018) use the same arithmetic with
+  three additions: the rate and the burst (or the limit of an hour or a day) are given per call, since each budget key has figures
+  of its own; windows reach 24 hours, in the key family `lim` whose keys live at most 48 hours (`maxLimiterWindow` is 12 hours for the
+  other limiters); bytes are charged with `INCRBY`, and parallel downloads are leases in a sorted set. They fall back as every
+  cluster limiter does, under the limiter name `limits`.
 - A limiter is registered with `LimiterSet.NewLimiter(name, scope, rate, burst)` (Q-ARCH-38). Scope `cluster`
   counts across all replicas. Scope `replica` counts in the replica's memory and is meant for limits
   that protect the replica itself.
@@ -4606,7 +4616,7 @@ describe the policy from the first stable release on.
 | Token formats | `qdr_*_` prefixes (INV-8) | A prefix never changes meaning. New token types get new prefixes. |
 | Metrics, log and audit fields | Names and labels | Stable within a major. A renamed metric is emitted under both names for at least 2 minors ([operations-and-observability.md](operations-and-observability.md)). |
 | Bastion interface | `bastion.InterfaceVersion`, an integer of its own, carried in `Quader-Bastion-Interface` ([bastion.md](bastion.md) R-BAS-009) | Main installation and Bastion talk only at the same version; every change of the interface raises it, guarded by its surface file; a release that raises it says so in its notes |
-| Format contract | `formats.ContractVersion`, frozen since the end of M3 ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)), at 4 since the upstream presets ([ADR-198](../decisions.md#adr-198--the-format-catalog-names-a-formats-upstream-presets-and-the-contract-is-at-version-4)), at 3 since the upload sessions ([ADR-178](../decisions.md#adr-178--the-upload-sessions-finalize-takes-an-offset-and-reports-the-received-count-and-the-contract-is-at-version-3)), after 2 of the project model ([ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project)) | Internal and compile-time checked; no external promise. Every change is an ADR; the rule for changing it is below |
+| Format contract | `formats.ContractVersion`, frozen since the end of M3 ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)), at 6 since the download limits ([ADR-206](../decisions.md#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce), [usage-and-limits.md](usage-and-limits.md) R-LIM-036), at 5 since the fetch of a version ([ADR-205](../decisions.md#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5)), at 4 since the upstream presets ([ADR-198](../decisions.md#adr-198--the-format-catalog-names-a-formats-upstream-presets-and-the-contract-is-at-version-4)), at 3 since the upload sessions ([ADR-178](../decisions.md#adr-178--the-upload-sessions-finalize-takes-an-offset-and-reports-the-received-count-and-the-contract-is-at-version-3)), after 2 of the project model ([ADR-156](../decisions.md#adr-156--projects-own-their-repositories-members-hold-roles-names-are-scoped-to-the-project)) | Internal and compile-time checked; no external promise. Every change is an ADR; the rule for changing it is below |
 
 **Major version 0.** Quader releases stay on major version 0 until the owner decides otherwise
 ([ADR-124](../decisions.md#adr-124--releases-stay-on-major-version-0)); Semantic Release sets each version from the

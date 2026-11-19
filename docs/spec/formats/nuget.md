@@ -212,7 +212,10 @@ HTTP conventions for every NuGet endpoint:
   page computes. The NuGet clients wait for the `Retry-After` of any
   answer before their next attempt, and that wait counts against the one `--timeout` budget of the
   whole command (R-NUGET-032). A longer value would spend a push's budget on waiting, or stall a
-  restore for minutes, before the client's last attempt.
+  restore for minutes, before the client's last attempt. The cap holds for the refusals of the download limits too
+  ([usage-and-limits.md](../usage-and-limits.md) R-LIM-020): a restore whose hourly budget is used up retries within the cap and
+  fails with the 429; its reason (`download_limit_reached: The download limit of …`) is in the body, which the clients do not print
+  (Gap 1 of that page).
 - Error bodies on NuGet protocol endpoints are one line of `text/plain; charset=utf-8` in the form
   `<code>: <message>`, using the codes of the owning pages (for example `credentials_required`,
   `invalid_token`, `deny.ownership`, `no_deploy_target`). NuGet clients print status and reason

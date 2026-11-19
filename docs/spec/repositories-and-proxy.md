@@ -781,6 +781,11 @@ operation of its own ([Q-REPO-217](#q-repo-217--a-repository-moves-to-another-pr
   (a key selector of the source project's policy, by its name within the project), `ci_mapping` (an inline grant of a mapping of
   the source project's tier names its key), and for a virtual repository that moves `member` and `deployment_target` (its own,
   which keep it from moving).
+- **What moves with it.** The repository's service accounts move with it and are renamed `sa:<target>/<repoKey>/<name>` in the
+  move's transaction; their actions, technical tokens, budgets and the rules and ceilings of the repository's place stay with the
+  repository's ID ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-046,
+  [authorization.md](authorization.md) R-AUTHZ-039, [usage-and-limits.md](usage-and-limits.md) R-LIM-016: a capped rule is clamped
+  by the target project's maximum from then on).
 - **A global grant does not ride along with an Owner's move.** A caller without `repositories:write-config`, an Owner of both
   projects, is refused with 409 `repository_in_use` as well while a key selector of a global policy names the repository: the
   reference has the kind `global_policy` and the name of the global policy. That grant is held by the repository's ID and would
@@ -1725,7 +1730,7 @@ within the remote's patterns and bounds, before a client asks (R-REPO-050 to R-R
 | `connectTimeoutMs` | TCP and TLS connection establishment | `10000` | 1000–120000 | RMT-015 | here |
 | `readTimeoutMs` | Longest time without receiving a byte | `15000` | 1000–600000 | RMT-015 | here |
 | `sourceNetwork` | Network prefix from which each replica takes its own local address for upstream connections (Q-REPO-9) | `null` (kernel choice) | an IPv4 or IPv6 CIDR prefix | RMT-015 | here |
-| `cacheFillAction` | `read` or `deploy` | `read` | | IAM-023 | [R-AUTHZ-008](authorization.md) |
+| `cacheFillAction` | `read` or `deploy` | `read` | | IAM-023 | [R-AUTHZ-008](authorization.md); who may fill says nothing of how much: the upstream figures and the ceilings of [usage-and-limits.md](usage-and-limits.md) R-LIM-015, R-LIM-022 bound that |
 | `cache.storeArtifacts` | `false` = pass-through | `true` | | RMT-017 | R-REPO-044 |
 | `cache.metadataTtlSeconds` | Metadata period | format default (npm: `7200`, NuGet: `300`) | 0–2592000 | RMT-018 | R-REPO-027 |
 | `cache.metadataRefreshTimeoutSeconds` | Wait for a refresh before serving stale | `60` | 1–600 | RMT-019 | R-REPO-027 |
@@ -1753,6 +1758,9 @@ within the remote's patterns and bounds, before a client asks (R-REPO-050 to R-R
 
 </details>
 
+- The download limits of a remote (its rules and its ceilings for all anonymous and all signed-in callers) are not members of this
+  section: they live in the limits of its place ([usage-and-limits.md](usage-and-limits.md) R-LIM-015, R-LIM-032) and in the
+  settings page's closed section **Download limits** ([api-and-ui.md](api-and-ui.md) R-UI-180).
 - `url` is stored normalized (scheme and host lower case, default port removed, an empty path as
   `/`). An omitted `url` takes the format's default preset (R-REPO-062); a format without presets makes it required
   (422 `invalid_upstream_url`). The upstream request for a canonical path is derived from it by the
@@ -1992,6 +2000,12 @@ execute these steps in order:
    expired entry as stale without contacting the upstream, otherwise 403 `populate_not_permitted`
    (R-AUTHZ-008; through a virtual repository the member counts as a miss). No negative entry is
    written.
+9a. The upstream budget ([usage-and-limits.md](usage-and-limits.md) R-LIM-022, owner's decision of 2026-11-19): c's budget key must
+   have room in its upstream requests and uncached bytes per hour, and R's ceiling for c's class (all anonymous or all signed-in
+   callers, R-LIM-015) room in both; the upstream request is counted here before the decision. Without room → serve an existing
+   expired entry as stale within `cache.maxStaleSeconds` (R-REPO-029) without contacting the upstream, otherwise 429
+   `upstream_limit_reached`. No negative entry is written and the circuit is not touched. Background requests skip this step; in
+   mode `audit` it records and admits (R-LIM-026).
 10. The collapsing protocol (R-REPO-026). Only the request that fetches, once it holds the flight
     or goes on without the cross-replica lock, takes the fetch slots of R-REPO-040; then the fetch,
     classification of the outcome (R-REPO-029), verification (R-REPO-041, R-REPO-042), storage and

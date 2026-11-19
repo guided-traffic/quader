@@ -8,6 +8,10 @@ headers of R-API-017 and the idempotency keys of R-API-014. How to use them is i
 
 ## Rate limits
 
+The download limits of [usage-and-limits.md](usage-and-limits.md) (specified, not built) change the package classes below: they cover
+`/v2/` as well, are keyed by the caller's subject instead of the token ID, and apply only while the mode is `audit`; in `enforce`
+the profiles take their place. Until that is built, the table describes the code.
+
 | Aspect | What the code does |
 |---|---|
 | Where it runs | The chain's stage 7, after authentication ([ratelimit.go](../../internal/api/v1/ratelimit.go), [wire_api.go](../../internal/app/wire_api.go)); it covers `/api/v1/`, `/files/` and the package protocols under `/api/<format>/` (Q-API-169). The login, token-validation and CI-exchange limits are the identity area's (R-AUTH-038, R-CI-021) and use the same limiter. |

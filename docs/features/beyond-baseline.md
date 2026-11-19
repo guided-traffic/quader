@@ -1770,7 +1770,11 @@ Interactions: RMT-027 in [remote-repositories.md](remote-repositories.md); BEYON
 ## Tenancy
 
 ### BEYOND-030 · Per-tenant quotas and rate limits
-Priority: **P2**
+Priority: **MVP**
+
+Taken up by the owner on 2026-11-19 (walk item W-26) for downloads: budgets per caller and repository, profiles, the usage overview
+and technical tokens on three levels, specified on [spec/usage-and-limits.md](../spec/usage-and-limits.md). The storage quota part
+stays with STOR-040 and [spec/storage.md](../spec/storage.md) R-STOR-029.
 
 **What it is.** Limits per tenant (a repository, a group of repositories, or a principal) on stored
 bytes, artifact count, request rate, download volume and upstream fetch rate, with standard HTTP

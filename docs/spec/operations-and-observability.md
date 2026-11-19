@@ -891,7 +891,8 @@ Rules for every metric family, including families that format pages and other sp
   | `db_pool` | `request`, `control`, `lease`; `backup` on backup pods ([architecture.md](architecture.md) R-ARCH-019) |
   | `command` | Valkey commands of the allowed command list ([architecture.md](architecture.md) R-ARCH-031) |
   | `mechanism` | Valkey uses of [architecture.md](architecture.md) R-ARCH-030 (`flight_lock`, `negative_cache`, `rate_limit`, `change_message`, `signal`, `probe`, and `bastion_state` for the Bastion's block list, timeouts, answers and sweep lease, R-BAS-034) |
-  | `limiter` | Registered rate limiters ([architecture.md](architecture.md) R-ARCH-034) |
+  | `limiter` | Registered rate limiters ([architecture.md](architecture.md) R-ARCH-034); `limits` for the counters of [usage-and-limits.md](usage-and-limits.md) |
+| `figure` | The figures of [usage-and-limits.md](usage-and-limits.md) R-LIM-004 by their API names, and `ceiling`; fixed in code |
   | `key_id` | Key IDs of the stored-secret key ring and key IDs that sealed values still reference ([architecture.md](architecture.md) R-ARCH-021); bounded by configuration |
   | `ecosystem`, `severity` | From M4b ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-024): the OSV ecosystem names of the formats with the vulnerability adapter (`npm`, `NuGet`), `""` for a source without ecosystems; the severity levels `critical`, `high`, `medium`, `low`, `none`, `unknown` |
   | `version`, `revision`, `goversion`, `role` | Only on `quader_build_info` |
@@ -1352,7 +1353,7 @@ The field set is fixed. A field that does not apply is `null`, and an unknown le
 consumers can rely on every key being present.
 
 <details>
-<summary>Fields of the request log record (25)</summary>
+<summary>Fields of the request log record (31)</summary>
 
 | Field | Content |
 |---|---|
@@ -1376,11 +1377,17 @@ consumers can rely on every key being present.
 | `principal_id` | Opaque principal ID, `null` for anonymous callers |
 | `token_id` | ID of the token used (never the token), `null` if none |
 | `auth_method` | `bearer`, `basic`, `nuget_apikey`, `session`, `none` |
-| `project`, `repo`, `format` | Project key, repository as its qualified name `<projectKey>/<repoKey>`, and format, if the request addressed one |
+| `project`, `repo`, `format` | Project key, repository as its qualified name `<projectKey>/<repoKey>`, and format, if the request addressed one; filled for every request on a protocol path ([usage-and-limits.md](usage-and-limits.md) R-LIM-030) |
 | `cache` | `hit`, `miss`, `stale`, `negative_hit` or `null` (remote and virtual reads) |
 | `deny_reason` | Short code for `401`/`403` responses (`no_credentials`, `invalid_token`, `not_permitted`, …), else `null` |
 | `limiter` | For a `429`: the name of the rate limiter that refused the request ([architecture.md](architecture.md) R-ARCH-034); else `null` |
 | `limit_mode` | For a `429`: `cluster` (the cluster-wide counter in Valkey), `fallback` (the per-replica share while Valkey is unavailable) or `replica` (a limit that protects this replica); else `null` |
+| `limits_subject` | The subject a request on a protocol path is charged to ([usage-and-limits.md](usage-and-limits.md) R-LIM-001): `user:<id>`, `technical_token:<id>`, `ci:<issuer>:<project ID>`, `anonymous:<prefix>`, `system`; else `null` |
+| `limits_place` | The place whose rule applied: `instance`, `project:<key>`, `repository:<projectKey>/<repoKey>`; else `null` |
+| `limits_rule` | The ID of the rule that applied, or `builtin:<kind>`; else `null` |
+| `limits_outcome` | `admitted`, `limited:<figure>`, `would_limit:<figure>` (mode `audit`), `paced`, `blocked`; else `null` |
+| `bytes_cached` | Cached bytes of the request (R-LIM-006), `0` when none; `null` off the protocol paths |
+| `bytes_uncached` | Uncached bytes charged to the request as a leader (R-LIM-006), `0` when none; `null` off the protocol paths |
 
 </details>
 
@@ -1942,6 +1949,15 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `vulnerability.claimed_name_match` | A | — | From M4b, security event: a public advisory names a claimed internal name, once per advisory and name (R-VULN-010) | `package`, `advisory`, `kind`, `claimRepository` |
 | `vulnerability.source.failed` | A | — | From M4b: an advisory sync run failed; at most once an hour per source and ecosystem (R-VULN-004) | `source`, `ecosystem`, `code` |
 | `vulnerability.source.imported` | T | — | From M4b: a sync run in mode `repository` imported an item (R-VULN-005) | `source`, `ecosystem`, `sha256`, `deployedBy`, `acceptShrink` |
+| `limits.profile.created`, `limits.profile.updated`, `limits.profile.deleted` | T | — | A profile of the download limits changed ([usage-and-limits.md](usage-and-limits.md) R-LIM-031) | `key`, `changes` |
+| `limits.assignment.created`, `limits.assignment.updated`, `limits.assignment.deleted` | T | — | A rule at the instance, a project or a repository changed, by the API or by the task `limits-cleanup` (R-LIM-032) | `place`, `who`, `profile`, `overrides`, `capped` |
+| `limits.ceiling.changed` | T | — | A remote repository's ceilings changed (R-LIM-015) | `repository`, `before`, `after` |
+| `limits.project_maximum.changed` | T | — | A project's maximum was set, changed or removed (R-LIM-016) | `project`, `before`, `after` |
+| `limits.mode.changed` | T | — | The mode switched between `audit` and `enforce` (R-LIM-026) | `before`, `after` |
+| `limits.settings.changed` | T | — | The block time changed (R-LIM-025) | `before`, `after` |
+| `limits.block.started` | A | — | A budget key was blocked after too many refused requests (R-LIM-025) | `subject`, `place`, `until`, `refused`, `limit` |
+| `limits.block.lifted` | T | — | A block was lifted (R-LIM-025) | `subject`, `place`, `block` |
+| `technicaltoken.created`, `technicaltoken.updated`, `technicaltoken.deleted` | T | — | A technical token of a service account changed ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-045) | `account`, `name` |
 | `vulnerability.advisory.kind_changed` | T | — | The kind of an advisory alias group changed because its canonical record changed (R-VULN-006, Q-VULN-61) | `ecosystem`, `advisory`, `previous`, `from`, `to`, `members` |
 
 </details>
@@ -2221,6 +2237,7 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 | `vuln-sync-osv` | From M4b, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-004, R-VULN-005: incremental advisory sync per ecosystem, full when the state requires it; dedup key `vuln-sync-osv`; task parameter `{"acceptShrink": true}` for a manual run | `*/15 * * * *` (proposed, vulnerability-scanning.md) |
 | `vuln-sync-osv-full` | From M4b, R-VULN-004: full advisory sync, which also removes records the source no longer has; shares the dedup key `vuln-sync-osv` | `17 3 * * 0` (proposed, vulnerability-scanning.md) |
 | `vuln-sync-kev` | From M4b, R-VULN-008: the known-exploited catalog | `41 */6 * * *` (proposed, vulnerability-scanning.md) |
+| `limits-cleanup` | [usage-and-limits.md](usage-and-limits.md) R-LIM-028: folds hourly usage rows older than 30 days into the daily sums, deletes expired usage rows, sums and blocks, and the rules and usage of deleted users, groups and technical tokens | `25 3 * * *` (proposed, usage-and-limits.md) |
 | `vuln-findings-retention` | From M4b, R-VULN-014: deletes findings resolved longer than `vulnerabilities.findings.resolved_retention` ago | `50 3 * * *` (proposed, vulnerability-scanning.md) |
 
 Retention policies ([storage.md](storage.md)) carry their own schedules and appear in the job list,

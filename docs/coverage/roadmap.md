@@ -1557,7 +1557,7 @@ The page's sizes are small, medium and large.
 | Candidate | Catalog priority, size | Slot | Why |
 |---|---|---|---|
 | BEYOND-028 namespace claims against dependency confusion | P1, small | M2 (already MVP through R-REPO-023) | Protects local package names from the first remote repository on. |
-| BEYOND-030 per-tenant quotas and rate limits | P2, medium | Rate limits in M1 (R-API-016 lists it); quotas after M7 | Rate limits are needed to run the beta. Tenant quotas need M7's storage accounting. |
+| BEYOND-030 per-tenant quotas and rate limits | MVP since 2026-11-19 (owner, W-26), medium | Rate limits in M1 (R-API-016); download budgets per caller and repository, the usage overview and technical tokens on three levels on [usage-and-limits.md](../spec/usage-and-limits.md); storage quotas after M7 | Rate limits are needed to run the beta; the owner took the download budgets up on 2026-11-19. Storage quotas need M7's storage accounting. |
 | BEYOND-027 minimum release age for remote repositories | P1, medium | npm in M2 (R-NPM-012), then with each format from F2 | Holds back fresh upstream releases at little cost. Each format defines publish time differently, so a missing time must lead to an explicit policy decision. |
 | BEYOND-015 referrers through remote and virtual repositories | P1, medium | F4 | Without it, signatures and SBOMs attached to proxied images stay invisible. |
 | BEYOND-031 provider presets for further CI systems | P1, small | M10 | Data and validation on top of R-CI-026's generic issuer. |

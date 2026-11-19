@@ -91,11 +91,13 @@ Decisions this page takes:
 Priority: **MVP** · Covers: IAM-019
 
 Quader MUST refuse every operation that no grant, no system role (R-AUTHZ-010), no project
-role (R-AUTHZ-026) and no visibility level (R-AUTHZ-033) allows. A new installation has no permission policies and the
+role (R-AUTHZ-026), no action of a repository's service account on its repository (R-AUTHZ-039) and no visibility level
+(R-AUTHZ-033) allows. A new installation has no permission policies and the
 default level `private`; only the break-glass administrator (INV-7, R-AUTH-014) can act until an administrator creates
 projects, members or policies.
 
-Grants, project roles and visibility levels MUST only add rights; there are no deny rules. A subject's rights can be
+Grants, project roles, a repository service account's actions and visibility levels MUST only add rights; there are no deny
+rules. A subject's rights can be
 narrowed only by:
 
 1. exclude patterns inside the same resource set (R-AUTHZ-005);
@@ -1197,6 +1199,8 @@ lists as system scope items (R-AUTH-025) use the same names; the others extend t
 | `endpoints:read`, `endpoints:write`: endpoints and their exposure rules ([endpoints.md](endpoints.md) R-EP-016), and Bastion registrations with their tokens ([bastion.md](bastion.md) R-BAS-004) | yes, yes | yes, yes | yes, — | yes, — | — |
 | `vulnerabilities:triage`, from M4b: change the status of vulnerability findings, which sets, lifts or restores download blocks (a block on a confirmed finding, the dismissal of a malicious one); effective only together with `read` on the finding's repository or `content:metadata-read` ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-013, Q-VULN-8, Q-VULN-20) | yes | yes | yes | — | — |
 | `content:metadata-read`: read the metadata of every repository (package lists, versions, documents, search, package pages, vulnerability findings), never an artifact (owner, [Q-AUTHZ-172](#q-authz-172--the-auditor-reads-every-repositorys-metadata-and-triages-but-downloads-nothing)) | yes | — | yes | — | — |
+| `limits:read`, `limits:write`: download limits, their profiles, rules, ceilings, project maxima, the mode and blocks ([usage-and-limits.md](usage-and-limits.md) R-LIM-016, R-AUTHZ-040) | yes, yes | yes, — | yes, — | — | — |
+| `usage:read`: the usage of every caller, with addresses ([usage-and-limits.md](usage-and-limits.md) R-LIM-029, R-AUTHZ-040) | yes | yes | yes | — | — |
 
 - Roles are bound to users, groups and service accounts (R-AUTHZ-022). A role bound to a group
   applies to every member, including members synchronized from the identity provider. This is how
@@ -2446,7 +2450,8 @@ What the Owner may do, within its project and nowhere else:
 | Repositories | Create, change and delete the project's repositories of every class: local, remote and virtual ([Q-AUTHZ-173](#q-authz-173--a-project-administrator-creates-remote-repositories)); read their full configuration (as `repositories:read-config` does, never a secret value); test the saved and the unsaved upstream of a remote; request a pass of a mirror (R-REPO-056); move a repository to another project of which it is Owner too (R-REPO-060). A remote's upstream stays subject to the outbound address rules of the installation ([security/egress.md](../security/egress.md)). An Owner without `repositories:write-config` gives an upstream secret as a value, never as a reference of the installation, and a stored one does not follow a new address ([Q-REPO-127](repositories-and-proxy.md#q-repo-127--a-project-administrator-gives-an-upstream-secret-as-a-value-and-a-stored-one-stays-with-its-hosts), 422 `secret_value_required`); it takes the installation's outbound path ([Q-REPO-128](repositories-and-proxy.md#q-repo-128--a-project-administrators-remote-repository-takes-the-installations-outbound-path), 422 `outbound_path_restricted`); and it keeps `remote.mode`, `remote.mirror`, the include and exclude lists, `remote.url` and `remote.extraHosts` of a mirror as stored (Q-REPO-193), pauses and resumes it, or turns the mode back to `pullThrough` ([Q-REPO-142](repositories-and-proxy.md#q-repo-142--who-may-switch-a-remote-to-mirror), 422 `mirror_restricted`) |
 | Policies | Create, change and delete the project's policies, granting any action (`manage` included, except to CI mappings) to users, groups, the project's service accounts, service accounts of no project and CI mappings, never to an auto-join group; validate a policy of the project |
 | Visibility | Set the levels of the project's repositories, artifacts and wiki, up to the project's level (R-AUTHZ-033); the project's own level is the administrator's |
-| Service accounts | Create, change, disable, enable and delete the project's service accounts; issue and revoke their tokens within the bounds below ([Q-AUTHZ-177](#q-authz-177--what-a-project-administrator-may-do-with-service-accounts-and-their-tokens)) |
+| Service accounts | Create, change, disable, enable and delete the project's service accounts and the service accounts of its repositories with their actions (R-AUTHZ-039); issue, renew and revoke their technical tokens within the bounds below ([Q-AUTHZ-177](#q-authz-177--what-a-project-administrator-may-do-with-service-accounts-and-their-tokens), [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-045, R-AUTH-046) |
+| Download limits | Rules at the project and its repositories, capped by the instance's values and the project's maximum; the ceilings of its remote repositories; lift the blocks of its places; read the usage of its repositories, with the names and addresses of their callers ([usage-and-limits.md](usage-and-limits.md) R-LIM-016, R-LIM-029) |
 | CI mappings | Manage the mappings of the tier `project:<projectKey>`, dry-run them and read the issuances of tokens through them, with the bounds of a project policy: the project's repositories only, its policies only, no groups, never `manage` ([gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-019) |
 | Settings | Change the display name and the description; read the project's level |
 
@@ -2494,6 +2499,8 @@ outside projects stays with R-CI-023 (P1).
 - It can be disabled (all its tokens fail with `principal_disabled`) and deleted (its tokens go) by an Owner of the
   project and by `identities:write`.
 - A project with a service account is not empty and cannot be deleted.
+- A service account of one of the project's repositories is no project service account: it holds actions on its repository at the
+  account, moves with its repository and is deleted with it (R-AUTHZ-039).
 
 **What others see.** `admin`, `security-admin`, `repository-admin` and `auditor` hold `projects:read`: they see every
 project with its members, their roles and counts. The `auditor` sees every project, its policies, service accounts and
@@ -3284,6 +3291,64 @@ everything, write the own scope"; `team-web-publish` gives `group:team-web` `["a
   `web-devs` whom no policy grants gets `E404` through `https://quader.example.com/api/npm/web/npm-all/` afterwards. A
   journaled `authz.project.member_changed` whose after-state raises `user:dave` from `reader` to `developer` is
   reported `skipped`.
+
+### R-AUTHZ-039 · The actions of a repository's service account
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's decision 13 of 2026-11-19 (W-26): an account for the rights, a token for the budget, and rights are given once, at the
+account. A repository's service account ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-046) holds its
+rights as a set of actions on its own repository, stored at the account
+([Q-AUTHZ-296](#q-authz-296--a-repositorys-service-account-holds-its-actions-at-the-account-not-through-policies)).
+
+- **What it grants**: each action of the set (R-AUTHZ-006) on every coordinate of its repository, no include or exclude pattern.
+  Nothing on any other repository; no system capability; no project role.
+- **In the decision** (R-AUTHZ-015): the compiled grant index holds, per repository, the actions of its accounts; `granted` admits
+  an action when the subject's service account is an account of the coordinate's repository and its set holds the action, after the
+  token's scope and before the policies. The explanation (R-AUTHZ-024) names the source `account:<reference>`
+  (`account:sa:web/npm-local/ci`).
+- **Where it cannot be named** (422): as an entry of any policy, global or of a project (`principal_outside_repository`), as a group
+  member (`project_account_not_groupable`), as a project member (`principal_not_allowed`), as a role binding (`role_not_allowed`), as a
+  package owner outside its repository (`principal_outside_repository`).
+- **Who changes the set**: an Owner of the repository's project and `identities:write` (R-AUTH-046); every change is
+  `serviceaccount.updated` with `actions`, and a narrowing is journaled as a narrowing (R-AUTHZ-031).
+- **The repository's lifecycle**: the set reads the repository by its ID; a move keeps it (the account moves with the repository,
+  [Q-AUTHZ-297](#q-authz-297--a-repositorys-service-account-moves-with-its-repository-and-is-deleted-with-it)); a deletion deletes the
+  account.
+- **The token scope** narrows it as every grant (R-AUTHZ-013). The endpoint's exposure binds it (R-EP-013).
+- Changing a set notifies the change area `authz` in the transaction of the write, as a policy write does (R-AUTHZ-028).
+
+This changes INV-9 of [README.md](README.md): a request's rights are the union of its policies' grants, its project role, and the
+actions of a repository's service account.
+
+Acceptance criteria:
+
+- `sa:web/npm-local/ci` with `{read, deploy}`: its token reads and publishes on `web/npm-local`, `npm unpublish` answers 403, any other
+  repository 404; `POST /api/v1/authz/explain` for a publish names `account:sa:web/npm-local/ci`.
+- An Owner removes `deploy` from the set; the next publish with the token is refused on every replica within the bound of R-AUTHZ-028.
+
+### R-AUTHZ-040 · Capabilities for download limits and usage
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's decisions 8 and 14 of 2026-11-19 (W-26) name the instance administrator, the auditor and a project Owner
+([Q-AUTHZ-298](#q-authz-298--download-limits-and-usage-are-three-capabilities-the-owner-of-a-project-holds-none-of-them)):
+
+| Capability | What it admits | Held by |
+|---|---|---|
+| `limits:read` | Read profiles, every rule, ceilings, the mode, the mode preview, project maxima, blocks, the explanation of any subject | `admin`, `security-admin`, `auditor` |
+| `limits:write` | Write profiles, the instance's rules, uncapped rules anywhere, every ceiling, the mode, the block time, project maxima; lift any block | `admin` |
+| `usage:read` | The usage of every subject in every scope, the detail, the export | `admin`, `security-admin`, `auditor` |
+
+- An Owner of a project holds none of them; its rights over its project's limits and usage come from its role through the
+  declarations of [api-and-ui.md](api-and-ui.md) R-API-082 (`projectRole: owner`), as for its policies and service accounts.
+- Every signed-in user reads its own usage and limits without a capability.
+- They are system scope items ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-025).
+- `limits:write` is the instance administrator's of the owner's decision 14 ("only the instance administrator raises above the
+  instance").
+
+Acceptance criteria:
+
+- The `auditor` reads `GET /api/v1/usage` (200) and gets 403 on `PATCH /api/v1/limits/settings`; a `security-admin` gets 403 on
+  `POST /api/v1/limits/profiles`.
 
 ## Worked examples
 
@@ -6965,6 +7030,57 @@ what the capability says. The development agent revisits it when the owner decid
 **Applied in the spec:** [api-and-ui.md](api-and-ui.md) R-UI-158, Q-UI-622. Code:
 [navigation.ts](../../web/src/app/core/navigation.ts) (`SECURITY_DASHBOARD_CAPABILITY`),
 [auth-guard.ts](../../web/src/app/core/auth-guard.ts) (`capabilityGuard`).
+
+### Q-AUTHZ-296 · A repository's service account holds its actions at the account, not through policies
+
+Status: **Decided by the development agent** — selected from the options below; **the owner reviews it first** at the walkthrough.
+The rule "rights are given once, at the account" is the owner's (W-26 decision 13, 2026-11-19).
+
+Context: a project's service account is granted through its project's policies (Q-AUTHZ-175). A repository has no policies of its
+own, and the owner proposed nothing for the rights of a repository's account beyond "at the account".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A set of actions on its repository stored at the account (chosen) | A new grant source | The owner's words; one screen for the account and its rights; a move of the repository carries the rights; nothing to check on every policy write | A grant source beside policies and roles: INV-9 and R-AUTHZ-001 change, the evaluation and the explanation learn it |
+| (b) The project's policies, restricted to its repository | A policy entry naming the account must select exactly its repository | No new grant source | Every policy write must check its selectors against the accounts it names; a move drops the grants with the old project's policies |
+| (c) A project service account with a token narrowed to the repository | — | Nothing new | The owner chose a kind of its own on three levels (decision 12) over this, which was the development agent's proposal |
+
+**Choice:** (a).
+
+**Rationale:** the account of a repository exists for that repository only, so its rights are a property of it; the evaluation adds
+one map lookup. The development agent would revisit this if include and exclude patterns are needed for such accounts, which would
+make them policies.
+
+**Applied in the spec:** R-AUTHZ-039, R-AUTHZ-001; INV-9 in [README.md](README.md);
+[identity-and-authentication.md](identity-and-authentication.md) R-AUTH-046.
+
+### Q-AUTHZ-297 · A repository's service account moves with its repository and is deleted with it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Moves with it, renamed `sa:<new project>/<repo>/<name>`; deleted with it (chosen) | The account belongs to the repository | Systems that use the token keep working after a move; no orphan | The principal's stored name changes, which audit events of before name differently (`moved` records both) |
+| (b) A move is refused while the repository has accounts | — | Names never change | Moves need the accounts deleted and recreated first, with new secrets for every system |
+| (c) The accounts are deleted by a move | — | Simple | A move breaks every system silently |
+
+**Choice:** (a). **Rationale:** the rights are on the repository, which keeps its ID. The development agent would revisit this if a
+stored principal name must be immutable for a consumer of the audit trail. **Applied in the spec:** R-AUTHZ-039;
+[identity-and-authentication.md](identity-and-authentication.md) R-AUTH-046; [repositories-and-proxy.md](repositories-and-proxy.md)
+R-REPO-060.
+
+### Q-AUTHZ-298 · Download limits and usage are three capabilities; the Owner of a project holds none of them
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `limits:read`, `limits:write`, `usage:read`; the Owner by role declaration (chosen) | — | The auditor reads usage without changing limits; a monitoring token can be scoped to `usage:read`; the Owner's reach stays inside its project | Three capabilities more |
+| (b) `settings:read`, `settings:write` | Reuse | No new names | The auditor holds `settings:read` but a token for monitoring would read every setting; usage with addresses is not a setting |
+| (c) One capability `limits` | — | Fewer | The auditor could not read without writing |
+
+**Choice:** (a). `security-admin` reads both and writes none: raising a limit is the instance administrator's (owner, decision 14).
+**Applied in the spec:** R-AUTHZ-040, R-AUTHZ-010.
 
 ## What this does not cover
 

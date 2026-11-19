@@ -203,6 +203,7 @@ checked every earlier decision against them:
 | [ADR-203](#adr-203--browse-goes-a-repositorys-files-live-on-its-page) | Browse goes; a repository's files live on its page | Accepted (owner decision of 2026-11-18); the details decided by the development agent — owner review at the walkthrough |
 | [ADR-204](#adr-204--an-administrator-restricts-visibility-levels-to-administrators) | An administrator restricts visibility levels to administrators | Accepted (owner requirement of 2026-11-18); the rules decided by the development agent — owner review at the walkthrough |
 | [ADR-205](#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5) | The format contract declares what a fetch of a version is, and a size may be partial or not known; the contract is at version 5 | Accepted (owner decision of 2026-11-19); the contract change decided by the development agent — owner review at the walkthrough |
+| [ADR-206](#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce) | Download limits: budgets per caller and repository, technical tokens on three levels, Audit and Enforce | Accepted (owner decisions of 2026-11-19); the mechanisms decided by the development agent — owner review at the walkthrough |
 | [ADR-157](#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own) | The backup lane is cut into ports, formats and registries that its work packages fill in files of their own | Decided by the development agent — owner review at the walkthrough |
 | [ADR-158](#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers) | A journal object is an envelope around the producer's entry, and replay is a registry of handlers | Decided by the development agent — owner review at the walkthrough |
 | [ADR-159](#adr-159--the-data-state-the-format-contract-carries-says-whether-the-ecosystem-has-synced-since-the-last-restore) | The data state the format contract carries says whether the ecosystem has synced since the last restore | Decided by the development agent — owner review at the walkthrough |
@@ -1093,6 +1094,57 @@ row per version written on the serve path (Q-API-295, Q-API-340).
 **Spec:** [architecture.md](spec/architecture.md) R-ARCH-008, R-ARCH-025; [api-and-ui.md](spec/api-and-ui.md) R-API-065, R-API-079 to R-API-081,
 Q-API-295, Q-API-340 to Q-API-343; [formats/oci.md](spec/formats/oci.md) Q-OCI-221, Q-OCI-222; [repositories-and-proxy.md](spec/repositories-and-proxy.md)
 Q-REPO-330, Q-REPO-331.
+
+### ADR-206 · Download limits: budgets per caller and repository, technical tokens on three levels, Audit and Enforce
+
+**Status:** Accepted (owner decisions of 2026-11-19, walk item W-26: seventeen decisions in his working paper); the mechanisms decided
+by the development agent — owner review at the walkthrough
+
+**Context.** The owner asked to set, for single users, technical tokens, groups and anonymous addresses, how many requests and how many
+bytes from the cache and from the upstream a caller may take per second and per hour, and for administrators and project Owners to
+see every caller's downloads at a glance. Until now the package protocols had three rate-limit classes keyed by the token ID, none on
+the registry's `/v2/` (finding F-155), and nothing counted bytes or callers. What is decided for OCI holds for every format.
+
+**Decision.**
+- Every request on a protocol path fits two budgets in the same figures: its subject's at the place whose rule applies, and the
+  remote's ceiling for its class of callers ([usage-and-limits.md](spec/usage-and-limits.md) R-LIM-001 to R-LIM-016). A subject is a
+  user (sessions and personal tokens together), a technical token, a CI project or an anonymous address (IPv4, IPv6 `/64`).
+- Profiles name every figure; rules give a profile to a single caller, an address range, a group or a kind at the instance, a project
+  or a repository; resolution takes the place first, then the caller; consumption under a repository's rule counts against that rule.
+  A project Owner narrows, and goes above the instance only up to a maximum the administrator gives the project.
+- Counters live in Valkey (with `INCRBY` and sorted sets added to the ACL); one round trip per protocol request, one more for a
+  download or a miss; the usage store is buffered per replica and written to PostgreSQL every ten seconds (R-LIM-017, R-LIM-027).
+- At the limit: 429 for requests; slowing down for bytes per second; 429 before a download for hourly and daily bytes; what is
+  cached is still served when the upstream budget is used up (R-REPO-025 step 9a); a block after too many refused requests.
+- One instance switch, Audit (default) or Enforce. In Audit the package classes of R-API-016, now on `/v2/` as well and keyed by
+  the subject, stay in force as the safety net (R-LIM-026, R-API-016).
+- A service account belongs to the instance, a project or a repository; a repository's account holds its actions at the account;
+  each account has named technical tokens, each a budget subject that rotation keeps
+  ([identity-and-authentication.md](spec/identity-and-authentication.md) R-AUTH-045, R-AUTH-046,
+  [authorization.md](spec/authorization.md) R-AUTHZ-039).
+- The format contract is at version 6: `Host.Serve` may refuse a download before its status line, and a route's kind decides what
+  is counted, checked and paced; a kit check and a pinned table hold every format to it (R-LIM-036).
+
+**Consequences.** INV-9 gains the actions of a repository's service account as a grant source. The `/files/` paths move from the
+management API's classes to the protocol paths. The service-account token operations become the technical-token operations; stored
+SATs are not converted (pre-alpha). The usage of anonymous callers, with their addresses, is kept 30 days and seen by
+administrators, auditors and the Owner of the project. The admin area gains **Usage** and **Download limits**; a project's and a
+repository's settings gain a closed section **Download limits**; the profile gains **Usage**.
+
+**Alternatives considered.** One budget per caller for the installation with repositories only narrowing, an ordered list of group
+rules, counting and showing before limiting, a technical token as a project account's token narrowed to a repository (the
+development agent's proposals the owner chose against); counters in PostgreSQL as for storage quotas (Q-LIM-10); every 404 as a
+refused request (Q-LIM-7); policies for a repository's account (Q-AUTHZ-296).
+
+**Revisit condition:** Valkey incidents let budgets be exceeded visibly; a format whose route kinds do not say what is content; the
+owner reads "nothing is refused in Audit" as including the request classes.
+
+**Spec:** [usage-and-limits.md](spec/usage-and-limits.md) R-LIM-001 to R-LIM-039, Q-LIM-1 to Q-LIM-27;
+[api-and-ui.md](spec/api-and-ui.md) R-API-016, R-API-082, R-UI-177 to R-UI-186, Q-API-344, Q-API-345, Q-UI-730 to Q-UI-736;
+[identity-and-authentication.md](spec/identity-and-authentication.md) R-AUTH-045, R-AUTH-046, Q-AUTH-415 to Q-AUTH-417;
+[authorization.md](spec/authorization.md) R-AUTHZ-039, R-AUTHZ-040, Q-AUTHZ-296 to Q-AUTHZ-298;
+[repositories-and-proxy.md](spec/repositories-and-proxy.md) R-REPO-025 step 9a; [architecture.md](spec/architecture.md) R-ARCH-031,
+R-ARCH-034.
 
 ## Design invariants
 

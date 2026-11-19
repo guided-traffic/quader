@@ -1699,6 +1699,10 @@ Priority: **MVP** · Covers: CIOIDC-010, CIOIDC-014, CIOIDC-018
   token as password, or `X-NuGet-ApiKey: <token>` on NuGet push.
 - CI tokens do not appear in any user's token list. Administrators find them through the
   issuance API (R-CI-020).
+- **The subject of a CI token's downloads** is its issuer and the project of its bundle (`<issuer ID>:<ProjectID>`, the verified pin
+  claim that `ci_exchange_subject` of R-CI-021 keys on), not the token, the job or the mapping: every job of a project shares one
+  budget, whatever mapping issued its token ([usage-and-limits.md](usage-and-limits.md) R-LIM-001, Q-LIM-1). A rule of the download
+  limits names it as `{"kind": "ciProject", "issuer": "<name>", "projectId": "<ID>"}`; its default is the profile Technical.
 - The token row carries what its use needs: `api_token.ci_context` holds the frozen bundle (the issuer, the project
   identity and, per contributing mapping, its tier and for a project tier its project, its groups, its rendered inline
   grants, its caps and the end of its own window when that is shorter than the token's; the bundle carries its format

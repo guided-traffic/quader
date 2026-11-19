@@ -1696,9 +1696,11 @@ account or to its groups, never from placeholder users.
 
 **Properties:**
 
-- A service account belongs to one project or to none (`project`, the project's key, fixed at creation; `null` for an
-  account of no project, called instance-wide)
-  ([Q-AUTHZ-209](authorization.md#q-authz-209--a-projects-policies-and-service-accounts-are-named-within-the-project-administrators-keep-instance-wide-ones)).
+- A service account belongs to the instance, to one project or to one repository (owner, 2026-11-19, W-26 decision 12): `project`,
+  the project's key, fixed at creation, `null` for an account of no project, called instance-wide
+  ([Q-AUTHZ-209](authorization.md#q-authz-209--a-projects-policies-and-service-accounts-are-named-within-the-project-administrators-keep-instance-wide-ones));
+  `repository`, the repository's key within its project, for an account of a repository (R-AUTH-046), `null` otherwise. The
+  record states `level`: `instance`, `project` or `repository`.
 - Names match `^[a-z0-9][a-z0-9-]{1,62}$` and are unique among the service accounts of the same project, and among the
   instance-wide ones: `partner` may exist in project `web`, in project `mobile` and once instance-wide. A name carries no
   project prefix. A second account of the same name in the same place answers 409 `already_exists`.
@@ -1710,12 +1712,17 @@ account or to its groups, never from placeholder users.
 - It is never a member of a project (422 `principal_not_allowed`): it reaches a project's repositories through policies
   ([Q-AUTHZ-215](authorization.md#q-authz-215--a-members-role-acts-through-its-session-and-personal-tokens-within-their-scope-and-service-accounts-are-not-members)).
 - It can be a group member (R-AUTH-018) and a policy principal, unless it is a project service account (below).
-- It holds `qdr_sat_` tokens, at most `max_active_per_principal`.
+- It holds technical tokens (R-AUTH-045): named tokens, each a line of `qdr_sat_` secrets with a budget of its own
+  ([usage-and-limits.md](usage-and-limits.md) R-LIM-038); at most `max_active_per_principal.sat` of them with a live secret and at
+  most `max_technical_tokens_per_account` in all.
 - The record states `isAdmin`: whether the account holds the administrator role now, by a binding on the account; always `false`
   for a project's account ([Q-AUTH-209](#q-auth-209--a-token-and-a-service-account-state-whether-the-owner-holds-the-administrator-role)).
 
-**Instance-wide service accounts** are created, changed, disabled, enabled and deleted, and their tokens issued, only by
+**Instance-wide service accounts** are created, changed, disabled, enabled and deleted, and their technical tokens issued, only by
 administrators of Quader (`identities:write`; tokens also by owners from P1; Q-AUTHZ-209).
+
+**Repository service accounts** belong to one repository and hold their rights on it at the account: R-AUTH-046 and
+[authorization.md](authorization.md) R-AUTHZ-039.
 
 **Project service accounts (owner, [Q-AUTHZ-169](authorization.md#q-authz-169--a-technical-account-for-a-project-belongs-to-the-project)).**
 A project's service account lives under the project's routes. It is created, changed, disabled, enabled and deleted by an
@@ -1763,13 +1770,13 @@ also by owners from P1.
 | `PATCH /api/v1/service-accounts/{name}` | `description`, `owners` | 200, 404, 412, 428 |
 | `POST /api/v1/service-accounts/{name}/disable`, `…/enable` | — | 204, 404 |
 | `DELETE /api/v1/service-accounts/{name}` | — | 204, 404 |
-| `POST /api/v1/service-accounts/{name}/tokens` | See R-AUTH-027 | 201 |
+| `/api/v1/service-accounts/{name}/technical-tokens[/{tokenName}[/secrets]]` | See R-AUTH-045 | 200, 201, 204 |
 | `POST /api/v1/projects/{projectKey}/service-accounts` | `{"name": "partner", "description": "…"}` | 201, 400, 404, 409, 422 |
 | `GET /api/v1/projects/{projectKey}/service-accounts?q=&limit=&cursor=`, `GET /api/v1/projects/{projectKey}/service-accounts/{name}` | — | 200, 404 |
 | `PATCH /api/v1/projects/{projectKey}/service-accounts/{name}` | `description`, `owners` | 200, 404, 412, 428 |
 | `POST /api/v1/projects/{projectKey}/service-accounts/{name}/disable`, `…/enable` | — | 204, 404 |
 | `DELETE /api/v1/projects/{projectKey}/service-accounts/{name}` | — | 204, 404 |
-| `POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | See R-AUTH-027 | 201 |
+| `/api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens[/{tokenName}[/secrets]]` | See R-AUTH-045 | 200, 201, 204 |
 
 A project the caller is no member of answers 404 on its routes, as a missing project does; a member that is not its Owner
 gets 403.
@@ -1787,6 +1794,89 @@ Acceptance criteria:
 - No path creates a session for a service account. `POST /auth/local/login` with
   `{"username": "sa:ci-bot", "password": "<its SAT>"}` answers 401 `invalid_credentials`, and
   `GET /api/v1/users/me/sessions` with the SAT answers 403.
+
+### R-AUTH-046 · Service accounts of a repository
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's decision 12 of 2026-11-19 (W-26): "Es gibt technische Token auf Instanz, Projekt und Repo-Ebene. Jeweils mit eigenem
+Budget." Decision 13: an account for the rights, a token for the budget, and rights are given once, at the account. A repository
+therefore has service accounts of its own.
+
+- **Who administers one** ([Q-AUTH-417](#q-auth-417--a-repositorys-service-accounts-are-administered-by-the-projects-owners)): an
+  Owner of the repository's project and a holder of `identities:write`, with the token rules an Owner has for a project's account
+  (R-AUTH-027: never non-expiring, at most `sat.max_ttl`, `admin: false`, no `system` item, not self-rotatable). No repository-level
+  right administers accounts.
+- **Name**: `^[a-z0-9][a-z0-9-]{1,62}$`, unique among the accounts of the repository; referenced as
+  `sa:<projectKey>/<repoKey>/<name>`, which is its stored principal name (neither key nor name contains `/`, so `UNIQUE (kind, name)`
+  holds).
+- **Rights**: a set of the repository actions of [authorization.md](authorization.md) R-AUTHZ-006 (`read`, `annotate`, `deploy`,
+  `overwrite`, `delete`, `manage`) on its own repository, stored at the account ([authorization.md](authorization.md) R-AUTHZ-039);
+  at least one; `read` by default. It is no policy principal, no group member, no project member and holds no role (422
+  `principal_outside_repository`, `project_account_not_groupable`, `principal_not_allowed`, `role_not_allowed`).
+- **Technical tokens** below it as for every account (R-AUTH-045).
+- **Disable and delete** as R-AUTH-020.
+- **When its repository is deleted**, its accounts are deleted with the repository's row (`ON DELETE CASCADE` of
+  `service_account.repository_id`), and a trigger of the same migration deletes each account's principal row, which takes its tokens
+  with it; its grants end with the repository's lifecycle as every grant on it does.
+- **When its repository moves** to another project (R-REPO-060), its accounts move with it: in the move's transaction each stored
+  name becomes `<new projectKey>/<repoKey>/<name>` and `service_account.project_id` the new project; the account's ID, its rights, its
+  technical tokens, their budgets and their rules at the repository stay; `serviceaccount.updated` records `moved`. Rules of the old
+  project that name its tokens stay and apply in that project only.
+- **A project** that holds a repository with accounts is not empty in the sense of R-AUTHZ-026 only through that repository.
+
+Data model (migration of work package 1):
+
+```sql
+ALTER TABLE service_account ADD COLUMN repository_id bigint NULL REFERENCES repositories (id) ON DELETE CASCADE;
+-- repository_id implies project_id = the repository's project; guarded by a trigger (SQLSTATE AI005)
+CREATE TABLE service_account_repository_grant (
+  service_account_id  uuid PRIMARY KEY REFERENCES service_account (principal_id) ON DELETE CASCADE,
+  actions             text[] NOT NULL CHECK (cardinality(actions) >= 1
+                        AND actions <@ ARRAY['read', 'annotate', 'deploy', 'overwrite', 'delete', 'manage'])
+);
+```
+
+API (each operation declares `identities:read` or `identities:write`, `project: path.projectKey`, `projectRole: owner`):
+
+| Method and path | Request | Status codes |
+|---|---|---|
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts?q=&limit=&cursor=` | — | 200, 404 |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts` | `{"name": "ci", "description": "release pipeline", "actions": ["read", "deploy"]}` | 201, 400, 404, 409, 422 |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}` | — | 200, 404 |
+| `PATCH /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}` | `description`, `actions` | 200, 404, 412, 422, 428 |
+| `POST …/{name}/disable`, `…/enable` | — | 204, 404 |
+| `DELETE …/{name}` | — | 204, 404 |
+| `…/{name}/technical-tokens[/{tokenName}[/secrets]]` | R-AUTH-045 | |
+
+A repository account:
+
+```json
+{
+  "name": "ci",
+  "reference": "sa:web/npm-local/ci",
+  "level": "repository",
+  "project": "web",
+  "repository": "npm-local",
+  "description": "release pipeline",
+  "actions": ["read", "deploy"],
+  "status": "active",
+  "isAdmin": false,
+  "technicalTokens": 1,
+  "createdAt": "2026-11-20T09:00:00Z",
+  "version": 1
+}
+```
+
+*(example)* `GET /api/v1/service-accounts?project=web` lists the repository accounts of `web` with `level: "repository"` beside the
+project's.
+
+Acceptance criteria:
+
+- An Owner of `web` creates `ci` on `web/npm-local` with `read` and `deploy` (201, `sa:web/npm-local/ci`); a token of it publishes to
+  `web/npm-local` and gets 404 from `web/npm-remote`; naming it in a policy answers 422 `principal_outside_repository`.
+- Moving `web/npm-local` to `mobile` renames the account `sa:mobile/npm-local/ci`; its token keeps working on the moved repository;
+  its technical token's usage history is unchanged.
+- Deleting `web/npm-local` deletes the account; a token of it answers 401 afterwards.
 
 ### R-AUTH-021 · Dormant-user deactivation
 Priority: **P1** · Covers: quader-only
@@ -1842,7 +1932,7 @@ Priority: **MVP** · Covers: TOK-002, TOK-004, TOK-006
 | Type | Prefix | Owner principal | Issued by |
 |---|---|---|---|
 | Personal access token (PAT) | `qdr_pat_` | user | the user (UI, API, npm web login, device login) |
-| Service-account token (SAT) | `qdr_sat_` | service account | administrators, owners (P1), `quader admin` |
+| Service-account token (SAT) | `qdr_sat_` | service account; each SAT is a secret of one technical token (R-AUTH-045), which the UI and the API name a technical token | administrators, Owners of the account's project, owners (P1), `quader admin` |
 | CI token (CIT) | `qdr_cit_` | CI identity mapping | the CI exchange only ([gitlab-ci-oidc.md](gitlab-ci-oidc.md)) |
 | Bastion token (BST) | `qdr_bst_` | Bastion registration (principal kind `bastion`) | holders of `endpoints:write`, `quader admin bastion token create`; accepted only by the Bastion interface ([bastion.md](bastion.md) R-BAS-004, R-BAS-005; phase 5b) |
 
@@ -1908,6 +1998,104 @@ Acceptance criteria:
   pattern, and pass the checksum.
 - Flipping any single character of a valid token fails the checksum, and the request is
   rejected without a database query.
+
+### R-AUTH-045 · Technical tokens
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's decisions 6, 12 and 13 of 2026-11-19 (W-26): a technical token's budget hangs on the single token ("Ich kann hier für
+jedes System einen eigenen Token ausstellen und die Budgets damit pro System genau einstellen"); an account for the rights, a token
+for the budget; each token has a name for its system; a rotated token keeps its budget and its consumption. "Technical token" is
+the owner's word and the name in the UI and the API; the principal kind stays `service_account` and the secrets stay `qdr_sat_`
+([Q-AUTH-415](#q-auth-415--a-technical-token-is-a-named-line-of-secrets-of-a-service-account-and-its-identity-is-the-budgets-subject)).
+
+- **What it is.** A technical token is a named token of one service account (of the instance, a project or a repository, R-AUTH-020,
+  R-AUTH-046) with an immutable ID: the subject of its budget ([usage-and-limits.md](usage-and-limits.md) R-LIM-001). Its secrets are
+  `qdr_sat_` tokens of R-AUTH-022 to R-AUTH-031, each a row of `api_token` that names the technical token. It has one live secret,
+  two during a rotation's overlap.
+- **Name**: required, `^[a-z0-9][a-z0-9-]{0,62}$`, the system that uses it (`nightly-mirror`, `release`), unique among the account's
+  technical tokens and immutable. A description of at most 1024 characters.
+- **Rights** come from the account; a secret's scope narrows them as every scope does (R-AUTH-024, R-AUTHZ-013).
+- **Create** issues the technical token with its first secret, under R-AUTH-027 (the creators, the derivation rule, the bounds of an
+  Owner) and R-AUTH-026 (lifetimes).
+- **Rotation** (R-AUTH-030) of a secret keeps the technical token: its ID, name, budget, rule and consumption.
+- **A new secret** (`POST …/{tokenName}/secrets`) is issued for a technical token that has no live secret (every secret expired or
+  revoked; 409 `technical_token_active` otherwise), by whoever may create one, with the request of a create without `name`
+  ([Q-AUTH-416](#q-auth-416--an-ended-technical-token-gets-a-new-secret-and-keeps-its-name-its-budget-and-its-history)). It keeps the
+  technical token as rotation does.
+- **Revoke** a secret as today (`DELETE /api/v1/tokens/{id}`, R-AUTH-029); the technical token stays, listed as revoked, until it is
+  deleted or gets a new secret.
+- **Delete** (`DELETE …/{tokenName}`) revokes its live secrets (`token.revoked`, journaled) and deletes the technical token; its rules
+  go with the limits task and its usage stays until its retention ([usage-and-limits.md](usage-and-limits.md) R-LIM-028).
+- **Limits on the number**: an account holds at most `auth.tokens.max_active_per_principal.sat` (20) technical tokens with a live
+  secret, the predecessor in a rotation's overlap not counted (409 `token_limit_reached`), and at most
+  `auth.tokens.max_technical_tokens_per_account` (100) technical tokens in all (409 `technical_token_limit_reached`).
+- **Retention**: when `token-cleanup` (R-AUTH-043) deletes the last secret row of a technical token that has no live secret, it
+  deletes the technical token too.
+- **What changes for the existing accounts**: the project and instance accounts keep their rights; their token operations become the
+  technical-token operations below and `…/tokens` of a service account goes. The migration does not convert stored SATs (pre-alpha,
+  [CLAUDE.md](../../CLAUDE.md)): an installation that holds SATs needs a fresh database.
+
+Data model (migration of work package 1):
+
+```sql
+CREATE TABLE technical_token (
+  id                  uuid PRIMARY KEY,                                  -- UUIDv7; the budget subject
+  service_account_id  uuid NOT NULL REFERENCES service_account (principal_id) ON DELETE CASCADE,
+  name                text NOT NULL CHECK (name ~ '^[a-z0-9][a-z0-9-]{0,62}$'),
+  description         text NOT NULL DEFAULT '' CHECK (length(description) <= 1024),
+  created_at          timestamptz NOT NULL DEFAULT now(),
+  created_by          uuid NULL REFERENCES principal (id) ON DELETE SET NULL,
+  UNIQUE (service_account_id, name)
+);
+ALTER TABLE api_token ADD COLUMN technical_token_id uuid NULL REFERENCES technical_token (id) ON DELETE CASCADE;
+ALTER TABLE api_token ADD CONSTRAINT api_token_sat_technical CHECK ((type = 'sat') = (technical_token_id IS NOT NULL));
+```
+
+The token cache entry carries `technical_token_id`, and the authentication stage puts it into `httpserver.Credential.TechnicalTokenID`
+(R-AUTH-023), so the subject is known without a query.
+
+API, below each account's base path (`/api/v1/service-accounts/{name}`, `/api/v1/projects/{projectKey}/service-accounts/{name}`,
+`/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}`):
+
+| Method and path | Request | Status codes | Permission |
+|---|---|---|---|
+| `GET …/technical-tokens` | — | 200, 404 | `identities:read`, or an Owner below a project |
+| `POST …/technical-tokens` | `{"name": "nightly-mirror", "description": "…", "ttlSeconds": 2592000, "scope": {"inherit": true}, "selfRotatable": false, "endpoints": []}` | 201 with the secret, 400, 403, 404, 409, 422 | the creators of R-AUTH-027 |
+| `GET …/technical-tokens/{tokenName}` | — | 200, 404 | as the list |
+| `PATCH …/technical-tokens/{tokenName}` | `description` | 200, 404, 412, 428 | `identities:write`, or an Owner below a project |
+| `DELETE …/technical-tokens/{tokenName}` | — | 204, 404 | `identities:write` or `tokens:revoke`, or an Owner below a project |
+| `POST …/technical-tokens/{tokenName}/secrets` | as the create, without `name` and `description` | 201 with the secret, 403, 404, 409 `technical_token_active` | as the create |
+
+A technical token:
+
+```json
+{
+  "id": "0193f2a5-11aa-7d3e-9b02-5c6d7e8f9a0b",
+  "name": "nightly-mirror",
+  "description": "the partner's nightly mirror job",
+  "account": {"reference": "sa:web/partner", "level": "project", "project": "web", "repository": null},
+  "state": "active",
+  "secrets": [
+    {"id": "0193f2a5-2b3c-7d4e-8f50-6a7b8c9d0e1f", "hint": "qdr_sat_7Hq2", "scope": {"inherit": true, "admin": false, "repositories": [], "system": []}, "createdAt": "2026-11-20T09:00:00Z", "expiresAt": "2026-12-20T09:00:00Z", "lastUsedAt": "2026-11-21T02:00:11Z", "rotatedFrom": null}
+  ],
+  "limit": {"rule": "0193f2a6-0000-7000-8000-000000000001", "profile": "technical", "overrides": 1},
+  "createdAt": "2026-11-20T09:00:00Z",
+  "createdBy": "priya"
+}
+```
+
+*(example)* `state` is `active` (a live secret), `expired` or `revoked` (none live, by the last secret's end); `limit` is the token's
+own rule at its account's place, `null` when the default applies. The answer of a create and of a new secret adds `token` (the
+secret, shown once) and its `secretId`. A token record of `GET /api/v1/tokens` of type `sat` carries `technicalToken: {"id", "name"}`.
+
+Acceptance criteria:
+
+- An administrator creates `nightly-mirror` for `sa:partner` (201 with the secret); a second `nightly-mirror` for the same account
+  answers 409 `already_exists`; one for `sa:web/partner` is accepted.
+- Rotating its secret with an overlap keeps `id` and `name`; both secrets authenticate as the same technical token.
+- After the secret expired, `POST …/nightly-mirror/secrets` answers 201 and the token keeps its rule; while a secret is live it
+  answers 409 `technical_token_active`.
+- The 21st technical token with a live secret of one account answers 409 `token_limit_reached`.
 
 ### R-AUTH-023 · Token storage, validation and caching
 Priority: **MVP** · Covers: TOK-004, TOK-032
@@ -2216,6 +2404,8 @@ used for monitoring and audit tokens:
 | `repositories:read-config` | Read repository configurations ([repositories-and-proxy.md](repositories-and-proxy.md)) |
 | `content:metadata-read` | Read the metadata of every repository the repository part of the scope admits (package lists, versions, the format's documents, search, the package pages), never an artifact; held by `auditor` and `admin` ([authorization.md](authorization.md) R-AUTHZ-011, R-AUTHZ-013, Q-AUTHZ-172) |
 | `vulnerabilities:triage` | From M4b: change the status of vulnerability findings; the token also needs `read` on the finding's repository, so a scope with this item alone reads and changes no finding ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-013, R-VULN-019) |
+| `usage:read` | Read the usage overview, a subject's detail and its export ([usage-and-limits.md](usage-and-limits.md) R-LIM-034; [authorization.md](authorization.md) R-AUTHZ-040) |
+| `limits:read` | Read profiles, rules, ceilings, the mode, project maxima and blocks ([usage-and-limits.md](usage-and-limits.md) R-LIM-031 to R-LIM-035) |
 
 **Declaring items.** Every administration operation declares the item that admits it, in the
 OpenAPI document as `x-quader-system-scope`. Operations without a declared item need
@@ -2269,7 +2459,7 @@ included. Every default is a finite duration; there is no "no default forced" se
 | Creation path | Default lifetime |
 |---|---|
 | `POST /api/v1/tokens`, UI token dialog | `pat.default_ttl` (its runtime value, R-AUTH-040); the UI pre-fills it |
-| `POST /api/v1/service-accounts/{name}/tokens`, `POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | `sat.default_ttl` (its runtime value) |
+| The creation of a technical token or of a new secret of one (R-AUTH-045), at every level | `sat.default_ttl` (its runtime value) |
 | Token-authenticated create under the derivation rule (R-AUTH-027) | The path's default, capped at the presenting token's expiry |
 | npm web login (R-AUTH-034), device login (R-AUTH-036) | `cli_login.token_ttl`, capped by the PAT maximum; the approver may shorten it |
 | `quader admin token create` (R-AUTH-015) | 15 min |
@@ -2307,7 +2497,8 @@ auth:
       max_ttl: 6h             # default (proposed); hard ceiling, gitlab-ci-oidc.md sets the issued TTL
     max_active_per_principal:
       pat: 50                 # default (proposed)
-      sat: 20                 # default (proposed)
+      sat: 20                 # default (proposed); technical tokens with a live secret per service account (R-AUTH-045)
+    max_technical_tokens_per_account: 100   # default (proposed); technical tokens of one account, ended ones included
 ```
 
 Acceptance criteria:
@@ -2332,8 +2523,9 @@ Priority: **MVP** · Covers: TOK-025, TOK-006, AUTHN-040, ADMAPI-039, IAM-037
 | Method and path | Creates | Caller |
 |---|---|---|
 | `POST /api/v1/tokens` | A PAT for the caller | user with a session (recent authentication, R-AUTH-011), or a PAT under the derivation rule |
-| `POST /api/v1/service-accounts/{name}/tokens` | A SAT of an account of no project | administrator (session with recent authentication, or token with `admin: true`); owners from P1; a SAT of that account under the derivation rule |
-| `POST /api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | A SAT of a project's account | administrator, as above; an Owner of the project through a UI session or a token with `admin: true` ([Q-AUTHZ-177](authorization.md#q-authz-177--what-a-project-administrator-may-do-with-service-accounts-and-their-tokens), [Q-AUTHZ-215](authorization.md#q-authz-215--a-members-role-acts-through-its-session-and-personal-tokens-within-their-scope-and-service-accounts-are-not-members)); owners from P1; a SAT of that account under the derivation rule |
+| `POST /api/v1/service-accounts/{name}/technical-tokens`, `…/{tokenName}/secrets` | A technical token of an account of no project, or a new secret of one (R-AUTH-045) | administrator (session with recent authentication, or token with `admin: true`); owners from P1; a SAT of that account under the derivation rule |
+| `POST /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens`, `…/{tokenName}/secrets` | A technical token of a project's account, or a new secret of one | administrator, as above; an Owner of the project through a UI session or a token with `admin: true` ([Q-AUTHZ-177](authorization.md#q-authz-177--what-a-project-administrator-may-do-with-service-accounts-and-their-tokens), [Q-AUTHZ-215](authorization.md#q-authz-215--a-members-role-acts-through-its-session-and-personal-tokens-within-their-scope-and-service-accounts-are-not-members)); owners from P1; a SAT of that account under the derivation rule |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens`, `…/{tokenName}/secrets` | A technical token of a repository's account (R-AUTH-046), or a new secret of one | as for a project's account |
 
 **Derivation rule** (IAM-037: token creation by non-interactive callers). A token-authenticated
 create call must satisfy all of the following:
@@ -2603,6 +2795,8 @@ The request body is `{"overlapSeconds": 0}`, with a maximum of 86400.
   from revokes the successor too; rotated through another token of the owner under the derivation
   rule, it is derived from that token instead (Q-AUTH-89);
 - records `rotatedFrom` and `createdVia: rotation`;
+- for a SAT, belongs to the predecessor's technical token (R-AUTH-045), so its name, its budget subject, its rule and its
+  consumption go on ([usage-and-limits.md](usage-and-limits.md) R-LIM-038);
 - comes back in the R-AUTH-027 response shape.
 
 **The predecessor** gets `expires_at = min(expires_at, now + overlap)`. With overlap 0 it is
@@ -3507,7 +3701,8 @@ or authorization codes.
 | `user.groups.claim_missing` | R-AUTH-008, with provider, reason (`absent`, `wrong_type`, `overage`), the previous reason when the reason changed, and `onMissingClaim`; outcome `warning` | yes, once per change of the identity's state to missing or to another reason (Q-AUTH-400), not at every login; the metric counts every login |
 | `user.groups.claim_returned` | R-AUTH-008, with provider, the reason the claim was missing for, `missingSince` and `onMissingClaim`; outcome `success` | yes, once when a login of an identity whose claim was missing delivers it again (Q-AUTH-401) |
 | `group.created`, `group.updated`, `group.deleted`, `group.members.changed` | R-AUTH-018, R-AUTH-039 | yes |
-| `serviceaccount.created`, `serviceaccount.updated`, `serviceaccount.disabled`, `serviceaccount.deleted` | R-AUTH-020 | yes |
+| `serviceaccount.created`, `serviceaccount.updated`, `serviceaccount.disabled`, `serviceaccount.deleted` | R-AUTH-020, R-AUTH-046; `details.level` (`instance`, `project`, `repository`), `details.repository` for a repository's account, `details.actions` on a change of its rights, `details.moved` with the old and new name when its repository moved | yes |
+| `technicaltoken.created`, `technicaltoken.updated`, `technicaltoken.deleted` | R-AUTH-045: the account, the token's ID and name; `token.created` and `token.revoked` of its secrets carry `technical_token` | yes |
 | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted` | R-BAS-004 ([bastion.md](bastion.md)); the token events of a Bastion token (`token.created`, `token.revoked`) carry `resource_type` `bastion` | yes; `bastion.disabled` and `bastion.deleted` carry a journal entry (Q-BAS-145) |
 | `cli_login.approved`, `cli_login.denied` | R-AUTH-034, R-AUTH-036 | yes |
 | `cli_login.poll_refused` | R-AUTH-034 address binding, with the refused and the requesting address | yes, once per change of the refused address within a login, decided under the row's lock (R-AUTH-034) |
@@ -6219,6 +6414,64 @@ the endpoint rules of the verdict it follows. The development agent records no r
 
 **Applied in the spec:** R-AUTH-001. Tests: the subtests for an endpoint that does not accept the session cookie, a replica
 without sessions and a token beside the cookie in `TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie`.
+
+### Q-AUTH-415 · A technical token is a named line of secrets of a service account, and its identity is the budget's subject
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The model
+is the owner's (W-26 decisions 6, 12, 13 of 2026-11-19); its form in the schema is the development agent's.
+
+Context: a token row is replaced on rotation (R-AUTH-030 writes a new row with `rotated_from`), so a token's ID cannot carry a budget
+that "keeps its consumption" across a rotation, and the owner wants each token named for its system.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A row `technical_token` (ID, account, name) that every SAT row names; rotation and a new secret keep it (chosen) | The identity is apart from the secrets | One stable ID for budgets, rules and history; a unique name per account; an ended token can get a new secret without losing its rule | A table more; every SAT must name one |
+| (b) The ID of the first token of a rotation chain, copied by rotation | A column `series_id` | No table | The name has no home; after every secret ended, a new token starts a new series and loses its rule |
+| (c) The account | One budget per account | — | Against the owner's decision 6 |
+
+**Choice:** (a).
+
+**Rationale:** the owner separates the rights (the account) from the budget (the token); (a) gives the budget an object of its own
+that outlives its secrets. The development agent would revisit this if personal tokens get budgets of their own (they do not: a PAT
+counts against its user).
+
+**Applied in the spec:** R-AUTH-045, R-AUTH-020, R-AUTH-022, R-AUTH-026, R-AUTH-027, R-AUTH-030;
+[usage-and-limits.md](usage-and-limits.md) R-LIM-001, R-LIM-038.
+
+### Q-AUTH-416 · An ended technical token gets a new secret and keeps its name, its budget and its history
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `POST …/{tokenName}/secrets` for a technical token without a live secret, under the creation rules (chosen) | Renewal after expiry or revocation | A system's limit and history survive an expired secret; a leaked secret is revoked and replaced under the same name, as R-AUTH-030 asks ("revoked and replaced by a newly created token") | A second way to get a secret besides rotation |
+| (b) Only rotation | — | One way | Rotation refuses an expired or revoked token (R-AUTH-030), so an expired token's rule and history would be lost |
+| (c) A new technical token of the same name after deleting the old one | — | No new operation | The rule and the history go with the delete |
+
+**Choice:** (a), refused with 409 while a secret is live, so it never doubles a token that rotation would renew.
+
+**Rationale:** the budget is a setting of the system, not of the secret. The development agent would revisit this if a new secret
+should require a fresh review of the token's scope (it does: the request names the scope anew).
+
+**Applied in the spec:** R-AUTH-045.
+
+### Q-AUTH-417 · A repository's service accounts are administered by the project's Owners
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An Owner of the project and `identities:write` (chosen) | The project's administration | Credentials are administration; the repository's configuration is an Owner's already (R-AUTHZ-006); no new right | A maintainer of the project cannot issue a token for its repository |
+| (b) A holder of `manage` on the repository | A repository-level right | Delegation per repository | `manage` is content administration; a holder could mint a credential with every action on the repository that outlives its own membership |
+| (c) A new repository role | — | Fine-grained | A role model the owner did not ask for |
+
+**Choice:** (a).
+
+**Rationale:** a technical token is a credential that outlives the person who made it; the project's Owner is the one who answers for
+the project's credentials. The development agent would revisit this if teams ask to delegate one repository's accounts without the
+whole project.
+
+**Applied in the spec:** R-AUTH-046; [authorization.md](authorization.md) R-AUTHZ-026, R-AUTHZ-039.
 
 ## What this does not cover
 

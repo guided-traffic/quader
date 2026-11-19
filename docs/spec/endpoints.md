@@ -1027,6 +1027,9 @@ Priority: **MVP** · Covers: BEYOND-030
   address of R-ARCH-006). An endpoint's `rate_limit_class` names one; empty means none.
 - The endpoint limiter runs at middleware step 7 of R-ARCH-005 for every request on the endpoint,
   package protocols included, before the classes of R-API-016 and R-AUTH-038, which still apply.
+- On a protocol path the download limits of [usage-and-limits.md](usage-and-limits.md) apply as well: a request must fit the
+  endpoint's class **and** its subject's budget and the remote's ceiling; neither replaces the other (R-LIM-005). The endpoint's class
+  keys on the token ID, the limits on the subject (a user with all its tokens), so the two count different things.
 - Each class is a limiter of [architecture.md](architecture.md) R-ARCH-034 named
   `endpoint_<class>`, with scope `cluster`; a hyphen of the class name is an underscore in the
   limiter name ([Q-EP-22](#q-ep-22--limiter-name-and-fallback-share-of-an-endpoint-class)). The

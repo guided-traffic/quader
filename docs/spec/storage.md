@@ -1427,6 +1427,9 @@ Priority: **P1** · Covers: ART-029
   *(example)*. Permission: `read`.
 - `last_downloader` is set to `NULL` when the principal is erased
   ([identity-and-authentication.md](identity-and-authentication.md)).
+- These statistics count downloads per item, not per caller. What each caller downloads, in requests and bytes per time bucket, is the
+  usage store of [usage-and-limits.md](usage-and-limits.md) R-LIM-027, written by the same kind of per-replica buffer and read by the
+  usage overview; neither reads the other.
 
 Configuration:
 
@@ -2423,6 +2426,9 @@ Priority: **P1** · Covers: STOR-040, OPS-066
 
 An object store does not report free space through the S3 API, so capacity is configured, not
 measured.
+
+The download limits of [usage-and-limits.md](usage-and-limits.md) do not count storage: a repository's and a project's storage quota
+stay with this requirement and R-STOR-049 (Later there).
 
 - System settings (runtime, `PUT /api/v1/settings/storage` with `If-Match`; one revisioned
   document with the trash settings, R-STOR-022):
