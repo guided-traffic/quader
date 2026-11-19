@@ -1227,6 +1227,32 @@ agent** is not decided until the owner has said so.
   macht, auch wenn er den Download nie anstößt, sollte Quader pro-aktiv den Download im Hintergrund schon starten." Open
   before it is built, and the owner's to decide one at a time: which platforms of an index, what counts as a probe in each
   format, and what bounds the work a request without a credential can start on a public remote.
+  **Read for the decisions** (a read-only pass over the six formats, 2026-11-19; file references in the session, the
+  points marked "inferred" not run):
+  - The specification says the opposite today: INV-11 and R-REPO-024, "in the default mode `pullThrough` nothing is fetched
+    ahead of time"; the eager fetch of companion artifacts (RMT-025) and a cache warm-up (RMT-027, API-020) are deferred.
+    W-25 changes that invariant on the owner's word.
+  - The means exist: a background fetch through the same gate and engine as a mirror pass (`BackgroundUpstream`, used by
+    the Ansible documentation job and the Debian index parse), run by the worker role, which yields to client fetches and
+    reads the upstream's circuit without moving it. Missing for this use: outside a pass nothing bounds the bytes
+    (`mirror.maxBytes` is a pass's), the include and exclude patterns are the dispatcher's check and not the background
+    path's, and a probe answered from a fresh cache runs no fill hook.
+  - What names exactly one version without fetching it: OCI, the manifest of a tag (the upstream request is a GET that
+    Docker Hub counts as a pull) and a HEAD by digest; npm, the version document and a HEAD of the tarball, while the
+    clients read the package document with every version; NuGet, the registration leaf and the `.nuspec`; Ansible, the
+    version document, which states the archive's digest and size; Debian, only a HEAD of a pool file, its other requests
+    are indexes of a whole component; generic has no remote class yet.
+  - OCI: after the probe of an index only its children and their platforms are known, the layers after each child's
+    manifest is fetched; a plan refuses more than 1,000 children; the setting `oci.mirror.platforms` (default every
+    platform) exists for mirror mode only.
+  - Who may start a fetch: a request without a credential on a `public` remote passes the fill check like a grant
+    (`cacheFillAction: read`, the warning `public_populates_remote` at save time only); there is no bound per caller on
+    bytes or fetches and no storage quota (R-STOR-029 has no code). Inferred from
+    [ratelimit.go](../../internal/api/v1/ratelimit.go) (`limitedPath`): the general rate-limit classes cover
+    `/api/v1`, `/files/` and `/api/<format>/`, not the registry's `/v2/`; not confirmed by a request.
+  - Found on the way, for W-24 (inferred): the size of an OCI index is set when the index row is written and not when a
+    child is recorded later; a single-platform tag shows the size its manifest declares while nothing is stored; a
+    Debian remote's files write no package row.
 - **A decision taken at OCI holds for every format** (owner, 2026-11-19): "Alles was wir hier für OCI besprechen gilt auch
   für alle anderen Registries die bereits gebaut sind und für zukünftige Registries. Ich verstehe, dass die API der
   Registries von ihrem Funktionsumfang unterschiedlich sind und deshalb manche Features nicht implementierbar sind. Das
