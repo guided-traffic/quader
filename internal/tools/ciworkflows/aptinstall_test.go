@@ -14,8 +14,9 @@ var repoRoot = filepath.Join("..", "..", "..")
 
 // The stubs stand in for dpkg-query, sudo, timeout and apt-get. Each call of timeout is one bounded apt-get call; the stub
 // writes it to STUB_LOG and decides, per phase (update, download, unpack) and attempt, whether the call hangs (exit 124 after
-// printing the file STUB_DIR/hang-output, as timeout reports a call it ended), fails (exit 100 after STUB_DIR/fail-output) or
-// succeeds. The outputs are files, not variables: macOS awk crashed now and then when the environment held a value with
+// printing the file STUB_DIR/hang-output, as timeout reports a call it ended), ends by itself without every source (exit 0
+// after STUB_DIR/partial-output, as apt-get update does when a source did not answer), fails (exit 100 after
+// STUB_DIR/fail-output) or succeeds. The outputs are files, not variables: macOS awk crashed now and then when the environment held a value with
 // newlines.
 var stubs = map[string]string{
 	"dpkg-query": `#!/usr/bin/env bash
@@ -45,6 +46,9 @@ n=$(( $(cat "$count" 2>/dev/null || echo 0) + 1 ))
 echo "$n" > "$count"
 case " $STUB_HANG " in
   *" $phase:$n "*) cat "$STUB_DIR/hang-output"; exit 124 ;;
+esac
+case " $STUB_PARTIAL " in
+  *" $phase:$n "*) cat "$STUB_DIR/partial-output"; exit 0 ;;
 esac
 case " $STUB_FAIL " in
   *" $phase "*) cat "$STUB_DIR/fail-output"; exit 100 ;;
@@ -79,6 +83,8 @@ type aptCase struct {
 	installed   string // packages dpkg-query reports as installed
 	hang        string // phase:attempt pairs that hang, for example "update:1"
 	hangOutput  string
+	partial     string // phase:attempt pairs that end by themselves, exit 0, without every source
+	partialOut  string
 	fail        string // phases that fail
 	failOutput  string
 	sources     bool // whether the Ubuntu sources file exists
@@ -117,7 +123,7 @@ func runAptInstall(t *testing.T, c aptCase, packages ...string) (aptRun, string)
 			t.Fatal(err)
 		}
 	}
-	for name, text := range map[string]string{"hang-output": c.hangOutput, "fail-output": c.failOutput} {
+	for name, text := range map[string]string{"hang-output": c.hangOutput, "partial-output": c.partialOut, "fail-output": c.failOutput} {
 		if err := os.WriteFile(filepath.Join(state, name), []byte(text+"\n"), 0o600); err != nil {
 			t.Fatal(err)
 		}
@@ -138,6 +144,7 @@ func runAptInstall(t *testing.T, c aptCase, packages ...string) (aptRun, string)
 		"STUB_LOG=" + log,
 		"STUB_INSTALLED=" + c.installed,
 		"STUB_HANG=" + c.hang,
+		"STUB_PARTIAL=" + c.partial,
 		"STUB_FAIL=" + c.fail,
 	}
 	out, err := cmd.CombinedOutput()
@@ -178,13 +185,15 @@ func TestAptInstallInstalledPackagesTouchNothing(t *testing.T) {
 }
 
 // The healthy path: the update reads the Ubuntu archive only, then the missing package (not the installed one) is downloaded
-// and unpacked, each call under its bound and with apt's own timeouts.
+// and unpacked, each call under its bound and with apt's own timeout. The update retries no request itself (it has to end
+// inside its bound to keep what it read), the download retries each three times, the unpacking fetches nothing.
 func TestAptInstallBoundsEveryCallAndInstallsOnlyWhatIsMissing(t *testing.T) {
 	t.Parallel()
 	r, stamp := runAptInstall(t, aptCase{installed: "jq", sources: true}, "jq", "libatomic1")
 	if r.status != 0 {
 		t.Fatalf("status %d:\n%s", r.status, r.output)
 	}
+	retries := map[string]string{"update": "Acquire::Retries=0", "--download-only": "Acquire::Retries=3"}
 	for marker, bound := range map[string]string{"update": "-k 10 60 ", "--download-only": "-k 10 90 ", "--no-download": "-k 10 120 "} {
 		calls := r.timeouts(marker)
 		if len(calls) != 1 {
@@ -193,10 +202,13 @@ func TestAptInstallBoundsEveryCallAndInstallsOnlyWhatIsMissing(t *testing.T) {
 		if !strings.HasPrefix(calls[0], "timeout "+bound+"apt-get ") {
 			t.Errorf("the %s call is not bounded by %q: %s", marker, bound, calls[0])
 		}
-		for _, opt := range []string{"Acquire::http::Timeout=20", "Acquire::https::Timeout=20", "Acquire::Retries=3"} {
+		for _, opt := range []string{"Acquire::http::Timeout=20", "Acquire::https::Timeout=20"} {
 			if !strings.Contains(calls[0], opt) {
 				t.Errorf("the %s call lacks %s: %s", marker, opt, calls[0])
 			}
+		}
+		if want := retries[marker]; (want == "" && strings.Contains(calls[0], "Acquire::Retries")) || !strings.Contains(calls[0], want) {
+			t.Errorf("the %s call should carry %q as its retries: %s", marker, want, calls[0])
 		}
 		if marker != "update" && (!strings.HasSuffix(calls[0], " libatomic1") || strings.Contains(calls[0], " jq")) {
 			t.Errorf("the %s call should name libatomic1 only: %s", marker, calls[0])
@@ -269,7 +281,7 @@ func TestAptInstallAnUpdateThatHangsTwiceFailsTheInstallFast(t *testing.T) {
 		t.Fatalf("status %d, calls %q, want 1 after two updates and one download:\n%s", r.status, r.calls, r.output)
 	}
 	mustContain(t, r,
-		"::warning::apt-get update did not finish in 60 s twice (waiting on one of archive.ubuntu.com security.ubuntu.com); installing from the indexes present",
+		"::warning::apt-get update did not finish in 60 s (waiting on one of archive.ubuntu.com security.ubuntu.com), the second time; installing from the indexes present",
 		"::error::apt-get could not fetch build-essential (E: Unable to locate package build-essential; the package indexes are incomplete, see the update above)",
 	)
 	if _, err := os.Stat(stamp); err == nil {
@@ -277,17 +289,61 @@ func TestAptInstallAnUpdateThatHangsTwiceFailsTheInstallFast(t *testing.T) {
 	}
 }
 
-// An update that fails by itself (a source answering 503) is not repeated; the install goes on from the indexes it read.
+// The failure of HA and Performance 44453781574 (nuget-ha), first half: one source is silent, apt gives it up inside the
+// bound and ends with exit 0 and the indexes of the other source. The script reads once more, on a new connection, and a
+// complete second update marks the indexes as read.
+func TestAptInstallAnUpdateWithoutEverySourceIsReadAgain(t *testing.T) {
+	t.Parallel()
+	r, stamp := runAptInstall(t, aptCase{
+		sources:    true,
+		partial:    "update:1",
+		partialOut: "Get:1 http://archive.ubuntu.com/ubuntu noble InRelease [256 kB]\nErr:2 http://security.ubuntu.com/ubuntu noble-security InRelease\n  Connection failed [IP: 185.125.190.82 80]\nW: Some index files failed to download. They have been ignored, or old ones used instead.",
+	}, "build-essential")
+	if r.status != 0 || len(r.timeouts("update")) != 2 || len(r.timeouts("--no-download")) != 1 {
+		t.Fatalf("status %d, calls %q, want two updates and an install:\n%s", r.status, r.calls, r.output)
+	}
+	mustContain(t, r, "::warning::apt-get update could not read security.ubuntu.com; reading the indexes once more")
+	if _, err := os.Stat(stamp); err != nil {
+		t.Error("the second, complete update did not mark the indexes as read")
+	}
+}
+
+// Second half: the source stays silent. The install goes on from the indexes of the source that answered, which the old
+// script lost with the update it ended; the indexes are not marked as read, so a later step of the job asks again.
+func TestAptInstallAnUpdateWithoutEverySourceTwiceInstallsFromTheRest(t *testing.T) {
+	t.Parallel()
+	r, stamp := runAptInstall(t, aptCase{
+		sources:    true,
+		partial:    "update:1 update:2",
+		partialOut: "Get:1 http://archive.ubuntu.com/ubuntu noble InRelease [256 kB]\nErr:2 http://security.ubuntu.com/ubuntu noble-security InRelease\n  Connection failed [IP: 185.125.190.82 80]",
+	}, "build-essential")
+	if r.status != 0 || len(r.timeouts("update")) != 2 || len(r.timeouts("--no-download")) != 1 {
+		t.Fatalf("status %d, calls %q, want two updates and an install:\n%s", r.status, r.calls, r.output)
+	}
+	mustContain(t, r,
+		"::warning::apt-get update could not read security.ubuntu.com, the second time; installing from the indexes present",
+		"apt-install: installed build-essential",
+	)
+	if _, err := os.Stat(stamp); err == nil {
+		t.Error("an update that did not read every source marked the indexes as read")
+	}
+}
+
+// An update that fails by itself (a source answering 503) is read once more as well, because the update retries no request
+// itself; after the second failure the install goes on from the indexes it read.
 func TestAptInstallAFailedUpdateIsAWarning(t *testing.T) {
 	t.Parallel()
 	r, _ := runAptInstall(t, aptCase{
 		fail:       "update",
 		failOutput: "Err:7 https://ppa.launchpadcontent.net/git-core/ppa/ubuntu noble InRelease\n  503  Service Unavailable\nE: Failed to fetch https://ppa.launchpadcontent.net/git-core/ppa/ubuntu/dists/noble/InRelease  503  Service Unavailable",
 	}, "jq")
-	if r.status != 0 || len(r.timeouts("update")) != 1 || len(r.timeouts("--no-download")) != 1 {
-		t.Fatalf("status %d, calls %q, want one update and an install:\n%s", r.status, r.calls, r.output)
+	if r.status != 0 || len(r.timeouts("update")) != 2 || len(r.timeouts("--no-download")) != 1 {
+		t.Fatalf("status %d, calls %q, want two updates and an install:\n%s", r.status, r.calls, r.output)
 	}
-	mustContain(t, r, "::warning::apt-get update failed (E: Failed to fetch https://ppa.launchpadcontent.net/git-core/ppa/ubuntu/dists/noble/InRelease  503  Service Unavailable); installing from the indexes it read")
+	mustContain(t, r,
+		"::warning::apt-get update failed (E: Failed to fetch https://ppa.launchpadcontent.net/git-core/ppa/ubuntu/dists/noble/InRelease  503  Service Unavailable); reading the indexes once more",
+		"::warning::apt-get update failed (E: Failed to fetch https://ppa.launchpadcontent.net/git-core/ppa/ubuntu/dists/noble/InRelease  503  Service Unavailable), the second time; installing from the indexes present",
+	)
 }
 
 // A download that hangs twice fails the step in bounded time and names the packages and the mirror.

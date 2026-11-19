@@ -237,11 +237,27 @@ What the script does, in order:
    installs anything from it. Without that file every source is read.
 4. The packages are downloaded first (`install --download-only`), then unpacked from the cache (`install --no-download`), so the
    bound that ends a stalled download never stops dpkg in the middle of a package.
-5. Each of the three calls runs under `timeout` (TERM, then KILL 10 s later) and with `Acquire::http::Timeout=20`,
-   `Acquire::https::Timeout=20`, `Acquire::Retries=3`. An update or download that the bound ended runs once more; one that failed by
-   itself does not, since apt has retried each request already.
-6. An update that failed or was ended twice is a warning, and the install goes on from the indexes present. A failed download or
-   unpacking fails the step with `::error::`, naming the packages and the hosts apt was waiting on.
+5. Each of the three calls runs under `timeout` (TERM, then KILL 10 s later) and with `Acquire::http::Timeout=20` and
+   `Acquire::https::Timeout=20`.
+6. The update runs with `Acquire::Retries=0`, so that it ends by itself: apt gives up a source that does not answer, keeps the
+   indexes of the sources that did and exits 0. An update that the bound ends keeps nothing, also not what it had read. The retry
+   is the script's: an update that did not read every source (a request whose last line is `Err`), that failed or that the bound
+   ended runs once more, on a new connection. Only an update that read every source leaves the stamp of step 2.
+7. The download runs with `Acquire::Retries=3`. A download that the bound ended runs once more; one that failed by itself does
+   not, since apt has retried each request already.
+8. An update that is incomplete after its second run is a warning, and the install goes on from the indexes present. A failed
+   download or unpacking fails the step with `::error::`, naming the packages and the hosts apt was waiting on.
+
+Why the update retries nothing itself: in HA and Performance 44453781574 (2026-11-19, `e2e (nuget-ha)`) `security.ubuntu.com`
+did not answer during the first update, which had read all of `archive.ubuntu.com` after 51 s, and `archive.ubuntu.com` did not
+answer during the second, which had read all of `security.ubuntu.com` after 24 s. apt printed its first `Ign` for the silent
+host 41 s after the start both times; with three retries it would have needed about 164 s to give the host up, so the bound
+of 60 s ended both updates, each lost what it had read, and the install failed with `Unable to locate package build-essential`
+after 120 s. Measured in an `ubuntu:24.04` container beside a source that accepts the connection and never answers: apt gives
+it up after 41 s with no retry, 82 s with one, 168 s with three, each time with exit 0 and the indexes of the other sources.
+One silent source therefore fits into the bound only without a retry. Three suites on one silent host (`archive.ubuntu.com`
+carries `noble`, `noble-updates` and `noble-backports`) are asked one after the other and still exceed it; the indexes a
+complete earlier update left stay in place then.
 
 The numbers, measured in the green run before it (Test and Release 44372205911, the logs of the 28 jobs that called apt-get,
 `gh api repos/guided-traffic/quader/actions/jobs/<id>/logs`, 33 updates):
@@ -249,7 +265,8 @@ The numbers, measured in the green run before it (Test and Release 44372205911, 
 | Bound | Value | Measured in the green run | Why this value |
 |---|---|---|---|
 | A request without a byte (`Acquire::http::Timeout`, `https`) | 20 s | apt gave up a stalled request to `archive.ubuntu.com` after 30 s (as in the hung run) and its retry succeeded at once (`web (Angular)`: 33 s for 10 kB of `libatomic1`); another update waited 22 s on the same host; the slowest answer of a healthy host was the PPA's, about 6 s | ends such a stall 10 s sooner and stays at three times the slowest healthy answer |
-| Retries of a failed request (`Acquire::Retries`) | 3 | – | apt's own retry is what recovered the stall |
+| Retries of a failed request in the update (`Acquire::Retries`) | 0 | a silent source: 41 s without a retry, 82 s with one, 168 s with three (container, 2026-11-19; 41 s to the first `Ign` in `nuget-ha` of 44453781574) | the update must end inside its 60 s to keep the indexes it read; the script's second update is the retry |
+| Retries of a failed request in the download (`Acquire::Retries`) | 3 | – | apt's own retry is what recovered the stall |
 | `apt-get update` | 60 s | 3 to 35 s, median 8 s; 34 MB of indexes; the 35 s held the stall of 22 s | about 1.7 times the slowest, which itself held a stall |
 | Download of the packages | 90 s | 2 to 14 s for 82 to 102 MB (`build-essential` is 87 packages, with ClamAV 99) | more than six times the slowest; 1 MB/s still finishes |
 | Unpacking | 120 s | the whole install step, update and download included, took 7 to 45 s | several times the longest whole step |
@@ -260,13 +277,19 @@ alike; forcing IPv4 would take away the family that works when IPv4 is the broke
 
 What it was tested against. The unit test [aptinstall_test.go](../../internal/tools/ciworkflows/aptinstall_test.go) runs the script
 with `dpkg-query`, `sudo`, `timeout` and `apt-get` stubbed (no root, no network): the installed case, the bounds and options of each
-call, the one update per job, an update that hangs once and twice, a failed update, a download that hangs twice and one that fails,
+call, the one update per job, an update that hangs once and twice, an update that ends without one source once and twice, a
+failed update, a download that hangs twice and one that fails,
 and an `awk` that crashes while the error is worded (the exit status stays apt's; macOS awk did crash now and then when the
 environment held a value with newlines, which is why the stubs read their output from files).
 By hand, on 2026-11-18, in `ubuntu:24.04` containers (arm64, so `ports.ubuntu.com`): a healthy install, the update that does not
 contact an extra source in `sources.list.d`, and a source that answers with headers and then one byte every 5 seconds. apt's own
 timeout never fired on that source; the script ended the update at 60 s, read again, gave up at 120 s and failed the install of
 `jq` with `Unable to locate package` at 121 s, because an update that never finished leaves a runner image without indexes.
+By hand, on 2026-11-19, in the same container beside a source that accepts the connection and never sends a byte: the script
+before the change ended both updates at 60 s and failed with `Unable to locate package jq` after 120 s, as in `nuget-ha`; the
+script after it let each of the two updates end by itself after 41 s, warned twice (`could not read dead.example`) and installed
+`jq` from the other sources, 85 s in all. In the same setup an update that the bound ended left the 15 index files of a complete
+earlier update in place, and three suites on the silent host took 121 s without a bound.
 
 #### The steps that download in the gating jobs
 

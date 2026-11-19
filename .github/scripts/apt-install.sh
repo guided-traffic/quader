@@ -13,15 +13,22 @@
 #      again. The update reads the Ubuntu archive only, when the runner image has /etc/apt/sources.list.d/ubuntu.sources: a
 #      third-party source of the image (the git PPA) answers slowly or not at all (503 on 2026-11-11) and holds nothing a job
 #      installs. Without that file every source of the image is read.
-#   3. Each apt-get call runs under a wall-clock bound (timeout, TERM, then KILL 10 s later) and with apt's own bounds: 20 s
-#      without a byte on a connection ends the request, and a failed request is retried 3 times. apt's own bounds do not end
-#      a source that sends a byte now and then (a test server sending one byte every 5 s held apt-get update until the
-#      wall-clock bound ended it), so the wall-clock bound is the one that holds. The update may take 60 s, the download of the
-#      packages 90 s, the unpacking 120 s. An update or a download that hit its bound is run once more, because a new
-#      connection is what the healthy runs needed after a stall; a call that failed by itself is not repeated.
-#   4. A failed or timed-out update is a warning: the install goes on with the indexes that are present. A failed download or
-#      unpacking fails the step and names the packages and the hosts apt was waiting on. An update that never finished leaves
-#      no indexes on a runner image that ships none, and the install then fails at once with "Unable to locate package".
+#   3. Each apt-get call runs under a wall-clock bound (timeout, TERM, then KILL 10 s later) and with apt's own bound: 20 s
+#      without a byte on a connection ends the request. apt's own bound does not end a source that sends a byte now and then
+#      (a test server sending one byte every 5 s held apt-get update until the wall-clock bound ended it), so the wall-clock
+#      bound is the one that holds. The update may take 60 s, the download of the packages 90 s, the unpacking 120 s.
+#   4. The update has to end by itself wherever it can, because an update that the bound ends keeps nothing: the indexes of
+#      the sources that had answered are lost with it (HA and Performance 44453781574, nuget-ha: security.ubuntu.com was
+#      silent during the first update and archive.ubuntu.com during the second, both were ended at 60 s, and the install
+#      found no index at all). apt gives up a silent source after 41 s per try with the 20 s above (measured there and in a
+#      container), so the update retries no request itself: it ends inside its bound, keeps the indexes of the sources that
+#      answered and exits 0. The retry is this script's: an update that did not read every source, or that the bound ended,
+#      runs once more, on a new connection. The download retries each request 3 times; a download that the bound ended runs
+#      once more, one that failed by itself is not repeated.
+#   5. An update that is incomplete after its second run is a warning: the install goes on with the indexes that are present.
+#      A failed download or unpacking fails the step and names the packages and the hosts apt was waiting on. An update that
+#      never finished leaves no indexes on a runner image that ships none, and the install then fails at once with "Unable
+#      to locate package".
 #
 # Worst case: 2 x 60 + 2 x 90 + 120 s, plus 10 s per kill, under 8 minutes; the shortest job that installs a package has 15.
 # The packages are downloaded first (--download-only) and unpacked from the cache (--no-download), so the bound that can
@@ -36,7 +43,9 @@ update_seconds=60
 download_seconds=90
 unpack_seconds=120
 kill_after=10
-apt_options=(-o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=3 -o Dpkg::Use-Pty=0)
+apt_options=(-o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Dpkg::Use-Pty=0)
+update_retries=0
+download_retries=3
 
 missing=()
 for p in "$@"; do
@@ -101,6 +110,11 @@ waiting() {
   echo "${h:-no host, apt had started no request}"
 }
 
+# unread LOG: the hosts of the requests apt gave up for good (their last line is Err); empty when it read every source.
+unread() {
+  requests "$1" | awk '$1 == "Err" { print $2 }' | LC_ALL=C sort -u | paste -sd ' ' - || true
+}
+
 # why LOG STATUS: apt's last error line (E: ...), or the exit status when it printed none.
 why() {
   local e
@@ -121,29 +135,32 @@ if [ -n "${RUNNER_TEMP:-}" ] && [ -f "$stamp" ]; then
 else
   for attempt in 1 2; do
     status=0
-    bounded "$update_seconds" "$work/update.log" ${scope[@]+"${scope[@]}"} update || status=$?
-    if [ "$status" -eq 0 ]; then
+    bounded "$update_seconds" "$work/update.log" -o "Acquire::Retries=$update_retries" ${scope[@]+"${scope[@]}"} update || status=$?
+    lost="$(unread "$work/update.log")"
+    if [ "$status" -eq 0 ] && [ -z "$lost" ]; then
       [ -z "${RUNNER_TEMP:-}" ] || touch "$stamp"
       break
     fi
-    if timed_out "$status" && [ "$attempt" -eq 1 ]; then
-      echo "::warning::apt-get update did not finish in ${update_seconds} s (waiting on $(waiting "$work/update.log")); reading the indexes once more"
+    if timed_out "$status"; then
+      what="did not finish in ${update_seconds} s (waiting on $(waiting "$work/update.log"))"
+    elif [ "$status" -eq 0 ]; then
+      what="could not read $lost"
+    else
+      what="failed ($(why "$work/update.log" "$status"))"
+    fi
+    if [ "$attempt" -eq 1 ]; then
+      echo "::warning::apt-get update $what; reading the indexes once more"
       continue
     fi
     indexes="incomplete"
-    if timed_out "$status"; then
-      echo "::warning::apt-get update did not finish in ${update_seconds} s twice (waiting on $(waiting "$work/update.log")); installing from the indexes present"
-    else
-      echo "::warning::apt-get update failed ($(why "$work/update.log" "$status")); installing from the indexes it read"
-    fi
-    break
+    echo "::warning::apt-get update $what, the second time; installing from the indexes present"
   done
 fi
 
 # The packages: downloaded under the bound, then unpacked from the cache.
 for attempt in 1 2; do
   status=0
-  bounded "$download_seconds" "$work/download.log" install -y --download-only "${missing[@]}" || status=$?
+  bounded "$download_seconds" "$work/download.log" -o "Acquire::Retries=$download_retries" install -y --download-only "${missing[@]}" || status=$?
   [ "$status" -ne 0 ] || break
   if timed_out "$status" && [ "$attempt" -eq 1 ]; then
     echo "::warning::the download of ${missing[*]} did not finish in ${download_seconds} s (waiting on $(waiting "$work/download.log")); trying once more"
