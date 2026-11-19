@@ -1194,6 +1194,19 @@ agent** is not decided until the owner has said so.
   `public_populates_remote`: a request without a credential fills the cache, which is what was asked for, bounded by the
   pattern. Not known: whether the owner also wants it on his installation, which cannot be reached from the development
   machine.
+- **W-23 · A control beside a text stands on the text's line, on every screen, and the renders hold it** (owner,
+  2026-11-19, with a picture of the images of `platform/guidedtraffic`: the button that opens a row sits in the middle of
+  the row, the image's name and the other cells at its top): "Wieso ist denn wieder nur das Icon am Anfang mittig und die
+  Schrift ist wieder nicht richtig ausgerichtet. Kannst du das bitte einmal für das gesamte Frontend überprüfen und ein für
+  alle mal absichern..." Measured in the running UI: the row is 65 px high, the button of 32 px has its middle at 32 px, the
+  name and every other cell their line's middle at 24 px. Why the render checks of W-5 let it pass, read in
+  [layout.ts](../../web/e2e/renders/layout.ts): the screen is in the set (`repository-oci`), but `icon-apart` fails only
+  when an icon and its label share no height at all, it looks for the label among the icon's siblings and so never compares
+  a button's glyph with the text beside the button, and `row-offset` compares the texts of a row's cells with each other,
+  which here all stand at the same height. To a builder on 2026-11-19 (R-UI-175 to R-UI-178, Q-UI-720 to Q-UI-729): the
+  check becomes one of middles within a tolerance, for icons and for controls, in a row of a table and in any row of
+  boxes; every finding of a full run is fixed at its shared cause. The owner's stack is given to the builder for its
+  render runs.
 - **Seen by the development agent, not decided:**
   - **Three tiles of Guides carry the same placeholder mark** (2026-11-19, as a visitor): Ansible Galaxy, Generic and npm show
     the outlined box, Debian, NuGet and OCI a mark of their own.
