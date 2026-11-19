@@ -1932,6 +1932,36 @@ agent** is not decided until the owner has said so.
   image they get past `Install build tools` and then build these images. To a builder on 2026-11-19, together with F-156:
   the images are built once per change of their inputs and reused from a cache that publishes nothing, the Go module
   cache holds every module of `go.sum`, and a download that stalls fails in minutes.
+  - **Built** (F-156 and F-158; Q-ARCH-520 to Q-ARCH-526, Q-ARCH-327 superseded in part; on `main` the same day, **not
+    proven before its first runs**): a job with unchanged inputs fetches none of the Go modules, the Go tools, the
+    clients images or the Quader image from outside.
+    - **Go modules:** the cache of `actions/setup-go` is off; a cache of the download directory, keyed by `go.sum`, is
+      completed by every job in a step of its own (`go mod download` under a bound of 300 s, the step 10 minutes, the
+      error names the request that got no answer) and saved by the first job that misses. Locally a miss fetched 477 files
+      in 21 s, a hit nothing in 0.1 s, and a proxy that accepts and never answers failed after its bound with the requests
+      named. 216 MB.
+    - **Go tools** (golangci-lint, govulncheck, gocyclo, kind, actionlint) are cached by pin and Go version instead of
+      being built inside the make targets of gating jobs.
+    - **Clients images** (npm, NuGet, OCI, APT, Ansible): saved as an image archive in the Actions cache, keyed by a hash
+      of their inputs (the set's directory, the pins the build reads, the forwarder binary, the script, the architecture);
+      a miss builds as before and saves, a broken entry falls back to building. Locally all five were built and loaded a
+      second time with every build, buildx and pull refused: only `docker load` ran, and the image IDs matched. Not chosen:
+      BuildKit's cache through the Actions cache (loading still pulls the base images) and a registry cache (it would
+      publish). 112 to 737 MB each.
+    - **The Quader image** is built once per run by the job `image` and loaded by the kind legs from an artifact, where
+      each of ten legs of a push and 25 of the nightly built it itself. **The job graph changed:** the kind legs need
+      `image` and start about four minutes later; the needs of Semantic Release are unchanged; the nightly has an `image`
+      job of its own.
+    Rules in `internal/tools/ciworkflows` hold it (every Go job completes the module cache before it builds; every leg
+    whose sets start client pods takes them from the cache; no job builds a clients image or the Quader image itself; no
+    `go install` outside the tool step); the builder broke the workflows ten ways and each rule caught its case.
+    **To check against the first runs:** the restore times on the self-hosted runners (they have no `zstd`, so their
+    entries are gzip); that `chart` and `unit` print no `go: downloading`; that the legs load the image for
+    `linux/amd64` and the dev profile still comes up; the second run's "loaded, nothing built" for each clients image; the
+    cache's size against the estimate of 4 GB of the repository's 10. **Still fetched in every leg, named by the builder:**
+    the kind node image, the dev profile's images and k6 (the remedy would be a registry or a mirror inside the runners'
+    cluster, which is the owner's to decide), the upgrade leg's second image, the stub and driver images. **For the
+    owner:** `zstd` in the runners' image would make the entries smaller and faster.
 - **F-159 · A unit test with a date in it turned the gating job `web (Angular)` red on its seventh day** (2026-11-19 from
   12:31:51 UTC, Test and Release 44525198691): two tests of the grade card held a fixture time of 2026-11-12 12:31:51 UTC
   and expected its relative time to read "now", minutes, hours, "yesterday" or days ago; from the seventh day on it reads
