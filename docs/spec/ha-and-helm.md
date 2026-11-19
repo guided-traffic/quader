@@ -10208,7 +10208,7 @@ cgroup namespace and reads `0::/`.
 | Class | Daemon's parent | Rows |
 |---|---|---|
 | `self-hosted` | `/docker` | as before: `cg:<name>` per top-level cgroup, `cgd:<id12>` per container of `/docker` (own and neighbours', told apart by `containers.tsv`) |
-| `large` | `/kubepods/burstable/pod<uid>/docker` | in addition `daemon:parent` (the leg's containers) and `daemon:pod` (the runner pod) with the columns of the `cg:` rows, `cgd:<id12>` also for the containers of the daemon's parent, and `pod-memory.csv` (the pod's `memory.current`, `memory.peak`, `memory.max`, the `oom` and `oom_kill` counts of `memory.events` and the `oom` count of `memory.events.local`) every 5 s; its last row heads the evidence's `README.txt` |
+| `large` | `/kubepods/burstable/pod<uid>/docker` | in addition `daemon:parent` (the leg's containers) and `daemon:pod` (the runner pod) with the columns of the `cg:` rows, `cgd:<id12>` also for the containers of the daemon's parent, and `pod-memory.csv` (the pod's `memory.current`, `memory.peak`, `memory.max`, the `oom` and `oom_kill` counts of `memory.events`, the `oom` count of `memory.events.local`, and `anon`, `file`, `kernel`, `shmem`, `slab_reclaimable` and `sock` of `memory.stat`) every 5 s; its last row heads the evidence's `README.txt`, with the peak of `anon` and of what cannot be given back (`anon + shmem + sock + kernel - slab_reclaimable`) over the leg |
 | not found | — | as `self-hosted`, and the log says so once |
 
 The leg's own and the neighbours' containers keep one row kind, `cgd:`, in both classes, and `containers.tsv` stays the rule for telling them

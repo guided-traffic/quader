@@ -17,7 +17,8 @@
 #                     cgroup parent of the job's Docker daemon and the pod it lies in (`daemon:parent`, `daemon:pod`) where that is
 #                     not a top-level cgroup, and the containers of both that parent and the top-level `docker` (`cgd:<id12>`)
 #   pod-memory.csv    where the daemon's cgroup parent lies inside a pod (the runner class `large`): the pod's memory.current, memory.peak,
-#                     memory.max and OOM counters, every QUADER_E2E_EVIDENCE_POD_INTERVAL seconds; the last values head README.txt
+#                     memory.max, OOM counters and what fills it (memory.stat: anon, file, kernel, shmem, slab_reclaimable, sock), every
+#                     QUADER_E2E_EVIDENCE_POD_INTERVAL seconds; the last values and the peak of what cannot be given back head README.txt
 #   pods.csv          per pod of each kind node, every QUADER_E2E_EVIDENCE_POD_INTERVAL seconds: CPU time, memory by kind (anon,
 #                     file, socket buffers, kernel) and the OOM kills of its cgroup; pod-names.tsv maps the uids to names
 #   containers.tsv    the containers of the job's own Docker daemon (kind nodes, k6, helpers), every 10 s: which `cgd:` rows are the leg's
@@ -70,7 +71,7 @@ CG_NAME="quader-e2e-evidence-cgroups-$CLUSTER"
 # The columns of samples.csv; every recorder below writes rows of exactly this width (an empty field where a source has no value).
 SAMPLES_HEADER='ts_ms,source,cpu_some_avg10,cpu_some_total_us,cpu_full_avg10,cpu_full_total_us,mem_some_avg10,mem_some_total_us,mem_full_avg10,mem_full_total_us,load1,load5,load15,edge_curr_conns,edge_curr_ssl_conns,edge_conn_rate,edge_idle_pct,io_some_avg10,io_some_total_us,io_full_avg10,io_full_total_us,cpu_usage_us,cpu_steal_us,cpus,cpu_weight,members'
 PODS_HEADER='ts_ms,node,pod_uid,cpu_usage_us,mem_current,mem_anon,mem_file,mem_sock,mem_kernel,oom_kill'
-PODMEM_HEADER='ts_ms,mem_current,mem_peak,mem_max,oom,oom_kill,oom_local,docker_mem_current'
+PODMEM_HEADER='ts_ms,mem_current,mem_peak,mem_max,oom,oom_kill,oom_local,docker_mem_current,mem_anon,mem_file,mem_kernel,mem_shmem,mem_slab_reclaimable,mem_sock'
 
 nodes() { kind get nodes --name "$CLUSTER" 2>/dev/null; }
 
@@ -206,8 +207,9 @@ EOF
 # (`daemon:pod`). Every $4-th sample one row per container of the top-level `docker` and of the daemon's parent (`cgd:<id12>`, CPU
 # time only), so that the leg's own containers (containers.tsv) and a neighbour's can be told apart, and one row of the pod's memory
 # (memory.current, memory.peak, memory.max, the oom and oom_kill counts of memory.events, which include every OOM kill below the pod,
-# the oom count of memory.events.local, which counts the pod's own limit only, and memory.current of the daemon's parent) into $8,
-# again once at the end.
+# the oom count of memory.events.local, which counts the pod's own limit only, memory.current of the daemon's parent, then from the
+# pod's memory.stat anon, file, kernel, shmem, slab_reclaimable and sock; a field the kernel lacks stays empty) into $8, again once
+# at the end.
 # $1 interval, $2 stop file, $3 max seconds, $4 a container sample every this many rows, $5 the mounted tree, $6 the daemon's cgroup
 # parent and $7 its pod as CGFIND prints them (empty or `-`: none), $8 the pod memory file.
 read -r -d '' CGSAMPLER <<'EOF'
@@ -236,14 +238,17 @@ ctrs() {
   done
 }
 mem() {
-  local d=$root$pod k v cur="" peak="" lim="" oom="" kill="" loc="" dcur=""
+  local d=$root$pod k v cur="" peak="" lim="" oom="" kill="" loc="" dcur="" anon="" file="" kern="" shm="" srec="" sock=""
   read -r cur 2>/dev/null < "$d/memory.current"
   read -r peak 2>/dev/null < "$d/memory.peak"
   read -r lim 2>/dev/null < "$d/memory.max"
   while read -r k v; do case $k in oom) oom=$v ;; oom_kill) kill=$v ;; esac; done 2>/dev/null < "$d/memory.events"
   while read -r k v; do [ "$k" = oom ] && loc=$v; done 2>/dev/null < "$d/memory.events.local"
   [ -n "$parent" ] && read -r dcur 2>/dev/null < "$root$parent/memory.current"
-  printf '%s,%s,%s,%s,%s,%s,%s,%s\n' "$now" "$cur" "$peak" "$lim" "$oom" "$kill" "$loc" "$dcur" >> "$memfile"
+  while read -r k v; do
+    case $k in anon) anon=$v ;; file) file=$v ;; kernel) kern=$v ;; shmem) shm=$v ;; slab_reclaimable) srec=$v ;; sock) sock=$v ;; esac
+  done 2>/dev/null < "$d/memory.stat"
+  printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' "$now" "$cur" "$peak" "$lim" "$oom" "$kill" "$loc" "$dcur" "$anon" "$file" "$kern" "$shm" "$srec" "$sock" >> "$memfile"
 }
 # one group to the end: the script appends `>>file` to this program, which applies to its last command only
 {
@@ -269,6 +274,32 @@ while [ "$SECONDS" -lt "$max" ] && [ ! -e "$stop" ]; do
 done
 if [ -n "$pod" ]; then now=$(date +%s%3N); mem; fi
 }
+EOF
+
+# ── the pod's memory in one line (runs on the host at the stop, with gib() prepended) ──────────────────────────────────────────────
+# $1 pod-memory.csv. Prints the line of README.txt: the last row's peak, limit, current use, the daemon's containers and OOM counters,
+# and over every row the peak of the anonymous memory and the peak of what the kernel cannot give back without swap: anon, shmem
+# (tmpfs and shared memory, counted in file), sock (socket buffers) and kernel less slab_reclaimable. A row that lacks one of
+# those fields counts for neither peak that needs it; nothing when the file has no row.
+read -r -d '' PODMEMLINE <<'EOF'
+read -r cur peak lim oom kill loc dcur anon held < <(awk -F, '
+  function num(x) { return x ~ /^[0-9]+$/ }
+  function v(x) { return x == "" ? "-" : x }
+  NR == 1 { next }
+  {
+    cur = $2; peak = $3; lim = $4; oom = $5; kill = $6; loc = $7; dcur = $8
+    if (num($9) && (anon == "" || $9 + 0 > anon + 0)) anon = $9
+    if (num($9) && num($11) && num($12) && num($13) && num($14)) {
+      h = sprintf("%.0f", $9 + $12 + $11 - $13 + $14)
+      if (held == "" || h + 0 > held + 0) held = h
+    }
+  }
+  END { if (NR > 1) print v(cur), v(peak), v(lim), v(oom), v(kill), v(loc), v(dcur), v(anon), v(held) }' "$1")
+[ -n "${cur:-}" ] || exit 0
+known() { if [ "$1" = - ]; then echo "not known"; else echo "$1"; fi; }
+a="at most $(gib "$anon") anonymous"; [ "$anon" = - ] && a="an anonymous part not known"
+h="at most $(gib "$held") that cannot be given back"; [ "$held" = - ] && h="a part that cannot be given back not known"
+echo "Pod memory         peak $(gib "$peak") of a limit of $(gib "$lim"), of that $a and $h (anon, shmem, sock, kernel less its reclaimable slab); at the end $(gib "$cur"), of that the daemon's containers $(gib "$dcur"); OOM at the pod's own limit $(known "$loc"), OOM events below the pod $(known "$oom"), OOM kills below the pod $(known "$kill") (pods.csv names a killed kind pod)"
 EOF
 
 # ── the log keeper (runs inside a node container) ────────────────────────────────────────────────────────────────────────────────
@@ -515,13 +546,13 @@ stop)
       echo "Docker daemon      puts its containers under $cg_parent of the machine's cgroups, inside the pod $cg_pod, whose memory limit counts them"
     fi
     if [ -s "$dir/pod-memory.csv" ]; then
-      IFS=, read -r _ m_cur m_peak m_max m_oom m_kill m_local m_docker < <(tail -n 1 "$dir/pod-memory.csv")
-      echo "Pod memory         peak $(gib "$m_peak") of a limit of $(gib "$m_max"); at the end $(gib "$m_cur"), of that the daemon's containers $(gib "$m_docker"); OOM at the pod's own limit ${m_local:-not known}, OOM events below the pod ${m_oom:-not known}, OOM kills below the pod ${m_kill:-not known} (pods.csv names a killed kind pod)"
+      bash -c "$(declare -f gib)
+$PODMEMLINE" _ "$dir/pod-memory.csv"
     fi
     echo
     cat <<'README'
 samples.csv        pressure (PSI cpu, memory and io: some/full avg10 and total microseconds) and CPU time of the host (source host: also the load average, the steal time and the number of CPUs), of the cgroup of each kind node (node:<name>) and of the machine's top-level cgroups (cg:<name>: also cpu.weight and the number of pods or containers in it), the same for the cgroup parent of the job's Docker daemon where it is not a top-level cgroup (daemon:parent) and for the pod it lies in (daemon:pod), the CPU time of every container of the machine's top-level docker cgroup and of the daemon's parent (cgd:<id12>), HAProxy's connection counters of each edge pod (edge:<pod>), every 1 to 5 s, by time
-pod-memory.csv     where the daemon's parent lies inside a pod: the pod's memory.current, memory.peak, memory.max, the oom and oom_kill counts of memory.events (every OOM below the pod, the kind pods' own limits included), the oom count of memory.events.local (the pod's own limit only) and memory.current of the daemon's parent, every 5 s and at the end
+pod-memory.csv     where the daemon's parent lies inside a pod: the pod's memory.current, memory.peak, memory.max, the oom and oom_kill counts of memory.events (every OOM below the pod, the kind pods' own limits included), the oom count of memory.events.local (the pod's own limit only), memory.current of the daemon's parent, and from the pod's memory.stat anon, file (page cache, shmem included), kernel, shmem, slab_reclaimable and sock, every 5 s and at the end
 pods.csv           per pod of each kind node: CPU time, memory.current, anon, file, socket buffers, kernel memory and the OOM kills of its cgroup, every 5 s
 pod-names.tsv      the namespace and name of each pod uid in pods.csv
 containers.tsv     the containers of the job's own Docker daemon (the kind nodes, k6, helpers) by their 12-character id: every other cgd: row is a neighbour's

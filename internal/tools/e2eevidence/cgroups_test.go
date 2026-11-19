@@ -31,6 +31,31 @@ const (
 	ownPod   = "kubepods/burstable/pod" + podUID
 )
 
+// podMemoryStat is the runner pod's memory.stat in the order and with the fields of a 6.x kernel (an excerpt): 8 GiB anon,
+// 3 GiB file of which 1 GiB shmem, 512 MiB kernel of which 256 MiB reclaimable slab, 16 MiB socket buffers. The fields that
+// start with the name of another (anon_thp, file_mapped, kernel_stack) must not be read as that one.
+const podMemoryStat = `anon 8589934592
+file 3221225472
+kernel 536870912
+kernel_stack 18874368
+pagetables 67108864
+sec_pagetables 0
+percpu 2097152
+sock 16777216
+vmalloc 1048576
+shmem 1073741824
+file_mapped 805306368
+file_dirty 4096
+file_writeback 0
+anon_thp 2097152
+slab_reclaimable 268435456
+slab_unreclaimable 100663296
+slab 369098752
+`
+
+// The memory.stat columns of pod-memory.csv that podMemoryStat gives: anon, file, kernel, shmem, slab_reclaimable, sock.
+const podMemoryStatColumns = "8589934592,3221225472,536870912,1073741824,268435456,16777216"
+
 func container(prefix string) string { return prefix + strings.Repeat("0", 64-len(prefix)) }
 
 // programs returns the bash programs that e2e-evidence.sh reads into variables from quoted heredocs (`<<'EOF'`), as the
@@ -45,7 +70,7 @@ func programs(t *testing.T) map[string]string {
 	for _, m := range regexp.MustCompile(`(?ms)^read -r -d '' (\w+) <<'EOF'\n(.*?)\nEOF$`).FindAllStringSubmatch(string(b), -1) {
 		out[m[1]] = m[2]
 	}
-	for _, name := range []string{"READERS", "CGFIND", "CGSAMPLER"} {
+	for _, name := range []string{"READERS", "CGFIND", "CGSAMPLER", "PODMEMLINE"} {
 		if out[name] == "" {
 			t.Fatalf("e2e-evidence.sh has no program %s", name)
 		}
@@ -106,6 +131,7 @@ func machine(t *testing.T, layout string) string {
 			"memory.max":          "30064771072\n",
 			"memory.events":       "low 0\nhigh 0\nmax 7\noom 1\noom_kill 2\noom_group_kill 0\n",
 			"memory.events.local": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+			"memory.stat":         podMemoryStat,
 		})
 		cgroup(t, filepath.Join(pod, runnerCtr), 200000, "100")
 		cgroup(t, filepath.Join(pod, dindCtr), 300000, "100")
@@ -295,7 +321,7 @@ func TestTheSamplerOnALargeRunnerRecordsTheLegsOwnContainersAndThePodsMemory(t *
 		t.Fatalf("%d pod memory rows in %d samples, want %d: %q", len(mem), samples, samples+1, mem)
 	}
 	for _, r := range mem {
-		if want := stamp + ",12884901888,17179869184,30064771072,1,2,0,10737418240"; r != want {
+		if want := stamp + ",12884901888,17179869184,30064771072,1,2,0,10737418240," + podMemoryStatColumns; r != want {
 			t.Errorf("pod memory row:\n got %s\nwant %s", r, want)
 		}
 	}
