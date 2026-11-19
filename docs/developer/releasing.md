@@ -103,7 +103,7 @@ which bounds the install in time ([OS packages in the jobs](#os-packages-in-the-
 | chart | `make chart-lint`, `make chart-test` | `helm lint` and `helm template` over every value set of both charts (`deploy/helm/quader/ci`, `deploy/helm/quader-bastion/ci`, the dev profile), the render assertions of [test/chart](../../test/chart) for both charts, and the `promtool check rules` / `promtool test rules` run over the Bastion's PrometheusRule ([rules_test.yaml](../../deploy/helm/quader-bastion/tests/rules_test.yaml)); `make chart-test` fetches promtool into `.bin` at `PROMTOOL_VERSION` of [tools/versions.env](../../tools/versions.env), checked against the SHA-256 of the platform; uploads `.out/test-chart.json` (`test-chart`) |
 | image | `make image IMAGE=quader:ci` | the [Containerfile](../../Containerfile) for the runner's architecture, loaded into Docker; the image must run as `65532:65532` (R-HA-033) |
 | SBOM generator (pinned syft, test image) | `make sbom-generator-check` | builds the SBOM generator of the release image and a two-platform test image with it, and asserts that both attestations name the pinned syft; needed by Semantic Release ([below](#sbom-generator)) |
-| Container Scan (Trivy, built image) | `make image IMAGE=quader:scan`, `make trivy`, then Trivy | Trivy (pinned `TRIVY_VERSION`) on the built image: fixed OS and library vulnerabilities of CRITICAL or HIGH, secrets and misconfigurations; SARIF uploaded as `trivy-container-report` |
+| Container Scan (Trivy, built image) | `make image IMAGE=quader:scan`, `make trivy`, then Trivy | Trivy (pinned `TRIVY_VERSION`) on the built image: fixed OS and library vulnerabilities of CRITICAL or HIGH, secrets and misconfigurations, less the findings accepted for a time ([below](#accepted-findings-of-the-container-scan)); SARIF uploaded as `trivy-container-report` |
 | integration (shard a, b, c) | `make integration-up`, `make test-integration SHARD=<a\|b\|c>`, `make integration-down` | the integration tier against the compose stack on TLS, on Valkey 9.1 only (no older line is guaranteed while Quader is in development); three legs with a stack each, shard `a` the packages `ci`, `coordination`, `mirror`, `npm`, `nuget`, `repository` and `proxy`, shard `c` the `oci*`, `deb*`, `registry`, `itempublish`, `vuln*` and `bastion*` packages and the OCI conformance suite, shard `b` every other one; uploads `test-integration-<shard>` and `profile-integration-<shard>` |
 | S3 conformance | `make silo-up`, `make s3-conformance`, `make silo-down` | the conformance tests of R-STOR-035 against Silo (the image `SILO_IMAGE`), served over TLS only; the server log is uploaded on failure |
 | e2e (npm) | `make image VERSION=dev`, `make dev-up`, `make e2e SET=npm`, `make dev-down` | the npm acceptance matrix (eight real clients, [R-NPM-045](../spec/formats/npm.md#r-npm-045--client-acceptance-matrix)), the npm side of the remote full mirror (R-REPO-055, R-REPO-059, Q-REPO-306) and E2.2 to E2.12 on the scatter profile with the counting test upstream; gates every change, own cluster name and edge port (8082). A dispatch with `closing=true` adds the leg `npm-closing` (port 8083): the matrix and the cold install with Valkey stopped, and the read-only subset against the public registry ([Q-NPM-46](../spec/formats/npm.md#q-npm-46--what-marks-the-run-that-closes-the-phase)); the legs `npm-ha` and `npm-ha-crash` left this job on 2026-11-01 (owner): `npm-ha` runs nightly and on dispatch in [HA and Performance (nightly)](#ha-and-performance-nightly) (port 8087), `npm-ha-crash` (three force-deletes) runs by hand only; for them the step budget is 80 minutes and the job 120, and they are E2.11: drain variant A, the PostgreSQL switchover and the Valkey failover under the npm load, and the pod crash with three force-deletes ([e2e.md](e2e.md#drain-and-failover-under-npm-load)); a closing dispatch runs both as one leg `npm-ha-closing` with the 20-minute pod crash, the R-ARCH-027 report and the 5-minute Valkey outage ([Q-HA-67](../spec/ha-and-helm.md#q-ha-67--where-and-how-often-the-scenarios-under-npm-load-run)); uploads `e2e-npm-report-<set>`, `e2e-npm-artifacts-<set>` and on failure the cluster state |
@@ -193,7 +193,28 @@ cloudnative-pg after about 5 minutes). Their digests are pinned ([Q-ARCH-356](..
 [H-589](../security/data-and-secret-flow.md#h-589--release-downloads-send-the-job-token-to-githubcom-two-residuals) for the cloudnative-pg one). The cache of those archives in CI is not in place yet
 ([Q-ARCH-355](../spec/architecture.md#q-arch-355--how-do-the-ci-jobs-get-their-pinned-tools-without-a-live-release-asset-download-per-job)).
 
-### OS packages in the jobs
+### Accepted findings of the container scan
+
+The container scan gates the release, and it scans everything in the image: Quader's own binary and the analyser of the image
+scanning, which is the upstream release archive at its pin. When the vulnerability database learns of a finding in a binary
+Quader does not build, the gate turns red on a commit that changed nothing, and stays red until upstream releases a new build.
+[.trivyignore.yaml](../../.trivyignore.yaml) is the place for such a finding, and only for it:
+
+- an entry names **one identifier**, the **path or paths in the image** it is accepted at (never the whole image), the **day it
+  ends** (`expired_at`) and, in `statement` and the comment above it, **why the finding does not apply** where it is accepted;
+  `TestAcceptedFindingsAreScopedAndEnd` ([internal/tools/ciworkflows](../../internal/tools/ciworkflows)) refuses an entry
+  without one of them, and `TestBothScanStepsReadTheAcceptedFindings` that the report's scan reads the same file as the gate's;
+- the same identifier at any other path fails the scan as before, and an entry past its day fails it again (both shown with
+  the pinned Trivy on 2026-11-19: accepted at the named path, exit 1 at another path, exit 1 with a day in the past);
+- a finding in Quader's own binary or in the base image is never entered here: it is fixed (the toolchain, the dependency, the
+  base image's pin);
+- the entry goes in the commit that raises the pin of the binary it names.
+
+The first entry (2026-11-19) is CVE-2026-97054, a finding of `net/http`'s server in the analyser built upstream with Go 1.27.3;
+Quader runs the analyser as a command for one scan and never as a server
+([image-scanning.md](../security/image-scanning.md#h-1003--the-analyser-is-an-upstream-build-with-the-vulnerabilities-of-its-day)).
+
+## OS packages in the jobs
 
 A step that needs an Ubuntu package calls [.github/scripts/apt-install.sh](../../.github/scripts/apt-install.sh) with the package
 names; the [build-tools](../../.github/actions/build-tools/action.yml) action calls it for what the runner lacks. No file under

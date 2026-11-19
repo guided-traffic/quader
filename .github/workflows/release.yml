@@ -733,8 +733,11 @@ jobs:
           make trivy
           echo "$PWD/.bin/trivy-${TRIVY_VERSION}" >> "$GITHUB_PATH"
 
+      # .trivyignore.yaml: the findings accepted for a time, each with its path in the image and the day it ends.
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_IGNOREFILE: .trivyignore.yaml
         with:
           image-ref: quader:scan
           format: table
@@ -750,6 +753,8 @@ jobs:
       - name: Run Trivy scan (SARIF output)
         if: always() && steps.trivy_install.outcome == 'success'
         uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_IGNOREFILE: .trivyignore.yaml
         with:
           image-ref: quader:scan
           format: sarif
