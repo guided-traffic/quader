@@ -342,7 +342,7 @@ export function layoutFindings(): LayoutFinding[] {
 
   // ---- broken: a short thing broken across lines (R-UI-171) ---------------------------------------------------------------
   // What the style guide keeps on one line: a status or a badge, a chip, a button's label (not a button that is a row's name in
-  // the look of a link, `button.link`, which wraps as a name does), a tab, a list's header, a date or a time (`time`; the relative
+  // the look of a link, `button.link`, which wraps as a name does, nor the toggle that is a section's heading), a tab, a list's header, a date or a time (`time`; the relative
   // time and its absolute one in brackets may stand on two lines, Q-UI-431), a key or an identifier in a cell (`translate="no"`;
   // not a name that may break beside its icon, Q-UI-425, nor a key a list lets wrap, Q-UI-303, nor its `.secondary` line), a
   // number with its unit, a format, a class and a level. A notice or a verdict in a paragraph (`p.warn`) is a sentence and wraps.
@@ -353,7 +353,9 @@ export function layoutFindings(): LayoutFinding[] {
   };
   const oneLine: readonly [string, string][] = [
     ['status', '.badge, span.ok, span.warn, span.bad, .chip'],
-    ['button', 'button:not(.link), a.btn, [role="tab"]'],
+    // Not the toggle of a section's heading (`h2 > button.toggle`): its label is the heading and wraps as a heading does (a
+    // guide's "Remove a version, import tasks and tombstones" at 390 px, in two lines on the runner and in one on a Mac).
+    ['button', 'button:not(.link):not(:is(h1, h2, h3, h4) > .toggle), a.btn, [role="tab"]'],
     ['header', 'table.data thead th'],
     ['time', 'time'],
     ['identifier', 'td[translate="no"]:not(.wrap), th[scope="row"][translate="no"]:not(.wrap-name)'],

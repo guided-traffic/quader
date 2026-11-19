@@ -574,6 +574,13 @@ jobs:
             mkdir -p "$out/$(dirname "$file")"
             cp ".out/ui-renders/$file" "$out/$file" 2>/dev/null || true
           done
+          # What Playwright kept of each failed screen: the page as it stood and the call that stopped it.
+          if [ -d .out/ui-renders/.results ]; then
+            (cd .out/ui-renders/.results && find . -name 'error-context.md' -print | while read -r file; do
+              mkdir -p "../../ui-layout-evidence/results/$(dirname "$file")"
+              cp "$file" "../../ui-layout-evidence/results/$file"
+            done)
+          fi
 
       - name: Upload the findings and the pictures of the failed screens
         if: failure()

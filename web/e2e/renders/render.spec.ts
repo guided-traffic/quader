@@ -99,7 +99,10 @@ for (const screen of screens) {
           }
         }
       } catch (e) {
-        failures.notices.push(`stopped at ${width} px: ${String(e instanceof Error ? e.message : e).split('\n')[0]?.slice(0, 300)}`);
+        // The first line names the call; the lines after it say what it waited for (the element, what covered it, that it kept
+        // moving). Without them a click that timed out on a runner cannot be explained from its report.
+        const told = String(e instanceof Error ? e.message : e).split('\n').map((l) => l.trim()).filter((l) => l !== '');
+        failures.notices.push(`stopped at ${width} px: ${told.slice(0, 12).join(' | ').slice(0, 1200)}`);
       }
       for (const shot of shots) {
         const where = `${shot.width} px, ${shot.scheme}${shot.tab ? `, ${shot.tab}` : ''}`;

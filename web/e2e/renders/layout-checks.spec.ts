@@ -105,6 +105,20 @@ const joinedField = (buttonCss: string): [string, string] => [
    quader-copy-button { display: flex; flex: none; margin-inline-start: -1px; ${buttonCss} }`,
 ];
 
+test.describe('a label kept on one line (R-UI-171)', () => {
+  const narrow = 'div.box { inline-size: 220px; } h2 { margin: 0; font-size: 16px; } .toggle { all: unset; display: inline; cursor: pointer; }';
+
+  test('R-UI-171 a button whose label breaks into two lines is found', async ({ page }) => {
+    const found = await check(page, '<div class="box"><button type="button" class="btn" style="white-space: normal">Remove a version, import tasks and tombstones</button></div>', narrow);
+    expect(only(found, 'broken'), describe(found)).toHaveLength(1);
+  });
+
+  test('R-UI-171 the toggle of a section\'s heading wraps as a heading does and passes', async ({ page }) => {
+    const found = await check(page, '<div class="box"><h2 class="heading"><button type="button" class="toggle" aria-expanded="false">Remove a version, import tasks and tombstones</button></h2></div>', narrow);
+    expect(only(found, 'broken'), describe(found)).toHaveLength(0);
+  });
+});
+
 test.describe('a button joined to a field (R-UI-175)', () => {
   test('R-UI-175 a joined button that the line rule gave margins of -8 px is 48 px beside a field of 32 and is found', async ({ page }) => {
     const [html, css] = joinedField('margin-block: -8px;');
