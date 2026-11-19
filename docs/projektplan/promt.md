@@ -1235,6 +1235,13 @@ agent** is not decided until the owner has said so.
     taller than the field (about 46 px against 32); the copy button's component is unchanged by this work, the state is
     new in the set, and the stack was the next builder's, so whether the change caused it is not known. It is the first
     case of the gap named first.
+    **Measured and fixed the same day** (the development agent, on the owner's stack): the button was 32 px wide and 48 px
+    high beside an input of 32. A rule of the lists gives every copy button inside a table cell the margins that centre it
+    on its line (-8 px above and below at a line of 16 px); the command of an opened row stands in a cell, its copy button
+    is joined to the field, and the field stretches what it holds, so the margins made the button 16 px higher. The change
+    of W-23 caused it (the margins were its line rule). The rule leaves a button joined to a field out; the checks gained
+    `joined` (a button joined to a field is as high as the field, within 1 px) with a fixture that reproduces the 48 px
+    and one that passes. Not run: a full render set with the new check.
 - **W-24 · A remote repository lists what was fetched, and every cell of the row is true** (owner, 2026-11-19, with
   pictures of `platform/guidedtraffic` and of its image `guidedtraffic/kubectl`: one image, one tag `latest`, size 0 B,
   **Last fetched** "Never", downloads 0): "Wie kann es sein, dass es nur ein einziges Image gibt und das keine Größe hat und
@@ -1821,6 +1828,19 @@ agent** is not decided until the owner has said so.
   installation's pull limit. Live on the development stack (`platform/guidedtraffic`, loopback only); on an installation
   it needs a public OCI remote on an endpoint the internet reaches, which is not known to exist. Not changed: a limit on
   `/v2/` also meets the clients behind one address that pull many layers at once, so its numbers are a decision.
+- **F-156 · A module download that stalled held the gating job `chart` to its limit, and W-23 went without a release**
+  (2026-11-19, Test and Release 44511234820 of 3dc92311): `make chart-test` began to download 75 modules at 11:05:02 UTC;
+  the download of `github.com/cloudflare/circl v1.6.3` from `proxy.golang.org` sent nothing for 16 minutes, until the
+  proxy closed the connection at 11:21:21 ("http2: server sent GOAWAY […] server_shutting_down"); the job reached its 20
+  minutes at 11:23 and was cancelled, and Semantic Release was skipped. The proxy answered at once when asked afterwards.
+  The same family as F-147, F-150, F-153 and F-154: a host outside that sends nothing, and a step without a bound of its
+  own (F-147 left the make targets to the job's limit). What the log adds: `Set up Go` had restored the module cache
+  ("Cache hit", "Cache restored successfully"), and the job still downloaded 75 modules. The cache has one key for every
+  job of a `go.sum` and is written once, by the first job that finishes after the key changed, with what that job
+  happened to need; a job that builds more than that one downloads the rest on every run. Not changed yet. The remedy of
+  the same kind as the runner image: a module cache that holds every module of `go.sum` (written by a step that runs `go
+  mod download`), so that no job asks the proxy; and a bound on the download itself so that a stall fails in minutes.
+  The release follows with the next push, whose run covers W-23.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
