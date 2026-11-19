@@ -1896,6 +1896,16 @@ agent** is not decided until the owner has said so.
     exceeded." and nothing else, and the job uploaded the pictures only. Cause not known. The report now carries the lines
     after the first (what the click waited for) and the job uploads Playwright's context of each failed screen; the next
     run names the cause.
+- **F-158 · The archive again, this time inside an image build: `e2e (nuget)` and `e2e (ci)` red** (2026-11-19, Test and
+  Release 44519652288 of 7665f810, from 11:59 UTC): both legs failed in `make nuget-clients-image` after ten minutes, the
+  package install inside the image build with "Could not connect to archive.ubuntu.com:80 […] connection timed out"; the
+  archive did not answer from the owner's network at 12:15 UTC either. No test ran. The runners' image does not reach
+  this: the five client images of the acceptance suites (npm, NuGet, APT, Ansible, and the forwarder they share) are built
+  from their Dockerfiles in every leg that needs them, without a layer cache, and each build installs OS packages and
+  tools from hosts outside. The same holds for the seven legs of the nightly that are still to run: with the runners'
+  image they get past `Install build tools` and then build these images. To a builder on 2026-11-19, together with F-156:
+  the images are built once per change of their inputs and reused from a cache that publishes nothing, the Go module
+  cache holds every module of `go.sum`, and a download that stalls fails in minutes.
 - **Render run of the walk** (2026-11-18, 242 of 246 passed in 19.4 min), open, cause not read:
   - `start-recent` as `plain` and as `power` ran into the test's 5 minutes inside `settle`
     ([render.spec.ts](../../web/e2e/renders/render.spec.ts)): a request stayed pending or the walk's states no longer fit the budget;
